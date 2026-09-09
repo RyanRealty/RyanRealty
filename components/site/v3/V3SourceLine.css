@@ -1,0 +1,192 @@
+/* V3SourceLine — the folded section 0 trace.
+   Every value comes from ./tokens.css. No raw color, no raw size.
+
+   The typography of a trace (`.v3 .v3-source`: caption size, note leading,
+   muted ink, and the on-media inversion) stays in tokens.css, because the dev
+   prototypes under app/dev/public-v3 still mark plain paragraphs with that
+   class. Everything here is the FOLDED FORM and is scoped to the element that
+   has one: `details.v3-source`. */
+
+/* THE BOX HOLDS ITSELF TO THE CONTENT COLUMN.
+   /price-drops mounted a trace straight on `main.v3`, which has no measure, so
+   the sentence ran 0..1440 at desktop and 0..375 on a phone — against the
+   viewport edge at both, which is what the taste table called clipped. A line
+   inside a section is already inside that section's measure and this
+   max-inline-size is a no-op there; a line on the page root gets the measure
+   AND the page gutter from the second rule. */
+.v3 details.v3-source,
+details.v3-source.v3 {
+  max-inline-size: var(--v3-measure);
+  margin-inline: auto;
+}
+
+/* THE GUTTER IS THE PAGE'S, SO ONLY THE PAGE ROOT GIVES IT. `main.v3`, not
+   `.v3`: every v3 SECTION also carries the root class (`v3 v3-instrument`,
+   `v3 v3-ledger`), and a `.v3 >` selector therefore paid the gutter twice —
+   the trace on /housing-market/central-oregon started 20px right of the
+   figures it explains, which is exactly the misalignment this node exists to
+   remove. Caught by looking at the shot, not by the box measurement, because
+   the box was right and the text inside it was not. */
+main.v3 > details.v3-source {
+  padding-inline: var(--v3-gutter);
+}
+
+/* THE SUMMARY IS THE CONTROL, SO IT CARRIES THE TAP FLOOR (ci:tap-targets,
+   WCAG 2.5.5/2.5.8). The gate measures the BOX, so the box is what grows.
+   `list-style: none` plus the ::-webkit-details-marker reset kills the native
+   triangle; the caret below is drawn instead, the same one V3Atlas.css and
+   V3ChartCard.css draw, because a disclosure with no affordance reads as a
+   label. A caller may set `white-space: nowrap` on the line (V3Drawing does);
+   normal here so a clause can never push a row off a 375 viewport. */
+.v3 details.v3-source .v3-source__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  align-content: center;
+  gap: var(--v3-space-3xs) var(--v3-space-sm);
+  min-block-size: var(--v3-tap);
+  cursor: pointer;
+  list-style: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.v3 details.v3-source .v3-source__summary::-webkit-details-marker {
+  display: none;
+}
+
+.v3 details.v3-source .v3-source__summary:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+/* THE CLAUSE. One line: what the source is called, and when it was read. This
+   is the whole of what a reader sees before asking for more. */
+.v3 details.v3-source .v3-source__clause {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--v3-space-2xs) var(--v3-space-sm);
+  min-inline-size: 0;
+}
+
+.v3 details.v3-source .v3-source__label {
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+}
+
+.v3 details.v3-source .v3-source__stamp {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The stamp is a second fact on the same line, so it gets the separator the
+   rest of the register uses rather than another comma. */
+.v3 details.v3-source .v3-source__stamp::before {
+  content: '·';
+  margin-inline-end: var(--v3-space-xs);
+}
+
+/* THE CONTROL SITS AT THE FAR END OF THE ROW on a window wide enough for it,
+   which is what turns a paragraph into a footer rule. Below that it wraps
+   under the clause and stays a control. */
+.v3 details.v3-source .v3-source__more {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+  margin-inline-start: auto;
+  text-decoration: underline;
+  text-decoration-color: var(--v3-edge);
+  text-underline-offset: var(--v3-underline-offset);
+  transition: color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 details.v3-source .v3-source__more::after {
+  content: '';
+  display: inline-block;
+  inline-size: 0.4rem;
+  block-size: 0.4rem;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: translateY(-0.12em) rotate(45deg);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 details.v3-source[open] .v3-source__more::after {
+  transform: translateY(0.06em) rotate(-135deg);
+}
+
+.v3 details.v3-source .v3-source__summary:hover .v3-source__more,
+.v3 details.v3-source .v3-source__summary:focus-visible .v3-source__more {
+  color: var(--v3-ink);
+  text-decoration-color: currentColor;
+}
+
+/* THE TRACE. Held to the reading measure, never the full column: this is the
+   longest sentence on the page and the one nobody has to read. */
+.v3 details.v3-source .v3-source__trace {
+  margin: 0 0 var(--v3-space-xs);
+  max-inline-size: var(--v3-measure-text);
+  white-space: normal;
+}
+
+/* ON MEDIA. Cream ink and the shadow the rest of the opening wears. */
+.v3 details.v3-source.v3-source--on-media .v3-source__summary,
+.v3 details.v3-source.v3-source--on-media .v3-source__trace {
+  text-shadow: var(--v3-media-shadow);
+}
+
+.v3 details.v3-source.v3-source--on-media .v3-source__summary:hover .v3-source__more {
+  color: var(--v3-ink-on-media);
+}
+
+/* HERO MOUNT — a chip beside the figure, not a sentence in the display
+   register. The opening of a place page is a photograph, an H1 and a face of
+   figures; a full trace sentence under the headline reads as body copy the
+   page never wrote. Same content, same disclosure, a mark instead of a line. */
+.v3 details.v3-source.v3-source--hero {
+  display: inline-block;
+  max-inline-size: min(100%, var(--v3-measure-text));
+  margin-inline: 0;
+  margin-block-start: var(--v3-space-sm);
+}
+
+.v3 details.v3-source.v3-source--hero .v3-source__summary {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--v3-space-2xs) var(--v3-space-xs);
+  padding: var(--v3-space-2xs) var(--v3-space-sm);
+  border: 1px solid var(--v3-edge);
+}
+
+.v3 details.v3-source.v3-source--hero .v3-source__clause {
+  align-items: center;
+  gap: var(--v3-space-2xs) var(--v3-space-xs);
+}
+
+/* The chip is already the affordance, so the control reads as a mark rather
+   than a link. It stays sentence case: one tracked uppercase run per chip is
+   the label, and a second one beside it shouts (looked at the Tetherow shot,
+   2026-09-09). */
+.v3 details.v3-source.v3-source--hero .v3-source__more {
+  margin-inline-start: var(--v3-space-2xs);
+  text-decoration: none;
+}
+
+.v3 details.v3-source.v3-source--hero .v3-source__trace {
+  margin-block-start: var(--v3-space-sm);
+}
+
+.v3 details.v3-source.v3-source--hero.v3-source--on-media .v3-source__summary {
+  border-color: var(--v3-scrim-soft);
+  background: var(--v3-scrim-mid);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3 details.v3-source .v3-source__more,
+  .v3 details.v3-source .v3-source__more::after {
+    transition: none;
+  }
+}

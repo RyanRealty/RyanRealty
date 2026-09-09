@@ -212,7 +212,7 @@ describe('buildCloseSubject — this house, on the same axes', () => {
     const view = buildCloseView(bendFacts(), null)
     const by = (id: string) => view.readings.find((r) => r.id === id)!
     expect(by('depth').value).toBe('5.9%')
-    expect(by('depth').against).toBe('came off the ask')
+    expect(by('depth').against).toBe('came off the asking price')
     expect(by('pace').value).toBe('29 days')
     expect(by('pace').against).toBe('from listing to contract')
   })

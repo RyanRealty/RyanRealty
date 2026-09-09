@@ -933,7 +933,16 @@ export default async function SubdivisionPage({ params }: Props) {
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
             </V3Heading>
-            <V3SourceLine source={inventorySource} onMedia={Boolean(stagePosterSrc)} />
+            {/* The opening is a photograph, an H1 and a face of figures. The
+                trace belongs to the face, so it mounts as the chip beside it
+                (SITE-42) — the full sentence under the headline read as hero
+                body copy the page never wrote. Nothing is cut: the disclosure
+                still holds this exact string. */}
+            <V3SourceLine
+              source={inventorySource}
+              mount="hero"
+              onMedia={Boolean(stagePosterSrc)}
+            />
             {posterCaption ? <p className="place-opening__caption">{posterCaption}</p> : null}
           </div>
         </div>

@@ -142,7 +142,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-09",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-24 round 3 — spawned from the build lane with the six shots and the lane's own dev server URL, scored the same shot set three times in one call; rounds 1 and 2 of the same instrument scored 61 and 74 on this plat before the defects below were fixed",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-42 round 1 — spawned from the build lane with the same six-shot set SITE-24 used, re-captured against the lane dev server after the section 0 line was folded, scored three times in one call.",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
@@ -167,57 +167,56 @@
       "answersDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-desktop.png",
       "answersMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-mobile375.png"
     },
-    "shotsHash": "sha256:641ab6fc10efeb4e2eb7468cf63a8676865da4bd4b367b47e2d7aac97704a1bb",
+    "shotsHash": "sha256:865202efd96928262a0e74a24069a04b68675fdc48333cfd56d5df15bc605455",
     "scores": [
-      77,
-      75,
+      79,
+      78,
       82
     ],
-    "score": 77,
+    "score": 79,
     "breakdown": {
-      "design": 23,
-      "originality": 22,
-      "interaction": 13,
-      "craft": 13,
-      "honesty": 5
+      "design": 24,
+      "originality": 24,
+      "interaction": 10,
+      "craft": 12,
+      "honesty": 9
     },
-    "beats": "Beats Zillow's and Redfin's subdivision aggregation page for this plat on depth and honesty: the portals key on the MLS subdivision string, which for a resort sub-plat is the resort's name, so they show a listing grid and no market reasoning at all. This page draws a 2012-2026 closed-sales line inside the recorded plat boundary, states 107 lifetime closed sales, compares 7 closes in 2025 against 2 in 2024 as two runs of marks, and refuses a buyer's/seller's verdict out loud at a sample that thin rather than guessing one.",
+    "beats": "Tetherow Resort's own site and the portals' subdivision pages for this plat. Neither shows a closed-sales trend scoped to this exact recorded plat, and no portal declines to compute a verdict at a thin sample — they print an algorithmic buyer's or seller's read whatever n is. This page shows 7 closed in 2025 against 2 in 2024, 107 lifetime, and says out loud that the sample cannot carry a verdict.",
     "defects": [
       {
-        "section": "#overview (hero)",
-        "severity": "honesty",
-        "finding": "The hero trace reads 'active single-family listings inside the recorded Golf Homes at Tetherow plat' while every listing the page plots on this plat is a townhouse (verified in the page's own Atlas payload: types = [townhouse], every point PropertySubType 'Townhouse'). The set behind it is propertyType 'A', which CLAUDE.md §0 names as a MIXED bucket (MARKET_TRUTH D1) — detached, townhouse and unclassified — so calling it single-family is wrong here. NOT FIXED IN THIS LANE ON PURPOSE: 'active single-family listings' is the wording of an 'A' set on roughly fifteen public surfaces (housing-market hub, region, annual review, /communities, /neighborhoods, /zip, both place views), so it is one cross-surface decision and not a one-route copy edit. Raised for its own node."
-      },
-      {
-        "section": "#overview (hero)",
+        "section": "hero (#overview)",
         "severity": "taste",
-        "finding": "The §0 source sentence is still the first line of body copy under the H1, ahead of any descriptive caption, and on this plat there is no hero photograph at all: no image is registered for the slug and the plat is not a registered alias of the Tetherow resort, so the resort-photo fallback never fires and the fold is bare type on cream. Carried forward unresolved from the prior receipt (the same finding on ridge-at-eagle-crest); adding the plat to the resort's alias list would fix the photo but a registry alias asserts membership and also scopes CMA comps, which is Matt's call, not a page fix."
-      },
-      {
-        "section": "#market-report / #faq",
-        "severity": "taste",
-        "finding": "107 is the terminal figure of the market band and is restated as the second FAQ row's figure ('sales on record'). The two rows around it now each make a distinct claim — the market band draws the by-year series, the first FAQ row compares 2025 against 2024 — but the lifetime total itself is said twice in two forms rather than once."
+        "finding": "Two full-size display headlines stack within about 150px of each other — \"Golf Homes at Tetherow\" then \"Golf Homes at Tetherow right now\" — at matching size and weight, with only the source chip between them. Reads as a component reused, not a page composed."
       },
       {
         "section": "#market-report",
-        "severity": "craft",
-        "finding": "The chart's interrogation is real (cursor crosshair, a crosshair and per-series value tip on pointer and touch, arrow-key stepping, a polite live region) but nothing on first paint signals it. The obvious fix — a caption telling the reader to scrub — is the Atlas how-to tell TASTE.md names and ci:taste-canon ratchets, so it was not added; a resting state that shows the latest reading is the candidate, and it is a change to the shared v3-chart primitive that every chart on the site would inherit."
+        "severity": "taste",
+        "finding": "The dullest section on the page: eyebrow, heading, caption, claim, line chart, big stat, source — the stacked-section shape, and it stands out because its neighbours (the hero filter and map, the FAQ accordion) are not built that way."
+      },
+      {
+        "section": "#market-report",
+        "severity": "taste",
+        "finding": "No hover affordance is visible on the line chart in either capture — no highlighted point, crosshair or tooltip cue — so the section cannot be confirmed to clear the hover-reveals-more-data bar from the stills."
+      },
+      {
+        "section": "#faq",
+        "severity": "taste",
+        "finding": "The FAQ intro heading is the third occurrence of the same oversized display-headline device on one page; by the third it reads as a reused component rather than a choice for this section."
+      },
+      {
+        "section": "#overview source chip",
+        "severity": "honesty",
+        "finding": "The chip carries no as-of date, because getPlatPublicInventory publishes no read timestamp. Nothing is invented in its place; a stamp for this population is open work on the data layer, not on the primitive."
       }
-    ],
-    "openRaise": [
-      "Does an 'A'-bucket set get called 'active single-family listings' anywhere on the site? CLAUDE.md §0 says 'A' is a mixed bucket, roughly fifteen surfaces use that wording for it, and this plat is the case where it is visibly false. One decision, then one sweep.",
-      "Should golf-homes-at-tetherow (and the other resort sub-plats) be registered as subdivision aliases of their parent resort so the hero can carry the resort photograph? A registry alias asserts membership and also scopes CMA comps, so it is not a page-level fix.",
-      "Should the hero §0 source line move behind a title tooltip to match the community grain, or stay as the first line of body copy on this class? Raised on the prior receipt and still unanswered.",
-      "Should the shared v3-chart primitive paint a resting reading (latest point, crosshair parked) so its interaction is legible without a how-to caption?"
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-08",
-      "score": 76,
+      "evaluatedAt": "2026-09-09",
+      "score": 77,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:b2fe0b7ea8f60f6cca620f65f32b5e6873cf3c7505d12513ab8419eca1193b0a"
+      "shotsHash": "sha256:641ab6fc10efeb4e2eb7468cf63a8676865da4bd4b367b47e2d7aac97704a1bb"
     },
-    "rebaselineReason": "shotsHash differs: the prior 76 was scored on /subdivisions/ridge-at-eagle-crest, a four-shot set of a build in which this class could not state a closed count at all. This pass is a six-shot set of a different plat and a different build, so it is the first mark on the new instrument. evaluatorModel and rubricVersion are unchanged. Within THIS instrument the score did rise: the same evaluator on the same rubric scored these shots 61, then 74 after the market band and the question set were rebuilt on the boundary attribution, then 77."
+    "rebaselineReason": "shotsHash differs: the page changed (the hero trace became a chip) so all six shots were re-captured against the lane dev server. evaluatorModel and rubricVersion are unchanged, and the raw comparison on the same model and rubric is 77 to 79."
   }
 }

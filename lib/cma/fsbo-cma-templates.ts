@@ -16,6 +16,8 @@
  * - Navy #102742 / cream #faf8f4 on surfaces that take brand color.
  */
 
+import { CMA_PRICING_PHILOSOPHY } from '@/lib/cma/first-contact'
+
 export const FSBO_CMA_FIRST_TOUCH_V1 = 'fsbo_cma_first_touch_v1' as const
 export const CMA_COVER_INTRO_V1 = 'cma_cover_intro_v1' as const
 export const CMA_BOTTOM_WHY_LIST_V1 = 'cma_bottom_why_list_v1' as const
@@ -87,7 +89,7 @@ function moneyOrNull(v: string | null | undefined): string | null {
  return trim(v)
 }
 
-/** Subject options - never bare CMA. */
+/** Subject options - never bare CMA, and plain (Matt 2026-09-09). */
 export function fsboCmaFirstTouchSubjects(facts: Pick<FsboCmaMergeFacts, 'propertyAddress' | 'propertyStreet'>): {
  option1: string
  option2: string
@@ -96,9 +98,9 @@ export function fsboCmaFirstTouchSubjects(facts: Pick<FsboCmaMergeFacts, 'proper
  const address = trim(facts.propertyAddress) ?? 'your home'
  const street = trim(facts.propertyStreet) ?? address
  return {
- option1: `Pricing report for ${address}`,
- option2: `Nearby sales vs your ask - ${street}`,
- option3: `Market snapshot: ${address}`,
+ option1: `A market analysis for ${street}`,
+ option2: `Your home at ${street}`,
+ option3: `Your market analysis for ${street}`,
  }
 }
 
@@ -113,8 +115,11 @@ export function pickFsboCmaFirstTouchSubject(
 }
 
 /**
- * Email body for fsbo_cma_first_touch_v1.
- * Omits suggested-list fragment when missing. Requires PDF attachment at send.
+ * Email body for fsbo_cma_first_touch_v1, in Matt's register (2026-09-09):
+ * who we are, why we wrote (sorry it did not sell / respect for a FSBO /
+ * thank you for asking), the numbers off the row, his pricing paragraph,
+ * the ask to earn their business, the reviews, best of luck. Omits any
+ * number it does not have. Requires the PDF attachment at send.
  */
 export function composeFsboCmaFirstTouchEmail(facts: FsboCmaMergeFacts): {
  templateId: typeof FSBO_CMA_FIRST_TOUCH_V1
@@ -124,49 +129,66 @@ export function composeFsboCmaFirstTouchEmail(facts: FsboCmaMergeFacts): {
 } {
  const first = trim(facts.ownerFirstName) ?? 'there'
  const address = trim(facts.propertyAddress) ?? 'your home'
+ const street = trim(facts.propertyStreet) ?? address
  const lo = moneyOrNull(facts.priceRangeLow)
  const hi = moneyOrNull(facts.priceRangeHigh)
  const suggested = moneyOrNull(facts.suggestedListPrice)
  const calendar = trim(facts.calendarLink)
  const phone = trim(facts.agentPhone)
  const email = trim(facts.agentEmail)
- const agent = trim(facts.agentName) ?? 'Ryan Realty'
+ const agent = trim(facts.agentName)
  const disclosure = trim(facts.brokerageDisclosureLine)
+ const lane = facts.leadType
+
+ const intro = agent ? `My name is ${agent} with Ryan Realty in Bend.` : 'This is Ryan Realty in Bend.'
+ const why =
+ lane === 'expired'
+ ? `We keep tabs on the MLS and noticed your home at ${street} came off the market recently without selling. We're sorry it didn't sell, and we would like the opportunity to earn your business should you decide to relist.`
+ : lane === 'fsbo'
+ ? `We noticed your home at ${street} is for sale by owner. We respect that, and a lot of people who sell on their own still want a second set of numbers, so we put one together for you, no charge and no strings.`
+ : `Thank you for asking what ${street} is worth. We researched your property and the comparable sales, and here is what we found.`
 
  const rangeLine =
  lo && hi
  ? suggested
- ? `The report is attached. Closed sales nearby support ${lo} to ${hi}. Recommended list: ${suggested}.`
- : `The report is attached. Closed sales nearby support ${lo} to ${hi}.`
- : 'The report is attached.'
+ ? `The full report is attached. Closed sales nearby support ${lo} to ${hi}. We would recommend listing at ${suggested}.`
+ : `The full report is attached. Closed sales nearby support ${lo} to ${hi}.`
+ : 'The full report is attached.'
 
- const contactBits = [phone, email].filter(Boolean).join(' · ')
- const bookLine = calendar
- ? `Book here: ${calendar}`
- : 'Reply with a time that works.'
- const orReply =
- calendar && contactBits
- ? `Or reply with a time that works. ${contactBits}`
- : calendar
- ? 'Or reply with a time that works.'
- : contactBits
- ? contactBits
- : null
+ const proof =
+ 'We could sit down, or take fifteen minutes on the phone, and talk about how we sell homes. We feel we offer a premium product, and you can read our reviews at https://ryan-realty.com/reviews.'
+ const ask =
+ lane === 'expired'
+ ? `Again, we are sorry your home did not sell. If you are ever considering selling in the future, we would love the opportunity to earn your business. ${proof}`
+ : lane === 'fsbo'
+ ? `If at some point you would rather have someone handle the showings, the paperwork and the negotiation, we would love the opportunity to earn your business. ${proof}`
+ : `If you are considering selling, we would love the opportunity to earn your business. ${proof}`
+
+ const bookLine = calendar ? `If you would like to talk, you can book a time here: ${calendar}` : null
+ const questions =
+ lane === 'expired'
+ ? 'Please let me know if you have any questions. Best of luck in the future.'
+ : lane === 'fsbo'
+ ? 'Please let me know if you have any questions. Best of luck with the sale.'
+ : 'Please let me know if you have any questions.'
 
  const lines = [
  `Hi ${first},`,
  '',
- `Pricing report for ${address}.`,
+ `${intro} ${why}`,
  '',
  rangeLine,
  '',
- `Reply or call to walk through the numbers.`,
+ CMA_PRICING_PHILOSOPHY,
+ '',
+ ask,
  '',
  bookLine,
- orReply,
  '',
- agent,
- 'Ryan Realty',
+ questions,
+ '',
+ agent ?? 'Ryan Realty',
+ agent ? 'Ryan Realty' : null,
  phone,
  email,
  disclosure,
@@ -294,7 +316,7 @@ export function composeCmaBottomWhyList(facts: FsboCmaMergeFacts): {
  '• Showing and offer management',
  '• Contract, disclosure, and closing coordination',
  '',
- 'Walk these comps on a call.',
+ 'We would be glad to walk through these sales with you on a call.',
  ctaBits || null,
  agent ? `${agent}, Ryan Realty` : 'Ryan Realty',
  ]
@@ -324,7 +346,7 @@ export function composeCmaBottomWhyList(facts: FsboCmaMergeFacts): {
  <li>Showing and offer management</li>
  <li>Contract, disclosure, and closing coordination</li>
  </ul>
- <p class="cta-lead">Walk these comps on a call.</p>
+ <p class="cta-lead">We would be glad to walk through these sales with you on a call.</p>
  ${calendar ? `<p><a href="${esc(calendar.includes('utm_') ? calendar : (calendar.includes('?') ? calendar + '&utm_source=crm&utm_medium=doc&utm_campaign=cma-letter&utm_content=why-list' : calendar + '?utm_source=crm&utm_medium=doc&utm_campaign=cma-letter&utm_content=why-list'))}" data-rr-track="cma-why-list-book">Book a time</a>${phone || email ? ` · ${esc([phone, email].filter(Boolean).join(' · '))}` : ''}</p>` : (ctaBits ? `<p>${esc(ctaBits)}</p>` : '')}
  <p>${esc(agent ? `${agent}, Ryan Realty` : 'Ryan Realty')}</p>
  <div class="trace"><div class="t-hd">Sources</div>${esc(footnotes).replace(/\n/g, '<br/>')}</div>
@@ -345,18 +367,21 @@ export const FSBO_CMA_FIRST_TOUCH_EMAIL_SEED = {
  channel: 'email' as const,
  name: 'FSBO CMA first touch - pricing report + PDF',
  category: 'fsbo-seller',
- subject: 'Pricing report for %address%',
+ subject: 'A market analysis for %address%',
  body: [
  'Hi %contact_first_name%,',
  '',
- 'Pricing report for %address%.',
+ 'My name is %agent_name% with Ryan Realty in Bend. Thank you for asking what %address% is worth. We researched your property and the comparable sales, and here is what we found.',
  '',
- 'The report is attached. Closed sales nearby support %customPriceRangeLow% to %customPriceRangeHigh%. Recommended list: %customSuggestedListPrice%.',
+ 'The full report is attached. Closed sales nearby support %customPriceRangeLow% to %customPriceRangeHigh%. We would recommend listing at %customSuggestedListPrice%.',
  '',
- 'Reply or call to walk through the numbers.',
+ CMA_PRICING_PHILOSOPHY,
  '',
- 'Book here: %calendar_link%',
- 'Or reply with a time that works. %agent_phone% · %agent_email%',
+ 'If you are considering selling, we would love the opportunity to earn your business. We could sit down, or take fifteen minutes on the phone, and talk about how we sell homes. We feel we offer a premium product, and you can read our reviews at https://ryan-realty.com/reviews.',
+ '',
+ 'If you would like to talk, you can book a time here: %calendar_link%',
+ '',
+ 'Please let me know if you have any questions.',
  '',
  '%agent_name%',
  'Ryan Realty',

@@ -77,7 +77,7 @@
         "type": "Dataset",
         "emittedBy": "MetadataBlock schemas array (dataset entry)",
         "gate": "G34",
-        "note": "Primary AI-citability signal. dateModified must equal regionPulse.refreshedAt from market_pulse_live geo_type='region'. Each variableMeasured value must equal the on-screen number (CLAUDE.md \u00a70). Emitted only when datasetVariables.length > 0 AND refreshedAt is present. Name, url and spatialCoverageName are unchanged from the KB page. THE DESCRIPTION IS DERIVED FROM variableMeasured, not typed beside it: the KB sentence hardcoded four metric names while the variable list is built one figure at a time, so a null column left the payload describing a measurement it did not carry, which is a claim outrunning its payload and the same defect class as a wrong number."
+        "note": "Primary AI-citability signal. dateModified must equal regionPulse.refreshedAt from market_pulse_live geo_type='region'. Each variableMeasured value must equal the on-screen number (CLAUDE.md §0). Emitted only when datasetVariables.length > 0 AND refreshedAt is present. Name, url and spatialCoverageName are unchanged from the KB page. THE DESCRIPTION IS DERIVED FROM variableMeasured, not typed beside it: the KB sentence hardcoded four metric names while the variable list is built one figure at a time, so a null column left the payload describing a measurement it did not carry, which is a claim outrunning its payload and the same defect class as a wrong number."
       },
       {
         "type": "FAQPage",
@@ -115,5 +115,79 @@
   "openDefects": {
     "_": "Closed 2026-08-27.",
     "items": []
+  },
+  "tasteReview": {
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-42 round 2 — a fresh agent given round one's five named findings to verify, the four shots, and the lane dev server URL, which it opened and scrolled end to end; scored three times in one call. Round one of the same instrument (a different agent instance, same model, same rubric, same shots) scored 63. The prior number for this class is the 2026-09-08 taste table mark of 63, from an instrument with no receipt, no recorded evaluator model and no shots on disk, so it is named here rather than as a priorMark.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/housing-market/central-oregon"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default",
+        "source-line"
+      ]
+    },
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/market-report-region/shots/mobile375.png",
+      "sourceDesktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/source-desktop.png",
+      "sourceMobile375": "design_system/ryan-realty/ui_kits/market-report-region/shots/source-mobile375.png"
+    },
+    "shotsHash": "sha256:1f747107a0e9ec714d88e156c4376dad77a550fb14e164b6a1a551a02b2c00b3",
+    "scores": [
+      66,
+      60,
+      64
+    ],
+    "score": 64,
+    "breakdown": {
+      "design": 20,
+      "originality": 19,
+      "interaction": 9,
+      "craft": 12,
+      "honesty": 4
+    },
+    "beats": "Zillow's regional market page: one aggregate market-temperature figure, no visible source trace, no per-city breakout without navigating away. This page wins on named-source specificity and breadth in one scroll — a disclosed source, method and as-of date beside city-by-city months of supply and median price for seven towns.",
+    "defects": [
+      {
+        "section": "the-pace-of-the-market",
+        "severity": "taste",
+        "finding": "The dullest section on the page: a bare two-figure KPI strip — days to an offer, closings in the last 30 days — with no chart, no hover and no plain sentence beside it saying what the pair means for a reader."
+      },
+      {
+        "section": "cities-and-towns and size-of-the-market",
+        "severity": "taste",
+        "finding": "Two sections on one page are hairline-divided text ledgers with no visual encoding of their values. Months of supply prints as the words \"3.8 months of supply\" where TASTE.md asks for two bars. The rows became real links this round but a link is not an encoding."
+      },
+      {
+        "section": "trend-chart-legend",
+        "severity": "craft",
+        "finding": "The year keys (2024, 2025, 2026) are inert — cursor auto, no role, no tabindex — while the chart body underneath now carries a real crosshair scrubber with a per-year tooltip and an aria-live readout."
+      },
+      {
+        "section": "central-oregon-real-estate-questions",
+        "severity": "taste",
+        "finding": "Five question and answer pairs render fully expanded with no disclosure and no figure — the banned wall-of-text tell, on a page whose answers are all numbers."
+      },
+      {
+        "section": "cities-and-towns and pace source lines",
+        "severity": "honesty",
+        "finding": "The secondary traces still say \"city pulse\", \"same pulse row\" and \"same path\", which name the market_pulse_live row rather than describing it. The hero trace and the pace opener were rewritten to plain English this round; these clauses were not."
+      },
+      {
+        "section": "page-level (unconfirmed, signed-in session only)",
+        "severity": "honesty",
+        "finding": "The evaluator reported that in a signed-in browser session this route self-navigated to /housing-market/bend about a second after paint. It did not reproduce in the lane's own signed-out playwright runs, which served region content on every pass, so it is recorded as an unverified signed-in observation for a separate node to isolate, not as a finding against this page."
+      }
+    ],
+    "comparedToPrior": "first"
   }
 }

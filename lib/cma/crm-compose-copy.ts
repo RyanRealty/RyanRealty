@@ -97,10 +97,10 @@ export function cmaComposeEmailFromFacts(facts: CmaComposeCopyFacts): {
 }
 
 export function cmaComposeSmsBody(subjectAddress: string): string {
- const address = subjectAddress.trim()
- return address
- ? `Pricing report for ${address} is attached.`
- : 'Pricing report PDF is attached.'
+ const street = streetFromAddress(subjectAddress)
+ return street
+ ? `Our market analysis for ${street} is attached.`
+ : 'Our market analysis is attached.'
 }
 
 export function cmaComposePdfFilename(slug: string): string {

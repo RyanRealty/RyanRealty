@@ -158,7 +158,7 @@ export function buildCloseView(facts: ListingCutFacts, subject: CloseSubject | n
       value: subject?.cutLabel ?? facts.cutSize.label,
       against: subject?.cutLabel
         ? `off this home\u2019s first ask, against a typical ${facts.cutSize.label}`
-        : 'came off the ask',
+        : 'came off the asking price',
       sentence:
         (population
           ? `Of the ${n(facts.cutSize.sampleN)} ${city} sellers who did cut, half took less than ${facts.cutSize.label} off their first ask and half took more.`

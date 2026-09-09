@@ -737,7 +737,7 @@ export function listPriceFromEngine(opts: {
   const askStep =
     ratio != null
       ? ` Homes in this city are closing at ${(ratio * 100).toFixed(1)} percent of the price they first asked, so each figure is carried to an asking price at that share.`
-      : ' No local share of the original ask was available, so the asking prices are the adjusted sale prices themselves.'
+      : ' No local share of the original asking price was available, so the asking prices are the adjusted sale prices themselves.'
   const rangeRule: PricingRangeRule | null =
     range != null && rangeLow != null && rangeHigh != null
       ? {

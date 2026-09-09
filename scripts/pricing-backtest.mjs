@@ -42,7 +42,9 @@ const { data: subjects, error } = await sb
   .lte('sqft', 4000)
   .gt('close_price', 150000)
   .order('listing_key', { ascending: true })
-  .limit(800)
+  // The candidate pool the stride samples from. 800 capped every run at 800
+  // subjects whatever PRICING_BACKTEST_N asked for (2026-09-09).
+  .limit(Math.max(800, SAMPLE * 2))
 if (error) {
   console.error(error.message)
   process.exit(1)

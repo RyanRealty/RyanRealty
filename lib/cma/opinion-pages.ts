@@ -477,7 +477,7 @@ export function failedAskBacktestHtml(a: OpinionPageArgs, doc: 'letter' | 'immer
   const small = doc === 'letter' ? 'small' : 'small r'
   return `<div class="${strip}">
     <div class="${cell}"><div class="${val}">${int(b.pairs)}</div><div class="${lbl}">Central Oregon homes came off unsold and then sold, 2023 to 2026</div></div>
-    <div class="${cell}"><div class="${val}">${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="${lbl}">of the ask that failed is what the median one sold for</div></div>
+    <div class="${cell}"><div class="${val}">${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="${lbl}">of the asking price that failed is what the median one sold for</div></div>
     <div class="${cell}"><div class="${val}">${b.shareClosedAboveAskPct}%</div><div class="${lbl}">sold for more than that ask</div></div>
   </div>
   <p class="${small}">${esc(FAILED_ASK_BACKTEST_SOURCE)}</p>`
