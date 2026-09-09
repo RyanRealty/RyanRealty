@@ -276,83 +276,33 @@ export function V3Figure({
 }
 
 /* -------------------------------------------------------------------------- */
-/* V3SourceLine                                                                */
+/* V3SourceLine + V3SourceDisclosure — moved to ./V3SourceLine.tsx (SITE-42)    */
 /* -------------------------------------------------------------------------- */
-
-export type V3SourceLineProps = {
-  /**
-   * The trace itself, without the word "Source" (this renders that prefix):
-   * what the figures above came from, the filter, and the population. Example:
-   * "live MLS, Bend single-family, active listings at last sync".
-   */
-  source: string
-  /** When the data was last refreshed. Rendered through the canonical formatter. */
-  updatedAt?: string | number | Date | null
-  /** Inverts for use over Stage media. */
-  onMedia?: boolean
-  id?: string
-  className?: string
-}
 
 /**
- * The section 0 trace line that sits under any block of real data: Instrument,
- * Field counts, Ledger rows, a Sheet result. Every figure renders with its
- * source available, so this is not decoration and is not optional on a data
- * block. Muted, small, and never louder than the number it explains.
+ * The section 0 trace outgrew an atom. It now folds — one clause visible, the
+ * full trace behind a native disclosure, held to the content column, with a
+ * chip mount for a place opening — and that is a primitive with its own file,
+ * its own stylesheet and its own tests: ./V3SourceLine.tsx.
+ *
+ * Re-exported here because every v3 pattern imports it from './atoms', and a
+ * primitive changing shape is not a reason for twenty files to change an import
+ * line. Both names resolve to the SAME component: one job, one primitive, one
+ * variant (TASTE.md, consistency).
  */
-export function V3SourceLine({
-  source,
-  updatedAt,
-  onMedia,
-  id,
-  className,
-}: V3SourceLineProps) {
-  return (
-    <p
-      id={id}
-      className={cn('v3-source', onMedia && 'v3-source--on-media', className)}
-    >
-      Source: {source}
-      {updatedAt == null ? null : ` · updated ${formatDate(updatedAt)}`}
-    </p>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
-/* V3SourceDisclosure                                                          */
-/* -------------------------------------------------------------------------- */
-
-export type V3SourceDisclosureProps = {
-  /**
-   * The full section 0 trace: table, filter, methodology stamp, population.
-   * Collapsed behind a "Source" summary — the trace is present on every data
-   * block but never a visible paragraph competing with the figures
-   * (Matt 2026-08-19).
-   */
-  source: string
-  /** When the data was last refreshed. Rendered through the canonical formatter. */
-  updatedAt?: string | number | Date | null
-  id?: string
-  className?: string
-}
-
-/**
- * The collapsed form of the section 0 trace: a native details/summary whose
- * closed state shows only the word "Source". Use it under a chart or figure
- * block where the trace names tables, filters, and vintages too long for the
- * one-line V3SourceLine.
- */
-export function V3SourceDisclosure({ source, updatedAt, id, className }: V3SourceDisclosureProps) {
-  return (
-    <details id={id} className={cn('v3-source-disclosure', className)}>
-      <summary className="v3-source-disclosure__summary">Source</summary>
-      <p className="v3-source">
-        {source}
-        {updatedAt == null ? null : ` · updated ${formatDate(updatedAt)}`}
-      </p>
-    </details>
-  )
-}
+export {
+  V3SourceLine,
+  V3SourceDisclosure,
+  v3SourceParts,
+  splitSourceStamp,
+  sourceNameFromTrace,
+} from './V3SourceLine'
+export type {
+  V3SourceLineProps,
+  V3SourceLineMount,
+  V3SourceDisclosureProps,
+  V3SourceParts,
+} from './V3SourceLine'
 
 /* -------------------------------------------------------------------------- */
 /* V3Eyebrow                                                                   */

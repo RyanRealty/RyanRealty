@@ -301,7 +301,8 @@ export default async function CentralOregonRegionPage() {
   const liveTrace =
     region.live.trace +
     (extraLive.length > 0
-      ? ' Extra product-type inventory and 12-month pace are sample-gated when published.'
+      ? ' Extra product-type inventory and the 12-month pace figures are withheld below a ' +
+        'minimum sample, so a figure that is not here was not published.'
       : '')
   const [firstPaceFigure, ...restPaceFigures] = region.pace.figures
   const cityLedger = buildCityLedger(citySnapshots, {
