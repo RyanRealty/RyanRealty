@@ -442,8 +442,11 @@ export function V3Answers({
                     <span aria-hidden="true" className="v3-answers__mark" />
                   </span>
                 </summary>
-                {groupDoors(edges).map((group) => (
-                  <div key={group.label ?? ' loose'} className="v3-answers__door-group">
+                {groupDoors(edges).map((group, groupIndex) => (
+                  <div
+                    key={group.label ?? `ungrouped-${groupIndex}`}
+                    className="v3-answers__door-group"
+                  >
                     {group.label ? (
                       <p className="v3-answers__door-group-label">{group.label}</p>
                     ) : null}

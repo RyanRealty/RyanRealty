@@ -90,6 +90,23 @@ describe('resolveCommunityDisplayName — the MLS spelling is what gets tested',
     }
   })
 
+  it('tests the MLS token but publishes the page\'s own better-spelled name', async () => {
+    // The MLS files this place under a short label; the page carries the
+    // curated one. The test runs on the token, the output keeps the curated
+    // spelling — publishing "Highlands" here would be a silent downgrade.
+    const r = await resolveCommunityDisplayName({
+      rawName: 'The Highlands At Broken Top',
+      mlsName: 'Highlands',
+      isCanonicalSlug: false,
+      readRecordedPlatLabel: noPlats,
+    })
+    expect(r).toEqual({
+      kind: 'publish',
+      name: 'The Highlands at Broken Top',
+      source: 'publishable-name',
+    })
+  })
+
   it('leaves a real MLS name alone — "Petrosa" is spelled the same either way', async () => {
     const r = await resolveCommunityDisplayName({
       rawName: 'Petrosa',

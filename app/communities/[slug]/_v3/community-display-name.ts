@@ -123,8 +123,22 @@ export async function resolveCommunityDisplayName(input: {
 
   // 1 + 2. Not an abbreviation, or a recorded expansion of one. Title-cased by
   // the same publisher /subdivisions uses, so the two routes cannot disagree.
+  //
+  // TESTED ON THE MLS SPELLING, PUBLISHED FROM THE PAGE'S OWN NAME. The two are
+  // different jobs. The test needs the MLS token because that is where the
+  // evidence is; the published string should stay whatever the page already had
+  // — a curated public.communities row, or a registry label reached through an
+  // alias — because that is the better-spelled of the two whenever they differ.
+  // Publishing the MLS token instead would quietly downgrade a curated name to
+  // its ingest spelling on every page that has one.
   const publishable = publishPlatDisplayName(token)
-  if (publishable) return { kind: 'publish', name: publishable, source: 'publishable-name' }
+  if (publishable) {
+    return {
+      kind: 'publish',
+      name: publishPlatDisplayName(raw) ?? publishable,
+      source: 'publishable-name',
+    }
+  }
 
   // Withheld. The only remaining honest names are recorded ones, looked up on
   // the token's own slug — exactly, never by prefix (C-21).
