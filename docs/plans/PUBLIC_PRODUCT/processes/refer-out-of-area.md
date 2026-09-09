@@ -261,6 +261,26 @@ into `ListingUnavailable` and delete the tier's whole reason to exist.
 Two claims from the original finding were **dropped for want of measurement**: entity
 dilution and crawl budget. Neither was measured, so neither is asserted here.
 
+## 8b. The asks stay — Matt's ruling, 2026-09-09
+
+The SITE-33 lane shipped the honesty block and then raised the question it could not
+answer itself: on a Medford page the sidebar still offers Tour, Call and Text and
+`#payment` still computes a monthly figure, directly beside a block saying we do not work
+in Medford. SITE-21's precedent pointed the other way — it strips `tel:`, `sms:` and the
+payment from a home the brokerage cannot transact — so the lane left it alone rather than
+guess.
+
+**Matt, asked and answered: keep them.** Out-of-area is not off-market. Ryan Realty holds
+an Oregon licence, these are live listings, and a person who wants to see a Medford house
+is a lead the referral tier exists to catch, not a dead end to be tidied away. The block
+tells them where they are; the asks let them act. Nothing changes in the code — this is
+recorded so the next reader does not "fix" the contradiction by deleting the asks.
+
+What the page therefore carries, together, on purpose: the honesty block naming the market
+and pointing at `/oregon/<city>`; `noindex, follow` with the canonical; and the full ask
+set with the payment. The one thing that would make this dishonest is a claim to local
+expertise in that market, and the block is what prevents it.
+
 The assertion lives in `lib/data/listings/service-area.test.ts` (the existing test for
 this predicate), `lib/data/sitemap/getListingSitemapRows.test.ts`, and
 `components/site/listing-detail/listing-out-of-area.test.ts` — not in a new gate.
