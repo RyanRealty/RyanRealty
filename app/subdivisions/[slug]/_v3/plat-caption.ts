@@ -23,6 +23,15 @@
  * Four settings, four grammars, and within each one the clause about homes for
  * sale is present only when there is a count to stand behind.
  *
+ * AND WHAT THE FRAME IS, ALWAYS (SITE-56). The opening now reaches past the
+ * resort borrow for its picture: one of the plat's own homes, or the plat's own
+ * ground drawn from TIGER data. Those are frames OF this place, so unlike the
+ * resort borrow they do not lead — the setting sentence comes first and the
+ * credit follows it as a short clause. Every one of them NAMES the frame: the
+ * address of the house in the photograph, or the fact that the drawing is a
+ * drawing and where its lines came from. A picture that makes a claim is held
+ * to §0 exactly as a number is.
+ *
  * §0, FIGURE BY FIGURE. Every number that can appear here is a number the same
  * page renders under its own trace:
  *
@@ -68,10 +77,22 @@ export type PlatCaptionFacts = {
   /** The plat's city. Null when the page could not resolve a real one. */
   cityName?: string | null
   /**
-   * The resort whose PHOTOGRAPH the opening borrowed, when the plat has no
-   * still of its own. Present means the caption must say whose frame it is.
+   * WHAT THE OPENING FRAME IS, when it is not a photograph of this place
+   * (SITE-56). Absent means the opening carries the plat's own still, or none
+   * at all, and the caption goes straight to the setting sentence.
+   *
+   *   resort   the frame is the resort the plat sits inside (SITE-08 pass 2).
+   *   listing  the frame is one of the plat's own homes, and the caption names
+   *            the house in it — the only condition on which a listing
+   *            photograph may open a page about a place.
+   *   ground   the frame is drawn, not photographed: the plat's own streets,
+   *            water and recorded outline.
    */
-  photographOf?: string | null
+  photograph?:
+    | { kind: 'resort'; label: string }
+    | { kind: 'listing'; address: string }
+    | { kind: 'ground' }
+    | null
   /** Homes for sale in the counted set. Null unless it is a real positive count. */
   activeForSale?: number | null
   /** The counted set's median list price, already formatted ("$1.2M", "$910,000"). */
@@ -100,7 +121,7 @@ export function platCaption(facts: PlatCaptionFacts): string | null {
   const resort = facts.resortLabel?.trim() || null
   const hood = facts.neighborhoodLabel?.trim() || null
   const city = facts.cityName?.trim() || null
-  const photo = facts.photographOf?.trim() || null
+  const photo = facts.photograph?.kind === 'resort' ? facts.photograph.label.trim() || null : null
   const n =
     facts.activeForSale != null && Number.isFinite(facts.activeForSale) && facts.activeForSale > 0
       ? Math.round(facts.activeForSale)
@@ -118,20 +139,41 @@ export function platCaption(facts: PlatCaptionFacts): string | null {
     return `That photograph is ${photo}. ${name} is one of the subdivisions inside it.`
   }
 
+  /* THE FRAME IS THIS PLACE'S OWN, AND STILL HAS TO BE NAMED (SITE-56).
+     A photograph of one of the plat's homes, or a drawing of its ground, is a
+     frame OF this place — so unlike the resort borrow above it does not lead;
+     it follows the setting sentence as its own short clause. The reader gets
+     the place first and the credit second, and nothing on the page implies a
+     listing's front elevation is a picture of a subdivision. */
+  const frameCredit =
+    facts.photograph?.kind === 'listing'
+      ? (() => {
+          const address = facts.photograph.address.trim()
+          if (address.length === 0) return null
+          if (n === 1) return `The photograph is ${address} — that home.`
+          if (n != null && n > 1) return `The photograph is ${address}, one of them.`
+          return `The photograph is ${address}, a home here.`
+        })()
+      : facts.photograph?.kind === 'ground'
+        ? `The drawing above is the ground under ${name}: its streets and water, from US Census TIGER data.`
+        : null
+  const withCredit = (sentence: string | null): string | null =>
+    frameCredit ? (sentence ? `${sentence} ${frameCredit}` : frameCredit) : sentence
+
   /* SETTING 2 — A SUBDIVISION OF A RESORT COMMUNITY.
      The resort is the thing a reader recognises, so it leads. When the counted
      set carries a median, the asking price is the second clause: it is the one
      figure that tells a buyer whether this pocket is their price band at all. */
   if (resort) {
     if (n != null && asking) {
-      return `${name} is one of ${resort}'s subdivisions. ${ofItsHomes(n)} for sale right now, and the typical one is asking ${asking}.`
+      return withCredit(`${name} is one of ${resort}'s subdivisions. ${ofItsHomes(n)} for sale right now, and the typical one is asking ${asking}.`)
     }
     if (n != null) {
-      return `${name} is one of ${resort}'s subdivisions, and ${ofItsHomes(n)} for sale right now.`
+      return withCredit(`${name} is one of ${resort}'s subdivisions, and ${ofItsHomes(n)} for sale right now.`)
     }
-    return city
+    return withCredit(city
       ? `${name} is one of the subdivisions inside ${resort}, in ${city}.`
-      : `${name} is one of the subdivisions inside ${resort}.`
+      : `${name} is one of the subdivisions inside ${resort}.`)
   }
 
   /* SETTING 3 — INSIDE A NAMED NEIGHBORHOOD OF A CITY.
@@ -139,14 +181,14 @@ export function platCaption(facts: PlatCaptionFacts): string | null {
      outward from the subdivision to the neighborhood to the city. */
   if (hood && city) {
     if (n != null) {
-      return `${name} sits inside ${hood}, in ${city}, and ${ofItsHomes(n)} on the market today.`
+      return withCredit(`${name} sits inside ${hood}, in ${city}, and ${ofItsHomes(n)} on the market today.`)
     }
-    return `${name} sits inside ${hood}, one of ${city}'s neighborhoods.`
+    return withCredit(`${name} sits inside ${hood}, one of ${city}'s neighborhoods.`)
   }
   if (hood) {
-    return n != null
+    return withCredit(n != null
       ? `${name} sits inside ${hood}, and ${ofItsHomes(n)} on the market today.`
-      : `${name} sits inside ${hood}.`
+      : `${name} sits inside ${hood}.`)
   }
 
   /* SETTING 4 — A CITY SUBDIVISION WITH NO NEARER PARENT.
@@ -159,20 +201,20 @@ export function platCaption(facts: PlatCaptionFacts): string | null {
      figure this setting was withholding that Setting 2 already spends. */
   if (city) {
     if (n != null && asking) {
-      return `${name}, one of ${city}'s subdivisions, has ${homes(n)} for sale right now, and the typical one is asking ${asking}.`
+      return withCredit(`${name}, one of ${city}'s subdivisions, has ${homes(n)} for sale right now, and the typical one is asking ${asking}.`)
     }
     if (n != null) {
-      return `${name}, one of ${city}'s subdivisions, has ${homes(n)} for sale right now.`
+      return withCredit(`${name}, one of ${city}'s subdivisions, has ${homes(n)} for sale right now.`)
     }
-    return `${name} is one of ${city}'s subdivisions.`
+    return withCredit(`${name} is one of ${city}'s subdivisions.`)
   }
 
   /* SETTING 5 — THE NAME AND A COUNT, AND NOTHING ELSE THE PAGE KNOWS.
      No city resolved, no parent recorded. The count is still a fact. */
   if (n != null) {
-    return `${homes(n)} ${n === 1 ? 'is' : 'are'} for sale in ${name} right now.`
+    return withCredit(`${homes(n)} ${n === 1 ? 'is' : 'are'} for sale in ${name} right now.`)
   }
 
   /* Nothing true to say. §0: no caption beats an empty one. */
-  return null
+  return withCredit(null)
 }

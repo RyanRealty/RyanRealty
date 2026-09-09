@@ -100,11 +100,61 @@ mount into the main checkout and deleted 164 packages; an `npm install` to repai
 pinned ranges in `package.json`. The repair is `git checkout HEAD -- package.json package-lock.json
 && npm ci`. Run lanes in the main tree.
 
-**Next.** The queue serves nothing: two open nodes both wait on held ones (SITE-43 on SITE-03, which
-is blocked until 2026-10-06; SITE-58 on SITE-56), and the three in-flight nodes belong to other
-sessions. **SITE-56 was deliberately held behind SITE-55 on this same route and the same
-`parity.json`; that block is now landed**, and the other session's own finding (Prior, below)
-reorders it around a plat resolver rather than the no-polygon fallback. PR #200 stays watched.
+**Next.** SITE-56 and SITE-31 have since landed on main and are merged in here. That leaves SITE-58
+(the Crook and Jefferson plat polygons) as the queue's one newly-eligible node, and SITE-43 still
+waiting on SITE-03, which is blocked until 2026-10-06. PR #200 stays watched.
+
+**The SITE-56 merge, and a receipt that went DOWN.** Main landed SITE-56 (a plat resolves to its
+recorded phases; 169 → 414 subdivision names now reach a polygon) and SITE-31 (Matt ruled GO;
+the eleven guides are live) on the same route and the same `parity.json` this branch's SITE-55
+had just touched. `app/subdivisions/[slug]/page.tsx` merged clean — main's opening and this
+branch's `#outcomes` do not overlap — and the parity contract took main's structure plus the
+`#outcomes` entry and its `V3Quiet` requirement.
+
+**The receipt is the finding.** SITE-55 scored 74 on four shots of a page with `#outcomes` and the
+old opening. SITE-56 scored 72 on eight shots of a page with the new opening and no `#outcomes`.
+The merged page was captured on the union — ten shots — and scored **69, then 72, then 70, then 71**, every round by a separate Sonnet evaluator. 71 is below the higher of the two prior marks, and the receipt says so rather than rebaselining the drop out of sight.
+
+**Why it fell is worth keeping.** The first round named it exactly: "the two halves each reached
+for the same eyebrow-heading-bignumber-source primitive, and stacked together the repetition is
+visible in a way it wasn't when each half was judged alone." Two lanes building two sections of
+one page, each scored alone, each passing, produced a page that repeats itself. **A per-section
+receipt cannot see this. Only a whole-page capture can.**
+
+**What this branch fixed, all of it inside `#outcomes`:**
+
+- The standalone number cell is gone. The count was printed twice — in the sentence and as a
+  display numeral — and the numeral was the third such cell in a row.
+- `V3Quiet` gained `source` on a prose passage. Until now the ONLY outlet for a §0 trace was a
+  figure cell, so a section had to print a display numeral to be allowed to cite its own number.
+  That is a primitive-level fix and every caller gets it.
+- The trace sits under the sentence it documents, flush with its left edge. At the section foot it
+  landed directly beneath the wider-market door's citation and the two read as one duplicated
+  component. `V3SourceLine`'s base rule centres itself in any box wider than the measure, which put
+  the trace 100px right of its own paragraph; the compound selector now beats it.
+- The trace opens with its source's NAME. It opened `public.subdivision_plat_unsold_mv, …`, and
+  `V3SourceLine` derives its one visible clause structurally, so the page published the words
+  **SOURCE public**. Same lesson `/invest` already recorded and the same fix.
+- One home is now singular. A render read *"One home came off the market … and every one cut the
+  ask first, a median of 7.1%"* — plural grammar over one row, and a "median" that is a single
+  value, which is a §0 claim the publisher never computed. The trace said "median over the 1 that
+  cut" too.
+- The sentence is two sentences. Joining on commas ran the clause straight through a date that
+  already carries one: "…to Sep 9, 2026, it ran 223 days, and cut…".
+- The eyebrow no longer repeats its own heading, which orphaned the word SELL at 375.
+
+**What is left, and whose it is.** Every remaining blocking defect belongs to a section this merge
+did not build: `#market-report`'s standalone numeral and `#faq`'s (both `V3Instrument`/`V3Answers`
+against the site-wide `--v3-font-num` token), the map crop, and the citation-row shape recurring
+down the page. They are on the receipt and on the node for the **/subdivisions composition node**,
+because no lane that owns one section can fix a repetition that only exists across three.
+
+**One evaluator finding was checked and rejected.** It called the display serif on a numeral a
+break of the dataviz rule "Amboqia never sits on a number". `--v3-font-num` in
+`components/site/v3/tokens.css` is a deliberate register decision — "Amboqia in Broadside, Geist
+Mono in Ledger" — applied to every V3Figure on 118 pages. The dataviz rule governs type ON A
+GRAPHIC (axis ticks, data labels). An evaluator is not the authority on the design system, so the
+token stands and the finding is recorded as rejected rather than acted on.
 
 **One thing SITE-56's resolver should know before it starts.** The `#outcomes` read this node added
 attributes a plat the two ways its closed sibling does — point-in-polygon AND slugified MLS

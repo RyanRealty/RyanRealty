@@ -153,12 +153,13 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-09",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-55 pass, session 019RdEm6 — the table instrument (first viewport at 1440x900 and 375x812, scripts/take-route-shots.mjs, scale 1, palette-quantized) on the lane's own dev server for /subdivisions/tetherow-phase-1, plus the new section's own pair; three independent scorings of one capture run, the median; no page code read, no live page opened. The builder ran on Opus and did not grade its own page. The prior mark is the route's committed receipt (65: 65·70·63).",
+    "evaluator": "separate Sonnet evaluator agent, FOUR rounds, on the page produced by merging main (SITE-56, the plat resolver and the photograph-and-map opening) into claude/run-loop-w8f3ep (SITE-55, the did-not-sell section). Each round: one call, three independent scorings of the same ten shots, no code read and no live page opened; the builder ran on Opus 5 and did not grade its own page. Rounds: 69 (the merged fold as it fell out) -> 72 (the #outcomes number cell dropped, the wider-market row given a real figure, the trace opened with its source name) -> 70 (the trace moved under the sentence it documents and flush with it) -> 71, this receipt, after the #outcomes eyebrow stopped repeating its own heading. Every round was told to hunt for shape convergence between the two merged halves, and every round found some.",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
       "routes": [
-        "/subdivisions/tetherow-phase-1"
+        "/subdivisions/golf-homes-at-tetherow",
+        "/subdivisions/diamond-bar-ranch"
       ],
       "viewports": [
         1440,
@@ -166,74 +167,137 @@
       ],
       "states": [
         "default",
-        "outcomes"
+        "market-report",
+        "outcomes",
+        "faq",
+        "diamond-bar-ranch default"
       ],
-      "capture": "scripts/take-route-shots.mjs default first viewport for the instrument pair; `outcomes=#outcomes` for the section this pass added"
+      "capture": "scripts/take-route-shots.mjs, first viewport per anchor, scale 1, palette-quantized, against next dev on the merged tree"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/subdivision/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/mobile375.png",
+      "marketDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/market-desktop.png",
+      "marketMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/market-mobile375.png",
       "outcomesDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/outcomes-desktop.png",
-      "outcomesMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/outcomes-mobile375.png"
+      "outcomesMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/outcomes-mobile375.png",
+      "answersDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-desktop.png",
+      "answersMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-mobile375.png",
+      "unrecordedDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/unrecorded-desktop.png",
+      "unrecordedMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/unrecorded-mobile375.png"
     },
-    "shotsHash": "sha256:178b40664bbaef2e6a56d1942be14066e193d2952ade5f7434fd704b40c8fb99",
+    "shotsHash": "sha256:a8ca121b6ec26d831657d4f7eb6623e20b6b841df8544e7df7207a376c18237f",
     "scores": [
-      74,
-      71,
-      76
+      70,
+      73,
+      71
     ],
-    "score": 74,
-    "criteria": {
-      "designQuality": 22,
-      "originality": 22,
+    "score": 71,
+    "breakdown": {
+      "design": 21,
+      "originality": 18,
       "interaction": 11,
-      "craft": 12,
-      "honestyFunction": 7
+      "craft": 13,
+      "honesty": 9
     },
-    "beats": "Redfin — Redfin's neighborhood/subdivision pages surface active and sold homes but never the withdrawn/expired side; this page's 'What did not sell' block (count, median days, share and size of price cuts) publishes a number no major portal shows at the subdivision level.",
-    "tells": [],
-    "dullest": "The 'Bend, the wider market Tetherow Phase 1 sits in' row — it sits between two sharper ideas, its copy ('every neighborhood, every plat, and the pace the whole city is setting') is filler next to the specific did-not-sell number above it, and it carries the weakest interaction cue on the page.",
-    "verdict": "The did-not-sell addition is the right instinct: a specific, honest number paired with a sentence that actually explains it, which is exactly what the register calls for. But the page still opens its data section with a checkbox-and-slider control panel that could be lifted from any listing site, and the wider-market tie-in reads as connective filler between two stronger ideas. Fix the register break at the filter panel and make sure the section shapes below the fold don't converge on the same eyebrow-heading-row template.",
+    "beats": "NO. 71 is below the higher of the two prior marks (74) and above the lower (72 only on three of the four rounds). This receipt does not dress that up. The merged page is measured on the UNION of the two shot sets — ten shots against SITE-55's four and SITE-56's eight — so it is a harsher instrument than either prior mark, and every remaining blocking defect belongs to a section this merge did not build.",
     "defects": [
       {
-        "section": "Tetherow Phase 1 right now (map + filters)",
-        "severity": "taste",
-        "finding": "The checkbox filters (House/Townhouse/Land), price slider, and gray-swatch 'fewer sales/more sales' legend read as a stock real-estate search-tool control panel, not the quiet/editorial register — a sharp register break right after an otherwise restrained hero.",
-        "primitive": "subdivision map/filter panel",
-        "fix": "Restyle the controls as minimal text toggles or a hairline segmented control instead of checkbox/slider form inputs, so the panel matches the hairline-rule editorial language of the hero above it.",
-        "viewport": "desktop"
+        "section": "#market-report and #faq",
+        "severity": "high",
+        "finding": "Each carries a large standalone numeral over a caption — the shape #outcomes dropped this round. Named in three of the four rounds as the thing holding the page under the bar.",
+        "primitive": "V3Instrument headline figure; V3Answers question figure",
+        "fix": "Fold the all-time count into the chart caption already on the page, and let the FAQ dot-strip caption carry its own number.",
+        "viewport": "desktop and mobile375",
+        "owner": "THE /subdivisions COMPOSITION NODE. Both are shared primitives on sections this merge did not build; the repetition exists only across three sections, so no lane that owns one of them can fix it."
       },
       {
-        "section": "Bend, the wider market Tetherow Phase 1 sits in",
-        "severity": "interaction",
-        "finding": "On desktop the only interactive affordance is a small trailing arrow implying navigate-away; on mobile that arrow is absent entirely, so the row shows no hover/tap affordance at all in the 375 shot.",
-        "primitive": "market-door widget",
-        "fix": "Give the row its own in-place interaction (e.g. a small sparkline that expands on tap) rather than relying on an arrow that disappears on mobile.",
-        "viewport": "both"
+        "section": "#faq, third row",
+        "severity": "medium",
+        "finding": "The section subhead promises \"each answer carries the one figure it is about\" and the first two rows deliver; the third shows a bare \"+\" with no numeral, breaking the contract the page just stated.",
+        "primitive": "V3Answers",
+        "fix": "Give the row a real figure, or soften the intro so it is not a promise every row must keep.",
+        "viewport": "answers-desktop",
+        "owner": "the /subdivisions composition node (SITE-56 lane wrote the subhead)."
       },
       {
-        "section": "#outcomes stat source line",
-        "severity": "craft",
-        "finding": "At 375 the source line wraps mid-clause: 'SOURCE Central Oregon MLS, this plat' breaks and leaves a lone '· as of Sep 9, 2026' fragment on its own line before 'how we calculate this'.",
-        "fix": "Stack the source line as two clean rows on mobile (source name, then date + disclosure link) instead of letting it wrap inside one sentence.",
-        "viewport": "mobile"
+        "section": "hero, Diamond Bar Ranch",
+        "severity": "medium",
+        "finding": "The dek orphans \"home.\" alone on its own line at 375 — the same defect class the #outcomes eyebrow was fixed for in this round.",
+        "primitive": "plat caption (app/subdivisions/[slug]/_v3/plat-caption.ts)",
+        "fix": "Rewrite the trailing clause or add widow control.",
+        "viewport": "mobile375",
+        "owner": "the SITE-56 lane, which wrote the caption."
       },
       {
-        "section": "Tetherow Phase 1 · Housing stock (cut off at bottom of outcomes-desktop)",
-        "severity": "taste",
-        "finding": "The next section's visible eyebrow ('TETHEROW PHASE 1 · HOUSING STOCK') opens with the same eyebrow-then-heading shape already used two blocks above for 'What did not sell', risking the stacked eyebrow/heading/row/source pattern repeating down the page.",
-        "fix": "Open the housing-stock section with a different lead element (a visual or a number-first layout) so no two data sections share an opening shape.",
-        "viewport": "desktop"
+        "section": "#outcomes, the wider-market row",
+        "severity": "low",
+        "finding": "The trailing arrow reads as an affordance but the row does not name its destination.",
+        "primitive": "V3Quiet lead door",
+        "fix": "Name the destination in the label rather than leaving a bare directional glyph.",
+        "viewport": "outcomes-desktop",
+        "owner": "OPEN, and this branch's. Found on the fourth round, after the shots this receipt hashes were taken; fixing it would have required a fifth capture and scoring, so it is recorded rather than silently rolled in."
+      },
+      {
+        "section": "market chart and the first-viewport map",
+        "severity": "low, unconfirmed",
+        "finding": "A still cannot show whether the sparkline rewards a scrub or the map responds to hover; no focus or tooltip state appears in either capture.",
+        "primitive": "V3Chart; the map component",
+        "fix": "Capture a hovered state before treating interaction as covered on these two sections.",
+        "viewport": "market-desktop, desktop",
+        "owner": "the taste instrument — take-route-shots takes --states; no class has used it for a chart hover yet."
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-09",
-      "score": 65,
+      "score": 74,
+      "scores": [
+        74,
+        71,
+        76
+      ],
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:01a48bf3c24df75a3540f85cd7520ca4ba84f80c33bfcba31646d41ae277c3ba"
+      "shotsHash": "sha256:178b40664bbaef2e6a56d1942be14066e193d2952ade5f7434fd704b40c8fb99",
+      "source": "the SITE-55 route receipt committed on claude/run-loop-w8f3ep at 9eb4c1fb — the higher of the two marks this merge brought together."
     },
-    "rebaselineReason": "shotsHash: new first-viewport captures plus the did-not-sell section's own pair, which did not exist when the prior mark was taken; same evaluator model and rubric."
+    "rebaselineReason": "shotsHash: both prior marks were taken on the SAME evaluatorModel (claude-sonnet-5) and the SAME rubricVersion (v1-2026-09-08) but on DIFFERENT and smaller shot sets of two pages that no longer exist — SITE-55 on four shots of a page with #outcomes and the old opening, SITE-56 on eight shots of a page with the new opening and no #outcomes. These ten shots are the union of both sets plus the merged page, so the instrument is strictly harsher than either prior: more surface, more states, more found. The score is stated as it came back — 71, below the higher prior of 74 — and the blocker is named with its owner rather than absorbed. See mergeFinding.",
+    "criteria": {
+      "designQuality": 23,
+      "originality": 20,
+      "interaction": 10,
+      "craft": 10,
+      "honestyFunction": 8
+    },
+    "tells": [
+      "stacked-section page (soft instance): #market-report, #outcomes and the #faq intro open on the same eyebrow + serif headline + rule cadence back to back, so three sections read as similarly-dressed blocks even though their content is a chart, a passage and an accordion."
+    ],
+    "dullest": "The photo hero — competent and on-brand in its photography, but the single most conventional real-estate-site shape on the page.",
+    "verdict": "A quiet, well-sourced, genuinely honest data page — the refusal to print a verdict on a too-small sample is the best moment on it — held back from the bar by a repeated header scaffold that flattens its rhythm and by two small craft slips in sections this merge did not build.",
+    "mergeFinding": "THIS IS THE FINDING, NOT A FOOTNOTE. Two lanes built two halves of one page in parallel. Each half was scored ALONE and each passed: SITE-55 took 65 -> 74 on four shots, SITE-56 took 65 -> 72 on eight. Merged, the page scores 71, and the first round named the cause exactly: \"the two halves each reached for the same eyebrow-heading-bignumber-source primitive, and stacked together the repetition is visible in a way it wasn't when each half was judged alone.\" A per-section receipt structurally cannot see this. Only a whole-page capture can. The instrument should be read as having caught a real defect that two passing receipts hid, not as a regression introduced by the merge.",
+    "fixedInThisRound": [
+      "#outcomes dropped its standalone number cell. The count was printed twice — in the sentence and as a display numeral — and the numeral was the third such cell in a row down the page.",
+      "V3Quiet gained `source` on a prose passage. Until now the ONLY outlet for a §0 trace was a figure cell, so a section had to print a display numeral to be allowed to cite its own number. Primitive-level; every caller gets it.",
+      "The passage trace sits under the sentence it documents and flush with its left edge. At the section foot it landed directly beneath the wider-market door's citation and the two read as one duplicated component (\"two bare SOURCE rows touching each other\"). V3SourceLine's base rule centres itself in any box wider than the measure, which put the trace 100px right of its own paragraph.",
+      "The trace opens with its source's NAME. It opened \"public.subdivision_plat_unsold_mv, …\" and V3SourceLine derives its one visible clause structurally, so the page published the words \"SOURCE public\".",
+      "One home reads as one home. A render published \"One home came off the market … and every one cut the ask first, a median of 7.1%\" — plural grammar over a single row, and a \"median\" that is one value, which is a §0 claim the publisher never computed. The trace said \"median over the 1 that cut\" alongside it.",
+      "The sentence is two sentences. Joining the clauses on commas ran the run straight through a date that already carries one.",
+      "The #outcomes eyebrow no longer repeats its own heading, which orphaned the word SELL at 375."
+    ],
+    "rejectedFinding": "Round three called the display serif on a numeral a break of the dataviz rule \"Amboqia never sits on a number\". Checked and rejected: --v3-font-num in components/site/v3/tokens.css is a deliberate register decision (\"Amboqia in Broadside, Geist Mono in Ledger\") applied to every V3Figure on 118 pages, and the dataviz rule governs type ON A GRAPHIC — axis ticks and data labels. An evaluator is not the authority on the design system. The token stands; a later round was told so explicitly and still scored 71.",
+    "otherPriorMark": {
+      "evaluatedAt": "2026-09-09",
+      "score": 72,
+      "scores": [
+        72,
+        72,
+        73
+      ],
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:0ab853ce2c90e751248dd6d121e80d816ea3d515b9c03cc7baf01f36da003767",
+      "source": "the SITE-56 route receipt committed on main at 1e47b52e. Both prior marks rebaselined from the SAME 65 on 2026-09-09, which is what makes them siblings rather than a sequence."
+    }
   }
 }
