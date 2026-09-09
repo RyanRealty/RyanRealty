@@ -59,10 +59,23 @@ export function listingShareSummary(opts: {
   sqft?: number | null
   address?: string | null
   city?: string | null
+  /**
+   * The word an off-market listing leads with — "Sold", "Off market" — from
+   * publishListingStatusWord. It sits in front of the price rather than after
+   * it because this string is read as a SERP snippet and a share card, where
+   * the first two words are the whole message: "$1,250,000 · 3 bed" on a home
+   * that sold for $1,100,000 was the SITE-20 defect, and a corrected price
+   * with no status word still reads as a home you can buy today.
+   */
+  statusWord?: string | null
 }): string {
   const parts: string[] = []
+  const statusWord = opts.statusWord?.trim() || null
   if (opts.price != null && opts.price > 0) {
-    parts.push(new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(opts.price))
+    const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(opts.price)
+    parts.push(statusWord ? `${statusWord} ${money}` : money)
+  } else if (statusWord) {
+    parts.push(statusWord)
   }
   if (opts.beds != null || opts.baths != null) {
     const b = [opts.beds != null ? `${opts.beds} bed` : null, opts.baths != null ? `${opts.baths} bath` : null].filter(Boolean).join(', ')
