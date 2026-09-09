@@ -25,14 +25,30 @@ const OUTBUILDING_RE = /\b(shop|barn|arena|outbuilding|detached garage|rv garage
 const IRRIGATION_RE = /\b(irrigat|water rights)/i
 const TERRAIN_RE = /\b(lava|steep|unusable|not usable|wetland|flood|rock outcrop)/i
 
+/** The `details->>Zoning` of a bounded key set — the jsonb is read by key only. */
+async function zoningByKey(keys: string[]): Promise<Map<string, string>> {
+  const sb = createServiceClient()
+  const out = new Map<string, string>()
+  for (let i = 0; i < keys.length; i += 200) {
+    const part = keys.slice(i, i + 200)
+    const { data, error } = await sb.from('listings').select('ListingKey, zoning:details->>Zoning').in('ListingKey', part)
+    if (error) throw new Error(`zoningByKey: ${error.message}`)
+    for (const r of (data ?? []) as Array<{ ListingKey: string; zoning: string | null }>) {
+      const z = String(r.zoning ?? '').trim()
+      if (z) out.set(r.ListingKey, z)
+    }
+  }
+  return out
+}
+
 /** A bounded row read tallied in code — the raw table is too large for a filtered count. */
-export async function getRuralFieldCoverage(limit = 3000): Promise<RuralFieldCoverage> {
+export async function getRuralFieldCoverage(limit = 1000): Promise<RuralFieldCoverage> {
   const sb = createServiceClient()
   const since = new Date()
   since.setMonth(since.getMonth() - 24)
   const { data, error } = await sb
     .from('listings')
-    .select('ListingKey, zoning:details->>Zoning, horse_yn, fencing, public_remarks, lot_size_acres')
+    .select('ListingKey, horse_yn, fencing, public_remarks, lot_size_acres')
     .eq('PropertyType', 'A')
     .ilike('StandardStatus', '%closed%')
     .gte('CloseDate', since.toISOString().slice(0, 10))
@@ -41,6 +57,7 @@ export async function getRuralFieldCoverage(limit = 3000): Promise<RuralFieldCov
     .limit(limit)
   if (error) throw new Error(`getRuralFieldCoverage: ${error.message}`)
   const rows = (data ?? []) as Array<Record<string, unknown>>
+  const zoning = await zoningByKey(rows.map((r) => String(r.ListingKey)))
   const out: RuralFieldCoverage = {
     sample: rows.length,
     zoningSet: 0,
@@ -53,7 +70,7 @@ export async function getRuralFieldCoverage(limit = 3000): Promise<RuralFieldCov
     fivePlusAcres: 0,
   }
   for (const r of rows) {
-    if (String(r.zoning ?? '').trim()) out.zoningSet++
+    if (zoning.has(String(r.ListingKey))) out.zoningSet++
     if (r.horse_yn != null) out.horseYnSet++
     if (r.horse_yn === true) out.horseYnTrue++
     if (String(r.fencing ?? '').trim()) out.fencingSet++
@@ -73,19 +90,19 @@ export async function getRuralZoningValues(limit = 40): Promise<Array<{ zoning: 
   since.setMonth(since.getMonth() - 24)
   const { data, error } = await sb
     .from('listings')
-    .select('zoning:details->>Zoning')
+    .select('ListingKey')
     .eq('PropertyType', 'A')
     .ilike('StandardStatus', '%closed%')
     .gte('CloseDate', since.toISOString().slice(0, 10))
     .gte('lot_size_acres', 1)
-    .not('details->>Zoning', 'is', null)
     .order('CloseDate', { ascending: false })
-    .limit(3000)
+    .limit(1000)
   if (error) throw new Error(`getRuralZoningValues: ${error.message}`)
+  const zoning = await zoningByKey(((data ?? []) as Array<{ ListingKey: string }>).map((r) => r.ListingKey))
   const tally = new Map<string, number>()
-  for (const r of (data ?? []) as Array<{ zoning: string | null }>) {
-    const z = String(r.zoning ?? '').trim().toUpperCase()
-    if (z) tally.set(z, (tally.get(z) ?? 0) + 1)
+  for (const z of zoning.values()) {
+    const key = z.toUpperCase()
+    tally.set(key, (tally.get(key) ?? 0) + 1)
   }
   return [...tally.entries()]
     .map(([zoning, n]) => ({ zoning, n }))
