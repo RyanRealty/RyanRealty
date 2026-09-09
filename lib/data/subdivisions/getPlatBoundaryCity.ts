@@ -26,7 +26,21 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 
-export type PlatBoundaryCity = { city: string; citySlug: string }
+export type PlatBoundaryCity = {
+  city: string
+  citySlug: string
+  /**
+   * The NEIGHBORHOOD the walk passed through on its way to the city, when the
+   * chain has one (SITE-47). The walk already visited this row and threw it
+   * away; keeping it is what lets the opening say "Park Addition sits inside
+   * Old Bend, in Bend" instead of naming the city alone. Null when the plat's
+   * parent is the city itself, or when the intermediate row is some other
+   * grain. Only the FIRST neighborhood on the chain is kept — the nearest
+   * container is the one a reader wants, and a second one would be a guess
+   * about which of two overlapping polygons the plat "really" belongs to.
+   */
+  neighborhood: { label: string; slug: string } | null
+}
 
 type BoundaryRow = {
   id?: string | null
@@ -47,11 +61,18 @@ export async function walkPlatBoundaryCity(
   const start = await readPlat(slug)
   if (!start) return null
   let parentId = start.parent_id ?? null
+  let neighborhood: { label: string; slug: string } | null = null
   for (let hop = 0; hop < MAX_HOPS && parentId; hop += 1) {
     const row = await readById(parentId)
     if (!row) return null
     if (row.geo_type === 'city' && row.geo_slug && row.geo_label) {
-      return { city: row.geo_label, citySlug: row.geo_slug }
+      return { city: row.geo_label, citySlug: row.geo_slug, neighborhood }
+    }
+    // The nearest neighborhood on the chain, kept for the opening's sentence.
+    // A chain that never reaches a city still answers null below: a
+    // neighborhood with no city above it is not a setting anyone can name.
+    if (neighborhood == null && row.geo_type === 'neighborhood' && row.geo_slug && row.geo_label) {
+      neighborhood = { label: row.geo_label, slug: row.geo_slug }
     }
     parentId = row.parent_id ?? null
   }

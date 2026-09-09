@@ -152,6 +152,27 @@ describe('plat public inventory rollup', () => {
     expect(rows[0]?.key).toBe('sisters:south-meadow')
   })
 
+  it('stamps every plat row with the read instant, one stamp for one batch (SITE-47)', () => {
+    // The plat opening's source chip publishes this as its as-of date, so every
+    // figure that came out of one query has to carry the SAME instant — not a
+    // per-row clock read, and never the render time.
+    const at = '2026-09-09T16:20:00.000Z'
+    const rows = rollupPlatPublicInventory(
+      [
+        {
+          listing_key: 'a',
+          list_price: 800_000,
+          subdivision_lower: 'ridge at eagle crest',
+          city_lower: 'redmond',
+        },
+      ],
+      undefined,
+      at,
+    )
+    expect(rows.length).toBeGreaterThan(1)
+    expect(new Set(rows.map((r) => r.readAt))).toEqual(new Set([at]))
+  })
+
   it('drops short MLS codes from the registry catalog', () => {
     expect(isDisplayablePlatName('BBR')).toBe(false)
     expect(isDisplayablePlatName('Ridge At Eagle Crest')).toBe(true)
