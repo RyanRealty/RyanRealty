@@ -1,0 +1,367 @@
+/* ===========================================================================
+   PATTERN 10: SLOTS — a tool's empty state, drawn as the thing it makes.
+   Styles for V3Slots.client.tsx and nothing else. Every colour, size, rule
+   weight and duration resolves from ./tokens.css; this file declares no raw
+   value.
+
+   The register is the Broadside default: cream field, navy marks, hairlines,
+   tabular numerals in the example. No card, no fill, no shadow — the slots are
+   drawn with the same rule weight the rest of the site divides sections with,
+   which is what makes an empty tray read as part of this page rather than as a
+   dropzone borrowed from an app.
+   =========================================================================== */
+
+/* Compound guard (same reason as every pattern — see V3Quiet.css). */
+.v3.v3-slots {
+  padding: clamp(2rem, 4.5vw, 3.25rem) 0 clamp(2rem, 4vw, 3rem);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
+* + .v3.v3-slots {
+  border-top: var(--v3-rule-section);
+}
+
+.v3-slots__inner {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: 0 var(--v3-gutter);
+}
+
+.v3 .v3-slots__headline {
+  max-width: min(100%, 54rem);
+  margin: 0;
+}
+
+.v3 .v3-slots__claim {
+  max-width: var(--v3-measure-text);
+  margin: var(--v3-space-sm) 0 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+}
+
+/* --------------------------------------------------------------------------
+   THE TRAY
+   One box per place the tool holds. The count comes in as --v3-slots-n so the
+   row is the shape of the limit, not a sentence about it.
+   -------------------------------------------------------------------------- */
+.v3 .v3-slots__tray {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--v3-space-sm);
+  margin: clamp(1.5rem, 3.5vw, 2.25rem) 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+
+@media (min-width: 48rem) {
+  .v3 .v3-slots__tray {
+    grid-template-columns: repeat(var(--v3-slots-n, 4), minmax(0, 1fr));
+  }
+}
+
+.v3 .v3-slots__slot {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  /* Tall enough to read as a place a house goes, short enough that four of
+     them plus the example's first rows still open above the fold at 375. */
+  min-height: clamp(4rem, 8vw, 5rem);
+  padding: var(--v3-space-sm);
+  border: var(--v3-rule-hairline);
+  border-radius: var(--v3-radius-card);
+}
+
+/* An empty slot is drawn, not filled: a dashed hairline says "this is where
+   one goes" without borrowing a dropzone's grey box. */
+.v3 .v3-slots__slot--empty {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--v3-navy) 30%, transparent);
+}
+
+.v3 .v3-slots__slot--full {
+  border-style: solid;
+  border-color: var(--v3-ink);
+}
+
+.v3 .v3-slots__ordinal {
+  position: absolute;
+  top: var(--v3-space-sm);
+  left: var(--v3-space-sm);
+  font-family: var(--v3-font-mono);
+  font-size: var(--v3-size-label);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--v3-track-eyebrow);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-slots__slot-label,
+.v3 .v3-slots__slot-link {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-heading);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-slots__slot-link {
+  /* The whole box is the control: a 44px floor without a button in sight, the
+     same trick V3Pulse's reading rows use. */
+  text-decoration: none;
+}
+
+.v3 .v3-slots__slot-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.v3 .v3-slots__slot-add {
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-slots__slot:hover .v3-slots__slot-add,
+.v3 .v3-slots__slot:focus-within .v3-slots__slot-add {
+  color: var(--v3-ink);
+}
+
+.v3 .v3-slots__slot:hover,
+.v3 .v3-slots__slot:focus-within {
+  border-color: var(--v3-ink);
+}
+
+.v3 .v3-slots__slot-link:focus-visible::after {
+  outline: var(--v3-focus-ring);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   THE WORKED EXAMPLE
+   -------------------------------------------------------------------------- */
+.v3 .v3-slots__sample {
+  margin: clamp(1.75rem, 4vw, 2.5rem) 0 0;
+  padding: clamp(1.25rem, 3vw, 1.75rem) 0 0;
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3 .v3-slots__sample-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--v3-space-xs) var(--v3-space-sm);
+  margin: 0 0 var(--v3-space-md);
+}
+
+/* The word that says this is not yours. Set as a mark, not a whisper. */
+.v3 .v3-slots__sample-tag {
+  padding: 0.2em 0.6em;
+  border: var(--v3-rule-hairline);
+  border-radius: var(--v3-radius-pill);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  font-weight: 600;
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink);
+}
+
+.v3 .v3-slots__sample-caption {
+  max-width: var(--v3-measure-text);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}
+
+/* Wide content scrolls inside its own box; the page body never scrolls
+   sideways at 375. */
+.v3 .v3-slots__scroller {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  /* REQUIRED, not decoration. `overflow` clips a descendant only when this
+     element is that descendant's containing block. The visually-hidden spans
+     inside the table (the caption and each add control's spoken suffix) are
+     position:absolute; without a positioned ancestor their containing block is
+     the initial one, so they escaped the scroller and sat 700px out — enough to
+     make the DOCUMENT scroll sideways at 375 while every visible box was inside
+     the gutter. Measured 2026-09-09: html.scrollWidth 602 against a 375
+     viewport, with body.scrollWidth already 375. */
+  position: relative;
+  /* A SCROLL CUE THAT COSTS NO JAVASCRIPT. Two cover panels painted in the
+     surface colour scroll WITH the content (background-attachment: local) and
+     two soft edge shadows stay PINNED to the box (scroll); at the far left the
+     cover hides the left shadow, and as soon as the content moves the shadow
+     appears on the side there is more to see. Without it the fourth home just
+     stops at the viewport edge at 375 and reads as a layout bug rather than a
+     row you can push (2026-09-09 evaluator). */
+  background:
+    linear-gradient(to right, var(--v3-surface) 40%, transparent) left center / 2.5rem 100% no-repeat
+      local,
+    linear-gradient(to left, var(--v3-surface) 40%, transparent) right center / 2.5rem 100% no-repeat
+      local,
+    radial-gradient(
+        farthest-side at 0 50%,
+        color-mix(in srgb, var(--v3-navy) 18%, transparent),
+        transparent
+      )
+      left center / 0.8rem 100% no-repeat scroll,
+    radial-gradient(
+        farthest-side at 100% 50%,
+        color-mix(in srgb, var(--v3-navy) 18%, transparent),
+        transparent
+      )
+      right center / 0.8rem 100% no-repeat scroll;
+}
+
+.v3 .v3-slots__table {
+  width: 100%;
+  min-width: 32rem;
+  border-collapse: collapse;
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3 .v3-slots__table-caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.v3 .v3-slots__rowhead {
+  width: 6.5rem;
+  padding: var(--v3-space-xs) var(--v3-space-sm) var(--v3-space-xs) 0;
+  border-bottom: var(--v3-rule-hairline);
+  text-align: left;
+  font-weight: 500;
+  color: var(--v3-ink-muted);
+  white-space: nowrap;
+}
+
+.v3 .v3-slots__col {
+  padding: 0 var(--v3-space-sm) var(--v3-space-sm);
+  border-bottom: var(--v3-rule-hairline);
+  text-align: left;
+  vertical-align: bottom;
+  font-weight: 400;
+}
+
+.v3 .v3-slots__photo {
+  display: block;
+  width: 100%;
+  height: clamp(2.75rem, 6vw, 4rem);
+  margin: 0 0 var(--v3-space-xs);
+  object-fit: cover;
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-hairline);
+}
+
+.v3 .v3-slots__col-title {
+  display: block;
+  font-weight: 600;
+  line-height: var(--v3-leading-heading);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-slots__col-place {
+  display: block;
+  font-size: var(--v3-size-label);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-slots__cell {
+  padding: var(--v3-space-xs) var(--v3-space-sm);
+  border-bottom: var(--v3-rule-hairline);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink);
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.v3 .v3-slots__value {
+  display: block;
+}
+
+/* The value drawn as a length: this column's share of the largest value in its
+   row. One mark per cell, the quietest weight on the page, and it is what
+   turns four rows of numerals into a comparison. */
+.v3 .v3-slots__bar {
+  display: block;
+  height: var(--v3-rule-weight-hairline);
+  margin-top: var(--v3-space-3xs);
+  background: color-mix(in srgb, var(--v3-navy) 14%, transparent);
+}
+
+.v3 .v3-slots__bar-fill {
+  display: block;
+  height: 100%;
+  width: calc(var(--v3-slots-w, 0) * 100%);
+  background: color-mix(in srgb, var(--v3-navy) 55%, transparent);
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* Hovering a row is the reading a comparison table is for: that one field,
+   across every home, lifted out of the field together — and its marks go to
+   full navy so the lengths are unmistakable while you are reading them. */
+.v3 .v3-slots__table tbody tr:hover .v3-slots__bar-fill {
+  background: var(--v3-navy);
+}
+
+/* Hovering a row lifts that one field across every home out of the field, which
+   is the reading a comparison table is for. Colour only — nothing moves. */
+.v3 .v3-slots__table tbody tr:hover .v3-slots__cell {
+  background: var(--v3-hairline);
+}
+
+/* The add control sits in the column head, under the address it adds. */
+.v3 .v3-slots__add {
+  display: inline-flex;
+  margin-top: var(--v3-space-xs);
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--v3-space-sm);
+  white-space: nowrap;
+  border: var(--v3-rule-hairline);
+  border-radius: var(--v3-radius-control);
+  font-size: var(--v3-size-body-sm);
+  font-weight: 500;
+  color: var(--v3-ink);
+  text-decoration: none;
+  transition: background var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-slots__add:hover,
+.v3 .v3-slots__add:focus-visible {
+  background: var(--v3-ink);
+  color: var(--v3-surface);
+}
+
+.v3 .v3-slots__add:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: 2px;
+}
+
+.v3 .v3-slots__source {
+  margin-top: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+.v3 .v3-slots__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3 .v3-slots__add {
+    transition: none;
+  }
+}

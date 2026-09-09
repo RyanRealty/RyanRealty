@@ -1,8 +1,8 @@
 {
   "route": "app/invest/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md patterns, built from components/site/v3. No KB-era mockup — the pattern set is the target (same basis as every post-2026-08-27 page).",
-  "competitiveTarget": "No Central Oregon brokerage has an investor destination at all — competitors bury multi-family in a search filter. This page wins by honesty: live per-type counts with the Market Truth trace, the rental math one tap away on every eligible listing, and NO cash-flow promises (the internal DSCR analysis shows Bend does not cash-flow on long-term rentals at financing rates; the page's stance is inventory + math, never hype).",
-  "note": "Matt ruling 2026-09-01 (decisions.md): investor becomes a real job with /invest as the door and the listing-page investor lens as the depth layer. Every figure is a getPublicPlaceSegments region row — the same numbers the housing-market and search pages print (one source, §0). Stale internal analysis figures are never republished here. Capture is the income-property alert (multi-family pin — a narrowing filter). Detached/SFR is deliberately absent: that is the buyer story.",
+  "competitiveTarget": "No Central Oregon brokerage has an investor destination at all — competitors bury multi-family in a search filter. This page wins by honesty: the composition of the income market stated as a finding in the first line, live per-type counts with the Market Truth trace, this week's published 30-year fixed beside the calculators, and NO cash-flow promise. The rent side of an investor's math has no live source on this site — the only rent-bearing table is per-listing, frozen at a 2026-08-03 batch and walled behind admin auth — so the page publishes no rent, no yield and no DSCR, and hands the reader a calculator for the number only they know.",
+  "note": "Matt ruling 2026-09-01 (decisions.md): investor becomes a real job with /invest as the door and the listing-page investor lens as the depth layer. Every inventory figure is a getPublicPlaceSegments region row — the same numbers the housing-market and search pages print (one source, §0). Stale internal analysis figures are never republished here. Capture is the income-property alert (multi-family pin — a narrowing filter). Detached/SFR is deliberately absent: that is the buyer story. SITE-50 (2026-09-09) replaced the Quiet #place opening — two prose blocks headed 'What this page is' and 'How to underwrite here', which the taste table scored 25 and called a cover memo — with a V3Pulse band whose claim IS the page's H1 and whose four rules are the largest income populations drawn as a part-to-whole, lit one at a time by the native radio switch. V3Instrument left the page in the same change: at region grain the metric layer withholds medianList and monthsOfSupply for every income segment, so the Instrument's only two figures were the multi-family and commercial ACTIVE COUNTS, which the Pulse above it now prints — an Instrument whose whole content is two numbers the section above already said is the repeated fact TASTE.md bans. The three remaining data families are split one per section: Pulse takes the active counts and their shares, Ledger takes the doors and how each type trades, Quiet #tools takes this week's published 30-year fixed. The rental-analysis sentence was cut, not reworded: RentalAnalysis.tsx and lib/hud-fmr.ts were deleted on 2026-09-09 (545e4e50), so the page had been advertising a surface the site no longer has.",
   "requiredComponents": [
     {
       "name": "V3SectionTracker",
@@ -20,18 +20,18 @@
       "blocking": true
     },
     {
-      "name": "V3Quiet",
-      "section": "#place opens with H1 + the page's stance (what it is, how to underwrite); #tools carries the math doors (rental calculator, mortgage calculator, market report).",
-      "blocking": true
-    },
-    {
-      "name": "V3Instrument",
-      "section": "#market — income-property figures (2-4 unit count + median, commercial count) with the Market Truth trace. Omitted entirely when the segment read returns nothing (§0: no section over withheld figures).",
+      "name": "V3Pulse",
+      "section": "#place — the opening. The finding as the H1, the four largest income populations as a part-to-whole with a definition and a door behind each, the moment of the read, and the §0 trace. Composed by app/invest/_v3/invest-pulse.ts, which publishes nothing when the read comes back empty.",
       "blocking": true
     },
     {
       "name": "V3Ledger",
-      "section": "#searches — one door per income property type (multi-family, commercial, land, farm, business), each with its live count and its place+type landing path.",
+      "section": "#searches — one door per income property type (multi-family, commercial, land, farm, business), each with its live count and how that type trades.",
+      "blocking": true
+    },
+    {
+      "name": "V3Quiet",
+      "section": "#tools — this week's published 30-year fixed as a sourced fact row, then the math doors (rental calculator, mortgage calculator, market report). Also the fallback opening when the segment read returns nothing, so the page never ships without an H1.",
       "blocking": true
     },
     {
@@ -48,13 +48,77 @@
   "sectionOrder": [
     "V3SectionTracker + inline JSON-LD (not sections)",
     "V3Breadcrumb",
-    "V3Quiet #place -- H1 + stance",
-    "V3Instrument #market -- income-property figures",
-    "V3Ledger #searches -- live per-type doors",
-    "V3Quiet #tools -- the math doors",
+    "V3Pulse #place -- the finding, the H1, the live counts, the switch",
+    "V3Ledger #searches -- live per-type doors and how each one trades",
+    "V3Quiet #tools -- the cost of money and the math doors",
     "InvestAlertSheet -- the ask (id=alerts renders inside the component, matching HomeAlertSheet)",
     "V3Footer"
   ],
-  "superseded": [],
-  "openDefects": {}
+  "superseded": [
+    {
+      "name": "V3Instrument",
+      "removed": "2026-09-09 (SITE-50)",
+      "why": "Its two figures were the multi-family and commercial active counts, which the Pulse opening now prints with their shares and their doors. At region grain the metric layer publishes no medianList and no monthsOfSupply for any income segment, so there was no third figure left to give it a job of its own."
+    }
+  ],
+  "openDefects": {},
+  "tasteReview": {
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "SITE-50 lane, round three. A separate Agent given only TASTE.md, the two shots below and the mark to beat, with no access to the builder's reasoning; it scored the same shots three times in one call. Rounds one and two, against earlier shots of the same rebuild, returned medians 66 and 59; this receipt records round three because these are the shots on disk.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": ["/invest"],
+      "viewports": [1440, 375],
+      "states": ["default"]
+    },
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/invest/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/invest/shots/mobile375.png"
+    },
+    "shotsHash": "sha256:042578c7951d396797f04544da36398bf94d2dd43aeb791cadf372482e50bb60",
+    "scores": [61, 66, 56],
+    "score": 61,
+    "criteria": {
+      "designQuality": 20,
+      "originality": 16,
+      "interaction": 5,
+      "craft": 12,
+      "honestyFunction": 8
+    },
+    "beats": "Portal land-search category pages (a Zillow or LandWatch 'land for sale in Deschutes County' grid) show raw listing counts and never synthesise a market-composition claim. This page's win is data depth stated as a finding: 605 lots against 61 commercial, 46 two-to-four unit and 41 farms, every one a live count, under one named source and a methodology disclosure, in the first screen.",
+    "defects": [
+      {
+        "section": "#place",
+        "severity": "interaction",
+        "finding": "the four ranked rows are a real radio group, but a static render shows no hover or focus state, so a reader cannot tell from the page alone that a row is a control",
+        "fix": "the mark was enlarged twice in this lane and still reads as a marker rather than a button; the next pass should try a labelled chip or a per-row chevron",
+        "viewport": "both"
+      },
+      {
+        "section": "#place",
+        "severity": "craft",
+        "finding": "the words column ends well short of the rules column, leaving an unbalanced band of cream above the section rule at 1440",
+        "fix": "carry a second element in the words column, or bottom-align the two",
+        "viewport": "desktop"
+      },
+      {
+        "section": "#place",
+        "severity": "craft",
+        "finding": "the inline doors in the words column carry no padded hit area, so their tap target may sit under 44px at 375",
+        "fix": "give an inline door in this band a 44px block without changing its type size",
+        "viewport": "mobile"
+      },
+      {
+        "section": "#place",
+        "severity": "honesty",
+        "finding": "the four figures share one source line rather than a per-figure trace naming each segment's own filter",
+        "fix": "the full per-segment arithmetic is already inside the disclosure; consider surfacing the segment filter on each row",
+        "viewport": "both"
+      }
+    ],
+    "comparedToPrior": "first",
+    "notes": "The route had no committed tasteReview before this one, so this is its first receipt and comparedToPrior is 'first'. The class's mark on the STANDING TABLE instrument (design_system/public/taste-table.json, 2026-09-08) was median 25 from scorings 25/19/29, with the verdict 'a cover memo, not a landing page'. That table's shots are not in the repo, so its shotsHash differs and it is not a valid priorMark here — the table's own note says so. On the same rubric, the same evaluator model and the same capture spec, the class now medians 61."
+  }
 }

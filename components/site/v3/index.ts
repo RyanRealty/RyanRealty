@@ -476,6 +476,27 @@ export { V3PlaceIndex, placeIndexRows } from './V3PlaceIndex'
 export type { V3PlaceIndexProps, V3PlaceIndexEntry } from './V3PlaceIndex'
 
 /* -------------------------------------------------------------------------- */
+/* Pattern 10 — SLOTS: a tool's empty state, drawn as the thing it makes       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A tool with nothing in it yet, shown as the object it becomes: one outlined
+ * slot per place the tool holds, and a WORKED EXAMPLE of the finished output
+ * over real rows, labelled in a visible word so nobody mistakes the example
+ * for their own.
+ *
+ * Quiet was standing in for this on /compare and the 2026-09-08 taste table
+ * named the result: "heading, sentence, link — indistinguishable from any SaaS
+ * empty-cart screen", with "no visible slot the visitor can watch fill". Quiet
+ * has no slot, no table and no figure by contract, so the fix was never a prop
+ * on Quiet. Any tool with a bounded tray and an output worth previewing takes
+ * this instead.
+ */
+export { V3Slots } from './V3Slots.client'
+
+export type { V3SlotsProps, V3SlotsColumn, V3SlotsFill } from './V3Slots.client'
+
+/* -------------------------------------------------------------------------- */
 /* PLACE SECTIONS — compositions of the six, not a seventh                     */
 /* -------------------------------------------------------------------------- */
 
