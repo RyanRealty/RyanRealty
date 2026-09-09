@@ -22,6 +22,7 @@ export async function getSaleZoneCache(keys: readonly string[]): Promise<Map<str
   const sb = createServiceClient()
   for (let i = 0; i < clean.length; i += 200) {
     const part = clean.slice(i, i + 200)
+    // @canonical-key — the selector's own ListingKeys, read from listings or sale_pricing_facts
     const { data, error } = await sb
       .from('cma_sale_zone_cache')
       .select('listing_key, lat, lng, zone, zone_type, source')
