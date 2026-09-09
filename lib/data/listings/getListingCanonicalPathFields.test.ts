@@ -93,7 +93,7 @@ describe('getListingCanonicalPathFields', () => {
    * IDX display permissions (ODS Rule B/G, NAR 7.58) — added 2026-08-19.
    *
    * getListingDetail already refuses these rows, so the detail page renders
-   * "This home may no longer be on the market". This lookup did not, and it
+   * "We can't show this home". This lookup did not, and it
    * feeds /listing/by-key, whose generateMetadata publishes the street address
    * in the <title> and a self-canonical to the pretty URL. Measured live before
    * the gate: https://ryan-realty.com/homes-for-sale/listing/220215050 (MLS
