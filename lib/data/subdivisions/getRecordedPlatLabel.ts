@@ -35,17 +35,12 @@
  * a request-time read, and never an automatic mapping". Reviewed evidence lives
  * in data/subdivision-alias-plats.json and is read from there.
  *
- * ABSENCE, BOTH SHAPES (§0). Broad first: public.boundaries holds 3,213
- * geo_type='subdivision' rows and every one is sourced "Deschutes County GIS
- * Subdivisions" — a bbox row read over lat 44.20-44.75 / lon -121.30 to -120.70
- * returned, for Madras and Prineville, only their TIGER city polygons and one
- * school district, and no plat at all. Then exact: geo_slug in
- * ('oll','parkpl','pleasvh',...) returned zero rows, and every geocoded PleasVH
- * listing point (35+) falls inside no recorded plat. That is not a query
- * artifact — data/subdivision-alias-plats.json already records the same fact in
- * its own words for two Prineville aliases: "Prineville = Crook County;
- * boundaries carries Deschutes plats only." So those three pages have no real
- * name available and must refuse rather than publish the abbreviation.
+ * ABSENCE, BOTH SHAPES (§0). SITE-58 (2026-09-09) ingested Crook County GIS
+ * Subdivisions LandGroup/7 (204 named plats). Deschutes remains BoundaryFD/4
+ * (3,223). Jefferson still publishes no recorded-plat layer. MLS abbreviations
+ * ('oll','parkpl','pleasvh') still have no exact slug in either county layer —
+ * a Crook plat named "Ochoco Pointe" does not rescue the MLS spelling "Oll".
+ * Those abbreviation pages must refuse rather than publish the abbreviation.
  *
  * SERVICE client: public.boundaries RLS hides subdivision rows from anon
  * (same as getSubdivisionBoundarySlugs / getPlatBoundaryCity). The output is a
