@@ -32,9 +32,10 @@ cma-delivery.compose.
 
 **Open.** (1) Matt has not yet said the words are right; Auto-send for expired and FSBO stays OFF
 until he does, then: harness send walk, second walk on the FSBO and expired lanes, flip the
-switches for clean documents (audit pass, no review reason, range inside the 8% share). (2) The
-broker record for Matt has no phone, so the letter says "give me a call" and the signature has no
-number; add it on the broker record and both fill in. (3) `subject_address` comes off the MLS
+switches for clean documents (audit pass, no review reason, range inside the 8% share). (2) Fixed
+in 9b1a0310: the send rail read `brokers.phone`, a column the CMA broker lookup never selects, so
+every letter had said "give me a call" with no number; it now reads the published twilio line
+through `formatPublishedPhone`, and the rail bolds the street form the letter uses. (3) `subject_address` comes off the MLS
 without a street suffix ("2465 7th"). (4) Some rows carry a recommended list outside the value
 range (e.g. cma-148728-snuffy-la-pine: range $470k–$497k, recommended $412k); the letter prints
 what the row says, so the review gate should catch it before a send. (5) The N=2,000 containment
