@@ -13,8 +13,7 @@
  * persist per-tool-call audit rows (role='tool') itself, since ingress.ts has
  * no visibility into what happened inside this call.
  */
-import Anthropic from '@anthropic-ai/sdk'
-import { createAnthropic, AGENT_MODEL, modelCostUsd } from '@/lib/ai/anthropic'
+import { GROK_MODELS, GrokError, ticksToUsd, xaiFetch } from '@/lib/grok/client'
 import { buildSystemPrompt, buildHelpText } from './prompt'
 import { parseKeyword, type ParsedKeyword } from './keywords'
 import { verifyReplyTrace } from './trace'
@@ -23,8 +22,18 @@ import { getAgentTools } from './tools'
 import { appendTurn, expireSession, touchSession } from '@/lib/data/agent/sessions'
 import { recordAgentCost, brokerSpendTodayUsd } from '@/lib/data/agent/cost-ledger'
 import { setAgentEnabled } from '@/lib/data/agent/broker-agent-flags'
-import type { AgentContext, AgentTool, AgentCitation, AgentTurnResult, ToolOutcome } from '@/lib/agent/types'
+import type {
+  AgentChatMessage,
+  AgentContext,
+  AgentTool,
+  AgentCitation,
+  AgentToolCall,
+  AgentTurnResult,
+  ToolOutcome,
+} from '@/lib/agent/types'
 
+/** Matt 2026-09-09: the agent runs on Grok, through lib/grok like every model call. */
+const AGENT_MODEL = GROK_MODELS.text
 const MAX_TOOL_ROUNDS = 8
 const MODEL_TIMEOUT_MS = 60_000
 const MAX_TOKENS = 16_000
@@ -34,20 +43,60 @@ const SAFE_FALLBACK_REPLY =
   "I want to double check a number before I send it. Give me a moment and I'll follow up with the confirmed figures."
 const EMPTY_MODEL_REPLY = "Let me get back to you on that in a moment."
 
-function extractText(content: Anthropic.ContentBlock[]): string {
-  return content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('\n')
-    .trim()
+type GrokChatResponse = {
+  choices?: Array<{
+    message?: { role?: string; content?: string | null; tool_calls?: AgentToolCall[] }
+    finish_reason?: string
+  }>
+  usage?: { cost_in_usd_ticks?: number }
 }
 
-function toAnthropicTools(tools: AgentTool[]): Anthropic.Tool[] {
+function toGrokTools(tools: AgentTool[]): Array<Record<string, unknown>> {
   return tools.map((t) => ({
-    name: t.name,
-    description: t.description,
-    input_schema: t.input_schema as Anthropic.Tool['input_schema'],
+    type: 'function',
+    function: { name: t.name, description: t.description, parameters: t.input_schema },
   }))
+}
+
+/** One chat-completions call with the agent's tools. */
+async function chat(
+  system: string,
+  messages: AgentChatMessage[],
+  tools: AgentTool[],
+  opts: { toolChoice: 'auto' | 'none' },
+): Promise<{ message: { content: string | null; tool_calls: AgentToolCall[] }; costUsd: number }> {
+  const res = await xaiFetch(
+    '/chat/completions',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        model: AGENT_MODEL,
+        max_tokens: MAX_TOKENS,
+        reasoning_effort: 'low',
+        messages: [{ role: 'system', content: system }, ...messages],
+        tools: toGrokTools(tools),
+        tool_choice: opts.toolChoice,
+      }),
+    },
+    { timeoutMs: MODEL_TIMEOUT_MS },
+  )
+  const data = (await res.json()) as GrokChatResponse
+  const msg = data.choices?.[0]?.message
+  if (!msg) throw new GrokError('agent call returned no message', 0, JSON.stringify(data).slice(0, 600))
+  return {
+    message: { content: typeof msg.content === 'string' ? msg.content : null, tool_calls: msg.tool_calls ?? [] },
+    costUsd: ticksToUsd(data.usage?.cost_in_usd_ticks) ?? 0,
+  }
+}
+
+function parseArgs(raw: string | undefined): Record<string, unknown> {
+  if (!raw) return {}
+  try {
+    const v = JSON.parse(raw) as unknown
+    return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {}
+  } catch {
+    return {}
+  }
 }
 
 interface ToolCallRecord {
@@ -59,7 +108,7 @@ interface ToolCallRecord {
 
 interface ModelLoopResult {
   finalText: string
-  messages: Anthropic.MessageParam[]
+  messages: AgentChatMessage[]
   toolCallCount: number
   citations: AgentCitation[]
   toolResultCorpus: string
@@ -68,15 +117,13 @@ interface ModelLoopResult {
 }
 
 async function runModelLoop(
-  client: Anthropic,
   system: string,
-  initialMessages: Anthropic.MessageParam[],
+  initialMessages: AgentChatMessage[],
   tools: AgentTool[],
   ctx: AgentContext,
 ): Promise<ModelLoopResult> {
-  const anthropicTools = toAnthropicTools(tools)
   const toolByName = new Map(tools.map((t) => [t.name, t]))
-  const messages: Anthropic.MessageParam[] = [...initialMessages]
+  const messages: AgentChatMessage[] = [...initialMessages]
   let toolCallCount = 0
   let costUsd = 0
   const citations: AgentCitation[] = []
@@ -85,26 +132,13 @@ async function runModelLoop(
 
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
     const forceFinal = round === MAX_TOOL_ROUNDS
-    // tools must be present on EVERY call once history contains tool_use /
-    // tool_result blocks (the API 400s otherwise) — forceFinal disables
-    // further use via tool_choice instead of dropping the definitions.
-    const response = await client.messages.create(
-      {
-        model: AGENT_MODEL,
-        max_tokens: MAX_TOKENS,
-        system,
-        messages,
-        tools: anthropicTools,
-        ...(forceFinal ? { tool_choice: { type: 'none' } } : {}),
-      } as Anthropic.MessageCreateParamsNonStreaming,
-      { timeout: MODEL_TIMEOUT_MS },
-    )
-    costUsd += modelCostUsd(AGENT_MODEL, response.usage.input_tokens, response.usage.output_tokens)
-    messages.push({ role: 'assistant', content: response.content as Anthropic.MessageParam['content'] })
+    const turn = await chat(system, messages, tools, { toolChoice: forceFinal ? 'none' : 'auto' })
+    costUsd += turn.costUsd
+    messages.push({ role: 'assistant', content: turn.message.content, tool_calls: turn.message.tool_calls.length ? turn.message.tool_calls : undefined })
 
-    if (response.stop_reason !== 'tool_use' || forceFinal) {
+    if (turn.message.tool_calls.length === 0 || forceFinal) {
       return {
-        finalText: extractText(response.content),
+        finalText: (turn.message.content ?? '').trim(),
         messages,
         toolCallCount,
         citations,
@@ -114,17 +148,13 @@ async function runModelLoop(
       }
     }
 
-    const toolUseBlocks = response.content.filter(
-      (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use',
-    )
-    const toolResults: Anthropic.ToolResultBlockParam[] = []
-    for (const block of toolUseBlocks) {
+    for (const call of turn.message.tool_calls) {
       toolCallCount++
-      const input = (block.input ?? {}) as Record<string, unknown>
-      const tool = toolByName.get(block.name)
+      const input = parseArgs(call.function?.arguments)
+      const tool = toolByName.get(call.function?.name ?? '')
       let outcome: ToolOutcome
       if (!tool) {
-        outcome = { result: { error: `tool "${block.name}" is not available yet` } }
+        outcome = { result: { error: `tool "${call.function?.name ?? '?'}" is not available yet` } }
       } else {
         try {
           outcome = await tool.handler(input, ctx)
@@ -135,10 +165,9 @@ async function runModelLoop(
       if (outcome.citations?.length) citations.push(...outcome.citations)
       const resultJson = JSON.stringify(outcome.result ?? null)
       toolResultChunks.push(resultJson)
-      toolCallRecords.push({ name: block.name, input, result: outcome.result ?? null, citations: outcome.citations ?? [] })
-      toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: resultJson })
+      toolCallRecords.push({ name: call.function?.name ?? '?', input, result: outcome.result ?? null, citations: outcome.citations ?? [] })
+      messages.push({ role: 'tool', tool_call_id: call.id, content: resultJson })
     }
-    messages.push({ role: 'user', content: toolResults })
   }
 
   // Unreachable: the forceFinal iteration always returns above.
@@ -225,13 +254,12 @@ export async function runAgentTurn(
   }
 
   // ── (c) The Opus 5 tool-use loop. ──────────────────────────────────────────
-  const client = createAnthropic()
   const system = buildSystemPrompt(ctx)
   const history = await buildModelHistory(ctx.sessionId)
   const mediaNote = mediaUrls?.length ? `\n\n[${mediaUrls.length} attachment(s) received with this message]` : ''
-  const messages: Anthropic.MessageParam[] = [...history, { role: 'user', content: `${inboundText}${mediaNote}` }]
+  const messages: AgentChatMessage[] = [...history, { role: 'user', content: `${inboundText}${mediaNote}` }]
 
-  const loop = await runModelLoop(client, system, messages, tools, ctx)
+  const loop = await runModelLoop(system, messages, tools, ctx)
 
   // ── (d) §0 trace verification, one corrective retry, then a safe fallback. ─
   let finalText = loop.finalText || EMPTY_MODEL_REPLY
@@ -243,22 +271,10 @@ export async function runAgentTurn(
       `Your last reply included figures that were not fetched this turn: ${check.violations.join(', ')}. ` +
       'Rewrite the reply using ONLY numbers that appear in the tool results already returned this turn. ' +
       'If you cannot state a figure confidently, describe it qualitatively instead of inventing or rounding it.'
-    const retryMessages: Anthropic.MessageParam[] = [...loop.messages, { role: 'user', content: nudge }]
-    // Same rule as runModelLoop: history carries tool blocks, so tools must be
-    // declared; tool_choice none keeps the retry text-only.
-    const retryResponse = await client.messages.create(
-      {
-        model: AGENT_MODEL,
-        max_tokens: MAX_TOKENS,
-        system,
-        messages: retryMessages,
-        tools: toAnthropicTools(tools),
-        tool_choice: { type: 'none' },
-      } as Anthropic.MessageCreateParamsNonStreaming,
-      { timeout: MODEL_TIMEOUT_MS },
-    )
-    costUsd += modelCostUsd(AGENT_MODEL, retryResponse.usage.input_tokens, retryResponse.usage.output_tokens)
-    const retryText = extractText(retryResponse.content)
+    const retryMessages: AgentChatMessage[] = [...loop.messages, { role: 'user', content: nudge }]
+    const retry = await chat(system, retryMessages, tools, { toolChoice: 'none' })
+    costUsd += retry.costUsd
+    const retryText = (retry.message.content ?? '').trim()
     const retryCheck = verifyReplyTrace(retryText, loop.toolResultCorpus)
     finalText = retryCheck.ok && retryText ? retryText : SAFE_FALLBACK_REPLY
   }

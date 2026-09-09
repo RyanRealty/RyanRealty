@@ -3,7 +3,7 @@
  * classifier and the R2.7 sha256-dedupe path in ingestShoot.
  *
  * NO network, NO live DB: lib/data/agent/asset-registry.ts (every Supabase
- * call) and lib/ai/anthropic.ts (the vision-grading model call) are fully
+ * call) and lib/grok/client.ts (the vision-grading model call) are fully
  * mocked. lib/agent/exif.ts is left real — `exifr` isn't installed for this
  * rung, so readExif() resolves to `{}` via its own dynamic-import failure
  * path with zero network involved (see that module's doc comment).
@@ -23,19 +23,25 @@ const registryMocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/data/agent/asset-registry', () => registryMocks)
 
-vi.mock('@/lib/ai/anthropic', () => ({
-  CLASSIFIER_MODEL: 'claude-haiku-4-5-20251001',
-  createAnthropic: () => ({
-    messages: {
-      create: vi.fn().mockResolvedValue({
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify([{ grade: 'A', caption: 'a house', scene: 'exterior', watermark: false }]),
+// The vision grade runs on Grok now (Matt 2026-09-09): one scripted
+// chat-completions answer carrying the same graded array.
+vi.mock('@/lib/grok/client', () => ({
+  GROK_MODELS: { text: 'grok-4.6', textFast: 'grok-4.5', vision: 'grok-4.6' },
+  grokConfigured: () => true,
+  xaiFetch: vi.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      choices: [
+        {
+          message: {
+            role: 'assistant',
+            content: JSON.stringify([{ grade: 'A', caption: 'a house', scene: 'exterior', watermark: false }]),
           },
-        ],
-      }),
-    },
+        },
+      ],
+      usage: {},
+    }),
   }),
 }))
 

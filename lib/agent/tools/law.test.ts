@@ -21,9 +21,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AgentContext } from '@/lib/agent/types'
 
 const messagesCreateMock = vi.fn()
-vi.mock('@/lib/ai/anthropic', () => ({
-  createAnthropic: () => ({ messages: { create: messagesCreateMock } }),
-  CLASSIFIER_MODEL: 'claude-haiku-4-5-20251001',
+// The classifier runs on Grok now; the scripted responses keep the Anthropic
+// text shape and are translated here, so the cases below stay as written.
+vi.mock('@/lib/grok/client', () => ({ GROK_MODELS: { text: 'grok-4.6', textFast: 'grok-4.5', vision: 'grok-4.6' } }))
+vi.mock('@/lib/grok/text', () => ({
+  generateGrokStructured: async () => {
+    const r = (await messagesCreateMock()) as { content?: Array<{ type: string; text?: string }> }
+    const text = r?.content?.find((b) => b.type === 'text')?.text ?? ''
+    const m = text.match(/\{[\s\S]*\}/)
+    return { value: m ? JSON.parse(m[0]) : {}, raw: text, costUsd: 0 }
+  },
 }))
 
 const searchLegalCorpusMock = vi.fn()

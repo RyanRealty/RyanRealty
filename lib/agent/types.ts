@@ -83,3 +83,15 @@ export interface AgentJobHandle {
   label: string
   status: string
 }
+
+/**
+ * One message in the model conversation, in the chat-completions shape Grok
+ * takes (Matt 2026-09-09: the agent runs on Grok). Tool calls ride on the
+ * assistant message; each result is its own `tool` message.
+ */
+export type AgentToolCall = { id: string; type: 'function'; function: { name: string; arguments: string } }
+export type AgentChatMessage =
+  | { role: 'system'; content: string }
+  | { role: 'user'; content: string }
+  | { role: 'assistant'; content: string | null; tool_calls?: AgentToolCall[] }
+  | { role: 'tool'; tool_call_id: string; content: string }

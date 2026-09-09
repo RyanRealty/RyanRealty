@@ -26,8 +26,8 @@
  * broker_agent_turns row (written by the runtime, not here) for the
  * digest either way.
  */
-import Anthropic from '@anthropic-ai/sdk'
-import { createAnthropic, CLASSIFIER_MODEL } from '@/lib/ai/anthropic'
+import { generateGrokStructured } from '@/lib/grok/text'
+import { GROK_MODELS } from '@/lib/grok/client'
 import { searchLegalCorpus, flagLawQuestionToMatt } from '@/lib/data/agent/legal'
 import type { AgentContext, AgentTool, AgentCitation, ToolOutcome } from '@/lib/agent/types'
 
@@ -54,34 +54,26 @@ const GENERAL_ANSWER_INSTRUCTION =
  */
 export async function classifyDealSpecific(question: string): Promise<boolean> {
   try {
-    const anthropic = createAnthropic()
-    const msg = await anthropic.messages.create(
-      {
-        model: CLASSIFIER_MODEL,
-        max_tokens: 100,
-        messages: [
-          {
-            role: 'user',
-            content:
-              'A real estate broker sent this question to a law-lookup assistant:\n\n' +
-              `"${question}"\n\n` +
-              'Decide: is this a GENERAL Oregon real-estate-law/rule question (asking what the ' +
-              'law or rule says in the abstract, e.g. "do I need a lead-based-paint disclosure ' +
-              'on a pre-1978 build", "how long do I have to keep transaction records"), or is it ' +
-              'asking for advice about a SPECIFIC live transaction or a named client\'s deal ' +
-              '(mentions a specific address, a client by name, "my deal", "can my client", a live ' +
-              'negotiation or dispute)?\n\n' +
-              'Reply with ONLY this JSON and nothing else: {"dealSpecific": true} or {"dealSpecific": false}',
-          },
-        ],
-      },
-      { timeout: CLASSIFIER_TIMEOUT_MS }
-    )
-
-    const text = msg.content.find((b): b is Anthropic.TextBlock => b.type === 'text')?.text ?? ''
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) return false
-    const parsed = JSON.parse(jsonMatch[0]) as { dealSpecific?: unknown }
+    // Matt 2026-09-09: the classifier runs on Grok, through lib/grok.
+    const res = await generateGrokStructured<{ dealSpecific?: unknown }>({
+      model: GROK_MODELS.textFast,
+      prompt:
+        'A real estate broker sent this question to a law-lookup assistant:\n\n' +
+        `"${question}"\n\n` +
+        'Decide: is this a GENERAL Oregon real-estate-law/rule question (asking what the ' +
+        'law or rule says in the abstract, e.g. "do I need a lead-based-paint disclosure ' +
+        'on a pre-1978 build", "how long do I have to keep transaction records"), or is it ' +
+        'asking for advice about a SPECIFIC live transaction or a named client\'s deal ' +
+        '(mentions a specific address, a client by name, "my deal", "can my client", a live ' +
+        'negotiation or dispute)?\n\n' +
+        'Reply with ONLY this JSON and nothing else: {"dealSpecific": true} or {"dealSpecific": false}',
+      schema: { type: 'object', additionalProperties: false, properties: { dealSpecific: { type: 'boolean' } }, required: ['dealSpecific'] },
+      schemaName: 'deal_specific',
+      maxTokens: 100,
+      reasoningEffort: 'low',
+      timeoutMs: CLASSIFIER_TIMEOUT_MS,
+    })
+    const parsed = res.value ?? {}
     return parsed.dealSpecific === true
   } catch (err) {
     console.warn('[law_lookup] classifyDealSpecific failed, failing open to general:', err)
