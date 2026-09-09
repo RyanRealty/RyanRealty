@@ -35,7 +35,9 @@ checks.push({
     /\.order\('id', \{ ascending: true \}\)/.test(dal),
 })
 
-const page = src('app/blog/page.tsx')
+// SITE-29: the index view is shared by /blog and its category/page routes;
+// the JSON-LD is built there, once, for all four.
+const page = src('app/blog/_v3/blog-index-view.tsx')
 checks.push({
   label: 'blog index JSON-LD goes through publishBlogIndexItemList',
   ok:

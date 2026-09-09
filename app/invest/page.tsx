@@ -121,7 +121,9 @@ export default async function InvestPage() {
     return {
       id: row.segment,
       href: publicSegmentBrowseHref(null, row.segment),
-      when: v3Text('Central Oregon'),
+      // SITE-52: the eyebrow is already "Central Oregon · By property type" —
+      // every row repeating 'Central Oregon' is the taste evaluator's OREGON
+      // defect with the region name instead of the state.
       what: v3Text(noun.charAt(0).toUpperCase() + noun.slice(1)),
       ...(bits.length > 0 ? { detail: v3Text(bits.join(' · ')) } : {}),
       value: v3Text(`${count.toLocaleString('en-US')} active`),
@@ -166,7 +168,14 @@ export default async function InvestPage() {
 
   const toolItems: V3QuietItem[] = [
     ...rateFact,
-    { label: 'Rental property calculator', href: '/tools/rental-property-calculator' },
+    // SITE-40: the first door leads. The reader who got this far wants the
+    // one calculator that takes their own numbers, not a list of four equals.
+    {
+      label: 'Rental property calculator',
+      href: '/tools/rental-property-calculator',
+      detail: 'Your rent, your rate, your expenses — the answer before the tour.',
+      lead: true,
+    },
     { label: 'Mortgage calculator', href: '/tools/mortgage-calculator' },
     { label: 'Central Oregon market report', href: '/housing-market' },
     { label: 'Every city', href: '/cities' },

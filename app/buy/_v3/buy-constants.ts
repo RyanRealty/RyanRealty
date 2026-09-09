@@ -45,7 +45,6 @@ export const FAQ_ITEMS = [
 export const BUYER_GUIDE_ROWS: V3LedgerPlainRow[] = [
   {
     href: '/buy/first-time-home-buyer',
-    when: v3Text('Guide'),
     what: v3Text('First-time buyer plan'),
     detail: v3Text(
       'Down-payment programs, what to inspect, and a realistic timeline for your first home in Central Oregon, from a broker who has walked plenty of first-time buyers through it.',
@@ -54,7 +53,6 @@ export const BUYER_GUIDE_ROWS: V3LedgerPlainRow[] = [
   },
   {
     href: '/buy/relocation',
-    when: v3Text('Guide'),
     what: v3Text('Relocation'),
     detail: v3Text(
       'Moving to Bend or Central Oregon from out of state? What the market looks like before you arrive, how to tour on a short visit, and what nobody tells you about winter.',
@@ -63,7 +61,6 @@ export const BUYER_GUIDE_ROWS: V3LedgerPlainRow[] = [
   },
   {
     href: '/buy/investment',
-    when: v3Text('Guide'),
     what: v3Text('Investment property'),
     detail: v3Text(
       'Vacation rentals, long-term rentals, and how to underwrite cash flow on a Central Oregon property with real local numbers.',

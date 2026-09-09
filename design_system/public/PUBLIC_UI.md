@@ -89,7 +89,13 @@ absolute it stated was not, and is gone.
    when an owned still exists, otherwise opens City. Embeds in Neighborhood and
    Master-plan. A short plat is a Ledger, not a fake Field.
 3. **Ledger** — a scannable list of real rows (homes, places, sales, reports) with tabular
-   numbers and one action per row. Every row is a door.
+   numbers and one action per row. Every row is a door. Past six rows a figure is also a
+   length (`encode="bar"` on the list's shared scale, the largest row at full ink); a row
+   rewards hover, focus, or a phone hold with one line its text does not carry
+   (`reveal`: the verdict, a twelve-month run); media is all-or-none per list (a navy
+   monogram where a photo is absent); a headline claim under the heading is drawn, not
+   said (`drawing`: the months-of-supply pair); and the `when` slot never repeats a fact
+   the page already made (SITE-52, 2026-09-09).
 4. **Stage** — full-bleed media (owned video/photo) carrying one line of type and one
    action; the only pattern allowed to be primarily emotional, and only where an owned
    asset exists. Never over a number. Opens Listing. Opens City and Master-plan when

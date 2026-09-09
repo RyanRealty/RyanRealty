@@ -1,0 +1,158 @@
+/* ===========================================================================
+   V3 PLACE DOOR (site queue SITE-03)
+   Styles for V3PlaceDoor.tsx and nothing else. Every value resolves from
+   ./tokens.css, which the component imports and whose scope the mount opens on
+   itself with V3_ROOT_CLASS. No raw color, no raw duration, no elevation
+   shadow, no literal radius — Broadside is square (--v3-radius-control is 0).
+
+   ONE CLAIM, ONE DOOR. The count is the display line, its label sits beside it,
+   and the whole plate is the link into that place's own pre-filtered inventory.
+   The trace, with the freshness stamp joined into it, sits under the plate,
+   quiet, outside the anchor. No verdict: that lives in the caption, once.
+
+   THE WRAPPER CARRIES V3_ROOT_CLASS, WHICH PAINTS. `.v3` in tokens.css sets
+   `background: var(--v3-surface)`, so a door mounted over the place opening's
+   photograph painted a full-width cream band across the still and then wrote
+   its own --on-media (white) lines on top of it: about 1.03:1, illegible. The
+   wrapper is a positioning box, not a surface — the plate inside it brings its
+   own fill. Declaring transparent is the same neutralisation
+   place-opening.css already makes for .v3-breadcrumb and .v3-sheet.
+
+   THE PREFIX IS LOAD-BEARING, not decoration. The base rules for .v3-btn and
+   .v3-source-disclosure live in tokens.css at (0,2,0), so an override here has
+   to reach (0,3,0) or lose on source order. `.v3 .v3-place-door__door` is only
+   (0,2,0) — a TIE, resolved by bundle order. The compound form every other
+   pattern stylesheet uses, `.v3.v3-place-door .v3-place-door__door`, actually
+   gets there.
+   =========================================================================== */
+
+.v3.v3-place-door {
+  display: grid;
+  justify-items: start;
+  gap: var(--v3-space-2xs);
+  margin-top: var(--v3-space-md);
+  min-width: 0;
+  background: transparent;
+}
+
+/* THE DOOR ---------------------------------------------------------------- */
+
+/* V3Button's filled form, re-proportioned: the count is a display numeral, so
+   the plate is a three-column grid rather than the button's centred label row.
+   The tap floor, the fill, the focus ring and the hover all stay the atom's.
+
+   THE SLACK TRAILS THE ARROW. Columns are count / label / arrow, and any width
+   the plate has beyond its content belongs to the LAST track, behind the arrow,
+   never to the label between them. The first cut gave the label the flexible
+   track (auto minmax(0,1fr) auto): invisible while the plate shrank to fit its
+   claim, wrong the moment it did not. place-opening.css makes the plate
+   full-width under 40rem, so on a 375 phone the label track swallowed ~75px of
+   slack and flung the arrow to the far edge, the claim and its affordance no
+   longer one object. Now the label is content-sized (an auto track still
+   shrinks toward min-content before the grid overflows, so a long claim still
+   wraps), the arrow sits one gap after it at either width, and the 1fr track it
+   starts takes whatever is left. */
+.v3.v3-place-door .v3-place-door__door {
+  display: inline-grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: var(--v3-space-xs) var(--v3-space-sm);
+  max-width: 100%;
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  text-align: left;
+}
+
+/* The figure: the register's numeral face, tabular so a re-render with a new
+   count does not reflow the plate.
+
+   THE PLACE LEADS THE STAGE, NOT THE NUMBER. This numeral wore --v3-size-num-lead
+   for one round because the alerts strip's 30-day count beneath it measured
+   55px against the door's 30px, and a reviewer read that as the fold's fact
+   being out-shouted. Raised to the lead size it measured 55px against the H1's
+   27px cap, and the city Stage had become a number hero, which PUBLIC_UI section
+   3 forbids. The answer to "which figure leads the fold" is neither: the place
+   name leads a Stage, and the door is a control that names one fact on its way
+   somewhere. So it wears --v3-size-num, subordinate to the H1. The loudness of
+   the alerts strip's own numeral is that strip's question, not this door's. */
+.v3.v3-place-door .v3-place-door__count {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  font-weight: var(--v3-weight-display);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: var(--v3-track-display);
+  line-height: 1;
+}
+
+/* What the figure counts. FULL cream on navy, never the muted tint: PUBLIC_UI.md
+   section 4 clears cream-60 on navy only at 16px and up, and this sits at
+   body-sm inside the plate — the same reasoning that took the alerts strip's
+   phone note to full cream. */
+.v3.v3-place-door .v3-place-door__claim {
+  min-width: 0;
+  color: inherit;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+  text-wrap: pretty;
+}
+
+.v3.v3-place-door .v3-place-door__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* The arrow owns the flexible track; it sits at the track's START so the
+     slack trails it rather than pushing it to the plate's far edge. */
+  justify-self: start;
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3.v3-place-door .v3-place-door__door:hover .v3-place-door__arrow {
+  transform: translateX(var(--v3-space-3xs));
+}
+
+/* THE FOOT: the trace ------------------------------------------------------ */
+
+/* One line under the door. The disclosure summary already carries a 44px box
+   (tokens.css), so the row aligns on centres. */
+.v3.v3-place-door .v3-place-door__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--v3-space-sm);
+  min-width: 0;
+  max-width: var(--v3-measure-text);
+}
+
+.v3.v3-place-door .v3-place-door__source {
+  min-width: 0;
+}
+
+.v3.v3-place-door .v3-place-door__source .v3-source {
+  max-width: var(--v3-measure-text);
+}
+
+/* ON MEDIA ----------------------------------------------------------------- */
+
+/* The plate is already navy on a scrimmed photograph, so it needs nothing. The
+   QUIET line does: the same inversion V3Heading and .place-opening__caption
+   take, so the word "Source" and the open trace stay legible over the still
+   instead of resolving to navy-70 on a dark frame. */
+.v3.v3-place-door--on-media .v3-place-door__source .v3-source-disclosure__summary,
+.v3.v3-place-door--on-media .v3-place-door__source .v3-source {
+  color: var(--v3-ink-on-media);
+  text-shadow: var(--v3-media-shadow);
+}
+
+/* WIDE WINDOWS ------------------------------------------------------------- */
+
+@media (min-width: 40rem) {
+  .v3.v3-place-door .v3-place-door__door {
+    padding: var(--v3-space-sm) var(--v3-space-lg);
+    gap: var(--v3-space-xs) var(--v3-space-md);
+  }
+
+  .v3.v3-place-door .v3-place-door__claim {
+    font-size: var(--v3-size-body);
+  }
+}

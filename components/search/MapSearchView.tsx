@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { navigateQuery, useUrlSearchParams } from '@/lib/search/url-search-params.client'
+import { mergeUrlSearchFilters } from '@/components/search/merge-url-search-filters'
 import dynamic from 'next/dynamic'
 import type { ListingTileRow, MapBounds } from '@/app/actions/listings'
 import { countSearchListings, getViewportSearch, type SearchFilters } from '@/app/actions/search'
@@ -287,6 +289,24 @@ export type MapSearchViewProps = {
    * homes only — zoom, listing clicks, and place jumps live on V3Atlas.
    */
   listOnly?: boolean
+  /**
+   * The page is a static shell (SITE-29): `filters` and the initial listings
+   * are the prerendered DEFAULTS, the URL's query is laid over them after
+   * mount, a query change refetches the viewport here (the route's RSC
+   * payload is static, so no server re-render carries new props), and URL
+   * writes go to history.pushState instead of router.push.
+   */
+  staticShell?: boolean
+  /**
+   * The place's own footprint (seed ring or plat union), the scope the server
+   * searched inside for the prerendered list. A static-shell refetch searches
+   * inside the same footprint, so a filtered list and its count describe the
+   * same population the page opened on. Without it the refetch would fall back
+   * to the bounding box plus the place's name tag, a different population
+   * (measured 2026-09-09 on /cities/bend/awbrey-butte: 70 in the ring, more by
+   * tag), and the count row would print the wrong number or none.
+   */
+  scopePolygon?: Parameters<typeof getViewportSearch>[2]
 }
 
 export default function MapSearchView({
@@ -294,7 +314,7 @@ export default function MapSearchView({
   initialTotalCount,
   initialCapped,
   initialBounds,
-  filters,
+  filters: filtersProp,
   savedListingKeys: savedListingKeysSeed,
   likedListingKeys: likedListingKeysSeed,
   placeQuery,
@@ -307,7 +327,17 @@ export default function MapSearchView({
   lockPlace = false,
   openHouseLabels = {},
   listOnly = false,
+  staticShell = false,
+  scopePolygon = null,
 }: MapSearchViewProps) {
+  // Static-safe query read (lib/search/url-search-params.client): '' at
+  // hydration, the live URL after. On a static shell the URL wins over the
+  // prerendered defaults; a place page keeps its geo pin (lockPlace).
+  const urlSearchParams = useUrlSearchParams()
+  const filters = useMemo(
+    () => (staticShell ? mergeUrlSearchFilters(filtersProp, urlSearchParams, { lockPlace }) : filtersProp),
+    [staticShell, filtersProp, urlSearchParams, lockPlace],
+  )
   // One initial shape set, whichever URL spelling delivered it: ?shapes=
   // (multi-shape) wins; a legacy ?poly= ring arrives as a single include
   // polygon. `initialPolygon` keeps its historical meaning for the scope-drop
@@ -412,6 +442,10 @@ export default function MapSearchView({
   useEffect(() => {
     searchFiltersRef.current = searchFilters
   }, [searchFilters])
+  const scopePolygonRef = useRef(scopePolygon)
+  useEffect(() => {
+    scopePolygonRef.current = scopePolygon
+  }, [scopePolygon])
   // The map's FIRST bounds report is its initial settle (fitBounds on load),
   // not a user gesture — it must not drop the scope. Every report after that
   // is a real pan/zoom/re-center. A short grace window covers the async
@@ -426,16 +460,15 @@ export default function MapSearchView({
   }, [])
   const router = useRouter()
   const pathname = usePathname()
-  const urlSearchParams = useSearchParams()
   const applyView = useCallback(
     (next: 'list' | 'map' | 'split') => {
       setLayoutView(next)
       setMobileView(next === 'list' ? 'list' : 'map')
       const params = new URLSearchParams(urlSearchParams?.toString() ?? '')
       params.set('view', next)
-      router.push(`${pathname ?? '/homes-for-sale'}?${params.toString()}`, { scroll: false })
+      navigateQuery(router, `${pathname ?? '/homes-for-sale'}?${params.toString()}`, { staticShell })
     },
-    [pathname, router, urlSearchParams],
+    [pathname, router, urlSearchParams, staticShell],
   )
   useEffect(() => {
     if (filters.view === 'list' || filters.view === 'map' || filters.view === 'split') {
@@ -524,7 +557,13 @@ export default function MapSearchView({
   // Re-seed from server props whenever the URL filters change (new SSR payload).
   // The SSR payload is scoped again, so the scope-drop resets with it — the
   // chip re-appears and the next user move re-drops it.
+  // Static shell (SITE-29): the server props are the prerendered defaults and
+  // never change after mount. A URL change is the refetch effect's job below;
+  // re-seeding here would snap the list back to the defaults.
+  const reseededRef = useRef(false)
   useEffect(() => {
+    if (staticShell && reseededRef.current) return
+    reseededRef.current = true
     setListings(initialListings)
     setTotalCount(initialTotalCount)
     setCapped(initialCapped)
@@ -556,8 +595,12 @@ export default function MapSearchView({
         const effectiveFilters = scopeDroppedRef.current ? stripGeoScope(base) : base
         // The drawn set becomes the server's include/exclude shapes contract
         // (PostGIS). Exclude-only sets ride the current viewport as the
-        // include ring — "this view minus those areas".
-        const poly = buildShapeSetForSearch(shapes, bounds)
+        // include ring — "this view minus those areas". A place page with no
+        // drawn shapes keeps the footprint its server list was scoped to.
+        const poly =
+          shapes.length === 0 && scopePolygonRef.current != null
+            ? scopePolygonRef.current
+            : buildShapeSetForSearch(shapes, bounds)
         // Pan passes { limit: 250 } for a lighter payload (P3). Non-pan paths
         // (draw, toggle, retry) keep the three-arg call so SSR-style fidelity
         // remains the default; the 4th arg is TypeScript-optional until the
@@ -595,6 +638,27 @@ export default function MapSearchView({
     []
   )
 
+  // Static shell (SITE-29): the URL is the filter state and the route's RSC
+  // payload is static, so a query change refetches the viewport here. The ref
+  // holds the query the CURRENT list was fetched with, seeded from the server
+  // props (the prerendered defaults), never from the merged filters: on a
+  // desktop place page the atlas remounts this component after its first
+  // camera fit, by which time the store already carries the URL, and a ref
+  // seeded from the merged snapshot would see no change and never refetch a
+  // deep-linked ?beds=4 (measured 2026-09-09: phones refetched, desktop did
+  // not). Seeded from the defaults, a mount under a filtered URL is a change.
+  const fetchedSnapshotRef = useRef(staticShell ? JSON.stringify(filtersProp) : filtersSnapshot)
+  useEffect(() => {
+    if (!staticShell) return
+    if (filtersSnapshot === fetchedSnapshotRef.current) return
+    fetchedSnapshotRef.current = filtersSnapshot
+    setVisibleCount(CARD_PAGE)
+    void runViewportSearch(lastBoundsRef.current, drawnShapes)
+    // drawnShapes is read for the call, not a trigger: a shape change runs
+    // its own search in handleShapesChange.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [staticShell, filtersSnapshot, runViewportSearch])
+
   /** Mockup G2: sort lives on the count row; updates URL like other filters. */
   const handleSortChange = useCallback(
     (value: string) => {
@@ -606,12 +670,12 @@ export default function MapSearchView({
       params.delete('page')
       const query = params.toString()
       const base = pathname ?? '/homes-for-sale'
-      router.replace(query ? `${base}?${query}` : base, { scroll: false })
+      navigateQuery(router, query ? `${base}?${query}` : base, { replace: true, staticShell })
       // Immediate viewport refetch with the new sort (don't wait on full SSR).
       searchFiltersRef.current = { ...searchFiltersRef.current, sort: next }
       void runViewportSearch(lastBoundsRef.current, drawnShapes)
     },
-    [router, pathname, urlSearchParams, drawnShapes, runViewportSearch]
+    [router, pathname, urlSearchParams, drawnShapes, runViewportSearch, staticShell]
   )
 
   const retryViewportSearch = useCallback(() => {
@@ -661,13 +725,13 @@ export default function MapSearchView({
         urlSearchParams?.toString() ?? '',
         bounds,
       )
-      if (cameraUrl) router.replace(cameraUrl, { scroll: false })
+      if (cameraUrl) navigateQuery(router, cameraUrl, { replace: true, staticShell })
       if (isInitialSettle === false && !lockPlace) dropGeoScope()
       if (isInitialSettle) return
       // Camera only. List + pins stay until Search this area.
       setAreaDirty(true)
     },
-    [dropGeoScope, pathname, router, urlSearchParams, lockPlace]
+    [dropGeoScope, pathname, router, urlSearchParams, lockPlace, staticShell]
   )
 
   /** Reflect the drawn shape set into the URL so reload/share reproduce it.
@@ -689,9 +753,9 @@ export default function MapSearchView({
       params.delete('page')
       const query = params.toString()
       const base = pathname ?? '/homes-for-sale'
-      router.replace(query ? `${base}?${query}` : base, { scroll: false })
+      navigateQuery(router, query ? `${base}?${query}` : base, { replace: true, staticShell })
     },
-    [router, pathname, urlSearchParams]
+    [router, pathname, urlSearchParams, staticShell]
   )
 
   // Instrumentation guard: fire search_map_draw only when a shape was ADDED
@@ -1022,7 +1086,7 @@ export default function MapSearchView({
               variant="outline"
               size="sm"
               className="srch-chip mt-4"
-              onClick={() => router.push(`${pathname ?? '/homes-for-sale'}?view=${filters.view ?? 'split'}`, { scroll: false })}
+              onClick={() => navigateQuery(router, `${pathname ?? '/homes-for-sale'}?view=${filters.view ?? 'split'}`, { staticShell })}
             >
               Clear all filters
             </Button>

@@ -388,7 +388,17 @@ export default async function ComparePage({
                   kind: 'prose',
                   body: 'Put up to four homes side by side: price, size, beds, baths, lot, year, and the rest. Add them from any search or listing page.',
                 },
-                { label: 'Search homes', href: '/homes-for-sale?view=list' },
+                // SITE-40: the fallback is the only thing on screen when the
+                // example cannot read, so it carries a lead door and the two
+                // other places a reader picks homes from — not one bare link.
+                {
+                  label: 'Search homes for sale',
+                  detail: 'Add from any listing page, then come back here.',
+                  href: '/homes-for-sale?view=list',
+                  lead: true,
+                },
+                { label: 'Every city', href: '/cities' },
+                { label: 'Price drops', href: '/price-drops' },
               ]}
             />
           )

@@ -40,11 +40,21 @@ describe('SEO route metadata contracts', () => {
   it('enforces noindex policy helpers for variant routes', () => {
     const searchIndex = readRouteFile('app/search/page.tsx')
     const searchPage = readRouteFile('app/search/[...slug]/page.tsx')
-    const blogIndex = readRouteFile('app/blog/page.tsx')
+    // SITE-29: the blog index's metadata is built once, in the shared view,
+    // and applied by the bare index and its category/page routes.
+    const blogIndexView = readRouteFile('app/blog/_v3/blog-index-view.tsx')
 
     expect(searchIndex).toMatch(/shouldNoIndexSearchVariant\(/)
     expect(searchIndex).toMatch(/appendIndexableSearchParams\(/)
     expect(searchPage).toMatch(/shouldNoIndexSearchVariant\(/)
-    expect(blogIndex).toMatch(/shouldNoIndexBlogIndex\(/)
+    expect(blogIndexView).toMatch(/shouldNoIndexBlogIndex\(/)
+    for (const route of [
+      'app/blog/page.tsx',
+      'app/blog/category/[category]/page.tsx',
+      'app/blog/page/[n]/page.tsx',
+      'app/blog/category/[category]/page/[n]/page.tsx',
+    ]) {
+      expect(readRouteFile(route)).toMatch(/blogIndexMetadata\(/)
+    }
   })
 })

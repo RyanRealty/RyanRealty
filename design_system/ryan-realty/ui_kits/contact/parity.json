@@ -2,7 +2,7 @@
   "route": "app/contact/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md, built from components/site/v3. THIS FILE BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat five-step contact wizards and generic 'get in touch' pages: one-screen V3Ask, a reach control with one dominant call door carrying a live hours state, and the brokers who answer shown as photographs rather than a flat hairline list.",
-  "note": "SITE-48 2026-09-09. Order is Breadcrumb, Quiet (H1 Call, text, or write), V3Doors #reach as a REACH CONTROL (one call door at display scale with the V3OnDuty live hours under it, then text, email and the calendar as lighter links), V3Ask (one screen, every field, one button), AboutFaces (who answers \u2014 the same roster primitive /team and /about use, replacing the flat V3Ledger row the 2026-09-08 evaluator called 'a flat hairline row \u2026 give it visual weight'), V3Answers, Footer. Consent checkbox is padded to --v3-tap on this route without changing SMS_CONSENT_TEXT. The live state is PUBLISHED HOURS, never a reply time: SITE-09's response clock is still unproven and its answered ratio is a backlog, not a promise.",
+  "note": "SITE-48 2026-09-09. Order is Breadcrumb, Quiet (H1 Call, text, or write), V3Doors #reach as a REACH CONTROL (one call door at display scale with the V3OnDuty live hours under it, then text, email and the calendar as lighter links), V3Ask (one screen, every field, one button), AboutFaces (who answers — the same roster primitive /team and /about use, replacing the flat V3Ledger row the 2026-09-08 evaluator called 'a flat hairline row … give it visual weight'), V3Answers, Footer. Consent checkbox is padded to --v3-tap on this route without changing SMS_CONSENT_TEXT. The live state is PUBLISHED HOURS, never a reply time: SITE-09's response clock is still unproven and its answered ratio is a backlog, not a promise.",
   "requiredComponents": [
     {
       "name": "V3SectionTracker",
@@ -41,12 +41,12 @@
     },
     {
       "name": "AboutFaces",
-      "section": "Who answers, headingLevel 2 \u2014 the same roster primitive /team and /about use, with the canonical broker cutouts and their reach chips. No record figures here: this route is dynamic and the per-broker MLS reads belong on the two cached pages.",
+      "section": "Who answers, headingLevel 2 — the same roster primitive /team and /about use, with the canonical broker cutouts and their reach chips. No record figures here: this route is dynamic and the per-broker MLS reads belong on the two cached pages.",
       "blocking": true
     },
     {
       "name": "V3OnDuty",
-      "section": "The live state on the reach control: published booking hours against the Pacific clock, from crm_company_settings.booking_hours \u2014 the same rows /book offers time from. NEVER a reply-time figure (SITE-09, V3OnDuty.view.ts).",
+      "section": "The live state on the reach control: published booking hours against the Pacific clock, from crm_company_settings.booking_hours — the same rows /book offers time from. NEVER a reply-time figure (SITE-09, V3OnDuty.view.ts).",
       "blocking": true
     }
   ],
@@ -75,7 +75,7 @@
     },
     {
       "name": "V3Ledger",
-      "reason": "The brokers band was a flat hairline row per broker with no visual encoding \u2014 the 2026-09-08 evaluator's own finding. AboutFaces does that job on every other page; a second, flatter way of listing the same three people is how one site becomes two (TASTE.md consistency)."
+      "reason": "The brokers band was a flat hairline row per broker with no visual encoding — the 2026-09-08 evaluator's own finding. AboutFaces does that job on every other page; a second, flatter way of listing the same three people is how one site becomes two (TASTE.md consistency)."
     }
   ],
   "removedComponents": [
@@ -95,7 +95,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-09",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate Sonnet evaluator agent, SITE-48 pass three, contact page class \u2014 one call, three independent scorings of the same two shots, run against the rubric table in design_system/public/TASTE.md and asked explicitly whether a contact list is the first content of the page",
+    "evaluator": "separate Sonnet evaluator agent on the MERGED page — three rounds. The 2026-09-09 merge of main (SITE-48) into claude/run-loop-w8f3ep (SITE-40) produced a fold neither committed receipt described: main's reach control and brokers band, with SITE-40's principal-broker door and its sourced 5.0 in the opening. Round one on that merged fold scored 58 and named two medium defects — the broker row and the office row were \"the same component instanced twice\", and ~115px of empty cream sat between the office row and the next section rule. Round two (the office folded to one inline secondary line, the inert full-bar ratio meter dropped, the inline label stopped wrapping at 375) scored 62, tied the bar, and named the dead space again as \"an artifact of section padding stacking rather than an intentional editorial pause\". Round three, after the seam fix, is this receipt. Each round: one call, three independent scorings of the same two shots, no code read and no live page opened. The builder ran on Opus 5 and did not grade its own page.",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
@@ -109,19 +109,19 @@
       "states": [
         "default"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, against the lane's own dev server before the push"
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, against next dev on the merged tree before the push"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/contact/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/contact/shots/mobile375.png"
     },
-    "shotsHash": "sha256:6a33c010e9e12ef34f81572e06025e0e075645ac580f2c209d677001037cfc32",
+    "shotsHash": "sha256:0429de75df3cc47c4b501d42d54fab22f3a71d7ab4200d06d0bc17fa85853030",
     "scores": [
-      58,
-      59,
-      61
+      65,
+      66,
+      68
     ],
-    "score": 59,
+    "score": 66,
     "breakdown": {
       "design": 18,
       "originality": 14,
@@ -129,42 +129,72 @@
       "craft": 11,
       "honesty": 8
     },
-    "beats": "Beats a static brokerage contact page (a form and a phone number) on one checkable thing: an open/closed state computed from our published booking hours against the clock, traced to the same crm_company_settings.booking_hours rows /book fills its calendar from, so a reader can verify it in one tap. The evaluator called that a real but modest edge and declined to claim a page-beating win, and that is how it is recorded here.",
+    "beats": "The giant tabular phone number and the sourced Google-reviews disclosure are the two moments a reader would screenshot. The gain over the 62 bar is incremental, not decisive — a contact page carries little data to work with.",
     "contactListIsFirstContent": false,
     "contactListAnswer": "The V3Quiet hero: eyebrow, H1 'Call, text, or write', one service-area sentence and an Office address row. Legitimate hero content, not an undifferentiated list; the reach control itself does not start until the second section.",
     "defects": [
       {
-        "section": "#reach live state",
-        "severity": "craft",
-        "finding": "At 1440x900 the \"Open now, until 5:00 pm\" chip and its source disclosure are clipped at the bottom edge of the first viewport, so the page's one live element is only half-legible on first paint."
+        "section": "Hero header (below the breadcrumb rule, above the eyebrow)",
+        "severity": "minor",
+        "finding": "Roughly 130-140px of empty cream between the breadcrumb rule and the eyebrow, pushing the phone number further down without adding meaning.",
+        "primitive": "V3Quiet section top padding (--v3-section-pad)",
+        "fix": "Tighten the top padding under the breadcrumb rule, or give the space a supporting element.",
+        "viewport": "desktop",
+        "owner": "the /contact composition node — the seam BELOW this section was fixed in this pass (a Quiet handing to a Doors band closes on --v3-space-xl); the top pad is the shared section token and moving it moves 118 pages."
       },
       {
-        "section": "#contact intro (V3Quiet)",
-        "severity": "taste",
-        "finding": "Two-thirds of the desktop fold is eyebrow, heading, one paragraph and an address row on cream, with no image, mark or figure \u2014 the default stacked-section shape. NOT TOUCHED this pass: V3Quiet is held by SITE-40 and its spacing is that item's to change."
+        "section": "Hero intro paragraph",
+        "severity": "moderate",
+        "finding": "The community-list body copy reads noticeably lighter than the surrounding navy; at this size it is borderline for AA against the cream ground.",
+        "primitive": "--v3-ink-muted in components/site/v3/tokens.css",
+        "fix": "Measure the rendered ratio against #faf8f4 and darken the token if it is under 4.5:1.",
+        "viewport": "desktop",
+        "owner": "the design system — this token sets muted body copy on every public page, so it is one change and one re-capture of every class, not a /contact fix."
       },
       {
-        "section": "#reach light doors",
-        "severity": "interaction",
-        "finding": "Text, Email and Schedule are static rows; only the primary door carries a live state. The Schedule door could read the next open slot from lib/booking/slots.ts."
+        "section": "Broker row vs the Send-a-text door",
+        "severity": "minor",
+        "finding": "Both use the left-content plus far-right chevron shape, so the shape appears twice in one viewport.",
+        "primitive": "V3Quiet door row and V3Doors door",
+        "fix": "Give the broker row a profile-card treatment without the arrow chrome so the chevron row appears once.",
+        "viewport": "desktop",
+        "owner": "the /contact composition node — the two rows are different primitives in different sections; reconciling them is a primitive change, not a page edit."
+      },
+      {
+        "section": "Office address row",
+        "severity": "minor",
+        "finding": "At 375 the address strands \"OR 97703\" on its own short line.",
+        "primitive": "V3Quiet inline door detail",
+        "fix": "Break after \"Ave #2,\" so the wrap falls in two balanced halves.",
+        "viewport": "mobile375",
+        "owner": "open — round two already cut this from three lines to two by stopping the label from wrapping."
+      },
+      {
+        "section": "Whole page",
+        "severity": "moderate",
+        "finding": "A static first-viewport capture cannot confirm the loading, empty and error states the rubric requires.",
+        "primitive": "n/a — a verification gap in the instrument, not a rendered defect",
+        "fix": "Capture the loading/empty/error states for the review figure and the send actions in a states pass.",
+        "viewport": "both",
+        "owner": "the taste instrument — scripts/take-route-shots.mjs takes --states; no class has used it for error states yet."
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-08",
-      "score": 49,
+      "evaluatedAt": "2026-09-09",
+      "score": 62,
       "scores": [
-        46,
-        49,
-        54
+        62,
+        59,
+        66
       ],
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "not recorded \u2014 the cross-class table predates per-row shot hashes",
-      "source": "design_system/public/taste-table.json"
+      "shotsHash": "sha256:2beff7986e208bc90659b199ef745d266b73064add89c673f43c1c343a30e42e",
+      "source": "the route receipt committed on claude/run-loop-w8f3ep at 1ea07155 (SITE-40) — the higher of the two marks this merge brought together; SITE-48 scored the same route 59 on main."
     },
-    "rebaselineReason": "The prior mark is the cross-class taste table of 2026-09-08 (design_system/public/taste-table.json), which is the instrument SITE-48's accept test names. Same evaluatorModel and same rubricVersion; the shots are new captures of a rebuilt page, so shotsHash differs and the mark re-baselines rather than \"rises\". The raw numbers, plainly: before 49 (raw [46, 49, 54]), after 59 (raw [58, 59, 61]), a rise of 10 points on the same rubric and the same evaluator model. The shotsHash is the only identity key that differs.",
-    "verdict": "The reach control has a hierarchy and a live state: one call door at display scale carrying the published-hours clock and its trace, three lighter links beside it, and the phone number printed once instead of twice. The hero above it is still the shared Quiet, and it is still what fills most of the first screen.",
+    "rebaselineReason": "shotsHash: the prior mark is the SITE-40 route receipt (62) on the SAME evaluatorModel (claude-sonnet-5) and the SAME rubricVersion (v1-2026-09-08), but on shots of a page that no longer exists — the merge replaced its reach section and its brokers band with SITE-48's. The shots here are of the merged page. Both marks this merge brought together are named and both are cleared: 62 (SITE-40) and 59 (SITE-48) -> 66.",
+    "verdict": "A disciplined, quiet, on-brand execution of a low-ceiling page. Dead space above the hero, a borderline-contrast intro paragraph, a repeated chevron-row shape and an unverified set of loading/empty/error states keep it short of exceptional.",
     "priorRouteMark": {
       "evaluatedAt": "2026-09-08",
       "score": 54,
@@ -201,6 +231,15 @@
           71
         ]
       }
-    }
+    },
+    "criteria": {
+      "designQuality": 22,
+      "originality": 20,
+      "interaction": 8,
+      "craft": 10,
+      "honestyFunction": 6
+    },
+    "tells": [],
+    "dullest": "The office address row — a pin and a bare mailing address is the one moment that reads as a generic directory listing rather than the editorial voice the rest of the page carries."
   }
 }

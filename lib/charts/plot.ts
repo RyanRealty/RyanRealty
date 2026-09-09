@@ -774,6 +774,68 @@ export function buildPairPlot(bars: readonly PairBarIn[]): PairPlot | null {
   }
 }
 
+/* ==========================================================================
+   SPARK: one short run of values as a line, no axes, no labels.
+
+   The Ledger's reveal draws twelve months of closes under a row this way
+   (site queue SITE-52). It is the smallest honest chart: the reader gets the
+   shape of the run and its endpoint, and the figures stay in the row's text
+   and its trace. Null is a month the source did not publish; it BREAKS the
+   line (the path lifts and restarts) rather than being drawn as zero, and a
+   run with fewer published points than `minPoints` is not drawn at all
+   (DATA_GRAPHICS.md small-n rule: omit, do not pad).
+
+   Absolute geometry in the caller's box, not percent: a spark is rendered at
+   one fixed size so its endpoint mark stays a circle and its stroke a stroke.
+   ========================================================================== */
+
+export type SparkPlot = {
+  kind: 'spark'
+  /** SVG path data: one M…L… run per unbroken stretch of published points. */
+  d: string
+  /** The last published point, for the endpoint mark. */
+  last: { x: number; y: number } | null
+  /** Published points drawn. */
+  n: number
+  min: number
+  max: number
+}
+
+export function buildSparkPlot(
+  values: readonly (number | null)[],
+  opts: { w: number; h: number; pad?: number; minPoints?: number },
+): SparkPlot | null {
+  const pad = opts.pad ?? 2
+  const minPoints = opts.minPoints ?? 2
+  const points: { i: number; v: number }[] = []
+  values.forEach((v, i) => {
+    if (typeof v === 'number' && isFiniteNumber(v)) points.push({ i, v })
+  })
+  if (values.length < 2 || points.length < Math.max(2, minPoints)) return null
+  let min = Infinity
+  let max = -Infinity
+  for (const p of points) {
+    if (p.v < min) min = p.v
+    if (p.v > max) max = p.v
+  }
+  const span = max - min
+  const innerW = Math.max(0, opts.w - pad * 2)
+  const innerH = Math.max(0, opts.h - pad * 2)
+  const x = (i: number) => pad + (i / (values.length - 1)) * innerW
+  // A flat run sits on the middle line rather than the floor: it is not zero.
+  const y = (v: number) => (span > 0 ? pad + innerH - ((v - min) / span) * innerH : pad + innerH / 2)
+  let d = ''
+  let prev = -2
+  for (const p of points) {
+    const px = x(p.i).toFixed(1)
+    const py = y(p.v).toFixed(1)
+    d += p.i === prev + 1 ? ` L${px} ${py}` : `${d ? ' ' : ''}M${px} ${py}`
+    prev = p.i
+  }
+  const tail = points[points.length - 1]!
+  return { kind: 'spark', d, last: { x: x(tail.i), y: y(tail.v) }, n: points.length, min, max }
+}
+
 /** One mark on a strip. `at` is the x value; every string is caller-formatted. */
 export type StripPointIn = {
   /** Stable id. Never an address — the caller decides what is safe to carry. */

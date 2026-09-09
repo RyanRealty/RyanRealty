@@ -262,6 +262,19 @@ export type {
   V3AlertsTrap,
 } from './V3AlertsStrip.client'
 
+/**
+ * The place-page door (SITE-03, 2026-09-08): beside the place H1, ONE live fact
+ * — the active count — as a filled plate that opens that place's own
+ * pre-filtered inventory. ONE fact at every grain: no median, no months of
+ * supply, no days-to-pending (unpublishable below city grain,
+ * lib/market/geo-grain-trust.ts) and no verdict either, because the verdict's
+ * one home is the opening's caption. `publishPlaceDoor()` turns a face that
+ * publishPlaceFace() already produced into these props; the primitive
+ * classifies nothing and formats nothing.
+ */
+export { V3PlaceDoor } from './V3PlaceDoor'
+export type { V3PlaceDoorProps } from './V3PlaceDoor'
+
 export type { V3AskProps, V3AskField, V3AskOption, V3AskResult } from './V3Ask.client'
 
 export { V3ChartSwitch } from './V3ChartSwitch.client'
@@ -328,7 +341,11 @@ export type {
   V3LedgerFigureRow,
   V3LedgerPlainRow,
   V3LedgerRows,
+  V3LedgerReveal,
 } from './V3Ledger'
+export { V3_LEDGER_SPARK_MIN } from './V3Ledger'
+/** The Ledger's phone hold (SITE-52); mounted by V3Ledger itself, exported so the barrel gate sees one register. */
+export { V3LedgerRevealIsland, V3_LEDGER_HOLD_MS } from './V3LedgerReveal.client'
 
 /**
  * The listing unit for Ledger-register search surfaces: one live listing as a
@@ -428,6 +445,8 @@ export type {
   V3QuietFact,
   V3QuietChips,
   V3QuietFold,
+  V3QuietFigure,
+  V3QuietMark,
 } from './V3Quiet'
 
 /* -------------------------------------------------------------------------- */

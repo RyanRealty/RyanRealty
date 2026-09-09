@@ -206,9 +206,12 @@ export function buildGuideRows(posts: BlogPostCard[]): V3LedgerPlainRow[] {
     const slug = post.slug?.trim()
     if (!title || !slug) continue
     const excerpt = post.excerpt?.trim()
+    // SITE-52: the eyebrow is already "Guides and insights", so a 'Guide'
+    // fallback would only repeat it — the published date is the context
+    // line worth printing, and a post with none carries no when at all.
     rows.push({
       href: `/blog/${slug}`,
-      when: v3Text(post.publishedAt ? formatDate(post.publishedAt) : 'Guide'),
+      ...(post.publishedAt ? { when: v3Text(formatDate(post.publishedAt)) } : {}),
       what: v3Text(title),
       detail: excerpt ? v3Text(excerpt) : undefined,
       id: slug,

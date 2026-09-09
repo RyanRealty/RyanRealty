@@ -30,9 +30,14 @@
  *   · Routes not in ROUTES below. It samples the public surface, it does not
  *     crawl all 118 pages, and it renders one instance of each templated route.
  *   · Anything inside an <iframe> — main frame only.
- *   · Controls that only exist after an interaction: contents of a closed
- *     disclosure or menu, dialogs, sheets, map info windows, hover-revealed UI.
- *     (Open-by-default <details> and rendered-but-offscreen nav ARE measured.)
+ *   · Controls that only exist after an interaction: dialogs, sheets, map info
+ *     windows, hover-revealed UI, and the contents of a closed disclosure whose
+ *     trigger is under the floor. A closed disclosure whose trigger IS full
+ *     size is opened for one synchronous measurement and its controls are
+ *     recorded at their OWN box (see `disclosedBox`); one that measures under
+ *     the floor once revealed is still not held to it here, because it is not
+ *     presented at rest. (Open-by-default <details> and rendered-but-offscreen
+ *     nav ARE measured.)
  *   · Non-default states: :hover, :active, invalid/error, signed-in variants.
  *   · Viewports other than 390 and 1440, and zoom levels other than 100%.
  *   · Effective hit area after z-order. It measures the element's own border
@@ -164,7 +169,7 @@ const THIRD_PARTY_ROOTS = ['.gm-style', '.gmnoprint', '.gm-svpc', 'nextjs-portal
  * (visibility, aria-hidden ancestry, accessible name, inline-in-a-sentence)
  * happens here; the equivalence pairing happens in node, over the whole page.
  */
-function collectControls(selector, thirdPartyRoots) {
+function collectControls(selector, thirdPartyRoots, minPx) {
   const norm = (s) =>
     String(s ?? '')
       .toLowerCase()
@@ -286,6 +291,87 @@ function collectControls(selector, thirdPartyRoots) {
     return clipped && r.width <= 2 && r.height <= 2
   }
 
+  const resolveHref = (el) => {
+    const hrefAttr = el.getAttribute('href') ?? ''
+    if (!hrefAttr) return ''
+    try {
+      const u = new URL(hrefAttr, location.href)
+      return u.origin === location.origin ? u.pathname + u.search : u.href
+    } catch {
+      return hrefAttr
+    }
+  }
+
+  /**
+   * WCAG 2.5.8 "Equivalent", one step removed. A control that is not
+   * presented because it sits inside a CLOSED disclosure is reached through
+   * that disclosure's trigger: a visible element carrying
+   * aria-expanded="false" and an aria-controls that names an ancestor of the
+   * control. When that trigger measures >= minPx both ways, every target on
+   * the way to the control is full size, and the control may stand as a
+   * partner — at ITS OWN measured box, never the trigger's.
+   *
+   * The atlas's folded chips are the case (SITE-07, 2026-09-09): eight chips
+   * and one "+ N more" chip at 44px, the rest behind it, each still the
+   * full-size partner of a polygon nobody could tap. The first version of
+   * this recorded a hidden control at the trigger's size without measuring
+   * it, which let any control behind a full-size trigger — every link in the
+   * closed phone drawer, on every route — excuse a small visible control it
+   * happened to share an href or a name with. So the disclosure is opened for
+   * one synchronous measurement and closed again before anything paints, and
+   * a control that measures under minPx once revealed earns nothing.
+   */
+  const disclosureOwners = (el) => {
+    for (const trigger of document.querySelectorAll('[aria-expanded="false"][aria-controls]')) {
+      const ids = (trigger.getAttribute('aria-controls') ?? '').split(/\s+/).filter(Boolean)
+      const owners = ids.map((id) => document.getElementById(id)).filter((n) => n && n.contains(el))
+      if (owners.length === 0) continue
+      if (trigger.closest('[aria-hidden="true"]')) continue
+      const tr = trigger.getBoundingClientRect()
+      if (tr.width === 0 || tr.height === 0) continue
+      const tcs = getComputedStyle(trigger)
+      if (tcs.display === 'none' || tcs.visibility === 'hidden' || Number(tcs.opacity) < 0.05) continue
+      if (tcs.pointerEvents === 'none') continue
+      const box = hitBox(trigger, tr)
+      if (box.w >= minPx && box.h >= minPx) return owners
+    }
+    return null
+  }
+
+  /**
+   * The control's own box with its disclosure open. The owners are shown by
+   * dropping the `hidden` attribute (the UA rule) and setting an !important
+   * inline `display: revert` (which rolls back the author rule a class put
+   * there, to the UA default); both are restored in `finally`, inside one
+   * evaluate, so no frame is painted between. An ancestor hidden some other
+   * way keeps the control at zero, which reads as not seen.
+   */
+  const disclosedBox = (el, owners) => {
+    const saved = owners.map((o) => ({
+      o,
+      hidden: o.hasAttribute('hidden'),
+      display: o.style.getPropertyValue('display'),
+      priority: o.style.getPropertyPriority('display'),
+    }))
+    try {
+      for (const st of saved) {
+        st.o.removeAttribute('hidden')
+        st.o.style.setProperty('display', 'revert', 'important')
+      }
+      const r = el.getBoundingClientRect()
+      if (r.width === 0 || r.height === 0) return null
+      const cs = getComputedStyle(el)
+      if (cs.display === 'none' || cs.visibility === 'hidden') return null
+      return hitBox(el, r)
+    } finally {
+      for (const st of saved) {
+        if (st.hidden) st.o.setAttribute('hidden', '')
+        if (st.display) st.o.style.setProperty('display', st.display, st.priority)
+        else st.o.style.removeProperty('display')
+      }
+    }
+  }
+
   const out = []
   for (const el of document.querySelectorAll(selector)) {
     // Roving-tabindex controls are real (the atlas). A -1 that is not part of a
@@ -307,6 +393,29 @@ function collectControls(selector, thirdPartyRoots) {
     }
     if (el.closest('[aria-hidden="true"]')) continue // not exposed, not a control
     if (el.hasAttribute('disabled') || el.getAttribute('aria-disabled') === 'true') continue
+    // Behind a closed disclosure whose trigger is full size: opened for one
+    // measurement and recorded at its OWN box (see disclosedBox). A descendant
+    // of a display:none box keeps its own computed display, so the zero rect
+    // is the tell as often as the display value is.
+    const unpresented =
+      cs.display === 'none' || cs.visibility === 'hidden' || r.width === 0 || r.height === 0
+    const owners = unpresented ? disclosureOwners(el) : null
+    const via = owners ? disclosedBox(el, owners) : null
+    if (via && via.w >= minPx && via.h >= minPx) {
+      const viaName = accName(el)
+      out.push({
+        sig: signature(el),
+        tag,
+        w: Math.round(via.w * 10) / 10,
+        h: Math.round(via.h * 10) / 10,
+        name: viaName,
+        key: norm(viaName),
+        href: resolveHref(el),
+        inline: false,
+        via: 'disclosure',
+      })
+      continue
+    }
     if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) < 0.05) continue
     if (cs.pointerEvents === 'none') continue
     if (r.width === 0 || r.height === 0) continue
@@ -453,7 +562,7 @@ async function main() {
           // `collectControls` lives in this file so it reads next to the rules
           // it encodes; it is serialised into the page, not duplicated there.
           const found = await page.evaluate(
-            `(${collectControls.toString()})(${JSON.stringify(CONTROL_SELECTOR)}, ${JSON.stringify(THIRD_PARTY_ROOTS)})`,
+            `(${collectControls.toString()})(${JSON.stringify(CONTROL_SELECTOR)}, ${JSON.stringify(THIRD_PARTY_ROOTS)}, ${MIN_PX})`,
           )
           const usable = found.filter((c) => !c.skip).length
           if (usable < MIN_CONTROLS_PER_PAGE) {

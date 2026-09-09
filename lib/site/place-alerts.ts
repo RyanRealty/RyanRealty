@@ -22,6 +22,14 @@
  * weight, the same form the withheld path takes; the numeral is reserved for
  * counts at or above it.
  *
+ * ONE FACT, ONE SENTENCE (evaluator, 2026-09-08). The callout and the sticky
+ * repeat used to say the same count two ways — "came on the market in Bend" and
+ * "listed in Bend" — which reads as two figures and makes a visitor check. Both
+ * now render from ONE builder, `placeAlertsClaimParts`: the sticky renders the
+ * parts (so the place name can stay whole at 375), the callout joins them, and
+ * the test beside this file asserts the join is the claim, character for
+ * character.
+ *
  * THE PROMISE says what the engine sends, and it lives IN EACH BINDER, not
  * here: ci:alert-capture-disclosure reads the file that calls the capture
  * action for a frequency sentence and an unsubscribe sentence, so the
@@ -87,6 +95,11 @@ export type PlaceAlertsCopy = {
   scopeLine: string | null
   /** The scope the promise names: "Bend", or "Bend, Awbrey Butte included". */
   scopePhrase: string
+  /**
+   * The scope the PROMISE names, or null when the scope line already says it:
+   * the two sit 200px apart and one statement is enough (evaluator, round 3).
+   */
+  promiseScope: string | null
   submitLabel: string
   browseLabel: string
   sent: { heading: string; body: string }
@@ -110,17 +123,39 @@ function houses(n: number): string {
   return n === 1 ? 'house' : 'houses'
 }
 
+/**
+ * THE ONE SENTENCE, in three parts. The sticky repeat renders the parts so the
+ * place name never breaks across lines; the callout joins them. Neither mount
+ * writes its own wording, so a visitor who meets both meets one fact.
+ *
+ * The numeral is NOT in `before` when the count earns a display figure: the
+ * callout sets it in the register's numeral face and the sticky sets it inline,
+ * and both put it immediately before this sentence.
+ */
+export function placeAlertsClaimParts(
+  placeName: string,
+  scopeName: string,
+  n: number | null,
+): PlaceAlertsStickyClaim {
+  if (n == null) {
+    return { before: 'New', place: scopeName, after: 'listings, by email, as they come on the market.' }
+  }
+  const after = 'in the last 30 days.'
+  if (earnsDisplayFigure(n)) return { before: `${houses(n)} came on the market in`, place: placeName, after }
+  return { before: `${formatCount(n)} ${houses(n)} came on the market in`, place: placeName, after }
+}
+
+/** The same sentence as one string, for the mount that has room to wrap it. */
+export function joinClaimParts(parts: PlaceAlertsStickyClaim): string {
+  return `${parts.before} ${parts.place} ${parts.after}`
+}
+
 export function placeAlertsClaim(placeName: string, scopeName: string, n: number | null): string {
-  if (n == null) return `New ${scopeName} listings, by email, as they come on the market.`
-  const tail = `came on the market in ${placeName} in the last 30 days.`
-  if (earnsDisplayFigure(n)) return `${houses(n)} ${tail}`
-  return `${formatCount(n)} ${houses(n)} ${tail}`
+  return joinClaimParts(placeAlertsClaimParts(placeName, scopeName, n))
 }
 
 export function placeAlertsStickyClaim(placeName: string, scopeName: string, n: number | null): PlaceAlertsStickyClaim {
-  if (n == null) return { before: 'New', place: scopeName, after: 'listings by email' }
-  if (earnsDisplayFigure(n)) return { before: `${houses(n)} listed in`, place: placeName, after: 'in the last 30 days' }
-  return { before: `${formatCount(n)} ${houses(n)} listed in`, place: placeName, after: 'in the last 30 days' }
+  return placeAlertsClaimParts(placeName, scopeName, n)
 }
 
 /** What the promise names: the scope the filter really sends, with the place folded in when it is narrower. */
@@ -128,7 +163,46 @@ export function placeAlertsScope(placeName: string, scopeName: string): string {
   return scopeName === placeName ? scopeName : `${scopeName}, ${placeName} included`
 }
 
-/** "Tetherow, Triple or Tetherow Resort" */
+/** Letters and digits only, so "Mt. Bachelor Village" and "Mt Bachelor Village" are one name. */
+function nameKey(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '')
+}
+
+/**
+ * THE NAMES A VISITOR CAN READ AS THIS PLACE (evaluator, 2026-09-08).
+ *
+ * The alert filter expands a community into its full registry alias set
+ * (lib/subdivision-aliases getSubdivisionMatchNames), and that set carries plat
+ * fragments as well as place names: Tetherow's is `["Tetherow", "Triple",
+ * "Tetherow Resort"]`, where "Triple" is a recorded-plat fragment
+ * (data/resort-communities.json subdivision_aliases). Printed in a sentence a
+ * buyer reads, "...under Tetherow, Triple or Tetherow Resort" reads as a
+ * corrupt row, not as coverage.
+ *
+ * So the SENTENCE lists only the names that read as this place — a name whose
+ * letters contain the place's, or that the place's contain (so "Black Butte"
+ * survives under "Black Butte Ranch") — deduplicated on punctuation. THE QUERY
+ * IS UNTOUCHED: the binders pass the full match set to the capture action and
+ * nothing here narrows what the filter matches. The line the reader gets is
+ * still true of every name it names; it simply stops reciting fragments.
+ */
+export function readableMatchNames(placeName: string, names: readonly string[]): string[] {
+  const place = nameKey(placeName)
+  if (!place) return []
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const raw of names) {
+    const name = raw.trim()
+    const key = nameKey(name)
+    if (!name || key.length < 3 || seen.has(key)) continue
+    if (!key.includes(place) && !place.includes(key)) continue
+    seen.add(key)
+    out.push(name)
+  }
+  return out
+}
+
+/** "Tetherow or Tetherow Resort" */
 export function joinNames(names: readonly string[]): string {
   const list = names.map((s) => s.trim()).filter(Boolean)
   if (list.length <= 1) return list[0] ?? ''
@@ -149,11 +223,29 @@ export function placeAlertsScopeLine(input: {
   if (input.scopeName !== input.placeName) {
     return `The alert covers all of ${input.scopeName}, ${input.placeName} included.`
   }
-  const names = (input.matchNames ?? []).map((s) => s.trim()).filter(Boolean)
+  const names = readableMatchNames(input.placeName, input.matchNames ?? [])
   if (names.length > 1) {
     return `The alert covers every listing the MLS files under ${joinNames(names)}.`
   }
   return null
+}
+
+/**
+ * THE STRIP'S ONE LINE, and it is the line that carries consent, so where the
+ * alert sends wider than the figure counts the SCOPE goes first and the cadence
+ * folds in behind it (evaluator, 2026-09-08: the callout carried the scope and
+ * the sticky repeat dropped it for cadence, so a visitor who only ever met the
+ * strip never learned the alert was wider than the count). Where scope equals
+ * the place — the city class — there is nothing to reconcile and the line stays
+ * the cadence sentence.
+ *
+ * `cadence` stays a literal in the binder that calls the capture action:
+ * ci:alert-capture-disclosure reads THAT file for a frequency sentence and an
+ * unsubscribe sentence.
+ */
+export function placeAlertsStickyNote(scopeLine: string | null, cadence: string): string {
+  const scope = (scopeLine ?? '').trim()
+  return scope ? `${scope} ${cadence.trim()}` : cadence.trim()
 }
 
 /**
@@ -183,17 +275,20 @@ export function placeAlertsSource(input: {
 
 export function placeAlertsCopy(input: PlaceAlertsInput): PlaceAlertsCopy {
   const n = publishableNewCount(input.newCount30d)
+  const scopeLine = placeAlertsScopeLine({
+    placeName: input.placeName,
+    scopeName: input.scopeName,
+    matchNames: input.matchNames,
+  })
+  const scopePhrase = placeAlertsScope(input.placeName, input.scopeName)
   return {
     eyebrow: `New listings · ${input.placeName}`,
     count: earnsDisplayFigure(n) ? formatCount(n) : null,
     claim: placeAlertsClaim(input.placeName, input.scopeName, n),
     stickyClaim: placeAlertsStickyClaim(input.placeName, input.scopeName, n),
-    scopeLine: placeAlertsScopeLine({
-      placeName: input.placeName,
-      scopeName: input.scopeName,
-      matchNames: input.matchNames,
-    }),
-    scopePhrase: placeAlertsScope(input.placeName, input.scopeName),
+    scopeLine,
+    scopePhrase,
+    promiseScope: scopeLine ? null : scopePhrase,
     submitLabel: 'Email me each one',
     browseLabel: `See the newest ${input.placeName} listings`,
     sent: {

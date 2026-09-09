@@ -38,6 +38,8 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { buildSparkPlot } from '@/lib/charts/plot'
+import { V3LedgerRevealIsland } from './V3LedgerReveal.client'
 import {
   V3Button,
   V3Eyebrow,
@@ -83,6 +85,15 @@ type V3LedgerRowBase = {
    * is not a when.
    */
   when?: V3Text
+  /**
+   * The calendar tile a `walk` row leads with: the day as a display numeral,
+   * the weekday over it, the month under it. THREE PREFORMATTED STRINGS, never
+   * a date: the caller splits the day with lib/format/date so the tile and
+   * the trace agree and this primitive formats nothing. Read only by
+   * `layout="walk"`; the other layouts print `when` alone. When it is
+   * present, `when` carries what is left of the moment (the hours).
+   */
+  date?: { weekday: V3Text; day: V3Text; month: V3Text }
   /** The row's name, and the loudest part of its link text. */
   what: V3Text
   /** The second line under the name: beds and baths, a subdivision, a status. */
@@ -103,6 +114,19 @@ type V3LedgerRowBase = {
    */
   media?: { src: string }
   /**
+   * What a hover (desktop), a keyboard focus, or a tap-and-hold (phone) shows
+   * about this row that its resting text does not: the months-of-supply
+   * verdict, a small-n reason, a twelve-month run of closes as a line. From
+   * the caller's data, already formatted, with its trace in the list's
+   * `source`. Hidden at rest so the list stays a list, and drawn over the top
+   * of the next row rather than in the flow, so nothing moves under the cursor.
+   *
+   * The evaluator's finding on the city index (taste table 2026-09-08):
+   * "nothing in the visible fold rewards a hover, tap, scrub, or toggle with
+   * more data; every row is a static link to another page."
+   */
+  reveal?: V3LedgerReveal
+  /**
    * Only when the row text is shorter than the name a screen reader needs. Never a
    * substitute for `what`.
    */
@@ -117,6 +141,30 @@ type V3LedgerRowBase = {
    */
   newTab?: boolean
 }
+
+/**
+ * The reveal: one line and, optionally, one run of numbers drawn as a line.
+ *
+ * `series` is Y GEOMETRY ONLY, oldest first, never written on screen (the
+ * numbers a reader gets are the row's `value` and the `line`). A null entry is
+ * a month the source did not publish; it breaks the line rather than being
+ * drawn as zero. Fewer than V3_LEDGER_SPARK_MIN published points draws no
+ * line at all (DATA_GRAPHICS.md small-n rule: omit, do not pad).
+ */
+export type V3LedgerReveal = {
+  /** "Seller's market · 3.8 months of supply", "Too few closes for a supply reading". */
+  line: V3Text
+  series?: readonly (number | null)[]
+  /** What the series counts, for the accessible name: "closed sales by month, last 12 months". */
+  seriesLabel?: V3Text
+}
+
+/** Published points a twelve-month run needs before it is drawn (DATA_GRAPHICS.md). */
+export const V3_LEDGER_SPARK_MIN = 6
+
+/** The spark's box. Fixed, so the endpoint mark stays a circle and the stroke stays 1.5px. */
+const SPARK_W = 120
+const SPARK_H = 24
 
 /**
  * A row whose third column carries data: a price, a count, a percent, a delta.
@@ -200,6 +248,17 @@ type V3LedgerBase = {
   eyebrow?: V3Text
   /** One sentence under the heading when the list needs a stated basis. */
   note?: V3Text
+  /**
+   * A drawing under the note, before the rows: the one place a list's headline
+   * claim is drawn rather than said. The city index puts the region's months
+   * of supply here as V3Drawing's two bars (homes for sale against a month of
+   * sales) instead of "Balanced market at 4.9 months of supply" as a sentence,
+   * which is the form DATA_GRAPHICS.md names and the evaluator asked for.
+   *
+   * A ReactNode because the drawing carries its own claim, reading and source
+   * line; this primitive draws nothing itself and formats no figure in it.
+   */
+  drawing?: ReactNode
   /** The one ask this list earns, if it earns one. Ghost by default: the rows are the point. */
   action?: V3LedgerAction
   /**
@@ -219,9 +278,23 @@ type V3LedgerBase = {
   id?: string
   className?: string
   /**
-   * Visual rhythm only. Rows stay doors. Default `list` is the hairline
-   * column. Place extras use the others so activity, open houses, guides,
-   * and other cities are not four copies of one row.
+   * Visual rhythm only. Rows stay doors, and the list stays a `<ul>` of links.
+   * Default `list` is the hairline column. The place pages run three of the
+   * others back to back (activity, open houses, guides), and three sections
+   * that do three different jobs must look like three different things
+   * (SITE-07 quality pass, 2026-09-09: the evaluator saw "three names, one
+   * silhouette" when they differed by a thumb size and a date style):
+   *
+   *  - `pulse`    the live feed. A photo column: the newest event full-width,
+   *               then thumb + one line per row.
+   *  - `walk`     open houses as a date-led timeline. Each row leads with a
+   *               calendar tile built from `date` (weekday / day / month),
+   *               then the address and the hours; the rows hang off one left
+   *               hairline rule instead of sitting on horizontal hairlines.
+   *  - `magazine` guides as a card grid. Photo on top, label under it, detail
+   *               under that, hairline card edges; two columns from 40rem with
+   *               the first card spanning both, one column below.
+   *  - `places`   a photo grid of places, the figure under the name.
    */
   layout?: 'list' | 'pulse' | 'walk' | 'magazine' | 'places'
   /**
@@ -310,6 +383,7 @@ export function V3Ledger(props: V3LedgerProps) {
     headingLevel = 2,
     eyebrow,
     note,
+    drawing,
     source,
     updated,
     emptyMessage,
@@ -338,6 +412,18 @@ export function V3Ledger(props: V3LedgerProps) {
   const rows: readonly V3LedgerRow[] = props.rows
   const isEmpty = rows.length === 0
 
+  /**
+   * MEDIA IS ALL-OR-NONE PER LIST. A verified photo on four rows and nothing on
+   * three read as an unfinished data pull, not a rhythm (the evaluator's
+   * finding on the city index, 2026-09-08: "uneven row heights and a ragged
+   * left edge"). When any row carries a photo, every row without one carries
+   * the glyph: the same square, navy wash, the place's initial. A list with no
+   * photos at all stays a list of names — the glyph is not decoration added
+   * to every ledger, it is the honest state of a column that exists.
+   */
+  const anyMedia = layout !== 'walk' && rows.some((row) => Boolean(row.media))
+  const anyReveal = rows.some((row) => Boolean(row.reveal))
+
   // Unreachable through the type: the empty variant requires emptyMessage. Still
   // reachable from untyped JS, where the old behavior was `return null`: the whole
   // section vanished from the page the day a query came back empty, with no reason
@@ -363,6 +449,7 @@ export function V3Ledger(props: V3LedgerProps) {
         'v3-ledger',
         layout !== 'list' && `v3-ledger--${layout}`,
         encode === 'bar' && 'v3-ledger--encoded',
+        anyReveal && 'v3-ledger--reveal',
         className,
       )}
       aria-labelledby={headingId}
@@ -374,33 +461,75 @@ export function V3Ledger(props: V3LedgerProps) {
           {heading}
         </V3Heading>
         {note ? <p className="v3-ledger__note">{note}</p> : null}
+        {drawing ? <div className="v3-ledger__drawing">{drawing}</div> : null}
       </div>
 
       {isEmpty ? (
         <p className="v3-ledger__empty">{emptyMessage}</p>
       ) : (
+        <MaybeHold hold={anyReveal}>
         <ul className="v3-ledger__list">
-          {rows.map((row) => (
-            <li key={row.id ?? row.href} className="v3-ledger__item">
+          {rows.map((row) => {
+            /* A walk row carries no photo: the calendar tile is its mark, and
+               with a thumbnail beside the address the row was the pulse row
+               wearing a tile (the evaluator scored the two sections as one
+               shape twice, 2026-09-09). The caller may still pass media; it
+               is simply not drawn on this layout. */
+            const showMedia = Boolean(row.media) && layout !== 'walk'
+            const showGlyph = anyMedia && !showMedia
+            const spark =
+              row.reveal?.series && row.reveal.series.length > 0
+                ? buildSparkPlot(row.reveal.series, {
+                    w: SPARK_W,
+                    h: SPARK_H,
+                    pad: 2.5,
+                    minPoints: V3_LEDGER_SPARK_MIN,
+                  })
+                : null
+            return (
+              <li key={row.id ?? row.href} className="v3-ledger__item">
               <Link
                 href={row.href}
-                className={cn('v3-ledger__row', !row.when && 'v3-ledger__row--no-when')}
+                className={cn(
+                  'v3-ledger__row',
+                  !row.when && 'v3-ledger__row--no-when',
+                  layout === 'walk' && row.date && 'v3-ledger__row--tile',
+                )}
                 aria-label={row.ariaLabel}
                 target={row.newTab ? '_blank' : undefined}
                 rel={row.newTab ? 'noopener noreferrer' : undefined}
               >
+                {layout === 'walk' && row.date ? (
+                  /* The calendar tile: three already-formatted strings from
+                     the caller, read in document order as "Wed 10 Sep". */
+                  <span className="v3-ledger__tile">
+                    <span className="v3-ledger__tile-weekday">{row.date.weekday}</span>
+                    <span className="v3-ledger__tile-day">{row.date.day}</span>
+                    <span className="v3-ledger__tile-month">{row.date.month}</span>
+                  </span>
+                ) : null}
                 {row.when ? <span className="v3-ledger__when">{row.when}</span> : null}
                 <span
-                  className={cn('v3-ledger__what', row.media && 'v3-ledger__what--media')}
+                  className={cn(
+                    'v3-ledger__what',
+                    (showMedia || showGlyph) && 'v3-ledger__what--media',
+                  )}
                 >
-                  {row.media ? (
+                  {showGlyph ? (
+                    /* The glyph: the same square as the photo, in navy wash,
+                       carrying the initial. Decorative, like the photo. */
+                    <span className="v3-ledger__media v3-ledger__glyph" aria-hidden="true">
+                      {glyphOf(row.what)}
+                    </span>
+                  ) : null}
+                  {showMedia && row.media ? (
                     /* Plain img, not next/image: these are owned files under public/
                        and remote MLS photo URLs in the same column, and the row must
                        render identically for both without depending on image-host
                        configuration. Decorative by construction — see `media`. */
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
-                      className="v3-ledger__thumb"
+                      className="v3-ledger__media v3-ledger__thumb"
                       src={row.media.src}
                       alt=""
                       loading="lazy"
@@ -437,10 +566,46 @@ export function V3Ledger(props: V3LedgerProps) {
                     <span className="v3-ledger__value">{row.value}</span>
                   )
                 ) : null}
+                {row.reveal ? (
+                  /* Out of the flow, over the top of the next row; hidden at
+                     rest, shown by :hover, :focus-within, or the phone hold
+                     (V3Ledger.css). */
+                  <span className="v3-ledger__reveal">
+                    {row.reveal ? (
+                      <>
+                        <span className="v3-ledger__reveal-line">{row.reveal.line}</span>
+                        {spark ? (
+                          /* The run and what it counts, together: a squiggle
+                             with no words is a decoration, and the words are
+                             the accessible name, so the SVG is hidden. */
+                          <span className="v3-ledger__run">
+                            {row.reveal.seriesLabel ? (
+                              <span className="v3-ledger__run-label">{row.reveal.seriesLabel}</span>
+                            ) : null}
+                            <svg
+                              className="v3-ledger__spark"
+                              viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
+                              width={SPARK_W}
+                              height={SPARK_H}
+                              aria-hidden="true"
+                            >
+                              <path d={spark.d} />
+                              {spark.last ? (
+                                <circle cx={spark.last.x.toFixed(1)} cy={spark.last.y.toFixed(1)} r="2.2" />
+                              ) : null}
+                            </svg>
+                          </span>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </span>
+                ) : null}
               </Link>
             </li>
-          ))}
+            )
+          })}
         </ul>
+        </MaybeHold>
       )}
 
       {footnote ? <p className="v3-ledger__footnote">{footnote}</p> : null}
@@ -458,4 +623,20 @@ export function V3Ledger(props: V3LedgerProps) {
       ) : null}
     </section>
   )
+}
+
+/**
+ * The glyph's letter: the first character of the row's name, upper-cased. A
+ * name is not a figure, so this is the one string the primitive derives; an
+ * empty name is a compile error upstream (V3Text), so the fallback dot is
+ * unreachable in typed code.
+ */
+function glyphOf(what: V3Text): string {
+  const first = String(what).trim().charAt(0)
+  return first ? first.toUpperCase() : '·'
+}
+
+/** The phone's hold, mounted only when a row has something to reveal. */
+function MaybeHold({ hold, children }: { hold: boolean; children: ReactNode }) {
+  return hold ? <V3LedgerRevealIsland>{children}</V3LedgerRevealIsland> : <>{children}</>
 }

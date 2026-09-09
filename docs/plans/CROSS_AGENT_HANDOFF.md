@@ -1,4 +1,121 @@
-# Current — 2026-09-09 (Matt: "there has to be a way to find those missing plats" — most of them were never missing)
+# Current — 2026-09-09 (SITE-55: the plat says what did not sell, and names the market it sits in)
+
+Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
+`9eb4c1fb`, then main merged through `d5b982e8` (round eight: SITE-48 and SITE-50). Node
+`3b4713f8` is `done` with evidence. Earlier on this branch: SITE-45 (`ba0fb159`), SITE-40
+(`1ea07155`), SITE-49 (`5d0fa577`) — see Prior. SITE-29 (`e3d1713f`) stays `blocked` until 2026-09-11.
+
+**What shipped.** A plat page could say what sold there and could not say what did not. That half
+existed nowhere outside the seller CMA, which reads raw listings per CITY — too coarse to answer
+"what happened in MY plat". Now `subdivision_plat_unsold_mv` carries a twelve-month did-not-sell
+aggregate per recorded plat, attributed the two ways its closed sibling is (point-in-polygon and MLS
+subdivision name, unioned over distinct listing key). The plat page prints it as an `#outcomes`
+Quiet between the market report and the sales history, and the expired-seller first-contact letter
+prints the same number from the same read.
+
+**Aggregate, not a roll-call — Matt's call, asked before building.** Oregon MLS policy
+(`docs/MASTER_SPEC.md` §3.8) holds that Withdrawn, Expired and Cancelled listings may not be
+actively marketed and must not appear in search results or active listing feeds, and every existing
+use of that data on this site is private (the CRM, the seller valuation). So the plat publishes the
+count, the median days those listings ran, and the median cut they took first — market reporting, the
+same class of figure as months of supply — and no addresses and no links. The row-level version the
+node's accept asks for is recorded on the node with the policy lines, for Matt to rule on.
+
+**Four §0 errors were caught in this lane before any of them reached production, and all four came
+from the same habit: trusting one query shape.**
+
+1. **A false clean record.** The first shape of the view emitted a row only where something had
+   failed, so a caller reading "no row" read it as "nothing failed" — and the letter published
+   *"Every home that came off the market in Diamond Bar Ranch sold"* while two listings had come off
+   unsold inside the window (2026-09-01 Withdrawn, 2026-01-21 Canceled). Caught by running §0's
+   counter-query. Fixed at the source: the view is now `plat_keys LEFT JOIN failed`, so **a zero is
+   measured and a missing row is unmeasured**, and `publishPlatUnsold` says nothing at all when the
+   read is null.
+2. **A year-3000 row moved the window a millennium.** One production row (ListingKey
+   2020022817044797361…, Expired, `off_market_date` 3000-03-31) poisoned a bare `max(off_market_date)`
+   anchor and zeroed all ~3,000 plats. The anchor is now bounded by `max("ModificationTimestamp")::date`.
+3. **`current_date` in a materialized view** fails `ci:mv-determinism` (F7) for a real reason: every
+   row differs on every refresh. The window is anchored to the data instead.
+4. **Two populations in one sentence.** The first render read "Over the same stretch 981 sold" —
+   lifetime closed against twelve-month failures. Fixing the window exposed the deeper fault: the
+   sold figure is the DETACHED segment and the failures count every property type. The comparison was
+   cut, not patched.
+
+A fifth, smaller: the clean plat's section vanished after the fix because the 6-hour cache still held
+the old `null`. **When a row's MEANING changes, bump the cache key** — `plat-unsold-outcome-v2-covered`.
+
+**Receipt: 65 → 74** (74 · 71 · 76), rebaselined, separate claude-sonnet-5 evaluator, builder Opus 5.
+**Mechanical accept 21/21** at 1440 and 375.
+
+**Open on the receipt, for the /subdivisions composition node.** The evaluator's dullest finding is
+the wider-market row ("connective filler between two stronger ideas") and its verdict names the
+filter panel above it as a register break — "a checkbox-and-slider control panel that could be lifted
+from any listing site". Neither is the `#outcomes` section; both belong to the page's own node.
+
+**The merge with round eight.** Main's SITE-48 and SITE-50 rebuilt five of the six pages this
+branch's SITE-40 lane had rebuilt, so the merge was read page by page rather than side-picked:
+
+- **/about, /reviews** — main deleted the very sections SITE-40 rebuilt (the `#who` list and the
+  `#reach` Quiet) and put the faces, the score and a live reach control in their place. Main's page,
+  main's receipt, main's shots. SITE-40's work there is superseded, and said so.
+- **/compare** — main's worked example replaces the empty Quiet. SITE-40's lead door and its two
+  extra destinations survive on the fallback branch, which is what renders when the sample read
+  returns nothing.
+- **/invest** — main's Pulse opening and its live 30-year fixed replace the two documentation
+  headers. SITE-52's `when` audit (no row repeating "Central Oregon" under an eyebrow that already
+  says it) and SITE-40's lead tool door were re-applied on top; `git checkout --theirs` drops
+  non-conflicted changes too, which is how they were lost the first time.
+- **/contact** — the only true hybrid. Main changed `#reach` and the brokers band; SITE-40 changed
+  the intro Quiet. Both are kept, because main's photographs sit below the form and SITE-40's
+  principal-broker door with the sourced 5.0 is what puts a face in the fold — the exact defect the
+  contact evaluator named.
+
+**The merged /contact fold was scored from scratch, three rounds, because neither committed receipt
+described it.** Round one came back **58** — below the 62 this branch had already recorded — so the
+merge did not just get committed and called done:
+
+1. The evaluator read the broker row and the office row as "the same component instanced twice". The
+   office is now one inline secondary line, which is a different shape and gives the address the full
+   measure.
+2. The ratio meter under `5.0 of 5` is gone. A 5.0 out of 5 fills the track completely, so the mark
+   carried no information; the evaluator could not tell it was a meter at all.
+3. `V3Quiet`'s inline label no longer wraps, which had broken "The office" across two lines at 375.
+
+That scored **62** — a tie, not a rise — and named the same dead space twice across two rounds:
+~115px of empty cream between the last row and the next section rule, "an artifact of section padding
+stacking rather than an intentional editorial pause". It was exactly that. `V3Doors` carries no
+padding of its own, so a Quiet's full `--v3-section-pad` was the whole seam. **A Quiet that hands
+straight to a Doors band now closes on `--v3-space-xl`**, the same idiom as the existing
+`--headless` rule that opens tighter. That pulls the live reach control into the graded viewport at
+1440. Round three: **66** (65 · 66 · 68). The rule touches three routes; on `/team/[slug]` the seam
+sits at y≈885, outside the first viewport, so no other class's shots move.
+
+**Two defects the merged /contact receipt hands off rather than fixes**, both because they are not
+/contact's to fix: the muted body-copy token reads borderline for AA against cream on every public
+page, and the shared header chrome is "indistinguishable from a generic listings site" in a crop.
+
+**A rule this branch paid for twice.** Never bind-mount `node_modules` into a worktree an agent can
+die in. When the SITE-49 worktree agent hit a session rate limit, harness cleanup reached through the
+mount into the main checkout and deleted 164 packages; an `npm install` to repair it rewrote two
+pinned ranges in `package.json`. The repair is `git checkout HEAD -- package.json package-lock.json
+&& npm ci`. Run lanes in the main tree.
+
+**Next.** The queue serves nothing: two open nodes both wait on held ones (SITE-43 on SITE-03, which
+is blocked until 2026-10-06; SITE-58 on SITE-56), and the three in-flight nodes belong to other
+sessions. **SITE-56 was deliberately held behind SITE-55 on this same route and the same
+`parity.json`; that block is now landed**, and the other session's own finding (Prior, below)
+reorders it around a plat resolver rather than the no-polygon fallback. PR #200 stays watched.
+
+**One thing SITE-56's resolver should know before it starts.** The `#outcomes` read this node added
+attributes a plat the two ways its closed sibling does — point-in-polygon AND slugified MLS
+`SubdivisionName` — and unions them over distinct listing key. That is the same
+coarse-MLS-name-against-fine-recorded-plat mismatch the other session measured, met on the same
+grain. **Diamond Bar Ranch has no `boundaries` row under the slug the page looks up, and it is
+exactly the plat whose false clean record this lane caught**: the by-name branch found its two
+unsold listings while a polygon-only read would have found nothing and said so. Whatever resolver
+SITE-56 lands should be the one both reads call, not a third attribution.
+
+## Prior — 2026-09-09 (Matt: "there has to be a way to find those missing plats" — most of them were never missing)
 
 Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout.
 
@@ -31,7 +148,7 @@ a plat boundary. Crook is the one that pays — Brasada Ranch, Ochoco Pointe, Cr
 **Also landed:** SITE-57, the MLS remarks (Matt: "mls descriptions must come back"), live and gated.
 SITE-56 is in flight with the finding above as its brief.
 
-# Current — 2026-09-09 (site queue round eight: SITE-48 and SITE-50 done; SITE-56 claimed and deliberately held)
+## Prior — 2026-09-09 (site queue round eight: SITE-48 and SITE-50 done; SITE-56 claimed and deliberately held)
 
 Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Pushes
 `3423a9fd` (SITE-48) and `7f958d17` (SITE-50); both deploys READY and verified live.
@@ -71,7 +188,171 @@ land. **Whoever takes SITE-56 next: SITE-55 first, then this, in sequence.**
 **Queue:** 26 done, 16 blocked on dated windows, 3 in flight elsewhere (SITE-31, SITE-41 on
 cloud-grinder; SITE-55 on claude-opus5), SITE-43 waiting on SITE-03. Nothing is blocked on Matt.
 
-# Current — 2026-09-09 (Matt's two rulings: the out-of-area asks stay, and the MLS remarks are back on the listing page)
+## Prior — 2026-09-09 (SITE-49: /price-drops opens with the shape of the week's cuts, and every card carries its own)
+
+Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
+`5d0fa577` on main through 52ea5f5e (Matt's two rulings: the out-of-area asks stay, the MLS remarks
+are back on the listing page with a gate). Node `1c971ea5` is `done` with evidence. Earlier today on
+this branch: SITE-45 (`ba0fb159`, listing opening 77 → 79) and SITE-40 (`1ea07155`, V3Quiet and its
+six openings) — see Prior. SITE-29 (`e3d1713f`) stays `blocked` until 2026-09-11.
+
+**What shipped.** The table scored the class 30 and its committed receipt stood at 43, both naming the
+same cause: the only data display in the first viewport was a portal card. Now the page opens with the
+distribution the count implies — every cut this week as one V3Drawing `strip` above the grid, a mark
+per cut at the cut as a percent of the previous ask, smallest to deepest, each giving up its street,
+its city, its percent and its dollars to a hover, a tap or the keyboard; the claim names the median and
+the deepest. Each card carries a short ink track under its ask, filled to that home's cut as a share of
+the deepest on the page. Two primitive fixes came out of the rounds: `V3Drawing` gains `askHint`, so a
+figure says what its own marks give up (the default promised a month these marks do not carry), and
+`V3SourceLine`'s visible clause is bracket-aware, because it cut at the first comma and a trace that
+puts its population in a parenthesis ended the clause on an open bracket — that one fixes every caller.
+
+**The overlap bug the node names first was already fixed** on this tree (the Field's out-of-flow photo
+list, `price-drops-field.css`, 2026-09-09). The lane proves it rather than re-fixing it: the accept
+measures the alerts sheet's box against every visible card at both widths.
+
+**Receipt: 43 → 71** (71 · 75 · 71), craft 11, no tell, rebaselined, separate claude-sonnet-5 evaluator,
+four rounds. **Mechanical accept 14/14** at 1440 and 375: the sheet covers no card; the drawing sits
+above the grid with a mark for every row; a mark gives up an address and a percent; the drawing carries
+its source line; every card's cut mark differs; no source line is clipped.
+
+**Open on the receipt and the node, for a later pass.** The two instrument shots disagree on the median
+cut (5.9% desktop, 5.8% phone): two loads of a LIVE pull minutes apart, each internally consistent,
+nothing carried between renders — but a headline figure that moves between captures wants either a
+finer read stamp beside the claim or a caption that does not name a moving median. Also: the photo
+badge keeps a rounded corner where the register is radius 0; the desktop hover does not mark which dot
+it is reading; the phone's source line sits below the fold. Deliberately not fixed: the marks cluster
+in the left half at 1440, which is the week's true shape — stretching the axis would draw a spread the
+data does not have.
+
+**Answered by main while this lane ran:** the MLS public remarks are back on the listing page as
+written, with a gate (62d8731a), which closes the §2 finding SITE-45 recorded; the out-of-area asks
+stay (aa5eb85d), which closes the two SITE-33/45 questions on the Medford sidebar and its calculator.
+
+**Next.** The next eligible SITE node under the two-open / three-owner rule. PR #200: green through
+0b43bbbe, building on 86e9cf98; the check-in fires 20:20Z.
+
+## Prior — 2026-09-09 (SITE-40: V3Quiet gets one measure, a figure slot with its trace, and doors as a form; six openings pick it up)
+
+Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
+`1ea07155` on main through 0ba0358d (merges 21d75e55 and 0b43bbbe carry SITE-42, SITE-46, SITE-53, the
+SMS agent and inbox parser on Grok, the CMA first-touch register). Node `ac7b98f8` (SITE-40) is `done`
+with evidence; `db6d07a9` (SITE-45) landed earlier today (see Prior). SITE-49 (`1c971ea5`, /price-drops)
+is claimed by this session: its worktree agent died on the session rate limit before writing a line, so
+the lane runs next in the main tree. SITE-29 (`e3d1713f`) stays `blocked` until 2026-09-11.
+
+**What the table said and what shipped.** The six lowest classes (invest 25, compare 29, about 31,
+market-report 41, reviews 48, contact 49) all open on V3Quiet, and the evaluators named the same three
+causes: an empty figure column beside every passage, no slot for the live count the page had already
+fetched, and N doors as N identical hairline rows. The primitive now: a prose-only item IS the 44rem
+measure (one track; the rule stops where the words stop) and splits text | figure only when it has a
+figure; `V3QuietFigure { value, unit?, source (required), sourceName?, updatedAt?, ratio? }` on prose
+and link items — no trace, no figure (§0); `sourceName` is the visitor-words clause with the trace
+behind SITE-42's disclosure; `ratio` draws a thin meter under the value; consecutive doors are one
+2-up group with a channel mark derived from the href, `lead` for the dominant door, `media` for a
+face or a place in the mark's slot, `weight: 'secondary'` to fold lighter doors into one inline line.
+Callers: /invest opens with 762 (the sum of its five segment rows, enumerated in the disclosure); the
+market hub's five doors carry marks, sentences and live figures (1,563 · 7 · 5,769 · Sep 5, 2026 ·
+4.9) with plain source clauses, two renamed from our IA (Every closed sale, Weekly snapshots); /about
+leads with the principal broker's face, the four channels on one line, the 5.0 from 25 Google reviews
+with its meter and source; /contact's person door carries the same sourced 5.0.
+
+**Receipts (table instrument, separate claude-sonnet-5, three scorings, median), all rebaselined:**
+* invest      25 → 60 (63·54·60), craft 12, no tell
+* compare     29 → 42 (42·37·45), craft 10, no tell
+* about       31 → 49 (47·49·52), craft 11, no tell — three rounds
+* market-report 41 → 54 (51·54·58), craft 10; two tells remain, both the
+  chooser's one repeated card shape, which the table assigns to that page's
+  composition node
+* reviews     48 → 50 (48·55·50), craft 9, no tell
+* contact     49 → 62 (62·59·66), craft 11, no tell — four rounds
+None of the final receipts names "scrolling lists as the design" or "walls of text". The lane's Opus
+worktree agent had no Agent tool, so the coordinator ran every evaluator; the rounds are on each
+receipt's evaluator sentence and on the node.
+
+**Found by measuring.** (1) Round one on /about drew the scrolling-lists tell on seven glyph-marked
+doors ("an icon card grid"); a face on the person door and a figure on the reviews door did not clear
+it (round two, 41); folding the four channels into one inline line did (round three, 49, no tell).
+(2) The hub's source clauses derived from the trace's leading segment put "Market Truth region row"
+in front of visitors — hence `sourceName`. (3) The lane's mechanical check read `Source:` with a colon;
+SITE-42's clause has none. (4) A worktree lane needs `node_modules`: Turbopack refuses a symlink, the
+lane bind-mounted the main checkout's, and when the SITE-49 worktree agent died the harness's cleanup
+reached through the mount — the main `node_modules` lost 164 packages (`.bin/next` gone, `npm install`
+then rewrote two pinned ranges in package.json). Repaired with `npm ci` from the committed lockfile;
+both mounts are unmounted. **Rule for the next lane: never bind-mount node_modules into a worktree
+an agent can die in; run a lane in the main tree, one writer at a time.** (5) Contact's third pass
+read "replies the same day" as an unsourced claim beside a sourced figure — cut (§0), fourth capture.
+
+**Mechanical accept (scratch site40-mechanical.mjs, dev render 1440 and 375): 33/33** — every
+prose-only item one track at 704px; no run of identical door siblings longer than one on any route;
+the hub chooser 5 of 5 doors with a digit and a source line.
+
+**Matt's calls / composition nodes (not this primitive's).** /compare's full-bleed H1 clips at 1440
+and the page shows no populated comparison (SITE-50 waits on this node); /contact's four-cell
+`V3Doors` and /reviews' bare `V3Proof` row are the tells that remain on those classes; /invest's
+"What this page is" headers; the evaluators want a map on the office door and a sparkline in the
+hub's lead door.
+
+**Next.** SITE-49 in the main tree (the brief is written: alerts sheet in flow, a dot strip of the
+sixty cuts with a hover reveal, a per-row cut mark, receipt "first"), then the next eligible SITE
+node under the two-open / three-owner rule. PR #200: green on 0b43bbbe; this push re-runs it; the
+check-in fires 19:04Z.
+
+## Prior — 2026-09-09 (SITE-45: the listing page opens with something to interrogate — one frame and a filmstrip, the price cut as a mark, a read under the pills, Tour in the fold)
+
+Owner: Claude (Fable 5.1), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
+`ba0fb159`; the landing commit is the merge of main (through 989b2652: SITE-46, SITE-53, the SMS agent
+and the inbox parser on Grok) that carries this block. Node `db6d07a9` (SITE-45) is `done` with
+evidence. SITE-40 (`ac7b98f8`, V3Quiet: single-measure prose, a figure slot, door rows as a form) is
+in flight in an Opus worktree agent off 851c20bc; the coordinator merges it. SITE-29 (`e3d1713f`)
+stays `blocked` until 2026-09-11 as shipped-and-measuring.
+
+**What the table said and what shipped.** listing-detail scored 55 on the 2026-09-08 table ("the
+conventional real-estate-portal template": a main photo, a 2x2 thumbnail grid, corner pills) and
+77 on its committed receipt (the SITE-33 pass). Now:
+- `ListingHero` rewritten: one frame plus a navy filmstrip that indexes every photo — a thumb sets
+  the frame on desktop and scrolls the snap carousel on phone; 44px thumbs at rest, 88px on hover or
+  the strip's toggle; the media tools (N photos, 3D, floor, street view, map) ride the strip instead
+  of floating on the picture; at 375 the strip shows the count, one "N photos" tool and one "More"
+  control. The mosaic and `publishListingMosaicTiles`/`Thumbs` are deleted.
+- `ListingDetailShell heroInMain`: the hero renders in the main column, so the sticky broker card
+  and the 5.0 / 25-review block share the fold (Tour bottom 462px at 1440; was under 900). The
+  on-media caption is gone — in the column it repeated the price, facts and street sixty pixels
+  above the price strip; `check-publish-listing-ask.mjs` now asserts the hero carries no price prop.
+- The price cut is a two-point mark (`PriceDropMark`, `publishListingDropMark(history)`: the newest
+  dated drop since the last listed row) that opens "$720,180 $714,900 −0.7% Sep 3, 2026" on hover or
+  focus. Off-market draws nothing.
+- Under the status pills, one sentence from the page's own market comparison
+  (`publishListingPillRead`): days listed against the grain's 90-day days-to-contract, this home's
+  $/sqft against the 12-month closed median, with a Source disclosure naming both stats and their
+  computed date. Null read → no sentence.
+- Receipt **77 → 79** (80 · 78 · 79) by a separate claude-sonnet-5 evaluator, rebaselined (ten
+  shots: the instrument pair, close, out-of-area, strip and drop hover records); no evaluator names
+  the gallery as a portal convention. Mechanical accept 17/17 on a dev render at 1440 and 375.
+
+**Matt's calls, recorded on the node, not implemented.** (1) The MLS public remarks are rendered
+nowhere on the listing page since the 12-section rebuild (7c40065e; `DescriptionBlock` was the
+renderer and `listing-remainder-contract.test.ts` asserts their absence) while CLAUDE.md §2 "MLS
+remarks shown as written" still binds — was the cut deliberate? (2) The Medford sidebar still offers
+Tour / Call / Text beside "We don't work in Medford", and the calculator still prices that lot —
+both carried from the SITE-33 receipt; the evaluator calls the CTA a blocker. (3) The breadcrumb
+reads "Bend / Easton / EASTON COMMERCIAL" on a single-family home: plat alias resolution, the one
+tell named on the receipt.
+
+**Findings for the queue.** The listing page's `unstable_cache` entry for the Apollo listing is
+2.6 MB; Next refuses it ("items over 2MB can not be cached") and logs an unhandledRejection on
+every dev render — the DAL is untouched by this lane, so it is main's. On phones the price strip's
+Tour/Call/Text/Save/Share row and the sticky bottom bar can share one viewport (pre-existing).
+
+**Tooling.** `take-route-shots.mjs` `SEL@ANCHOR!hover` frames the anchor on a hover record (the
+strip record keeps the frame in the shot). The state name must match the element id:
+`outofarea=#out-of-area`, not `outofarea`.
+
+**Next.** Land SITE-40 from the worktree (six receipts rebaselined, mechanical accept, ci:gates, a
+Node-trailed commit), then the next eligible SITE node under the two-open / three-owner rule. PR #200:
+CI on 851c20bc was green on lint-and-build with e2e running; this push re-runs it.
+
+## Prior — 2026-09-09 (Matt's two rulings: the out-of-area asks stay, and the MLS remarks are back on the listing page)
 
 Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Push
 `b921fff8..aa5eb85d`; deploy dpl_9suRuEtNnFEc51KHwTDiahp9NNT1 READY in 271s.
@@ -104,7 +385,7 @@ shape, green once wired, eight fixture cases.
 **Fleet:** cloud-grinder on SITE-31 and SITE-41; claude-opus5 on SITE-49; this session on SITE-48
 (the people pages) and SITE-50 (/invest and /compare). Nothing is blocked on Matt right now.
 
-# Current — 2026-09-09 (site queue round seven: SITE-44 and SITE-47 done; the map is no longer a Google default map)
+## Prior — 2026-09-09 (site queue round seven: SITE-44 and SITE-47 done; the map is no longer a Google default map)
 
 Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Pushes:
 `f98e0f4d` (SITE-44) and `4064f4d7` (SITE-47); both deploys READY.
@@ -139,7 +420,7 @@ on SITE-48 (the people pages). SITE-50 (/invest, /compare) is eligible and uncla
 don't work in Medford"); the MLS remarks missing from the listing page since the twelve-section
 rebuild (on SITE-45); a hero data graphic for /buy.
 
-# Current — 2026-09-09 (round four: the first message is in Matt's register, and so is every first touch)
+## Prior — 2026-09-09 (round four: the first message is in Matt's register, and so is every first touch)
 
 Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
 (`wt/cma-ship-20260907`). One gated push after this was written — `git log origin/main --oneline -6`.
@@ -240,8 +521,73 @@ what the row says, so the review gate should catch it before a send. (5) The N=2
 backtest (before/after) is still running in the background; add the result to
 `docs/research/pricing-backtest-containment-2026-09-09.md` when the waiter prints it.
 
-## Prior — 2026-09-09 (round three: the first message is drafted for Matt, the parser and the agent are on Grok, the queue is clean)
+## Prior — 2026-09-09 (SITE-52 + SITE-51: the Ledger past six rows carries a mark, a reveal, one media column and no repeated `when`; the taste table is a tool)
 
+Owner: Claude (Fable 5.1), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
+`b093f5f7` (SITE-52) merged with the SITE-51 worktree commit `06812977`; the landing commit is the merge of main (through 28a1b3a8) that carries this
+block. Nodes `49414e76` (SITE-52) and `2750dd42` (SITE-51) are `done` with evidence.
+SITE-29 (`e3d1713f`) stays `blocked` until 2026-09-11 as shipped-and-measuring (see Prior).
+
+**SITE-52, what the evaluator saw and what was true.** The 2026-09-08 table scored /cities 30 and named
+`V3Ledger`: no visible bar, nothing to hover, thumbnails on some rows, "OREGON" on every row, the
+region's months of supply as a sentence. Three of those were the primitive; two were data defects the
+page hid:
+1. The page turned the encode off when ONE row lacked a count. Tumalo and Crooked River Ranch have no
+   `geo_snapshot_mv` row and no `market_metric` row, went null, printed "None listed now" (null as zero,
+   §0), and switched the bars off for all fifteen rows. Production /cities served 0 encoded ledgers.
+2. `getDetachedOverlays` read `market_metric` unordered with no limit. PostgREST caps a response at
+   1,000 rows: with region + 15 cities the region's latest `active_count` made the cut and its latest
+   `months_of_supply` did not, so the region assembled inventory but no headlines and the page lost its
+   verdict and its drawing while looking healthy. Traced outside Next with a 16-geo call (rows returned
+   = 1,000). Fixed at the DAL: `computed_at` desc, 14-day lookback, range-paged; every caller of the
+   overlay read (city pulse, region pulse, snapshots, /sell) gets the same fix.
+
+**What shipped.**
+- `V3Ledger`: `encode="bar"` track 8px, context bars navy 45%, the lead at full ink (lead and context
+  were one tint); media all-or-none per list — a navy monogram (`.v3-ledger__glyph`, Amboqia initial)
+  on every photo-less row once any row has a photo; `reveal` per row (one line + an optional
+  twelve-point run drawn by `buildSparkPlot` in `lib/charts/plot.ts`), hidden at rest, shown by
+  `:hover`, `:focus-within`, or the phone's 350ms hold (`V3LedgerRevealIsland`, swallows the click
+  that would follow, closes on an outside tap), OVERLAYING the top of the next row so nothing moves
+  under the cursor; `drawing` slot under the note.
+- `/cities`: overlays for the region and every city in one read; a twelve-month run of closed
+  detached sales per city (`getPublicDetachedMonthly`, both reads timeboxed); the region's supply pair
+  through `buildAnswerFigures` + `V3Drawing`; a null count prints "No live count"; no `when`.
+- The `when` audit (Sonnet subagent, 16 caller files): dropped Oregon / Guide / Central Oregon /
+  Market / Home / kind labels that repeated their heading; date-or-Guide fallbacks made conditional;
+  subdivisions rows carry no `when` (the sentence names the place) and stop printing "Sunriver,
+  Sunriver".
+- `scripts/take-route-shots.mjs` gains `state=SEL!hover` for hover records. `.v3-btn--text` keeps the
+  44px hit box (PR #200's tap-target failure on /cities/bend at 1440: 231×35 → 231×44).
+- Spec: PUBLIC_UI.md pattern 3 now states the four rules.
+
+**Measured.** Playwright on the dev render, 1440 and 375: 13 bars with distinct widths, 15 rows = 15
+media squares (12 photos + 3 monograms), 0 rows reading "Oregon", the reveal hidden at rest and
+visible on hover ("Seller's market · 3.8 months of supply · Closes by month, September 2025 to
+August 2026"), the head's two-bar pair with a Source line. Receipts on the table instrument, separate
+claude-sonnet-5 evaluator, three scorings each: **cities 75 (75 · 71 · 80) (table mark 30; no tell named)**,
+**subdivisions 53 (first mark; cold 36 → 44 after the monogram → 53 after the `when` drop and the bar
+caption)**. Rounds and defects are on the receipts.
+
+**SITE-51.** `scripts/taste-table.mjs` + `scripts/lib/taste-table-core.mjs` (Sonnet subagent, 50
+unit cases): registry `design_system/public/taste-classes.json` (25 classes), versioned prompt
+`taste-evaluator.v1-2026-09-08.md`, scratch captures under `.taste-table/`, three scorings per class,
+JSON + the E2E markdown block regenerated between markers, `--diff` with 70-line crossings, the
+under-70 candidate list. The subagent's two-class verification run (cities 38, sell 51 on the
+pre-SITE-52 page, a webpack dev server) was NOT kept as the table: the 2026-09-08 pass stays the
+instrument until a full run replaces it. Flagged, not fixed: `next dev --webpack` cannot compile a
+"use client" file that imports the v3 barrel (server-only V3PlaceDocuments enters the client graph).
+
+**Not mine, recorded on the nodes.** Tumalo and Crooked River Ranch have no inventory row anywhere;
+whether they stay in `FEATURED_CITY_SLUGS` is a content call. The subdivisions index has no reveal
+(no per-plat Market Truth series), is A-to-Z rather than ranked, and its source line sits below the
+fold. The evaluators still want a photo for every place and a threshold gauge beside the verdict.
+
+**Next round.** Bottom of the table first: invest 25, compare 29, price-drops 30, about 31,
+market-report-annual 31, search 32, zip 33. Run `npm run taste:table <baseUrl>` against a build of
+main for the next full pass.
+
+---
 ## Prior — 2026-09-09 (site queue round six: SITE-53 and SITE-46 done, SITE-32 blocked on its 60-day window)
 
 Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Pushes today
@@ -273,7 +619,6 @@ cartography). Only SITE-44 was eligible and unclaimed. **Open for Matt:** the ou
 listing asks (Tour / Call / Text and the payment beside "we don't work in Medford"); the MLS
 remarks missing from the listing page (on SITE-45); a hero data graphic for /buy (variants rule).
 
-## Prior — 2026-09-09 (engine items 3 and 4: the map's own ground and the graded cover; an inbound email advances the CRM)
 ## Prior — 2026-09-09 (round three: the first message is drafted for Matt, the parser and the agent are on Grok, the queue is clean)
 
 Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
@@ -438,6 +783,403 @@ regenerate it). Resolution: take either side, commit the merge, `npm run ci:data
 **Next in Matt's order:** cover photo and map → inbound email replies advance the CRM. Still
 open: CmaLaneFunnel not mounted, 8 zz-test-rebrand fixtures in production `cmas`, all four lane
 Auto-send switches OFF, the usable-acreage GIS measure.
+
+## Prior — 2026-09-09 (SITE-29: place pages and the blog are static shells that revalidate; the node's diagnosis was stale and the real cause was in the client tree)
+
+Owner: Claude (Fable 5.1), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
+`8dc9b550`, main merged at `07441b9e` (through `a97023d6`), the landing commit is the one carrying this block. Node
+`e3d1713f` is `blocked` until 2026-09-11 as shipped-and-measuring: its accept is a production CDN
+header and runs only after PR #200 merges and Vercel deploys.
+
+**What the node said, and what was true.** The node blamed a `cookies()` read in
+`PlaceSplitView`; that read left on 2026-09-01. Three things actually kept the pages dynamic, each
+proven on `next build`'s route table and on `next start`, not by reasoning:
+1. All four place pages awaited `searchParams` and threaded it into `PlaceSplitView`. Under Next 16
+   without `cacheComponents` that read alone classifies the route dynamic, whatever else is clean.
+2. Every client component under the split view called `useSearchParams()` from `next/navigation`.
+   Inside a static render Next throws `BailoutToCSRError` from it (`dynamic-rendering.js`, case
+   `prerender-legacy`) and React client-renders the tree up to the nearest Suspense boundary, which
+   on a place page is `loading.tsx`: the page's static HTML would have been the loading skeleton,
+   listing cards and all. Deleting the page-level read would have shipped exactly that.
+3. The blog post had two dead cookie awaits and, once those were gone, **no `generateStaticParams`
+   at all, which Next never caches** (the route table shows ƒ and `next start` served
+   `private, no-store`); the blog index read `?category=`/`?page=` on every hit.
+
+**What shipped (`8dc9b550`).**
+- `lib/search/url-search-params.client.tsx`: the query string as a static-safe external store.
+  Server render and hydration read `''` on a static shell (or the request's query through
+  `UrlSearchParamsProvider`, which `/search` and `/homes-for-sale` now wrap); after hydration the
+  store reads `window.location` and one root bridge in `IdentityBridges` keeps it current — that
+  bridge holds the only real `useSearchParams()`, inside its own Suspense.
+- `SearchFilters`, `MapSearchView`, `AllFiltersSheet`, `SearchAlertCapture`, `SaveSearchButton` read
+  the store. Under `staticShell` the URL is laid over the server defaults
+  (`components/search/merge-url-search-filters.ts`, geo keys locked on a place), a query change
+  refetches the viewport **inside the place's own seed polygon** (`scopePolygon`), and URL writes go
+  to `history.pushState` (Next's patched one, so the router syncs) instead of a router round trip.
+- `PlaceSplitView` renders the default list; the four place pages drop the read; `/subdivisions`
+  goes from `force-dynamic` to `revalidate = 60` (its cause is gone).
+- Blog: `[slug]` gets `generateStaticParams` returning `[]` + `revalidate = 300`; `/blog` reads no
+  query; category and page views live on `/blog/category/<c>`, `/blog/page/<n>`,
+  `/blog/category/<c>/page/<n>` (on-demand ISR, each with its own breadcrumb, noindex as the query
+  forms were); `next.config` 308s the old `?category=`/`?page=` forms to them.
+- Middleware: unknown blog categories and malformed page numbers are real 404s at the edge
+  (`lib/blog/index-path-guard.ts`, the soft-404 class the middleware already kills for `/communities`).
+- Held mechanically: `components/search/__tests__/static-shell-url-params.test.ts` (no
+  `useSearchParams` under the split view, no request-state read on the place pages, the footprint
+  passed to the map); `check-ssg-budget` now lists the four blog routes; `check-seo-authoring`,
+  `check-publish-blog-index-list`, `index-ledger-openings`, `seo-route-contracts` and
+  `site-contracts` were repointed from the old shapes they encoded (the plat-detail contract
+  literally asserted `force-dynamic`).
+
+**Measured on the served build.** `/cities/bend`, `/communities/sunriver`, `/cities/bend/awbrey-butte`:
+`Cache-Control: public, s-maxage=60, stale-while-revalidate=600`, `x-nextjs-prerender: 1`, H1 and
+13/10/12 h2 in the static HTML, the split view's 48 cards in it. `/subdivisions/ridge-at-eagle-crest`:
+MISS then HIT. On the merged build: `/blog` prerendered (served from the cache, `s-maxage=60`, H1 present); `/blog/sunriver-year-round-living-vs-vacation` MISS then HIT with H1 and 11 h2; `/blog/category/Market%20Reports` and `/blog/page/2` MISS then HIT, `noindex, follow`, canonical `/blog`; `/blog?category=Market%20Reports` → 308 `/blog/category/Market%20Reports` (the query is carried along, harmless), `/blog/page/1` and `/blog/category/All` → 308 `/blog`. A missing post, an unknown category or a malformed page number used to stream a hollow 200 (the whole site does, `app/loading.tsx` flushes the shell before a page-body `notFound()`; only `/communities` answers 404, from the middleware's slug allow-list): the blog now does the same at the edge (`lib/blog/index-path-guard.ts`), `/blog/category/Nope`, `/blog/page/0`, `/blog/page/x` are real 404s; a page past the last is still a streamed 200 (the edge cannot know the post count), and `/blog/<missing-post>` still streams a 200 — same class, its own node. Deep links: `/cities/bend?beds=4` on desktop and 375 shows the Beds chip
+as "4+ bd", refetches to "215 homes in this map view · Bend · 4+ bd", 48 cards and none under four
+beds; a chip change writes `?beds=3` with no document load and refetches ("594+ homes · 3+ bd");
+back restores the bare URL and the default list. Receipts: the four classes' records re-captured
+against the served build differ from the shots on disk by 0–1% outside live listing and market data
+(and the atlas records lose the pointer's hover card, below); shots, hashes and scores unchanged
+(city 69, neighborhood 65, community 80, blog 52).
+
+**Two defects found by measuring, both fixed before landing.**
+- The first refetch effect seeded its "last fetched" ref from the merged snapshot; on desktop the
+  atlas remounts the list after its first camera fit, by which time the store already carried the
+  URL, so a deep link updated the chip and never the cards (a Sonnet Playwright pass and my own
+  card-level count both caught it; phones refetched, desktop did not). Seeded from the server
+  defaults instead: a mount under a filtered URL is a change.
+- The refetch first searched the bounding box plus the place's name tag, a different population
+  from the seed polygon the server searched (243 vs 215 homes for Bend · 4+ bd). The map now
+  carries the place's footprint and keeps it whenever no shape is drawn.
+
+**The shot tool could not pass a hydrated atlas.** `take-route-shots` wheels the page from the
+viewport centre; a hydrated V3Atlas under the pointer eats the wheel as a zoom, the loop reads a
+stall and gives up, and every anchor below the atlas shot the atlas — on a production server, where
+the atlas hydrates before the first wheel (the dev server's late chunk had hidden it). It now parks
+the pointer in the top-right corner first. Deliberate side effect: the centre pointer also raised the
+atlas hover card ("NEIGHBORHOOD · 98 listings") into every atlas-bearing record on disk; records now
+show the page before any pointer intent.
+
+**Known, not this lane's.** The count row hides its figure when the filter-match count equals the
+viewport count (`publishSearchCountPair`'s equality rule): `/cities/bend/awbrey-butte?propertyType=Residential`
+shows "57 homes" for a moment and then "Bend · Residential"; the mobile sheet still prints the
+number. Pre-existing on the dynamic page too (same two queries), worth a node. Three CMA integration
+tests (`lib/cma-request.int.test.ts`, `lib/crm/cma-kickoff.int.test.ts`) fail on live
+`cma-zztest-clobber` row state; nothing in this lane touches them. A deep-linked filter renders the
+default list in the static HTML until hydration — inherent to a static shell; no indexed URL carries
+a filter (canonical and sitemap are bare).
+
+**The accept, after deploy.** Twice each with a browser UA: `https://ryan-realty.com/communities/sunriver`,
+`/cities/bend`, `/blog`, `/blog/sunriver-year-round-living-vs-vacation` → second response
+`cache-control` contains `public` and `s-maxage`, `x-vercel-cache: HIT`; Sunriver's H1 and ≥8 h2;
+the post's H1 and ≥8 h2. Also `curl -sI "/blog?category=Market%20Reports"` → 308 to
+`/blog/category/Market%20Reports` (check the Location's encoding of the space; Next compiles the
+captured query into the path). The exact commands are on the node.
+
+**Lane lessons.** Verify a caching claim on the route table AND on `next start`: the blog post
+looked fixed after the cookie reads went and was still `no-store`. The session limit suspended this
+lane for four hours mid-build; the tree survived, the claim did not (re-claimed), and the build had
+to be restarted — commit before a long build. `useSearchParams` under a static route is a silent
+skeleton, not an error: the structural test is the guard.
+
+**Queue at handoff.** Lanes at 12:10Z: SITE-30 and SITE-54 in progress elsewhere; SITE-29 blocked
+until 2026-09-11 (deploy + accept). Never run prettier in this repo.
+
+## Prior — 2026-09-09 (SITE-31: eleven community guides as drafts, four titles rewritten live, the blog class's first mark — the flip is Matt's)
+
+Owner: Claude (Fable 5.1), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, landing at
+`c99cf61b`. Node `0bacd965` is `blocked` with NO date: blocked on Matt for one action, below.
+
+**What shipped live now.** The four keyword-stacked titles the node named ("Broken Top Bend Oregon
+Golf Community Guide" and the others, taking 20–194 impressions where four claim titles take 8,205)
+now state a decision on both the H1 and the `<title>`: "Broken Top in Bend: Is the Golf Membership
+Worth It?", "Brasada Ranch: Full-Time Home or Rental? The Costs to Know", "Black Butte Ranch: Costs,
+HOA Fees, and Rental Rules", "NW Crossing in Bend: What Walkable Living Costs". Updated on the rows
+directly and verified rendering; each seed entry carries the same title AND its live body folded in,
+because Broken Top's row had been edited live on 2026-09-07 and `seed-blog-posts.ts` replaces a whole
+row on upsert — a reseed would have regressed it. The seed script gained `--only <file>`.
+
+**What is waiting on Matt: eleven guides, seeded as `status: 'draft'`.** One for each registry
+community that had none — Juniper Preserve (URL slug stays `pronghorn`), Awbrey Glen, Crosswater,
+Widgi Creek, Vandevert Ranch, Three Rivers, Mountain High, Mt Bachelor Village, Inn of the 7th
+Mountain, Rivers Edge, Crooked River Ranch — in `scripts/blog-content/community-guides-2026-09.ts`,
+rows verified in `blog_posts`. Each meets the node's contract, held by a checker that uses the real
+FAQ extractor: a title stating a number or a decision, 9–12 sub-question H2s plus a `Questions`
+block (5–7 h3/p pairs → FAQPage) and a `Next step`, 1,600–2,400 words, ≥2 links to the community
+page. CLAUDE.md §1 shows copy drafts to Matt before they enter a distribution path, and the blog
+skill flips on his go. **The flip:** set `status: 'published'` and `published_at` on the eleven rows
+(and in the seed file), then confirm each `/blog/<slug>` returns 200 with FAQPage in its JSON-LD;
+the node's 28-day GSC read starts from the last flip.
+
+**§0, stated plainly.** Every market and HOA figure was pulled fresh 2026-09-09 from
+`market_metric` (detached, mt-v1) and `get_place_character` (36-month window) mirroring the DAL's
+predicates — the DAL itself cannot run under `tsx` because `lib/data/client.ts` imports
+`server-only` — and each is stated with its window and n. Every number in every body was traced by
+the checker to the fact sheet, the community's provenance-gated content file, or a cited primary
+URL; the fact sheet and per-post sources are on the node. What is deliberately NOT there: Crosswater
+and Vandevert Ranch publish no price or pace (floors); Mt Bachelor Village and Crooked River Ranch
+carry dues only; **Inn of the 7th Mountain and Rivers Edge carry no market or HOA figure at all** —
+the graph holds no row for either at any grain (broad counter-query run), and each says so in one
+sentence; Three Rivers' blended HOA figure ($25/mo, n=321) was omitted because its own sources say
+no single assessment exists across its sub-associations.
+
+**Live gaps found on the way, for their own nodes.**
+- **Mountain High's figures live at `geo_type='subdivision'`; `/communities/mountain-high` reads
+  `neighborhood` and shows none of them.** Real data, one grain over.
+- Inn of the 7th Mountain and Rivers Edge have no boundary and no membership rows; their community
+  pages can carry no figure until someone maps them.
+- The two "winner" exemplars the node cites (Sunriver 1,362 words, Eagle Crest 1,208) meet none of
+  the spec they justify: no Questions block, zero links to their own community page, narrative
+  price ranges with no source. They should be brought up to the same contract.
+
+**The blog class had no receipt, so the accept's "rise" had no baseline.** Added
+`design_system/ryan-realty/ui_kits/blog/parity.json` (requiredComponents from the page's own
+imports; `ci:mockup-parity` and `ci:taste-canon` pass) and a FIRST mark from a separate Sonnet
+evaluator on the template rendered on its best-performing post: **52 (52/44/57)**, builder recorded as
+the model on the template's last commit (Fable 5.1). Its findings are the next blog round, and they
+matter for these eleven: the template has **no apparatus to make a sourced number look sourced** (a
+verified figure and an invented one render pixel-identical), the **desktop hero fills more than a
+full screen before a word of prose**, nothing in the open fold can be interacted with, and
+`ShareButton` is a blocking import that is not visible in the byline row.
+
+**Lane lessons.** Eleven Sonnet writers in parallel worked; the §0 discipline that made it safe
+was a per-community fact sheet (`site31-facts.json`) writers could not go outside, plus a checker
+that traces every digit — it caught an unsourced "15 minutes", a topic-list title, a derived span
+without its math, and, in my own punctuation fix, an entity turned into "CC&Rs;". A writer's
+self-report is not a check.
+
+**Queue at handoff.** Lanes: cloud-grinder on SITE-20/21, fable-9d4aa6fc on SITE-24/25 (both
+merged on main now). Twenty-one nodes were open at 04:50Z. Never run prettier in this repo.
+
+## Prior — 2026-09-09 (SITE-07 quality pass landed at 448dae9d; the ruled defects are fixed and the score did not rise, and here is why)
+
+Owner: Claude (Fable 5.1), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200.
+Main merged in through `00f400b9` (SITE-20, SITE-22, the CMA send). Node `f2cfd7a0` re-blocked to
+2026-10-06 with the measurement reason unchanged.
+
+**Matt's ruling (2026-09-09), executed as written.** The calculator shipped and was not touched.
+The two defects the 67 pass charged to pre-existing sections were fixed in the primitive each
+lives in, not the page:
+- **Truncation — `V3Atlas`.** The phone chip row was a hidden-scrollbar horizontal rail with the
+  third chip cut mid-word at the viewport edge, and sibling plats sharing a long prefix ellipsized
+  to one identical string ("Awbrey Butte Homesite…" six times). Chips WRAP at every width (the
+  mobile mandate; decisions.md bans scroll rails), fold behind one "+ N more" chip in the register
+  (eight on a phone, twenty-four from 48rem — two rests, two CSS-toggled labels, no media query in
+  render), and `stripOwnPrefix` drops the containing place's name so "Homesites Phase Twenty-two"
+  reads as itself. Phase WORDS are kept on purpose: stripping them collapses every "Homesites
+  Phase …" sibling into one chip. The same strip runs in `placeFigureRows` for the subdivisions
+  ledger and a ledger label may wrap.
+- **The run — `V3Ledger`.** pulse / walk / magazine had differed by a thumbnail size and a date
+  style. Walk is a date-led timeline (calendar tile, one left rule, NO photo — with a photo it was
+  the feed row wearing a tile), magazine a card grid (photo on top, lead spanning, detail line in
+  body type at every width), pulse stays the feed. Section roots carry `scroll-margin-top`.
+
+**The number, straight.** Separate Sonnet evaluator, rubric v1-2026-09-08, fourteen records
+(opening, Atlas, chips folded and open, activity, open houses, guides): **65 (65/59/68) against
+the ruled 67 — it did not rise.** A first pass on the same tree scored 64 (64/58/68); the canon
+lens's findings between the two (the guides card's detail in the display serif, the walk row still
+reading as the feed, eighty chips beside empty cream) were fixed and the evaluator credits each.
+Two rounds inside a nine-to-ten point within-call spread, with both ruled defects confirmed fixed
+on the pixels by two adversarial lenses and two evaluations, is the finding. The receipt carries
+the same-instrument 83 on the file as not comparable (two states) and the 67 as the honest
+baseline.
+
+**What holds the number is outside the item, and needs Matt — four decisions on node f2cfd7a0:**
+1. `#activity` and `#open-houses` are **Bend-wide sections on a neighborhood page** — every row
+   shown is in Bend Riverside, Broken Top, Stone Creek or Wyndemere, none in Awbrey Butte, with no
+   disclosure. Honesty scored 6 of 10 on it; "the single biggest credibility problem on the page,
+   persisted across two prior review rounds." Filter to the neighborhood's plats with a disclosed
+   thin-n fallback, or relabel honestly. This is scope, not craft.
+2. The neighborhood **opens on a photo Stage**; PUBLIC_UI's per-destination table specifies
+   Instrument first for this grain. The evaluator reads it as a place-rhythm lock break.
+3. The chip cloud **carries a sold count it does not encode**; DATA_GRAPHICS names this the
+   horizontal-bar case. A sorted bar list with a show-all is a new item.
+4. Three sections still **share eyebrow → heading → rows at the section level** with three row
+   shapes; the rubric's letter counts three Ledgers in a row. The city page moves `V3Answers`
+   between them; the neighborhood could too.
+
+**Also landed, from the lenses.** The builder's `check-tap-targets.mjs` change had let a control
+hidden behind a full-size disclosure vouch, unmeasured, for small visible controls site-wide (every
+link in the closed phone drawer, every route). The gate now opens the disclosure for one
+synchronous measurement, records the control's OWN box, restores before paint; one under 44 once
+revealed earns nothing. `scripts/__tests__/check-tap-targets.test.mjs` holds it in real Chromium.
+The capture tool waits for the load event so a streamed section is present before a state frames.
+
+**Two lane lessons that cost hours, for the next session.**
+- **`npx prettier --write` has no config in this repo** (the formatter is eslint). It rewrote two
+  TSX files wholesale — double quotes, semicolons, 1,210 lines — and broke a test that greps source
+  literals. Never run prettier here; write in the house style.
+- **The account session limit kills a builder mid-report.** The SITE-07 builder hit "session
+  limit, resets 3am UTC" after 47 minutes with its work in the tree and no report. Salvage from the
+  tree (typecheck, tests, records) beat a rebuild; keep a diff snapshot in the scratchpad before
+  long lanes. A claim was also released as stale under three hours once — heartbeat every 30 min.
+- **Tool blind spot, unresolved:** `scripts/take-route-shots.mjs` cannot see `#subdivisions` on
+  `/cities/bend/mountain-view` though curl serves it and a bare Playwright context confirms it
+  exists and is visible after hydration with zero hydration errors. No subdivisions record exists
+  in the receipt; the ledger fix is held by unit tests.
+
+**Queue at handoff:** SITE-07 blocked to 2026-10-06. Lanes: `cloud-grinder-2026-09-08-22` on
+SITE-20/22 (both now merged on main) and `claude-fable-9d4aa6fc` on SITE-24/25 with live
+heartbeats. Do not preempt.
+
+## Prior — 2026-09-08 (SITE-03 shipped on the city grain; the sub-city questions are on the node)
+
+Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200 at
+`95197c9`. `ci:gates` 157/157, `test:unit` 888 files, `tsc` clean cold.
+
+**What shipped.** `V3PlaceDoor`, a new v3 primitive: beside "Bend real estate", a filled
+plate reading **"664 detached homes for sale"** that opens `/homes-for-sale/bend`, with the §0
+trace collapsed beneath it. One fact, at control size, under the place name. The city page
+mounts it; the alerts strip and the market Instrument's own way into the same URL step down to
+the outline, so the page has one filled route into inventory and the fold has one filled
+control. Count comes off the face the page already publishes (`leftoverHudKpis` →
+`publishPlaceFace`); no new read. A real bug fixed in the publisher: `/homes-for-sale/bend/tetherow`
+is a legacy-redirect key back to `/communities/tetherow`, so a door there would 301 to itself —
+`publishPlaceBrowseHref` now refuses any path middleware would redirect, and the key is untouched
+because a live 301 is Matt's call.
+
+**Not the node as written, and the node text needs amending.** The item asks for
+"673 homes for sale · 3.9 months · seller's market · 23 days to pending · read Sep 7" from
+`market_stats_cache` on three templates. Three verified blockers: §0 (MOS/verdict/DTP are
+unpublishable below city grain — `geo-grain-trust.ts` carries the Century West "48.0 MONTHS"
+measurement); the five-figure string is the leftover HUD `ci:taste-canon` hard-fails; and
+`market_stats_cache` has no months-of-supply column. The item's own accept text asks for a
+figure set its own §0 rules forbid.
+
+**City only, by decision; sub-city held, not dropped.** Built, reviewed and reverted. On the
+node with evidence: (a) at community grain the door's boundary-membership count can exceed the
+destination's City+SubdivisionName count — "10 homes" one click from "7"; (b) neighborhood
+counts Active+AUC while city/community count Active only, one label over two populations;
+(c) PUBLIC_UI §3 gives the neighborhood an Instrument opening, not a copy of the city door —
+one shape at three grains needs Matt; (d) Tetherow can carry no browse door until the 301 is
+decided; (e) the community copy block top-anchors above the scrim (white-on-photo measured
+2.57:1 on Broken Top) and needs a local scrim before any door lands there; (f) "read through
+the Market Truth metric layer" is visitor-facing in seven traces site-wide — one vocabulary
+decision, not a per-page edit. The primitive stays grain-aware for the next round.
+
+**Green gates lied, three rounds running.** The first build passed 161/161 gates and 9,493
+tests and the page was broken: the wrapper inherited `.v3 { background }` and painted a cream
+band across the hero with white text on it at ~1.03:1. Nobody had looked. Adversarial review
+then caught, across three rounds: a detached-only count labelled plain "homes for sale" above an
+all-types search (R-024, 664 vs 839 on the same `computed_at`); the verdict stated twice; two
+filled primaries; Tetherow left with no filled ask; "inside the city boundary" when the writer is
+MLS City text; a read date from a different pipeline than its count; "at this grain" and "the
+metric layer" in buyer-facing prose; a second filled primary to the identical URL six sections
+down; and the numeral raised to the lead size to answer one reviewer, then measured at 55px
+against the H1's 27px cap by the next. **Lessons for the loop:** a lane must capture and LOOK
+before it reports (make it mechanical: no receipt without the builder's own capture paths); and
+one reviewer's fix is the next reviewer's finding — measure both sides of a composition change.
+
+**The instrument, stated plainly.** Separate Sonnet evaluator, three scorings of the eight
+re-captured city records: **73 / 68 / 64, median 68**, against 60 on the same model and rubric
+before the change. Recorded as a rise, inside a band this instrument spread 5–13 points within one
+call today. Its first return carried a factually false defect (it read the outlined alerts button
+as filled — measured 84% light fill); challenged with the measurement, it re-examined the pixels,
+withdrew it, and re-ran three fresh passes to the same median. **The receipt contract has a hole:**
+`scripts/lib/taste-receipt.mjs` counts `shotsHash` among `IDENTITY_KEYS`, so any re-capture forces
+`"rebaselined"` and `"rose"` is never recordable across a real change — the rise rule cannot bind
+through the gate as written. Proposed fix: identity = evaluatorModel + rubricVersion; shotsHash
+binds the score to its files and must *differ* from the prior for a rise claim.
+
+**Queue at handoff.** SITE-03 is mine and should move to `blocked` with `blocked_until` on
+landing (the accept needs 28 days of GA4 click-through per `rr_vid`). SITE-07 is live under
+`cloud-grinder-2026-09-08-20`; SITE-08 and SITE-12 under `01NESdvn`. Three owners is the cap.
+Nothing else is open.
+
+**Still open for Matt, unchanged:** (a) may the alert capture take an `events` override so a
+price-drop alert is its own measurable row; (b) is "every new listing, by email" acceptable over
+the literal "one email per listing", given the hourly cron batches sends.
+
+## Prior — 2026-09-08 (SITE-04 verified on a legal instrument; the instrument is the finding)
+
+Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200 at
+`ddd8f45`. Main merged in at `9efa2cf` (50 commits, 7 conflicts, each resolved keeping both
+sides). `ci:gates` 207/207, `test:unit` 9470 across 887 files.
+
+**The phone alerts bar is repaired and measured.** Round three's compact phone row was a
+regression: it clamped the button to 7.5rem — narrower than its own label, so the glyphs ran
+past the border on both sides at 43px tall — and hid the line carrying the alert scope and
+the unsubscribe while still asking for an email. Smaller and worse. It stacks now: sentence
+on the measure, control on its own full-width row, disclosure kept on screen because it is
+the promise the button collects against. Measured live: **button 335x44 with its label
+inside it**, note 14.4px full cream carrying scope + unsubscribe, bar 164px/20.2%
+(neighborhood) and 174px/21.5% (community). The bar height is still an open defect, named by
+all three evaluators. CSS trap worth keeping: that media block needs the `.v3` prefix,
+because the base rules for the same elements sit later in the file and an unprefixed
+override at equal specificity loses on source order — one measurement cycle to find.
+
+**An Opus scoring pass was produced and then discarded, on purpose.** Five passes had scored
+the three place classes (city 57, neighborhood 60, community 53, 48 named defects). None of
+it could become a receipt: the evaluator ran on `claude-opus-5` and `claude-opus-5` also
+built the change. TASTE.md line 155 requires a separate agent on a DIFFERENT model and
+`check-taste-canon` enforces it. Three Sonnet evaluators re-scored the identical eight
+records per class instead: **city 60 (60/56/61), neighborhood 57 (63/50/57), community 55
+(57/51/55)**, 24 named defects, each hashed to the eight records that ship. **No rise is
+claimed anywhere** — city and neighborhood drift on `evaluatorModel` and `shotsHash`,
+community on `shotsHash` alone.
+
+**THE INSTRUMENT IS THE FINDING, and it changes how the queue's rise rule can work.** Three
+independent scorings of the SAME eight files inside ONE evaluator call spread 5 points on
+city, 6 on community and **13 on neighborhood**. Across calls it is wider: city ran
+78 → 74 → 69 → 57 over four Opus passes today while the code only improved. The last of
+those evaluators diagnosed the fall itself as its own rising scrutiny of sections nobody had
+touched, not a regression. So: **a difference under roughly 13 points on this instrument is
+not evidence about the page**, and "the score must rise" cannot be satisfied by craft work
+on one strip while the untouched sections hold the page down. The next process change should
+be a defect-closure test (did the named defects close?) or a fixed evaluator seed per class,
+not a scalar comparison. Recorded as `instrumentNotes` on all three receipts so it travels
+with the number instead of living in a chat.
+
+**Two sessions collided on the same route, and both lanes' work survives.** `main` carried a
+Sonnet mark of 60 for community (`510dd47`) scored against that route's TOP and ANSWER
+states. It is not overturned on the merits — it looked at a different part of the same page
+— but it could not stand as the file's receipt once this branch re-captured the desktop and
+mobile records it hashes. Its four defects are carried on the SITE-04 node and its
+`answer-*` shots are untouched on disk. Likewise `tokens.css`: two sessions fixed the same
+`ci:tap-targets` failure the same day and the auto-merge stacked both rule bodies with
+duplicate declarations; reconciled into one rule on the `--v3-tap` token rather than either
+side's literal 44px.
+
+**Converged next target** (all three Sonnet evaluators independently, and the Opus pass
+agreed): (1) the Atlas chip/plat layer — a duplicate "Highlands Ridge 3", five chips all
+reading "Tetherow" separated only by a count, and labels hard-clipped mid-word at the 375
+edge with no scroll cue; (2) the market slot must render or collapse — it reserves
+~150-250px of hairline-bounded blank announcing it cannot chart, which reads as a failed
+load, not a designed empty state; (3) section-shape repetition — adjacent sections share one
+eyebrow/heading/claim/figures/source recipe, the stacked-section page the rubric bans by
+name. Two of three also named the Atlas H2 rendering sliced under the sticky nav (missing
+`scroll-margin-top`, confirmed by pixel crop) and the sticky bar covering the market source
+trace mid-sentence.
+
+**Two of the named defects were fixed concurrently on main and need re-verification, not
+re-work.** Round 3 (session 01Aubwpa, on main at `9efa2cf`) states that the city chart's
+falling year now wears the exception ink and its year labels stop overprinting. Both were
+named as defects by evaluators in this round — the city receipt's top defect is the
+2023/2024/2025 end labels collapsing into one illegible mark, and the neighborhood receipt
+names the missing `--rr-exception` on a real YoY decline. Those records were captured on this
+branch at 18:21-18:25Z, before main's fix merged in at 19:0xZ, so the receipts are accurate
+about the files they hash and stale about the tree. A next session should re-capture the
+market state first and confirm before spending a lane on either.
+
+**Needs its own item, not SITE-04:** the community fold is a "What would your home sell for
+in Tetherow?" valuation card over the Stage photo, ahead of any inventory. `PUBLIC_UI.md`
+puts the master-plan opening at Stage then Atlas and calls value-my-home chrome outside
+`/sell` "wrong-job-chrome" — a canon violation on the fold of a page named for a place.
+
+**Queue state at handoff: nothing is claimable.** No SITE node is `open`. SITE-08 and
+SITE-12 are live under session `01NESdvn` (heartbeats 9 and 12 minutes old) — do not
+preempt. **SITE-03 and SITE-07 are stranded** on `cloud-grinder-2026-09-08-16` with
+heartbeats 164 minutes stale; they pass the 3-hour release at about 19:40Z and are the first
+two a next session should take. Nine nodes are `blocked` with `blocked_until` 2026-10-06
+(shipped and measuring), which is the correct state, not a stall.
+
+**Open for Matt, unanswered:** (a) may the alert capture take an `events` override so a
+price-drop alert is its own measurable row rather than folded into the new-listing row;
+(b) is "every new listing, by email" acceptable in place of the literal "one email per
+listing", given the hourly cron batches sends.
+
+
+## Prior — 2026-09-09 (site queue: a sold home stops publishing its asking price; one canonical per listing)
 
 ## Prior — 2026-09-09 (site queue round four: SITE-54 and SITE-30 done, 28 orphans settled; the sitemap classes answer cold under 40 s)
 
@@ -1669,6 +2411,86 @@ SITE-09's own ledger row is `response-clock` (28 days, baseline_value null on pu
 - Promise a visitor a duration ("within one business day", "within five minutes"): a
   duration is a number, and the only sourced one lives on the admin panel.
 
+## Landed — 2026-09-08 (session 019RdEm6: SITE-M1 done, SITE-04 built and live, evaluator marks re-baselined, round 2 claimed)
+
+Owner: Claude (Fable 5.1), session 019RdEm6, branch `claude/run-loop-w8f3ep` (PR #200, draft).
+The session is pinned to that branch; session 3db16241 merged its head 968b0e4 into `main`
+(bdf60cf0 → 7ac7ecc, 08:33 UTC), deploy READY, and recorded both nodes. Live check 08:40 UTC:
+the compact brokers table is on `/`, the alerts strip renders on /cities/bend, /cities/bend/
+awbrey-butte and /communities/tetherow ("2 houses came on the market in Tetherow" inline).
+
+**Matt's word this session: "Go" (twice).** `/site-queue` with `ScheduleWakeup` self-pacing;
+two lanes in worktrees; a separate Opus evaluator per page class.
+
+**Shipped**
+- SITE-M1 (node 64fe8b08, `done`): `AboutFaces size="compact"` on the homepage only. At
+  390x844 the section is 520px: eyebrow, heading + Meet the team, three faces on a shared
+  shelf, name, role, OR license, Call / Text / Book rows, all in the first screen
+  (`ui_kits/homepage-v6/shots/brokers-390.png`, before shot beside it). Also fixed: save
+  hearts and carousel dots rendered as bordered squares (selector specificity), the footer
+  skyline crop, the hero missing from record shots. Evaluator 60 → 74 → 77 on one scale.
+  **Matt 2026-09-08 08:35 UTC: 77 is the new homepage mark; the 88 is retired** (different
+  evaluator, deleted shots).
+- SITE-04 (node 9339692e, `blocked` on MEASUREMENT, re-open 2026-10-06): `V3AlertsStrip`
+  barrel primitive (callout after the opening with the real 30-day count; sticky repeat past
+  #atlas, dismissible, off over the footer, gone after a send) on city, neighborhood,
+  community. Count = Market Truth `new_listings_30d` (city:bend 148, awbrey-butte 15,
+  tetherow 2 on 2026-09-08, detached, period_end 2026-09-06) with a Source disclosure. No
+  price-cut count exists in any cache (two query shapes), so the price-drop promise is a
+  sentence, never a number. Display numeral only at counts ≥ 10 (`PLACE_ALERTS_FIGURE_MIN`);
+  scope line reconciles figure and offer ("covers all of Bend, Awbrey Butte included"; the
+  exact MLS subdivision set a community filter matches: Tetherow, Triple or Tetherow Resort).
+  Capture contract unchanged; `alert_create` carries `placement`. Round three (4848a1a):
+  the door has an affordance at every width, the scope is stated once, and a real logic gap
+  closed (the sticky strip's IntersectionObserver never fires on a jump past the Atlas; a
+  throttled scroll read backs it now).
+
+  **The marks were rebaselined, not raised (2026-09-08).** Main landed the receipt contract
+  the same day: a tasteReview dated 2026-09-08 or later must record its instrument, and a
+  prior mark that differs on evaluatorModel, rubricVersion or shotsHash is not a baseline.
+  Every earlier place mark differs on all three, so these are first marks on this instrument:
+  city 78, neighborhood 72, community 65 (median of three scorings in one evaluator call,
+  claude-opus-5 against claude-fable-5-1 as builder, rubric v1-2026-09-08, hashed to eight
+  records from one capture run). Prior marks noted on each receipt.
+
+  **A degraded capture cost the city page 18 points before anyone noticed.** Every place
+  figure here comes from a read wrapped in a 3.5s timeout; a dev server compiling under load
+  blows through it and the page renders its honest withheld state ("Live counts are
+  unavailable right now", a callout with no figure). A scoring round was handed exactly that
+  on the phone records and reported the feature missing on mobile and the hero photograph
+  wrong. Both were capture artifacts. The tool now reloads up to three times and refuses to
+  write a record in that state (trap 12), and the healthy re-score moved city 60 to 78. If a
+  record ever looks broken, warm the route and re-capture before you believe it.
+
+- CI: `docs/ROUTE_INVENTORY.md` could not regenerate since `CANONICAL_ZIPS` moved
+  (`scripts/index-routes.mjs` threw), so the /dashboard/marketing deletion never reached
+  the route smoke and PR #200 went red on two 404s. Generator fixed, inventory regenerated
+  (7ac7ecc on main). `ci:routes` is not in the gate chain.
+
+**SITE-04 measurement baseline (28 days before ship, read 2026-09-08 07:35Z, operational):**
+place-page sessions 1,335 distinct (`visitor_events` page_view: city 527, neighborhood 231,
+community 636); `listing_alerts` rows from real visitors 2, neither from a place-page filter
+shape (21 of 23 rows were fleet-test or staff). Baseline rate 0 per 100 place-page sessions.
+Price-drop rows cannot be reported separately without an `events` override on the capture
+action (Matt's call, on the node).
+
+**Rules learned (apply, do not re-litigate)**
+- Evaluator marks are not comparable across evaluators; record the new number with the
+  prior mark noted; the rise rule is judged on one scale within the item (Matt, above).
+- Record shots must show the page: the sandbox browser cannot load the Supabase storage
+  hero or the Spark photo CDN; relay those hosts through curl in the capture. Never a
+  fabricated image.
+- Lane agents idle on background waiters; brief them to run everything in the foreground.
+- Two Fable lanes plus an evaluator hit the account rate limit in ~35 minutes; the skill's
+  "schedule the wake for the reset" rule held.
+
+**Round 2 (claimed 08:41 UTC by this session):** SITE-12 (homepage hero: live counts under
+the search, server-rendered Sell tab) and SITE-02b (the answer drawn: months-of-supply bars,
+comparable-sale dots, days-to-pending rule; every later item depends on it). Both were released
+from the grinder by the 3-hour idle rule. SITE-02b's evaluator pass is on the community page,
+which session 01Aubwpa's SITE-11 also touches: whoever lands second re-scores that class.
+
+
 ## Prior — 2026-09-07 (site queue mechanism + the place-page value ask, SITE-01)
 
 Owner: Claude (Fable 5.1), session 3db16241, main checkout. Landed on `origin/main`:
@@ -1744,6 +2566,29 @@ the surface must land as queue items, never as a new plan; community traffic is 
 (24 clicks in 28 days), so some accept windows will not prove anything and the item is
 called done on evaluator + function; the site cannot change impressions or the AI
 shortlists (reviews, rankings); parallel lanes cost merges and rate limits.
+
+**UNFINISHED AND PUSHED ON PURPOSE (2026-09-08 16:30 UTC, 8bf1621).** The alerts
+strip carries a craft round closing the seven item-level defects the evaluator named:
+the count as a door at rest, the sticky disclosure off the size and contrast floor, the
+bar collapsed at 375 with the page reserving its height, the scope carried on the sticky
+where the alert is wider than the count, one sentence shared by callout and sticky, the
+bare MLS alias out of visitor prose, and a drawn caret replacing the browser triangle.
+
+It is pushed WITHOUT record shots and WITHOUT an evaluator pass, which is a deliberate
+trade, not an oversight: a builder lane wrote it, the container restarted before the lane
+reported, and the work was recovered from its worktree as an uncommitted patch and
+three-way merged onto this branch (five files conflicted with round three and the
+tap-target fix; each was resolved to keep both changes). Verified: 86 unit tests, tsc
+clean, ci:gates 145/145. Not verified: nothing visual. So the marks still stand at city
+78, neighborhood 72, community 65 on the 2026-09-08 instrument, and the three receipts
+still point at the pre-craft records.
+
+PICK IT UP HERE: warm the three routes with curl and a browser user agent until they
+answer in about two seconds, capture with
+`node scripts/take-route-shots.mjs <class> <url> --states atlas=#atlas,market=#market,alerts-callout=#alerts`,
+LOOK at the shots, then re-score and rewrite the three receipts. Do not call the defects
+closed until a separate evaluator has seen them. The tool will refuse to write a record
+that caught the degraded read, so a throw there means warm the route again, not a bug.
 
 **Next (the queue, in order)**
 1. SITE-02 `/sell`: show the sourced answer between the address and the contact step

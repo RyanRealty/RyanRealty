@@ -153,10 +153,13 @@ export function publishActiveListingRows(
         sub,
       ].filter((part): part is string => Boolean(part && part.trim()))
       const photo = (tile.photoUrl ?? '').trim()
+      // SITE-52: the section heading is already "Active listings" — the DOM
+      // count is the context line worth printing; a bare 'Active' with no DOM
+      // would only repeat the heading, so the row carries no when at all.
       const when =
         typeof tile.dom === 'number' && Number.isFinite(tile.dom) && tile.dom >= 0
-          ? `Active · ${Math.round(tile.dom)} DOM`
-          : 'Active'
+          ? `${Math.round(tile.dom)} DOM`
+          : null
       return {
         href: listingTileHref({
           listingKey: tile.listingKey,
@@ -165,7 +168,7 @@ export function publishActiveListingRows(
           city: tile.city,
           subdivisionName: tile.subdivisionName,
         }),
-        when: v3Text(when),
+        ...(when ? { when: v3Text(when) } : {}),
         what: v3Text(what),
         detail: detailParts.length > 0 ? v3Text(detailParts.join(' · ')) : undefined,
         value: v3Text(formatPriceExact(Number(tile.listPrice))),

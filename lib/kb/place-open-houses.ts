@@ -26,7 +26,8 @@
  */
 import { getListingTiles, getHeroPhotosByListingKeys, getUpcomingOpenHouses } from '@/lib/data'
 import { assembleOpenHouses, type OpenHouseListing } from '@/app/open-houses/_v3/oh-listings'
-import { openHouseWhen } from '@/app/open-houses/_v3/oh-when'
+import { formatClock, openHouseWhen } from '@/app/open-houses/_v3/oh-when'
+import { publishCalendarDay } from '@/lib/listing/publish-calendar-day'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { pacificTodayIso, addIsoDays } from '@/app/open-houses/_v3/oh-constants'
@@ -73,7 +74,25 @@ export function openHouseRows(items: readonly OpenHouseListing[]): V3LedgerFigur
     const address = (oh.unparsedAddress
       ?? [oh.streetNumber, oh.streetName, oh.streetSuffix].filter(Boolean).join(' '))?.trim()
     if (!address || !oh.href) return []
-    const when = openHouseWhen(oh.eventDate, oh.startTime, oh.endTime)
+    // The calendar tile the walk layout leads with: weekday, day, month as
+    // three already-formatted strings, each through publishCalendarDay so the
+    // civil day stays the Pacific day (the Kilimanjaro rule) and the tile can
+    // never disagree with the trace. `formatDate` merges its own month, day
+    // and year defaults under the options, so the parts a tile string drops
+    // are passed as undefined on purpose. Derived HERE and never in the
+    // primitive (ci:public-v3 rule 3). With a readable day, `when` carries
+    // only the hours; without one the row keeps its one-line form.
+    const weekday = publishCalendarDay(oh.eventDate, { weekday: 'short', month: undefined, day: undefined, year: undefined })
+    const dayNumber = publishCalendarDay(oh.eventDate, { day: 'numeric', month: undefined, year: undefined })
+    const month = publishCalendarDay(oh.eventDate, { month: 'short', day: undefined, year: undefined })
+    const tile =
+      weekday && month && /^\d{1,2}$/.test(dayNumber)
+        ? { weekday: v3Text(weekday), day: v3Text(dayNumber), month: v3Text(month) }
+        : null
+    const startLabel = formatClock(oh.startTime)
+    const endLabel = formatClock(oh.endTime)
+    const hours = startLabel && endLabel ? `${startLabel}-${endLabel}` : startLabel
+    const when = tile ? hours || 'Open house' : openHouseWhen(oh.eventDate, oh.startTime, oh.endTime)
     const specs = [
       oh.beds != null ? `${oh.beds} bd` : null,
       oh.baths != null ? `${oh.baths} ba` : null,
@@ -100,6 +119,7 @@ export function openHouseRows(items: readonly OpenHouseListing[]): V3LedgerFigur
         id: oh.id,
         href: oh.href,
         when: v3Text(when || 'This week'),
+        ...(tile ? { date: tile } : {}),
         what: v3Text(address),
         ...(detail ? { detail: v3Text(detail) } : {}),
         value: v3Text(formatPublishedAsk(oh.listPrice) ?? 'Price on request'),

@@ -5,6 +5,7 @@ import { shouldRefuseDevRoute, DEV_NOT_FOUND_HTML } from '@/lib/routing/dev-only
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
 import { isPresetSlug } from '@/lib/search-presets'
 import resortCommunitiesRegistry from '@/data/resort-communities.json'
+import { isInvalidBlogIndexPath } from '@/lib/blog/index-path-guard'
 
 /**
  * Next.js Edge Middleware.
@@ -359,6 +360,13 @@ function resolveGeoCityRedirect(pathname: string): string | null {
   return null
 }
 
+const BLOG_NOT_FOUND_HTML =
+  '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Page not found · Ryan Realty</title></head>' +
+  '<body style="font-family:Geist,system-ui,sans-serif;background:#102742;color:#faf8f4;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center">' +
+  '<div style="max-width:32rem;padding:2rem"><h1 style="font-size:2rem;margin:0 0 .75rem">Page not found</h1>' +
+  '<p style="opacity:.8;line-height:1.6;margin:0 0 1.5rem">There is no blog page at this address. The index has every post.</p>' +
+  '<a href="/blog" style="color:#faf8f4;text-decoration:underline">Central Oregon market writing</a></div></body></html>'
+
 const GEO_NOT_FOUND_HTML =
   '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Page not found · Ryan Realty</title></head>' +
   '<body style="font-family:Geist,system-ui,sans-serif;background:#102742;color:#faf8f4;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center">' +
@@ -534,6 +542,19 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         'cache-control': 'no-store',
         'x-robots-tag': 'noindex, nofollow',
       },
+    })
+  }
+
+  // ─── (0b2) Invalid blog index path → REAL 404 (SITE-29) ─────────────────
+  // /blog/category/<c> and /blog/page/<n> are on-demand ISR with an empty
+  // generateStaticParams, the same soft-404 class as (0c): an unknown
+  // category or a malformed page number would render a hollow 200 under
+  // app/loading.tsx. The edge knows the category list and the page shape
+  // (lib/blog/index-path-guard); a page past the last stays the route's own.
+  if (!pathname.startsWith('/api/') && isInvalidBlogIndexPath(pathname)) {
+    return new NextResponse(BLOG_NOT_FOUND_HTML, {
+      status: 404,
+      headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
     })
   }
 

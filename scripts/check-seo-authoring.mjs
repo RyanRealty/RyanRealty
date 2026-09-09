@@ -72,10 +72,18 @@ const REQUIRED_FILE_CONTRACTS = [
         pattern: /alternates:\s*\{\s*canonical:/m,
         message: 'Blog index metadata must define a canonical URL.',
       },
+    ],
+  },
+  // SITE-29: the bare index reads no query and is always indexable; the
+  // category and page views moved to their own paths and carry the noindex
+  // policy there. The shared metadata builder applies it for all three.
+  {
+    file: 'app/blog/_v3/blog-index-view.tsx',
+    checks: [
       {
         id: 'blog-noindex-policy',
         pattern: /shouldNoIndexBlogIndex\(/m,
-        message: 'Blog index metadata must apply noindex policy helper.',
+        message: 'Blog index category/page metadata must apply noindex policy helper.',
       },
     ],
   },

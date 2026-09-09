@@ -53,6 +53,11 @@ const OVERLAY_STATS = [
   'median_list_active',
 ] as const
 
+/** PostgREST's per-response row cap; the overlay read pages in this size. */
+const OVERLAY_PAGE = 1000
+/** How far back an overlay row can be and still be read; see loadOverlayRows. */
+const OVERLAY_LOOKBACK_DAYS = 14
+
 type MetricRow = {
   stat_id: string
   geo_type: string
@@ -133,29 +138,47 @@ async function loadOverlayRows(
   if (!normalized.length) return { normalized, latest }
 
   const sb = createServiceClient()
-  const { data, error } = await sb
-    .from('market_metric')
-    .select(
-      'stat_id, geo_type, geo_slug, value, value_text, is_publishable, complete_through, period_end, window_months, computed_at',
-    )
-    .eq('definition_id', DEFINITION_ID)
-    .eq('segment', 'detached')
-    .in(
-      'geo_type',
-      [...new Set(normalized.map((k) => k.geoType))],
-    )
-    .in(
-      'geo_slug',
-      [...new Set(normalized.map((k) => k.geoSlug))],
-    )
-    .in('stat_id', [...OVERLAY_STATS])
-  if (error) throw new Error(`getDetachedMarkets: ${error.message}`)
+  // NEWEST FIRST, BOUNDED, PAGED. market_metric keeps every computation, so
+  // the unordered read this used to be grew past PostgREST's 1,000-row cap
+  // once a caller asked for more than a dozen geos: on 2026-09-09 the cities
+  // index (region + 15 cities) got exactly 1,000 rows, the region's latest
+  // active_count was among them and its latest months_of_supply was not, so
+  // the region assembled inventory but no headlines and the page lost its
+  // verdict and its drawing while looking healthy. Ordering by computed_at
+  // desc puts every key's latest row on the first page; the lookback keeps
+  // the read bounded (nothing older is publishable as live: staleReason gives
+  // a windowed stat two days of slack, and an inventory count a fortnight
+  // old is not "right now"); the range loop finishes any page the cap cut.
+  const since = new Date(Date.now() - OVERLAY_LOOKBACK_DAYS * 86_400_000).toISOString()
+  for (let from = 0; ; from += OVERLAY_PAGE) {
+    const { data, error } = await sb
+      .from('market_metric')
+      .select(
+        'stat_id, geo_type, geo_slug, value, value_text, is_publishable, complete_through, period_end, window_months, computed_at',
+      )
+      .eq('definition_id', DEFINITION_ID)
+      .eq('segment', 'detached')
+      .in(
+        'geo_type',
+        [...new Set(normalized.map((k) => k.geoType))],
+      )
+      .in(
+        'geo_slug',
+        [...new Set(normalized.map((k) => k.geoSlug))],
+      )
+      .in('stat_id', [...OVERLAY_STATS])
+      .gte('computed_at', since)
+      .order('computed_at', { ascending: false })
+      .range(from, from + OVERLAY_PAGE - 1)
+    if (error) throw new Error(`getDetachedMarkets: ${error.message}`)
 
-  for (const raw of data ?? []) {
-    const row = raw as MetricRow
-    const key = metricKey(row.geo_type, row.geo_slug, row.stat_id)
-    const prev = latest.get(key)
-    if (!prev || String(row.computed_at) > String(prev.computed_at)) latest.set(key, row)
+    const rows = (data ?? []) as MetricRow[]
+    for (const row of rows) {
+      const key = metricKey(row.geo_type, row.geo_slug, row.stat_id)
+      const prev = latest.get(key)
+      if (!prev || String(row.computed_at) > String(prev.computed_at)) latest.set(key, row)
+    }
+    if (rows.length < OVERLAY_PAGE) break
   }
   return { normalized, latest }
 }

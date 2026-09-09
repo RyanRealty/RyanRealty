@@ -38,6 +38,7 @@ import { moneyTicks, monthTicks, yoyClaim, yoyDirection } from '@/lib/charts/tic
 import { formatPriceCompact, formatPriceExact } from '@/lib/format/money'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
+import { stripOwnPrefix } from '@/lib/place/short-place-label'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import type { KbYearSeries } from '@/lib/kb/year-series'
@@ -109,9 +110,28 @@ function media(img: string): { src: string } | undefined {
  * A place whose count is null is still listed — its node is still reachable — and
  * its value column reads as unmeasured rather than as zero.
  */
+/**
+ * @param within The containing place's name, when the items are its own
+ * children (a neighborhood's subdivisions, a community's plats, a city's
+ * neighborhoods). Each row's name drops that prefix: a neighborhood's plats
+ * read as its own children, so on Awbrey Butte's page "Awbrey Butte
+ * Homesites Phase Twenty-two" is the row "Homesites Phase Twenty-two"
+ * (lib/place/short-place-label, stripOwnPrefix). Only the prefix goes; the
+ * phase stays, because in a ledger the phase is what tells two plats apart
+ * and the label has room to wrap. The href, the count and the trace are
+ * untouched: a label is cosmetic, a count is not (section 0). Omit it for a
+ * list of peers (other cities, golf communities), which have no parent here.
+ */
 export function placeFigureRows(
   items: readonly CityPlaceItem[],
-  kindLabel: string,
+  // Unused for rendering (SITE-52): every caller's kindLabel repeated a fact
+  // the section's own heading/eyebrow already stated ("Bend neighborhood" on
+  // a "Bend · Neighborhoods" ledger, "Central Oregon city" on an "Explore
+  // other cities" ledger). Kept in the signature so callers read the same at
+  // the call site; a future caller whose kindLabel genuinely differs from its
+  // heading can reintroduce the when.
+  _kindLabel: string,
+  within?: string | null,
 ): V3LedgerFigureRow[] {
   /**
    * Each row's share of the busiest place in the same list, which V3Ledger
@@ -139,8 +159,7 @@ export function placeFigureRows(
       {
         id: href,
         href,
-        when: v3Text(kindLabel),
-        what: v3Text(name),
+        what: v3Text(within ? stripOwnPrefix(name, within) : name),
         ...(detail ? { detail: v3Text(detail) } : {}),
         value: v3Text(
           // A MEASURED zero prints as the absence it is, matching /cities'
@@ -198,6 +217,11 @@ export function placePlainRows(
  * The clip is not played here — V3Ledger renders the poster frame, and the
  * community's own node is where the clip plays — but a community that HAS one is
  * marked, because that is why it leads the list.
+ *
+ * `when` carries ONLY the area-guide flag, not the town (SITE-52): every item's
+ * town is this city, already named by the section's own eyebrow/heading, so
+ * printing it on every row was the taste evaluator's "repeats OREGON" defect
+ * with a city name in place of the state.
  */
 export function communityRows(items: readonly CityCommunityItem[]): V3LedgerFigureRow[] {
   return items.flatMap((item) => {
@@ -208,7 +232,7 @@ export function communityRows(items: readonly CityCommunityItem[]): V3LedgerFigu
       {
         id: href,
         href,
-        when: v3Text(item.video ? `${item.town} · Area guide` : item.town),
+        ...(item.video ? { when: v3Text('Area guide') } : {}),
         what: v3Text(name),
         value: v3Text(
           item.activeCount != null ? `${item.activeCount.toLocaleString('en-US')} active` : 'not measured',
@@ -282,18 +306,27 @@ export function areaGuideRow(
   ]
 }
 
-/** Published guides as rows. No figures, so no trace is owed. */
+/**
+ * Published guides as rows. No figures, so no trace is owed.
+ *
+ * `when` is the publish date and ONLY the date (SITE-52): every caller heads
+ * this Ledger "Guides" or "{place} guides", so a 'Guide' fallback on a post
+ * with no dateLabel would repeat that heading rather than add a context line.
+ * Omit it instead — matching the doc's own rule that a leftover kind label is
+ * not a when.
+ */
 export function articleRows(items: readonly CityArticleItem[]): V3LedgerPlainRow[] {
   return items.flatMap((item) => {
     const title = item.title?.trim()
     const href = item.href?.trim()
     if (!title || !href) return []
     const detail = item.excerpt?.trim()
+    const dateLabel = item.dateLabel?.trim()
     return [
       {
         id: href,
         href,
-        when: v3Text(item.dateLabel?.trim() || 'Guide'),
+        ...(dateLabel ? { when: v3Text(dateLabel) } : {}),
         what: v3Text(title),
         ...(detail ? { detail: v3Text(detail) } : {}),
         ...(item.imageUrl?.trim() ? { media: { src: item.imageUrl.trim() } } : {}),
@@ -531,11 +564,19 @@ const FEED = 'live MLS through Oregon Data Share'
  * The trace over the Instrument's leftover-HUD figures. Every figure names its
  * own window on its label; a cell the metric layer withheld is absent, never
  * estimated (§0). The MoS clauses ride along only when a supply figure prints.
+ *
+ * MLS CITY, NOT A POLYGON. §0 rule 1 makes a trace name the filter that actually
+ * ran, and the writer behind these figures is public.refresh_place_membership,
+ * whose header states "Cities: MLS city text (D5), hyphen slug. Never city
+ * polygons." (supabase/migrations/20260823001500_refresh_place_membership.sql:2).
+ * "Inside the city boundary" named a spatial filter no query performs. The place
+ * door's own city trace now says the same sentence, so the two traces this page
+ * prints agree (lib/market/publish-place-door.ts).
  */
 export function cityMarketTrace(cityName: string, hasMos: boolean): string {
   return (
     `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
-    `detached single-family houses inside the ${cityName} city boundary. ` +
+    `detached single-family houses whose MLS City is ${cityName}. ` +
     `Every figure names its own window; a figure the layer withheld is absent, not estimated.` +
     (hasMos ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
   )

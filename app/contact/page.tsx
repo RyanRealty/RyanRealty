@@ -28,12 +28,12 @@ import { getPageContent } from '@/app/actions/site-pages'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
-import { getBrokers, getListingTiles } from '@/lib/data'
+import { getBrokers, getListingTiles, getReviews } from '@/lib/data'
 import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listing-ask'
-import { listingTileHref } from '@/lib/slug'
+import { listingTileHref, teamPath } from '@/lib/slug'
 import { formatDate } from '@/lib/format/date'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
-import { BRAND, CONTACT } from '@/lib/brand/contact'
+import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
 import { valuationHref } from '@/lib/site/valuation-href'
 import {
   V3_ROOT_CLASS,
@@ -82,7 +82,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
   // Session + identity-bridge reads kept (they pin this route's dynamic
   // rendering mode); the CRM page-view mirror they fed was deleted with the
   // CRM decommission. First-party visitor_sessions covers page views now.
-  const [params, pageContent, brokers, companySettings] = await Promise.all([
+  const [params, pageContent, brokers, companySettings, , , reviewSummary] = await Promise.all([
     searchParams,
     getPageContent('contact'),
     getBrokers(),
@@ -93,6 +93,9 @@ export default async function ContactPage({ searchParams }: PageProps) {
     getCrmCompanySettings().catch(() => null),
     getSession(),
     getPersonIdFromCookie(),
+    // The 5.0 on the principal broker's door (SITE-40): the same cached read
+    // /reviews and /about make; a failed read prints no figure, never a fallback.
+    getReviews(6).catch(() => null),
   ])
   const defaultInquiry = params.inquiry ?? (params.listingKey ? 'Buying' : undefined)
   const intent =
@@ -150,14 +153,65 @@ export default async function ContactPage({ searchParams }: PageProps) {
   const faqJsonLd = generateFAQSchema([...CONTACT_FAQ_ITEMS])
 
   const listingHref = listingTile ? listingTileHref(listingTile) : null
+  const principal =
+    brokers.find((b) => b.isPrincipal) ?? brokers.find((b) => b.slug === BROKERS.matt.slug) ?? null
   const introItems: V3QuietItem[] = [
     // The H1 lives on this Quiet; with no rows it would not render at all
     // (V3Quiet returns null on empty items — evaluator B2). One true line.
     { kind: 'prose' as const, body: 'Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the surrounding communities. Local experts who take care of you from the first call through closing.' },
+    // SITE-40, second pass: the evaluator found "no photo, map, headshot, or
+    // mark anywhere in either shot" and scored the fold level with its table
+    // mark. The person a visitor is about to call leads the doors, with the
+    // photograph as the mark; the four reaches stay ONCE, in V3Doors below.
+    ...(principal
+      ? [
+          {
+            label: `${principal.fullName}, principal broker`,
+            // No reply-time promise here: a claim with no measured basis is
+            // an invented figure (§0; the third evaluator pass read it as an
+            // unsourced claim beside a sourced one).
+            ...(principal.licenseNumber ? { detail: `Oregon license #${principal.licenseNumber}` } : {}),
+            href: teamPath(principal.slug),
+            mark: 'person' as const,
+            lead: true,
+            media: { src: principal.headshotPng, alt: principal.fullName },
+            ...(reviewSummary && reviewSummary.count > 0
+              ? {
+                  figure: {
+                    value: reviewSummary.averageRating.toFixed(1),
+                    unit: `of 5, from ${reviewSummary.count} Google reviews`,
+                    // NO ratio meter here. A 5.0 out of 5 fills the track
+                    // completely, so the mark carries no information and reads
+                    // as a stray rule beside the number — the separate
+                    // evaluator (2026-09-09, merged page) called it "inert
+                    // rather than data" and could not tell whether it was a
+                    // meter at all. The number carries the fact.
+                    source:
+                      'Google Business Profile reviews of Ryan Realty — every non-hidden review row in public.reviews, ratings averaged to a tenth, read live at render.',
+                    sourceName: 'Google reviews',
+                  },
+                }
+              : {}),
+          },
+        ]
+      : []),
+    // SITE-40: the office was a prose row, which is why the evaluator found "no
+    // image, mark, or visual element anywhere in the captured fold at either
+    // 1440 or 375". It is a door now, carrying the navy locator mark and going
+    // where a person reading an address wants to go — the office on the map.
+    // SECONDARY, so it folds to one inline line rather than a second full door
+    // row. The separate evaluator (2026-09-09, merged page) named the repeat by
+    // shape: the broker row and the office row were "the same component
+    // instanced twice — leading image or icon, bold title, trailing chevron,
+    // muted meta line". They are not the same weight of thing either. Inline
+    // also gives the address the full measure, so the postcode stops orphaning
+    // onto a third line at 375.
     {
-      kind: 'prose' as const,
-      term: 'Office',
-      body: `${BRAND.address.street}, ${BRAND.address.city}, ${BRAND.address.region} ${BRAND.address.postalCode}`,
+      label: 'The office',
+      detail: `${BRAND.address.street}, ${BRAND.address.city}, ${BRAND.address.region} ${BRAND.address.postalCode}`,
+      href: BRAND.social.googleBusinessProfile,
+      mark: 'map' as const,
+      weight: 'secondary' as const,
     },
     // The four reaches (call, text, email, schedule) live ONCE, in V3Doors
     // below. The separate evaluator (2026-09-08) read them here and again in

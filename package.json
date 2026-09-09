@@ -123,6 +123,8 @@
     "ci:ad-brokerage-attribution": "node scripts/check-ad-brokerage-attribution.mjs",
     "ci:alias-plats": "node scripts/check-subdivision-alias-plats.mjs",
     "ci:taste-canon": "node scripts/check-taste-canon.mjs",
+    "taste:table": "node scripts/taste-table.mjs",
+    "taste:table:diff": "node scripts/taste-table.mjs --diff",
     "ci:market-formula": "node scripts/check-market-formula.mjs",
     "ci:market-question": "node scripts/check-market-question-heading.mjs",
     "ci:market-section-nesting": "node scripts/check-market-section-nesting.mjs",

@@ -1,3 +1,5 @@
+// @no-static-params — on-demand ISR (SITE-29): generateStaticParams returns [] on purpose so nothing
+// prerenders at build (ci:ssg-budget); the first hit renders and caches under `revalidate`.
 /**
  * /blog/[slug] — one published article, on the components/site/v3 barrel.
  *
@@ -47,8 +49,6 @@ import {
 import { rewriteBlogMosVerdicts } from '@/lib/blog/publish-blog-mos-verdicts'
 import { publishBlogFaq } from '@/lib/blog/publish-blog-faq'
 import '@/components/site/v3/V3ArticleIsland.css'
-import { getSession } from '@/app/actions/auth'
-import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { generateBlogSchema } from '@/lib/structured-data'
 import ShareButton from '@/components/ShareButton'
 import { formatDate } from '@/lib/format/date'
@@ -89,7 +89,12 @@ function estimateReadTime(content: string | null | undefined): number {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
   const post = await getBlogPostBySlug(slug)
-  if (!post) return { title: 'Post Not Found | Ryan Realty', robots: { index: false, follow: true } }
+  // notFound() here, in generateMetadata: app/loading.tsx opens a Suspense
+  // boundary on every route, so the page body's notFound() lands after the
+  // shell's 200 has flushed and a crawler reads a 200 "Post Not Found" with no
+  // H1 (measured 2026-09-09 on next start). Metadata resolves before the
+  // shell, so this one is a real 404 (SITE-29).
+  if (!post) notFound()
 
   const period = publishBlogReportPeriod({
     title: post.title,
@@ -129,13 +134,30 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
+// ISR ON DEMAND, ZERO BUILD-TIME FAN-OUT (SITE-29). A dynamic segment with no
+// generateStaticParams at all is never cached: Next classifies it fully
+// dynamic and every request rendered at origin (private, no-store, measured
+// 2026-09-09 on next start). The empty list below is the on-demand shape
+// ci:ssg-budget prescribes for /subdivisions: nothing prerenders at build (a
+// fan-out over every post chains getBlogRelatedHomes → getCityListings and
+// getDetachedMarket and cost 11.2 of 14 build minutes), the first hit renders
+// and caches, and later hits are served for 300s. The months-of-supply guard
+// below then re-runs at most every 300s, inside its intent.
+export const dynamicParams = true
+export const revalidate = 300
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  return []
+}
+
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params
-  const [post] = await Promise.all([
-    getBlogPostBySlug(slug),
-    getSession(),
-    getPersonIdFromCookie(),
-  ])
+  // No per-visitor read here. Until 2026-09-09 this awaited the session and the
+  // identity cookie beside the post and discarded both; each reads cookies(),
+  // which made every blog post render at request time (private, no-store, CDN
+  // MISS, ~100ms of TTFB) on the site's highest-impression class, for nothing:
+  // ShareButton and V3SectionTracker are client components and hydrate their
+  // own state (SITE-29).
+  const post = await getBlogPostBySlug(slug)
   if (!post) notFound()
 
   const relatedPosts = await getRelatedBlogPosts(post.slug, post.category, 3)
@@ -249,9 +271,12 @@ export default async function BlogPostPage({ params }: PageProps) {
     const relatedTitle = related.title?.trim()
     const relatedSlug = related.slug?.trim()
     if (!relatedTitle || !relatedSlug) continue
+    // SITE-52: the heading is already "Related posts", so a 'Guide' fallback
+    // would only repeat it — the published date is the context line worth
+    // printing, and a post with none carries no when at all.
     relatedRows.push({
       href: `/blog/${relatedSlug}`,
-      when: v3Text(related.published_at ? formatDate(related.published_at) : 'Guide'),
+      ...(related.published_at ? { when: v3Text(formatDate(related.published_at)) } : {}),
       what: v3Text(relatedTitle),
       id: relatedSlug,
     })

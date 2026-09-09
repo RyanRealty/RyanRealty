@@ -135,7 +135,6 @@ export const revalidate = 60
 
 type Props = {
   params: Promise<{ slug: string; neighborhoodSlug: string }>
-  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 // Short form for the character-constrained meta description below ONLY.
@@ -175,9 +174,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
 }
 
-export default async function NeighborhoodDetailPage({ params, searchParams }: Props) {
+export default async function NeighborhoodDetailPage({ params }: Props) {
   const { slug: citySlug, neighborhoodSlug } = await params
-  const sp = await searchParams
 
   const neighborhood = await getNeighborhoodBySlug(citySlug, neighborhoodSlug)
   if (!neighborhood) notFound()
@@ -513,7 +511,9 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
     img: preferPlaceHero(c.heroImageUrl, communityImage(c.slug) ?? ''),
     typeBits: childTypeBits.get(slugify(c.subdivision)) ?? null,
   }))
-  const [firstSub, ...restSub] = placeFigureRows(subdivisionItems, `${neighborhood.name} subdivision`)
+  // Its own children: the rows drop the neighborhood's name where a plat's
+  // name opens with it (placeFigureRows, `within`).
+  const [firstSub, ...restSub] = placeFigureRows(subdivisionItems, `${neighborhood.name} subdivision`, neighborhood.name)
 
   // Live feed - fetched city-wide (the MLS carries no neighborhood scope), so
   // it is labeled with whichever scope the rows actually carry (§0).
@@ -707,7 +707,6 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             listings={splitListings}
             totalCount={inventoryOk ? inventory.activeCount : undefined}
             degraded={!boundaryRead.ok && !inventoryOk}
-            searchParams={sp}
           />
         </div>
 

@@ -12,7 +12,7 @@
  */
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useUrlSearchParams } from '@/lib/search/url-search-params.client'
 import { cn } from '@/lib/utils'
 import './search-ledger.css'
 import { publishSearchCount } from '@/lib/search/publish-search-count'
@@ -400,7 +400,7 @@ export default function AllFiltersSheet({
   enableCount = true,
   contextDefaults,
 }: AllFiltersSheetProps) {
-  const searchParams = useSearchParams()
+  const searchParams = useUrlSearchParams()
   const [draft, setDraft] = useState<Record<string, string>>({})
   const [count, setCount] = useState<number | null>(null)
   // Class-prevalence census (plan §5) — ~120 KB, loaded lazily on first open.

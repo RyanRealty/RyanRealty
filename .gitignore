@@ -220,5 +220,9 @@ scripts/place-documents/ocr
 #   node scripts/gis/build-basemap-skeleton.mjs
 .basemap-work/
 data/basemap/central-oregon-detail.ndjson
+
+# taste-table.mjs scratch captures (SITE-51) — never ui_kits/, never committed.
+# One run dir per invocation; regenerable via `npm run taste:table`.
+.taste-table/
 !.claude/skills/site-queue/
 !.claude/skills/loop-status/

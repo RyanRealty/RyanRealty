@@ -61,3 +61,10 @@ export function indexBarWeight(count: number | null | undefined, max: number): n
 export function liveForSaleLabel(count: number): string {
   return count > 0 ? `${formatCount(count)} for sale` : 'None listed now'
 }
+
+/**
+ * The value when no source published a count for the row. Unknown is not
+ * zero: until SITE-52 the index printed a null count as "None listed now",
+ * which claims an empty market the data never established (CLAUDE.md §0).
+ */
+export const NO_LIVE_COUNT_LABEL = 'No live count'

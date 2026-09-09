@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import legacyRedirects from '@/data/legacy-redirects.json'
+import { getPlaceLinks } from '@/lib/place-links'
 import {
   isPlaceFilteredSearchHref,
   publishPlaceBrowseHref,
   publishPlaceHeroCta,
+  redirectsAwayFromSearch,
 } from './publish-place-browse-href'
 
 describe('publishPlaceBrowseHref', () => {
@@ -27,6 +30,44 @@ describe('publishPlaceBrowseHref', () => {
     expect(publishPlaceBrowseHref('#homes')).toBeNull()
     expect(publishPlaceBrowseHref('')).toBeNull()
     expect(publishPlaceBrowseHref(null)).toBeNull()
+  })
+
+  it('withholds a path middleware 301s away — Tetherow bounces back to its own page', () => {
+    // getPlaceLinks returns this exact path for the Tetherow community, and
+    // data/legacy-redirects.json maps it to /communities/tetherow, which
+    // middleware.ts applies before any route resolves. A door built from it
+    // would take a visitor on /communities/tetherow back to where they stand.
+    const tetherow = getPlaceLinks({ type: 'community', slug: 'tetherow' })
+    expect(tetherow.browseUrl).toBe('/homes-for-sale/bend/tetherow')
+    expect((legacyRedirects as Record<string, string>)['/homes-for-sale/bend/tetherow']).toBe(
+      '/communities/tetherow',
+    )
+    expect(publishPlaceBrowseHref(tetherow.browseUrl)).toBeNull()
+    expect(publishPlaceBrowseHref('/homes-for-sale/bend/tetherow')).toBeNull()
+    expect(publishPlaceHeroCta('/homes-for-sale/bend/tetherow', 'See Tetherow homes')).toBeNull()
+    // Normalised the way middleware normalises: trailing slash and case.
+    expect(publishPlaceBrowseHref('/homes-for-sale/bend/tetherow/')).toBeNull()
+    expect(publishPlaceBrowseHref('/Homes-For-Sale/Bend/Tetherow')).toBeNull()
+  })
+
+  it('still publishes the places that do not redirect', () => {
+    const bend = getPlaceLinks({ type: 'city', slug: 'bend' })
+    expect(publishPlaceBrowseHref(bend.browseUrl)).toBe('/homes-for-sale/bend')
+    const awbrey = getPlaceLinks({ type: 'neighborhood', slug: 'awbrey-butte', citySlug: 'bend' })
+    expect(publishPlaceBrowseHref(awbrey.browseUrl)).toBe('/homes-for-sale/bend/awbrey-butte')
+  })
+
+  it('redirectsAwayFromSearch ignores a self-map, the way middleware does', () => {
+    expect(redirectsAwayFromSearch('/homes-for-sale/bend/tetherow')).toBe(true)
+    expect(redirectsAwayFromSearch('/homes-for-sale/bend')).toBe(false)
+    expect(redirectsAwayFromSearch('/homes-for-sale/redmond/ridge-at-eagle-crest')).toBe(false)
+  })
+
+  it('is the only /homes-for-sale key in the legacy map — a second one changes this rule', () => {
+    const keys = Object.keys(legacyRedirects as Record<string, string>).filter((k) =>
+      k.startsWith('/homes-for-sale'),
+    )
+    expect(keys).toEqual(['/homes-for-sale/bend/tetherow'])
   })
 })
 

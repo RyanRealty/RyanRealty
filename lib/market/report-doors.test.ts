@@ -48,12 +48,12 @@ describe('market report doors', () => {
 
 
 describe('market hub chooser', () => {
-  it('lists Live · By city · Explore · Sales/weekly · MOS', () => {
+  it('lists Live · By city · Every closed sale · Weekly snapshots · MOS', () => {
     expect(marketHubChooser().map((d) => d.label)).toEqual([
       'Live market',
       'By city',
-      'Explore',
-      'Sales / weekly',
+      'Every closed sale',
+      'Weekly snapshots',
       'Months of supply',
     ])
   })

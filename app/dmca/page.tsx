@@ -117,7 +117,6 @@ export default function DMCAPage() {
           rows={[
             {
               href: '/',
-              when: v3Text('Home'),
               what: v3Text('Ryan Realty home'),
               detail: v3Text('Central Oregon listings'),
             },

@@ -67,16 +67,27 @@
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
-      "routes": ["/compare"],
-      "viewports": [1440, 375],
-      "states": ["empty-queue"]
+      "routes": [
+        "/compare"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "empty-queue"
+      ]
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/compare/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/compare/shots/mobile375.png"
     },
     "shotsHash": "sha256:f541dd6d4bea0aa03bb14eba85e7fe3c6517076eef541aa71fd164a0f7844da0",
-    "scores": [53, 52, 56],
+    "scores": [
+      53,
+      52,
+      56
+    ],
     "score": 53,
     "criteria": {
       "designQuality": 18,
@@ -116,7 +127,22 @@
         "viewport": "both"
       }
     ],
-    "comparedToPrior": "first",
-    "notes": "The route had no committed tasteReview before this one, so this is its first receipt and comparedToPrior is 'first'. The class's mark on the STANDING TABLE instrument (design_system/public/taste-table.json, 2026-09-08) was median 29 from scorings 29/34/25, with the verdict 'an empty form label, not a product demo'. That table's shots are not in the repo, so its shotsHash differs and it is not a valid priorMark here — the table's own note says so. On the same rubric, the same evaluator model and the same capture spec, the class now medians 53."
+    "comparedToPrior": "rebaselined",
+    "notes": "The route had no committed tasteReview before this one, so this is its first receipt and comparedToPrior is 'first'. The class's mark on the STANDING TABLE instrument (design_system/public/taste-table.json, 2026-09-08) was median 29 from scorings 29/34/25, with the verdict 'an empty form label, not a product demo'. That table's shots are not in the repo, so its shotsHash differs and it is not a valid priorMark here — the table's own note says so. On the same rubric, the same evaluator model and the same capture spec, the class now medians 53.",
+    "priorMark": {
+      "evaluatedAt": "2026-09-09",
+      "score": 42,
+      "scores": [
+        42,
+        37,
+        45
+      ],
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:099fb0fe2259cac6d9717ee2d4acf34f5007781e045c45d6328a66f248232808",
+      "source": "the route receipt committed on claude/run-loop-w8f3ep at 1ea07155 (SITE-40), merged into this branch alongside SITE-50"
+    },
+    "rebaselineReason": "shotsHash: the prior mark is the route receipt this branch committed at 1ea07155 (SITE-40, score 42) on the SAME evaluatorModel (claude-sonnet-5) and the SAME rubricVersion (v1-2026-09-08), but on shots of the pre-SITE-50 empty state. SITE-50 replaced that empty state with the worked example, so the shots are of a different page and the instrument is not identical. The two marks are still directly comparable on model and rubric, and the score rose 42 -> 53.",
+    "priorMarkNote": "SITE-50 was built and scored on main, where this route carried no committed receipt, so the receipt was written \"first\" against the cross-class taste table (29 on 2026-09-08). The SITE-40 lane on claude/run-loop-w8f3ep had meanwhile committed a 42 for the same route on the SAME instrument — same evaluator model, same rubric version, same capture script. The merge of 2026-09-09 puts both in one history, so the higher committed mark is the prior one and this is a rise on a comparable instrument: 42 -> 53. The shotsHash differs because the page differs; that is what a rise is."
   }
 }

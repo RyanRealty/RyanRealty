@@ -23,6 +23,8 @@ import { ALL_SEARCH_URL_PARAMS } from '@/lib/search/field-registry'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 import MapSearchView from '@/components/search/MapSearchView'
 import SearchFilters from '@/components/search/SearchFilters'
+import { UrlSearchParamsProvider } from '@/lib/search/url-search-params.client'
+import { queryStringFromSearchParams } from '@/lib/search/search-params-query'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3_LEDGER_CLASS } from '@/components/site/v3'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
@@ -327,6 +329,9 @@ export async function renderMapSplitView(props: {
   // (THE LOOK, PUBLIC_UI.md section 6).
   return (
     <main className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'search-app-frame w-full bg-muted')}>
+    {/* Dynamic page: the request's query seeds the static-safe URL store the
+        filter tree reads (SITE-29), so the chips are in the HTML as before. */}
+    <UrlSearchParamsProvider search={queryStringFromSearchParams(sp as Record<string, string | string[] | undefined>)}>
       <div className="search-filter-dock w-full shrink-0 border-b border-border bg-card shadow-sm">
         <h1 className="truncate px-4 pt-2 font-display text-sm font-medium leading-5 text-foreground sm:px-6">
           {headline}
@@ -364,6 +369,7 @@ export async function renderMapSplitView(props: {
           openHouseLabels={openHouseLabels}
         />
       </div>
+    </UrlSearchParamsProvider>
     </main>
   )
 }

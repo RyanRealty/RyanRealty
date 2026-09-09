@@ -26,6 +26,10 @@ import { listingContactHref, publishListingContactKey } from '@/lib/listing/publ
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { publishListingLastDrop } from '@/lib/listing/publish-listing-history'
 import { publishListingListedBy } from '@/lib/listing/publish-listing-listed-by'
+import { formatPriceCompact } from '@/lib/format/money'
+import type { PublishedListingDropMark } from '@/lib/listing/publish-listing-drop-mark'
+import type { PublishedListingPillRead } from '@/lib/listing/publish-listing-pill-read'
+import { PriceDropMark } from './PriceDropMark'
 
 /**
  * PriceCtaStrip — price + address + pill row + CTA hierarchy under the hero.
@@ -120,6 +124,19 @@ type Props = {
   similarHref?: string
   /** The saved-search capture on this page. The off-market secondary. */
   alertsHref?: string
+  /**
+   * SITE-45. The newest price cut as two points (publishListingDropMark, off
+   * the same history rail): drawn as a slope mark beside the price, hover or
+   * tap for the two prices, the percent and the date. Null draws the label
+   * the strip always printed.
+   */
+  dropMark?: PublishedListingDropMark | null
+  /**
+   * SITE-45. One plain sentence under the status pills reading the day count
+   * and the $/sqft against the place's record (publishListingPillRead), with
+   * its trace behind a disclosure. Null prints the pills alone.
+   */
+  read?: PublishedListingPillRead | null
   className?: string
 }
 
@@ -151,6 +168,8 @@ export function PriceCtaStrip({
   textHref,
   similarHref = '#similar',
   alertsHref = '#listing-like-alerts',
+  dropMark = null,
+  read = null,
   className,
 }: Props) {
   // SITE-21. The four statuses under which nobody can buy this home. Read from
@@ -346,7 +365,17 @@ export function PriceCtaStrip({
           </span>
         ) : null}
       </div>
-      {publishedDrop ? (
+      {dropMark && !offMarket ? (
+        /* The cut drawn, not said: two points on one slope, the reading on
+           hover, focus or tap (SITE-45). The label is the one the strip has
+           always printed, so the a11y contract and the rail agree with it. */
+        <div className="mt-1.5">
+          <PriceDropMark
+            mark={dropMark}
+            label={lastDrop?.label ?? `Price drop ${formatPriceCompact(dropMark.drop)}`}
+          />
+        </div>
+      ) : publishedDrop ? (
         <div className="mt-1.5 text-sm font-semibold" style={{ color: 'var(--navy)' }}>
           Down <Price value={publishedDrop.drop} exact /> from{' '}
           <Price value={publishedDrop.original} exact />
@@ -402,6 +431,19 @@ export function PriceCtaStrip({
           </Pill>
         ) : null}
       </div>
+      {read ? (
+        /* The pills' plain read (SITE-45): what the day count and the $/sqft
+           mean against the place's own record, from the same Market Truth
+           reads the instrument further down makes. The trace sits behind a
+           disclosure so the sentence stays a sentence. */
+        <div className="listing-read">
+          <p className="listing-read__sentence">{read.sentence}</p>
+          <details className="listing-read__source">
+            <summary>Source</summary>
+            <p>{read.source}</p>
+          </details>
+        </div>
+      ) : null}
       </div>
       {/* No Google raster of this house here. Matt 2026-09-02: a listing page
           carries the living map only, and a 118px roadmap thumbnail above it

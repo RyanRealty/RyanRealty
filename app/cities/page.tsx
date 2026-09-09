@@ -3,7 +3,16 @@
  * Cities index — A–Z directory of Central Oregon cities.
  *
  * PAGE_INVENTORY §3: live counts on the rows, doors. Not a mini-Bend KPI
- * Instrument. Caption carries the region count and months-of-supply verdict.
+ * Instrument. The region's months of supply is DRAWN above the rows as
+ * V3Drawing's two bars (homes for sale against a month of sales); the caption
+ * under the heading names the directory, not the figure.
+ *
+ * SITE-52 (taste table 2026-09-08, /cities scored 30). Every row draws its
+ * count as a bar on the list's shared scale; a hover, a focus, or a hold shows
+ * the city's months-of-supply verdict where Market Truth publishes one and the
+ * last twelve complete months of closed detached sales as a line; every row
+ * carries a photo or the glyph; no row repeats "Oregon"; and a city whose
+ * count no source published says so instead of "None listed now".
  *
  * Parity contract: design_system/ryan-realty/ui_kits/cities/parity.json
  */
@@ -13,29 +22,34 @@ import type { Metadata } from 'next'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
 import { getAllCitySnapshots } from '@/lib/data'
-import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { getDetachedOverlays, type DetachedOverlay } from '@/lib/data/market-truth/getSellBendMarket'
+import { getPublicDetachedMonthly, type PublicMonthlyPoint } from '@/lib/data/market-truth/public-monthly'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
 import { getCityContent } from '@/lib/city-content'
 import { cityHero, preferPlaceHero } from '@/lib/geo-images'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { formatCount } from '@/lib/format/count'
-import { formatDate } from '@/lib/format/date'
+import { formatDate, formatMonthYear, zonedDateKey } from '@/lib/format/date'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import { formatIndexMedianUsd } from '@/lib/market/publish-index-median'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
+import { buildAnswerFigures, salesPerMonthFrom } from '@/lib/site/answer-figures'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
   V3Breadcrumb,
+  V3Drawing,
   V3Footer,
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
   V3_FOOTER_COLUMNS,
+  V3_LEDGER_SPARK_MIN,
   V3_ROOT_CLASS,
   v3Text,
   type V3LedgerFigureRow,
+  type V3LedgerReveal,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
@@ -43,6 +57,7 @@ import { cityFeaturedLinks } from '@/app/cities/CityFeaturedLinks'
 import {
   CITY_SENTENCE_FALLBACK,
   FEATURED_CITY_SLUGS,
+  NO_LIVE_COUNT_LABEL,
   firstSentence,
   indexBarWeight,
   liveForSaleLabel,
@@ -66,22 +81,84 @@ const FEATURED_TRACE =
 const OTHERS_TRACE =
   'live MLS through Oregon Data Share, the city snapshot row for each remaining Central Oregon city: active single-family count and the median list price of those listings'
 
+const REVEAL_TRACE =
+  'On hover, focus, or a hold, a row shows its months-of-supply verdict where Market Truth publishes one for the city (market_metric, detached, months_of_supply and market_verdict), and the last twelve complete months of closed detached sales as a line (market_metric closed_count, detached, one calendar month each); a month the source withheld breaks the line, and fewer than six published months draws none'
+
+const REGION_SUPPLY_TRACE =
+  'Market Truth, detached homes across Central Oregon (market_metric, definition mt-v1, segment detached, region central-oregon): active_count, and months_of_supply as homes for sale divided by closes in the last six months divided by six. The monthly pace drawn here is that division recovered exactly from the two published figures'
+
+/** The twelve complete months a row's run covers. */
+const REVEAL_MONTHS = 12
+
 function fmtMedian(n: number | null | undefined): string | null {
   return formatIndexMedianUsd(n)
 }
 
+/**
+ * What a row reveals, from what the sources published for it. The verdict line
+ * only where Market Truth assembled a publishable months-of-supply reading;
+ * an honest line where it published inventory but withheld the reading; the
+ * run only when at least V3_LEDGER_SPARK_MIN of the twelve months published.
+ * A city with nothing published reveals nothing, and the band stays empty.
+ */
+function cityReveal(layers: DetachedOverlay | undefined, months: readonly PublicMonthlyPoint[]): V3LedgerReveal | undefined {
+  const headlines = layers?.headlines ?? null
+  // marketVerdict() labels read "seller's market"; the line opens a sentence.
+  const verdict = headlines ? headlines.verdictLabel.charAt(0).toUpperCase() + headlines.verdictLabel.slice(1) : null
+  const line = headlines
+    ? `${verdict} · ${headlines.mosLabel} months of supply`
+    : layers?.inventory
+      ? 'No published months-of-supply reading for this city'
+      : null
+  const window = months.slice(-REVEAL_MONTHS)
+  const series = window.map((m) => m.closedCount)
+  const published = series.filter((v) => v != null).length
+  const drawRun = window.length === REVEAL_MONTHS && published >= V3_LEDGER_SPARK_MIN
+  if (!line && !drawRun) return undefined
+  const first = window[0]
+  const last = window[window.length - 1]
+  return {
+    line: v3Text(line ?? 'Closed sales by month'),
+    ...(drawRun && first && last
+      ? {
+          series,
+          seriesLabel: v3Text(`Closes by month, ${formatMonthYear(first.periodStart)} to ${formatMonthYear(last.periodStart)}`),
+        }
+      : {}),
+  }
+}
+
 export default async function CitiesPage() {
-  const [allCities, allSnapshots, overlays] = await Promise.all([
-    getCitiesForIndex(),
-    getAllCitySnapshots(),
+  const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
+  const [allCities, allSnapshots] = await Promise.all([getCitiesForIndex(), getAllCitySnapshots()])
+
+  const sortedCities = sortCitiesWithPrimaryFirst(allCities)
+  const visibleCities = sortedCities.slice(0, 60)
+  const directorySlugs = [...new Set<string>([...FEATURED_CITY_SLUGS, ...visibleCities.map((c) => c.slug)])]
+
+  // One Market Truth read for the region and every city on the page, and one
+  // monthly read per city for the run under its row. Both are timeboxed: a
+  // slow read costs the drawing and the reveals, never the directory.
+  const [overlays, monthlyBySlug] = await Promise.all([
     withTimeoutFallback(
       getDetachedOverlays([
         { geoType: 'region', geoSlug: 'central-oregon' },
-        ...FEATURED_CITY_SLUGS.map((slug) => ({ geoType: 'city' as const, geoSlug: slug })),
+        ...directorySlugs.map((slug) => ({ geoType: 'city' as const, geoSlug: slug })),
       ]),
-      new Map(),
+      new Map<string, DetachedOverlay>(),
       3500,
       'cities:leftoverOverlays',
+    ),
+    withTimeoutFallback(
+      Promise.all(
+        directorySlugs.map(
+          async (slug) =>
+            [slug, await getPublicDetachedMonthly({ geoType: 'city', geoSlug: slug, currentMonthKey })] as const,
+        ),
+      ).then((pairs) => new Map<string, PublicMonthlyPoint[]>(pairs)),
+      new Map<string, PublicMonthlyPoint[]>(),
+      4500,
+      'cities:monthlyRuns',
     ),
   ])
   const regionMt = overlays.get('region:central-oregon')
@@ -91,9 +168,6 @@ export default async function CitiesPage() {
     inventory: regionMt?.inventory ?? null,
     pace: EMPTY_PUBLIC_PACE,
   })
-
-  const sortedCities = sortCitiesWithPrimaryFirst(allCities)
-  const visibleCities = sortedCities.slice(0, 60)
 
   const snapshotBySlug = new Map<string, { activeCount: number | null; medianPrice: number | null }>()
   for (const s of allSnapshots) {
@@ -112,14 +186,29 @@ export default async function CitiesPage() {
       cityNameBySlug.get(slug) ??
       slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
     const layers = overlays.get(`city:${slug}`)
-    const leftoverActive = layers?.headlines?.activeCount ?? layers?.inventory?.activeCount ?? null
-    const leftoverMedian = layers?.headlines?.medianListPrice ?? layers?.inventory?.medianListPrice ?? null
+    const indexRow = allCities.find((c) => c.slug === slug)
+    // Market Truth first, then the snapshot row, then the index's own count.
+    // Until SITE-52 a featured city with no Market Truth row (Tumalo, Crooked
+    // River Ranch) went null here, printed as "None listed now", and switched
+    // the bars off for the whole list.
+    const leftoverActive =
+      layers?.headlines?.activeCount ??
+      layers?.inventory?.activeCount ??
+      snapshotBySlug.get(slug)?.activeCount ??
+      indexRow?.activeCount ??
+      null
+    const leftoverMedian =
+      layers?.headlines?.medianListPrice ??
+      layers?.inventory?.medianListPrice ??
+      snapshotBySlug.get(slug)?.medianPrice ??
+      indexRow?.medianPrice ??
+      null
     const content = getCityContent(name)
     const sentence = content?.description
       ? firstSentence(content.description)
       : CITY_SENTENCE_FALLBACK[slug] ?? null
     const fallbackHero = cityHero(slug)
-    const liveHero = allCities.find((c) => c.slug === slug)?.heroImageUrl
+    const liveHero = indexRow?.heroImageUrl
     const src = preferPlaceHero(liveHero, fallbackHero.src)
     return {
       slug,
@@ -225,7 +314,9 @@ export default async function CitiesPage() {
 
   const publishedCounts = directory.map((row) => row.activeCount).filter((n): n is number => n != null)
   const maxCount = publishedCounts.length > 0 ? Math.max(...publishedCounts) : 0
-  const countsPublishable = directory.length > 0 && directory.every((row) => row.activeCount != null)
+  // The bars draw whenever any city published a count; a city with none gets
+  // no bar and says so, rather than switching the encode off for everyone.
+  const countsPublishable = maxCount > 0
 
   const figureRows: V3LedgerFigureRow[] = directory.map((city) => {
     const median = fmtMedian(city.medianListPrice)
@@ -233,12 +324,12 @@ export default async function CitiesPage() {
     return {
       id: city.slug,
       href: `/cities/${city.slug}`,
-      when: v3Text('Oregon'),
       what: v3Text(city.name),
       detail: bits.length > 0 ? v3Text(bits.join(' · ')) : undefined,
-      value: v3Text(liveForSaleLabel(city.activeCount ?? 0)),
+      value: v3Text(city.activeCount != null ? liveForSaleLabel(city.activeCount) : NO_LIVE_COUNT_LABEL),
       weight: indexBarWeight(city.activeCount, maxCount),
       media: city.mediaSrc ? { src: city.mediaSrc } : undefined,
+      reveal: cityReveal(overlays.get(`city:${city.slug}`), monthlyBySlug.get(city.slug) ?? []),
       ariaLabel: v3Text(`Homes for sale in ${city.name}, Oregon`),
     }
   })
@@ -248,16 +339,44 @@ export default async function CitiesPage() {
     cityFeaturedLinks(city.slug, city.name),
   )
 
+  // The region's months of supply as the two-bar drawing, from the same two
+  // published figures the old sentence quoted. G68: formatted and classified
+  // here, on the server, from one raw value; nothing downstream re-rounds it.
   const mosText = hud.monthsSupply != null ? formatMonthsOfSupply(hud.monthsSupply) : null
   const regionVerdict = monthsOfSupplyVerdict(hud.monthsSupply)
-  const directoryNote = [
-    totalActive != null && totalActive > 0
-      ? `${formatCount(totalActive)} homes for sale across these cities.`
-      : null,
-    mosText && regionVerdict ? `${regionVerdict.label} at ${mosText} months of supply.` : null,
-  ]
-    .filter(Boolean)
-    .join(' ')
+  const regionFigures = buildAnswerFigures({
+    placeLabel: 'Central Oregon',
+    street: '',
+    monthsOfSupply: mosText,
+    verdictLabel: regionVerdict?.label ?? null,
+    activeCount: hud.active,
+    salesPerMonth: salesPerMonthFrom(hud.active, hud.monthsSupply),
+    daysToPending: null,
+    cityDaysToPending: null,
+    cityLabel: null,
+    compMarks: [],
+    compCount: null,
+    subjectFound: false,
+    subjectSummary: null,
+    asOfLabel: leftoverStamp ? formatDate(leftoverStamp) : null,
+    sources: { supply: REGION_SUPPLY_TRACE },
+    unmatchedSentence: '',
+  })
+  const regionDrawing =
+    regionFigures.length > 0 ? (
+      <V3Drawing figures={regionFigures} label="Central Oregon homes for sale against a month of sales" />
+    ) : null
+  // When the drawing cannot be drawn, the note carries the figure as before.
+  const directoryNote = regionDrawing
+    ? `${formatCount(directory.length)} cities, A to Z. Each bar is the city's share of the largest live count on the list; rest on a city, or hold it on a phone, for its supply verdict and a year of closes.`
+    : [
+        totalActive != null && totalActive > 0
+          ? `${formatCount(totalActive)} homes for sale across these cities.`
+          : null,
+        mosText && regionVerdict ? `${regionVerdict.label} at ${mosText} months of supply.` : null,
+      ]
+        .filter(Boolean)
+        .join(' ')
 
   return (
     <>
@@ -299,9 +418,10 @@ export default async function CitiesPage() {
             note={v3Text(
               directoryNote || 'Live single-family inventory from the regional MLS.',
             )}
+            drawing={regionDrawing}
             rows={[firstFeatured, ...restFeatured]}
             encode={countsPublishable ? 'bar' : undefined}
-            source={v3Text(FEATURED_TRACE + '. Remaining cities: ' + OTHERS_TRACE)}
+            source={v3Text(FEATURED_TRACE + '. Remaining cities: ' + OTHERS_TRACE + '. ' + REVEAL_TRACE)}
             updated={ledgerStamp ? v3Text(formatDate(ledgerStamp)) : undefined}
             action={{ label: v3Text('Search all listings'), href: '/search', variant: 'primary' }}
           />

@@ -89,5 +89,88 @@
   "openDefects": {
     "_": "Closed 2026-08-27.",
     "items": []
+  },
+  "tasteReview": {
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-52, session 019RdEm6 — the table instrument (first viewport at 1440x900 and 375x812, scripts/take-route-shots.mjs, scale 1, palette-quantized) on the lane's own dev server (localhost:3198) for /cities, plus two hover/hold records per viewport (the region supply bar's reading, the first row's reveal) read only for the Interaction criterion; three independent scorings of one capture run, the median; no page code read, no live page opened. The prior mark is the taste table of 2026-09-08 (median 30, scores 33·29·30, tell 'Scrolling lists as the design'), which is an instrument, not a route receipt: this file carried no tasteReview before, so the receipt is the route's first. Rounds this lane ran before recording: cold on the first capture (71: 73·67·71), after the navy monogram and the supply hover record (72: 72·66·77), and this one after the reveal cue in the caption. The builder ran on a different model from the evaluator on every round.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/cities"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default",
+        "supply",
+        "reveal"
+      ],
+      "capture": "scripts/take-route-shots.mjs default first viewport for the instrument pair; `supply=#featured-cities .v3-drawing__barrow:first-child!hover` and `reveal=#featured-cities .v3-ledger__item:first-child .v3-ledger__row!hover` for the records (the !hover state landed with this node)"
+    },
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/cities/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/cities/shots/mobile375.png",
+      "supplyDesktop": "design_system/ryan-realty/ui_kits/cities/shots/supply-desktop.png",
+      "supplyMobile375": "design_system/ryan-realty/ui_kits/cities/shots/supply-mobile375.png",
+      "revealDesktop": "design_system/ryan-realty/ui_kits/cities/shots/reveal-desktop.png",
+      "revealMobile375": "design_system/ryan-realty/ui_kits/cities/shots/reveal-mobile375.png"
+    },
+    "shotsHash": "sha256:16d70ef7008ac579ad0c83a32a3c12aac1886992386571499bd58279d4c9bcfe",
+    "scores": [
+      75,
+      71,
+      80
+    ],
+    "score": 75,
+    "criteria": {
+      "designQuality": 24,
+      "originality": 21,
+      "interaction": 12,
+      "craft": 10,
+      "honestyFunction": 8
+    },
+    "beats": "Redfin and Zillow city and neighborhood directories: this page wins on same-page depth. Resting a pointer or holding a row turns one bar-list line into a market verdict plus a year of close-volume trend without a page load or a modal, something their per-city pages require leaving the page to get.",
+    "tells": [],
+    "dullest": "A no-photo city row at rest, e.g. Camp Sherman: a navy monogram tile, a name, one median-price line, and a short gray bar. Nothing distinguishes it from a generic ranked list until a pointer or finger arrives; the hover payload is doing all the work that the resting state should share some of.",
+    "verdict": "Meaningfully better than a 30/100 page: the bars are visibly present and proportionate, the region stat is backed by two real numbers instead of asserted, an empty market (Crooked River Ranch) says 'No live count' instead of faking a zero, and 'OREGON' no longer sits on every row; three of the five named defects are resolved outright. Two persist in weaker form: photo coverage still stops at Black Butte Ranch, Camp Sherman and Metolius, which fall back to a monogram, and the region's 4.9-months verdict is a sentence with no scale showing where it lands between the thresholds. The hover-to-reveal pattern, a hairline bar turning into a verdict and a year-long close sparkline without leaving the page, is the one genuinely original idea here and it holds up on both desktop and mobile. The bars are pill-rounded against a page whose thumbnails and monograms are square, the small inconsistency that keeps an otherwise disciplined page from reading as fully considered.",
+    "defects": [
+      {
+        "section": "#featured-cities region pair and every row bar",
+        "severity": "craft",
+        "finding": "Every per-city bar renders with fully rounded, pill-shaped end caps while the thumbnails and monogram tiles on the same rows are square; the register calls for radius 0 on every box, so the page uses two radii in one viewport.",
+        "primitive": "components/site/v3/V3Ledger.css (.v3-ledger__track border-radius 999px)",
+        "fix": "Set the bar track and fill to radius 0 (or one shared radius token used everywhere) so bars match the square thumbnails and monograms.",
+        "viewport": "both"
+      },
+      {
+        "section": "#featured-cities Black Butte Ranch, Camp Sherman, Metolius rows",
+        "severity": "taste",
+        "finding": "These three rows fall back to a navy monogram instead of a photo while seven other rows carry a photographic thumbnail in the same list; the prior mark's 'thumbnails on some rows only' still stands in weaker form.",
+        "primitive": "app/cities/page.tsx (mediaSrc) / lib/geo-images.ts",
+        "fix": "Source or license a verified photo for every listed city, or commit to the monogram as a deliberate flat mark on ALL rows so the inconsistency reads as a system, not a gap.",
+        "viewport": "both"
+      },
+      {
+        "section": "#featured-cities region figure verdict sentence",
+        "severity": "taste",
+        "finding": "The two inputs (1,563 / 320) have bars, but the derived verdict is still a sentence with no visual scale showing where 4.9 sits relative to the seller's (≤4) / balanced (4-6) / buyer's (≥6) thresholds.",
+        "primitive": "components/site/v3/V3Drawing.client.tsx (pair verdict)",
+        "fix": "Add a labeled threshold scale under the two bars that plots the months of supply within its band, so the verdict is seen, not only read.",
+        "viewport": "both"
+      },
+      {
+        "section": "#featured-cities secondary text under each city name",
+        "severity": "craft",
+        "finding": "The muted meta line (median list price, the sentence) sits at visibly lower contrast against the cream ground than the navy headline and bold count; from stills alone it cannot be certified as failing AA, but it reads close enough to the line to need a check.",
+        "primitive": "components/site/v3/tokens.css (--v3-ink-muted)",
+        "fix": "Verify the muted ink against #faf8f4 at 4.5:1 for its rendered size and darken it if it falls short.",
+        "viewport": "both"
+      }
+    ],
+    "comparedToPrior": "first"
   }
 }

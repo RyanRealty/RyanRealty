@@ -1,0 +1,136 @@
+{
+  "note": "The taste-table.mjs class registry (SITE-51). One entry per public page class with a ui_kits parity.json — admin kits (lead-command-center) are excluded. url is a concrete sample URL for the class (the only one used for a dynamic route); the tool never derives a URL from a route file. Seeded 2026-09-09 from design_system/public/taste-table.json rows, cross-checked against every design_system/ryan-realty/ui_kits/*/parity.json route field.",
+  "generatedBy": "scripts/taste-table.mjs (seeded by hand this once; edit in place when a class is added, renamed, or its sample url changes)",
+  "classes": [
+    {
+      "key": "about",
+      "route": "app/about/page.tsx",
+      "url": "/about"
+    },
+    {
+      "key": "buy",
+      "route": "app/buy/page.tsx",
+      "url": "/buy"
+    },
+    {
+      "key": "cities",
+      "route": "app/cities/page.tsx",
+      "url": "/cities"
+    },
+    {
+      "key": "city",
+      "route": "app/cities/[slug]/page.tsx",
+      "url": "/cities/bend"
+    },
+    {
+      "key": "community",
+      "route": "app/communities/[slug]/page.tsx",
+      "url": "/communities/tetherow"
+    },
+    {
+      "key": "compare",
+      "route": "app/compare/page.tsx",
+      "url": "/compare"
+    },
+    {
+      "key": "contact",
+      "route": "app/contact/page.tsx",
+      "url": "/contact"
+    },
+    {
+      "key": "homepage-v6",
+      "route": "app/page.tsx",
+      "url": "/"
+    },
+    {
+      "key": "invest",
+      "route": "app/invest/page.tsx",
+      "url": "/invest"
+    },
+    {
+      "key": "listing-detail",
+      "route": "app/listing/[listingKey]/page.tsx",
+      "url": "/listing/220222277"
+    },
+    {
+      "key": "market-report",
+      "route": "app/housing-market/page.tsx",
+      "url": "/housing-market"
+    },
+    {
+      "key": "market-report-annual",
+      "route": "app/housing-market/annual-review/page.tsx",
+      "url": "/housing-market/annual-review"
+    },
+    {
+      "key": "market-report-detail",
+      "route": "app/housing-market/[...slug]/page.tsx",
+      "url": "/housing-market/bend"
+    },
+    {
+      "key": "market-report-region",
+      "route": "app/housing-market/central-oregon/page.tsx",
+      "url": "/housing-market/central-oregon"
+    },
+    {
+      "key": "neighborhood",
+      "route": "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
+      "url": "/cities/bend/awbrey-butte"
+    },
+    {
+      "key": "oregon-city",
+      "route": "app/oregon/[city]/page.tsx",
+      "url": "/oregon/medford"
+    },
+    {
+      "key": "place-type",
+      "route": "app/cities/[slug]/types/[type]/page.tsx",
+      "url": "/cities/bend/types/single-family"
+    },
+    {
+      "key": "place-type-community",
+      "route": "app/communities/[slug]/types/[type]/page.tsx",
+      "url": "/communities/tetherow/types/single-family"
+    },
+    {
+      "key": "price-drops",
+      "route": "app/price-drops/page.tsx",
+      "url": "/price-drops"
+    },
+    {
+      "key": "reviews",
+      "route": "app/reviews/page.tsx",
+      "url": "/reviews"
+    },
+    {
+      "key": "search",
+      "route": "app/search/page.tsx",
+      "url": "/search"
+    },
+    {
+      "key": "sell",
+      "route": "app/sell/page.tsx",
+      "url": "/sell"
+    },
+    {
+      "key": "subdivision",
+      "route": "app/subdivisions/[slug]/page.tsx",
+      "url": "/subdivisions/ridge-at-eagle-crest"
+    },
+    {
+      "key": "subdivisions",
+      "route": "app/subdivisions/page.tsx",
+      "url": "/subdivisions"
+    },
+    {
+      "key": "team",
+      "route": "app/team/page.tsx",
+      "url": "/team"
+    },
+    {
+      "key": "zip",
+      "route": "app/zip/[zip]/page.tsx",
+      "url": "/zip/97702"
+    }
+  ]
+}

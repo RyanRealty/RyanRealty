@@ -35,6 +35,7 @@ import {
   V3SectionTracker,
   V3SourceLine,
   type V3QuietItem,
+  V3Drawing,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
@@ -46,6 +47,7 @@ import {
   medianPositive,
 } from './_v3/drops-constants'
 import { priceDropFieldItems } from './_v3/drops-field-items'
+import { priceDropDistribution } from './_v3/drops-drawing'
 import { priceDropDatasetSchemas } from './_v3/drops-jsonld'
 import { PriceDropPhotos, PriceDropsOpening } from './_v3/PriceDropsField'
 
@@ -66,8 +68,17 @@ export const metadata: Metadata = pageMetadata({
   ],
 })
 
+/**
+ * The pull's row cap. Named because the page prints BOTH counts — "60 price
+ * cuts this week · 48 shown below" — and a reader who sees two numbers and no
+ * reason is owed one (evaluator, 2026-09-09: "the 60-vs-48 gap is stated three
+ * times and never explained"). The drawing's trace now says the pull is capped
+ * and how many cuts that leaves off the page.
+ */
+const PRICE_DROPS_LIMIT = 48
+
 export default async function PriceDropsRegionPage() {
-  const { drops, total, fetchedAt } = await getPriceDrops({ limit: 48, days: 7 })
+  const { drops, total, fetchedAt } = await getPriceDrops({ limit: PRICE_DROPS_LIMIT, days: 7 })
 
   if (drops.length === 0) {
     noStore()
@@ -76,6 +87,16 @@ export default async function PriceDropsRegionPage() {
   const totalReduced = drops.reduce((sum, d) => sum + (d.lastDropAmount ?? 0), 0)
   const medianDropPct = medianPositive(drops.map((d) => d.lastDropPct))
   const fieldItems = priceDropFieldItems(drops)
+  // SITE-49: the distribution the count implies, above the grid. Every mark is
+  // a row the grid renders; a row with no percent is not plotted (§0).
+  const distribution = priceDropDistribution({
+    drops,
+    total,
+    cap: PRICE_DROPS_LIMIT,
+    placeLabel: 'Central Oregon',
+    windowDays: 7,
+    fetchedAt: fetchedAt ? formatDate(fetchedAt) : null,
+  })
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const pageUrl = `${siteUrl}/price-drops`
 
@@ -151,6 +172,14 @@ export default async function PriceDropsRegionPage() {
                     : 'price cuts this week'
               }
             />
+            {distribution ? (
+              <V3Drawing
+                id="spread"
+                className="pd-spread"
+                figures={[distribution]}
+                label="This week's price cuts by how far the ask came down"
+              />
+            ) : null}
             <V3Field
               id="cuts"
               className="pd-homes-field"
