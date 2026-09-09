@@ -330,7 +330,11 @@ export type {
   V3LedgerFigureRow,
   V3LedgerPlainRow,
   V3LedgerRows,
+  V3LedgerReveal,
 } from './V3Ledger'
+export { V3_LEDGER_SPARK_MIN } from './V3Ledger'
+/** The Ledger's phone hold (SITE-52); mounted by V3Ledger itself, exported so the barrel gate sees one register. */
+export { V3LedgerRevealIsland, V3_LEDGER_HOLD_MS } from './V3LedgerReveal.client'
 
 /**
  * The listing unit for Ledger-register search surfaces: one live listing as a

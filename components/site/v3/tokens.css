@@ -583,7 +583,10 @@
 }
 
 .v3 .v3-btn--text {
-  min-height: auto;
+  /* Still the 44px hit box from .v3-btn: the box is what the tap-target gate
+     measures, and `min-height: auto` here left the plats index's "Every
+     Central Oregon subdivision" at 231x35 on /cities/bend at 1440 (CI on
+     PR #200, 2026-09-09). The text stays a text link; the box grew. */
   padding: var(--v3-space-xs) 0;
   background: none;
   border-color: transparent;

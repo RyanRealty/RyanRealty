@@ -728,7 +728,14 @@ export default async function SubdivisionPage({ params }: Props) {
     3000,
     'plat:areaGuide',
   )
-  const [firstGuide, ...restGuide] = areaGuideRow(displayName, areaGuideVideo)
+  // SITE-52: this Ledger's own heading is "{displayName} area guide", so the
+  // row's 'Area guide' when would repeat it — drop it, unlike the mixed
+  // guides-and-news Ledger on the city and neighborhood nodes where the same
+  // row sits beside dated blog rows and the label still differentiates.
+  const [firstGuide, ...restGuide] = areaGuideRow(displayName, areaGuideVideo).map((row) => ({
+    ...row,
+    when: undefined,
+  }))
 
   const schemas: SchemaInput[] = [
     {

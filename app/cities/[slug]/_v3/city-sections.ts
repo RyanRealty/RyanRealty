@@ -124,7 +124,13 @@ function media(img: string): { src: string } | undefined {
  */
 export function placeFigureRows(
   items: readonly CityPlaceItem[],
-  kindLabel: string,
+  // Unused for rendering (SITE-52): every caller's kindLabel repeated a fact
+  // the section's own heading/eyebrow already stated ("Bend neighborhood" on
+  // a "Bend · Neighborhoods" ledger, "Central Oregon city" on an "Explore
+  // other cities" ledger). Kept in the signature so callers read the same at
+  // the call site; a future caller whose kindLabel genuinely differs from its
+  // heading can reintroduce the when.
+  _kindLabel: string,
   within?: string | null,
 ): V3LedgerFigureRow[] {
   /**
@@ -153,7 +159,6 @@ export function placeFigureRows(
       {
         id: href,
         href,
-        when: v3Text(kindLabel),
         what: v3Text(within ? stripOwnPrefix(name, within) : name),
         ...(detail ? { detail: v3Text(detail) } : {}),
         value: v3Text(
@@ -212,6 +217,11 @@ export function placePlainRows(
  * The clip is not played here — V3Ledger renders the poster frame, and the
  * community's own node is where the clip plays — but a community that HAS one is
  * marked, because that is why it leads the list.
+ *
+ * `when` carries ONLY the area-guide flag, not the town (SITE-52): every item's
+ * town is this city, already named by the section's own eyebrow/heading, so
+ * printing it on every row was the taste evaluator's "repeats OREGON" defect
+ * with a city name in place of the state.
  */
 export function communityRows(items: readonly CityCommunityItem[]): V3LedgerFigureRow[] {
   return items.flatMap((item) => {
@@ -222,7 +232,7 @@ export function communityRows(items: readonly CityCommunityItem[]): V3LedgerFigu
       {
         id: href,
         href,
-        when: v3Text(item.video ? `${item.town} · Area guide` : item.town),
+        ...(item.video ? { when: v3Text('Area guide') } : {}),
         what: v3Text(name),
         value: v3Text(
           item.activeCount != null ? `${item.activeCount.toLocaleString('en-US')} active` : 'not measured',
@@ -296,18 +306,27 @@ export function areaGuideRow(
   ]
 }
 
-/** Published guides as rows. No figures, so no trace is owed. */
+/**
+ * Published guides as rows. No figures, so no trace is owed.
+ *
+ * `when` is the publish date and ONLY the date (SITE-52): every caller heads
+ * this Ledger "Guides" or "{place} guides", so a 'Guide' fallback on a post
+ * with no dateLabel would repeat that heading rather than add a context line.
+ * Omit it instead — matching the doc's own rule that a leftover kind label is
+ * not a when.
+ */
 export function articleRows(items: readonly CityArticleItem[]): V3LedgerPlainRow[] {
   return items.flatMap((item) => {
     const title = item.title?.trim()
     const href = item.href?.trim()
     if (!title || !href) return []
     const detail = item.excerpt?.trim()
+    const dateLabel = item.dateLabel?.trim()
     return [
       {
         id: href,
         href,
-        when: v3Text(item.dateLabel?.trim() || 'Guide'),
+        ...(dateLabel ? { when: v3Text(dateLabel) } : {}),
         what: v3Text(title),
         ...(detail ? { detail: v3Text(detail) } : {}),
         ...(item.imageUrl?.trim() ? { media: { src: item.imageUrl.trim() } } : {}),

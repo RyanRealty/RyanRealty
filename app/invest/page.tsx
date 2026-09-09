@@ -107,7 +107,9 @@ export default async function InvestPage() {
     return {
       id: row.segment,
       href: publicSegmentBrowseHref(null, row.segment),
-      when: v3Text('Central Oregon'),
+      // SITE-52: the eyebrow is already "Central Oregon · By property type" —
+      // every row repeating 'Central Oregon' is the taste evaluator's OREGON
+      // defect with the region name instead of the state.
       what: v3Text(noun.charAt(0).toUpperCase() + noun.slice(1)),
       ...(bits.length > 0 ? { detail: v3Text(bits.join(' · ')) } : {}),
       value: v3Text(`${count.toLocaleString('en-US')} active`),

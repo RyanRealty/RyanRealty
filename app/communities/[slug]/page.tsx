@@ -386,7 +386,14 @@ export default async function CommunityDetailPage({ params }: Props) {
   // on a Tetherow page is wrong). A door in a ledger below the fold, never a
   // looping hero: the first fold stays Split + leftover face.
   const areaGuideVideo = await withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'comm:areaGuide')
-  const [firstGuide, ...restGuide] = areaGuideRow(publicName, areaGuideVideo)
+  // SITE-52: this Ledger's own heading is "{publicName} area guide", so the
+  // row's 'Area guide' when would repeat it — drop it, unlike the mixed
+  // guides-and-news Ledger on the city and neighborhood nodes where the same
+  // row sits beside dated blog rows and the label still differentiates.
+  const [firstGuide, ...restGuide] = areaGuideRow(publicName, areaGuideVideo).map((row) => ({
+    ...row,
+    when: undefined,
+  }))
   const stagePosterSrc = stagePoster(slug, community.heroImageUrl, libraryHero)
   const headline = belongingHeadline(publicName, richContent)
   const belonging = belongingFigures(richContent, placeCharacter)

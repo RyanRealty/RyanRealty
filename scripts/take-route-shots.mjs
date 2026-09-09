@@ -47,6 +47,8 @@
  *                `a`          scroll to `#a` when it exists, else shoot the top
  *                `b=SEL`      scroll SEL into view, then shoot the viewport
  *                `c=SEL!click` scroll to SEL, click it, then shoot the viewport
+ *                `c=SEL!hover` scroll to SEL, rest the pointer on it, then
+ *                             shoot — the record of a hover reveal (SITE-52)
  *                `d=SEL!type:TEXT` scroll to SEL, fill it with TEXT, submit its
  *                             form, wait for the answer, then shoot. A states
  *                             argument containing `!type:` is separated by
@@ -200,12 +202,13 @@ export function parseStates(raw) {
     .filter(Boolean)) {
     const eq = chunk.indexOf('=')
     if (eq === -1) {
-      states.push({ name: chunk, selector: `#${chunk}`, anchor: null, click: false, type: null, selectorImplied: true })
+      states.push({ name: chunk, selector: `#${chunk}`, anchor: null, click: false, hover: false, type: null, selectorImplied: true })
       continue
     }
     const name = chunk.slice(0, eq).trim()
     let selector = chunk.slice(eq + 1).trim()
     let click = false
+    let hover = false
     let type = null
     const bang = selector.indexOf('!type:')
     if (bang !== -1) {
@@ -214,6 +217,9 @@ export function parseStates(raw) {
     } else if (selector.endsWith('!click')) {
       click = true
       selector = selector.slice(0, -'!click'.length).trim()
+    } else if (selector.endsWith('!hover')) {
+      hover = true
+      selector = selector.slice(0, -'!hover'.length).trim()
     }
     // `SEL@ANCHOR` — click SEL, frame ANCHOR. A control and the thing it
     // changes are usually not the same element: the homepage Sell tab sits at
@@ -227,7 +233,7 @@ export function parseStates(raw) {
       anchor = selector.slice(at + 1).trim() || null
       selector = selector.slice(0, at).trim()
     }
-    states.push({ name, selector, anchor, click, type, selectorImplied: false })
+    states.push({ name, selector, anchor, click, hover, type, selectorImplied: false })
   }
   return states
 }
@@ -851,6 +857,16 @@ async function main() {
               const framed = await measure(state.anchor)
               if (framed) await wheelTo(page, Math.max(0, framed.top - framed.reserve))
             }
+          }
+          if (state.hover) {
+            // The pointer rests on SEL and the shot records what that reveals.
+            // The tool parks the pointer top-right before every plain shot
+            // (Trap 13), so a reveal is only ever in a record that asked for it.
+            await page.hover(state.selector, { timeout: 5000 }).catch((err) => {
+              console.error(`  ${viewport.key}: state "${state.name}" — hover failed: ${err.message.split('\n')[0]}`)
+              failed = true
+            })
+            await page.waitForTimeout(400)
           }
           if (state.type != null) {
             // Fill, submit the owning form, and wait for the ANSWER — not for

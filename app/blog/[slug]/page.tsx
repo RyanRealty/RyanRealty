@@ -239,9 +239,12 @@ export default async function BlogPostPage({ params }: PageProps) {
     const relatedTitle = related.title?.trim()
     const relatedSlug = related.slug?.trim()
     if (!relatedTitle || !relatedSlug) continue
+    // SITE-52: the heading is already "Related posts", so a 'Guide' fallback
+    // would only repeat it — the published date is the context line worth
+    // printing, and a post with none carries no when at all.
     relatedRows.push({
       href: `/blog/${relatedSlug}`,
-      when: v3Text(related.published_at ? formatDate(related.published_at) : 'Guide'),
+      ...(related.published_at ? { when: v3Text(formatDate(related.published_at)) } : {}),
       what: v3Text(relatedTitle),
       id: relatedSlug,
     })

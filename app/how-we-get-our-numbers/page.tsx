@@ -69,10 +69,11 @@ export default function HowWeGetOurNumbersPage() {
     })),
   ]
 
+  // SITE-52: 'Market' repeated on every row added nothing this page — about
+  // market figures start to finish — had not already said.
   const [firstDoor, ...restDoors] = HOW_NUMBER_RELATED.map(
     (link): V3LedgerPlainRow => ({
       href: link.href,
-      when: v3Text('Market'),
       what: v3Text(link.label),
     }),
   )

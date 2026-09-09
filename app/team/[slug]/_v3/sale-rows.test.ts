@@ -222,6 +222,55 @@ describe('publishActiveListingRows', () => {
     ] as any)
     expect(rows).toHaveLength(1)
     expect(rows[0]!.id).toBe('A1')
-    expect(String(rows[0]!.when)).toContain('Active')
+    // SITE-52: the section heading already says "Active listings", so the
+    // row's when carries only the DOM count, not a redundant 'Active'.
+    expect(String(rows[0]!.when)).toBe('12 DOM')
+  })
+
+  it('omits when entirely when DOM is unknown, rather than repeat "Active"', async () => {
+    const { publishActiveListingRows } = await import('./sale-rows')
+    const rows = publishActiveListingRows([
+      {
+        listingKey: 'C3',
+        listNumber: '3',
+        status: 'Active',
+        listPrice: 599000,
+        closePrice: null,
+        closeDate: null,
+        beds: 2,
+        baths: 2,
+        sqft: 1200,
+        streetNumber: '5',
+        streetName: 'Century',
+        streetSuffix: 'Dr',
+        city: 'Bend',
+        citySlug: 'bend',
+        postalCode: '97701',
+        subdivisionName: null,
+        subdivisionSlug: null,
+        lat: null,
+        lng: null,
+        photoUrl: null,
+        propertyType: 'Residential',
+        propertySubType: null,
+        onMarketDate: null,
+        modifiedAt: null,
+        pricePerSqft: null,
+        lotSizeAcres: null,
+        yearBuilt: null,
+        garageSpaces: null,
+        poolYn: null,
+        hasVirtualTour: null,
+        tourUrl: null,
+        dom: null,
+        priceDropCount: null,
+        addressSlug: null,
+        boundaryCity: null,
+        boundaryNeighborhood: null,
+        boundarySubdivision: null,
+      },
+    ] as any)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.when).toBeUndefined()
   })
 })

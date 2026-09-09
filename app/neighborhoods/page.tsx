@@ -132,7 +132,7 @@ export default async function NeighborhoodsPage() {
   const rowBase = featured.map((n) => ({
     id: n.slug,
     href: n.href,
-    when: v3Text(`${n.cityName} · Oregon`),
+    when: v3Text(n.cityName),
     what: v3Text(n.name),
     detail: (() => {
       const median = fmtMedian(n.medianListPrice)

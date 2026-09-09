@@ -1,0 +1,164 @@
+{
+  "route": "app/subdivisions/page.tsx",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md. No mockup ever existed for the subdivisions index; this file exists so the class carries a taste receipt (SITE-52, 2026-09-09) and so ci:mockup-parity notices if the index loses a section.",
+  "competitiveTarget": "A portal's subdivision list: an alphabet of links with no count and no photo. We publish the live single-family count per plat drawn as a bar on one shared scale, the median list price, a verified plat photo or the glyph on every row, and the A to Z browser for every recorded plat under it.",
+  "note": "Created 2026-09-09 for SITE-52 (V3Ledger: visible encode, all-or-none media, hover reveal, no repeated when). The subdivisions index is the second Ledger-led class the node names beside the cities index; it had no parity.json and no tasteReview before this, so the receipt below is the class's FIRST mark.",
+  "requiredComponents": [
+    {
+      "name": "MetadataBlock",
+      "section": "imported by app/subdivisions/page.tsx on 2026-09-09",
+      "blocking": true
+    },
+    {
+      "name": "CommunityIndexBrowser",
+      "section": "imported by app/subdivisions/page.tsx on 2026-09-09",
+      "blocking": true
+    },
+    {
+      "name": "V3Breadcrumb",
+      "section": "imported by app/subdivisions/page.tsx on 2026-09-09",
+      "blocking": true
+    },
+    {
+      "name": "V3Footer",
+      "section": "imported by app/subdivisions/page.tsx on 2026-09-09",
+      "blocking": true
+    },
+    {
+      "name": "V3Heading",
+      "section": "imported by app/subdivisions/page.tsx on 2026-09-09",
+      "blocking": true
+    },
+    {
+      "name": "V3Lede",
+      "section": "imported by app/subdivisions/page.tsx on 2026-09-09",
+      "blocking": true
+    },
+    {
+      "name": "V3Ledger",
+      "section": "imported by app/subdivisions/page.tsx on 2026-09-09",
+      "blocking": true
+    },
+    {
+      "name": "V3Quiet",
+      "section": "imported by app/subdivisions/page.tsx on 2026-09-09",
+      "blocking": true
+    },
+    {
+      "name": "V3SectionTracker",
+      "section": "imported by app/subdivisions/page.tsx on 2026-09-09",
+      "blocking": true
+    },
+    {
+      "name": "V3_FOOTER_COLUMNS",
+      "section": "imported by app/subdivisions/page.tsx on 2026-09-09",
+      "blocking": true
+    },
+    {
+      "name": "V3_ROOT_CLASS",
+      "section": "imported by app/subdivisions/page.tsx on 2026-09-09",
+      "blocking": true
+    }
+  ],
+  "layoutComponents": [
+    {
+      "name": "PublicNav",
+      "section": "renders from app/layout.tsx",
+      "note": "Resolves to V3Chrome today."
+    }
+  ],
+  "deferredComponents": [],
+  "sectionOrder": [
+    "V3SectionTracker + MetadataBlock -- BreadcrumbList and the CollectionPage/ItemList JSON-LD (not sections)",
+    "V3Breadcrumb -- Home / Subdivisions",
+    "V3Ledger #featured-plats -- the H1, the caption (count, and what a bar is), every registry plat with a live count as a bar on the list's shared scale, a photo or the monogram, the median list price",
+    "section #all-plats -- V3Heading + V3Lede over CommunityIndexBrowser: the A to Z browser of every recorded plat",
+    "V3Quiet #edges -- search every listing, communities, neighborhoods, value my home, the data source",
+    "V3Footer"
+  ],
+  "tasteReview": {
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-52, session 019RdEm6 — the table instrument (first viewport at 1440x900 and 375x812, scripts/take-route-shots.mjs, scale 1, palette-quantized) on the lane's own dev server (localhost:3198) for /subdivisions; three independent scorings of one capture run, the median; no page code read, no live page opened. The class had no table row and no receipt: this is its first mark. Rounds this lane ran before recording: cold (36: 36·37·33, the wash glyph read as an unstyled placeholder), after the navy monogram (44: 44·48·41, the phone eyebrow repeated the row's sentence), and this one after the row dropped its when and the caption says what a bar is. The builder ran on a different model from the evaluator on every round.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/subdivisions"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default"
+      ],
+      "capture": "scripts/take-route-shots.mjs default first viewport"
+    },
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/subdivisions/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/subdivisions/shots/mobile375.png"
+    },
+    "shotsHash": "sha256:84c74f47fe981b8674b8319d65f35eb546d17fbcc0a7c0d38c7e134c342375c8",
+    "scores": [
+      53,
+      55,
+      53
+    ],
+    "score": 53,
+    "criteria": {
+      "designQuality": 20,
+      "originality": 16,
+      "interaction": 4,
+      "craft": 10,
+      "honestyFunction": 3
+    },
+    "beats": "Redfin's neighborhood-directory pages: this page wins on restraint, one plain descriptive sentence per row instead of a stat-badge cluster, hairline dividers instead of card shadows, and an actual quantity bar instead of decorative icons.",
+    "tells": [],
+    "dullest": "The row list past the first two entries: every row repeats the identical photo/title/description/bar/count shape with no variation besides one navy bar marking the current max, giving a reader no reason to keep scrolling rather than skim for their own subdivision's name.",
+    "verdict": "The palette and type discipline are right; this reads as Ryan Realty from a single cropped row, and the navy accent picking out the top subdivision is a genuinely smart touch. But underneath that it is one long alphabetically sorted list wearing a bar chart as a costume: the bars do not rank anything, nothing on the page rewards a hover, and there is no source line in the fold on figures the brand's own rules treat as load-bearing. Sort it by the number it is showing, give the list something to click, and cite the data in the fold.",
+    "defects": [
+      {
+        "section": "#featured-plats rows",
+        "severity": "craft",
+        "finding": "The list is sorted alphabetically even though the subhead says each bar encodes share of the largest live count; the counts jump non-monotonically down the page (5, 12, 14, 2, 7, 4), so the bar lengths never read as a ranking.",
+        "primitive": "app/subdivisions/page.tsx (row order) / components/site/v3/V3Ledger.tsx",
+        "fix": "Sort rows by for-sale count descending by default, or add a sort toggle, so bar length reads as a comparison the reader can use.",
+        "viewport": "both"
+      },
+      {
+        "section": "#featured-plats rows",
+        "severity": "honesty",
+        "finding": "No source trace, as-of date, or freshness label appears near the median list prices or for-sale counts in the fold; nothing in the first viewport tells the reader whether this is live MLS data or a cached snapshot (the ledger's source line sits under the list, below the fold).",
+        "primitive": "app/subdivisions/page.tsx",
+        "fix": "Add an 'Updated <date> · MLS' line under the caption, matching the citation discipline the site uses elsewhere.",
+        "viewport": "both"
+      },
+      {
+        "section": "#featured-plats rows",
+        "severity": "interaction",
+        "finding": "Neither shot shows any sign that a row, bar, or thumbnail responds to hover or tap with more data; the reveal V3Ledger gained on the city index is not wired here because no per-plat Market Truth overlay exists.",
+        "primitive": "components/site/v3/V3Ledger.tsx (reveal not wired on this route)",
+        "fix": "Give the row a hover/hold reveal (a year of closes, the community's verdict) once a per-plat series is published.",
+        "viewport": "both"
+      },
+      {
+        "section": "#featured-plats thumbnails (7th Mtn Golf Village, Glaze Meadow Homesite Section)",
+        "severity": "craft",
+        "finding": "Rows without a photo fall back to a solid navy square with a single cream initial, which sits visually heavier and flatter than the photographic thumbnails on neighboring rows.",
+        "primitive": "components/site/v3/V3Ledger.css (.v3-ledger__glyph)",
+        "fix": "A lighter treatment (navy-on-cream outline, or a thin Central Oregon line mark) so it reads as an intentional variant, not a missing-image placeholder; or a verified photo for every plat.",
+        "viewport": "both"
+      },
+      {
+        "section": "#featured-plats Deschutes River Recreation Homesites row",
+        "severity": "craft",
+        "finding": "At 375 the two-line title and three-line description run well past the thumbnail's height, leaving empty cream beside the small square photo before the bar and count appear.",
+        "primitive": "components/site/v3/V3Ledger.css (row layout at 375)",
+        "fix": "Grow the thumbnail to the row's text height, or balance a shorter element beside long text so every row keeps one silhouette.",
+        "viewport": "mobile"
+      }
+    ],
+    "comparedToPrior": "first"
+  }
+}
