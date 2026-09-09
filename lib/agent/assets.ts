@@ -24,8 +24,7 @@ import { promisify } from 'node:util'
 import { mkdtemp, writeFile, readdir, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import Anthropic from '@anthropic-ai/sdk'
-import { createAnthropic, CLASSIFIER_MODEL } from '@/lib/ai/anthropic'
+import { GROK_MODELS, grokConfigured, xaiFetch } from '@/lib/grok/client'
 import { haversineMeters } from '@/lib/map-polygon'
 import { slugify } from '@/lib/slug'
 import { readExif } from '@/lib/agent/exif'
@@ -342,18 +341,16 @@ async function gradeImagesBatch(
   }
   if (!gradeable.length) return results
 
-  let anthropic: Anthropic
-  try {
-    anthropic = createAnthropic()
-  } catch (err) {
-    console.error('[gradeImagesBatch] Anthropic not configured, shipping ungraded:', err instanceof Error ? err.message : err)
+  // Matt 2026-09-09: the vision grade runs on Grok (image_url parts), through lib/grok.
+  if (!grokConfigured()) {
+    console.error('[gradeImagesBatch] XAI_API_KEY not configured, shipping ungraded')
     for (const img of gradeable) results.set(img.index, { grade: null })
     return results
   }
 
-  const content: Anthropic.Messages.ContentBlockParam[] = gradeable.map((img) => ({
-    type: 'image' as const,
-    source: { type: 'base64' as const, media_type: toAnthropicMediaType(img.mime)!, data: img.buffer.toString('base64') },
+  const content: Array<Record<string, unknown>> = gradeable.map((img) => ({
+    type: 'image_url',
+    image_url: { url: `data:${toAnthropicMediaType(img.mime)!};base64,${img.buffer.toString('base64')}`, detail: 'low' },
   }))
   content.push({
     type: 'text',
@@ -366,12 +363,21 @@ async function gradeImagesBatch(
   })
 
   try {
-    const resp = await anthropic.messages.create({
-      model: CLASSIFIER_MODEL,
-      max_tokens: 1536,
-      messages: [{ role: 'user', content }],
-    })
-    const textBlock = resp.content.find((b): b is Anthropic.TextBlock => b.type === 'text')?.text ?? ''
+    const res = await xaiFetch(
+      '/chat/completions',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          model: GROK_MODELS.vision,
+          max_tokens: 1536,
+          reasoning_effort: 'low',
+          messages: [{ role: 'user', content }],
+        }),
+      },
+      { timeoutMs: 120_000 },
+    )
+    const data = (await res.json()) as { choices?: Array<{ message?: { content?: string | null } }> }
+    const textBlock = data.choices?.[0]?.message?.content ?? ''
     const parsed = extractJsonArray(textBlock)
     if (!Array.isArray(parsed)) throw new Error('vision grade response was not a JSON array')
 

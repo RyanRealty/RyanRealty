@@ -1,7 +1,7 @@
 /**
  * lib/agent/e2e.test.ts — R5.1 golden-transcript harness for the broker SMS agent.
  *
- * Drives runAgentTurn end to end with a scripted Anthropic client and scripted
+ * Drives runAgentTurn end to end with a scripted Grok chat-completions client and scripted
  * tools — no network, no live DB (int tests write to production; forbidden).
  * These are the conversation shapes the plan's DONE contract names: property
  * Q&A with §0 tracing, the trace-violation fallback, keyword handling, the
@@ -41,20 +41,31 @@ type ScriptedResponse = {
 }
 let script: ScriptedResponse[] = []
 let createCalls: Array<Record<string, unknown>> = []
-vi.mock('@/lib/ai/anthropic', () => ({
-  AGENT_MODEL: 'claude-opus-5',
-  CLASSIFIER_MODEL: 'claude-haiku-4-5-20251001',
-  modelCostUsd: () => 0.01,
-  createAnthropic: () => ({
-    messages: {
-      create: async (params: Record<string, unknown>) => {
-        createCalls.push(params)
-        const next = script.shift()
-        if (!next) throw new Error('scripted model exhausted')
-        return { ...next, usage: { input_tokens: 100, output_tokens: 50 } }
-      },
-    },
-  }),
+vi.mock('@/lib/grok/client', () => ({
+  GROK_MODELS: { text: 'grok-4.6', textFast: 'grok-4.5', vision: 'grok-4.6' },
+  GrokError: class GrokError extends Error {},
+  ticksToUsd: () => 0.01,
+  grokConfigured: () => true,
+  // Each scripted entry is one Anthropic-shaped response; it is translated to
+  // the chat-completions shape the runtime reads (Matt 2026-09-09: the agent
+  // runs on Grok), so the scripts below stay as written.
+  xaiFetch: async (_path: string, init: { body?: string }) => {
+    createCalls.push(JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>)
+    const next = script.shift()
+    if (!next) throw new Error('scripted model exhausted')
+    const text = next.content
+      .filter((b) => b.type === 'text')
+      .map((b) => String(b.text ?? ''))
+      .join('\n')
+    const tool_calls = next.content
+      .filter((b) => b.type === 'tool_use')
+      .map((b) => ({ id: String(b.id), type: 'function', function: { name: String(b.name), arguments: JSON.stringify(b.input ?? {}) } }))
+    const body = {
+      choices: [{ message: { role: 'assistant', content: text || null, tool_calls }, finish_reason: tool_calls.length ? 'tool_calls' : 'stop' }],
+      usage: { cost_in_usd_ticks: 1 },
+    }
+    return { ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) }
+  },
 }))
 
 // Scripted tool registry.
@@ -142,7 +153,7 @@ describe('golden: §0 trace enforcement', () => {
     // the retry call also declared tools with tool_choice none
     const retry = createCalls[2]
     expect(Array.isArray(retry.tools)).toBe(true)
-    expect((retry.tool_choice as { type?: string })?.type).toBe('none')
+    expect(retry.tool_choice).toBe('none')
   })
 
   it('accepts the corrected reply on retry', async () => {

@@ -91,10 +91,9 @@ describe('lib/crm/gmail.ts wires the email reply-intent pass into the sync', () 
     // dir==='in' rows are collected for the pass. Matched per FIELD, not as one
     // frozen literal: the collection grew a `ts` (2026-09-07, so the CMA reply
     // alert can ignore a backfill's old mail) and a byte-exact regex failed a
-    // purely additive change while the contract it guards still held. The
-    // span budget is 400, not 200: `fromEmails` (2026-09-09, the reply-intent
-    // pass on Grok) pushed the literal past 200 characters and the same
-    // additive change failed this test on main.
+    // purely additive change while the contract it guards still held. The cap
+    // is a window, not a limit: eb1553c5 (2026-09-09) added `fromEmails` and the
+    // block reached 204 chars, so 200 failed a second purely additive change.
     expect(src).toMatch(/inboundForIntent\.push\(\{[\s\S]{0,400}?\}\)/)
     for (const field of ['personId', 'messageKey', 'body', 'subject']) {
       expect(src.match(/inboundForIntent\.push\(\{[\s\S]{0,400}?\}\)/)?.[0]).toContain(field)

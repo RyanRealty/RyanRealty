@@ -1,4 +1,58 @@
-# Current — 2026-09-09 (SITE-52 + SITE-51: the Ledger past six rows carries a mark, a reveal, one media column and no repeated `when`; the taste table is a tool)
+# Current — 2026-09-09 (SITE-45: the listing page opens with something to interrogate — one frame and a filmstrip, the price cut as a mark, a read under the pills, Tour in the fold)
+
+Owner: Claude (Fable 5.1), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
+`ba0fb159`; the landing commit is the merge of main (through 989b2652: SITE-46, SITE-53, the SMS agent
+and the inbox parser on Grok) that carries this block. Node `db6d07a9` (SITE-45) is `done` with
+evidence. SITE-40 (`ac7b98f8`, V3Quiet: single-measure prose, a figure slot, door rows as a form) is
+in flight in an Opus worktree agent off 851c20bc; the coordinator merges it. SITE-29 (`e3d1713f`)
+stays `blocked` until 2026-09-11 as shipped-and-measuring.
+
+**What the table said and what shipped.** listing-detail scored 55 on the 2026-09-08 table ("the
+conventional real-estate-portal template": a main photo, a 2x2 thumbnail grid, corner pills) and
+77 on its committed receipt (the SITE-33 pass). Now:
+- `ListingHero` rewritten: one frame plus a navy filmstrip that indexes every photo — a thumb sets
+  the frame on desktop and scrolls the snap carousel on phone; 44px thumbs at rest, 88px on hover or
+  the strip's toggle; the media tools (N photos, 3D, floor, street view, map) ride the strip instead
+  of floating on the picture; at 375 the strip shows the count, one "N photos" tool and one "More"
+  control. The mosaic and `publishListingMosaicTiles`/`Thumbs` are deleted.
+- `ListingDetailShell heroInMain`: the hero renders in the main column, so the sticky broker card
+  and the 5.0 / 25-review block share the fold (Tour bottom 462px at 1440; was under 900). The
+  on-media caption is gone — in the column it repeated the price, facts and street sixty pixels
+  above the price strip; `check-publish-listing-ask.mjs` now asserts the hero carries no price prop.
+- The price cut is a two-point mark (`PriceDropMark`, `publishListingDropMark(history)`: the newest
+  dated drop since the last listed row) that opens "$720,180 $714,900 −0.7% Sep 3, 2026" on hover or
+  focus. Off-market draws nothing.
+- Under the status pills, one sentence from the page's own market comparison
+  (`publishListingPillRead`): days listed against the grain's 90-day days-to-contract, this home's
+  $/sqft against the 12-month closed median, with a Source disclosure naming both stats and their
+  computed date. Null read → no sentence.
+- Receipt **77 → 79** (80 · 78 · 79) by a separate claude-sonnet-5 evaluator, rebaselined (ten
+  shots: the instrument pair, close, out-of-area, strip and drop hover records); no evaluator names
+  the gallery as a portal convention. Mechanical accept 17/17 on a dev render at 1440 and 375.
+
+**Matt's calls, recorded on the node, not implemented.** (1) The MLS public remarks are rendered
+nowhere on the listing page since the 12-section rebuild (7c40065e; `DescriptionBlock` was the
+renderer and `listing-remainder-contract.test.ts` asserts their absence) while CLAUDE.md §2 "MLS
+remarks shown as written" still binds — was the cut deliberate? (2) The Medford sidebar still offers
+Tour / Call / Text beside "We don't work in Medford", and the calculator still prices that lot —
+both carried from the SITE-33 receipt; the evaluator calls the CTA a blocker. (3) The breadcrumb
+reads "Bend / Easton / EASTON COMMERCIAL" on a single-family home: plat alias resolution, the one
+tell named on the receipt.
+
+**Findings for the queue.** The listing page's `unstable_cache` entry for the Apollo listing is
+2.6 MB; Next refuses it ("items over 2MB can not be cached") and logs an unhandledRejection on
+every dev render — the DAL is untouched by this lane, so it is main's. On phones the price strip's
+Tour/Call/Text/Save/Share row and the sticky bottom bar can share one viewport (pre-existing).
+
+**Tooling.** `take-route-shots.mjs` `SEL@ANCHOR!hover` frames the anchor on a hover record (the
+strip record keeps the frame in the shot). The state name must match the element id:
+`outofarea=#out-of-area`, not `outofarea`.
+
+**Next.** Land SITE-40 from the worktree (six receipts rebaselined, mechanical accept, ci:gates, a
+Node-trailed commit), then the next eligible SITE node under the two-open / three-owner rule. PR #200:
+CI on 851c20bc was green on lint-and-build with e2e running; this push re-runs it.
+
+## Prior — 2026-09-09 (SITE-52 + SITE-51: the Ledger past six rows carries a mark, a reveal, one media column and no repeated `when`; the taste table is a tool)
 
 Owner: Claude (Fable 5.1), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
 `b093f5f7` (SITE-52) merged with the SITE-51 worktree commit `06812977`; the landing commit is the merge of main (through 28a1b3a8) that carries this
@@ -65,6 +119,74 @@ market-report-annual 31, search 32, zip 33. Run `npm run taste:table <baseUrl>` 
 main for the next full pass.
 
 ---
+## Prior — 2026-09-09 (site queue round six: SITE-53 and SITE-46 done, SITE-32 blocked on its 60-day window)
+
+Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Pushes today
+since the last block: `5fb3dadd..773e1454` (SITE-32), `773e1454..93856f85` (SITE-53),
+`28a1b3a8..e7c20fdb` (SITE-46); each deploy READY with the sitemap smoke green.
+
+**SITE-53 done.** The place-type Atlas never silently drops (boundary read behind Suspense with a
+same-footprint standin; 10/10 loads in and out of the DB window, live and local); a §0 claim
+sentence under the H1 ("16 single-family homes for sale in Tetherow, asking $1,350,000 to
+$4,250,000."); exactly one display headline; rows and pins linked both ways; crawlable ?sort=
+links; 44px zoom. place-type 77, place-type-community 70 (rebaselined; the committed marks had
+no instrument). **§0 finding (on SITE-43):** leftover market truth says 658 active Bend
+single-family, listing_tile_mv 768; the place-type pages now read one MV for everything. Sunriver
+and Brasada Ranch have no trusted polygon and shipped with no map until the standin.
+
+**SITE-46 done.** /buy's Stage carries a navy band with three sourced figures (1,563 houses,
+$749,900 median ask, 29 days to an offer) from getMarketPulseRegionSnapshot, the first listing
+row breaks the fold at 552px, the CTA is navy; /sell's Stage byte-identical. buy 42 → 60. Two
+divergences closed on the way (raw pace 28 vs the destination's 29; a rounded median).
+
+**SITE-32 shipped, blocked until 2026-11-08.** Keep-indexed ruling in MASTER_SPEC §4.9 and one
+CLAUDE.md row; the losing text deleted; ci:listing-offmarket-index pins that a listing page's
+robots depend on geography and the refusal path only; ListingUnavailable copy corrected. The
+60-day GSC-vs-DAL cross is the open clause (before: 6,611 off-market URLs / 26,123 impressions).
+
+**Fleet at the time of writing:** cloud-grinder on SITE-31 and SITE-41; claude-opus5 on SITE-40
+and SITE-45; this session on SITE-42 (source-line form, four classes) and SITE-44 (map
+cartography). Only SITE-44 was eligible and unclaimed. **Open for Matt:** the out-of-area
+listing asks (Tour / Call / Text and the payment beside "we don't work in Medford"); the MLS
+remarks missing from the listing page (on SITE-45); a hero data graphic for /buy (variants rule).
+
+## Prior — 2026-09-09 (round three: the first message is drafted for Matt, the parser and the agent are on Grok, the queue is clean)
+
+Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
+(`wt/cma-ship-20260907`). Commits 3264efb3 (inbox parser on Grok), eca69b97 (agent on Grok);
+one gated push after this was written — `git log origin/main --oneline -6`. Matt's answers in
+memory `feedback_cma_send_walk_decisions` (round three).
+
+**Auto-send waits on the first message.** Matt: today's letter is "too brief and does not really
+follow my voice… it's really important that we nail that first message." The rewrite — expired,
+FSBO, seller-valuation, each filled with a real document, plus the brief the composer will
+follow and the merge fields — is the artifact "The First Message"
+(https://claude.ai/code/artifact/a4f1379b-c4d8-4bba-9274-3138b858ed02). When he approves or
+edits it: put the wording into `lib/cma/first-contact.ts` (planFor / offerFor / resourceParagraphs
+become the paragraphs on the page; new facts — comps count, comp-area place, the expired ask
+exposure — come off `render_args` in `cmaFirstContactFactsFromRow`), keep every number
+row-bound (drop the sentence when its fact is missing), rerun the harness walk, and only then
+flip the expired and FSBO switches for clean documents (audit pass, no review reason, range
+inside the 8% share).
+
+**Done this round.** The lane funnel is live on /admin/cmas ("CMA funnel by lane", wired by
+545e4e50 from another session; the earlier "not mounted" note was stale). The 8 zz-test-rebrand
+fixtures and the six harness documents are archived. `lib/marketing-brain/inbox-parser.ts` and
+the broker SMS agent (`lib/agent/runtime.ts` tool loop, `tools/law.ts` classifier,
+`assets.ts` photo grade) run on Grok; verified live as Matt's harness: a Bend inventory question
+called the market tool and answered with fetched figures ($0.12), a lead-paint question failed
+safe and flagged Matt ($0.19). At ~$0.15 a turn the $3 daily cap is ~20 turns; grok-4.5 would
+halve it if he wants more. No Anthropic caller is left outside `lib/ai/anthropic.ts` itself.
+
+**Dropped by Matt.** The usable-acreage GIS measure ("remarks are enough").
+
+**Running.** The containment backtest at N=2,000, before (worktree
+`~/RyanRealty-wt-backtest-before` at 63e78f72) and after; `scripts/pricing-backtest.mjs`'s
+subject pool now follows N (it was capped at 800 rows whatever N asked). Results go beside
+`docs/research/pricing-backtest-containment-2026-09-09.md`.
+
+**Next, in Matt's order:** the first message (on his edits) → the second send walk on the FSBO
+and expired lanes → the switches.
 
 ## Prior — 2026-09-09 (engine items 3 and 4: the map's own ground and the graded cover; an inbound email advances the CRM)
 

@@ -247,3 +247,282 @@
     0 0 0 var(--v3-focus-offset) var(--v3-surface-inverse),
     var(--v3-media-shadow);
 }
+
+/* ---------------------------------------------------------------------------
+   3. THE INVENTORY VARIANT (SITE-46)
+
+   WHY IT EXISTS. The taste table of 2026-09-08 scored /buy at 42 and called it
+   "competent, on-brand and inert": on the one page whose job is helping someone
+   buy a house, the whole first viewport was a photograph, an eyebrow, a serif
+   headline and one button — zero data, zero listings, zero map. The route was
+   already reading live inventory and mounting a listing Field directly beneath
+   this pattern; the Stage's own height simply pushed it past the fold, leaving
+   about 60px of unlabeled photo strip at 1440x900.
+
+   Three rules, all of them scoped to .v3-stage--inventory so that a Stage with
+   no inventory behind it keeps the quiet photo form byte for byte:
+     a) the frame is shorter, so the section below breaks the fold,
+     b) the copy carries a strip of live figures and one section 0 trace,
+     c) the action takes the navy fill.
+   --------------------------------------------------------------------------- */
+
+/* (a) THE SHORTER FRAME. The default door is max(72vh, 28rem) — 648px at
+   1440x900, which put the Field's first photograph at y=732 with 168px of it
+   above the fold and no price, no address, no filter chips in view. At
+   max(52vh, 27rem) the same capture puts the Field's chips and the top half of
+   the lead photograph on screen. It is still a full-bleed door: 52vh is more
+   than half the viewport, and the copy inside sets the real height whenever the
+   headline, the strip and the action need more than that. */
+.v3.v3-stage--inventory {
+  min-height: max(52vh, 27rem);
+}
+
+/* The copy stack is the same stack; it just opens a little tighter at the top,
+   because the strip has added a block at the bottom and the pattern's balance
+   is between the two, not around the headline alone. */
+.v3.v3-stage--inventory .v3-stage-copy {
+  padding-top: var(--v3-space-2xl);
+  gap: var(--v3-space-sm);
+}
+
+/* THE RAMP, HELD HIGHER. The 'standard' ramp reaches its mid stop at 46% of the
+   frame, which is where the headline used to end. The strip and its trace now
+   sit in that band, and small cream type over bright water (the /buy hero is a
+   lake) is the one place this pattern can still fail legibility. Holding the
+   strong stop to 40% and the mid stop to 72% keeps the entire copy stack over
+   the same depth of navy the headline always had. Same three tokens, same
+   direction, no new color. Only the 'standard' ramp needs it: 'deep' already
+   holds strong through the copy zone, and 'light' is opt-in for footage that is
+   already dark. */
+.v3.v3-stage--inventory.v3-stage--standard .v3-stage-scrim {
+  background: linear-gradient(
+    to top,
+    var(--v3-scrim-strong) 0%,
+    var(--v3-scrim-strong) 40%,
+    var(--v3-scrim-mid) 72%,
+    var(--v3-scrim-soft) 100%
+  );
+}
+
+/* (b) THE BAND. The figures do not float on the photograph: they sit on a
+   full-bleed navy band across the base of the hero, under a cream hairline.
+
+   WHY A BAND AND NOT AN OVERLAY. The first build put this strip inside the copy
+   stack, over the photo. A separate evaluator scored that fold at 42 and named
+   the reason: "one hero moment, not a composed page — a full-bleed photo
+   followed immediately by another full-bleed photo with the identical scrim,
+   two adjacent sections sharing a shape from the first scroll". A band ends the
+   Stage on a second material, so the fold reads photograph, then instrument,
+   then the cream page. It also gives 0.74rem type a ground rather than a
+   gradient: the trace under these figures was the one line in the pattern whose
+   legibility depended on what the photographer pointed at.
+
+   The band is the section's second grid row, so the copy sizes itself and the
+   band sits under it; align-content on the variant keeps both at the bottom of
+   the frame the way the single copy row always sat. */
+.v3.v3-stage--inventory {
+  align-content: end;
+}
+
+.v3 .v3-stage-band {
+  position: relative;
+  z-index: 3;
+  background: var(--v3-surface-inverse);
+  border-top: var(--v3-rule-weight-hairline) solid
+    color-mix(in srgb, var(--v3-cream) 30%, transparent);
+}
+
+.v3 .v3-stage-band__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-sm);
+  width: 100%;
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-space-md) var(--v3-gutter) var(--v3-space-md);
+}
+
+.v3 .v3-stage-strip__row {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* NARROW FIRST: one figure per line, its number and its meaning on one
+   baseline, hairline-separated. Three figures side by side at 375 would put
+   "median asking price" on three lines under a numeral — the wrapped-label tell
+   TASTE.md names. A ledger line is the honest small-screen form of the same
+   content, and it is the form the register already uses for rows. */
+.v3 .v3-stage-strip__cell + .v3-stage-strip__cell {
+  border-top: var(--v3-rule-weight-hairline) solid
+    color-mix(in srgb, var(--v3-cream) 20%, transparent);
+}
+
+.v3 .v3-stage-strip__cell .v3-figure {
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  /* One rhythm down the band. Without it each row is as tall as its own
+     numeral and the three sit at three heights, which reads as unplanned
+     rather than composed (evaluator, 2026-09-09). */
+  min-height: var(--v3-tap);
+}
+
+/* THE DOOR. A figure with a surface behind it is a link to that surface, and
+   the link is the whole cell so the target is never smaller than the number.
+   min-height is the tap floor (WCAG 2.5.8, ci:tap-targets). */
+.v3 .v3-stage-strip__door {
+  display: block;
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-2xs) var(--v3-space-xs);
+  margin-inline: calc(var(--v3-space-xs) * -1);
+  color: inherit;
+  text-decoration: none;
+}
+
+/* THE AFFORDANCE, AT REST. A caret after the label, drawn in CSS the way this
+   register already draws the one on a source disclosure's summary — not a
+   second copy of V3Doors' arrow component, and not a hover-only state.
+
+   It replaced an underline. The underline was the honest first choice (it is
+   the register's text-control treatment) but a separate evaluator, given only
+   the still, could not tell a live link from decorative underline styling, and
+   on the narrow band the rule sat close enough to the numerals to read as a
+   strikethrough. A caret says "this opens something" in a screenshot, which is
+   the only place a taste pass can see it.
+
+   The travel on hover is 2px of transform, inside the register's micro band. */
+.v3 .v3-stage-strip__door .v3-figure__label::after {
+  content: '';
+  display: inline-block;
+  width: 0.4em;
+  height: 0.4em;
+  margin-left: 0.6em;
+  vertical-align: baseline;
+  border-top: var(--v3-rule-weight-hairline) solid currentColor;
+  border-right: var(--v3-rule-weight-hairline) solid currentColor;
+  transform: translateX(0) rotate(45deg);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* The whole cell lights, the way a Door does: cream at 8% is the on-navy
+   counterpart of --v3-wash, which is navy at 6% and invisible here. */
+.v3 .v3-stage-strip__door {
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-stage-strip__door:hover,
+.v3 .v3-stage-strip__door:focus-visible {
+  background: color-mix(in srgb, var(--v3-cream) 8%, transparent);
+}
+
+.v3 .v3-stage-strip__door:hover .v3-figure__label,
+.v3 .v3-stage-strip__door:focus-visible .v3-figure__label {
+  color: var(--v3-ink-on-media);
+}
+
+.v3 .v3-stage-strip__door:hover .v3-figure__label::after,
+.v3 .v3-stage-strip__door:focus-visible .v3-figure__label::after {
+  transform: translateX(2px) rotate(45deg);
+}
+
+/* Reduced motion keeps the caret and drops the travel: the graphic is already
+   complete, so nothing is lost by it not moving. */
+@media (prefers-reduced-motion: reduce) {
+  .v3 .v3-stage-strip__door:hover .v3-figure__label::after,
+  .v3 .v3-stage-strip__door:focus-visible .v3-figure__label::after {
+    transform: translateX(0) rotate(45deg);
+  }
+}
+
+/* The trace never competes with the figures: it is the smallest line in the
+   pattern, and it carries the as-of stamp for every figure in the band. */
+.v3 .v3-stage-strip__source {
+  max-width: var(--v3-measure-text);
+}
+
+/* WIDE: the same content as one instrument line — figures side by side,
+   separated by cream hairlines, each number over its meaning. */
+@media (min-width: 48rem) {
+  /* The trace moves to the right end of the band and sits on the figures'
+     baseline. On a 1440 frame the three cells occupy about the left two thirds,
+     and a band with a third of its width empty reads as a stat overlay that ran
+     out of stats; with the trace at the far end the band is one instrument with
+     its figures at one end and its provenance at the other. */
+  .v3 .v3-stage-band__inner {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--v3-space-xl);
+  }
+
+  .v3 .v3-stage-band .v3-stage-strip__source {
+    max-width: 24rem;
+    text-align: right;
+  }
+
+  .v3 .v3-stage-strip__row {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+  }
+
+  .v3 .v3-stage-strip__cell + .v3-stage-strip__cell {
+    border-top: 0;
+    border-left: var(--v3-rule-weight-hairline) solid
+      color-mix(in srgb, var(--v3-cream) 20%, transparent);
+    margin-left: var(--v3-space-xl);
+    padding-left: var(--v3-space-xl);
+  }
+
+  .v3 .v3-stage-strip__cell .v3-figure {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: var(--v3-space-2xs);
+  }
+}
+
+/* (c) THE NAVY ACTION, ON MEDIA.
+
+   Section 2 above inverts the on-media primary to a cream face with navy ink,
+   and the reason it gives is real: a navy fill painted onto a navy scrim
+   measured 1.07:1 against its backdrop, under the 3:1 floor WCAG 2.2 SC 1.4.11
+   sets for the visual information that identifies a control. The taste table's
+   craft defect is equally real — that cream box reads as a form field, not as
+   this brand's primary action.
+
+   Both are satisfied by inverting which of the two colors draws the boundary.
+   The face is navy (the brand's action color) and the EDGE is cream at 2px, so
+   the boundary that identifies the control is again between two colors the
+   control owns rather than between the control and whatever the photograph is
+   doing behind it. Sampled from the rendered /buy hero at 1440x900 rather than
+   computed from the stylesheet — sixteen points around the button's border box
+   on 2026-09-09 — the cream edge reads between 9.39:1 and 16.38:1 against the
+   scrimmed backdrop, and 14.23:1 against the navy face it encloses, the pair
+   PUBLIC_UI.md section 4 rates AAA. The cream label on that face is the same
+   14.23:1. At the worst of those sixteen points the navy face alone reads
+   1.52:1 against its backdrop, which is the whole argument in one number: the
+   fill can never identify this control, and the edge always can.
+
+   This is opt-in, not a re-skin of the ghost variant and not a change to the
+   base primary: it is scoped to a Stage that opted into the inventory variant,
+   so every other Stage keeps the cream face section 2 argues for. */
+.v3.v3-stage--inventory .v3-btn--on-media.v3-btn--primary {
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+  border-color: var(--v3-ink-on-navy);
+  border-width: var(--v3-rule-weight-section);
+}
+
+/* Hover lifts the face rather than inverting it: a control that swaps its two
+   colors on hover restates itself as a different button. The lift is navy
+   carrying a little cream — both brand colors, nothing new — and the cream
+   label holds 10.01:1 on the mixed face, measured the same way. */
+.v3.v3-stage--inventory .v3-btn--on-media.v3-btn--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--v3-cream) 12%, var(--v3-navy));
+}

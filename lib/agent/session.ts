@@ -9,9 +9,8 @@
  * lib/data/agent/sessions.ts's module doc for why `recentTurns` (not
  * turn-intake.ts) is the reader used here.
  */
-import type Anthropic from '@anthropic-ai/sdk'
 import { getOrCreateActiveSession, recentTurns } from '@/lib/data/agent/sessions'
-import type { AgentSessionRow, BrokerSlug } from '@/lib/agent/types'
+import type { AgentChatMessage, AgentSessionRow, BrokerSlug } from '@/lib/agent/types'
 
 export async function resolveAgentSession(brokerSlug: BrokerSlug): Promise<AgentSessionRow> {
   return getOrCreateActiveSession(brokerSlug)
@@ -29,15 +28,15 @@ function turnText(content: unknown): string {
 }
 
 /**
- * Map the session's recent turns onto the Anthropic Messages API shape:
+ * Map the session's recent turns onto the chat-completions shape Grok takes:
  * broker -> user, agent -> assistant. Tool and system rows are bookkeeping
  * (per-tool-call audit rows, keyword confirmations) — never replayed into
  * the model's own conversation, so the model is never shown a fabricated
  * "assistant said this" for something it did not actually say as a reply.
  */
-export async function buildModelHistory(sessionId: string): Promise<Anthropic.MessageParam[]> {
+export async function buildModelHistory(sessionId: string): Promise<AgentChatMessage[]> {
   const turns = await recentTurns(sessionId, HISTORY_TURN_LIMIT)
-  const messages: Anthropic.MessageParam[] = []
+  const messages: AgentChatMessage[] = []
   for (const turn of turns) {
     if (turn.role === 'broker') {
       messages.push({ role: 'user', content: turnText(turn.content) })

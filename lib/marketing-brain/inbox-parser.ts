@@ -1,3 +1,5 @@
+import { generateGrokStructured } from '@/lib/grok/text'
+import { GROK_MODELS, grokConfigured } from '@/lib/grok/client'
 /**
  * marketing-brain: inbox-parser
  *
@@ -13,7 +15,7 @@
  *   - Confidence < INBOX_PARSE_CONFIDENCE_THRESHOLD (default 0.70) routes to
  *     comms:matt_alert in the dispatcher for manual triage.
  *
- * Auth: ANTHROPIC_API_KEY env var.
+ * Model: lib/grok (XAI_API_KEY), Matt 2026-09-09.
  *
  * Locked 2026-05-14. Tracks producers/REGISTRY.md — update VALID_ACTION_TYPES
  * when a new producer ships.
@@ -21,9 +23,7 @@
 
 export const INBOX_PARSE_CONFIDENCE_THRESHOLD = 0.7
 
-const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
-const ANTHROPIC_VERSION = '2023-06-01'
-const HAIKU_MODEL = 'claude-haiku-4-5-20251001'
+const PARSER_MODEL = GROK_MODELS.textFast
 
 // Synced 2026-05-14 against marketing_brain_skills/producers/REGISTRY.md.
 // Add a new action_type here when a producer registers it. If the parser
@@ -195,23 +195,18 @@ RULES:
   - Never fabricate data. Confidence and rationale must be honest.`
 }
 
-interface AnthropicResponse {
-  content: Array<{ type: string; text: string }>
-  usage?: { input_tokens: number; output_tokens: number }
-  stop_reason?: string
-}
-
 export async function parseInboxEmail(input: InboxParseInput): Promise<InboxParseResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
+  // Matt 2026-09-09: every model pass through lib/grok (§4). Same prompt,
+  // same JSON contract, now schema-bound; the fail-open shape is unchanged.
+  if (!grokConfigured()) {
     return {
       action_type: 'unknown',
-      target: 'manual:no-anthropic-key',
+      target: 'manual:no-model-key',
       payload: {},
       confidence: 0,
-      rationale: 'ANTHROPIC_API_KEY not configured; parser cannot run.',
-      model: HAIKU_MODEL,
-      error: 'ANTHROPIC_API_KEY missing',
+      rationale: 'XAI_API_KEY not configured; parser cannot run.',
+      model: PARSER_MODEL,
+      error: 'XAI_API_KEY missing',
     }
   }
 
@@ -222,77 +217,40 @@ Subject: ${input.subject}
 Body:
 ${truncatedBody}`
 
-  const requestBody = {
-    model: HAIKU_MODEL,
-    max_tokens: 600,
-    system: getInboxParserSystemPrompt(),
-    messages: [
-      {
-        role: 'user',
-        content: userMessage,
-      },
-    ],
-  }
-
-  let response: Response
+  let parsed: Record<string, unknown>
   try {
-    response = await fetch(ANTHROPIC_API, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': ANTHROPIC_VERSION,
+    const res = await generateGrokStructured<Record<string, unknown>>({
+      model: PARSER_MODEL,
+      system: getInboxParserSystemPrompt(),
+      prompt: userMessage,
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          action_type: { type: 'string' },
+          target: { type: 'string' },
+          payload: { type: 'object', additionalProperties: true },
+          confidence: { type: 'number' },
+          rationale: { type: 'string' },
+        },
+        required: ['action_type', 'target', 'payload', 'confidence', 'rationale'],
       },
-      body: JSON.stringify(requestBody),
+      schemaName: 'inbox_parse',
+      maxTokens: 600,
+      reasoningEffort: 'low',
+      timeoutMs: 60_000,
     })
+    parsed = res.value ?? {}
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     return {
       action_type: 'unknown',
-      target: 'manual:parser-network-error',
+      target: 'manual:parser-error',
       payload: {},
       confidence: 0,
-      rationale: `Anthropic API network error: ${msg}`,
-      model: HAIKU_MODEL,
+      rationale: `Parser call failed: ${msg.slice(0, 160)}`,
+      model: PARSER_MODEL,
       error: msg,
-    }
-  }
-
-  if (!response.ok) {
-    const text = await response.text()
-    return {
-      action_type: 'unknown',
-      target: 'manual:parser-api-error',
-      payload: {},
-      confidence: 0,
-      rationale: `Anthropic API returned ${response.status}: ${text.slice(0, 200)}`,
-      model: HAIKU_MODEL,
-      error: `HTTP ${response.status}`,
-    }
-  }
-
-  const data = (await response.json()) as AnthropicResponse
-  const textBlock = data.content.find((b) => b.type === 'text')?.text ?? ''
-
-  // Strip optional markdown code fences (Haiku occasionally wraps in ```json).
-  const cleaned = textBlock
-    .replace(/^\s*```(?:json)?\s*/i, '')
-    .replace(/\s*```\s*$/i, '')
-    .trim()
-
-  let parsed: Record<string, unknown>
-  try {
-    parsed = JSON.parse(cleaned)
-  } catch {
-    return {
-      action_type: 'unknown',
-      target: 'manual:parser-json-error',
-      payload: { raw_response: textBlock },
-      confidence: 0,
-      rationale: `Parser returned non-JSON output.`,
-      model: HAIKU_MODEL,
-      raw_response: textBlock,
-      error: 'JSON parse error',
     }
   }
 
@@ -319,6 +277,6 @@ ${truncatedBody}`
     payload,
     confidence: isValid ? confidence : Math.min(confidence, 0.4),
     rationale: finalRationale,
-    model: HAIKU_MODEL,
+    model: PARSER_MODEL,
   }
 }
