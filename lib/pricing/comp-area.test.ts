@@ -447,3 +447,20 @@ describe('compAreaIn', () => {
     ).toBe('within two miles of your home')
   })
 })
+
+describe('the adjacent-plat rungs are boundary rungs', () => {
+  it('a sale from a touching plat makes the area the neighborhood, and carries a 2-mile cap', () => {
+    expect(rungRadiusMiles('adjacent-subdivision-6mo')).toBe(2)
+    expect(rungRadiusMiles('adjacent-sub-12mo')).toBe(2)
+    const area = buildCompArea({
+      subject: { ...OLD_BEND, subdivision: 'Kenwood', city: 'Bend' },
+      rungs: [rung('subdivision-6mo', 1), rung('adjacent-sub-6mo', 3)],
+      keptComps: [
+        comp('Kenwood', 'subdivision-6mo', OLD_BEND),
+        comp('Roanoke', 'adjacent-sub-6mo', OLD_BEND),
+        comp('Bend View Addition', 'adjacent-sub-6mo', OLD_BEND),
+      ],
+    })!
+    expect(area.kind).toBe('neighborhood')
+  })
+})

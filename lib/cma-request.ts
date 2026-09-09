@@ -22,6 +22,7 @@ import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 import { sendBrokerNotification, sendLeadConfirmation } from '@/lib/cma/request-emails'
 import { applyCmaClientIntent, isCmaClientIntent } from '@/lib/cma/client-intent'
 import { parsePositiveInt, parsePositiveNumber } from '@/lib/cma/client-link'
+import { kickCmaBuild } from '@/lib/cma/kick'
 
 export type CreateCmaRequestInput = {
   rawAddress: string
@@ -520,6 +521,8 @@ export async function createCmaRequest(
       }
     }
 
+    // Matt 2026-09-09: kick on intake — the draft builds now, not at :14/:44.
+    await kickCmaBuild(slug)
     return {
       ok: true,
       cmaId: cmaRow.id,

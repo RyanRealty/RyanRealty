@@ -31,7 +31,7 @@
  * ground (Redmond, Tumalo) cannot fail open across 97.
  */
 
-import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data'
+import { selectCmaCompsPool, selectCmaCompsByKeys, getSubdivisionRing, assignSubdivisionSlugs } from '@/lib/data'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import type { CmaListingRow } from '@/lib/data'
@@ -323,6 +323,19 @@ export async function selectComps(
 
   const tiers = compTierLadder(subdivisionIlike)
   const ruralAcreage = isRuralAcreage(subject, subjectArea)
+  // Containment (Matt 2026-09-08): the plats next to the subject's, inside its
+  // neighborhood polygon when it has one. Fail-open: no ring, no adjacent rung.
+  const ring = await getSubdivisionRing(subject.latitude, subject.longitude)
+  const adjacentSlugs = new Set(
+    (ring?.ring ?? []).filter((r) => r.inNeighborhood !== false).map((r) => r.slug),
+  )
+  if (ring) {
+    trace.push(
+      adjacentSlugs.size > 0
+        ? `Subject plat: ${ring.homeLabel}. ${adjacentSlugs.size} plat(s) touch it${subjectArea ? ' inside the same neighborhood' : ''}: ${[...(ring.ring ?? [])].filter((r) => adjacentSlugs.has(r.slug)).slice(0, 8).map((r) => r.label).join(', ')}${adjacentSlugs.size > 8 ? ', …' : ''}.`
+        : `Subject plat: ${ring.homeLabel}. No plat touches it inside the boundary, so the adjacent-subdivision rung is skipped.`,
+    )
+  }
   const customOrNew = isCustomOrNewSubject({
     yearBuilt: subject.yearBuilt,
     newConstructionYn: subject.newConstructionYn,
@@ -363,7 +376,9 @@ export async function selectComps(
         ? 'the subject has no usable SubdivisionName on its MLS record'
         : tier.sameArea && !subjectArea
           ? 'the subject sits outside every mapped neighborhood polygon'
-          : tier.ruralOnly && !ruralAcreage
+          : tier.adjacentSubdivisions && adjacentSlugs.size === 0
+            ? 'no plat next to the subject\'s is known'
+            : tier.ruralOnly && !ruralAcreage
             ? 'this rung is reserved for rural acreage subjects outside every mapped neighborhood'
             : null
     const sqftMin = Math.round(sqft * (1 - tier.sqftBand))
@@ -419,12 +434,23 @@ export async function selectComps(
       propertyType: segment,
     })
     rung.rows_returned = rows.length
+    // The adjacent rung needs each row's plat; one batched point lookup.
+    const rowPlats = tier.adjacentSubdivisions
+      ? await assignSubdivisionSlugs(rows.map((r) => ({ lat: num(r['Latitude']), lng: num(r['Longitude']) })))
+      : null
     let added = 0
-    for (const row of rows) {
+    for (const [rowIndex, row] of rows.entries()) {
       const comp = rowToComp(row, tier.name, Boolean(land))
       if (!comp) {
         rung.excluded.unusable_row++
         continue
+      }
+      if (rowPlats) {
+        const plat = rowPlats[rowIndex]
+        if (!plat || !adjacentSlugs.has(plat)) {
+          rung.excluded.market_area++
+          continue
+        }
       }
       if (subject.listingKey && comp.listingKey === subject.listingKey) {
         rung.excluded.self++
@@ -558,7 +584,7 @@ export async function selectComps(
       }
 
       const compArea = resolveMarketArea(comp.latitude, comp.longitude)
-      if (tier.sameArea && compArea !== subjectArea) {
+      if ((tier.sameArea || (tier.adjacentSubdivisions && subjectArea)) && compArea !== subjectArea) {
         rung.excluded.market_area++
         continue
       }

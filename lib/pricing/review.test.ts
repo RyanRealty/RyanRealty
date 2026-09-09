@@ -7,7 +7,14 @@
  * surface at all.
  */
 import { describe, expect, it } from 'vitest'
-import { RENDERER_NOTICE, buildPricingReview, confidenceForVerdict, REVIEW_REASONS } from './review'
+import {
+  RENDERER_NOTICE,
+  RANGE_REVIEW_SHARE,
+  buildPricingReview,
+  confidenceForVerdict,
+  rangeWiderThanShare,
+  REVIEW_REASONS,
+} from './review'
 import type { CmaPricingClamp } from '@/lib/cma/types'
 
 const clamp: CmaPricingClamp = {
@@ -178,5 +185,36 @@ describe('confidenceForVerdict', () => {
   it('never raises a confidence the engine did not give', () => {
     expect(confidenceForVerdict('Supportable', 'pass').confidence).toBe('Supportable')
     expect(confidenceForVerdict('Moderate', 'did-not-run').confidence).toBe('Moderate')
+  })
+})
+
+describe('the value range and the broker (Matt 2026-09-09: cap it and force review)', () => {
+  it("Blake's 1617 NW 8th, $699,000 to $932,000 around $816,000, is wide on both sides", () => {
+    const r = rangeWiderThanShare({ recommended: 816000, valueLow: 699000, valueHigh: 932000 })
+    expect(r.wide).toBe(true)
+    expect(r.lowShare).toBeCloseTo(0.143, 3)
+    expect(r.highShare).toBeCloseTo(0.142, 3)
+  })
+
+  it("Avery's 2465 NE 7th, $412,000 to $443,000 around $435,000, is inside the share", () => {
+    const r = rangeWiderThanShare({ recommended: 435000, valueLow: 412000, valueHigh: 443000 })
+    expect(r.wide).toBe(false)
+    expect(RANGE_REVIEW_SHARE).toBe(0.08)
+  })
+
+  it('one wide side is enough, and a swapped low/high still reads', () => {
+    expect(rangeWiderThanShare({ recommended: 500000, valueLow: 480000, valueHigh: 560000 }).wide).toBe(true)
+    expect(rangeWiderThanShare({ recommended: 500000, valueLow: 530000, valueHigh: 470000 }).wide).toBe(false)
+    expect(rangeWiderThanShare({ recommended: 0, valueLow: 1, valueHigh: 2 }).wide).toBe(false)
+  })
+
+  it('the contract detail maps to the seller sentence', () => {
+    const r = buildPricingReview({
+      needsReview: true,
+      reviewReason: 'The value range is wider than 8% of the recommended list on a side: $699,000 to $932,000 around $816,000.',
+      auditVerdict: 'pass',
+    })
+    expect(r.reasons).toEqual([REVIEW_REASONS.rangeWidth])
+    expect(r.severity).toBe('review')
   })
 })

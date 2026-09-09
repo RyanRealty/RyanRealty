@@ -42,8 +42,31 @@ export const REVIEW_REASONS = {
     'An independent review pass recorded findings on this analysis, and a broker answers them before this goes out.',
   auditMissing:
     'The independent review pass did not run on this build, so a broker reads it before this goes out.',
+  rangeWidth:
+    'The range the sales support is wider than usual for this home, so a broker confirms the number before this goes out.',
   other: 'A broker reviews this document before it is sent.',
 } as const
+
+/**
+ * How wide a value range may print without a broker looking first (Matt
+ * 2026-09-09, after Blake's 1617 NW 8th went out at $699,000–$932,000 around
+ * $816,000, 14% each side: "cap it and force review"). Each side is measured
+ * against the recommended list; 8% is the share offered and accepted.
+ */
+export const RANGE_REVIEW_SHARE = 0.08
+
+export function rangeWiderThanShare(
+  pricing: { recommended: number; valueLow: number; valueHigh: number },
+  share = RANGE_REVIEW_SHARE,
+): { wide: boolean; lowShare: number; highShare: number } {
+  const rec = pricing.recommended
+  if (!(rec > 0)) return { wide: false, lowShare: 0, highShare: 0 }
+  const low = Math.min(pricing.valueLow, pricing.valueHigh)
+  const high = Math.max(pricing.valueLow, pricing.valueHigh)
+  const lowShare = Math.max(0, (rec - low) / rec)
+  const highShare = Math.max(0, (high - rec) / rec)
+  return { wide: lowShare > share || highShare > share, lowShare, highShare }
+}
 
 /**
  * THE ONE SENTENCE A LETTER OR A PDF PRINTS.
@@ -138,6 +161,9 @@ export function buildPricingReview(args: {
   }
   if (args.clamp != null || /asking that (just )?failed|failed-ask/.test(raw)) {
     add(REVIEW_REASONS.failedAskCeiling)
+  }
+  if (/range .*wider|wider than/.test(raw)) {
+    add(REVIEW_REASONS.rangeWidth)
   }
   if (verdict === 'fail' || verdict === 'review' || /audit/.test(raw)) {
     add(REVIEW_REASONS.auditFindings)

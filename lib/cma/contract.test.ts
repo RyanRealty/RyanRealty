@@ -194,6 +194,35 @@ describe('evaluateAccuracyContract', () => {
     expect(contract.checks.find((c) => c.id === 'dispersion-within-limit')!.pass).toBe(false)
   })
 
+  it('a range wider than 8% of the recommended list on a side forces review (Matt 2026-09-09)', () => {
+    const tight = [
+      comp({ closePrice: 600000, sqft: 2000 }),
+      comp({ closePrice: 605000, sqft: 2000 }),
+      comp({ closePrice: 610000, sqft: 2000 }),
+      comp({ closePrice: 615000, sqft: 2000 }),
+      comp({ closePrice: 620000, sqft: 2000 }),
+      comp({ closePrice: 625000, sqft: 2000 }),
+    ]
+    const adjusted = adjustComps(subject(), tight, null)
+    const pricing = computePricing(subject(), adjusted, null)!
+    // Blake's 1617 NW 8th: $699,000 to $932,000 around $816,000.
+    pricing.valueLow = Math.round(pricing.recommended * 0.857)
+    pricing.valueHigh = Math.round(pricing.recommended * 1.142)
+    const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(tight),
+      minComps: 6,
+      marketContextPresent: true,
+    })
+    const check = contract.checks.find((c) => c.id === 'range-width')!
+    expect(check.severity).toBe('review')
+    expect(check.pass).toBe(false)
+    expect(check.detail).toMatch(/wider than 8%/)
+    expect(contract.forceReview).toBe(true)
+  })
+
   it('forces review when the adversarial audit did not run', () => {
     const comps = tightSet()
     const adjusted = adjustComps(subject(), comps, null)

@@ -396,6 +396,59 @@ listing", given the hourly cron batches sends.
 
 ## Prior — 2026-09-09 (site queue: a sold home stops publishing its asking price; one canonical per listing)
 
+## Prior — 2026-09-09 (site queue round four: SITE-54 and SITE-30 done, 28 orphans settled; the sitemap classes answer cold under 40 s)
+
+Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. One push for
+the round: `31c64459..e60a791f` (lanes 01667168 and ed5e11f9+3e91c239, the cleanup branch
+545e4e50, merges ffee43a6 / 8527c4a9 / the cleanup merge, and the DAL index regen e60a791f).
+Deploy dpl_Dbo5rbSWZhg34KkNWUcsq1exisJw READY in 281s. Both Opus lanes died on the session
+limit mid-verification and were finished by Sonnet continuations in the SAME worktrees.
+
+**SITE-54 done.** The sitemap no longer pages the 525 MB tile history view (a nightly
+subdivision_city_inventory_mv, 6,885 rows, pg_cron 10:56Z, feeds it; getSubdivisionBrowseSlugsByCity
+deleted, ~20K statement timeouts a day gone at the source); a second hidden cost was found and
+fixed (the city×preset loop rebuilt the ~8 s search matrix ~1,080 times per build); the warmer
+runs at :26, outside both refresh windows, and skips with a logged reason while pg_cron job 164
+runs (proven live twice); deploy:verify now smokes /sitemap.xml and all five classes with a
+browser UA and fails on non-200. Production, cold, right after READY: core 34.9 s, geo 38.9 s
+(4,643 entries, carries golf-homes-at-tetherow), content 34.3 s, listings 6.1 s, matrix 34.1 s;
+warm geo 0.10 s; the 13:26Z warmer on this SHA logged per-class counts. Open finding on the
+node: the matrix class is not deterministic across builds (844 cold, 322 in the warmer's cache,
+901 local) — the leg fails closed into a partial under DB load, by design, but the class count
+does not say so. The 525 MB all-history MV refreshing every 30 minutes is still the structural
+load and needs its own data-plane node.
+
+**SITE-30 done, one clause honest-unmet.** V3PlaceIndex renders the atlas regions as real
+anchors (/cities/bend 60, /communities/tetherow 23, from 0 and 1); getAllPublishedBlogRefs
+feeds a #reading section on community pages (sunriver, broken-top, brasada-ranch each link
+their guide); ids #plats and #reading, no duplicates. /communities/brasada-ranch has 0 plat
+anchors because Crook County plats were never digitized into boundaries (verified five ways);
+nothing was invented. Taste: city 68 → 74, community 65 → 70, both rebaselined (Opus evaluator
+against a Sonnet build; the committed priors were Sonnet-scored on other shots).
+
+**Orphan cleanup (branch chore/dead-code-reachable-exports-20260909).** ci:reachable-exports
+already failed on origin/main with 28 orphans from the LP retirement, the CMA ship, the
+12-section listing rebuild and the homepage intents commit; 24 deleted with their tests, two
+marked entry points (getBoundarySentinelCoverage, publish-public-chart-source), CmaLaneFunnel
+wired into /admin/cmas (a tracked "not yet mounted" gap), four gate scripts that read deleted
+files by text repointed. **§2 finding, appended to SITE-45:** the MLS public remarks are not
+rendered anywhere on the listing page since the 12-section rebuild (DescriptionBlock was the
+renderer and nothing replaced it); CLAUDE.md §2 "MLS remarks shown as written" still binds —
+Matt's call whether the cut was deliberate.
+
+**In flight:** SITE-33 (out-of-area listing pages: honesty block + noindex,follow per Matt's
+ruling, sitemap excludes them) and SITE-53 (place-type pages: the Atlas never silently drops,
+a claim sentence, row↔pin linking, 44px zoom), both this session. Elsewhere: SITE-31 and
+SITE-41 (cloud-grinder). Eligible after these: SITE-32 (needs SITE-33's listing files clear),
+SITE-40, 42, 44, 46, 51, 52, SITE-45 (listing opening; carries the remarks finding).
+
+**Lane lessons this round.** (1) Every lane pair conflicts on the two auto-generated docs;
+regenerate once on the merged tree, never hand-merge. (2) A lane brief now says: on a rate
+limit, commit a WIP with the trailer first; two lanes lost nothing today because the worktree
+held their staged files and a continuation agent in the same worktree finished. (3) A gate that
+fails on origin/main blocks every push; check the full chain on origin/main before a round,
+not only the lane's path-selected subset.
+
 ## Prior — 2026-09-09 (site queue round three: an off-market listing stops selling a home that already sold)
 
 Owner: Claude (Opus 5), cloud "Site queue grinder" routine, session 01DLfMFV. **main is at `650666bb2`.**

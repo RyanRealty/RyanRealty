@@ -11,7 +11,7 @@
  */
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'
-import { MAX_SITE_CLAIMS_PER_SESSION, MAX_SITE_WORKERS } from '../lib/data/loop/work-node'
+import { MAX_SITE_CLAIMS_PER_SESSION, MAX_SITE_WORKERS, SITE_CLAIM_IDLE_HOURS, siteServeTier } from '../lib/data/loop/work-node'
 
 config({ path: '.env.local' })
 
@@ -97,15 +97,35 @@ async function touch(sb: ReturnType<typeof createClient>, gaps: string[], owner:
 async function claim(sb: ReturnType<typeof createClient>, gaps: string[], owner: string): Promise<number> {
   const { data: rows, error } = await sb
     .from('loop_work_nodes')
-    .select('version_gap,state,owner_session,depends_on')
+    .select('version_gap,state,owner_session,depends_on,heartbeat_at,updated_at')
     .eq('domain', 'public-ux')
     .like('version_gap', 'SITE-%')
   if (error) {
     console.error('read failed:', error.message)
     return 0
   }
-  const all = (rows ?? []) as Array<{ version_gap: string; state: string; owner_session: string | null; depends_on: string[] }>
-  const inProgress = all.filter((r) => r.state === 'in_progress')
+  const all = (rows ?? []) as Array<{ version_gap: string; state: string; owner_session: string | null; depends_on: string[]; heartbeat_at: string | null; updated_at: string }>
+  // A claim whose heartbeat is older than SITE_CLAIM_IDLE_HOURS is a dead worker, not a
+  // worker (2026-09-09: a hand-started session went silent twice holding a node, and the
+  // routine's cheapest check counted it toward the cap and stopped on "fleet full"). The
+  // brief releases such claims at boot; the claim path releases them too, so a fire that
+  // never runs the brief still sees the real fleet. Optimistic on owner, so a worker that
+  // heartbeats between the read and the write keeps its node.
+  const staleMs = SITE_CLAIM_IDLE_HOURS * 3_600_000
+  const isStale = (r: { heartbeat_at: string | null; updated_at: string }) =>
+    Date.now() - Date.parse(r.heartbeat_at ?? r.updated_at) > staleMs
+  const heldRows = all.filter((r) => r.state === 'in_progress')
+  for (const r of heldRows.filter(isStale)) {
+    const { data: freed } = await sb
+      .from('loop_work_nodes')
+      .update({ state: 'open', owner_session: null, heartbeat_at: null, updated_at: new Date().toISOString() })
+      .eq('version_gap', r.version_gap)
+      .eq('state', 'in_progress')
+      .eq('owner_session', r.owner_session)
+      .select('version_gap')
+    if (freed?.length) console.log(`${r.version_gap}: released a stale claim by ${r.owner_session ?? '?'} (heartbeat older than ${SITE_CLAIM_IDLE_HOURS}h)`)
+  }
+  const inProgress = heldRows.filter((r) => !isStale(r))
   const mine = inProgress.filter((r) => r.owner_session === owner)
   const otherOwners = new Set(inProgress.filter((r) => r.owner_session !== owner).map((r) => r.owner_session ?? '?'))
 
@@ -199,17 +219,26 @@ async function main() {
   const doneIds = new Set(rows.filter((r) => r.state === 'done').map((r) => r.id))
   const gapOf = (id: string) => byId.get(id)?.version_gap ?? id.slice(0, 8)
 
+  // Serve order (Matt 2026-09-09): tier from siteServeTier, then oldest first. The
+  // routine claims the first eligible items in this order, so the JSON and the
+  // table print it rather than a gap-number sort.
   const view = rows
     .slice()
-    .sort((a, b) => String(a.version_gap).localeCompare(String(b.version_gap), 'en', { numeric: true }))
+    .sort(
+      (a, b) =>
+        siteServeTier(a.version_gap, a.title) - siteServeTier(b.version_gap, b.title) ||
+        Date.parse(a.created_at) - Date.parse(b.created_at),
+    )
     .map((r) => {
       const waits = r.depends_on.filter((d) => !doneIds.has(d)).map(gapOf)
       const eligible = r.state === 'open' && waits.length === 0
       let note = ''
       if (r.state === 'open') note = eligible ? 'eligible' : `waits on ${waits.join(', ')}`
+      let stale = false
       if (r.state === 'in_progress') {
         const beat = r.heartbeat_at ?? r.updated_at
-        note = `held by ${r.owner_session ?? '?'} · last heartbeat ${ago(beat, now)} ago${r.heartbeat_at ? '' : ' (never heartbeated)'}`
+        stale = now.getTime() - Date.parse(beat) > SITE_CLAIM_IDLE_HOURS * 3_600_000
+        note = `held by ${r.owner_session ?? '?'} · last heartbeat ${ago(beat, now)} ago${r.heartbeat_at ? '' : ' (never heartbeated)'}${stale ? ' · STALE, the next claim or brief releases it' : ''}`
       }
       if (r.state === 'blocked') {
         const until = r.blocked_until ? `reopens ${r.blocked_until.slice(0, 10)} · ` : 'waiting on a person · '
@@ -217,11 +246,13 @@ async function main() {
       }
       if (r.state === 'done') note = oneLine(r.evidence)
       if (r.state === 'killed') note = oneLine(r.blocked_reason)
-      return { gap: r.version_gap ?? '-', state: r.state, moved: ago(r.updated_at, now), title: r.title, note, eligible }
+      return { gap: r.version_gap ?? '-', state: r.state, moved: ago(r.updated_at, now), title: r.title, note, eligible, owner: r.owner_session, stale, tier: siteServeTier(r.version_gap, r.title) }
     })
 
   if (process.argv.includes('--json')) {
-    console.log(JSON.stringify({ readAt: now.toISOString(), items: view }, null, 2))
+    const liveWorkers = new Set(view.filter((v) => v.state === 'in_progress' && !v.stale).map((v) => v.owner ?? '?')).size
+    const staleClaims = view.filter((v) => v.state === 'in_progress' && v.stale).map((v) => v.gap)
+    console.log(JSON.stringify({ readAt: now.toISOString(), serveOrder: 'items are in serve order: tier (fleet p0, fleet major, round three + SITE-31, the rest; Matt 2026-09-09) then oldest first', liveWorkers, staleClaims, maxWorkers: MAX_SITE_WORKERS, items: view }, null, 2))
     return
   }
 
@@ -230,7 +261,7 @@ async function main() {
   console.log(`SITE QUEUE — ${view.length} items · ${Object.entries(counts).map(([k, n]) => `${k} ${n}`).join(' · ')} · read ${now.toISOString().slice(0, 16)}Z`)
   console.log(`next served: ${next ? `${next.gap} ${oneLine(next.title, 80)}` : 'nothing eligible'}`)
   console.log('')
-  console.log('gap       state        moved  item')
+  console.log('gap       state        moved  item  (serve order: round three + SITE-31 first, then oldest; Matt 2026-09-09)')
   for (const v of view) {
     console.log(`${v.gap.padEnd(9)} ${v.state.padEnd(12)} ${v.moved.padStart(5)}  ${oneLine(v.title, 90)}`)
     if (v.note) console.log(`${''.padEnd(29)}${v.note}`)

@@ -836,14 +836,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       })
       return { ok: false, error: err, slug }
     }
-    if (contract.forceReview && !pricing.needsReview) {
+    if (contract.forceReview) {
+      // Every failing review check reaches the reason, even when the engine
+      // had already raised the flag: Dana's 1531 10th carried dispersion and
+      // a ±27% range, and the range sentence never printed because the flag
+      // was up first (2026-09-09).
       pricing.needsReview = true
-      pricing.reviewReason =
-        pricing.reviewReason ??
-        contract.checks
-          .filter((c) => c.severity === 'review' && !c.pass)
-          .map((c) => c.detail)
-          .join(' ')
+      const details = contract.checks
+        .filter((c) => c.severity === 'review' && !c.pass)
+        .map((c) => c.detail)
+        .filter((d) => d && !(pricing.reviewReason ?? '').includes(d))
+      pricing.reviewReason = [pricing.reviewReason, ...details].filter(Boolean).join(' ')
     }
 
     // 4.6. THE REVIEW FLAG, ON THE DOCUMENT (tasteReview round three, §2

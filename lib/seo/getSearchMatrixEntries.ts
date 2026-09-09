@@ -326,6 +326,58 @@ export async function getMatrixCityPresetNoIndex(citySlug: string, presetSlug: s
 }
 
 /**
+ * Batch form of getMatrixCityPresetNoIndex, for a caller deciding many
+ * (city, preset) combos in one pass instead of one `await` per combo.
+ *
+ * WHY THIS EXISTS (SITE-54, 2026-09-09). app/sitemap.ts calls the per-combo
+ * decision once per (city, preset) pair — up to 24 cities x 45 presets =
+ * ~1,080 sequential awaits. `getSearchMatrix()` is wrapped in React `cache()`
+ * to dedupe within one call tree, but app/sitemap.ts's buildAllUrls() runs
+ * inside `unstable_cache`'s revalidation context (lib/sitemap-class-rows.ts),
+ * which is not the request-scoped AsyncLocalStorage `cache()` dedupes against.
+ * Measured directly: the first ~25 combos each independently rebuilt the
+ * matrix (assembleSearchMatrix -> getSearchMatrixInventory, ~8.3s per
+ * rebuild, confirmed against production with a standalone timed read of
+ * listing_search_mv), consuming the sitemap's whole 210s leg budget by
+ * roughly the 25th combo; every combo after that hit the exhausted-budget 1s
+ * floor and still couldn't finish inside it, so /sitemaps/geo.xml (which
+ * shares buildAllUrls with every other class) never returned.
+ *
+ * This resolves the matrix ONCE, so the caller can do synchronous Set
+ * lookups for every combo — same underlying data, same classification, one
+ * database-backed read instead of ~1,080. `null` = the read failed; callers
+ * fail OPEN exactly like getMatrixCityPresetNoIndex does on a null matrix.
+ */
+export async function getMatrixCityPresetDecisionSet(): Promise<{
+  positiveCityPresets: Set<string>
+  cityPresetKeys: Set<string>
+} | null> {
+  const matrix = await getSearchMatrix()
+  if (!matrix) return null
+  return { positiveCityPresets: matrix.positiveCityPresets, cityPresetKeys: matrix.cityPresetKeys }
+}
+
+/**
+ * Pure, synchronous form of the getMatrixCityPresetNoIndex decision over an
+ * already-resolved set pair (from getMatrixCityPresetDecisionSet). Byte-for-
+ * byte the same branches as the async version.
+ */
+export function matrixCityPresetNoIndexFromSet(
+  decision: { positiveCityPresets: Set<string>; cityPresetKeys: Set<string> } | null,
+  citySlug: string,
+  presetSlug: string,
+): boolean {
+  const city = (citySlug ?? '').trim().toLowerCase()
+  const preset = (presetSlug ?? '').trim().toLowerCase()
+  if (!city || !preset) return false
+  if (!decision) return false
+  const path = cityPresetPath(city, preset)
+  if (decision.positiveCityPresets.has(path)) return false
+  if (!decision.cityPresetKeys.has(path)) return false // never enumerated -> index
+  return true
+}
+
+/**
  * The single render-time noindex decision for a preset search route, across both
  * the 3-segment {city}/{area}/{preset} (W3.2) and 2-segment {city}/{preset}
  * (W3.1) scopes. Returns false (index) for a non-preset route or any unknown

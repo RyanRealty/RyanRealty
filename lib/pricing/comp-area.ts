@@ -112,6 +112,8 @@ function marketAreaLabel(slug: string | null): string | null {
  */
 const NAMED_RUNG_MILES: Array<[RegExp, number]> = [
   [/^competing-area-/, 2],
+  [/^adjacent-subdivision-/, 2],
+  [/^adjacent-sub-/, 2],
   [/^citywide-/, 5],
   [/^rural-county-12mo$/, 10],
   [/^rural-county-24mo$/, 15],
@@ -135,9 +137,12 @@ function isSubdivisionRung(key: string): boolean {
   return key.startsWith('subdivision-') || key.startsWith('similar-sub')
 }
 
-/** Rungs whose membership test IS the GIS boundary the subject sits in. */
+/**
+ * Rungs whose membership test IS the GIS boundary the subject sits in. The
+ * adjacent-plat rungs count: their members are inside the polygon by rule.
+ */
 function isBoundaryRung(key: string): boolean {
-  return key.startsWith('neighborhood-')
+  return key.startsWith('neighborhood-') || key.startsWith('adjacent-sub')
 }
 
 function clean(s: string | null | undefined): string | null {

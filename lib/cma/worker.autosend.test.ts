@@ -16,6 +16,8 @@ const updateCmaActionRow = vi.fn((..._a: Args) => Promise.resolve(undefined))
 const getCmaActionPayload = vi.fn((..._a: Args) => Promise.resolve({} as Record<string, unknown>))
 const getCmaServeHead = vi.fn((..._a: Args) => Promise.resolve(null as unknown))
 const attachCmaToPerson = vi.fn((..._a: Args) => Promise.resolve(undefined))
+const claimCmaAction = vi.fn((..._a: Args) => Promise.resolve(true))
+const listOpenCmaActionsForSlug = vi.fn((..._a: Args) => Promise.resolve([] as unknown[]))
 const buildCma = vi.fn((..._a: Args) => Promise.resolve({ ok: false } as Record<string, unknown>))
 const autoSendBuiltCma = vi.fn((..._a: Args) =>
   Promise.resolve({
@@ -32,6 +34,8 @@ vi.mock('@/lib/data', () => ({
   getCmaActionPayload: (...a: Args) => getCmaActionPayload(...a),
   getCmaServeHead: (...a: Args) => getCmaServeHead(...a),
   attachCmaToPerson: (...a: Args) => attachCmaToPerson(...a),
+  claimCmaAction: (...a: Args) => claimCmaAction(...a),
+  listOpenCmaActionsForSlug: (...a: Args) => listOpenCmaActionsForSlug(...a),
 }))
 vi.mock('@/lib/cma/build', () => ({ buildCma: (...a: Args) => buildCma(...a) }))
 vi.mock('@/lib/cma/auto-send', () => ({ autoSendBuiltCma: (...a: Args) => autoSendBuiltCma(...a) }))
@@ -52,6 +56,7 @@ function action(over: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  claimCmaAction.mockResolvedValue(true)
   getCmaServeHead.mockResolvedValue(null)
   autoSendBuiltCma.mockResolvedValue({
     outcome: 'lane-off',
@@ -96,5 +101,25 @@ describe('runCmaBuildWorker → auto-send', () => {
     await runCmaBuildWorker(1)
     expect(buildCma).not.toHaveBeenCalled()
     expect(autoSendBuiltCma).not.toHaveBeenCalled()
+  })
+})
+
+describe('runCmaBuildWorker → one run per row', () => {
+  it('walks away from a row another run already holds, and builds nothing for it', async () => {
+    listOpenCmaActions.mockResolvedValue([action()])
+    claimCmaAction.mockResolvedValue(false)
+    const res = await runCmaBuildWorker(1)
+    expect(res.skipped).toBe(1)
+    expect(res.built).toBe(0)
+    expect(buildCma).not.toHaveBeenCalled()
+  })
+
+  it('a slug kick reads only that slug\'s open build', async () => {
+    listOpenCmaActionsForSlug.mockResolvedValue([action({ id: 'k1', target: 'cma:cma-kick' })])
+    buildCma.mockResolvedValue({ ok: true, pricing: { recommended: 1 }, comps: [], pageCount: 1 })
+    const res = await runCmaBuildWorker(3, { slug: 'CMA-Kick' })
+    expect(listOpenCmaActionsForSlug).toHaveBeenCalledWith('cma-kick')
+    expect(listOpenCmaActions).not.toHaveBeenCalled()
+    expect(res.built).toBe(1)
   })
 })

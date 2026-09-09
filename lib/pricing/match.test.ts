@@ -1028,3 +1028,52 @@ describe('walkPricingLadder', () => {
     expect(out.comps.map((c) => c.listingKey)).not.toContain('LARK')
   })
 })
+
+describe('containment — the plats next to the subject, then the boundary (Matt 2026-09-08)', () => {
+  const asOf = '2026-09-01'
+  // River West, so every non-subdivision rung is boundary-cut.
+  const RIVER_WEST = { latitude: 44.0645, longitude: -121.3237, marketArea: 'bend-river-west' }
+
+  it('a sale in a touching plat is taken by the adjacent rung, before any mile ring', () => {
+    const subj = subject({ ...RIVER_WEST, subdivisionSlug: 'kenwood', adjacentSubdivisionSlugs: ['kenwood-first-addition', 'roanoke'] })
+    const pool = [
+      sale({ ...RIVER_WEST, subdivision: 'Roanoke', subdivisionNorm: 'roanoke', subdivisionSlug: 'roanoke', closeDate: '2026-07-15' }),
+      sale({ ...RIVER_WEST, subdivision: 'Aubrey Heights', subdivisionNorm: 'aubrey heights', subdivisionSlug: 'aubrey-heights', closeDate: '2026-07-15' }),
+    ]
+    const out = walkPricingLadder(subj, pool, { asOf })
+    const tiers = out.comps.map((c) => [c.subdivisionNorm, c.selectionTier])
+    expect(tiers).toContainEqual(['roanoke', 'adjacent-sub-3mo'])
+    // The non-adjacent plat inside the same polygon still enters, later, on a mile ring.
+    expect(tiers.find((t) => t[0] === 'aubrey heights')?.[1]).toMatch(/^nearby-/)
+  })
+
+  it('the adjacent rung skips when no ring is known, and the walk says why', () => {
+    const subj = subject({ ...RIVER_WEST, adjacentSubdivisionSlugs: [] })
+    const out = walkPricingLadder(subj, [sale({ ...RIVER_WEST, subdivisionNorm: 'roanoke', subdivisionSlug: 'roanoke' })], { asOf })
+    const adj = out.rungs.find((r) => r.tier === 'adjacent-sub-3mo')!
+    expect(adj.ran).toBe(false)
+    expect(adj.skippedReason).toMatch(/no plat next to/)
+  })
+
+  it('never leaves the boundary while it supplied the minimum; crosses only when it did not', () => {
+    // Awbrey Butte: another mapped polygon on the same bank, about a mile away.
+    const outside = { latitude: 44.075, longitude: -121.33, marketArea: 'bend-awbrey-butte' }
+    const inside = (n: number) =>
+      Array.from({ length: n }, (_, i) =>
+        sale({ ...RIVER_WEST, subdivisionNorm: `plat-${i}`, subdivisionSlug: `plat-${i}`, listingKey: `IN${i}`, closeDate: '2026-06-01' }),
+      )
+    const strangers = Array.from({ length: 4 }, (_, i) =>
+      sale({ ...outside, subdivision: 'Awbrey Woods', subdivisionNorm: 'awbrey woods', subdivisionSlug: 'awbrey-woods', listingKey: `OUT${i}`, closeDate: '2026-06-01' }),
+    )
+    const subj = subject(RIVER_WEST)
+    const held = walkPricingLadder(subj, [...inside(5), ...strangers], { asOf })
+    expect(held.comps.every((c) => c.listingKey.startsWith('IN'))).toBe(true)
+    const beyond = held.rungs.find((r) => r.tier === 'beyond-2mi-12mo')!
+    expect(beyond.ran).toBe(false)
+    expect(beyond.skippedReason).toMatch(/stayed inside/)
+
+    const crossed = walkPricingLadder(subj, [...inside(3), ...strangers], { asOf })
+    expect(crossed.comps.some((c) => c.selectionTier.startsWith('beyond-'))).toBe(true)
+    expect(crossed.trace.join(' ')).toMatch(/crossed its boundary/)
+  })
+})

@@ -1,0 +1,206 @@
+/* ===========================================================================
+   PATTERN 9: INDEX
+   Styles for V3PlaceIndex.tsx and nothing else. Every value resolves from
+   ./tokens.css, which V3PlaceIndex.tsx imports and whose scope the section
+   opens on itself with V3_ROOT_CLASS. No raw color, no hardcoded motion.
+
+   THE FORM IS A GAZETTEER, not a list of links: names set in columns, each one
+   carrying its own figure, and the figure drawn as a length under the name so
+   the whole set reads as one comparison at a glance. That is the entire reason
+   this is not a Quiet block — sixty hairline door rows is the scrolling list
+   TASTE.md bans; sixty names in four columns with a measured underline is an
+   index, and an index is a thing a reader scans rather than scrolls.
+
+   The block selector is doubled (`.v3.v3-place-index`) for the same reason
+   every other pattern doubles its own: the prototype route
+   (app/dev/public-v3/public-v3.css) declares plain global single-class rules,
+   App Router keeps route CSS in the document across client navigations, and a
+   (0,1,0) rule must never be able to reach this one.
+   =========================================================================== */
+
+.v3.v3-place-index {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+/* Rule weight is the hierarchy: a section following content opens on the 2px
+   navy section rule. Same as Quiet, Instrument and Ledger. */
+* + .v3.v3-place-index {
+  border-top: var(--v3-rule-section);
+}
+
+/* Head ---------------------------------------------------------------------- */
+.v3-place-index__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-xs);
+  margin-bottom: var(--v3-space-lg);
+}
+
+.v3-place-index__heading {
+  margin: 0;
+}
+
+.v3-place-index__lede {
+  max-width: var(--v3-measure-text);
+}
+
+/* The columns ---------------------------------------------------------------
+   auto-fill so the column count is a consequence of the measure and the name
+   width, never a breakpoint someone has to maintain. min() keeps a single
+   column at 375 without a media query: 18rem is wider than the viewport's
+   content box there, so the track collapses to 100%. */
+.v3-place-index__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
+  column-gap: var(--v3-space-xl);
+  /* A row-gap, small (taste pass, SITE-30): with none, a row's own bottom bar
+     sat flush against the NEXT row's top hairline — at reading distance the
+     mark read as a broken divider rather than a measurement. This is the only
+     change; the bar and the hairline are still the same two elements. */
+  row-gap: var(--v3-space-3xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-place-index__list--tail {
+  margin-top: 0;
+}
+
+/* The hairline IS the rhythm, exactly as in Quiet: a rule above every row, so
+   the columns read as a set without a box around them. */
+.v3-place-index__item {
+  border-top: var(--v3-rule-hairline);
+  min-width: 0;
+}
+
+/* One row -------------------------------------------------------------------
+   The whole row is the target at the 44px thumb minimum (WCAG 2.5.8). */
+.v3-place-index__row {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-xs) 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  text-decoration: none;
+}
+
+.v3-place-index__name {
+  min-width: 0;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-place-index__row:hover .v3-place-index__name,
+.v3-place-index__row:focus-visible .v3-place-index__name {
+  text-decoration-color: currentColor;
+}
+
+.v3-place-index__row:focus-visible {
+  outline: var(--v3-focus-width) solid var(--v3-focus);
+  outline-offset: var(--v3-focus-offset);
+}
+
+/* The figure ----------------------------------------------------------------
+   Tabular numerals so the column of counts aligns down the grid. */
+.v3-place-index__figure {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.v3-place-index__count {
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--v3-size-source);
+}
+
+.v3-place-index__unit {
+  /* The noun is said once per row at the quietest weight the register has: a
+     column of bare integers beside place names is a number with no noun, and
+     repeating the full label at body weight would shout it sixty times. */
+  color: var(--v3-ink-muted);
+}
+
+/* The length ----------------------------------------------------------------
+   The row's own share of the largest count in the set, drawn along the bottom
+   of the row on top of the next row's hairline. Two colors only: it is navy at
+   the register's hairline weight, so a dense index still reads as one texture.
+   --v3-share is written by the component from the caller's share; a row with
+   no share never renders this element at all. */
+.v3-place-index__bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: var(--v3-rule-weight-hairline);
+  /* A floor, not a fabrication (taste pass, SITE-30): this element only ever
+     renders for a row whose count is a real number — a null/unmeasured count
+     skips the whole figure, bar included, in V3PlaceIndex.tsx. So a share of
+     0 here is always a COUNTED zero, and a zero-width bar made it read as an
+     absent measurement instead of a measured one. 2px is a mark, not a value:
+     the printed number beside it is still the only thing anyone reads as data. */
+  /* 96%, not 100% (taste pass, SITE-30): the top row's bar at a full share
+     spanned the exact width of the item's own hairline rules above and below
+     it, so the one mark the encoding should shout read as a third divider
+     line instead of a measurement. 96% keeps it unmistakably a bar. */
+  width: max(2px, calc(var(--v3-share, 0) * 96%));
+  background: var(--v3-navy);
+  opacity: 0.55;
+}
+
+/* The fold ------------------------------------------------------------------
+   A native disclosure, so every anchor inside is in the served HTML whether or
+   not it is open — the crawler and the reader who wants the whole tree both
+   get all of it. The chevron matches Quiet, Atlas and the footer: closed points
+   RIGHT, open points DOWN. */
+.v3-place-index__fold {
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3-place-index__fold-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+  cursor: pointer;
+  list-style: none;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+}
+
+.v3-place-index__fold-summary::-webkit-details-marker {
+  display: none;
+}
+
+.v3-place-index__fold-summary:focus-visible {
+  outline: var(--v3-focus-width) solid var(--v3-focus);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-place-index__fold-summary::after {
+  content: '›';
+  color: var(--v3-ink-muted);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-place-index__fold[open] > .v3-place-index__fold-summary::after {
+  transform: rotate(90deg);
+}
+
+.v3-place-index__action {
+  margin: var(--v3-space-lg) 0 0;
+}
+
+.v3-place-index__source {
+  margin-top: var(--v3-space-lg);
+}

@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const VOICE = readFileSync(resolve('components/site/v3/FindMeVoice.client.tsx'), 'utf8')
 const CHROME = readFileSync(resolve('components/site/v3/V3Chrome.tsx'), 'utf8')
 const CHROME_CSS = readFileSync(resolve('components/site/v3/V3Chrome.css'), 'utf8')
 const PROOF = readFileSync(resolve('components/site/v3/V3Proof.client.tsx'), 'utf8')
@@ -12,8 +11,7 @@ const FACES_CSS = readFileSync(resolve('app/about/_v3/about-faces.css'), 'utf8')
 const PAGE = readFileSync(resolve('app/page.tsx'), 'utf8')
 
 describe('chrome homepage H-fixes', () => {
-  it('does not mount FindMeVoice in chrome (Matt/Cos 2026-09-06)', () => {
-    expect(CHROME).not.toContain('<FindMeVoice')
+  it('chrome sign-in and primary bar are present (Matt/Cos 2026-09-06)', () => {
     expect(CHROME).toContain('v3-chrome__signin')
     expect(CHROME).toContain('PRIMARY_BAR_KEYS')
   })

@@ -451,6 +451,27 @@ export type {
 } from './V3Answers'
 
 /* -------------------------------------------------------------------------- */
+/* Pattern 9 — INDEX: the place tree, named, measured, and crawlable           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The Atlas draws the places inside a place; it is a client component, so its
+ * region names and hrefs reach the browser inside the hydration payload and
+ * nowhere else. Measured 2026-09-09 (site queue SITE-30): the served HTML of
+ * /cities/bend held ZERO `<a href="/subdivisions/…">`, /communities/tetherow
+ * held exactly one, and the 511 sitemapped plat pages had essentially no
+ * contextual inbound links. This pattern is the map's legend in server HTML —
+ * a dense multi-column gazetteer, one measured figure per name, drawn as a
+ * length so the set reads as a comparison rather than a list of links. Quiet
+ * (pattern 6) stays the right form for a handful of exits closing a node; it
+ * has no column for a figure, and sixty of its rows is the scrolling list
+ * TASTE.md bans.
+ */
+export { V3PlaceIndex, placeIndexRows } from './V3PlaceIndex'
+
+export type { V3PlaceIndexProps, V3PlaceIndexEntry } from './V3PlaceIndex'
+
+/* -------------------------------------------------------------------------- */
 /* PLACE SECTIONS — compositions of the six, not a seventh                     */
 /* -------------------------------------------------------------------------- */
 

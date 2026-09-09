@@ -214,6 +214,12 @@ export type { UpcomingOpenHouseRow } from '@/lib/data/open-houses/getUpcomingOpe
 export { getRecentBlogPosts } from '@/lib/data/blog/getRecentBlogPosts'
 export type { BlogPostCard } from '@/lib/data/blog/getRecentBlogPosts'
 
+// Blog — EVERY published post, for the place→blog direction. The rail read
+// above sees a 24-post window, which cannot answer "which post is about this
+// place" once a community's guide falls out of it (SITE-30).
+export { getAllPublishedBlogRefs, PUBLISHED_BLOG_REF_CAP } from '@/lib/data/blog/getAllPublishedBlogRefs'
+export type { PublishedBlogRef } from '@/lib/data/blog/getAllPublishedBlogRefs'
+
 // Blog — fetch a set of posts by slug (amenity topic-cluster SEO).
 export { getBlogPostsBySlugs } from '@/lib/data/blog/getBlogPostsBySlugs'
 export type { AmenityBlogPost } from '@/lib/data/blog/getBlogPostsBySlugs'
@@ -294,6 +300,8 @@ export type { GeoSnapshot, GeoSnapshotInput } from '@/lib/data/geo/getGeoSnapsho
 // Geo — boundary polygon (PostGIS → GeoJSON) via boundary_geojson RPC.
 // Returns null when no boundary row exists for the geo.
 export { getBoundaryGeoJSON } from '@/lib/data/geo/getBoundaryGeoJSON'
+export { getSubdivisionRing, assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
+export type { SubdivisionRing, SubdivisionRingPlat } from '@/lib/data/geo/subdivision-ring'
 export type { BoundaryGeoJSONInput, BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
 export { getResortBoundaryGeoJSON } from '@/lib/data/geo/getResortBoundaryGeoJSON'
 
@@ -335,6 +343,12 @@ export type {
   CommunitySubdivisionInput,
   CommunitySubdivision,
 } from '@/lib/data/geo/getCommunitySubdivisions'
+
+// The indexable recorded-plat set — the same read the sitemap, llms.txt and the
+// /subdivisions/[slug] robots tag make. A city page renders it as its plat index
+// (SITE-30), so the pages we submit to Google are the pages we link to.
+export { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
+export type { IndexableSubdivision } from '@/lib/data/subdivisions/subdivision-index'
 
 // Market (real impls — no MV dependency, usable today)
 export { getMarketStats } from '@/lib/data/market/getMarketStats'
@@ -598,7 +612,7 @@ export {
   getCmaAccessIdentity, updateCmaRowFieldsBySlug, deleteCmaRowById, replaceCmaComps,
 } from '@/lib/data/cma/documents'
 export type { CmaAdminRow, CmaCompInsert, CmaServeHead, CmaRenderSource } from '@/lib/data/cma/documents'
-export { listOpenCmaActions, updateCmaActionRow, findOpenCmaActionBySlug, appendCmaActionNotify, getCmaActionPayload, mergeCmaActionContact } from '@/lib/data/cma/queue'
+export { listOpenCmaActions, listOpenCmaActionsForSlug, claimCmaAction, updateCmaActionRow, findOpenCmaActionBySlug, appendCmaActionNotify, getCmaActionPayload, mergeCmaActionContact } from '@/lib/data/cma/queue'
 // THE one CMA queue — every origin in a single list (Matt 2026-09-04).
 export { listCmaQueue, isSendableQueueState } from '@/lib/data/cma/unified-queue'
 export type { CmaQueueRow, CmaQueueState, CmaAuditVerdict } from '@/lib/data/cma/unified-queue'

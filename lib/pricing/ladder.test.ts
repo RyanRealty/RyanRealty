@@ -37,3 +37,31 @@ describe('pricingTierLadder — time before distance', () => {
     expect(names.indexOf('nearby-6mi-24mo')).toBeLessThan(names.indexOf('similar-sub-3mo'))
   })
 })
+
+describe('pricingTierLadder — containment (Matt 2026-09-08)', () => {
+  it('exhausts the subdivision to 12 months, then the plats next to it, before any mile ring', () => {
+    const names = pricingTierLadder().map((t) => t.name)
+    expect(names.indexOf('subdivision-9mo-wide')).toBeLessThan(names.indexOf('subdivision-12mo'))
+    expect(names.indexOf('subdivision-12mo-wide')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
+    expect(names.filter((n) => n.startsWith('adjacent-sub-'))).toEqual([
+      'adjacent-sub-3mo',
+      'adjacent-sub-6mo',
+      'adjacent-sub-9mo',
+      'adjacent-sub-12mo',
+    ])
+    expect(names.indexOf('adjacent-sub-12mo')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
+  })
+
+  it('crosses the boundary only at the end, after the city rung, and says so', () => {
+    const tiers = pricingTierLadder()
+    const names = tiers.map((t) => t.name)
+    expect(names.indexOf('city-5mi-9mo')).toBeLessThan(names.indexOf('beyond-2mi-12mo'))
+    expect(names.indexOf('beyond-2mi-12mo')).toBeLessThan(names.indexOf('beyond-5mi-12mo'))
+    expect(names.indexOf('beyond-5mi-12mo')).toBeLessThan(names.indexOf('rural-10mi-9mo'))
+    for (const t of tiers) {
+      expect(!!t.crossBoundary).toBe(t.name.startsWith('beyond-'))
+      expect(!!t.adjacentSubdivision).toBe(t.name.startsWith('adjacent-sub-'))
+      if (t.crossBoundary) expect(t.disclosure).toMatch(/crossed its boundary/)
+    }
+  })
+})

@@ -25,11 +25,20 @@ import {
   decideCmaAccess,
   renderRegisterShell,
   renderConsentShell,
+  renderConsentBarHtml,
   renderWrongPersonShell,
 } from '@/lib/cma/register-gate'
 import { SMS_CONSENT_TEXT } from '@/lib/crm/sms-consent-text'
 import type { CmaRenderSource } from '@/lib/data/cma/documents'
 import { adminReviewBannerHtml, injectAdminReviewBanner } from '@/lib/cma/review-banner'
+
+/** The first-party identity cookie PersonIdentityBridge writes from ?_pid=. */
+const RR_PID_COOKIE = 'rr_pid'
+
+function parseCmaPersonId(v: string | null | undefined): number | null {
+  const n = Number.parseInt(String(v ?? '').trim(), 10)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
 
 export const CMA_DOC_HEADERS = {
   'Content-Type': 'text/html',
@@ -130,9 +139,9 @@ function withTracker(html: string, extra = ''): string {
   return html.includes('</body>') ? html.replace('</body>', `${tracker}</body>`) : html + tracker
 }
 
-function storedHtmlResult(html: string, origin: string): CmaServeResult {
+function storedHtmlResult(html: string, origin: string, extra = ''): CmaServeResult {
   let out = html.replace(/https?:\/\/[^'")\s]+(\/fonts\/[^'")\s]+)/g, `${origin}$1`)
-  out = withTracker(out, '<script src="/rr-cma-doc.js" defer></script>')
+  out = withTracker(out, `<script src="/rr-cma-doc.js" defer></script>${extra}`)
   return { kind: 'html', status: 200, html: out, headers: CMA_DOC_HEADERS }
 }
 
@@ -180,9 +189,21 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
   const wantsPrint = new URL(opts.requestUrl).searchParams.has('print')
   const publicReady = isCmaClientReady(head.status)
 
+  // The consent bar for a recipient who came in on the tracked link and has
+  // not answered the ask yet; empty for everyone else. Appended beside the
+  // tracker on the document paths below (never on the print path).
+  let consentBar = ''
   if (publicReady && !opts.isAdmin && !opts.skipRegisterGate) {
     const identity = await getCmaAccessIdentity(safeSlug)
-    const commsCookie = (await cookies()).get(GOOGLE_COMMS_COOKIE)?.value
+    const jar = await cookies()
+    const commsCookie = jar.get(GOOGLE_COMMS_COOKIE)?.value
+    // Matt 2026-09-09: the person the email went to reads the report without
+    // the Google door. `?_pid=` rides on every tracked send (lib/cma/send.ts →
+    // attributeOutbound); PersonIdentityBridge copies it into rr_pid, so a
+    // return visit without the parameter still matches.
+    const recipientPersonId =
+      parseCmaPersonId(new URL(opts.requestUrl).searchParams.get('_pid')) ??
+      parseCmaPersonId(jar.get(RR_PID_COOKIE)?.value)
     const decision = decideCmaAccess({
       isAdmin: false,
       viewerEmail: opts.viewerEmail,
@@ -191,7 +212,23 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
       claimedBy: identity?.claimedBy ?? null,
       consentRecorded: identity?.consentRecorded ?? false,
       commsConsentRecorded: hasGoogleCommsConsentRecorded(commsCookie),
+      personId: identity?.personId ?? null,
+      recipientPersonId,
     })
+    if (
+      decision.kind === 'serve' &&
+      decision.via === 'recipient' &&
+      identity?.personId &&
+      !identity.consentRecorded &&
+      !hasGoogleCommsConsentRecorded(commsCookie)
+    ) {
+      consentBar = renderConsentBarHtml({
+        slug: safeSlug,
+        personId: identity.personId,
+        address: identity.subjectAddress ?? null,
+        smsConsentText: SMS_CONSENT_TEXT,
+      })
+    }
     if (decision.kind === 'register') {
       return {
         kind: 'html',
@@ -250,14 +287,14 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
     if (source) {
       const immersive = await immersiveFromRow(source, origin, false, safeSlug)
       if (immersive) {
-        return { kind: 'html', status: 200, html: withTracker(immersive), headers: CMA_DOC_HEADERS }
+        return { kind: 'html', status: 200, html: withTracker(immersive, consentBar), headers: CMA_DOC_HEADERS }
       }
     }
   }
 
   // Fallback: frozen stored HTML (print path, legacy rows, immersive render miss).
   const stored = await getCmaStoredHtmlBySlug(safeSlug)
-  if (stored) return storedHtmlResult(stored, origin)
+  if (stored) return storedHtmlResult(stored, origin, consentBar)
 
   if (head.html_path?.startsWith('public/cmas/')) {
     return { kind: 'redirect', url: head.html_path.replace(/^public/, ''), status: 302 }

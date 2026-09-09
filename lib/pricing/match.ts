@@ -43,6 +43,7 @@ import {
   pricingTierLadder,
   type AppleStrictness,
   type PricingTier,
+  BOUNDARY_EXIT_BELOW,
 } from '@/lib/pricing/ladder'
 
 export type PricingSubject = {
@@ -68,6 +69,14 @@ export type PricingSubject = {
   ruralAcreage: boolean
   /** City of Bend GIS mesh slug, or null outside every polygon. */
   marketArea?: string | null
+  /** County plat the subject sits in (boundaries.geo_slug), for the adjacency rung. */
+  subdivisionSlug?: string | null
+  /**
+   * Plats next to the subject's, inside the same neighborhood or community
+   * (Matt 2026-09-08 containment). Empty when the point is in no plat or the
+   * ring read failed; the adjacent rung then skips.
+   */
+  adjacentSubdivisionSlugs?: string[]
   newConstruction?: boolean | null
   /** MLS property_sub_type — "New Construction" classifies even when YN is null. */
   propertySubType?: string | null
@@ -112,6 +121,8 @@ export type PricingSale = {
   photoUrl: string | null
   publicRemarks: string | null
   marketArea?: string | null
+  /** County plat the sale sits in (boundaries.geo_slug); set by the selector for the adjacency rung. */
+  subdivisionSlug?: string | null
   newConstruction?: boolean | null
   zoning?: string | null
 }
@@ -294,6 +305,11 @@ function passesTier(
       return { ok: false, miles: null }
     }
   }
+  // The plats next to the subject's, inside its boundary (containment rung).
+  if (tier.adjacentSubdivision) {
+    const ring = subject.adjacentSubdivisionSlugs ?? []
+    if (!sale.subdivisionSlug || !ring.includes(sale.subdivisionSlug)) return { ok: false, miles: null }
+  }
   const sqftLo = subject.sqft * (1 - tier.sqftBand)
   const sqftHi = subject.sqft * (1 + tier.sqftBand)
   if (sale.sqft < sqftLo || sale.sqft > sqftHi) return { ok: false, miles: null }
@@ -359,7 +375,11 @@ function passesTier(
     // subjects outside the Bend GIS mesh still keep year-quality peers that
     // resolve into a neighboring polygon (North Rim → Awbrey Butte). True
     // Parkway/Deschutes crosses stay hard in applesOk.
-    if (subjectArea !== saleArea && !customPeer) {
+    // A boundary-exit rung (ladder.ts `beyond-*`) is the one place the search
+    // may cross the polygon, and it only runs once the boundary is exhausted.
+    // Crossing lands in ANOTHER mapped polygon, never in unmapped land — a
+    // Highway 20 sale is a different market for a mapped Bend subject.
+    if (subjectArea !== saleArea && !customPeer && !(tier.crossBoundary && saleArea != null)) {
       return { ok: false, miles: null }
     }
     const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
@@ -573,7 +593,7 @@ export function walkPricingLadder(
   const rungs: PricingLadderRung[] = []
   const tiersUsed: string[] = []
   const trace: string[] = [
-    `As-of ${asOf}. Same subdivision first (3 then 6 then 9 months, then a wider GLA band on the same street), then distance, then similar-performing subdivisions. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, zoning when both sides have a zone, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
+    `As-of ${asOf}. Same subdivision first (3, 6, 9, then 12 months, and a wider GLA band on the same street), then the plats next to it inside the same neighborhood or community (3 to 12 months), then distance inside that boundary, then similar-performing subdivisions; the boundary is crossed only when it supplied fewer than ${BOUNDARY_EXIT_BELOW} sales. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, zoning when both sides have a zone, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
   ]
 
   if (!subject.sqft || subject.sqft < 300) {
@@ -585,11 +605,17 @@ export function walkPricingLadder(
     const skip =
       tier.sameSubdivision && !subject.subdivisionNorm
         ? 'the subject has no subdivision on its MLS row'
-        : tier.ruralOnly && !subject.ruralAcreage
-          ? 'the subject is not rural acreage'
-          : tier.name.startsWith('city-') && subject.ruralAcreage
-            ? 'the subject is rural acreage, so the citywide rung does not apply'
-            : null
+        : tier.adjacentSubdivision && !(subject.adjacentSubdivisionSlugs?.length)
+          ? 'no plat next to the subject\'s is known'
+          : tier.crossBoundary && !subject.marketArea
+            ? 'the subject is outside every mapped boundary, so there is no boundary to leave'
+            : tier.crossBoundary && byKey.size >= BOUNDARY_EXIT_BELOW
+              ? `the boundary supplied ${byKey.size} sales, so the search stayed inside it`
+              : tier.ruralOnly && !subject.ruralAcreage
+                ? 'the subject is not rural acreage'
+                : tier.name.startsWith('city-') && subject.ruralAcreage
+                  ? 'the subject is rural acreage, so the citywide rung does not apply'
+                  : null
     if (skip) {
       rungs.push({
         tier: tier.name,

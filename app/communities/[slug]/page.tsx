@@ -18,7 +18,7 @@ import { notFound } from 'next/navigation'
 import { readCityOpenHouses, openHouseRows, OPEN_HOUSE_TRACE } from '@/lib/kb/place-open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { buildActivityItems } from '@/lib/kb/place-sections'
-import { activityRows, areaGuideRow, placeFigureRows, PLACE_COUNT_TRACE, type CityPlaceItem } from '@/app/cities/[slug]/_v3/city-sections'
+import { activityRows, areaGuideRow, articleRows, placeFigureRows, PLACE_COUNT_TRACE, type CityPlaceItem } from '@/app/cities/[slug]/_v3/city-sections'
 import { areaGuideVideoSchema } from '@/lib/site/area-guide-schema'
 import { communityImage } from '@/lib/geo-images'
 import type { Metadata } from 'next'
@@ -31,6 +31,7 @@ import {
   getResortBoundaryGeoJSON,
   getResortCommunityBySlug,
   getBlogPostsBySlugs,
+  getAllPublishedBlogRefs,
   getAreaGuideVideo,
   getPriceHistory,
   getDetachedOverlays,
@@ -89,6 +90,8 @@ import {
   V3Quiet,
   V3Atlas,
   type AtlasRegion,
+  V3PlaceIndex,
+  type V3PlaceIndexEntry,
   V3SectionTracker,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
@@ -123,7 +126,8 @@ import {
   reconcileListedVsDetachedFaq,
   reconcilePlaceHoaFaq,
 } from './_v3/community-figures'
-import { buildPlaceKnowledge, placeKnowledgeSource } from './_v3/place-knowledge'
+import { buildPlaceKnowledge, communityGuides, placeKnowledgeSource } from './_v3/place-knowledge'
+import { matchGeoLinksForPost } from '@/lib/blog-geo-links'
 import { measuredPlaceHoaInput } from './_v3/place-hoa-measured'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import {
@@ -605,21 +609,85 @@ export default async function CommunityDetailPage({ params }: Props) {
   // The lots inside this community, from the county assessor's cadastre. A
   // /subdivisions/ slug for a registry community redirects here, so this is
   // where a plat's lot lines actually get drawn.
-  const platLots = await withTimeoutFallback(
-    getTaxlotsInBoundary({ geoType: null, geoSlug: slug, maxLots: 320 }).catch((err) => {
-      console.error('[community] plat lots failed', { slug, err })
-      return []
-    }),
-    [],
-    8000,
-    'comm:taxlots',
-  )
+  const [platLots, publishedPosts] = await Promise.all([
+    withTimeoutFallback(
+      getTaxlotsInBoundary({ geoType: null, geoSlug: slug, maxLots: 320 }).catch((err) => {
+        console.error('[community] plat lots failed', { slug, err })
+        return []
+      }),
+      [],
+      8000,
+      'comm:taxlots',
+    ),
+    // SITE-30: every published post, so the reverse of the blog's own geo link
+    // can be drawn. The city page's "latest guides" rail reads a fixed
+    // 24-post window and cannot answer "which post is about THIS place".
+    withTimeoutFallback(getAllPublishedBlogRefs(), [], 3000, 'comm:blogRefs'),
+  ])
+  // ONE array of child plats. The Atlas draws it and the index below names it,
+  // so the map and the list are the same set by construction rather than by
+  // two reads that happen to agree today.
+  const platRegions = regionsFromChildCells(platCells)
   const atlasRegions: AtlasRegion[] = mapPolygon
     ? [
         { id: `community:${slug}`, kind: 'town', kindLabel: 'Community', name: publicName, href: `/communities/${slug}`, geometry: mapPolygon },
-        ...regionsFromChildCells(platCells),
+        ...platRegions,
       ]
     : []
+
+  /**
+   * THE PLAT INDEX, IN SERVER HTML (site queue SITE-30, 2026-09-09).
+   *
+   * The Atlas is a client component, so before this section its region names
+   * and hrefs existed only inside the hydration payload: measured on the live
+   * tree, /communities/tetherow's served HTML held 47 occurrences of
+   * "/subdivisions/" of which 46 were escaped JSON and exactly ONE was a real
+   * anchor. This list is built from the SAME cells the Atlas regions are built
+   * from, one line above, so an outline on the map always has its anchor below
+   * and the two can never disagree.
+   *
+   * The figure is each plat's own active count, which the same RPC already
+   * returned — the map and the index publish one number from one read.
+   *
+   * A COMMUNITY WITH NO RECORDED PLATS RENDERS NO SECTION, and that is a fact
+   * about the county, not a failure. `boundaries` holds Deschutes County's plat
+   * set (3,223 rows); Brasada Ranch is in CROOK county, so
+   * community_subdivisions returns zero rows for it. Confirmed four ways on
+   * 2026-09-09 rather than from one query shape (§0): the containment RPC (0),
+   * boundaries by label (one row, the community's own neighborhood polygon,
+   * no child plats), the city-level RPC for powell-butte (0), and every MLS
+   * SubdivisionName ever carried by a Powell Butte listing (2,512 of them say
+   * "Brasada Ranch" and nothing else names a phase). There is no nested plat to
+   * link, so nothing is invented to fill the section.
+   */
+  const platActiveBySlug = new Map(platCells.map((cell) => [cell.slug, cell.activeHomes]))
+  const platIndexEntries: V3PlaceIndexEntry[] = platRegions.map((region) => ({
+    name: region.name,
+    href: region.href,
+    count: platActiveBySlug.get(region.id.replace(/^subdivision:/, '')) ?? null,
+  }))
+
+  /**
+   * THE GUIDES THIS COMMUNITY IS THE SUBJECT OF (SITE-30).
+   *
+   * The blog has linked INTO /communities/<slug> since 2026-07-28
+   * (lib/blog-geo-links.ts). Nothing linked back: verified live on sunriver,
+   * broken-top, brasada-ranch, northwest-crossing, tetherow and caldera-springs
+   * on 2026-09-09, all six carrying zero `<a href="/blog/…">`, while eleven
+   * community guides published the day before sat with no inbound link from the
+   * page each one is about. Same matcher, read backwards, so one rule decides
+   * both directions and they cannot drift.
+   */
+  const guidePosts = communityGuides(slug, publishedPosts, matchGeoLinksForPost)
+  const [firstReading, ...restReading] = articleRows(
+    guidePosts.map((post) => ({
+      title: post.title,
+      href: `/blog/${post.slug}`,
+      excerpt: post.excerpt,
+      imageUrl: post.heroImageUrl ?? null,
+      dateLabel: formatDate(post.publishedAt),
+    })),
+  )
   const typeCovers = await withTimeoutFallback(
     loadPlaceTypeCoverPhotos({
       city: cityName,
@@ -848,6 +916,20 @@ export default async function CommunityDetailPage({ params }: Props) {
           />
         )}
 
+        {/* SITE-30: the map's legend, in the served HTML. The same plat cells
+            the Atlas above draws, each one a real anchor with the homes for
+            sale inside it right now. */}
+        <V3PlaceIndex
+          id="plats"
+          eyebrow={`${publicName} · Recorded plats`}
+          heading={`The plats inside ${publicName}`}
+          lede={`${publicName} was recorded in phases, and each phase is its own plat with its own page — its lot lines, what has sold there, and what is for sale today.`}
+          countLabel="for sale"
+          entries={platIndexEntries}
+          foldAfter={10}
+          source={`recorded plat polygons from public.boundaries (geo_type='subdivision', Deschutes County DIAL), selected by spatial membership — the plat's centroid inside the recorded ${publicName} boundary, via the community_subdivisions RPC. The figure is that plat's active listings counted by boundary membership in listing_boundary_xref_mv, the same read the map above draws from. A plat with no active listing prints 0, which is a counted zero and not a missing read.`}
+        />
+
         <PlaceTypeSlider cards={typeCards} label={`${publicName} property types`} />
 
         <PlaceSplitView
@@ -948,6 +1030,22 @@ export default async function CommunityDetailPage({ params }: Props) {
                   ? `${courseMap.course.shortName}, drawn from the air`
                   : `${courseMap.course.shortName}, hole by hole`,
             )}
+          />
+        ) : null}
+
+        {/* SITE-30: the guides this community is the subject of. The section id
+            is #reading, NOT #guides — #guides on this template is already the
+            area-guide VIDEO ledger below, and two sections cannot share an id.
+            A community the matcher does not name renders nothing here rather
+            than the newest post about somewhere else. */}
+        {firstReading ? (
+          <V3Ledger
+            id="reading"
+            layout="magazine"
+            eyebrow={v3Text(`${publicName} · Reading`)}
+            heading={v3Text(`Guides about ${publicName}`)}
+            rows={[firstReading, ...restReading]}
+            action={{ label: v3Text('Every guide'), href: '/blog' }}
           />
         ) : null}
 

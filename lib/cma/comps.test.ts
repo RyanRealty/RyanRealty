@@ -65,6 +65,8 @@ describe('compTierLadder', () => {
     expect(names).toEqual([
       'subdivision-6mo',
       'subdivision-12mo',
+      'adjacent-subdivision-6mo',
+      'adjacent-subdivision-12mo',
       'neighborhood-6mo',
       'neighborhood-12mo',
       'competing-area-12mo',

@@ -22,6 +22,7 @@ import { customBathCompatible } from '@/lib/pricing/classes'
 import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaAudit } from '@/lib/cma/audit'
 import type { CmaSiteData } from '@/lib/cma/county'
+import { RANGE_REVIEW_SHARE, rangeWiderThanShare } from '@/lib/pricing/review'
 
 // Restrictive/resource base zones where buildability is NOT automatic — a
 // dwelling needs a verified current entitlement (SKILL §3.5).
@@ -212,6 +213,21 @@ export function evaluateAccuracyContract(args: {
     pass: !pricing.needsReview || !pricing.reviewReason?.includes('price-per-square-foot'),
     detail: pricing.needsReview ? (pricing.reviewReason ?? 'Dispersion flag raised.') : 'Comp set is one market tier.',
   })
+  // Matt 2026-09-09: a range wider than RANGE_REVIEW_SHARE on either side of
+  // the recommended list is a broker's call, like an audit finding. The detail
+  // carries "wider than" so lib/pricing/review.ts prints the seller sentence.
+  {
+    const width = rangeWiderThanShare(pricing)
+    const pct = (v: number) => `${Math.round(v * 100)}%`
+    checks.push({
+      id: 'range-width',
+      severity: 'review',
+      pass: !width.wide,
+      detail: width.wide
+        ? `The value range is wider than ${pct(RANGE_REVIEW_SHARE)} of the recommended list on a side: $${Math.min(pricing.valueLow, pricing.valueHigh).toLocaleString()} to $${Math.max(pricing.valueLow, pricing.valueHigh).toLocaleString()} around $${pricing.recommended.toLocaleString()} (${pct(width.lowShare)} below, ${pct(width.highShare)} above).`
+        : `Value range within ${pct(RANGE_REVIEW_SHARE)} of the recommended list on both sides (${pct(width.lowShare)} below, ${pct(width.highShare)} above).`,
+    })
+  }
   checks.push({
     id: 'adversarial-audit-ran',
     severity: 'review',
