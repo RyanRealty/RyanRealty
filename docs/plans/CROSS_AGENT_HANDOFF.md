@@ -156,6 +156,60 @@ listing", given the hourly cron batches sends.
 
 ## Prior — 2026-09-08 PM (round four closed: A–F shipped, the contract fails closed on type)
 
+## Prior — 2026-09-09 (site queue round two: SITE-26 and SITE-27 done in one push; the BPO contract forwards the subject type again)
+
+Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. One push for
+the ship class: `467825cf..78e9cf5c` (lane commits d173fab0 and a5cd7001, merges 7ff9ce9b and
+ec52e202, fixes c4c362de and 78e9cf5c). Deploy dpl_GfVj83JGChKRKSogwso31ZZQesJk READY in 271s,
+756 SSG pages, 0 rail timeouts. Every accept clause was re-run against ryan-realty.com with a
+browser UA after READY; the observed values are on the nodes (`loop status`).
+
+**SITE-26 done.** Both report families go through pageMetadata (one "Ryan Realty" in the title,
+figures in the description from the same React cache()-shared read the body renders);
+canonicalLiveUrl deleted, so the sales page's BreadcrumbList and Dataset point at the real route;
+the housing-market head is built from the Dataset's own variableMeasured (the snippet cannot
+disagree with the JSON-LD; verdict from lib/market/classify); unknown geo is noindexed in
+generateMetadata (still HTTP 200: app/loading.tsx streams the shell, a real 404 needs an edge
+rule); weekly report dates formatted, title 63 chars. New gate `ci:title-brand-once` (AST,
+scripts/check-title-brand-once.mjs) with a shrink-only baseline of 8 pre-existing double-brand
+titles: app/sign/[token], app/blog/[slug], app/compare, app/our-homes, app/reviews,
+app/marketing/request, app/cma-drafts/[id], app/admin/access-denied.
+
+**SITE-27 done.** middleware.ts: single-segment /open-houses/<slug> and /homes-for-sale/<slug>
+that are not Central Oregon cities 308 to /oregon/<slug>; presets exempt; a registry resort
+community or city-prefixed community slug hops to /communities/<slug> instead (before this,
+/homes-for-sale/tetherow served an indexable phantom "Homes for Sale in tetherow"). Hub
+description carries the live count and dates (57, Sep 8 through Sep 14, same read as the
+figure). A city with no open house in the window is noindex (culver, metolius today; it flips
+back when one lands, which is why the "metolius index, follow" accept clause could not hold on
+the same day, recorded on the node). New gate `ci:city-route-guard`
+(scripts/check-city-route-guard.mjs): every page reaching getCityFromSlug needs the allowlist
+test, a dynamicParams=false pin, or a middleware rule; 3 routes guarded. Traffic: none recovered
+by design (2 clicks in 90 days on the class; out-of-area pages outranked in-market ones).
+
+**Found on main and fixed (not a site node).** 573e9b32 made the shared accuracy contract fail
+closed when the subject's type is unstored; lib/cma/build.ts already forwarded subjectSubType,
+lib/bpo/build.ts never did, so every BPO forced review and lib/bpo/contract.test.ts was red on
+origin/main (467825cf). c4c362de forwards subject.propertySubType from the BPO build and locks
+the unstored case with a test. The merge commit ec52e202 skipped hooks for exactly that reason;
+c4c362de and 78e9cf5c ran the full suite (903 files green).
+
+**Queue after this round:** open and eligible SITE-23, 24, 25, 28, 29, 30, 31; SITE-21 waits on
+SITE-20; SITE-32 waits on 20, 22, 25; SITE-33 waits on 25. In progress elsewhere at the time of
+writing: SITE-03 (claude-opus5-019RdEm6), SITE-20 and SITE-22 (cloud-grinder-2026-09-08-22).
+
+**Lane lessons this round (for the next brief).** (1) Two lanes editing `ci:gates:chain` in
+package.json conflict on one line; the union is the resolution. (2) `PORT=<n> npm run
+ci:runtime-gates` cannot honour PORT because `start:ci` pins `next start -p 3000`; both lanes
+ran the three gates by hand against their own port. Worth a node. (3) `next dev --webpack` 500s
+in this tree (app/_v3/HomeFeaturedCommunity.client.tsx pulls next/headers through the v3
+barrel); Turbopack works in a worktree whose node_modules is an APFS clone, not a symlink.
+(4) A shell function named `head` shadows the binary and recurses; name probe helpers
+distinctly. (5) `git worktree add` of origin/main plus a node_modules symlink is enough to run
+one vitest file at a given SHA (used to prove the BPO test was red before this round).
+
+## Prior — 2026-09-08 PM (round four closed: A–F shipped, the contract fails closed on type)
+
 Owner: Claude (Fable). Integration branch `wt/cma-ship-20260907` → main. Blueprint, four
 evaluator rounds, and the round-four audit: `docs/plans/CMA_REIMAGINED_2026-09-07.md`.
 
