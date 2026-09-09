@@ -58,7 +58,16 @@ describe('platCaption', () => {
   it('leads with the inventory when the city is the only container', () => {
     expect(
       platCaption({ displayName: 'Easton', cityName: 'Bend', activeForSale: 20 }),
-    ).toBe("20 homes are for sale in Easton right now, one of Bend's subdivisions.")
+    ).toBe("Easton, one of Bend's subdivisions, has 20 homes for sale right now.")
+  })
+
+  it('adds the asking price to the city setting when the counted set has one', () => {
+    // Setting 4 has no resort or neighborhood to lead with — the asking price
+    // is the one figure this setting can still spend that Setting 2 already
+    // does, so a plat with a median reads as specifically as a resort plat.
+    expect(
+      platCaption({ displayName: 'Easton', cityName: 'Bend', activeForSale: 20, medianAsking: '$850,000' }),
+    ).toBe("Easton, one of Bend's subdivisions, has 20 homes for sale right now, and the typical one is asking $850,000.")
   })
 
   it('is a different grammar per setting, not one sentence with the name swapped', () => {
@@ -84,7 +93,7 @@ describe('platCaption', () => {
 
   it('agrees in number with a single listing', () => {
     expect(platCaption({ displayName: 'Easton', cityName: 'Bend', activeForSale: 1 })).toBe(
-      "1 home is for sale in Easton right now, one of Bend's subdivisions.",
+      "Easton, one of Bend's subdivisions, has 1 home for sale right now.",
     )
     expect(
       platCaption({ displayName: 'Easton', resortLabel: 'Tetherow', activeForSale: 1 }),
@@ -93,7 +102,7 @@ describe('platCaption', () => {
 
   it('separates thousands so a four-figure count is readable', () => {
     expect(platCaption({ displayName: 'Big Plat', cityName: 'Bend', activeForSale: 1200 })).toBe(
-      "1,200 homes are for sale in Big Plat right now, one of Bend's subdivisions.",
+      "Big Plat, one of Bend's subdivisions, has 1,200 homes for sale right now.",
     )
   })
 

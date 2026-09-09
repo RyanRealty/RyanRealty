@@ -150,12 +150,19 @@ export function platCaption(facts: PlatCaptionFacts): string | null {
   }
 
   /* SETTING 4 — A CITY SUBDIVISION WITH NO NEARER PARENT.
-     There is no container worth leading with, so the INVENTORY leads. A reader
-     who landed here from a search wants the count first; the city is the
-     appositive that places it. */
+     There is no container worth leading with, and the INVENTORY is the only
+     fact this setting has: no resort, no neighborhood, sometimes no median.
+     The appositive sits mid-sentence, not trailing after "right now" — a
+     taste pass on golf-homes-at-tetherow (SITE-47, second round) flagged the
+     earlier trailing form as a dangling clause that read as a slot-filled
+     template regardless of grammar, and named the asking price as the one
+     figure this setting was withholding that Setting 2 already spends. */
   if (city) {
+    if (n != null && asking) {
+      return `${name}, one of ${city}'s subdivisions, has ${homes(n)} for sale right now, and the typical one is asking ${asking}.`
+    }
     if (n != null) {
-      return `${homes(n)} ${n === 1 ? 'is' : 'are'} for sale in ${name} right now, one of ${city}'s subdivisions.`
+      return `${name}, one of ${city}'s subdivisions, has ${homes(n)} for sale right now.`
     }
     return `${name} is one of ${city}'s subdivisions.`
   }

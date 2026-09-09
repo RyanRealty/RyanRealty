@@ -163,11 +163,12 @@ export type V3AtlasProps = {
    *
    * `none` is the default and what every caller before 2026-09-09 renders: an
    * inventory map's claim is the empty string, because PLACE_PAGES §4 killed
-   * the "91 listings of every type for sale, 48 pending, 17 sold in the last 30
-   * days. Pinch or scroll to zoom." line that used to sit there. That kill was
-   * right about the how-to and the triple count; it left the section opening on
-   * a bare label, which the taste table of 2026-09-08 scored as a first read
-   * that requires a hover to discover what the marks mean.
+   * the old triple-count line (every type for sale, pending, sold in the last
+   * 30 days) and its trailing how-to-zoom instruction that used to sit there.
+   * That kill was right about the how-to and the triple count; it left the
+   * section opening on a bare label, which the taste table of 2026-09-08
+   * scored as a first read that requires a hover to discover what the marks
+   * mean.
    *
    * `inventory` restores ONE clause, built from the SAME filtered counts the
    * marks are drawn from — so it moves with the type toggles and the price
@@ -741,9 +742,9 @@ export function V3Atlas({
 
   const claim = useMemo(() => {
     if (incomplete) return 'Live counts are unavailable right now. The map shows what could be read.'
-    // SITE_PAGES / PLACE_PAGES kill list: no "N listings of every type for sale,
-    // N pending, N sold in the last 30 days. Pinch or scroll to zoom." under the
-    // Atlas headline. The how-to and the triple count stay dead. A caller that
+    // SITE_PAGES / PLACE_PAGES kill list: no old-style triple-count line (every
+    // type for sale, pending, sold in the last 30 days) with its trailing
+    // how-to-zoom instruction under the Atlas headline. Both stay dead. A caller that
     // asks for `claimTone="inventory"` gets ONE clause off the same filtered
     // count the marks use, with the feed named — the first read the taste table
     // of 2026-09-08 said this section did not have.
