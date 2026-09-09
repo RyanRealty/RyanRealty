@@ -1,3 +1,43 @@
+# Current — 2026-09-09 (site queue round eight: SITE-48 and SITE-50 done; SITE-56 claimed and deliberately held)
+
+Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Pushes
+`3423a9fd` (SITE-48) and `7f958d17` (SITE-50); both deploys READY and verified live.
+
+**SITE-48 done.** The four people pages open with proof. /reviews leads with 5.0 and 25 Google
+reviews at top 168 and a quote at 366, with the page's own first contact link at 664 — the two
+tel: anchors above them are the sitewide header, which I checked rather than assumed. /about opens
+on the three portraits with a sourced record line. /team's cards now differ: 7 closings, 3
+closings, and 1 home for sale right now — the third is the honest fallback, because no closing is
+recorded against that broker and the card says so instead of printing a zero. /contact's primary
+door is 143,437 square pixels against three at 55,470, with a live "Open now, until 5:00 pm".
+about 31→55, team 39→64, reviews 48→81, contact 49→59.
+
+**Deviation worth knowing:** the accept asked for a live element from SITE-09's response clock. The
+lane read it, found the median rests entirely on touches predating the provenance stamp — SITE-09's
+own "unproven" condition — and 8 in-hours submits against 2 answered by a person. Neither figure
+ships. The live element is the published booking_hours against the Pacific clock instead. Met in
+spirit, not literally, and recorded that way.
+
+**SITE-50 done.** /invest's meta-labels are gone, six sourced figures sit in the fold, and the
+headline is the finding the data actually supports: **the cash-flow verdict does not ship**,
+because the only rent-bearing table is frozen at a 2026-08-03 batch with no refresh cron and an
+admin wall — so the page leads with composition (605 of 761 income listings are land, 79.5%),
+published only while land is both largest and a majority. /compare opens on four slots, four real
+add controls and a sample labelled with the word Sample. The adds are **not** "recently viewed":
+nothing records that signed-out, so the lane substituted real listings and said so. It also cut a
+false claim — /invest advertised a per-listing rental analysis the orphan sweep had deleted hours
+earlier. invest 25→61, compare 29→53.
+
+**SITE-56 is claimed by this session and deliberately not started.** It is Matt's own finding (the
+plat page the expired-seller CMA links opens on cream with two blank maps, and at least 265 plats
+with live homes have no polygon), but `claude-opus5` is mid-flight on SITE-55 in the same file and
+the same parity.json. Two lanes on one route's contract and tasteReview is the merge fight and the
+double-score the skill exists to prevent. The claim holds the node; the build waits for SITE-55 to
+land. **Whoever takes SITE-56 next: SITE-55 first, then this, in sequence.**
+
+**Queue:** 26 done, 16 blocked on dated windows, 3 in flight elsewhere (SITE-31, SITE-41 on
+cloud-grinder; SITE-55 on claude-opus5), SITE-43 waiting on SITE-03. Nothing is blocked on Matt.
+
 # Current — 2026-09-09 (Matt's two rulings: the out-of-area asks stay, and the MLS remarks are back on the listing page)
 
 Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Push
