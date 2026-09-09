@@ -150,7 +150,6 @@ export const revalidate = 60
 
 type Props = {
   params: Promise<{ slug: string }>
-  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 const BOUNDARY_ROW_CAP = 200
@@ -175,9 +174,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   )
 }
 
-export default async function CommunityDetailPage({ params, searchParams }: Props) {
+export default async function CommunityDetailPage({ params }: Props) {
   const { slug } = await params
-  const sp = await searchParams
 
   const community = await getCommunityBySlug(slug)
   if (!community) notFound()
@@ -805,7 +803,6 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
           listings={splitListings}
           totalCount={splitListings?.length}
           degraded={!citySfrRead.ok && isResortInCity}
-          searchParams={sp}
         />
 
         {/* Subdivisions inside the community - every row is a door, mirroring

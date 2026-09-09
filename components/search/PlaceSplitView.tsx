@@ -41,11 +41,6 @@ function boundsFromListings(rows: ListingTileRow[]): MapBounds | null {
   }
 }
 
-function firstParam(value: string | string[] | undefined): string {
-  if (Array.isArray(value)) return value[0] ?? ''
-  return value ?? ''
-}
-
 /**
  * Flagship Split on a place page.
  *
@@ -53,6 +48,16 @@ function firstParam(value: string | string[] | undefined): string {
  * viewport; it is not a drawable Area (Area 1 / Exclude empties the map).
  * Home type / price / beds ride SearchFilters so area maps have the same
  * type picker as /homes-for-sale.
+ *
+ * STATIC SHELL (SITE-29). This server render reads NO request state: no
+ * searchParams, no cookies. It renders the place's default list (Active,
+ * newest, every home type) so the page can prerender and revalidate, and
+ * hands SearchFilters + MapSearchView `staticShell`, under which the URL's
+ * query is laid over these defaults after mount and a filter change
+ * refetches the viewport on the client. Until 2026-09-09 every place page
+ * awaited searchParams for this component, which made all 1,151 of them
+ * render at request time (private, no-store, CDN MISS) for a filter almost
+ * no URL carries.
  */
 export async function PlaceSplitView(props: {
   id?: string
@@ -79,7 +84,6 @@ export async function PlaceSplitView(props: {
   /** Atlas camera box. Absent, the list follows the living atlas live. */
   viewBounds?: AtlasViewBounds | null
   degraded?: boolean
-  searchParams?: Record<string, string | string[] | undefined>
 }) {
   const pinBounds = props.bounds ?? boundsFromListings(props.listings ?? [])
   const seed =
@@ -99,20 +103,11 @@ export async function PlaceSplitView(props: {
           ? seed.shapes[0].points
           : null
 
-  const sp = props.searchParams ?? {}
-  const rawType = firstParam(sp.propertyType)
-  const rawSub = firstParam(sp.propertySubTypes)
-  const allTypes = rawType === 'all' || (!rawType && !rawSub)
-  const propertyType = allTypes ? '' : rawType
-  const propertySubTypes = allTypes ? '' : rawSub
-  const minPrice = firstParam(sp.minPrice)
-  const maxPrice = firstParam(sp.maxPrice)
-  const beds = firstParam(sp.beds)
-  const baths = firstParam(sp.baths)
-  const status = firstParam(sp.status) || 'Active'
-  const sort = firstParam(sp.sort) || 'newest'
-  const viewRaw = firstParam(sp.view)
-  const view = viewRaw === 'list' || viewRaw === 'split' || viewRaw === 'map' ? viewRaw : 'map'
+  // The static defaults. The URL's filters, when a visitor sets any, apply on
+  // the client (SearchFilters / MapSearchView `staticShell`).
+  const status = 'Active'
+  const sort = 'newest'
+  const view = 'map'
 
   const viewportFilters: ViewportFilters = {
     // City + subdivision only: the query layer (toSearchAllFilter) expands a
@@ -121,24 +116,20 @@ export async function PlaceSplitView(props: {
     city: props.city || undefined,
     subdivision: props.neighborhood ? undefined : props.subdivision || undefined,
     neighborhood: props.neighborhood || undefined,
-    propertyType: propertyType || undefined,
-    propertySubTypes: propertySubTypes ? propertySubTypes.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
-    minPrice: minPrice ? Number(minPrice) : undefined,
-    maxPrice: maxPrice ? Number(maxPrice) : undefined,
-    beds: beds ? Number(beds) : undefined,
-    baths: baths ? Number(baths) : undefined,
     status,
     sort,
   }
 
   const empty = { listings: [] as ListingTileRow[], totalCount: 0, capped: false }
-  const hasTypeFilter = Boolean(propertyType || propertySubTypes)
   let listings: ListingTileRow[] | undefined
   let totalCount: number | undefined
   let capped = false
   let degraded = props.degraded ?? false
 
-  const mustSearch = hasTypeFilter || allTypes || props.listings == null
+  // Every place page searches here (the city page passes no listings; the
+  // others pass a rail that the viewport search supersedes when it answers).
+  // Under ISR this runs at prerender and on each revalidation, not per hit.
+  const mustSearch = true
   if (mustSearch) {
     const settled = await withTimeoutFallbackResult(
       getViewportSearch(viewportFilters, fetchBounds, seedPoly),
@@ -178,12 +169,12 @@ export async function PlaceSplitView(props: {
     status,
     sort,
     view,
-    propertyType: allTypes ? 'all' : propertyType,
-    propertySubTypes,
-    minPrice,
-    maxPrice,
-    beds,
-    baths,
+    propertyType: 'all',
+    propertySubTypes: '',
+    minPrice: '',
+    maxPrice: '',
+    beds: '',
+    baths: '',
   }
 
   return (
@@ -194,6 +185,7 @@ export async function PlaceSplitView(props: {
           signedIn={false}
           hideViewToggle
           hideLocation
+          staticShell
         />
       </div>
       <PlaceSplitHomesBound
@@ -224,6 +216,8 @@ export async function PlaceSplitView(props: {
           lockPlace
           openHouseLabels={openHouseLabels}
           listOnly
+          staticShell
+          scopePolygon={seedPoly}
         />
       </PlaceSplitHomesBound>
     </div>

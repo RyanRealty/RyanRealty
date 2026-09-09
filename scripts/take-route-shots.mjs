@@ -563,6 +563,20 @@ async function settleText(page, selector, { every = 500, cap = 45000 } = {}) {
  * the page will not move (a scroll-locked modal, a shorter page than expected).
  */
 async function wheelTo(page, targetY) {
+  // Trap 13 — wheel from the top-right corner, not the viewport centre. A
+  // wheel event lands on whatever is under the pointer, and a hydrated
+  // V3Atlas (or any scroll container) under the centre eats it as a zoom,
+  // so the page stops moving and this loop reads a stall: on 2026-09-09
+  // every anchor below the atlas on /cities/bend/awbrey-butte shot the atlas
+  // instead, on a production server, where the atlas hydrates before the
+  // first wheel (a dev server's late chunk had hidden this). The corner is
+  // header chrome on every route, and wheel over it scrolls the document.
+  // Side effect, deliberate: the centre pointer also raised the atlas's hover
+  // card into every atlas-bearing record (the "NEIGHBORHOOD · 98 listings"
+  // card in the 2026-09-08 shots); records now show the page as a reader
+  // sees it before any pointer intent.
+  const vp = page.viewportSize()
+  if (vp) await page.mouse.move(Math.max(2, vp.width - 4), 2)
   let current = await readScrollY(page)
   let stalled = 0
   for (let guard = 0; guard < 160 && Math.abs(current - targetY) > 48; guard += 1) {

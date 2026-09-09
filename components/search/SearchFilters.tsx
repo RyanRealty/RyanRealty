@@ -1,6 +1,8 @@
 'use client'
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
+import { navigateQuery, useUrlSearchParams } from '@/lib/search/url-search-params.client'
+import { mergeUrlSearchFilters } from '@/components/search/merge-url-search-filters'
 import { useCallback, useMemo, useState, useRef } from 'react'
 import { trackEvent } from '@/lib/tracking'
 import { fireFirstPartyEvent } from '@/components/VisitTracker'
@@ -258,19 +260,39 @@ type Props = {
   hideViewToggle?: boolean
   /** Place pages already name the place. Location search would fight that pin. */
   hideLocation?: boolean
+  /**
+   * The page is a static shell (SITE-29): the server rendered DEFAULT
+   * filters, and the URL's query applies here after mount. Filter writes go
+   * to history.pushState (no server re-render exists to wait for) and the
+   * chips read the merged filters, not the props.
+   */
+  staticShell?: boolean
 }
 
 type OpenPanel = 'places' | 'status' | 'price' | 'beds' | 'baths' | 'type' | null
 
 export default function SearchFilters({
-  initialFilters,
+  initialFilters: initialFiltersProp,
   signedIn: signedInSeed = false,
   hideViewToggle = true,
   hideLocation = false,
+  staticShell = false,
 }: Props) {
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+  // Static-safe: '' on the server and at hydration, the real query after
+  // (lib/search/url-search-params.client). On a dynamic page the provider
+  // supplies the request's query, so nothing changes there.
+  const searchParams = useUrlSearchParams()
+  // On a static shell the props are the defaults; the URL wins after mount.
+  // hideLocation marks a place page, whose geo keys the URL may not re-pin.
+  const initialFilters = useMemo(
+    () =>
+      staticShell
+        ? mergeUrlSearchFilters(initialFiltersProp, searchParams, { lockPlace: hideLocation })
+        : initialFiltersProp,
+    [staticShell, initialFiltersProp, searchParams, hideLocation],
+  )
   // Hydrated after mount so a cacheable signed-out shell still shows the
   // signed-in save flow to a signed-in visitor (see use-viewer-listing-state).
   const viewerState = useViewerListingState({ signedIn: signedInSeed })
@@ -326,7 +348,7 @@ export default function SearchFilters({
       ) {
         params.delete('bbox')
       }
-      router.push(`${pathname ?? '/homes-for-sale'}?${params.toString()}`, { scroll: false })
+      navigateQuery(router, `${pathname ?? '/homes-for-sale'}?${params.toString()}`, { staticShell })
       // Instrumentation (Phase 0.5): EVERY filter mutation routes through this
       // one function — chip-bar dropdowns, the All-filters sheet apply, the
       // location picker, chip removes. One URL mutation = one event; a
@@ -334,7 +356,7 @@ export default function SearchFilters({
       const payload = buildFilterApplyPayload(updates, params)
       if (payload) fireSearchEvent('search_filter_apply', payload)
     },
-    [router, pathname, searchParams]
+    [router, pathname, searchParams, staticShell]
   )
 
   const setFilter = useCallback(
@@ -472,7 +494,7 @@ export default function SearchFilters({
   }
 
   function clearAll() {
-    router.push(`${pathname ?? '/homes-for-sale'}?view=${view}`, { scroll: false })
+    navigateQuery(router, `${pathname ?? '/homes-for-sale'}?view=${view}`, { staticShell })
     setLocationQuery('')
   }
 

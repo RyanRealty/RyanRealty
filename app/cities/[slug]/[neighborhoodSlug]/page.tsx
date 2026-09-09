@@ -135,7 +135,6 @@ export const revalidate = 60
 
 type Props = {
   params: Promise<{ slug: string; neighborhoodSlug: string }>
-  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 // Short form for the character-constrained meta description below ONLY.
@@ -175,9 +174,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
 }
 
-export default async function NeighborhoodDetailPage({ params, searchParams }: Props) {
+export default async function NeighborhoodDetailPage({ params }: Props) {
   const { slug: citySlug, neighborhoodSlug } = await params
-  const sp = await searchParams
 
   const neighborhood = await getNeighborhoodBySlug(citySlug, neighborhoodSlug)
   if (!neighborhood) notFound()
@@ -709,7 +707,6 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             listings={splitListings}
             totalCount={inventoryOk ? inventory.activeCount : undefined}
             degraded={!boundaryRead.ok && !inventoryOk}
-            searchParams={sp}
           />
         </div>
 

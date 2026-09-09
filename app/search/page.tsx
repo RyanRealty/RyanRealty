@@ -60,6 +60,8 @@ import SearchFilters from '@/components/search/SearchFilters'
 import SentenceSearch from '@/components/search/SentenceSearch'
 import SearchResults from '@/components/search/SearchResults'
 import MapSearchView from '@/components/search/MapSearchView'
+import { UrlSearchParamsProvider } from '@/lib/search/url-search-params.client'
+import { queryStringFromSearchParams } from '@/lib/search/search-params-query'
 import HideAwareSearchMap from '@/components/search/HideAwareSearchMap'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { ResultsStamp } from '@/components/search/ResultsStamp.client'
@@ -462,6 +464,9 @@ export default async function SearchPage({
     {/* V3_LEDGER_CLASS: search is a data surface and wears the Ledger register
         (THE LOOK, PUBLIC_UI.md section 6). */}
     <main className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'w-full bg-muted', isAppFrame ? 'search-app-frame' : 'min-h-screen')}>
+    {/* Dynamic page: the request's query seeds the static-safe URL store the
+        filter tree reads (SITE-29), so the chips are in the HTML as before. */}
+    <UrlSearchParamsProvider search={queryStringFromSearchParams(sp)}>
       {/* V3Chrome is sticky in flow on app/layout.tsx. Do not remount it.
           Search is the Homes Field (MapSearchView), not header chrome. */}
       <SplitViewBodyLock active={isAppFrame} />
@@ -562,6 +567,7 @@ export default async function SearchPage({
           </div>
         )}
       </div>
+    </UrlSearchParamsProvider>
     </main>
     {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
         when it is NOT nested in sectioning content. Map/split is viewport-fit

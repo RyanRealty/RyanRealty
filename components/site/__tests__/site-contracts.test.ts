@@ -822,18 +822,26 @@ describe('place-family indexes', () => {
     expect(plat).toMatch(/generateStaticParams[\s\S]{0,80}return\s*\[\s*\]/)
   })
 
-  it('plat detail renders force-dynamic, never ISR, while the split view reads the session', () => {
-    // `revalidate` on this route was the fleet's oldest silent 500: with an
-    // empty generateStaticParams Next classified the route SSG, every request
-    // attempted a static render, and PlaceSplitView's cookies() read threw
-    // DYNAMIC_SERVER_USAGE — every /subdivisions/* URL 500ed in production
-    // 2026-07-15..2026-09-01. The sibling place routes dodge it only because
-    // their build-time prerender trips the bailout and Next reclassifies them
-    // dynamic. Do not restore `revalidate` here until session-dependent reads
-    // move behind a client/Suspense boundary.
+  it('plat detail serves on demand under revalidate now that the render reads no request state', () => {
+    // `revalidate` on this route was once the fleet's oldest silent 500: with
+    // an empty generateStaticParams Next classified the route SSG, every
+    // request attempted a static render, and PlaceSplitView's cookies() read
+    // threw DYNAMIC_SERVER_USAGE (every /subdivisions/* URL 500ed in
+    // production 2026-07-15..2026-09-01), so the route ran force-dynamic from
+    // 2026-09-01. SITE-29 (2026-09-09) removed the condition itself: the
+    // session read moved behind the client on 2026-09-01, and the page no
+    // longer awaits searchParams (the split view is a static shell whose URL
+    // filters apply after mount). With no request-state read left, the empty
+    // generateStaticParams is the on-demand ISR shape ci:ssg-budget wants:
+    // first hit renders and caches, later hits serve from the cache.
     const plat = readSrc('app/subdivisions/[slug]/page.tsx')
-    expect(plat).toMatch(/export const dynamic = 'force-dynamic'/)
-    expect(plat).not.toMatch(/export const revalidate/)
+    expect(plat).toMatch(/^export const revalidate = \d+$/m)
+    expect(plat).not.toMatch(/export const dynamic = 'force-dynamic'/)
+    const code = plat.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n')
+    expect(code).not.toMatch(/\bsearchParams\b|cookies\(\)|headers\(\)/)
+    const split = readSrc('components/search/PlaceSplitView.tsx')
+    const splitCode = split.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n')
+    expect(splitCode).not.toMatch(/getSession|getPersonIdFromCookie|cookies\(\)|\bsearchParams\b/)
   })
 })
 

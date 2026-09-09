@@ -168,7 +168,6 @@ export const revalidate = 60
 
 type Props = {
   params: Promise<{ slug: string }>
-  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 /** Polygon / MultiPolygon, or a Feature wrapping one. Miss is null. */
@@ -202,9 +201,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
 }
 
-export default async function CityDetailPage({ params, searchParams }: Props) {
+export default async function CityDetailPage({ params }: Props) {
   const { slug } = await params
-  const sp = await searchParams
 
   const snapshot = await getGeoSnapshot({ geoType: 'city', geoKey: slug })
   if (!snapshot) notFound()
@@ -777,7 +775,6 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
           overlayBoundaries={overlaysFromRegions(atlasRegions.slice(1))}
           seedRing
           placeQuery={`${cityName} Oregon`}
-          searchParams={sp}
         />
 
         {/* D83: the DESIGNATED Bend polygons, and only those. */}

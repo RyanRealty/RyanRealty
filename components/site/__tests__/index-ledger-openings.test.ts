@@ -9,7 +9,9 @@ import { describe, expect, it } from 'vitest'
 const ROOT = process.cwd()
 
 const INDEX_PAGES = [
-  'app/blog/page.tsx',
+  // SITE-29: the blog index view is shared by /blog and its category/page
+  // routes; the Ledger lives there, the routes only load and seat it.
+  'app/blog/_v3/blog-index-view.tsx',
   'app/central-oregon/events/page.tsx',
   'app/central-oregon/trails/page.tsx',
   'app/central-oregon/venues/page.tsx',

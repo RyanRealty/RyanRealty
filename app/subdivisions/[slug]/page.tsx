@@ -203,20 +203,19 @@ import {
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 
 export const dynamicParams = true
-// FORCE-DYNAMIC, NOT ISR — this is the fix for the fleet's oldest silent 500.
-// PlaceSplitView reads the visitor's session (cookies) on every place page, so
-// no place page can complete a STATIC render. The sibling routes (/cities,
-// /communities) survive only by accident: their generateStaticParams returns
-// real slugs, the build-time prerender trips the cookies() bailout, and Next
-// silently reclassifies them fully dynamic. This route prerenders nothing
-// (ci:ssg-budget), so under `revalidate` Next classified it SSG and every
-// runtime request attempted a static render — cookies() threw
+// ISR ON DEMAND (SITE-29, 2026-09-09). This route was `force-dynamic` from
+// 2026-09-01 as the fix for the fleet's oldest silent 500: PlaceSplitView read
+// the visitor's session during server render, so under `revalidate` every
+// runtime request attempted a static render, cookies() threw
 // DYNAMIC_SERVER_USAGE, and every /subdivisions/* URL served a 500 from
-// 2026-07-15 to 2026-09-01. Declaring force-dynamic states what the render
-// tree already requires. Do NOT restore `revalidate` here while the split view
-// reads per-visitor state during server render; real ISR for place pages means
-// moving session-dependent reads behind a client/Suspense boundary first.
-export const dynamic = 'force-dynamic'
+// 2026-07-15 to 2026-09-01. Both reads are gone: the session moved behind
+// the client (use-viewer-listing-state, 2026-09-01) and the page no longer
+// awaits searchParams (the split view is a static shell whose URL filters
+// apply after mount). The render tree now reads NO request state, which is
+// the condition `revalidate` needs: the first hit renders and caches, later
+// hits are served from the cache and refreshed every 60s. Held by the
+// structural test in components/search/__tests__/static-shell-url-params.
+export const revalidate = 60
 // Worst-case first render chains sequential timeout-capped stages, above
 // Vercel's 15s default function cap.
 export const maxDuration = 60
@@ -232,7 +231,6 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
 
 type Props = {
   params: Promise<{ slug: string }>
-  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 /**
@@ -409,9 +407,8 @@ const loadSubdivisionCore = cache(async (slug: string) => {
 // Page
 // ---------------------------------------------------------------------------
 
-export default async function SubdivisionPage({ params, searchParams }: Props) {
+export default async function SubdivisionPage({ params }: Props) {
   const { slug } = await params
-  const sp = await searchParams
 
   const { inventoryRead, mtCounts, boundary, inventory, hasBoundary, registryMatch, mapTiles, refused } =
     await loadSubdivisionCore(slug)
@@ -984,7 +981,6 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
             totalCount={activeCount ?? splitListings.length}
             bounds={seedRing ? undefined : pinBounds ?? undefined}
             degraded={!inventoryRead.ok}
-            searchParams={sp}
           />
         </div>
 

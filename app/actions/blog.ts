@@ -1,5 +1,6 @@
 'use server'
 
+import { BLOG_CATEGORIES } from '@/lib/blog/categories'
 import { createServiceClient } from '@/lib/supabase/service'
 import { checkAdminAction } from '@/lib/admin/require-admin'
 
@@ -43,24 +44,8 @@ export type BlogPostWithAuthor = BlogPostRow & {
   status?: string | null
 }
 
-const CATEGORIES = [
-  'All',
-  'Market Reports',
-  'Market Updates',
-  'Market Analysis',
-  'Buying Guides',
-  'Selling Guides',
-  'Community Spotlights',
-  'Lifestyle & Living',
-  'Investment & Finance',
-  'First-Time Buyers',
-  'Relocation Guides',
-  'Home Improvement',
-  'Local Housing News',
-] as const
-
 export async function getBlogCategories(): Promise<readonly string[]> {
-  return CATEGORIES
+  return BLOG_CATEGORIES
 }
 
 // ─── Admin actions ────────────────────────────────────────────────
