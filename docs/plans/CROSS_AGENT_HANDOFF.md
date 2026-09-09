@@ -1,3 +1,36 @@
+# Current — 2026-09-09 (Matt: "there has to be a way to find those missing plats" — most of them were never missing)
+
+Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout.
+
+**The answer, measured against live Supabase before anything was built.** Of 1,087 distinct
+`SubdivisionName` values on 3,573 active SFR listings: **177** match a recorded plat by exact slug;
+**207** have no exact match while recorded plats START WITH the name — the county's own phases and
+additions; **77** more have no name match but their homes already carry `boundary_subdivision` from
+SITE-23's point-in-polygon classifier; **626** resolve neither way. So **284 of the 910 unmatched
+names are recoverable from data already in the table**, with no new source at all. Dry Canyon: 21
+homes against 6 recorded phases. Caldera Springs: 31 against 15. Rivers Edge Village: 10 against 24.
+
+**Diamond Bar Ranch, the page Matt read, is the proof.** `public.boundaries` holds four recorded
+plats for it (Phase 1, 2, 3, 4 — Deschutes County GIS Subdivisions, layer 4 of
+maps.deschutes.org/…/BoundaryFD/MapServer) and its one active listing already carries
+`boundary_subdivision = 'Diamond Bar Ranch Phase 1'`. The page opens on cream with two empty frames
+because the lookup slugifies the MLS name to `diamond-bar-ranch`, misses the exact slug, and falls
+to the no-polygon path. Same coarse-MLS-name-against-fine-recorded-plat mismatch SITE-24 found in
+the closed-sale join and SITE-28 found in the display name. **This reorders SITE-56:** the resolver
+(exact slug → phase prefix, unioned → the listings' own polygon attribution) comes first, and the
+no-polygon fallback becomes the path for what is genuinely unrecorded rather than for a fifth of
+the class.
+
+**The 626 that remain are an ingest project, seeded as SITE-58.** Every one of our 3,223 plat
+polygons is Deschutes; Crook holds one row, Jefferson and Klamath none. Probed the same day:
+Deschutes publishes the Subdivisions layer we already hold in full; the Klamath org we pull taxlots
+from (201 services) publishes no equivalent; the Josephine org returned none; two guessed Crook
+endpoints 404'd. The endpoints must be found, not guessed, and a hull around listing points is not
+a plat boundary. Crook is the one that pays — Brasada Ranch, Ochoco Pointe, Crooked River Ranch.
+
+**Also landed:** SITE-57, the MLS remarks (Matt: "mls descriptions must come back"), live and gated.
+SITE-56 is in flight with the finding above as its brief.
+
 # Current — 2026-09-09 (site queue round eight: SITE-48 and SITE-50 done; SITE-56 claimed and deliberately held)
 
 Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Pushes
