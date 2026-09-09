@@ -19,8 +19,12 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingPlaceTrail } from '@/lib/site/place-trail'
 import { listingAliasPlatLadder } from '@/lib/listing/listing-alias-plat-trail'
 import { listingShareSummary } from '@/lib/share-metadata'
-import { publishListingDrop, publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
-import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
+import { publishListingDrop } from '@/lib/listing/publish-listing-ask'
+import {
+  publishListingPublishedPrice,
+  publishListingPublishedWholePropertyPrice,
+  publishListingStatusWord,
+} from '@/lib/listing/publish-listing-published-price'
 import { listingMlsAddressFull, listingMlsStreetLine } from '@/lib/listing/publish-street-line'
 import { homesForSalePath, listingDetailPath, subdivisionListingsPath } from '@/lib/slug'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
@@ -121,22 +125,33 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!listing) return LISTING_UNAVAILABLE_METADATA
 
   const addressFull = listingMlsAddressFull(listing)
+  // SITE-20. Every figure and every word this function publishes is
+  // status-aware, because none of it was: 55550 Heidi Court (MLS 220219603)
+  // closed at $1,100,000 and its <meta name=description>, its og:description
+  // and its structured-data description all read $1,250,000, under a title
+  // that said only the address. The publisher is the same one the visible page
+  // uses, so the SERP snippet and the H1 cannot disagree again.
+  const statusWord = publishListingStatusWord(listing.status)
   const description = listingShareSummary({
-    price: publishWholePropertyAmount({
-      price: listing.listPrice,
+    price: publishListingPublishedWholePropertyPrice({
+      status: listing.status,
+      listPrice: listing.listPrice,
+      closePrice: listing.closePrice,
       propertyType: listing.propertyType,
       propertySubType: listing.propertySubType,
       subdivisionName: listing.subdivisionName,
       city: listing.city,
       listNumber: listing.listNumber,
     }),
+    statusWord,
     beds: listing.beds,
     baths: listing.baths,
     sqft: listing.sqft ?? listing.totalLivingAreaSqFt,
     address: addressFull || undefined,
     city: addressFull ? undefined : (listing.city ?? undefined),
   })
-  const title = addressFull ? addressFull : `Listing ${listing.listingKey}`
+  const addressTitle = addressFull ? addressFull : `Listing ${listing.listingKey}`
+  const title = statusWord ? `${statusWord} · ${addressTitle}` : addressTitle
 
   const canonicalSubdivision =
     listing.subdivisionName && listing.subdivisionName !== 'N/A' ? listing.subdivisionName : null
@@ -183,12 +198,22 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const listing = await getListingDetail(listingKey)
   if (!listing) return <ListingUnavailable />
 
-  const publishedSaleAsk =
-    publishListingSaleAsk({ price: listing.listPrice, propertyType: listing.propertyType })?.ask ??
-    null
+  // SITE-20: ONE published price for the whole page. Before this, PriceCtaStrip
+  // branched on Closed by hand and printed the close price, while these two
+  // constants — which feed the on-media hero caption, the map card, the
+  // payment, the near-this-price band and the structured data — read the ask.
+  // A sold home showed $1,100,000 in its H1 and $1,250,000 everywhere else.
+  const publishedSaleAsk = publishListingPublishedPrice({
+    status: listing.status,
+    listPrice: listing.listPrice,
+    closePrice: listing.closePrice,
+    propertyType: listing.propertyType,
+  })
 
-  const wholePropertyPrice = publishWholePropertyAmount({
-    price: listing.listPrice,
+  const wholePropertyPrice = publishListingPublishedWholePropertyPrice({
+    status: listing.status,
+    listPrice: listing.listPrice,
+    closePrice: listing.closePrice,
     propertyType: listing.propertyType,
     propertySubType: listing.propertySubType,
     subdivisionName: listing.subdivisionName,

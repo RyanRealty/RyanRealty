@@ -13,10 +13,14 @@ import { redirectToLoginForSave } from '@/lib/pending-save'
 import { ListingGuestSaveSheet } from '@/components/site/listing-detail/ListingGuestSaveSheet.client'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
-import { publishListingDrop, publishListingEstPayment, publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingDrop, publishListingEstPayment } from '@/lib/listing/publish-listing-ask'
+import {
+  listingPublishesClosePrice,
+  publishListingPublishedPrice,
+  publishListingPublishedWholePropertyPrice,
+} from '@/lib/listing/publish-listing-published-price'
 import { publishListingHeroKeyStats } from '@/lib/listing/publish-listing-hero-stats'
 import { publishListingShareKind, publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
-import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { publishListingLastDrop } from '@/lib/listing/publish-listing-history'
@@ -151,12 +155,18 @@ export function PriceCtaStrip({
     onSaved: () => setSaveState('saved'),
   })
 
-  const isClosed = listing.status === 'Closed'
-  const publishedAsk = publishListingSaleAsk({
-    price: isClosed ? listing.closePrice : listing.listPrice,
+  // SITE-20: this strip's hand-written `isClosed ? closePrice : listPrice` was
+  // the ONLY status branch on the page, which is how the H1 came out right and
+  // the meta description, the share card, the JSON-LD, the hero caption and the
+  // map card all came out wrong. The branch now lives in one publisher every
+  // one of those surfaces calls; the pill below still reads the raw status.
+  const isClosed = listingPublishesClosePrice(listing.status)
+  const headlinePrice = publishListingPublishedPrice({
+    status: listing.status,
+    listPrice: listing.listPrice,
+    closePrice: listing.closePrice,
     propertyType: listing.propertyType,
   })
-  const headlinePrice = publishedAsk?.ask ?? null
   const shareSubject = {
     propertySubType: listing.propertySubType,
     subdivisionName: listing.subdivisionName,
@@ -170,9 +180,11 @@ export function PriceCtaStrip({
   // both read "…lists in this city near this price" over a band built from a
   // rent rate and a share.
   const alertBandIsPublished =
-    publishWholePropertyAmount({
+    publishListingPublishedWholePropertyPrice({
       ...shareSubject,
-      price: isClosed ? listing.closePrice : listing.listPrice,
+      status: listing.status,
+      listPrice: listing.listPrice,
+      closePrice: listing.closePrice,
       propertyType: listing.propertyType,
     }) != null
   const publishedPpsf = publishListingSharePricePerSqft({
@@ -188,7 +200,7 @@ export function PriceCtaStrip({
     acres: listing.lotSizeAcres,
   }).join(' · ')
   const publishedDrop = publishListingDrop({
-    listPrice: isClosed ? listing.closePrice : listing.listPrice,
+    listPrice: headlinePrice,
     originalListPrice: listing.originalListPrice,
     historyPrices: history?.map((row) => row.price) ?? [],
   })

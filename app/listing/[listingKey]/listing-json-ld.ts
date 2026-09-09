@@ -25,6 +25,7 @@
  */
 
 import { listingShareSummary } from '@/lib/share-metadata'
+import { publishListingStatusWord } from '@/lib/listing/publish-listing-published-price'
 import { listingDetailPath } from '@/lib/slug'
 import type { PlaceCrumb } from '@/lib/site/place-trail'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -40,9 +41,14 @@ export type ListingJsonLdInput = {
    */
   trail: readonly PlaceCrumb[]
   /**
-   * The price of the WHOLE property, or null when withheld (a lease rate, a
-   * fractional interest, or no price at all). Never the raw ListPrice, and
-   * never the page's badged share ask.
+   * The price of the WHOLE property AS PUBLISHED, or null when withheld (a
+   * lease rate, a fractional interest, or no price at all). Never the raw
+   * ListPrice, and never the page's badged share ask.
+   *
+   * SITE-20: on a Closed listing this is the CLOSE price, from
+   * publishListingPublishedWholePropertyPrice. The list price of a home that
+   * already sold is not a fact about that home's value, and a machine node
+   * carries no pill saying so.
    */
   wholePropertyPrice: number | null
   listing: {
@@ -126,6 +132,7 @@ export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
       description:
         listingShareSummary({
           price: wholePropertyPrice,
+          statusWord: publishListingStatusWord(listing.status),
           beds: listing.beds,
           baths: listing.baths,
           sqft: livingArea,

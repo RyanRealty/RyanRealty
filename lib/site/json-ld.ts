@@ -1,5 +1,6 @@
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { isComingSoonStatus } from '@/lib/listing-status-public'
+import { publishListingSchemaAvailability } from '@/lib/listing/publish-listing-published-price'
 
 /**
  * Typed schema.org JSON-LD builders for the site v2 MetadataBlock.
@@ -80,16 +81,19 @@ export type RealEstateListingInput = {
   photos?: ReadonlyArray<string>
   listingAgent?: { name?: string; email?: string; telephone?: string }
   /**
-   * Listing status from the MLS feed. Controls whether an Offer node is
-   * emitted and what availability value it carries.
+   * Listing status from the MLS feed. Controls two things: whether an Offer
+   * node is emitted (buildOffer), and what `availability` the RealEstateListing
+   * NODE itself carries (publishListingSchemaAvailability).
    *
-   * Active               -> Offer with InStock availability
-   * Active Under Contract
-   * Coming Soon          -> Offer with PreOrder availability
-   * Pending              -> no Offer (price no longer actionable)
-   * Closed / Withdrawn
-   * Expired / Canceled   -> no Offer (listing is off-market)
-   * undefined            -> behaves like Active (backwards-compatible)
+   * Active                -> node InStock  + Offer with InStock
+   * Active Under Contract -> node PreOrder + Offer with PreOrder
+   * Pending               -> no node value, no Offer (see the publisher: schema.org
+   *                          has no honest value for "under contract")
+   * Closed                -> node SoldOut, no Offer
+   * Expired / Canceled /
+   * Withdrawn             -> node OutOfStock, no Offer
+   * Coming Soon           -> nothing at all; it never reaches a public surface
+   * undefined             -> behaves like Active (backwards-compatible)
    */
   availability?: string
 }
@@ -286,6 +290,14 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
           unitCode: 'FTK',
         } : undefined,
         yearBuilt: input.yearBuilt,
+        // SITE-20: the node states what the listing IS, whether or not an Offer
+        // is emitted beside it. buildOffer() correctly drops the Offer for every
+        // off-market status — a sold home is not purchasable — and until this
+        // line existed, dropping the Offer dropped the ONLY machine-readable
+        // statement of the listing's state. 55550 Heidi Court (MLS 220219603)
+        // shipped a RealEstateListing with a $1,250,000 description, no offers
+        // node and no availability, for a home that closed at $1,100,000.
+        availability: publishListingSchemaAvailability(input.availability) ?? undefined,
         offers: buildOffer(input.listPrice, input.availability),
         image: input.photos && input.photos.length > 0 ? input.photos.slice(0, 5).map(absoluteUrl) : undefined,
         listingAgent: input.listingAgent ? prune({
