@@ -36,6 +36,7 @@
     "ci:no-report-rpc",
     "ci:no-staging-host",
     "ci:ods-compliance",
+    "ci:offmarket-listing-cta",
     "ci:page-dal",
     "ci:pdf-page-safety",
     "ci:prerender-db-safety",

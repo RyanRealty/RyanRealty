@@ -2,7 +2,7 @@
   "route": "app/listing/[listingKey]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Zillow Showcase. Photos plus 3D / floor plan / map tabs, one monthly payment with P&I tax HOA, nearby schools, tax history, lot size. We add place climb, assessor lot lines, published CC&Rs, a live broker, and one payment formula (computeMonthlyPiti).",
-  "note": "PAGE_INVENTORY listing (house URL) 12 sections. Tour / Call / Text is the ask. Face Est. $/mo is off the page so Payment is the one number. Cookies cannot cover the ask. No leftover HUD, CMA, rental, or doors on this route.",
+  "note": "PAGE_INVENTORY listing (house URL) 12 sections. Tour / Call / Text is the ask WHILE THE HOME IS ON THE MARKET, Pending included (a pending home takes backup offers and is a live lead source). SITE-21: when isPublicOffMarketStatus(status) is true — Closed, Expired, Canceled, Withdrawn — the page publishes the sold facts, the active homes in this city and a saved search instead: no payment, no market-ask instrument, no three-act close, and no tel: or sms: anywhere inside <main> (the brokerage line stays in V3Footer, outside it). Face Est. $/mo is off the page so Payment is the one number. Cookies cannot cover the ask. No leftover HUD, CMA, rental, or doors on this route.",
   "dataChanges": {
     "unchanged": "Every listing figure traces to getListingDetail, photos, videos, history, open houses, brokers, reviews, related homes, plat documents, taxlots. JSON-LD RealEstateListing + BreadcrumbList still emit from MetadataBlock. Payment is computeMonthlyPiti only.",
     "similarHomes": "A capped strip of V3ListingRow from the same relatedHomes ranking, same parent. One view-more href.",
@@ -37,6 +37,16 @@
     {
       "name": "PriceCtaStrip",
       "section": "H1 is the street. One ask: Tour / Call / Text. Face Est. $/mo is off.",
+      "blocking": true
+    },
+    {
+      "name": "ListingOffMarketFacts",
+      "section": "SITE-21, off market only: the sold facts as one claim. An Instrument when the close record carries figures, a Quiet block when the listing ended without a sale. Replaces the market-ask instrument, which compares a price nobody can pay against a market the house has left.",
+      "blocking": true
+    },
+    {
+      "name": "ListingLikeThisAlerts",
+      "section": "SITE-21, off market only: the saved search that replaces the tour, city + price band + beds pre-filled from this home. MASTER_SPEC 4.9's saved-search CTA. #listing-like-alerts.",
       "blocking": true
     },
     {
@@ -254,15 +264,18 @@
   "sectionOrder": [
     "ListingHero (price, beds, baths, sqft, street on the media)",
     "V3Atlas #location with lot figure",
-    "PriceCtaStrip Tour / Call / Text",
+    "PriceCtaStrip Tour / Call / Text on market; homes-for-sale + alerts off market",
+    "ListingOffMarketFacts the sold facts, off market only, first thing under the price",
+    "ListingSimilarStrip off market: the homes a reader CAN buy, promoted to just under the sold facts",
+    "ListingLikeThisAlerts off market: the saved search that replaces the tour",
     "PropertySpecs facts",
-    "MortgageCalculator #payment",
+    "MortgageCalculator #payment (on market only)",
     "SchoolsBlock #schools nearby",
     "ListingAroundHere parks / trails",
     "ListingTaxHistory #tax",
     "GoverningDocumentsBlock #plat",
-    "ListingSimilarStrip",
-    "V3ListingClose #close (the ending: cut claim + drawing, then watch / tour / payment)",
+    "ListingSimilarStrip on market: similar in the same parent, under the plat docs",
+    "V3ListingClose #close (on market only: the ending, cut claim + drawing, then watch / tour / payment)",
     "ListingBrokerCTA #listed",
     "ListingAttribution",
     "MetadataBlock",
