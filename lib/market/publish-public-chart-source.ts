@@ -1,4 +1,12 @@
 /**
+ * reachability: entry-point pinned by ci:publish-median-caption — no code
+ * imports this as a module (city/community charts inline the same "Oregon
+ * Data Share, no table names" protection in city-sections.ts). scripts/
+ * check-publish-median-caption.mjs reads this file's TEXT to verify
+ * toPublicCoreChartSeries still exists and still guards table-name leaks;
+ * deleting the file would crash that ci:gates check. If the check is ever
+ * repointed at the live implementation, this file becomes deletable.
+ *
  * Visitor-facing chart source line.
  *
  * Public HTML must not leak table names (`market_pulse_live`,

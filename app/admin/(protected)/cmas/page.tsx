@@ -9,6 +9,8 @@ import { listCmaQueue, type CmaQueueRow, type CmaQueueState } from '@/lib/data'
 import { CMA_ORIGIN_LABEL, type CmaOrigin } from '@/lib/cma/origin'
 import { approveAndDeliverCma, setCmaLaneAutoSendAction } from '@/app/actions/cma-queue'
 import { getLaneSettings, AUTO_SEND_LANES } from '@/lib/data/cma/lane-settings'
+import { getCmaLaneFunnel } from '@/lib/data/cma/outcomes'
+import { CmaLaneFunnel } from '@/components/admin/cma/CmaLaneFunnel'
 import { isColdOrigin } from '@/lib/cma/origin'
 import { hasCapability } from '@/lib/admin/capabilities'
 import { LaneAutoSendSwitch } from '@/app/admin/(protected)/cmas/_components/queue/LaneAutoSendSwitch.client'
@@ -239,9 +241,10 @@ export default async function CmaQueuePage({
     sort: str(sp.sort) as CmaQueueSort | undefined,
   }
 
-  const [{ rows, total }, laneSettings] = await Promise.all([
+  const [{ rows, total }, laneSettings, laneFunnel] = await Promise.all([
     listCmaQueue({ limit: WINDOW }),
     getLaneSettings(),
+    getCmaLaneFunnel(),
   ])
 
   const { listQueuedFirstTouch, getLastDripSentAt } = await import('@/lib/data/prospecting/drip-queue')
@@ -307,6 +310,8 @@ export default async function CmaQueuePage({
         settings={laneSettings}
         canFlip={hasCapability(admin, 'settings.compliance')}
       />
+
+      <CmaLaneFunnel funnel={laneFunnel} />
 
       <QueueFilters
         filters={filters}
