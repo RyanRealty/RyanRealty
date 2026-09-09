@@ -28,6 +28,10 @@ import {
 import { isPublicOffMarketStatus } from '@/lib/listing-status-public'
 import { publishListingOffMarketFacts } from '@/lib/listing/publish-listing-offmarket'
 import { ListingOffMarketFacts } from '@/components/site/listing-detail/ListingOffMarketFacts'
+import { ListingOutOfAreaNotice } from '@/components/site/listing-detail/ListingOutOfAreaNotice'
+import { buildListingOutOfAreaNotice } from '@/components/site/listing-detail/listing-out-of-area'
+import { outOfAreaListingPolicy } from '@/lib/data/listings/service-area'
+import { getOutOfAreaCity } from '@/lib/data/geo/getOutOfAreaCities'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
 import { listingMlsAddressFull, listingMlsStreetLine } from '@/lib/listing/publish-street-line'
 import { homesForSalePath, listingCanonicalHref, subdivisionListingsPath } from '@/lib/slug'
@@ -170,11 +174,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // every path for this listing points at.
   const canonicalPath = listingCanonicalHref(listing)
 
+  // SITE-33 (Matt 2026-09-08). 56% of listings.xml was Southern Oregon
+  // inventory rendered identically to a Bend home under a "Central Oregon"
+  // brand suffix. The ruling: the page still serves in full, it carries the
+  // honesty block, and it leaves the index — with FOLLOW PRESERVED, so the
+  // ~200 internal links on it (and the /oregon referral pages that link IN to
+  // it) keep passing. `nofollow` is deliberately not set. The canonical stays:
+  // pageMetadata always emits alternates.canonical, noindexed or not.
+  //
+  // The predicate is the one lib/data/listings/service-area.ts uses for the
+  // tile and feed reads and the one /oregon/[city] uses for the city tier, so
+  // the robots directive, the visible block and the sitemap row cannot
+  // disagree about which market this home is in.
+  const outOfArea = outOfAreaListingPolicy(listing.city)
+
   return pageMetadata({
     title,
     description,
     path: canonicalPath,
     ogImage: `/api/og?type=listing&id=${encodeURIComponent(listing.listingKey)}`,
+    noindex: outOfArea !== null,
   })
 }
 
@@ -225,6 +244,25 @@ export default async function ListingDetailPage({ params }: PageProps) {
   // off is an ask the broker cannot fulfil or a figure about a price nobody can
   // pay; everything it turns on is a door that goes somewhere.
   const offMarket = isPublicOffMarketStatus(listing.status)
+
+  // SITE-33 — this home's market, decided by the SAME predicate as the robots
+  // directive above and the sitemap row. Null on every Central Oregon home, so
+  // a Bend page pays nothing: the geo read below only runs when the answer is
+  // already "outside our market".
+  const outOfArea = outOfAreaListingPolicy(listing.city)
+  // Whether /oregon/<city> will actually render. That route notFound()s a slug
+  // with no live snapshot row, and a door to a 404 is worse than no door, so
+  // the block falls back to /contact when the city has no page. One cached
+  // read (geo_snapshot_mv, 1h, the same index the city tier serves from).
+  const outOfAreaCityRow = outOfArea
+    ? await withTimeoutFallback(
+        getOutOfAreaCity(outOfArea.citySlug),
+        null,
+        3000,
+        'listing:out-of-area-city',
+      )
+    : null
+  const outOfAreaNotice = buildListingOutOfAreaNotice(outOfArea, outOfAreaCityRow !== null)
 
   const { placeContext, marketGeo } = resolveListingPlaceAndMarket(listing)
   const featuredGeoName =
@@ -604,6 +642,14 @@ export default async function ListingDetailPage({ params }: PageProps) {
         similarHref={similarHref}
         alertsHref={alertsHref}
       />
+      {/* SITE-33 — THIS IS NOT OUR MARKET, said before the page says anything
+          else about the home. A reader who scrolls past the price strip on a
+          Medford house has already been told, by a "| Ryan Realty — Central
+          Oregon" title and a page identical to a Bend one, something that is
+          not true. The block is the city tier's own claim one level down, and
+          it ends in that city's referral page. Null on every Central Oregon
+          listing. */}
+      {outOfAreaNotice ? <ListingOutOfAreaNotice notice={outOfAreaNotice} /> : null}
       {/* SITE-21 — THE SOLD FACTS, first thing under the price. What happened
           to this house is the answer the reader came for, and it is the only
           claim about its price that is still true. */}
