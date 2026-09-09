@@ -92,6 +92,23 @@ subject outside any boundary uses the comp radius, never a city-wide band. Befor
 were the market-area grain at a fixed 12 months and competition was city-wide nearest-first.
 `render_args.compArea` is the one area object; the renderer reads it for both chapters.
 
+**Session cut-off 2026-09-08 (limit resets 8pm PT) — state of the two lanes:**
+- Document `wt/cma-doc-20260907`: Delta 3 landed as `010a544d` (one map, three pin families,
+  three matrices) and `ef66f481` (sort/filter/reveal per matrix), plus `b366a3a6` WIP residue
+  (typechecks; tests unconfirmed). NOT done: the wiring pass that points chapter 2 and the
+  competition chapter at R2h's `render_args.compArea`, `expiredPeers` (a set: `.peers`,
+  `.sentence`, `.shortfall`, `peer.whyItSat`) and `bandRivals` (a set: `.rivals`, `.sentence`,
+  `.source`) — see R2h's list: `opinion-pages.ts` `didNotSellArgs` and `competitionArgs`,
+  `opinion-scenes.ts:76`, `render.ts` types; `lib/cma/extras.ts` still computes the city-wide
+  sets until then.
+- Engine `wt/cma-engine-20260907`: R2h landed (`a18989f9` `ead99804` `9b4cc390` `11782caa`,
+  merged into ship). R2i, the rural competition radius (start 5 mi, widen 5 → 10 → comp
+  radius only while fewer than three rivals; never beyond the comp radius) is NOT started;
+  rule in memory `feedback_cma_comp_containment`.
+- Delta 4 (rural homes read as property: zoning, irrigation, usable acreage, outbuildings,
+  well/septic, farm use as hard splits or itemised lines) is recorded in the blueprint and
+  memory; the next engine item after the containment ladder.
+
 **Still open:** the cover photo is whatever single MLS photo the row carries; the map is a
 Google tile with our pins; subdivision-story and voice-reviewer still call the Anthropic API
 and fail open; inbound EMAIL replies do not advance the CRM; D21 price-tier fallback is Matt's
