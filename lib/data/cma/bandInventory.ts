@@ -7,6 +7,12 @@
 
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import {
+  compAreaBounds,
+  compAreaContains,
+  type CompArea,
+} from '@/lib/pricing/comp-area'
+import { areaFilterTrace, type CmaAreaReadCitation } from '@/lib/data/cma/areaUnsoldReads'
 
 const BAND_SELECT =
   'ListingKey, StreetNumber, StreetName, ListPrice, OriginalListPrice, StandardStatus, DaysOnMarket, OnMarketDate, PhotoURL, Latitude, Longitude, property_sub_type, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, year_built, lot_size_acres'
@@ -32,6 +38,9 @@ export type CmaBandListingRow = {
   Latitude: number | null
   Longitude: number | null
   property_sub_type?: string | null
+  /** Selected only by the area-scoped read; the city-scoped one already knows the city. */
+  City?: string | null
+  SubdivisionName?: string | null
   BedroomsTotal?: number | null
   BathroomsTotal?: number | null
   TotalLivingAreaSqFt?: number | null
@@ -146,4 +155,141 @@ function daysOnMarket(onMarketDate: string | null): number | null {
   if (Number.isNaN(then.getTime())) return null
   const days = Math.floor((Date.now() - then.getTime()) / 86_400_000)
   return days >= 0 ? days : null
+}
+
+/**
+ * THE SAME BAND, READ INSIDE THE AREA (Matt 2026-09-08).
+ *
+ * `getCmaBandInventory` above is city-wide, which is what put citywide counts
+ * under a chapter about one street. This read takes the CompArea the document
+ * already resolved — the neighborhood or community polygon the subject sits
+ * in, or the radius when it sits in none — and never widens to the city.
+ *
+ * Geometry goes into the query as a bounding box and is re-tested exactly per
+ * row by `compAreaContains`, so the counts reported are counts INSIDE the
+ * shape, not inside the box. That is also why there is no `head:true` count
+ * here: a database count would count the box.
+ */
+const AREA_SELECT = `${BAND_SELECT}, City, SubdivisionName`
+
+export type CmaAreaBandInventory = {
+  area: CompArea
+  lo: number
+  hi: number
+  activeRows: CmaBandListingRow[]
+  pendingRows: CmaBandListingRow[]
+  /** Rows inside the exact shape. Never a bounding-box count. */
+  activeCount: number
+  pendingCount: number
+  activeAsks: number[]
+  activeDaysOnMarket: number[]
+  truncated: boolean
+  citation: CmaAreaReadCitation
+}
+
+export async function getCmaAreaBandInventory(input: {
+  area: CompArea
+  /** The subject's city — the bound when the area is scoped by name rather than shape. */
+  city: string
+  lo: number
+  hi: number
+  propertySubType?: string | null
+}): Promise<CmaAreaBandInventory | null> {
+  const sb = client()
+  if (!sb) return null
+  const area = input.area
+  const subType = input.propertySubType?.trim() || null
+  const bounds = compAreaBounds(area)
+
+  const scoped = (status: 'Active' | 'Pending') => {
+    let q = sb
+      .from('listings')
+      .select(AREA_SELECT)
+      .eq('PropertyType', 'A')
+      .eq('StandardStatus', status)
+      .gte('ListPrice', input.lo)
+      .lte('ListPrice', input.hi)
+    if (subType) q = q.eq('property_sub_type', subType)
+    if (area.kind === 'subdivision' || area.kind === 'subdivisions') {
+      q = q.in('SubdivisionName', area.names)
+      if (input.city.trim()) q = q.eq('City', input.city.trim())
+    } else if (area.kind === 'city') {
+      q = q.eq('City', area.names[0] ?? input.city.trim())
+    }
+    if (bounds) {
+      q = q
+        .gte('Latitude', bounds.latMin)
+        .lte('Latitude', bounds.latMax)
+        .gte('Longitude', bounds.lngMin)
+        .lte('Longitude', bounds.lngMax)
+    }
+    return q
+  }
+
+  const readAll = async (status: 'Active' | 'Pending') => {
+    const rows: CmaBandListingRow[] = []
+    for (let offset = 0; offset < CEILING; offset += PAGE_SIZE) {
+      const { data, error } = await scoped(status)
+        .order('ListPrice', { ascending: true })
+        .order('ListingKey', { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1)
+      if (error) throw new Error(error.message)
+      const page = asRows(data)
+      rows.push(...page)
+      if (page.length < PAGE_SIZE) return { rows, truncated: false }
+    }
+    return { rows, truncated: true }
+  }
+
+  const inside = (rows: CmaBandListingRow[]) =>
+    rows.filter((r) =>
+      compAreaContains(area, {
+        latitude: r.Latitude,
+        longitude: r.Longitude,
+        subdivision: r.SubdivisionName ?? null,
+        city: r.City ?? null,
+      }),
+    )
+
+  const filter = [
+    `PropertyType='A'`,
+    `StandardStatus IN (Active, Pending)`,
+    `ListPrice ${input.lo}..${input.hi}`,
+    subType ? `property_sub_type='${subType}'` : 'any residential sub type',
+    areaFilterTrace(area),
+  ].join(' AND ')
+
+  try {
+    const [actives, pendings] = await Promise.all([readAll('Active'), readAll('Pending')])
+    const activeRows = inside(actives.rows)
+    const pendingRows = inside(pendings.rows)
+    return {
+      area,
+      lo: input.lo,
+      hi: input.hi,
+      activeRows,
+      pendingRows,
+      activeCount: activeRows.length,
+      pendingCount: pendingRows.length,
+      activeAsks: activeRows.map((r) => Number(r.ListPrice)).filter((n) => Number.isFinite(n) && n > 0),
+      // Days on market from OnMarketDate, never the "DaysOnMarket" column —
+      // docs/DATABASE_FOR_AI_AGENTS.md §4a: that column is list-to-close.
+      activeDaysOnMarket: activeRows
+        .map((r) => daysOnMarket(r.OnMarketDate))
+        .filter((n): n is number => n != null),
+      truncated: actives.truncated || pendings.truncated,
+      citation: {
+        table: 'listings',
+        filter,
+        rows: actives.rows.length + pendings.rows.length,
+        rowsAfterAreaTest: activeRows.length + pendingRows.length,
+        fetchedAt: new Date().toISOString(),
+        query: `supabase.from('listings').select(...).where(${filter})`,
+        truncated: actives.truncated || pendings.truncated,
+      },
+    }
+  } catch (e) {
+    console.error('[getCmaAreaBandInventory]', e instanceof Error ? e.message : String(e))
+    return null
+  }
 }
