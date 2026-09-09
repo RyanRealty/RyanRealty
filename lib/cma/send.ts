@@ -26,6 +26,7 @@ import {
   stampCmaLinkOnPerson,
   logCmaTimelineEvent,
 } from '@/lib/data'
+import { CMA_DOC_ORIGIN } from '@/lib/cma/doc-links'
 import { renderCmaPdfBuffer, CmaNotFoundError } from '@/lib/cma-pdf'
 import { wrapBrandedEmail, brandedTextFooter, escapeHtml } from '@/lib/email/shell'
 import { brokerSendIdentity } from '@/lib/email/broker-identity'
@@ -43,7 +44,18 @@ import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
 import { formatPublishedPhone } from '@/lib/cma/format-phone'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+/**
+ * The letter's own origin is the PRODUCTION origin, never the env host — the
+ * same rule lib/cma/doc-links.ts and lib/cma/cma-place-links.ts already follow,
+ * and for the same reason: these URLs land in a stranger's inbox and outlive
+ * every deploy. It is also correctness, not just hygiene: `attributeOutbound`
+ * only attributes ryan-realty.com links, so a report button built on the
+ * staging host loses its `?_pid=` and the recipient meets the consent bar
+ * instead of the report they were sent (caught on the 2026-09-09 send walk,
+ * where a worktree with the vercel host in .env.local mailed an unattributed
+ * report link).
+ */
+const SITE_URL = CMA_DOC_ORIGIN
 const MAX_PDF_BYTES = 25 * 1024 * 1024
 
 interface CmaSendContext {
