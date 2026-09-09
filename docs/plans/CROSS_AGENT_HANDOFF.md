@@ -100,9 +100,53 @@ mount into the main checkout and deleted 164 packages; an `npm install` to repai
 pinned ranges in `package.json`. The repair is `git checkout HEAD -- package.json package-lock.json
 && npm ci`. Run lanes in the main tree.
 
-**Next.** The next eligible SITE node under the two-open / three-owner rule. **SITE-56 is claimed by
-the other session and was deliberately held behind SITE-55 on this same route and the same
-`parity.json`** — that block is now landed, so SITE-56 is unblocked. PR #200 stays watched.
+**Next.** The queue serves nothing: two open nodes both wait on held ones (SITE-43 on SITE-03, which
+is blocked until 2026-10-06; SITE-58 on SITE-56), and the three in-flight nodes belong to other
+sessions. **SITE-56 was deliberately held behind SITE-55 on this same route and the same
+`parity.json`; that block is now landed**, and the other session's own finding (Prior, below)
+reorders it around a plat resolver rather than the no-polygon fallback. PR #200 stays watched.
+
+**One thing SITE-56's resolver should know before it starts.** The `#outcomes` read this node added
+attributes a plat the two ways its closed sibling does — point-in-polygon AND slugified MLS
+`SubdivisionName` — and unions them over distinct listing key. That is the same
+coarse-MLS-name-against-fine-recorded-plat mismatch the other session measured, met on the same
+grain. **Diamond Bar Ranch has no `boundaries` row under the slug the page looks up, and it is
+exactly the plat whose false clean record this lane caught**: the by-name branch found its two
+unsold listings while a polygon-only read would have found nothing and said so. Whatever resolver
+SITE-56 lands should be the one both reads call, not a third attribution.
+
+## Prior — 2026-09-09 (Matt: "there has to be a way to find those missing plats" — most of them were never missing)
+
+Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout.
+
+**The answer, measured against live Supabase before anything was built.** Of 1,087 distinct
+`SubdivisionName` values on 3,573 active SFR listings: **177** match a recorded plat by exact slug;
+**207** have no exact match while recorded plats START WITH the name — the county's own phases and
+additions; **77** more have no name match but their homes already carry `boundary_subdivision` from
+SITE-23's point-in-polygon classifier; **626** resolve neither way. So **284 of the 910 unmatched
+names are recoverable from data already in the table**, with no new source at all. Dry Canyon: 21
+homes against 6 recorded phases. Caldera Springs: 31 against 15. Rivers Edge Village: 10 against 24.
+
+**Diamond Bar Ranch, the page Matt read, is the proof.** `public.boundaries` holds four recorded
+plats for it (Phase 1, 2, 3, 4 — Deschutes County GIS Subdivisions, layer 4 of
+maps.deschutes.org/…/BoundaryFD/MapServer) and its one active listing already carries
+`boundary_subdivision = 'Diamond Bar Ranch Phase 1'`. The page opens on cream with two empty frames
+because the lookup slugifies the MLS name to `diamond-bar-ranch`, misses the exact slug, and falls
+to the no-polygon path. Same coarse-MLS-name-against-fine-recorded-plat mismatch SITE-24 found in
+the closed-sale join and SITE-28 found in the display name. **This reorders SITE-56:** the resolver
+(exact slug → phase prefix, unioned → the listings' own polygon attribution) comes first, and the
+no-polygon fallback becomes the path for what is genuinely unrecorded rather than for a fifth of
+the class.
+
+**The 626 that remain are an ingest project, seeded as SITE-58.** Every one of our 3,223 plat
+polygons is Deschutes; Crook holds one row, Jefferson and Klamath none. Probed the same day:
+Deschutes publishes the Subdivisions layer we already hold in full; the Klamath org we pull taxlots
+from (201 services) publishes no equivalent; the Josephine org returned none; two guessed Crook
+endpoints 404'd. The endpoints must be found, not guessed, and a hull around listing points is not
+a plat boundary. Crook is the one that pays — Brasada Ranch, Ochoco Pointe, Crooked River Ranch.
+
+**Also landed:** SITE-57, the MLS remarks (Matt: "mls descriptions must come back"), live and gated.
+SITE-56 is in flight with the finding above as its brief.
 
 ## Prior — 2026-09-09 (site queue round eight: SITE-48 and SITE-50 done; SITE-56 claimed and deliberately held)
 
