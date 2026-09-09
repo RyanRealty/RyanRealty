@@ -1,4 +1,70 @@
-# Current — 2026-09-09 (SITE-45: the listing page opens with something to interrogate — one frame and a filmstrip, the price cut as a mark, a read under the pills, Tour in the fold)
+# Current — 2026-09-09 (SITE-40: V3Quiet gets one measure, a figure slot with its trace, and doors as a form; six openings pick it up)
+
+Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
+`1ea07155` on main through 0ba0358d (merges 21d75e55 and 0b43bbbe carry SITE-42, SITE-46, SITE-53, the
+SMS agent and inbox parser on Grok, the CMA first-touch register). Node `ac7b98f8` (SITE-40) is `done`
+with evidence; `db6d07a9` (SITE-45) landed earlier today (see Prior). SITE-49 (`1c971ea5`, /price-drops)
+is claimed by this session: its worktree agent died on the session rate limit before writing a line, so
+the lane runs next in the main tree. SITE-29 (`e3d1713f`) stays `blocked` until 2026-09-11.
+
+**What the table said and what shipped.** The six lowest classes (invest 25, compare 29, about 31,
+market-report 41, reviews 48, contact 49) all open on V3Quiet, and the evaluators named the same three
+causes: an empty figure column beside every passage, no slot for the live count the page had already
+fetched, and N doors as N identical hairline rows. The primitive now: a prose-only item IS the 44rem
+measure (one track; the rule stops where the words stop) and splits text | figure only when it has a
+figure; `V3QuietFigure { value, unit?, source (required), sourceName?, updatedAt?, ratio? }` on prose
+and link items — no trace, no figure (§0); `sourceName` is the visitor-words clause with the trace
+behind SITE-42's disclosure; `ratio` draws a thin meter under the value; consecutive doors are one
+2-up group with a channel mark derived from the href, `lead` for the dominant door, `media` for a
+face or a place in the mark's slot, `weight: 'secondary'` to fold lighter doors into one inline line.
+Callers: /invest opens with 762 (the sum of its five segment rows, enumerated in the disclosure); the
+market hub's five doors carry marks, sentences and live figures (1,563 · 7 · 5,769 · Sep 5, 2026 ·
+4.9) with plain source clauses, two renamed from our IA (Every closed sale, Weekly snapshots); /about
+leads with the principal broker's face, the four channels on one line, the 5.0 from 25 Google reviews
+with its meter and source; /contact's person door carries the same sourced 5.0.
+
+**Receipts (table instrument, separate claude-sonnet-5, three scorings, median), all rebaselined:**
+* invest      25 → 60 (63·54·60), craft 12, no tell
+* compare     29 → 42 (42·37·45), craft 10, no tell
+* about       31 → 49 (47·49·52), craft 11, no tell — three rounds
+* market-report 41 → 54 (51·54·58), craft 10; two tells remain, both the
+  chooser's one repeated card shape, which the table assigns to that page's
+  composition node
+* reviews     48 → 50 (48·55·50), craft 9, no tell
+* contact     49 → 62 (62·59·66), craft 11, no tell — four rounds
+None of the final receipts names "scrolling lists as the design" or "walls of text". The lane's Opus
+worktree agent had no Agent tool, so the coordinator ran every evaluator; the rounds are on each
+receipt's evaluator sentence and on the node.
+
+**Found by measuring.** (1) Round one on /about drew the scrolling-lists tell on seven glyph-marked
+doors ("an icon card grid"); a face on the person door and a figure on the reviews door did not clear
+it (round two, 41); folding the four channels into one inline line did (round three, 49, no tell).
+(2) The hub's source clauses derived from the trace's leading segment put "Market Truth region row"
+in front of visitors — hence `sourceName`. (3) The lane's mechanical check read `Source:` with a colon;
+SITE-42's clause has none. (4) A worktree lane needs `node_modules`: Turbopack refuses a symlink, the
+lane bind-mounted the main checkout's, and when the SITE-49 worktree agent died the harness's cleanup
+reached through the mount — the main `node_modules` lost 164 packages (`.bin/next` gone, `npm install`
+then rewrote two pinned ranges in package.json). Repaired with `npm ci` from the committed lockfile;
+both mounts are unmounted. **Rule for the next lane: never bind-mount node_modules into a worktree
+an agent can die in; run a lane in the main tree, one writer at a time.** (5) Contact's third pass
+read "replies the same day" as an unsourced claim beside a sourced figure — cut (§0), fourth capture.
+
+**Mechanical accept (scratch site40-mechanical.mjs, dev render 1440 and 375): 33/33** — every
+prose-only item one track at 704px; no run of identical door siblings longer than one on any route;
+the hub chooser 5 of 5 doors with a digit and a source line.
+
+**Matt's calls / composition nodes (not this primitive's).** /compare's full-bleed H1 clips at 1440
+and the page shows no populated comparison (SITE-50 waits on this node); /contact's four-cell
+`V3Doors` and /reviews' bare `V3Proof` row are the tells that remain on those classes; /invest's
+"What this page is" headers; the evaluators want a map on the office door and a sparkline in the
+hub's lead door.
+
+**Next.** SITE-49 in the main tree (the brief is written: alerts sheet in flow, a dot strip of the
+sixty cuts with a hover reveal, a per-row cut mark, receipt "first"), then the next eligible SITE
+node under the two-open / three-owner rule. PR #200: green on 0b43bbbe; this push re-runs it; the
+check-in fires 19:04Z.
+
+## Prior — 2026-09-09 (SITE-45: the listing page opens with something to interrogate — one frame and a filmstrip, the price cut as a mark, a read under the pills, Tour in the fold)
 
 Owner: Claude (Fable 5.1), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
 `ba0fb159`; the landing commit is the merge of main (through 989b2652: SITE-46, SITE-53, the SMS agent
@@ -83,6 +149,39 @@ instant email (`lib/cma-delivery.ts composeCmaEmail`). `scripts/cma-first-messag
 (https://claude.ai/code/artifact/a4f1379b-c4d8-4bba-9274-3138b858ed02) is three real rows printed
 by it. Tests: first-contact (17), first-touch-copy (10), fsbo-cma-templates (12), crm-compose-copy,
 cma-delivery.compose.
+
+**The subdivision is the loop (Matt 2026-09-09, second directive).** "Show that we are true market
+experts by being able to dive into that subdivision they're in, not just the neighborhood… drive
+them back to that subdivision page… homes that sold and didn't sell… then the broader picture of
+the neighborhood or community… That's the full loop. We need to make sure those links always
+work. You can't just have some bullshit link." Done in the letter: the pricing paragraph is
+tighter ("the price is everything… pricing low is rarely the danger people think it is");
+`lib/cma/first-contact-place.ts` resolves the place BEFORE composing and links a plat page only
+when it renders, decided the way the page decides (`app/subdivisions/[slug]/page.tsx`
+loadSubdivisionCore: a polygon in `boundaries`, counted registry inventory, or live SFR homes under
+the MLS name), with the page's own figures (`getSubdivisionCounts` twelve-month instrument when
+published, else `getSubdivisionSalesHistory`: this year to date and the lifetime count since the
+first recorded year) and the wider place (Bend neighborhood or city). The letter now reads "In
+Diamond Bar Ranch itself, twelve homes have sold so far in 2026, and 367 have closed there since
+2005. Our Diamond Bar Ranch page keeps the running picture… The Redmond page shows the wider
+market it sits in…" (verified against the live page's own sentences). `scripts/cma-first-message.ts`
+fetches every link in the letter and prints `LINK 200 ok` or the refusal shell; all four links on
+each of the three review rows are 200 ok. The subdivision page itself does not yet show what did
+NOT sell, so the sentence says "what is for sale there and what has sold"; that page work is the
+site lane's, seeded as **SITE-55** (loop_work_nodes, open, after SITE-47 on the same route): the
+plat-outcomes DAL read, a "What did not sell in {name}" section, a wider-market block with a real
+anchor, and the letter sentence updated to "and what did not" when it ships. Not touched: the
+subdivision page (SITE-47 is in progress on it).
+
+**Matt, reading the Diamond Bar Ranch page the letter links: "There's no map… and no photo."**
+Verified in a headless render (scratchpad dbr-top2.png): the opening is cream with no photograph,
+the atlas is an empty grey frame with a legend, and the split-view Google map paints no tiles.
+Cause: no polygon in `boundaries`, so the page renders through the MLS-name path with an atlas
+framed around one dot and a poster that is null by design (SITE-08 pass 2 refuses stand-in
+photos). At least 265 plain plats with live SFR homes are in this class (511 homes, lower bound,
+`scripts/_plats-without-polygons.ts`). Seeded as **SITE-56** in the site lane (open, after
+SITE-47): the no-polygon atlas frame, the split-view map painting, and an honest opening image on
+every plat. Not touched from this tree.
 
 **"The ask" is gone from what we send.** Matt: "we don't say things like, 'The ask was this.' No one
 says that." Every rendered "the ask" is now "the asking price" (or "a price cut"): the public

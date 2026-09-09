@@ -30,10 +30,15 @@ import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hi
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import AreaPicker from '@/components/search/AreaPicker'
-import { type V3ListingRowBadge as ListingBadge } from '@/components/site/v3'
+import { V3SourceDisclosure, type V3ListingRowBadge as ListingBadge } from '@/components/site/v3'
+import { buildPpsfBand } from '@/components/search/ppsf-band'
+import { formatCount } from '@/lib/format/count'
+import { formatPriceCompact } from '@/lib/format/money'
 import { SplitListingCard } from '@/components/search/SplitListingCard'
 import { isListingVirtualTour } from '@/lib/listing/publish-listing-hero-video'
 import { publishListingCardBadges } from '@/lib/listing/publish-listing-card-badges'
+import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
+import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { publishTourEmbedFromUrl } from '@/lib/listing/publish-listing-hero-video'
 import { ListingTourOverlay } from '@/components/site/listing-detail/ListingTourOverlay'
 import type { VideoEmbed } from '@/lib/data/types/video'
@@ -855,12 +860,81 @@ export default function MapSearchView({
   )
   const mapListings = useMemo(() => visibleListings.map(toMapListing), [visibleListings])
 
+  /**
+   * The claim this rail is making about the current frame, and the band the
+   * cards measure themselves against. SITE-44.
+   *
+   * Section 0: BOTH are derived from `visibleListings` — the exact array the
+   * cards render and `mapListings` pins — so the sentence, the pins and the
+   * card marks cannot disagree. There is no second query and no market-wide
+   * constant here; pan the map and the population changes, so the claim does.
+   *
+   * And both run every row through the publisher that matches THIS claim.
+   * Reading ListPrice raw put "from $8K to $8.8M in Bend" over the rail, which
+   * is a sentence about what a home in Bend costs — and the $8K was a
+   * fractional week at Inn of the 7th Mountain (18575 Century Drive prints
+   * $3,000 for a 1 bd / 662 sqft share) sitting next to commercial lease rates
+   * on PropertyType 'G'. `publishWholePropertyAmount` is the rule that already
+   * knows both: it is documented as the input for exactly this figure, "the
+   * 'homes near this price' band, the comparison against a place median", and
+   * it withholds a lease rate and a share. The CARD still prints $3,000 for
+   * that share, correctly, because it prints the share label beside it; the
+   * header is making a different claim and takes the stricter number.
+   * `publishListingSharePricePerSqft` does the same job for the band.
+   * `askCount` is the population the range describes, which is what the trace
+   * names whenever it is not the whole set.
+   */
+  const viewClaim = useMemo(() => {
+    const asks: number[] = []
+    const ppsf: (number | null)[] = []
+    for (const l of visibleListings) {
+      const ask = publishWholePropertyAmount({
+        price: l.ListPrice,
+        propertyType: l.PropertyType,
+        propertySubType: l.PropertySubType,
+        subdivisionName: l.SubdivisionName,
+        city: l.City,
+        listNumber: l.ListNumber != null ? String(l.ListNumber) : null,
+      })
+      if (ask != null) asks.push(ask)
+      ppsf.push(
+        publishListingSharePricePerSqft({
+          propertyType: l.PropertyType,
+          propertySubType: l.PropertySubType,
+          subdivisionName: l.SubdivisionName,
+          city: l.City,
+          listNumber: l.ListNumber != null ? String(l.ListNumber) : null,
+          pricePerSqft: cardPricePerSqft(l),
+        }),
+      )
+    }
+    return {
+      count: visibleListings.length,
+      askCount: asks.length,
+      low: asks.length > 0 ? Math.min(...asks) : null,
+      high: asks.length > 0 ? Math.max(...asks) : null,
+      band: buildPpsfBand(ppsf),
+    }
+  }, [visibleListings])
+
+  /** The most specific place the filters name, for the claim's last clause. */
+  const claimPlace = scopeLabel?.split(' · ')[0]?.trim() || null
+
   const publishedCounts = publishSearchCountPair({
     matchCount,
     viewportCount: totalCount,
     viewportCapped: capped,
   })
   const filtersSummary = useMemo(() => buildFiltersSummary(filters), [filters])
+  /**
+   * The crumb row under the claim, minus whatever the claim sentence already
+   * said. A lone "BEND" in caps under "…in Bend." is the sentence twice, and
+   * the second one is the shouty one.
+   */
+  const crumbs = useMemo(() => {
+    const parts = filtersSummary.split(' · ').filter((p) => p && p !== claimPlace)
+    return parts.join(' · ')
+  }, [filtersSummary, claimPlace])
   // Cos/Matt 2026-09-06 residual: kill UNSCOPED total-inventory chrome
   // (sheet peek "3,231+ homes for sale"; list "3,341 homes found"). Place-
   // scoped sheet counts stay ("26 homes for sale"). Map-viewport phrases
@@ -895,30 +969,72 @@ export default function MapSearchView({
   // the row / sheet show previous N + "Updating…" (SEARCH_UX_WAVE3 pan sticky count).
   const listPanel = (
     <div ref={listContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-muted">
-      {/* Count row — Sort moved to floating Map|Sort pill (Matt 2026-09-07). */}
-      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-4 py-2 sm:py-3">
-        <p className="srch-count min-w-0 flex-1 text-muted-foreground" aria-live="polite">
-          {resultsDegraded ? (
-            <span className="font-semibold text-foreground">Search delayed</span>
-          ) : (
-            <>
-              {/* Map-view count only — no big filter-match total inventory. */}
-              {listCountPhrase !== 'Homes' ? (
-                <span className="srch-figure text-foreground">{listCountPhrase}</span>
-              ) : null}
-              {filtersSummary ? (
-                <span className={listCountPhrase !== 'Homes' ? 'hidden sm:inline' : 'hidden sm:inline'}>
-                  {listCountPhrase !== 'Homes' ? ' · ' : ''}
-                  {filtersSummary}
-                </span>
-              ) : null}
-            </>
-          )}
-          {loading ? (
-            <span className="ml-2 text-xs text-muted-foreground">Updating…</span>
-          ) : null}
-        </p>
-      </div>
+      {/* The claim (SITE-44). This rail used to open with a bare count and a
+          crumb string — the taste table's "no claim tying list and map into one
+          object". It now states, in a sentence, what the frame is showing: how
+          many homes are drawn, the ask range across them, and the place, with
+          the section 0 trace under it. Sort still lives on the floating
+          Map|Sort pill (Matt 2026-09-07). */}
+      <header className="srch-claim sticky top-0 z-10 px-4 py-2.5 sm:py-3" aria-live="polite">
+        {resultsDegraded ? (
+          <p className="srch-claim__line">
+            <span className="font-semibold">Search delayed.</span> We could not read this view in
+            time. That is a connection problem, not an empty market.
+          </p>
+        ) : (
+          <>
+            <p className="srch-claim__line">
+              {viewClaim.count > 0 ? (
+                <>
+                  <span className="srch-figure">{formatCount(viewClaim.count)}</span>
+                  {viewClaim.count === 1 ? ' home is drawn on this map' : ' homes are drawn on this map'}
+                  {viewClaim.low != null && viewClaim.high != null ? (
+                    viewClaim.low === viewClaim.high ? (
+                      <>
+                        {', asking '}
+                        <span className="srch-figure">{formatPriceCompact(viewClaim.low)}</span>
+                      </>
+                    ) : (
+                      <>
+                        {', from '}
+                        <span className="srch-figure">{formatPriceCompact(viewClaim.low)}</span>
+                        {' to '}
+                        <span className="srch-figure">{formatPriceCompact(viewClaim.high)}</span>
+                      </>
+                    )
+                  ) : null}
+                  {claimPlace ? ` in ${claimPlace}` : ''}.
+                  {capped
+                    ? ' This frame holds more than the map draws — zoom in to see the rest.'
+                    : ''}
+                  {viewClaim.band
+                    ? ' The bar under each ask places that home per square foot against the rest of them.'
+                    : ''}
+                </>
+              ) : (
+                <>{listCountPhrase === 'Updating…' ? 'Reading this view…' : 'No homes are drawn on this map yet.'}</>
+              )}
+            </p>
+            {crumbs || loading ? (
+              <p className="srch-claim__crumbs">
+                {crumbs}
+                {crumbs && loading ? ' · ' : ''}
+                {loading ? 'Updating…' : ''}
+              </p>
+            ) : null}
+            {viewClaim.count > 0 ? (
+              // The trace is present on the claim, but collapsed: four lines
+              // of methodology under a one-line sentence is the wall of text
+              // TASTE.md bans, and this header sits above every scroll of the
+              // rail. One word, "Source", and the whole trace on a click.
+              <V3SourceDisclosure
+                className="srch-claim__source"
+                source={`Oregon Data Share, read live for this map frame — the ${formatCount(viewClaim.count)} active listing${viewClaim.count === 1 ? '' : 's'} this view returned${capped ? ', which is the display cap rather than the whole area' : ''}. The range is the lowest and highest ask among the ${formatCount(viewClaim.askCount)} of them that publish a whole-property price — a fractional share and a commercial lease rate are withheld${viewClaim.band ? `; the band is the middle half of the ${formatCount(viewClaim.band.n)} that also publish a price per square foot` : ''}.`}
+              />
+            ) : null}
+          </>
+        )}
+      </header>
       {resultsDegraded ? (
         <div className="srch-panel m-4 p-8 text-center">
           <p className="srch-label">Try again</p>
@@ -1049,6 +1165,7 @@ export default function MapSearchView({
                       ? 'Video tour'
                       : '3D Walkthrough'
                   }
+                  ppsfBand={viewClaim.band}
                   priority={cardIndex < 4}
                   className={cn(isSelected && 'is-active', !isSelected && isHovered && 'is-hot')}
                   onOpenTour={
@@ -1315,8 +1432,28 @@ export default function MapSearchView({
               }}
             >
               <span className="map-search-sheet__handle" aria-hidden />
+              {/* SITE-44: the peek is the only line a phone reader gets before
+                  they open the sheet, and it used to be a bare inventory count.
+                  It now also carries the claim the desktop header makes about
+                  the frame in front of them.
+                  §0 — the two halves are DIFFERENT POPULATIONS and each says so.
+                  The first is the filter match across the whole search
+                  ("1,236+ homes for sale"); the second is what this frame draws
+                  and what those cost ("500 on this map, $57K to $5.0M"). A
+                  round-two evaluator read an earlier version of this line, where
+                  only the second half was labelled, as the page contradicting
+                  itself between desktop and phone. Both halves are labelled now.
+                  The full trace is one tap away, inside the sheet. */}
               <span className="srch-count map-search-sheet__title" aria-live="polite">
                 <span className="srch-figure font-semibold">{sheetHomesLabel}</span>
+                {viewClaim.count > 0 && viewClaim.low != null && viewClaim.high != null && !resultsDegraded ? (
+                  <span className="map-search-sheet__range">
+                    {`· ${formatCount(viewClaim.count)} on this map, `}
+                    {viewClaim.low === viewClaim.high
+                      ? formatPriceCompact(viewClaim.low)
+                      : `${formatPriceCompact(viewClaim.low)} to ${formatPriceCompact(viewClaim.high)}`}
+                  </span>
+                ) : null}
                 {loading ? <span className="ml-1.5 text-xs text-muted-foreground">Updating…</span> : null}
               </span>
             </button>

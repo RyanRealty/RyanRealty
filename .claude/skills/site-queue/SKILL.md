@@ -1,6 +1,6 @@
 ---
 name: site-queue
-description: Run the site queue until it is empty. Pull every eligible SITE node from the work graph, build them in parallel lanes across their page classes, a separate evaluator whose score must rise, the gates, one push and one deploy verify per round, a live check, evidence on each node, then the next round without stopping. Use when Matt says "run loop", "run the loop", "/site-queue", "go", "run the site queue", "keep going until the site is done", or when a /loop firing carries this protocol. While any SITE-* node is open this skill owns "run loop"; the growth loop resumes it when the site queue is empty.
+description: Run the site queue until it is empty. Pull every eligible SITE node from the work graph, build them in parallel lanes across their page classes, a separate evaluator whose score must rise, the gates, one push and one deploy verify per round, a live check, evidence on each node, then the next round without stopping. Use when Matt says "run loop", "run the loop", "/site-queue", "go", "run the site queue", "keep going until the site is done", or when a /loop firing carries this protocol. "run loop" always means this skill (Matt 2026-09-09); when the queue runs dry it runs the measurer (/growth-loop's ingest half) and seeds the next round from the bottom of the table, and stops only when every public page class clears the finish line.
 ---
 
 # /site-queue — the site is done when this queue is empty
@@ -314,7 +314,12 @@ skill has.
 
 ## When it stops, and only then
 
-1. **The queue is empty AND the site clears the finish line.** No open SITE node is
+1. **The queue is empty AND the site clears the finish line.** If the queue is empty and
+   any class is still under 70, do not stop: run the measurer, which is `/growth-loop`'s
+   ingest half (`node scripts/_gsc-by-class.mjs`, the taste table, windows coming due),
+   seed round N+1 from the bottom of the table by primitive through
+   `scripts/seed-site-queue.ts`, and continue. The growth loop never ships the public site
+   itself; this skill never audits it. One path measures, one path builds (Matt 2026-09-09). No open SITE node is
    eligible: every node is done, blocked on a dated measurement window, or blocked on a
    decision only Matt can make with the question written in `blocked_reason`. And every
    public page class scores **70 or above on the table instrument** (Matt 2026-09-09;

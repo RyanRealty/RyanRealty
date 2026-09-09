@@ -14,6 +14,8 @@
  * change it ONCE in this file and it applies everywhere.
  */
 
+import { getV3MapOptions, V3_BASEMAP_STYLE } from '@/lib/maps/v3-basemap'
+
 // Brand tokens (hex required for Google Maps SVG/InfoWindow isolation).
 /** Excluded-shape tint for map draw tools (destructive red at map-overlay opacity). */
 export const MAP_EXCLUDE_RED = '#dc2626'
@@ -71,106 +73,45 @@ export function getBaseMapOptions(): google.maps.MapOptions {
 }
 
 /**
- * Explore / place-page map options (city, community, subdivision, neighborhood).
- * Same editorial basemap as search (cream/muted). Uses Cloud Map ID when set;
- * otherwise MAP_SEARCH_STYLES. Cooperative gestures so page scroll still works.
+ * Explore / place-page map options (city, community, subdivision, neighborhood,
+ * ZIP, and every V3Field mapSlot).
+ *
+ * SITE-44, 2026-09-09: this function used to re-enable Google's own map-type
+ * DROPDOWN at TOP_RIGHT and inherit Google's +/- zoom stack from
+ * getBaseMapOptions, on top of a basemap that fell back to the Cloud Map ID.
+ * That is exactly the "Google default map" the taste table named on /zip. Both
+ * controls are gone and the cartography is now the one style array in
+ * lib/maps/v3-basemap.ts. Cooperative gestures so page scroll still works.
  */
 export function getExploreMapOptions(optsExtra?: {
-  /** Prefer Cloud Map ID when set. Pass false to force raster styles (safer on single-pin maps). */
+  /**
+   * Retained for call-site compatibility and now inert: there is no Cloud Map
+   * ID path on a public map any more (see lib/maps/v3-basemap.ts). Every caller
+   * gets the readable style array.
+   */
   preferMapId?: boolean
 }): google.maps.MapOptions {
-  const base = getBaseMapOptions()
-  const preferMapId = optsExtra?.preferMapId !== false
-  const mapId =
-    preferMapId && typeof process !== 'undefined'
-      ? (process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || '').trim()
-      : ''
-  const opts: google.maps.MapOptions = {
-    ...base,
-    gestureHandling: 'cooperative',
-    fullscreenControl: false,
-    mapTypeControl: false,
-    streetViewControl: false,
-    backgroundColor: '#faf8f4',
-    minZoom: 7,
-    maxZoom: 18,
-  }
-  // Always attach editorial styles. When mapId is valid, Cloud style wins and
-  // styles are ignored; if mapId misconfigured, styles still paint tiles.
-  opts.styles = MAP_SEARCH_STYLES
-  if (mapId) {
-    opts.mapId = mapId
-  }
-  if (typeof google !== 'undefined' && google.maps?.ControlPosition && google.maps?.MapTypeId) {
-    opts.mapTypeControl = true
-    opts.mapTypeControlOptions = {
-      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
-      position: google.maps.ControlPosition.TOP_RIGHT,
-      mapTypeIds: [google.maps.MapTypeId.ROADMAP, google.maps.MapTypeId.SATELLITE],
-    }
-  }
-  return opts
+  void optsExtra
+  return getV3MapOptions({ gestureHandling: 'cooperative' })
 }
 
 /**
- * Search-map options — greedy gestures, editorial basemap (or Cloud Map ID).
+ * Search-map options — greedy gestures, the V3 navy-on-cream basemap.
  * Google tiles stay. Google Draw / Map dropdown / zoom / Roboto chrome is off.
  * MapChrome (Map/Satellite + zoom) owns top-right; Draw owns top-left.
  */
 export function getSearchMapOptions(): google.maps.MapOptions {
-  const mapId =
-    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID) || ''
-  const opts: google.maps.MapOptions = {
-    gestureHandling: 'greedy',
-    disableDefaultUI: true,
-    fullscreenControl: false,
-    mapTypeControl: false,
-    streetViewControl: false,
-    zoomControl: false,
-    rotateControl: false,
-    scaleControl: false,
-    cameraControl: false,
-    keyboardShortcuts: false,
-    clickableIcons: false,
-    backgroundColor: '#faf8f4',
-    minZoom: 7,
-    maxZoom: 18,
-    styles: mapId ? undefined : MAP_SEARCH_STYLES,
-  }
-  if (mapId) opts.mapId = mapId
-  return opts
+  return getV3MapOptions({ gestureHandling: 'greedy' })
 }
 
 /**
- * Editorial search basemap (raster path when no Cloud Map ID).
- * Goal: cream/sand water, muted roads, quiet labels — price pins are the only
- * loud layer. When NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID is set, Cloud console styles
- * own the basemap instead (see docs/MAPS_CLOUD_STYLE.md); these JSON styles are
- * stripped next to mapId (Google ignores them).
+ * The editorial search basemap. One name, one array, and it is the V3 one:
+ * every public map — search, place Field, listing locator, homepage explore —
+ * paints the same navy-on-cream cartography as V3Atlas. Kept as an alias so the
+ * older call sites and their tests keep resolving; new code should import
+ * V3_BASEMAP_STYLE directly.
  */
-export const MAP_SEARCH_STYLES: google.maps.MapTypeStyle[] = [
-  { elementType: 'geometry', stylers: [{ color: '#f3f0e8' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#102742' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#faf8f4' }] },
-  { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#c9c2b4' }] },
-  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
-  { featureType: 'administrative.neighborhood', elementType: 'labels.text.fill', stylers: [{ color: '#5a6a7a' }] },
-  { featureType: 'landscape.natural', elementType: 'geometry', stylers: [{ color: '#e8e4d8' }] },
-  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#e0dccf' }] },
-  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#d4e0c8' }] },
-  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#4a5d3a' }] },
-  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi.attraction', stylers: [{ visibility: 'off' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#d9d3c6' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#6b7280' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#f0ebe0' }] },
-  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#cfc6b4' }] },
-  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c5d8e0' }] },
-  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#5a7a8a' }] },
-]
+export const MAP_SEARCH_STYLES: google.maps.MapTypeStyle[] = V3_BASEMAP_STYLE
 
 /**
  * POI-suppressed map style used when embedding a boundary/neighborhood map.

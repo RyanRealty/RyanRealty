@@ -21,7 +21,7 @@
  */
 
 import { type InboundPacketFacts, type InboundValuationCopy } from '@/lib/cma/inbound-packet'
-import { primaryCmaPlaceLink } from '@/lib/cma/cma-place-links'
+import type { FirstContactPlace } from '@/lib/cma/first-contact-place'
 import { isAskedOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { formatFirstTouchUsd } from '@/lib/crm/first-touch-copy'
 
@@ -63,6 +63,12 @@ export type CmaFirstContactFacts = InboundPacketFacts & {
   /** Priced closed sales in the document (`cmas.comps_count`). */
   closedSalesCount?: number | null
   salesScope?: CmaSalesScope | null
+  /**
+   * Resolved by `resolveFirstContactPlace` before composing: the subdivision page
+   * only when the plat renders, with the counts that page prints, and the wider
+   * place (neighborhood or city). Null or missing → no place links at all.
+   */
+  place?: FirstContactPlace | null
 }
 
 /** The one close every origin shares. The send rail appends the report URL to it. */
@@ -156,7 +162,7 @@ export function composeFirstContactNumbers(origin: CmaOrigin, facts: CmaFirstCon
 
 /** Matt's pricing philosophy, in his words, on every lane and in every letter we send. */
 export const CMA_PRICING_PHILOSOPHY =
-  'One of the most important things in today\'s market is nailing the price. Price too high and the home sits, and the longer it sits the harder it is to negotiate. There is no such thing as pricing too low. You want it priced just right so it draws enough activity to bring, hopefully, multiple offers. It is a fine line, and it takes real expertise on what is going on in the market. We feel we have the most knowledgeable brokers in Central Oregon when it comes to market performance, and that is what went into the analysis attached.'
+  "In today's market, the price is everything. Priced too high, a home sits, and every week it sits weakens your position when an offer finally comes. Priced right, it draws real activity and often more than one offer, so pricing low is rarely the danger people think it is. That line is a fine one, and finding it takes brokers who know exactly what is happening around your home. We believe we are the most knowledgeable brokers in Central Oregon when it comes to market performance, and that is what went into this analysis."
 
 function reportParagraph(origin: CmaOrigin): string {
   const rivals =
@@ -187,22 +193,51 @@ function honestNote(origin: CmaOrigin): string | null {
   return 'The range is what the sales support, not a promise. The right list price also depends on the condition of the home, and we would want to walk it before putting a number in front of a buyer.'
 }
 
-function areaLine(facts: CmaFirstContactFacts): string | null {
-  const city = trim(facts.city)
-  const nName = trim(facts.neighborhoodName)
-  const nSlug = trim(facts.neighborhoodSlug)
-  const citySlug = city ? city.toLowerCase().replace(/[^a-z0-9]+/g, '-') : null
-  const nKey = nSlug ? nSlug.toLowerCase().replace(/[^a-z0-9]+/g, '-') : null
-  const inNabe = Boolean(city && nName && nKey && nKey !== citySlug)
-  const place = primaryCmaPlaceLink({
-    city,
-    subdivisionName: facts.subdivision,
-    neighborhoodName: inNabe ? nName : null,
-    neighborhoodSlug: inNabe ? nSlug : null,
-    inMappedNeighborhood: inNabe,
-  })
+/**
+ * The subdivision, then the wider place. Matt 2026-09-09: show we are true market
+ * experts by diving into the subdivision they are in, not just the neighborhood,
+ * then the broader picture it sits in. Every count is the one the subdivision page
+ * prints, and a subdivision link appears only when that page renders.
+ */
+function placeParagraph(facts: CmaFirstContactFacts): string | null {
+  const place = facts.place ?? null
   if (!place) return null
-  return `Our page on ${place.label} is at ${publicHref(place.href)}.`
+  const sub = place.subdivision
+  const wider = place.wider
+  const parts: string[] = []
+  if (sub) {
+    const counts: string[] = []
+    // The instrument's twelve-month figures when the page publishes them; else
+    // the "Closed sales in {name}" figures, this year to date and since the
+    // first recorded year. Both are the page's own words for the same plat.
+    if (sub.closed12mo != null && sub.closed12mo > 0) {
+      counts.push(`${countWord(sub.closed12mo)} ${sub.closed12mo === 1 ? 'home' : 'homes'} sold in the last twelve months`)
+    } else if (sub.history && sub.history.closedThisYear != null && sub.history.closedThisYear > 0) {
+      counts.push(
+        `${countWord(sub.history.closedThisYear)} ${sub.history.closedThisYear === 1 ? 'home has' : 'homes have'} sold so far in ${sub.history.thisYear}`,
+      )
+    }
+    if (sub.history && sub.history.closedSince > 0 && (counts.length === 0 || sub.history.closedSince > (sub.history.closedThisYear ?? 0))) {
+      counts.push(`${sub.history.closedSince.toLocaleString('en-US')} have closed there since ${sub.history.sinceYear}`)
+    }
+    if (sub.active != null && sub.active > 0) {
+      counts.push(`${countWord(sub.active)} ${sub.active === 1 ? 'is' : 'are'} for sale right now`)
+    }
+    if (sub.pending != null && sub.pending > 0) {
+      counts.push(`${countWord(sub.pending)} ${sub.pending === 1 ? 'is' : 'are'} under contract`)
+    }
+    if (counts.length) {
+      const joined = counts.length === 1 ? counts[0]! : `${counts.slice(0, -1).join(', ')}, and ${counts[counts.length - 1]!}`
+      parts.push(`In ${sub.label} itself, ${joined}.`)
+      parts.push(`Our ${sub.label} page keeps the running picture, what is for sale there and what has sold: ${sub.href}.`)
+    } else {
+      parts.push(`Our ${sub.label} page is at ${sub.href}.`)
+    }
+    if (wider) parts.push(`The ${wider.label} page shows the wider market it sits in: ${wider.href}.`)
+    return parts.join(' ')
+  }
+  if (wider) return `Our page on ${wider.label} is at ${wider.href}.`
+  return null
 }
 
 function closingFor(origin: CmaOrigin, facts: CmaFirstContactFacts): string {
@@ -243,7 +278,7 @@ export function composeCmaFirstContact(
     reportParagraph(origin),
     honestNote(origin),
     askFor(origin, facts),
-    areaLine(facts),
+    placeParagraph(facts),
     closingFor(origin, facts),
   ]
     .filter((p): p is string => Boolean(p && p.trim()))
@@ -311,7 +346,13 @@ export function salesScopeFromTierCounts(counts: unknown): CmaSalesScope | null 
 /** Pull letter merge fields off a cmas row without inventing a place. */
 export function cmaFirstContactFactsFromRow(
   row: Record<string, unknown>,
-  extra?: { brokerName?: string | null; brokerPhone?: string | null; firstName?: string | null; lastListPrice?: number | null },
+  extra?: {
+    brokerName?: string | null
+    brokerPhone?: string | null
+    firstName?: string | null
+    lastListPrice?: number | null
+    place?: FirstContactPlace | null
+  },
 ): CmaFirstContactFacts {
   const args = asRecord(row.render_args)
   const subject = asRecord(args?.subject)
@@ -334,5 +375,6 @@ export function cmaFirstContactFactsFromRow(
     neighborhoodSlug: strField(market?.geoSlug),
     closedSalesCount: countField(row.comps_count),
     salesScope: salesScopeFromTierCounts(selection?.final_tier_counts),
+    place: extra?.place ?? null,
   }
 }

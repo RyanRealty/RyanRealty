@@ -210,6 +210,14 @@ type FilterDropdownProps = {
   onOpenChange: (open: boolean) => void
   children: React.ReactNode
   align?: 'start' | 'end'
+  /**
+   * SITE-44: the row had no hierarchy — Price weighed exactly what "Save this
+   * search" weighed, so the eye had nowhere to land. The two controls a buyer
+   * actually reaches for (Price, Beds/Baths) are `key`; everything else stays
+   * at the row's base medium. The weight itself is one rule in
+   * search-ledger.css so the ladder is a token, not a per-call-site class.
+   */
+  weight?: 'base' | 'key'
 }
 
 function FilterDropdown({
@@ -219,6 +227,7 @@ function FilterDropdown({
   onOpenChange,
   children,
   align = 'start',
+  weight = 'base',
 }: FilterDropdownProps) {
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -230,6 +239,7 @@ function FilterDropdown({
           aria-haspopup="dialog"
           className={cn(
             'srch-chip shrink-0 gap-1 whitespace-nowrap px-3',
+            weight === 'key' && 'srch-chip--key',
             open && !active && 'ring-2 ring-primary/30',
           )}
         >
@@ -968,6 +978,7 @@ export default function SearchFilters({
           active={!!activePriceLabel}
           open={openPanel === 'price'}
           onOpenChange={panelOpenHandler('price')}
+          weight="key"
         >
           <div className="p-3">
             <p className="srch-label mb-2.5">Price range</p>
@@ -1050,6 +1061,7 @@ export default function SearchFilters({
           active={!!activeBedsLabel}
           open={openPanel === 'beds'}
           onOpenChange={panelOpenHandler('beds')}
+          weight="key"
         >
           <div className="space-y-3 p-3">
             <div>
@@ -1093,6 +1105,7 @@ export default function SearchFilters({
           active={!!activeBathsLabel}
           open={openPanel === 'baths'}
           onOpenChange={panelOpenHandler('baths')}
+          weight="key"
         >
           <div className="space-y-3 p-3">
             <div>
@@ -1155,25 +1168,31 @@ export default function SearchFilters({
         </FilterDropdown>
         </div>
 
-        {/* All filters — always present. Chip set scrolls on 390. */}
-        <Button
-          type="button"
-          variant={moreFilterCount > 0 ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => {
-            setMoreSheetMounted(true)
-            setMoreSheetOpen(true)
-          }}
-          className="srch-chip shrink-0 gap-1 px-3"
-          aria-label={moreFilterCount > 0 ? `Open all filters, ${moreFilterCount} active` : 'Open all filters'}
-        >
-          <HugeiconsIcon icon={FilterIcon} className="size-3.5" aria-hidden />
-          <span className="sm:hidden">{moreFilterCount > 0 ? moreFilterCount : 'Filters'}</span>
-          <span className="hidden sm:inline">
-            {moreFilterCount > 0 ? `All filters (${moreFilterCount})` : 'All filters'}
-          </span>
-        </Button>
-        <SaveSearchButton user={viewerState.signedIn} />
+        {/* All filters — always present. Chip set scrolls on 390.
+            SITE-44: the two ACTIONS sit behind a hairline. Eight identical
+            pills end to end read as a control strip with no beginning and no
+            end; the rule says where describing the search stops and doing
+            something with it starts. */}
+        <span className="srch-chip-actions flex shrink-0 items-center gap-2">
+          <Button
+            type="button"
+            variant={moreFilterCount > 0 ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setMoreSheetMounted(true)
+              setMoreSheetOpen(true)
+            }}
+            className="srch-chip shrink-0 gap-1 px-3"
+            aria-label={moreFilterCount > 0 ? `Open all filters, ${moreFilterCount} active` : 'Open all filters'}
+          >
+            <HugeiconsIcon icon={FilterIcon} className="size-3.5" aria-hidden />
+            <span className="sm:hidden">{moreFilterCount > 0 ? moreFilterCount : 'Filters'}</span>
+            <span className="hidden sm:inline">
+              {moreFilterCount > 0 ? `All filters (${moreFilterCount})` : 'All filters'}
+            </span>
+          </Button>
+          <SaveSearchButton user={viewerState.signedIn} />
+        </span>
         {hideViewToggle ? null : (
         <div className="map-search-mapsort__pill ml-auto shrink-0" role="group" aria-label="Map and sort">
           <div className="map-search-views map-search-mapsort__views" role="radiogroup" aria-label="View">

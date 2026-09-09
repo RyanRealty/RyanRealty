@@ -58,7 +58,7 @@ describe('fsbo_cma_first_touch_v1', () => {
  expect(body).toContain('your home at 123 NW Cascade Ave is for sale by owner')
  expect(body).toContain('no charge and no strings')
  expect(body).toContain('Closed sales nearby support $625,000 to $655,000. We would recommend listing at $649,000.')
- expect(body).toContain('nailing the price')
+ expect(body).toContain('the price is everything')
  expect(body).toContain('earn your business')
  expect(body).toContain('https://ryan-realty.com/reviews')
  expect(body).toContain('book a time here: https://ryan-realty.com/book/matt')

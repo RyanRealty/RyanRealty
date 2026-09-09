@@ -1,0 +1,58 @@
+---
+description: "run loop" means the site queue — the claim tool, the caps, the evaluator, the finish line. Applies to every agent in this repo, Cursor or Grok included.
+alwaysApply: true
+---
+
+# "run loop" = the site queue
+
+When Matt says **run loop**, **run the loop**, **go**, or **keep going until the site is
+done**, he means the site queue. Not the growth loop, not an audit, not a plan
+(Matt 2026-09-09: "run loop" never flips to another skill).
+
+**Read first:** `.cursor/skills/site-queue/SKILL.md` — the pointer skill for a non-Claude
+builder, which names the canonical protocol (`.claude/skills/site-queue/SKILL.md`) and the
+four mission documents. Then work. Do not re-audit the site; the backlog already exists.
+
+## The three commands
+
+```bash
+npx tsx scripts/site-queue-status.ts --json                                    # what to take, in serve order
+npx tsx scripts/site-queue-status.ts --claim SITE-XX,SITE-YY --owner <owner>   # the ONLY claim path
+npx tsx scripts/site-queue-status.ts --touch SITE-XX,SITE-YY --owner <owner>   # hourly, while you hold
+```
+
+`--json` carries `liveWorkers`, `maxWorkers` and `staleClaims`. **If `liveWorkers` is at or
+above `maxWorkers` (3), stop and say so** — every worker spends one shared account
+allowance, and four at once exhausted it and killed all of them on 2026-09-08. Otherwise
+claim the first two eligible items in the JSON's order on disjoint file sets. A non-zero
+exit means you got nothing: read the message, do not hand-write a claim. Claude sessions
+and Grok sessions coexist by this tool alone; never coordinate by hand.
+
+Owner name: `grok-<model>-<YYYY-MM-DD>`, or `cursor-<model>-<date>`. A claim whose
+heartbeat is older than three hours is released to the next worker, so heartbeat hourly or
+lose the node.
+
+## The bar
+
+Every SITE node's accept test ends the same way: a **separate evaluator** — a different
+model from the builder — scores the page class from shots at 1440 and 375
+(`scripts/take-route-shots.mjs`), three scorings in one call, median, and the score must
+rise. Receipt in the route's `parity.json` per `design_system/public/TASTE.md`, shape
+checked by `scripts/lib/taste-receipt.mjs`. The instrument is `claude-sonnet-5` on rubric
+`v1-2026-09-08`; call the Claude API with `ANTHROPIC_API_KEY` from `.env.local` so marks
+stay comparable to `design_system/public/taste-table.json`. **Finish line: every public
+page class at 70 or above on that table** (Matt 2026-09-09).
+
+Then the gates (`npm run ci:gates`), the `Node: <id>` trailer on every commit touching
+`app/**` or `components/site/**` (G72), ONE `npm run push` per round from the main
+checkout, `deploy:verify`, a live check on ryan-realty.com, and the evidence written on
+the node — done, or blocked with `blocked_until` so it reopens itself, or blocked on Matt
+with the question in ONE line in `blocked_reason`.
+
+## Never
+
+- Never wait on Matt mid-round: take the safe path the skill allows, write what you chose
+  on the node, keep going.
+- Never mark a node done from a self-report; evidence is what the environment showed.
+- Never leave finished work on a branch — merge and push, or write it into
+  `docs/plans/CROSS_AGENT_HANDOFF.md` before you stop.
