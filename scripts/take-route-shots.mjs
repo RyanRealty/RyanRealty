@@ -118,6 +118,13 @@
  *     was correct. The scroll now reserves the target's own
  *     `scroll-margin-top`, or the pinned chrome's height plus 24 when it
  *     declares none.
+ * 12. Streamed sections. A place page streams: at domcontentloaded the
+ *     document holds one section and the rest land over the next two seconds
+ *     as their reads resolve. A `--states` selector for a late section came
+ *     back "not found" while the same URL curled with it every time
+ *     (2026-09-09, #subdivisions on /cities/bend/mountain-view). The stream
+ *     closing is the document's `load` event, so `loadPage` waits for it,
+ *     bounded at 30s, before anything is measured.
  *
  * RUNNING A SERVER FOR IT. In a git worktree use `npx next dev --webpack`:
  * Turbopack refuses the symlinked `node_modules` a worktree gets. Any port is
@@ -616,6 +623,16 @@ async function degradedRead(page) {
 async function loadPage(page, url, { attempt = 1 } = {}) {
   // Trap 6 — domcontentloaded plus an explicit settle, never networkidle.
   const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 })
+  // Trap 12 — streamed sections. App Router streams a place page: at
+  // domcontentloaded the document holds ONE section, and the other seventeen
+  // land over the next two seconds as their reads resolve. Fonts, images and
+  // the scroll walk are not that signal (a shell with no images is "90%
+  // decoded" at once), so a `--states` selector for a late section came back
+  // "not found" while the same URL curled with it every time (2026-09-09,
+  // #subdivisions on /cities/bend/mountain-view). The stream closing IS the
+  // `load` event; wait for it, bounded, and fall through if a socket the page
+  // keeps warm holds it open.
+  await page.waitForLoadState('load', { timeout: 30000 }).catch(() => {})
   await waitFonts(page)
   await page.waitForTimeout(1200)
   await dismissOverlays(page)
@@ -794,7 +811,13 @@ async function main() {
 
         if (target == null) {
           if (!state.selectorImplied) {
-            console.error(`  ${viewport.key}: state "${state.name}" — selector ${frameSel} not found`)
+            // Say what IS there: a "not found" with no context cost an hour on
+            // 2026-09-09 (#subdivisions rendered for curl and for a bare
+            // Playwright context, and this tool alone could not see it).
+            const present = await page
+              .evaluate(() => [...document.querySelectorAll('[id]')].map((e) => e.id).filter((id) => /^[a-z][a-z0-9-]*$/.test(id)).slice(0, 40).join(', '))
+              .catch(() => '')
+            console.error(`  ${viewport.key}: state "${state.name}" — selector ${frameSel} not found (ids present: ${present || 'none'})`)
             failed = true
             continue
           }

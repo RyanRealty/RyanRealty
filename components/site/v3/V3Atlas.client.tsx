@@ -68,7 +68,7 @@ import {
   type AtlasCam,
   type AtlasViewBounds,
 } from '@/lib/geo/atlas-camera'
-import { shortPlaceLabel } from '@/lib/place/short-place-label'
+import { placeDoorLabels, shortPlaceLabel } from '@/lib/place/short-place-label'
 
 export type { AtlasViewBounds }
 import {
@@ -82,6 +82,20 @@ import { atlasLabelBox, packAtlasLabels, type AtlasLabelCandidate } from '@/lib/
 import { V3_ROOT_CLASS, type V3Text } from './atoms'
 import './tokens.css'
 import './V3Atlas.css'
+
+/**
+ * How many chips show before the set folds behind one "+ N more" chip
+ * (SITE-07 quality pass, 2026-09-09). Eight on a phone is two to three
+ * wrapped rows at 375: enough to read as the place's children under the map,
+ * short of the wall that eighty plats make. From 48rem the column holds
+ * twenty-four before the same chip folds the rest — the first record at 1440
+ * showed seventeen rows of chips beside empty cream (canon lens). The width
+ * that applies is decided in V3Atlas.css, never by a media query read in
+ * render, so the server and the client agree: both rests and both labels
+ * are in the markup and the stylesheet shows one of each.
+ */
+const CHIP_FOLD_AT = 8
+const CHIP_FOLD_AT_WIDE = 24
 
 /* -------------------------------------------------------------------------- */
 /* Data                                                                        */
@@ -420,6 +434,34 @@ export function V3Atlas({
      LISTING-NOBOUNDARY-9). */
   const fitsPhone = proj.width / proj.height >= 1
 
+  /* The page's own place: the one town whose silhouette IS the frame (a
+     scoped place page). Its name opens most of its children's plat names and
+     the door labels drop it, because a neighborhood's plats read as its own
+     children: on Awbrey Butte's page "Awbrey Butte Homesites Phase Twenty-two"
+     is the door "Homesites Phase Twenty-two". The homepage frames several
+     towns and none fills it, so nothing is stripped there (SITE-07 quality
+     pass, 2026-09-09). */
+  const ownPlaceName = useMemo(() => {
+    const framed = towns.filter(isFrame)
+    return framed.length === 1 ? framed[0]!.name : null
+  }, [towns, isFrame])
+  /* One label per place, computed over the WHOLE set so a chip, its map label,
+     its card and its polygon's accessible name all agree (the tap-target gate
+     pairs polygon to chip by that name), and so siblings that differ only by
+     phase keep the phase instead of collapsing to one identical string
+     (lib/place/short-place-label, placeDoorLabels). */
+  const doorLabels = useMemo(() => {
+    const labels = placeDoorLabels(
+      places.map((s) => s.name),
+      ownPlaceName,
+    )
+    return new Map(places.map((s, i) => [s.id, labels[i] ?? s.name]))
+  }, [places, ownPlaceName])
+  const doorLabel = useCallback(
+    (s: RegionShape) => doorLabels.get(s.id) ?? shortPlaceLabel(s.name),
+    [doorLabels],
+  )
+
   const xy = useMemo(() => dots.map((d) => proj.toXY(d.lng, d.lat)), [dots, proj])
 
   const membership = useMemo(
@@ -521,6 +563,9 @@ export function V3Atlas({
   const setMaxPrice = (v: number) => setMaxPriceRaw(v >= priceScale.max ? null : v)
   const [offTypes, setOffTypes] = useState<ReadonlySet<string>>(() => new Set())
   const [hover, setHover] = useState<string | null>(null)
+  /* The phone fold on the chips: closed on arrival, so a page with eighty
+     plats opens on its first eight and one honest count of the rest. */
+  const [chipsOpen, setChipsOpen] = useState(false)
   const [pinned, setPinned] = useState<{ id: string; at: readonly [number, number] } | null>(null)
   const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null)
   const cardRef = useRef<HTMLDivElement>(null)
@@ -843,6 +888,27 @@ export function V3Atlas({
             .slice(0, Math.max(24, drawnPlaces.length)),
     [places, regionStats, incomplete, closingsMap, drawnPlaces.length],
   )
+  /* One chip. Rendered twice over (the first eight, then the folded rest), so
+     the two halves cannot drift apart. */
+  const chipButton = (r: (typeof chipPlaces)[number]) => (
+    <button
+      key={r.shape.id}
+      type="button"
+      className={cn('v3-atlas__chip', active === r.shape.id && 'is-active')}
+      aria-pressed={active === r.shape.id}
+      onPointerEnter={() => {
+        setDotHit(null)
+        setHover(r.shape.id)
+      }}
+      onPointerLeave={() => {
+        if (!pinned) setHover(null)
+      }}
+      onClick={() => openPlace(r.shape)}
+    >
+      <span className="v3-atlas__chip-name">{doorLabel(r.shape)}</span>
+      {r.n > 0 ? <span className="v3-atlas__chip-n">{r.n.toLocaleString('en-US')}</span> : null}
+    </button>
+  )
 
   /* Escape, a click on empty map, or a click outside the stage release a
      pinned card. */
@@ -928,7 +994,7 @@ export function V3Atlas({
         const [x0, y0] = screenOf(s.bbox.minLon, s.bbox.maxLat)
         const [x1, y1] = screenOf(s.bbox.maxLon, s.bbox.minLat)
         if (Math.min(Math.abs(x1 - x0), Math.abs(y1 - y0)) < 32) continue
-        const text = shortPlaceLabel(s.name)
+        const text = doorLabel(s)
         const [x, y] = screenOf(s.anchor[0], s.anchor[1])
         const n = regionStats.get(s.id)?.n ?? 0
         candidates.push({
@@ -943,7 +1009,7 @@ export function V3Atlas({
       }
     }
     if (activeShape?.anchor && !isFrame(activeShape)) {
-      const text = shortPlaceLabel(activeShape.name)
+      const text = doorLabel(activeShape)
       const [x, y] = screenOf(activeShape.anchor[0], activeShape.anchor[1])
       candidates.push({
         id: `on-${activeShape.id}`,
@@ -956,7 +1022,7 @@ export function V3Atlas({
       })
     }
     return packAtlasLabels(candidates, view)
-  }, [view, highlight, dots, towns, places, active, activeShape, cam.k, screenOf, isFrame, regionStats])
+  }, [view, highlight, dots, towns, places, active, activeShape, cam.k, screenOf, isFrame, regionStats, doorLabel])
 
   const activeHomes = useMemo(() => {
     if (!active || incomplete) return []
@@ -1044,7 +1110,7 @@ export function V3Atlas({
           ×
         </button>
         <p className="v3-atlas__card-kind">{activeShape.kindLabel ?? KIND_LABEL[activeShape.kind]}</p>
-        <p className="v3-atlas__card-name">{shortPlaceLabel(activeShape.name)}</p>
+        <p className="v3-atlas__card-name">{doorLabel(activeShape)}</p>
         {incomplete ? (
           <p className="v3-atlas__card-label">Counts unavailable right now</p>
         ) : (
@@ -1432,7 +1498,9 @@ export function V3Atlas({
                          box (evaluator round five, HOMEPAGE-1). */
                       tabIndex={i === roving ? 0 : -1}
                       role="button"
-                      aria-label={s.name}
+                      /* The door label, not the county line: the same name
+                         the chip carries, so the two pair as one control. */
+                      aria-label={doorLabel(s)}
                       onFocus={() => {
                         setHover(s.id)
                         setRoving(i)
@@ -1591,26 +1659,57 @@ export function V3Atlas({
               (evaluator round five, TEAM-MATT-5). It sits AFTER the search so
               it fills the column rather than pushing the search off screen. */}
           {chipPlaces.length > 0 ? (
+            /* Wrapped at every width; a set past the fold shows its first
+               chips and one trailing "+ N more" chip that opens the rest
+               (aria-expanded, aria-controls). The rest is two wrappers so the
+               stylesheet can fold at eight on a phone and at twenty-four from
+               48rem with one control; the chip carries both counts and shows
+               the one its width means. Every chip reads the door label, so
+               siblings that differ only by phase stay distinct and no chip is
+               ever clipped at the viewport edge (SITE-07, 2026-09-09). */
             <div className="v3-atlas__chips" role="group" aria-label="Places on this map">
-              {chipPlaces.map((r) => (
-                <button
-                  key={r.shape.id}
-                  type="button"
-                  className={cn('v3-atlas__chip', active === r.shape.id && 'is-active')}
-                  aria-pressed={active === r.shape.id}
-                  onPointerEnter={() => {
-                    setDotHit(null)
-                    setHover(r.shape.id)
-                  }}
-                  onPointerLeave={() => {
-                    if (!pinned) setHover(null)
-                  }}
-                  onClick={() => openPlace(r.shape)}
-                >
-                  <span className="v3-atlas__chip-name">{shortPlaceLabel(r.shape.name)}</span>
-                  {r.n > 0 ? <span className="v3-atlas__chip-n">{r.n.toLocaleString('en-US')}</span> : null}
-                </button>
-              ))}
+              {chipPlaces.slice(0, CHIP_FOLD_AT).map(chipButton)}
+              {chipPlaces.length > CHIP_FOLD_AT ? (
+                <>
+                  <div
+                    id={`${uid}-chips-rest`}
+                    className={cn('v3-atlas__chips-rest', !chipsOpen && 'is-folded')}
+                  >
+                    {chipPlaces.slice(CHIP_FOLD_AT, CHIP_FOLD_AT_WIDE).map(chipButton)}
+                  </div>
+                  {chipPlaces.length > CHIP_FOLD_AT_WIDE ? (
+                    <div
+                      id={`${uid}-chips-rest-wide`}
+                      className={cn('v3-atlas__chips-rest-wide', !chipsOpen && 'is-folded')}
+                    >
+                      {chipPlaces.slice(CHIP_FOLD_AT_WIDE).map(chipButton)}
+                    </div>
+                  ) : null}
+                  <button
+                    type="button"
+                    className={cn(
+                      'v3-atlas__chip v3-atlas__chip--more',
+                      chipPlaces.length <= CHIP_FOLD_AT_WIDE && 'v3-atlas__chip--more-narrow-only',
+                    )}
+                    aria-expanded={chipsOpen}
+                    aria-controls={
+                      chipPlaces.length > CHIP_FOLD_AT_WIDE
+                        ? `${uid}-chips-rest ${uid}-chips-rest-wide`
+                        : `${uid}-chips-rest`
+                    }
+                    onClick={() => setChipsOpen((open) => !open)}
+                  >
+                    {/* Two labels, one shown per width (display: none keeps the
+                        hidden one out of the accessible name). */}
+                    <span className="v3-atlas__chip-name v3-atlas__chip-name--narrow">
+                      {chipsOpen ? 'Fewer' : `+ ${chipPlaces.length - CHIP_FOLD_AT} more`}
+                    </span>
+                    <span className="v3-atlas__chip-name v3-atlas__chip-name--wide">
+                      {chipsOpen ? 'Fewer' : `+ ${chipPlaces.length - CHIP_FOLD_AT_WIDE} more`}
+                    </span>
+                  </button>
+                </>
+              ) : null}
             </div>
           ) : null}
           {source ? (

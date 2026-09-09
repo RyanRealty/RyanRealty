@@ -433,9 +433,12 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
       ]
     })
     .sort((a, b) => (b.activeCount ?? 0) - (a.activeCount ?? 0) || a.name.localeCompare(b.name))
+  // Its own children: the rows drop the community's name where a plat's
+  // name opens with it (placeFigureRows, `within`).
   const [firstChildSub, ...restChildSub] = placeFigureRows(
     childSubdivisionItems,
     `${publicName} subdivision`,
+    publicName,
   )
 
   const marketHeadline = `Typical price in ${publicName}`

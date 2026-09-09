@@ -38,6 +38,7 @@ import { moneyTicks, monthTicks, yoyClaim, yoyDirection } from '@/lib/charts/tic
 import { formatPriceCompact, formatPriceExact } from '@/lib/format/money'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
+import { stripOwnPrefix } from '@/lib/place/short-place-label'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import type { KbYearSeries } from '@/lib/kb/year-series'
@@ -109,9 +110,22 @@ function media(img: string): { src: string } | undefined {
  * A place whose count is null is still listed — its node is still reachable — and
  * its value column reads as unmeasured rather than as zero.
  */
+/**
+ * @param within The containing place's name, when the items are its own
+ * children (a neighborhood's subdivisions, a community's plats, a city's
+ * neighborhoods). Each row's name drops that prefix: a neighborhood's plats
+ * read as its own children, so on Awbrey Butte's page "Awbrey Butte
+ * Homesites Phase Twenty-two" is the row "Homesites Phase Twenty-two"
+ * (lib/place/short-place-label, stripOwnPrefix). Only the prefix goes; the
+ * phase stays, because in a ledger the phase is what tells two plats apart
+ * and the label has room to wrap. The href, the count and the trace are
+ * untouched: a label is cosmetic, a count is not (section 0). Omit it for a
+ * list of peers (other cities, golf communities), which have no parent here.
+ */
 export function placeFigureRows(
   items: readonly CityPlaceItem[],
   kindLabel: string,
+  within?: string | null,
 ): V3LedgerFigureRow[] {
   /**
    * Each row's share of the busiest place in the same list, which V3Ledger
@@ -140,7 +154,7 @@ export function placeFigureRows(
         id: href,
         href,
         when: v3Text(kindLabel),
-        what: v3Text(name),
+        what: v3Text(within ? stripOwnPrefix(name, within) : name),
         ...(detail ? { detail: v3Text(detail) } : {}),
         value: v3Text(
           // A MEASURED zero prints as the absence it is, matching /cities'

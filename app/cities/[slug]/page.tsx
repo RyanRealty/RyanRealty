@@ -650,7 +650,10 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
 
   // V3Ledger's rows prop is a non-empty tuple, so each section destructures a
   // head and renders nothing when there is none.
-  const [firstNbh, ...restNbh] = placeFigureRows(bendNeighborhoodItems, `${cityName} neighborhood`)
+  // Its own children: a neighborhood named with the city in front drops it
+  // (placeFigureRows, `within`); none of Bend's thirteen is, so this is the
+  // rule, not a change.
+  const [firstNbh, ...restNbh] = placeFigureRows(bendNeighborhoodItems, `${cityName} neighborhood`, cityName)
   const [firstRail, ...restRail] = communityRows(communityItems)
   const [firstGolf, ...restGolf] = placeFigureRows(golfLedgerItems, 'Golf and master-planned')
   const [firstOther, ...restOther] = placeFigureRows(otherCityItems, 'Central Oregon city')

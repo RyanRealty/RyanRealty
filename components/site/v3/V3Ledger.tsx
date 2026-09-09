@@ -83,6 +83,15 @@ type V3LedgerRowBase = {
    * is not a when.
    */
   when?: V3Text
+  /**
+   * The calendar tile a `walk` row leads with: the day as a display numeral,
+   * the weekday over it, the month under it. THREE PREFORMATTED STRINGS, never
+   * a date: the caller splits the day with lib/format/date so the tile and
+   * the trace agree and this primitive formats nothing. Read only by
+   * `layout="walk"`; the other layouts print `when` alone. When it is
+   * present, `when` carries what is left of the moment (the hours).
+   */
+  date?: { weekday: V3Text; day: V3Text; month: V3Text }
   /** The row's name, and the loudest part of its link text. */
   what: V3Text
   /** The second line under the name: beds and baths, a subdivision, a status. */
@@ -219,9 +228,23 @@ type V3LedgerBase = {
   id?: string
   className?: string
   /**
-   * Visual rhythm only. Rows stay doors. Default `list` is the hairline
-   * column. Place extras use the others so activity, open houses, guides,
-   * and other cities are not four copies of one row.
+   * Visual rhythm only. Rows stay doors, and the list stays a `<ul>` of links.
+   * Default `list` is the hairline column. The place pages run three of the
+   * others back to back (activity, open houses, guides), and three sections
+   * that do three different jobs must look like three different things
+   * (SITE-07 quality pass, 2026-09-09: the evaluator saw "three names, one
+   * silhouette" when they differed by a thumb size and a date style):
+   *
+   *  - `pulse`    the live feed. A photo column: the newest event full-width,
+   *               then thumb + one line per row.
+   *  - `walk`     open houses as a date-led timeline. Each row leads with a
+   *               calendar tile built from `date` (weekday / day / month),
+   *               then the address and the hours; the rows hang off one left
+   *               hairline rule instead of sitting on horizontal hairlines.
+   *  - `magazine` guides as a card grid. Photo on top, label under it, detail
+   *               under that, hairline card edges; two columns from 40rem with
+   *               the first card spanning both, one column below.
+   *  - `places`   a photo grid of places, the figure under the name.
    */
   layout?: 'list' | 'pulse' | 'walk' | 'magazine' | 'places'
   /**
@@ -380,20 +403,40 @@ export function V3Ledger(props: V3LedgerProps) {
         <p className="v3-ledger__empty">{emptyMessage}</p>
       ) : (
         <ul className="v3-ledger__list">
-          {rows.map((row) => (
-            <li key={row.id ?? row.href} className="v3-ledger__item">
+          {rows.map((row) => {
+            /* A walk row carries no photo: the calendar tile is its mark, and
+               with a thumbnail beside the address the row was the pulse row
+               wearing a tile (the evaluator scored the two sections as one
+               shape twice, 2026-09-09). The caller may still pass media; it
+               is simply not drawn on this layout. */
+            const showMedia = Boolean(row.media) && layout !== 'walk'
+            return (
+              <li key={row.id ?? row.href} className="v3-ledger__item">
               <Link
                 href={row.href}
-                className={cn('v3-ledger__row', !row.when && 'v3-ledger__row--no-when')}
+                className={cn(
+                  'v3-ledger__row',
+                  !row.when && 'v3-ledger__row--no-when',
+                  layout === 'walk' && row.date && 'v3-ledger__row--tile',
+                )}
                 aria-label={row.ariaLabel}
                 target={row.newTab ? '_blank' : undefined}
                 rel={row.newTab ? 'noopener noreferrer' : undefined}
               >
+                {layout === 'walk' && row.date ? (
+                  /* The calendar tile: three already-formatted strings from
+                     the caller, read in document order as "Wed 10 Sep". */
+                  <span className="v3-ledger__tile">
+                    <span className="v3-ledger__tile-weekday">{row.date.weekday}</span>
+                    <span className="v3-ledger__tile-day">{row.date.day}</span>
+                    <span className="v3-ledger__tile-month">{row.date.month}</span>
+                  </span>
+                ) : null}
                 {row.when ? <span className="v3-ledger__when">{row.when}</span> : null}
                 <span
-                  className={cn('v3-ledger__what', row.media && 'v3-ledger__what--media')}
+                  className={cn('v3-ledger__what', showMedia && 'v3-ledger__what--media')}
                 >
-                  {row.media ? (
+                  {showMedia && row.media ? (
                     /* Plain img, not next/image: these are owned files under public/
                        and remote MLS photo URLs in the same column, and the row must
                        render identically for both without depending on image-host
@@ -439,7 +482,8 @@ export function V3Ledger(props: V3LedgerProps) {
                 ) : null}
               </Link>
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
 

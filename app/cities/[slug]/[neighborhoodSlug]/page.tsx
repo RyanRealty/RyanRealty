@@ -513,7 +513,9 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
     img: preferPlaceHero(c.heroImageUrl, communityImage(c.slug) ?? ''),
     typeBits: childTypeBits.get(slugify(c.subdivision)) ?? null,
   }))
-  const [firstSub, ...restSub] = placeFigureRows(subdivisionItems, `${neighborhood.name} subdivision`)
+  // Its own children: the rows drop the neighborhood's name where a plat's
+  // name opens with it (placeFigureRows, `within`).
+  const [firstSub, ...restSub] = placeFigureRows(subdivisionItems, `${neighborhood.name} subdivision`, neighborhood.name)
 
   // Live feed - fetched city-wide (the MLS carries no neighborhood scope), so
   // it is labeled with whichever scope the rows actually carry (§0).
