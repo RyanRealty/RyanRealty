@@ -53,9 +53,10 @@
  *  - No 'use client'. Pure server component: no state, no effects, no fetch, and
  *    no hooks, which is why the heading id derives from `id` rather than useId.
  */
+import { Fragment } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { V3Eyebrow, V3Heading, V3_ROOT_CLASS } from './atoms'
+import { V3Eyebrow, V3Heading, V3SourceDisclosure, V3_ROOT_CLASS } from './atoms'
 import './tokens.css'
 import './V3Quiet.css'
 
@@ -195,6 +196,25 @@ export type V3QuietProps = {
    */
   note?: string
   /**
+   * The §0 trace for a Quiet block whose `kind: 'fact'` rows carry AUTHORED
+   * facts — a founding year, an acreage, a course architect, a published
+   * ranking. Rendered as V3SourceDisclosure — the collapsed form the rest of
+   * the site uses when a trace names more publishers or filters than fit on one
+   * line (atoms.tsx, Matt 2026-08-19). Tetherow's record cites ten distinct
+   * publishers; as a visible paragraph that would be louder than the facts it
+   * explains, and cutting it to fit would be the wrong half to lose.
+   *
+   * WHY QUIET NEEDED ONE. Quiet's contract says it never carries a figure, and
+   * that is still true of a MARKET figure — those belong in an Instrument with
+   * its own trace. But a fact row IS a claim, and the community page's
+   * Belonging block shipped four of them unsourced ("Founded 2008", "Acres
+   * 700", "Course architect David McLay Kidd", "Ranked #57"), which two
+   * separate evaluator rounds recorded as an honesty defect. `note` was the
+   * only outlet and it renders as a caveat, not a source. Optional: a Quiet
+   * holding only doors and prose passes none and renders exactly as before.
+   */
+  source?: string
+  /**
    * The visible uppercase context line above the block. A label, never the
    * region's name.
    */
@@ -319,6 +339,7 @@ export function V3Quiet({
   headingLevel = 2,
   ariaLabel,
   note,
+  source,
   eyebrow,
   id,
   className,
@@ -326,6 +347,7 @@ export function V3Quiet({
   const rendered = toRenderable(items)
   const title = text(heading)
   const trailingNote = text(note)
+  const sourceLine = text(source)
   const contextLine = text(eyebrow)
   const name = title ?? text(ariaLabel)
 
@@ -352,6 +374,23 @@ export function V3Quiet({
   // id. Without one the region falls back to naming itself with the same text.
   const headingId = title && id ? `${id}-heading` : undefined
 
+  /**
+   * The trace goes with the FACTS, not at the bottom of the block.
+   *
+   * A Quiet block is not homogeneous: #belonging opens on four authored fact
+   * rows and then runs another two thousand pixels of chips, drive times,
+   * membership and prose. Rendering the source after the whole list put it that
+   * far from the only rows it describes, and the round-two evaluator recorded
+   * exactly that — "orphaned ~2000px below the facts it covers". So it closes
+   * the fact run instead: the last `kind: 'fact'` row, and everything after it
+   * carries on below. A block with no fact rows keeps the trace at the end,
+   * which is where a trace belongs when it describes the whole block.
+   */
+  const lastFactIndex = rendered.reduce(
+    (last, item, index) => (item.kind === 'fact' ? index : last),
+    -1,
+  )
+
   return (
     <section
       id={id}
@@ -376,7 +415,9 @@ export function V3Quiet({
 
       {rendered.length > 0 ? (
         <ul className="v3-quiet__list">
-          {rendered.map((item, index) =>
+          {rendered.map((item, index) => (
+            <Fragment key={item.id ?? `${item.kind ?? 'prose'}-${index}`}>
+              {
             item.kind === 'link' ? (
               <li
                 key={item.id ?? `link-${index}`}
@@ -477,12 +518,22 @@ export function V3Quiet({
                   </div>
                 )}
               </li>
-            ),
-          )}
+            )
+              }
+              {sourceLine && index === lastFactIndex ? (
+                <li className="v3-quiet__item v3-quiet__item--source">
+                  <V3SourceDisclosure source={sourceLine} className="v3-quiet__source" />
+                </li>
+              ) : null}
+            </Fragment>
+          ))}
         </ul>
       ) : null}
 
       {trailingNote ? <p className="v3-quiet__note">{trailingNote}</p> : null}
+      {sourceLine && lastFactIndex < 0 ? (
+        <V3SourceDisclosure source={sourceLine} className="v3-quiet__source" />
+      ) : null}
     </section>
   )
 }

@@ -95,6 +95,20 @@ export function communityMetadataInput(input: {
   name: string
   city: string
   heroImageUrl?: string | null
+  /**
+   * SITE-28. True when no real place name resolved for a compound slug, so the
+   * page renders CommunityUnavailable instead of a community. The title and
+   * description must then name NO place: the whole defect was
+   * "Oll Homes for Sale | Prineville, OR" over a body about nothing, and a
+   * refusal that keeps the old <title> has not fixed anything a crawler reads.
+   *
+   * `noindex` is deliberately NOT forced here. Every compound non-community
+   * slug is already noindex by construction below, and a refusal is only ever
+   * reachable on a compound slug, so the emitted robots value is byte-identical
+   * to what shipped before this item — which is what SITE-28's accept test
+   * requires. Forcing it would be the same value written a second way.
+   */
+  refused?: boolean
 }): Parameters<typeof pageMetadata>[0] {
   const { slug, name, city } = input
 
@@ -131,6 +145,25 @@ export function communityMetadataInput(input: {
       COMMUNITY_HERO[slug] ??
       `/api/og?type=community&name=${encodeURIComponent(name)}&city=${encodeURIComponent(city)}`,
   )
+
+  if (input.refused) {
+    return {
+      // No place name, in either field: the URL resolved to no community, and
+      // the page body says exactly that. Same shape as
+      // SUBDIVISION_UNAVAILABLE_METADATA one route over.
+      title: 'No community at this address',
+      description:
+        'This address does not resolve to a named community in Central Oregon. Browse communities, recorded subdivisions, or homes for sale.',
+      path: `/communities/${slug}`,
+      noindex: compoundNonCommunity,
+      // NO ogImage. The generated card is /api/og?type=community&name=<name>,
+      // which would paint the withheld MLS token onto a shareable image — the
+      // defect, one surface over. Omitting it falls back to the site default
+      // card, which names no place. A curated KB/community photo is never
+      // reached here either: a refusing slug has no curated entry by
+      // construction (those are keyed by registry slug).
+    }
+  }
 
   return {
     // Title <= 60 chars — community override, not the global template. Format:
