@@ -13,16 +13,16 @@
  * silently drop the whole matrix from the sitemap on a transient blip.
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabaseAnon } from '@/lib/data/client'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { SERVICE_AREA_CITIES_LOWER } from '@/lib/data/listings/service-area'
 import { PUBLIC_ON_MARKET_STATUSES } from '@/lib/listing-status-public'
+import { classifyLifetimeBuckets } from '@/lib/data/subdivisions/subdivision-sitemap-inventory'
 import {
-  classifyLifetimeBuckets,
-  type SubdivisionInventoryRow,
-} from '@/lib/data/subdivisions/subdivision-sitemap-inventory'
+  citySlugToMlsCityLower,
+  getSubdivisionCityInventoryByCityLower,
+} from '@/lib/data/subdivisions/getSubdivisionCityInventory'
 
 /** Matches the hourly sitemap ISR window — the matrix is a sitemap input. */
 const MATRIX_CACHE_SECONDS = 3600
@@ -140,147 +140,57 @@ export type SubdivisionLifetimeCountRow = {
   closed: number | null
 }
 
-/** Pages (1,000 rows each) fetched concurrently within one city — mirrors
- * getSubdivisionBrowseSlugsByCity.ts / getIndexableSubdivisions.ts. Those two
- * modules already replaced their own get_subdivision_status_counts(p_city)
- * calls with a listing_tile_mv scan for the identical reason documented in
- * their module docs: the RPC's `TRIM("City") ILIKE TRIM(p_city)` predicate is
- * unindexable and forces a sequential scan of the 589K-row `listings` table
- * per call (measured against production 2026-08-02: Bend 41.3s, Sisters
- * 32.0s, Redmond 14.6s, 104.7s for eight cities). listing_tile_mv carries the
- * same one-row-per-listing data with an indexed `city_lower` column
- * (`listing_tile_mv_address_slug (city_lower, address_slug)`), so a
- * `city_lower` equality filter is an index scan instead. */
-const PAGE_CONCURRENCY = 12
-
-/** Retries a transient network/PostgREST hiccup — same rationale and shape as
- * the identically-named helper in getSubdivisionBrowseSlugsByCity.ts /
- * getIndexableSubdivisions.ts (not shared code: each module keeps its own
- * copy, per those files' comments). A bare `{ message: '' }` error surfaces on
- * roughly 1 in 5 requests under concurrent load and always clears on retry. */
-async function withRetry<T extends { error: unknown }>(fn: () => PromiseLike<T>, attempts = 3): Promise<T> {
-  let last: T | undefined
-  for (let i = 0; i < attempts; i++) {
-    try {
-      const result = await fn()
-      if (!result.error) return result
-      last = result
-    } catch (err) {
-      last = { error: err } as T
-    }
-    if (i < attempts - 1) await new Promise((r) => setTimeout(r, 150))
-  }
-  return last as T
-}
-
 /**
- * Every listing_tile_mv row (subdivision_name + standard_status only) for one
- * city, fetched via concurrent, ORDERED pagination.
+ * Per-city subdivision active/pending/closed counts.
  *
- * PAGINATION ORDER IS NOT OPTIONAL. `.order('address_slug').order('listing_key')`
- * on every page is required for correctness, not style: Postgres guarantees no
- * stable row order across separate OFFSET/LIMIT queries without an ORDER BY,
- * and these pages are fetched CONCURRENTLY. The sibling fix
- * (getSubdivisionBrowseSlugsByCity.ts) measured the consequence in production
- * for the identical unordered pattern: 13,032 duplicate rows out of 94,068 for
- * Bend alone (13.9%), meaning an equal number of real rows were silently
- * dropped from a different page and never counted — a subdivision sitting
- * near the D1 lifetime-sales threshold could be admitted or excluded at
- * random on each build. address_slug is the second column of the existing
- * listing_tile_mv_address_slug (city_lower, address_slug) index already
- * serving the city_lower filter, so Postgres walks it in index order rather
- * than re-sorting the per-city set on every page; listing_key breaks ties
- * since a property's repeat sales share one address_slug.
+ * SOURCE CHANGED 2026-09-09 (SITE-54). This used to page every row of
+ * public.listing_tile_mv for the city through PostgREST — 1,000 rows at a time,
+ * 12 pages concurrently, each failed page retried 3 times — and compute the
+ * counts client-side, because PostgREST has no server-side GROUP BY on this
+ * project (PGRST123). listing_tile_mv holds one row per MLS listing ever seen,
+ * so that is ~129,192 rows for Bend alone, against an 8s PostgREST statement
+ * timeout, while pg_cron job 164 holds the view under REFRESH ... CONCURRENTLY
+ * for 13-21 minutes of every 30-minute slot overnight. Grouped by query_id over
+ * 24h, that statement was the single largest statement-timeout source on the
+ * whole database (19,655 page timeouts plus 1,136 for its count), it degraded
+ * listing detail, tiles and blog through the connection pool, and it is what
+ * put `[getSearchMatrixInventory] read failed` in every warm-sitemaps run.
+ *
+ * The identical aggregate is now computed once a night inside
+ * public.subdivision_city_inventory_mv and read by
+ * getSubdivisionCityInventory() — one filtered read of pre-counted rows,
+ * shared with the sitemap's browse-pair loop, which paid this same bill twice.
+ *
+ * NOTHING ELSE MOVED. Same source rows (the MV aggregates listing_tile_mv),
+ * same classifyLifetimeBuckets() classification, same grouping key (the RAW
+ * TRIMMED subdivision name, case preserved, exactly like the RPC's
+ * `COALESCE(TRIM("SubdivisionName"), '')`), and the same downstream
+ * 'N/A'/'unknown'-slug filtering in buildSubdivisionGeos. The one deliberate
+ * divergence from get_subdivision_status_counts is carried forward unchanged:
+ * listing_tile_mv excludes internet-display-opted-out / non-IDX-participant
+ * listings that the RPC's raw `listings` scan includes.
+ *
+ * Lifetime = active + pending + closed. `null` = read failed.
  */
-async function fetchCityInventoryRowsForLifetimeCounts(
-  supabase: SupabaseClient,
-  cityLower: string,
-): Promise<SubdivisionInventoryRow[]> {
-  const { count, error: countError } = await withRetry(() =>
-    supabase
-      .from('listing_tile_mv')
-      .select('subdivision_name', { count: 'exact', head: true })
-      .eq('city_lower', cityLower)
-      .not('subdivision_name', 'is', null),
-  )
-  if (countError) {
-    throw new Error(
-      `[getSubdivisionLifetimeCounts] listing_tile_mv count failed for ${cityLower}: ${countError.message}`,
-    )
-  }
-  const total = count ?? 0
-  if (total === 0) return []
-
-  const pageCount = Math.ceil(total / PAGE_SIZE)
-  const rows: SubdivisionInventoryRow[] = []
-  for (let start = 0; start < pageCount; start += PAGE_CONCURRENCY) {
-    const pageIndexes: number[] = []
-    for (let p = start; p < Math.min(start + PAGE_CONCURRENCY, pageCount); p++) pageIndexes.push(p)
-    const pages = await Promise.all(
-      pageIndexes.map((p) =>
-        withRetry(() =>
-          supabase
-            .from('listing_tile_mv')
-            .select('subdivision_name,standard_status')
-            .eq('city_lower', cityLower)
-            .not('subdivision_name', 'is', null)
-            .order('address_slug')
-            .order('listing_key')
-            .range(p * PAGE_SIZE, p * PAGE_SIZE + PAGE_SIZE - 1),
-        ),
-      ),
-    )
-    for (const page of pages) {
-      if (page.error) {
-        throw new Error(
-          `[getSubdivisionLifetimeCounts] listing_tile_mv page fetch failed for ${cityLower}: ${page.error.message}`,
-        )
-      }
-      rows.push(...((page.data ?? []) as SubdivisionInventoryRow[]))
-    }
-  }
-  return rows
-}
-
 async function fetchSubdivisionLifetimeCounts(
   citySlug: string,
 ): Promise<SubdivisionLifetimeCountRow[]> {
-  // Anon, not service: listing_tile_mv is granted `select` to anon,
-  // authenticated, AND service_role identically (the Coming Soon exclusion
-  // baked into the view's WHERE clause applies to every role the same way —
-  // see supabase/migrations/20260721091000_coming_soon_mv_lockdown.sql), and
-  // app/sitemap.ts already reads this same view with the anon client
-  // (getSubdivisionBrowseSlugsByCity). The service client here used to exist
-  // ONLY because get_subdivision_status_counts ran ~3.1s per city, past the
-  // anon role's 3s statement_timeout — that RPC call is gone, so that
-  // justification is gone with it. Using the anon client matches every other
-  // export in this file (fetchSearchMatrixInventory, etc.) and this module's
-  // own supabaseAnon() import.
-  const supabase = supabaseAnon()
-  if (!supabase) throw new Error('[getSubdivisionLifetimeCounts] supabase not configured')
+  const byCityLower = await getSubdivisionCityInventoryByCityLower()
+  const entries = byCityLower.get(citySlugToMlsCityLower(citySlug)) ?? []
 
-  // Matches the RPC's TRIM("City") ILIKE TRIM(p_city) semantics for a
-  // no-wildcard pattern — hyphenless slugs map back to the MLS spelling by
-  // swapping hyphens for spaces ('la-pine' -> 'la pine'), already lowercase
-  // (listing_tile_mv.city_lower = lower(trim("City"))).
-  const cityLower = citySlug.replace(/-/g, ' ')
-  const rows = await fetchCityInventoryRowsForLifetimeCounts(supabase, cityLower)
-
-  // Group by the RAW trimmed subdivision_name (case preserved, exactly like
-  // the RPC's `COALESCE(TRIM("SubdivisionName"), '')` grouping key) — the
-  // downstream consumer (buildSubdivisionGeos in getSearchMatrixEntries.ts)
-  // does its own 'N/A'/'unknown'-slug filtering and lower-cases every name it
-  // keeps, so this fetch must not pre-filter or normalize case: doing so
-  // would silently change which rows the RPC used to return.
   const countsByName = new Map<string, { active: number; pending: number; closed: number }>()
-  for (const row of rows) {
-    const name = (row.subdivision_name ?? '').trim()
-    // Mirrors the RPC's `TRIM(COALESCE("SubdivisionName", '')) <> ''` filter —
-    // an empty subdivision name never gets a row, in either implementation.
-    if (!name) continue
-    const entry = countsByName.get(name) ?? { active: 0, pending: 0, closed: 0 }
-    for (const bucket of classifyLifetimeBuckets(row.standard_status)) entry[bucket] += 1
-    countsByName.set(name, entry)
+  for (const entry of entries) {
+    for (const row of entry.rows) {
+      const name = (row.subdivision_name ?? '').trim()
+      // Mirrors the RPC's `TRIM(COALESCE("SubdivisionName", '')) <> ''` filter
+      // — an empty subdivision name never gets a row, in either implementation.
+      if (!name) continue
+      const raw = Number(row.n)
+      const n = Number.isFinite(raw) && raw > 0 ? Math.trunc(raw) : 1
+      const acc = countsByName.get(name) ?? { active: 0, pending: 0, closed: 0 }
+      for (const bucket of classifyLifetimeBuckets(row.standard_status)) acc[bucket] += n
+      countsByName.set(name, acc)
+    }
   }
 
   return Array.from(countsByName, ([subdivision_name, counts]) => ({
@@ -289,18 +199,6 @@ async function fetchSubdivisionLifetimeCounts(
   }))
 }
 
-/**
- * Per-city subdivision active/pending/closed counts, sourced from
- * listing_tile_mv instead of the get_subdivision_status_counts RPC (see
- * PAGE_CONCURRENCY's doc comment above for why). Semantics match the RPC
- * byte-for-byte via classifyLifetimeBuckets(), with one deliberate
- * divergence: listing_tile_mv excludes internet-display-opted-out /
- * non-IDX-participant listings that the RPC's raw `listings` scan includes
- * (same divergence as the sibling fixes in
- * lib/data/subdivisions/getSubdivisionBrowseSlugsByCity.ts and
- * getIndexableSubdivisions.ts). Lifetime = active + pending + closed.
- * `null` = failed.
- */
 export const getSubdivisionLifetimeCounts = makeResilientCached<
   [string],
   SubdivisionLifetimeCountRow[] | null

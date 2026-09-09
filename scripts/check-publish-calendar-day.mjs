@@ -35,13 +35,25 @@ checks.push({
     format.includes('T12:00:00Z'),
 })
 
-const listingOh = src('components/site/listing-detail/OpenHouses.tsx')
+// components/site/listing-detail/OpenHouses.tsx (the section, pinned here on
+// publishOpenHouseDay) was deleted 2026-09-09 (ci:reachable-exports) — the
+// 12-section listing contract dropped the section. The listing page still
+// carries an open-house date, now as the badge label on the price strip:
+// publishOpenHouseBadgeLabel in lib/listing/publish-listing-card-badges.ts,
+// called from app/listing/[listingKey]/page.tsx. It anchors its own noon
+// offset independently rather than wrapping publishOpenHouseDay, so this
+// check follows the risk to its live surface instead of a deleted file.
+const badgeHelper = src('lib/listing/publish-listing-card-badges.ts')
 checks.push({
-  label: 'listing-detail OpenHouses publishes the calendar day',
+  label: 'publishOpenHouseBadgeLabel anchors the date at noon, not a bare Date parse',
   ok:
-    /from ['"]@\/lib\/listing\/publish-calendar-day['"]/.test(listingOh) &&
-    /publishOpenHouseDay\(/.test(listingOh) &&
-    !listingOh.includes('timeZone: \'America/Los_Angeles\''),
+    /export function publishOpenHouseBadgeLabel/.test(badgeHelper) &&
+    /T12:00:00-07:00/.test(badgeHelper),
+})
+const listingPage = src('app/listing/[listingKey]/page.tsx')
+checks.push({
+  label: 'listing page publishes the open-house badge through publishOpenHouseBadgeLabel',
+  ok: /publishOpenHouseBadgeLabel\(/.test(listingPage),
 })
 
 const history = src('components/site/listing-detail/PropertyHistory.tsx')

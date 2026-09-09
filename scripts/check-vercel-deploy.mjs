@@ -38,6 +38,7 @@ import { classifyDiff, isVercelSkippable, listChangedFiles } from './lib/product
 // The live probe speaks the shared CI user agent: the middleware bot screen
 // 403s an unknown UA, and ci:probe-ua fails any raw-HTTP probe without it.
 import { CI_PROBE_USER_AGENT } from './lib/ci-probe-ua.mjs'
+import { formatSitemapSmoke, probeSitemapClasses } from './lib/sitemap-smoke.mjs'
 import {
   DEFAULT_TIMEOUT_MS,
   DEFAULT_SKIP_WAIT_MS,
@@ -432,6 +433,28 @@ async function main() {
           err(`ryan-realty.com check failed: ${e instanceof Error ? e.message : String(e)}`)
           process.exit(2)
         }
+
+        // ── sitemap smoke (SITE-54) ────────────────────────────────────────
+        // The index plus all five children, browser-clearing UA, concurrent,
+        // 300s each (the route's own maxDuration). On 2026-09-09 geo.xml and
+        // core.xml both returned 504 on production while the deploy was READY,
+        // `/` answered 200 and build telemetry was green — nothing in the repo
+        // could see it. SITEMAP_SMOKE_SKIP=1 is the acknowledged-outage escape.
+        if (process.env.SITEMAP_SMOKE_SKIP === '1') {
+          out('sitemap smoke: SKIPPED (SITEMAP_SMOKE_SKIP=1)')
+        } else {
+          const smokeTimeout = Number(process.env.SITEMAP_SMOKE_TIMEOUT_MS ?? 300_000)
+          const smoke = await probeSitemapClasses('https://ryan-realty.com', {
+            timeoutMs: smokeTimeout,
+          })
+          for (const line of formatSitemapSmoke(smoke.results)) out(`sitemap smoke: ${line}`)
+          if (!smoke.ok) {
+            err('✗ SITEMAP SMOKE FAILED — a sitemap Google reads is not a 200 with entries.')
+            err('  Google cannot discover the affected URL class while this is red.')
+            process.exit(1)
+          }
+        }
+
         const regressed = usingCliFallback
           ? false
           : await reportBuildTelemetry(apiToken, teamId, deployId)

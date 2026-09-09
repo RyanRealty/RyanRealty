@@ -317,3 +317,81 @@ export function buildPlaceKnowledge(input: {
 
   return items
 }
+
+/* -------------------------------------------------------------------------- */
+/* The guides this community is the subject of                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * One published guide, ready to render as a door.
+ */
+export type CommunityGuide = {
+  slug: string
+  title: string
+  excerpt: string | null
+  publishedAt: string
+  /** The post's verified local hero, when the read resolved one. */
+  heroImageUrl?: string | null
+}
+
+/**
+ * Which published posts are ABOUT this community — the reverse of the link the
+ * blog template already draws.
+ *
+ * WHY IT IS THE SAME MATCHER RUN BACKWARDS (site queue SITE-30, 2026-09-09).
+ * lib/blog-geo-links.ts has decided since 2026-07-28 which community a post
+ * points AT: the registry label, the registry slug, or a short alias must
+ * appear in the post's slug, title or tags, never its body, capped at two and
+ * longest label first. That module renders two links from
+ * /blog/sunriver-year-round-living-vs-vacation to /communities/sunriver today.
+ * The community page rendered none back, on any community — verified live on
+ * six of them, all zero.
+ *
+ * A second matcher here would be a second definition of "this post is about
+ * this place", and the two would drift on the first alias anybody added to one
+ * of them. So this is a filter over `matchGeoLinksForPost`'s own answer: a post
+ * belongs to a community exactly when the shared matcher would have linked the
+ * post to that community. One rule, read in both directions.
+ *
+ * A COMMUNITY THE MATCHER DOES NOT NAME GETS NO SECTION. On 2026-09-09 eight of
+ * the registry's communities had at least one published post that names them;
+ * the rest return an empty array here, and the page omits the section rather
+ * than filling it with the newest post about somewhere else — which is exactly
+ * what a recency rail would have done.
+ *
+ * Newest first, capped: a place page's job is the place, and a guides section
+ * long enough to scroll is a blog index in the wrong location.
+ */
+export function communityGuides(
+  communitySlug: string,
+  posts: readonly {
+    slug: string
+    title: string
+    excerpt: string | null
+    publishedAt: string
+    tags: string[]
+    heroImageUrl?: string | null
+  }[],
+  matchGeoLinks: (post: { slug: string; title?: string | null; tags?: string[] | null }) => readonly { slug: string }[],
+  max = 4,
+): CommunityGuide[] {
+  const key = communitySlug.trim().toLowerCase()
+  if (!key) return []
+
+  return posts
+    .filter((post) =>
+      matchGeoLinks({ slug: post.slug, title: post.title, tags: post.tags }).some(
+        (link) => link.slug.trim().toLowerCase() === key,
+      ),
+    )
+    .slice()
+    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+    .slice(0, max)
+    .map((post) => ({
+      slug: post.slug,
+      title: post.title,
+      excerpt: post.excerpt,
+      publishedAt: post.publishedAt,
+      heroImageUrl: post.heroImageUrl ?? null,
+    }))
+}

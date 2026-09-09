@@ -66,21 +66,27 @@ const DEAD_FILES = [
   { path: 'app/cities/[slug]/PublicPaceStats.tsx', reason: 'pace figures fold into leftoverMarketFigures via publicPaceItems' },
   { path: 'app/cities/[slug]/PublicMixStats.tsx', reason: 'mix figures fold into leftoverMarketFigures via buildPublicMixFigures' },
   // ----- Deprecated breadcrumb impls -----
-  // The sole breadcrumb is components/site/BreadcrumbNav.tsx. The following
-  // are old implementations that have been superseded. They have zero import
-  // statements but their names look legitimate, risking re-adoption.
+  // The public site's breadcrumb is V3Breadcrumb (components/site/v3), the
+  // one check-breadcrumb.mjs's DIRECT_RENDER recognizer expects. The three
+  // below are pre-v3 implementations superseded on the same 2026-08-27 cutover
+  // that made components/site/v3 the sole public register (§3). Their names
+  // look legitimate, risking re-adoption.
+  {
+    path: 'components/site/BreadcrumbNav.tsx',
+    reason:
+      'KB-era breadcrumb, superseded by V3Breadcrumb — zero importers confirmed ' +
+      '(ci:reachable-exports, 2026-09-09). check-breadcrumb.mjs already recognizes ' +
+      'V3Breadcrumb, not this file.',
+  },
   {
     path: 'components/Breadcrumb.tsx',
     reason:
       'Deprecated alias of BreadcrumbNav — imports @/components/ui/breadcrumb and aliases ' +
-      'it as BreadcrumbNav (confusingly). Zero importers confirmed. Sole breadcrumb: ' +
-      'components/site/BreadcrumbNav.tsx.',
+      'it as BreadcrumbNav (confusingly). Zero importers confirmed.',
   },
   {
     path: 'components/layout/BreadcrumbStrip.tsx',
-    reason:
-      'Deprecated BreadcrumbStrip — legacy layout breadcrumb superseded by ' +
-      'components/site/BreadcrumbNav.tsx. Zero importers confirmed.',
+    reason: 'Deprecated BreadcrumbStrip — legacy layout breadcrumb. Zero importers confirmed.',
   },
 
   // ----- Orphaned listing-detail components -----

@@ -507,7 +507,14 @@ const WIRED = [
   // its yield, its monthly cost, its machine-readable offer, its share card,
   // its price-band promise — so each takes the whole-property price, never the
   // ask. MLS 220190868 asks $1 for a fractional interest at Eagle Crest.
-  ['components/site/listing-detail/RentalAnalysis.tsx', 'publishWholePropertyAmount'],
+  //
+  // RentalAnalysis.tsx (the listing-page rental section this row once pinned)
+  // was deleted 2026-09-09 (ci:reachable-exports): the 12-section listing
+  // contract (listing-remainder-contract.test.ts) asserts it is not mounted,
+  // and no other surface resolves a whole-property price FROM a listing row
+  // for rental math — /tools/rental-property-calculator's RentalCalculator
+  // takes `initialPrice` from a free-form query param, never a ListingDetail,
+  // so the fractional-interest risk this row guarded has no live surface.
   ['app/api/og/route.tsx', 'publishWholePropertyAmount'],
   // SITE-20 (2026-09-08). The listing detail page and its price strip reach
   // the whole-property rule through publishListingPublishedWholePropertyPrice,
@@ -700,43 +707,14 @@ const UNLABELLED_ASK_SURFACES_MAX = 3 // 6 -> 3 when the KB register was deleted
   }
 }
 
-// A RENT NEEDS A DWELLING. lib/hud-fmr.ts read `bedrooms ?? 2` and then
-// labelled its answer "HUD Fair Market Rent (FY2025), Deschutes County, 2BR" —
-// a bedroom count the feed never stated, published under a sourced label. On
-// MLS 220218536 that produced "Gross rent $1,667", "Cap rate 71.2%" and "Cash
-// on cash 324.3%".
-//
-// THE POPULATION IS ALL THREE RENTAL-ELIGIBLE CLASSES (re-counted 2026-08-19).
-// Live Active or Active Under Contract rows stating no BedroomsTotal: 46 of
-// 4,685 'A', 5 of 228 'B', 155 of 155 'C'. 193 sit in the section's render
-// window; 57 of those are in a HUD-mapped city and published the fabricated
-// label — verified on /listing/20260501203559794588000000 (MLS 220220657,
-// Madras multi-family), which read "HUD Fair Market Rent (FY2025), Jefferson
-// County, 2BR" over a building the feed gives no bedroom count for.
-{
-  const hudSrc = readFileSync('lib/hud-fmr.ts', 'utf8')
-  const hudCode = hudSrc.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1')
-  if (/bedrooms\s*\?\?/.test(hudCode)) {
-    failures.push(
-      'wiring: lib/hud-fmr.ts substitutes a bedroom count when the feed states none. A figure labelled "2BR" for a row with no bedrooms is a fabricated basis (§0), not a default.',
-    )
-  }
-  if (!/typeof bedrooms !== 'number'/.test(hudCode)) {
-    failures.push(
-      'wiring: lib/hud-fmr.ts must return null when the bedroom count is not stated.',
-    )
-  }
-  const rentalSrc = readFileSync('components/site/listing-detail/RentalAnalysis.tsx', 'utf8')
-  const rentalCode = rentalSrc.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1')
-  // The section also carries a price-ratio fallback for cities outside the HUD
-  // map. Withholding the HUD figure without this guard would route those 46
-  // rows into it and swap one unsourced rent for another.
-  if (!/listing\.beds\s*==\s*null\)\s*return null/.test(rentalCode)) {
-    failures.push(
-      'wiring: components/site/listing-detail/RentalAnalysis.tsx must render nothing when the feed states no bedroom count. Every figure in the section descends from a monthly rent, and its fallback rent is a price ratio — $500/mo off a $19,500 share on MLS 220218536.',
-    )
-  }
-}
+// A RENT NEEDS A DWELLING (retired 2026-09-09, ci:reachable-exports). This
+// check pinned lib/hud-fmr.ts and components/site/listing-detail/
+// RentalAnalysis.tsx against fabricating a bedroom count for a HUD rent
+// figure (MLS 220220657). Both files were deleted: the 12-section listing
+// contract (listing-remainder-contract.test.ts) confirms RentalAnalysis is
+// not mounted anywhere, hud-fmr.ts had no other caller, and no surviving
+// surface computes a HUD-sourced rent figure from a listing's bedroom count —
+// the fabrication risk this block guarded has no live surface to fabricate on.
 
 // The $/sq ft publisher takes the property type AND the whole fractional
 // subject, so a caller cannot omit either check by forgetting a field — the

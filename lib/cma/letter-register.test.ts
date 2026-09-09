@@ -7,7 +7,6 @@ import { renderCmaHtml, type RenderCmaArgs } from './render'
 import { renderImmersiveCmaHtml } from './immersive'
 import { cmaStylesheet } from './render-css'
 import { immersiveStylesheet } from './immersive-css'
-import { assembleCompFlyerPages } from './opinion-flyers'
 import { propertyUsePage } from './render-use-of-property'
 import { zoningExplainerBlock } from './render-blocks'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
@@ -189,16 +188,6 @@ describe('CMA letter register — no capsule chrome', () => {
   it('stylesheets do not draw capsules', () => {
     expect(cmaStylesheet('https://ryan-realty.com')).not.toMatch(PILL_RADIUS)
     expect(immersiveStylesheet()).not.toMatch(PILL_RADIUS)
-  })
-
-  it('comp flyers use a kicker line, not a badge', () => {
-    const [page] = assembleCompFlyerPages([comp])
-    expect(page.body).toContain('class="flyer-kicker"')
-    expect(page.body).toContain('Closed Jun 2026')
-    expect(page.body).not.toMatch(CAPSULE)
-    expect(page.body).toContain('Adjusted close')
-    expect(page.body).not.toMatch(/as your house/i)
-    expect(page.body).not.toMatch(/subdivision-\dmo|nearby-\dmi|city-\dmo|subdivision comp/i)
   })
 
   it('use-of-property marks answers in type, not chips', () => {
