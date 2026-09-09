@@ -1,4 +1,59 @@
-# Current — 2026-09-09 (site queue round four: SITE-54 and SITE-30 done, 28 orphans settled; the sitemap classes answer cold under 40 s)
+# Current — 2026-09-09 (round two of Matt's calls: the story on Grok, the kick-off asks, Delta 4 rural splits are live)
+
+Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
+(`wt/cma-ship-20260907`). Commits d2bc4235 (Grok story + kick-off ask), f13cfd53 (Delta 4),
+185baa55 (canonical-key annotation + snapshot), 76173ab8 (the rural search story); pushed as one
+gated push after this was written — `git log origin/main --oneline -8` says whether it landed.
+Decisions in memory `feedback_cma_send_walk_decisions` (round two) and
+`feedback_cma_comp_containment` (Delta 4 status).
+
+**Matt's round-two calls.** Boundary exit stays as shipped (cross under five, disclosed, into
+another mapped polygon only). A kick-off onto another contact's open draft ASKS the broker. The
+subdivision-story pass moves to Grok. Delta 4: irrigation, zoning class, usable acreage,
+outbuildings are all HARD splits.
+
+**Subdivision story on Grok.** `lib/cma/subdivision-story.ts` runs the same prompt and schema
+through `generateGrokStructured` (grok-4.6, photos as data URLs, reasoning low). Verified on
+Dana's `cma-1531-10th`: three sections in the house voice, $0.21 with photos. The Anthropic key
+is no longer read there; the "voice reviewer" an earlier block named was not a separate caller.
+
+**Kick-off asks.** `kickoffCmaCore` returns `needsChoice` + `existingOwnerName` when the open
+draft at the address is claimed by someone else (person_id or client email); the sheet offers
+"same household, attach" (`attachToExisting`, the D8 attach) or "different owner, new document"
+(`buildNewVersion`). `lib/crm/cma-kickoff.int.test.ts` walks both taps.
+
+**Delta 4, built.** `lib/pricing/rural.ts`: `zoningClass` (farm/forest, rural residential, urban,
+unknown; the MLS sentinel "********" is unknown), `outbuildingsClass`, `terrainClass` from the
+remarks, each split fail-open on an unknown side; both ladders run them on subjects on an acre or
+more beside the live irrigation and horse/barn splits. A sale's zone: `lib/pricing/sale-zoning.ts`
+→ county GIS zoning layer by coordinates through `public.cma_sale_zone_cache` (migration
+20260909150000, applied), nearest first, ≤40 live lookups a build, so the cache fills over
+successive builds; the MLS zoning field is the sentinel on 75% of rural closes
+(`lib/data/cma/rural-coverage.ts`, a 1,000-row sample: horse_yn set 58%, fencing never, remarks
+name an outbuilding 64%). The reader's half: `render_args.compSearch.ruralSentence`, appended to
+the search story. Concorde (EFUTRB), second build: "This home sits on farm or forest land (zoned
+EFUTRB), and the search read the land as part of the home. Before any price was taken, 80 sales
+on rural residential land, 70 sales with a different irrigation or horse setup, and 24 sales with
+different outbuildings were set aside." Look-pass OK.
+
+**What Concorde looks like after Delta 4.** 5 sales from citywide-12mo + rural-county-12/24mo,
+$1,473,000 capped by the failed ask, the sales' own range $1,550,000–$3,255,000 (the document
+says the number is capped below the range and why), three review reasons (dispersion, failed-ask
+ceiling, range width). That is the honest shape for an EFU home once rural-residential sales are
+out: thin and wide, held for a broker. The count moved between the two builds (61 → 80 zoning
+exclusions) because the zone cache filled and more sales could be classed. Usable acreage is
+remarks-only: the county slope and wetland layers are empty (lib/cma/county.ts); a GIS measure
+needs 3DEP + NWI.
+
+**Merge note.** Two pushes today stopped on `docs/DAL_INDEX.md` conflicts (other sessions
+regenerate it). Resolution: take either side, commit the merge, `npm run ci:data-access
+-- --refresh`, commit the regenerated docs, then gates and push.
+
+**Next in Matt's order:** cover photo and map → inbound email replies advance the CRM. Still
+open: CmaLaneFunnel not mounted, 8 zz-test-rebrand fixtures in production `cmas`, all four lane
+Auto-send switches OFF, the usable-acreage GIS measure.
+
+## Prior — 2026-09-09 (site queue round four: SITE-54 and SITE-30 done, 28 orphans settled; the sitemap classes answer cold under 40 s)
 
 Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. One push for
 the round: `31c64459..e60a791f` (lanes 01667168 and ed5e11f9+3e91c239, the cleanup branch
