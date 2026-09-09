@@ -96,7 +96,11 @@ export function buildSubdivisionEdges(input: EdgeInput): V3QuietItem[] {
     city: 'city',
     neighborhood: 'neighborhood',
     community: 'community',
-    subdivision: 'plat',
+    // NOT "plat": the county's word for this object does not reach a visitor
+    // (parity.json, and the route docblock says it twice). This label was the
+    // one place on the page that still printed it — "Broken Top plat" in the
+    // closing edges. SITE-47.
+    subdivision: 'subdivision',
   }
   for (const parent of placeContext.parents) {
     push(`${parent.label} ${PARENT_NOUN[parent.type]}`, parent.href)

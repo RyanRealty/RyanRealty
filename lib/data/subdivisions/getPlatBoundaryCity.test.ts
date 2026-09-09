@@ -11,6 +11,7 @@ const rows: Row[] = [
   { id: 'x1', geo_type: 'neighborhood', geo_slug: 'loop-a', geo_label: 'Loop A', parent_id: 'x2' },
   { id: 'x2', geo_type: 'neighborhood', geo_slug: 'loop-b', geo_label: 'Loop B', parent_id: 'x1' },
   { id: 'p3', geo_type: 'subdivision', geo_slug: 'looping-plat', geo_label: 'Looping Plat', parent_id: 'x1' },
+  { id: 'p4', geo_type: 'subdivision', geo_slug: 'direct-plat', geo_label: 'Direct Plat', parent_id: 'c1' },
 ]
 const readPlat = async (slug: string) => rows.find((r) => r.geo_type === 'subdivision' && r.geo_slug === slug) ?? null
 const readById = async (id: string) => rows.find((r) => r.id === id) ?? null
@@ -20,6 +21,16 @@ describe('walkPlatBoundaryCity', () => {
     await expect(walkPlatBoundaryCity('courtyard-garages-at-broken-top', readPlat, readById)).resolves.toEqual({
       city: 'Bend',
       citySlug: 'bend',
+      neighborhood: { label: 'Century West', slug: 'bend-century-west' },
+    })
+  })
+  it('reports no neighborhood when the plat hangs straight off the city', async () => {
+    // SITE-47: the opening's sentence changes shape when there is no nearer
+    // container, so "none" has to be distinguishable from "not walked".
+    await expect(walkPlatBoundaryCity('direct-plat', readPlat, readById)).resolves.toEqual({
+      city: 'Bend',
+      citySlug: 'bend',
+      neighborhood: null,
     })
   })
   it('answers null for a plat with no parent chain (never a guessed city)', async () => {
