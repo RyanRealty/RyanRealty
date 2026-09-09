@@ -26,7 +26,7 @@
 
 import { listingShareSummary } from '@/lib/share-metadata'
 import { publishListingStatusWord } from '@/lib/listing/publish-listing-published-price'
-import { listingDetailPath } from '@/lib/slug'
+import { listingCanonicalHref } from '@/lib/slug'
 import type { PlaceCrumb } from '@/lib/site/place-trail'
 import type { SchemaInput } from '@/lib/site/json-ld'
 
@@ -76,37 +76,21 @@ export type ListingJsonLdInput = {
   agent: { fullName: string; email: string | null; phoneDirect: string | null } | null
 }
 
-/** Canonical public path — matches generateMetadata, the sitemap, and the canonical link. */
+/**
+ * Canonical public path — matches generateMetadata, the sitemap, and the
+ * canonical link, because since SITE-22 all four are the SAME expression:
+ * listingCanonicalHref in lib/slug.ts. This function survives as the name the
+ * JSON-LD builder reads; it holds no rule of its own any more.
+ *
+ * The rules it used to hold now live in one place, where every internal link
+ * builder also gets them: the 'Outside Boundaries' sentinel is refused inside
+ * listingDetailPath (2026-08-27 audit — this builder published
+ * /homes-for-sale/outside-boundaries/... in the JSON-LD while the canonical
+ * said /homes-for-sale/bend/... on the same page), and 'N/A' is dropped by
+ * displaySubdivision. Two copies of a rule is how they came apart.
+ */
 export function listingCanonicalPath(listing: ListingJsonLdInput['listing']): string {
-  const subdivision =
-    listing.subdivisionName && listing.subdivisionName !== 'N/A' ? listing.subdivisionName : null
-  return listingDetailPath(
-    listing.listingKey,
-    {
-      streetNumber: listing.streetNumber,
-      streetName: listing.streetName,
-      city: listing.city,
-      state: null,
-      postalCode: listing.postalCode,
-    },
-    {
-      // ONE URL, matching <link rel=canonical> (2026-08-27 audit: this builder
-      // published /homes-for-sale/outside-boundaries/... in the JSON-LD while
-      // the canonical said /homes-for-sale/bend/... on the same page).
-      // 'outside-boundaries' is the boundary classifier's SENTINEL for a home
-      // outside every polygon — it is not a place and never a URL segment.
-      // The sentinel arrives as the display form "Outside Boundaries" (verified
-      // against listing_tile_mv.boundary_city for 220225078), so the check is
-      // case-insensitive on the words, not on the slug it would produce.
-      city:
-        listing.boundaryCity && !/^outside[\s-]?boundaries$/i.test(listing.boundaryCity.trim())
-          ? listing.boundaryCity
-          : listing.city,
-      neighborhood: listing.boundaryNeighborhood,
-      subdivision,
-    },
-    { mlsNumber: listing.listNumber },
-  )
+  return listingCanonicalHref(listing)
 }
 
 export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {

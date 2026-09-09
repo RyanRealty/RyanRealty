@@ -205,8 +205,13 @@ export function listingDetailPath(
   // pass `boundaryCity ?? city`, so when the boundary field carries the
   // sentinel, fall through to the MLS city instead of publishing
   // /homes-for-sale/outside-boundaries/... as the canonical.
+  // `[\s-]*` rather than `[\s-]?` (SITE-22): the fixture asserting this rule
+  // found the single-separator form let "Outside  Boundaries" through, and
+  // a URL segment is not the place to be strict about whitespace. No real
+  // Central Oregon place is named this, so widening the match cannot withhold
+  // a real one.
   const isBoundarySentinel = (v: string | null | undefined) =>
-    !!v && /^outside[\s-]?boundaries$/i.test(v.trim())
+    !!v && /^outside[\s-]*boundaries$/i.test(v.trim())
   const locationCity = isBoundarySentinel(location?.city) ? null : (location?.city ?? null)
   const cityRaw = locationCity ?? address?.city ?? null
   const citySlug = cityRaw?.trim() ? slugify(cityRaw) : null
@@ -245,15 +250,8 @@ export function listingByKeyPath(publicId: string): string {
   return `/homes-for-sale/listing/${encodeURIComponent(publicId)}`
 }
 
-/**
- * Canonical public detail href for a listing tile / pin. Always returns a
- * /homes-for-sale/... URL via listingDetailPath — never the raw /listing/<key>
- * alias. Pass whatever fields the caller has (camelCase tile shape); when
- * address fields are absent (e.g. a bare map pin) it degrades to the still-valid
- * /homes-for-sale/listing/<id> form, never a 404. This is the ONE helper every
- * site surface should use so the address bar shows the SEO URL on navigation.
- */
-export function listingTileHref(tile: {
+/** Every field the ONE listing-URL builder reads. Nothing else affects the path. */
+export type ListingUrlSubject = {
   listingKey?: string | null
   listNumber?: string | null
   streetNumber?: string | null
@@ -264,22 +262,81 @@ export function listingTileHref(tile: {
   boundaryCity?: string | null
   boundaryNeighborhood?: string | null
   subdivisionName?: string | null
-}): string {
-  // Mirror the AUTHORITATIVE canonical builder in app/listing/[listingKey]/page.tsx
-  // (generateMetadata) and getListingSitemapRows EXACTLY, so every internal link
-  // agrees with the indexed canonical: city/neighborhood/subdivision/address-mls.
+}
+
+/**
+ * THE listing URL. One builder for the canonical, the sitemap row, and every
+ * internal href, so the site cannot link to a URL it does not canonicalise to.
+ *
+ * Always returns a /homes-for-sale/... path via listingDetailPath — never the
+ * raw /listing/<key> alias. Pass whatever fields the caller has; when address
+ * fields are absent (a bare map pin) it degrades to the still-valid
+ * /homes-for-sale/listing/<id> form, never a 404.
+ *
+ * SITE-22, verified against Search Console 2026-06-08..2026-09-05: 2,363 of
+ * 8,724 listing ids appeared at more than one URL — 4,995 URLs, 21,808
+ * impressions, 47.7% of listing-class impressions (2,104 ids at two URLs, 249
+ * at three, 10 at four). The duplicates were the site's own output, not
+ * crawler-minted, and they had one cause each:
+ *
+ *   · a builder called listingDetailPath directly with {city, subdivision}
+ *     while the canonical passed {boundaryCity, boundaryNeighborhood,
+ *     subdivision}, so the href and the canonical disagreed on the middle
+ *     segments for every home whose boundary place is not its MLS city;
+ *   · a builder passed no listNumber, subdivisionName or boundaryNeighborhood
+ *     at all, so the path fell back to the 26-digit ListingKey — 885 such URLs
+ *     drawing 3,348 impressions.
+ *
+ * The demonstrated harm is index fragmentation, not clicks: multi-URL ids ran
+ * 1.33% CTR at weighted position 13.5 against 1.56% and 11.5 for single-URL
+ * ids. Do NOT read a rank change into that.
+ *
+ * The three fields most easily dropped — listNumber, boundaryNeighborhood,
+ * subdivisionName — are the three that MOVE the path, which is why every
+ * caller takes this whole shape rather than four positional arguments it can
+ * partly fill.
+ */
+export function listingTileHref(tile: ListingUrlSubject): string {
+  // 'N/A' is MLS noise, not a plat. listingDetailPath drops it too (via
+  // displaySubdivision) — the pre-filter here keeps the two agreeing even if
+  // one of them is edited, which is the /jacksonville/na/... shape GSC still
+  // carries from before the filter existed.
   const subdivision =
     tile.subdivisionName && tile.subdivisionName !== 'N/A' ? tile.subdivisionName : null
   return listingDetailPath(
     String(tile.listingKey ?? tile.listNumber ?? ''),
     { streetNumber: tile.streetNumber ?? null, streetName: tile.streetName ?? null, city: tile.city ?? null },
     {
+      // 'Outside Boundaries' is the classifier's sentinel, not a place;
+      // listingDetailPath refuses it and falls through to the MLS city, which
+      // is why /homes-for-sale/outside-boundaries/... is a RETIRED canonical
+      // shape GSC still remembers rather than one we can emit today.
       city: tile.boundaryCity ?? tile.city ?? null,
       neighborhood: tile.boundaryNeighborhood ?? null,
       subdivision,
     },
     { mlsNumber: tile.listNumber ?? null },
   )
+}
+
+/**
+ * The same URL, from a listing DETAIL row. Identical output to
+ * listingTileHref — it exists so a detail page (whose row spells the fields
+ * differently) cannot quietly grow a second builder, and so `<link
+ * rel=canonical>`, the JSON-LD `url` and the page's own self-href are one
+ * expression rather than three copies of it.
+ */
+export function listingCanonicalHref(listing: {
+  listingKey: string
+  listNumber?: string | null
+  streetNumber?: string | null
+  streetName?: string | null
+  city?: string | null
+  boundaryCity?: string | null
+  boundaryNeighborhood?: string | null
+  subdivisionName?: string | null
+}): string {
+  return listingTileHref(listing)
 }
 
 /**

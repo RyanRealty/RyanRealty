@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getListingDetail } from '@/lib/data'
-import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
+import { listingCanonicalHref, listingsBrowsePath } from '@/lib/slug'
 
 /**
  * Legacy AgentFire IDX listing-detail redirect (cutover SEO preservation).
@@ -45,23 +45,11 @@ export async function GET(
   if (mls) {
     const listing = await getListingDetail(mls).catch(() => null)
     if (listing) {
-      // Match the sitemap's canonical builder: a literal "N/A" subdivision would
-      // slugify into a bogus /na/ segment, so drop it (keeps this redirect's
-      // target identical to the indexed canonical URL — no canonical/sitemap split).
-      const subdivision =
-        listing.subdivisionName && listing.subdivisionName !== 'N/A' ? listing.subdivisionName : null
-      dest = listingDetailPath(
-        listing.listingKey,
-        {
-          streetNumber: listing.streetNumber,
-          streetName: listing.streetName,
-          city: listing.city,
-          state: null,
-          postalCode: listing.postalCode,
-        },
-        { city: listing.city, subdivision },
-        { mlsNumber: listing.listNumber },
-      )
+      // SITE-22: the same builder the canonical, the sitemap and every internal
+      // href use. It was a hand-rolled copy that passed {city, subdivision} and
+      // dropped the boundary fields, so this 308 landed on a URL the listing
+      // does not canonicalise to — the redirect itself minted a duplicate.
+      dest = listingCanonicalHref(listing)
     }
   }
 

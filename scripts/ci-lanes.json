@@ -25,6 +25,7 @@
     "ci:jsonb-cast-guard",
     "ci:jsonb-contains",
     "ci:listing-alert-enroll",
+    "ci:listing-canonical-single",
     "ci:listing-figure-publish",
     "ci:listing-key-lookup",
     "ci:listing-photo-alt",

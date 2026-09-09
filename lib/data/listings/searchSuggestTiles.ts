@@ -36,6 +36,10 @@ export type SuggestTileRow = {
   city: string | null
   postalCode: string | null
   subdivisionName: string | null
+  /** SITE-22 — the canonical URL's middle segments, so a typeahead address
+   *  suggestion links to the URL that listing canonicalises to. */
+  boundaryCity: string | null
+  boundaryNeighborhood: string | null
 }
 
 const MAX_TOKENS = 6
@@ -65,6 +69,8 @@ type MvRow = {
   city: string | null
   postal_code: string | null
   subdivision_name: string | null
+  boundary_city: string | null
+  boundary_neighborhood: string | null
 }
 
 /**
@@ -90,7 +96,7 @@ export async function searchListingSuggestTiles(
   const trimmed = (query ?? '').trim()
   const cappedLimit = Math.min(Math.max(limit, 1), 500)
   const cols =
-    'list_number, listing_key, street_number, street_name, street_suffix, city, postal_code, subdivision_name'
+    'list_number, listing_key, street_number, street_name, street_suffix, city, postal_code, subdivision_name, boundary_city, boundary_neighborhood'
   // Lockdown-view predicate mirror — central policy constant, kept in lockstep
   // with migration 20260721164833 (G-COMINGSOON).
   const comingSoonMirror = MV_NOT_COMING_SOON_OR_PREDICATE
@@ -152,5 +158,7 @@ function mapRows(rows: MvRow[]): SuggestTileRow[] {
     city: r.city,
     postalCode: r.postal_code,
     subdivisionName: r.subdivision_name,
+    boundaryCity: r.boundary_city,
+    boundaryNeighborhood: r.boundary_neighborhood,
   }))
 }

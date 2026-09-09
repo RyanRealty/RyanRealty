@@ -50,6 +50,10 @@ export type AtlasTile = {
   propertySubType: string | null
   streetNumber: string | null
   streetName: string | null
+  /** SITE-22 — the canonical URL's middle segments, so an Atlas dot's href is
+   *  the URL that listing canonicalises to. */
+  boundaryCity: string | null
+  boundaryNeighborhood: string | null
 }
 
 export type AtlasTilesInput = {
@@ -76,10 +80,12 @@ type Row = {
   property_sub_type: string | null
   street_number: string | null
   street_name: string | null
+  boundary_city: string | null
+  boundary_neighborhood: string | null
 }
 
 const COLUMNS =
-  'listing_key,list_number,standard_status,list_price,close_price,close_date,on_market_date,modified_at,lat,lng,city,subdivision_name,property_type,property_sub_type,street_number,street_name'
+  'listing_key,list_number,standard_status,list_price,close_price,close_date,on_market_date,modified_at,lat,lng,city,subdivision_name,property_type,property_sub_type,street_number,street_name,boundary_city,boundary_neighborhood'
 const PAGE = 1000
 /** 8 pages = 8,000 rows: the whole service area on market is ~4–5K. */
 const MAX_PAGES = 8
@@ -139,10 +145,12 @@ type ClosedRow = {
   property_sub_type: string | null
   StreetNumber: string | null
   StreetName: string | null
+  boundary_city: string | null
+  boundary_neighborhood: string | null
 }
 
 const CLOSED_COLUMNS =
-  'ListingKey,ListNumber,StandardStatus,ListPrice,ClosePrice,CloseDate,OnMarketDate,ModificationTimestamp,Latitude,Longitude,City,SubdivisionName,PropertyType,property_sub_type,StreetNumber,StreetName'
+  'ListingKey,ListNumber,StandardStatus,ListPrice,ClosePrice,CloseDate,OnMarketDate,ModificationTimestamp,Latitude,Longitude,City,SubdivisionName,PropertyType,property_sub_type,StreetNumber,StreetName,boundary_city,boundary_neighborhood'
 /** A month of closes across the service area is a few hundred rows. */
 const CLOSED_MAX_PAGES = 3
 
@@ -199,6 +207,8 @@ function fromClosed(r: ClosedRow): Row {
     property_sub_type: r.property_sub_type,
     street_number: r.StreetNumber,
     street_name: r.StreetName,
+    boundary_city: r.boundary_city,
+    boundary_neighborhood: r.boundary_neighborhood,
   }
 }
 
@@ -232,6 +242,8 @@ async function fetchAtlasTiles(input: AtlasTilesInput): Promise<AtlasTile[]> {
       propertySubType: r.property_sub_type,
       streetNumber: r.street_number,
       streetName: r.street_name,
+      boundaryCity: r.boundary_city,
+      boundaryNeighborhood: r.boundary_neighborhood,
     })
   }
   return out

@@ -16,7 +16,7 @@ import type { ListingTile } from '@/lib/data/types/listing'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
-import { listingDetailPath } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 
 /**
  * A tile earns a row when it carries a price and an address. Both are the row's
@@ -69,12 +69,7 @@ export function cityFieldItems(tiles: readonly ListingTile[], limit?: number): V
 
     items.push({
       id: tile.listingKey,
-      href: listingDetailPath(
-        tile.listingKey,
-        { streetNumber: tile.streetNumber, streetName: tile.streetName, city: tile.city },
-        { city: tile.city, subdivision: tile.subdivisionName },
-        { mlsNumber: tile.listNumber },
-      ),
+      href: listingTileHref(tile),
       priceLabel: formatPublishedAsk(tile.listPrice) ?? 'Price on request',
       // Every card names its city (Matt 2026-08-27): cards travel — open
       // houses, trails, price drops, saved-search alerts — so a bare street

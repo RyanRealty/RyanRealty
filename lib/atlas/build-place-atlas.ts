@@ -19,7 +19,7 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { getAtlasTiles, type AtlasTile } from '@/lib/data'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
-import { listingDetailPath } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 import { formatDateTime } from '@/lib/format/date'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { outerRings, pointInRings, type Ring } from '@/lib/geo/project-svg'
@@ -167,12 +167,7 @@ export function atlasDotsFromTiles(tiles: readonly AtlasTile[], nowMs = Date.now
     return [
       {
         k: tile.listingKey,
-        href: listingDetailPath(
-          tile.listingKey,
-          { streetNumber: tile.streetNumber, streetName: tile.streetName, city: tile.city },
-          { city: tile.city, subdivision: tile.subdivisionName },
-          { mlsNumber: tile.listNumber },
-        ),
+        href: listingTileHref(tile),
         lat: Number(tile.lat.toFixed(4)),
         lng: Number(tile.lng.toFixed(4)),
         p: raw != null && Number.isFinite(raw) && raw > 0 ? Math.round(raw) : null,
@@ -212,12 +207,7 @@ function eventOf(tile: AtlasTile, kind: AtlasEvent['kind'], verb: string, fallba
     key: `${kind}:${tile.listingKey}`,
     kind,
     label: `${verb} in ${placeOf(tile, fallback)}, ${price}`,
-    href: listingDetailPath(
-      tile.listingKey,
-      { streetNumber: tile.streetNumber, streetName: tile.streetName, city: tile.city },
-      { city: tile.city, subdivision: tile.subdivisionName },
-      { mlsNumber: tile.listNumber },
-    ),
+    href: listingTileHref(tile),
   }
 }
 

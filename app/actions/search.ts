@@ -151,6 +151,8 @@ function tileToViewportRow(t: ListingTile): ListingTileRow {
     State: 'OR',
     PostalCode: t.postalCode,
     SubdivisionName: t.subdivisionName,
+    BoundaryCity: t.boundaryCity,
+    BoundaryNeighborhood: t.boundaryNeighborhood,
     PhotoURL: t.photoUrl,
     Latitude: t.lat,
     Longitude: t.lng,

@@ -1,7 +1,7 @@
 import type { V3FieldItem } from '@/components/site/v3'
 import type { PriceDrop } from '@/lib/data'
 import { formatPrice, formatPriceCompact } from '@/lib/format/money'
-import { listingDetailPath, displaySubdivision } from '@/lib/slug'
+import { listingTileHref, displaySubdivision } from '@/lib/slug'
 import { listingMlsStreetLine, publishCardAddress } from '@/lib/listing/publish-street-line'
 
 export type PriceDropFieldItem = V3FieldItem & { overlay?: string }
@@ -58,17 +58,7 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
 
     items.push({
       id: drop.listingKey,
-      href: listingDetailPath(
-        drop.listingKey,
-        {
-          streetNumber: drop.streetNumber,
-          streetName: drop.streetName,
-          city: drop.city,
-          postalCode: drop.postalCode,
-        },
-        { city: drop.city, subdivision: drop.subdivisionName },
-        { mlsNumber: drop.listNumber },
-      ),
+      href: listingTileHref(drop),
       priceLabel,
       title: publishCardAddress(drop),
       ...(pct ? { overlay: pct } : {}),

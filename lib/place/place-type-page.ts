@@ -17,7 +17,7 @@ import {
 } from '@/lib/place/publish-place-type-cards'
 import type { PlaceTypeKey } from '@/lib/place/place-type-style'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { displaySubdivision, listingDetailPath } from '@/lib/slug'
+import { displaySubdivision, listingTileHref } from '@/lib/slug'
 
 export type PlaceTypePageSpec = {
   key: PlaceTypeKey
@@ -165,12 +165,7 @@ export function placeTypeListingRows(tiles: readonly ListingTile[]): V3ListingRo
     const subdivision = displaySubdivision(tile.subdivisionName)
     rows.push({
       listingKey: tile.listingKey,
-      href: listingDetailPath(
-        tile.listingKey,
-        { streetNumber: tile.streetNumber, streetName: tile.streetName, city: tile.city },
-        { city: tile.city, subdivision: tile.subdivisionName },
-        { mlsNumber: tile.listNumber },
-      ),
+      href: listingTileHref(tile),
       photoUrl: photo,
       price: tile.listPrice,
       addressLine: street,

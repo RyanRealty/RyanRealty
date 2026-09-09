@@ -26,7 +26,7 @@ import {
   publishListingStatusWord,
 } from '@/lib/listing/publish-listing-published-price'
 import { listingMlsAddressFull, listingMlsStreetLine } from '@/lib/listing/publish-street-line'
-import { homesForSalePath, listingDetailPath, subdivisionListingsPath } from '@/lib/slug'
+import { homesForSalePath, listingCanonicalHref, subdivisionListingsPath } from '@/lib/slug'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
 import {
   ListingUnavailable,
@@ -153,24 +153,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const addressTitle = addressFull ? addressFull : `Listing ${listing.listingKey}`
   const title = statusWord ? `${statusWord} · ${addressTitle}` : addressTitle
 
-  const canonicalSubdivision =
-    listing.subdivisionName && listing.subdivisionName !== 'N/A' ? listing.subdivisionName : null
-  const canonicalPath = listingDetailPath(
-    listing.listingKey,
-    {
-      streetNumber: listing.streetNumber,
-      streetName: listing.streetName,
-      city: listing.city,
-      state: null,
-      postalCode: listing.postalCode,
-    },
-    {
-      city: listing.boundaryCity ?? listing.city,
-      neighborhood: listing.boundaryNeighborhood,
-      subdivision: canonicalSubdivision,
-    },
-    { mlsNumber: listing.listNumber },
-  )
+  // SITE-22: ONE builder for the canonical, the JSON-LD url, the sitemap row
+  // and every internal href. The by-address route no longer overrides this with
+  // a self-canonical to whatever path was requested, so this is the single URL
+  // every path for this listing points at.
+  const canonicalPath = listingCanonicalHref(listing)
 
   return pageMetadata({
     title,
@@ -407,23 +394,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
     : reviews
 
   const street = listingMlsStreetLine(listing)
-  const listingHref = listingDetailPath(
-    listing.listingKey,
-    {
-      streetNumber: listing.streetNumber,
-      streetName: listing.streetName,
-      city: listing.city,
-      state: null,
-      postalCode: listing.postalCode,
-    },
-    {
-      city: listing.boundaryCity ?? listing.city,
-      neighborhood: listing.boundaryNeighborhood,
-      subdivision:
-        listing.subdivisionName && listing.subdivisionName !== 'N/A' ? listing.subdivisionName : null,
-    },
-    { mlsNumber: listing.listNumber },
-  )
+  const listingHref = listingCanonicalHref(listing)
 
   const aliasLadder = listingAliasPlatLadder({
     mlsSubdivisionName: listing.subdivisionName,
@@ -467,6 +438,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       lat={listing.lat}
       lng={listing.lng}
       price={publishedSaleAsk}
+      priceStatusWord={publishListingStatusWord(listing.status)}
       beds={listing.beds}
       baths={listing.baths}
       sqft={listing.sqft ?? listing.totalLivingAreaSqFt}

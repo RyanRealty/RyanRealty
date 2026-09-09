@@ -21,7 +21,7 @@
  * Server component — no client-side state. Pass listings in pre-sorted.
  */
 import Link from 'next/link'
-import { listingDetailPath } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 import { formatPriceCompact } from '@/lib/format/money'
 import { statusPillClass } from '@/lib/format/listing-status'
 
@@ -68,12 +68,14 @@ export function listingCardHref(
   const firstSpace = addr.indexOf(' ')
   const streetNumber = firstSpace > 0 ? addr.slice(0, firstSpace) : null
   const streetName = firstSpace > 0 ? addr.slice(firstSpace + 1) : addr || null
-  return listingDetailPath(
-    listing.listingKey,
-    { streetNumber, streetName, city: listing.city ?? null },
-    { city: listing.city ?? null, subdivision: listing.subdivision ?? null },
-    { mlsNumber: listing.listNumber ?? null },
-  )
+  return listingTileHref({
+    listingKey: listing.listingKey,
+    listNumber: listing.listNumber ?? null,
+    streetNumber,
+    streetName,
+    city: listing.city ?? null,
+    subdivisionName: listing.subdivision ?? null,
+  })
 }
 
 export function ListingCard({ listing, href, scheduleHref }: ListingCardProps) {

@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button'
 import { getCanonicalSiteUrl, listingShareText } from '@/lib/share-metadata'
 import { incrementListingShareCount } from '@/app/actions/engagement'
 import { trackListingClick } from '@/lib/tracking'
-import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
+import { listingTileHref, listingsBrowsePath } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeftRightIcon } from '@hugeicons/core-free-icons'
@@ -247,12 +247,20 @@ function ListingTile({
     null
   const neighborhood = getNeighborhoodName(listing)
   const href = linkKey
-    ? listingDetailPath(
-        linkKey,
-        { streetNumber: listing.StreetNumber, streetName: listing.StreetName, city: listing.City, state: listing.State, postalCode: listing.PostalCode },
-        { city: listing.City, neighborhood, subdivision: listing.SubdivisionName },
-        { mlsNumber: safeListNumber }
-      )
+    ? listingTileHref({
+        listingKey: linkKey,
+        listNumber: safeListNumber,
+        streetNumber: listing.StreetNumber,
+        streetName: listing.StreetName,
+        city: listing.City,
+        boundaryCity:
+          (listing as { BoundaryCity?: string | null }).BoundaryCity ?? null,
+        boundaryNeighborhood:
+          (listing as { BoundaryNeighborhood?: string | null }).BoundaryNeighborhood ??
+          neighborhood ??
+          null,
+        subdivisionName: listing.SubdivisionName,
+      })
     : listingsBrowsePath()
   const videoUrls = useMemo(() => getVideoUrls(listing), [listing.details])
   const tileVideoEmbed = useMemo(

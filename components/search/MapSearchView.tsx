@@ -20,7 +20,7 @@ import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registr
 import { publishSearchCountPair } from '@/lib/search/publish-search-count'
 import { GEO_SCOPE_KEYS, geoScopeLabel, stripGeoScope } from '@/components/search/geo-scope'
 import { nextSearchUrlWithBbox } from '@/lib/search/publish-map-bbox'
-import { listingDetailPath, displaySubdivision } from '@/lib/slug'
+import { listingTileHref, displaySubdivision } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
 import { useViewerListingState } from '@/components/search/use-viewer-listing-state'
@@ -923,12 +923,16 @@ export default function MapSearchView({
         <div className="v3-lrow-list px-4 py-2">
           {visibleListings.slice(0, visibleCount).map((l, cardIndex) => {
             const key = rowKey(l)
-            const href = listingDetailPath(
-              key,
-              { streetNumber: l.StreetNumber, streetName: l.StreetName, city: l.City, state: l.State, postalCode: l.PostalCode },
-              undefined,
-              { mlsNumber: l.ListNumber ?? null }
-            )
+            const href = listingTileHref({
+              listingKey: key,
+              listNumber: l.ListNumber ?? null,
+              streetNumber: l.StreetNumber,
+              streetName: l.StreetName,
+              city: l.City,
+              boundaryCity: l.BoundaryCity ?? null,
+              boundaryNeighborhood: l.BoundaryNeighborhood ?? null,
+              subdivisionName: l.SubdivisionName,
+            })
             const isHovered = hoveredKey === key
             const isSelected = selectedKey === key
             const addressLine = cardStreet(l)

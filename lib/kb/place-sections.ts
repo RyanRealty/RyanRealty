@@ -90,6 +90,9 @@ type TileRow = {
 /** An open_houses row joined to its listing (app/actions/open-houses). */
 type OpenHouseRow = {
   listing_key: string
+  /** SITE-22 — the fields that move the URL. Same omission as ActivityRow. */
+  list_number?: string | null
+  boundary_neighborhood?: string | null
   street_number: string | null
   street_name: string | null
   city: string | null
@@ -110,6 +113,17 @@ type ActivityRow = {
   event_type: string
   event_at: string
   listing_key: string
+  /**
+   * SITE-22. The three fields that MOVE the listing URL, and the two this type
+   * used to omit. app/actions/activity-feed.ts has always returned ListNumber
+   * and NeighborhoodName; because they were not declared here, buildActivityItems
+   * built its href from listing_key + street + city alone, and listingDetailPath
+   * fell all the way back to the 26-digit ListingKey — 885 such URLs drawing
+   * 3,348 impressions in GSC 2026-06-08..2026-09-05, none of them the URL the
+   * listing canonicalises to.
+   */
+  ListNumber?: string | null
+  NeighborhoodName?: string | null
   StreetNumber?: string | null
   StreetName?: string | null
   StreetSuffix?: string | null
@@ -190,7 +204,13 @@ export function formatOpenHouseWhen(eventDate: string, start: string | null, end
 export function buildOpenHouseItems(rows: readonly OpenHouseRow[], limit = 6): KbOpenHouseItem[] {
   return rows.slice(0, limit).map((oh) => ({
     href: listingTileHref({
-      listingKey: oh.listing_key, streetNumber: oh.street_number, streetName: oh.street_name, city: oh.city,
+      listingKey: oh.listing_key,
+      listNumber: oh.list_number ?? null,
+      streetNumber: oh.street_number,
+      streetName: oh.street_name,
+      city: oh.city,
+      boundaryNeighborhood: oh.boundary_neighborhood ?? null,
+      subdivisionName: oh.subdivision_name,
     }),
     photoUrl: oh.photo_url,
     price: oh.list_price,
@@ -235,7 +255,15 @@ export function buildActivityItems(
       cityLine: [a.City, a.SubdivisionName].filter(Boolean).join(' · '),
       price: a.ListPrice ?? null,
       imageUrl: a.PhotoURL ?? null,
-      href: listingTileHref({ listingKey: a.listing_key, streetNumber: a.StreetNumber ?? null, streetName: a.StreetName ?? null, city: a.City ?? null }),
+      href: listingTileHref({
+        listingKey: a.listing_key,
+        listNumber: a.ListNumber ?? null,
+        streetNumber: a.StreetNumber ?? null,
+        streetName: a.StreetName ?? null,
+        city: a.City ?? null,
+        boundaryNeighborhood: a.NeighborhoodName ?? null,
+        subdivisionName: a.SubdivisionName ?? null,
+      }),
       whenLabel: a.event_at
         ? formatDate(a.event_at, { month: 'short', day: 'numeric', year: undefined, timeZone: 'UTC' })
         : '',
