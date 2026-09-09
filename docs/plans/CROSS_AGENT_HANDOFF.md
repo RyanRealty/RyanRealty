@@ -1,3 +1,35 @@
+# Current — 2026-09-09 (SITE-58: Crook plats ingested; Jefferson publishes none)
+
+Owner: Grok (grok-01a0884a-2026-09-09), main checkout. Push `ea8be553`; deploy
+`dpl_DbJGeqPE7ce5WzUBn8EY1kWtcqqb` READY in 280s.
+
+**SITE-58 done.** Crook County GIS `Public/LandGroup/MapServer/7` ("Sudivisions")
+is the recorded-plat layer: 211 polygons, 204 new `public.boundaries` subdivision
+rows (falcon-ridge, grandridge, west-hills already existed as Deschutes slugs and
+were skipped). Brasada Ranch (OBJECTID 186, 888 acres) and Ochoco Pointe
+(OBJECTID 8, 59.5 acres, phases 1–4 and South) resolve exact.
+`subdivision_footprint` returns `source=exact` with the Crook MultiPolygon.
+Live: `/subdivisions/ochoco-pointe` 200, H1 Ochoco Pointe, `boundaryGeojson` is
+the Crook polygon. `/subdivisions/brasada-ranch` 308s to `/communities/brasada-ranch`.
+
+**Jefferson publishes no recorded-plat layer.** GIS data is sold; the public web
+map is "temporarily unavailable"; `maps.co.jefferson.or.us` timed out; county
+REST hosts 302 with no services directory. Haystack Butte (7) and Willowbrook (13)
+stay on SITE-56's no-polygon path. Klamath's live catalog has taxlots and
+`KC_Surveys` (10,571 survey-document polygons), not a subdivision plat layer.
+
+**Crooked River Ranch.** Not on Crook's 211 names. The spelled-out slug
+phase-matches Deschutes plats 4 and 5. MLS `Crr` (13 homes) still has no polygon.
+
+Class list, statewide: 626 none → 592 none. Provenance floor 3200 → 3427
+(3,223 Deschutes + 204 Crook). Ingest: `scripts/gis/import-county-subdivisions.mjs`.
+
+**Queue:** SITE-41 in flight (claude-opus5). SITE-43 open, waits on SITE-03
+(measurement window to 2026-10-06). Nothing else eligible.
+
+**Skills read:** site-queue, loop-status, database-canonical-reference,
+TASTE.md, frontend-design, DATABASE_FOR_AI_AGENTS.md §2a.
+
 # Current — 2026-09-09 (four nodes said done and were not on main; landed, plus SITE-31's eleven guides)
 
 Owner: Claude (Opus 5), session claude-opus5-9d4aa6fc-2026-09-09, main checkout. Pushes
