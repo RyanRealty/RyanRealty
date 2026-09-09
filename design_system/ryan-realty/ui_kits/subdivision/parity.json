@@ -42,7 +42,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "The place's own market below the fold: publishPlatFigures median (DTP and 30-day sold WITHHOLD), Market Truth recorded counts, and the market_stats_cache ytd row. Not the live face.",
+      "section": "The place's own market below the fold: publishPlatFigures median (DTP and 30-day sold WITHHOLD), Market Truth recorded counts, the market_stats_cache ytd row, and (SITE-24) the plat's LIFETIME closed count attributed by point-in-polygon out of subdivision_plat_closed_mv. Its chart is the MLS-name yearly series when that join produced one, and otherwise the SAME boundary union grouped by year — never both, because the yearly Ledger below prints the name-joined counts and two populations may not sit under one heading. Not the live face.",
       "blocking": true
     },
     {
@@ -82,7 +82,7 @@
     },
     {
       "name": "V3Answers",
-      "section": "Pattern 8, #faq, and this route's FIRST question set (site queue SITE-08). Verified questions from buildPlaceAnswers, each row carrying the ONE figure it is about — the figure on the closed row, the drawing and the §0 trace inside it — and the SAME array feeds the FAQPage JSON-LD through answersFaqItems, so the markup cannot describe a sentence the page does not print. WHAT THE PLAT GRAIN MAY ANSWER, and the short set is the point: REGISTRY §4 withholds every closed-price statistic at this grain (a closed median, a YoY of it, and a sale-to-list ratio, all off an MLS SubdivisionName join where most plats never reach ten detached sales in 36 months), and lib/market/geo-grain-trust.ts refuses this grain's closed attribution, so months of supply is withheld too. The verdict question is still ASKED and answered with the refusal plus the closed count behind it (the SITE-01 sentence pattern), never dropped. What publishes: the live list median of the plat's own actives (publishPlatFigures), median days on market from the plat's own market_stats_cache ytd row, the counted active set, and the latest COMPLETE calendar year's closed count from getSubdivisionSalesHistory — never the running partial year. Doors are the browse path, the parent resort or city, and /how-we-get-our-numbers. Closes the page after SubdivisionDocuments, so no two adjacent sections share a pattern.",
+      "section": "Pattern 8, #faq, and this route's FIRST question set (site queue SITE-08). Verified questions from buildPlaceAnswers, each row carrying the ONE figure it is about — the figure on the closed row, the drawing and the §0 trace inside it — and the SAME array feeds the FAQPage JSON-LD through answersFaqItems, so the markup cannot describe a sentence the page does not print. WHAT THE PLAT GRAIN MAY ANSWER, and the short set is the point: REGISTRY §4 withholds every closed-price statistic at this grain (a closed median, a YoY of it, and a sale-to-list ratio, all off an MLS SubdivisionName join where most plats never reach ten detached sales in 36 months), and lib/market/geo-grain-trust.ts refuses this grain's closed attribution, so months of supply is withheld too. The verdict question is still ASKED and answered with the refusal plus the closed count behind it (the SITE-01 sentence pattern), never dropped. What publishes: the live list median of the plat's own actives (publishPlatFigures), median days on market from the plat's own market_stats_cache ytd row, the counted active set, the latest COMPLETE calendar year's closed count — never the running partial year — from getSubdivisionSalesHistory, or, when that name join is empty (every sub-plat of a resort: its homes are filed under the resort's MLS name), the same year off the boundary union, carrying its own trace and its own population noun because the boundary count is every property type; and the plat's lifetime closed count inside its recorded boundary, drawn as a tally (SITE-24). Doors are the browse path, the parent resort or city, and /how-we-get-our-numbers. Closes the page after SubdivisionDocuments, so no two adjacent sections share a pattern.",
       "blocking": true
     }
   ],
@@ -109,7 +109,8 @@
     "getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }) — this place's own cache row. ci:subdivision-stats-integrity pins the period.",
     "getSubdivisionSchools(city, alias) — only when a registry match exists; omit a level the modal does not publish. ci:subdivision-stats-integrity pins the call.",
     "getPlaceDocuments('subdivision', slug) and getPlaceCharacter('subdivision', slug) — documents and character.",
-    "getIndexableSubdivisions() — robots policy in generateMetadata AND the place's city."
+    "getIndexableSubdivisions() — robots policy in generateMetadata AND the place's city.",
+    "getPlatClosedCount(slug) — public.subdivision_plat_closed_mv: the plat's lifetime closed sales attributed by ST_Contains against its recorded polygon, unioned over distinct listing_key with the MLS-name match, plus closedByYear. Feeds the indexability gate, the market band's figure and series, and two FAQ rows (SITE-24)."
   ],
   "sectionOrder": [
     "MetadataBlock",
@@ -139,14 +140,14 @@
     "SmoothScrollProvider, KbFooter, KbBreadcrumb, KbSectionTracker (chrome)"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-08",
+    "evaluatedAt": "2026-09-09",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator, SITE-08 round 2 — scored the MERGED build after the round-1 defects were fixed and the pages recaptured; three scorings of one shot set, median reported",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-24 round 3 — spawned from the build lane with the six shots and the lane's own dev server URL, scored the same shot set three times in one call; rounds 1 and 2 of the same instrument scored 61 and 74 on this plat before the defects below were fixed",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
       "routes": [
-        "/subdivisions/ridge-at-eagle-crest"
+        "/subdivisions/golf-homes-at-tetherow"
       ],
       "viewports": [
         1440,
@@ -154,59 +155,69 @@
       ],
       "states": [
         "default",
-        "answers-first-row-open"
+        "market-report",
+        "faq"
       ]
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/subdivision/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/mobile375.png",
+      "marketDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/market-desktop.png",
+      "marketMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/market-mobile375.png",
       "answersDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-desktop.png",
       "answersMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-mobile375.png"
     },
-    "shotsHash": "sha256:b2fe0b7ea8f60f6cca620f65f32b5e6873cf3c7505d12513ab8419eca1193b0a",
+    "shotsHash": "sha256:641ab6fc10efeb4e2eb7468cf63a8676865da4bd4b367b47e2d7aac97704a1bb",
     "scores": [
-      73,
-      76,
-      78
+      77,
+      75,
+      82
     ],
-    "score": 76,
+    "score": 77,
     "breakdown": {
-      "design": 20,
-      "originality": 24,
-      "interaction": 12,
-      "craft": 12,
-      "honesty": 8
+      "design": 23,
+      "originality": 22,
+      "interaction": 13,
+      "craft": 13,
+      "honesty": 5
     },
-    "beats": "Zillow's/Realtor.com's subdivision aggregation page for Ridge at Eagle Crest on honesty and depth: a year-over-year closed-sales tally comparison (26 vs 21), an explicit refusal to print a verdict or a median close price at a sample this thin, versus the portals' raw listing grid with no market reasoning at all.",
+    "beats": "Beats Zillow's and Redfin's subdivision aggregation page for this plat on depth and honesty: the portals key on the MLS subdivision string, which for a resort sub-plat is the resort's name, so they show a listing grid and no market reasoning at all. This page draws a 2012-2026 closed-sales line inside the recorded plat boundary, states 107 lifetime closed sales, compares 7 closes in 2025 against 2 in 2024 as two runs of marks, and refuses a buyer's/seller's verdict out loud at a sample that thin rather than guessing one.",
     "defects": [
       {
         "section": "#overview (hero)",
-        "severity": "taste",
-        "finding": "Verified in the served HTML: the hero renders `<V3SourceLine source={inventorySource} onMedia .../>` directly under the H1 — a full §0 audit sentence ('Source: live MLS through Oregon Data Share, active single-family listings under the Ridge at Eagle Crest name in Redmond.') sits as the first line of body copy over the photo, ahead of the actual descriptive caption ('Eagle Crest, the resort Ridge at Eagle Crest sits inside.'). Neither sibling route in the same page class does this: /communities/tetherow carries the equivalent trace in a `title` tooltip attribute (invisible until hover), and /cities/bend/awbrey-butte shows no source line in its hero at all. This is a page-class inconsistency and a register violation — a data-provenance sentence, not a hook, is the first thing a visitor reads under the headline."
-      },
-      {
-        "section": "#faq",
         "severity": "honesty",
-        "finding": "Unlike the neighborhood and community routes, this route's buildPlaceAnswers call sets no `sourceKey`, so the #faq section has no `data-source-key` attribute in the served HTML (confirmed by grep — zero matches, versus one match each on the other two routes). The machine-audit handle §0 asks for exists on 2 of 3 place grains and not this one."
+        "finding": "The hero trace reads 'active single-family listings inside the recorded Golf Homes at Tetherow plat' while every listing the page plots on this plat is a townhouse (verified in the page's own Atlas payload: types = [townhouse], every point PropertySubType 'Townhouse'). The set behind it is propertyType 'A', which CLAUDE.md §0 names as a MIXED bucket (MARKET_TRUTH D1) — detached, townhouse and unclassified — so calling it single-family is wrong here. NOT FIXED IN THIS LANE ON PURPOSE: 'active single-family listings' is the wording of an 'A' set on roughly fifteen public surfaces (housing-market hub, region, annual review, /communities, /neighborhoods, /zip, both place views), so it is one cross-surface decision and not a one-route copy edit. Raised for its own node."
       },
       {
-        "section": "listing rows",
+        "section": "#overview (hero)",
         "severity": "taste",
-        "finding": "Confirmed as flagged: individual listing rows below the fold still print the MLS-cased 'Ridge At Eagle Crest' (capital At) in their city/subdivision line and in the map-tile filter payload, while the H1, breadcrumb, headings, all five Q&A questions and the FAQPage JSON-LD correctly read 'Ridge at Eagle Crest.' Deliberately deferred per a live search-filter-key dependency, but it is still a visible casing mismatch between the page's own name for itself and the listings it shows under that name."
+        "finding": "The §0 source sentence is still the first line of body copy under the H1, ahead of any descriptive caption, and on this plat there is no hero photograph at all: no image is registered for the slug and the plat is not a registered alias of the Tetherow resort, so the resort-photo fallback never fires and the fold is bare type on cream. Carried forward unresolved from the prior receipt (the same finding on ridge-at-eagle-crest); adding the plat to the resort's alias list would fix the photo but a registry alias asserts membership and also scopes CMA comps, which is Matt's call, not a page fix."
+      },
+      {
+        "section": "#market-report / #faq",
+        "severity": "taste",
+        "finding": "107 is the terminal figure of the market band and is restated as the second FAQ row's figure ('sales on record'). The two rows around it now each make a distinct claim — the market band draws the by-year series, the first FAQ row compares 2025 against 2024 — but the lifetime total itself is said twice in two forms rather than once."
+      },
+      {
+        "section": "#market-report",
+        "severity": "craft",
+        "finding": "The chart's interrogation is real (cursor crosshair, a crosshair and per-series value tip on pointer and touch, arrow-key stepping, a polite live region) but nothing on first paint signals it. The obvious fix — a caption telling the reader to scrub — is the Atlas how-to tell TASTE.md names and ci:taste-canon ratchets, so it was not added; a resting state that shows the latest reading is the candidate, and it is a change to the shared v3-chart primitive that every chart on the site would inherit."
       }
     ],
     "openRaise": [
-      "Was the hero V3SourceLine placement a deliberate call for the plat grain, or should it move behind a title tooltip like the community route to match the class?",
-      "Should platStatsTrace's sourceTrace also populate a sourceKey so all three place grains expose the same audit handle?"
+      "Does an 'A'-bucket set get called 'active single-family listings' anywhere on the site? CLAUDE.md §0 says 'A' is a mixed bucket, roughly fifteen surfaces use that wording for it, and this plat is the case where it is visibly false. One decision, then one sweep.",
+      "Should golf-homes-at-tetherow (and the other resort sub-plats) be registered as subdivision aliases of their parent resort so the hero can carry the resort photograph? A registry alias asserts membership and also scopes CMA comps, so it is not a page-level fix.",
+      "Should the hero §0 source line move behind a title tooltip to match the community grain, or stay as the first line of body copy on this class? Raised on the prior receipt and still unanswered.",
+      "Should the shared v3-chart primitive paint a resting reading (latest point, crosshair parked) so its interaction is legible without a how-to caption?"
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-08",
-      "score": 82,
+      "score": 76,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:7c616fee8b37b0b72d7e41556fad6cc249829f1fa7d93c6792150d73294b1ed6"
+      "shotsHash": "sha256:b2fe0b7ea8f60f6cca620f65f32b5e6873cf3c7505d12513ab8419eca1193b0a"
     },
-    "rebaselineReason": "The prior 82 was scored on a different shotsHash — shots of the pre-fix build, before the source lines were rewritten, the plat name recased and the reference rows split. Same evaluatorModel and same rubricVersion, but a different artifact, so this is a rebaseline and not a rise. Round 1 marks for the record: neighborhood 82, community 79, subdivision 73."
+    "rebaselineReason": "shotsHash differs: the prior 76 was scored on /subdivisions/ridge-at-eagle-crest, a four-shot set of a build in which this class could not state a closed count at all. This pass is a six-shot set of a different plat and a different build, so it is the first mark on the new instrument. evaluatorModel and rubricVersion are unchanged. Within THIS instrument the score did rise: the same evaluator on the same rubric scored these shots 61, then 74 after the market band and the question set were rebuilt on the boundary attribution, then 77."
   }
 }

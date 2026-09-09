@@ -116,3 +116,70 @@ export function subdivisionSalesChart(
     ...(xTicks.length ? { xTicks } : {}),
   }
 }
+
+/**
+ * THE PLAT'S OWN SERIES, ATTRIBUTED BY BOUNDARY (SITE-24).
+ *
+ * Same drawing as subdivisionSalesChart above, different join, and it exists
+ * because that one is empty for a whole class of plats: it matches the MLS
+ * SubdivisionName, and every home inside Golf Homes At Tetherow or Tennis
+ * Tracts At Broken Top is filed under "Tetherow" or "Broken Top". Those pages
+ * printed "Too few recent sales here to chart." over plats holding 107 and 110
+ * closed sales. This series is the same union the plat's lifetime count is
+ * built from (public.subdivision_plat_closed_mv, closed_by_year), grouped by
+ * calendar year of the close, so the line and the figure beside it are one
+ * population and the years sum to the total.
+ *
+ * EVERY PROPERTY TYPE, like the count. The caption says so rather than letting
+ * a reader carry over the single-family scope of the sibling chart.
+ *
+ * THE CURRENT YEAR IS A PARTIAL YEAR and its point is labelled "to date"; the
+ * claim above the drawing never compares a partial year to a full one (§0, the
+ * same rule the sibling applies).
+ */
+export function platClosedYearChart(
+  displayName: string,
+  closedByYear: Readonly<Record<number, number>> | null | undefined,
+): V3ChartProps | undefined {
+  if (!closedByYear) return undefined
+  const thisYear = new Date().getFullYear()
+  const points: V3ChartPoint[] = Object.entries(closedByYear)
+    .map(([year, count]) => ({ year: Number(year), count: Number(count) }))
+    .filter((row) => Number.isInteger(row.year) && Number.isFinite(row.count) && row.count > 0)
+    .sort((a, b) => a.year - b.year)
+    .map((row) => ({
+      value: row.count,
+      tick: v3Text(String(row.year)),
+      label: v3Text(
+        row.year === thisYear
+          ? `${row.count.toLocaleString('en-US')} to date`
+          : row.count.toLocaleString('en-US'),
+      ),
+      at: row.year,
+    }))
+  // Fewer than two years is not a line. The count still prints as a figure.
+  if (points.length < 2) return undefined
+  const series = [{ name: v3Text('Closed sales'), points }]
+  const last = points[points.length - 1]!
+  const claim =
+    last.at === thisYear
+      ? yoyClaim({
+          metric: 'Closed sales',
+          unit: 'count',
+          series: [{ name: series[0]!.name, points: [last] }],
+          value: last.value.toLocaleString('en-US'),
+          latestLabel: `${thisYear} so far`,
+        })
+      : yoyClaim({ metric: 'Closed sales', unit: 'count', series })
+  const yTicks = countTicks(series)
+  const xTicks = yearTicks(series)
+  return {
+    caption: v3Text(
+      `Closed sales inside the recorded ${displayName} plat, by year, every property type`,
+    ),
+    ...(claim ? { claim: v3Text(claim) } : {}),
+    series,
+    ...(yTicks.length ? { yTicks } : {}),
+    ...(xTicks.length ? { xTicks } : {}),
+  }
+}

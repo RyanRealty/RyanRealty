@@ -405,3 +405,87 @@ describe('the reader\'s sentence and the machine handle are separate fields', ()
     expect(out.traces).toContain('regional MLS, the median of the 135 current listings that report dues')
   })
 })
+
+/**
+ * SITE-24. The boundary question. A sub-plat of a resort has no figure on any
+ * name-joined row — every home inside Golf Homes At Tetherow is recorded in the
+ * MLS under "Tetherow" — so before this the section rendered its heading,
+ * "questions, answered with the number", over a single row that was the
+ * valuation ask and carried no number at all.
+ */
+describe('buildPlaceAnswers — the lifetime count attributed by boundary', () => {
+  const plat: PlaceAnswersInput = {
+    ...base,
+    placeName: 'Golf Homes at Tetherow',
+    figures: {
+      lifetimeClosedCount: {
+        count: 107,
+        trace: 'live MLS through Oregon Data Share through the recorded-plat closed-sale index',
+      },
+    },
+  }
+
+  it('answers the boundary question on a plat that can answer nothing else', () => {
+    const { answers } = buildPlaceAnswers(plat)
+    const row = answers.find((a) => a.id === 'answer-lifetime-sales')
+    expect(row).toBeDefined()
+    expect(row?.question).toBe('How many homes have ever sold in Golf Homes at Tetherow?')
+    expect(row?.figure?.value).toBe('107')
+    expect(row?.figure?.mark).toMatchObject({ kind: 'tally', count: 107 })
+    // The method is in the body, because a count a name join cannot produce is
+    // only trustworthy if the reader is told how it was produced.
+    expect([row?.body ?? ''].flat().join(' ')).toMatch(/where the home actually sits/)
+    expect(row?.source).toMatch(/recorded-plat closed-sale index/)
+  })
+
+  it('puts the boundary count in the FAQPage payload, so the markup matches the page', () => {
+    const items = answersFaqItems(buildPlaceAnswers(plat).answers)
+    expect(items.some((i) => i.question.includes('ever sold in Golf Homes at Tetherow'))).toBe(true)
+  })
+
+  it('§0: a missing or zero lifetime count is an absent question, never a zero', () => {
+    for (const figures of [{}, { lifetimeClosedCount: null }, { lifetimeClosedCount: { count: 0 } }]) {
+      const { answers } = buildPlaceAnswers({ ...plat, figures })
+      expect(answers.find((a) => a.id === 'answer-lifetime-sales')).toBeUndefined()
+    }
+  })
+
+  /**
+   * The two counts coexist and they measure different sets: the yearly count is
+   * a name join over one window, the lifetime count is a boundary join over all
+   * of them. The boundary row sits after the name row, because a reader asks
+   * how it is selling now before asking how much has ever sold here.
+   */
+  /**
+   * §0 rule 5 in one word. The boundary count is every property type and this
+   * plat is townhomes; the page's own population label is single-family.
+   */
+  it('lets the closed figure name its own population instead of the page\'s', () => {
+    const { answers } = buildPlaceAnswers({
+      ...plat,
+      figures: {
+        closedCount: { count: 7, windowLabel: 'in 2025', populationLabel: 'homes' },
+      },
+    })
+    const body = answers.flatMap((a) => [a.body].flat()).join(' ')
+    expect(body).toMatch(/7 homes closed/)
+    expect(body).not.toMatch(/7 single-family homes closed/)
+  })
+
+  it('sits after the yearly closed count and does not replace it', () => {
+    const { answers } = buildPlaceAnswers({
+      ...plat,
+      figures: {
+        closedCount: { count: 26, windowLabel: 'in 2025' },
+        lifetimeClosedCount: { count: 107 },
+      },
+    })
+    const ids = answers.map((a) => a.id)
+    // With no months-of-supply the yearly count answers the verdict question.
+    expect(ids).toContain('answer-verdict')
+    expect(ids.indexOf('answer-lifetime-sales')).toBeGreaterThan(ids.indexOf('answer-verdict'))
+    const figures = answers.map((a) => a.figure?.value)
+    expect(figures).toContain('26')
+    expect(figures).toContain('107')
+  })
+})

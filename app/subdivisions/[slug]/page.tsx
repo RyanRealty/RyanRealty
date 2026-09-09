@@ -46,7 +46,7 @@
  * true, generateStaticParams returning [], and maxDuration 60. MetadataBlock stays on the legacy register: JSON-LD is not
  * visual language and ci:ai-structured-data pins this route to it by name.
  *
- * FOUR POPULATIONS, FOUR TRACES (CLAUDE.md §0). Every sentence that describes
+ * FIVE POPULATIONS, FIVE TRACES (CLAUDE.md §0). Every sentence that describes
  * one lives in _v3/subdivision-traces.ts, and no section prints a figure its own
  * trace does not cover:
  *   1. The plat's active count and the homes — getPlatPublicInventory, the
@@ -60,6 +60,14 @@
  *      'subdivision', periodType 'ytd' (pinned by ci:subdivision-stats-integrity).
  *   4. The yearly closed aggregates — the get_subdivision_sales_history RPC.
  *      ODS rule 5-4 A.4: aggregates only, never an individual sold address.
+ *   5. The plat's LIFETIME closed count and its year series — the
+ *      subdivision_plat_closed_mv union, attributed by the sale's coordinates
+ *      falling inside the recorded plat polygon and by the MLS name, counted
+ *      once either way (SITE-24). Populations 3 and 4 are name joins, so they
+ *      are EMPTY for every sub-plat of a resort — every home inside Golf Homes
+ *      At Tetherow is filed under "Tetherow" — and this is the only one of the
+ *      five such a page can state anything from. It is counts only; a
+ *      closed-price statistic at plat grain stays withheld.
  *
  * ABSENT IS NOT ZERO. A boundary or inventory read that times out leaves the
  * same empty array a genuinely empty plat leaves, so activeCount is null in that
@@ -111,7 +119,7 @@ import { cityStagePoster, placeLibraryHero } from '@/app/cities/[slug]/_v3/city-
 import {
   placeCostChart,
   platRecentClosedCount,
-  tooFewSalesItems,
+  TOO_FEW_SALES_LINE,
 } from '@/app/cities/[slug]/_v3/place-graphics'
 import { communityImage } from '@/lib/geo-images'
 import { getPlatPublicInventory } from '@/lib/data/geo/plat-public-inventory'
@@ -127,6 +135,7 @@ import {
   subdivisionPlaceContext,
 } from '@/lib/explore/subdivision-page-extras'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
+import { getPlatClosedCount } from '@/lib/data/subdivisions/getPlatClosedCounts'
 import { getSubdivisionSalesHistory } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 import { getSubdivisionSchools } from '@/lib/data/subdivisions/getSubdivisionSchools'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
@@ -176,7 +185,7 @@ import { SubdivisionSchools } from './SubdivisionSchools'
 import { SubdivisionDocuments } from './SubdivisionDocuments'
 import { SubdivisionMarketCharts } from './_v3/SubdivisionMarketCharts'
 import { buildSubdivisionEdges } from './_v3/subdivision-edges'
-import { platStatsFigures, subdivisionSalesChart } from './_v3/subdivision-figures'
+import { platClosedYearChart, platStatsFigures, subdivisionSalesChart } from './_v3/subdivision-figures'
 import { resolveRegistryAlias, slugToTitle } from './_v3/subdivision-registry'
 import { boundsFromListingPins, hasRealPlatPolygon, toSplitListing } from './_v3/subdivision-split'
 import {
@@ -184,6 +193,7 @@ import {
   PERIOD_LABEL,
   platCountsTrace,
   platInventoryTrace,
+  platLifetimeClosedTrace,
   platStatsTrace,
   salesHistoryTrace,
   type PlatScope,
@@ -487,8 +497,15 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
     seedRing || splitListings.some((row) => row.Latitude != null && row.Longitude != null)
 
   // ── THE REST OF THE READS. Every one of them reaches the screen. ─────────
-  const [salesHistory, subdivisionStats, subdivisionSchools, placeDocuments, placeCharacter, publicSegments] =
-    await Promise.all([
+  const [
+    salesHistory,
+    subdivisionStats,
+    subdivisionSchools,
+    placeDocuments,
+    placeCharacter,
+    publicSegments,
+    platClosed,
+  ] = await Promise.all([
       withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
       withTimeoutFallback(
         getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }),
@@ -514,6 +531,12 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
         3000,
         'sub:publicSegments',
       ),
+      // POPULATION 5 (SITE-24): the plat's lifetime closed count, attributed by
+      // point-in-polygon first and by MLS name second, unioned. It is the same
+      // read the indexability gate makes, off the same 6h cache, so the figure
+      // the page prints and the verdict the robots tag publishes can never
+      // disagree. null on a miss — the figure is then absent, never a zero.
+      withTimeoutFallback(getPlatClosedCount(slug), null, 4500, 'sub:platClosed'),
     ])
 
   // ── THE MARKET BAND READS ONE POPULATION AT A TIME ──────────────────────
@@ -606,6 +629,18 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
       label: v3Text('closed in the last 30 days'),
     })
   }
+  // POPULATION 5. The one figure on this page a sub-plat of a resort can
+  // actually answer: every home inside Ridge At Broken Top is listed under
+  // "Broken Top", so the name-joined populations above are empty for it while
+  // the recorded plat has a real sale history. §0: printed only when the read
+  // answered with a real count — a miss is absent, never a zero.
+  const lifetimeClosed = platClosed && platClosed.closedCount > 0 ? platClosed.closedCount : null
+  if (lifetimeClosed != null) {
+    marketFigures.push({
+      value: v3Text(String(lifetimeClosed)),
+      label: v3Text('homes sold here, all time'),
+    })
+  }
   // The Market Truth recorded-plat counts, then the plat's own cache row. Each
   // figure keeps the label its own layer gave it, so nothing is relabeled on
   // the way onto the page.
@@ -620,7 +655,21 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   const [firstPlatFigure, ...restPlatFigures] = marketFigures
   const salesChart = subdivisionSalesChart(displayName, salesHistory)
   const closedN = platRecentClosedCount(salesHistory)
-  const soldChart = placeCostChart(closedN, salesChart)
+  const nameJoinChart = placeCostChart(closedN, salesChart)
+  /* THE SERIES A SUB-PLAT CAN HAVE (SITE-24). `nameJoinChart` is the MLS
+     SubdivisionName join, and it is empty for every sub-plat of a resort: those
+     homes are filed under "Tetherow" or "Broken Top", so this section printed
+     "Too few recent sales here to chart." over plats holding 107 and 110 closed
+     sales on their own recorded boundaries.
+
+     THE NAME JOIN STILL WINS WHERE IT WORKS, and the fallback is deliberate
+     rather than a preference: the yearly Ledger below this section prints the
+     name-joined counts, so drawing the boundary series ABOVE a table of the
+     name-joined ones would put two populations under one heading — the exact
+     defect 3f34bf65 removed from this page. The boundary series appears only
+     where the name join produced nothing, where there is no second population
+     to disagree with. */
+  const soldChart = nameJoinChart ?? platClosedYearChart(displayName, platClosed?.closedByYear)
 
   // ONE SENTENCE PER POPULATION THAT ACTUALLY REACHED THE PAGE, and the sentences
   // are joined rather than concatenated: each trace is written to follow the word
@@ -628,6 +677,15 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   // case in the middle of the line.
   const marketClauses = [
     platFigures.medianListPrice != null ? platInventoryTrace(platScope) : null,
+    // THE DRAWING GETS A CLAUSE TOO, and which clause depends on which join
+    // produced it. The chart carried no sentence at all before SITE-24, which
+    // was survivable while there was only one possible series; with two, a
+    // section whose line is the boundary series under a sentence describing the
+    // MLS-name series would be §0 rule 5 exactly backwards. The name-joined
+    // chart and the yearly Ledger below share one population and one sentence;
+    // the boundary chart shares the lifetime count's.
+    nameJoinChart ? salesHistoryTrace(displayName) : null,
+    lifetimeClosed != null ? platLifetimeClosedTrace(displayName) : null,
     countFigures.length > 0 ? platCountsTrace(displayName) : null,
     cacheFigures.length > 0 ? platStatsTrace(displayName, cityName, statsPeriodLabel) : null,
   ].filter((clause): clause is string => clause !== null)
@@ -729,6 +787,34 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
      query under the same drawing would be two populations wearing one form. */
   const priorCompleteYear =
     lastCompleteYear && completeYears[1]?.year === lastCompleteYear.year - 1 ? completeYears[1] : null
+  /* THE BOUNDARY SERIES ANSWERING THE SAME QUESTION (SITE-24). Same shape, same
+     rules — latest COMPLETE year, and a comparison run only when it is the year
+     immediately before it and came out of this same map. Used only where the
+     name join produced nothing, so the two populations never appear together. */
+  const boundaryYears = platClosed?.closedByYear ?? {}
+  const boundaryComplete = Object.entries(boundaryYears)
+    .map(([year, count]) => ({ year: Number(year), closedCount: Number(count) }))
+    .filter((row) => row.year < nowYear && row.closedCount > 0)
+    .sort((a, b) => b.year - a.year)
+  const boundaryLast = boundaryComplete[0]
+  const boundaryPrior =
+    boundaryLast && boundaryComplete[1]?.year === boundaryLast.year - 1 ? boundaryComplete[1] : null
+  const platBoundaryYears = boundaryLast
+    ? {
+        count: boundaryLast.closedCount,
+        windowLabel: `in ${boundaryLast.year}`,
+        // EVERY PROPERTY TYPE, and the noun has to say so. The page's own
+        // population is single-family (getPlatPublicInventory is SFR), but the
+        // boundary count is not filtered on type at all, and Golf Homes At
+        // Tetherow is a townhome plat — "7 single-family homes closed" would be
+        // §0 rule 5 in one word.
+        populationLabel: 'homes',
+        trace: platLifetimeClosedTrace(displayName),
+        priorWindow: boundaryPrior
+          ? { count: boundaryPrior.closedCount, label: `in ${boundaryPrior.year}` }
+          : null,
+      }
+    : null
   const { answers: platAnswers, traces: platAnswerTraces, sourceKey: platSourceKey } = buildPlaceAnswers({
     placeName: displayName,
     cityName: placeCity,
@@ -754,7 +840,24 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
               ? { count: priorCompleteYear.closedCount, label: `in ${priorCompleteYear.year}` }
               : null,
           }
-        : null,
+        : // THE SAME QUESTION, OFF THE BOUNDARY SERIES, when the name join has
+          // no year to answer it with (SITE-24). A sub-plat's sales are all
+          // filed under the resort's MLS name, so `salesHistory` is empty for it
+          // and this page could not ask "is it a buyer's or seller's market"
+          // at all — not even to refuse it, which is the answer the grain owes.
+          // Its own trace travels with it, because it is a different population
+          // from the one salesHistoryTrace describes.
+          platBoundaryYears,
+      // POPULATION 5 (SITE-24). The boundary question, and on a sub-plat of a
+      // resort the ONLY question on this page that has an answer: every row
+      // above is name-joined and a sub-plat's sales all carry the resort's MLS
+      // name. Golf Homes At Tetherow shipped this section with a single row —
+      // the valuation ask — under a heading promising answers with the number.
+      // §0: printed only when the read answered; a miss is absent, not a zero.
+      lifetimeClosedCount:
+        lifetimeClosed != null
+          ? { count: lifetimeClosed, trace: platLifetimeClosedTrace(displayName) }
+          : null,
       daysOnMarket:
         subdivisionStats?.medianDaysOnMarket != null && subdivisionStats.medianDaysOnMarket > 0
           ? {
@@ -880,8 +983,19 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
             by name. */}
         <SubdivisionSchools displayName={displayName} schools={subdivisionSchools} edges={edges} />
 
-        {/* Pattern 1, Instrument — the plat's own market, one population. */}
-        {soldChart && firstPlatFigure ? (
+        {/* Pattern 1, Instrument — the plat's own market, one population.
+
+            THE CHART IS OPTIONAL HERE; THE FIGURES ARE NOT. Until SITE-24 the
+            no-chart case rendered a V3Quiet carrying only "Too few recent sales
+            here to chart." and DROPPED every figure with it. On a sub-plat of a
+            resort that was a §0 reconciliation failure the moment the polygon
+            join landed: Golf Homes At Tetherow has 107 closed sales on its
+            recorded plat, and the page said too-few-sales and printed none of
+            them, because the yearly series behind the chart is name-joined and
+            a sub-plat's sales are all recorded under "Tetherow". The chart
+            refusal is still true and still printed — it moves into the note
+            slot, one sentence above the figures — and the figures survive. */}
+        {firstPlatFigure ? (
           <V3Instrument
             id="market-report"
             level={2}
@@ -898,13 +1012,9 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
                 ? v3Text(formatDate(subdivisionStats.refreshedAt))
                 : undefined
             }
-            chart={soldChart}
-          />
-        ) : firstPlatFigure && !soldChart ? (
-          <V3Quiet
-            id="market-report"
-            heading={`What sold in ${displayName}`}
-            items={tooFewSalesItems()}
+            {...(soldChart
+              ? { chart: soldChart }
+              : { note: v3Text(TOO_FEW_SALES_LINE) })}
           />
         ) : null}
 
