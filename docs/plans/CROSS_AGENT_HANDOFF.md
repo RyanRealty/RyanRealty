@@ -92,6 +92,14 @@ subject outside any boundary uses the comp radius, never a city-wide band. Befor
 were the market-area grain at a fixed 12 months and competition was city-wide nearest-first.
 `render_args.compArea` is the one area object; the renderer reads it for both chapters.
 
+**Landed after the cut-off (2026-09-08 evening):** the wiring pass (`fa6dde43`) and Delta 3
+(`010a544d`, `ef66f481`) reached main at `09b59010` and are live: one map, three pin families,
+three matrices; chapter 2 and the competition read `compArea` / `expiredPeers` / `bandRivals`.
+The rural competition cap (`6ea73fc4`: start 5 mi, widen 5 → 10 → comp radius only to find
+three) reached main at `8a1f83be`; Concorde's competition is 3 active + 1 pending within five
+miles. All four exemplars rebuilt on this engine; look-pass OK on all four. The block below
+describes the state BEFORE those landed and is kept for the record.
+
 **Session cut-off 2026-09-08 (limit resets 8pm PT) — state of the two lanes:**
 - Document `wt/cma-doc-20260907`: Delta 3 landed as `010a544d` (one map, three pin families,
   three matrices) and `ef66f481` (sort/filter/reveal per matrix), plus `b366a3a6` WIP residue
