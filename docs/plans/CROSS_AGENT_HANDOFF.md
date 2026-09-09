@@ -1,4 +1,74 @@
-# Current — 2026-09-09 (site queue round two: SITE-26 and SITE-27 done in one push; the BPO contract forwards the subject type again)
+# Current — 2026-09-09 (the CMA send walked end to end on the email harness; the intake stops taking over other people's drafts)
+
+Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
+(`wt/cma-ship-20260907`). Commit 021e0e9a, merged with main at 31eef8d8, gated push in flight
+when this was written — `git log origin/main --oneline -3` says whether it landed.
+
+**What Matt asked.** "Work through the full send of CMAs to some of the aliases, then open and
+click, ensure tracking works and that the CMA delivery shows up under the lead. Walk the process
+and improve it. Tweak the email with a custom email."
+
+**What was walked, on production, as Matt.** Three seller-LP requests for the harness aliases
+(`scripts/_cma-harness-requests.ts`): Avery → 2465 NE 7th Redmond (new row
+`cma-2465-ne-7th-redmond-97756`), Blake → 1617 NW 8th Bend, Casey → 19968 Terrace Bend. Two
+documents sent from `/admin/cmas/<slug>` with a broker-typed subject and body (Send now), read
+back from the marketing@ inbox over DWD (`scripts/_cma-harness-inbox.ts`), the report link
+opened in a fresh headless profile (`scripts/_cma-harness-click.ts`, never the admin's browser —
+`?_pid` would stitch Matt's visitor id to the alias). Verified for both Avery and Blake:
+`cmas.status=delivered`; `email_events` sent (transport gmail) and click, keyed `cma:<slug>`;
+`crm_timeline` email_out → email_click → "Broker alert queued (return-visit)"; `visitor_events`
+page_view `client-document` on `/cma/<slug>`; `visitor_identity_map` row for the new rr_vid with
+`identify_source=email_click_pid`; the review page's "What happened" panel (Sent, Clicked, Visited
+· 3×) and the lead page `/admin/people/63297` ("CMA sent … Clicked · on the site after"). Blake's
+went out on the versioned slug `cma-1617-nw-8th--v2`, so the `--vN` path delivers and tracks.
+"Opened —" is expected on the panel: the headless reader loads no pixel.
+
+**The defect the walk found, fixed in 021e0e9a.** Blake's and Casey's requests landed on OTHER
+PEOPLE's open drafts — `cma-1617-nw-8th` was Merle Lookabaugh's asked-unsent draft, `cma-19968`
+was Rob Voth's hot FSBO draft (person 63676). The intake's "open draft → refresh contact fields"
+rule rewrote their client name and email to the alias while `person_id` (stamped only when null)
+kept the first person: one document, two people, the send would have gone to the second while
+the events landed on the first. The cma-build-worker had already rebuilt 1617 under Blake's name
+and was mid-build on 19968 (killed by hand, action 43e20378). Both rows were restored from the
+original action payloads and Merle's rebuilt on the current engine; Rob's build never wrote.
+Fix: `resolveWritableCmaSlot(baseSlug, requester?)` — an open draft claimed by someone else
+(person id or email) is stepped past to `--vN` exactly like a protected document; unclaimed
+drafts and the same person's drafts behave as before; callers with no identity (admin rebuild,
+prospecting, CLI) keep the old rule. Intake, the contact-card CMA, and the CRM kick-off pass
+identity. `lib/cma/versions.owner.test.ts` locks it. Re-running the requests through the fix
+produced `cma-1617-nw-8th--v2` and `cma-19968--v2` for the aliases, both look-pass OK.
+
+**Email fixes in the same commit.** The review page preview of a custom email showed no report
+link while the send appended one — `lib/cma/report-button.ts` is now the one source for the
+READ THE FULL REPORT button, used by `lib/cma/send.ts` (both branches) and prepended to the
+review page's `signatureHtml`. A custom note's preheader is its own first sentence, not the
+composed line it replaced. "the sales that set it" → "the sales behind it" in the first-contact
+copy and the inbound packet ("set" is on the CMA's banned list).
+
+**Seen on the walk, not changed (Matt's call or by design).**
+- `/cma/<slug>` is the Google sign-in door (Matt 2026-08-05, `lib/cma/register-gate.ts`): the
+  lead reads the attached PDF freely; the web report and its tracked address links sit behind
+  "Continue with Google". The tracked click and the door's page view both record; a headless
+  reader cannot pass the door, so in-document taps were verified from the admin render only.
+- The build worker runs at :14 and :44 (`vercel.json`); a seller-LP request can wait 29 minutes
+  for its draft. Avery's built in 26s only because the request landed at :43. Kicking the worker
+  from the intake (`after()` fetch with the cron secret) would close that; not built.
+- "What happened" on the review page lagged one reload behind the click (60-second
+  `unstable_cache` on `cma:engagement`); the second load was right.
+- After Send now the review page auto-advances to the next ready document in the lane; it landed
+  on Merle's real draft. Correct product behavior, and the reason every harness send must be read
+  twice before the click.
+- `cma-19968--v2` (Casey) is `review` severity (audit findings; the document prints "under broker
+  review") and was not sent. `cma-1617-nw-8th--v2` (Blake) carries a $699,000–$932,000 range
+  around $816,000 — wide; the engine's number, left as is for this walk.
+
+**Not done from the mission list** (unchanged from the previous block): containment ladder
+(subdivision → adjacent subdivisions inside the neighborhood/community to 12 months → out), Delta
+4 rural-property factors, cover photo, subdivision-story/voice-reviewer Anthropic calls, inbound
+email replies not advancing the CRM, D21 price-tier fallback, CmaLaneFunnel not mounted, the 8
+zz-test-rebrand fixtures in production `cmas`, all four lane Auto-send switches OFF.
+
+## Prior — 2026-09-09 (site queue round two: SITE-26 and SITE-27 done in one push; the BPO contract forwards the subject type again)
 
 Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. One push for
 the ship class: `467825cf..78e9cf5c` (lane commits d173fab0 and a5cd7001, merges 7ff9ce9b and
