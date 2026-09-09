@@ -352,8 +352,14 @@ describe('print CMA price-opinion spine', () => {
         pricing: {
           ...pricing,
           sellerNet: {
+            basis: 'list' as const,
+            list: 475000,
+            lines: [{ label: 'Seller concession', amount: 8000, source: 'Median of the 3 comparable sales that reported the field. 2 of them gave one, median $10,000.' }],
+            net: 467000,
+            sentence:
+              'From a $475,000 list, less $8,000 in seller concessions, $467,000 remains. This figure does not include the listing and buyer-broker commission, title insurance, escrow and closing fees, recording and transfer fees and your loan payoff.',
+            unknowns: ['the listing and buyer-broker commission'],
             expectedConcessions: 8000,
-            predictedSellerNet: 457000,
             knownCount: 3,
             givenCount: 2,
             medianWhenGiven: 10000,

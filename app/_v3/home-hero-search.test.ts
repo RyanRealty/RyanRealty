@@ -54,7 +54,6 @@ describe('homepage hero search uses the public search stack', () => {
   })
 
   it('wires Buy | Sell tabs on the hero (Buy = search, Sell = Value my home)', () => {
-    expect(SEARCH).toContain('role="tablist"')
     expect(SEARCH).toMatch(/>\s*Buy\s*</)
     expect(SEARCH).toMatch(/>\s*Sell\s*</)
     expect(SEARCH).toContain('Value my home')
@@ -63,7 +62,83 @@ describe('homepage hero search uses the public search stack', () => {
     expect(SEARCH).not.toContain('see what your home is worth')
     const css = readFileSync(resolve('app/_v3/home-hero-search.css'), 'utf8')
     expect(css).toContain('.v3 .home-hero-search__tabs')
-    expect(css).toContain('.v3 .home-hero-search__tab--on')
+    expect(css).toContain('.v3 .home-hero-search__mode--buy:checked')
+    expect(css).toContain('.v3 .home-hero-search__mode--sell:checked')
+  })
+
+  // SITE-12. The hard accept test for this node: `curl /` finds the seller
+  // address field. That can only be true if the panel is in the document at
+  // render, which means the switch cannot be React state and the field cannot
+  // be mounted by an effect.
+  it('server-renders BOTH panels and switches them in CSS, not in state', () => {
+    expect(SEARCH).toContain('name="address"')
+    expect(SEARCH).toContain('home-hero-search__panel-form--buy')
+    expect(SEARCH).toContain('home-hero-search__panel-form--sell')
+    expect(SEARCH).toContain('home-hero-search__mode--buy')
+    expect(SEARCH).toContain('home-hero-search__mode--sell')
+    // No tab state, and therefore no way to render one panel and not the other.
+    expect(SEARCH).not.toMatch(/useState<HeroTab>/)
+    expect(SEARCH).not.toMatch(/tab === 'buy' \?/)
+    const css = readFileSync(resolve('app/_v3/home-hero-search.css'), 'utf8')
+    expect(css).toContain('.v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__panel-form--buy')
+    expect(css).toContain('.v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__panel-form--sell')
+    // Hidden, never display:none: the switch stays on the tab order.
+    expect(css).toContain('.v3 .home-hero-search__mode {')
+    expect(css).toContain('clip-path: inset(50%)')
+  })
+
+  // 2026-09-08 evaluator: the tabs switched the form and left the copy alone,
+  // so Sell mode read "Homes for sale in Central Oregon" over the visitor's own
+  // address field. The copy switches with the panel now, in the same stylesheet,
+  // and the page still ships exactly one h1 with the locked buyer line in it.
+  it('switches the hero copy with the panel, and keeps one h1', () => {
+    const STAGE = readFileSync(resolve('components/site/v3/V3Stage.tsx'), 'utf8')
+    const STAGE_CSS = readFileSync(resolve('components/site/v3/V3Stage.css'), 'utf8')
+    const css = readFileSync(resolve('app/_v3/home-hero-search.css'), 'utf8')
+
+    expect(PAGE).toContain('altEyebrow="Selling in Central Oregon"')
+    expect(PAGE).toContain('altHeadline="What is your home worth?"')
+    // The locked buyer H1 is untouched, and it is still the only heading.
+    expect(PAGE).toMatch(/headline=\{v3Text\('Homes for sale in Central Oregon'\)\}/)
+    expect(STAGE).toContain('v3-stage-line--alt')
+    expect(STAGE).toContain('v3-stage-eyebrow--alt')
+    // A paragraph wearing the heading face — never a second h1 on the page.
+    expect(STAGE).not.toMatch(/altHeadline[\s\S]{0,400}<V3Heading/)
+    // Hidden by default, so a Stage with alt copy and no switch is still right.
+    expect(STAGE_CSS).toContain('.v3 .v3-stage-eyebrow--alt,')
+    expect(STAGE_CSS).toContain('.v3 .v3-stage-line--alt {')
+    // The switch itself lives with the tabs that drive it.
+    expect(css).toContain(
+      '.v3 .v3-stage-copy:has(.home-hero-search__mode--sell:checked) .v3-stage-line--alt',
+    )
+    expect(css).toContain(
+      '.v3 .v3-stage-copy:has(.home-hero-search__mode--sell:checked) .v3-stage-line:not(.v3-stage-line--alt)',
+    )
+  })
+
+  it('both panels submit without JavaScript, to somewhere real', () => {
+    expect(SEARCH).toContain("const BUY_ACTION = '/homes-for-sale'")
+    expect(SEARCH).toContain("const SELL_ACTION = '/sell#get-value'")
+    expect(SEARCH).toContain('action={BUY_ACTION}')
+    expect(SEARCH).toContain('action={SELL_ACTION}')
+    expect(SEARCH).toMatch(/method="get"[\s\S]*method="get"/)
+    expect(SEARCH).toContain('name="q"')
+  })
+
+  it('uses the /sell address field itself, never a second address input', () => {
+    expect(SEARCH).toContain("import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'")
+    expect(SEARCH).toContain('<AddressAutocomplete')
+    const SELL_FORM = readFileSync(resolve('app/sell/_v3/SellValueForm.tsx'), 'utf8')
+    expect(SELL_FORM).toContain("import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'")
+    // …and what the hero hands it is what /sell opens with.
+    expect(SELL_FORM).toContain("new URLSearchParams(window.location.search).get('address')")
+  })
+
+  it('stamps the hero as the ask source so a home-started valuation is countable', () => {
+    expect(SEARCH).toContain("markAskSource('hero')")
+    expect(SEARCH).toContain("trackEvent('address_submit', { form: 'get-value', surface: 'home_hero' })")
+    expect(SEARCH).toContain("trackEvent('search'")
+    expect(SEARCH).toContain("surface: 'home_hero'")
   })
 
   it('empty submit opens the regional list, not a dead form', () => {
@@ -226,6 +301,26 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(facesAt).toBeGreaterThan(doorsAt)
     expect(placesAt).toBeGreaterThan(facesAt)
     expect(proofAt).toBeGreaterThan(placesAt)
+  })
+
+  // 2026-09-08 evaluator: #places was twelve identical empty boxes with nothing
+  // telling a town from a resort. Two labelled runs now, and the town run
+  // carries the same live active count /cities publishes per city.
+  it('browses places as two labelled runs, with the live count on the towns', () => {
+    expect(PAGE).toMatch(/<HomeBrowsePlaces[^>]*runs=\{placeRuns\}/)
+    expect(PAGE).toContain("name: 'Towns'")
+    expect(PAGE).toContain("name: 'Resorts and communities'")
+    expect(PAGE).toContain("unit: 'houses for sale'")
+    expect(PAGE).toContain("seeAll: { label: 'Every city', href: '/cities' }")
+    expect(PAGE).toContain("seeAll: { label: 'Every community', href: '/communities' }")
+    // Section 0: a null or non-finite activeCount prints nothing, never a zero.
+    expect(PAGE).toContain("typeof active === 'number' && Number.isFinite(active)")
+    expect(PLACES).toMatch(/home-browse-places__run\b/)
+    expect(PLACES).toMatch(/home-browse-places__runname/)
+    expect(PLACES).toMatch(/home-browse-places__unit/)
+    expect(PLACES).toMatch(/home-browse-places__count/)
+    // The resorts run ships no figure at all — this page holds no per-resort read.
+    expect(PAGE).toMatch(/RESORT_DOORS\.map\(\(r\) => \(\{ label: r\.label, href: r\.href \}\)\)/)
   })
 
   it('does not print the regional remainder paragraph', () => {

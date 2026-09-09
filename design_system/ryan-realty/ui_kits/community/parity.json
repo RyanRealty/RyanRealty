@@ -12,7 +12,7 @@
   "requiredComponents": [
     {
       "name": "MetadataBlock",
-      "section": "BreadcrumbList + Place + Dataset + FAQPage JSON-LD. All four are emitted here. FAQPage moved into this array because its old emitter left: the KB page emitted it from inside FAQBlock's includeJsonLd, and the v3 Quiet block that renders the questions carries no structured data of its own, so a swap that did not move the payload would have dropped the strongest AI-citation lever silently.",
+      "section": "BreadcrumbList + Place + Dataset + FAQPage JSON-LD. All four are emitted here. FAQPage moved into this array because its old emitter left: the KB page emitted it from inside FAQBlock's includeJsonLd, and the v3 Quiet block that renders the questions carries no structured data of its own, so a swap that did not move the payload would have dropped the strongest AI-citation lever silently. 2026-09-08: the FAQPage items are now answersFaqItems(placeAnswers) — derived FROM the rendered rows, not built beside them.",
       "blocking": true
     },
     {
@@ -77,7 +77,7 @@
     },
     {
       "name": "V3Answers",
-      "section": "FAQ. Verified questions from buildMarketFaq, each answer a disclosure. Doors are the explore edges. Not a Quiet wall.",
+      "section": "Pattern 8, #faq (site queue SITE-08, 2026-09-08). Rows come from buildPlaceAnswers and EACH CARRIES ONE SOURCED DATED FIGURE: the value on the closed row (so a shut section already reads as an answer sheet), and inside the disclosure the figure DRAWN plus its own §0 trace. Two drawings cover the class — a banded rule (months of supply lands inside seller's / balanced / buyer's, so the verdict is a position and not a word) and a tally of one mark per home, grouped in fives. The parent city sits on the same rule as a named context mark where one exists, never as a figure under this place's name. The SAME array feeds the FAQPage JSON-LD through answersFaqItems, which is the whole point of the node: a schema built beside the rows instead of from them can drift from the visible text. The questions with no figure (HOA, school district, which subdivisions a community holds) still come from buildMarketFaq and are merged in after the figured rows, deduped by question text. The last row is the closing ask and links to the address field. ON THIS GRAIN the verdict is WITHHELD and said so: publishMonthsOfSupply refuses a community's supply ratio (lib/market/geo-grain-trust.ts), so the question is answered with the closed count and the same sentence SITE-01 put on the address answer. The inventory row carries listedVsDetachedNote, one wording shared with reconcileListedVsDetachedFaq, so the every-property-type Field count and the single-family figure are reconciled rather than left to be spotted. Its closing action is #value — CommunityPlaceValue, the SITE-01 address ask at the top of this page.",
       "blocking": true
     },
     {
@@ -102,7 +102,7 @@
     },
     {
       "name": "CommunityPlaceValue",
-      "section": "The first-screen ask (site queue SITE-01, Matt 2026-09-07): V3PlaceValue bound to this route's server actions. Address in, verdict and pace out with no contact asked (months of supply verdict, days to pending, cash share, comparable-close count, each with its source and date), then email required and phone optional to deliver the written valuation. Never a dollar figure on the page. Renders on every community page: where Market Truth publishes no verdict (Brasada Ranch, too few recent sales) the answer says so and still carries the comparable-close count from the CMA engine, the figure the written valuation is built on. The kill-list ban on a KPI strip as the first thing you read still holds: nothing prints until the visitor types their own address.",
+      "section": "The first-screen ask (site queue SITE-01, Matt 2026-09-07): V3PlaceValue bound to this route's server actions. Address in, verdict and pace out with no contact asked (months of supply verdict, days to pending, cash share, comparable-close count, each with its source and date), then email required and phone optional to deliver the written valuation. Never a dollar figure on the page. Renders on every community page: where Market Truth publishes no verdict (Brasada Ranch, too few recent sales) the answer says so and still carries the comparable-close count from the CMA engine, the figure the written valuation is built on. The kill-list ban on a KPI strip as the first thing you read still holds: nothing prints until the visitor types their own address. Carries id=\"value\" (SITE-08): the closing answer set's last row links back to this field, and the id lives on the primitive so the anchor cannot drift from the control.",
       "blocking": true
     }
   ],
@@ -232,16 +232,10 @@
   },
   "tasteReview": {
     "evaluatedAt": "2026-09-08",
-    "score": 55,
-    "scores": [
-      57,
-      51,
-      55
-    ],
-    "evaluator": "separate Sonnet evaluator agent, one per page class, SITE-04 place-alerts craft round, session 019RdEm6 — three independent scorings of one capture run, no page code read and no live page opened",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator, SITE-08 round 2 — scored the MERGED build after the round-1 defects were fixed and the pages recaptured; three scorings of one shot set, median reported",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
-    "rubricVersion": "v1-2026-09-08",
     "shotSpec": {
       "routes": [
         "/communities/tetherow"
@@ -252,81 +246,54 @@
       ],
       "states": [
         "default",
-        "atlas",
-        "market (sticky alerts bar armed)",
-        "alerts-callout"
-      ],
-      "capture": "scripts/take-route-shots.mjs, device scale 1, palette-quantized, consent banner and dev badge suppressed, image hosts relayed so the real hero and listing photographs are in frame, degraded-read sentinels retried so no withheld state was scored"
+        "answers-first-row-open"
+      ]
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/community/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/community/shots/mobile375.png",
-      "atlasDesktop": "design_system/ryan-realty/ui_kits/community/shots/atlas-desktop.png",
-      "atlasMobile375": "design_system/ryan-realty/ui_kits/community/shots/atlas-mobile375.png",
-      "marketDesktop": "design_system/ryan-realty/ui_kits/community/shots/market-desktop.png",
-      "marketMobile375": "design_system/ryan-realty/ui_kits/community/shots/market-mobile375.png",
-      "alertsCalloutDesktop": "design_system/ryan-realty/ui_kits/community/shots/alerts-callout-desktop.png",
-      "alertsCalloutMobile375": "design_system/ryan-realty/ui_kits/community/shots/alerts-callout-mobile375.png"
+      "answersDesktop": "design_system/ryan-realty/ui_kits/community/shots/answers-desktop.png",
+      "answersMobile375": "design_system/ryan-realty/ui_kits/community/shots/answers-mobile375.png"
     },
-    "shotsHash": "sha256:87116db54b94d205dbf5f3afa7d872d2a116a0909910a89b6da401ae19375745",
-    "beats": "I did not open any competing page this session — not Tetherow's own site, not a portal listing page, not a competitor Bend brokerage's community page — so I have no comparison to name. Judged only against the rubric and the shots.",
-    "subScores": {
-      "design": 16,
-      "originality": 15,
-      "interaction": 9,
-      "craft": 7,
-      "honesty": 8
+    "shotsHash": "sha256:b5c7e39e1680040d9f5243a052e84fd1cd320fa68ea345b5ad5a200d47c1510c",
+    "scores": [
+      78,
+      80,
+      83
+    ],
+    "score": 80,
+    "breakdown": {
+      "design": 25,
+      "originality": 24,
+      "interaction": 13,
+      "craft": 12,
+      "honesty": 6
     },
-    "scoringNotes": "Three independent looks at the same eight shots, spread 51-57 (6 points), median 55. Pass 1 (57) reacted mainly to the two loudest problems: the hero fold is a Value-My-Home funnel card floating over the Stage photo instead of the community's inventory, and the 'Typical price' section is an empty chart-shaped hole. Pass 2 (51) went back through PUBLIC_UI.md's own text before re-scoring and marked the hero card down harder — the doc names this exact pattern 'wrong-job-chrome' and says the master-plan opening is Stage then Atlas, not Stage then a Sell card — and also weighed the three back-to-back eyebrow/heading/hairline/rows sections (new-listings, typical-price, living-in-Tetherow) as the literal 'stacked-section page' the rubric bans, which pulled originality and design down together. Pass 3 (55) settled in the middle after crediting what is genuinely strong and specific to this shop: the Atlas's live sold/pending ticker and quick-filter chips, and the HOA figure's inline source trace ('MEDIAN OF THE 135 CURRENT LISTINGS THAT REPORT DUES') sitting right next to the number instead of hidden in a footnote. The spread is mostly about how much weight to give the fold's canon violation versus the Atlas's real originality; craft and honesty barely moved across passes because the concrete bugs (clipped heading, duplicate chip, occluding sticky bar) are visible facts, not judgment calls.",
-    "evidenceLimits": "Static PNGs only: no hover, tap, focus-ring, keyboard-nav, scrub, or draw-on/replay state is visible, so the Atlas's ticker rows, the price-slider, the chips, and the map pins could not be confirmed to reveal more data on interaction — I scored their apparent affordances, not confirmed behavior. No motion or reduced-motion path is visible. Nothing below the bottom edge of each shot is visible, so content after the 'Ranked' row, after the visible chip list, and after the alerts-callout capture is unknown. Pixel resolution is not enough to confirm tabular-numeral font (Geist Mono vs Amboqia) with certainty, or to confirm whether the hero card carries an elevation shadow (which the design system forbids). Whether the mobile sticky bar auto-hides on scroll or persists for the whole session is not visible from a single static frame.",
-    "instrumentNotes": "This instrument is noisy and the receipt says so rather than let a reader treat a few points as a change in the page. Three genuinely independent scorings of the SAME eight files inside one evaluator call spread 6 points here (57, 51, 55); across the three classes today that within-call spread ran 5 to 13. Across calls it is wider still: this class was scored 65, then 60, then 58, then 53 by claude-opus-5 over four passes on progressively re-captured records, while the code only improved — a phone control that had been broken was repaired and confirmed by direct measurement. That evaluator diagnosed the fall itself as its own rising scrutiny of sections nobody had touched, not a regression. Read a single mark as one honest reading on one instrument, not as a point in a trend, and compare only marks matching on evaluatorModel, rubricVersion and shotsHash.",
-    "topThree": "1) Fix the fold: replace the Value-My-Home card floating on the Stage photo with the Atlas/Field of Tetherow's current inventory (or a belonging-first Instrument), matching the documented master-plan opening and ending the wrong-job-chrome violation — this is the single biggest identity and IA problem on the page. 2) Break the stacked-section run: give the new-listings, typical-price, and living-in-Tetherow sections three visibly different forms (the empty-chart state should be one tight line, not a blank hole; the facts list should carry a visual mark, not just rows of text). 3) Clean the Atlas data layer and its mobile chrome: dedupe the 'Highlands Ridge 3' chip, fix the truncated 'Tetherow Vacation Hom...' label, push the map palette toward confident navy rather than pale gray, and shrink the mobile sticky alert bar so it stops covering the last content row.",
-    "comparedToPrior": "rebaselined",
-    "rebaselineReason": "The prior mark differs on shotsHash. shotsHash: all eight records were re-captured through the one capture tool after the phone sticky-bar repair, so the prior score is bound to files that no longer exist. The prior here is a concurrent Sonnet mark of 60 taken on main the same day against the top and answer states of this route (answer-desktop.png, answer-mobile375.png). It is not overturned on the merits and its four defects are carried on the SITE-04 node: it simply cannot stand as this file's receipt, because the desktop and mobile records it hashes were re-captured by this branch. The two marks looked at different parts of the same page. A different instrument is not a baseline, so this is a rebaseline and no rise is claimed.",
-    "priorMark": {
-      "evaluatedAt": "2026-09-08",
-      "score": 60,
-      "evaluator": "separate Sonnet evaluator, SITE-02b drawing pass, three independent scorings of one shot set (60 / 55 / 64)",
-      "evaluatorModel": "claude-sonnet-5",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:3192935af6f45ac76ebaa0e8b1fae3e3863a80837e8e6da4b73b31dfff90232f"
-    },
+    "beats": "Tetherow's own resort site (tetherow.com) on data ownership: live closed-sale evidence, a sourced HOA figure, and an address-in/valuation-out tool one tap from the hero, versus the resort's lifestyle-only copy with no pricing data at all.",
     "defects": [
       {
-        "section": "hero / fold (desktop.png, mobile375.png)",
-        "finding": "The community page's fold is dominated by a 'What would your home sell for in Tetherow?' Value-My-Home card overlapping the Stage photo, ahead of any view of current inventory. PUBLIC_UI.md's own opening table puts Master-plan at Stage then Atlas, and separately states value-my-home chrome belongs on Sell only, calling the opposite pattern 'wrong-job-chrome.' Fix: swap the hero card for an Atlas/Field teaser of Tetherow's current listings; move the valuation ask lower or to Sell."
+        "section": "#belonging",
+        "severity": "honesty",
+        "finding": "The claimed fix ('the HOA dollar figure now carries its own §0 source line, like every other figure') only reached the FAQ's HOA row. The identical $2,052/year HOA figure is restated in the 'Living in Tetherow' fact list (#belonging) with a bare population clause ('median of the 135 current listings that report dues') and no 'Source:' line at all — verified: the whole #belonging block contains zero v3-source elements. The same section also states 'Founded 2008', '700 acres', 'Course architect David McLay Kidd', and 'Ranked #57 (Golf Digest)' with no source of any kind, named or linked, for any of them."
       },
       {
-        "section": "'Typical price in Tetherow' (market-desktop.png, market-mobile375.png)",
-        "finding": "The too-few-sales fallback text sits inside a container that reserves roughly 150-200px of blank space bounded by hairlines top and bottom, as if a chart failed to load rather than a designed empty state. Fix: collapse the container height to the text line, per DATA_GRAPHICS.md's 'quiet one line' instruction."
-      },
-      {
-        "section": "sticky alert bar, mobile (market-mobile375.png)",
-        "finding": "The bottom sticky bar occupies about 20% of the 375x812 viewport and its top edge overlaps the last visible ledger row ('Ranked ...'), permanently hiding part of real content rather than sitting below it. Fix: shrink the bar or trigger it only once the ledger section has fully scrolled past."
-      },
-      {
-        "section": "Atlas quick-filter chips (atlas-desktop.png)",
-        "finding": "The chip list contains an exact duplicate ('Highlands Ridge 3' appears twice) and several chips labeled only 'Tetherow' distinguished solely by a trailing count, plus one label truncated to an ellipsis ('Tetherow Vacation Hom...'). Fix: dedupe the source list and widen or shorten labels so none truncates or repeats verbatim."
-      },
-      {
-        "section": "'Tetherow right now' heading (atlas-desktop.png)",
-        "finding": "The H2 is visually clipped at the top, its ascenders cut off directly under the sticky nav bar, indicating a scroll-anchor or z-index bug rather than a deliberate crop. Fix: add scroll-margin-top or adjust stacking so the heading clears the fixed header."
-      },
-      {
-        "section": "page rhythm (desktop.png + market-desktop.png + alerts-callout-desktop.png in sequence)",
-        "finding": "Three consecutive sections (new-listings alert, typical-price, living-in-Tetherow) all use the identical eyebrow-over-heading-over-hairline-over-rows shape, which is literally the 'stacked-section page' the rubric bans by name. Fix: give at least one of the three a different form (e.g., encode the Living-in-Tetherow facts as marks/icons rather than a plain row list)."
-      },
-      {
-        "section": "Atlas map palette (atlas-desktop.png, atlas-mobile375.png)",
-        "finding": "The map's sales-density fill and pins render as pale grayscale rather than the 'cream field, navy marks' register the taste doc names as this shop's reference object, reading closer to a generic GIS export. Fix: push the density fill and pin ink toward navy tints so the map reads as the brand's instrument."
-      },
-      {
-        "section": "alert copy duplication (compare desktop.png bottom + market-desktop.png sticky bar)",
-        "finding": "The exact sentence '2 houses came on the market in Tetherow in the last 30 days' and its disclosure text appear twice on the page, once in-flow and once verbatim in the sticky bar, doubling the same pitch instead of varying the message or omitting the repeat."
+        "section": "#faq (doors fold)",
+        "severity": "taste",
+        "finding": "41 outbound doors fold behind one 'Where to go next' disclosure. Correct pattern for the volume, but once opened it is still one flat, uncategorized list of 41 hairline rows (governing documents, golf, sibling resorts, generic site links all interleaved) — the exact 'table wearing hairlines' shape TASTE bans, just deferred behind a click instead of removed."
       }
     ],
-    "bannedTells": [
-      "The stacked-section page: three adjacent sections (new-listings, typical-price, living-in-Tetherow) share the identical eyebrow/heading/hairline/rows shape."
-    ]
+    "openRaise": [
+      "Does the Belonging fact list need the same closing §0 note pattern #character already carries (one shared population/feed sentence for the whole block), given it restates a figure the FAQ just sourced individually?",
+      "Worth grouping the 41 folded doors by type (documents / golf / nearby resorts / site) now that the count is verified at 41, rather than one flat alphabetical-by-source list?"
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 77,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:1190c1436a67ff05c2e13297504297c385a6698f73c35cd4b7a4b4b3759d8b87"
+    },
+    "rebaselineReason": "The prior 77 was scored on a different shotsHash — shots of the pre-fix build, before the source lines were rewritten, the plat name recased and the reference rows split. Same evaluatorModel and same rubricVersion, but a different artifact, so this is a rebaseline and not a rise. Round 1 marks for the record: neighborhood 82, community 79, subdivision 73."
   }
 }

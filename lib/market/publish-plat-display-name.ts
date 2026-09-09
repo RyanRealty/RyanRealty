@@ -66,11 +66,65 @@ export function looksLikeMlsAbbreviation(name: string): boolean {
   return false
 }
 
+/**
+ * Words a place name does not capitalise in the middle of itself.
+ *
+ * WHY: MLS SubdivisionName capitalises every word, and so did the slug
+ * fallback, so /subdivisions/ridge-at-eagle-crest published "Ridge At Eagle
+ * Crest" — in the H1, the breadcrumb, the by-the-numbers heading, all five Q&A
+ * questions, and the FAQPage JSON-LD Google reads (separate evaluator,
+ * 2026-09-08). This is English title case, not a rename: no word is added,
+ * removed or reordered, only cased the way the language cases it. It is
+ * therefore NOT an invented expansion, which is what this module withholds.
+ * One list, used by every path that builds a visitor plat name.
+ */
+export const TITLE_LOWER_WORDS: ReadonlySet<string> = new Set([
+  'a',
+  'an',
+  'and',
+  'at',
+  'by',
+  'de',
+  'del',
+  'for',
+  'in',
+  'la',
+  'las',
+  'los',
+  'of',
+  'on',
+  'or',
+  'the',
+  'to',
+  'van',
+  'von',
+])
+
+/**
+ * Lower an interior connector word. The first and last words always keep their
+ * capital, so "The Ridge" keeps its The and a name is never left ending on a
+ * dangling preposition. A word that is not exactly a connector is untouched,
+ * including anything with internal capitals or digits, so MLS phase markers
+ * (Phase 3, 7th) and camel tokens survive unchanged.
+ */
+export function titleCasePlaceName(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  if (words.length === 0) return name
+  return words
+    .map((word, i) => {
+      if (i === 0 || i === words.length - 1) return word
+      return TITLE_LOWER_WORDS.has(word.toLowerCase()) ? word.toLowerCase() : word
+    })
+    .join(' ')
+}
+
 export function publishPlatDisplayName(raw: string | null | undefined): string | null {
   const cleaned = displaySubdivision(raw)
   if (!cleaned) return null
   const recorded = RECORDED_PLAT_DISPLAY[cleaned.toLowerCase()]
   if (recorded) return recorded
+  // The abbreviation test runs on the CLEANED name, before casing, because
+  // casing must not turn a withheld token into a publishable one.
   if (looksLikeMlsAbbreviation(cleaned)) return null
-  return cleaned
+  return titleCasePlaceName(cleaned)
 }

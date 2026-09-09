@@ -1,0 +1,13 @@
+{
+  "note": "Files whose document-level title bakes in \"Ryan Realty\" while the layout template appends it too. Frozen ledger for ci:title-brand-once — the list may only shrink. Fix by routing the Metadata through pageMetadata(), or by declaring title: { absolute } when the page owns its whole title.",
+  "files": [
+    "app/admin/access-denied/page.tsx",
+    "app/blog/[slug]/page.tsx",
+    "app/cma-drafts/[id]/page.tsx",
+    "app/compare/page.tsx",
+    "app/marketing/request/page.tsx",
+    "app/our-homes/page.tsx",
+    "app/reviews/page.tsx",
+    "app/sign/[token]/page.tsx"
+  ]
+}

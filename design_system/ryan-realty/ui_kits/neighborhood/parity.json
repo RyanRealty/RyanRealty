@@ -6,7 +6,7 @@
   "requiredComponents": [
     {
       "name": "MetadataBlock",
-      "section": "BreadcrumbList + Neighborhood Place + Dataset + FAQPage JSON-LD. All four are emitted here: V3Breadcrumb and V3Quiet carry no structured data of their own, on purpose, so one derivation feeds the visible copy and the markup. FAQPage moved here from FAQBlock's includeJsonLd; the payload's meaning is unchanged. Place.hasMap ships when PlaceFieldMap is in the Field slot (pins or a recorded polygon).",
+      "section": "BreadcrumbList + Neighborhood Place + Dataset + FAQPage JSON-LD. All four are emitted here: V3Breadcrumb and V3Quiet carry no structured data of their own, on purpose, so one derivation feeds the visible copy and the markup. FAQPage moved here from FAQBlock's includeJsonLd; the payload's meaning is unchanged. Place.hasMap ships when PlaceFieldMap is in the Field slot (pins or a recorded polygon). 2026-09-08 (SITE-08): the FAQPage items are answersFaqItems(placeAnswers), derived FROM the rendered V3Answers rows rather than from a second array beside them.",
       "blocking": true
     },
     {
@@ -36,7 +36,7 @@
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6, twice, never adjacent. ABOUT carries the verified depth from data/resort-community-{citySlug}-{neighborhoodSlug}.json: the curated prose, the drive times, and up to eight amenities with their descriptions and access notes, falling back to the neighborhoods-table description when no config exists, which is the same either/or the KB pair KbResortOverview + KbAbout ran. CLOSING carries the market Q&A as question-and-answer prose from the same buildMarketFaq array the FAQPage JSON-LD uses, then every outbound edge: the full-inventory door, the parent city both as an overview and as a market report, months of supply when that figure shipped, each subdivision inside this neighborhood, each peer neighborhood, the city index, open houses, price drops, the recent guides, the sell path, the saved-searches sign-in the KB alert block carried, and the Oregon Data Share citation MarketSources used to render. ITS NAME COVERS BOTH HALVES: eyebrow 'Questions and next steps', heading 'Questions about {Neighborhood}, and where to go next'. It was named 'Common questions', which described the first four rows and misdescribed the roughly thirty link rows after them, including the accessible name announced for the landmark. It stays ONE section because the four-pattern cap and the no-two-adjacent rule leave exactly two Quiet slots on this node, one either side of the Sheet, and ABOUT holds the other. See barrelGaps.",
+      "section": "Pattern 6, twice, never adjacent. ABOUT carries the verified depth from data/resort-community-{citySlug}-{neighborhoodSlug}.json: the curated prose, the drive times, and up to eight amenities with their descriptions and access notes, falling back to the neighborhoods-table description when no config exists, which is the same either/or the KB pair KbResortOverview + KbAbout ran. CLOSING carries the market Q&A as question-and-answer prose from the same buildMarketFaq array the FAQPage JSON-LD uses, then every outbound edge: the full-inventory door, the parent city both as an overview and as a market report, months of supply when that figure shipped, each subdivision inside this neighborhood, each peer neighborhood, the city index, open houses, price drops, the recent guides, the sell path, the saved-searches sign-in the KB alert block carried, and the Oregon Data Share citation MarketSources used to render. ITS NAME COVERS BOTH HALVES: eyebrow 'Questions and next steps', heading 'Questions about {Neighborhood}, and where to go next'. It was named 'Common questions', which described the first four rows and misdescribed the roughly thirty link rows after them, including the accessible name announced for the landmark. It stays ONE section because the four-pattern cap and the no-two-adjacent rule leave exactly two Quiet slots on this node, one either side of the Sheet, and ABOUT holds the other. See barrelGaps. 2026-09-08: the market Q&A left this Quiet for V3Answers (#faq), which is a required component in its own right below; ABOUT and the closing explore block are what this entry now governs.",
       "blocking": true
     },
     {
@@ -72,6 +72,16 @@
     {
       "name": "V3PlaceCharacter",
       "section": "Pattern 6: build years + HOA measured from member listings (boundary slug). Renders null when nothing is publishable.",
+      "blocking": true
+    },
+    {
+      "name": "V3Answers",
+      "section": "Pattern 8, #faq (site queue SITE-08, 2026-09-08). Rows come from buildPlaceAnswers and EACH CARRIES ONE SOURCED DATED FIGURE: the value on the closed row (so a shut section already reads as an answer sheet), and inside the disclosure the figure DRAWN plus its own §0 trace. Two drawings cover the class — a banded rule (months of supply lands inside seller's / balanced / buyer's, so the verdict is a position and not a word) and a tally of one mark per home, grouped in fives. The parent city sits on the same rule as a named context mark where one exists, never as a figure under this place's name. The SAME array feeds the FAQPage JSON-LD through answersFaqItems, which is the whole point of the node: a schema built beside the rows instead of from them can drift from the visible text. The questions with no figure (HOA, school district, which subdivisions a community holds) still come from buildMarketFaq and are merged in after the figured rows, deduped by question text. The last row is the closing ask and links to the address field. ON THIS GRAIN the verdict PUBLISHES: hud.monthsSupply comes from Market Truth headlines at neighborhood grain (Awbrey Butte 4.9, balanced, 2026-09-08). TWO HONEST ACTIVE COUNTS, NAMED APART: the metric layer counts 49 by primary place membership and the recorded polygon holds 60 in a publicly active MLS status. The inventory row publishes the 60 this page's own Field publishes, with its own population clause, and the verdict's trace names the 49 its ratio was computed on — so the two can never be read as one number disagreeing with itself (§0 rule 5). No SITE-01 address field exists on this route yet, so the closing action is valuationHref('/cities/{city}/{neighborhood}'), the valuation spine carrying this page as its attribution source.",
+      "blocking": true
+    },
+    {
+      "name": "V3PlaceAffordability",
+      "section": "#afford — SITE-07, the two-way affordability instrument, after the typical-price Instrument and before #daily-life. Its own barrel pattern, so neither neighbour repeats one. A payment and a price each SOLVE THE OTHER: typing or dragging a monthly number returns the price ceiling it reaches (lib/finance/affordability.ts solvePriceForMonthlyPayment, which seeds off the closed form and then snaps to the largest whole-dollar price whose PUBLISHED payment — the same estimatedMonthlyPayment the listing pages print, down payment rounded through publishFinancingSplit — is at or under the target, so the ceiling on the button is never above the ceiling that was solved). It opens pre-filled at THIS place's own published median asking price, the same figure this page publishes on its face (getNeighborhoodPublicInventory, over pricedCount — the population the median was actually taken across, never activeCount), so the calculator cannot disagree with the section above it. THE RATE IS MEASURED, NOT ASSUMED: getLiveMortgageRate() reads market_history_weekly national/us mortgage_rate_30yr, written every Monday from Freddie Mac PMMS (read 2026-09-08: 6.71%, week of 2026-09-07, source freddie:pmms30), and it publishes WITH its week stamp. When that series is dark the field falls back to lib/mortgage.ts DEFAULT_DISPLAY_RATE, which has no source, and the copy then says in plain words that the number is an assumption the visitor sets — it never says \"today's rate\" or \"current rate\" on either path. THE FINANCING MIX IS PUBLISHED BESIDE IT AS A FACT ABOUT CLOSED SALES (market_metric financing_mix, {Neighborhood} detached, 12-month window widened by the registry ladder where a place is thin; shares under 5% are not published so they do not add to 100) and it SEEDS THE OPENING MODE ONLY — cash opens the calculator only where cash was the MAJORITY of closed sales (opensOnCash, threshold 0.5; {Neighborhood} detached cash_share read 2026-09-08 puts it under that, so it opens financed). A cash share is never turned into a down payment. THE DRAWINGS ARE ALL V3Drawing 'pair' — your monthly number against the middle of this market, what you bring against what you borrow, and how the last year's buyers actually paid — because every one is a comparison, because a place's asking prices are too right-skewed for a price axis to say anything (Bend, read 2026-09-08: 761 active single-family asks from $350,000 to $11,900,000, median $899,000), and because V3Drawing's strip marks are 24x24 buttons on a route ci:tap-targets measures. NO COUNT OF HOMES UNDER THE CEILING IS PUBLISHED: the only per-listing active price set this page can reach is the Atlas population off listing_tile_mv, and it is a materially different population from the median this page prints (Bend: 761 asks at a $899,000 median there against the published 664 detached at $947,000), so a count drawn from one under a median from the other is two answers to one question. The count belongs to the search. THE ENDING IS THE SEARCH AT THE CEILING: the page's OWN homes link plus maxPrice (the confirmed param, normalised by lib/search-filters.ts and read by PlaceSplitView), with the ceiling rounded DOWN so the search can keep the promise on the button. Fires calculator_used on a real changed input, debounced 600ms — a mount is not a use — and calculator_interact on the result-link click, both carrying the ceiling and rr_vid so the click-through is measurable per visitor.",
       "blocking": true
     }
   ],
@@ -179,6 +189,7 @@
     "#homes",
     "#subdivisions",
     "#market",
+    "#afford",
     "#daily-life",
     "#about",
     "V3PlaceDocuments",
@@ -198,16 +209,10 @@
   },
   "tasteReview": {
     "evaluatedAt": "2026-09-08",
-    "score": 57,
-    "scores": [
-      63,
-      50,
-      57
-    ],
-    "evaluator": "separate Sonnet evaluator agent, one per page class, SITE-04 place-alerts craft round, session 019RdEm6 — three independent scorings of one capture run, no page code read and no live page opened",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator, SITE-08 round 2 — scored the MERGED build after the round-1 defects were fixed and the pages recaptured; three scorings of one shot set, median reported",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
-    "rubricVersion": "v1-2026-09-08",
     "shotSpec": {
       "routes": [
         "/cities/bend/awbrey-butte"
@@ -218,90 +223,54 @@
       ],
       "states": [
         "default",
-        "atlas",
-        "market (sticky alerts bar armed)",
-        "alerts-callout"
-      ],
-      "capture": "scripts/take-route-shots.mjs, device scale 1, palette-quantized, consent banner and dev badge suppressed, image hosts relayed so the real hero and listing photographs are in frame, degraded-read sentinels retried so no withheld state was scored"
+        "answers-first-row-open"
+      ]
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/mobile375.png",
-      "atlasDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/atlas-desktop.png",
-      "atlasMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/atlas-mobile375.png",
-      "marketDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/market-desktop.png",
-      "marketMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/market-mobile375.png",
-      "alertsCalloutDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/alerts-callout-desktop.png",
-      "alertsCalloutMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/alerts-callout-mobile375.png"
+      "answersDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/answers-desktop.png",
+      "answersMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/answers-mobile375.png"
     },
-    "shotsHash": "sha256:e391bdb66e29299acf43c10758a98445362e792b6081b49be92fcc5a5918f2c7",
-    "beats": "I did not open any competing page this session (no resort/HOA site, no competitor brokerage neighborhood page, no portal place page), so I am not naming one — any comparison would be invented.",
-    "subScores": {
-      "design": 18,
-      "originality": 16,
-      "interaction": 8,
-      "craft": 8,
-      "honesty": 7
+    "shotsHash": "sha256:36e5120fa2e58adca3803aba49d7ee245fd88480064552af874138171aeef40e",
+    "scores": [
+      81,
+      83,
+      85
+    ],
+    "score": 83,
+    "breakdown": {
+      "design": 25,
+      "originality": 23,
+      "interaction": 13,
+      "craft": 13,
+      "honesty": 9
     },
-    "scoringNotes": "Pass 1 (63): first read of all eight shots top-to-bottom, crediting the Atlas parcel map and the on-line year labels on the price chart as genuinely distinctive, reading the Atlas-desktop heading clip as a possible capture artifact rather than a real bug, and not yet weighing the sticky-bar/source-trace overlap. Pass 2 (50): re-examined with pixel crops — confirmed the Atlas heading is truly sliced by the sticky nav (not a capture quirk), confirmed the plat-count pill is hard-clipped mid-word at the 375 edge, confirmed the YoY-decline sentence and line carry no --rr-exception ink despite this being exactly the case DATA_GRAPHICS calls for it, read 'ALL 2 FIGURES +' as raw internal copy, and noticed the Atlas section skips the mandatory claim-first sentence — each of these is a named-spec violation, not a taste opinion, so this pass marked them harder across design/originality/craft. Pass 3 (57): settled between the two — kept full credit for the Atlas map and chart-label device as real originality, kept all the confirmed defects from pass 2 (they are verifiable in the files, not judgment calls), but did not double-penalize the same header-clip bug in both design and craft. Spread is 13 points, almost entirely a function of how much weight to put on the confirmed rendering bugs (header clip, chip clip, missing exception ink) versus the genuine credit the Atlas/chart devices earn.",
-    "evidenceLimits": "Eight static PNGs only. No hover/tap/scrub state on the price chart (cannot confirm the crosshair-tooltip DATA_GRAPHICS requires), no interaction with the Atlas checkboxes, price slider, or +/- zoom (cannot confirm they actually filter data), no confirmation the year lines or map dots do anything on hover, no keyboard-focus order or focus-ring check, no motion/reduced-motion behavior, no loading/empty/error states, and nothing below the captured fold in any shot (what follows the plat-pill row on Atlas, or past the sticky bar on Market, is unseen). The 'ALL 2 FIGURES +' control's expanded content is unseen. Font-metric claims (tabular numerals) are read visually, not measured.",
-    "instrumentNotes": "This instrument is noisy and the receipt says so rather than let a reader treat a few points as a change in the page. Three genuinely independent scorings of the SAME eight files inside one evaluator call spread 13 points here (63, 50, 57); across the three classes today that within-call spread ran 5 to 13. Across calls it is wider still: this class was scored 72, then 65, then 57, then 60 by claude-opus-5 over four passes on progressively re-captured records, while the code only improved — a phone control that had been broken was repaired and confirmed by direct measurement. That evaluator diagnosed the fall itself as its own rising scrutiny of sections nobody had touched, not a regression. Read a single mark as one honest reading on one instrument, not as a point in a trend, and compare only marks matching on evaluatorModel, rubricVersion and shotsHash.",
-    "topThree": "1) Fix the Atlas section's header-overlap bug so its own heading never renders sliced in the shipped record — this is a confirmed rendering defect, not a taste call, and it undercuts the 'expensive' read instantly. 2) Differentiate the two Instrument-shaped sections (give the opening '15 houses' stat a real interactive surface — sparkline or a day-range toggle — instead of sharing the exact eyebrow/heading/source template the price chart already uses). 3) Close the two DATA_GRAPHICS compliance gaps on the Atlas section: add the missing claim-first sentence and a visible source trace for its headline counts, and put --rr-exception ink on the price chart's real YoY decline instead of plain navy.",
-    "comparedToPrior": "rebaselined",
-    "rebaselineReason": "The prior mark differs on evaluatorModel and shotsHash. evaluatorModel: the prior mark was scored by claude-opus-5, which is also the model that built this round's change. TASTE.md requires the evaluator to run on a DIFFERENT model from the builder, so this pass was re-run on claude-sonnet-5 and the Opus marks for this round were discarded rather than recorded. shotsHash: all eight records were re-captured through the one capture tool after the phone sticky-bar repair, so the prior score is bound to files that no longer exist. A different instrument is not a baseline, so this is a rebaseline and no rise is claimed.",
-    "priorMark": {
-      "evaluatedAt": "2026-09-08",
-      "score": 72,
-      "evaluator": "separate Opus evaluator, SITE-04 place-alerts pass, session 019RdEm6 — three scorings of one capture run",
-      "evaluatorModel": "claude-opus-5",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:89e3ed0372e8c763715126c8c919f3268c1c81908c2362d413cd3d6cc393e4b1"
-    },
+    "beats": "Redfin's/Zillow's Awbrey Butte neighborhood page on interactivity (a scrubbable months-of-supply scale with bands and a crosshair vs. their static 'competitive' badge) and on transparency (every figure carries its own plain-English §0 trace, theirs carry none).",
     "defects": [
       {
-        "section": "Atlas / Field (atlas-desktop.png)",
-        "finding": "The heading 'Awbrey Butte right now' renders sliced off at its ascenders, flush against the sticky nav's bottom rule — confirmed by a 2x pixel crop, not a capture artifact. The section's scroll anchor does not account for the fixed header's height. Fix: add scroll-margin-top equal to the nav height on the section, or scroll-padding-top on the scroll container."
+        "section": "#alerts",
+        "severity": "taste",
+        "finding": "The navy sticky new-listings/email bar is pinned to the bottom of the viewport in both the desktop and mobile captures and physically overlaps the last visible answer row ('How many buyers pay cash in Awbrey Butte?' / its figure), so it reads as an intrusive cookie-banner competing with the page rather than a composed closing section."
       },
       {
-        "section": "Market chart claim (market-desktop.png / market-mobile375.png)",
-        "finding": "The sentence 'down 20% from Jul 2025' and the 2026 line itself are plain navy throughout, with no --rr-exception ink, even though this is precisely the real YoY decline the section's own claim is about and DATA_GRAPHICS.md names 'YoY −5.2% in navy' as a defect already fixed elsewhere. Fix: apply --rr-exception to the decline clause and the declining line segment."
-      },
-      {
-        "section": "Mobile sticky alerts bar (market-mobile375.png)",
-        "finding": "The bar is ~163px tall on an 812px viewport (~20%, the disclosed open item) and by default overlaps the chart's mandatory section-0 source line mid-sentence — 'Source: regional MLS through Oregon Data Share... assigned to Awbrey Butte by the recorded' is truncated where the navy bar begins, hiding the boundary/window/fetched-date tail unless the visitor taps the small X. Fix: shrink the bar to a single-line pill by default, or never let it overlay source-trace text."
-      },
-      {
-        "section": "Atlas / Field claim (atlas-desktop.png, atlas-mobile375.png)",
-        "finding": "The section jumps from the heading straight to the map with no plain-English claim sentence, though DATA_GRAPHICS.md rule 1 requires 'one sentence under the H2... then the drawing' and the Market section on the same page correctly has one. Fix: add a one-line claim ('X homes for sale here right now, Y pending') under the Atlas heading."
-      },
-      {
-        "section": "Atlas plat pills, mobile (atlas-mobile375.png)",
-        "finding": "The third pill ('Manchester Division No...') is hard-clipped mid-word at the exact 375px viewport edge with no fade mask or partial-chip cue that the row scrolls — confirmed by crop. Reads as a bug, not an affordance. Fix: add a right-edge gradient mask or extra trailing padding."
-      },
-      {
-        "section": "Market chart disclosure (market-desktop.png)",
-        "finding": "The expand control reads 'ALL 2 FIGURES +' — raw, internal-sounding microcopy a consumer has to parse, close to the 'methodology jargon in visitor-facing copy' tell TASTE bans. Fix: rewrite in plain language."
-      },
-      {
-        "section": "Hero breadcrumb (desktop.png)",
-        "finding": "'Bend / Awbrey Butte' sits directly on the photo with no scrim; at this exact frame the lighter 'Bend' label lands on bright, cloud-lit sky and drops toward low contrast. Fix: add a subtle top-left gradient/scrim behind the breadcrumb."
-      },
-      {
-        "section": "Page composition (desktop.png vs market-desktop.png)",
-        "finding": "The opening Instrument ('15 houses...') and the Market 'Typical price' section are built to the identical shape — small-caps eyebrow, big serif heading, one-line claim, figures, source line — which is exactly the repeated section-shape the Originality bar forbids, even though the Atlas section between them keeps the mechanical adjacency rule technically satisfied. Fix: give one of the two a genuinely different form."
-      },
-      {
-        "section": "Atlas / Field figures (atlas-desktop.png, atlas-mobile375.png)",
-        "finding": "The headline counts (73 for sale, 26 pending, and the three just-listed/pending/sold examples) carry no visible source-trace line or disclosure on the page, unlike the Market section's explicit sourced paragraph. Fix: add a compact source line under the map legend or a disclosure control matching the Instrument section's '› SOURCE'."
-      },
-      {
-        "section": "Instrument opening (desktop.png, mobile375.png)",
-        "finding": "The '15 houses' stat has no visible interactive surface at all — no sparkline, no hoverable mark, nothing beyond a static sentence and an email field — bordering on the 'KPI tile' shape (a figure with no way to interrogate it further) the rubric singles out. Fix: add a minimal interactive element, e.g. a 30/60/90-day toggle or a small pace sparkline."
+        "section": "#faq answer-inventory / answer-verdict",
+        "severity": "honesty",
+        "finding": "The verdict row's own trace states months of supply is computed on '48 listings this layer counts as active,' while a few rows down the inventory row publishes '57' as 'homes for sale' with a differently-scoped trace (recorded boundary, publicly active MLS status). Both traces are individually accurate, but nothing on the page acknowledges the two different active counts sit a few rows apart under the same word 'active' — the `activeCountNotes` field lib/site/place-answers.ts built for exactly this reconciliation is not populated on this route."
       }
     ],
-    "bannedTells": [
-      "Methodology jargon visible to the visitor: the chart disclosure reads 'ALL 2 FIGURES +'.",
-      "Clipped label at 375: the third plat-count pill on the Atlas mobile view is cut off mid-word with no scroll affordance."
-    ]
+    "openRaise": [
+      "Should activeCountNotes carry a one-line reconciliation for the 48-vs-57 active-count split, the same pattern the module's own code comments call out by name for this exact neighborhood?",
+      "Should the sticky alerts bar auto-collapse or dock lower once a reader has the FAQ section's last row in view, so it stops covering the answer sheet at both viewports?"
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 78,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:2de587c0a54b7b8cf291721cfc5f785bac34bcacea504fdf6d663670245953cd"
+    },
+    "rebaselineReason": "The prior 78 was scored on a different shotsHash — shots of the pre-fix build, before the source lines were rewritten, the plat name recased and the reference rows split. Same evaluatorModel and same rubricVersion, but a different artifact, so this is a rebaseline and not a rise. Round 1 marks for the record: neighborhood 82, community 79, subdivision 73."
   }
 }

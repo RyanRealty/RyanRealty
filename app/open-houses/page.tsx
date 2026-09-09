@@ -27,6 +27,7 @@
  * SmoothScrollProvider, region pulse read that rendered only on KbSell.
  */
 
+import { cache } from 'react'
 import type { Metadata } from 'next'
 import {
   getUpcomingOpenHouses,
@@ -34,6 +35,7 @@ import {
   getHeroPhotosByListingKeys,
 } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { formatCalendarDay } from '@/lib/format/date'
 import { listingsBrowsePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { formatPrice } from '@/lib/format/money'
@@ -68,11 +70,41 @@ import { openHouseEventSchemas } from './_v3/oh-jsonld'
 
 export const revalidate = 60
 
+/**
+ * ONE read per request, shared by generateMetadata and the body.
+ * React cache() keys on Object.is per argument, so every argument here is a
+ * primitive — an options object would never dedupe and the page would pay the
+ * window read twice.
+ */
+const openHouseRowsForWindow = cache(
+  (dateFromIso: string, dateToIso: string, todayIso: string, city: string | undefined) =>
+    getUpcomingOpenHouses({ dateFromIso, dateToIso, todayIso, city }),
+)
+
+/** "Sep 8" — the brand timezone, no year, through lib/format/date. */
+function windowDayLabel(iso: string): string {
+  return formatCalendarDay(iso, { month: 'short', day: 'numeric', year: undefined })
+}
+
+/**
+ * The description carries the LIVE count and the LIVE window, read from the
+ * same getUpcomingOpenHouses call the body renders (§0: one read, one number).
+ * It describes the CANONICAL page — today through six days out, Pacific, no
+ * narrowing filters — which is what alternates.canonical points at, so a
+ * filtered URL still describes the page it canonicalises to.
+ *
+ * With no filters assembleOpenHouses keeps every row, so rows.length is exactly
+ * the count the Instrument prints below.
+ */
 export async function generateMetadata(): Promise<Metadata> {
+  const todayIso = pacificTodayIso()
+  const dateToIso = addIsoDays(todayIso, 6)
+  const rows = await openHouseRowsForWindow(todayIso, dateToIso, todayIso, undefined)
+  const count = rows.length
+  const noun = count === 1 ? 'open house' : 'open houses'
   return pageMetadata({
     title: 'Open Houses in Central Oregon',
-    description:
-      "This week's open houses in Bend, Redmond, Sisters, La Pine, and across Central Oregon. Times, addresses, and prices from the regional MLS.",
+    description: `${count.toLocaleString('en-US')} ${noun} across Central Oregon, ${windowDayLabel(todayIso)} through ${windowDayLabel(dateToIso)}. Times, addresses, and prices from the regional MLS.`,
     path: '/open-houses',
   })
 }
@@ -106,12 +138,7 @@ export default async function OpenHousesPage({
   const beds = sp.beds ? Number(sp.beds) : undefined
   const baths = sp.baths ? Number(sp.baths) : undefined
 
-  const rows = await getUpcomingOpenHouses({
-    dateFromIso: dateFrom,
-    dateToIso: dateTo,
-    todayIso,
-    city: cityFilter,
-  })
+  const rows = await openHouseRowsForWindow(dateFrom, dateTo, todayIso, cityFilter || undefined)
   const listingKeys = [...new Set(rows.map((r) => r.listing_key))]
   const [tiles, heroes] =
     listingKeys.length > 0

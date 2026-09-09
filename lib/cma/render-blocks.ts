@@ -489,3 +489,33 @@ export function propertyDescription(subject: {
   ].filter(Boolean)
   return `${head}${facts.length > 0 ? ` · ${facts.join(' · ')}` : ''}.`
 }
+
+/**
+ * THE REVIEW NOTICE, ON EVERY PATH A HUMAN CAN OPEN.
+ *
+ * Round-four class C. A row whose audit says a broker has to look at it before
+ * it goes out carried its gate on `/admin/cmas/[slug]/view` and nowhere else
+ * (lib/cma/serve-document.ts). The client link, the immersive and the PDF
+ * printed the same row as a finished opinion. So the flag was visible to the
+ * one reader who had already decided to look.
+ *
+ * This band is the SELLER-SAFE half: `pricing.review.rendererNotice`, written
+ * on the pricing side, never the audit's own words. The admin banner keeps the
+ * audit's words; the two are different strings off the same block, and this
+ * one is the only one either document prints.
+ *
+ * Inline colours, not a class: it must render identically in the letter's
+ * stylesheet, the immersive's, and a print pass that emulates print media.
+ */
+export function reviewNoticeBandHtml(notice: string, doc: 'letter' | 'immersive'): string {
+  if (!notice.trim()) return ''
+  const inner = `<p class="rv-notice-t" style="margin:0;max-width:none;font:500 ${
+    doc === 'immersive' ? '17px/1.5' : '11.5px/1.5'
+  } Geist,system-ui,sans-serif;color:#faf8f4">${escapeHtml(notice.trim())}</p>`
+  if (doc === 'immersive') {
+    return `<section class="sc rv-notice" id="review-notice" style="background:#102742;color:#faf8f4;min-height:0;display:block;padding:30px 24px">
+  <div class="in wide">${inner}</div>
+</section>`
+  }
+  return `<div class="rv-notice" role="status" style="background:#102742;color:#faf8f4;padding:12px 16px;margin:0 0 16px">${inner}</div>`
+}

@@ -182,6 +182,9 @@
   background: var(--v3-surface);
   color: var(--v3-ink);
   text-shadow: none;
+  /* The closing answer set links back to #value (SITE-08). The chrome is
+     sticky, so the ask needs the same headroom the sheet's own steps take. */
+  scroll-margin-top: 5.5rem;
 }
 
 .place-opening--media .place-opening__ask .v3-place-value {

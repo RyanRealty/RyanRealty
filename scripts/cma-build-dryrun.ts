@@ -97,8 +97,21 @@ type DryRun = {
   renderArgsPricingReconciliation: unknown
   /** render_args.pricing.rangeRule — how the low and high were produced. */
   renderArgsPricingRangeRule: unknown
+  /**
+   * render_args.compSearch — the ladder as COUNTS. Round four class E: the
+   * prose search story claimed "not enough recent sales inside Diamond Bar
+   * Ranch" while three of the five printed sales were in it.
+   */
+  renderArgsCompSearch: unknown
   /** render_args.pricing.timeAdjustment — the basis every date adjustment used. */
   renderArgsPricingTimeAdjustment: unknown
+  /**
+   * The two city trends the document prints, each named. Round four class E:
+   * the index peaked in a month the median close bottomed in, and neither
+   * carried a label saying they measure different things.
+   */
+  timeAdjustmentMeasure: string | null
+  marketTrendMeasure: string | null
   /**
    * The "Adjusted for date" column the price grid prints, one row per sale,
    * beside the move the named index actually records over that sale's own
@@ -128,6 +141,27 @@ type DryRun = {
   renderArgsPricingSetAside: unknown
   /** render_args.pricing.review — the flag a document must not be able to hide. */
   renderArgsPricingReview: unknown
+  /**
+   * render_args.pricing.sellerNet — what the seller keeps, itemised from the
+   * RECOMMENDED LIST. Round four class A: the figure this replaced was
+   * `predictedClose - concessions`, unanchored from the price printed beside
+   * it, and on cma-65365-concorde it published a net ABOVE the list.
+   * `sellerNetAnchored` is the invariant: net <= recommended, always.
+   */
+  renderArgsPricingSellerNet: unknown
+  sellerNetAnchored: boolean
+  /**
+   * render_args.expiredAudit.askExposure — every price the final listing
+   * period wore and how long each one ran. Round four class B: the story was
+   * computed from the last cut, which on cma-2465 covered 35 of 187 days.
+   */
+  renderArgsExpiredAuditAskExposure: unknown
+  /**
+   * render_args.subjectStatus — the compliance carve-out. Round four class D.
+   */
+  renderArgsSubjectStatus: unknown
+  /** The subject's own last-ask fields AFTER the stale-cycle suppression. */
+  subjectLastAsk: { price: number | null; date: string | null; historyLine: string | null }
   /** The state /admin/cmas renders for the STORED row today. */
   queueStateStored: string | null
   /** The state it would land in after this run, carrying the stored audit verdict. */
@@ -171,7 +205,9 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { MIN_COMPS } = await import('@/lib/cma/comps')
   const { getBpoListingCyclesByAddress } = await import('@/lib/data/bpo/reads')
   const { analyzeListingHistory } = await import('@/lib/bpo/history')
-  const { buildFailureFindings, stampFinalCycleDom, buildFinalCycle, applyFailedAskCap } = await import('@/lib/cma/expired-audit')
+  const { buildFailureFindings, stampFinalCycleDom, resolveFinalCycle, buildAskExposure, applyFailedAskCap, FAILED_ASK_RECENCY_MONTHS } =
+    await import('@/lib/cma/expired-audit')
+  const { buildSubjectStatus } = await import('@/lib/pricing/subject-status')
   const { attachCompConcessions, attachSellerNet } = await import('@/lib/pricing/seller-net')
   const { buildCmaLocalOutcomes } = await import('@/lib/pricing/local-outcomes-read')
   const { getCmaListingPriceEvents } = await import('@/lib/data/cma/localOutcomeReads')
@@ -185,9 +221,13 @@ async function dryRun(slug: string): Promise<DryRun> {
     concessionSentenceTrimmed: null, renderArgsMarketOfferTiming: null,
     renderArgsMarketAskOutcome: null, renderArgsMarketOriginalAskRealization: null,
     renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
-    renderArgsPricingRangeRule: null, renderArgsPricingTimeAdjustment: null,
+    renderArgsPricingRangeRule: null, renderArgsCompSearch: null, renderArgsPricingTimeAdjustment: null,
+    timeAdjustmentMeasure: null, marketTrendMeasure: null,
     renderArgsPricingClamp: null, renderArgsPricingSetAside: null,
-    renderArgsPricingReview: null, queueState: null, queueStateStored: null,
+    renderArgsPricingReview: null, renderArgsPricingSellerNet: null, sellerNetAnchored: true,
+    renderArgsExpiredAuditAskExposure: null, renderArgsSubjectStatus: null,
+    subjectLastAsk: { price: null, date: null, historyLine: null },
+    queueState: null, queueStateStored: null,
     renderArgsPricingRejected: null, renderArgsExpiredAuditFinalCycle: null,
     dateAdjustments: [], dateAdjustmentCheckOk: true, dateAdjustmentFailures: [], error: null,
   }
@@ -225,6 +265,25 @@ async function dryRun(slug: string): Promise<DryRun> {
     if (Number.isFinite(cycleAsk) && cycleAsk > 0) subject.lastListPrice = cycleAsk
     subject.standardStatus = cycleStatus
     stampFinalCycleDom(subject, analyzeListingHistory(cycleRows, subject, null).currentCycle)
+  }
+
+  // EXACTLY lib/cma/build.ts step 1's stale-cycle suppression (round four,
+  // class B). Without it this script shows the $140,000 November 2004 ask on
+  // cma-19968 that the document was printing.
+  let staleCycleReason: string | null = null
+  if (!lastCycleFailed) {
+    const lastAskDay = String(subject.lastListDate ?? '').slice(0, 10)
+    const askMs = /^\d{4}-\d{2}-\d{2}$/.test(lastAskDay) ? Date.parse(`${lastAskDay}T00:00:00.000Z`) : NaN
+    const monthsOld = Number.isNaN(askMs) ? null : (Date.now() - askMs) / (30.44 * 24 * 3600 * 1000)
+    if (monthsOld != null && monthsOld > FAILED_ASK_RECENCY_MONTHS) {
+      staleCycleReason =
+        `The last listing period at this address ran in ${lastAskDay.slice(0, 4)}, more than ` +
+        `${FAILED_ASK_RECENCY_MONTHS} months ago. That is a different market, so this report does not ` +
+        `build a story on the price it asked.`
+      subject.lastListPrice = null
+      subject.lastListDate = null
+      subject.listingHistoryLine = null
+    }
   }
 
   const asOf = new Date().toISOString().slice(0, 10)
@@ -354,8 +413,23 @@ async function dryRun(slug: string): Promise<DryRun> {
     })),
   })
 
+  // render_args.compSearch — the ladder as counts, built by the same function
+  // lib/cma/build.ts calls. The judge is skipped here, so the kept set is the
+  // full ladder result and the counts are the widest the document could print.
+  const { buildCompSearch } = await import('@/lib/pricing/comp-search')
+  const compSearch = buildCompSearch({
+    subdivision: selection.diagnostics.subject.subdivision ?? subject.subdivision,
+    ladder: selection.diagnostics.ladder.map((t) => ({
+      tier: t.tier,
+      ran: t.ran,
+      monthsBack: t.months_back,
+      compsAdded: t.comps_added,
+    })),
+    keptComps: adjusted.map((c) => ({ subdivision: c.subdivision, selectionTier: c.selectionTier })),
+  })
+
   // §0 rule 5 cross-checks, computed off the same objects render_args carries.
-  attachSellerNet(pricing, selection.comps, pricing.predictedClose ?? pricing.recommended ?? null)
+  attachSellerNet(pricing, selection.comps)
   const concessionLine = (n: { knownCount: number; givenCount: number; medianWhenGiven: number | null } | undefined) => {
     if (!n || n.knownCount === 0) return null
     const whenGiven =
@@ -367,7 +441,7 @@ async function dryRun(slug: string): Promise<DryRun> {
   // a MIN_COMPS-sized slice too, to show the denominator follows whatever set
   // the document ends up printing rather than the wider band set.
   const trimmed = { recommended: pricing.recommended, notes: [] as string[] } as Parameters<typeof attachSellerNet>[0]
-  attachSellerNet(trimmed, selection.comps.slice(0, MIN_COMPS), pricing.predictedClose ?? pricing.recommended ?? null)
+  attachSellerNet(trimmed, selection.comps.slice(0, MIN_COMPS))
   const concessionSentenceTrimmed = concessionLine(trimmed?.sellerNet)
   const reviewSubjectDom = (() => {
     if (!lastCycleFailed) return null
@@ -387,13 +461,27 @@ async function dryRun(slug: string): Promise<DryRun> {
     originalAskRealization: null,
     localFailedThenSold: null,
   }))
-  const finalCycleBlock = await (async () => {
-    if (!lastCycleFailed) return null
+  const resolvedCycle = await (async () => {
+    if (!lastCycleFailed) return { cycle: null, suppressedReason: null }
     const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
     const cycle = history.currentCycle
     const priceEvents = cycle?.listingKey ? await getCmaListingPriceEvents(cycle.listingKey).catch(() => []) : []
-    return buildFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey })
+    return resolveFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey })
   })()
+  const finalCycleBlock = resolvedCycle.cycle
+  if (resolvedCycle.suppressedReason) staleCycleReason = resolvedCycle.suppressedReason
+  const askExposure = buildAskExposure({
+    cycle: finalCycleBlock,
+    rangeLow: pricing.valueLow,
+    rangeHigh: pricing.valueHigh,
+  })
+  const subjectStatus = buildSubjectStatus({
+    standardStatus: subject.standardStatus,
+    listAgentName: (cycleRows[0]?.['ListAgentName'] as string | null) ?? subject.listAgentName ?? null,
+    listAgentEmail: subject.listAgentEmail ?? null,
+    listOfficeName: (cycleRows[0]?.['ListOfficeName'] as string | null) ?? subject.listOfficeName ?? null,
+    suppressedReason: staleCycleReason,
+  })
 
   // EXACTLY what lib/cma/build.ts step 4.6 writes. The dry run skips the LLM
   // audit, so the verdict it can report is 'did-not-run'.
@@ -464,10 +552,26 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsMarketOriginalAskRealization: localOutcomes.originalAskRealization,
     renderArgsPricingReconciliation: pricing.reconciliation ?? null,
     renderArgsPricingRangeRule: pricing.rangeRule ?? null,
+    renderArgsCompSearch: compSearch,
     renderArgsPricingTimeAdjustment: pricing.timeAdjustment ?? null,
+    timeAdjustmentMeasure: pricing.timeAdjustment?.measure ?? null,
+    marketTrendMeasure: market?.trendMeasure ?? null,
     renderArgsPricingClamp: pricing.clamp ?? null,
     renderArgsPricingSetAside: pricing.setAside ?? null,
     renderArgsPricingReview: review,
+    renderArgsPricingSellerNet: pricing.sellerNet ?? null,
+    // THE INVARIANT: what the seller keeps can never exceed the price we told
+    // them to ask. Round four class A shipped four documents where it did.
+    sellerNetAnchored:
+      pricing.sellerNet == null ||
+      (pricing.sellerNet.list === pricing.recommended && pricing.sellerNet.net <= pricing.recommended),
+    renderArgsExpiredAuditAskExposure: askExposure,
+    renderArgsSubjectStatus: subjectStatus,
+    subjectLastAsk: {
+      price: subject.lastListPrice,
+      date: subject.lastListDate,
+      historyLine: subject.listingHistoryLine,
+    },
     // What /admin/cmas shows for the STORED row, and what it would show after
     // this run. The dry run cannot re-run the LLM audit, so the second line
     // carries the stored verdict beside THIS run's review flag.
@@ -515,7 +619,11 @@ async function main() {
       renderArgsMarketOriginalAskRealization: null, renderArgsMarketLocalFailedThenSold: null,
       renderArgsPricingReconciliation: null, renderArgsPricingRangeRule: null,
       renderArgsPricingTimeAdjustment: null, renderArgsPricingClamp: null,
-      renderArgsPricingSetAside: null, renderArgsPricingReview: null, queueState: null,
+      renderArgsPricingSetAside: null, renderArgsPricingReview: null,
+      renderArgsPricingSellerNet: null, sellerNetAnchored: true,
+      renderArgsExpiredAuditAskExposure: null, renderArgsSubjectStatus: null,
+      subjectLastAsk: { price: null, date: null, historyLine: null },
+      queueState: null,
       queueStateStored: null,
       renderArgsPricingRejected: null,
       renderArgsExpiredAuditFinalCycle: null,
@@ -569,6 +677,11 @@ async function main() {
       }
       for (const f of r.dateAdjustmentFailures) console.log(`     ✖ ${f}`)
     }
+    console.log(
+      `   two city trends, two measures · timeAdjustment.measure = ${
+        r.timeAdjustmentMeasure ?? 'none'
+      } · market.trendMeasure = ${r.marketTrendMeasure ?? 'none'}`,
+    )
     console.log('   render_args.pricing.timeAdjustment =')
     console.log(indent(r.renderArgsPricingTimeAdjustment))
     console.log('   render_args.pricing.clamp =')
@@ -577,11 +690,24 @@ async function main() {
     console.log(indent(r.renderArgsPricingRangeRule))
     console.log('   render_args.pricing.setAside =')
     console.log(indent(r.renderArgsPricingSetAside))
+    console.log('   render_args.compSearch =')
+    console.log(indent(r.renderArgsCompSearch))
     console.log(
       `   queue state · stored ${r.queueStateStored ?? 'n/a'} · after this run ${r.queueState ?? 'n/a'}`,
     )
     console.log('   render_args.pricing.review =')
     console.log(indent(r.renderArgsPricingReview))
+    console.log(
+      `   render_args.pricing.sellerNet · ${r.sellerNetAnchored ? 'ANCHORED to the recommended list' : 'UNANCHORED — the net does not follow the list'} =`,
+    )
+    console.log(indent(r.renderArgsPricingSellerNet))
+    console.log('   render_args.subjectStatus =')
+    console.log(indent(r.renderArgsSubjectStatus))
+    console.log(
+      `   subject last ask (after the stale-cycle suppression) · ${
+        r.subjectLastAsk.price == null ? 'none' : `$${r.subjectLastAsk.price.toLocaleString('en-US')}`
+      } · ${r.subjectLastAsk.date ?? 'no date'} · ${r.subjectLastAsk.historyLine ?? 'no history line'}`,
+    )
     console.log('   render_args.pricing.reconciliation =')
     console.log(indent(r.renderArgsPricingReconciliation))
     console.log('   render_args.market.originalAskRealization =')
@@ -590,6 +716,8 @@ async function main() {
     console.log(indent(r.renderArgsMarketLocalFailedThenSold))
     console.log('   render_args.expiredAudit.finalCycle =')
     console.log(indent(r.renderArgsExpiredAuditFinalCycle))
+    console.log('   render_args.expiredAudit.askExposure =')
+    console.log(indent(r.renderArgsExpiredAuditAskExposure))
     if (r.error) console.log(`   ✖ ${r.error}`)
   }
   if (asJson) console.log(JSON.stringify(out, null, 2))

@@ -152,7 +152,7 @@ describe('set aside', () => {
   it('states one n across the strip caption and the lead', () => {
     const html = chapter(pricing())
     expect(keptCompCount(pricing(), comps)).toBe(4)
-    expect(html).toContain('Sale price today, 4 sales')
+    expect(html).toContain('One scale: sale price today. 4 sales.')
     expect(html).toContain('The four closed sales below set this number')
     expect(html).toContain('Two more are shown below and set aside.')
   })

@@ -24,6 +24,19 @@
  *      `faqs.map(` into a V3Quiet (neighborhood face is count + median, so
  *      the question lives in the FAQ, not the Instrument headline). The
  *      template is pinned inside lib/site/market-faq.ts below.
+ *   d. ANSWERS idiom (site queue SITE-08) — the page builds
+ *      `buildPlaceAnswers(…)` and hands the result to a rendered `<V3Answers>`
+ *      as its `questions`. That builder templates the SAME question and, where
+ *      the grain cannot publish a supply reading, still asks it and says so
+ *      rather than dropping the row — which is the behaviour Matt's 2026-08-26
+ *      ruling is actually about. Template pinned in lib/site/place-answers.ts
+ *      below, and the render is pinned too, so a page that computes the answers
+ *      and never mounts them does not satisfy this check.
+ *
+ * SUBDIVISION joined the list on 2026-09-08, when /subdivisions/[slug] started
+ * asking the question through idiom (d). It was absent before because the plat
+ * page asked nothing; it is here now because it does, and the point of the rule
+ * is that no place grain silently loses it in a rebuild.
  *
  * FALSIFIED both ways on 2026-08-26: removing the question template from
  * app/zip/[zip]/page.tsx fails the zip row; restoring it passes.
@@ -71,6 +84,19 @@ checks.push({
   ok: faq.includes("`Is ${geoName} a buyer's or seller's market?`"),
 })
 
+const placeAnswers = stripComments(src('lib/site/place-answers.ts'))
+checks.push({
+  label: 'buildPlaceAnswers templates the same question for the place answer sets',
+  ok: placeAnswers.includes("`Is ${place} a buyer's or seller's market?`"),
+})
+checks.push({
+  label: 'buildPlaceAnswers still asks it where no verdict can publish',
+  // Two emitters: one behind the published months-of-supply, one behind the
+  // closed count that explains the refusal. A single emitter would mean the
+  // question disappears on exactly the grains that most need the honest answer.
+  ok: (placeAnswers.match(/`Is \$\{place\} a buyer's or seller's market\?`/g) ?? []).length >= 2,
+})
+
 // ── The five place grains ──────────────────────────────────────────────────
 const GRAINS = [
   { grain: 'city', page: 'app/cities/[slug]/page.tsx', local: 'app/cities/[slug]/_v3' },
@@ -86,6 +112,7 @@ const GRAINS = [
     page: 'app/housing-market/[...slug]/page.tsx',
     local: 'app/housing-market/[...slug]/_v3',
   },
+  { grain: 'subdivision', page: 'app/subdivisions/[slug]/page.tsx', local: 'app/subdivisions/[slug]/_v3' },
 ]
 
 for (const { grain, page, local } of GRAINS) {
@@ -98,10 +125,14 @@ for (const { grain, page, local } of GRAINS) {
   const faqIdiom =
     pageText.includes('buildMarketFaq(') &&
     everywhere.some((t) => /buildFaqItems\(\s*faqs/.test(t) || /faqs\.map\(/.test(t))
+  // Computed AND mounted: buildPlaceAnswers alone is a variable nobody reads.
+  const answersIdiom =
+    pageText.includes('buildPlaceAnswers(') &&
+    everywhere.some((t) => /<V3Answers[\s\S]{0,800}?questions=\{/.test(t))
 
   checks.push({
     label: `${grain} grain (${page}) renders the market question`,
-    ok: kbIdiom || v3Idiom || faqIdiom,
+    ok: kbIdiom || v3Idiom || faqIdiom || answersIdiom,
   })
 }
 

@@ -9,8 +9,10 @@ import {
   dateLong,
   escapeHtml,
   monthYear,
+  reviewNoticeBandHtml,
   sparkPhotoAt,
 } from '@/lib/cma/render-blocks'
+import { readReviewNotice } from '@/lib/cma/render-contract'
 import type {
   CmaAdjustedComp,
   CmaBroker,
@@ -67,12 +69,26 @@ export interface RenderCmaArgs {
   generatedAtIso: string
   subjectTrace: string
   compTrace: string[]
+  /**
+   * The pricing side's own account of the comp search — the rungs it walked,
+   * how many kept sales each supplied, and its sentence. Absent on every row
+   * built before it landed; chapter 3 then derives the sentence from
+   * `compTrace` and the printed sales (round-four class E).
+   */
+  compSearch?: unknown
   excludedOutliers: Array<{ address: string; closePrice: number; ppsf: number; reason: string }>
   sellerImprovementsText?: string | null
   site?: CmaSiteData | null
   /** Recorded lot polygons for the subject and its comps; drives "The land". */
   parcels?: CmaParcelSet | null
   expiredAudit?: ExpiredAuditData | null
+  /**
+   * Whose listing this is TODAY — `standardStatus`, whether it is active with
+   * another brokerage, whether it was withdrawn rather than expired. Written
+   * at build; the closing chapter reads it and stops asking for the listing
+   * when it says somebody else has it (class D).
+   */
+  subjectStatus?: import('@/lib/cma/render-contract').CmaSubjectStatus | null
   development?: DevelopmentOpportunities | null
   rental?: RentalPotential | null
   extras?: CmaExtras | null
@@ -227,11 +243,30 @@ function coverPage(a: RenderCmaArgs): PageDef {
 
 }
 
+/**
+ * The review band, directly under the cover.
+ *
+ * Round-four class C: it belongs on the sheet a reader turns to first, not on
+ * a page of its own. `.page-cover` already breaks after itself, so prepending
+ * the band to the first chapter puts it at the top of page two on paper and
+ * immediately under the cover on screen — one sheet, no orphan page.
+ */
+function withReviewNotice(a: RenderCmaArgs, pages: PageDef[]): PageDef[] {
+  const review = readReviewNotice(a.pricing)
+  if (!review) return pages
+  const band = reviewNoticeBandHtml(review.notice ?? '', 'letter')
+  if (!band) return pages
+  const at = pages.findIndex((p) => !p.cover)
+  if (at < 0) return [...pages, { meta: 'Pricing report', body: band }]
+  return pages.map((p, i) => (i === at ? { ...p, body: `${band}
+${p.body}` } : p))
+}
+
 export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: number } {
   // P10: cover, then the ONE chapter order both documents walk
   // (OPINION_CHAPTER_ORDER). Nothing is appended here — a chapter that exists
   // only on the letter is exactly the drift the shared order removes.
-  const pages: PageDef[] = [coverPage(a), ...assembleOpinionPages(a)]
+  const pages: PageDef[] = withReviewNotice(a, [coverPage(a), ...assembleOpinionPages(a)])
   const body = pages.map((p) => wrapPage(p)).join('\n')
   const html = `<!DOCTYPE html>
 <html lang="en">

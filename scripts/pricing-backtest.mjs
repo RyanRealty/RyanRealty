@@ -211,7 +211,11 @@ for (const row of picked) {
     closeDate: asOf,
   })
   const actualNet = sellerNetFromPrice(actual, actualConc)
-  const predictedNet = est.pricing?.sellerNet?.predictedSellerNet ?? null
+  // The CLOSE net, for a backtest of the close prediction. `pricing.sellerNet`
+  // is anchored to the recommended LIST now (round four, class A), which is a
+  // different statement and would not be comparable to `actualNet` below. The
+  // arithmetic here is the one the removed `predictedSellerNet` performed.
+  const predictedNet = sellerNetFromPrice(predicted, est.pricing?.sellerNet?.expectedConcessions ?? null)
   const netErr =
     predictedNet != null && actualNet != null && actualNet > 0 ? (predictedNet - actualNet) / actualNet : null
   errors.push({

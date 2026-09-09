@@ -154,6 +154,282 @@ price-drop alert is its own measurable row rather than folded into the new-listi
 (b) is "every new listing, by email" acceptable in place of the literal "one email per
 listing", given the hourly cron batches sends.
 
+## Prior — 2026-09-08 PM (round four closed: A–F shipped, the contract fails closed on type)
+
+Owner: Claude (Fable). Integration branch `wt/cma-ship-20260907` → main. Blueprint, four
+evaluator rounds, and the round-four audit: `docs/plans/CMA_REIMAGINED_2026-09-07.md`.
+
+**Shipped this pass (all on main, deploy verified, 2465 rebuilt on the shipped code):**
+- A. `pricing.sellerNet` itemised: list, each cost line with its source, net ≤ list, and a
+  sentence naming what is NOT included (commission is never silently zero). The sentence now
+  states the count when the median across reporting sales is $0 while some gave one.
+- B. `expiredAudit.askExposure`: chapter 1 reads the ask that ran the clock ("It asked
+  $475,000 for 152 days, then $460,000 for 35", 7.2 percent above the range top). A stale
+  cycle (>12 months) never feeds the story; an owner asking below the range never gets the
+  overpricing story. An ask above the sales that sat is the overpricing story; only an ask
+  inside or below the range earns "points at something other than the number."
+- C. `pricing.review.severity` + `rendererNotice`: a review band on the letter AND the
+  immersive, not only the admin route.
+- D. `subjectStatus`: an active listing with another brokerage gets no solicitation and the
+  non-solicitation sentence; a Withdrawn subject carries the non-interference sentence.
+- E. One list ceiling (every tier ≤ `clamp.after`, never the failed ask); the worth range is
+  the kept set only (a set-aside sale can never be an axis end); `render_args.compSearch`
+  drives a search sentence the grid cannot refute; kept-set n is one number everywhere;
+  measures labelled (index = every home sale in the city per $/sqft, month line =
+  single-family sale price); no stale "listed $140,000".
+- F. One scale on the worth strip; a place polygon that holds neither subject nor sale is
+  suppressed.
+- Contract: `product-type-match` fails CLOSED when the subject's type is unstored (review,
+  not a pass). Matt 2026-09-08: apples to apples only, on every rung.
+
+**Matt's two rules from today (memory `feedback_cma_comp_containment`):** comps never leave
+the neighborhood or community boundary until it is exhausted to 12 months (subdivision →
+adjacent subdivisions inside the boundary → then out); same property type on every rung. The
+ladder change is the next engine item and is NOT built yet — see the previous block for the
+tier order and the data to confirm first.
+
+**Still open:** the cover photo is whatever single MLS photo the row carries; the map is a
+Google tile with our pins; subdivision-story and voice-reviewer still call the Anthropic API
+and fail open; inbound EMAIL replies do not advance the CRM; D21 price-tier fallback is Matt's
+call; `CmaLaneFunnel` not mounted; 8 `zz-test-rebrand-*` fixtures in production `cmas`;
+`lib/cma-request.int.test.ts` is flaky under the parallel full suite (shared DB). Every ready
+row still needs a rebuild on this engine before any send; all lane switches are OFF.
+
+## Prior — 2026-09-08 (site queue round two seeded from Search Console; two policy questions on Matt; the cloud fleet can take a screenshot)
+
+Owner: Claude (Fable 5.1), session 3db16241, main checkout. Three commits on this program today:
+`e09771ea` (a cloud lane installs the browser its taste pass needs; `tsx` declared), `a5dbf484`
+(a measurement window no longer freezes its page; the cloud setup script recorded), and this one
+(round two seeded, `scripts/_gsc-by-class.mjs` promoted, this block).
+
+**The queue is 29 items: 12 open, 2 in progress (SITE-03, SITE-07), 13 blocked (11 on dated
+windows that reopen 2026-10-05..08, 2 on Matt), 2 done.** Next served: SITE-20. Ids and the
+round-two note are in `docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md` ("Site queue"). `loop status`
+prints all of it, including the two questions.
+
+**Round two, SITE-20..33, and what it is not.** Source: Search Console 2026-06-08..2026-09-05
+(`node scripts/_gsc-by-class.mjs`: 129,817 impressions, 1,368 clicks, 1.05% CTR), four lenses and
+twenty-two adversarial verifications (workflow `wf_71474111-a25`), every code fact re-read, every
+live claim re-curled with a browser UA. Every traffic-causation claim died against this site's own
+query data: the class CTR gap is rank on head terms (/subdivisions earns 57 of its 71 clicks at
+positions 1-10 on uncontested plat names; /cities sits at 19-45 on "homes for sale in redmond"),
+and cross-class position comparison is uninformative in any weighting. So round two claims no click
+it cannot prove. It is correctness on a licensed broker's public site (Closed listings publish the
+list price in the snippet, the share card and the JSON-LD, 1,282 of 1,708 compared rows; off-market
+pages compute a mortgage on the old price and invite a tour; "Oll Homes for Sale" as a place name;
+Grants Pass open houses under a Central Oregon title), consolidation (2,330 listings indexed at more
+than one self-canonical URL; resort sub-plats scoring zero closed sales forever because the count is
+a text join at resort grain), origin cost (every place page and the blog are fully dynamic), and
+eleven missing community guides. Each node carries file:line, the figures, and a mechanical accept
+test the verifier rewrote so it cannot pass for the wrong reason.
+
+**Refuted and NOT seeded, so nobody re-finds them:** a registry-alias noindex for plats (already
+shipped by `getIndexableSubdivisions`; the residue is recrawl latency); a /cities out-of-area gate
+(middleware already 308s to /oregon); cannibalization, entity-dilution and crawl-budget mechanisms
+(no measurement exists on this site); the greenwood-playhouse snippet (every impression is a quoted
+navigational query for the venue's own site); a stale-price bug on MLS 220219174 (it is Active; the
+'2202' prefix is a sequence, not a year).
+
+**Ruled by Matt 2026-09-08 (asked, answered, written onto the nodes, which are now open):**
+- SITE-32: off-market listing URLs stay INDEXED with the honest state. MASTER_SPEC:1942 wins;
+  data-architecture-plan:1095's noindex text is the losing text and gets deleted by the lane.
+  Closed pages showing ClosePrice are not treated as a VOW-only sold surface under ODS A.4 for
+  indexing. Gate pins index,follow; SITE-21 is what those URLs serve.
+- SITE-33: the listing tier gets the honesty block and noindex with follow preserved; pages
+  still serve; the /oregon referral pages' inventory links keep resolving; /oregon/[city] stays
+  indexed per W12.4. SITE-33 now waits on SITE-25 (pageMetadata cannot emit noindex,follow yet).
+
+**Fleet state.** Environment RYANREALTY_CLOUD: network access Full, variables populated, Setup
+script `CLOUD_SETUP_BROWSERS=1 bash scripts/cloud-setup.sh || true` (set through Matt's Chrome at
+22:10Z with his ok, reopened and verified persisted; the editor is under the environment chip on the
+composer, not under Settings). Routine `trig_01JTHasiFzPRDnkTiPzodMPV`: every four hours, back on
+Fable 5.1 at Matt's call, next fire 2026-09-09 00:05Z; 4 of 13 fires today succeeded, the rest died
+on the Fable weekly limit (reset 19:00Z) and one 08:30Z fire is still parked on a `.git/index.lock`
+permission prompt under the old prompt, holding no node. The skill now carries "If you are a cloud
+session" (browser first, --webpack, curl UA, scratchpad/, per-file deletes, the 16 GB build ceiling)
+and "A measurement window does not freeze the page" (Matt: quality passes allowed, window keeps
+running, recorded on the same node, `blocked_until` untouched).
+
+**Do not.** Re-audit the site or write a new audit document (append to a node). Claim a click from
+a metadata change. Noindex anything on the listing route before SITE-32 is ruled. Set
+`dynamicParams = false` on /housing-market or /open-houses (each 404s legitimate pages named on the
+nodes). Call `permanentRedirect` from the by-address page body (blank 200 under loading.tsx; the
+file documents it). Gate on `PUBLIC_ACTIVE_STATUSES` for off-market behaviour (it excludes Pending).
+
+---
+
+## Prior — 2026-09-08 (CMA reimagined: round four audit, WIP on two branches, and Matt's comp-containment rule)
+
+Owner: Claude (Fable). Integration branch `wt/cma-ship-20260907`; WIP on `wt/cma-engine-20260907`
+(`910b2261`) and `wt/cma-doc-20260907` (`c7be141b`, which already merges the engine WIP).
+Blueprint + four evaluator rounds + the round-four audit: `docs/plans/CMA_REIMAGINED_2026-09-07.md`.
+Memory: `project_cma_funnel_mission`, `reference_partial_month_index_endpoint`,
+`feedback_cma_document_reimagined`, `feedback_cma_comp_containment` (new, below).
+
+**THE NEXT ENGINE ITEM, from Matt 2026-09-08 (his words):**
+"Whenever we're in a city, if the city has a neighborhood district or a community where there are
+subdivisions inside it, we want to always focus on that subdivision to try and get our comps. If we
+can't find it within that subdivision, we never leave the community boundary or the neighborhood
+boundary. We want to start by looking at the most adjacent subdivisions within the neighborhood or
+community, and continue to do that until we've exhausted everything before we would leave the
+neighborhood boundary. We would go back up to 12 months within that neighborhood or community
+boundary before we would ever leave it. … we had one in Old Bend, and then you got me a bunch of
+homes in Southwest Crossing, which are two entirely different homes and locations."
+- Today's ladder (`lib/pricing/ladder.ts`, per `CMA_STATE_OF_THE_WORLD.md`): subdivision 3/6/9 mo →
+  wide-GLA same subdivision → **1 mi radius** → 2 mi → similar subdivisions → city. The 1-mile
+  rung is what jumps Old Bend into Southwest Crossing.
+- The rule: subdivision to 12 months → adjacent subdivisions INSIDE the same neighborhood or
+  community (nearest shared boundary first, from the GIS mesh `resolveMarketArea` already uses)
+  to 12 months → only then any rung that crosses the boundary. Where a city has no neighborhood
+  layer (Redmond, La Pine) the rule degrades to subdivision → city, and the document's search
+  sentence must say which.
+- Data to confirm before coding: `boundaries` (3,213 subdivision rows), the 14 Bend neighborhoods
+  and 14 resort communities in `data/resort-communities.json`, and subdivision→neighborhood
+  membership (registry aliases assert membership; gated). Run the backtest N=600 before/after;
+  the hard cuts (product, baths, US-97, tier) still hold on every rung.
+- Renderer follow-through: the chapter-3 search sentence must state the rung actually used
+  (the round-four audit found it saying "not enough sales inside Diamond Bar Ranch" while three of
+  five comps WERE Diamond Bar Ranch).
+
+**State of main (`b9da5d2e` + this handoff).** The reimagined document, the corrected pricing
+(range from the printed adjusted sales, reconciliation weights, trailing-3 index with a guard,
+clamp printed when it binds, set-aside sales out of the weights, review flag on the row), tracked
+links on every address, the four-lane queue with Auto-send OFF everywhere. Production deploy
+verified. Nothing sends.
+
+**Round-four audit (in the plan doc): NOT SENDABLE. Blocking classes:**
+A. `pricing.sellerNet.predictedSellerNet` is wrong on every row and impossible on one (Concorde's
+   net exceeds its list). The chapter is headed "What you keep".
+B. The story reads the ask that did not run the clock (2465 held $475,000 for 152 of 187 days;
+   the document quotes the $460,000 gap). 19968 runs the overpricing story off a Nov 2004 ask.
+   1617 runs it at an owner asking BELOW the range.
+C. `pricing.review` reaches the admin route only; the letter and PDF a broker sends carry no
+   trace of a `fail` verdict.
+D. Compliance: 1617 NW 8th is ACTIVE with another brokerage and the closing solicits it; 2465 is
+   Withdrawn, not Expired.
+E/F. Counts that contradict inside one document; the Google default map; a strip mixing scales.
+
+**The WIP that addresses A–D (typechecks; 3,078 of 3,079 CMA+pricing tests pass):**
+- engine `910b2261`: itemised `pricing.sellerNet {basis:'list', list, lines[], net, sentence,
+  unknowns[]}` (commission is in `unknowns`, never silently zero), `expiredAudit.askExposure
+  {segments[], dominant, final, sentence}`, `pricing.review.severity` + `rendererNotice`,
+  `lib/pricing/subject-status.ts` → `subjectStatus {standardStatus, isActiveWithOtherBrokerage,
+  isWithdrawnNotExpired, listingAgentIsUs, note}`.
+- doc `c7be141b`: net chapter itemised with what is not included, chapter 1 reads
+  `askExposure.dominant`, review band on letter + immersive, `lib/cma/render-contract.ts`.
+- The one failing test (`lib/cma/opinion-spine.test.ts` "omits … seller net when those extras
+  are unknown"): the net chapter now renders its heading with no figure when `sellerNet` is
+  absent; the test expects the chapter omitted. Decide: omit when `sellerNet` is absent
+  entirely, print the sentence only when present without a derivable net. Then finish classes
+  E/F, rebuild the four exemplars (`scripts/_rebuild-cma.ts`), look-pass `--check --interact`
+  (it clears the slug first now), merge to ship, gates, push.
+
+**Process note.** The round-four audit workflow expanded to 631 agents on an uncapped
+findings→refuters fan-out and hit the session limit before its judge stage, twice. Cap findings
+per lens (top 5) and use two refuters. The findings were worth it; the sizing was not.
+
+**Unchanged open items:** subdivision-story and voice-reviewer still call the Anthropic API and
+fail open; inbound EMAIL replies do not advance the CRM; D21 price-tier fallback is Matt's call;
+`CmaLaneFunnel` not mounted; 8 `zz-test-rebrand-*` fixtures in production `cmas`; the cover
+photo is whatever single photo the MLS carries; the map is a monochrome Google tile.
+
+## Prior — 2026-09-08 (round 4: SITE-08 and SITE-12 landed, and three false-pass traps closed)
+
+Owner: Claude (Opus 5), session 01NESdvn. **main is at `b9da5d2e6`**, Vercel
+`dpl_q2yrS6o3G1fHfPwmNpeqpeHxLG7W` READY in production and live-checked on ryan-realty.com.
+Both nodes are blocked on measurement to 2026-10-08 with their evidence written
+(`f475834f` SITE-08, `28a55619-eff3-4763-aeaf-e7f3617a9cb3` SITE-12). 20 commits in one push.
+`ci:gates 165/165` · runtime gates green · 892 test files, 9,543 tests.
+
+**The part worth reading is that three separate things reported PASS while measuring the wrong
+thing.** Green output is not evidence unless you can say what it measured.
+
+1. **`ci:runtime-gates` — the command I shipped this morning so a lane could run the gates CI
+   runs — could never start.** It was `start-server-and-test`, whose waiter is axios-based; the
+   middleware bot screen's `BAD_BOT_RE` matches `axios`, so every probe came back 403 and it
+   retried to a mute "Timed out waiting for: http://127.0.0.1:3000". That is the identical
+   failure CI carried on every pull request from 2026-07-25 to 2026-08-02, already root-caused
+   in the header of `scripts/wait-for-server.mjs`. I shipped a gate command that reintroduced a
+   bug this repository had written down. `scripts/run-runtime-gates.sh` now uses CI's own
+   start/wait/run split and CI's own waiter.
+2. **A stale server answered for the new one, twice.** A `next start` from an earlier run held
+   port 3000; the new server died with `EADDRINUSE` into a log nobody read, and the waiter got
+   its 200 from the old process. A hand check then "verified" two just-built fixes against the
+   previous build. The runner now refuses a busy port, and it tries `lsof`, `fuser` AND `ss` —
+   because on this container `lsof -ti tcp:3000` printed nothing while `fuser` named the pid, so
+   an lsof-only guard would have waved through the exact case it exists to catch.
+3. **A `Node:` trailer named a uuid that is not a node,** and every write keyed on it updated
+   zero rows and reported success. G72 checks the trailer's shape, not that it resolves. The
+   first attempt to close SITE-12 wrote its evidence into nothing and printed "blocked"; it
+   surfaced only because the queue listing still showed the node in_progress. `post-commit` now
+   prints a loud line when the id resolves to no row. Two pushed commits (`7e2086647`,
+   `b70aafff4`) still carry the wrong id; history is not being rewritten for it, and the node's
+   evidence says so.
+
+Add to that the one this session had already hit: a lane read a tap-target pass from a `.next`
+whose BUILD_ID predated its own fix commit by 13 minutes. The runner refuses that too now.
+
+## What shipped
+
+**SITE-08 — cited Q&A with FAQPage schema on all three place grains.** One array
+(`lib/site/place-answers.ts`) feeds both the visible rows and the JSON-LD, so the markup cannot
+describe a sentence the page does not print. A separate claude-sonnet-5 evaluator scored the
+merged build twice, three scorings each, rubric `v1-2026-09-08`: round 1 neighborhood 82 /
+community 79 / subdivision 73, then after the fixes below and a recapture, **83 / 80 / 76**.
+
+Its findings, all verified against source and the served HTML before being believed:
+
+- **The visible §0 line was leaking the database.** All three grains opened "Source:
+  market_metric neighborhood:bend-awbrey-butte through the Market Truth layer" — a table name
+  and a raw slug, in body copy, the tell TASTE.md bans by name. §0 needs that handle auditable;
+  TASTE says a client should not have to read it. Both are right, so the field split:
+  `sourceTrace` is the sentence, `sourceKey` is the handle, emitted as `data-source-key` on the
+  `#faq` section. Greppable in the served HTML, out of the reader's way.
+- **"Ridge At Eagle Crest"** with a capital A, in the H1, the breadcrumb, the heading, all five
+  Q&A questions and the FAQPage JSON-LD Google reads. English title case now lives in one list
+  in `lib/market/publish-plat-display-name.ts` that both name paths use. It cannot rescue a
+  withheld MLS abbreviation, which is pinned by test.
+- **The prose rows wore the figure rows' clothes.** /communities/tetherow ran five aligned
+  tabular numerals down its right column and then two blanks. They carry a reference register
+  now, on an EXPLICIT flag — deriving it from "has no figure" muted the value ask, which is the
+  one row the section exists for.
+- **The HOA dollar figure had no source line** while every other figure did.
+- **Two "active" counts, no reconciliation.** Awbrey Butte published 48 as the supply
+  denominator and 57 as homes for sale a few rows apart, both traced correctly, neither
+  explained. `activeCountNotes` existed for exactly this and was unused.
+
+**SITE-12 — live counts under the homepage hero, Sell tab as real HTML.** Taste receipt 80. Its
+merge into main resolved three conflicts rather than picking a side; the one worth knowing is
+the Source-summary tap target, where main's fix and the lane's were independent and main's had
+silently removed the control's only affordance (any `display` other than `list-item` suppresses
+the native `::marker`). The merge keeps main's geometry and the lane's drawn caret.
+
+## Open, and named by the evaluator rather than by me
+
+- **Listing rows still print the raw MLS "Ridge At Eagle Crest"** under each address, so the
+  page's own name for itself and the listings under it disagree. Deferred deliberately: the same
+  string is a live search-filter key, so display and filter have to be separated first, and
+  `publishPlatDisplayName` returns null for MLS abbreviations, so a naive route would blank the
+  subdivision line on many tiles.
+- **The community `#belonging` block restates $2,052 with no source line,** and states "Founded
+  2008", "700 acres", "Course architect David McLay Kidd" and "Ranked #57 (Golf Digest)" with no
+  source of any kind. That block is SITE-01's surface.
+- **The subdivision hero prints a full §0 audit sentence as its first line of body copy** under
+  the H1; neither sibling grain does. A page-class question, raised not answered.
+- **The mobile sticky listings bar overlaps the answers section at 375px** on neighborhood and
+  community — SITE-04's surface, node `9339692e-a02e-4a31-a416-cf7ebcdc010a`.
+- **`ci:a11y` and `ci:lighthouse` have still never executed.** They sit in the same CI job as the
+  three runtime gates and are not in `ci:runtime-gates`, deliberately: adding a command for a
+  gate that does not run would be the same mistake as item 1 above.
+
+## Queue
+
+15 items · 2 done · 11 blocked on measurement · SITE-03 and SITE-07 held by other sessions
+(`claude-opus5-019RdEm6`, `cloud-grinder-2026-09-08-20`). **Nothing is open to claim.** The next
+session's work is whatever reopens, or whatever those two lanes hand back.
+
+---
+
 ## Prior — 2026-09-08 (round 3 landed, deploy verified, and the live check found two more §0 defects)
 
 Owner: Claude (Opus 5), session 01Aubwpa. **main is at `9efa2cf32`.** Round 3 is on main, gated,

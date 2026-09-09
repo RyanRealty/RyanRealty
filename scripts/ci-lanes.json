@@ -355,6 +355,14 @@
       "app/communities/**",
       "lib/data/**"
     ],
+    "ci:city-route-guard": [
+      "app/**/page.tsx",
+      "app/actions/**",
+      "lib/central-oregon.ts",
+      "middleware.ts",
+      "next.config.*",
+      "scripts/check-city-route-guard.mjs"
+    ],
     "ci:claude-canon": [
       "CLAUDE.md",
       "AGENTS.md",
@@ -1211,6 +1219,12 @@
       "components/site/v3/V3Atlas.client.tsx",
       "scripts/lib/taste-receipt.mjs",
       "scripts/taste-receipt-v2-baseline.json"
+    ],
+    "ci:title-brand-once": [
+      "app/**/page.tsx",
+      "app/**/layout.tsx",
+      "lib/site/page-metadata.ts",
+      "scripts/title-brand-once-baseline.json"
     ],
     "ci:tool-discipline": [
       "lib/**",

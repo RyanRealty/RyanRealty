@@ -125,9 +125,9 @@ export function platInventoryTrace(scope: PlatScope): string {
 /** Trace for the yearly closed-sale table. Aggregates only, per ODS rule 5-4 A.4. */
 export function salesHistoryTrace(displayName: string, priceMayPublish = false): string {
   const base =
-    `${FEED}, closed single-family sales recorded under the MLS plat name ${displayName}, a ` +
-    `single-family name join and not recorded-plat membership, grouped by calendar year. ` +
-    `Never an individual sale.`
+    `${FEED}, closed single-family sales recorded under the MLS subdivision name ` +
+    `${displayName} — matched by that name, not by the recorded plat boundary — grouped by ` +
+    `calendar year. Never an individual sale.`
   return priceMayPublish
     ? base
     : `${base} Counts only: a closed-price statistic at this grain is withheld, because most ` +

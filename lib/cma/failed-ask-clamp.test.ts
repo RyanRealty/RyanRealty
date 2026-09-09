@@ -56,8 +56,8 @@ describe('pricing.clamp — the failed-ask ceiling, on render_args', () => {
     expect(clamp!.applications.map((a) => a.tier).sort()).toEqual(['highEnd', 'recommended'])
     expect(clamp!.applications.find((a) => a.tier === 'highEnd')).toMatchObject({
       before: 1930000,
-      after: 1500000,
-      ratio: 1,
+      after: 1473000,
+      ratio: FAILED_ASK_BACKTEST.closeP75Ratio,
     })
   })
 
@@ -129,13 +129,67 @@ describe('pricing.clamp — the failed-ask ceiling, on render_args', () => {
   })
 
   it('names the high end when only the high end moved', () => {
-    // Below both quantile ceilings, above the ask itself.
+    // Below both quantile ceilings, above the ask itself. The high end comes
+    // down to the SAME ceiling the recommendation is held to — one list
+    // ceiling, not the ask (round four, class E).
     const x = p({ conservative: 400000, recommended: 460000, highEnd: 530000 })
     applyFailedAskCap(x, { lastFailedListPrice: 500000, offMarketDate: recentOff })
     expect(x.recommended).toBe(460000)
-    expect(x.highEnd).toBe(500000)
+    expect(x.highEnd).toBe(491000)
     expect(x.clamp!.appliedTo).toBe('highEnd')
-    expect(x.clamp!.basis.ratio).toBe(1)
+    expect(x.clamp!.basis.ratio).toBe(FAILED_ASK_BACKTEST.closeP75Ratio)
     expect(x.clamp!.applications).toHaveLength(1)
+  })
+})
+
+/**
+ * ONE LIST CEILING, NEVER THE FAILED ASK (round four, class E).
+ *
+ * cma-65365-concorde printed list tiers $1,413,000–$1,500,000 beside a
+ * recommendation of $1,473,000: three list numbers on two screens, the highest
+ * of them the $1,500,000 ask that had just failed to sell. The high end used
+ * to have a ceiling of its own — the ask itself — so a document that told the
+ * owner not to go above $1,473,000 printed $1,500,000 as the top of the same
+ * band. There is now one ceiling for the whole printed list band, and it is
+ * the one the recommendation is held to.
+ */
+describe('the clamp is ONE ceiling for every list tier', () => {
+  it('Concorde: no printed list tier sits above clamp.after, and none is the failed ask', () => {
+    const ask = 1500000
+    const x = p({ conservative: 1438000, recommended: 1774000, highEnd: 1996000 })
+    applyFailedAskCap(x, { lastFailedListPrice: ask, offMarketDate: recentOff })
+    const after = x.clamp!.after
+    expect(after).toBe(1473000)
+    for (const tier of ['conservative', 'recommended', 'highEnd'] as const) {
+      expect(x[tier]).toBeLessThanOrEqual(after)
+    }
+    expect(x.highEnd).not.toBe(ask)
+    expect(x.highEnd).toBeLessThan(ask)
+    // conservative ≤ recommended ≤ highEnd still holds (range-consistency).
+    expect(x.conservative).toBeLessThanOrEqual(x.recommended)
+    expect(x.recommended).toBeLessThanOrEqual(x.highEnd)
+    // The high end's move is recorded against the ceiling that produced it.
+    expect(x.clamp!.applications.find((a) => a.tier === 'highEnd')).toMatchObject({
+      before: 1996000,
+      after: 1473000,
+      ratio: FAILED_ASK_BACKTEST.closeP75Ratio,
+    })
+  })
+
+  it('2465 7th: the same, on the Redmond shape', () => {
+    const ask = 460000
+    const x = p({ conservative: 435000, recommended: 454000, highEnd: 484000 })
+    applyFailedAskCap(x, { lastFailedListPrice: ask, offMarketDate: recentOff })
+    expect(x.recommended).toBe(452000)
+    expect(x.highEnd).toBe(452000)
+    expect(x.highEnd).toBeLessThan(ask)
+    expect(x.highEnd).toBeLessThanOrEqual(x.clamp!.after)
+  })
+
+  it('a high end already below the ceiling is left where the evidence put it', () => {
+    const x = p({ conservative: 400000, recommended: 430000, highEnd: 470000 })
+    applyFailedAskCap(x, { lastFailedListPrice: 500000, offMarketDate: recentOff })
+    expect(x.clamp).toBeNull()
+    expect(x.highEnd).toBe(470000)
   })
 })

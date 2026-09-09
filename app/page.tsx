@@ -15,8 +15,10 @@ import {
   V3_FOOTER_COLUMNS,
   V3SectionTracker,
   V3Proof,
+  V3Pulse,
 } from '@/components/site/v3'
 import { HomeHomesRails } from './_v3/HomeHomesRails'
+import { loadHomePulse } from './_v3/home-pulse'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
 import { HomeBrowsePlaces } from './_v3/HomeBrowsePlaces'
 import { HomeFeaturedCommunity } from './_v3/HomeFeaturedCommunity.client'
@@ -90,7 +92,7 @@ const RESORT_DOORS = [
 ] as const
 
 export default async function Home() {
-  const [cities, tiles, brokers, openHouseLabels, reviewSummary, featuredCommunitySlides] =
+  const [cities, tiles, brokers, openHouseLabels, reviewSummary, featuredCommunitySlides, pulse] =
     await Promise.all([
       getCitiesForIndex().catch(() => []),
       getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
@@ -100,6 +102,12 @@ export default async function Home() {
       loadHomeFeaturedCommunitySlides().catch((err) => {
         console.error('[home] featured community loader failed', err)
         return []
+      }),
+      // The same cached region population the chrome already read. SITE-12
+      // moved "Central Oregon right now" out of the Homes dropdown to here.
+      loadHomePulse().catch((err) => {
+        console.error('[home] live pulse loader failed', err)
+        return null
       }),
     ])
 
@@ -144,24 +152,55 @@ export default async function Home() {
       kicker: v3Text('Join'),
       label: v3Text('Work with us'),
       href: '/join',
+      // The third door was the only one with no line under it (2026-09-08
+      // evaluator). The count is the live broker roster this page already read
+      // and prints as faces below; the rest of the sentence is the brokerage's
+      // own description of itself (VOICE.md, Matt 2026-09-07). Omitted rather
+      // than guessed when the roster read gives nothing.
+      ...(faces.length > 0
+        ? {
+            fact: v3Text(
+              faces.length === 1
+                ? 'One broker who lives and works here'
+                : `${faces.length} brokers who live and work here`,
+            ),
+          }
+        : {}),
       pictogram: 'work',
     },
   ] as const
 
-  const placeDoors = [
-    ...TOWN_ORDER.map((slug) => {
-      const live = cityBySlug.get(slug)
-      return {
-        label: live?.name ?? TOWN_LABEL[slug],
-        href: `/cities/${slug}`,
-      }
-    }),
-    ...RESORT_DOORS.map((r) => ({
-      label: r.label,
-      href: r.href,
-    })),
-    { label: 'Every city', href: '/cities' },
-    { label: 'Resorts and communities', href: '/communities' },
+  // Two labelled runs, not twelve identical boxes (2026-09-08 evaluator). The
+  // town chips carry the live active count from getCitiesForIndex — `activeCount`
+  // is null when that city's inventory is unmeasured and 0 is a measured empty,
+  // so a null prints nothing rather than a zero (section 0). The resorts run
+  // carries no figure because this page holds no per-resort read; /communities
+  // owns those.
+  const placeRuns = [
+    {
+      name: 'Towns',
+      // What the figures count, said once for the run: `activeCount` is
+      // geo_snapshot_mv's active_sfr_count, the detached single-family actives,
+      // which is the same figure and the same read /cities publishes per city.
+      unit: 'houses for sale',
+      seeAll: { label: 'Every city', href: '/cities' },
+      doors: TOWN_ORDER.map((slug) => {
+        const live = cityBySlug.get(slug)
+        const active = live?.activeCount
+        return {
+          label: live?.name ?? TOWN_LABEL[slug],
+          href: `/cities/${slug}`,
+          ...(typeof active === 'number' && Number.isFinite(active)
+            ? { count: active.toLocaleString('en-US') }
+            : {}),
+        }
+      }),
+    },
+    {
+      name: 'Resorts and communities',
+      seeAll: { label: 'Every community', href: '/communities' },
+      doors: RESORT_DOORS.map((r) => ({ label: r.label, href: r.href })),
+    },
   ]
 
   // Live Bend place-row hero wins over the static Old Mill poster (G30).
@@ -184,11 +223,21 @@ export default async function Home() {
           height="tall"
           eyebrow="Central Oregon"
           headline={v3Text('Homes for sale in Central Oregon')}
+          // Sell mode swaps the copy with the panel, so the line over the
+          // address field is a seller's question and not a buyer's headline.
+          // The h1 above is the page's one heading either way.
+          altEyebrow="Selling in Central Oregon"
+          altHeadline="What is your home worth?"
           posterSrc={heroPosterSrc}
           videoSrc={HERO_VIDEO}
         >
           <HomeHeroSearch valuationHref={valuationHref('/')} />
         </V3Stage>
+
+        {/* The live read, under the search. Absent — never zeroed — when the
+            listing read gives nothing: a count of no listings across Central
+            Oregon is a fact about the read, not about the market (section 0). */}
+        {pulse ? <V3Pulse {...pulse} id="right-now" /> : null}
 
         <HomeHomesRails
           rows={railRows}
@@ -203,7 +252,7 @@ export default async function Home() {
           <AboutFaces people={faces} heading="Talk to a broker" headingLevel={2} size="compact" />
         ) : null}
 
-        <HomeBrowsePlaces id="places" doors={placeDoors} />
+        <HomeBrowsePlaces id="places" runs={placeRuns} />
 
         {reviewQuotes.length > 0 ? (
           <V3Proof

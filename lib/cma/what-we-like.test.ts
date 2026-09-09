@@ -250,10 +250,13 @@ describe('the failed-ask ceiling (applyFailedAskCap)', () => {
     const x = p({ conservative: 2100000, recommended: 2275000, highEnd: 2455000 })
     const r = applyFailedAskCap(x, { lastFailedListPrice: 1675000, offMarketDate: recentOff })
     expect(r.applied).toBe(true)
-    // 0.942 and 0.982 of the $1,675,000 failed ask, rounded to $1K.
+    // 0.942 and 0.982 of the $1,675,000 failed ask, rounded to $1K. The high
+    // end takes the SAME 0.982 ceiling as the recommendation — one list
+    // ceiling, never the ask that failed (round four, class E).
     expect(x.conservative).toBe(1578000)
     expect(x.recommended).toBe(1645000)
-    expect(x.highEnd).toBe(1675000)
+    expect(x.highEnd).toBe(1645000)
+    expect(x.highEnd).toBeLessThan(1675000)
     expect(x.conservative).toBeLessThanOrEqual(x.recommended)
     expect(x.recommended).toBeLessThanOrEqual(x.highEnd)
     expect(r.cappedTo).toBe(1645000)

@@ -1,0 +1,322 @@
+/* ===========================================================================
+   V3PlaceAffordability. The two-way affordability instrument on a place page.
+
+   Every color, size, stroke and duration comes from ./tokens.css. No raw color
+   is declared here (ci:public-v3 rule 2), and no elevation shadow exists in
+   either register (PUBLIC_UI section 6).
+
+   THE COMPOSITION IS DELIBERATELY ASYMMETRIC. The dials take a narrow left
+   column — they are a working panel, sunken, dense, the one place on a place
+   page where the reader operates something. The answer takes the wide right
+   column, because the answer is what the section is for. At 375 the dials come
+   first and the answer follows, which is the order a person uses them in.
+
+   EVERY CONTROL CLEARS 44x44 (WCAG 2.5.5 / 2.5.8, ci:tap-targets, which
+   measures /cities/bend at 390 and 1440). The range track is a full --v3-tap
+   tall so the thumb has a real hit area, the chips carry a --v3-tap floor on
+   both axes, and the disclosure summary is a full-width --v3-tap row.
+
+   NOTHING ANIMATES ON LOAD. The only motion is the bar widths inside
+   V3Drawing, which move because the reader moved a dial.
+   =========================================================================== */
+
+.v3.v3-afford {
+  margin: 0;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+}
+
+/* A section that FOLLOWS content opens on the section rule. */
+* + .v3.v3-afford {
+  border-top: var(--v3-rule-section);
+}
+
+.v3 .v3-afford__head {
+  max-width: var(--v3-measure);
+  margin: 0 auto var(--v3-space-xl);
+}
+
+.v3 .v3-afford__claim {
+  max-width: var(--v3-measure-text);
+  margin: var(--v3-space-sm) 0 0;
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3 .v3-afford__body {
+  display: grid;
+  gap: var(--v3-space-xl);
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+}
+
+@media (min-width: 62rem) {
+  .v3 .v3-afford__body {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr);
+    gap: var(--v3-space-2xl);
+    align-items: start;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   The dials — the working panel
+   -------------------------------------------------------------------------- */
+
+.v3 .v3-afford__solve {
+  display: grid;
+  gap: var(--v3-space-lg);
+  padding: var(--v3-space-lg);
+  background: var(--v3-panel-bg);
+  border: var(--v3-panel-border);
+  border-radius: var(--v3-radius-card);
+}
+
+.v3 .v3-afford__modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-control);
+  overflow: hidden;
+}
+
+.v3 .v3-afford__mode {
+  flex: 1 1 auto;
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+  padding: var(--v3-space-2xs) var(--v3-space-md);
+  border: 0;
+  background: transparent;
+  color: var(--v3-ink-muted);
+  font: inherit;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--v3-dur-state) var(--v3-ease-out), color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-afford__mode + .v3-afford__mode {
+  border-inline-start: 1px solid var(--v3-edge);
+}
+
+.v3 .v3-afford__mode.is-on {
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+}
+
+.v3 .v3-afford__mode:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: calc(-1 * var(--v3-focus-width));
+}
+
+.v3 .v3-afford__dial {
+  display: grid;
+  gap: var(--v3-space-2xs);
+}
+
+.v3 .v3-afford__dial-head {
+  display: grid;
+  gap: var(--v3-space-3xs);
+}
+
+.v3 .v3-afford__dial-name {
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-afford__field {
+  inline-size: 100%;
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-2xs) var(--v3-space-sm);
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  /* A form control wears the UI face, not the display face (PUBLIC_UI section
+     3: forms are Geist). The display face belongs on the ANSWER, which is the
+     figure, not on the box the visitor is typing in. */
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-num);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3 .v3-afford__rate-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--v3-space-2xs);
+}
+
+.v3 .v3-afford__field--rate {
+  font-size: var(--v3-size-body-lg);
+  inline-size: 7rem;
+}
+
+.v3 .v3-afford__unit {
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3 .v3-afford__field:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3 .v3-afford__range {
+  inline-size: 100%;
+  block-size: var(--v3-tap);
+  margin: 0;
+  accent-color: var(--v3-navy);
+  cursor: pointer;
+}
+
+.v3 .v3-afford__range:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3 .v3-afford__dial-note {
+  margin: 0;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   The assumptions, folded
+   -------------------------------------------------------------------------- */
+
+.v3 .v3-afford__terms {
+  border-top: var(--v3-rule-hairline);
+  padding-top: var(--v3-space-sm);
+}
+
+.v3 .v3-afford__terms-summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink);
+  cursor: pointer;
+}
+
+.v3 .v3-afford__terms-summary:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3 .v3-afford__terms-body {
+  display: grid;
+  gap: var(--v3-space-md);
+  padding-top: var(--v3-space-sm);
+}
+
+.v3 .v3-afford__choices {
+  display: grid;
+  gap: var(--v3-space-3xs);
+}
+
+.v3 .v3-afford__chiprow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs);
+}
+
+.v3 .v3-afford__choices-name {
+  margin: 0;
+  padding: 0;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-afford__chip {
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+  padding: var(--v3-space-3xs) var(--v3-space-sm);
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface);
+  color: var(--v3-ink-muted);
+  font: inherit;
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background var(--v3-dur-state) var(--v3-ease-out), color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-afford__chip.is-on {
+  background: var(--v3-navy);
+  border-color: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+}
+
+.v3 .v3-afford__chip:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+/* --------------------------------------------------------------------------
+   The answer
+   -------------------------------------------------------------------------- */
+
+.v3 .v3-afford__answer {
+  display: grid;
+  gap: var(--v3-space-lg);
+  align-content: start;
+}
+
+.v3 .v3-afford__answer-line {
+  margin: 0;
+  max-width: 22ch;
+  font-family: var(--v3-font-display);
+  font-weight: var(--v3-weight-display);
+  font-size: var(--v3-size-display-2);
+  line-height: var(--v3-leading-display);
+  letter-spacing: var(--v3-track-display);
+  color: var(--v3-ink);
+  font-variant-numeric: tabular-nums;
+  text-wrap: balance;
+}
+
+@media (min-width: 62rem) {
+  .v3 .v3-afford__answer-line {
+    max-width: 26ch;
+  }
+}
+
+/* The drawing sits inside the answer column and keeps its own rules to
+   itself: the section rule above already separated this section. */
+.v3 .v3-afford__drawing {
+  padding: 0;
+}
+
+.v3 .v3-afford__go {
+  display: flex;
+}
+
+.v3 .v3-afford__source {
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3 .v3-afford__mode,
+  .v3 .v3-afford__chip {
+    transition: none;
+  }
+}

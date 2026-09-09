@@ -28,6 +28,10 @@ export function evaluateBpoAccuracyContract(args: {
   opinion: BpoOpinion
   history: BpoListingHistory
   site?: CmaSiteData | null
+  /** The subject's stored property type. The base contract's product-type
+   *  check fails closed without it (Matt 2026-09-08: apples to apples only),
+   *  so the BPO build forwards it exactly as the CMA build does. */
+  subjectSubType?: string | null
   minComps: number
   marketContextPresent: boolean
 }): AccuracyContract {

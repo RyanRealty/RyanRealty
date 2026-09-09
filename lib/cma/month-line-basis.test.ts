@@ -32,7 +32,7 @@ describe('the month line and the recommendation', () => {
   it('names the basis when every month drawn sits above the number', () => {
     const html = renderInventoryBoardHtml(market, { recommended: 435_000, subject })
     expect(html).toContain(
-      'These are every home in Redmond, all sizes. Yours is priced against 3 bed 2 bath homes near 1,440 square feet.',
+      'This line is the middle sale price of single-family homes in Redmond, all sizes. Yours is priced against 3 bed 2 bath homes near 1,440 square feet.',
     )
   })
 

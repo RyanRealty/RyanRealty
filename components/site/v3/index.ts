@@ -210,6 +210,33 @@ export type { V3PlaceValueProps } from './V3PlaceValue.client'
 export { V3StickyAsk, type V3StickyAskProps, type V3StickyAskSurface } from './V3StickyAsk.client'
 
 /**
+ * The place-page affordability instrument (SITE-07, 2026-09-08): a payment and a
+ * price that each solve the other, opened at this place's published median ask,
+ * ending in the search at the ceiling it solved. The rate is a measured figure
+ * when market_history_weekly has one and a labelled assumption when it does not;
+ * the local financing mix is drawn as a fact about closed sales and never turned
+ * into a down payment. Math in lib/finance/affordability.ts, sentences and drawn
+ * figures in V3PlaceAffordability.view.ts, props built by
+ * lib/place/publish-place-affordability.ts.
+ */
+export { V3PlaceAffordability, V3_AFFORD_TRACK_DEBOUNCE_MS } from './V3PlaceAffordability.client'
+export type {
+  V3PlaceAffordabilityProps,
+  V3PlaceAffordabilityRate,
+} from './V3PlaceAffordability.client'
+export {
+  affordabilityClaim,
+  affordabilityAnswerLine,
+  affordabilitySearchLabel,
+  affordabilityFigures,
+} from './V3PlaceAffordability.view'
+export type {
+  AffordabilityMode,
+  AffordabilityMixSlice,
+  AffordabilityViewInput,
+} from './V3PlaceAffordability.view'
+
+/**
  * The place-page listing-alert capture (SITE-04, 2026-09-07): the first callout
  * after a place opening, with the real 30-day count as its promise, and the
  * sticky repeat that shows once the visitor is past the Atlas. One component,
@@ -264,6 +291,18 @@ export type {
   V3InstrumentFigure,
   V3InstrumentFigures,
 } from './V3Instrument'
+
+/* -------------------------------------------------------------------------- */
+/* Pattern 7 — PULSE: the live read of a place, drawn                          */
+/*                                                                             */
+/* A gauge, not a section: the counts that are true right now, a mark per       */
+/* listing plotted where it sits, the moment of the read, and a native radio    */
+/* switch that lights one population — all of it server HTML, no JavaScript.    */
+/* -------------------------------------------------------------------------- */
+
+export { V3Pulse } from './V3Pulse'
+
+export type { V3PulseProps, V3PulseReading } from './V3Pulse'
 
 /* -------------------------------------------------------------------------- */
 /* Pattern 2 — FIELD: inventory as a spatial surface                           */
@@ -401,7 +440,15 @@ export type {
  */
 export { V3Answers, splitQuietItems } from './V3Answers'
 
-export type { V3AnswersProps, V3Answer, V3AnswersDoor } from './V3Answers'
+export type {
+  V3AnswersProps,
+  V3Answer,
+  V3AnswersDoor,
+  V3AnswerFigure,
+  V3AnswerMark,
+  V3AnswerScale,
+  V3AnswerTally,
+} from './V3Answers'
 
 /* -------------------------------------------------------------------------- */
 /* PLACE SECTIONS — compositions of the six, not a seventh                     */

@@ -16,7 +16,10 @@ import {
   roundPriceUp,
   trimPpsfOutliers,
   usableSaleToAskRatio,
+  TIME_ADJUSTMENT_MEASURE_INDEX,
+  TIME_ADJUSTMENT_MEASURE_YOY,
 } from '@/lib/pricing/estimate'
+import { CMA_MARKET_TREND_MEASURE } from '@/lib/data/cma/builderReads'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CmaSubject } from '@/lib/cma/types'
 
@@ -718,9 +721,104 @@ describe('D10 — the range and the point come off the printed adjusted prices',
     })
     const sentence = engine.rangeRule!.sentence
     expect(sentence).toContain('the four sale prices behind this price')
-    expect(sentence).toContain('Two more sales sat outside every one of them and were set aside')
+    // BOTH counts by name, in one arithmetic a reader can check (round four,
+    // class E): cma-19968's market chapter said six sales support a range the
+    // price chapter drew from four.
+    expect(sentence).toContain('Two of the six sales sat outside every one of them and were set aside')
     // The old sentence opened on six and then described a spread of four.
     expect(sentence).not.toContain('the 6 sale prices')
+  })
+
+  /**
+   * THE WORTH RANGE COMES FROM THE KEPT SET ONLY (round four, class E).
+   *
+   * cma-19968 printed a worth range topping at $479,000 with a $479,614 sale
+   * in `setAside` — $614 apart on a document that told the reader that sale
+   * had been removed. The ends are the kept extremes, and the outward rounding
+   * that puts them on the pricing grid may never reach the neighbour it was
+   * drawn to exclude.
+   */
+  describe('the range ends never reach a sale the document set aside', () => {
+    const ends = (prices: number[]) => {
+      const engine = listPriceFromEngine({
+        subjectSqft: 2000,
+        lastAsk: null,
+        adjusted: prices.map((p) => sale(p)),
+        saleToAskRatios: [],
+        asOfSaleToOriginal: 1,
+        qualitySet: false,
+      })
+      const part = partitionByRangeRule(prices.map((p) => sale(p)))
+      return {
+        low: engine.rangeRule!.adjustedLow,
+        high: engine.rangeRule!.adjustedHigh,
+        setAside: part.setAside.map((s) => s.adjustedPrice!),
+        kept: part.kept.map((s) => s.adjustedPrice!),
+      }
+    }
+
+    it('both ends are the min and max of the KEPT sales', () => {
+      const r = ends([331_304, 370_698, 458_723, 469_558, 478_079, 479_614])
+      expect(Math.min(...r.kept)).toBe(370_698)
+      expect(Math.max(...r.kept)).toBe(478_079)
+      expect(r.low).toBeLessThanOrEqual(370_698)
+      expect(r.high).toBeGreaterThanOrEqual(478_079)
+      // Nothing outside the kept spread by more than one rounding step.
+      expect(370_698 - r.low).toBeLessThan(1000)
+      expect(r.high - 478_079).toBeLessThan(1000)
+    })
+
+    it('cma-19968: no set-aside sale equals either end', () => {
+      const r = ends([331_304, 370_698, 458_723, 469_558, 478_079, 479_614])
+      for (const aside of r.setAside) {
+        expect(aside).not.toBe(r.low)
+        expect(aside).not.toBe(r.high)
+      }
+      expect(r.high).toBeLessThan(479_614)
+      expect(r.low).toBeGreaterThan(331_304)
+    })
+
+    it('rounds inward rather than onto a set-aside sale $200 away', () => {
+      // Outward rounding would take the high to $480,000, PAST the $479,200
+      // sale the rule just removed, and the low to $370,000, past $370,400.
+      const r = ends([370_400, 370_600, 458_723, 469_558, 479_100, 479_200])
+      expect(r.high).toBe(479_000)
+      expect(r.low).toBe(371_000)
+      expect(r.high).toBeLessThan(479_200)
+      expect(r.low).toBeGreaterThan(370_400)
+      for (const aside of r.setAside) {
+        expect(aside).not.toBe(r.low)
+        expect(aside).not.toBe(r.high)
+      }
+    })
+
+    it('the sentence names rangeRule.n and rangeRule.kept, both by name', () => {
+      const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight']
+      for (const prices of [
+        [400_000, 420_000, 440_000, 460_000, 480_000, 500_000],
+        [400_000, 415_000, 430_000, 445_000, 460_000, 480_000, 500_000],
+        [400_000, 450_000, 500_000],
+      ]) {
+        const engine = listPriceFromEngine({
+          subjectSqft: 2000,
+          lastAsk: null,
+          adjusted: prices.map((p) => sale(p)),
+          saleToAskRatios: [],
+          asOfSaleToOriginal: 1,
+          qualitySet: false,
+        })
+        const rule = engine.rangeRule!
+        expect(rule.sentence).toContain(words[rule.kept]!)
+        expect(rule.sentence).toContain(words[rule.n]!)
+      }
+    })
+
+    it('holds the order when both kept extremes sit inside one rounding step', () => {
+      const r = ends([420_100, 420_300, 420_400, 420_500, 420_600, 420_800])
+      expect(r.low).toBeLessThanOrEqual(r.high)
+      expect(r.low).toBeGreaterThan(420_100)
+      expect(r.high).toBeLessThan(420_800)
+    })
   })
 
   it('carries the value to an ask at the local share of the original ask', () => {
@@ -973,6 +1071,64 @@ describe('the time-adjustment basis says exactly what is applied (R2d)', () => {
     expect(out.sentence.split('. ').length).toBe(3)
     expect(out.sentence).not.toMatch(/percent a month/)
     expect(out.sentence).not.toMatch(/\d+\.\d\d/)
+  })
+
+  /**
+   * TWO CITY TRENDS, TWO MEASURES (round four, class E). The date adjustment
+   * and the market chapter's month line both describe Redmond and disagree:
+   * the index peaked in April on price a square foot while the median close
+   * bottomed in the same month. Neither is wrong; they are different
+   * measurements, and each now says which.
+   */
+  it('names what the basis measures, and it is not the month line', () => {
+    const out = buildTimeAdjustmentBasis({
+      citySlug: 'redmond',
+      cityName: 'Redmond',
+      points: redmond,
+      asOf: '2026-09-07',
+    })
+    expect(out.measure).toBe(TIME_ADJUSTMENT_MEASURE_INDEX)
+    // pricing_market_index has no product_class filter, so the label may not
+    // claim single-family. Verified against the migration and the live table
+    // (townhouse / condominium / manufactured rows in Bend, 2026-09-08).
+    expect(out.measure).toContain('price a square foot')
+    expect(out.measure).not.toMatch(/single.family|detached/i)
+    expect(out.measure).not.toBe(CMA_MARKET_TREND_MEASURE)
+  })
+
+  it('the year-over-year fallback names its own, different measure', () => {
+    const out = buildTimeAdjustmentBasis({
+      citySlug: 'sisters',
+      cityName: 'Sisters',
+      points: [],
+      asOf: '2026-09-07',
+      yoyMedianPriceDeltaPct: -3.2,
+      indexUnavailableReason: 'no monthly index for this city',
+    })
+    expect(out.basis).toBe('year-over-year')
+    expect(out.measure).toBe(TIME_ADJUSTMENT_MEASURE_YOY)
+    expect(out.measure).toContain('median sale price')
+    expect(out.measure).not.toBe(TIME_ADJUSTMENT_MEASURE_INDEX)
+  })
+
+  it('a basis that moved nothing measures nothing', () => {
+    const out = buildTimeAdjustmentBasis({
+      citySlug: 'sisters',
+      cityName: 'Sisters',
+      points: [],
+      asOf: '2026-09-07',
+    })
+    expect(out.basis).toBe('none')
+    expect(out.measure).toBeNull()
+  })
+
+  it('the month line measures single-family sale prices, and says so', () => {
+    // compute_and_cache_period_stats filters PropertyType='A' AND
+    // property_sub_type='Single Family Residence' (read from the live function
+    // body, 2026-09-08). The index above does not.
+    expect(CMA_MARKET_TREND_MEASURE).toContain('single-family')
+    expect(CMA_MARKET_TREND_MEASURE).toContain('median sale price')
+    expect(CMA_MARKET_TREND_MEASURE).not.toContain('square foot')
   })
 
   it('states the endpoint rule in the source trace, and leaves the partial month out', () => {

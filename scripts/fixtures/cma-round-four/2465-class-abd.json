@@ -1,0 +1,35 @@
+{
+  "subjectStatus": {
+    "standardStatus": "Withdrawn",
+    "isActiveWithOtherBrokerage": false,
+    "isWithdrawnNotExpired": true,
+    "listingAgentIsUs": false,
+    "note": "Came off the market withdrawn rather than expired."
+  },
+  "pricing": {
+    "sellerNet": {
+      "basis": "Commission is the rate in your listing agreement; title and escrow are the Deschutes County schedule.",
+      "list": 435000,
+      "lines": [
+        { "label": "Commission", "amount": 21750, "source": "Listing agreement, 5.0%" },
+        { "label": "Title and escrow", "amount": 3100, "source": "Deschutes County schedule" },
+        { "label": "Recording and property-tax proration", "amount": 1450, "source": "Deschutes County recording schedule" },
+        { "label": "Loan payoff", "amount": 210000, "source": "Payoff quote you provided" }
+      ],
+      "net": 198700,
+      "sentence": "At $435,000 you would walk away with about $198,700.",
+      "unknowns": []
+    }
+  },
+  "expiredAudit": {
+    "askExposure": {
+      "segments": [
+        { "ask": 475000, "from": "2026-02-26", "to": "2026-07-28", "days": 152, "sharePct": 81.3, "pctAboveRangeTop": 7.2 },
+        { "ask": 460000, "from": "2026-07-28", "to": "2026-09-01", "days": 35, "sharePct": 18.7, "pctAboveRangeTop": 3.8 }
+      ],
+      "dominant": 475000,
+      "final": 460000,
+      "sentence": "It asked $475,000 for 152 days, then $460,000 for 35."
+    }
+  }
+}

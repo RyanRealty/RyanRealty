@@ -54,6 +54,16 @@ function project(points: Pt[]): (p: Pt) => { x: number; y: number } {
 export type CompPinMapOverlay = {
   view: StaticMapView
   pins: readonly CmaMapPin[]
+  /**
+   * Whether the place outline was drawn on this tile.
+   *
+   * Undefined means the tile was built before the check existed (a stored
+   * `mapDataUri` on an older row), and the caption keeps its hedge. False
+   * means the outline was suppressed because it held neither the subject nor
+   * any sale, and the caption says nothing about a boundary at all
+   * (round-four class F, 19968).
+   */
+  boundaryShown?: boolean
 }
 
 /**

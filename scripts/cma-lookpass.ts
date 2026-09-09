@@ -826,6 +826,33 @@ async function writeContactSheet(outDir: string, slug: string, meta: Record<stri
   await fs.writeFile(path.join(outDir, 'contact-sheet.html'), html, 'utf-8')
 }
 
+/**
+ * A FIXTURE OVERLAY, deep-merged into the stored `render_args`.
+ *
+ * The class A-D contract (`pricing.sellerNet`, `expiredAudit.askExposure`,
+ * `pricing.review`, `subjectStatus`) lands on the pricing side in this same
+ * cycle, so none of the four stored exemplars carries it yet. Reasoning about
+ * how those chapters "would" render is exactly the habit that shipped the
+ * defects; `--overlay` renders them, through the same two production
+ * functions, from a row built in memory.
+ *
+ * READ-ONLY, like the rest of this tool: the merged row is never written back.
+ * Arrays REPLACE rather than concatenate — a fixture that says "these are the
+ * segments" means those and no others.
+ */
+function deepMerge(base: unknown, patch: unknown): unknown {
+  if (Array.isArray(patch)) return patch
+  if (patch === null || typeof patch !== 'object') return patch
+  const out: Record<string, unknown> =
+    base && typeof base === 'object' && !Array.isArray(base)
+      ? { ...(base as Record<string, unknown>) }
+      : {}
+  for (const [k, v] of Object.entries(patch as Record<string, unknown>)) {
+    out[k] = deepMerge(out[k], v)
+  }
+  return out
+}
+
 async function processSlug(
   slug: string,
   browser: import('puppeteer-core').Browser,
@@ -836,6 +863,10 @@ async function processSlug(
     getCmaRenderSourceBySlug: (slug: string) => Promise<CmaRenderSource | null>
     getCmaStoredHtmlBySlug: (slug: string) => Promise<string | null>
     resolveCmaPrintHtml: (slug: string) => Promise<{ html: string; status: string } | null>
+    resolveCmaPrintHtmlFromSource: (
+      row: CmaRenderSource,
+      slug: string,
+    ) => Promise<{ html: string; status: string } | null>
     immersiveFromRow: (
       row: CmaRenderSource,
       origin: string,
@@ -845,6 +876,7 @@ async function processSlug(
     extractChapters: (html: string) => Array<{ id: string; heading: string; svgCount: number; imgCount: number; tableCount: number }>
     findSellerBannedWords: (html: string) => Array<{ label: string; excerpt: string }>
   },
+  overlay?: { name: string; patch: Record<string, unknown> } | null,
 ): Promise<{ slug: string; ok: boolean; contactSheet?: string; failures: CheckFailure[] }> {
   console.log(`\n=== ${slug} ===`)
   const adminRow = await deps.getCmaAdminRowBySlug(slug)
@@ -865,19 +897,45 @@ async function processSlug(
   console.log(`  doc_type=${meta.doc_type} request_source=${meta.request_source} status=${meta.status} subject="${meta.subject_address}"`)
   console.log(`  render_args present=${meta.has_render_args} html_content present=${meta.has_html_content}`)
 
-  const outDir = path.join(OUT_ROOT, slug)
+  const outDir = path.join(OUT_ROOT, overlay ? `${slug}@${overlay.name}` : slug)
+  // Clear the slug before writing. Chapter file names carry the recommended
+  // price ("04-443000.png"), so a rebuild that moves the number leaves the old
+  // chapter beside the new one and the evidence shows two answers for one
+  // document. The round-two taste review caught exactly that. Rewriting in
+  // place is not enough; the stale name has to go.
+  await fs.rm(outDir, { recursive: true, force: true })
   await fs.mkdir(outDir, { recursive: true })
 
   const allShots: Shot[] = []
   const failures: CheckFailure[] = []
+  // The overlay row is built ONCE, here, and both documents render from it, so
+  // the letter and the immersive can never be looking at different fixtures.
+  const storedSource = await deps.getCmaRenderSourceBySlug(slug)
+  const overlaidSource: CmaRenderSource | null =
+    overlay && storedSource
+      ? ({
+          ...storedSource,
+          render_args: deepMerge(storedSource.render_args, overlay.patch) as CmaRenderSource['render_args'],
+        } as CmaRenderSource)
+      : storedSource
+  if (overlay) {
+    if (!storedSource) {
+      console.error(`  --overlay needs a stored row to merge into; "${slug}" has none`)
+      return { slug, ok: false, failures: [] }
+    }
+    console.log(`  overlay: ${overlay.name} — merged into render_args (nothing written)`)
+  }
   const { subject: subjectAddress, addresses } = collectDocumentAddresses(
-    (adminRow.render_args as Record<string, unknown> | null) ?? null,
+    ((overlaidSource?.render_args as Record<string, unknown> | null) ??
+      (adminRow.render_args as Record<string, unknown> | null)) ?? null,
   )
 
   // Letter: resolveCmaPrintHtml is the exact function lib/cma-pdf.ts calls
   // for the PDF and the ?print=1 route falls back to — reusing it means a
   // renderer fix (or a renderer bug) shows up here identically.
-  const letter = await deps.resolveCmaPrintHtml(slug)
+  const letter = overlay
+    ? await deps.resolveCmaPrintHtmlFromSource(overlaidSource!, slug)
+    : await deps.resolveCmaPrintHtml(slug)
   if (letter?.html) {
     await fs.writeFile(path.join(outDir, 'letter.html'), letter.html, 'utf-8')
     for (const width of [816, 375] as const) {
@@ -906,7 +964,7 @@ async function processSlug(
   // recipient already has or is about to get; frozen html_content fallback
   // when render_args is absent) so the shots match what production serves.
   let immersiveHtml: string | null = null
-  const renderSource = await deps.getCmaRenderSourceBySlug(slug)
+  const renderSource = overlaidSource
   if (renderSource) {
     // The SLUG, so every tracked link in the evidence carries the identity the
     // recipient's copy carries — `_pid`, `agent`, `utm_campaign`. Without it
@@ -986,17 +1044,38 @@ async function main(): Promise<void> {
   const argv = process.argv.slice(2)
   const check = argv.includes('--check')
   const interact = argv.includes('--interact')
+  const overlayAt = argv.indexOf('--overlay')
+  const overlayPath = overlayAt >= 0 ? argv[overlayAt + 1] : null
+  if (overlayAt >= 0 && (!overlayPath || overlayPath.startsWith('--'))) {
+    console.error('--overlay needs a path to a JSON file')
+    process.exit(1)
+  }
+  let overlay: { name: string; patch: Record<string, unknown> } | null = null
+  if (overlayPath) {
+    const raw = await fs.readFile(path.resolve(REPO_ROOT, overlayPath), 'utf-8')
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      console.error(`--overlay ${overlayPath} must hold a JSON object`)
+      process.exit(1)
+    }
+    overlay = {
+      name: path.basename(overlayPath).replace(/\.json$/i, ''),
+      patch: parsed as Record<string, unknown>,
+    }
+  }
   const slugs = argv
-    .filter((a) => !a.startsWith('--'))
+    .filter((a, i) => !a.startsWith('--') && i !== overlayAt + 1)
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean)
   if (slugs.length === 0) {
-    console.error('usage: npx tsx scripts/cma-lookpass.ts [--check] [--interact] <slug> [<slug> ...]')
+    console.error(
+      'usage: npx tsx scripts/cma-lookpass.ts [--check] [--interact] [--overlay <patch.json>] <slug> [<slug> ...]',
+    )
     process.exit(1)
   }
 
   const { getCmaAdminRowBySlug, getCmaRenderSourceBySlug, getCmaStoredHtmlBySlug } = await import('@/lib/data')
-  const { resolveCmaPrintHtml } = await import('@/lib/cma/print-html')
+  const { resolveCmaPrintHtml, resolveCmaPrintHtmlFromSource } = await import('@/lib/cma/print-html')
   const { immersiveFromRow } = await import('@/lib/cma/serve-document')
   const { extractChapters } = await import('@/lib/cma/lookpass-chapters')
   const { findSellerBannedWords } = await import('@/lib/cma/seller-text')
@@ -1027,10 +1106,11 @@ async function main(): Promise<void> {
         getCmaRenderSourceBySlug,
         getCmaStoredHtmlBySlug,
         resolveCmaPrintHtml,
+        resolveCmaPrintHtmlFromSource,
         immersiveFromRow,
         extractChapters,
         findSellerBannedWords,
-      })
+      }, overlay)
       results.push(result)
     }
   } finally {

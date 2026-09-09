@@ -27,15 +27,17 @@ import {
   didNotSellBodyHtml,
   type DidNotSellArgs,
 } from '@/lib/cma/did-not-sell'
-import {
-  FAILED_ASK_BACKTEST,
-  listingTimelineReading,
-  resolveListingTimeline,
-} from '@/lib/cma/expired-audit'
+import { FAILED_ASK_BACKTEST, resolveListingTimeline } from '@/lib/cma/expired-audit'
 import { listingTimelinePhoneSvg, listingTimelineSvg } from '@/lib/cma/market-charts'
-import { subjectDomDays } from '@/lib/cma/comp-matrix'
-import { sellerNetFromPrice } from '@/lib/pricing/seller-net'
-import { pricingPage, worthRangeRounded } from '@/lib/cma/render-pricing-page'
+import { subjectDomDays, type SubjectAskContext } from '@/lib/cma/comp-matrix'
+import {
+  failedSubjectAsk,
+  keptSaleCount,
+  listRangeBounds,
+  pricingPage,
+  worthRangeRounded,
+} from '@/lib/cma/render-pricing-page'
+import { setAsideCompIndexes } from '@/lib/cma/set-aside'
 import type { CmaBroker, CmaClient } from '@/lib/cma/types'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { CmaExtras } from '@/lib/cma/extras'
@@ -49,10 +51,22 @@ import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import {
   PRICED_RIGHT_HEADING_OVERPRICED,
+  askExposureSentence,
   askGapClass,
+  askStoryReading,
+  neutralAskReading,
   pricedRightHeadingFor,
   type AskGapClass,
 } from '@/lib/cma/ask-story'
+import {
+  readAskExposure,
+  readSellerNetSheet,
+  readSellerNetUnknowns,
+  readSubjectStatus,
+  type AskExposure,
+  type CmaSubjectStatus,
+  type SellerNetSheet,
+} from '@/lib/cma/render-contract'
 
 const esc = escapeHtml
 
@@ -69,11 +83,27 @@ export type OpinionPageArgs = {
   /** Deprecated for letter render (C9). Ignored — comps map is the single map. */
   subjectMapDataUri?: string | null
   tiersUsed?: string[]
+  /** The rungs the selector actually walked. Chapter 3's "why these sales". */
+  compTrace?: readonly string[] | null
+  /**
+   * `render_args.compSearch` — the pricing side's own account of the search,
+   * including how many kept sales each rung supplied. Absent on every row
+   * built before it landed; the renderer then derives the sentence from
+   * `compTrace` and the printed sales (class E).
+   */
+  compSearch?: unknown
   generatedAtIso: string
   /** Carried on render_args; nothing on the seller document prints it. */
   excludedOutliers?: Array<{ address: string; closePrice: number; ppsf: number; reason: string }>
   equity?: CmaEquityPosition | null
   expiredAudit?: ExpiredAuditData | null
+  /**
+   * Whose listing this is TODAY. Written at build by lib/pricing; absent on
+   * every row built before that landed, and `readSubjectStatus` returns null
+   * for those. The closing chapter reads it, and what it reads decides whether
+   * this document is allowed to ask for the listing at all (class D).
+   */
+  subjectStatus?: CmaSubjectStatus | null
   site?: CmaSiteData | null
   /** Recorded lot polygons for the subject and its comps. Null when unavailable. */
   parcels?: CmaParcelSet | null
@@ -105,97 +135,147 @@ export type OpinionPageArgs = {
 
 
 /**
- * The seller concessions THIS DOCUMENT PRINTS, over the sales it prints them
- * for.
+ * WHETHER THE SUBJECT'S STORED ASK IS STILL THIS LISTING'S ASK.
  *
- * Chapter 3's grid carries a "Seller concessions" line per sale, resolved at
- * build by `attachCompConcessions`. Chapter 6 used to assert a basis of its
- * own — "the sales that set this price reported no seller concessions" — off
- * `pricing.sellerNet.expectedConcessions`, which is measured over a wider set
- * of rows than the five the document shows. On 2465 7th that produced a net
- * sheet resting on "no concessions" three screens under a grid printing
- * $4,000 and $10,000. A licensed broker's price opinion does not get to
- * contradict its own evidence (CLAUDE.md §0), so this reads the same values
- * the grid prints, resolved the same way `concessionCell` resolves them.
+ * One resolution for the whole document (class E): the subject column's head,
+ * its phone card, the strip's dashed failed-ask line and the list range's
+ * ceiling all mean the same event. `finalCycle` being null is the build saying
+ * it found no listing cycle to reason about, and a price with no cycle behind
+ * it is a record, not an ask — 19968 Terrace printed $140,000 from a November
+ * 2004 cycle, undated, three times, beside a $461,000 recommendation.
  *
- * It is arithmetic over printed figures, not a new statistic: a reader can add
- * the concessions row up and land on the same median.
+ * `hasFinalCycle` stays undefined when the row carries no expired audit at
+ * all: that is a document about a home nobody claims failed, and only the date
+ * gate applies.
  */
-export function printedConcessions(comps: ReadonlyArray<CmaAdjustedComp>): {
-  reported: number
-  paid: number
-  median: number | null
-} {
-  const values = comps
-    .map((c) => c.concessions ?? c.concessionsAmount ?? null)
-    .filter((v): v is number => v != null && Number.isFinite(v))
-  const paid = values.filter((v) => v > 0).sort((a, b) => a - b)
-  const mid = Math.floor(paid.length / 2)
-  const median =
-    paid.length === 0 ? null : paid.length % 2 === 1 ? paid[mid]! : Math.round((paid[mid - 1]! + paid[mid]!) / 2)
-  return { reported: values.length, paid: paid.length, median }
+export function subjectAskContext(a: OpinionPageArgs): SubjectAskContext {
+  return {
+    asOfIso: a.generatedAtIso,
+    hasFinalCycle: a.expiredAudit ? a.expiredAudit.finalCycle != null : undefined,
+  }
 }
 
 /**
- * Where the concession figure came from, over the rows that produced it.
- *
- * Research item 8, and D14 behind it: the net sheet quoted a concession figure
- * with no basis anywhere on the page. The caption names the sales it was taken
- * over and how many of them paid nothing, so the column above it adds up.
+ * "commission, title, escrow, or your loan payoff" — an OR list, because each
+ * one of them alone makes the figure above it wrong.
  */
-export function concessionBasisLine(a: OpinionPageArgs, concession: number): string {
-  const p = printedConcessions(a.comps)
-  const head = `Net at list is the list price minus ${usd(concession)}, before commission and closing costs.`
-  if (p.paid === 0 || p.reported === 0) return head
-  const none = p.reported - p.paid
-  const basis = ` That figure is the median across the ${int(p.paid)} ${
-    p.paid === 1 ? 'sale' : 'sales'
-  } in the price chapter that reported one${
-    none > 0
-      ? `; the other ${int(none)} of the ${int(p.reported)} that recorded the field reported none`
-      : ''
-  }.`
-  return `${head}${basis}`
+function orList(items: readonly string[]): string {
+  const list = items.map((s) => s.trim()).filter(Boolean)
+  if (list.length === 0) return ''
+  if (list.length === 1) return list[0]!
+  if (list.length === 2) return `${list[0]} or ${list[1]}`
+  return `${list.slice(0, -1).join(', ')}, or ${list[list.length - 1]}`
+}
+
+/**
+ * What a net at list would need, when the row cannot produce one.
+ *
+ * The four figures are the ones a licensed broker fills in on an Oregon net
+ * sheet and none of them is in the MLS record, so the report cannot hold them
+ * and does not pretend to.
+ */
+const NET_AT_LIST_REQUIRES = [
+  'what you still owe on the home',
+  'the commission written into your listing agreement',
+  'title and escrow',
+  "the county's recording fees and the property-tax proration",
+]
+
+/**
+ * WHAT YOU KEEP IS A CLAIM ABOUT EVERY DEDUCTION, and the chapter may only
+ * make it when it holds every deduction (round-four class A).
+ *
+ * What was here: three figures headed "At $475,000 / $467,000", computed as
+ * the list minus the median seller concession off the price chapter's own
+ * sales, under an immersive eyebrow reading "What you keep". Commission,
+ * title, escrow and the seller's loan payoff — every large number on a real
+ * net sheet — were in a caption as words, not in the arithmetic. On a $475,000
+ * list that figure overstates what the seller walks away with by roughly the
+ * price of a car, and it is the one number in the document a seller will
+ * quote back.
+ *
+ * So the chapter either ITEMISES — list, every cost line with the source it
+ * came from, the net, and one sentence naming what is still not in it — or it
+ * prints no figure at all and says what a net would need. `lib/pricing` owns
+ * the sheet; `readSellerNetSheet` refuses anything whose column does not add
+ * up, and refuses a net above the list outright.
+ */
+export function sellerNetSheetForDoc(a: OpinionPageArgs): SellerNetSheet | null {
+  const sheet = readSellerNetSheet(a.pricing)
+  if (!sheet) return null
+  // ONE LIST CEILING PER DOCUMENT (class E). This chapter's whole column hangs
+  // off one list price, printed twice — the head row and the net row — so a
+  // sheet priced above the ceiling chapter 3 states would be the document's
+  // highest number, in the chapter a seller reads for what they walk away
+  // with. A sheet at the ask that already failed is the same defect wearing
+  // the failed price. Neither is repaired here: the arithmetic belongs to
+  // lib/pricing, so the chapter prints no figure and says what a net needs.
+  const bounds = listRangeBounds(a.pricing, failedSubjectAsk(a.subject, subjectAskContext(a)))
+  if (bounds && sheet.list > bounds.high) return null
+  const failed = failedSubjectAsk(a.subject, subjectAskContext(a))
+  if (failed != null && failed > 0 && sheet.list >= failed) return null
+  return sheet
+}
+
+/** True only when every deduction is on the sheet. Gates the phrase itself. */
+export function netIsEverything(sheet: SellerNetSheet | null): boolean {
+  return sheet != null && sheet.unknowns.length === 0
+}
+
+/** The eyebrow over the immersive twin. Never "What you keep" on a partial net. */
+export function sellerNetKick(a: OpinionPageArgs): string {
+  return netIsEverything(sellerNetSheetForDoc(a)) ? 'What you keep' : 'Net at list'
+}
+
+export function sellerNetBodyHtml(a: OpinionPageArgs): string {
+  const sheet = sellerNetSheetForDoc(a)
+  if (!sheet) {
+    const named = readSellerNetUnknowns(a.pricing)
+    const needs = named.length > 0 ? named : NET_AT_LIST_REQUIRES
+    return `<p>${esc(
+      `A net at ${usd(a.pricing.recommended)} needs ${orList(
+        needs,
+      )}. None of those is in the record this report reads. We put them in writing, against a real list price, before anything is signed.`,
+    )}</p>`
+  }
+  const everything = netIsEverything(sheet)
+  const rows = sheet.lines
+    .map(
+      (l) =>
+        `<tr><th>${esc(l.label)}<span class="ln-src">${esc(l.source)}</span></th><td class="v">${esc(
+          `${l.amount < 0 ? '+' : '−'}${usd(Math.abs(l.amount))}`,
+        )}</td></tr>`,
+    )
+    .join('\n    ')
+  return `${sheet.sentence ? `<p>${esc(sheet.sentence)}</p>` : ''}
+  <table class="kv netsheet">
+    <tbody>
+    <tr><th>List price</th><td class="v">${usd(sheet.list)}</td></tr>
+    ${rows}
+    <tr class="is-net"><th>${esc(
+      everything ? `What you keep at ${usd(sheet.list)}` : `Net at ${usd(sheet.list)}`,
+    )}</th><td class="v">${usd(sheet.net)}</td></tr>
+    </tbody>
+  </table>
+  ${sheet.basis ? `<p class="small">${esc(sheet.basis)}</p>` : ''}
+  ${
+    everything
+      ? ''
+      : `<p>${esc(`This does not include ${orList(sheet.unknowns)}.`)}</p>`
+  }`
 }
 
 export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
-  const printed = printedConcessions(a.comps)
-  const stored = a.pricing.sellerNet?.expectedConcessions ?? null
-  // The grid is the evidence. When the printed sales reported a concession the
-  // net reads THOSE rows; when they all recorded none it says so; when none of
-  // them recorded the field at all, the build's own figure stands in.
-  const concession = printed.median ?? (printed.reported > 0 ? 0 : stored)
-  if (concession == null) return null
-  const low = sellerNetFromPrice(a.pricing.conservative, concession)
-  const rec = sellerNetFromPrice(a.pricing.recommended, concession)
-  const high = sellerNetFromPrice(a.pricing.highEnd, concession)
-  if (low == null && rec == null && high == null) return null
-  const listPriceSentence = `what you net at list is the list price: ${usd(a.pricing.conservative)} to ${usd(
-    a.pricing.highEnd,
-  )}, ${usd(a.pricing.recommended)} at the recommended list. Commission and closing costs come out of that.`
+  // No sheet on the row at all: the build never priced a net, so there is no
+  // chapter. The "what a net would need" sentence is for a sheet that exists
+  // and cannot be added up, not for a row that never carried one.
+  if (a.pricing.sellerNet == null) return null
   return {
     meta: `${esc(a.subject.streetAddress)} · Net at list`,
     toc: 'Net at list',
     body: `
   <h2 class="section">Net at list</h2>
-  ${
-    concession <= 0
-      ? `<p>${esc(
-          printed.reported > 0
-            ? `${
-                printed.reported === 1
-                  ? 'The one sale in the price chapter that recorded what the seller paid reported none, so '
-                  : `All ${int(printed.reported)} sales in the price chapter that recorded what the seller paid reported none, so `
-              }${listPriceSentence}`
-            : `No sale in the price chapter recorded a seller concession, so ${listPriceSentence}`,
-        )}</p>`
-      : `<div class="stat-strip is-3">
-    ${low != null ? `<div class="stat"><div class="lbl">At ${usd(a.pricing.conservative)}</div><div class="val">${usd(low)}</div></div>` : ''}
-    ${rec != null ? `<div class="stat"><div class="lbl">At ${usd(a.pricing.recommended)}</div><div class="val">${usd(rec)}</div></div>` : ''}
-    ${high != null ? `<div class="stat"><div class="lbl">At ${usd(a.pricing.highEnd)}</div><div class="val">${usd(high)}</div></div>` : ''}
-  </div>
-  <p class="small">${esc(concessionBasisLine(a, concession))}</p>`
-  }`,
+  ${sellerNetBodyHtml(a)}`,
   }
 }
 
@@ -217,21 +297,42 @@ export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
 export function whatHappenedPage(a: OpinionPageArgs): CmaPageDef | null {
   const ea = a.expiredAudit
   if (!ea || ea.findings.length === 0) return null
-  const b = FAILED_ASK_BACKTEST
-  const heading = whatHappenedHeading(a.subject)
+  const heading = whatHappenedHeading(a)
   return {
     meta: `${esc(a.subject.streetAddress)} · What happened`,
     toc: heading,
     body: `
   <h2 class="section">${esc(heading)}</h2>
   ${whatHappenedGraphicHtml(a)}
-  <div class="stat-strip is-3">
-    <div class="stat"><div class="val">${int(b.pairs)}</div><div class="lbl">Central Oregon homes came off unsold and then sold, 2023 to 2026</div></div>
-    <div class="stat"><div class="val">${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="lbl">of the ask that failed is what the median one sold for</div></div>
-    <div class="stat"><div class="val">${b.shareClosedAboveAskPct}%</div><div class="lbl">sold for more than that ask</div></div>
-  </div>
-  <p class="small">${esc(FAILED_ASK_BACKTEST_SOURCE)}</p>`,
+  ${failedAskBacktestHtml(a, 'letter')}`,
   }
+}
+
+/**
+ * The three regional relist figures — and the one case they may not print.
+ *
+ * "94.2 percent of the ask that failed is what the median one sold for" is a
+ * statement about listings that FAILED. On a home that is on the market with
+ * another brokerage today it is not a fact about this seller at all, it is a
+ * pitch about somebody else's live listing; and on an ask that sat below the
+ * bottom of the range it argues a case the numbers contradict. Both are the
+ * neutral chapter, which states the ask, the range and the days and stops
+ * (round-four class B).
+ */
+export function failedAskBacktestHtml(a: OpinionPageArgs, doc: 'letter' | 'immersive'): string {
+  if (storyClassFor(a) === 'neutral') return ''
+  const b = FAILED_ASK_BACKTEST
+  const strip = doc === 'letter' ? 'stat-strip is-3' : 'stat3 r'
+  const cell = doc === 'letter' ? 'stat' : 'st'
+  const val = doc === 'letter' ? 'val' : 'st-n'
+  const lbl = doc === 'letter' ? 'lbl' : 'st-l'
+  const small = doc === 'letter' ? 'small' : 'small r'
+  return `<div class="${strip}">
+    <div class="${cell}"><div class="${val}">${int(b.pairs)}</div><div class="${lbl}">Central Oregon homes came off unsold and then sold, 2023 to 2026</div></div>
+    <div class="${cell}"><div class="${val}">${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="${lbl}">of the ask that failed is what the median one sold for</div></div>
+    <div class="${cell}"><div class="${val}">${b.shareClosedAboveAskPct}%</div><div class="${lbl}">sold for more than that ask</div></div>
+  </div>
+  <p class="${small}">${esc(FAILED_ASK_BACKTEST_SOURCE)}</p>`
 }
 
 /**
@@ -269,22 +370,34 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
     rangeLabel: 'where homes like yours sold, adjusted for date and size',
     domDays: subjectDomDays(a.subject),
   })
-  if (!timeline) {
-    // The row carries no list date and no ask, so there is no period to draw.
-    // State what IS known and stop (CLAUDE.md §0).
-    return `<p class="chart-read">${esc(
-      `Your home came off the market without selling. Homes like yours sold for ${usd(a.pricing.valueLow)} to ${usd(a.pricing.valueHigh)}.`,
-    )}</p>`
-  }
+  // The row carries no list date and no ask, so there is no period to draw.
+  // State what IS known and stop (CLAUDE.md §0) — and on a home that is on the
+  // market with another brokerage, "came off the market without selling" is
+  // not one of the things known (class D).
+  const noChart = `<p class="chart-read">${esc(
+    storyClassFor(a) === 'neutral'
+      ? neutralAskReading({
+          ask: failedAskForStory(a) ?? a.subject.lastListPrice ?? null,
+          rangeLow: a.pricing.valueLow,
+          rangeHigh: a.pricing.valueHigh,
+          days: subjectDomDays(a.subject),
+        })
+      : `Your home came off the market without selling. Homes like yours sold for ${usd(a.pricing.valueLow)} to ${usd(a.pricing.valueHigh)}.`,
+  )}</p>`
+  if (!timeline) return noChart
   const wide = listingTimelineSvg(timeline)
   const phone = listingTimelinePhoneSvg(timeline)
-  if (!wide) {
-    return `<p class="chart-read">${esc(
-      `Your home came off the market without selling. Homes like yours sold for ${usd(a.pricing.valueLow)} to ${usd(a.pricing.valueHigh)}.`,
-    )}</p>`
-  }
-  const reading = listingTimelineReading({
-    timeline,
+  if (!wide) return noChart
+  const reading = askStoryReading({
+    // THE ASK THAT RAN THE CLOCK, not the one the listing came off at
+    // (round-four class B). `failedAskForStory` resolves the dominant ask when
+    // the row carries the exposure and falls back to the last cut when it does
+    // not — and in that second case `exposureKnown` is false, so nothing
+    // causal is said about it.
+    ask: failedAskForStory(a) ?? timeline.steps[timeline.steps.length - 1]?.ask ?? null,
+    rangeLow: timeline.rangeLow,
+    rangeHigh: timeline.rangeHigh,
+    days: timeline.days,
     city: a.subject.city,
     // The SAME median chapter 2 draws, when the row carries it. Two figures
     // for "days to an accepted offer in Redmond" — 21 off `market_stats_cache`
@@ -292,15 +405,54 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
     // a §0 failure whichever is right, and only the offer-timing block ships
     // with a source trace beside it.
     marketMedianDom: readOfferTiming(a.market)?.medianDays ?? a.market?.medianDom ?? null,
+    neutral: storyClassFor(a) === 'neutral',
+    exposureKnown: askExposureKnown(a),
   })
   return `<div class="szn timeline-wide">${wide}</div>
   ${phone ? `<div class="szn timeline-phone">${phone}</div>` : ''}
   ${reading ? `<p class="chart-read">${esc(reading)}</p>` : ''}`
 }
 
-/** "It asked $460,000 and did not sell." Shared by both documents. */
-export function whatHappenedHeading(subject: CmaSubject): string {
-  const ask = subject.lastListPrice
+/**
+ * Whether this row says which ask held the market.
+ *
+ * Both halves are required. `askExposure` is the segmentation; `finalCycle` is
+ * the listing period it segments. With either missing there is no basis for
+ * saying a particular price cost this seller anything, and chapter 1 prints
+ * the days and the city's median and stops (round-four class B).
+ */
+export function askExposureKnown(a: OpinionPageArgs): boolean {
+  return askExposureFor(a) != null && a.expiredAudit?.finalCycle != null
+}
+
+export function askExposureFor(a: OpinionPageArgs): AskExposure | null {
+  return readAskExposure(a.expiredAudit)
+}
+
+/**
+ * Chapter 1's title.
+ *
+ * "It asked $460,000 and did not sell." was the blueprint's line and it is
+ * still right whenever one price held the whole listing. When the ask stepped,
+ * the title names EVERY ask and how long each ran, because the reader's next
+ * question — which price actually sat there — was answerable from the row all
+ * along and the document was answering it with the wrong number.
+ *
+ * A home listed with another brokerage today did not fail at anything, so its
+ * title says where it stands and nothing more (class D).
+ */
+export function whatHappenedHeading(a: OpinionPageArgs): string {
+  const status = readSubjectStatus(a)
+  const exposure = askExposureFor(a)
+  if (status?.isActiveWithOtherBrokerage) {
+    const ask = exposure?.final ?? a.subject.lastListPrice ?? null
+    return ask != null && ask > 0 ? `It is listed at ${usd(ask)}.` : 'Where this listing stands.'
+  }
+  if (exposure && exposure.segments.length > 1) {
+    const sentence = askExposureSentence(exposure.segments)
+    if (sentence) return sentence
+  }
+  const ask = exposure?.segments[0]?.ask ?? a.subject.lastListPrice
   return ask != null && ask > 0
     ? `It asked ${usd(ask)} and did not sell.`
     : 'It came off the market without selling.'
@@ -346,15 +498,37 @@ export function pricedRightPage(a: OpinionPageArgs): CmaPageDef | null {
  */
 export function failedAskForStory(a: OpinionPageArgs): number | null {
   if ((a.expiredAudit?.findings.length ?? 0) === 0) return null
+  // THE DOMINANT ASK FIRST. The last cut is where the story used to start and
+  // it is the ask the market saw least (round-four class B): on the exemplar
+  // 152 of 187 days ran at a price $15,000 above the one this used to measure.
+  const dominant = askExposureFor(a)?.dominant ?? null
+  if (dominant != null && dominant > 0) return dominant
   const cycle = a.expiredAudit?.finalCycle ?? null
   const lastCut = [...(cycle?.cuts ?? [])].reverse().find((c) => c.ask > 0)?.ask ?? null
   const ask = lastCut ?? cycle?.initialAsk ?? a.subject.lastListPrice ?? null
   return ask != null && ask > 0 ? ask : null
 }
 
-/** Which of the three chapter-1 stories this document is in. */
+/**
+ * Which chapter-1 story this document is in — and whether it gets one at all.
+ *
+ * Three gates, and the first two are not measurements:
+ *
+ *  1. `neutral` when the home is on the market with another brokerage, or when
+ *     the ask sat BELOW the bottom of the range. Neither can carry an
+ *     overpricing argument: the first is somebody else's listing (class D),
+ *     the second is a price the sales say was low.
+ *  2. `null` when the row does not say which ask ran the clock. Measuring the
+ *     gap of the final cut is measuring the wrong ask (class B), so nothing
+ *     causal is claimed and chapter 2b takes its descriptive title.
+ *  3. otherwise the measured gap, off the DOMINANT ask.
+ */
 export function storyClassFor(a: OpinionPageArgs): AskGapClass | null {
-  return askGapClass(failedAskForStory(a), a.pricing.valueLow, a.pricing.valueHigh)
+  const measured = askGapClass(failedAskForStory(a), a.pricing.valueLow, a.pricing.valueHigh)
+  if (readSubjectStatus(a)?.isActiveWithOtherBrokerage) return 'neutral'
+  if (measured === 'below') return 'neutral'
+  if (!askExposureKnown(a)) return null
+  return measured
 }
 
 /**
@@ -521,7 +695,15 @@ export function thisMarketBodyHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub')
  * the unadjusted one, and each says which it is.
  */
 export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
-  const closes = a.comps
+  // THE KEPT SET, AND THE SAME n THE PRICE CHAPTER PRINTS (round-four class E).
+  // This said "The six sales behind your price sold for $370,000 to $479,000"
+  // while chapter 3 two screens earlier said four sales set the number and
+  // named the other two as set aside — and $479,000, the top of this raw
+  // range, WAS one of the two. A range whose top is a sale the document
+  // disowned is not the range behind the price.
+  const aside = setAsideCompIndexes(a.pricing, a.comps)
+  const kept = a.comps.filter((_, i) => !aside.has(i))
+  const closes = kept
     .map((c) => c.closePrice)
     .filter((n): n is number => n != null && Number.isFinite(n) && n > 0)
   if (closes.length < 2) return ''
@@ -539,7 +721,7 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
         : `; adjusted, they support ${usd(worth.low)} to ${usd(worth.high)}`
       : ''
   return `<p class="chart-read">${esc(
-    `The ${countWord(closes.length)} sales behind your price sold for ${usd(
+    `The ${countWord(keptSaleCount(a.pricing, a.comps))} sales behind your price sold for ${usd(
       Math.min(...closes),
     )} to ${usd(Math.max(...closes))} before adjusting for date and size${adjusted}.`,
   )}</p>`
@@ -726,8 +908,50 @@ export function nextStepPage(a: OpinionPageArgs): CmaPageDef | null {
 }
 
 /** "Sorry this listing did not sell." */
-export function nextStepHeading(a: Pick<OpinionPageArgs, 'expiredAudit'>): string {
+export function nextStepHeading(a: OpinionPageArgs): string {
+  // A home on the market with another brokerage did not fail at anything, and
+  // saying sorry about it is the opening line of a solicitation (class D).
+  if (readSubjectStatus(a)?.isActiveWithOtherBrokerage) return 'What this report is.'
   return a.expiredAudit ? 'Sorry this listing did not sell.' : 'What happens next.'
+}
+
+/**
+ * ORS 696 AND THE REALTOR CODE, ARTICLE 16, IN ONE SENTENCE EACH.
+ *
+ * Round-four class D. The closing chapter asked for the listing on every
+ * document it rendered — "Talk with Matt" over "we will walk the house, price
+ * it against these same sales" — including on a home that is listed with
+ * another brokerage right now, and on one that came off the market
+ * WITHDRAWN rather than expired, where the listing agreement is very likely
+ * still running. A licensed principal broker does not send that, and a
+ * renderer that cannot tell the two apart will send it every time.
+ *
+ * So the two statuses each get their own sentence, and the active one gets a
+ * single neutral action instead of the two asks.
+ */
+export const NON_SOLICITATION_SENTENCE =
+  'This report is not a solicitation. If your home is listed with another broker, we are not asking you to break that agreement, and we are not asking for the listing.'
+
+export const WITHDRAWN_AGREEMENT_SENTENCE =
+  'Your listing came off the market rather than expiring, so your agreement with your broker may still be running. This report is not an offer to interfere with it.'
+
+/** True when this document may not ask for the listing at all. */
+export function closingIsNonSoliciting(a: OpinionPageArgs): boolean {
+  return readSubjectStatus(a)?.isActiveWithOtherBrokerage === true
+}
+
+/** The compliance sentence this closing carries, or ''. */
+export function closingComplianceSentence(a: OpinionPageArgs): string {
+  const status = readSubjectStatus(a)
+  if (!status) return ''
+  if (status.isActiveWithOtherBrokerage) return NON_SOLICITATION_SENTENCE
+  if (status.isWithdrawnNotExpired) return WITHDRAWN_AGREEMENT_SENTENCE
+  return ''
+}
+
+export function closingComplianceHtml(a: OpinionPageArgs): string {
+  const sentence = closingComplianceSentence(a)
+  return sentence ? `<p class="next-note is-compliance">${esc(sentence)}</p>` : ''
 }
 
 /**
@@ -743,6 +967,12 @@ export function nextStepButtonsHtml(a: OpinionPageArgs): string {
   // BUTTONS, not two 22px underlined text links (tasteReview item 3). Both
   // carry `_pid`, `agent` and `utm_campaign` through trackedDocLink, so the
   // one click that matters is attributable to the person and to this document.
+  // ONE neutral action when the home is listed with another brokerage. Two
+  // asks, one of them "talk with the broker who wrote this", is a solicitation
+  // whatever the button says (class D).
+  if (closingIsNonSoliciting(a)) {
+    return `<a class="btn sec ghost" href="${esc(search)}" data-rr-track="cma-search">See homes for sale near you</a>`
+  }
   return `<a class="btn pri" href="${esc(book)}" data-rr-track="cma-book">Talk with ${esc(first)}</a>
     <a class="btn sec ghost" href="${esc(search)}" data-rr-track="cma-search">See homes for sale near you</a>`
 }
@@ -758,12 +988,19 @@ export function nextStepNoteHtml(a: OpinionPageArgs): string {
   // "We", not the signing broker's first name: a re-brand replaces the
   // signature block and must leave every figure and every sentence identical
   // (W10.3), and VOICE.md says we outside the signed closing anyway.
+  if (closingIsNonSoliciting(a)) {
+    return `<p class="next-note">${esc(
+      `This is what the sales say your home is worth today. The link opens every home for sale in ${place} on our site.`,
+    )}</p>
+  ${closingComplianceHtml(a)}`
+  }
   return `<p class="next-note">${esc(
     'Bring this report. We will walk the house, price it against these same sales, and tell you what would have to change to sell it. There is nothing to sign for that.',
   )}</p>
   <p class="next-note">${esc(
     `If you would rather look first, the second link opens every home for sale in ${place} on our site.`,
-  )}</p>`
+  )}</p>
+  ${closingComplianceHtml(a)}`
 }
 
 /** The signature, the licence, the date, and the one disclosure sentence. */
@@ -896,6 +1133,9 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
         mapDataUri: a.mapDataUri,
         mapOverlay: a.mapOverlay,
         docLinks: a.docLinks,
+        renderArgs: a,
+        compTrace: a.compTrace,
+        askCtx: subjectAskContext(a),
       }),
     competition: () => competitionPage(a),
     'this-market': () => thisMarketPage(a),

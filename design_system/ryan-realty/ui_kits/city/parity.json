@@ -73,6 +73,11 @@
       "name": "PlaceTypeSlider",
       "section": "Horizontal leftover type cards with listing thumbs. Filters Split Home type. Replaces the stacked V3PlacePropertyTypes Instruments that all looked the same.",
       "blocking": true
+    },
+    {
+      "name": "V3PlaceAffordability",
+      "section": "#afford — SITE-07, the two-way affordability instrument, after the typical-price Instrument and before #about. Its own barrel pattern, so neither neighbour repeats one. A payment and a price each SOLVE THE OTHER: typing or dragging a monthly number returns the price ceiling it reaches (lib/finance/affordability.ts solvePriceForMonthlyPayment, which seeds off the closed form and then snaps to the largest whole-dollar price whose PUBLISHED payment — the same estimatedMonthlyPayment the listing pages print, down payment rounded through publishFinancingSplit — is at or under the target, so the ceiling on the button is never above the ceiling that was solved). It opens pre-filled at THIS place's own published median asking price, the same figure the #market Instrument prints (market_metric median_list_active, detached), so the calculator cannot disagree with the section above it. THE RATE IS MEASURED, NOT ASSUMED: getLiveMortgageRate() reads market_history_weekly national/us mortgage_rate_30yr, written every Monday from Freddie Mac PMMS (read 2026-09-08: 6.71%, week of 2026-09-07, source freddie:pmms30), and it publishes WITH its week stamp. When that series is dark the field falls back to lib/mortgage.ts DEFAULT_DISPLAY_RATE, which has no source, and the copy then says in plain words that the number is an assumption the visitor sets — it never says \"today's rate\" or \"current rate\" on either path. THE FINANCING MIX IS PUBLISHED BESIDE IT AS A FACT ABOUT CLOSED SALES (market_metric financing_mix, {City} detached, 12-month window widened by the registry ladder where a place is thin; shares under 5% are not published so they do not add to 100) and it SEEDS THE OPENING MODE ONLY — cash opens the calculator only where cash was the MAJORITY of closed sales (opensOnCash, threshold 0.5; {City} detached cash_share read 2026-09-08 puts it under that, so it opens financed). A cash share is never turned into a down payment. THE DRAWINGS ARE ALL V3Drawing 'pair' — your monthly number against the middle of this market, what you bring against what you borrow, and how the last year's buyers actually paid — because every one is a comparison, because a place's asking prices are too right-skewed for a price axis to say anything (Bend, read 2026-09-08: 761 active single-family asks from $350,000 to $11,900,000, median $899,000), and because V3Drawing's strip marks are 24x24 buttons on a route ci:tap-targets measures. NO COUNT OF HOMES UNDER THE CEILING IS PUBLISHED: the only per-listing active price set this page can reach is the Atlas population off listing_tile_mv, and it is a materially different population from the median this page prints (Bend: 761 asks at a $899,000 median there against the published 664 detached at $947,000), so a count drawn from one under a median from the other is two answers to one question. The count belongs to the search. THE ENDING IS THE SEARCH AT THE CEILING: the page's OWN homes link plus maxPrice (the confirmed param, normalised by lib/search-filters.ts and read by PlaceSplitView), with the ceiling rounded DOWN so the search can keep the promise on the button. Fires calculator_used on a real changed input, debounced 600ms — a mount is not a use — and calculator_interact on the result-link click, both carrying the ceiling and rr_vid so the click-through is measurable per visitor.",
+      "blocking": true
     }
   ],
   "layoutComponents": [
@@ -164,6 +169,7 @@
     "V3Ledger #communities (all city communities, marquee first, D88)",
     "V3Ledger #communities-ledger (golf and master-planned, D85/D90/D92)",
     "V3Instrument #market (one typical-price slope after children; MOS is a caption) or V3Quiet (too few / stated absence)",
+    "V3PlaceAffordability #afford (SITE-07: the two-way affordability instrument, ending in the search at its ceiling)",
     "V3Quiet #about (the city in plain words + place facts)",
     "V3Ledger (Latest market activity, D93)",
     "V3Answers (market FAQ)",
@@ -174,11 +180,11 @@
   ],
   "tasteReview": {
     "evaluatedAt": "2026-09-08",
-    "score": 68,
+    "score": 69,
     "scores": [
-      73,
-      68,
-      64
+      69,
+      65,
+      73
     ],
     "evaluator": "separate Sonnet evaluator agent, SITE-03 place-door round, session 019RdEm6 — three independent scorings of one capture run, no page code read and no live page opened. Its first return carried a defect that was factually wrong on the record (it read the outlined alerts button as filled; measured 84% light fill, 5% navy); on a factual challenge with the measurement it re-examined the pixels, withdrew the defect, and re-ran three fresh passes rather than adjusting the number",
     "evaluatorModel": "claude-sonnet-5",
@@ -196,7 +202,8 @@
         "default",
         "atlas",
         "market (sticky alerts bar armed)",
-        "alerts-callout"
+        "alerts-callout",
+        "afford (the SITE-07 instrument at rest; its terms-open and cash states are not claimed here because that lane recorded no capture arguments and a guessed state is not a record)"
       ],
       "capture": "scripts/take-route-shots.mjs, device scale 1, palette-quantized, consent banner and dev badge suppressed, image hosts relayed, degraded-read sentinels retried"
     },
@@ -208,64 +215,71 @@
       "marketDesktop": "design_system/ryan-realty/ui_kits/city/shots/market-desktop.png",
       "marketMobile375": "design_system/ryan-realty/ui_kits/city/shots/market-mobile375.png",
       "alertsCalloutDesktop": "design_system/ryan-realty/ui_kits/city/shots/alerts-callout-desktop.png",
-      "alertsCalloutMobile375": "design_system/ryan-realty/ui_kits/city/shots/alerts-callout-mobile375.png"
+      "alertsCalloutMobile375": "design_system/ryan-realty/ui_kits/city/shots/alerts-callout-mobile375.png",
+      "affordDesktop": "design_system/ryan-realty/ui_kits/city/shots/afford-desktop.png",
+      "affordMobile375": "design_system/ryan-realty/ui_kits/city/shots/afford-mobile375.png"
     },
-    "shotsHash": "sha256:1d4d03a805d97b7adb6c0cb9662e0ad4cb9d30c05143bfa4688ed68885ceccf4",
-    "beats": "I did not open any competing page this session (not the resort/HOA site, not a competitor brokerage neighborhood page, not a portal city page) — I have no basis to name one, and the prompt says I almost certainly did not, which is correct here. No beats claim made.",
+    "shotsHash": "sha256:5499eff86e2c133454650e031adea12489c5600d29659683ecae324d165863c8",
+    "beats": "I did not open any competing page this session (no Bend brokerage site, portal city page, or Zillow/Redfin equivalent) — I have nothing verified to name here, and am saying so rather than inventing a comparison.",
     "subScores": {
-      "design": 22,
-      "originality": 19,
-      "interaction": 11,
-      "craft": 9,
-      "honesty": 7
+      "design": 21,
+      "originality": 20,
+      "interaction": 12,
+      "craft": 8,
+      "honesty": 8
     },
-    "scoringNotes": "CORRECTED after a factual challenge. My original defect #1 claimed two filled controls were visible in the desktop fold (the hero door AND 'Email me each one'). I cropped and pixel-sampled desktop.png: the door plate (x180-500,y430-475) is ~82% navy fill — genuinely filled. 'Email me each one' (x1115-1265,y862-892) samples ~82% light/cream and only ~3.5% navy, with its top edge at y=857 reading (250,248,244) — cream. It is a cream-filled, navy-bordered ghost button, not a filled one. I also checked its reappearance on the market page's bottom bar: same outline treatment (border only) against the bar's own navy fill, again ghost. The fold in fact shows exactly ONE filled control, matching the site's own rule correctly — this was a misread on my part, not a real defect, and I withdrew it and dropped it from topThree rather than patch around it. Per instruction I did not just add the points back; I re-ran three genuinely fresh passes. Pass 1 (CTA-discipline-corrected, first-impression) now credits the page for the one-filled-control discipline it actually has and lands at 73. Pass 2 (chart/craft-focused, weighing the pixel-verified exception-red-on-the-whole-2026-line and the legend/pill legibility misses) lands at 68. Pass 3 (register-skeptical, still weighing the dismissible SaaS-style bar and the repeated instrument-template shape heavily, without the now-void double-CTA claim to lean on) lands at 64. Median is 68 — close in magnitude to my original median (also 68) but arrived at through a different, corrected path and a different sub-score split (craft down a point, design up a point) reflecting the actual recalculation, not a refusal to move. Every other defect in the original submission was independently re-verified this round (pixel-sampled the chart line color; re-cropped the mobile bottom-bar collision) and stands.",
-    "evidenceLimits": "These are eight static single-state PNGs at one scroll offset each, two breakpoints, no interaction captured. I cannot confirm: hover/tooltip contents or crosshair behavior on the chart; scrub or replay motion or draw-on entrance; whether the collapsed '› SOURCE' actually expands to a full trace on click or is dead chrome; keyboard operability of the map/filters/slider; loading, empty, or error states (none shown, so I note absence-of-evidence rather than claim they're missing); prefers-reduced-motion fallback; live contrast ratios (estimated by eye and by RGB sampling on the compressed 8-bit colormap PNGs, not measured on the live page); and whether the dark bar at the foot of the market shots is genuinely fixed/sticky versus just the next in-flow section timed to a particular scroll capture — I infer 'persistent/dismissible' from its layout and × icon, not from DOM or CSS.",
-    "instrumentNotes": "Within-call spread on these records: 9 points (73, 68, 64). Earlier today the same class spread 5-13 points within one call and 21 points across four calls on code that only improved, so a difference inside that band is not evidence about the page. THE SAME-INSTRUMENT COMPARISON, stated plainly: the prior mark was 60 by the same evaluator model under the same rubric, and this mark is 68 — it ROSE. The receipt contract counts shotsHash as part of the instrument identity, so any re-capture after a code change forces comparedToPrior to \"rebaselined\" and \"rose\" is never recordable across a real change; the honest comparison is the sentence above, not that field.",
-    "topThree": "1) Remove or radically flatten the dismissible sticky promo bar at the foot of the Market instrument — it duplicates content already shown, reads as the one register this brand is explicitly told to never wear (a SaaS nag bar with a close icon), and is also the thing breaking the mobile source trace. 2) Restore the chart's 2026 line to navy and confine --rr-exception to a single callout mark at the actual YoY-decline point — pixel-verified the whole line is currently rust-colored, spending the brand's one rare exception hue on decoration rather than exception-marking. 3) Vary the form of one of the two stat-led instrument sections ('142 houses' and 'Typical price') — right now they share the exact same eyebrow/headline/ghost-CTA/source shape, which is the templated composition the taste standard calls out as the site's default failure mode.",
+    "scoringNotes": "Three independent passes on the same ten shots. Pass 1 (holistic first read, before pixel-measuring anything): 69 — on-brand navy/cream/Amboqia identity reads clearly, Atlas and the afford instrument are genuinely interactive, but the repeated 'big numeral + source line' shape across two sections and a visible bug pull it down. Pass 2 (harshest, after measuring pixels): 65 — once I confirmed by sampling that both CTAs in the New Listings section are outline-only (interior = cream, not navy) and that the 2026 price line is drawn in the exact --rr-exception hex rather than navy, the page reads as having no earned primary action in that section and a broken color rule, which is worse than a first glance suggests. Pass 3 (most charitable, weighting the afford instrument's two-way slider-solve as a real, uncommon differentiator for a real-estate site, and the Atlas as a legitimately strong, dense, hover-rich map): 73. Spread is 8 points, mostly hinging on how much weight to give the sticky-bar overlap and the exception-color misuse — both are concrete, measured, not matters of opinion, so I did not let the spread average them away softly; median 69 is the reported score.",
+    "evidenceLimits": "These are static PNGs of one state (page at rest) for each route; I cannot confirm hover/scrub/tooltip behavior on the chart, Atlas, or afford bars actually fires, cannot confirm keyboard-equivalent interaction, cannot confirm prefers-reduced-motion fallback, cannot confirm the sticky alerts bar's actual dismiss/persistence logic or whether it re-appears on scroll, cannot confirm the true tap-hit-box of the close (X) control (only its visible glyph, which is small), cannot confirm live data accuracy behind any traced figure (I checked that source lines exist, not that the numbers match Supabase/Spark), and per the task's own framing, the afford instrument's terms-open and cash-mode states and the alerts-sent state are not in this set — I scored the instrument only at rest, as instructed.",
+    "instrumentNotes": "Within-call spread on these records: 8 points (69, 65, 73). Earlier today the same class spread 5-13 points within one call and 21 points across four calls on code that only improved, so a difference inside that band is not evidence about the page. THE SAME-INSTRUMENT COMPARISON, stated plainly: the prior mark was 65 by the same evaluator model under the same rubric, and this mark is 69 — it ROSE. The receipt contract counts shotsHash as part of the instrument identity, so any re-capture after a code change forces comparedToPrior to \"rebaselined\" and \"rose\" is never recordable across a real change; the honest comparison is the sentence above, not that field.",
+    "topThree": "1. Stop the sticky alerts bar from covering live inputs and the required source trace — reserve safe-area padding for it or suppress it over an instrument's own controls; right now it hides the second half of the one interactive tool the page ships. 2. Recolor the 2026 line in the Typical Price chart to solid navy and reserve --rr-exception for the actual declining segment only — the current misuse breaks the one color rule this whole system depends on, on the page's own showcase chart. 3. Give the New Listings section one filled primary control instead of two competing ghost buttons, so the section's own ask has the visual weight the founding directive requires.",
     "comparedToPrior": "rebaselined",
-    "rebaselineReason": "The prior mark differs on shotsHash. shotsHash: every record was re-captured after V3PlaceDoor landed on the opening, so the prior score is bound to files that no longer exist. Evaluator model and rubric are unchanged, so the prior IS the same instrument in every sense that matters; see instrumentNotes for whether the score rose. A different set of records is not a baseline under the contract as written, so this is recorded as a rebaseline.",
+    "rebaselineReason": "The prior mark differs on shotsHash. shotsHash: every record was re-captured on the merged tree, which carries both this lane's door and the SITE-07 affordability instrument the prior mark scored — no earlier record shows a page with both — so the prior score is bound to files that no longer exist. Evaluator model and rubric are unchanged, so the prior IS the same instrument in every sense that matters; see instrumentNotes for whether the score rose. A different set of records is not a baseline under the contract as written, so this is recorded as a rebaseline.",
     "sameInstrumentPrior": {
-      "score": 60,
+      "score": 65,
       "evaluatedAt": "2026-09-08",
       "rose": true
     },
     "priorMark": {
       "evaluatedAt": "2026-09-08",
-      "score": 60,
-      "evaluator": "separate Sonnet evaluator agent, one per page class, SITE-04 place-alerts craft round, session 019RdEm6 — three independent scorings of one capture run, no page code read and no live page opened",
+      "score": 65,
+      "evaluator": "separate claude-sonnet-5 evaluator, SITE-07 pass, run by the cloud grinder against its own dev server on /cities/bend and /cities/redmond at 1440 and 375; it drove the calculator, toggled loan/cash, opened the rate disclosure and clicked through to the filtered search, then scored the same evidence three times in one call. The builder did not grade its own page.",
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:d342da9c542ac85412ef4abb5802b962faac2f02e90dd819284b9f442b2688fb"
+      "shotsHash": "sha256:386bbbd595bf15ae82e698ef3c92d813058400a1a62af6e30e92eadc35dbe73f"
     },
     "defects": [
       {
-        "section": "Market instrument, foot (both breakpoints)",
-        "finding": "A dark bar with a × dismiss control reprises the exact same '142 houses came on the market' stat and the same email pitch already delivered in full higher on the page, in a different visual treatment (its 'Email me each one' is a ghost/outline control here too, not filled — but the bar's overall chrome, tone, and dismiss icon still read as a persistent nag component). A dismissible sticky promo bar is a growth-marketing/SaaS pattern, which is the one register this brand is told never to wear ('quiet, editorial, expensive... never modern SaaS'), and it duplicates a fact the visitor already saw. Smallest fix: delete the second capture surface, or replace it with a single flat inline line with no dismiss chrome."
+        "section": "alerts capture (sticky bar, seen atop both market-desktop/mobile375 and afford-desktop/mobile375)",
+        "finding": "A fixed/sticky bottom bar renders permanently over page content once scrolled to these sections. On afford-desktop it overlaps the 'Between $100,000 and $2,605,000... Type any number in the box' caption and truncates the 'Yours $4,894' comparison bar; on afford-mobile375 it fully covers the 'what the house costs' input and its slider, so the second half of the one interactive tool this page ships is inaccessible until the bar is dismissed. On market-desktop it also clips the tail of the chart's required source-trace paragraph. Smallest fix: reserve bottom safe-area padding equal to the bar's height whenever it is visible, so it sits beside content rather than on top of it, or suppress it while an instrument's own input is in the lower viewport."
       },
       {
-        "section": "Market instrument, foot (mobile 375)",
-        "finding": "That same bar collides with the content above it: the source-trace paragraph is cut off mid-sentence ('Months of supply = active listings divided by...') with no gap before the bar starts, and the 'See every Bend home for sale' CTA visible in the same spot on desktop is not visible in the mobile capture at all. A required §0 source trace becomes effectively unreachable at this breakpoint. Smallest fix: give the content column bottom padding equal to the bar's height."
+        "section": "Typical price in Bend (market-desktop/mobile375)",
+        "finding": "The '2026' line is drawn in RGB(168,69,43) — I sampled it directly and it is the exact hex of --v3-exception/--rr-exception (#A8452B) — for its entire length, including the Jan–May stretch where 2026 prices are the HIGHEST of the three years shown, not a decline. This uses the exception hue as a category label ('this is the current year') rather than to flag an actual drawdown, which the design system explicitly bans ('never an accent'). Fix: draw 2026 in solid navy (the subject-series convention every other chart on this page follows — see the afford instrument's navy 'you bring' bar against its gray 'you borrow' bar, which gets this right) and reserve terracotta for the specific point or segment that is actually down YoY."
       },
       {
-        "section": "Typical price in Bend (chart, both breakpoints)",
-        "finding": "Pixel-sampled: the 2026 line reads RGB (194,127,107), a rust/terracotta clearly distinct from navy (16,39,66) and from the gray context lines. The entire 2026 line is drawn in this exception-like hue, not just the point of the actual YoY decline the caption calls out. House rule reserves the exception hue for the specific drawdown/threshold breach and requires the subject series to stay in navy like any other subject series ('never an accent', 'never a new hue'). Painting the whole current-year line in the exception color turns a marking device into a decorative one. Smallest fix: render 2026 in navy like 2024/2025's tint family; add a small exception-colored callout mark only at the actual YoY-decline point."
+        "section": "New listings · Bend (alerts-callout-desktop/mobile375)",
+        "finding": "Both calls to action in this section — 'See the newest Bend listings' and 'Email me each one' — are outline-only. I sampled the interior of each: both return (250,248,244), the cream background color, not navy. The section's entire job is to convert a click, yet nothing in it carries a filled control; the page's only filled control is the hero door two sections above. Fix: fill one of the two — 'Email me each one' is the section's stated ask ('Every new listing in Bend, by email...') — navy background, cream text, matching the door's treatment."
       },
       {
-        "section": "New-listings instrument + Typical-price instrument",
-        "finding": "Both non-Atlas data sections share an identical shape — eyebrow, a stat or headline, one claim sentence, a ghost CTA, a collapsed source line — even though they are not literally adjacent (Atlas sits between them). It reads as the same template used twice rather than two different forms, which is the compositional habit TASTE.md names as the site's default failure mode. Smallest fix: give one of the two a different form (e.g. render new-listings capture as a slim inline banner instead of a second full instrument block)."
+        "section": "Sticky bar close control (afford-mobile375)",
+        "finding": "The dismiss X is a small, unadorned glyph with no visible padding chip or circle around it; measured against the surrounding 43px-tall ghost buttons on the same page, the X's own glyph looks well under a 44px target. I can't rule out a larger invisible hit box from a static PNG, but nothing renders to signal one to the person trying to tap it — and this is the only way to uncover the input the bar is covering (see defect 1)."
       },
       {
-        "section": "Bend right now (Atlas neighborhood pills)",
-        "finding": "Eleven neighborhood chips ('Summit West 137', 'Mountain View 122', ... down to 'Southeast Bend 34') are differentiated only by a plain count number — no bar length, fill intensity, or size scaled to the value — so a reader cannot visually scan for which neighborhood is hottest without reading every number in turn. Smallest fix: scale each chip's fill or border weight to its count so the ranking is legible at a glance, the way the map's own density legend already works."
+        "section": "New listings · Bend button ('See the newest Bend listings')",
+        "finding": "Measured height 274px→317px = 43px in the mobile375 capture, one pixel under the 44px touch floor. Marginal and within anti-aliasing noise, but it is the second control on this page measuring at or under the floor."
       },
       {
-        "section": "Bend right now (Atlas legend)",
-        "finding": "The two point-category legend items, '720 for sale' and '344 pending', use dots that read as nearly the same gray value at this resolution, so the map's second encoded dimension (status) is easy to miss on a first look even though the density fill (sold volume) reads clearly. Smallest fix: give the two dot categories a clearly different mark (e.g. hollow vs filled, or a visibly different tint step)."
+        "section": "Typical price in Bend — source line",
+        "finding": "The full MOS formula ('Months of supply = active listings divided by average monthly closings over the last 6 months...') is printed as visible running body text beneath the chart, not folded under the adjacent 'ALL 33 FIGURES +' disclosure that already exists on the same line. It is doing the required §0 trace job, but it is also exactly the 'methodology jargon in anything a visitor reads' the taste canon separately bans. Fold the formula sentence into the disclosure; keep only source name + window + fetch date visible by default."
+      },
+      {
+        "section": "Hero door vs. New listings section",
+        "finding": "'664 detached homes for sale' (hero door) and '142 houses came on the market... in the last 30 days' (next section) are both large Amboqia numerals over a plain-English tail, one scroll apart, answering adjacent-feeling questions (how many for sale vs. how many just listed). Not wrong, but it reads as an echo rather than a second, differently-shaped claim — the section that should be introducing the page's second idea instead restates the first idea's form."
       }
     ],
     "bannedTells": [
-      "Neighborhood pill list runs past six items with no visual encoding beyond the raw count printed on each chip — the closest match to the named 'scrolling lists as the design' tell, just rendered as chips instead of table rows."
+      "Exception ink (--rr-exception) used as a persistent category color for 'the current year' series rather than to mark an actual decline/breach — confirmed by pixel sample matching the token hex exactly across a line segment that is, for half its length, the highest value on the chart, not a decline.",
+      "A full MOS-formula sentence ('Months of supply = active listings divided by...') sits in visible running body copy rather than confined to hover/disclosure — the kind of methodology jargon the canon says belongs on /how-we-get-our-numbers or behind an interaction, not in the read path."
     ]
   }
 }

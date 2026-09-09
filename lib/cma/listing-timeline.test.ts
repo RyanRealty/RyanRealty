@@ -202,8 +202,8 @@ describe('listingTimelineReading', () => {
     })
     expect(reading).toContain('percent above the top of the range homes like yours sold in')
     expect(reading).toContain('Half of the homes that sold in Redmond had an offer inside 26 days.')
-    expect(reading).toContain('At a price near the range, 187 days without an offer points at')
-    expect(reading).toContain('We would walk the house before saying what.')
+    expect(reading).toContain('That ask was above what the sales support, and it went 187 days without an offer. We would walk the house before saying more.')
+    expect(reading).not.toContain('points at something other than the number')
   })
 
   it('keeps the overpricing reading past ten percent, and adds no cause', () => {

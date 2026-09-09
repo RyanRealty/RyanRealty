@@ -11,7 +11,12 @@ import { cleanText, countWord, escapeHtml, int, usd } from '@/lib/cma/render-blo
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { currentAskLine } from '@/lib/cma/cover-value'
 import { describeCompSearch } from '@/lib/pricing/search-story'
-import { renderCompMatrixHtml, subjectListingFailed } from '@/lib/cma/comp-matrix'
+import {
+  renderCompMatrixHtml,
+  subjectListingFailed,
+  subjectPrintableAsk,
+  type SubjectAskContext,
+} from '@/lib/cma/comp-matrix'
 import {
   compWeightIndex,
   renderPricingMethodHtml,
@@ -22,6 +27,8 @@ import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { worthStripHtml } from '@/lib/cma/worth-strip'
 import { clampSentence, keptCompCount, setAsideCompIndexes, setAsideRows } from '@/lib/cma/set-aside'
+import { listCeiling, readMeasure, readRangeRuleKept } from '@/lib/cma/render-contract'
+import { compSearchSentence } from '@/lib/cma/render-comp-search'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
@@ -43,7 +50,11 @@ export function whatItsWorthHeading(pricing: CmaPricing): string {
  * what the sales support. The two numbers sit beside each other with the gap
  * visible; they are never blended (CmaPricing, SHOW BOTH, NEVER BLEND).
  */
-export function whatItsWorthLead(subject: CmaSubject, pricing: CmaPricing): string {
+export function whatItsWorthLead(
+  subject: CmaSubject,
+  pricing: CmaPricing,
+  askCtx?: SubjectAskContext,
+): string {
   // THE VALUE RANGE, ONCE, HERE. tasteReview round two, §1 Words: chapter 3
   // stated it three times inside ten lines — the strip's reading to the
   // dollar, the method sentence rounded, and the table's lead to the dollar
@@ -53,11 +64,12 @@ export function whatItsWorthLead(subject: CmaSubject, pricing: CmaPricing): stri
   // is what the cover reads), and it is rounded to the nearest thousand so the
   // two cannot print to different precisions.
   const worth = worthRangeSentence(pricing)
-  const listRange = listRangeSentence(pricing)
+  const listRange = listRangeSentence(pricing, failedSubjectAsk(subject, askCtx))
   // A home that is on the market already has an ask. The blueprint gives that
   // case ONE line: what it is listed at, and what the sales support.
-  if (ON_MARKET.test(subject.standardStatus ?? '') && subject.lastListPrice != null && subject.lastListPrice > 0) {
-    return [`Listed at ${usd(subject.lastListPrice)}.`, worth, listRange].filter(Boolean).join(' ')
+  const liveAsk = subjectPrintableAsk(subject, askCtx)
+  if (ON_MARKET.test(subject.standardStatus ?? '') && liveAsk != null && liveAsk > 0) {
+    return [`Listed at ${usd(liveAsk)}.`, worth, listRange].filter(Boolean).join(' ')
   }
   // A subject whose ASK is on the pricing row rather than its MLS status —
   // an owner-supplied ask on an off-market home. The blueprint puts that line
@@ -70,9 +82,53 @@ export function whatItsWorthLead(subject: CmaSubject, pricing: CmaPricing): stri
     .join(' ')
 }
 
+/**
+ * THE INDEX CLAUSE NAMES WHAT THE INDEX MEASURES (round-four class E).
+ *
+ * Chapter 3's method sentence says the market "rose to a peak in April";
+ * chapter 5's month line, four screens later, draws April as the LOW month.
+ * Both are true — one is a price-a-square-foot index, the other is the median
+ * close price of every home in the city — and a reader who cannot see that
+ * reads one document contradicting itself. `timeAdjustment.measure` is the
+ * pricing side's own short phrase for what its index is an index OF; when the
+ * row carries it, it prints in the same breath as the month.
+ *
+ * Nothing is invented when the field is absent: the sentence prints exactly as
+ * lib/pricing wrote it.
+ */
+function pricingWithMeasure(pricing: CmaPricing): CmaPricing {
+  const ta = (pricing as unknown as { timeAdjustment?: Record<string, unknown> | null })
+    .timeAdjustment
+  const measure = readMeasure(ta)
+  const sentence = typeof ta?.sentence === 'string' ? ta.sentence.trim() : ''
+  if (!measure || !sentence) return pricing
+  if (sentence.toLowerCase().includes(measure.toLowerCase())) return pricing
+  return {
+    ...pricing,
+    timeAdjustment: { ...ta, sentence: `${sentence} That index is ${measure}.` },
+  } as unknown as CmaPricing
+}
+
 /** Nearest thousand. Never enough to move a narrative, always enough to match. */
 function round1k(n: number): number {
   return Math.round(n / 1000) * 1000
+}
+
+/**
+ * THE ASK THAT FAILED, once, for every mark and every ceiling in this chapter.
+ *
+ * The strip's dashed line, the list range's ceiling and the subject column's
+ * head all mean the same event, so they resolve through one function: the
+ * listing came off unsold AND the price is still this listing's price
+ * (`subjectPrintableAsk`, class E). A twenty-two-year-old list price is not an
+ * ask that failed; it is a record of a sale.
+ */
+export function failedSubjectAsk(
+  subject: CmaSubject,
+  askCtx?: SubjectAskContext,
+): number | null {
+  if (!subjectListingFailed(subject)) return null
+  return subjectPrintableAsk(subject, askCtx)
 }
 
 /**
@@ -102,15 +158,76 @@ function worthRangeSentence(pricing: CmaPricing): string {
 }
 
 /**
+ * THE LIST RANGE THIS DOCUMENT IS ALLOWED TO PRINT, rounded once, here.
+ *
+ * `[conservative, min(highEnd, clamp.after)]`. Round-four class E: Concorde
+ * carried three list ceilings across two screens — the cover's raw `highEnd`,
+ * this chapter's raw `highEnd`, and the clamped recommendation between them —
+ * and the highest of the three was $1,500,000, the ask that had just failed to
+ * sell. `listCeiling` is the one resolution; the cover reads this same
+ * function, so the two screens cannot disagree and neither can round
+ * differently.
+ *
+ * Null when the row carries no usable pair. The chapter then states the worth
+ * range alone rather than inventing a list.
+ */
+export function listRangeBounds(
+  pricing: CmaPricing,
+  failedAsk?: number | null,
+): { low: number; high: number } | null {
+  let top = listCeiling(pricing)
+  if (top == null || !(top > 0)) return null
+  // AND NEVER THE PRICE THAT ALREADY FAILED, EXACTLY. `applyFailedAskCap` caps
+  // the high end AT the ask, so a row whose clamp headline is the high-end
+  // tier prints the failed ask itself as the top of the list range — the
+  // Concorde defect said in the document's own recommending voice. The test is
+  // equality, not "above": a high end that merely sits above the old ask is a
+  // reading the evidence may honestly support, and rewriting it would be the
+  // renderer overruling lib/pricing. Landing ON it is the one case where the
+  // number came from the ask rather than from the sales.
+  if (failedAsk != null && failedAsk > 0 && top === failedAsk && pricing.recommended > 0) {
+    top = Math.min(top, pricing.recommended)
+  }
+  const floor = pricing.conservative > 0 ? Math.min(pricing.conservative, top) : top
+  if (!(floor > 0)) return null
+  return { low: round1k(floor), high: round1k(top) }
+}
+
+/**
+ * ONE n FOR THE WHOLE DOCUMENT: how many sales the number is over.
+ *
+ * 19968 printed six, four and two for one set inside two chapters (class E).
+ * The strip's caption, this chapter's lead, chapter 5's "sales behind your
+ * price" and the set-aside list under the grid now all resolve here.
+ *
+ * WHICH COUNT WINS. The set-aside sales are NAMED under the grid, so a reader
+ * can subtract them from the rows above and get a number. When the renderer
+ * knows which sales those are, that arithmetic is the answer — a stored count
+ * that disagreed with it would be a second answer to a question the page
+ * already showed its working for. `rangeRule.kept` is used only when the row
+ * says nothing about which sales were set aside, and it is clamped to the
+ * printed rows so it can never name a sale the reader cannot find.
+ */
+export function keptSaleCount(
+  pricing: CmaPricing,
+  comps: readonly CmaAdjustedComp[],
+): number {
+  if (setAsideCompIndexes(pricing, comps).size > 0) return keptCompCount(pricing, comps)
+  const stated = readRangeRuleKept(pricing)
+  if (stated != null && stated > 0) return Math.min(stated, comps.length)
+  return keptCompCount(pricing, comps)
+}
+
+/**
  * The list range beside it — dropped when it is the same two numbers again.
  *
  * On 1617 NW 8th `conservative`/`highEnd` are `valueLow`/`valueHigh`, so the
  * old lead printed one pair twice in one sentence.
  */
-function listRangeSentence(pricing: CmaPricing): string {
-  const lo = round1k(Math.min(pricing.conservative, pricing.highEnd))
-  const hi = round1k(Math.max(pricing.conservative, pricing.highEnd))
-  if (!(lo > 0) || !(hi > 0)) return ''
+function listRangeSentence(pricing: CmaPricing, failedAsk: number | null): string {
+  const bounds = listRangeBounds(pricing, failedAsk)
+  if (!bounds) return ''
+  const { low: lo, high: hi } = bounds
   if (lo === round1k(Math.min(pricing.valueLow, pricing.valueHigh)) && hi === round1k(Math.max(pricing.valueLow, pricing.valueHigh))) {
     // Same two numbers. The instruction survives; the figures do not repeat.
     return 'List in that range.'
@@ -126,11 +243,28 @@ function listRangeSentence(pricing: CmaPricing): string {
  * SEARCH, not the sentence a seller reads about it, so the legend is composed
  * from the same facts in the document's own voice.
  */
-function mapLegend(subdivision: string | null | undefined): string {
+/**
+ * THE CAPTION MAY ONLY NAME AN OUTLINE THE MAP ACTUALLY DREW (class F).
+ *
+ * 19968 captioned an outline that contained neither the subject nor any sale.
+ * `boundaryShown` is decided in `buildCmaMapDataUri` by a point-in-polygon
+ * test against the marks on the tile (`lib/cma/render-place-polygon.ts`); when
+ * it says the outline was suppressed, this sentence goes with it.
+ *
+ * Three states, deliberately. `true` also drops the "when that boundary is on
+ * file" hedge — that clause exists only because the caption used to be written
+ * before anyone knew, and a sentence that hedges about something visible on
+ * the page reads as the document not having looked.
+ */
+function mapLegend(
+  subdivision: string | null | undefined,
+  boundaryShown?: boolean,
+): string {
   const name = cleanText(subdivision)
-  return name
-    ? `The pins are the sales above. The outline is ${name}, when that boundary is on file.`
-    : 'The pins are the sales above.'
+  if (!name || boundaryShown === false) return 'The pins are the sales above.'
+  return boundaryShown === true
+    ? `The pins are the sales above. The outline is ${name}.`
+    : `The pins are the sales above. The outline is ${name}, when that boundary is on file.`
 }
 
 /**
@@ -149,7 +283,7 @@ function tableLead(input: { comps: CmaAdjustedComp[]; pricing: CmaPricing }): st
   // Concorde — three counts of one set inside one chapter (tasteReview round
   // three, §2 item 2). The number that means something is the count of sales
   // the price is over; the rest are shown, and said to be set aside.
-  const n = keptCompCount(input.pricing, input.comps)
+  const n = keptSaleCount(input.pricing, input.comps)
   const aside = input.comps.length - n
   // NO SECOND RANGE HERE. This line used to print the span of every adjusted
   // sale to the dollar — the UNTRIMMED pair on a document whose cover, method
@@ -270,10 +404,23 @@ export function pricingPage(input: {
   docLinks?: TrackedDocLinkCtx | null
   /** Immersive hero already printed the number and the range — skip the lead. */
   omitLeadPrices?: boolean
+  /** `render_args.compSearch`, and the trace the selector walked. */
+  renderArgs?: unknown
+  compTrace?: readonly string[] | null
+  /** Whether the subject's stored ask is still this listing's ask (class E). */
+  askCtx?: SubjectAskContext
 }): CmaPageDef {
   const p = input.pricing
   const s = input.subject
   const search = describeCompSearch({ subdivision: s.subdivision, tiersUsed: input.tiersUsed ?? [] })
+  // WHY THESE SALES. Never a shortage claim the printed grid refutes (class E).
+  const whichSales = compSearchSentence({
+    subdivision: s.subdivision,
+    args: input.renderArgs,
+    compTrace: input.compTrace ?? input.tiersUsed ?? null,
+    comps: input.comps,
+    fallback: search.body,
+  })
   const pinMap = renderCompPinMapHtml(
     s,
     input.comps,
@@ -293,13 +440,13 @@ export function pricingPage(input: {
     ? ''
     : `
   <h2 class="section is-answer">${esc(heading)}</h2>
-  <p class="worth-lead">${esc(whatItsWorthLead(s, p))}</p>
+  <p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx))}</p>
   ${clampHtml}`
   // The method comes BEFORE the evidence for it (Delta 1): which sales, how
   // each was adjusted, and how the range and the recommended list follow.
   // Every one of those sentences is written by lib/pricing and stored on the
   // row; nothing here composes one.
-  const method = renderPricingMethodHtml({ pricing: p, whichSales: search.body })
+  const method = renderPricingMethodHtml({ pricing: pricingWithMeasure(p), whichSales })
   // The chapter's own conclusion, drawn, BEFORE the method that reached it and
   // the grid that proves it (tasteReview item 2). One glance lands where five
   // real sales put this house and where we would list it.
@@ -319,17 +466,15 @@ export function pricingPage(input: {
     // $140,000 drawn as "asked $140K" beside sales clustered $296K to $441K,
     // which stretched the axis by 40 percent and stated something untrue about
     // the home (tasteReview round two, §3.G).
-    lastAsk:
-      subjectListingFailed(s) && s.lastListPrice != null && s.lastListPrice > 0
-        ? s.lastListPrice
-        : null,
+    lastAsk: failedSubjectAsk(s, input.askCtx),
+    keptCount: keptSaleCount(p, input.comps),
   })
   return {
     meta: `${esc(s.streetAddress)} · ${esc(heading)}`,
     toc: heading,
     body: `
   ${lead}
-  ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p))}</p>
+  ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx))}</p>
   ${clampHtml}` : ''}
   ${strip}
   ${method}
@@ -339,6 +484,7 @@ export function pricingPage(input: {
     tableLead({ comps: input.comps, pricing: p }),
     input.docLinks,
     weightsWithoutSetAside(p, input.comps, aside),
+    input.askCtx,
   )}
   ${concessionsCaption(input.comps)}
   ${renderSetAsideHtml(p, input.comps)}
@@ -347,7 +493,7 @@ export function pricingPage(input: {
   ${renderRejectedSalesHtml(p, input.comps)}
   ${
     pinMap
-      ? `<div class="pin-map-wrap">${pinMap}</div><p class="small">${esc(mapLegend(s.subdivision))}</p>`
+      ? `<div class="pin-map-wrap">${pinMap}</div><p class="small">${esc(mapLegend(s.subdivision, input.mapOverlay?.boundaryShown))}</p>`
       : ''
   }
 `,

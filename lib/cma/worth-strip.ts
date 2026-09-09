@@ -64,6 +64,15 @@ export type WorthStripInput = {
   recommended: number
   /** The ask that FAILED, on a listing that came off unsold. Null otherwise. */
   lastAsk: number | null
+  /**
+   * The document's own n — how many sales the price is over.
+   *
+   * Passed in rather than counted here so the caption, chapter 3's lead,
+   * chapter 5's "sales behind your price" and the set-aside list under the
+   * grid are one number (round-four class E: 19968 printed six, four and two
+   * for one set). Omitted, it falls back to the kept dots on the drawing.
+   */
+  keptCount?: number | null
 }
 
 export type WorthStripLayout = { width: number; height: number; fontSize: number }
@@ -167,6 +176,11 @@ export function worthStripSvg(
   const g = worthStripGeometry(input)
   if (!g) return ''
   const { width: W, height: H, fontSize: fs } = layout
+  const drawnKept = g.sales.filter((s) => s.setAside !== true).length
+  const keptCount =
+    input.keptCount != null && Number.isFinite(input.keptCount) && input.keptCount > 0
+      ? Math.round(input.keptCount)
+      : drawnKept
   const left = 10
   const right = W - 10
   // The shaded strip sits low in the frame; the marks that name themselves sit above
@@ -223,6 +237,17 @@ export function worthStripSvg(
     )
     return Math.max(Math.min(Number.isFinite(near) ? near : 44, 44), 26)
   }
+  // The two axis-end labels' own boxes, so the set-aside word can be tested
+  // against where they actually print rather than against a price.
+  const labelHalf = (t: string, size: number) => (t.length * size * 0.58) / 2
+  const asideHalf = labelHalf(ASIDE_LABEL, fs - 1)
+  const endSpans: Array<[number, number]> = [g.low, g.high].map((v) => {
+    const half = labelHalf(shortUsd(v), fs)
+    return [x(v) - half, x(v) + half]
+  })
+  const labelWouldSitOnAnAxisEnd = (cx: number): boolean =>
+    endSpans.some(([lo, hi]) => cx + asideHalf >= lo - 2 && cx - asideHalf <= hi + 2)
+
   const topRow = Math.max(0, ...rows)
   // The stack has a ceiling: seven sales inside a whisker of each other would
   // otherwise climb straight out of the frame. The step tightens instead.
@@ -239,6 +264,20 @@ export function worthStripSvg(
       const cx = cxs[i]!
       const cy = dotY - rows[i]! * step
       const aside = s.setAside === true
+      // THE AXIS END WINS (round-four class E). On 19968 the set-aside sale is
+      // $479,614 against a stated worth top of $479,000 — one point on the
+      // drawing, wearing the bold "$479K" the chapter concluded with and the
+      // word "set aside" directly above it. A reader takes the two together
+      // and reads "the top of what your home is worth was set aside".
+      //
+      // The test is the one the eye applies: does the word land over an axis
+      // end's own label? Not equality of the two prices — they were never
+      // equal on the row that produced the defect, and $614 of difference is
+      // three tenths of a pixel. The axis label is the chapter's own
+      // conclusion and it stays; the dot stays hollow, which is what says
+      // "not one of the sales the range is the spread of", and the reason is
+      // in the named list under the grid.
+      const onAxisEnd = aside && labelWouldSitOnAnAxisEnd(cx)
       const read = `${s.n}. ${s.address} · sale price today ${usd(s.adjustedPrice)}${
         aside ? ' · set aside from the range' : ''
       }`
@@ -247,8 +286,12 @@ export function worthStripSvg(
       // a sale the range was not the spread of (tasteReview round two, §3.G).
       const asideFit = fit(cx, ASIDE_LABEL, fs - 1, W)
       const mark = aside
-        ? `<circle class="ws-aside" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="none" stroke="${INK}" stroke-width="1.5"/>
+        ? `<circle class="ws-aside" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="none" stroke="${INK}" stroke-width="1.5"/>${
+            onAxisEnd
+              ? ''
+              : `
       <text x="${asideFit.x}" y="${asideLabelY.toFixed(1)}" text-anchor="${asideFit.anchor}" font-size="${(fs - 1).toFixed(1)}" fill="${MUTED}">${ASIDE_LABEL}</text>`
+          }`
         : `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="${INK}"/>`
       return `<g class="ws-dot${aside ? ' is-aside' : ''}" data-comp="${s.n}" data-pin="${s.n}" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
       <rect x="${(cx - hitWidth(i) / 2).toFixed(1)}" y="${(cy - HIT_UNITS / 2).toFixed(1)}" width="${hitWidth(i).toFixed(1)}" height="${HIT_UNITS}" fill="transparent"/>
@@ -318,9 +361,9 @@ export function worthStripSvg(
   const askY = askDrops ? markY + fs + 4 : markY
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Where the sales put this home, and where we would list it" class="trend-svg worth-strip">
-    <text x="${left}" y="14" font-size="${fs}" fill="${MUTED}">Sale price today, ${int(
-      g.sales.filter((s) => s.setAside !== true).length,
-    )} sales</text>
+    <text x="${left}" y="14" font-size="${fs}" fill="${MUTED}">One scale: sale price today. ${int(
+      keptCount,
+    )} sales.</text>
     <rect x="${x(g.low).toFixed(1)}" y="${zoneTop.toFixed(1)}" width="${Math.max(x(g.high) - x(g.low), 2).toFixed(1)}" height="${(zoneBottom - zoneTop).toFixed(1)}" fill="${ZONE}" stroke="${INK}" stroke-opacity="0.45" stroke-width="1"/>
     <line x1="${left}" y1="${zoneBottom.toFixed(1)}" x2="${right}" y2="${zoneBottom.toFixed(1)}" stroke="${EDGE}" stroke-width="0.75"/>
     ${
