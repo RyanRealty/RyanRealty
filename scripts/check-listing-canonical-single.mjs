@@ -59,8 +59,14 @@ function code(text) {
 const byAddress = code(src('app/listing/by-address/[...slug]/page.tsx'))
 checks.push({
   label: 'by-address generateMetadata does not override the inherited canonical',
+  // `[:=]`, not `:` — the object-literal spelling is the one this route shipped
+  // for three months, but `base.alternates = { canonical }` is the same defect
+  // one character apart and slipped through when this check was first written.
+  // Match the ASSIGNMENT too, or the gate only holds the shape it happened to
+  // be tested against.
   ok:
-    !/alternates:\s*\{\s*canonical/.test(byAddress) &&
+    !/alternates\s*[:=]\s*\{\s*canonical/.test(byAddress) &&
+    !/\bcanonical\s*[:=]\s*`?\/homes-for-sale\//.test(byAddress) &&
     !/const canonical = `\/homes-for-sale\//.test(byAddress) &&
     /return generateListingMetadata\(\{ params: Promise\.resolve\(\{ listingKey \}\) \}\)/.test(
       byAddress,
