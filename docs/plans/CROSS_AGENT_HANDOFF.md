@@ -1,3 +1,36 @@
+# Current — 2026-09-09 (Matt's two rulings: the out-of-area asks stay, and the MLS remarks are back on the listing page)
+
+Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Push
+`b921fff8..aa5eb85d`; deploy dpl_9suRuEtNnFEc51KHwTDiahp9NNT1 READY in 271s.
+
+**Matt, asked and answered, 2026-09-09.** (1) *"Yes keep out of area"* — the Tour, Call, Text and
+payment stay on an out-of-area listing beside the honesty block. Out-of-area is not off-market: the
+brokerage holds an Oregon licence, the listings are live, and that visitor is the lead the referral
+tier exists to catch. No code changed; recorded as §8b of
+`docs/plans/PUBLIC_PRODUCT/processes/refer-out-of-area.md` and on SITE-33, so nobody later deletes
+the asks to resolve the apparent contradiction with SITE-21. (2) *"mls descriptions must come
+back"* — done, SITE-57, live.
+
+**SITE-57 done.** The remarks render again as row 5 of the listing page, under the existing
+attribution, as written. Verified on production with a headless browser: for three Active listings
+resolved at run time, `document.body.innerText` — the visible text, not the payload — contains
+that listing's own first eight words. Before the fix the same check was false and the only text
+node holding the phrase sat inside a script tag.
+
+**Why it went missing, because the shape matters more than the fix:** `getListingDetail` kept
+selecting `public_remarks` and mapping it to `publicRemarks`; the twelve-section rebuild dropped
+the renderer's import; the remainder contract then asserted the renderer's *absence*; the orphan
+sweep deleted the component and, as a cascade, the paragraph joiner whose only caller it was. Every
+step was locally reasonable and the page carried the listing agent's words into the payload and
+showed the visitor none of them. So the answer is a gate, not a comment:
+**ci:listing-remarks-rendered** refuses the DAL mapping remarks while the page renders none, a
+renderer that skips the joiner (Spark inserts a blank line mid-sentence; a naive split truncates
+the first paragraph), and any slice/substring/ellipsis truncation. Proven red on the real 2026-09-09
+shape, green once wired, eight fixture cases.
+
+**Fleet:** cloud-grinder on SITE-31 and SITE-41; claude-opus5 on SITE-49; this session on SITE-48
+(the people pages) and SITE-50 (/invest and /compare). Nothing is blocked on Matt right now.
+
 # Current — 2026-09-09 (site queue round seven: SITE-44 and SITE-47 done; the map is no longer a Google default map)
 
 Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Pushes:
