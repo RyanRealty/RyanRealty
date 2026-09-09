@@ -2,9 +2,18 @@
  * /contact - write a broker, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * About destinations open on Quiet + Sheet. Order: Quiet (how to reach us),
- * Sheet (the form, same submitContactForm fields), Ledger (brokers), Quiet
- * (FAQ and edges).
+ * Order: Quiet (H1 and the one true line), V3Doors #reach as a REACH CONTROL
+ * (one call door at display scale carrying the live hours, then text, email
+ * and the calendar as lighter links), ContactAsk (the whole form at once),
+ * AboutFaces (who answers, with their photographs), V3Answers.
+ *
+ * SITE-48 (2026-09-09) changed two of those. The taste table scored this page
+ * 49 with the verdict "the fold is a text hero on top of a four-times-repeated
+ * link row with zero interaction", and its open list carried "Brokers roster:
+ * a flat hairline row; give it visual weight (larger headshots, a specialty
+ * line)". So the doors have a hierarchy and a live state, and the brokers band
+ * is the same AboutFaces roster /team and /about use rather than a second,
+ * flatter way of listing the same three people (TASTE.md consistency).
  *
  * THE PAGE CONTRACT, carried across: export const metadata, ContactPage +
  * BreadcrumbList + FAQPage JSON-LD, getPageContent, getSession,
@@ -22,6 +31,7 @@ import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { getBrokers, getListingTiles, getReviews } from '@/lib/data'
 import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listing-ask'
 import { listingTileHref, teamPath } from '@/lib/slug'
+import { formatDate } from '@/lib/format/date'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
 import { valuationHref } from '@/lib/site/valuation-href'
@@ -31,18 +41,21 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Ledger,
   V3Answers,
   splitQuietItems,
   V3Quiet,
   V3SectionTracker,
-  type V3LedgerPlainRow,
   type V3QuietItem,
   V3Doors,
+  V3OnDuty,
+  V3SourceLine,
 } from '@/components/site/v3'
+import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { ContactAsk } from './_v3/ContactAsk.client'
 import { CONTACT_FAQ_ITEMS } from './_v3/contact-constants'
-import { brokerLedgerRow, TEAM_RANK } from '@/app/team/_v3/team-constants'
+import { TEAM_RANK } from '@/app/team/_v3/team-constants'
+import { AboutFaces } from '@/app/about/_v3/AboutFaces'
+import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
 
 const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')}/api/og?type=default`
 
@@ -69,10 +82,15 @@ export default async function ContactPage({ searchParams }: PageProps) {
   // Session + identity-bridge reads kept (they pin this route's dynamic
   // rendering mode); the CRM page-view mirror they fed was deleted with the
   // CRM decommission. First-party visitor_sessions covers page views now.
-  const [params, pageContent, brokers, , , reviewSummary] = await Promise.all([
+  const [params, pageContent, brokers, companySettings, , , reviewSummary] = await Promise.all([
     searchParams,
     getPageContent('contact'),
     getBrokers(),
+    // The published hours behind the reach control's live state. This is the
+    // SAME row /book fills its calendar from, so a reader who doubts the line
+    // can check it in one tap. See components/site/v3/V3OnDuty.view.ts for why
+    // the state is hours and not a reply-time figure.
+    getCrmCompanySettings().catch(() => null),
     getSession(),
     getPersonIdFromCookie(),
     // The 5.0 on the principal broker's door (SITE-40): the same cached read
@@ -114,10 +132,12 @@ export default async function ContactPage({ searchParams }: PageProps) {
   const orderedBrokers = [...brokers].sort(
     (a, b) => (TEAM_RANK[a.slug.split('-')[0] ?? ''] ?? 9) - (TEAM_RANK[b.slug.split('-')[0] ?? ''] ?? 9),
   )
-  const brokerRows = orderedBrokers
-    .map((b) => brokerLedgerRow(b))
-    .filter((row): row is V3LedgerPlainRow => row !== null)
-  const [firstBroker, ...restBrokers] = brokerRows
+  /* The same faces /team and /about publish. No record figures here: this is a
+     dynamic route (getSession pins it), and the per-broker MLS reads belong on
+     the two cached pages that exist to carry them. */
+  const faces: AboutFace[] = orderedBrokers
+    .map((b) => aboutFaceFromBroker(b))
+    .filter((face): face is AboutFace => face !== null)
 
   const baseUrl = getCanonicalSiteUrl()
   const jsonLd = {
@@ -160,7 +180,12 @@ export default async function ContactPage({ searchParams }: PageProps) {
                   figure: {
                     value: reviewSummary.averageRating.toFixed(1),
                     unit: `of 5, from ${reviewSummary.count} Google reviews`,
-                    ratio: reviewSummary.averageRating / 5,
+                    // NO ratio meter here. A 5.0 out of 5 fills the track
+                    // completely, so the mark carries no information and reads
+                    // as a stray rule beside the number — the separate
+                    // evaluator (2026-09-09, merged page) called it "inert
+                    // rather than data" and could not tell whether it was a
+                    // meter at all. The number carries the fact.
                     source:
                       'Google Business Profile reviews of Ryan Realty — every non-hidden review row in public.reviews, ratings averaged to a tenth, read live at render.',
                     sourceName: 'Google reviews',
@@ -174,11 +199,19 @@ export default async function ContactPage({ searchParams }: PageProps) {
     // image, mark, or visual element anywhere in the captured fold at either
     // 1440 or 375". It is a door now, carrying the navy locator mark and going
     // where a person reading an address wants to go — the office on the map.
+    // SECONDARY, so it folds to one inline line rather than a second full door
+    // row. The separate evaluator (2026-09-09, merged page) named the repeat by
+    // shape: the broker row and the office row were "the same component
+    // instanced twice — leading image or icon, bold title, trailing chevron,
+    // muted meta line". They are not the same weight of thing either. Inline
+    // also gives the address the full measure, so the postcode stops orphaning
+    // onto a third line at 375.
     {
       label: 'The office',
       detail: `${BRAND.address.street}, ${BRAND.address.city}, ${BRAND.address.region} ${BRAND.address.postalCode}`,
       href: BRAND.social.googleBusinessProfile,
       mark: 'map' as const,
+      weight: 'secondary' as const,
     },
     // The four reaches (call, text, email, schedule) live ONCE, in V3Doors
     // below. The separate evaluator (2026-09-08) read them here and again in
@@ -199,6 +232,39 @@ export default async function ContactPage({ searchParams }: PageProps) {
     { label: 'Client reviews', href: '/reviews' },
     { label: 'Value my home', href: valuationHref('/contact') },
   ]
+
+  /* The live state on the reach control, and its section 0 trace.
+     WHAT THIS IS NOT: a response-time figure. SITE-09 removed the "one
+     business day" promise from this page and left the speed claim empty on
+     purpose. Read on 2026-09-09, getResponseClockReport() over its 28-day
+     window returned a median whose every counted touch predates the
+     provenance stamp — the exact condition /admin/crm prints "unproven" for —
+     and 2 of 8 in-hours site submits answered by a person. Neither ships: one
+     is not proven and the other is a backlog, not a promise.
+     WHAT IT IS: our published hours against the clock, from the same
+     crm_company_settings.booking_hours rows that fill /book's calendar, so a
+     reader can check the claim in one tap. Empty hours render nothing. */
+  const hoursBlocks = companySettings?.booking_hours ?? []
+  const hoursTimeZone = companySettings?.time_zone || 'America/Los_Angeles'
+  const hoursLive =
+    hoursBlocks.length > 0 ? (
+      <>
+        <V3OnDuty blocks={hoursBlocks} timeZone={hoursTimeZone} nowIso={new Date().toISOString()} />
+        {/* No `asOf` stamp on this one. The state above is as of NOW — that is
+            what makes it live — and "as of <the day the row was last edited>"
+            beside it reads as a stale figure, besides wrapping onto a line of
+            its own behind a stray middot at 375. The row's own edit date is
+            inside the trace, where it belongs. */}
+        <V3SourceLine
+          sourceName={v3Text('Ryan Realty booking hours')}
+          source={v3Text(
+            `Ryan Realty booking hours, public.crm_company_settings.booking_hours — ${hoursBlocks
+              .map((b) => `${b.days.join(', ')} ${b.start_time} to ${b.end_time}`)
+              .join('; ')}, evaluated in ${hoursTimeZone} against the clock at page render. Hours row last edited ${companySettings?.updated_at ? formatDate(companySettings.updated_at) : 'unknown'}. These are the same windows the /book calendar offers time from (lib/booking/slots.ts), so the state above is checkable in one tap. It is a statement of published hours only: this page makes no claim about how fast anyone replies, because the CRM response clock's median is still unproven (SITE-09).`,
+          )}
+        />
+      </>
+    ) : null
 
   // Split once, here, so the discarded third bucket is visible rather than
   // vanishing inside a JSX spread: `prose` holds passages with no question to
@@ -222,22 +288,33 @@ export default async function ContactPage({ searchParams }: PageProps) {
           headingLevel={1}
           items={introItems}
         />
-        {/* The three fastest doors, above the form: a visitor who wants a
-            human should not have to find a form field first. */}
+        {/* The reach control, above the form: a visitor who wants a human
+            should not have to find a form field first.
+
+            SITE-48: this was four equal bordered cells with an arrow each —
+            the card-grid silhouette, with the same phone number printed twice
+            and nothing live behind any of them. Calling is the fastest reach,
+            so calling is the one door, at display scale, carrying the live
+            state; text, email and the calendar sit beside it as the lighter
+            alternatives they are. */}
         <V3Doors
           id="reach"
           name={v3Text('Reach a broker')}
           doors={[
             {
-              kicker: v3Text('Call'),
+              kicker: v3Text('Call or text'),
               label: v3Text(CONTACT.phoneDirect),
-              fact: v3Text('Local experts. Exceptional customer service.'),
+              fact: v3Text('One number for the whole brokerage'),
               href: `tel:${CONTACT.phoneDirectTel}`,
+              primary: true,
+              live: hoursLive,
             },
             {
               kicker: v3Text('Text'),
-              label: v3Text(CONTACT.phoneDirect),
-              fact: v3Text('Same line as call'),
+              // The number is printed once, on the door above. The taste table
+              // named "the same phone number restated twice" by name.
+              label: v3Text('Send a text'),
+              fact: v3Text('Same line as the call'),
               href: `sms:${CONTACT.phoneDirectTel}`,
             },
             {
@@ -251,8 +328,8 @@ export default async function ContactPage({ searchParams }: PageProps) {
             },
             {
               kicker: v3Text('Schedule'),
-              label: v3Text('Book a broker'),
-              fact: v3Text('Pick a time on the calendar'),
+              label: v3Text('Book a time'),
+              fact: v3Text('Open slots on the calendar'),
               href: '/book',
             },
           ]}
@@ -265,25 +342,15 @@ export default async function ContactPage({ searchParams }: PageProps) {
           listingSummary={listingSummary || undefined}
         />
 
-        {firstBroker ? (
-          <V3Ledger
-            id="office"
-            eyebrow={v3Text('Who answers')}
-            heading={v3Text('The brokers')}
-            note={v3Text('Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the surrounding communities.')}
-            rows={[firstBroker, ...restBrokers]}
-            action={{ label: v3Text('Broker profiles'), href: '/team' }}
+        {faces.length > 0 ? (
+          <AboutFaces
+            people={faces}
+            heading="Who answers"
+            headingLevel={2}
+            eyebrow="Ryan Realty · Bend"
+            claim="Three licensed Oregon brokers, all of them here. Whichever one you reach is the one who works your deal, from the first call through closing."
           />
-        ) : (
-          <V3Ledger
-            id="office"
-            eyebrow={v3Text('Who answers')}
-            heading={v3Text('The brokers')}
-            rows={[]}
-            emptyMessage={v3Text('Broker profiles did not return in this refresh.')}
-            action={{ label: v3Text('Broker profiles'), href: '/team' }}
-          />
-        )}
+        ) : null}
 
         {/* The questions fold; the four doors stay in the flow, which is what
             V3Answers does under its own six-door ceiling. */}

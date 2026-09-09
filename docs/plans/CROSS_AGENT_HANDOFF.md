@@ -1,4 +1,150 @@
-# Current — 2026-09-09 (SITE-49: /price-drops opens with the shape of the week's cuts, and every card carries its own)
+# Current — 2026-09-09 (SITE-55: the plat says what did not sell, and names the market it sits in)
+
+Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
+`9eb4c1fb`, then main merged through `d5b982e8` (round eight: SITE-48 and SITE-50). Node
+`3b4713f8` is `done` with evidence. Earlier on this branch: SITE-45 (`ba0fb159`), SITE-40
+(`1ea07155`), SITE-49 (`5d0fa577`) — see Prior. SITE-29 (`e3d1713f`) stays `blocked` until 2026-09-11.
+
+**What shipped.** A plat page could say what sold there and could not say what did not. That half
+existed nowhere outside the seller CMA, which reads raw listings per CITY — too coarse to answer
+"what happened in MY plat". Now `subdivision_plat_unsold_mv` carries a twelve-month did-not-sell
+aggregate per recorded plat, attributed the two ways its closed sibling is (point-in-polygon and MLS
+subdivision name, unioned over distinct listing key). The plat page prints it as an `#outcomes`
+Quiet between the market report and the sales history, and the expired-seller first-contact letter
+prints the same number from the same read.
+
+**Aggregate, not a roll-call — Matt's call, asked before building.** Oregon MLS policy
+(`docs/MASTER_SPEC.md` §3.8) holds that Withdrawn, Expired and Cancelled listings may not be
+actively marketed and must not appear in search results or active listing feeds, and every existing
+use of that data on this site is private (the CRM, the seller valuation). So the plat publishes the
+count, the median days those listings ran, and the median cut they took first — market reporting, the
+same class of figure as months of supply — and no addresses and no links. The row-level version the
+node's accept asks for is recorded on the node with the policy lines, for Matt to rule on.
+
+**Four §0 errors were caught in this lane before any of them reached production, and all four came
+from the same habit: trusting one query shape.**
+
+1. **A false clean record.** The first shape of the view emitted a row only where something had
+   failed, so a caller reading "no row" read it as "nothing failed" — and the letter published
+   *"Every home that came off the market in Diamond Bar Ranch sold"* while two listings had come off
+   unsold inside the window (2026-09-01 Withdrawn, 2026-01-21 Canceled). Caught by running §0's
+   counter-query. Fixed at the source: the view is now `plat_keys LEFT JOIN failed`, so **a zero is
+   measured and a missing row is unmeasured**, and `publishPlatUnsold` says nothing at all when the
+   read is null.
+2. **A year-3000 row moved the window a millennium.** One production row (ListingKey
+   2020022817044797361…, Expired, `off_market_date` 3000-03-31) poisoned a bare `max(off_market_date)`
+   anchor and zeroed all ~3,000 plats. The anchor is now bounded by `max("ModificationTimestamp")::date`.
+3. **`current_date` in a materialized view** fails `ci:mv-determinism` (F7) for a real reason: every
+   row differs on every refresh. The window is anchored to the data instead.
+4. **Two populations in one sentence.** The first render read "Over the same stretch 981 sold" —
+   lifetime closed against twelve-month failures. Fixing the window exposed the deeper fault: the
+   sold figure is the DETACHED segment and the failures count every property type. The comparison was
+   cut, not patched.
+
+A fifth, smaller: the clean plat's section vanished after the fix because the 6-hour cache still held
+the old `null`. **When a row's MEANING changes, bump the cache key** — `plat-unsold-outcome-v2-covered`.
+
+**Receipt: 65 → 74** (74 · 71 · 76), rebaselined, separate claude-sonnet-5 evaluator, builder Opus 5.
+**Mechanical accept 21/21** at 1440 and 375.
+
+**Open on the receipt, for the /subdivisions composition node.** The evaluator's dullest finding is
+the wider-market row ("connective filler between two stronger ideas") and its verdict names the
+filter panel above it as a register break — "a checkbox-and-slider control panel that could be lifted
+from any listing site". Neither is the `#outcomes` section; both belong to the page's own node.
+
+**The merge with round eight.** Main's SITE-48 and SITE-50 rebuilt five of the six pages this
+branch's SITE-40 lane had rebuilt, so the merge was read page by page rather than side-picked:
+
+- **/about, /reviews** — main deleted the very sections SITE-40 rebuilt (the `#who` list and the
+  `#reach` Quiet) and put the faces, the score and a live reach control in their place. Main's page,
+  main's receipt, main's shots. SITE-40's work there is superseded, and said so.
+- **/compare** — main's worked example replaces the empty Quiet. SITE-40's lead door and its two
+  extra destinations survive on the fallback branch, which is what renders when the sample read
+  returns nothing.
+- **/invest** — main's Pulse opening and its live 30-year fixed replace the two documentation
+  headers. SITE-52's `when` audit (no row repeating "Central Oregon" under an eyebrow that already
+  says it) and SITE-40's lead tool door were re-applied on top; `git checkout --theirs` drops
+  non-conflicted changes too, which is how they were lost the first time.
+- **/contact** — the only true hybrid. Main changed `#reach` and the brokers band; SITE-40 changed
+  the intro Quiet. Both are kept, because main's photographs sit below the form and SITE-40's
+  principal-broker door with the sourced 5.0 is what puts a face in the fold — the exact defect the
+  contact evaluator named.
+
+**The merged /contact fold was scored from scratch, three rounds, because neither committed receipt
+described it.** Round one came back **58** — below the 62 this branch had already recorded — so the
+merge did not just get committed and called done:
+
+1. The evaluator read the broker row and the office row as "the same component instanced twice". The
+   office is now one inline secondary line, which is a different shape and gives the address the full
+   measure.
+2. The ratio meter under `5.0 of 5` is gone. A 5.0 out of 5 fills the track completely, so the mark
+   carried no information; the evaluator could not tell it was a meter at all.
+3. `V3Quiet`'s inline label no longer wraps, which had broken "The office" across two lines at 375.
+
+That scored **62** — a tie, not a rise — and named the same dead space twice across two rounds:
+~115px of empty cream between the last row and the next section rule, "an artifact of section padding
+stacking rather than an intentional editorial pause". It was exactly that. `V3Doors` carries no
+padding of its own, so a Quiet's full `--v3-section-pad` was the whole seam. **A Quiet that hands
+straight to a Doors band now closes on `--v3-space-xl`**, the same idiom as the existing
+`--headless` rule that opens tighter. That pulls the live reach control into the graded viewport at
+1440. Round three: **66** (65 · 66 · 68). The rule touches three routes; on `/team/[slug]` the seam
+sits at y≈885, outside the first viewport, so no other class's shots move.
+
+**Two defects the merged /contact receipt hands off rather than fixes**, both because they are not
+/contact's to fix: the muted body-copy token reads borderline for AA against cream on every public
+page, and the shared header chrome is "indistinguishable from a generic listings site" in a crop.
+
+**A rule this branch paid for twice.** Never bind-mount `node_modules` into a worktree an agent can
+die in. When the SITE-49 worktree agent hit a session rate limit, harness cleanup reached through the
+mount into the main checkout and deleted 164 packages; an `npm install` to repair it rewrote two
+pinned ranges in `package.json`. The repair is `git checkout HEAD -- package.json package-lock.json
+&& npm ci`. Run lanes in the main tree.
+
+**Next.** The next eligible SITE node under the two-open / three-owner rule. **SITE-56 is claimed by
+the other session and was deliberately held behind SITE-55 on this same route and the same
+`parity.json`** — that block is now landed, so SITE-56 is unblocked. PR #200 stays watched.
+
+## Prior — 2026-09-09 (site queue round eight: SITE-48 and SITE-50 done; SITE-56 claimed and deliberately held)
+
+Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Pushes
+`3423a9fd` (SITE-48) and `7f958d17` (SITE-50); both deploys READY and verified live.
+
+**SITE-48 done.** The four people pages open with proof. /reviews leads with 5.0 and 25 Google
+reviews at top 168 and a quote at 366, with the page's own first contact link at 664 — the two
+tel: anchors above them are the sitewide header, which I checked rather than assumed. /about opens
+on the three portraits with a sourced record line. /team's cards now differ: 7 closings, 3
+closings, and 1 home for sale right now — the third is the honest fallback, because no closing is
+recorded against that broker and the card says so instead of printing a zero. /contact's primary
+door is 143,437 square pixels against three at 55,470, with a live "Open now, until 5:00 pm".
+about 31→55, team 39→64, reviews 48→81, contact 49→59.
+
+**Deviation worth knowing:** the accept asked for a live element from SITE-09's response clock. The
+lane read it, found the median rests entirely on touches predating the provenance stamp — SITE-09's
+own "unproven" condition — and 8 in-hours submits against 2 answered by a person. Neither figure
+ships. The live element is the published booking_hours against the Pacific clock instead. Met in
+spirit, not literally, and recorded that way.
+
+**SITE-50 done.** /invest's meta-labels are gone, six sourced figures sit in the fold, and the
+headline is the finding the data actually supports: **the cash-flow verdict does not ship**,
+because the only rent-bearing table is frozen at a 2026-08-03 batch with no refresh cron and an
+admin wall — so the page leads with composition (605 of 761 income listings are land, 79.5%),
+published only while land is both largest and a majority. /compare opens on four slots, four real
+add controls and a sample labelled with the word Sample. The adds are **not** "recently viewed":
+nothing records that signed-out, so the lane substituted real listings and said so. It also cut a
+false claim — /invest advertised a per-listing rental analysis the orphan sweep had deleted hours
+earlier. invest 25→61, compare 29→53.
+
+**SITE-56 is claimed by this session and deliberately not started.** It is Matt's own finding (the
+plat page the expired-seller CMA links opens on cream with two blank maps, and at least 265 plats
+with live homes have no polygon), but `claude-opus5` is mid-flight on SITE-55 in the same file and
+the same parity.json. Two lanes on one route's contract and tasteReview is the merge fight and the
+double-score the skill exists to prevent. The claim holds the node; the build waits for SITE-55 to
+land. **Whoever takes SITE-56 next: SITE-55 first, then this, in sequence.**
+
+**Queue:** 26 done, 16 blocked on dated windows, 3 in flight elsewhere (SITE-31, SITE-41 on
+cloud-grinder; SITE-55 on claude-opus5), SITE-43 waiting on SITE-03. Nothing is blocked on Matt.
+
+## Prior — 2026-09-09 (SITE-49: /price-drops opens with the shape of the week's cuts, and every card carries its own)
 
 Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
 `5d0fa577` on main through 52ea5f5e (Matt's two rulings: the out-of-area asks stay, the MLS remarks
@@ -162,7 +308,6 @@ strip record keeps the frame in the shot). The state name must match the element
 Node-trailed commit), then the next eligible SITE node under the two-open / three-owner rule. PR #200:
 CI on 851c20bc was green on lint-and-build with e2e running; this push re-runs it.
 
-## Prior — 2026-09-09 (round four: the first message is in Matt's register, and so is every first touch)
 ## Prior — 2026-09-09 (Matt's two rulings: the out-of-area asks stay, and the MLS remarks are back on the listing page)
 
 Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Push

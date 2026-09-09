@@ -69,6 +69,15 @@
   margin: 0 0 clamp(1.5rem, 3vw, 2.25rem);
 }
 
+/* The claim as a page's H1 is set at display-1, roughly half again the size of
+   the H2 the reading measure was chosen for. Held to 44rem it breaks into four
+   short lines with a third of the row empty beside it, which is the same void
+   the 2026-09-08 evaluator marked on this page's previous opening. A display
+   line takes a display measure. */
+.v3 h1.v3-pulse__claim {
+  max-width: min(100%, 54rem);
+}
+
 /* --------------------------------------------------------------------------
    THE BODY: readings on one baseline, the plot in the margin.
    -------------------------------------------------------------------------- */
@@ -103,6 +112,21 @@
   .v3-pulse__readings {
     align-self: stretch;
   }
+
+  /* No drawing, no track for one — the words take the margin instead.
+     A band whose population is a count without a coordinate (/invest reads the
+     Market Truth segment board, which publishes counts and no geometry) has
+     two parts, not three: the rules and the words about whichever rule is lit.
+     Set as one column they stack to nearly a full screen and push the source
+     line out of the first viewport; side by side they are one object the width
+     of the measure, and the reader sees the figure and its explanation at the
+     same time. */
+  .v3-pulse__body--flat {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas: 'readings foot';
+    align-items: start;
+  }
 }
 
 .v3-pulse__readings {
@@ -134,7 +158,7 @@
    row is the control — a 44px floor without a button anywhere in sight. */
 .v3-pulse__pick {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto auto minmax(0, 1fr);
   grid-template-rows: auto auto;
   align-items: baseline;
   /* The rule belongs to the figure above it, so the pair stays together and the
@@ -150,6 +174,31 @@
 
 .v3-pulse__pick:hover {
   background: var(--v3-wash);
+}
+
+/* The switch, at rest: one square per population, on the register's own radius
+   (which is 0), hairline until its row is lit and solid navy after. It says
+   "these four are one group and one of them is chosen" without a word, and it
+   carries the state in SHAPE as well as colour, so it survives a greyscale
+   print the same way the lit row's navy edge does. */
+.v3-pulse__mark {
+  align-self: center;
+  display: block;
+  /* Big enough and dark enough to read as a control rather than a list bullet
+     — a round-two evaluator called the first pass at 8px "easily mistaken for
+     a bullet/list marker". */
+  width: 0.75rem;
+  height: 0.75rem;
+  border: var(--v3-rule-weight-section) solid color-mix(in srgb, var(--v3-navy) 60%, transparent);
+  border-radius: var(--v3-radius-sm);
+  background: transparent;
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    border-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-pulse__pick:hover .v3-pulse__mark {
+  border-color: var(--v3-navy);
 }
 
 .v3-pulse__figure {
@@ -178,7 +227,13 @@
   display: block;
   height: var(--v3-rule-weight-section);
   margin-top: var(--v3-space-2xs);
-  background: var(--v3-hairline);
+  /* The UNFILLED remainder has to be visible or the track is not a track. At
+     the hairline's 8% a dominant reading — /invest's land at 79.5% — fills so
+     much of the row that the remaining 20% disappears and the whole thing
+     reads as a stray divider rather than the longest bar in a family (a
+     2026-09-09 evaluator marked exactly that). This is still the quietest mark
+     on the page; it is just visible. */
+  background: color-mix(in srgb, var(--v3-navy) 14%, transparent);
 }
 
 .v3-pulse__rule-fill {
@@ -298,6 +353,14 @@
 .v3-pulse__radio--3:checked ~ .v3-pulse__body .v3-pulse__reading--3 .v3-pulse__rule-fill,
 .v3-pulse__radio--4:checked ~ .v3-pulse__body .v3-pulse__reading--4 .v3-pulse__rule-fill {
   background: var(--v3-navy);
+}
+
+.v3-pulse__radio--1:checked ~ .v3-pulse__body .v3-pulse__reading--1 .v3-pulse__mark,
+.v3-pulse__radio--2:checked ~ .v3-pulse__body .v3-pulse__reading--2 .v3-pulse__mark,
+.v3-pulse__radio--3:checked ~ .v3-pulse__body .v3-pulse__reading--3 .v3-pulse__mark,
+.v3-pulse__radio--4:checked ~ .v3-pulse__body .v3-pulse__reading--4 .v3-pulse__mark {
+  background: var(--v3-navy);
+  border-color: var(--v3-navy);
 }
 
 .v3-pulse__radio--1:checked ~ .v3-pulse__body .v3-pulse__dots--1,

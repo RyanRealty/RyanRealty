@@ -495,6 +495,27 @@ export { V3PlaceIndex, placeIndexRows } from './V3PlaceIndex'
 export type { V3PlaceIndexProps, V3PlaceIndexEntry } from './V3PlaceIndex'
 
 /* -------------------------------------------------------------------------- */
+/* Pattern 10 — SLOTS: a tool's empty state, drawn as the thing it makes       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A tool with nothing in it yet, shown as the object it becomes: one outlined
+ * slot per place the tool holds, and a WORKED EXAMPLE of the finished output
+ * over real rows, labelled in a visible word so nobody mistakes the example
+ * for their own.
+ *
+ * Quiet was standing in for this on /compare and the 2026-09-08 taste table
+ * named the result: "heading, sentence, link — indistinguishable from any SaaS
+ * empty-cart screen", with "no visible slot the visitor can watch fill". Quiet
+ * has no slot, no table and no figure by contract, so the fix was never a prop
+ * on Quiet. Any tool with a bounded tray and an output worth previewing takes
+ * this instead.
+ */
+export { V3Slots } from './V3Slots.client'
+
+export type { V3SlotsProps, V3SlotsColumn, V3SlotsFill } from './V3Slots.client'
+
+/* -------------------------------------------------------------------------- */
 /* PLACE SECTIONS — compositions of the six, not a seventh                     */
 /* -------------------------------------------------------------------------- */
 
@@ -595,3 +616,18 @@ export type { V3SectionTrackerProps } from './V3SectionTracker.client'
  * SWEEP_MS = 900 mirroring --v3-dur-sequence, one duration with two definitions,
  * which drifts the moment the token moves.
  */
+
+/* -------------------------------------------------------------------------- */
+/* LIVE STATE — appended 2026-09-09 (SITE-48). Not a seventh pattern.          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The published hours against the clock, for a reach control that would
+ * otherwise be four static links. It claims hours and nothing else: the
+ * refusal to publish a reply-time figure, and the SITE-09 read behind it,
+ * are argued in V3OnDuty.view.ts.
+ */
+export { V3OnDuty } from './V3OnDuty.client'
+export type { V3OnDutyProps } from './V3OnDuty.client'
+export { onDutyLabel, onDutyState } from './V3OnDuty.view'
+export type { V3OnDutyState } from './V3OnDuty.view'

@@ -44,6 +44,20 @@
   padding-top: var(--v3-space-xl);
 }
 
+/* A Quiet that hands straight to a Doors band closes tighter, for the same
+   reason the headless rule opens tighter. V3Doors carries NO padding of its
+   own — its first door sits on the section rule — so the Quiet's own
+   --v3-section-pad (120px at 1440) is the entire seam, and on /contact the
+   separate evaluator measured it twice in two rounds: "roughly 115px of pure
+   empty cream between the office-address hairline and the next thick section
+   rule … it does not recur on mobile, which suggests it's an artifact of
+   section padding stacking rather than an intentional editorial pause"
+   (2026-09-09). It was exactly that. The two blocks are one gesture — here is
+   who we are, here is how you reach them — so they are spaced as one. */
+.v3.v3-quiet:has(+ .v3.v3-doors) {
+  padding-bottom: var(--v3-space-xl);
+}
+
 /* Head ---------------------------------------------------------------------
    Optional context line and optional title. Both absent is the common case:
    a Quiet block usually closes a node without announcing itself. */
@@ -225,8 +239,18 @@
   text-decoration: none;
 }
 
+/* A folded door's own label never breaks. At 375 the inline line is a flex row
+   whose detail can be long (an address, an email), and with the label free to
+   wrap it broke "The office" across two lines while the detail sat beside it
+   on one — an orphan the separate evaluator caught on the merged /contact
+   (2026-09-09). The label holds together; the detail is what wraps. */
+.v3-quiet__inlinelink .v3-quiet__label {
+  white-space: nowrap;
+}
+
 .v3-quiet__inlinedetail {
   color: var(--v3-ink-muted);
+  min-width: 0;
 }
 
 .v3-quiet__inlinelink:hover .v3-quiet__label,

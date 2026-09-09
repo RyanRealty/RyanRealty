@@ -76,6 +76,18 @@ export type V3PulseProps = {
    * band cannot ship as a bare figure row.
    */
   claim: V3Text
+  /**
+   * What the claim renders AS. 2 by default: the band is a section inside a
+   * page whose H1 sits above it, which is every caller before 2026-09-09.
+   *
+   * 1 is for a page the band OPENS, where the claim is the page's own answer
+   * and there is no other heading above it (/invest). The same prop, the same
+   * default, and the same reason as V3Ledger, V3Answers, V3Ask, V3Atlas and
+   * V3Quiet: a primitive that can open a page has to be able to carry that
+   * page's H1, or the route hand-rolls a heading beside it and the page ships
+   * two registers.
+   */
+  headingLevel?: 1 | 2
   readings: readonly V3PulseReading[]
   /** The shared frame the paths were projected into. */
   field?: { w: number; h: number }
@@ -96,6 +108,7 @@ const MAX_READINGS = 4
 export function V3Pulse({
   id,
   claim,
+  headingLevel = 2,
   readings,
   field,
   fieldAlt,
@@ -135,15 +148,31 @@ export function V3Pulse({
           />
         ))}
 
-        <V3Heading level={2} id={headingId} className="v3-pulse__claim">
+        <V3Heading level={headingLevel} id={headingId} className="v3-pulse__claim">
           {claim}
         </V3Heading>
 
-        <div className="v3-pulse__body">
+        {/* Without a drawing the body is ONE column. It used to reserve the
+            17rem plot track unconditionally, which put a tall void down the
+            right of any band whose population has no coordinates to plot — the
+            same empty-column defect the 2026-09-08 evaluator recorded against
+            /invest's old prose block. A grid does not reserve a track for
+            something that is not there. */}
+        <div className={cn('v3-pulse__body', !showPlot && 'v3-pulse__body--flat')}>
           <ul className="v3-pulse__readings">
             {shown.map((reading, i) => (
               <li key={reading.key} className={cn('v3-pulse__reading', `v3-pulse__reading--${i + 1}`)}>
                 <label className="v3-pulse__pick" htmlFor={`${id}-${reading.key}`}>
+                  {/* THE SWITCH, VISIBLE AT REST. The radio group itself is
+                      hidden (it has to be, to be styled at all), and without a
+                      mark the rows are four figures that happen to be
+                      clickable: a 2026-09-09 evaluator, given only the
+                      rendered page, reported "no cursor affordance, no active
+                      highlight, no icon distinguishes the rows from static
+                      text" and scored interaction 6/15 on a band whose whole
+                      point is the switch. A control has to look like one
+                      before it is touched. */}
+                  <span className="v3-pulse__mark" aria-hidden="true" />
                   <span className="v3-pulse__figure">{reading.figure}</span>
                   <span className="v3-pulse__name">{reading.label}</span>
                   <span

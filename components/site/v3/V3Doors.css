@@ -122,6 +122,96 @@
   color: var(--v3-ink);
 }
 
+/* ---------------------------------------------------------------------------
+   THE REACH CONTROL (`--lead`). One door the band is for, three lighter links.
+
+   Four equal cells, each with a kicker, a bold value, a caption and an arrow,
+   is the card-grid silhouette TASTE.md bans, and the taste table of 2026-09-08
+   named it on /contact. The fix is hierarchy, not color: the lead door keeps
+   the display face and takes a column of its own; the rest drop to body size
+   and stack beside it as what they are — alternatives. Nothing here adds a
+   fill, a shadow, or a button; the restraint is still the pattern.
+   --------------------------------------------------------------------------- */
+
+/* Stacked at 375: the lead first, at its own weight, then the light column. */
+.v3-doors--lead .v3-doors__item--lead + .v3-doors__item {
+  border-top: var(--v3-rule-hairline);
+}
+
+@media (min-width: 48rem) {
+  .v3-doors--lead .v3-doors__list {
+    /* Two tracks, not four: the lead owns the left one for the whole band.
+       The rows are explicit (count set inline from the door count) so the
+       lead's `grid-row: 1 / -1` has real lines to span. */
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    grid-template-rows: repeat(var(--v3-doors-rows, 3), auto);
+  }
+
+  .v3-doors--lead .v3-doors__item--lead {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    border-right: var(--v3-rule-hairline);
+  }
+
+  /* Inside the light column the divider runs between rows again, and the
+     column's own left edge is the lead's right border, so no cell draws two. */
+  .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) {
+    grid-column: 2;
+    border-left: 0;
+  }
+
+  .v3-doors--lead .v3-doors__item--lead + .v3-doors__item {
+    border-top: 0;
+  }
+
+  .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) + .v3-doors__item {
+    border-top: var(--v3-rule-hairline);
+  }
+}
+
+/* The lead reads at display scale and breathes; it is the biggest box in the
+   band at every width, which is the whole point of the variant. */
+.v3-doors__door--lead {
+  gap: var(--v3-space-xs);
+  padding-block: clamp(1.9rem, 4.5vw, 3.1rem);
+}
+
+.v3-doors__door--lead .v3-doors__label {
+  font-size: var(--v3-size-display-1);
+}
+
+/* The three alternatives are links, not cards: body-size label, tighter box. */
+.v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) .v3-doors__label {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: normal;
+}
+
+.v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) .v3-doors__door {
+  padding-block: clamp(0.95rem, 2.2vw, 1.25rem);
+}
+
+/* The live state sits under the lead door, inside its cell, outside the
+   anchor — an anchor may not contain another interactive element, and the
+   state is read, not clicked. */
+.v3-doors__live {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-2xs);
+  margin-top: calc(-1 * var(--v3-space-2xs));
+  padding: 0 var(--v3-gutter) clamp(1.4rem, 3vw, 2.2rem);
+}
+
+/* The state itself reads as a mark, not as the first of four caption lines
+   under the display numeral: it takes a hairline chip so the eye separates it
+   from the trace that explains it (evaluator, 2026-09-09). */
+.v3-doors__live > .v3-onduty {
+  align-self: flex-start;
+  padding: var(--v3-space-3xs) var(--v3-space-xs);
+  border: var(--v3-rule-hairline);
+}
+
 /* Optional owned still above the kicker (Home illustrated doors). */
 .v3-doors__art {
   display: block;

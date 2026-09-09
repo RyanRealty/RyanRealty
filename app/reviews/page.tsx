@@ -2,11 +2,14 @@
  * /reviews - Google reviews as written, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Look (2026-09-06): Reviews = the record, with reach on the first screen.
- * Quiet Call/Text/Email/Schedule sits above V3Proof so mobile 375 has a way
- * to reach a broker without scrolling past the instrument. V3Proof keeps the
- * H1 (figures, strip, year chips, reading pane; full text under `archive`).
- * Doors close the page. The family's Sheet stays on /contact and /team/[slug].
+ * Look (SITE-48, 2026-09-09): the page opens ON THE RATING. V3Proof is the
+ * whole opening — the Google score face (5.0 drawn as stars, the count), the
+ * span as context figures, one client's words in full, then the reach as a
+ * slim action row, then the strip of every review on its month with the year
+ * chips and the full-text archive. The reach was a V3Quiet list ABOVE all of
+ * that until this pass, which meant four identical arrow rows were the first
+ * thing a reader judging us met, with a blank band above them. Doors close
+ * the page. The family's Sheet stays on /contact and /team/[slug].
  *
  * Reviews are quoted as written. Brand-voice laws do not rewrite client text.
  * No aggregateRating on this page (self-serving on our own site).
@@ -32,7 +35,6 @@ import {
   V3Proof,
   V3Quiet,
   V3SectionTracker,
-  type V3QuietItem,
 } from '@/components/site/v3'
 import { formatDate } from '@/lib/format/date'
 import { buildReviewsJsonLd } from './_v3/reviews-jsonld'
@@ -79,10 +81,15 @@ export default async function ReviewsPage() {
   const newestYear = dated[dated.length - 1]?.year
   const thisYear = new Date().getFullYear()
   const thisYearCount = quotes.filter((q) => q.year === thisYear).length
+  /* The claim no longer restates the score. The headline carries the count and
+     the score face under it carries the average drawn as stars, so a claim of
+     "5.0 of 5 across 25 reviews" printed the same two numbers a third and a
+     fourth time in one screen. What the sentence is FOR is the promise the
+     figures cannot make: nothing here is picked, cut, or rewritten. */
   const claim =
     firstYear && newestYear && firstYear !== newestYear
-      ? `${average.toFixed(1)} of 5 across ${count} reviews, ${firstYear} to ${newestYear}. Every one in full, as written.`
-      : `${average.toFixed(1)} of 5 across ${count} reviews. Every one in full, as written.`
+      ? `Every review Ryan Realty has, ${firstYear} to ${newestYear}, in full and exactly as it was written. Nothing picked, nothing trimmed.`
+      : 'Every review Ryan Realty has, in full and exactly as it was written. Nothing picked, nothing trimmed.'
   const figures = [
     { value: String(count), label: 'Google reviews' },
     { value: average.toFixed(1), label: 'average of 5' },
@@ -91,19 +98,17 @@ export default async function ReviewsPage() {
     ...(newestDate ? [{ value: formatDate(newestDate, { month: 'short', day: undefined, year: 'numeric' }), label: 'newest' }] : []),
   ]
 
-  /**
-   * SITE-40. The taste table scored this page 48 and named the opening: "four
-   * hairline-divided rows, identical apart from label text and a trailing
-   * arrow glyph, are the very first content the reader meets on a reviews page
-   * — before any proof of the 5.0 rating", the "scrolling lists as the design"
-   * tell. Same four reaches, two-up, each with its channel mark, so the strip
-   * is one compact action band rather than four rows of the same object.
-   */
-  const reachItems: V3QuietItem[] = [
-    { label: 'Call', detail: CONTACT.phoneDirect, href: `tel:${CONTACT.phoneDirectTel}` },
-    { label: 'Text', detail: CONTACT.phoneDirect, href: `sms:${CONTACT.phoneDirectTel}` },
-    { label: 'Email', detail: CONTACT.email.primary, href: `mailto:${CONTACT.email.primary}` },
-    { label: 'Schedule with a broker', detail: 'Pick a time that works', href: '/book' },
+  /* The reach, folded into the Proof band as one slim row under the opening
+     (SITE-48). It was a V3Quiet section of its own ABOVE the instrument, and
+     the taste table's dullest-thing finding was exactly that: "a person
+     landing on a reviews page to judge trustworthiness meets four identical
+     arrow-tipped rows of contact info before seeing a single star or quote".
+     Same four destinations, one row, after the score and the lead quote. */
+  const reachActions = [
+    { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
+    { label: 'Text us', href: `sms:${CONTACT.phoneDirectTel}` },
+    { label: 'Email', href: `mailto:${CONTACT.email.primary}` },
+    { label: 'Book a time', href: '/book' },
   ]
 
   return (
@@ -116,10 +121,6 @@ export default async function ReviewsPage() {
         <V3SectionTracker />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Reviews' }]} />
 
-        {/* Reach on the first screen at 375. Prior tip 83693d90 claimed this Quiet
-            above Proof but shipped an empty commit; doors alone sat ~1428px down. */}
-        <V3Quiet id="reach" ariaLabel="Reach a broker" items={reachItems} />
-
         {quotes.length > 0 ? (
           <V3Proof
             id="reviews"
@@ -131,6 +132,8 @@ export default async function ReviewsPage() {
             quotes={quotes}
             source={{ label: 'View every review on Google', href: GOOGLE_REVIEWS_URL }}
             archive
+            face
+            actions={reachActions}
           />
         ) : (
           <V3Quiet

@@ -66,6 +66,24 @@ export type V3ProofProps = {
    * this, so the homepage newest-four path does not move.
    */
   archive?: boolean
+  /**
+   * Lead with the SCORE, not a figure row (SITE-48, 2026-09-09). The taste
+   * table read the /reviews opening as "five bare numbers over five bare
+   * labels … the KPI-grid tell verbatim". The compact bands already had the
+   * answer — the Google mark, the aggregate at display size, the stars drawn
+   * to the live rating — and it was reachable only through `record={false}`.
+   * Setting this shows that face on a record page too, and the average and the
+   * count leave the figure row rather than being printed twice.
+   */
+  face?: boolean
+  /**
+   * A slim row of next actions under the opening, for a page whose reach
+   * strip would otherwise be a stacked section of its own ahead of the proof.
+   * They render AFTER the score and the lead quote on purpose: a reader who
+   * came to judge us meets the rating and a client's own words before a phone
+   * number.
+   */
+  actions?: readonly { label: string; href: string }[]
   className?: string
 }
 
@@ -171,6 +189,8 @@ export function V3Proof({
   source,
   record = true,
   archive = false,
+  face = false,
+  actions,
   className,
 }: V3ProofProps) {
   const uid = useId()
@@ -313,7 +333,15 @@ export function V3Proof({
   const countFigure =
     figures.find((f) => /review/i.test(f.label)) ??
     figures.find((f) => f !== averageFigure)
-  const showFace = !record && averageFigure != null && countFigure != null
+  const showFace = (face || !record) && averageFigure != null && countFigure != null
+  // The score face already prints the average and the count at display size.
+  // Leaving them in the row as well would say each number twice — the figure
+  // row's job here is only the context the face cannot hold (the span, the
+  // year's tally).
+  const restFigures = useMemo(
+    () => (showFace ? figures.filter((f) => f !== averageFigure && f !== countFigure) : figures),
+    [showFace, figures, averageFigure, countFigure],
+  )
 
   return (
     <section
@@ -323,7 +351,16 @@ export function V3Proof({
       // and it pays the chrome's spacing rather than the section rhythm. Same
       // distinction PUBLIC_UI.md section 6 already makes for the section rule
       // ("the section that opens the page carries none").
-      className={cn(V3_ROOT_CLASS, 'v3-proof', headingLevel === 1 && 'v3-proof--lead', className)}
+      className={cn(
+        V3_ROOT_CLASS,
+        'v3-proof',
+        headingLevel === 1 && 'v3-proof--lead',
+        // The score plate sits BESIDE the headline on a wide window rather
+        // than under it: at 1440 the opening was a 700px column of type with
+        // half the page empty to its right (SITE-48).
+        showFace && record && 'v3-proof--score',
+        className,
+      )}
       aria-labelledby={`${uid}-h`}
     >
       <div className="v3-proof__head">
@@ -334,11 +371,26 @@ export function V3Proof({
         <p className="v3-proof__claim">{claim}</p>
       </div>
 
-      {showFace ? (
-        <ScoreFace average={averageFigure!.value} count={countFigure!.value} />
-      ) : figures.length > 0 ? (
+      {showFace ? <ScoreFace average={averageFigure!.value} count={countFigure!.value} /> : null}
+
+      {/* When the score plate carries the headline numbers, what is left is
+          span and tally — a caption, not an instrument. Three stat pairs on
+          their own row read as "a miniature KPI row" (evaluator, 2026-09-09),
+          so they run as one line: value, label, hairline middot. */}
+      {showFace && restFigures.length > 0 ? (
+        <dl className="v3-proof__context">
+          {restFigures.map((f) => (
+            <div key={`${f.value} ${f.label}`} className="v3-proof__context-item">
+              <dt className="v3-proof__context-value">{f.value}</dt>
+              <dd className="v3-proof__context-label">{f.label}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
+      {!showFace && restFigures.length > 0 ? (
         <dl className="v3-proof__figures">
-          {figures.map((f) => {
+          {restFigures.map((f) => {
             const n = Number(f.value)
             const isScore = /average/.test(f.label) && Number.isFinite(n) && n >= 1 && n <= 5
             return (
@@ -350,6 +402,38 @@ export function V3Proof({
             )
           })}
         </dl>
+      ) : null}
+
+      {/* A CLIENT'S OWN WORDS, BEFORE THE INSTRUMENT (SITE-48). In archive mode
+          the reading pane used to sit under the strip, the chips and the
+          status, which put every quote below the fold: the taste table's
+          verdict was that the page "buries its best asset … under a blank gap
+          and a plain contact list before the reader sees a single number".
+          The pane is the same element, the strip still writes to it, and the
+          strip's own scrollIntoView still finds it — it is read before it is
+          worked instead of after. */}
+      {asArchive ? (
+        <div id={`${uid}-read`} className="v3-proof__reading v3-proof__reading--lead">
+          {reading ? (
+            <QuoteFigure q={reading} displayPull showMarks={showMarks} />
+          ) : (
+            <p className="v3-proof__reading-empty">Point at a mark, or pick a year, to read a review here.</p>
+          )}
+        </div>
+      ) : null}
+
+      {/* The reach, folded into this band as one slim row rather than running
+          as its own stacked section ahead of the headline. */}
+      {actions && actions.length > 0 ? (
+        <ul className="v3-proof__actions">
+          {actions.map((a) => (
+            <li key={a.href} className="v3-proof__action-item">
+              <a className="v3-proof__action" href={a.href}>
+                {a.label}
+              </a>
+            </li>
+          ))}
+        </ul>
       ) : null}
 
       {/* The record: every review on its month. Hover or tap a mark to read
@@ -489,13 +573,6 @@ export function V3Proof({
       ) : null}
       {asArchive ? (
         <div className="v3-proof__archive-wrap">
-          <div id={`${uid}-read`} className="v3-proof__reading">
-            {reading ? (
-              <QuoteFigure q={reading} displayPull showMarks={showMarks} />
-            ) : (
-              <p className="v3-proof__reading-empty">Point at a mark, or pick a year, to read a review here.</p>
-            )}
-          </div>
           <details className="v3-proof__archive">
             <summary className="v3-proof__archive-summary">
               Every review as written

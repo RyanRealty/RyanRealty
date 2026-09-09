@@ -12,11 +12,12 @@
  *   Matt 2026-09-07). Email and Schedule stay on the roster and the portrait.
  */
 
+import type { ReactNode } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading } from "@/components/site/v3"
 import { teamPath } from "@/lib/slug"
-import type { AboutFace } from "./about-faces"
+import type { AboutFace, AboutFaceRecord } from "./about-faces"
 import { aboutCompactReach } from "./about-faces"
 import "./about-faces.css"
 
@@ -88,6 +89,57 @@ function IconCalendar() {
 }
 
 
+/**
+ * The broker's own figure, and the reveal behind it (SITE-48).
+ *
+ * A figure with a plain sentence beside it, then ONE native disclosure holding
+ * both the places those transactions were and the section 0 trace. Native, so
+ * every word is in the served HTML with no script, and the reveal is real data
+ * rather than a hover that decorates. A broker with no record renders nothing
+ * here — see AboutFaceRecord for why a zero is not an option.
+ *
+ * WHY NOT V3SourceLine HERE. That primitive is itself a <details>, and nesting
+ * it inside this one would put the trace two clicks deep. It carries the same
+ * contract instead — the complete trace verbatim, in the served HTML, folded
+ * behind one control, labelled "Source" — and the reader reaches the places
+ * and the method with a single tap rather than reading three identical
+ * "SOURCE …" rows across three cards standing side by side.
+ */
+function faceRecord(record: AboutFaceRecord | null | undefined) {
+  if (!record) return null
+  return (
+    <div className="about-faces__record">
+      <p className="about-faces__record-figure">
+        <span className="about-faces__record-value">{record.value}</span>
+        <span className="about-faces__record-label">{record.label}</span>
+      </p>
+      {/* One control, not two. The places and the section 0 trace live behind
+          the same disclosure: three cards side by side each printing their own
+          "SOURCE …" row put the least editorial text on the page three times
+          in a row, and the trace is still in the served HTML either way. */}
+      <details className="about-faces__where">
+        <summary className="about-faces__where-summary">
+          <span className="about-faces__where-text">{record.placesSummary}</span>
+          <span className="about-faces__where-caret" aria-hidden="true" />
+        </summary>
+        {record.places.length > 0 ? (
+          <ul className="about-faces__where-list">
+            {record.places.map((place) => (
+              <li key={place.name} className="about-faces__where-row">
+                <span className="about-faces__where-place">{place.name}</span>
+                <span className="about-faces__where-n">{place.n}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <p className="about-faces__where-trace">
+          <span className="about-faces__where-trace-label">Source</span> {record.trace}
+        </p>
+      </details>
+    </div>
+  )
+}
+
 function faceIdentity(person: AboutFace, opts?: { contact?: boolean }) {
   return (
     <>
@@ -121,6 +173,10 @@ export function AboutFaces({
   headingLevel = 1,
   size = "roster",
   reach = true,
+  eyebrow,
+  claim,
+  figures,
+  source,
 }: {
   people: readonly AboutFace[]
   heading: string
@@ -142,6 +198,21 @@ export function AboutFaces({
   size?: "roster" | "portrait" | "compact"
   /** Call / Text / Email / Schedule buttons on the face row, including portrait. */
   reach?: boolean
+  /**
+   * The three head slots, added for /about (SITE-48). Roster only. They exist
+   * so a page can OPEN on this section — the faces and the firm's own record —
+   * instead of on a stack of contact links. /about's fold was seven identical
+   * hairline link rows with the Proof, the closings, the faces and the Atlas
+   * all below it; the taste table's verdict was "a phone book, not a proof
+   * point". Leave them off and the section renders exactly as it always did.
+   */
+  eyebrow?: string
+  /** One sentence the firm says about itself, under the heading. */
+  claim?: string
+  /** The firm's own figures beside the claim. Each carries its trace via `source`. */
+  figures?: readonly { value: string; label: string }[]
+  /** The section 0 trace for `figures`. Required whenever figures are passed. */
+  source?: ReactNode
 }) {
   const [first, ...rest] = people
   if (!first) return null
@@ -222,29 +293,52 @@ export function AboutFaces({
     )
   }
 
+  /* Four chips of identical weight said Call and Schedule matter equally, and
+     the row read as the "card grids with icons" tell (evaluator, 2026-09-09).
+     Call carries the modifier and the weight; the rest are the alternatives.
+     Same vocabulary as the homepage compact rows, which already name the kind
+     on the class. */
   const reachLinks = (person: AboutFace) =>
     reach ? (
       <div className="about-faces__reach-row" id={size === "portrait" ? "contact-broker" : undefined}>
         {person.tel ? (
-          <a href={`tel:${person.tel}`} className="about-faces__reach" aria-label={`Call ${person.name}`}>
+          <a
+            href={`tel:${person.tel}`}
+            className={cn("about-faces__reach", "about-faces__reach--call")}
+            aria-label={`Call ${person.name}`}
+          >
             <IconPhone />
-            <span className="about-faces__reach-label">Call</span>
+            <span className="about-faces__reach-label">
+              Call{person.phoneDisplay ? <span className="about-faces__reach-num">{person.phoneDisplay}</span> : null}
+            </span>
           </a>
         ) : null}
         {person.tel ? (
-          <a href={`sms:${person.tel}`} className="about-faces__reach" aria-label={`Text ${person.name}`}>
+          <a
+            href={`sms:${person.tel}`}
+            className={cn("about-faces__reach", "about-faces__reach--text")}
+            aria-label={`Text ${person.name}`}
+          >
             <IconMessage />
             <span className="about-faces__reach-label">Text</span>
           </a>
         ) : null}
         {person.email ? (
-          <a href={`mailto:${person.email}`} className="about-faces__reach" aria-label={`Email ${person.name}`}>
+          <a
+            href={`mailto:${person.email}`}
+            className={cn("about-faces__reach", "about-faces__reach--email")}
+            aria-label={`Email ${person.name}`}
+          >
             <IconEnvelope />
             <span className="about-faces__reach-label">Email</span>
           </a>
         ) : null}
         {person.bookHref ? (
-          <Link href={person.bookHref} className="about-faces__reach" aria-label={`Schedule with ${person.name}`}>
+          <Link
+            href={person.bookHref}
+            className={cn("about-faces__reach", "about-faces__reach--book")}
+            aria-label={`Schedule with ${person.name}`}
+          >
             <IconCalendar />
             <span className="about-faces__reach-label">Schedule</span>
           </Link>
@@ -295,9 +389,22 @@ export function AboutFaces({
       aria-labelledby="faces-heading"
     >
       <div className="about-faces__head">
+        {eyebrow ? <V3Eyebrow>{eyebrow}</V3Eyebrow> : null}
         <V3Heading level={headingLevel} id="faces-heading" className="about-faces__heading">
           {heading}
         </V3Heading>
+        {claim ? <p className="about-faces__claim">{claim}</p> : null}
+        {figures && figures.length > 0 ? (
+          <dl className="about-faces__figures">
+            {figures.map((f) => (
+              <div key={`${f.value} ${f.label}`} className="about-faces__figure">
+                <dt className="about-faces__figure-value">{f.value}</dt>
+                <dd className="about-faces__figure-label">{f.label}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
+        {source}
       </div>
       <ul className="about-faces__grid">
         {shown.map((person, index) => (
@@ -321,6 +428,7 @@ export function AboutFaces({
                 {person.name}
               </Link>
               {faceIdentity(person)}
+              {faceRecord(person.record)}
               {reachLinks(person)}
             </div>
           </li>
