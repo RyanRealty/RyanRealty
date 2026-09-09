@@ -1,3 +1,45 @@
+# Current — 2026-09-09 (four nodes said done and were not on main; landed, plus SITE-31's eleven guides)
+
+Owner: Claude (Opus 5), session claude-opus5-9d4aa6fc-2026-09-09, main checkout. Pushes
+`38e2f6c3` (SITE-31) and `6c648787` (the stranded branch); both deploys READY.
+
+**Read this one first: done is not landed.** SITE-40, SITE-49, SITE-51 and SITE-55 were all
+`done` in the work graph with landing commits recorded, and not one of their commits was an
+ancestor of `origin/main`. One session built them on `claude/run-loop-w8f3ep`, merged
+`origin/main` INTO that branch after every round, and never merged back. 230 files, ~13,900
+insertions. SITE-55 made it unmistakable: its migration was applied and populated in
+production (`subdivision_plat_unsold_mv`, 7,846 rows) while the site that reads it was not
+deployed — **the database had the work and the site did not.** SITE-51 was the costly one:
+with `scripts/taste-table.mjs` off main the queue had no measurer, so the taste table was
+still the 2026-09-08 baseline while a dozen classes had been rebuilt that day. All four are
+now on main, verified live: /price-drops draws the week's cuts (12 svgs in main),
+/subdivisions/deschutes-river-woods says "did not sell in Deschutes River Woods" beside 68
+closings in 2025 and 57 in 2024, /contact renders V3Quiet's new form. Memory:
+`reference_done_is_not_landed`. **Before trusting any node's done, run
+`git merge-base --is-ancestor <lane commit> origin/main`.**
+
+**SITE-31 landed the same way** — eleven community guides finished on `wt/site-31-guides`
+and released on an idle heartbeat before merging. All eleven are published and live; four
+sampled at 200 with their titles. Every title states a number or a decision: "Awbrey Glen: A
+$1,349,000 Median and an $87 HOA", "Crosswater Sold Just One Home in the Last 12 Months",
+"What $620 a Month Buys You at Mt. Bachelor Village". Blog class 52 → 74.
+
+**Conflict resolutions worth knowing.** Two taste receipts collided. Blog resolved to main's
+74/68/77 over the branch's older 52/44/57. Subdivision resolved to main's SITE-56 pass
+(72/72/73) over the branch's SITE-55 pass (74/71/76), each with its own shots so the
+`shotsHash` still matches disk. **Neither receipt scored the combined subdivision page** —
+SITE-55's unsold work and SITE-56's resolver and opening are both live and no evaluator has
+seen them together. Re-score before building on that class.
+
+**In flight:** SITE-41 (V3Instrument, this session). SITE-58 (Crook and Jefferson plats) was
+taken by a grok session. Nothing else is eligible; SITE-43 waits on SITE-03, which is on a
+measurement window to 2026-10-06.
+
+**The finish line is not close.** The taste table lists 25 classes and, on the 2026-09-08
+instrument, every one is under 70 — best was 69. Many have been rebuilt since and the table
+is stale; now that the measurer is on main, the next round should re-run it and seed from the
+bottom rather than from last week's numbers.
+
 # Current — 2026-09-09 (SITE-55: the plat says what did not sell, and names the market it sits in)
 
 Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
