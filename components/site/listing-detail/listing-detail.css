@@ -610,10 +610,18 @@
   bottom: 0;
   z-index: 3;
   padding: var(--v3-space-md) var(--v3-space-sm) 3.25rem;
+  /* SITE-20: the ramp reaches the TEXT, not just the frame edge. The old stops
+     (78% at the bottom, 28% by 55%) put the caption block itself in the thin
+     part of the scrim, so on 55550 Heidi Court the sale price sat as cream
+     text on a sunlit gravel driveway and could not be read at either width.
+     The number this caption carries is now the price the home SOLD for, so it
+     is the one figure on the page that may not be squinted at. Same two
+     colours, same scrim, a ramp that covers the words. */
   background: linear-gradient(
     to top,
-    color-mix(in srgb, var(--v3-navy) 78%, transparent) 0%,
-    color-mix(in srgb, var(--v3-navy) 28%, transparent) 55%,
+    color-mix(in srgb, var(--v3-navy) 84%, transparent) 0%,
+    color-mix(in srgb, var(--v3-navy) 66%, transparent) 46%,
+    color-mix(in srgb, var(--v3-navy) 20%, transparent) 80%,
     transparent 100%
   );
   color: var(--v3-cream);
@@ -626,6 +634,18 @@
   font-weight: var(--v3-weight-num);
   font-variant-numeric: tabular-nums;
   line-height: 1.15;
+}
+
+/* The status word rides the ask at a smaller size and a wider track, so the
+   figure keeps the weight and the word supplies the frame. */
+.listing-mosaic__on-status {
+  font-size: 0.6em;
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-right: 0.55em;
+  vertical-align: 0.14em;
+  opacity: 0.92;
 }
 
 .listing-mosaic__on-facts,

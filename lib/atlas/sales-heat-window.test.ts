@@ -37,6 +37,8 @@ function tile(over: {
     propertyType: 'Residential',
     propertySubType: 'Single Family Residence',
     streetNumber: '1',
+    boundaryCity: 'Bend',
+    boundaryNeighborhood: null,
     streetName: 'Main',
   }
 }

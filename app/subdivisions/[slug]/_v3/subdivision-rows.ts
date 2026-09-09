@@ -16,7 +16,7 @@ import type { ListingTile } from '@/lib/data'
 import { v3Text, type V3FieldItem, type V3LedgerFigureRow } from '@/components/site/v3'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
-import { listingDetailPath } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 
 /** Pins at or above this count are a map. Below it, the plat is a list. */
 export const FIELD_MAP_MIN = 4
@@ -50,12 +50,7 @@ export function toFieldEntry(tile: ListingTile, hasVideo: boolean): FieldEntry |
   })
   return {
     id: tile.listingKey,
-    href: listingDetailPath(
-      tile.listingKey,
-      { streetNumber: tile.streetNumber, streetName: tile.streetName, city: tile.city },
-      { city: tile.city, subdivision: tile.subdivisionName },
-      { mlsNumber: tile.listNumber },
-    ),
+    href: listingTileHref(tile),
     priceLabel: formatPublishedAsk(tile.listPrice) ?? NO_PRICE,
     // Every card names its city (Matt 2026-08-27): cards travel — open
     // houses, trails, price drops, saved-search alerts — so a bare street

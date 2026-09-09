@@ -18,7 +18,7 @@ import type { ListingTile } from '@/lib/data/types/listing'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
-import { listingDetailPath } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 
 const TYPE_ORDER = [
   'house',
@@ -145,12 +145,7 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): Ho
 
     items.push({
       id: tile.listingKey,
-      href: listingDetailPath(
-        tile.listingKey,
-        { streetNumber: tile.streetNumber, streetName: tile.streetName, city: tile.city },
-        { city: tile.city, subdivision: tile.subdivisionName },
-        { mlsNumber: tile.listNumber },
-      ),
+      href: listingTileHref(tile),
       priceLabel: formatPublishedAsk(tile.listPrice) ?? 'Price on request',
       title: publishCardAddress({
         streetNumber: tile.streetNumber,

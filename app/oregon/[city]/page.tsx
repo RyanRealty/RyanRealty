@@ -73,7 +73,7 @@ import type { Metadata } from 'next'
 import { getListingTiles } from '@/lib/data'
 import { classifyInventoryPropertyType } from '@/lib/inventory-filters'
 import { publishCardAddress } from '@/lib/listing/publish-street-line'
-import { displaySubdivision, homesForSalePath, listingDetailPath } from '@/lib/slug'
+import { displaySubdivision, homesForSalePath, listingTileHref } from '@/lib/slug'
 import {
   getOutOfAreaCity,
   getIndexableOutOfAreaCities,
@@ -266,17 +266,7 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
           .filter(Boolean)
           .join(' · ')
     listingRows.push({
-      href: listingDetailPath(
-        tile.listingKey,
-        {
-          streetNumber: tile.streetNumber,
-          streetName: tile.streetName,
-          city: tile.city,
-          postalCode: tile.postalCode,
-        },
-        { city: tile.city, subdivision: tile.subdivisionName },
-        { mlsNumber: tile.listNumber },
-      ),
+      href: listingTileHref(tile),
       when: v3Text(displaySubdivision(tile.subdivisionName) ?? tile.city ?? city.name),
       what: v3Text(address),
       detail: meta ? v3Text(meta) : undefined,

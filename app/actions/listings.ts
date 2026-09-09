@@ -3,7 +3,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
 import { unstable_cache } from 'next/cache'
-import { listingDetailPath, neighborhoodPagePath, reportsExploreYtdPath } from '../../lib/slug'
+import { listingTileHref, neighborhoodPagePath, reportsExploreYtdPath } from '../../lib/slug'
 import { HOME_TILE_SELECT } from '@/lib/listing-tile-projections'
 import { getSubdivisionMatchNames } from '../../lib/subdivision-aliases'
 import { getPolygonBounds, isPointInPolygon, type MapPolygonPoint } from '@/lib/map-polygon'
@@ -64,6 +64,18 @@ export type ListingTileRow = {
   State: string | null
   PostalCode: string | null
   SubdivisionName: string | null
+  /**
+   * SITE-22 — the boundary place from listing_tile_mv's spatial xref, and the
+   * two segments in the middle of this listing's canonical URL. Every card
+   * built from this row links to that listing, and until these fields existed
+   * the search cards passed `undefined` for the whole location argument: the
+   * href came out /homes-for-sale/<mls-city>/<address-mls> while the canonical
+   * said /homes-for-sale/<boundary-city>/<neighborhood>/<subdivision>/<address-mls>,
+   * so the site linked to a URL it did not canonicalise to. Optional because
+   * the keyword RPC does not project them; pass them wherever the row has them.
+   */
+  BoundaryCity?: string | null
+  BoundaryNeighborhood?: string | null
   /** Living area sqft. Present at runtime — getListings maps tile.sqft and the
    * search_listings_advanced RPC returns TotalLivingAreaSqFt; the type omitted it. */
   TotalLivingAreaSqFt?: number | null
@@ -321,6 +333,8 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     State: 'OR' as const,
     PostalCode: t.postalCode,
     SubdivisionName: t.subdivisionName,
+    BoundaryCity: t.boundaryCity,
+    BoundaryNeighborhood: t.boundaryNeighborhood,
   }))
   const cityCounts = new Map<string, number>()
   for (const row of listingRows) {
@@ -370,11 +384,16 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
     if (!key) continue
     addresses.push({
       label,
-      href: listingDetailPath(
-        key,
-        { streetNumber: sn, streetName: sname, city, state, postalCode: zip },
-        { city }
-      ),
+      href: listingTileHref({
+        listingKey: key,
+        listNumber: row.ListNumber ?? null,
+        streetNumber: sn,
+        streetName: sname,
+        city,
+        boundaryCity: row.BoundaryCity ?? null,
+        boundaryNeighborhood: row.BoundaryNeighborhood ?? null,
+        subdivisionName: row.SubdivisionName ?? null,
+      }),
     })
     if (addresses.length >= 10) break
   }
@@ -646,6 +665,8 @@ export async function getListings(options: {
       State: null,
       PostalCode: t.postalCode,
       SubdivisionName: t.subdivisionName,
+      BoundaryCity: t.boundaryCity,
+      BoundaryNeighborhood: t.boundaryNeighborhood,
       PhotoURL: t.photoUrl,
       Latitude: t.lat,
       Longitude: t.lng,
@@ -1002,6 +1023,8 @@ function tileToSearchRow(t: ListingTile): ListingTileRow {
     State: 'OR',
     PostalCode: t.postalCode,
     SubdivisionName: t.subdivisionName,
+    BoundaryCity: t.boundaryCity,
+    BoundaryNeighborhood: t.boundaryNeighborhood,
     PhotoURL: t.photoUrl,
     Latitude: t.lat,
     Longitude: t.lng,
@@ -1242,6 +1265,8 @@ function tileToHomeTileRow(tile: ListingTile): HomeTileRow {
     State: null,
     PostalCode: tile.postalCode,
     SubdivisionName: tile.subdivisionName,
+    BoundaryCity: tile.boundaryCity,
+    BoundaryNeighborhood: tile.boundaryNeighborhood,
     PhotoURL: tile.photoUrl,
     Latitude: tile.lat,
     Longitude: tile.lng,
@@ -2326,6 +2351,8 @@ function tileToListingTileRow(t: ListingTile): ListingTileRow {
     State: 'OR',
     PostalCode: t.postalCode,
     SubdivisionName: t.subdivisionName,
+    BoundaryCity: t.boundaryCity,
+    BoundaryNeighborhood: t.boundaryNeighborhood,
     PhotoURL: t.photoUrl,
     Latitude: t.lat,
     Longitude: t.lng,

@@ -29,7 +29,7 @@ import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-str
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import type { PlaceFaceStat } from '@/lib/market/publish-place-face'
 import type { ListingTile } from '@/lib/data/types/listing'
-import { listingDetailPath } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 
 /** H1. The counted set is this neighborhood, never the city. */
 export function neighborhoodHeadline(placeName: string): string {
@@ -134,12 +134,7 @@ export function nbhFieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
     const photo = t.photoUrl?.trim()
     items.push({
       id: key,
-      href: listingDetailPath(
-        key,
-        { streetNumber: t.streetNumber, streetName: t.streetName, city: t.city },
-        { city: t.city, subdivision: t.subdivisionName },
-        { mlsNumber: t.listNumber },
-      ),
+      href: listingTileHref({ ...t, listingKey: key }),
       priceLabel: formatPublishedAsk(t.listPrice) ?? 'Price on request',
       // Every card names its city (Matt 2026-08-27): cards travel — open
       // houses, trails, price drops, saved-search alerts — so a bare street

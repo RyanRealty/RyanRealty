@@ -1,7 +1,7 @@
 /**
  * JSON-LD structured data generators for SEO. Step 20.
  */
-import { listingDetailPath, teamPath } from '@/lib/slug'
+import { listingTileHref, teamPath } from '@/lib/slug'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -14,6 +14,9 @@ export type ListingForSchema = {
   living_area?: number | null
   subdivision_name?: string | null
   standard_status?: string | null
+  /** SITE-22 — the canonical URL's middle segments. */
+  boundary_city?: string | null
+  boundary_neighborhood?: string | null
 }
 
 export type PropertyAddress = {
@@ -35,23 +38,16 @@ export function generateListingSchema(
     '@context': 'https://schema.org',
     '@type': listing.living_area != null && listing.living_area > 0 ? 'SingleFamilyResidence' : 'Residence',
     name: address.unparsed_address ?? street ?? 'Property',
-    url: `${SITE_URL}${listingDetailPath(
-      listing.list_number ?? listing.listing_key,
-      {
-        streetNumber: address.street_number ?? null,
-        streetName: address.street_name ?? null,
-        city: address.city ?? null,
-        state: address.state ?? null,
-        postalCode: address.postal_code ?? null,
-      },
-      {
-        city: address.city ?? null,
-        subdivision: listing.subdivision_name ?? null,
-      },
-      {
-        mlsNumber: listing.list_number ?? null,
-      }
-    )}`,
+    url: `${SITE_URL}${listingTileHref({
+      listingKey: listing.list_number ?? listing.listing_key,
+      listNumber: listing.list_number ?? null,
+      streetNumber: address.street_number ?? null,
+      streetName: address.street_name ?? null,
+      city: address.city ?? null,
+      boundaryCity: listing.boundary_city ?? null,
+      boundaryNeighborhood: listing.boundary_neighborhood ?? null,
+      subdivisionName: listing.subdivision_name ?? null,
+    })}`,
     ...(listing.list_price != null && listing.list_price > 0 && {
       offers: { '@type': 'Offer', price: listing.list_price, priceCurrency: 'USD' },
     }),

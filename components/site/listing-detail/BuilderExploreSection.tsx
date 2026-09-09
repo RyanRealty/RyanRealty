@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { ListingTile } from '@/lib/data/types/listing'
-import { listingDetailPath } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 
@@ -48,16 +48,7 @@ export function BuilderExploreSection({ builderName, tiles }: Props) {
               city: t.city,
               listNumber: t.listNumber,
             })
-            const href = listingDetailPath(
-              t.listingKey,
-              {
-                streetNumber: t.streetNumber,
-                streetName: t.streetName,
-                city: t.city,
-              },
-              { city: t.city, subdivision: t.subdivisionName },
-              { mlsNumber: t.listNumber },
-            )
+            const href = listingTileHref(t)
             return (
               <li
                 key={t.listingKey}

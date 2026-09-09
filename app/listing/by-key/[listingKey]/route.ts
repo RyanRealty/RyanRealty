@@ -32,27 +32,22 @@
 
 import { NextResponse, type NextRequest } from 'next/server'
 import { getListingCanonicalPathFields } from '@/lib/data/listings/getListingCanonicalPathFields'
-import { listingDetailPath, listingKeyFromSlug } from '@/lib/slug'
+import { listingCanonicalHref, listingKeyFromSlug } from '@/lib/slug'
 
 function canonicalPathFromFields(
   row: NonNullable<Awaited<ReturnType<typeof getListingCanonicalPathFields>>>,
 ): string {
-  return listingDetailPath(
-    row.ListingKey,
-    {
-      streetNumber: row.StreetNumber,
-      streetName: row.StreetName,
-      city: row.City,
-      state: row.State,
-      postalCode: row.PostalCode,
-    },
-    {
-      city: row.boundary_city ?? row.City,
-      neighborhood: row.boundary_neighborhood,
-      subdivision: row.SubdivisionName,
-    },
-    { mlsNumber: row.ListNumber },
-  )
+  // SITE-22: one builder for the canonical and everything that points at it.
+  return listingCanonicalHref({
+    listingKey: row.ListingKey,
+    listNumber: row.ListNumber,
+    streetNumber: row.StreetNumber,
+    streetName: row.StreetName,
+    city: row.City,
+    boundaryCity: row.boundary_city,
+    boundaryNeighborhood: row.boundary_neighborhood,
+    subdivisionName: row.SubdivisionName,
+  })
 }
 
 async function lookupPathFields(listingKey: string) {

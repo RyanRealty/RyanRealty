@@ -22,6 +22,11 @@ const ACTIVE_OR =
 const PROJECTION = [
   'ListingKey, ListNumber, ListPrice, OriginalListPrice, BedroomsTotal, BathroomsTotal',
   'TotalLivingAreaSqFt, StreetNumber, StreetName, StreetSuffix:details->>StreetSuffix, City, State, PostalCode, SubdivisionName',
+  // SITE-22: the two segments in the middle of this listing's canonical URL.
+  // /sell and /our-homes build their hrefs from this row, and without these
+  // they linked to /homes-for-sale/<mls-city>/... while the listing
+  // canonicalised to /homes-for-sale/<boundary-city>/<neighborhood>/...
+  'boundary_city, boundary_neighborhood',
   'PhotoURL, StandardStatus, OnMarketDate, CloseDate, ClosePrice',
   'ListAgentName, ListOfficeName',
   'has_virtual_tour, virtual_tour_url',
@@ -44,6 +49,9 @@ export type PriceDropTile = {
   State: string | null
   PostalCode: string | null
   SubdivisionName: string | null
+  /** SITE-22 — canonical URL segments. See PROJECTION. */
+  boundary_city?: string | null
+  boundary_neighborhood?: string | null
   PhotoURL: string | null
   StandardStatus: string | null
   OnMarketDate: string | null
