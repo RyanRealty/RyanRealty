@@ -54,6 +54,42 @@ describe('listing remainder composition', () => {
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
   })
 
+  /**
+   * SITE-33 (Matt 2026-09-08). The out-of-area listing tier: the block renders,
+   * the page still serves, robots is "noindex, follow" (never nofollow), and
+   * both halves read the SAME predicate as the sitemap.
+   */
+  it('discloses the market on an out-of-area home, before it says anything else about it', () => {
+    const main = PAGE.slice(PAGE.indexOf('const main = ('), PAGE.indexOf('const floating ='))
+    const notice = main.indexOf('<ListingOutOfAreaNotice')
+    expect(notice).toBeGreaterThan(-1)
+    // Under the price strip and above every other claim the page makes.
+    expect(notice).toBeGreaterThan(main.indexOf('<PriceCtaStrip'))
+    for (const later of ['<ListingOffMarketFacts', '<PropertySpecs', '{atlasBlock}']) {
+      expect(notice).toBeLessThan(main.indexOf(later))
+    }
+  })
+
+  it('decides the block and the robots directive with one predicate', () => {
+    expect(PAGE).toMatch(/import \{ outOfAreaListingPolicy \} from '@\/lib\/data\/listings\/service-area'/)
+    // Once in generateMetadata, once in the render.
+    expect(PAGE.match(/outOfAreaListingPolicy\(listing\.city\)/g)).toHaveLength(2)
+    expect(PAGE).toMatch(/buildListingOutOfAreaNotice\(/)
+  })
+
+  it('leaves the index WITH follow preserved, and keeps the page serving', () => {
+    expect(PAGE).toMatch(/noindex: outOfArea !== null/)
+    // `nofollow` is a SEPARATE pageMetadata flag (SITE-25) and is not wanted:
+    // the /oregon referral pages link IN to these pages, and these pages link
+    // back out to the place, plat and city they sit in. Setting it would throw
+    // both away. Matched as the property, so the word may still be explained
+    // in a comment.
+    expect(PAGE).not.toMatch(/nofollow\s*:/)
+    // The policy never refuses the row — the page renders in full either way.
+    expect(PAGE).not.toMatch(/outOfArea[\s\S]{0,80}<ListingUnavailable/)
+    expect(PAGE).not.toMatch(/outOfArea[\s\S]{0,80}notFound\(\)/)
+  })
+
   it('does not restack leftover HUD, CMA, rental, or a second lot map', () => {
     expect(PAGE).not.toMatch(/<NeighborhoodMarketContext/)
     expect(PAGE).not.toMatch(/<LivePricingRead/)
