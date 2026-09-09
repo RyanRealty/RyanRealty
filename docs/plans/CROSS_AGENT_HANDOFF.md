@@ -53,6 +53,22 @@ plat-outcomes DAL read, a "What did not sell in {name}" section, a wider-market 
 anchor, and the letter sentence updated to "and what did not" when it ships. Not touched: the
 subdivision page (SITE-47 is in progress on it).
 
+**Send walk two ran, on the expired and FSBO lanes (2026-09-09).** Requests created through
+those lanes' own sources (`expired-listing-cron`, `fsbo-cron`) to harness aliases dana (63427) and
+erin (63428): 2465 NE 7th, Redmond (expired, audit **pass**, 5 comps, Diamond Bar Ranch) and
+19968 Terrace, Bend (FSBO, audit **review**, 6 comps, Romaine Village). Both built on the intake
+kick, both approved and sent from matt@ryan-realty.com over Gmail, both letters carry the system
+signature. The CRM has the whole chain per person: `email_out` → `email_click` → a
+`return-visit` broker alert. **The walk caught a real defect:** the report button was built from
+`NEXT_PUBLIC_SITE_URL`, and `attributeOutbound` only attributes ryan-realty.com links, so on any
+host but the apex the button shipped with no `?_pid=` and the recipient met the consent bar
+instead of their own report. Pinned to `CMA_DOC_ORIGIN`; re-sent and re-clicked, the recipient
+now lands on the full price opinion with 45 tracked in-document links and a comp address opens
+its listing page. **The FSBO row is the case for keeping the review gate:** its audit reads
+"recommending $461,000 (above every method and both kept adjusted values) is indefensible with
+this set" while the kept comps cluster in the low-to-mid $300ks. Auto-send stays OFF; a lane
+switch must not be flipped while a row like that can reach a stranger.
+
 **Matt, reading the Diamond Bar Ranch page the letter links: "There's no map… and no photo."**
 Verified in a headless render (scratchpad dbr-top2.png): the opening is cream with no photograph,
 the atlas is an empty grey frame with a legend, and the split-view Google map paints no tiles.
