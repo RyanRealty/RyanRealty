@@ -1,4 +1,86 @@
-# Current — 2026-09-09 (the CMA send walked end to end on the email harness; the intake stops taking over other people's drafts)
+# Current — 2026-09-09 (site queue: a sold home stops publishing its asking price; one canonical per listing)
+
+Owner: Claude (Opus 5), cloud "Site queue grinder" routine, session 01DLfMFV. **main is at `8bef8ddde`.**
+Three SITE nodes moved this run: SITE-07 shipped and live, SITE-22 DONE, SITE-20 shipped and
+live-verified but deliberately left OPEN. Four pushes, each gated, each live-checked.
+
+**The one that mattered: SITE-20, a §0 defect that was live under a principal broker's licence.**
+Every Closed listing published its LIST price as the headline of its search snippet, its share
+card and its RealEstateListing JSON-LD — and because `buildOffer` correctly drops the Offer for a
+sold home, dropping it also dropped the only machine-readable statement that the home had sold.
+55550 Heidi Court published $1,250,000 against an $1,100,000 sale; 1117 Peco Road published
+$1,199,000 against $1,000,000. 1,282 of 1,708 comparable Closed rows have ListPrice != ClosePrice.
+`lib/listing/publish-listing-published-price.ts` is now the one publisher for every surface, and it
+REFUSES to fall back from a missing ClosePrice to the ask — that fallback is the defect, so it may
+not come back as error handling. Pending stays unmapped in schema availability because schema.org
+has no value meaning "under contract, not yet sold" and inventing one publishes a claim the record
+does not support.
+
+**SITE-22 is done.** One listing could be reached at four URLs, each self-canonical: 2,363 of 8,724
+listing ids at more than one URL, 47.7% of listing-class impressions. There is now ONE builder —
+`listingTileHref` / `listingCanonicalHref`, both through `listingDetailPath` — making the canonical,
+the sitemap row and every internal href. Eight of eight production variants (including an invented
+`/portland/` path and an `/na/` segment) resolve to the one canonical; `/cities/bend` went from 8
+raw-ListingKey hrefs to 0. Harm was index fragmentation, not clicks — do not read a rank change into it.
+
+**The container restarted mid-round and killed the build lane. Read this before trusting a lane.**
+SITE-20 survived as a commit. SITE-22 survived as 44 files STAGED AND NEVER EXECUTED — no test, no
+gate, no live assertion had ever run against them. Replaying that work found three things the lane
+never saw: two contract tests that demanded a DIRECT `listingDetailPath(` call and so failed the
+refactor that fixes what they guard, and `ci:listing-figure-publish` rejecting the sold-price
+publisher for the same reason. All three were legitimate to update — each now asserts the shared
+builder, whose OUTPUT is pinned by seventeen behavioural assertions in `lib/slug.test.ts`, which is
+a stronger contract than grepping one file. Nothing landed on the strength of a diff looking right.
+
+**A gate held the spelling it was tested against, not the defect.** SITE-22's accept requires the new
+`ci:listing-canonical-single` to FAIL when the by-address override returns. It does. But probed with
+the same defect one character apart — `base.alternates = { canonical }` instead of
+`alternates: { canonical }` — it passed 10/10. Hardened in `8bef8ddde` and re-probed three ways
+(clean 10/10, historical override FAILs, assignment form FAILs). **Worth generalising: when you add a
+gate, probe it with a second spelling of the same defect before you believe it.**
+
+**SITE-20 is OPEN, not done, and that is deliberate.** Everything functional is shipped and verified on
+production against a pre-fix baseline captured BEFORE the deploy (all four listings publish Sold + the
+exact ClosePrice, `schema.org/SoldOut`, still no offers node; Active listings resolved at query time
+still publish list price, InStock, a real offer). What is NOT done is its taste half: the listing-detail
+evaluator rising above **87** on the same instrument. That pass was not run and nothing claims it. A
+future session owes only that.
+
+**A question is still with Matt from SITE-07** (place-page affordability instrument, live on
+`/cities/bend`, `/cities/redmond`, `/cities/bend/awbrey-butte`). The city class rebaselined honestly at
+65 — the prior 67 was grok-4.6 with no rubric version and no shots hash, so all three identity keys
+drift. The neighborhood class scored **67 against a standing 83 from the same evaluator model and the
+same rubric**. Only `shotsHash` differed, and only because the change added shots. `ci:taste-canon`
+would have ACCEPTED a "rebaselined" claim on that key alone; writing one would have laundered a
+16-point fall past a gate that reads three keys, so the 83 stands and the rise is recorded as unmet.
+The evaluator found ZERO defects in the new section and called it the best thing on both page classes —
+every point lost belongs to sections SITE-07 does not own (the city FAQ is the weaker of two builds of
+one component and carries no per-answer source line; five consecutive sections share one shape; the
+property-type tiles are a KPI grid; the neighborhood subdivision grid repeats indistinguishable
+truncated labels, which is information loss). **Accept 67 as the honest mark for that class, or hold
+SITE-07 until a node fixes those sections?**
+
+**Two traps that cost this run real time.**
+1. **A count taken from an unchecked response is not a measurement.** The first production pass on
+   SITE-22 reported failures and once made SITE-20 look like it had regressed off production. Several
+   of those reads were failed fetches (`http 000`) whose empty bodies `grep -c` happily counted as
+   zero. Check the status code before you parse the body; every figure recorded on these nodes comes
+   from a confirmed 200.
+2. **`next dev --webpack` and `next build --webpack` both fail in a worktree on this repo, on main,
+   before any change** — `getPlaceDocuments` reaches the client graph through the v3 barrel via
+   `V3PlaceDocuments` and webpack errors on `next/headers`. The fix is NOT the flag:
+   `cp -al <main>/node_modules ./node_modules` (hardlinks, seconds) makes Turbopack's workspace-root
+   inference succeed. A bare symlink is rejected. **`.claude/skills/site-queue/SKILL.md` still tells
+   every cloud lane to use `--webpack`; that line is wrong in a worktree and should be corrected.**
+   Also: `npm run ci:runtime-gates` times out against a healthy server because its `wait-on` uses
+   axios, which `middleware.ts` 403s; `scripts/run-runtime-gates.sh` on main is the working path.
+
+**Queue.** 43 items, 23 open. SITE-22 done. SITE-20 open (taste only). SITE-07 was claimed by another
+session after this run released it. Fleet discipline held throughout: never more than three workers.
+
+---
+
+## Prior — 2026-09-09 (the CMA send walked end to end on the email harness; the intake stops taking over other people's drafts)
 
 Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
 (`wt/cma-ship-20260907`). Commit 021e0e9a, merged with main at 31eef8d8, gated push in flight
