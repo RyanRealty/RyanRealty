@@ -1082,6 +1082,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         subdivision: c.subdivision,
         selectionTier: c.selectionTier,
       })),
+      // Delta 4: on acreage the story names the splits that set sales aside.
+      rural:
+        selection.diagnostics.rural_acreage || (subject.lotAcres ?? 0) >= 1
+          ? { subjectZone: site.zone, counts: selection.diagnostics.excluded_totals }
+          : null,
     })
 
     // R2h. ONE AREA, then the two sets that must come out of it (Matt

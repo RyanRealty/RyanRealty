@@ -87,3 +87,55 @@ export const RURAL_SPLIT_REASON = {
   outbuildings: 'different outbuildings (a shop, barn, or arena on one side and none on the other)',
   terrain: 'different land (usable ground on one side, rock, slope, or wetland on the other)',
 } as const
+
+export type RuralSplitCounts = {
+  zoning_class: number
+  outbuildings: number
+  terrain: number
+  acreage_infrastructure: number
+}
+
+const ZONE_CLASS_LABEL: Record<ZoningClass, string | null> = {
+  farm_forest: 'farm or forest land',
+  rural_res: 'rural residential land',
+  urban: 'city land',
+  unknown: null,
+}
+
+function plural(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`
+}
+
+/**
+ * The story of the splits, for the reader (Matt 2026-09-08: "the story names
+ * which set the price"). Counts are sales the search set aside for each rule;
+ * nothing is said about a rule that set nothing aside. Null when there is
+ * nothing to say.
+ */
+export function ruralSplitsSentence(input: {
+  subjectZone: string | null | undefined
+  counts: Partial<RuralSplitCounts> | null | undefined
+}): string | null {
+  const c = input.counts ?? {}
+  const zoning = c.zoning_class ?? 0
+  const out = c.outbuildings ?? 0
+  const terrain = c.terrain ?? 0
+  const infra = c.acreage_infrastructure ?? 0
+  if (zoning + out + terrain + infra === 0) return null
+  const cls = zoningClass(input.subjectZone)
+  const zone = (input.subjectZone ?? '').trim()
+  const parts: string[] = []
+  if (zoning > 0) {
+    const other = cls === 'farm_forest' ? 'rural residential land' : cls === 'rural_res' ? 'farm or forest land' : 'land in a different zoning class'
+    parts.push(`${plural(zoning, 'sale', 'sales')} on ${other}`)
+  }
+  if (infra > 0) parts.push(`${plural(infra, 'sale', 'sales')} with a different irrigation or horse setup`)
+  if (out > 0) parts.push(`${plural(out, 'sale', 'sales')} with different outbuildings`)
+  if (terrain > 0) parts.push(`${plural(terrain, 'sale', 'sales')} on different ground`)
+  const list = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`
+  const opening =
+    cls !== 'unknown' && ZONE_CLASS_LABEL[cls]
+      ? `This home sits on ${ZONE_CLASS_LABEL[cls]}${zone ? ` (zoned ${zone})` : ''}, and the search read the land as part of the home.`
+      : 'On acreage the search reads the land as part of the home.'
+  return `${opening} Before any price was taken, ${list} ${parts.length === 1 && !/sales/.test(parts[0]) ? 'was' : 'were'} set aside.`
+}

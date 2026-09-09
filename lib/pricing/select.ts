@@ -336,7 +336,10 @@ export function matchToCompSelection(
       target_comps: PRICING_TARGET_COMPS,
       min_comps: PRICING_MIN_COMPS,
       candidates: match.comps.length,
-      excluded_totals: emptyExclusions(),
+      // The facts ladder rejects inside passesTier without a reason, so the
+      // totals stay at zero — except the acreage splits, which the walk counts
+      // once over the rural pool for the reader's story (Delta 4).
+      excluded_totals: { ...emptyExclusions(), ...(match.ruralSplits ?? {}) },
       outliers_excluded: 0,
       final_count: match.comps.length,
       final_tier_counts: Object.fromEntries(

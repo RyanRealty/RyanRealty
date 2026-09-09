@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ruralSplitsSentence,
   outbuildingsClass,
   outbuildingsCompatible,
   terrainClass,
@@ -49,5 +50,24 @@ describe('outbuildings and terrain from the remarks', () => {
     expect(terrainClass('Level building site above a rocky terrain draw.')).toBe('unknown')
     expect(terrainCompatible('lava rock', 'level pasture')).toBe(false)
     expect(terrainCompatible('lava rock', 'views for days')).toBe(true)
+  })
+})
+
+describe('ruralSplitsSentence — the story names which split set sales aside', () => {
+  it("Concorde: farm land, 61 rural-residential sales, 70 irrigation/horse, 34 outbuildings", () => {
+    const t = ruralSplitsSentence({
+      subjectZone: 'EFUTRB',
+      counts: { zoning_class: 61, acreage_infrastructure: 70, outbuildings: 34, terrain: 0 },
+    })
+    expect(t).toBe(
+      'This home sits on farm or forest land (zoned EFUTRB), and the search read the land as part of the home. Before any price was taken, 61 sales on rural residential land, 70 sales with a different irrigation or horse setup, and 34 sales with different outbuildings were set aside.',
+    )
+  })
+  it('says nothing when nothing was set aside, and names ground when it was', () => {
+    expect(ruralSplitsSentence({ subjectZone: 'RR10', counts: { zoning_class: 0 } })).toBeNull()
+    expect(ruralSplitsSentence({ subjectZone: null, counts: { terrain: 1 } })).toBe(
+      'On acreage the search reads the land as part of the home. Before any price was taken, 1 sale on different ground was set aside.',
+    )
+    expect(ruralSplitsSentence({ subjectZone: 'RR10', counts: { zoning_class: 3 } })).toContain('3 sales on farm or forest land were set aside')
   })
 })
