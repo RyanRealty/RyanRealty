@@ -1,4 +1,48 @@
-# Current — 2026-09-09 (SITE-40: V3Quiet gets one measure, a figure slot with its trace, and doors as a form; six openings pick it up)
+# Current — 2026-09-09 (SITE-49: /price-drops opens with the shape of the week's cuts, and every card carries its own)
+
+Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
+`5d0fa577` on main through 52ea5f5e (Matt's two rulings: the out-of-area asks stay, the MLS remarks
+are back on the listing page with a gate). Node `1c971ea5` is `done` with evidence. Earlier today on
+this branch: SITE-45 (`ba0fb159`, listing opening 77 → 79) and SITE-40 (`1ea07155`, V3Quiet and its
+six openings) — see Prior. SITE-29 (`e3d1713f`) stays `blocked` until 2026-09-11.
+
+**What shipped.** The table scored the class 30 and its committed receipt stood at 43, both naming the
+same cause: the only data display in the first viewport was a portal card. Now the page opens with the
+distribution the count implies — every cut this week as one V3Drawing `strip` above the grid, a mark
+per cut at the cut as a percent of the previous ask, smallest to deepest, each giving up its street,
+its city, its percent and its dollars to a hover, a tap or the keyboard; the claim names the median and
+the deepest. Each card carries a short ink track under its ask, filled to that home's cut as a share of
+the deepest on the page. Two primitive fixes came out of the rounds: `V3Drawing` gains `askHint`, so a
+figure says what its own marks give up (the default promised a month these marks do not carry), and
+`V3SourceLine`'s visible clause is bracket-aware, because it cut at the first comma and a trace that
+puts its population in a parenthesis ended the clause on an open bracket — that one fixes every caller.
+
+**The overlap bug the node names first was already fixed** on this tree (the Field's out-of-flow photo
+list, `price-drops-field.css`, 2026-09-09). The lane proves it rather than re-fixing it: the accept
+measures the alerts sheet's box against every visible card at both widths.
+
+**Receipt: 43 → 71** (71 · 75 · 71), craft 11, no tell, rebaselined, separate claude-sonnet-5 evaluator,
+four rounds. **Mechanical accept 14/14** at 1440 and 375: the sheet covers no card; the drawing sits
+above the grid with a mark for every row; a mark gives up an address and a percent; the drawing carries
+its source line; every card's cut mark differs; no source line is clipped.
+
+**Open on the receipt and the node, for a later pass.** The two instrument shots disagree on the median
+cut (5.9% desktop, 5.8% phone): two loads of a LIVE pull minutes apart, each internally consistent,
+nothing carried between renders — but a headline figure that moves between captures wants either a
+finer read stamp beside the claim or a caption that does not name a moving median. Also: the photo
+badge keeps a rounded corner where the register is radius 0; the desktop hover does not mark which dot
+it is reading; the phone's source line sits below the fold. Deliberately not fixed: the marks cluster
+in the left half at 1440, which is the week's true shape — stretching the axis would draw a spread the
+data does not have.
+
+**Answered by main while this lane ran:** the MLS public remarks are back on the listing page as
+written, with a gate (62d8731a), which closes the §2 finding SITE-45 recorded; the out-of-area asks
+stay (aa5eb85d), which closes the two SITE-33/45 questions on the Medford sidebar and its calculator.
+
+**Next.** The next eligible SITE node under the two-open / three-owner rule. PR #200: green through
+0b43bbbe, building on 86e9cf98; the check-in fires 20:20Z.
+
+## Prior — 2026-09-09 (SITE-40: V3Quiet gets one measure, a figure slot with its trace, and doors as a form; six openings pick it up)
 
 Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
 `1ea07155` on main through 0ba0358d (merges 21d75e55 and 0b43bbbe carry SITE-42, SITE-46, SITE-53, the
@@ -119,6 +163,75 @@ Node-trailed commit), then the next eligible SITE node under the two-open / thre
 CI on 851c20bc was green on lint-and-build with e2e running; this push re-runs it.
 
 ## Prior — 2026-09-09 (round four: the first message is in Matt's register, and so is every first touch)
+## Prior — 2026-09-09 (Matt's two rulings: the out-of-area asks stay, and the MLS remarks are back on the listing page)
+
+Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Push
+`b921fff8..aa5eb85d`; deploy dpl_9suRuEtNnFEc51KHwTDiahp9NNT1 READY in 271s.
+
+**Matt, asked and answered, 2026-09-09.** (1) *"Yes keep out of area"* — the Tour, Call, Text and
+payment stay on an out-of-area listing beside the honesty block. Out-of-area is not off-market: the
+brokerage holds an Oregon licence, the listings are live, and that visitor is the lead the referral
+tier exists to catch. No code changed; recorded as §8b of
+`docs/plans/PUBLIC_PRODUCT/processes/refer-out-of-area.md` and on SITE-33, so nobody later deletes
+the asks to resolve the apparent contradiction with SITE-21. (2) *"mls descriptions must come
+back"* — done, SITE-57, live.
+
+**SITE-57 done.** The remarks render again as row 5 of the listing page, under the existing
+attribution, as written. Verified on production with a headless browser: for three Active listings
+resolved at run time, `document.body.innerText` — the visible text, not the payload — contains
+that listing's own first eight words. Before the fix the same check was false and the only text
+node holding the phrase sat inside a script tag.
+
+**Why it went missing, because the shape matters more than the fix:** `getListingDetail` kept
+selecting `public_remarks` and mapping it to `publicRemarks`; the twelve-section rebuild dropped
+the renderer's import; the remainder contract then asserted the renderer's *absence*; the orphan
+sweep deleted the component and, as a cascade, the paragraph joiner whose only caller it was. Every
+step was locally reasonable and the page carried the listing agent's words into the payload and
+showed the visitor none of them. So the answer is a gate, not a comment:
+**ci:listing-remarks-rendered** refuses the DAL mapping remarks while the page renders none, a
+renderer that skips the joiner (Spark inserts a blank line mid-sentence; a naive split truncates
+the first paragraph), and any slice/substring/ellipsis truncation. Proven red on the real 2026-09-09
+shape, green once wired, eight fixture cases.
+
+**Fleet:** cloud-grinder on SITE-31 and SITE-41; claude-opus5 on SITE-49; this session on SITE-48
+(the people pages) and SITE-50 (/invest and /compare). Nothing is blocked on Matt right now.
+
+## Prior — 2026-09-09 (site queue round seven: SITE-44 and SITE-47 done; the map is no longer a Google default map)
+
+Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Pushes:
+`f98e0f4d` (SITE-44) and `4064f4d7` (SITE-47); both deploys READY.
+
+**SITE-44 done, verified by the orchestrator in a real browser, not from the lane's word.** The
+search and zip maps now draw on the navy-on-cream ladder: 13,888 pixels sampled on /homes-for-sale
+came back 63.4% #faf8f4, 10.9% #ecebea, 4.1% #102742 with the road greys, and /zip/97702 90.8%
+cream — no Google greens, tans or water blues in either. Google's zoom and map-type controls are
+gone from both. The claim header reads "500 homes are drawn on this map, from $57K to $8.8M in
+Bend." with its source disclosure; 48 cards carry 48 price-per-square-foot marks; the Price, Beds
+and Baths chips are 700 against Save-this-search at 500. **Note for the next reader:** the tile
+requests carry no `styles=` param (17 and 12 requests, zero) because Maps JS encodes the style in
+the tile payload — the param is not the test, the pixels are. search 32 → 75, zip 33 → 60, both
+rebaselined. Both baseline files shrank; no dependency added.
+
+**SITE-47 done, and its score went DOWN.** The plat opening now composes one authored sentence per
+setting — "That photograph is Three Rivers. River Meadows is one of the subdivisions inside it, and
+10 of its homes are for sale right now." / "Park Addition sits inside Old Bend, in Bend, and 3 of
+its homes are on the market today." / "Easton, one of Bend's subdivisions, has 20 homes for sale
+right now." — all three live and distinct; the Atlas claim and dot key are in the fold via opt-in
+props (every other caller byte-identical, proven); a 44px door sits inside the first 900px; and
+plat-public-inventory finally carries a readAt, which closes SITE-42's missing as-of date. But the
+class scored **65 against a 79 high-water mark** from SITE-42 this morning. It landed because the
+node's own bar is 59 and the evaluator explicitly cleared the template verdict, and because a mark
+from a different shot set is not a baseline. **That is an open question, not a rounding:** the
+spread inside one round was 63 to 74. Re-score before building the next subdivision node.
+
+**Fleet:** cloud-grinder on SITE-31 and SITE-41; claude-opus5 on SITE-40 and SITE-49; this session
+on SITE-48 (the people pages). SITE-50 (/invest, /compare) is eligible and unclaimed.
+
+**Still open for Matt:** the out-of-area listing asks (Tour / Call / Text and a payment beside "we
+don't work in Medford"); the MLS remarks missing from the listing page since the twelve-section
+rebuild (on SITE-45); a hero data graphic for /buy.
+
+## Prior — 2026-09-09 (round four: the first message is in Matt's register, and so is every first touch)
 
 Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
 (`wt/cma-ship-20260907`). One gated push after this was written — `git log origin/main --oneline -6`.
@@ -172,6 +285,22 @@ site lane's, seeded as **SITE-55** (loop_work_nodes, open, after SITE-47 on the 
 plat-outcomes DAL read, a "What did not sell in {name}" section, a wider-market block with a real
 anchor, and the letter sentence updated to "and what did not" when it ships. Not touched: the
 subdivision page (SITE-47 is in progress on it).
+
+**Send walk two ran, on the expired and FSBO lanes (2026-09-09).** Requests created through
+those lanes' own sources (`expired-listing-cron`, `fsbo-cron`) to harness aliases dana (63427) and
+erin (63428): 2465 NE 7th, Redmond (expired, audit **pass**, 5 comps, Diamond Bar Ranch) and
+19968 Terrace, Bend (FSBO, audit **review**, 6 comps, Romaine Village). Both built on the intake
+kick, both approved and sent from matt@ryan-realty.com over Gmail, both letters carry the system
+signature. The CRM has the whole chain per person: `email_out` → `email_click` → a
+`return-visit` broker alert. **The walk caught a real defect:** the report button was built from
+`NEXT_PUBLIC_SITE_URL`, and `attributeOutbound` only attributes ryan-realty.com links, so on any
+host but the apex the button shipped with no `?_pid=` and the recipient met the consent bar
+instead of their own report. Pinned to `CMA_DOC_ORIGIN`; re-sent and re-clicked, the recipient
+now lands on the full price opinion with 45 tracked in-document links and a comp address opens
+its listing page. **The FSBO row is the case for keeping the review gate:** its audit reads
+"recommending $461,000 (above every method and both kept adjusted values) is indefensible with
+this set" while the kept comps cluster in the low-to-mid $300ks. Auto-send stays OFF; a lane
+switch must not be flipped while a row like that can reach a stranger.
 
 **Matt, reading the Diamond Bar Ranch page the letter links: "There's no map… and no photo."**
 Verified in a headless render (scratchpad dbr-top2.png): the opening is cream with no photograph,

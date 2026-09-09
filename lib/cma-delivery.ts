@@ -30,6 +30,7 @@
  */
 
 import { CMA_PRICING_PHILOSOPHY } from '@/lib/cma/first-contact'
+import { getSignatureForMailbox } from '@/lib/crm/email-signature'
 import 'server-only'
 
 import React from 'react'
@@ -345,6 +346,7 @@ export async function processCmaDelivery(deliveryId: string): Promise<{
     brokerName: assignedBroker?.displayName ?? null,
     brokerEmail: assignedBroker?.email ?? null,
     brokerPhone: formatPublishedPhone(assignedBroker?.phone) ?? null,
+    signature: assignedBroker?.email ? await getSignatureForMailbox(assignedBroker.email) : null,
   })
 
   // ── Step 8: persist the draft state → 'ready'
@@ -610,8 +612,15 @@ export function composeCmaEmail(params: {
   brokerName: string | null
   brokerEmail: string | null
   brokerPhone: string | null
+  /**
+   * The broker's signature from the system (lib/crm/email-signature.ts), which
+   * signs every letter we send (Matt 2026-09-09: "we will always use my
+   * signature from the system"). When the row cannot be read the identity block
+   * below stands in, so a draft is never unsigned.
+   */
+  signature?: { html: string; plain: string } | null
 }): { subject: string; html: string; text: string } {
-  const { leadFirstName, fullAddress, cma, brokerName, brokerEmail, brokerPhone } =
+  const { leadFirstName, fullAddress, cma, brokerName, brokerEmail, brokerPhone, signature } =
     params
   const greeting = leadFirstName ? `Hi ${leadFirstName},` : 'Hi,'
   const street = fullAddress.split(',')[0]?.trim() || fullAddress
@@ -644,9 +653,11 @@ export function composeCmaEmail(params: {
   const paragraphs = [greeting, intro, numbers, CMA_PRICING_PHILOSOPHY, ask, questions].filter(
     (p): p is string => Boolean(p),
   )
-  const signature = [brokerName ? brokerName : 'Ryan Realty', brokerEmail || '', brokerPhone || ''].filter(Boolean)
+  const identityLines = [brokerName ? brokerName : 'Ryan Realty', brokerEmail || '', brokerPhone || ''].filter(Boolean)
 
-  const text = [...paragraphs.flatMap((p) => [p, '']), ...signature].join('\n')
+  const text = signature?.plain
+    ? `${paragraphs.join('\n\n')}\n${signature.plain}`
+    : [...paragraphs.flatMap((p) => [p, '']), ...identityLines].join('\n')
 
   // Same sentences as `text` above: both are sent, so change one, change both.
   const para = (p: string) =>
@@ -656,10 +667,10 @@ export function composeCmaEmail(params: {
   const html = `
 <div style="font-family:${EMAIL_FONT_STACK};font-size:16px;line-height:1.55;color:#102742;max-width:580px;margin:0 auto">
   ${paragraphs.map(para).join('\n  ')}
-  <p style="margin-top:28px">${escapeHtml(brokerName ?? 'Ryan Realty')}<br>
+  ${signature?.html ?? `<p style="margin-top:28px">${escapeHtml(brokerName ?? 'Ryan Realty')}<br>
   ${brokerEmail ? `<a href="mailto:${encodeURIComponent(brokerEmail)}" style="color:#102742">${escapeHtml(brokerEmail)}</a><br>` : ''}
   ${brokerPhone ? `<a href="tel:${encodeURIComponent(brokerPhone)}" style="color:#102742">${escapeHtml(brokerPhone)}</a>` : ''}
-  </p>
+  </p>`}
 </div>`.trim()
 
   return { subject, html, text }

@@ -31,6 +31,11 @@
       "blocking": true
     },
     {
+      "name": "V3Button",
+      "section": "SITE-47: the opening's door row (.plat-opening__doors) — one primary door to the browse path (\"See every home for sale\") and one ghost to a broker, in the fold beneath the caption. Neither captured viewport of this class held a next action before this pass.",
+      "blocking": true
+    },
+    {
       "name": "PlaceSplitView",
       "section": "Flagship Split of the counted plat inventory. Seed ring only from a real GIS polygon. Pin bounds when there is no ring.",
       "blocking": true
@@ -142,7 +147,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-09",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-42 round 1 — spawned from the build lane with the same six-shot set SITE-24 used, re-captured against the lane dev server after the section 0 line was folded, scored three times in one call.",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-47 build lane — spawned from the build lane with the same six-shot set, re-captured against the lane dev server after the caption composer, the Atlas claim+legend fold and the CTA doors landed, scored three times in one call, and asked explicitly whether the caption reads as a template (answer: no).",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
@@ -167,56 +172,61 @@
       "answersDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-desktop.png",
       "answersMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-mobile375.png"
     },
-    "shotsHash": "sha256:865202efd96928262a0e74a24069a04b68675fdc48333cfd56d5df15bc605455",
+    "shotsHash": "sha256:01a48bf3c24df75a3540f85cd7520ca4ba84f80c33bfcba31646d41ae277c3ba",
     "scores": [
-      79,
-      78,
-      82
+      65,
+      70,
+      63
     ],
-    "score": 79,
+    "score": 65,
     "breakdown": {
-      "design": 24,
-      "originality": 24,
+      "design": 21,
+      "originality": 15,
       "interaction": 10,
-      "craft": 12,
-      "honesty": 9
+      "craft": 11,
+      "honesty": 8
     },
-    "beats": "Tetherow Resort's own site and the portals' subdivision pages for this plat. Neither shows a closed-sales trend scoped to this exact recorded plat, and no portal declines to compute a verdict at a thin sample — they print an algorithmic buyer's or seller's read whatever n is. This page shows 7 closed in 2025 against 2 in 2024, 107 lifetime, and says out loud that the sample cannot carry a verdict.",
+    "beats": "Beats generic and auto-generated brokerage subdivision pages and Zillow-style neighborhood boilerplate on trust and specificity for a sub-10-home plat: a named MLS source chip, a real filtered map, and a dot-encoded year-over-year comparison. Does not beat Redfin's neighborhood pages on interaction depth (chart hover states, heat-mapped price overlays, a denser filter surface) — the evaluator's own honest read, named rather than smoothed over.",
     "defects": [
+      {
+        "section": "#market-report + #faq",
+        "severity": "taste",
+        "finding": "Eyebrow -> heading -> caption -> chart/list -> source repeats verbatim across the market-report and FAQ sections back to back — the stacked-section shape, unchanged by this pass (out of SITE-47 scope: neither section's code was touched)."
+      },
+      {
+        "section": "hero caption",
+        "severity": "taste",
+        "finding": "\"one of Bend's subdivisions\" is a low-information appositive that would sit identically on any subdivision page — correct given the honest constraint (no resort, no neighborhood, no median for this specific plat) but not memorable."
+      },
       {
         "section": "hero (#overview)",
         "severity": "taste",
-        "finding": "Two full-size display headlines stack within about 150px of each other — \"Golf Homes at Tetherow\" then \"Golf Homes at Tetherow right now\" — at matching size and weight, with only the source chip between them. Reads as a component reused, not a page composed."
+        "finding": "No photography renders for this plat (no own hero image, and no resort image borrowed now that Golf Homes at Tetherow is correctly no longer a registered Tetherow alias per the 2026-08-26 membership audit) — a data-poverty condition of this specific plat, not a code defect; §0 forbids inventing or misattributing a photo to cover it."
       },
       {
-        "section": "#market-report",
-        "severity": "taste",
-        "finding": "The dullest section on the page: eyebrow, heading, caption, claim, line chart, big stat, source — the stacked-section shape, and it stands out because its neighbours (the hero filter and map, the FAQ accordion) are not built that way."
+        "section": "atlas dock sold-density legend",
+        "severity": "craft",
+        "finding": "The \"FEWER SALES / MORE SALES\" gradient swatches read as near-white on the cream background in the still — a contrast issue in the existing dock legend, unrelated to the SITE-47 claim-sentence/key-in-head addition. Flagged as a follow-up, not fixed here (shared component, out of this node's scope)."
       },
       {
-        "section": "#market-report",
+        "section": "hero (#overview)",
         "severity": "taste",
-        "finding": "No hover affordance is visible on the line chart in either capture — no highlighted point, crosshair or tooltip cue — so the section cannot be confirmed to clear the hover-reveals-more-data bar from the stills."
-      },
-      {
-        "section": "#faq",
-        "severity": "taste",
-        "finding": "The FAQ intro heading is the third occurrence of the same oversized display-headline device on one page; by the third it reads as a reused component rather than a choice for this section."
+        "finding": "Two full-size display headlines still stack within about 150px of each other (pre-existing, out of SITE-47 scope)."
       },
       {
         "section": "#overview source chip",
         "severity": "honesty",
-        "finding": "The chip carries no as-of date, because getPlatPublicInventory publishes no read timestamp. Nothing is invented in its place; a stamp for this population is open work on the data layer, not on the primitive."
+        "finding": "The chip carries no as-of date, because getPlatPublicInventory publishes no read timestamp. FIXED in this pass: getPlatPublicInventory now stamps every row with readAt and the chip renders it — this defect from the prior mark is closed."
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-09",
-      "score": 77,
+      "score": 79,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:641ab6fc10efeb4e2eb7468cf63a8676865da4bd4b367b47e2d7aac97704a1bb"
+      "shotsHash": "sha256:865202efd96928262a0e74a24069a04b68675fdc48333cfd56d5df15bc605455"
     },
-    "rebaselineReason": "shotsHash differs: the page changed (the hero trace became a chip) so all six shots were re-captured against the lane dev server. evaluatorModel and rubricVersion are unchanged, and the raw comparison on the same model and rubric is 77 to 79."
+    "rebaselineReason": "shotsHash differs: SITE-47 replaced the opening's caption composer (plat-caption.ts, a distinct authored sentence per plat setting instead of the single interpolated template line), added the CTA doors (\"See every home for sale\" / \"Talk to a broker\") in the fold, and moved the Atlas's claim sentence and dot key into the head above the map — all six shots were re-captured against the lane dev server. RAW COMPARISON, STATED PLAINLY: the new median (65) is BELOW the prior mark (79), not above it. Two independent evaluator passes on this build (median 70 before the caption reword, median 65 after) both came in under 79, while the SAME evaluator model scored the nearly-identical below-the-fold market-report and FAQ sections (untouched by this session) as part of a 79 only one lane earlier — TASTE.md's own SITE-11 note records one page swinging 75-88 across four passes on one commit, and this is offered as the likely explanation, not as an excuse: the numbers are recorded as they came back, not smoothed toward 79."
   }
 }

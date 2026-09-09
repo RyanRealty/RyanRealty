@@ -134,10 +134,7 @@ export function composeFsboCmaFirstTouchEmail(facts: FsboCmaMergeFacts): {
  const hi = moneyOrNull(facts.priceRangeHigh)
  const suggested = moneyOrNull(facts.suggestedListPrice)
  const calendar = trim(facts.calendarLink)
- const phone = trim(facts.agentPhone)
- const email = trim(facts.agentEmail)
  const agent = trim(facts.agentName)
- const disclosure = trim(facts.brokerageDisclosureLine)
  const lane = facts.leadType
 
  const intro = agent ? `My name is ${agent} with Ryan Realty in Bend.` : 'This is Ryan Realty in Bend.'
@@ -185,13 +182,10 @@ export function composeFsboCmaFirstTouchEmail(facts: FsboCmaMergeFacts): {
  '',
  bookLine,
  '',
+ // Matt 2026-09-09: "we will always use my signature from the system." The CRM
+ // appends buildSignature (lib/crm/email-signature.ts) at send, so the body ends
+ // on the closing line — no name, no phone, no email, no disclosure of its own.
  questions,
- '',
- agent ?? 'Ryan Realty',
- agent ? 'Ryan Realty' : null,
- phone,
- email,
- disclosure,
  ]
  .filter((l) => l !== null)
  .join('\n')
@@ -382,11 +376,6 @@ export const FSBO_CMA_FIRST_TOUCH_EMAIL_SEED = {
  'If you would like to talk, you can book a time here: %calendar_link%',
  '',
  'Please let me know if you have any questions.',
- '',
- '%agent_name%',
- 'Ryan Realty',
- '%agent_phone%',
- '%agent_email%',
  ].join('\n'),
 }
 

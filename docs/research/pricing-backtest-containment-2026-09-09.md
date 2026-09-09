@@ -90,3 +90,34 @@ Raw outputs: the two JSON blocks below are the scripts' own summaries, verbatim.
   }
 }
 ```
+
+## The larger run, before and after (2026-09-09, N=1,000 per side)
+
+Both sides were asked for 2,000 subjects and each sampled **1,000** — the number
+below is what ran, not what was requested. "Before" is the worktree at 63e78f72
+(`~/RyanRealty-wt-backtest-before`), "after" is the containment ladder on main.
+Same fact pool (149,754 rows), same script, run side by side.
+
+| metric | before | after | delta |
+|---|---|---|---|
+| subjects priced | 776 | 808 | +32 |
+| refused (starved) | 224 | 192 | −32 |
+| MAPE | 9.89% | 10.15% | +0.26pp |
+| median absolute error | 6.88% | 6.91% | +0.03pp |
+| within 2% | 15.2% | 16.1% | +0.9pp |
+| within 5% | 39.8% | 38.1% | −1.7pp |
+| within 8% | 55.8% | 55.8% | 0.0pp |
+| within 10% | 64.6% | 63.9% | −0.7pp |
+
+**What this says.** Containment converts refusals into answers: 32 subjects that
+had no priceable comp set now get one, a 14% cut in refusals, and the accuracy
+profile is flat — the within-8% share is identical to the tenth of a point.
+
+**What this cannot say.** The 32 newly priced subjects are, by construction, the
+ones the old ladder could not reach, so they carry the harder comp sets and are
+expected to price worse than the average. The output keeps only the 15 worst rows
+(`under_ask_15`), so the run **cannot** separate "the newly priced dragged the
+mean" from "a small regression on the subjects both sides priced". To settle it,
+`scripts/pricing-backtest.mjs` has to dump one row per subject (address, city,
+predicted, actual, error, tiers) and the comparison joins on the address. Until
+that runs, the honest claim is the refusal cut, not an accuracy win.

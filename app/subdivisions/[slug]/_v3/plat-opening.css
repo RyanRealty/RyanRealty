@@ -1,0 +1,30 @@
+/* The subdivision opening's door row (SITE-47).
+ *
+ * The opener's photograph, breadcrumb, H1, source chip, caption and face are
+ * components/place/place-opening.css — shared by every place grain. This file
+ * holds the ONE thing only the plat opening has: a row of doors under the
+ * sentence, because neither captured viewport of this class held a next action
+ * on a page whose job is lead generation (taste table 2026-09-08).
+ *
+ * Layout only. Every control inside it is V3Button, so the look, the tap floor
+ * (--v3-tap) and the on-media inversion come from components/site/v3/tokens.css
+ * and nothing is restyled here. No color, no radius, no type: a second look for
+ * a button is how one site becomes two.
+ */
+
+.plat-opening__doors {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  margin-top: var(--v3-space-lg);
+}
+
+/* On a narrow phone two buttons side by side wrap to two lines with a ragged
+   right edge and a 12px orphan; full width reads as two stacked doors, which is
+   what they are. */
+@media (max-width: 29.99rem) {
+  .plat-opening__doors > * {
+    width: 100%;
+  }
+}

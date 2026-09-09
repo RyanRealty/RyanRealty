@@ -26,8 +26,9 @@ import {
   stampCmaLinkOnPerson,
   logCmaTimelineEvent,
 } from '@/lib/data'
+import { CMA_DOC_ORIGIN } from '@/lib/cma/doc-links'
 import { renderCmaPdfBuffer, CmaNotFoundError } from '@/lib/cma-pdf'
-import { wrapBrandedEmail, brandedTextFooter, escapeHtml, type ShellBroker } from '@/lib/email/shell'
+import { wrapBrandedEmail, brandedTextFooter, escapeHtml } from '@/lib/email/shell'
 import { brokerSendIdentity } from '@/lib/email/broker-identity'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
@@ -36,12 +37,25 @@ import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
 import { composeCmaFirstContact, cmaFirstContactFactsFromRow, streetOnly, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
 import { resolveFirstContactPlace } from '@/lib/cma/first-contact-place'
+import { buildSignature } from '@/lib/crm/email-signature'
+import { getBrokers } from '@/lib/data'
 import { cmaReportButtonHtml, previewTextFromCustomBody } from '@/lib/cma/report-button'
 import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
 import { formatPublishedPhone } from '@/lib/cma/format-phone'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+/**
+ * The letter's own origin is the PRODUCTION origin, never the env host — the
+ * same rule lib/cma/doc-links.ts and lib/cma/cma-place-links.ts already follow,
+ * and for the same reason: these URLs land in a stranger's inbox and outlive
+ * every deploy. It is also correctness, not just hygiene: `attributeOutbound`
+ * only attributes ryan-realty.com links, so a report button built on the
+ * staging host loses its `?_pid=` and the recipient meets the consent bar
+ * instead of the report they were sent (caught on the 2026-09-09 send walk,
+ * where a worktree with the vercel host in .env.local mailed an unattributed
+ * report link).
+ */
+const SITE_URL = CMA_DOC_ORIGIN
 const MAX_PDF_BYTES = 25 * 1024 * 1024
 
 interface CmaSendContext {
@@ -101,7 +115,6 @@ async function resolveSendContext(
   const clientName = (row.client_name as string | null) ?? null
   const facts = cmaFirstContactFactsFromRow(row as Record<string, unknown>, {
     brokerName: brokerRow.displayName,
-    brokerPhone: brokerRow.phone,
     firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
     lastListPrice,
   })
@@ -181,7 +194,31 @@ function emphasizeAddress(text: string, address: string | null): string {
   return out
 }
 
-function buildLeadBody(ctx: CmaSendContext, override?: CmaSendOverride): { html: string; text: string; subject: string } {
+/**
+ * The broker's own signature, from the system (Matt 2026-09-09: "we will always
+ * use my signature from the system"). Gmail-synced wins, then the signature they
+ * saved in Settings, then the generated identity block — and every variant
+ * carries the Oregon agency-pamphlet line, so the letter is compliant by
+ * construction. Null only when the broker row cannot be read; the letter then
+ * ships with the branded footer alone rather than a made-up sign-off.
+ */
+async function signatureFor(email: string | null): Promise<{ html: string; plain: string } | null> {
+  const mailbox = (email ?? '').trim().toLowerCase()
+  if (!mailbox) return null
+  try {
+    const brokers = await getBrokers()
+    const broker = brokers.find((b) => (b.email ?? '').toLowerCase() === mailbox)
+    return broker ? buildSignature(broker) : null
+  } catch {
+    return null
+  }
+}
+
+function buildLeadBody(
+  ctx: CmaSendContext,
+  override?: CmaSendOverride,
+  signature?: { html: string; plain: string } | null,
+): { html: string; text: string; subject: string } {
   const copy = composeCmaFirstContact(ctx.origin, inboundFacts(ctx))
   const brokerFirst = ctx.brokerRow.displayName.split(/\s+/)[0]
   const viewUrl = `${SITE_URL}/cma/${ctx.slug}`
@@ -197,27 +234,12 @@ function buildLeadBody(ctx: CmaSendContext, override?: CmaSendOverride): { html:
 <div style="padding:32px 34px 8px;">
   ${paras}
   ${cmaReportButtonHtml(viewUrl)}
-  <p style="margin:0 0 8px 0;">${escapeHtml(brokerFirst)}<br/>Ryan Realty${ctx.brokerRow.phone ? `<br/>${escapeHtml(ctx.brokerRow.phone)}` : ''}</p>
+  ${signature?.html ?? ''}
 </div>`
     const text = `${raw}
 
 Read the full report: ${viewUrl}
-
-${brokerFirst}
-Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedTextFooter()}`
-    const shellBroker: ShellBroker = {
-      name: ctx.brokerRow.displayName,
-      firstName: brokerFirst,
-      title: ctx.brokerRow.title,
-      phone: ctx.brokerRow.phone,
-      email: ctx.brokerRow.email,
-      headshotUrl: ctx.brokerRow.photoUrl
-        ? ctx.brokerRow.photoUrl.startsWith('http')
-          ? ctx.brokerRow.photoUrl
-          : `${SITE_URL}${ctx.brokerRow.photoUrl}`
-        : `${SITE_URL}/images/brokers/ryan-matt.png`,
-      isOwner: ctx.brokerRow.slug === 'matthew-ryan',
-    }
+${signature?.plain ?? ''}${brandedTextFooter()}`
     const html = wrapBrandedEmail({
       bodyHtml,
       // A broker-typed note previews as its own first sentence, not the
@@ -225,7 +247,9 @@ Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedText
       previewText: previewTextFromCustomBody(raw, copy.previewText),
       mastheadLine: copy.mastheadLine,
       heroUrl: null,
-      senderBroker: shellBroker,
+      // One close: the broker's own signature, appended above. The navy
+      // "talk to" card would be a second sign-off under it (Matt 2026-09-09).
+      senderBroker: null,
       unsubscribeUrl: null,
       audienceLine: null,
     })
@@ -236,33 +260,18 @@ Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedText
 <div style="padding:32px 34px 8px;">
   ${bodyParagraphsHtml(copy.bodyText, ctx.subjectAddress)}
   ${cmaReportButtonHtml(viewUrl)}
-  <p style="margin:0 0 8px 0;">${escapeHtml(brokerFirst)}<br/>Ryan Realty${ctx.brokerRow.phone ? `<br/>${escapeHtml(ctx.brokerRow.phone)}` : ''}</p>
+  ${signature?.html ?? ''}
 </div>`
 
   const text = `${copy.bodyText.replace(copy.close, `${copy.close} ${viewUrl}`)}
+${signature?.plain ?? ''}${brandedTextFooter()}`
 
-${brokerFirst}
-Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedTextFooter()}`
-
-  const shellBroker: ShellBroker = {
-    name: ctx.brokerRow.displayName,
-    firstName: brokerFirst,
-    title: ctx.brokerRow.title,
-    phone: ctx.brokerRow.phone,
-    email: ctx.brokerRow.email,
-    headshotUrl: ctx.brokerRow.photoUrl
-      ? ctx.brokerRow.photoUrl.startsWith('http')
-        ? ctx.brokerRow.photoUrl
-        : `${SITE_URL}${ctx.brokerRow.photoUrl}`
-      : `${SITE_URL}/images/brokers/ryan-matt.png`,
-    isOwner: ctx.brokerRow.slug === 'matthew-ryan',
-  }
   const html = wrapBrandedEmail({
     bodyHtml,
     previewText: copy.previewText,
     mastheadLine: copy.mastheadLine,
     heroUrl: null,
-    senderBroker: shellBroker,
+    senderBroker: null,
     unsubscribeUrl: null,
     audienceLine: null,
   })
@@ -343,7 +352,6 @@ export async function prepareCmaSendPreview(slug: string): Promise<
       lastListPrice,
       facts: cmaFirstContactFactsFromRow(row as Record<string, unknown>, {
         brokerName: brokerRow.displayName,
-        brokerPhone: brokerRow.phone,
         firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
         lastListPrice,
       }),
@@ -398,7 +406,7 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
     return { ok: false, error: 'The rendered PDF exceeds the 25 MB attachment cap.' }
   }
 
-  const body = buildLeadBody(ctx, override)
+  const body = buildLeadBody(ctx, override, await signatureFor(ctx.brokerRow.email))
   const crmBrokerSlug = CRM_BROKER_BY_EMAIL[(ctx.brokerRow.email ?? '').toLowerCase()] ?? 'matt'
   const emailKey = `cma:${slug}`
   const trackedHtml = attributeOutbound(body.html, {

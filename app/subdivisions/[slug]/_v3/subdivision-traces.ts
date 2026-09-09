@@ -37,8 +37,16 @@
  * so the trace and the figure set cannot disagree. Type-only: nothing here runs.
  */
 
-/** Every figure on this page traces to the same feed. This is how it is named. */
-const FEED = 'live MLS through Oregon Data Share'
+/**
+ * Every figure on this page traces to the same feed. This is how it is named.
+ *
+ * EXPORTED SINCE SITE-47 because the Atlas's claim sentence attributes itself
+ * in the fold, and a second spelling of the feed on one page is exactly the
+ * kind of drift this file exists to prevent. One constant, every trace, and
+ * the map's own clause.
+ */
+export const PLAT_FEED = 'live MLS through Oregon Data Share'
+const FEED = PLAT_FEED
 
 /** The population an active count covers, by which resolution path found it. */
 export type PlatScope =

@@ -138,6 +138,8 @@ import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSu
 import { getPlatClosedCount } from '@/lib/data/subdivisions/getPlatClosedCounts'
 import { getPlatBoundaryCity } from '@/lib/data/subdivisions/getPlatBoundaryCity'
 import { platPageTitle } from './_v3/plat-title'
+import { platCaption } from './_v3/plat-caption'
+import './_v3/plat-opening.css'
 import { getSubdivisionSalesHistory } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 import { getSubdivisionSchools } from '@/lib/data/subdivisions/getSubdivisionSchools'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
@@ -166,6 +168,7 @@ import {
   V3PlaceCharacter,
   V3SectionTracker,
   V3SourceLine,
+  V3Button,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -197,6 +200,7 @@ import {
   platInventoryTrace,
   platLifetimeClosedTrace,
   platStatsTrace,
+  PLAT_FEED,
   salesHistoryTrace,
   type PlatScope,
 } from './_v3/subdivision-traces'
@@ -422,8 +426,20 @@ export default async function SubdivisionPage({ params }: Props) {
   const derivedPlatCity = derivePlatCity(mapTiles)
   // Fourth source, the county plat tree (see generateMetadata). Cached per
   // slug, so the head and the body read it once.
-  const boundaryCity =
-    registryMatch?.city || derivedPlatCity?.city ? null : await getPlatBoundaryCity(slug)
+  //
+  // READ UNCONDITIONALLY SINCE SITE-47, and the CITY PRECEDENCE IS UNCHANGED.
+  // The walk is also the only source for the NEIGHBORHOOD between this plat and
+  // its city — the container the opening's sentence names on a city plat — and
+  // that fact is wanted whether or not a listing-derived city already answered.
+  // It is a cached walk of at most five single-row reads per slug, and it stays
+  // BEHIND registry and listing-derived city, so no page's title or breadcrumb
+  // moves because of this line.
+  const boundaryCity = await withTimeoutFallback(
+    getPlatBoundaryCity(slug),
+    null,
+    2500,
+    'sub:boundaryCity',
+  )
   const cityName = registryMatch?.city ?? derivedPlatCity?.city ?? boundaryCity?.city ?? 'Central Oregon'
   const citySlug = registryMatch?.citySlug ?? derivedPlatCity?.citySlug ?? boundaryCity?.citySlug ?? null
   const resortLabel = registryMatch?.resortLabel ?? null
@@ -603,8 +619,6 @@ export default async function SubdivisionPage({ params }: Props) {
   const platOwnPoster = cityStagePoster(communityImage(slug), platLibraryHeroUrl)
   const resortPoster = platOwnPoster ? null : resortSlug ? communityImage(resortSlug) : null
   const stagePosterSrc = platOwnPoster ?? resortPoster
-  const posterCaption =
-    resortPoster && resortLabel ? `${resortLabel}, the resort ${displayName} sits inside.` : null
 
   // THE DOOR BEHIND THE FIGURE, PUBLISHED NOT ASSEMBLED. publishPlaceBrowseHref
   // returns null for anything that resolves to the unfiltered regional index, so
@@ -612,6 +626,61 @@ export default async function SubdivisionPage({ params }: Props) {
   // a visitor to every home in Central Oregon under a plat's name (founding case
   // /subdivisions/ridge-at-eagle-crest, fleet 70b9cdad).
   const browseHref = publishPlaceBrowseHref(subdivisionListingsPath(cityName, displayName))
+
+  /* THE OPENING'S SENTENCE (SITE-47). One authored sentence per SETTING, from
+     ./_v3/plat-caption.ts — not the interpolated fragment
+     "${resortLabel}, the resort ${displayName} sits inside." that the taste
+     table of 2026-09-08 named as a template, and not only on the plats that
+     borrowed a resort photograph: three of the four plats measured on this
+     route rendered no caption at all, so the H1 sat directly on the Atlas
+     headline and the class opened on two display lines and nothing else.
+
+     §0, AND THE COUNT IS THE PAGE'S OWN. `captionActive` is the number this
+     page RENDERS, on whichever resolution path found it — the counted set on a
+     registry plat, the in-boundary single-family tiles PlaceSplitView lists on
+     a recorded plat. Both are covered by the opening's own source chip
+     (homesLedgerTrace) and both are the set the browse door opens, so the
+     sentence, the chip, the door and the list cannot disagree. Positive only:
+     a short read leaves the same empty array an empty plat leaves, and the
+     composer drops the clause rather than publishing a zero. */
+  const captionActive = activeCount ?? (mapTiles.length > 0 ? mapTiles.length : null)
+  const posterCaption = platCaption({
+    displayName,
+    resortLabel,
+    neighborhoodLabel: boundaryCity?.neighborhood?.label ?? null,
+    cityName: placeCity,
+    // Present ONLY when the frame is the resort's rather than this place's, so
+    // the sentence says whose photograph it is (§0 applies to a picture that
+    // makes a claim exactly as it applies to a number).
+    photographOf: resortPoster && resortLabel ? resortLabel : null,
+    activeForSale: captionActive,
+    // The same median the market Instrument prints, formatted the same way, so
+    // one figure is not spelled two ways on one page.
+    medianAsking:
+      platFigures.medianListPrice != null ? formatPriceExact(platFigures.medianListPrice) : null,
+  })
+
+  /* THE NEXT ACTION, IN THE FOLD (SITE-47). Neither captured viewport held a
+     door on a page whose job is lead generation: the browse path, the broker
+     and the market report were all in the closing Quiet, thousands of pixels
+     down. One primary — the homes, which is what the reader came for and what
+     the sentence above just counted — and one ghost to a person. Real anchors,
+     no registration wall, no dollar figure for a typed address (Matt's
+     rulings). When the browse path cannot be published the broker door is the
+     primary rather than a second-choice ghost. */
+  /* THE PRIMARY DOOR CARRIES NO COUNT, AND THAT IS §0, NOT RESTRAINT. Measured
+     on the lane server 2026-09-09: this page counts 14 single-family actives in
+     Ridge at Eagle Crest and its browse destination
+     /homes-for-sale/redmond/ridge-at-eagle-crest answers "99 homes for sale,
+     all types"; Park Addition is 3 here and 4 there. A door reading "See all 14
+     homes for sale" would be a figure this page cannot reconcile with the page
+     it opens. "Every home for sale" is what the destination actually holds —
+     its own heading is "Homes for sale in {Name}" — so the label describes the
+     door instead of counting through it. The count stays where its trace is. */
+  const platDoors: Array<{ label: string; href: string }> = [
+    ...(browseHref ? [{ label: 'See every home for sale', href: browseHref }] : []),
+    { label: 'Talk to a broker', href: '/contact' },
+  ]
 
   const marketFigures: V3InstrumentFigure[] = []
   if (platFigures.medianListPrice != null) {
@@ -942,8 +1011,26 @@ export default async function SubdivisionPage({ params }: Props) {
               source={inventorySource}
               mount="hero"
               onMedia={Boolean(stagePosterSrc)}
+              // THE CHIP'S AS-OF (SITE-47). The counted set now publishes when
+              // it was read (getPlatPublicInventory.readAt), so the opening's
+              // trace carries a date instead of a source name alone. A recorded
+              // plat resolved off the boundary has no such stamp and stays
+              // undated — nothing is invented to fill the clause.
+              asOf={inventory?.readAt ?? null}
             />
             {posterCaption ? <p className="place-opening__caption">{posterCaption}</p> : null}
+            <div className="plat-opening__doors">
+              {platDoors.map((door, i) => (
+                <V3Button
+                  key={door.href}
+                  href={door.href}
+                  variant={i === 0 ? 'primary' : 'ghost'}
+                  onMedia={Boolean(stagePosterSrc)}
+                >
+                  {door.label}
+                </V3Button>
+              ))}
+            </div>
           </div>
         </div>
         {canMapAtlas && (
@@ -951,6 +1038,18 @@ export default async function SubdivisionPage({ params }: Props) {
             id="atlas"
             headingLevel={2}
             headline={v3Text(`${displayName} right now`)}
+            /* SITE-47. The section opened on a bare label over a map whose
+               marks meant nothing until a hover, with the key below a frame
+               tall enough to push it off the first read (measured at 1440:
+               the key sat at y=1348 on /subdivisions/ridge-at-eagle-crest,
+               724px into the section, under the map). Both opt-ins:
+               `inventory` prints ONE claim clause built from the same filtered
+               count the marks are drawn from and names the feed; `head` moves
+               the dot key up beside it, above the map, in every layout. */
+            claimTone="inventory"
+            keyPlacement="head"
+            // The feed, spelled once for the whole route (subdivision-traces).
+            sourceName={PLAT_FEED}
             dots={atlasView.dots}
             regions={atlasRegions}
             basemap={basemapForRegions(atlasRegions, {

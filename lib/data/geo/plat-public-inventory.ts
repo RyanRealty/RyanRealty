@@ -66,6 +66,21 @@ export type PlatPublicInventory = {
   medianListPrice: number | null
   listingKeys: string[]
   href: string
+  /**
+   * WHEN THIS POPULATION WAS READ, as an ISO instant (SITE-47).
+   *
+   * The plat opening's source chip carried a source name and no as-of date,
+   * because this payload published no timestamp — the one honesty defect the
+   * subdivision taste review (2026-09-09) named that was a DATA-LAYER gap and
+   * not a primitive's. Every figure on the plat face (the count, the median)
+   * comes from this one batch read, so one stamp covers all of them.
+   *
+   * It is the moment `fetchRegistryPlatPublicInventory` finished its query, not
+   * the moment the page rendered: the payload is cached for 15 minutes, so
+   * "now" would be a freshness claim the data does not support. A caller that
+   * shows it is saying when the MLS was read, which is what it means.
+   */
+  readAt: string
 }
 
 export type PlatInventoryRow = {
@@ -133,6 +148,11 @@ export function registryChildPlats(
 export function rollupPlatPublicInventory(
   rows: readonly PlatInventoryRow[],
   plats: readonly RegistryPlat[] = registryChildPlats(),
+  /**
+   * When the rows were read. Passed in rather than taken from the clock here so
+   * the rollup stays pure and a test can pin it (SITE-47).
+   */
+  readAt: string = new Date().toISOString(),
 ): PlatPublicInventory[] {
   const byKey = new Map<string, { keys: string[]; prices: number[] }>()
   for (const plat of plats) {
@@ -168,6 +188,7 @@ export function rollupPlatPublicInventory(
       medianListPrice: medianListPrice(priced),
       listingKeys: bucket.keys,
       href: `/subdivisions/${p.slug}`,
+      readAt,
     }
   })
 }
@@ -175,6 +196,10 @@ export function rollupPlatPublicInventory(
 const NAME_CHUNK = 40
 
 async function fetchRegistryPlatPublicInventory(): Promise<PlatPublicInventory[]> {
+  // The as-of the page publishes: when THIS read ran, not when a cached copy of
+  // it was served (SITE-47). Taken before the query so a slow read is never
+  // stamped later than the rows it returned.
+  const readAt = new Date().toISOString()
   const plats = registryChildPlats()
   const names = [...new Set(plats.map((p) => p.name.toLowerCase().trim()))]
   const sb = supabaseAnon()
@@ -206,7 +231,7 @@ async function fetchRegistryPlatPublicInventory(): Promise<PlatPublicInventory[]
     rows.push(...page)
   }
 
-  return rollupPlatPublicInventory(rows, plats)
+  return rollupPlatPublicInventory(rows, plats, readAt)
 }
 
 /**
