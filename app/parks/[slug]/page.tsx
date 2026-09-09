@@ -21,6 +21,7 @@ import type { Metadata } from 'next'
 import { getParkDetail, getParkBoundaryGeoJSON } from '@/lib/data'
 import { CO_PARKS, getParkBySlug, type ParkType } from '@/data/co-parks'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { registryDescription, registryTitle } from '@/lib/site/registry-metadata'
 import { publishNearbyListingsSource } from '@/lib/site/publish-nearby-listings-source'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -64,12 +65,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const park = getParkBySlug(slug)
   if (!park) notFound()
 
-  const typeLabel = TYPE_LABEL[park.type].toLowerCase()
-  const desc = `${park.name} is a ${typeLabel} in ${park.city}, Central Oregon. See what is there and the homes for sale nearby, from Ryan Realty, a local Central Oregon brokerage.`
-
+  // Registry-only, and the park's OWN words: the category label and the
+  // brokerage tail made every park description a fill-in-the-blank whose only
+  // variable was the name (sawyer-park and big-sky-park were byte-identical
+  // apart from it). See lib/site/registry-metadata.ts.
   return pageMetadata({
-    title: `${park.name} | Central Oregon Parks`,
-    description: desc,
+    title: registryTitle(park.name),
+    description: registryDescription(park.blurb),
     path: `/parks/${slug}`,
   })
 }

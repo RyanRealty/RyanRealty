@@ -1,0 +1,18 @@
+{
+  "note": "Registry entity names whose document title overflows the 60-char budget once the 31-char layout suffix \"| Ryan Realty — Central Oregon\" is counted. Frozen ledger for ci:content-metadata — the list may only shrink. Shorten the name to take one off, then rerun with --write-baseline.",
+  "maxName": 29,
+  "names": [
+    "event/downtown-bend-tree-lighting",
+    "event/nwx-farmers-market",
+    "event/sunriver-4th-of-july",
+    "event/sunriver-grand-illumination",
+    "park/american-legion-park",
+    "park/cline-falls",
+    "park/pilot-butte",
+    "trail/benham-falls",
+    "trail/deschutes-river-trail-first-street",
+    "venue/mcmenamins-old-st-francis",
+    "venue/midtown-ballroom",
+    "venue/sunriver-stars"
+  ]
+}

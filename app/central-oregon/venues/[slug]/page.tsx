@@ -23,6 +23,7 @@ import { getVenueDetail } from '@/lib/data'
 import { CO_VENUES, getVenueBySlug, VENUE_TYPE_LABEL, type CoVenue } from '@/data/co-venues'
 import { buildVenueFaq, venueKindLabel } from '@/lib/venues-format'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { registryDescription, registryTitle } from '@/lib/site/registry-metadata'
 import { publishNearbyListingsSource } from '@/lib/site/publish-nearby-listings-source'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -69,10 +70,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const venue = getVenueBySlug(slug)
   if (!venue) notFound()
-  const desc = `${venue.name} in ${venue.city}, Central Oregon. See what is on, the venue details, and the homes for sale nearby, from Ryan Realty, a local Central Oregon brokerage.`
+  // Registry-only, and the venue's OWN words (lib/site/registry-metadata.ts).
   return pageMetadata({
-    title: `${venue.name} | Central Oregon Live Music & Shows`,
-    description: desc,
+    title: registryTitle(venue.name),
+    description: registryDescription(venue.blurb),
     path: `/central-oregon/venues/${slug}`,
   })
 }
