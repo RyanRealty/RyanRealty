@@ -66,27 +66,38 @@ export type {
 /* Atoms — the small pieces the six patterns share                             */
 /* -------------------------------------------------------------------------- */
 
-export {
-  V3Button,
-  V3Figure,
-  V3SourceLine,
-  V3SourceDisclosure,
-  V3Eyebrow,
-  V3Heading,
-  V3Lede,
-} from './atoms'
+export { V3Button, V3Figure, V3Eyebrow, V3Heading, V3Lede } from './atoms'
 
 export type {
   V3ButtonProps,
   V3ButtonVariant,
   V3FigureProps,
-  V3SourceLineProps,
-  V3SourceDisclosureProps,
   V3EyebrowProps,
   V3HeadingProps,
   V3HeadingSize,
   V3LedeProps,
 } from './atoms'
+
+/**
+ * The section 0 trace. Its own primitive since SITE-42 (2026-09-09): one clause
+ * visible, the full trace behind a native disclosure, held to the content
+ * column, with a chip mount for a place opening. `./atoms` re-exports the same
+ * two components so no existing import had to move.
+ */
+export {
+  V3SourceLine,
+  V3SourceDisclosure,
+  v3SourceParts,
+  splitSourceStamp,
+  sourceNameFromTrace,
+} from './V3SourceLine'
+
+export type {
+  V3SourceLineProps,
+  V3SourceLineMount,
+  V3SourceDisclosureProps,
+  V3SourceParts,
+} from './V3SourceLine'
 
 /**
  * The series atom. Instrument mounts it under the figures (D9). Not a seventh

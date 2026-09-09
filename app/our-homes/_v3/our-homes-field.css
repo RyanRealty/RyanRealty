@@ -20,6 +20,14 @@
   background: transparent;
 }
 
+/* THE PHOTOS ARE IN FLOW. V3Field absolutely fills the only-child of a map slot
+   that is not the --photos variant, because a Maps canvas needs the box. This
+   Field released the box's height above but not that fill, so the list painted
+   out of flow over the sections below it while the section itself took 66px
+   (measured /price-drops at 1440, 2026-09-09). Static is what makes
+   "height: auto" mean anything. */
 .our-homes-field.v3.v3-field .v3-field__map > :only-child {
+  position: static;
+  inset: auto;
   height: auto;
 }
