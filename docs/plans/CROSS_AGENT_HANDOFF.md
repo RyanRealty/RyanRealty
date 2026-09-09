@@ -292,6 +292,12 @@ navigational query for the venue's own site); a stale-price bug on MLS 220219174
 - SITE-33: the listing tier gets the honesty block and noindex with follow preserved; pages
   still serve; the /oregon referral pages' inventory links keep resolving; /oregon/[city] stays
   indexed per W12.4. SITE-33 now waits on SITE-25 (pageMetadata cannot emit noindex,follow yet).
+- SITE-07 (2026-09-09 00:1xZ): the neighborhood place class scored 67 against a same-instrument
+  83 after SITE-07 shipped, all lost points on pre-existing sections. Matt: accept 67 as the
+  honest mark and fix the two named defects now (subdivision-label truncation; the stacked-list
+  run) as a quality pass on SITE-07. The node is reopened with QUALITY PASS DUE at the head of
+  its objective and is the next item served; its October 6 date is kept and it re-blocks to it
+  when the pass lands. The city class was rebaselined at 65 on the new instrument.
 
 **Fleet state.** Environment RYANREALTY_CLOUD: network access Full, variables populated, Setup
 script `CLOUD_SETUP_BROWSERS=1 bash scripts/cloud-setup.sh || true` (set through Matt's Chrome at

@@ -161,6 +161,16 @@ due the conversion numbers can be read against a page that is known to have chan
 mid-window. A window is there to measure whether the page converts, not to protect a page
 Matt does not want to look at.
 
+**How a quality pass is served (first used on SITE-07, 2026-09-09).** The brief serves
+`open` nodes, so a pass on a windowed item is put in front of a lane by reopening the node
+with `QUALITY PASS DUE:` at the head of its objective — what the evaluator named, the mark
+to beat, and the ORIGINAL `blocked_until` date — while the column itself keeps that date and
+`blocked_reason` keeps the measurement text. The node is then the oldest open item and is
+served next. The lane fixes the named defects in the primitive they live in, re-captures,
+re-scores on the same instrument, and when the median has risen it re-blocks the node to the
+original date with the measurement reason unchanged. A pass never mints a new node and never
+touches the calendar.
+
 **Heartbeat, or lose the claim (2026-09-08).** A SITE-* claim untouched for
 `SITE_CLAIM_IDLE_HOURS` (3, `lib/data/loop/work-node.ts`, the grinder's own guard) is
 released by the next boot's brief; the day-long window stays for every other domain. The
