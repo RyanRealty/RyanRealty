@@ -2,7 +2,7 @@
  * The source traces this route publishes, in one file.
  *
  * CLAUDE.md section 0: one trace per query, one stamp per trace, never borrowed
- * across populations. The plat node reads FOUR populations and they are not
+ * across populations. The plat node reads FIVE populations and they are not
  * interchangeable, so each gets its own sentence here and the page hands that
  * sentence to the one section that prints that population's figures.
  *
@@ -20,6 +20,13 @@
  *      periodType 'ytd' (ci:subdivision-stats-integrity pins the period).
  *   4. THE PARENT MARKET. market_pulse_live for the resort community or the
  *      city. It is not plat-level and the sentence says which place it covers.
+ *   5. THE PLAT'S LIFETIME CLOSED COUNT (SITE-24). subdivision_plat_closed_mv:
+ *      every closed sale attributed to the recorded plat by its own coordinates
+ *      falling inside the plat polygon, unioned with the MLS-name match. It is
+ *      the ONLY population on this page a sub-plat of a resort can answer —
+ *      populations 3 and 4 are name-joined and a sub-plat's sales all carry the
+ *      resort's name — so it must never be conflated with the yearly table's
+ *      name-joined counts sitting a section away from it.
  *
  * No sentence here contains a number. Numbers live at the call site with the
  * query that produced them.
@@ -120,6 +127,35 @@ export function platInventoryTrace(scope: PlatScope): string {
       ? `recorded under the ${scope.subdivisionName} subdivision name in ${scope.city}`
       : `inside the recorded ${scope.displayName} plat`
   return `${FEED}, the list prices of the active single-family listings ${where}.`
+}
+
+/**
+ * Trace for the plat's LIFETIME closed count (SITE-24, 2026-09-08). A FIFTH
+ * population, and it exists because the fourth cannot answer for a sub-plat:
+ * salesHistoryTrace names sales "recorded under the MLS subdivision name", and
+ * every home inside Ridge At Broken Top or Golf Homes At Tetherow is recorded
+ * under "Broken Top" or "Tetherow", so that population is empty for them at any
+ * grain finer than the resort. This one is attributed by GEOMETRY first — the
+ * sale's own coordinates inside the recorded plat boundary — unioned with the
+ * name match so a sale whose historical geocode is coarse is not lost either.
+ * Counted once however it was found.
+ *
+ * The sentence names the join because the reader cannot otherwise tell this
+ * figure from the yearly table's counts directly above it, and the two measure
+ * different sets.
+ */
+export function platLifetimeClosedTrace(displayName: string): string {
+  // Not "${FEED} through the … index": FEED already ends in "through Oregon
+  // Data Share", and the two prepositions collided into "through … through"
+  // (evaluator, 2026-09-09). The clause opens with a comma, like every other
+  // trace in this file, and names the index inside the sentence instead.
+  return (
+    `${FEED}, every closed sale on record attributed to the ${displayName} plat by the ` +
+    `recorded-plat closed-sale index — the sale's own coordinates falling inside the recorded ` +
+    `plat boundary, or the sale carrying this plat's name in the MLS, counted once either ` +
+    `way. Lifetime, every property type, and the by-year series above is the same set grouped ` +
+    `by the year of the close. Counts only: a closed-price statistic at plat grain is withheld.`
+  )
 }
 
 /** Trace for the yearly closed-sale table. Aggregates only, per ODS rule 5-4 A.4. */

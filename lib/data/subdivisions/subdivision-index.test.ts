@@ -5,7 +5,7 @@ import {
   subdivisionDetailPath,
   subdivisionLlmsLines,
   subdivisionSitemapUrls,
-  type CitySubdivisionCounts,
+  type PlatClosedCount,
 } from './subdivision-index'
 
 const BOUNDARY_SLUGS = new Set([
@@ -13,17 +13,31 @@ const BOUNDARY_SLUGS = new Set([
   'awbrey-glen',
   'obsidian-meadows',
   'river-canyon-estates',
+  'golf-homes-at-tetherow',
 ])
 
-function counts(rows: Array<[string, string, number]>): CitySubdivisionCounts[] {
-  // rows: [citySlug, subdivisionName, closed]
-  const byCity = new Map<string, CitySubdivisionCounts>()
-  for (const [citySlug, name, closed] of rows) {
-    const bucket = byCity.get(citySlug) ?? { citySlug, rows: [] }
-    bucket.rows.push({ subdivision_name: name, active: 0, pending: 0, closed })
-    byCity.set(citySlug, bucket)
-  }
-  return [...byCity.values()]
+/**
+ * Build plat rows the way getPlatClosedCounts hands them over. The tuple is
+ * [platSlug, platLabel, closedCount, topCityLower]; the polygon/name split
+ * defaults to "all from the polygon" and is overridden where a test is about
+ * the split itself.
+ */
+function plats(
+  rows: Array<[string, string, number, string | null]>,
+  overrides: Partial<Record<string, Partial<PlatClosedCount>>> = {},
+): PlatClosedCount[] {
+  return rows.map(([slug, label, closedCount, topCityLower]) => ({
+    slug,
+    label,
+    closedCount,
+    closedInPolygon: closedCount,
+    closedByName: 0,
+    closedCountSfr: closedCount,
+    topCityLower,
+    lastCloseDate: null,
+    closedByYear: {},
+    ...(overrides[slug] ?? {}),
+  }))
 }
 
 describe('SUBDIVISION_INDEX_MIN_LIFETIME_SALES', () => {
@@ -36,10 +50,10 @@ describe('buildIndexableSubdivisions', () => {
   it('requires BOTH a GIS polygon and the closed-sales threshold', () => {
     const out = buildIndexableSubdivisions(
       BOUNDARY_SLUGS,
-      counts([
-        ['bend', 'Tetherow Phase 5', 25], // polygon + above threshold -> in
-        ['bend', 'Awbrey Glen', 9], // polygon but below threshold -> out
-        ['bend', 'No Polygon Estates', 500], // above threshold but no polygon -> out
+      plats([
+        ['tetherow-phase-5', 'Tetherow Phase 5', 25, 'bend'], // polygon + above threshold -> in
+        ['awbrey-glen', 'Awbrey Glen', 9, 'bend'], // polygon but below threshold -> out
+        ['no-polygon-estates', 'No Polygon Estates', 500, 'bend'], // above threshold, polygon withdrawn -> out
       ]),
     )
     expect(out.map((s) => s.slug)).toEqual(['tetherow-phase-5'])
@@ -48,58 +62,111 @@ describe('buildIndexableSubdivisions', () => {
   it('includes a plat exactly at the threshold (>=, not >)', () => {
     const out = buildIndexableSubdivisions(
       BOUNDARY_SLUGS,
-      counts([['bend', 'Awbrey Glen', SUBDIVISION_INDEX_MIN_LIFETIME_SALES]]),
+      plats([['awbrey-glen', 'Awbrey Glen', SUBDIVISION_INDEX_MIN_LIFETIME_SALES, 'bend']]),
     )
     expect(out.map((s) => s.slug)).toEqual(['awbrey-glen'])
   })
 
-  it('sums closed sales across cities for the same slug and keeps the best city', () => {
+  /**
+   * THE SITE-24 CASE. A sub-plat of a resort carries ZERO sales under its own
+   * MLS name — every home inside it is listed as "Broken Top" or "Tetherow" —
+   * so the name join scored it zero against any nonzero floor forever. The
+   * polygon attribution is what clears the floor, and the floor did not move.
+   */
+  it('indexes a sub-plat whose sales are ALL attributed by polygon and none by name', () => {
     const out = buildIndexableSubdivisions(
       BOUNDARY_SLUGS,
-      counts([
-        ['bend', 'River Canyon Estates', 4],
-        ['redmond', 'River Canyon Estates', 7],
-      ]),
+      plats([['golf-homes-at-tetherow', 'Golf Homes At Tetherow', 107, 'bend']], {
+        'golf-homes-at-tetherow': { closedInPolygon: 107, closedByName: 0 },
+      }),
     )
     expect(out).toHaveLength(1)
     expect(out[0]).toMatchObject({
-      slug: 'river-canyon-estates',
-      closedCount: 11,
-      citySlug: 'redmond', // 7 > 4 — the larger contributor names the city
+      slug: 'golf-homes-at-tetherow',
+      name: 'Golf Homes At Tetherow',
+      citySlug: 'bend',
+      closedCount: 107,
     })
   })
 
-  it('drops N/A, empty, and unknown-slug subdivision names', () => {
+  /**
+   * The other half of the same rule. Outcrop's plat is real but six of its
+   * closed sales share one builder geocode outside the polygon, so the polygon
+   * alone scores it 8. The union keeps it indexed. A pure polygon join would
+   * have taken an already-indexed page's index slot away.
+   */
+  it('keeps a plat indexed on the union when the polygon alone would fall under the floor', () => {
+    const out = buildIndexableSubdivisions(
+      BOUNDARY_SLUGS,
+      plats([['obsidian-meadows', 'Obsidian Meadows', 20, 'la-pine']], {
+        'obsidian-meadows': { closedInPolygon: 8, closedByName: 20 },
+      }),
+    )
+    expect(out.map((s) => s.slug)).toEqual(['obsidian-meadows'])
+  })
+
+  it('uses the recorded plat label as the display name, not the MLS name', () => {
+    const out = buildIndexableSubdivisions(
+      BOUNDARY_SLUGS,
+      plats([['river-canyon-estates', 'River Canyon Estates', 11, 'redmond']]),
+    )
+    expect(out[0]).toMatchObject({ name: 'River Canyon Estates', citySlug: 'redmond' })
+  })
+
+  /**
+   * §0: an unknown city is absent, never a place called Unknown. slugify()
+   * returns the literal 'unknown' for an empty string, and the page titles read
+   * "… | <City>, Oregon" straight off this field.
+   */
+  it('leaves citySlug empty rather than naming a city the data did not give', () => {
+    const out = buildIndexableSubdivisions(
+      BOUNDARY_SLUGS,
+      plats([
+        ['awbrey-glen', 'Awbrey Glen', 12, null],
+        ['tetherow-phase-5', 'Tetherow Phase 5', 12, '   '],
+      ]),
+    )
+    expect(out.map((s) => s.citySlug)).toEqual(['', ''])
+  })
+
+  it('slugifies a multi-word MLS city into the page-title slug', () => {
+    const out = buildIndexableSubdivisions(
+      BOUNDARY_SLUGS,
+      plats([['awbrey-glen', 'Awbrey Glen', 32, 'black butte ranch']]),
+    )
+    expect(out[0].citySlug).toBe('black-butte-ranch')
+  })
+
+  it('drops the n-a and unknown sentinel slugs', () => {
     const out = buildIndexableSubdivisions(
       new Set(['n-a', 'unknown', ...BOUNDARY_SLUGS]),
-      counts([
-        ['bend', 'N/A', 100],
-        ['bend', '   ', 100],
-        ['bend', '///', 100], // slugifies to 'unknown'
+      plats([
+        ['n-a', 'N/A', 100, 'bend'],
+        ['unknown', 'Unknown', 100, 'bend'],
       ]),
     )
     expect(out).toEqual([])
   })
 
-  it('normalizes casing/punctuation variants of one plat into a single slug', () => {
+  it('counts a duplicated plat row once, never summed into a doubled count', () => {
     const out = buildIndexableSubdivisions(
       BOUNDARY_SLUGS,
-      counts([
-        ['bend', 'Tetherow Phase 5', 6],
-        ['bend', 'TETHEROW  PHASE 5', 6],
+      plats([
+        ['tetherow-phase-5', 'Tetherow Phase 5', 12, 'bend'],
+        ['tetherow-phase-5', 'Tetherow Phase 5', 12, 'bend'],
       ]),
     )
     expect(out).toHaveLength(1)
-    expect(out[0]).toMatchObject({ slug: 'tetherow-phase-5', closedCount: 12 })
+    expect(out[0].closedCount).toBe(12)
   })
 
   it('returns a stable slug-sorted list', () => {
     const out = buildIndexableSubdivisions(
       BOUNDARY_SLUGS,
-      counts([
-        ['bend', 'Tetherow Phase 5', 20],
-        ['bend', 'Awbrey Glen', 20],
-        ['redmond', 'Obsidian Meadows', 20],
+      plats([
+        ['tetherow-phase-5', 'Tetherow Phase 5', 20, 'bend'],
+        ['awbrey-glen', 'Awbrey Glen', 20, 'bend'],
+        ['obsidian-meadows', 'Obsidian Meadows', 20, 'redmond'],
       ]),
     )
     expect(out.map((s) => s.slug)).toEqual([
@@ -113,10 +180,10 @@ describe('buildIndexableSubdivisions', () => {
 describe('sitemap <-> llms.txt parity', () => {
   const subs = buildIndexableSubdivisions(
     BOUNDARY_SLUGS,
-    counts([
-      ['bend', 'Tetherow Phase 5', 25],
-      ['bend', 'Awbrey Glen', 12],
-      ['la-pine', 'Obsidian Meadows', 10],
+    plats([
+      ['tetherow-phase-5', 'Tetherow Phase 5', 25, 'bend'],
+      ['awbrey-glen', 'Awbrey Glen', 12, 'bend'],
+      ['obsidian-meadows', 'Obsidian Meadows', 10, 'la-pine'],
     ]),
   )
 
@@ -155,6 +222,16 @@ describe('sitemap <-> llms.txt parity', () => {
     const lines = subdivisionLlmsLines(subs, 'https://ryan-realty.com')
     const obsidian = lines.find((l) => l.includes('/subdivisions/obsidian-meadows'))
     expect(obsidian).toContain('(La Pine)')
+  })
+
+  it('llms lines omit the parenthetical entirely when the city is unknown', () => {
+    const cityless = buildIndexableSubdivisions(
+      BOUNDARY_SLUGS,
+      plats([['awbrey-glen', 'Awbrey Glen', 12, null]]),
+    )
+    const [line] = subdivisionLlmsLines(cityless, 'https://ryan-realty.com')
+    expect(line).toBe('- Awbrey Glen: https://ryan-realty.com/subdivisions/awbrey-glen')
+    expect(line).not.toContain('(')
   })
 })
 

@@ -282,3 +282,68 @@ describe('V3Instrument mounts the chart atom', () => {
     expect(html).not.toContain('<path')
   })
 })
+
+/**
+ * The fold is an appendix, never the answer (SITE-24). `foldAfter={0}` was
+ * written for the chart-first market sections, where the drawing answers the
+ * question and the tiles fold underneath it. Applied to a section with no chart
+ * it left a heading, a note, and a closed <details> — a market band showing the
+ * reader no number. Applied to a single figure it hid that figure behind the
+ * words "All 1 figures". /subdivisions/golf-homes-at-tetherow hit both at once:
+ * one figure, no chart, and that figure — the plat's 107 lifetime closed sales —
+ * is the entire reason the section renders.
+ */
+describe('V3Instrument fold', () => {
+  const two = [
+    { value: v3Text('$475K'), label: v3Text('median close') },
+    { value: v3Text('107'), label: v3Text('homes sold here, all time') },
+  ] as const
+  const one = [{ value: v3Text('107'), label: v3Text('homes sold here, all time') }] as const
+
+  function render(props: Record<string, unknown>) {
+    return renderToStaticMarkup(
+      createElement(V3Instrument, {
+        headline: v3Text('What sold in Golf Homes at Tetherow'),
+        source: v3Text('live MLS through Oregon Data Share, closed sales inside the plat'),
+        level: 2,
+        ...props,
+      } as never),
+    )
+  }
+
+  it('folds every figure only when a chart is carrying the answer above it', () => {
+    const html = render({
+      figures: two,
+      foldAfter: 0,
+      chartFirst: true,
+      chart: { caption: v3Text('Closed by year'), series: [MEDIAN] },
+    })
+    expect(html).toContain('v3-instrument__fold')
+    expect(html).toContain('All 2 figures')
+  })
+
+  it('leaves the figures open when foldAfter is 0 and there is no chart to answer', () => {
+    const html = render({ figures: two, foldAfter: 0, chartFirst: true })
+    expect(html).not.toContain('v3-instrument__fold')
+    expect(html).toContain('107')
+    expect(html).toContain('$475K')
+  })
+
+  it('never folds a lone figure behind "All 1 figures"', () => {
+    const html = render({
+      figures: one,
+      foldAfter: 0,
+      chartFirst: true,
+      chart: { caption: v3Text('Closed by year'), series: [MEDIAN] },
+    })
+    expect(html).not.toContain('All 1 figures')
+    expect(html).not.toContain('v3-instrument__fold')
+    expect(html).toContain('107')
+  })
+
+  it('still folds the tail when foldAfter is a positive number', () => {
+    const html = render({ figures: [...two, ...one], foldAfter: 1 })
+    expect(html).toContain('v3-instrument__fold')
+    expect(html).toContain('$475K')
+  })
+})
