@@ -1,3 +1,38 @@
+# Current — 2026-09-09 (site queue round seven: SITE-44 and SITE-47 done; the map is no longer a Google default map)
+
+Owner: Claude (Opus 5), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Pushes:
+`f98e0f4d` (SITE-44) and `4064f4d7` (SITE-47); both deploys READY.
+
+**SITE-44 done, verified by the orchestrator in a real browser, not from the lane's word.** The
+search and zip maps now draw on the navy-on-cream ladder: 13,888 pixels sampled on /homes-for-sale
+came back 63.4% #faf8f4, 10.9% #ecebea, 4.1% #102742 with the road greys, and /zip/97702 90.8%
+cream — no Google greens, tans or water blues in either. Google's zoom and map-type controls are
+gone from both. The claim header reads "500 homes are drawn on this map, from $57K to $8.8M in
+Bend." with its source disclosure; 48 cards carry 48 price-per-square-foot marks; the Price, Beds
+and Baths chips are 700 against Save-this-search at 500. **Note for the next reader:** the tile
+requests carry no `styles=` param (17 and 12 requests, zero) because Maps JS encodes the style in
+the tile payload — the param is not the test, the pixels are. search 32 → 75, zip 33 → 60, both
+rebaselined. Both baseline files shrank; no dependency added.
+
+**SITE-47 done, and its score went DOWN.** The plat opening now composes one authored sentence per
+setting — "That photograph is Three Rivers. River Meadows is one of the subdivisions inside it, and
+10 of its homes are for sale right now." / "Park Addition sits inside Old Bend, in Bend, and 3 of
+its homes are on the market today." / "Easton, one of Bend's subdivisions, has 20 homes for sale
+right now." — all three live and distinct; the Atlas claim and dot key are in the fold via opt-in
+props (every other caller byte-identical, proven); a 44px door sits inside the first 900px; and
+plat-public-inventory finally carries a readAt, which closes SITE-42's missing as-of date. But the
+class scored **65 against a 79 high-water mark** from SITE-42 this morning. It landed because the
+node's own bar is 59 and the evaluator explicitly cleared the template verdict, and because a mark
+from a different shot set is not a baseline. **That is an open question, not a rounding:** the
+spread inside one round was 63 to 74. Re-score before building the next subdivision node.
+
+**Fleet:** cloud-grinder on SITE-31 and SITE-41; claude-opus5 on SITE-40 and SITE-49; this session
+on SITE-48 (the people pages). SITE-50 (/invest, /compare) is eligible and unclaimed.
+
+**Still open for Matt:** the out-of-area listing asks (Tour / Call / Text and a payment beside "we
+don't work in Medford"); the MLS remarks missing from the listing page since the twelve-section
+rebuild (on SITE-45); a hero data graphic for /buy.
+
 # Current — 2026-09-09 (round four: the first message is in Matt's register, and so is every first touch)
 
 Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
