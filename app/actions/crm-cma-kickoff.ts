@@ -26,6 +26,8 @@ export async function kickoffCmaForContactAction(input: {
   /** Explicit "build a fresh CMA" confirmation from the sheet (Matt decision
    *  2026-07-17) — see kickoffCmaCore. */
   buildNewVersion?: boolean
+  /** The broker's "same household" answer to a needsChoice result. */
+  attachToExisting?: boolean
 }): Promise<CmaKickoffResult> {
   try {
     const personId = Number(input?.personId)
@@ -43,6 +45,7 @@ export async function kickoffCmaForContactAction(input: {
       idempotencyKey: String(input?.idempotencyKey ?? ''),
       actorBroker: access.brokerSlug ?? null,
       buildNewVersion: Boolean(input?.buildNewVersion),
+      attachToExisting: Boolean(input?.attachToExisting),
       beds: parsePositiveInt(input?.beds ?? null),
       baths: parsePositiveNumber(input?.baths ?? null),
       sqft: parsePositiveInt(input?.sqft ?? null),
