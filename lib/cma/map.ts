@@ -17,6 +17,10 @@
 import { getBoundaryGeoJSON } from '@/lib/data'
 import { spreadStackedMapPoints, type CmaMapPoint } from '@/lib/cma-map'
 import { circlePath, pathParam, ringsFromGeometry, type MapLatLng } from '@/lib/cma/map-overlay'
+import { renderMapGroundSvg, svgDataUri, viewBbox, type MapGroundLabel } from '@/lib/cma/map-ground'
+import { basemapForFrame } from '@/lib/geo/basemap-source'
+import mapLabels from '@/data/cma/map-labels.json'
+import resortRegistry from '@/data/resort-communities.json'
 import { fitStaticMapView, type StaticMapView } from '@/lib/cma/static-map-projection'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import { polygonHoldsAnyPoint } from '@/lib/cma/render-place-polygon'
@@ -80,7 +84,7 @@ function finite(n: unknown): number | null {
 
 /** Logical pixels. `scale=2` doubles the image and leaves the geometry alone. */
 const MAP_W = 640
-const MAP_H = 400
+const MAP_H = 360
 /** Room for a 44px tap target plus its label, at both edges. */
 const MAP_PAD = 46
 
@@ -161,6 +165,31 @@ function areaNames(area: CmaCompArea | null, subject: CmaSubject): string[] {
   return subject.subdivision?.trim() ? [subject.subdivision.trim()] : []
 }
 
+/**
+ * The towns the ground may name: cities and CDPs from `data/cma/map-labels.json`
+ * (TIGER place polygons, point-on-surface) ranked by size, then the resort and
+ * planned communities from the registry. The ground packs them around the pins.
+ */
+function mapGroundLabels(): MapGroundLabel[] {
+  const towns = (mapLabels as { towns: Array<{ label: string; lat: number; lng: number; sqMi: number }> }).towns
+  const out: MapGroundLabel[] = towns.map((t) => ({
+    text: t.label,
+    lat: t.lat,
+    lng: t.lng,
+    kind: 'town',
+    rank: 100 + Math.min(99, Math.round(t.sqMi)),
+  }))
+  const registry =
+    (resortRegistry as { communities?: Array<{ label?: string; center_lon_lat?: number[]; is_resort?: boolean }> })
+      .communities ?? []
+  for (const c of registry) {
+    const centre = c.center_lon_lat
+    if (!c.label || !centre || centre.length !== 2) continue
+    out.push({ text: c.label, lat: centre[1]!, lng: centre[0]!, kind: 'place', rank: c.is_resort ? 50 : 40 })
+  }
+  return out
+}
+
 /** Subject pin and the subdivision outline. No numbered comps. */
 export async function buildSubjectLocationMapDataUri(
   subject: CmaSubject,
@@ -217,10 +246,12 @@ export async function buildCmaMapDataUri(
   // makes: is my house in that shape, or is one of the marks?
   const drawn: MapLatLng[] = points.map((p) => ({ lat: p.lat, lng: p.lng }))
   let boundaryShown = false
+  const groundRings: MapLatLng[][] = []
   for (const name of areaNames(area, subject)) {
     const rings = await boundaryRings(name)
     if (!polygonHoldsAnyPoint(rings, drawn)) continue
     for (const ring of rings) {
+      groundRings.push(ring)
       const path = pathParam('0x102742CC', '0x10274222', ring)
       if (path) paths.push(path)
     }
@@ -235,17 +266,57 @@ export async function buildCmaMapDataUri(
       : null)
   const radiusMiles = area?.radiusMiles ?? story.radiusMiles ?? null
   let radiusShown = false
+  let radiusCentre: MapLatLng | null = null
+  let radiusDrawnMiles: number | null = null
   if (centre && radiusMiles != null && radiusMiles > 0 && !us97IntersectsDisk(centre, radiusMiles)) {
     const circle = pathParam('0x10274299', '0x10274211', circlePath(centre, radiusMiles))
     if (circle) {
       paths.push(circle)
       radiusShown = true
+      radiusCentre = centre
+      radiusDrawnMiles = radiusMiles
     }
   }
   try {
     // Two pins on one rooftop cover each other whoever draws them, so the same
     // nudge the Google markers used still applies to ours.
     const spread = spreadStackedMapPoints(points)
+    // The document's own ground (lib/cma/map-ground.ts): a fractional zoom
+    // fits the pins tight, and the TIGER skeleton under them is the Atlas
+    // register. The Google tile stays as the fallback for a frame outside
+    // the basemap tiers.
+    const tightView = fitStaticMapView(spread, {
+      width: MAP_W,
+      height: MAP_H,
+      padding: MAP_PAD,
+      maxZoom: points.length === 1 ? 15 : 17,
+      fractional: true,
+    })
+    if (tightView) {
+      const ground = renderMapGroundSvg({
+        view: tightView,
+        basemap: basemapForFrame({ bbox: viewBbox(tightView), pad: 0.1 }),
+        boundaryRings: groundRings,
+        radius: radiusCentre && radiusDrawnMiles != null ? { centre: radiusCentre, miles: radiusDrawnMiles } : null,
+        labels: mapGroundLabels(),
+        pins: spread.map((p) => ({ lat: p.lat, lng: p.lng })),
+      })
+      if (ground.featureCount > 0) {
+        return {
+          dataUri: svgDataUri(ground.svg),
+          pointCount: points.length,
+          view: tightView,
+          pins: points.map((p, i) => ({
+            key: families[i]!.key,
+            family: families[i]!.family,
+            lat: spread[i]!.lat,
+            lng: spread[i]!.lng,
+          })),
+          boundaryShown,
+          radiusShown,
+        }
+      }
+    }
     const view = fitStaticMapView(spread, {
       width: MAP_W,
       height: MAP_H,

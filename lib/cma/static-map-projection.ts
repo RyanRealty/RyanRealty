@@ -65,6 +65,12 @@ export type FitOptions = {
   padding?: number
   minZoom?: number
   maxZoom?: number
+  /**
+   * Keep the zoom fractional. A Google tile needs an integer zoom, which can
+   * leave the frame up to twice as wide as the pins need; the document's own
+   * SVG ground (lib/cma/map-ground.ts) has no such rule and fits tight.
+   */
+  fractional?: boolean
 }
 
 /**
@@ -94,10 +100,8 @@ export function fitStaticMapView(points: readonly LatLng[], opts: FitOptions): S
   // rather than dividing by zero and asking for zoom Infinity.
   const spanX = Math.max(maxX - minX, 1e-9)
   const spanY = Math.max(maxY - minY, 1e-9)
-  const zoom = Math.max(
-    minZoom,
-    Math.min(maxZoom, Math.floor(Math.min(Math.log2(usableW / spanX), Math.log2(usableH / spanY)))),
-  )
+  const raw = Math.min(Math.log2(usableW / spanX), Math.log2(usableH / spanY))
+  const zoom = Math.max(minZoom, Math.min(maxZoom, opts.fractional ? raw : Math.floor(raw)))
   const center = worldToLatLng({ x: (minX + maxX) / 2, y: (minY + maxY) / 2 })
   return {
     centerLat: center.lat,

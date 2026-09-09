@@ -65,11 +65,17 @@ export function currentAskLine(p: CmaPricing): string | null {
 export function coverWorthSentence(p: CmaPricing, opts?: { omitAsk?: boolean }): string {
   const lo = Math.min(p.valueLow ?? 0, p.valueHigh ?? 0)
   const hi = Math.max(p.valueLow ?? 0, p.valueHigh ?? 0)
+  // The failed-ask cap can sit the number BELOW the range the sales support
+  // (65365 Concorde: $1,473,000 under $1,550,000 to $3,255,000). "Worth" then
+  // reads as a contradiction beside the number; say what happened instead.
+  const capped = p.clamp != null && p.recommended > 0 && lo > 0 && p.recommended < lo
   const worth =
     lo > 0 && hi > 0
-      ? lo === hi
-        ? `Your home is worth ${usd(lo)} today.`
-        : `Your home is worth ${usd(lo)} to ${usd(hi)} today.`
+      ? capped
+        ? `The sales support ${usd(lo)} to ${usd(hi)}. The list price is capped below that by the price that already failed to sell.`
+        : lo === hi
+          ? `Your home is worth ${usd(lo)} today.`
+          : `Your home is worth ${usd(lo)} to ${usd(hi)} today.`
       : ''
   const ask =
     opts?.omitAsk !== true && p.recommended > 0 ? `We recommend listing at ${usd(p.recommended)}.` : ''
