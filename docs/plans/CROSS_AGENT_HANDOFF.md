@@ -1,3 +1,35 @@
+# Current — 2026-09-09 (site queue round six: SITE-53 and SITE-46 done, SITE-32 blocked on its 60-day window)
+
+Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Pushes today
+since the last block: `5fb3dadd..773e1454` (SITE-32), `773e1454..93856f85` (SITE-53),
+`28a1b3a8..e7c20fdb` (SITE-46); each deploy READY with the sitemap smoke green.
+
+**SITE-53 done.** The place-type Atlas never silently drops (boundary read behind Suspense with a
+same-footprint standin; 10/10 loads in and out of the DB window, live and local); a §0 claim
+sentence under the H1 ("16 single-family homes for sale in Tetherow, asking $1,350,000 to
+$4,250,000."); exactly one display headline; rows and pins linked both ways; crawlable ?sort=
+links; 44px zoom. place-type 77, place-type-community 70 (rebaselined; the committed marks had
+no instrument). **§0 finding (on SITE-43):** leftover market truth says 658 active Bend
+single-family, listing_tile_mv 768; the place-type pages now read one MV for everything. Sunriver
+and Brasada Ranch have no trusted polygon and shipped with no map until the standin.
+
+**SITE-46 done.** /buy's Stage carries a navy band with three sourced figures (1,563 houses,
+$749,900 median ask, 29 days to an offer) from getMarketPulseRegionSnapshot, the first listing
+row breaks the fold at 552px, the CTA is navy; /sell's Stage byte-identical. buy 42 → 60. Two
+divergences closed on the way (raw pace 28 vs the destination's 29; a rounded median).
+
+**SITE-32 shipped, blocked until 2026-11-08.** Keep-indexed ruling in MASTER_SPEC §4.9 and one
+CLAUDE.md row; the losing text deleted; ci:listing-offmarket-index pins that a listing page's
+robots depend on geography and the refusal path only; ListingUnavailable copy corrected. The
+60-day GSC-vs-DAL cross is the open clause (before: 6,611 off-market URLs / 26,123 impressions).
+
+**Fleet at the time of writing:** cloud-grinder on SITE-31 and SITE-41; claude-opus5 on SITE-40
+and SITE-45; this session on SITE-42 (source-line form, four classes) and SITE-44 (map
+cartography). Only SITE-44 was eligible and unclaimed. **Open for Matt:** the out-of-area
+listing asks (Tour / Call / Text and the payment beside "we don't work in Medford"); the MLS
+remarks missing from the listing page (on SITE-45); a hero data graphic for /buy (variants rule).
+
+# Current — 2026-09-09 (engine items 3 and 4: the map's own ground and the graded cover; an inbound email advances the CRM)
 # Current — 2026-09-09 (round three: the first message is drafted for Matt, the parser and the agent are on Grok, the queue is clean)
 
 Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
