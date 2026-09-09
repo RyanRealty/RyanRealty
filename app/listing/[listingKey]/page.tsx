@@ -650,7 +650,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
       <ListingAroundHere lat={listing.lat} lng={listing.lng} />
       {!offMarket && askClaim ? <ListingAskInstrument claim={askClaim} /> : null}
       <div id="history">
-        <PropertyHistory history={history} mode="meaningful-only" />
+        <PropertyHistory
+          history={history}
+          mode="meaningful-only"
+          closePrice={listing.closePrice}
+        />
       </div>
       <div id="tax">
         <ListingTaxHistory

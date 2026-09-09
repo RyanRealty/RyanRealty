@@ -316,3 +316,34 @@ export function publishListingHistory(input: {
       return true
     })
 }
+
+/**
+ * The price a SALE row in the history rail publishes (SITE-21).
+ *
+ * FOUNDING CASE, measured on a dev render 2026-09-09 of Closed MLS 220224752:
+ * the sold instrument read "Sold for $827,000 on September 8, 2026" while the
+ * history rail further down the same page read "Sep 8, 2026 · Sold ·
+ * $849,000". Two prices for one sale on one page, which is the §0 failure this
+ * node exists to end. The rail was not wrong about its own row — the MLS
+ * change-log event that flips the status to Closed carries the then-current
+ * LIST price — but a row LABELLED Sold publishes a sale, and the price of a
+ * sale is the ClosePrice.
+ *
+ * So a sale row publishes the close price or NO price. There is no fallback to
+ * the ask, for the same reason publish-listing-published-price has none: the
+ * list price of a home that already sold, printed under the word Sold, IS the
+ * defect. A row with no publishable price renders a dash; the ask is still
+ * visible on its own Listed and Price change rows, where it is true.
+ */
+export function publishHistoryRowPrice(input: {
+  /** True when this row's published LABEL is the sale ("Sold"). */
+  isSale: boolean
+  /** The price the merged history row carries. */
+  rowPrice: number | null | undefined
+  /** ClosePrice from the listing row, or null when the feed withholds it. */
+  closePrice: number | null | undefined
+}): number | null {
+  if (!input.isSale) return input.rowPrice ?? null
+  const close = input.closePrice
+  return close != null && Number.isFinite(close) && close > 0 ? close : null
+}
