@@ -2,7 +2,7 @@
   "route": "app/search/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/search/index.html",
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED site-v2 mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target. Homes opens on Field. Production search (MapSearchView + SearchFilters + SearchResults) IS the Field. Do not wrap it in V3Field: that would duplicate list+map.",
-  "competitiveTarget": "Redfin/Zillow-grade map search. Headline: search-as-you-move (pan/zoom re-queries the visible area; list + markers stay in lockstep from ONE viewport fetch). Plus list\u2194map hover sync, photo popups on markers, mobile list/map toggle.",
+  "competitiveTarget": "Redfin/Zillow-grade map search. Headline: search-as-you-move (pan/zoom re-queries the visible area; list + markers stay in lockstep from ONE viewport fetch). Plus list↔map hover sync, photo popups on markers, mobile list/map toggle.",
   "note": "E-HOMES-SEARCH 2026-08-13. Migrated leftover search chrome onto the v3 barrel. V3Chrome is sticky in flow on app/layout.tsx (recipe still says fixed; ignore that). This page does not remount chrome. Search belongs to the Homes Field, not the header. App-frame height is retargeted in app/search/search-frame.css off the sticky 3.5rem bar (globals.css still subtracts a 64px fixed overlay). Filter dock uses search-filter-dock under that bar. @no-breadcrumb stays: a Home > self trail on the highest-traffic page is waste. Map/split is viewport-fit and shows no footer at render; the V3Footer token stays in source for ci:default-chrome-footer / ci:kb-shared-shell. List view renders V3Footer outside <main>. KB-era deletions: KbFooter, kb.css, kb-root, pt-16 gap that assumed a fixed 64px nav. Capture unchanged: SearchAlertCapture. JSON-LD unchanged on the slug route (SearchPageJsonLd + Dataset MetadataBlock + preset FAQPage now from SeoTail MetadataBlock). Dual objectives and exits unchanged.",
   "requiredComponents": [
     {
@@ -46,11 +46,16 @@
   "layoutContracts": [
     "3-row chrome intent: Row 1 omnibox + Save/Alerts CTAs; Row 2 primary filter chips; Row 3 results count + filter summary + sort",
     "Degraded search honesty: SSR/client timeout or fetch failure must not present as true zero inventory without a retry/degraded affordance",
-    "Count/sort row: dedicated visible stamp in split (N homes \u00b7 scope/filters \u00b7 sorted by\u2026). 390 list names the list (N homes). in this map view only when the map is on screen.",
+    "Count/sort row: dedicated visible stamp in split (N homes · scope/filters · sorted by…). 390 list names the list (N homes). in this map view only when the map is on screen.",
     "390 filters are one All filters control. Chip set is sm+ so pills do not clip.",
     "Search-as-you-move: pan/zoom re-queries the visible area; list + markers stay in lockstep from ONE viewport fetch",
     "Split body: map + results side-by-side on desktop; intentional mobile list/map toggle (not dual conflicting chrome)",
-    "V3Chrome is sticky in flow, not fixed. Search-app-frame height is calc(100dvh - 3.5rem) with margin-top 0. Filter dock sticks at top 3.5rem."
+    "V3Chrome is sticky in flow, not fixed. Search-app-frame height is calc(100dvh - 3.5rem) with margin-top 0. Filter dock sticks at top 3.5rem.",
+    "SITE-44 basemap: every public Google map paints lib/maps/v3-basemap.ts — a navy-on-cream style array matched to V3Atlas's ladder (highway navy 34%, arterial 22%, local 10%, water 12%, boundary 55%, labels 70%). No mapId is ever passed: a Map ID makes Google discard the style array and serve a Cloud Console style this repo cannot read, which is how the search map came to be stock Google tiles. Google's own controls are off in one place (V3_MAP_CHROME_OFF); the wordmark and terms links stay, by the Maps terms of service.",
+    "SITE-44 marks: clustering never stops (V3_CLUSTER_MAX_ZOOM) and merges anything closer than one mark's width (V3_CLUSTER_RADIUS_PX, with supercluster's extent pinned to the 256px tile so the radius means screen pixels). The opening fitBounds clears a mark and a half on every edge (v3FitPadding) and frames the boundary AND the pins, not the boundary alone. A mark that would still cross an edge slides in, and its caret slides the opposite way so it keeps pointing at its own house. A cluster badge's diameter is its count, and hovering it names the count and the ask range it holds.",
+    "SITE-44 claim: the results rail opens on a sentence, not a count — how many homes the frame draws, the ask range across them, the place, and a collapsed section 0 trace. It is derived from the same array the cards and the pins render, through publishWholePropertyAmount, so a lease rate and a fractional share never enter the range. The mobile peek carries the same claim beside the filter-match count, and each half names its own population.",
+    "SITE-44 card mark: every result card carries a price-per-square-foot position against the homes currently in view — a track for the full spread, a band for the middle half, a dot for this home (components/search/ppsf-band.ts). A home with no living area renders the mark's empty state rather than dropping it.",
+    "SITE-44 filter weights: Price and Beds/Baths are the row's heavy controls (srch-chip--key, 700); every other pill and the Save-search control sit at the row's base 500, and the two actions sit behind a hairline."
   ],
   "sectionOrder": [
     "APP FRAME, not a document. It renders no breadcrumb and no footer on purpose: the map/list split is viewport-fit.",
@@ -65,13 +70,74 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-06",
-    "score": 57,
-    "beats": "Windermere / local IDX Bend search: named-city split Field with photo rows and navy price pins, not a card grid under an unfiltered embed",
-    "evaluator": "separate grok-4.6 evaluator, wave-b search chrome",
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "SITE-44, round three. Separate evaluator agent (Agent tool, model selector \"sonnet\" — the harness default Sonnet, a different model from the builder), handed the two committed shots and TASTE.md's rubric quoted in the prompt, asked to score the same shots three times in one call, to answer explicitly whether it saw a Google default map, and to mark each of the previous round's defects fixed or still present. Three rounds ran on this branch before the push: 72 on the first build, 67 on the second, 75 on this one. It did not build the page and could not edit anything.",
+    "evaluatorModel": "sonnet",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/homes-for-sale?city=Bend"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default"
+      ]
+    },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/search/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/search/shots/mobile375.png"
-    }
+    },
+    "shotsHash": "sha256:fe34a159f9dd25c306c8670718834fd54f9307e87089d56c1bc9e69122bc13e4",
+    "scores": [
+      75,
+      77,
+      73
+    ],
+    "score": 75,
+    "beats": "Zillow's Bend map search on data transparency: this page states how many of the market's active listings the current frame actually draws and the band they span, with the trace one click away, where a portal map silently truncates its pins and never says so.",
+    "defects": [
+      {
+        "section": "#filters",
+        "severity": "taste",
+        "finding": "All filters and Save this search still wear the same outline pill, all-caps tracking and border as Price, Beds, Baths and Home type, so a command and an attribute dropdown read in one register. A hairline now separates the two groups; it is not yet enough."
+      },
+      {
+        "section": "#rail",
+        "severity": "craft",
+        "finding": "The price-per-square-foot mark now reads as an encoding rather than a stray rule, but at row scale it is still thin and quiet enough that a first glance can miss it."
+      },
+      {
+        "section": "#map-controls-mobile",
+        "severity": "taste",
+        "finding": "The corner is one column now and the optional boundary control is off at 375, but the layers strip, the zoom pair and Locate are still three bordered rows sitting beside the Showing Bend only chip."
+      },
+      {
+        "section": "#mobile-toolbar",
+        "severity": "craft",
+        "finding": "Save search is clipped at the 375 right edge with no scroll affordance; the chip rail's trailing fade is deliberately off below 640 because it used to clip the Places chip and the in-bar mic."
+      },
+      {
+        "section": "#chrome",
+        "severity": "taste",
+        "finding": "Nav row, search row and filter row still stack as three full-width bands before any map or listing content. That is V3Chrome and the filter dock, outside this item's file set."
+      },
+      {
+        "section": "#map-pins",
+        "severity": "craft",
+        "finding": "Along the right map edge the price pills and a neighbouring cluster badge crowd each other; measured overlap is zero, but the spacing reads tight."
+      }
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-06",
+      "score": 57,
+      "evaluator": "separate grok-4.6 evaluator, wave-b search chrome",
+      "note": "The committed receipt on this route at HEAD. It predates the instrument fields, so it records no evaluatorModel, no rubricVersion and no shotsHash. The 2026-09-08 site-queue taste table separately marked this route 32, which is the number SITE-44 was opened against; it is not a committed receipt either and records no instrument."
+    },
+    "rebaselineReason": "The prior committed mark of 57 differs on all three identity keys: evaluatorModel (grok-4.6 against this run's sonnet), rubricVersion (unrecorded — the receipt predates v1-2026-09-08) and shotsHash (unrecorded, and its shots have been recaptured since). A different instrument is not a baseline, so this 75 is the first mark on the current one and the next pass must rise above it."
   }
 }

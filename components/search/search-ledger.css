@@ -610,3 +610,299 @@
 .srch-mic-inbar {
   border-radius: 6px !important;
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   SITE-44 — the claim, the comparative mark, and one weight hierarchy.
+
+   The 2026-09-08 taste table found a portal split with no object tying the
+   list to the map, cards with no comparative signal, and a filter row where
+   Price weighed exactly what "Save this search" weighed. These three blocks
+   are the answer to those three findings.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* The claim above the rail: a sentence first, figures second (TASTE.md rule 1).
+   It is the rail's own header, so it holds the sticky position the bare count
+   row used to hold. */
+.srch-claim {
+  border-bottom: var(--v3-rule-hairline, 1px solid color-mix(in srgb, var(--v3-navy) 8%, transparent));
+  background: var(--v3-surface, var(--v3-cream));
+}
+
+.srch-claim__line {
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body, 0.8125rem);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/* The figures inside the sentence carry the weight, not a separate KPI tile. */
+.srch-claim__line .srch-figure {
+  font-weight: var(--v3-weight-num, 700);
+  font-variant-numeric: tabular-nums;
+}
+
+.srch-claim__crumbs {
+  margin-top: 0.2rem;
+  color: var(--v3-ink-muted, color-mix(in srgb, var(--v3-navy) 70%, transparent));
+  font-size: var(--v3-size-label, 0.65625rem);
+  letter-spacing: var(--v3-track-label, 0.12em);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+/* V3SourceLine sets its own type; this only holds it to the header's rhythm. */
+.srch-claim .srch-claim__source {
+  margin-top: 0.35rem;
+}
+
+/* The per-card comparative mark: full spread as a hairline, the middle half of
+   the visible set as a band, this home as a tick. Thin on purpose — the number
+   is already in the meta line, and a number on every point is banned. */
+.srch-ppsf {
+  position: relative;
+  display: block;
+  width: min(100%, 11rem);
+  height: 7px;
+  margin: 0.3rem 0 0.1rem;
+}
+
+.srch-ppsf::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 3px;
+  height: 1px;
+  background: color-mix(in srgb, var(--v3-navy) 14%, transparent);
+}
+
+.srch-ppsf__mid {
+  position: absolute;
+  top: 2px;
+  height: 3px;
+  background: color-mix(in srgb, var(--v3-navy) 22%, transparent);
+}
+
+.srch-ppsf__tick {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 7px;
+  margin-left: -1px;
+  background: var(--v3-navy);
+}
+
+/* A home with no living area has no place on the band. Say so rather than
+   dropping the mark and breaking the rail's rhythm (TASTE.md: missing states). */
+.srch-ppsf__none {
+  position: absolute;
+  left: 0;
+  top: -1px;
+  font-size: 0.5625rem;
+  letter-spacing: var(--v3-track-label, 0.12em);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--v3-navy) 45%, transparent);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Weight hierarchy in the filter row. Price and Beds/Baths are what a buyer
+   actually reaches for; everything else, Save this search included, sits at the
+   row's base medium. Element+class so a Tailwind weight utility on the Button
+   cannot outrank it by source order. */
+button.srch-chip--key {
+  font-weight: var(--v3-weight-num, 700);
+}
+
+/* SITE-44 — the map's controls as ONE hairline instrument, not three floating
+   boxes. The children keep their own selectors (and their 44px floors); the
+   panel takes over the edge and the dividers so nothing inside draws a second
+   border. Google's own wordmark and terms links are untouched: those stay by
+   the Maps terms of service. */
+.map-search-chrome {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
+  border-radius: 6px;
+  background: var(--v3-cream);
+}
+
+.map-search-chrome > * + * {
+  border-top: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
+}
+
+.map-search-chrome .map-search-views,
+.map-search-chrome .map-search-zoom,
+.map-search-chrome .map-search-locate {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Zoom sits as a pair across the panel rather than a stack down the edge, so
+   the whole instrument is three short rows instead of a column of controls. */
+.map-search-chrome .map-search-zoom {
+  flex-direction: row;
+}
+
+.map-search-chrome .map-search-zoom button + button {
+  border-top: 0;
+  border-left: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
+}
+
+.map-search-chrome .map-search-zoom button {
+  flex: 1 1 0;
+}
+
+.map-search-chrome .map-search-locate {
+  width: 100%;
+  letter-spacing: var(--v3-track-label, 0.12em);
+  text-transform: uppercase;
+  font-size: var(--v3-size-label, 0.65625rem);
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   SITE-44, evaluator round two.
+
+   "The per-listing price-position bar is thin and low-contrast enough to read
+   as a stray rule rather than a legible, hoverable data encoding" — the
+   separate evaluator's single strongest change. So: a real track, a real band,
+   and a real dot for this home, with a hover that opens the whole mark up.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.srch-ppsf {
+  height: 10px;
+  width: min(100%, 13rem);
+  margin: 0.4rem 0 0.15rem;
+  cursor: help;
+}
+
+/* The full spread of the homes in view. */
+.srch-ppsf::before {
+  top: 4px;
+  height: 2px;
+  background: color-mix(in srgb, var(--v3-navy) 16%, transparent);
+  transition: background 150ms ease;
+}
+
+/* Their middle half. */
+.srch-ppsf__mid {
+  top: 2px;
+  height: 6px;
+  background: color-mix(in srgb, var(--v3-navy) 26%, transparent);
+  transition: height 150ms ease, top 150ms ease;
+}
+
+/* This home. A dot, not a hairline: it is the one mark on the row that answers
+   "cheap or dear for what is on this map", and it has to be findable at a
+   glance. The cream ring keeps it legible where it lands inside the band. */
+.srch-ppsf__tick {
+  top: 0;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 50%;
+  background: var(--v3-navy);
+  box-shadow: 0 0 0 2px var(--v3-cream);
+  transition: transform 150ms ease;
+}
+
+.v3-lrow:hover .srch-ppsf::before,
+.srch-ppsf:hover::before {
+  background: color-mix(in srgb, var(--v3-navy) 24%, transparent);
+}
+
+.v3-lrow:hover .srch-ppsf__mid,
+.srch-ppsf:hover .srch-ppsf__mid {
+  top: 1px;
+  height: 8px;
+}
+
+.v3-lrow:hover .srch-ppsf__tick,
+.srch-ppsf:hover .srch-ppsf__tick {
+  transform: scale(1.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .srch-ppsf::before,
+  .srch-ppsf__mid,
+  .srch-ppsf__tick {
+    transition: none;
+  }
+}
+
+.srch-ppsf__none {
+  top: 1px;
+  font-size: 0.5625rem;
+}
+
+/* A hairline between the filters and the two actions beside them. Eight
+   identical pills in a row read as a control strip; the rule says where the
+   query stops and what you can do with it starts. */
+.srch-chip-actions {
+  border-left: var(--v3-rule-hairline, 1px solid color-mix(in srgb, var(--v3-navy) 8%, transparent));
+  padding-left: 0.625rem;
+  margin-left: 0.125rem;
+}
+
+/* The map's corner panel gives back some width on a phone, where it is sitting
+   on top of the data rather than beside it. */
+@media (max-width: 640px) {
+  .map-search-chrome .map-search-locate {
+    padding: 0 0.4rem;
+    font-size: 0.5625rem;
+  }
+}
+
+/* The peek line's second clause: the ask range of what is drawn, quieter than
+   the count that leads it. */
+.map-search-sheet__range {
+  margin-left: 0.4rem;
+  color: var(--v3-ink-muted, color-mix(in srgb, var(--v3-navy) 70%, transparent));
+  font-weight: var(--v3-weight-body, 400);
+  font-variant-numeric: tabular-nums;
+}
+
+/* SITE-44, evaluator round three. "ALL FILTERS and SAVE THIS SEARCH are
+   visually indistinguishable in weight from the attribute pills, so primary
+   actions and filter toggles compete for the same visual register." The rule
+   between them was a hairline at 8% and did not register at all. It is the
+   structural edge weight now, with real air on both sides — a divider a reader
+   sees rather than one a spec knows about. */
+.srch-chip-actions {
+  border-left: 1px solid var(--v3-edge, color-mix(in srgb, var(--v3-navy) 12%, transparent));
+  padding-left: 0.875rem;
+  margin-left: 0.375rem;
+}
+
+/* The peek's second clause wraps rather than truncating: it names its own
+   population, and a population that runs off the edge is not named. */
+.map-search-sheet__title {
+  text-wrap: pretty;
+}
+
+/* SITE-44 round three, two corrections found by looking at the 375 capture.
+
+   1. The optional map control (Remove boundary) is off on a phone. A Tailwind
+      `hidden sm:flex` could not do it: `.map-search-chrome` is unlayered CSS
+      and outranks Tailwind's layered `.hidden` on source order, so the panel
+      stayed. The rule belongs here, beside the panel it governs.
+   2. The peek carries two clauses now and they wrap, so the bar that was sized
+      for one line was clipping the second — the half that names the frame. */
+@media (max-width: 639px) {
+  .map-search-chrome--optional {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .map-search-sheet.is-peek {
+    height: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.map-search-sheet__title {
+  text-align: center;
+}
