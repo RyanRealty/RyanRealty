@@ -1,3 +1,30 @@
+# Current — 2026-09-09 (site queue round five: SITE-33 done; the plat-index tap floor; two main-checkout build traps recorded)
+
+Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Push
+`d51aa362..e112178f` (lane 11cfbe52 + the tap-floor fix e112178f); deploy READY in 271s, sitemap
+smoke green (geo warm 0.3 s).
+
+**SITE-33 done.** Out-of-area listing pages (Medford, Grants Pass, Klamath Falls) carry the
+honesty block with a door to /oregon/<city>, serve noindex, follow with the canonical, and leave
+the listings sitemap (builder 7,501 → 3,312; production shows the old class until the next warm);
+/oregon/[city] stays index, follow (W12.4); Bend listings unchanged. Listing-detail taste
+rebaselined at 77 on a widened instrument. **Open for Matt (revenue call, not ruled):** on an
+out-of-area listing the sidebar still offers Tour / Call / Text and a monthly payment beside
+"we don't work in Medford" — keep the asks or drop to the referral ask alone?
+
+**Two traps in the main checkout, both fixed, both in memory.** (1) node_modules/.bin/.bin was a
+self-symlink since Sep 3 and made a local `next build` panic (Turbopack infinite loop); worktree
+clones and Vercel never saw it; removed by name. (2) An untracked scratch/audit-social-profiles.ts
+with a type error failed the build's type check; moved into scratchpad/ (tsconfig-excluded).
+After both, runtime gates on the merged tree: route-smoke 145/145, page-payload OK, tap-targets
+0 unexcused everywhere — including the /cities/bend plat-index action SITE-30 had left at 35 px
+(the V3Button text variant sets min-height auto; the index action now carries --v3-tap).
+
+**In flight:** SITE-53 (place-type pages) and SITE-32 (off-market index policy, keep-indexed gate),
+both this session. Elsewhere: SITE-31, SITE-41 (cloud-grinder). SITE-45 carries the missing MLS
+remarks finding.
+
+# Current — 2026-09-09 (site queue round four: SITE-54 and SITE-30 done, 28 orphans settled; the sitemap classes answer cold under 40 s)
 # Current — 2026-09-09 (round two of Matt's calls: the story on Grok, the kick-off asks, Delta 4 rural splits are live)
 
 Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
