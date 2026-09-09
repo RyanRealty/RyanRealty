@@ -197,6 +197,14 @@
   transform: rotate(90deg);
 }
 
+/* The action is a standalone control, not an inline link in prose, so it
+   carries the tap floor (WCAG 2.5.8, ci:tap-targets): the text variant's
+   min-height: auto is for links that sit inside a line. Found 2026-09-09 as a
+   224.9x35.3 hit area on /cities/bend. */
+.v3-place-index__action .v3-btn {
+  min-height: var(--v3-tap);
+}
+
 .v3-place-index__action {
   margin: var(--v3-space-lg) 0 0;
 }
