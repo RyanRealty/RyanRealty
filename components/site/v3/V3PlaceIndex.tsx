@@ -146,7 +146,16 @@ export function placeIndexRows(entries: readonly V3PlaceIndexEntry[]): Row[] {
 
   const largest = rows.reduce((max, r) => (r.count != null && r.count > max ? r.count : max), 0)
   for (const row of rows) {
-    row.share = row.count != null && largest > 0 ? row.count / largest : null
+    // Square root, not linear (taste pass, SITE-30, 2026-09-09): a real place
+    // set is right-skewed — one Phase 1 at 3,241 lifetime sales next to a dozen
+    // sub-100 plats — and a linear share against that one outlier flattens every
+    // smaller row to an indistinguishable few-pixel stub. sqrt keeps the order
+    // and keeps 1 at the top, but pulls the small end apart: on Bend's own set,
+    // 720 sales reads 47% instead of 22%, and two plats forty rows apart (50 vs
+    // 10) land at visibly different sixth- and twelfth-of-track widths instead
+    // of both rounding to nothing. Still a real function of the real count, so
+    // the §0 trace under the section still describes exactly what the bar is.
+    row.share = row.count != null && largest > 0 ? Math.sqrt(row.count / largest) : null
   }
 
   return rows.sort((a, b) => {

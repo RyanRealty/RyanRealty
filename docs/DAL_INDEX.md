@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-09T07:01:41.142Z
+**Generated:** 2026-09-09T12:25:14.955Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -433,6 +433,20 @@ Companion files:
 **Tables:** `blog_posts`
 
 **Selected columns:** `slug`, `status`, `published_at`
+
+---
+
+### `lib/data/blog/getAllPublishedBlogRefs.ts`
+
+**Exports:** `PUBLISHED_BLOG_REF_CAP`, `toPublishedBlogRefs`, `getAllPublishedBlogRefs`
+
+**Tables:** `blog_posts`
+
+**Selected columns:** `slug`, `title`, `excerpt`, `published_at`, `tags`, `category`
+
+**TTL windows:** `CACHE_WINDOWS.blog`
+
+**Cache tags:** `cacheTag.blog`
 
 ---
 
@@ -4647,7 +4661,7 @@ Companion files:
 | `analytics_result_cache` | `analyzeClosedSales()` <br /> `lib/data/analytics/analyzeClosedSales.ts` |
 | `app_config` | `getCalculatorDefaults()` <br /> `lib/data/config.ts` |
 | `asset_library` | `PROPERTY_SHOOTS_BUCKET()`, `ensureShootsBucket()`, `uploadShootAsset()`, `findAssetBySourceId()`, `upsertAssetLibraryRow()`, `resolveListingLatLng()`, `youtubeFromUsedIn()`, `getAreaGuideVideos()`, `getAreaGuideVideo()`, `getGeoTileImages()`, `getGolfImages()`, `pickGolfImage()`, `getLifestyleImages()`, `getSurfaceImages()`, `pickSurfaceImage()`, `getSurfaceImage()` <br /> `lib/data/agent/asset-registry.ts` · `lib/data/media/getAreaGuideVideos.ts` · `lib/data/media/getGeoTileImages.ts` · `lib/data/media/getGolfImages.ts` · `lib/data/media/getLifestyleImages.ts` · `lib/data/media/getSurfaceImages.ts` |
-| `blog_posts` | `MATT_BROKER_ID()`, `publishBlogPost()`, `getBlogPostBySlug()`, `getBlogPostsBySlugs()`, `getPopularBlogSlugs()`, `getPublishedBlogPosts()`, `getRecentBlogPosts()`, `getRelatedBlogPosts()`, `getMattBrokerRecord()`, `getBrokerSelfRecord()`, `getBrokerSelfRecordByEmail()`, `updateBrokerById()`, `getBrokerBySlug()`, `getBrokerForOgBySlug()`, `getBlogPostForOgBySlug()`, `searchBrokersByDisplayName()`, `getBrokers()`, `searchSiteContentTitles()` <br /> `lib/data/blog/blogPostWrites.ts` · `lib/data/blog/getBlogPostBySlug.ts` · `lib/data/blog/getBlogPostsBySlugs.ts` · `lib/data/blog/getPopularBlogSlugs.ts` · `lib/data/blog/getPublishedBlogPosts.ts` · `lib/data/blog/getRecentBlogPosts.ts` · `lib/data/blog/getRelatedBlogPosts.ts` · `lib/data/brokers/getBrokers.ts` · `lib/data/search/searchSiteContentTitles.ts` |
+| `blog_posts` | `MATT_BROKER_ID()`, `publishBlogPost()`, `PUBLISHED_BLOG_REF_CAP()`, `toPublishedBlogRefs()`, `getAllPublishedBlogRefs()`, `getBlogPostBySlug()`, `getBlogPostsBySlugs()`, `getPopularBlogSlugs()`, `getPublishedBlogPosts()`, `getRecentBlogPosts()`, `getRelatedBlogPosts()`, `getMattBrokerRecord()`, `getBrokerSelfRecord()`, `getBrokerSelfRecordByEmail()`, `updateBrokerById()`, `getBrokerBySlug()`, `getBrokerForOgBySlug()`, `getBlogPostForOgBySlug()`, `searchBrokersByDisplayName()`, `getBrokers()`, `searchSiteContentTitles()` <br /> `lib/data/blog/blogPostWrites.ts` · `lib/data/blog/getAllPublishedBlogRefs.ts` · `lib/data/blog/getBlogPostBySlug.ts` · `lib/data/blog/getBlogPostsBySlugs.ts` · `lib/data/blog/getPopularBlogSlugs.ts` · `lib/data/blog/getPublishedBlogPosts.ts` · `lib/data/blog/getRecentBlogPosts.ts` · `lib/data/blog/getRelatedBlogPosts.ts` · `lib/data/brokers/getBrokers.ts` · `lib/data/search/searchSiteContentTitles.ts` |
 | `boundaries` | `getCrmNeighborhoodOptions()`, `collectCompanyScoreboardSignals()`, `walkPlatBoundaryCity()`, `getPlatBoundaryCity()`, `readRecordedPlatLabel()`, `getRecordedPlatLabel()`, `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()` <br /> `lib/data/crm/getCrmNeighborhoodOptions.ts` · `lib/data/loop/signals.ts` · `lib/data/subdivisions/getPlatBoundaryCity.ts` · `lib/data/subdivisions/getRecordedPlatLabel.ts` · `lib/data/sync/syncWrites.ts` |
 | `bpo_comps` | `getBpoListingCyclesByAddress()`, `getBpoAdminRowBySlug()`, `getBpoHtmlBySlug()`, `upsertBpoRowBySlug()`, `updateBpoRowFieldsBySlug()`, `deleteBpoRowById()`, `replaceBpoComps()`, `listBposForAdmin()`, `getBpoWorklistRowById()` <br /> `lib/data/bpo/reads.ts` |
 | `broker_agent_sessions` | `getBrokerAgentDigest()`, `expireSession()`, `getOrCreateActiveSession()`, `touchSession()`, `updateSessionState()`, `addActiveAction()`, `removeActiveAction()`, `appendTurn()`, `recentTurns()` <br /> `lib/data/agent/digest.ts` · `lib/data/agent/sessions.ts` |

@@ -55,6 +55,11 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
   column-gap: var(--v3-space-xl);
+  /* A row-gap, small (taste pass, SITE-30): with none, a row's own bottom bar
+     sat flush against the NEXT row's top hairline — at reading distance the
+     mark read as a broken divider rather than a measurement. This is the only
+     change; the bar and the hairline are still the same two elements. */
+  row-gap: var(--v3-space-3xs);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -136,7 +141,17 @@
   left: 0;
   bottom: 0;
   height: var(--v3-rule-weight-hairline);
-  width: calc(var(--v3-share, 0) * 100%);
+  /* A floor, not a fabrication (taste pass, SITE-30): this element only ever
+     renders for a row whose count is a real number — a null/unmeasured count
+     skips the whole figure, bar included, in V3PlaceIndex.tsx. So a share of
+     0 here is always a COUNTED zero, and a zero-width bar made it read as an
+     absent measurement instead of a measured one. 2px is a mark, not a value:
+     the printed number beside it is still the only thing anyone reads as data. */
+  /* 96%, not 100% (taste pass, SITE-30): the top row's bar at a full share
+     spanned the exact width of the item's own hairline rules above and below
+     it, so the one mark the encoding should shout read as a third divider
+     line instead of a measurement. 96% keeps it unmistakably a bar. */
+  width: max(2px, calc(var(--v3-share, 0) * 96%));
   background: var(--v3-navy);
   opacity: 0.55;
 }

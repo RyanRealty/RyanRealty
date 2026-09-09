@@ -2,7 +2,7 @@
   "route": "app/cities/[slug]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker / Windermere city pages. The place verdict in the first viewport with its trace and its stamp, the live inventory as a spatial surface directly under it, one low-friction city-scoped alert capture, and every outbound edge the place graph owns. No aggregator publishes the trace under the number, and none of them answer the buyer-or-seller question on the city page at all. MEASURED AGAINST THE FIELD 2026-08-27 (six-brokerage sweep): no local competitor publishes financing mix as data -- Ladd states one cash-share sentence a month in prose, the other five publish nothing -- and for the SAME July the three that publish a Bend median disagree by $104K ($696K Cascade, $736.5K RE/MAX, $800K Ladd) with no methodology stated. This page now publishes the normalised financing mix (cash share + conventional share, rolling 365d, >=50-sale floor) through analytics_financing_mix_co -> getFinancingMix, a stat no competitor carries at all.",
-  "note": "City first screen, amended 2026-09-03: one composition for the place-page class. Order is V3Breadcrumb, place-opening (V3Heading `${cityName} homes for sale` + PlaceFaceStrip leftover grain face + full-bleed PlaceAreaHero photo, never an H1 cage), V3Atlas, PlaceTypeSlider, PlaceSplitView (seed ring from getBoundaryGeoJSON / getCityBoundaryGeoJSON, overlayBoundaries from nested Atlas children: Bend neighborhoods, plats elsewhere), Instrument level 2 (market leftover HUD + charts) or Quiet (stated absence), Ledger (designated Bend neighborhoods), Quiet #about (one open paragraph, facts as facts, extra prose folded), Ledger (all city communities, marquee first), Ledger (golf and master-planned), Sheet (city alert capture), Ledger (live activity), Ledger (open houses), V3Answers #faq, Ledger (city-tagged guides only; omit if none), Quiet (outbound edges), Ledger (other cities), Footer. Do not write ?shapes= onto /cities/[slug]. Type chips live on Split and PlaceTypeSlider, not as first-screen V3PlacePropertyTypes H2s. Median close 12mo stays on the city Time/Relate/Rank charts below the fold. Face numbers are leftover HUD for THIS slug — Bend and Redmond print different leftover cells; do not hardcode 728 / 4.2 / $760k. V3Stage and CityHomesField are not the first-screen cage. THE MARKET SECTION IS THE LEFTOVER HUD (MARKET_TRUTH D19/D26/D78): leftoverHudKpis is the one pile, publishPlaceFace filters the face strip, pulse and the stats cache never fill a tile, and buildMarketFaq is called unconditionally with source 'market-truth' (D91).",
+  "note": "City first screen, amended 2026-09-03: one composition for the place-page class. Order is V3Breadcrumb, place-opening (V3Heading `${cityName} homes for sale` + PlaceFaceStrip leftover grain face + full-bleed PlaceAreaHero photo, never an H1 cage), V3Atlas, PlaceTypeSlider, PlaceSplitView (seed ring from getBoundaryGeoJSON / getCityBoundaryGeoJSON, overlayBoundaries from nested Atlas children: Bend neighborhoods, plats elsewhere), Instrument level 2 (market leftover HUD + charts) or Quiet (stated absence), Ledger (designated Bend neighborhoods), Quiet #about (one open paragraph, facts as facts, extra prose folded), Ledger (all city communities, marquee first), Ledger (golf and master-planned), Sheet (city alert capture), Ledger (live activity), Ledger (open houses), V3Answers #faq, Ledger (city-tagged guides only; omit if none), Quiet (outbound edges), Ledger (other cities), Footer. Do not write ?shapes= onto /cities/[slug]. Type chips live on Split and PlaceTypeSlider, not as first-screen V3PlacePropertyTypes H2s. Median close 12mo stays on the city Time/Relate/Rank charts below the fold. Face numbers are leftover HUD for THIS slug \u2014 Bend and Redmond print different leftover cells; do not hardcode 728 / 4.2 / $760k. V3Stage and CityHomesField are not the first-screen cage. THE MARKET SECTION IS THE LEFTOVER HUD (MARKET_TRUTH D19/D26/D78): leftoverHudKpis is the one pile, publishPlaceFace filters the face strip, pulse and the stats cache never fill a tile, and buildMarketFaq is called unconditionally with source 'market-truth' (D91).",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -11,7 +11,7 @@
     },
     {
       "name": "CityPageTracker",
-      "section": "Tracking. The view_city GA4 event: city_name, city_slug, listing_count (null when the pulse read degraded, because an unknown count is not a zero), median_price, community_count. COMMUNITY_COUNT IS A CHANGED METRIC, NOT A CHANGED SOURCE FOR THE SAME METRIC — an earlier revision of this contract asserted it was 'the same figure from the row the page already had' and that was false. It is now geo_snapshot_mv.community_count: distinct SubdivisionName values, non-null, not 'N/A', carried by an Active listing in the city, across ALL property types and uncapped (supabase/migrations/20260730003000_geo_snapshot_mv_drop_volatile_split.sql line 119). The retired page sent getCityCommunitySnapshots().length: community rows with active single-family inventory under a LIMIT 40, which on a large city reported the cap rather than a count. TWO POPULATIONS, AND AN EARLIER REVISION OF THIS ENTRY RAN THEM TOGETHER — it cited 'a true uncapped 260' for Bend and then stated the step as 'Bend 40 to 343', two different numbers for one claim in one paragraph. Both were real and neither described the other. Re-verified live 2026-08-12: geo_snapshot_mv.community_count reads Bend 342, Redmond 142, La Pine 63, Sisters 51, Terrebonne 24, Powell Butte 12. Community rows carrying active single-family inventory — the uncapped form of what the retired call counted under its LIMIT 40 — read Bend 259, Redmond 107, La Pine 52, Sisters 37. The uncapped all-types figure is the one kept, and the retired figure is not restored because restoring it would restore a published LIMIT artifact. The GA4 series therefore steps once, at this deploy, from the capped 40 (or the city's row count where it never reached the cap) to that city's community_count. That step is a definition change, not market movement. The figure is ANALYTICS ONLY: no surface on this page renders it, because there is no source line on this page under which it could sit.",
+      "section": "Tracking. The view_city GA4 event: city_name, city_slug, listing_count (null when the pulse read degraded, because an unknown count is not a zero), median_price, community_count. COMMUNITY_COUNT IS A CHANGED METRIC, NOT A CHANGED SOURCE FOR THE SAME METRIC \u2014 an earlier revision of this contract asserted it was 'the same figure from the row the page already had' and that was false. It is now geo_snapshot_mv.community_count: distinct SubdivisionName values, non-null, not 'N/A', carried by an Active listing in the city, across ALL property types and uncapped (supabase/migrations/20260730003000_geo_snapshot_mv_drop_volatile_split.sql line 119). The retired page sent getCityCommunitySnapshots().length: community rows with active single-family inventory under a LIMIT 40, which on a large city reported the cap rather than a count. TWO POPULATIONS, AND AN EARLIER REVISION OF THIS ENTRY RAN THEM TOGETHER \u2014 it cited 'a true uncapped 260' for Bend and then stated the step as 'Bend 40 to 343', two different numbers for one claim in one paragraph. Both were real and neither described the other. Re-verified live 2026-08-12: geo_snapshot_mv.community_count reads Bend 342, Redmond 142, La Pine 63, Sisters 51, Terrebonne 24, Powell Butte 12. Community rows carrying active single-family inventory \u2014 the uncapped form of what the retired call counted under its LIMIT 40 \u2014 read Bend 259, Redmond 107, La Pine 52, Sisters 37. The uncapped all-types figure is the one kept, and the retired figure is not restored because restoring it would restore a published LIMIT artifact. The GA4 series therefore steps once, at this deploy, from the capped 40 (or the city's row count where it never reached the cap) to that city's community_count. That step is a definition change, not market movement. The figure is ANALYTICS ONLY: no surface on this page renders it, because there is no source line on this page under which it could sit.",
       "blocking": true
     },
     {
@@ -41,7 +41,7 @@
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6, twice on the answering render and three times on the stated-absence render, where a level-1 Quiet stands in for the Instrument. THAT THIRD BLOCK IS KEYED ON THIS PAGE'S OWN MARKET READ, NEVER ON THE FIGURE ARRAY: market_pulse_live holds live city rows that RETURN carrying nulls (verified 2026-08-12, geo_slug 'warm springs', property_type 'A', active_count 0 with median_list_price, months_of_supply and median_days_to_pending all null), and keying it on the figures published 'the market row did not return' directly above a Field printing its count under 'the 15-minute market row for Warm Springs'. One page, two contradictory claims about one read. It also states no count of its own and points at the Field's source line instead, and it drops the closing clause about the homes below when there are no rows below. AND NEITHER OF THE OTHER TWO BLOCKS CARRIES A FIGURE — which is now true of the shipped page and was not true of the revision that first claimed it. First: the city in plain words, meaning getCityContent's hand-written description when the city has one, plus the place facts from CITY_QUICK_FACTS, which are the city's own attributes and not market data. buildDataDrivenCityAbout is NOT called from this route (see removedComponents): it emitted live figures inline, so every city without a written description published 'Right now the {City} market shows N active listings, a median list price of $X, N communities and subdivisions' inside a Quiet, with no source line and no stamp — confirmed rendering at /cities/terrebonne before the repair. That sentence restated the inventory count directly under the Field that states it with a trace, reached its median through a fallback chain the traced figure does not use, and published a community count with no trace anywhere on the page. Second: the verified market FAQ as question-and-answer prose from the same buildMarketFaq array the FAQPage JSON-LD uses, followed by every outbound edge this route owns in page-inventory.json (city browse, city market report, open houses, each Bend neighborhood, each registry resort community, the cities index, the valuation spine), plus the Oregon Data Share citation MarketSources used to render and the Census citation whenever a population figure is printed. AND A DECLARED CONFLICT REMAINS IN THE SECOND BLOCK: the market FAQ answers contain numbers, so V3Quiet's own statement that the pattern 'never carries a figure' is not literally true of this page. That is not a repair this route can make. The FAQPage JSON-LD requires its answers to be visible, buildMarketFaq is the single builder feeding the visible copy, the FAQPage items, and the Dataset variables, and the closed six-pattern set has no pattern for verified question-and-answer prose whose answers state figures. The difference from the About block that WAS repaired is not cosmetic: every FAQ answer is a full sentence that names its own basis and its own as-of month ('the median list price for a single-family home in {City} is $X as of {Month}, based on live MLS data'), so each figure travels with its trace, whereas the About sentence carried none. Reported as a pattern-set gap for a program-wide ruling; this contract will not claim the block is figure-free while it is not.",
+      "section": "Pattern 6, twice on the answering render and three times on the stated-absence render, where a level-1 Quiet stands in for the Instrument. THAT THIRD BLOCK IS KEYED ON THIS PAGE'S OWN MARKET READ, NEVER ON THE FIGURE ARRAY: market_pulse_live holds live city rows that RETURN carrying nulls (verified 2026-08-12, geo_slug 'warm springs', property_type 'A', active_count 0 with median_list_price, months_of_supply and median_days_to_pending all null), and keying it on the figures published 'the market row did not return' directly above a Field printing its count under 'the 15-minute market row for Warm Springs'. One page, two contradictory claims about one read. It also states no count of its own and points at the Field's source line instead, and it drops the closing clause about the homes below when there are no rows below. AND NEITHER OF THE OTHER TWO BLOCKS CARRIES A FIGURE \u2014 which is now true of the shipped page and was not true of the revision that first claimed it. First: the city in plain words, meaning getCityContent's hand-written description when the city has one, plus the place facts from CITY_QUICK_FACTS, which are the city's own attributes and not market data. buildDataDrivenCityAbout is NOT called from this route (see removedComponents): it emitted live figures inline, so every city without a written description published 'Right now the {City} market shows N active listings, a median list price of $X, N communities and subdivisions' inside a Quiet, with no source line and no stamp \u2014 confirmed rendering at /cities/terrebonne before the repair. That sentence restated the inventory count directly under the Field that states it with a trace, reached its median through a fallback chain the traced figure does not use, and published a community count with no trace anywhere on the page. Second: the verified market FAQ as question-and-answer prose from the same buildMarketFaq array the FAQPage JSON-LD uses, followed by every outbound edge this route owns in page-inventory.json (city browse, city market report, open houses, each Bend neighborhood, each registry resort community, the cities index, the valuation spine), plus the Oregon Data Share citation MarketSources used to render and the Census citation whenever a population figure is printed. AND A DECLARED CONFLICT REMAINS IN THE SECOND BLOCK: the market FAQ answers contain numbers, so V3Quiet's own statement that the pattern 'never carries a figure' is not literally true of this page. That is not a repair this route can make. The FAQPage JSON-LD requires its answers to be visible, buildMarketFaq is the single builder feeding the visible copy, the FAQPage items, and the Dataset variables, and the closed six-pattern set has no pattern for verified question-and-answer prose whose answers state figures. The difference from the About block that WAS repaired is not cosmetic: every FAQ answer is a full sentence that names its own basis and its own as-of month ('the median list price for a single-family home in {City} is $X as of {Month}, based on live MLS data'), so each figure travels with its trace, whereas the About sentence carried none. Reported as a pattern-set gap for a program-wide ruling; this contract will not claim the block is figure-free while it is not.",
       "blocking": true
     },
     {
@@ -71,12 +71,12 @@
     },
     {
       "name": "V3PlaceAffordability",
-      "section": "#afford — SITE-07, the two-way affordability instrument, after the typical-price Instrument and before #about. Its own barrel pattern, so neither neighbour repeats one. A payment and a price each SOLVE THE OTHER: typing or dragging a monthly number returns the price ceiling it reaches (lib/finance/affordability.ts solvePriceForMonthlyPayment, which seeds off the closed form and then snaps to the largest whole-dollar price whose PUBLISHED payment — the same estimatedMonthlyPayment the listing pages print, down payment rounded through publishFinancingSplit — is at or under the target, so the ceiling on the button is never above the ceiling that was solved). It opens pre-filled at THIS place's own published median asking price, the same figure the #market Instrument prints (market_metric median_list_active, detached), so the calculator cannot disagree with the section above it. THE RATE IS MEASURED, NOT ASSUMED: getLiveMortgageRate() reads market_history_weekly national/us mortgage_rate_30yr, written every Monday from Freddie Mac PMMS (read 2026-09-08: 6.71%, week of 2026-09-07, source freddie:pmms30), and it publishes WITH its week stamp. When that series is dark the field falls back to lib/mortgage.ts DEFAULT_DISPLAY_RATE, which has no source, and the copy then says in plain words that the number is an assumption the visitor sets — it never says \"today's rate\" or \"current rate\" on either path. THE FINANCING MIX IS PUBLISHED BESIDE IT AS A FACT ABOUT CLOSED SALES (market_metric financing_mix, {City} detached, 12-month window widened by the registry ladder where a place is thin; shares under 5% are not published so they do not add to 100) and it SEEDS THE OPENING MODE ONLY — cash opens the calculator only where cash was the MAJORITY of closed sales (opensOnCash, threshold 0.5; {City} detached cash_share read 2026-09-08 puts it under that, so it opens financed). A cash share is never turned into a down payment. THE DRAWINGS ARE ALL V3Drawing 'pair' — your monthly number against the middle of this market, what you bring against what you borrow, and how the last year's buyers actually paid — because every one is a comparison, because a place's asking prices are too right-skewed for a price axis to say anything (Bend, read 2026-09-08: 761 active single-family asks from $350,000 to $11,900,000, median $899,000), and because V3Drawing's strip marks are 24x24 buttons on a route ci:tap-targets measures. NO COUNT OF HOMES UNDER THE CEILING IS PUBLISHED: the only per-listing active price set this page can reach is the Atlas population off listing_tile_mv, and it is a materially different population from the median this page prints (Bend: 761 asks at a $899,000 median there against the published 664 detached at $947,000), so a count drawn from one under a median from the other is two answers to one question. The count belongs to the search. THE ENDING IS THE SEARCH AT THE CEILING: the page's OWN homes link plus maxPrice (the confirmed param, normalised by lib/search-filters.ts and read by PlaceSplitView), with the ceiling rounded DOWN so the search can keep the promise on the button. Fires calculator_used on a real changed input, debounced 600ms — a mount is not a use — and calculator_interact on the result-link click, both carrying the ceiling and rr_vid so the click-through is measurable per visitor.",
+      "section": "#afford \u2014 SITE-07, the two-way affordability instrument, after the typical-price Instrument and before #about. Its own barrel pattern, so neither neighbour repeats one. A payment and a price each SOLVE THE OTHER: typing or dragging a monthly number returns the price ceiling it reaches (lib/finance/affordability.ts solvePriceForMonthlyPayment, which seeds off the closed form and then snaps to the largest whole-dollar price whose PUBLISHED payment \u2014 the same estimatedMonthlyPayment the listing pages print, down payment rounded through publishFinancingSplit \u2014 is at or under the target, so the ceiling on the button is never above the ceiling that was solved). It opens pre-filled at THIS place's own published median asking price, the same figure the #market Instrument prints (market_metric median_list_active, detached), so the calculator cannot disagree with the section above it. THE RATE IS MEASURED, NOT ASSUMED: getLiveMortgageRate() reads market_history_weekly national/us mortgage_rate_30yr, written every Monday from Freddie Mac PMMS (read 2026-09-08: 6.71%, week of 2026-09-07, source freddie:pmms30), and it publishes WITH its week stamp. When that series is dark the field falls back to lib/mortgage.ts DEFAULT_DISPLAY_RATE, which has no source, and the copy then says in plain words that the number is an assumption the visitor sets \u2014 it never says \"today's rate\" or \"current rate\" on either path. THE FINANCING MIX IS PUBLISHED BESIDE IT AS A FACT ABOUT CLOSED SALES (market_metric financing_mix, {City} detached, 12-month window widened by the registry ladder where a place is thin; shares under 5% are not published so they do not add to 100) and it SEEDS THE OPENING MODE ONLY \u2014 cash opens the calculator only where cash was the MAJORITY of closed sales (opensOnCash, threshold 0.5; {City} detached cash_share read 2026-09-08 puts it under that, so it opens financed). A cash share is never turned into a down payment. THE DRAWINGS ARE ALL V3Drawing 'pair' \u2014 your monthly number against the middle of this market, what you bring against what you borrow, and how the last year's buyers actually paid \u2014 because every one is a comparison, because a place's asking prices are too right-skewed for a price axis to say anything (Bend, read 2026-09-08: 761 active single-family asks from $350,000 to $11,900,000, median $899,000), and because V3Drawing's strip marks are 24x24 buttons on a route ci:tap-targets measures. NO COUNT OF HOMES UNDER THE CEILING IS PUBLISHED: the only per-listing active price set this page can reach is the Atlas population off listing_tile_mv, and it is a materially different population from the median this page prints (Bend: 761 asks at a $899,000 median there against the published 664 detached at $947,000), so a count drawn from one under a median from the other is two answers to one question. The count belongs to the search. THE ENDING IS THE SEARCH AT THE CEILING: the page's OWN homes link plus maxPrice (the confirmed param, normalised by lib/search-filters.ts and read by PlaceSplitView), with the ceiling rounded DOWN so the search can keep the promise on the button. Fires calculator_used on a real changed input, debounced 600ms \u2014 a mount is not a use \u2014 and calculator_interact on the result-link click, both carrying the ceiling and rr_vid so the click-through is measurable per visitor.",
       "blocking": true
     },
     {
       "name": "V3PlaceIndex",
-      "section": "Pattern 9, #plats, between #atlas and the type slider (site queue SITE-30, 2026-09-09). The crawlable half of the Atlas. V3Atlas is a client component, so before this section the served HTML of /cities/bend carried ZERO <a href=\"/subdivisions/…\"> — its only 22 occurrences of that string were storage image URLs — while the page carried 42 crawlable community links, every one of them sitewide chrome. The 2,486 plats that clear the indexable floor (1,519 of them attributed to Bend, measured 2026-09-09) had essentially no contextual inbound link from the city that contains them. Entries are the city's own slice of getIndexableSubdivisions() — the SAME read the sitemap, llms.txt and the /subdivisions robots tag make, so a page we submit to Google is a page we link to — deepest sale history first, capped at CITY_PLAT_INDEX_CAP (60, the Atlas's own child cap), UNIONED with every plat the Atlas above actually draws so the map can never show an outline the index omits. The figure is that plat's lifetime closed sales from subdivision_plat_closed_mv, polygon-and-name unioned over distinct listing; a drawn plat below the publishing floor prints NO figure rather than one measured a different way (§0 — unknown is not zero, and a noindexed plat still renders its page). Names run through atlasRegionNames, the set-aware publisher, so two plats whose recorder residue strips to one string keep their full names instead of two rows reading the same and opening different pages. The tail past twelve rows is a native <details>, so every anchor is in the served HTML whether or not it is open, and /subdivisions carries the rest of the set.",
+      "section": "Pattern 9, #plats, between #atlas and the type slider (site queue SITE-30, 2026-09-09). The crawlable half of the Atlas. V3Atlas is a client component, so before this section the served HTML of /cities/bend carried ZERO <a href=\"/subdivisions/\u2026\"> \u2014 its only 22 occurrences of that string were storage image URLs \u2014 while the page carried 42 crawlable community links, every one of them sitewide chrome. The 2,486 plats that clear the indexable floor (1,519 of them attributed to Bend, measured 2026-09-09) had essentially no contextual inbound link from the city that contains them. Entries are the city's own slice of getIndexableSubdivisions() \u2014 the SAME read the sitemap, llms.txt and the /subdivisions robots tag make, so a page we submit to Google is a page we link to \u2014 deepest sale history first, capped at CITY_PLAT_INDEX_CAP (60, the Atlas's own child cap), UNIONED with every plat the Atlas above actually draws so the map can never show an outline the index omits. The figure is that plat's lifetime closed sales from subdivision_plat_closed_mv, polygon-and-name unioned over distinct listing; a drawn plat below the publishing floor prints NO figure rather than one measured a different way (\u00a70 \u2014 unknown is not zero, and a noindexed plat still renders its page). Names run through atlasRegionNames, the set-aware publisher, so two plats whose recorder residue strips to one string keep their full names instead of two rows reading the same and opening different pages. The tail past twelve rows is a native <details>, so every anchor is in the served HTML whether or not it is open, and /subdivisions carries the rest of the set.",
       "blocking": true
     }
   ],
@@ -142,7 +142,7 @@
         "emittedBy": "MetadataBlock schemas array (faqPage entry), items = the same faqs array the second V3Quiet renders. On the KB page this came out of FAQBlock's includeJsonLd; the payload's meaning is unchanged."
       }
     ],
-    "note": "One derivation, one answer. The visible FAQ, the FAQPage items, the Dataset variables, and the Place's additionalProperty all come from buildMarketFaq called once, fed the RAW months-of-supply value — not the rounded one an earlier revision of this note claimed. The builder classifies that raw value and renders it through formatMonthsOfSupply, which is the identical pair marketVerdict and the Instrument run, so the H1 verdict, the printed figure, the visible answer and the Months of Supply variable cannot diverge. The same rule now covers median days to pending: the Instrument prints the digits the builder publishes rather than a second rounding of them."
+    "note": "One derivation, one answer. The visible FAQ, the FAQPage items, the Dataset variables, and the Place's additionalProperty all come from buildMarketFaq called once, fed the RAW months-of-supply value \u2014 not the rounded one an earlier revision of this note claimed. The builder classifies that raw value and renders it through formatMonthsOfSupply, which is the identical pair marketVerdict and the Instrument run, so the H1 verdict, the printed figure, the visible answer and the Months of Supply variable cannot diverge. The same rule now covers median days to pending: the Instrument prints the digits the builder publishes rather than a second rounding of them."
   },
   "dataLayer": {
     "getGeoSnapshot": "lib/data/geo/getGeoSnapshot.ts. NOT a plain geo_snapshot_mv read for a city, and the route file must not describe it as one. It reads geo_snapshot_mv on geo_type='city', geo_key=slug, and then applies withPulseOverride (lines 104-114, called at 147-148) on EVERY city read, replacing activeSfrCount, pendingCount, medianListPrice, and refreshedAt with the market_pulse_live row's values whenever its pulse map has a hit. That map is built by fetchPulseCityMap, which keys on BOTH geo_slug and geo_label lowercased and does not filter property_type - a broader match than this page's own getMarketPulse, which is `eq('geo_slug', geoSlug)` plus `eq('property_type','A')`. The two reads therefore fail independently, and the page cannot tell from the returned object which source won. That is why the Field's fallback source line names both sources and the rule that chooses, and confines its only negative claim to this page's own market read. Awaited first and gates notFound, so it is never null past that line. Supplies the city label, the analytics-only community count, and the fallback inventory count + median + stamp for the structured data when this page's pulse read returns nothing.",
@@ -179,15 +179,14 @@
     "V3Footer"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-08",
+    "evaluatedAt": "2026-09-09",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator, SITE-07 pass, run by the cloud grinder against its own dev server on /cities/bend and /cities/redmond at 1440 and 375; it drove the calculator, toggled loan/cash, opened the rate disclosure and clicked through to the filtered search, then scored the same evidence three times in one call. The builder did not grade its own page.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluator": "separate claude-opus-5 evaluator, SITE-30, run by the lane's own session against its own dev server (localhost:3900) on /cities/bend at 1440 and 375. Three rounds: round 1 scored the freshly-added #plats section cold ([61 not recorded separately; see below] median 68); round 2 after fixing the bare count label, the linear bar-share, the bar-hairline collision and two mismatched afford-state captures (median 71); round 3, recorded here, after capping the max bar at 96% share and flooring a counted zero at 2px (median 74). The builder ran on claude-sonnet-5, a different model from the evaluator on every round.",
+    "evaluatorModel": "claude-opus-5",
+    "builderModel": "claude-sonnet-5",
     "shotSpec": {
       "routes": [
-        "/cities/bend",
-        "/cities/redmond"
+        "/cities/bend"
       ],
       "viewports": [
         1440,
@@ -195,6 +194,7 @@
       ],
       "states": [
         "default",
+        "plats",
         "afford-default",
         "afford-terms-open",
         "afford-cash"
@@ -203,6 +203,8 @@
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/city/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/city/shots/mobile375.png",
+      "platsDesktop": "design_system/ryan-realty/ui_kits/city/shots/plats-desktop.png",
+      "platsMobile375": "design_system/ryan-realty/ui_kits/city/shots/plats-mobile375.png",
       "affordDesktop": "design_system/ryan-realty/ui_kits/city/shots/afford-desktop.png",
       "affordMobile375": "design_system/ryan-realty/ui_kits/city/shots/afford-mobile375.png",
       "affordTermsDesktop": "design_system/ryan-realty/ui_kits/city/shots/afford-terms-desktop.png",
@@ -210,61 +212,56 @@
       "affordCashDesktop": "design_system/ryan-realty/ui_kits/city/shots/afford-cash-desktop.png",
       "affordCashMobile375": "design_system/ryan-realty/ui_kits/city/shots/afford-cash-mobile375.png"
     },
-    "shotsHash": "sha256:386bbbd595bf15ae82e698ef3c92d813058400a1a62af6e30e92eadc35dbe73f",
+    "shotsHash": "sha256:8f69cad776f910f41cf169a6ca3e025ef38a4cb2f857c7bfe3ca31f2ae5d398b",
     "scores": [
-      61,
-      65,
-      70
+      74,
+      72,
+      75
     ],
-    "score": 65,
+    "score": 74,
     "breakdown": {
-      "design": 20,
-      "originality": 19,
-      "interaction": 10,
-      "craft": 10,
-      "honesty": 6
+      "design": 22,
+      "originality": 20,
+      "interaction": 11,
+      "craft": 12,
+      "honesty": 9
     },
-    "beats": "Zillow's Bend, OR city page, on the affordability question specifically: #afford is a bidirectional payment-price control tied to THIS city's published median asking price, publishes the local financing mix as measured data (Bend detached: 63.2% conventional, 27.8% cash) and a 30-year rate carrying its Freddie Mac PMMS week stamp, and ends in the filtered local search at the ceiling the visitor chose. Zillow's calculator runs on national assumptions, carries no source trace, and does not hand the result back to a local search.",
+    "beats": "Beats Zillow's and realtor.com's Bend, OR city pages on depth of place: 1,519 recorded plats, each a door with its own lifetime closed-sale count attributed both by polygon and by recorded name (neither portal publishes plat-level sale history at all), plus a payment solver that runs price-to-payment in both directions rather than a one-way calculator.",
     "defects": [
       {
+        "section": "#plats",
+        "severity": "taste",
+        "finding": "The bar length is square-root-scaled against the largest count so small counts stay visible, but the label beside it just says \"lifetime sales\" and nothing in the section or its Source disclosure says the length is non-linear."
+      },
+      {
+        "section": "#plats",
+        "severity": "taste",
+        "finding": "Nothing rewards a hover or tap with more data than the row already prints -- the row is a link that underlines itself, the bar is aria-hidden with no tooltip. Sixty measured rows and no way to interrogate one beyond the number already shown."
+      },
+      {
         "section": "#afford",
-        "severity": "taste",
-        "finding": "None found by the evaluator on either page class. It named this section the best thing on the page and the standard the rest of the page should be rebuilt to meet."
-      },
-      {
-        "section": "#faq",
-        "severity": "taste",
-        "finding": "The city FAQ renders as a plain-text accordion while the neighborhood page ships the same v3-answers component as number-forward answers with an MOS gauge. One component, two looks, and the city holds the weaker one."
-      },
-      {
-        "section": "#faq",
-        "severity": "honesty",
-        "finding": "Confirmed in the DOM: city answer items carry no per-answer source disclosure, where the neighborhood instance carries one on every row."
-      },
-      {
-        "section": "#homes",
-        "severity": "taste",
-        "finding": "Neighborhoods, Communities, Golf communities, Latest market activity and Open houses are five consecutive sections sharing one shape (eyebrow, heading, photo-and-price rows, source line) — the banned stacked-section tell."
-      },
-      {
-        "section": "#homes",
-        "severity": "taste",
-        "finding": "The property-type tiles (\"63 Condos in Bend · BUYER’S MARKET\") are a figure plus a verdict word plus jargon with no plain sentence and nothing to interact with — the banned KPI-grid tell."
-      },
-      {
-        "section": "#homes",
         "severity": "craft",
-        "finding": "At 375 the neighborhood chip carousel clips its third chip mid-word with no fade, arrow or peek affordance signalling that it scrolls."
+        "finding": "\"Each bar gives up what it counts.\" appears verbatim twice in one column of the affordability panel and reads as a typo for \"gives you\" rather than a repeated caption."
+      },
+      {
+        "section": "#plats",
+        "severity": "craft",
+        "finding": "At 375 a wrapped plat name leaves its count figure baseline-aligned to the name's first line, floating roughly 22px above the bar it belongs to."
+      },
+      {
+        "section": "page-wide",
+        "severity": "craft",
+        "finding": "The sticky email bar takes roughly 150px of an 812px mobile viewport in every captured state and overlaps the \"See homes under $939,000 in Bend\" CTA in the affordability section's cash state."
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-06",
-      "score": 67,
-      "evaluatorModel": "grok-4.6",
-      "rubricVersion": "none-recorded",
-      "shotsHash": "none-recorded"
+      "evaluatedAt": "2026-09-08",
+      "score": 65,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:386bbbd595bf15ae82e698ef3c92d813058400a1a62af6e30e92eadc35dbe73f"
     },
-    "rebaselineReason": "The prior mark differs on evaluatorModel (grok-4.6 against claude-sonnet-5), on rubricVersion (the 2026-09-06 receipt predates the versioned rubric and records none, against v1-2026-09-08) and on shotsHash (it recorded none, and its two shots have since been recaptured and six state shots added). Three of three identity keys drift, so 67 is not a baseline this mark can be measured against. 65 is the first mark on the new instrument and the next pass must rise above 65 — this is not a claim that the page improved."
+    "rebaselineReason": "The committed 65 was scored by evaluatorModel claude-sonnet-5 against a shotsHash from before #plats existed; this mark's evaluatorModel is claude-opus-5 (the different-model rule requires it to differ from this session's own claude-sonnet-5 builder) and its shotsHash is necessarily different because the shot set now includes the new #plats section and two re-captured afford states. Both evaluatorModel and shotsHash drift, so 65 is not a baseline this mark can be measured against. Within this session's own three rounds on this new instrument the score rose every round: 68, then 71, then 74 recorded here."
   }
 }

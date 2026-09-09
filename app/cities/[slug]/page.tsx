@@ -806,7 +806,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
               ? `A plat is the subdivision the county recorded when the ground was divided. ${cityName} holds ${cityIndexablePlats.length.toLocaleString('en-US')} of them with a page of their own; these are the ${platIndexEntries.length} with the deepest sale history.`
               : `A plat is the subdivision the county recorded when the ground was divided. Each one below has its own page — what has sold there, what is for sale, and where its lines run.`
           }
-          countLabel="sales"
+          countLabel="lifetime sales"
           entries={platIndexEntries}
           foldAfter={12}
           action={
