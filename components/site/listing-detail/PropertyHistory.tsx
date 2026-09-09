@@ -1,6 +1,7 @@
 import { Price } from '@/components/site/primitives'
 import { publishHistoryDay } from '@/lib/listing/publish-calendar-day'
 import {
+  publishHistoryRowPrice,
   publishListingHistoryDeltaLabel,
   publishListingHistoryDescription,
 } from '@/lib/listing/publish-listing-history'
@@ -23,6 +24,14 @@ export type ListingHistoryEvent = {
 type Props = {
   history: ReadonlyArray<ListingHistoryEvent>
   mode?: 'all' | 'meaningful-only'
+  /**
+   * ClosePrice off the listing row (SITE-21). The MLS change-log event that
+   * flips a listing to Closed carries the then-current LIST price, so a row
+   * labelled Sold published the ask — $849,000 under the word Sold on a home
+   * the same page said sold for $827,000. Passed in, a sale row publishes the
+   * sale; withheld, it publishes nothing rather than the ask.
+   */
+  closePrice?: number | null
   className?: string
 }
 
@@ -80,13 +89,24 @@ function isMeaningfulEvent(ev: ListingHistoryEvent): boolean {
   return false
 }
 
-export function PropertyHistory({ history, mode = 'all', className }: Props) {
+export function PropertyHistory({ history, mode = 'all', closePrice = null, className }: Props) {
   const filtered = mode === 'meaningful-only' ? history.filter(isMeaningfulEvent) : history
-  const events = [...filtered].sort((a, b) => {
+  const sorted = [...filtered].sort((a, b) => {
     const ta = a.event_date ? Date.parse(a.event_date) : 0
     const tb = b.event_date ? Date.parse(b.event_date) : 0
     return tb - ta
   })
+  // Republish every row's price BEFORE the deltas are taken off it, so the
+  // dollar change on a sale row is measured against the sale and not against
+  // the ask the change-log happened to be carrying.
+  const events = sorted.map((ev) => ({
+    ...ev,
+    price: publishHistoryRowPrice({
+      isSale: eventLabel(ev.event) === 'Sold',
+      rowPrice: ev.price,
+      closePrice,
+    }),
+  }))
   if (events.length === 0) return null
 
   return (
