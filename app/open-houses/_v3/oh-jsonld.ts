@@ -1,4 +1,4 @@
-import { listingDetailPath } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import type { OpenHouseListing } from './oh-listings'
 
@@ -14,18 +14,17 @@ export function openHouseEventSchemas(
       'Property'
     const start = `${oh.eventDate}T${(oh.startTime ?? '09:00').toString().slice(0, 5)}:00`
     const end = `${oh.eventDate}T${(oh.endTime ?? '12:00').toString().slice(0, 5)}:00`
-    const path = listingDetailPath(
-      oh.listingKey,
-      {
-        streetNumber: oh.streetNumber,
-        streetName: oh.streetName,
-        city: oh.city,
-        state: oh.state,
-        postalCode: oh.postalCode,
-      },
-      { city: oh.city, subdivision: oh.subdivisionName },
-      { mlsNumber: oh.listNumber },
-    )
+    // Same fields, same builder, same URL as the card's own href (SITE-22).
+    const path = listingTileHref({
+      listingKey: oh.listingKey,
+      listNumber: oh.listNumber,
+      streetNumber: oh.streetNumber,
+      streetName: oh.streetName,
+      city: oh.city,
+      boundaryCity: oh.boundaryCity,
+      boundaryNeighborhood: oh.boundaryNeighborhood,
+      subdivisionName: oh.subdivisionName,
+    })
     events.push({
       type: 'event',
       name: `Open House at ${nameStreet}`,

@@ -165,21 +165,40 @@ describe('assembleOpinionPages format', () => {
       subjectMapDataUri: 'data:image/png;base64,subjmap',
       mapDataUri: 'data:image/png;base64,compsmap',
     })
-    const price = pages.find((p) => p.toc === '$429,000.')
-    expect(price?.body).toContain('data:image/png;base64,compsmap')
-    expect(price?.body).toContain('pin-map')
-    expect(pages.map((p) => p.body).join('')).not.toContain('data:image/png;base64,subjmap')
+    // Delta 3: the map is its own chapter, under the number, and there is
+    // still exactly one of it in the whole document.
+    const map = pages.find((p) => p.toc === 'Where all of this is.')
+    expect(map?.body).toContain('data:image/png;base64,compsmap')
+    expect(map?.body).toContain('pin-map')
+    const all = pages.map((p) => p.body).join('')
+    expect(all).not.toContain('data:image/png;base64,subjmap')
+    expect((all.match(/data:image\/png;base64,compsmap/g) ?? []).length).toBe(1)
+    const price = pages.findIndex((p) => p.toc === '$429,000.')
+    expect(pages.findIndex((p) => p.toc === 'Where all of this is.')).toBe(price + 1)
   })
 
-  it('puts competition next to the price, before the market chapter', () => {
-    const tocs = assembleOpinionPages(args()).map((p) => p.toc)
+  it('runs the number, the map, then the three matrices in Delta 3 order', () => {
+    // Three closed sales is the pricing unit's own floor, and the floor the
+    // matrix fails closed at (MIN_CLOSED_SALES_FOR_MATRIX).
+    const base = args()
+    const tocs = assembleOpinionPages({
+      ...base,
+      comps: [0, 1, 2].map((i) => ({ ...base.comps[0]!, listingKey: `K${i}`, address: `${100 + i} Test St` })),
+      mapDataUri: 'data:image/png;base64,compsmap',
+    }).map((p) => p.toc)
     const price = tocs.indexOf('$429,000.')
+    const map = tocs.indexOf('Where all of this is.')
+    const closed = tocs.indexOf('The sales that set this price')
     const competition = tocs.findIndex((t) => t?.startsWith('Who you would compete with at'))
+    const market = tocs.findIndex((t) => t?.endsWith('right now'))
     expect(price).toBeGreaterThanOrEqual(0)
-    expect(competition).toBe(price + 1)
+    expect(map).toBe(price + 1)
+    expect(closed).toBe(map + 1)
+    expect(competition).toBeGreaterThan(closed)
+    if (market >= 0) expect(market).toBeGreaterThan(competition)
   })
 
-  it('draws sold vs unsold before the number and before live competition', () => {
+  it('puts the listings that came off unsold between the sales and the competition', () => {
     const pages = assembleOpinionPages({
       ...args(),
       extras: {
@@ -235,14 +254,18 @@ describe('assembleOpinionPages format', () => {
     const price = tocs.indexOf('$429,000.')
     // The listings that did not sell are their own chapter (Delta 1), and they
     // sit BEFORE the number they explain. Competition follows the number.
+    // Delta 3's order: the number, the map, matrix 1, matrix 2, matrix 3.
     const stories = tocs.indexOf('The listings near you that did not sell.')
     expect(stories).toBeGreaterThanOrEqual(0)
-    expect(price).toBeGreaterThan(stories)
-    expect(competition).toBeGreaterThan(price)
+    expect(stories).toBeGreaterThan(price)
+    expect(competition).toBeGreaterThan(stories)
     const body = pages[stories]!.body
     expect(body).toContain('2527 5th')
-    // One story each, never the price ruler of dots this replaced.
-    expect(body).toContain('dns-card')
+    // Matrix 2, one column set with the closed sales, never the cards it
+    // replaced and never the price ruler of dots before them.
+    expect(body).toContain('comp-matrix is-unsold')
+    expect(body).toContain('First ask \u2192 last ask \u2192 outcome')
+    expect(body).not.toContain('dns-card')
     expect(body).not.toContain("Didn't sell")
     expect(body).not.toContain('Recommended $')
     expect(body).not.toContain('ruler-wide')

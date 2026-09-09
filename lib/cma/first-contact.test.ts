@@ -34,7 +34,7 @@ describe('first-contact copy', () => {
     expect(fsbo.plan).toContain('selling 1005 Butler Market yourself')
 
     const asked = composeCmaFirstContact('seller-valuation', FACTS)
-    expect(asked.plan).toBe('The number for 1005 Butler Market, and the sales that set it.')
+    expect(asked.plan).toBe('The number for 1005 Butler Market, and the sales behind it.')
   })
 
   it('carries the same verified numbers whatever the origin', () => {

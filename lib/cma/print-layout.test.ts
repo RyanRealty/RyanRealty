@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { renderCmaHtml, type RenderCmaArgs } from './render'
-import { pricingPage } from './render-pricing-page'
+import { mapPage, pricingPage, salesThatSetItPage } from './render-pricing-page'
 import { printWiderMarketPages } from './market-area-chapters'
 import { cmaStylesheet } from './render-css'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
@@ -118,24 +118,26 @@ function args(): RenderCmaArgs {
 
 describe('print CMA layout', () => {
   it('keeps one map on the price chapter, not a pin map plus a second static map', () => {
-    const page = pricingPage({
+    // Delta 3: the map is its own chapter and the sales are matrix 1.
+    const input = { subject, comps: fiveSales(comp), market: null, pricing }
+    const map = mapPage({
       subject,
-      comps: fiveSales(comp),
-      market: null,
-      pricing,
+      facts: [
+        { key: '1', family: 'closed' as const, address: '1 Test', outcome: 'sold $400K', domDays: 9, priceChanges: 0 },
+      ],
       mapDataUri: 'data:image/png;base64,aaa',
     })
-    expect(page.body).toContain('pin-map')
-    expect(page.body).toContain('data:image/png;base64,aaa')
-    expect(page.body).not.toContain('class="map-img"')
-    // The chapter carries drawn price paths now, so "no SVG" is the wrong
-    // shape for this check: what it guards is a SECOND map.
-    expect((page.body.match(/pin-map/g) ?? []).length).toBeGreaterThan(0)
-    expect(page.body).not.toContain('static-map')
-    expect(page.body).toContain('comp-matrix')
-    expect(page.body).toContain('The sales that set this price')
-    expect(page.body).not.toContain('Sale price / sqft')
-    expect(page.body).toContain('Size')
+    expect(map?.body).toContain('pin-map')
+    expect(map?.body).toContain('data:image/png;base64,aaa')
+    expect(map?.body).not.toContain('class="map-img"')
+    expect(map?.body).not.toContain('static-map')
+    const matrix = salesThatSetItPage(input)?.body ?? ''
+    expect(matrix).not.toContain('pin-map')
+    expect(matrix).toContain('comp-matrix')
+    expect(matrix).toContain('The sales that set this price')
+    expect(matrix).not.toContain('Sale price / sqft')
+    expect(matrix).toContain('Size')
+    expect(pricingPage(input).body).not.toContain('pin-map')
   })
 
   it('does not insert a contents sheet', () => {

@@ -507,14 +507,31 @@ const WIRED = [
   // its yield, its monthly cost, its machine-readable offer, its share card,
   // its price-band promise — so each takes the whole-property price, never the
   // ask. MLS 220190868 asks $1 for a fractional interest at Eagle Crest.
-  ['app/listing/[listingKey]/page.tsx', 'publishWholePropertyAmount'],
   ['components/site/listing-detail/RentalAnalysis.tsx', 'publishWholePropertyAmount'],
-  ['components/site/listing-detail/PriceCtaStrip.tsx', 'publishWholePropertyAmount'],
   ['app/api/og/route.tsx', 'publishWholePropertyAmount'],
+  // SITE-20 (2026-09-08). The listing detail page and its price strip reach
+  // the whole-property rule through publishListingPublishedWholePropertyPrice,
+  // which is publishWholePropertyAmount plus ONE rule: a Closed listing
+  // publishes its ClosePrice. They may not go back to calling the figure
+  // contract directly, because that is the call shape that published
+  // $1,250,000 for a home that sold for $1,100,000 (MLS 220219603). The
+  // wrapper's own wiring to publishWholePropertyAmount is asserted on the row
+  // below, so the fractional-interest rule still has exactly one enforced path.
+  ['lib/listing/publish-listing-published-price.ts', 'publishWholePropertyAmount'],
+  [
+    'app/listing/[listingKey]/page.tsx',
+    'publishListingPublishedWholePropertyPrice',
+    '@/lib/listing/publish-listing-published-price',
+  ],
+  [
+    'components/site/listing-detail/PriceCtaStrip.tsx',
+    'publishListingPublishedWholePropertyPrice',
+    '@/lib/listing/publish-listing-published-price',
+  ],
 ]
-for (const [file, symbol] of WIRED) {
+for (const [file, symbol, from = '@/lib/listing/publish-listing-figure'] of WIRED) {
   const text = readFileSync(file, 'utf8')
-  if (!text.includes(`from '@/lib/listing/publish-listing-figure'`) || !text.includes(symbol)) {
+  if (!text.includes(`from '${from}'`) || !text.includes(symbol)) {
     failures.push(`wiring: ${file} must publish through ${symbol} from the figure contract.`)
   }
 }
@@ -527,7 +544,10 @@ for (const [file, symbol] of WIRED) {
 // while the page published a 1,571,464% cap rate again. Nothing else catches
 // it: an unused import is a warning to eslint and nothing at all to tsc. So the
 // whole-property surfaces are asserted at the CALL SITE, in the AST.
-for (const [file, symbol] of WIRED.filter(([, s]) => s === 'publishWholePropertyAmount')) {
+// SITE-20: the filter is now "every whole-property surface", not one symbol —
+// two of them reach the rule through publishListingPublishedWholePropertyPrice
+// and an unused import there is exactly as empty as an unused one here.
+for (const [file, symbol] of WIRED.filter(([, s]) => /^publish(WholePropertyAmount|ListingPublishedWholePropertyPrice)$/.test(s))) {
   const text = readFileSync(file, 'utf8')
   const sourceFile = ts.createSourceFile(
     file,

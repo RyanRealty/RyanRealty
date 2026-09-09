@@ -70,16 +70,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug = [] } = await params
   const listingKey = await resolveListingKeyFromPathSegments(slug)
   if (!listingKey) return LISTING_UNAVAILABLE_METADATA
-  const base = await generateListingMetadata({ params: Promise.resolve({ listingKey }) })
-  // A refused listing gets NO canonical. The status is stuck at 200 (streamed
-  // shell), so noindex is the only signal doing work, and pairing noindex with
-  // a self-canonical is a contradictory instruction to a crawler.
-  if (base.robots && typeof base.robots === 'object' && 'index' in base.robots && base.robots.index === false) {
-    return base
-  }
-  // Self-canonical to the PUBLIC URL the visitor/Googlebot actually requested —
-  // this IS the sitemap URL. Overrides the inherited canonical so the pretty URL
-  // is the indexed one and there's no canonical/sitemap split.
-  const canonical = `/homes-for-sale/${slug.map(encodeURIComponent).join('/')}`
-  return { ...base, alternates: { canonical } }
+  // ONE canonical per listing (SITE-22). This function returns the base
+  // metadata UNCHANGED, and the canonical inside it is the one
+  // app/listing/[listingKey]/page.tsx computes from the listing's OWN boundary
+  // fields — so every path this route answers on points at the same URL.
+  //
+  // It used to end with a self-canonical to whatever path was requested, added
+  // by b58edad4 on 2026-06-01. That same commit taught [listingKey]/page.tsx to
+  // build the public canonical through listingDetailPath, which made the
+  // override redundant the day it landed; what it did instead was declare every
+  // requested path its own canonical. `:26-30` resolves the listing from the
+  // MLS tail alone, so ANY city and ANY area segments render 200 — verified
+  // live 2026-09-08 on 220226356 at four paths including an invented
+  // /portland/ one, all 200, all index,follow, each declaring itself canonical.
+  // Measured over GSC 2026-06-08..2026-09-05, 2,363 of 8,724 listing ids
+  // appeared at more than one URL: 4,995 URLs and 21,808 impressions.
+  //
+  // DO NOT reach for redirect()/permanentRedirect() here. This route has a
+  // loading.tsx, and so does app/, so the shell is flushed before any throw and
+  // the visitor gets a blank 200 — the consequence recorded at :62-64 above,
+  // and the reason app/listing/by-key/[listingKey]/route.ts had to become a
+  // route handler.
+  return generateListingMetadata({ params: Promise.resolve({ listingKey }) })
 }

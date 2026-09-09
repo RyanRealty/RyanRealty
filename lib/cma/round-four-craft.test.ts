@@ -18,7 +18,7 @@ import {
   polygonHoldsAnyPoint,
   type Ring,
 } from '@/lib/cma/render-place-polygon'
-import { pricingPage } from '@/lib/cma/render-pricing-page'
+import { mapPage, pricingPage } from '@/lib/cma/render-pricing-page'
 import { worthStripHtml, worthStripSvg, WORTH_STRIP_WIDE } from '@/lib/cma/worth-strip'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
@@ -193,29 +193,39 @@ describe('F2 — a place polygon is suppressed when it holds neither the subject
     reviewReason: null,
   } as unknown as CmaPricing
 
+  // Delta 3 gave the map its own chapter, so the caption lives there.
   function legendOf(boundaryShown: boolean | undefined): string {
-    const body = pricingPage({
-      subject,
-      comps,
-      market: null,
-      pricing,
-      tiersUsed: [],
-      mapDataUri: 'data:image/png;base64,AAAA',
-      mapOverlay: {
-        view: { centerLat: 44.05, centerLng: -121.05, zoom: 14, width: 640, height: 400 },
-        pins: [],
-        boundaryShown,
-      } as never,
-    }).body
-    return /<p class="small">(The pins are the sales above[^<]*)<\/p>/.exec(body)?.[1] ?? ''
+    const body =
+      mapPage({
+        subject,
+        facts: [
+          {
+            key: '1',
+            family: 'closed',
+            address: comps[0]!.address,
+            outcome: 'sold $400K',
+            domDays: 20,
+            priceChanges: 0,
+          },
+        ],
+        mapDataUri: 'data:image/png;base64,AAAA',
+        mapOverlay: {
+          view: { centerLat: 44.05, centerLng: -121.05, zoom: 14, width: 640, height: 400 },
+          pins: [],
+          boundaryShown,
+        } as never,
+      })?.body ?? ''
+    return /<p class="small">(Every pin below[^<]*)<\/p>/.exec(body)?.[1] ?? ''
   }
 
   it('drops the boundary sentence when the outline was suppressed', () => {
-    expect(legendOf(false)).toBe('The pins are the sales above.')
+    expect(legendOf(false)).toBe('Every pin below is a row in one of the three tables that follow.')
   })
 
   it('names the outline plainly when it was drawn', () => {
-    expect(legendOf(true)).toBe('The pins are the sales above. The outline is Romaine Village.')
+    expect(legendOf(true)).toBe(
+      'Every pin below is a row in one of the three tables that follow. The outline is Romaine Village.',
+    )
   })
 
   it('keeps the hedge only when the tile predates the check', () => {

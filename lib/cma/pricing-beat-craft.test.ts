@@ -175,9 +175,9 @@ describe('pricing beat craft', () => {
     expect(matrix).toContain('Sale price')
     expect(matrix).toContain('Sold for')
     expect(matrix).toContain('Size')
-    expect(matrix).toContain('Days to offer')
+    expect(matrix).toContain('Days on market')
     expect(matrix).toContain('Sale price today')
-    expect(matrix).not.toContain('data-fact="dom"')
+    expect(matrix).toContain('data-fact="dom"')
     expect(matrix).not.toContain('data-fact="listing-history"')
     expect(matrix).toContain('Sale price today')
     // Shared HTML still emits stack markup for the letter path; immersive CSS hides it.

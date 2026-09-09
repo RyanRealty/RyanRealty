@@ -61,15 +61,49 @@ export type WritableDocSlot =
        *  when the slot is empty and a fresh row should be created. */
       existing: { id: string; row: DocRow } | null
       /** Status of the newest protected document stepped past, or null when
-       *  the write lands on the base slug. */
+       *  the write lands on the base slug. A draft that belongs to another
+       *  person reads `draft (another requester)`. */
       priorStatus: string | null
     }
   | { ok: false; error: string }
+
+/**
+ * Who is asking for the slot. An open draft is only THAT person's writable
+ * slot when it is unclaimed (no person_id, no client_email) or claimed by them
+ * (same person id, or same email). Any other person's open draft is stepped
+ * past exactly like a protected document.
+ *
+ * Why (send walk 2026-09-08): two harness requests landed on `cma-19968` and
+ * `cma-1617-nw-8th`, which were Rob Voth's and Merle Lookabaugh's open drafts.
+ * The intake's "open draft → refresh contact fields" rule rewrote their client
+ * name and email to the new requester while `person_id` (stamped only when
+ * null) kept pointing at the first person — one document, two people, and the
+ * send would have gone to the second while the events landed on the first.
+ * An open draft is a person's document from the moment it is claimed.
+ *
+ * Callers without an identity (admin rebuilds, prospect builds, the CLI) pass
+ * nothing and keep the old rule: the open draft is the slot.
+ */
+export type SlotRequester = { personId?: number | null; email?: string | null }
+
+function draftBelongsToAnotherPerson(row: DocRow, requester: SlotRequester | undefined): boolean {
+  if (!requester) return false
+  const reqPerson = typeof requester.personId === 'number' && requester.personId > 0 ? requester.personId : null
+  const reqEmail = (requester.email ?? '').trim().toLowerCase() || null
+  if (!reqPerson && !reqEmail) return false
+  const ownerPerson = typeof row.person_id === 'number' && row.person_id > 0 ? row.person_id : null
+  const ownerEmail = String(row.client_email ?? '').trim().toLowerCase() || null
+  if (!ownerPerson && !ownerEmail) return false
+  if (reqPerson && ownerPerson === reqPerson) return false
+  if (reqEmail && ownerEmail === reqEmail) return false
+  return true
+}
 
 async function resolveWritableSlot(
   fetchRow: DocFetch,
   baseSlug: string,
   label: string,
+  requester?: SlotRequester,
 ): Promise<WritableDocSlot> {
   const hits = await probeVersionChain(fetchRow, baseSlug)
   const latest = hits[hits.length - 1] ?? null
@@ -77,7 +111,8 @@ async function resolveWritableSlot(
   if (!latest) return { ok: true, slug: baseSlug, existing: null, priorStatus: null }
 
   const status = String(latest.row.status ?? '')
-  if (status === 'draft') {
+  const anotherPersonsDraft = status === 'draft' && draftBelongsToAnotherPerson(latest.row, requester)
+  if (status === 'draft' && !anotherPersonsDraft) {
     const id = latest.row.id
     if (typeof id !== 'string' || !id) {
       return { ok: false, error: `${label} row ${latest.slug} has no readable id` }
@@ -91,7 +126,8 @@ async function resolveWritableSlot(
   }
 
   // Newest document is protected (finalized/delivered/final/archived/unknown —
-  // anything that is not an open draft is treated as protected, fail-safe).
+  // anything that is not an open draft is treated as protected, fail-safe), or
+  // it is an open draft that belongs to someone else.
   const nextVersion = latest.version + 1
   if (nextVersion > MAX_CMA_VERSIONS) {
     return {
@@ -103,7 +139,7 @@ async function resolveWritableSlot(
     ok: true,
     slug: cmaSlugForVersion(baseSlug, nextVersion),
     existing: null,
-    priorStatus: status,
+    priorStatus: anotherPersonsDraft ? 'draft (another requester)' : status,
   }
 }
 
@@ -169,9 +205,14 @@ export type WritableCmaSlot = WritableDocSlot
 /**
  * Where a CMA build/intake for this address may write. Never a protected
  * (non-draft) row: those keep their status, client, and public link forever.
+ * Pass the requester when one is known: another person's open draft is not
+ * this person's slot either.
  */
-export async function resolveWritableCmaSlot(baseSlug: string): Promise<WritableCmaSlot> {
-  return resolveWritableSlot(fetchCmaRow, baseSlug, 'cmas')
+export async function resolveWritableCmaSlot(
+  baseSlug: string,
+  requester?: SlotRequester,
+): Promise<WritableCmaSlot> {
+  return resolveWritableSlot(fetchCmaRow, baseSlug, 'cmas', requester)
 }
 
 // ── BPO wrappers (`public.broker_price_opinions`, statuses draft|final) ─────

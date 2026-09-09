@@ -1299,3 +1299,127 @@ prices, so the lowest sale renders outside the shading captioned "what your home
 **Method note for the next round: cap the fan-out.** This run spawned 631 agents on an
 uncapped findings-to-refuters expansion and exhausted the session. Cap findings per lens and
 use two refuters, not three.
+
+## Delta 3, 2026-09-08 (Matt): one map, three pin families, three matrices
+
+"We can use one map for that, and we'll just have to make the map look cooler and put better
+pins on it to show the comps and the expired or canceled as a different kind of subset. We want
+to actually have the actives, the closed, and the expired or canceled as three different icon
+sets: these are the ones that closed, this is where we're getting our number from; these are
+the ones that are active in this market right now; these are the ones that expired or canceled.
+We always have to be able to tell the tale of how long they've been on the market and how many
+price changes they've had. That has to be clear on all of those: how long it took them to sell.
+Look, once they dropped it down into this range, it sold, but these people never got down to
+that range. One comprehensive map, and then we'll break out the matrices of comparables so that
+we start with the closed comparables, the ones that set the price. We look at people that
+expired in that same area, and we have ours right next to it. All of our subject properties in
+that matrix, with all of the details: year built, notes on remodel, size, lot size, rooms,
+bathrooms, bedrooms. We do the same thing for these homes that were listed in the same area but
+were not able to sell. This is who your competition is right now in the same area at the
+recommended price point: these people are here at this price, it doesn't mean they're going to
+sell at this price."
+
+**The map.** One map for the whole document, drawn on the comp area (`render_args.compArea`).
+Three pin families, one glyph each, legend keyed to the three matrices: closed (filled navy,
+numbered, "set the price"), active or pending (hollow navy, lettered, "for sale now"), expired,
+withdrawn or canceled (navy with a strike or hollow with a bar, roman, "came off unsold"). The
+subject is the star. Every pin's label and tap reveal the same two facts: days on market and
+the count of price changes, plus the outcome (sold $X · offer in N days / asking $X · N days /
+came off after N days). Not a Google default: monochrome basemap, our pins, no attribution tell
+beyond what the license requires.
+
+**The three matrices, in this order, one column set, the subject column first in each:**
+1. Closed sales that set the price.
+2. Expired, withdrawn or canceled in the same area (the peers from Delta 1, now from the
+   comp area, widened until at least three).
+3. Active and pending in the same area at the recommended price.
+
+Columns: photo · address (tracked link) · outcome line · year built · remodel or update notes
+(the MLS remark fragment, shown as written, only when the remarks say updated / remodeled /
+new roof / new kitchen and the like; otherwise "none noted") · size · lot size · rooms · beds ·
+baths · days on market · price changes (count and the path drawn) · first ask → last ask →
+outcome. The price path row is the story Matt tells at the table: the range shaded on every
+path so the reader sees who dropped into it and sold, and who never got down to it. Phone: one
+card per row with the same fields, same order.
+
+**Sentences.** Over matrix 2: "These asked and never came down to the range." Over matrix 3:
+"These are asking in this range now. Asking is not selling." Both from data; counts and the
+range from `render_args`.
+
+### Delta 3 — what shipped, 2026-09-08 (R3h, the renderer half)
+
+Built in `wt/cma-doc-20260907`. The data half (`render_args.compArea`,
+`expiredPeers.{area, windowMonths, widenedTo, shortfall}`, `bandRivals.{area, sentence}`) is
+R2h's; every renderer below reads those fields when the row carries them and degrades to what
+the row already held when it does not, so the two lanes land independently.
+
+**The one map.** `lib/cma/map.ts` fits one tile over the subject, the closed sales, the homes
+for sale and the listings that came off, draws the comp area on it — `compArea.names` outlines
+and `compArea.radiusMiles` ring when present, the subject's own subdivision and the search
+story's radius otherwise, both still suppressed unless the shape holds a mark (class F) — and
+returns a pin per home keyed by family. `lib/cma/map-families.ts` owns the three alphabets
+(1.., A.., i..) and `lib/cma/matrix-sets.ts` decides membership and order ONCE, so a pin and a
+row cannot mean different houses. `lib/cma/comp-pin-map.ts` draws the pins as DOM buttons —
+filled numbered, hollow lettered, hollow-barred roman, a star for the subject — each revealing
+days on market, price changes and the outcome line on tap and on hover, with a legend keyed to
+the three matrices. The chapter is `the-map`, under the number; it is the only map in the
+document.
+
+**The three matrices.** `lib/cma/matrix-entry.ts` turns a closed sale, an unsold peer, a live
+rival and the subject into ONE shape; `renderMatrixHtml` in `lib/cma/comp-matrix.ts` draws it
+three times with the same twelve columns, subject column first. The adjustment grid stays
+under matrix 1 as its own table, folded by the same rules. Every price path carries the worth
+range shaded across it with a hairline at each edge.
+
+**What §0 changed about the count of price changes.** Delta 3 asks for "how many price changes
+they've had". The record answers that for exactly one listing — the seller's own dated cycle.
+Every other row holds an opening ask and today's ask and nothing between, which says THAT the
+price moved, not how often; a closed sale with no original ask on the row says neither. So the
+cell prints an exact count only where the cuts are dated, "at least 1" where only the two ends
+are known, "none" where the two ends are equal, and nothing at all where the record is silent.
+The map's reveal says the same three things in the same three ways.
+
+**The order.** `OPINION_CHAPTER_ORDER` is now what happened → the number → the map → matrix 1
+→ matrix 2 → matrix 3 → what price and time look like here → the market → net → basis → next
+step. `lib/cma/opinion-scenes.ts` walks the same list.
+
+**Interactions.** One wiring runs over all three matrix chapters: the adjustments toggle where
+there is working to put away, an order select built from the sort keys that matrix carries
+(and suppressed on a matrix holding one home), and — on matrix 3 alone — a for sale / under
+contract filter that hides columns by `data-status`. The sort realigns the adjustment grid to
+the same result.
+
+**Look-pass:** `--check --interact` exits 0 on all four exemplars, with a new `map-pin-reveal`
+step that taps a pin and reads back what it revealed and what it lit.
+
+## Delta 4, 2026-09-08 (Matt): rural homes get read as property, not as a house
+
+"For rural homes it's really important to look deeper at the property. Some are farm or have
+irrigation, some are just a plain home on a bunch of unusable land. Zoning, irrigation, other
+buildings, etc. should all factor in. Rural homes are hard so we need to nail this."
+
+**Rule.** Outside a neighborhood or community boundary the comparison is of the PROPERTY:
+the home, the land it sits on, what the land can do, and what else stands on it. A sale is
+comparable to a rural subject only when it matches on: zoning class (EFU / MUA / RR / F and
+the like, from the county), irrigation (water rights: yes/no, acres, district), usable versus
+unusable acreage (irrigated or level versus slope, rock, juniper), outbuildings (shop, barn,
+arena, ADU, guest house, with size where recorded), well and septic, and farm use or deferral
+where recorded. Each of those is a hard split before price, the way product class already is,
+or it is an itemised adjustment line with its basis printed. The document's rural grid carries
+them as rows with the source named, and the story sentences say which of them set the price
+("Both sales carry COID water; yours has none, so …").
+
+**What exists today (verified in code and memory):** `landProduct` and the acreage threshold
+(`lib/cma/land-pricing.ts`), the irrigation hard-split and custom year-quality on the facts
+path (`fe98e4bb`), the county acreage beside the MLS figure and the recorded lot drawn
+(`52083998`, `64eb7ecf`), well / septic / zoning from the county GIS
+(`reference_bend_land_data_sources`), the D18 condo site-data defect. NOT yet in the engine:
+outbuildings, farm use or deferral, usable-acre share, irrigation acres and district as
+adjustment lines, zoning as a hard split on every rural rung.
+
+**Next engine item after the containment ladder:** confirm which MLS `listings` /
+`details` fields and which county layers carry each factor (do not assume; print the
+population rate over the rural closes), add the hard splits and the itemised lines with tests
+and a rural backtest slice, and put every factor on `render_args` with its source so the rural
+grid can print it. Concorde (6.38 acres) is the exemplar; the round-four audit noted its land
+was never valued, compared, or disclosed as excluded.

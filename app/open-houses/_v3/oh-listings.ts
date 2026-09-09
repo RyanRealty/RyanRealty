@@ -1,6 +1,6 @@
 import type { UpcomingOpenHouseRow } from '@/lib/data'
 import type { ListingTile } from '@/lib/data/types/listing'
-import { listingDetailPath } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 
 export type OpenHouseListing = {
   id: string
@@ -20,6 +20,10 @@ export type OpenHouseListing = {
   city: string | null
   state: string | null
   postalCode: string | null
+  /** SITE-22 — the canonical URL's middle segments, carried so the JSON-LD
+   *  event url and this row's own href are built from the same fields. */
+  boundaryCity?: string | null
+  boundaryNeighborhood?: string | null
   streetNumber: string | null
   streetName: string | null
   streetSuffix: string | null
@@ -98,18 +102,18 @@ export function assembleOpenHouses(
       photoUrl: heroes.get(listingKey) ?? tile?.photoUrl ?? null,
       lat: tile?.lat ?? null,
       lng: tile?.lng ?? null,
-      href: listingDetailPath(
+      boundaryCity: tile?.boundaryCity ?? null,
+      boundaryNeighborhood: tile?.boundaryNeighborhood ?? null,
+      href: listingTileHref({
         listingKey,
-        {
-          streetNumber,
-          streetName,
-          city,
-          state: null,
-          postalCode: tile?.postalCode ?? null,
-        },
-        { city, subdivision },
-        { mlsNumber: listNumber },
-      ),
+        listNumber,
+        streetNumber,
+        streetName,
+        city,
+        boundaryCity: tile?.boundaryCity ?? null,
+        boundaryNeighborhood: tile?.boundaryNeighborhood ?? null,
+        subdivisionName: subdivision,
+      }),
     })
   }
 

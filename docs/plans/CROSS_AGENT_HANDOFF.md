@@ -1,4 +1,75 @@
-# Current — 2026-09-08 (SITE-03 shipped on the city grain; the sub-city questions are on the node)
+# Current — 2026-09-09 (SITE-07 quality pass landed at 448dae9d; the ruled defects are fixed and the score did not rise, and here is why)
+
+Owner: Claude (Fable 5.1), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200.
+Main merged in through `00f400b9` (SITE-20, SITE-22, the CMA send). Node `f2cfd7a0` re-blocked to
+2026-10-06 with the measurement reason unchanged.
+
+**Matt's ruling (2026-09-09), executed as written.** The calculator shipped and was not touched.
+The two defects the 67 pass charged to pre-existing sections were fixed in the primitive each
+lives in, not the page:
+- **Truncation — `V3Atlas`.** The phone chip row was a hidden-scrollbar horizontal rail with the
+  third chip cut mid-word at the viewport edge, and sibling plats sharing a long prefix ellipsized
+  to one identical string ("Awbrey Butte Homesite…" six times). Chips WRAP at every width (the
+  mobile mandate; decisions.md bans scroll rails), fold behind one "+ N more" chip in the register
+  (eight on a phone, twenty-four from 48rem — two rests, two CSS-toggled labels, no media query in
+  render), and `stripOwnPrefix` drops the containing place's name so "Homesites Phase Twenty-two"
+  reads as itself. Phase WORDS are kept on purpose: stripping them collapses every "Homesites
+  Phase …" sibling into one chip. The same strip runs in `placeFigureRows` for the subdivisions
+  ledger and a ledger label may wrap.
+- **The run — `V3Ledger`.** pulse / walk / magazine had differed by a thumbnail size and a date
+  style. Walk is a date-led timeline (calendar tile, one left rule, NO photo — with a photo it was
+  the feed row wearing a tile), magazine a card grid (photo on top, lead spanning, detail line in
+  body type at every width), pulse stays the feed. Section roots carry `scroll-margin-top`.
+
+**The number, straight.** Separate Sonnet evaluator, rubric v1-2026-09-08, fourteen records
+(opening, Atlas, chips folded and open, activity, open houses, guides): **65 (65/59/68) against
+the ruled 67 — it did not rise.** A first pass on the same tree scored 64 (64/58/68); the canon
+lens's findings between the two (the guides card's detail in the display serif, the walk row still
+reading as the feed, eighty chips beside empty cream) were fixed and the evaluator credits each.
+Two rounds inside a nine-to-ten point within-call spread, with both ruled defects confirmed fixed
+on the pixels by two adversarial lenses and two evaluations, is the finding. The receipt carries
+the same-instrument 83 on the file as not comparable (two states) and the 67 as the honest
+baseline.
+
+**What holds the number is outside the item, and needs Matt — four decisions on node f2cfd7a0:**
+1. `#activity` and `#open-houses` are **Bend-wide sections on a neighborhood page** — every row
+   shown is in Bend Riverside, Broken Top, Stone Creek or Wyndemere, none in Awbrey Butte, with no
+   disclosure. Honesty scored 6 of 10 on it; "the single biggest credibility problem on the page,
+   persisted across two prior review rounds." Filter to the neighborhood's plats with a disclosed
+   thin-n fallback, or relabel honestly. This is scope, not craft.
+2. The neighborhood **opens on a photo Stage**; PUBLIC_UI's per-destination table specifies
+   Instrument first for this grain. The evaluator reads it as a place-rhythm lock break.
+3. The chip cloud **carries a sold count it does not encode**; DATA_GRAPHICS names this the
+   horizontal-bar case. A sorted bar list with a show-all is a new item.
+4. Three sections still **share eyebrow → heading → rows at the section level** with three row
+   shapes; the rubric's letter counts three Ledgers in a row. The city page moves `V3Answers`
+   between them; the neighborhood could too.
+
+**Also landed, from the lenses.** The builder's `check-tap-targets.mjs` change had let a control
+hidden behind a full-size disclosure vouch, unmeasured, for small visible controls site-wide (every
+link in the closed phone drawer, every route). The gate now opens the disclosure for one
+synchronous measurement, records the control's OWN box, restores before paint; one under 44 once
+revealed earns nothing. `scripts/__tests__/check-tap-targets.test.mjs` holds it in real Chromium.
+The capture tool waits for the load event so a streamed section is present before a state frames.
+
+**Two lane lessons that cost hours, for the next session.**
+- **`npx prettier --write` has no config in this repo** (the formatter is eslint). It rewrote two
+  TSX files wholesale — double quotes, semicolons, 1,210 lines — and broke a test that greps source
+  literals. Never run prettier here; write in the house style.
+- **The account session limit kills a builder mid-report.** The SITE-07 builder hit "session
+  limit, resets 3am UTC" after 47 minutes with its work in the tree and no report. Salvage from the
+  tree (typecheck, tests, records) beat a rebuild; keep a diff snapshot in the scratchpad before
+  long lanes. A claim was also released as stale under three hours once — heartbeat every 30 min.
+- **Tool blind spot, unresolved:** `scripts/take-route-shots.mjs` cannot see `#subdivisions` on
+  `/cities/bend/mountain-view` though curl serves it and a bare Playwright context confirms it
+  exists and is visible after hydration with zero hydration errors. No subdivisions record exists
+  in the receipt; the ledger fix is held by unit tests.
+
+**Queue at handoff:** SITE-07 blocked to 2026-10-06. Lanes: `cloud-grinder-2026-09-08-22` on
+SITE-20/22 (both now merged on main) and `claude-fable-9d4aa6fc` on SITE-24/25 with live
+heartbeats. Do not preempt.
+
+## Prior — 2026-09-08 (SITE-03 shipped on the city grain; the sub-city questions are on the node)
 
 Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200 at
 `95197c9`. `ci:gates` 157/157, `test:unit` 888 files, `tsc` clean cold.
@@ -156,6 +227,158 @@ listing", given the hourly cron batches sends.
 
 ## Prior — 2026-09-08 PM (round four closed: A–F shipped, the contract fails closed on type)
 
+## Prior — 2026-09-09 (site queue: a sold home stops publishing its asking price; one canonical per listing)
+
+Owner: Claude (Opus 5), cloud "Site queue grinder" routine, session 01DLfMFV. **main is at `8bef8ddde`.**
+Three SITE nodes moved this run: SITE-07 shipped and live, SITE-22 DONE, SITE-20 shipped and
+live-verified but deliberately left OPEN. Four pushes, each gated, each live-checked.
+
+**The one that mattered: SITE-20, a §0 defect that was live under a principal broker's licence.**
+Every Closed listing published its LIST price as the headline of its search snippet, its share
+card and its RealEstateListing JSON-LD — and because `buildOffer` correctly drops the Offer for a
+sold home, dropping it also dropped the only machine-readable statement that the home had sold.
+55550 Heidi Court published $1,250,000 against an $1,100,000 sale; 1117 Peco Road published
+$1,199,000 against $1,000,000. 1,282 of 1,708 comparable Closed rows have ListPrice != ClosePrice.
+`lib/listing/publish-listing-published-price.ts` is now the one publisher for every surface, and it
+REFUSES to fall back from a missing ClosePrice to the ask — that fallback is the defect, so it may
+not come back as error handling. Pending stays unmapped in schema availability because schema.org
+has no value meaning "under contract, not yet sold" and inventing one publishes a claim the record
+does not support.
+
+**SITE-22 is done.** One listing could be reached at four URLs, each self-canonical: 2,363 of 8,724
+listing ids at more than one URL, 47.7% of listing-class impressions. There is now ONE builder —
+`listingTileHref` / `listingCanonicalHref`, both through `listingDetailPath` — making the canonical,
+the sitemap row and every internal href. Eight of eight production variants (including an invented
+`/portland/` path and an `/na/` segment) resolve to the one canonical; `/cities/bend` went from 8
+raw-ListingKey hrefs to 0. Harm was index fragmentation, not clicks — do not read a rank change into it.
+
+**The container restarted mid-round and killed the build lane. Read this before trusting a lane.**
+SITE-20 survived as a commit. SITE-22 survived as 44 files STAGED AND NEVER EXECUTED — no test, no
+gate, no live assertion had ever run against them. Replaying that work found three things the lane
+never saw: two contract tests that demanded a DIRECT `listingDetailPath(` call and so failed the
+refactor that fixes what they guard, and `ci:listing-figure-publish` rejecting the sold-price
+publisher for the same reason. All three were legitimate to update — each now asserts the shared
+builder, whose OUTPUT is pinned by seventeen behavioural assertions in `lib/slug.test.ts`, which is
+a stronger contract than grepping one file. Nothing landed on the strength of a diff looking right.
+
+**A gate held the spelling it was tested against, not the defect.** SITE-22's accept requires the new
+`ci:listing-canonical-single` to FAIL when the by-address override returns. It does. But probed with
+the same defect one character apart — `base.alternates = { canonical }` instead of
+`alternates: { canonical }` — it passed 10/10. Hardened in `8bef8ddde` and re-probed three ways
+(clean 10/10, historical override FAILs, assignment form FAILs). **Worth generalising: when you add a
+gate, probe it with a second spelling of the same defect before you believe it.**
+
+**SITE-20 is OPEN, not done, and that is deliberate.** Everything functional is shipped and verified on
+production against a pre-fix baseline captured BEFORE the deploy (all four listings publish Sold + the
+exact ClosePrice, `schema.org/SoldOut`, still no offers node; Active listings resolved at query time
+still publish list price, InStock, a real offer). What is NOT done is its taste half: the listing-detail
+evaluator rising above **87** on the same instrument. That pass was not run and nothing claims it. A
+future session owes only that.
+
+**A question is still with Matt from SITE-07** (place-page affordability instrument, live on
+`/cities/bend`, `/cities/redmond`, `/cities/bend/awbrey-butte`). The city class rebaselined honestly at
+65 — the prior 67 was grok-4.6 with no rubric version and no shots hash, so all three identity keys
+drift. The neighborhood class scored **67 against a standing 83 from the same evaluator model and the
+same rubric**. Only `shotsHash` differed, and only because the change added shots. `ci:taste-canon`
+would have ACCEPTED a "rebaselined" claim on that key alone; writing one would have laundered a
+16-point fall past a gate that reads three keys, so the 83 stands and the rise is recorded as unmet.
+The evaluator found ZERO defects in the new section and called it the best thing on both page classes —
+every point lost belongs to sections SITE-07 does not own (the city FAQ is the weaker of two builds of
+one component and carries no per-answer source line; five consecutive sections share one shape; the
+property-type tiles are a KPI grid; the neighborhood subdivision grid repeats indistinguishable
+truncated labels, which is information loss). **Accept 67 as the honest mark for that class, or hold
+SITE-07 until a node fixes those sections?**
+
+**Two traps that cost this run real time.**
+1. **A count taken from an unchecked response is not a measurement.** The first production pass on
+   SITE-22 reported failures and once made SITE-20 look like it had regressed off production. Several
+   of those reads were failed fetches (`http 000`) whose empty bodies `grep -c` happily counted as
+   zero. Check the status code before you parse the body; every figure recorded on these nodes comes
+   from a confirmed 200.
+2. **`next dev --webpack` and `next build --webpack` both fail in a worktree on this repo, on main,
+   before any change** — `getPlaceDocuments` reaches the client graph through the v3 barrel via
+   `V3PlaceDocuments` and webpack errors on `next/headers`. The fix is NOT the flag:
+   `cp -al <main>/node_modules ./node_modules` (hardlinks, seconds) makes Turbopack's workspace-root
+   inference succeed. A bare symlink is rejected. **`.claude/skills/site-queue/SKILL.md` still tells
+   every cloud lane to use `--webpack`; that line is wrong in a worktree and should be corrected.**
+   Also: `npm run ci:runtime-gates` times out against a healthy server because its `wait-on` uses
+   axios, which `middleware.ts` 403s; `scripts/run-runtime-gates.sh` on main is the working path.
+
+**Queue.** 43 items, 23 open. SITE-22 done. SITE-20 open (taste only). SITE-07 was claimed by another
+session after this run released it. Fleet discipline held throughout: never more than three workers.
+
+---
+
+## Prior — 2026-09-09 (the CMA send walked end to end on the email harness; the intake stops taking over other people's drafts)
+
+Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
+(`wt/cma-ship-20260907`). Commit 021e0e9a, merged with main at 31eef8d8, gated push in flight
+when this was written — `git log origin/main --oneline -3` says whether it landed.
+
+**What Matt asked.** "Work through the full send of CMAs to some of the aliases, then open and
+click, ensure tracking works and that the CMA delivery shows up under the lead. Walk the process
+and improve it. Tweak the email with a custom email."
+
+**What was walked, on production, as Matt.** Three seller-LP requests for the harness aliases
+(`scripts/_cma-harness-requests.ts`): Avery → 2465 NE 7th Redmond (new row
+`cma-2465-ne-7th-redmond-97756`), Blake → 1617 NW 8th Bend, Casey → 19968 Terrace Bend. Two
+documents sent from `/admin/cmas/<slug>` with a broker-typed subject and body (Send now), read
+back from the marketing@ inbox over DWD (`scripts/_cma-harness-inbox.ts`), the report link
+opened in a fresh headless profile (`scripts/_cma-harness-click.ts`, never the admin's browser —
+`?_pid` would stitch Matt's visitor id to the alias). Verified for both Avery and Blake:
+`cmas.status=delivered`; `email_events` sent (transport gmail) and click, keyed `cma:<slug>`;
+`crm_timeline` email_out → email_click → "Broker alert queued (return-visit)"; `visitor_events`
+page_view `client-document` on `/cma/<slug>`; `visitor_identity_map` row for the new rr_vid with
+`identify_source=email_click_pid`; the review page's "What happened" panel (Sent, Clicked, Visited
+· 3×) and the lead page `/admin/people/63297` ("CMA sent … Clicked · on the site after"). Blake's
+went out on the versioned slug `cma-1617-nw-8th--v2`, so the `--vN` path delivers and tracks.
+"Opened —" is expected on the panel: the headless reader loads no pixel.
+
+**The defect the walk found, fixed in 021e0e9a.** Blake's and Casey's requests landed on OTHER
+PEOPLE's open drafts — `cma-1617-nw-8th` was Merle Lookabaugh's asked-unsent draft, `cma-19968`
+was Rob Voth's hot FSBO draft (person 63676). The intake's "open draft → refresh contact fields"
+rule rewrote their client name and email to the alias while `person_id` (stamped only when null)
+kept the first person: one document, two people, the send would have gone to the second while
+the events landed on the first. The cma-build-worker had already rebuilt 1617 under Blake's name
+and was mid-build on 19968 (killed by hand, action 43e20378). Both rows were restored from the
+original action payloads and Merle's rebuilt on the current engine; Rob's build never wrote.
+Fix: `resolveWritableCmaSlot(baseSlug, requester?)` — an open draft claimed by someone else
+(person id or email) is stepped past to `--vN` exactly like a protected document; unclaimed
+drafts and the same person's drafts behave as before; callers with no identity (admin rebuild,
+prospecting, CLI) keep the old rule. Intake, the contact-card CMA, and the CRM kick-off pass
+identity. `lib/cma/versions.owner.test.ts` locks it. Re-running the requests through the fix
+produced `cma-1617-nw-8th--v2` and `cma-19968--v2` for the aliases, both look-pass OK.
+
+**Email fixes in the same commit.** The review page preview of a custom email showed no report
+link while the send appended one — `lib/cma/report-button.ts` is now the one source for the
+READ THE FULL REPORT button, used by `lib/cma/send.ts` (both branches) and prepended to the
+review page's `signatureHtml`. A custom note's preheader is its own first sentence, not the
+composed line it replaced. "the sales that set it" → "the sales behind it" in the first-contact
+copy and the inbound packet ("set" is on the CMA's banned list).
+
+**Seen on the walk, not changed (Matt's call or by design).**
+- `/cma/<slug>` is the Google sign-in door (Matt 2026-08-05, `lib/cma/register-gate.ts`): the
+  lead reads the attached PDF freely; the web report and its tracked address links sit behind
+  "Continue with Google". The tracked click and the door's page view both record; a headless
+  reader cannot pass the door, so in-document taps were verified from the admin render only.
+- The build worker runs at :14 and :44 (`vercel.json`); a seller-LP request can wait 29 minutes
+  for its draft. Avery's built in 26s only because the request landed at :43. Kicking the worker
+  from the intake (`after()` fetch with the cron secret) would close that; not built.
+- "What happened" on the review page lagged one reload behind the click (60-second
+  `unstable_cache` on `cma:engagement`); the second load was right.
+- After Send now the review page auto-advances to the next ready document in the lane; it landed
+  on Merle's real draft. Correct product behavior, and the reason every harness send must be read
+  twice before the click.
+- `cma-19968--v2` (Casey) is `review` severity (audit findings; the document prints "under broker
+  review") and was not sent. `cma-1617-nw-8th--v2` (Blake) carries a $699,000–$932,000 range
+  around $816,000 — wide; the engine's number, left as is for this walk.
+
+**Not done from the mission list** (unchanged from the previous block): containment ladder
+(subdivision → adjacent subdivisions inside the neighborhood/community to 12 months → out), Delta
+4 rural-property factors, cover photo, subdivision-story/voice-reviewer Anthropic calls, inbound
+email replies not advancing the CRM, D21 price-tier fallback, CmaLaneFunnel not mounted, the 8
+zz-test-rebrand fixtures in production `cmas`, all four lane Auto-send switches OFF.
+
 ## Prior — 2026-09-09 (site queue round two: SITE-26 and SITE-27 done in one push; the BPO contract forwards the subject type again)
 
 Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. One push for
@@ -241,6 +464,39 @@ the neighborhood or community boundary until it is exhausted to 12 months (subdi
 adjacent subdivisions inside the boundary → then out); same property type on every rung. The
 ladder change is the next engine item and is NOT built yet — see the previous block for the
 tier order and the data to confirm first.
+
+**Matt's third rule today (memory `feedback_cma_comp_containment`, in build on
+`wt/cma-engine-20260907` as R2h):** unsold peers (Expired/Withdrawn/Canceled) come from the
+SAME area the kept comps came from, widening 3 → 6 → 9 → 12 → 18 → 24 months until at least
+three, each with its story; competition is limited to the neighborhood or community, and a
+subject outside any boundary uses the comp radius, never a city-wide band. Before this, peers
+were the market-area grain at a fixed 12 months and competition was city-wide nearest-first.
+`render_args.compArea` is the one area object; the renderer reads it for both chapters.
+
+**Landed after the cut-off (2026-09-08 evening):** the wiring pass (`fa6dde43`) and Delta 3
+(`010a544d`, `ef66f481`) reached main at `09b59010` and are live: one map, three pin families,
+three matrices; chapter 2 and the competition read `compArea` / `expiredPeers` / `bandRivals`.
+The rural competition cap (`6ea73fc4`: start 5 mi, widen 5 → 10 → comp radius only to find
+three) reached main at `8a1f83be`; Concorde's competition is 3 active + 1 pending within five
+miles. All four exemplars rebuilt on this engine; look-pass OK on all four. The block below
+describes the state BEFORE those landed and is kept for the record.
+
+**Session cut-off 2026-09-08 (limit resets 8pm PT) — state of the two lanes:**
+- Document `wt/cma-doc-20260907`: Delta 3 landed as `010a544d` (one map, three pin families,
+  three matrices) and `ef66f481` (sort/filter/reveal per matrix), plus `b366a3a6` WIP residue
+  (typechecks; tests unconfirmed). NOT done: the wiring pass that points chapter 2 and the
+  competition chapter at R2h's `render_args.compArea`, `expiredPeers` (a set: `.peers`,
+  `.sentence`, `.shortfall`, `peer.whyItSat`) and `bandRivals` (a set: `.rivals`, `.sentence`,
+  `.source`) — see R2h's list: `opinion-pages.ts` `didNotSellArgs` and `competitionArgs`,
+  `opinion-scenes.ts:76`, `render.ts` types; `lib/cma/extras.ts` still computes the city-wide
+  sets until then.
+- Engine `wt/cma-engine-20260907`: R2h landed (`a18989f9` `ead99804` `9b4cc390` `11782caa`,
+  merged into ship). R2i, the rural competition radius (start 5 mi, widen 5 → 10 → comp
+  radius only while fewer than three rivals; never beyond the comp radius) is NOT started;
+  rule in memory `feedback_cma_comp_containment`.
+- Delta 4 (rural homes read as property: zoning, irrigation, usable acreage, outbuildings,
+  well/septic, farm use as hard splits or itemised lines) is recorded in the blueprint and
+  memory; the next engine item after the containment ladder.
 
 **Still open:** the cover photo is whatever single MLS photo the row carries; the map is a
 Google tile with our pins; subdivision-story and voice-reviewer still call the Anthropic API

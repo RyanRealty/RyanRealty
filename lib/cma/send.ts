@@ -35,6 +35,7 @@ import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
 import { composeCmaFirstContact, cmaFirstContactFactsFromRow, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
+import { cmaReportButtonHtml, previewTextFromCustomBody } from '@/lib/cma/report-button'
 import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
 
@@ -180,7 +181,7 @@ function buildLeadBody(ctx: CmaSendContext, override?: CmaSendOverride): { html:
     const bodyHtml = `
 <div style="padding:32px 34px 8px;">
   ${paras}
-  <p style="margin:0 0 24px 0;"><a href="${viewUrl}" style="display:inline-block;background:#102742;color:#faf8f4;font-size:13px;font-weight:700;letter-spacing:.08em;text-decoration:none;padding:14px 32px;">READ THE FULL REPORT &rarr;</a></p>
+  ${cmaReportButtonHtml(viewUrl)}
   <p style="margin:0 0 8px 0;">${escapeHtml(brokerFirst)}<br/>Ryan Realty${ctx.brokerRow.phone ? `<br/>${escapeHtml(ctx.brokerRow.phone)}` : ''}</p>
 </div>`
     const text = `${raw}
@@ -204,7 +205,9 @@ Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedText
     }
     const html = wrapBrandedEmail({
       bodyHtml,
-      previewText: copy.previewText,
+      // A broker-typed note previews as its own first sentence, not the
+      // composed line it replaced.
+      previewText: previewTextFromCustomBody(raw, copy.previewText),
       mastheadLine: copy.mastheadLine,
       heroUrl: null,
       senderBroker: shellBroker,
@@ -217,7 +220,7 @@ Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedText
   const bodyHtml = `
 <div style="padding:32px 34px 8px;">
   ${bodyParagraphsHtml(copy.bodyText, ctx.subjectAddress)}
-  <p style="margin:0 0 24px 0;"><a href="${viewUrl}" style="display:inline-block;background:#102742;color:#faf8f4;font-size:13px;font-weight:700;letter-spacing:.08em;text-decoration:none;padding:14px 32px;">READ THE FULL REPORT &rarr;</a></p>
+  ${cmaReportButtonHtml(viewUrl)}
   <p style="margin:0 0 8px 0;">${escapeHtml(brokerFirst)}<br/>Ryan Realty${ctx.brokerRow.phone ? `<br/>${escapeHtml(ctx.brokerRow.phone)}` : ''}</p>
 </div>`
 

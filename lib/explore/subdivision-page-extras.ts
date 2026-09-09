@@ -4,7 +4,7 @@
  * Plat live figures go through publishPlatFigures — do not fetch parent pulse here.
  */
 
-import { listingDetailPath, slugify } from '@/lib/slug'
+import { listingTileHref, slugify } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import resortCommunitiesData from '@/data/resort-communities.json'
@@ -131,12 +131,7 @@ export function splitRowsFromTiles(
       })
       return {
         key: t.listingKey,
-        href: listingDetailPath(
-          t.listingKey,
-          { streetNumber: t.streetNumber, streetName: t.streetName, city: t.city },
-          { city: t.city, subdivision: t.subdivisionName },
-          { mlsNumber: t.listNumber },
-        ),
+        href: listingTileHref(t),
         title: street || 'Listing',
         subtitle: [t.beds != null ? `${t.beds} bd` : null, t.baths != null ? `${t.baths} ba` : null]
           .filter(Boolean)

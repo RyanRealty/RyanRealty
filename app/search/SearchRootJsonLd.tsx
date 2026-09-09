@@ -1,4 +1,4 @@
-import { listingDetailPath } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 
 /**
  * Structured data for the root search page (/homes-for-sale, unslugged
@@ -20,6 +20,10 @@ type ListingRow = {
   State?: string | null
   PostalCode?: string | null
   SubdivisionName?: string | null
+  /** SITE-22 — declared, not read through the index signature, so the ItemList
+   *  url is built from the same fields the listing's canonical is. */
+  BoundaryCity?: string | null
+  BoundaryNeighborhood?: string | null
   [key: string]: unknown
 }
 
@@ -54,23 +58,16 @@ export default function SearchRootJsonLd({
     .map((l) => {
       const key = l.ListNumber ?? l.ListingKey
       if (!key || !siteUrl) return null
-      const href = listingDetailPath(
-        String(key),
-        {
-          streetNumber: l.StreetNumber ?? null,
-          streetName: l.StreetName ?? null,
-          city: l.City ?? null,
-          state: l.State ?? null,
-          postalCode: l.PostalCode ?? null,
-        },
-        {
-          city: l.City ?? null,
-          subdivision: l.SubdivisionName ?? null,
-        },
-        {
-          mlsNumber: l.ListNumber ?? null,
-        }
-      )
+      const href = listingTileHref({
+        listingKey: String(key),
+        listNumber: l.ListNumber ?? null,
+        streetNumber: l.StreetNumber ?? null,
+        streetName: l.StreetName ?? null,
+        city: l.City ?? null,
+        boundaryCity: l.BoundaryCity ?? null,
+        boundaryNeighborhood: l.BoundaryNeighborhood ?? null,
+        subdivisionName: l.SubdivisionName ?? null,
+      })
       return `${siteUrl}${href}`
     })
     .filter(Boolean) as string[]

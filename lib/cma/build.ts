@@ -78,6 +78,11 @@ import { renderCmaHtml } from '@/lib/cma/render'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { buildSubjectStatus } from '@/lib/pricing/subject-status'
 import { buildCompSearch } from '@/lib/pricing/comp-search'
+import { buildCompArea, resolveCompetitionArea } from '@/lib/pricing/comp-area'
+import { getCmaAreaUnsoldCycles } from '@/lib/data/cma/areaUnsoldReads'
+import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
+import { buildExpiredPeerSet, keptCompMedianPpsf, marketAreaPriceBand } from '@/lib/cma/market-status'
+import { bandAroundList, bandRowToRival, buildBandRivalSet, pickCompetitionRing } from '@/lib/cma/band-rivals'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
@@ -1076,10 +1081,135 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       })),
     })
 
+    // R2h. ONE AREA, then the two sets that must come out of it (Matt
+    // 2026-09-08: "we want to use the same area that we searched and where we
+    // actually retrieved comps ... Same thing with the competition").
+    //
+    // The unsold peers and the competition used to be city-wide reads, so one
+    // document carried three different maps. `compArea` is derived from the
+    // counted ladder above and the sales this document prints; both reads
+    // below are scoped to it and to nothing wider.
+    const compArea = buildCompArea({
+      subject: {
+        latitude: subject.latitude,
+        longitude: subject.longitude,
+        subdivision: selection.diagnostics.subject.subdivision ?? subject.subdivision,
+        city: subject.city,
+      },
+      rungs: (compSearch?.rungs ?? []).map((r) => ({ key: r.key, kept: r.kept, added: r.added })),
+      keptComps: renderComps.map((c) => ({
+        subdivision: c.subdivision,
+        selectionTier: c.selectionTier,
+        latitude: c.latitude,
+        longitude: c.longitude,
+      })),
+    })
+    // Matt 2026-09-08, "definitely tighter on rural homes, make the best
+    // decision": a subject with no mapped neighborhood or community widens
+    // its competition circle only as far as it has to. `resolveCompetitionArea`
+    // returns the RING ORDER to try — one ring for a mapped boundary or a
+    // no-coordinate subject, otherwise 5 miles, then 10, then the comp
+    // search's own reach, never past it.
+    const competitionRings = compArea
+      ? resolveCompetitionArea({
+          compArea,
+          subject: { latitude: subject.latitude, longitude: subject.longitude, city: subject.city },
+          keptComps: renderComps.map((c) => ({ latitude: c.latitude, longitude: c.longitude })),
+        })
+      : []
+    // The rows are read ONCE, at the widest ring — `pickCompetitionRing` below
+    // walks the narrower rings over rows already in hand, the same shape as
+    // the expired-peer window ladder just below it (one read, then a walk).
+    const widestCompetitionRing = competitionRings[competitionRings.length - 1] ?? null
+
+    // The peer band is the market-area band (0.55x-1.85x of the anchor) the
+    // status grid already uses; the competition band is the +/-10% live band
+    // the competition chapter already uses. Same two definitions, read inside
+    // the area instead of inside the city.
+    const peerBand = marketAreaPriceBand(pricing.recommended || subject.lastListPrice || 0)
+    const rivalBand = bandAroundList(pricing.recommended)
+    const [unsoldRead, widestAreaInventory] = await Promise.all([
+      compArea && peerBand
+        ? getCmaAreaUnsoldCycles({
+            area: compArea,
+            city: subject.city,
+            propertySubType: subject.propertySubType,
+            priceLo: peerBand.lo,
+            priceHi: peerBand.hi,
+          }).catch(() => null)
+        : Promise.resolve(null),
+      widestCompetitionRing && rivalBand
+        ? getCmaAreaBandInventory({
+            area: widestCompetitionRing,
+            city: subject.city,
+            lo: rivalBand.lo,
+            hi: rivalBand.hi,
+            propertySubType: subject.propertySubType,
+          }).catch(() => null)
+        : Promise.resolve(null),
+    ])
+
+    const expiredPeers =
+      compArea && unsoldRead
+        ? buildExpiredPeerSet({
+            rows: unsoldRead.rows,
+            subject: {
+              beds: subject.beds,
+              sqft: subject.sqft,
+              latitude: subject.latitude,
+              longitude: subject.longitude,
+              listingKey: subject.listingKey,
+              mlsNumber: subject.mlsNumber,
+              streetAddress: subject.streetAddress,
+            },
+            area: compArea,
+            keptCompMedianPpsf: keptCompMedianPpsf(renderComps),
+          })
+        : null
+
+    // Walk the ring ladder over the widest read: stop at the first ring
+    // holding three active-or-pending homes, or the widest ring itself.
+    const competitionRing =
+      widestAreaInventory && competitionRings.length > 0
+        ? pickCompetitionRing({
+            rings: competitionRings,
+            activeRows: widestAreaInventory.activeRows,
+            pendingRows: widestAreaInventory.pendingRows,
+          })
+        : null
+    const competitionArea = competitionRing?.area ?? widestCompetitionRing
+
+    const bandRivals =
+      competitionRing && widestAreaInventory
+        ? buildBandRivalSet({
+            area: competitionRing.area,
+            lo: widestAreaInventory.lo,
+            hi: widestAreaInventory.hi,
+            activeCount: competitionRing.activeCount,
+            pendingCount: competitionRing.pendingCount,
+            rivals: [
+              ...competitionRing.activeRows.map((r) => bandRowToRival(r, 'Active')),
+              ...competitionRing.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
+            ].filter((r): r is NonNullable<typeof r> => r != null),
+            subject: {
+              latitude: subject.latitude,
+              longitude: subject.longitude,
+              beds: subject.beds,
+              sqft: subject.sqft,
+            },
+            asOfIso: generatedAtIso,
+            widenedFrom: competitionRing.widenedFrom,
+            ringsTried: competitionRing.ringsTried,
+          })
+        : null
+
     const renderArgs = {
       subject,
       comps: renderComps,
       compSearch,
+      compArea,
+      expiredPeers,
+      bandRivals,
       market,
       pricing,
       client: input.client,
@@ -1173,6 +1303,43 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             cost_usd: subdivisionStory.costUsd,
             photo_sales_reviewed: subdivisionStory.photoSalesReviewed,
             photo_sales: subdivisionStory.notableSales.map((n) => ({ mls: n.listNumber, address: n.address })),
+          }
+        : { source: 'none' },
+      // R2h: one entry per read, so a reviewer can re-run the exact scope the
+      // peers and the competition were taken over. The rural ladder's ring
+      // actually read, and every ring it tried before that, ride along on
+      // both entries so a reviewer never has to re-derive the widening.
+      comp_area: compArea
+        ? {
+            ...compArea,
+            competition_area: competitionArea,
+            competition_rings_tried: competitionRing?.ringsTried ?? [],
+            competition_widened_from: competitionRing?.widenedFrom ?? null,
+          }
+        : { source: 'none', note: 'No sale was printed, so no area was derived.' },
+      unsold_peers: unsoldRead
+        ? {
+            ...unsoldRead.citation,
+            window_months: expiredPeers?.windowMonths ?? null,
+            windows_tried: expiredPeers?.windowsTried ?? [],
+            widened_to: expiredPeers?.widenedTo ?? null,
+            count: expiredPeers?.count ?? 0,
+            shortfall: expiredPeers?.shortfall ?? true,
+            price_band: peerBand,
+          }
+        : { source: 'none' },
+      competition: widestAreaInventory && competitionRing
+        ? {
+            ...widestAreaInventory.citation,
+            active: competitionRing.activeCount,
+            pending: competitionRing.pendingCount,
+            price_band: rivalBand,
+            // The ring actually read (miles, null for a mapped boundary or a
+            // no-coordinate subject), every ring tried before it, and the
+            // starting ring it widened from — the rural ladder's own trace.
+            ring_miles: competitionRing.area.kind === 'radius' ? competitionRing.area.radiusMiles : null,
+            rings_tried: competitionRing.ringsTried,
+            widened_from: competitionRing.widenedFrom,
           }
         : { source: 'none' },
       equity_position: equity ?? { source: 'none' },

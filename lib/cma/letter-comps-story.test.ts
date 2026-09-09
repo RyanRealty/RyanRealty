@@ -233,12 +233,11 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
     const html = renderCompMatrixHtml(subject, fiveSales(sold))
     expect(html).toContain('The sales that set this price')
     expect(html).toContain('Sold for')
-    expect(html).toContain('Days to offer')
+    expect(html).toContain('Days on market')
     expect(html).toContain('Sale price today')
     expect(html).toContain('20 days')
-    // Days on market and the listing-history paragraph are cut
-    // (CMA_REIMAGINED_2026-09-07.md chapter 3).
-    expect(html).not.toContain('Days on market')
+    // The listing-history paragraph stays cut — a paragraph inside a table
+    // cell is the wall of text this document is not (blueprint chapter 3).
     expect(html).not.toContain('Listing history')
     expect(html).not.toContain('Listed at $529,000, sold at $497,800')
   })
@@ -291,7 +290,7 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
     expect(html).not.toContain('97 days on market')
   })
 
-  it('print spine orders unsold peers → the sales that set the price → competition', () => {
+  it('print spine orders the sales that set the price → unsold peers → competition', () => {
     const pages = assembleOpinionPages({
       subject,
       comps: fiveSales(sold),
@@ -303,15 +302,15 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
       excludedOutliers: [],
     })
     const bodies = pages.map((p) => p.body).join('\n')
-    // CMA_REIMAGINED_2026-09-07.md reordered this: the unsold listings are
-    // chapter 2's evidence that priced high sits, so they come BEFORE the
-    // number they explain, and competition follows the number.
+    // Delta 3's order: matrix 1 (the closed sales that set the price), then
+    // matrix 2 (the listings that came off unsold), then matrix 3 (who is
+    // asking now).
     const salesIdx = bodies.indexOf('The sales that set this price')
     const expiredIdx = bodies.indexOf('The listings near you that did not sell.')
     const compIdx = bodies.indexOf('Who you would compete with at')
-    expect(expiredIdx).toBeGreaterThan(-1)
-    expect(salesIdx).toBeGreaterThan(expiredIdx)
-    expect(compIdx).toBeGreaterThan(salesIdx)
+    expect(salesIdx).toBeGreaterThan(-1)
+    expect(expiredIdx).toBeGreaterThan(salesIdx)
+    expect(compIdx).toBeGreaterThan(expiredIdx)
   })
 
   it('immersive spine carries the same four beats', () => {

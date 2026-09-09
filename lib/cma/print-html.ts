@@ -8,7 +8,7 @@ import type { CmaRenderSource } from '@/lib/data/cma/documents'
 import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
 import { renderCmaHtml, type RenderCmaArgs } from '@/lib/cma/render'
-import { buildCmaMapDataUri } from '@/lib/cma/map'
+import { buildCmaMapDataUri, cmaMapOptionsFromArgs } from '@/lib/cma/map'
 import type { CompPinMapOverlay } from '@/lib/cma/comp-pin-map'
 import type { CmaBroker } from '@/lib/cma/types'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
@@ -56,9 +56,16 @@ export async function resolveCmaPrintHtmlFromSource(
     let mapOverlay: CompPinMapOverlay | null = null
     if (!mapDataUri) {
       try {
-        const map = await buildCmaMapDataUri(stored.subject, comps)
+        const map = await buildCmaMapDataUri(stored.subject, comps, cmaMapOptionsFromArgs(stored))
         mapDataUri = map?.dataUri ?? null
-        mapOverlay = map ? { view: map.view, pins: map.pins, boundaryShown: map.boundaryShown } : null
+        mapOverlay = map
+          ? {
+              view: map.view,
+              pins: map.pins,
+              boundaryShown: map.boundaryShown,
+              radiusShown: map.radiusShown,
+            }
+          : null
       } catch {
         mapDataUri = null
         mapOverlay = null

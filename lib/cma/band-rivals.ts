@@ -7,6 +7,9 @@ import { UNADDRESSED_DOC_LINKS, escapeHtml, int, sparkPhotoAt, usd } from '@/lib
 import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { formatDate } from '@/lib/format/date'
 import { priceHistoryLineCompactHtml, pricePathFromListing } from '@/lib/cma/price-path'
+import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import { compAreaContains, compAreaIn, compAreaPhrase, milesPhrase, type CompArea } from '@/lib/pricing/comp-area'
+import { countWord } from '@/lib/pricing/estimate'
 
 const esc = escapeHtml
 
@@ -69,7 +72,7 @@ function dist2(
   return dLat * dLat + dLng * dLng
 }
 
-function rivalFitsSubject(
+export function rivalFitsSubject(
   r: CmaBandRival,
   subject?: { beds?: number | null; sqft?: number | null } | null,
 ): boolean {
@@ -254,6 +257,8 @@ export function competitionSentence(input: {
   activeCount: number
   pendingCount: number
   shown: number
+  /** True when the homes drawn were narrowed to ones like the subject. */
+  likeYours?: boolean
 }): string {
   const bits = [
     `${int(input.activeCount)} home${input.activeCount === 1 ? ' is' : 's are'} for sale between ${usd(input.lo)} and ${usd(input.hi)}.`,
@@ -389,4 +394,326 @@ export function renderBandRivalsSceneHtml(input: BandRivalsInput): string {
       <div class="r">${competitionBody(input)}</div>
     </div>
   </section>`
+}
+
+/**
+ * THE COMPETITION IS THE NEIGHBOURHOOD, NEVER THE CITY.
+ *
+ * Matt 2026-09-08: "Same thing with the competition: we want to limit it to the
+ * neighborhood or community. Unless it's not part of that, then we'll have to
+ * use a radius."
+ *
+ * `getCmaBandInventory` reads City + price band + sub type, so a seller in Old
+ * Bend was shown the four nearest homes out of every listing in Bend inside
+ * their band, and the counts in the first sentence — "34 homes are for sale
+ * between $356,000 and $435,000" — were citywide counts under a chapter about
+ * their street. `buildBandRivalSet` takes the area the document already
+ * resolved and states the counts inside it.
+ */
+
+/** ±10% of the recommended list — the band the competition chapter has always used. */
+export const BAND_HALF_WIDTH_PCT = 0.1
+
+export function bandAroundList(recommendedList: number): { lo: number; hi: number } | null {
+  if (!Number.isFinite(recommendedList) || recommendedList <= 0) return null
+  return {
+    lo: Math.round((recommendedList * (1 - BAND_HALF_WIDTH_PCT)) / 1000) * 1000,
+    hi: Math.round((recommendedList * (1 + BAND_HALF_WIDTH_PCT)) / 1000) * 1000,
+  }
+}
+
+export type CmaBandRivalSet = {
+  /** The area these counts are taken over — the ring that won the ladder below. */
+  area: CompArea
+  lo: number
+  hi: number
+  /** Listings INSIDE the area, not inside the city. */
+  activeCount: number
+  pendingCount: number
+  rivals: CmaBandRival[]
+  sentence: string
+  source: string
+  /** The starting ring's radius, when the winner widened past it. Null for a mapped boundary, a no-coordinate subject, or a ring that already held three. */
+  widenedFrom: number | null
+  /** Every ring radius (miles) tried, in order. Empty for a mapped boundary or a no-coordinate subject. */
+  ringsTried: number[]
+}
+
+/**
+ * "27 homes are for sale in Old Bend between $350,000 and $428,000. 14 are
+ * under contract." A rural ring that had to widen past its starting five
+ * miles says so, in the same sentence, so the seller reads why the map got
+ * bigger rather than just a wider number (Matt 2026-09-08).
+ */
+export function competitionAreaSentence(input: {
+  area: CompArea
+  lo: number
+  hi: number
+  activeCount: number
+  pendingCount: number
+  shown: number
+  /** True when the homes drawn were narrowed to ones like the subject. */
+  likeYours?: boolean
+  /** The starting ring's radius, when the winning ring widened past it. Null otherwise. */
+  widenedFrom?: number | null
+}): string {
+  const where = compAreaIn(input.area)
+  const widenedNote =
+    input.widenedFrom != null &&
+    input.area.kind === 'radius' &&
+    input.area.radiusMiles != null &&
+    input.area.radiusMiles > input.widenedFrom
+      ? ` We widened from ${milesPhrase(input.widenedFrom)} to find three.`
+      : ''
+  if (input.activeCount === 0 && input.pendingCount === 0) {
+    return `No home ${where} is for sale between ${usd(input.lo)} and ${usd(
+      input.hi,
+    )}, and none is under contract.${widenedNote}`
+  }
+  const bits = [
+    `${int(input.activeCount)} home${input.activeCount === 1 ? ' is' : 's are'} for sale ${where} between ${usd(
+      input.lo,
+    )} and ${usd(input.hi)}.`,
+    input.pendingCount > 0
+      ? `${int(input.pendingCount)} ${input.pendingCount === 1 ? 'is' : 'are'} under contract.`
+      : 'None are under contract right now.',
+  ]
+  if (widenedNote) bits.push(widenedNote.trim())
+  if (input.shown > 0 && input.shown < input.activeCount + input.pendingCount) {
+    // "like yours" when the pick narrowed: the counts above are every home in
+    // the band, the cards below are the ones at the subject's bed count and
+    // within 25% of its size. Without the qualifier the sentence says the
+    // nearest of one set and then draws another (§0).
+    bits.push(
+      `The nearest ${countWord(input.shown)}${input.likeYours ? ' like yours' : ''} ${
+        input.shown === 1 ? 'is' : 'are'
+      } below.`,
+    )
+  }
+  return bits.join(' ')
+}
+
+/** The §0 trace for the two counts: the area, the band, the source and the day. */
+export function competitionAreaSourceLine(input: {
+  area: CompArea
+  lo: number
+  hi: number
+  asOfIso?: string | null
+}): string {
+  const formatted = input.asOfIso ? formatDate(input.asOfIso) : ''
+  const when = formatted && formatted !== '—' ? ` as of ${formatted}` : ''
+  const where =
+    input.area.kind === 'radius' ? compAreaPhrase(input.area) : `in ${compAreaPhrase(input.area)}`
+  return `Homes for sale and under contract ${where} between ${usd(input.lo)} and ${usd(
+    input.hi,
+  )}, from the Oregon Data Share MLS${when}.`
+}
+
+export function buildBandRivalSet(input: {
+  area: CompArea
+  lo: number
+  hi: number
+  activeCount: number
+  pendingCount: number
+  rivals: readonly CmaBandRival[]
+  subject?: {
+    latitude: number | null
+    longitude: number | null
+    beds?: number | null
+    sqft?: number | null
+  } | null
+  cap?: number
+  asOfIso?: string | null
+  /** The starting ring's radius, when `area` widened past it. Null otherwise — see `pickCompetitionRing`. */
+  widenedFrom?: number | null
+  /** Every ring radius (miles) the ladder tried, in order. Empty for a mapped boundary or a no-coordinate subject. */
+  ringsTried?: number[]
+}): CmaBandRivalSet {
+  const rivals = pickBandRivals(input.rivals, input.subject ?? null, input.cap ?? BAND_RIVAL_CAP)
+  const likeYours = input.rivals.some((r) => rivalFitsSubject(r, input.subject ?? null))
+  const widenedFrom = input.widenedFrom ?? null
+  return {
+    area: input.area,
+    lo: input.lo,
+    hi: input.hi,
+    activeCount: input.activeCount,
+    pendingCount: input.pendingCount,
+    rivals,
+    sentence: competitionAreaSentence({
+      area: input.area,
+      lo: input.lo,
+      hi: input.hi,
+      activeCount: input.activeCount,
+      pendingCount: input.pendingCount,
+      shown: rivals.length,
+      likeYours,
+      widenedFrom,
+    }),
+    source: competitionAreaSourceLine({
+      area: input.area,
+      lo: input.lo,
+      hi: input.hi,
+      asOfIso: input.asOfIso ?? null,
+    }),
+    widenedFrom,
+    ringsTried: input.ringsTried ?? [],
+  }
+}
+
+/** Minimum active-or-pending count a rural competition ring must hold before the search stops widening (Matt 2026-09-08). */
+export const COMPETITION_RING_MIN = 3
+
+export type CompetitionRingPick<T> = {
+  /** The ring that won — the first to hold three, or the widest ring tried. */
+  area: CompArea
+  /** Every ring radius (miles) tried, in order. Empty for a mapped boundary or a no-coordinate subject — there was only ever one ring. */
+  ringsTried: number[]
+  /** The starting ring's radius, when the winner is a wider ring than that. Null otherwise. */
+  widenedFrom: number | null
+  activeRows: T[]
+  pendingRows: T[]
+  activeCount: number
+  pendingCount: number
+}
+
+/**
+ * THE RURAL RING LADDER (Matt 2026-09-08): "definitely tighter on rural
+ * homes, make the best decision." `resolveCompetitionArea` (lib/pricing/
+ * comp-area.ts) returns the ring order to try — one ring for a mapped
+ * boundary or a no-coordinate subject, otherwise 5 miles, then 10, then the
+ * comp search's own reach. This walks that order and stops at the first ring
+ * that holds three active-or-pending homes, never past the widest ring.
+ *
+ * `activeRows`/`pendingRows` are read ONCE, at the widest ring
+ * (`getCmaAreaBandInventory` already exact-tests them against it), so this
+ * walks rows already in hand rather than re-querying per ring — the same
+ * shape as the expired-peer window ladder in lib/cma/market-status.ts
+ * (`buildExpiredPeerSet`): "The rows come from ONE read at the widest step
+ * ... so the ladder is a walk, not six queries." A ring narrower than the
+ * widest is always a radius (only the sole, unwidened ring can be a mapped
+ * boundary or a city), so re-testing membership only ever needs lat/lng.
+ */
+export function pickCompetitionRing<T extends { Latitude?: number | null; Longitude?: number | null }>(
+  input: {
+    rings: readonly CompArea[]
+    activeRows: readonly T[]
+    pendingRows: readonly T[]
+  },
+): CompetitionRingPick<T> {
+  const rings = input.rings
+  const first = rings[0] ?? null
+  const ringsTried: number[] = []
+  const geo = (r: T) => ({
+    latitude: r.Latitude ?? null,
+    longitude: r.Longitude ?? null,
+    subdivision: null,
+    city: null,
+  })
+  for (let i = 0; i < rings.length; i++) {
+    const ring = rings[i]!
+    const isLast = i === rings.length - 1
+    if (ring.kind === 'radius' && ring.radiusMiles != null) ringsTried.push(ring.radiusMiles)
+    // The widest ring's rows are already exact-tested by the reader that
+    // fetched them; re-testing costs nothing extra to trust but nothing to
+    // skip either, EXCEPT that the widest ring may be a mapped boundary or a
+    // city, whose exact test needs fields (subdivision/city) this row shape
+    // does not carry. Only narrower rings — always a radius — need the
+    // re-test, so the last ring is taken as-is.
+    const activeIn = isLast ? [...input.activeRows] : input.activeRows.filter((r) => compAreaContains(ring, geo(r)))
+    const pendingIn = isLast
+      ? [...input.pendingRows]
+      : input.pendingRows.filter((r) => compAreaContains(ring, geo(r)))
+    if (activeIn.length + pendingIn.length >= COMPETITION_RING_MIN || isLast) {
+      const widenedFrom =
+        i > 0 && first && first.kind === 'radius' && first.radiusMiles !== ring.radiusMiles
+          ? first.radiusMiles
+          : null
+      return {
+        area: ring,
+        ringsTried,
+        widenedFrom,
+        activeRows: activeIn,
+        pendingRows: pendingIn,
+        activeCount: activeIn.length,
+        pendingCount: pendingIn.length,
+      }
+    }
+  }
+  // Unreachable: the loop above always returns on its last iteration. Kept
+  // for type-safety and to fail closed (the whole inventory) rather than throw.
+  return {
+    area: rings[rings.length - 1]!,
+    ringsTried,
+    widenedFrom: null,
+    activeRows: [...input.activeRows],
+    pendingRows: [...input.pendingRows],
+    activeCount: input.activeRows.length,
+    pendingCount: input.pendingRows.length,
+  }
+}
+
+/** An MLS row as the band reads carry it. Structural so this file stays server-free. */
+export type BandInventoryRow = BandStreetRow & {
+  ListingKey: string
+  ListPrice: number | null
+  OriginalListPrice?: number | null
+  DaysOnMarket: number | null
+  OnMarketDate: string | null
+  PhotoURL: string | null
+  Latitude: number | null
+  Longitude: number | null
+  BedroomsTotal?: number | null
+  BathroomsTotal?: number | null
+  TotalLivingAreaSqFt?: number | null
+  year_built?: number | null
+  lot_size_acres?: number | null
+  property_sub_type?: string | null
+}
+
+function finiteOrNull(v: unknown): number | null {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : null
+}
+
+/** Whole days since a listing went on market. Null when the date is unusable. */
+function daysSinceOnMarket(onMarketDate: string | null | undefined): number | null {
+  if (!onMarketDate) return null
+  const then = new Date(onMarketDate)
+  if (Number.isNaN(then.getTime())) return null
+  const days = Math.floor((Date.now() - then.getTime()) / 86_400_000)
+  return days >= 0 ? days : null
+}
+
+/** One MLS row as a named competitor. Null when it has no address or no ask. */
+export function bandRowToRival(row: BandInventoryRow, status: 'Active' | 'Pending'): CmaBandRival | null {
+  const address = rivalAddress(row)
+  const listPrice = Number(row.ListPrice)
+  if (!address || !Number.isFinite(listPrice) || listPrice <= 0) return null
+  const originalListPrice = finiteOrNull(row.OriginalListPrice)
+  const daysOnMarket = daysSinceOnMarket(row.OnMarketDate) ?? finiteOrNull(row.DaysOnMarket)
+  return {
+    listingKey: row.ListingKey,
+    address,
+    listPrice,
+    status,
+    daysOnMarket,
+    photoUrl: row.PhotoURL,
+    latitude: row.Latitude,
+    longitude: row.Longitude,
+    beds: finiteOrNull(row.BedroomsTotal),
+    baths: finiteOrNull(row.BathroomsTotal),
+    sqft: finiteOrNull(row.TotalLivingAreaSqFt),
+    yearBuilt: finiteOrNull(row.year_built),
+    lotAcres: finiteOrNull(row.lot_size_acres),
+    propertySubType: row.property_sub_type ?? null,
+    originalListPrice,
+    onMarketDate: row.OnMarketDate,
+    listingHistoryLine: buildListingHistoryLine({
+      listPrice,
+      originalListPrice,
+      status,
+      onMarketDate: row.OnMarketDate,
+      daysOnMarket,
+    }),
+  }
 }

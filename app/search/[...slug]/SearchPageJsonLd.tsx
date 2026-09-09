@@ -1,4 +1,4 @@
-import { homesForSalePath, listingDetailPath, getSubdivisionDisplayName } from '../../../lib/slug'
+import { homesForSalePath, listingTileHref, getSubdivisionDisplayName } from '../../../lib/slug'
 import { buildJsonLd, type SchemaInput } from '../../../lib/site/json-ld'
 
 /**
@@ -14,6 +14,10 @@ type ListingRow = {
   State?: string | null
   PostalCode?: string | null
   SubdivisionName?: string | null
+  /** SITE-22 — declared, not read through the index signature, so the ItemList
+   *  url is built from the same fields the listing's canonical is. */
+  BoundaryCity?: string | null
+  BoundaryNeighborhood?: string | null
   [key: string]: unknown
 }
 
@@ -133,23 +137,16 @@ export default function SearchPageJsonLd({
     .map((l) => {
       const key = l.ListNumber ?? l.ListingKey
       if (!key || !siteUrl) return null
-      const href = listingDetailPath(
-        String(key),
-        {
-          streetNumber: l.StreetNumber ?? null,
-          streetName: l.StreetName ?? null,
-          city: l.City ?? city ?? null,
-          state: l.State ?? null,
-          postalCode: l.PostalCode ?? null,
-        },
-        {
-          city: l.City ?? city ?? null,
-          subdivision: l.SubdivisionName ?? subdivision ?? null,
-        },
-        {
-          mlsNumber: l.ListNumber ?? null,
-        }
-      )
+      const href = listingTileHref({
+        listingKey: String(key),
+        listNumber: l.ListNumber ?? null,
+        streetNumber: l.StreetNumber ?? null,
+        streetName: l.StreetName ?? null,
+        city: l.City ?? city ?? null,
+        boundaryCity: l.BoundaryCity ?? null,
+        boundaryNeighborhood: l.BoundaryNeighborhood ?? null,
+        subdivisionName: l.SubdivisionName ?? subdivision ?? null,
+      })
       return `${siteUrl}${href}`
     })
     .filter(Boolean) as string[]

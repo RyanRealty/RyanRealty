@@ -5,7 +5,7 @@ import Link from 'next/link'
 import type { ListingTileRow } from '@/app/actions/listings'
 import { getSearchListings, type SearchFilters } from '@/app/actions/search'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
-import { listingDetailPath, displaySubdivision } from '@/lib/slug'
+import { listingTileHref, displaySubdivision } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { V3ListingRow } from '@/components/site/v3'
@@ -242,13 +242,16 @@ export default function SearchResults({
           <div className="v3-lrow-list">
         {visibleListings.map((listing, cardIndex) => {
           const key = String(listingKey(listing)).trim()
-          const href = listingDetailPath(key, {
+          const href = listingTileHref({
+            listingKey: key,
+            listNumber: listing.ListNumber ?? null,
             streetNumber: listing.StreetNumber,
             streetName: listing.StreetName,
             city: listing.City,
-            state: listing.State,
-            postalCode: listing.PostalCode,
-          }, undefined, { mlsNumber: listing.ListNumber ?? null })
+            boundaryCity: listing.BoundaryCity ?? null,
+            boundaryNeighborhood: listing.BoundaryNeighborhood ?? null,
+            subdivisionName: listing.SubdivisionName,
+          })
           const cityParts = [listing.City, listing.State].filter(Boolean).join(', ')
           const cityZip = [cityParts, listing.PostalCode].filter(Boolean).join(' ').trim()
           const subdivision = displaySubdivision(listing.SubdivisionName)

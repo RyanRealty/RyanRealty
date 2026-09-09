@@ -83,7 +83,7 @@ function planFor(origin: CmaOrigin, named: string): string {
   if (origin === 'place-page') {
     return `You asked what ${named} would sell for. Here's the full comparison.`
   }
-  return `The number for ${named}, and the sales that set it.`
+  return `The number for ${named}, and the sales behind it.`
 }
 
 function closeFor(): string {
@@ -134,7 +134,7 @@ export function cmaFirstContactPreview(origin: CmaOrigin, address: string | null
   const named = trim(address) ?? 'this home'
   if (origin === 'expired') return `${named}: the number now, and what sold while it was listed.`
   if (origin === 'fsbo') return `${named}: the number, and what it is competing with.`
-  return `${named}: the number, then the sales that set it.`
+  return `${named}: the number, then the sales behind it.`
 }
 
 /**

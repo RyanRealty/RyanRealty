@@ -61,7 +61,7 @@ export function inboundValuationMasthead(): string {
 
 export function inboundValuationPreview(address: string | null): string {
   const named = trim(address) ?? 'this home'
-  return `${named}: the number, then the sales that set it.`
+  return `${named}: the number, then the sales behind it.`
 }
 
 /**
@@ -110,7 +110,7 @@ export function composeInboundValuationCopy(facts: InboundPacketFacts): InboundV
   const first = trim(facts.firstName) ?? 'there'
   const greeting = `Hi ${first},`
   const named = trim(facts.address) ?? 'this home'
-  const plan = `The number for ${named}, and the sales that set it.`
+  const plan = `The number for ${named}, and the sales behind it.`
   const numbers = composeInboundNumbersClause(facts)
   const close = 'The report is attached as a PDF. You can also read it online.'
   const bodyText = [greeting, '', plan, numbers, '', close]

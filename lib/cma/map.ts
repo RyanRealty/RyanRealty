@@ -4,16 +4,27 @@
  * proxy route, no API key in the client-facing document, and the PDF renderer
  * needs no network hop.
  *
+ * ONE MAP FOR THE WHOLE DOCUMENT (Delta 3, 2026-09-08). It carries three pin
+ * families over one comp area: the closed sales that set the price, the homes
+ * for sale or under contract in the same area, and the listings that came off
+ * that area unsold. The tile is the ground; every pin is DOM
+ * (`lib/cma/comp-pin-map.ts`), because a bitmap cannot answer a tap.
+ *
  * Reuses the styled URL builder from lib/cma-map.ts (the legacy per-slug
  * registry stays for the file-based CMAs).
  */
 
 import { getBoundaryGeoJSON } from '@/lib/data'
 import { spreadStackedMapPoints, type CmaMapPoint } from '@/lib/cma-map'
-import { circlePath, pathParam, ringsFromGeometry } from '@/lib/cma/map-overlay'
+import { circlePath, pathParam, ringsFromGeometry, type MapLatLng } from '@/lib/cma/map-overlay'
 import { fitStaticMapView, type StaticMapView } from '@/lib/cma/static-map-projection'
 import { describeCompSearch } from '@/lib/pricing/search-story'
-import { mapPointsFor, polygonHoldsAnyPoint } from '@/lib/cma/render-place-polygon'
+import { polygonHoldsAnyPoint } from '@/lib/cma/render-place-polygon'
+import { keyFor, type CmaMapFamily } from '@/lib/cma/map-families'
+import { matrixSetsFromArgs, readCompArea, type CmaCompArea } from '@/lib/cma/matrix-sets'
+
+export { readCompArea, compAreaSentence } from '@/lib/cma/matrix-sets'
+export type { CmaCompArea } from '@/lib/cma/matrix-sets'
 import { us97IntersectsDisk } from '@/lib/pricing/highway-cross'
 import { slugify } from '@/lib/slug'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
@@ -30,7 +41,7 @@ export interface CmaMapResult {
   /** Every pin, at the coordinates the tile was drawn for, in grid order. */
   pins: CmaMapPin[]
   /**
-   * Whether the subdivision outline was actually drawn.
+   * Whether the comp-area outline was actually drawn.
    *
    * Round-four class F: 19968's polygon contained neither the subject nor any
    * sale, under a caption that named it. The caption reads this rather than
@@ -38,18 +49,38 @@ export interface CmaMapResult {
    * can never disagree.
    */
   boundaryShown: boolean
+  /** Whether the search radius was drawn as a ring. */
+  radiusShown: boolean
 }
 
-/** A pin the DOCUMENT draws, not Google. `n` is null on the subject. */
+/**
+ * A pin the DOCUMENT draws, not Google.
+ *
+ * `key` is what the matrix row carries in `data-comp` — `1`, `A`, `iii` — and
+ * null on the subject. One vocabulary, `lib/cma/map-families.ts`, so a tap on
+ * a pin and a tap on a row can only ever mean the same home.
+ */
 export interface CmaMapPin {
-  n: number | null
+  key: string | null
+  family: CmaMapFamily | 'subject'
   lat: number
   lng: number
 }
 
+/** One home offered to the map, in whatever family it belongs to. */
+export type CmaMapEntry = {
+  latitude?: number | null
+  longitude?: number | null
+}
+
+function finite(n: unknown): number | null {
+  const v = typeof n === 'number' ? n : Number(n)
+  return Number.isFinite(v) ? v : null
+}
+
 /** Logical pixels. `scale=2` doubles the image and leaves the geometry alone. */
 const MAP_W = 640
-const MAP_H = 360
+const MAP_H = 400
 /** Room for a 44px tap target plus its label, at both edges. */
 const MAP_PAD = 46
 
@@ -105,8 +136,8 @@ export function buildMonochromeStaticMapUrl(
   return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`
 }
 
-async function subdivisionRings(subdivision: string | null | undefined) {
-  const slug = subdivision?.trim() ? slugify(subdivision.trim()) : ''
+async function boundaryRings(name: string | null | undefined): Promise<MapLatLng[][]> {
+  const slug = name?.trim() ? slugify(name.trim()) : ''
   if (!slug) return []
   try {
     const geom = await getBoundaryGeoJSON({ geoType: 'subdivision', geoSlug: slug })
@@ -117,6 +148,19 @@ async function subdivisionRings(subdivision: string | null | undefined) {
   }
 }
 
+/**
+ * The names whose outlines this map may draw.
+ *
+ * `compArea.names` when the row carries them — that is the pricing side saying
+ * where it actually looked — and the subject's own subdivision otherwise. At
+ * most two, because a Static Maps URL has a length the request has to fit in.
+ */
+function areaNames(area: CmaCompArea | null, subject: CmaSubject): string[] {
+  const named = (area?.names ?? []).filter(Boolean)
+  if (named.length > 0) return named.slice(0, 2)
+  return subject.subdivision?.trim() ? [subject.subdivision.trim()] : []
+}
+
 /** Subject pin and the subdivision outline. No numbered comps. */
 export async function buildSubjectLocationMapDataUri(
   subject: CmaSubject,
@@ -124,55 +168,79 @@ export async function buildSubjectLocationMapDataUri(
   return buildCmaMapDataUri(subject, [])
 }
 
+export type CmaMapOptions = {
+  tiersUsed?: string[]
+  /** Homes for sale or under contract in the same area, in matrix-3 order. */
+  active?: readonly CmaMapEntry[]
+  /** Listings that came off the same area unsold, in matrix-2 order. */
+  unsold?: readonly CmaMapEntry[]
+  /** `render_args.compArea`. Absent on older rows; the map degrades. */
+  compArea?: CmaCompArea | null
+}
+
 /** Build the subject + comps map as a base64 PNG data URI. Null when the API
  *  key is missing or no coordinates are available. */
 export async function buildCmaMapDataUri(
   subject: CmaSubject,
-  comps: CmaComp[],
-  opts: { tiersUsed?: string[] } = {},
+  comps: readonly CmaComp[],
+  opts: CmaMapOptions = {},
 ): Promise<CmaMapResult | null> {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim()
   if (!apiKey) return null
   const points: CmaMapPoint[] = []
-  if (subject.latitude != null && subject.longitude != null) {
-    points.push({ label: 'S', color: 'red', lat: subject.latitude, lng: subject.longitude })
+  const families: Array<{ key: string | null; family: CmaMapFamily | 'subject' }> = []
+  const push = (
+    e: CmaMapEntry,
+    family: CmaMapFamily | 'subject',
+    key: string | null,
+  ): void => {
+    const lat = finite(e.latitude)
+    const lng = finite(e.longitude)
+    if (lat == null || lng == null) return
+    points.push({ label: key ?? 'S', color: family === 'subject' ? 'red' : '0x102742', lat, lng })
+    families.push({ key, family })
   }
-  comps.forEach((comp, i) => {
-    if (comp.latitude != null && comp.longitude != null && i < 9) {
-      points.push({ label: String(i + 1), color: '0x102742', lat: comp.latitude, lng: comp.longitude })
-    }
-  })
+  push(subject, 'subject', null)
+  // Nine is the ceiling the numbered set has always had — past it the pins
+  // knot however far they are spread — and each family gets its own.
+  comps.slice(0, 9).forEach((c, i) => push(c, 'closed', keyFor('closed', i)))
+  ;(opts.active ?? []).slice(0, 9).forEach((r, i) => push(r, 'active', keyFor('active', i)))
+  ;(opts.unsold ?? []).slice(0, 9).forEach((p, i) => push(p, 'unsold', keyFor('unsold', i)))
   if (points.length < 1) return null
+  const area = opts.compArea ?? null
   const story = describeCompSearch({ subdivision: subject.subdivision, tiersUsed: opts.tiersUsed ?? [] })
   const paths: string[] = []
   // THE OUTLINE HAS TO CONTAIN SOMETHING ON THE MAP (class F). An MLS
   // subdivision NAME and a recorded plat SLUG are different keys, so
-  // `slugify(subject.subdivision)` can resolve to a plat that holds neither
-  // this home nor any of its sales — which is what 19968 drew. The check is
-  // the one a reader makes: is my house in that shape, or is one of the sales?
-  const rings = await subdivisionRings(subject.subdivision)
-  const boundaryShown = polygonHoldsAnyPoint(rings, mapPointsFor(subject, comps))
-  if (boundaryShown) {
+  // `slugify(name)` can resolve to a plat that holds neither this home nor any
+  // of its sales — which is what 19968 drew. The check is the one a reader
+  // makes: is my house in that shape, or is one of the marks?
+  const drawn: MapLatLng[] = points.map((p) => ({ lat: p.lat, lng: p.lng }))
+  let boundaryShown = false
+  for (const name of areaNames(area, subject)) {
+    const rings = await boundaryRings(name)
+    if (!polygonHoldsAnyPoint(rings, drawn)) continue
     for (const ring of rings) {
       const path = pathParam('0x102742CC', '0x10274222', ring)
       if (path) paths.push(path)
     }
+    boundaryShown = true
   }
-  if (
-    story.radiusMiles != null &&
-    subject.latitude != null &&
-    subject.longitude != null &&
-    !us97IntersectsDisk(
-      { lat: subject.latitude, lng: subject.longitude },
-      story.radiusMiles,
-    )
-  ) {
-    const circle = pathParam(
-      '0x10274299',
-      '0x10274211',
-      circlePath({ lat: subject.latitude, lng: subject.longitude }, story.radiusMiles),
-    )
-    if (circle) paths.push(circle)
+  // THE COMP AREA'S OWN RADIUS FIRST, the search story's second. `compArea`
+  // is what the pricing side says it searched; the story is what the renderer
+  // could work out on its own before that field existed.
+  const centre = area?.centre ??
+    (finite(subject.latitude) != null && finite(subject.longitude) != null
+      ? { lat: subject.latitude as number, lng: subject.longitude as number }
+      : null)
+  const radiusMiles = area?.radiusMiles ?? story.radiusMiles ?? null
+  let radiusShown = false
+  if (centre && radiusMiles != null && radiusMiles > 0 && !us97IntersectsDisk(centre, radiusMiles)) {
+    const circle = pathParam('0x10274299', '0x10274211', circlePath(centre, radiusMiles))
+    if (circle) {
+      paths.push(circle)
+      radiusShown = true
+    }
   }
   try {
     // Two pins on one rooftop cover each other whoever draws them, so the same
@@ -193,15 +261,36 @@ export async function buildCmaMapDataUri(
       dataUri: `data:image/png;base64,${buf.toString('base64')}`,
       pointCount: points.length,
       view,
-      pins: spread.map((p) => ({
-        n: p.label === 'S' ? null : Number(p.label),
+      pins: spread.map((p, i) => ({
+        key: families[i]?.key ?? null,
+        family: families[i]?.family ?? 'closed',
         lat: p.lat,
         lng: p.lng,
       })),
       boundaryShown,
+      radiusShown,
     }
   } catch (e) {
     console.warn('[buildCmaMapDataUri]', e instanceof Error ? e.message : String(e))
     return null
+  }
+}
+
+/**
+ * The three families and the comp area, read off one stored `render_args`.
+ *
+ * Both serve paths (`lib/cma/serve-document.ts`, `lib/cma/print-html.ts`)
+ * rebuild the tile on the request, so this is where the peers and the rivals
+ * become map points. Reading them here rather than at each call site is what
+ * keeps the letter and the immersive drawing the same map.
+ */
+export function cmaMapOptionsFromArgs(args: unknown): CmaMapOptions {
+  const a = args as { tiersUsed?: string[] } | null | undefined
+  const sets = matrixSetsFromArgs(args)
+  return {
+    tiersUsed: a?.tiersUsed ?? [],
+    unsold: sets.unsold,
+    active: sets.active,
+    compArea: readCompArea(args),
   }
 }

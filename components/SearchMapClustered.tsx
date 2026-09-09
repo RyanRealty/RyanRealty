@@ -11,7 +11,7 @@ import {
 } from '@googlemaps/markerclusterer'
 
 import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
-import { listingDetailPath } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 import type { DrawnShape, MapPolygonPoint } from '@/lib/map-polygon'
 import MapDrawTools from '@/components/search/MapDrawTools'
 import MapChrome from '@/components/search/MapChrome'
@@ -96,6 +96,10 @@ export type ListingForMap = {
   hasVideo?: boolean
   PropertyType?: string | null
   PropertySubType?: string | null
+  /** SITE-22 — the segments the popup's href must share with the canonical. */
+  SubdivisionName?: string | null
+  BoundaryCity?: string | null
+  BoundaryNeighborhood?: string | null
 }
 
 function getBounds(listings: ListingForMap[]) {
@@ -1497,18 +1501,17 @@ export default function SearchMapClustered({
                   baths: openListing.BathroomsTotal ?? null,
                   sqft: openListing.TotalLivingAreaSqFt ?? null,
                   isSaved: savedSet.has(openKey),
-                  href: listingDetailPath(
-                    openKey,
-                    {
-                      streetNumber: openListing.StreetNumber,
-                      streetName: openListing.StreetName,
-                      city: openListing.City,
-                      state: openListing.State,
-                      postalCode: openListing.PostalCode,
-                    },
-                    undefined,
-                    { mlsNumber: openListing.ListNumber != null ? String(openListing.ListNumber) : null },
-                  ),
+                  href: listingTileHref({
+                    listingKey: openKey,
+                    listNumber:
+                      openListing.ListNumber != null ? String(openListing.ListNumber) : null,
+                    streetNumber: openListing.StreetNumber,
+                    streetName: openListing.StreetName,
+                    city: openListing.City,
+                    boundaryCity: openListing.BoundaryCity ?? null,
+                    boundaryNeighborhood: openListing.BoundaryNeighborhood ?? null,
+                    subdivisionName: openListing.SubdivisionName ?? null,
+                  }),
                 }}
               />
             ) : null}

@@ -148,7 +148,10 @@ export async function startCmaForContactAction(personId: number): Promise<StartC
     // Land the build on a writable slot: rebuild the open draft in place, or
     // open a new --vN document after a finalized/delivered CMA — never clobber
     // a protected document back to draft (lib/cma/versions.ts).
-    const slot = await resolveWritableCmaSlot(slugifyAddress(parsed.rawAddress))
+    const slot = await resolveWritableCmaSlot(slugifyAddress(parsed.rawAddress), {
+      personId: ctx.personId,
+      email: ctx.leadEmail,
+    })
     if (!slot.ok) return { ok: false, error: slot.error }
     const slug = slot.slug
     const built = await buildCma({

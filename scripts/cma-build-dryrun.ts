@@ -103,6 +103,17 @@ type DryRun = {
    * Ranch" while three of the five printed sales were in it.
    */
   renderArgsCompSearch: unknown
+  /**
+   * R2h — the one area, and the two sets that must come out of it. Before
+   * this, the unsold peers were a city-wide 12-month pull and the competition
+   * was a city-wide band read, so one document carried three different maps.
+   */
+  renderArgsCompArea: unknown
+  renderArgsCompetitionArea: unknown
+  renderArgsExpiredPeers: unknown
+  renderArgsBandRivals: unknown
+  /** One §0 entry per area-scoped read: table, filter, rows, fetchedAt, query. */
+  areaCitations: unknown[]
   /** render_args.pricing.timeAdjustment — the basis every date adjustment used. */
   renderArgsPricingTimeAdjustment: unknown
   /**
@@ -173,6 +184,90 @@ type DryRun = {
   error: string | null
 }
 
+/**
+ * R2h — the area block: the one area in seller words, the unsold peers with
+ * the window the ladder had to open to, the competition with its own area, and
+ * the §0 citation for each read.
+ */
+type AreaLike = { sentence?: string; kind?: string; names?: string[]; radiusMiles?: number | null }
+type PeerLike = {
+  count: number
+  areaTotal: number
+  found: number
+  likeYours: boolean
+  windowMonths: number
+  windowsTried: number[]
+  widenedTo: number | null
+  shortfall: boolean
+  sentence: string
+  peers: Array<{
+    address: string
+    status: string
+    listPrice: number
+    daysOnMarket: number | null
+    whyItSat?: string | null
+  }>
+}
+type RivalsLike = {
+  activeCount: number
+  pendingCount: number
+  sentence: string
+  area: AreaLike
+  widenedFrom: number | null
+  ringsTried: number[]
+  rivals: Array<{ address: string; status: string; listPrice: number; daysOnMarket: number | null }>
+}
+
+function printArea(r: DryRun): void {
+  const area = r.renderArgsCompArea as AreaLike | null
+  const comp = r.renderArgsCompetitionArea as AreaLike | null
+  console.log(`   compArea.sentence = ${area?.sentence ?? 'none'}`)
+  console.log('   render_args.compArea =')
+  console.log(indent(r.renderArgsCompArea))
+  console.log(`   competition area = ${comp?.kind ?? 'none'} · ${comp?.sentence ?? ''}`)
+  const peers = r.renderArgsExpiredPeers as PeerLike | null
+  if (!peers) console.log('   render_args.expiredPeers = none')
+  else {
+    console.log(
+      `   render_args.expiredPeers · shown ${peers.count} of ${peers.found} found${
+        peers.likeYours ? ' like the subject' : ''
+      } · ${peers.areaTotal} unsold in the area · windowMonths ${peers.windowMonths} · widenedTo ${peers.widenedTo ?? 'none'} · tried ${peers.windowsTried.join(
+        '/',
+      )}${peers.shortfall ? ' · SHORTFALL' : ''}`,
+    )
+    console.log(`     ${peers.sentence}`)
+    for (const p of peers.peers) {
+      console.log(
+        `     ${p.address.slice(0, 28).padEnd(28)} ${p.status.padEnd(9)} $${p.listPrice.toLocaleString('en-US').padStart(9)}  ${
+          p.daysOnMarket ?? '?'
+        } days`,
+      )
+      if (p.whyItSat) console.log(`       why it sat: ${p.whyItSat}`)
+    }
+  }
+  const rivals = r.renderArgsBandRivals as RivalsLike | null
+  if (!rivals) console.log('   render_args.bandRivals = none')
+  else {
+    console.log(
+      `   render_args.bandRivals · ${rivals.activeCount} active · ${rivals.pendingCount} pending · area ${
+        rivals.area?.kind
+      } ${(rivals.area?.names ?? []).join(', ')}${rivals.area?.radiusMiles ? ` ${rivals.area.radiusMiles} mi` : ''} · ringsTried ${rivals.ringsTried.join(
+        '/',
+      )} · widenedFrom ${rivals.widenedFrom ?? 'none'}`,
+    )
+    console.log(`     ${rivals.sentence}`)
+    for (const v of rivals.rivals) {
+      console.log(
+        `     ${v.address.slice(0, 28).padEnd(28)} ${v.status.padEnd(9)} $${v.listPrice.toLocaleString('en-US').padStart(9)}  ${
+          v.daysOnMarket ?? '?'
+        } days`,
+      )
+    }
+  }
+  console.log('   area read citations =')
+  console.log(indent(r.areaCitations))
+}
+
 /** JSON, indented under the dry-run's own two-space report gutter. */
 function indent(value: unknown): string {
   return JSON.stringify(value, null, 2)
@@ -222,6 +317,8 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsMarketAskOutcome: null, renderArgsMarketOriginalAskRealization: null,
     renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
     renderArgsPricingRangeRule: null, renderArgsCompSearch: null, renderArgsPricingTimeAdjustment: null,
+    renderArgsCompArea: null, renderArgsCompetitionArea: null, renderArgsExpiredPeers: null,
+    renderArgsBandRivals: null, areaCitations: [],
     timeAdjustmentMeasure: null, marketTrendMeasure: null,
     renderArgsPricingClamp: null, renderArgsPricingSetAside: null,
     renderArgsPricingReview: null, renderArgsPricingSellerNet: null, sellerNetAnchored: true,
@@ -428,6 +525,115 @@ async function dryRun(slug: string): Promise<DryRun> {
     keptComps: adjusted.map((c) => ({ subdivision: c.subdivision, selectionTier: c.selectionTier })),
   })
 
+  // R2h — render_args.compArea, render_args.expiredPeers, render_args.bandRivals,
+  // through the same functions lib/cma/build.ts calls. Both reads are scoped to
+  // the derived area and to nothing wider.
+  const { buildCompArea, resolveCompetitionArea } = await import('@/lib/pricing/comp-area')
+  const { getCmaAreaUnsoldCycles } = await import('@/lib/data/cma/areaUnsoldReads')
+  const { getCmaAreaBandInventory } = await import('@/lib/data/cma/bandInventory')
+  const { buildExpiredPeerSet, keptCompMedianPpsf, marketAreaPriceBand } = await import('@/lib/cma/market-status')
+  const { bandAroundList, bandRowToRival, buildBandRivalSet, pickCompetitionRing } = await import(
+    '@/lib/cma/band-rivals'
+  )
+
+  const compArea = buildCompArea({
+    subject: {
+      latitude: subject.latitude,
+      longitude: subject.longitude,
+      subdivision: selection.diagnostics.subject.subdivision ?? subject.subdivision,
+      city: subject.city,
+    },
+    rungs: (compSearch?.rungs ?? []).map((r) => ({ key: r.key, kept: r.kept, added: r.added })),
+    keptComps: adjusted.map((c) => ({
+      subdivision: c.subdivision,
+      selectionTier: c.selectionTier,
+      latitude: c.latitude,
+      longitude: c.longitude,
+    })),
+  })
+  // Matt 2026-09-08: rural competition widens only as far as it has to.
+  // `resolveCompetitionArea` returns the ring order to try; the widest one
+  // bounds the single read, and `pickCompetitionRing` walks the rest.
+  const competitionRings = compArea
+    ? resolveCompetitionArea({
+        compArea,
+        subject: { latitude: subject.latitude, longitude: subject.longitude, city: subject.city },
+        keptComps: adjusted.map((c) => ({ latitude: c.latitude, longitude: c.longitude })),
+      })
+    : []
+  const widestCompetitionRing = competitionRings[competitionRings.length - 1] ?? null
+  const peerBand = marketAreaPriceBand(pricing.recommended || subject.lastListPrice || 0)
+  const rivalBand = bandAroundList(pricing.recommended)
+  const [unsoldRead, widestAreaInventory] = await Promise.all([
+    compArea && peerBand
+      ? getCmaAreaUnsoldCycles({
+          area: compArea,
+          city: subject.city,
+          propertySubType: subject.propertySubType,
+          priceLo: peerBand.lo,
+          priceHi: peerBand.hi,
+        }).catch(() => null)
+      : Promise.resolve(null),
+    widestCompetitionRing && rivalBand
+      ? getCmaAreaBandInventory({
+          area: widestCompetitionRing,
+          city: subject.city,
+          lo: rivalBand.lo,
+          hi: rivalBand.hi,
+          propertySubType: subject.propertySubType,
+        }).catch(() => null)
+      : Promise.resolve(null),
+  ])
+  const expiredPeers =
+    compArea && unsoldRead
+      ? buildExpiredPeerSet({
+          rows: unsoldRead.rows,
+          subject: {
+            beds: subject.beds,
+            sqft: subject.sqft,
+            latitude: subject.latitude,
+            longitude: subject.longitude,
+            listingKey: subject.listingKey,
+            mlsNumber: subject.mlsNumber,
+            streetAddress: subject.streetAddress,
+          },
+          area: compArea,
+          keptCompMedianPpsf: keptCompMedianPpsf(adjusted),
+        })
+      : null
+  const competitionRing =
+    widestAreaInventory && competitionRings.length > 0
+      ? pickCompetitionRing({
+          rings: competitionRings,
+          activeRows: widestAreaInventory.activeRows,
+          pendingRows: widestAreaInventory.pendingRows,
+        })
+      : null
+  const competitionArea = competitionRing?.area ?? widestCompetitionRing
+  const bandRivals =
+    competitionRing && widestAreaInventory
+      ? buildBandRivalSet({
+          area: competitionRing.area,
+          lo: widestAreaInventory.lo,
+          hi: widestAreaInventory.hi,
+          activeCount: competitionRing.activeCount,
+          pendingCount: competitionRing.pendingCount,
+          rivals: [
+            ...competitionRing.activeRows.map((r) => bandRowToRival(r, 'Active')),
+            ...competitionRing.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
+          ].filter((r): r is NonNullable<typeof r> => r != null),
+          subject: {
+            latitude: subject.latitude,
+            longitude: subject.longitude,
+            beds: subject.beds,
+            sqft: subject.sqft,
+          },
+          asOfIso: new Date().toISOString(),
+          widenedFrom: competitionRing.widenedFrom,
+          ringsTried: competitionRing.ringsTried,
+        })
+      : null
+
   // §0 rule 5 cross-checks, computed off the same objects render_args carries.
   attachSellerNet(pricing, selection.comps)
   const concessionLine = (n: { knownCount: number; givenCount: number; medianWhenGiven: number | null } | undefined) => {
@@ -553,6 +759,25 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsPricingReconciliation: pricing.reconciliation ?? null,
     renderArgsPricingRangeRule: pricing.rangeRule ?? null,
     renderArgsCompSearch: compSearch,
+    renderArgsCompArea: compArea,
+    renderArgsCompetitionArea: competitionArea,
+    renderArgsExpiredPeers: expiredPeers,
+    renderArgsBandRivals: bandRivals,
+    areaCitations: [
+      unsoldRead ? { read: 'unsold peers', ...unsoldRead.citation, price_band: peerBand } : null,
+      widestAreaInventory && competitionRing
+        ? {
+            read: 'competition',
+            ...widestAreaInventory.citation,
+            active: competitionRing.activeCount,
+            pending: competitionRing.pendingCount,
+            price_band: rivalBand,
+            ring_miles: competitionRing.area.kind === 'radius' ? competitionRing.area.radiusMiles : null,
+            rings_tried: competitionRing.ringsTried,
+            widened_from: competitionRing.widenedFrom,
+          }
+        : null,
+    ].filter((c) => c != null),
     renderArgsPricingTimeAdjustment: pricing.timeAdjustment ?? null,
     timeAdjustmentMeasure: pricing.timeAdjustment?.measure ?? null,
     marketTrendMeasure: market?.trendMeasure ?? null,
@@ -692,6 +917,7 @@ async function main() {
     console.log(indent(r.renderArgsPricingSetAside))
     console.log('   render_args.compSearch =')
     console.log(indent(r.renderArgsCompSearch))
+    printArea(r)
     console.log(
       `   queue state · stored ${r.queueStateStored ?? 'n/a'} · after this run ${r.queueState ?? 'n/a'}`,
     )

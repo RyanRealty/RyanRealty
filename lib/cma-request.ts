@@ -240,7 +240,10 @@ export async function createCmaRequest(
     // status-guarded patch (TOCTOU), re-resolve once — the second pass lands on
     // the next version slot instead of touching the now-protected document.
     for (let attempt = 0; attempt < 2 && !cmaRow; attempt++) {
-      const slot = await resolveWritableCmaSlot(baseSlug)
+      // The requester rides along: an open draft that another person already
+      // claimed is stepped past to a new version, never rewritten to this
+      // lead (send walk 2026-09-08 — two real drafts were taken over).
+      const slot = await resolveWritableCmaSlot(baseSlug, { personId: linkedPersonId, email: leadEmail })
       if (!slot.ok) return { ok: false, error: slot.error }
       slug = slot.slug
       const generationReason = `${sourceLabel} from ${leadEmail ?? input.leadPhone ?? 'unknown contact'}${

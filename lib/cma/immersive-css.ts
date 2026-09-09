@@ -114,9 +114,19 @@ img{max-width:100%;display:block}
    193px of photo above 240px of facts, five times over. */
 @media (max-width:560px){.comp-stack-card .matrix-thumb{aspect-ratio:2/1}}
 @media print{.comp-stack{display:none!important}.comp-matrix-wrap,.matrix-group-h{display:block!important}.comp-matrix-wrap{overflow-x:visible}}
-table.comp-matrix{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+/* FIXED LAYOUT, the same as the print sheet. Without it the browser sized the
+   columns from their content, so one long MLS remodel remark widened its
+   column to a third of the table and squeezed four addresses into "840 Qui
+   nce" (look-pass, 2026-09-08). The colgroup is the contract. */
+table.comp-matrix{width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+/* The MLS sentence, as written, reads as prose: left-aligned and a size down
+   from the figures beside it. */
+table.comp-matrix td.is-note{text-align:left;font-size:12px;line-height:1.4;opacity:.85}
 table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px solid var(--ink12);text-align:right;white-space:normal;overflow-wrap:anywhere}
 table.comp-matrix td.n{white-space:nowrap}
+/* Matrix 3's status filter hides COLUMNS. A table cell needs the rule said
+   out loud: our own padding rule would otherwise fight the UA [hidden]. */
+table.comp-matrix th[hidden],table.comp-matrix td[hidden]{display:none}
 table.comp-matrix thead th:first-child,table.comp-matrix tbody th{text-align:left}
 table.comp-matrix td.is-diff{font-weight:600}
 table.comp-matrix tr.is-total th,table.comp-matrix tr.is-total td{border-top:1px solid var(--navy);font-weight:600}
@@ -196,6 +206,28 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
    pin a reader lit comes to the front, whatever it was sitting under. */
 .pin-hit.is-on,.pin-hit:focus-visible{z-index:3}
 .pin-hit.is-on .pin-dot{background:var(--cream);color:var(--navy);box-shadow:0 0 0 3px var(--navy)}
+/* THREE FAMILIES, THREE GLYPHS (Delta 3): filled numbered for a sale that
+   closed, hollow lettered for a home on the market, hollow barred roman for a
+   listing that came off unsold. */
+.pin-hit.is-active .pin-dot,.pin-hit.is-unsold .pin-dot{background:var(--cream);color:var(--navy);box-shadow:0 0 0 2px var(--navy),0 1px 6px rgba(16,39,66,.25)}
+.pin-hit.is-unsold .pin-dot{position:relative}
+.pin-hit.is-unsold .pin-dot::after{content:'';position:absolute;left:-5px;right:-5px;top:50%;height:2px;background:var(--navy)}
+/* Every pin tells the tale: days on market, price changes, the outcome. */
+.pin-note{position:absolute;left:50%;top:100%;transform:translate(-50%,8px);width:210px;padding:9px 11px;background:var(--cream);border:1px solid var(--navy);color:var(--navy);font-size:12px;line-height:1.4;text-align:left;z-index:4;opacity:0;pointer-events:none;transition:opacity 200ms ease-out}
+.pin-hit.is-on .pin-note,.pin-hit:hover .pin-note,.pin-hit:focus-visible .pin-note{opacity:1}
+@media (prefers-reduced-motion:reduce){.pin-note{transition:none}}
+.pin-note .pn-a{display:block;font-weight:600}
+.pin-note .pn-o,.pin-note .pn-d{display:block;opacity:.8}
+.pin-legend{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;opacity:.75}
+.pin-legend .pl-i{display:flex;align-items:center;gap:8px}
+.pin-legend .pl-k{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--navy);color:var(--cream);font-size:11px;font-weight:600;flex:0 0 auto}
+.pin-legend .is-active .pl-k,.pin-legend .is-unsold .pl-k{background:transparent;color:var(--navy);box-shadow:inset 0 0 0 2px var(--navy)}
+.pin-legend .is-subject .pl-k{background:transparent;color:var(--navy)}
+.peer-stories{list-style:none;margin:14px 0 0;padding:0}
+.peer-stories li{display:flex;align-items:baseline;gap:10px;margin:0 0 8px;font-size:14px;line-height:1.5}
+.peer-stories .ps-a{font-weight:600;white-space:nowrap}
+.peer-stories .ps-r{min-width:0;opacity:.85}
+@media (max-width:700px){.peer-stories li{flex-direction:column;gap:2px}.peer-stories .ps-a{white-space:normal}}
 .lot-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin:14px 0 8px}
 .lot-tile{margin:0}
 .lot-tile svg{width:100%;height:auto;display:block;border:1px solid var(--ink12);border-radius:10px}
@@ -324,6 +356,9 @@ table.comp-matrix .matrix-addr{display:block}
 /* The map's pin, at reading size. The number beside a sale is the KEY to that
    pin, not a rank, and drawn as the pin it cannot be misread as one after the
    grid is sorted. */
+.pin-badge.is-active,.pin-badge.is-unsold{background:transparent;color:var(--navy);box-shadow:inset 0 0 0 2px var(--navy)}
+.pin-badge.is-subject{background:transparent;color:var(--navy)}
+.subhead.adjustments-h,h4.adjustments-h{margin-top:22px}
 .pin-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--navy);color:var(--cream);font-size:11px;font-weight:700;line-height:1;margin-right:7px;flex:0 0 auto;vertical-align:middle}
 .addr-row{display:flex;align-items:center;justify-content:center}
 .addr-row .matrix-addr{min-width:0}

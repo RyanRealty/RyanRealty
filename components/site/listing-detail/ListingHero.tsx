@@ -54,6 +54,15 @@ type Props = {
   openHouseLabel?: string | null
   className?: string
   price?: number | null
+  /**
+   * SITE-20 — "Sold", "Off market", or null while the home is on market, from
+   * publishListingStatusWord. The caption is the first thing a person reads
+   * and the frame that gets screenshotted and shared, so a bare number over a
+   * photograph reads as an asking price. On 55550 Heidi Court it read
+   * $1,250,000; it now reads Sold $1,100,000, and the status pill 200px below
+   * is no longer the only thing carrying the fact.
+   */
+  priceStatusWord?: string | null
   beds?: number | null
   baths?: number | null
   sqft?: number | null
@@ -102,6 +111,7 @@ export function ListingHero({
   openHouseLabel,
   className,
   price,
+  priceStatusWord,
   beds,
   baths,
   sqft,
@@ -396,7 +406,12 @@ export function ListingHero({
       {(heroVideo != null || total > 0) && (price != null || onMediaFacts || addressLine) ? (
         <div className="listing-mosaic__on-media">
           {price != null ? (
-            <p className="listing-mosaic__on-ask">{formatPriceExact(price)}</p>
+            <p className="listing-mosaic__on-ask">
+              {priceStatusWord ? (
+                <span className="listing-mosaic__on-status">{priceStatusWord}</span>
+              ) : null}
+              {formatPriceExact(price)}
+            </p>
           ) : null}
           {onMediaFacts ? <p className="listing-mosaic__on-facts">{onMediaFacts}</p> : null}
           {addressLine ? <p className="listing-mosaic__on-street">{addressLine}</p> : null}
