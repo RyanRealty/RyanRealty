@@ -148,7 +148,7 @@ export async function kickoffCmaCore(input: {
       // plus a newer --vN document, so the open-build check, the existing-
       // document guard, and the stub carve-out below all operate on the
       // chain's writable end — never blindly on the base slug.
-      const slot = await resolveWritableCmaSlot(slug)
+      const slot = await resolveWritableCmaSlot(slug, { personId: person.id })
       if (!slot.ok) return { ok: false, error: slot.error }
 
       // Direction-explicit dedupe FIRST: attach to an in-flight build for this

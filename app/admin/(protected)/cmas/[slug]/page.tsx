@@ -32,6 +32,7 @@ import { readFirstContactOverride } from '@/lib/cma/first-contact-override'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
 import { dripEtaFor, DRIP_CADENCE_LINE } from '@/lib/cma/drip-eta'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
+import { cmaReportButtonHtml } from '@/lib/cma/report-button'
 import '../_components/cma-review.css'
 
 export const dynamic = 'force-dynamic'
@@ -106,7 +107,10 @@ export default async function AdminCmaReviewPage({
     (typeof brokerRow?.email === 'string' && /@ryan-realty\.com$/i.test(brokerRow.email)
       ? brokerRow.email
       : null) || 'matt@ryan-realty.com'
-  const signatureHtml = (await getSignatureForMailbox(fromMailbox))?.html ?? null
+  // The preview appends the same report button the send rail appends, so a
+  // broker-typed note previews with its link (lib/cma/report-button.ts).
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const signatureHtml = `${cmaReportButtonHtml(`${siteUrl}/cma/${slug}`)}${(await getSignatureForMailbox(fromMailbox))?.html ?? ''}`
 
   // Drip ETA when this CMA's prospect is currently queued.
   let inDrip = false
