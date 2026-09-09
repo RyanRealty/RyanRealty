@@ -165,6 +165,13 @@ time (nothing aggregates it — `app/oregon/[city]/page.tsx:19-22`); the rendere
 - **Indexable vs noindex** (`lib/out-of-area-cities.ts:102-107`;
   `app/oregon/[city]/page.tsx:86-92`): ≥5 active AND top-100 → index + sitemap; else
   noindex. Thin-content protection is a policy branch, not an accident.
+- **Out-of-area LISTING — the tier below the city page** (`lib/data/listings/service-area.ts`,
+  `outOfAreaListingPolicy`): a listing detail page whose `City` is outside
+  `CENTRAL_OREGON_CITY_SLUGS` renders the honesty block, goes `noindex, follow`, and
+  leaves `listings.xml`. See §8a for the ruling and the numbers behind it. The predicate
+  is the SAME `isServiceAreaCity` the tile and feed reads use and the same membership
+  `isOutOfAreaCityKey` gives the city tier, so the two tiers cannot disagree about a
+  market (pinned by `lib/data/listings/service-area.test.ts`).
 - **Honeypot** (`app/actions/out-of-area-referral.ts:51`): filled → fake success, zero
   writes.
 - **Enroll gate — keyed on `referral:candidate`, deliberately NOT the bare
@@ -203,6 +210,60 @@ Terminal states:
   The page still served its visitor objective; no lead exists.
 - **(c) Rejected submit** — validation error surfaced inline; visitor may retry.
 - **(d) Honeypot drop** — bot saw success, nothing was written.
+
+## 8a. The listing tier — Matt's ruling, 2026-09-08 (SITE-33)
+
+This process owned the CITY page and stopped there. The listing detail pages the city
+page links to — the inventory it exists to show — carried none of its honesty and all of
+its indexing.
+
+**What was measured**, live 2026-09-08 against `https://ryan-realty.com/sitemaps/listings.xml`:
+4,190 of 7,506 listing URLs (56%) were homes in cities outside `CENTRAL_OREGON_CITY_SLUGS` —
+Medford 730, Klamath Falls 635, Grants Pass 541, Ashland 275, Chiloquin 184, Eagle Point
+165, Central Point 149. Each rendered identically to a Bend home, under the layout's
+`| Ryan Realty — Central Oregon` title suffix, `index, follow`, with a submitted sitemap
+row. `lib/data/sitemap/getListingSitemapRows.ts` paged `listing_tile_mv` on status alone;
+`lib/data/listings/getListingDetail.ts` refused only IDX opt-out and Coming Soon.
+
+**This was never a missing filter.** `lib/out-of-area-cities.ts` and `app/oregon/[city]/page.tsx`
+are the shipped referral tier for exactly these cities, and that page links straight at
+these listing detail pages through `listingDetailPath`. Refusing out-of-area rows in the
+detail read would turn every inventory link on `/oregon/medford` and `/oregon/grants-pass`
+into `ListingUnavailable` and delete the tier's whole reason to exist.
+
+**The ruling (asked, answered):**
+
+1. The out-of-area listing page **gets the honesty block** — the city tier's claim one
+   level down, in the city tier's words, ending in that city's `/oregon` page
+   (`components/site/listing-detail/ListingOutOfAreaNotice.tsx`, copy in
+   `listing-out-of-area.ts`). It sits directly under the price strip, above every other
+   claim the page makes about the home.
+2. It is **`noindex` with `follow` PRESERVED**. `pageMetadata({ noindex: true })` emits
+   `noindex, follow` (SITE-25); the separate `nofollow` flag is deliberately not set, so
+   the links in and out keep passing. The canonical stays on the page.
+3. **The page still serves, 200, in full.** This is a policy at the page, never a filter
+   in a read. Every inventory link on the referral pages keeps resolving.
+4. **`/oregon/[city]` stays indexed**, per W12.4 (Matt directive 2026-07-22) — confirmed,
+   unchanged. GSC window read 2026-09-08: 55 pages, 1,187 impressions, 1 click, average
+   position 33.8. Low, and low is what a referral tier for markets we do not work should
+   look like; the tier is kept for the referral, not for the traffic.
+5. **The sitemap drops those rows.** A noindexed URL does not belong in a submitted
+   sitemap, so `serviceAreaSitemapTiles` filters `getListingSitemapRows` through the same
+   `isServiceAreaCity` predicate. Measured 2026-09-09 on the branch by reproducing the
+   DAL's own read (`listing_tile_mv`, `PUBLIC_ACTIVE_STATUSES`, `ORDER BY listing_key`,
+   1,000-row pages → `assembleListingSitemapRows`): **7,501 listing URLs before, 3,312
+   after — 4,189 out-of-area rows dropped (55.8%)**. The drop by city: Medford 731,
+   Klamath Falls 635, Grants Pass 546, Ashland 276, Chiloquin 185, Eagle Point 165,
+   Central Point 149, Cave Junction 115, Bonanza 108, Rogue River 96, Jacksonville 90,
+   White City 83. The spread against the 2026-09-08 production figures above is one day
+   of feed movement, not a methodology change.
+
+Two claims from the original finding were **dropped for want of measurement**: entity
+dilution and crawl budget. Neither was measured, so neither is asserted here.
+
+The assertion lives in `lib/data/listings/service-area.test.ts` (the existing test for
+this predicate), `lib/data/sitemap/getListingSitemapRows.test.ts`, and
+`components/site/listing-detail/listing-out-of-area.test.ts` — not in a new gate.
 
 ## 8. Time & performance
 

@@ -3,7 +3,9 @@ import {
   SERVICE_AREA_CITIES_LOWER,
   SERVICE_AREA_CITIES_PROPER,
   isServiceAreaCity,
+  outOfAreaListingPolicy,
 } from './service-area'
+import { isOutOfAreaCityKey, outOfAreaCitySlug } from '@/lib/out-of-area-cities'
 import { CENTRAL_OREGON_CITY_SLUGS } from '@/lib/central-oregon'
 
 describe('service-area (audit P0-3)', () => {
@@ -100,6 +102,70 @@ describe('service-area (audit P0-3)', () => {
       expect(isServiceAreaCity(null)).toBe(false)
       expect(isServiceAreaCity(undefined)).toBe(false)
       expect(isServiceAreaCity('')).toBe(false)
+    })
+  })
+
+  /**
+   * SITE-33 — THE LISTING TIER (Matt 2026-09-08). Removing
+   * `outOfAreaListingPolicy` from service-area.ts fails this block: the import
+   * above stops resolving, so the whole file fails rather than passing quietly
+   * with the branch gone. That is the point of testing it here and not beside
+   * the component — this predicate is what the robots directive, the visible
+   * honesty block and the sitemap row all read.
+   */
+  describe('outOfAreaListingPolicy (the listing tier)', () => {
+    it('returns null for every Central Oregon city, so an in-area page is untouched', () => {
+      for (const city of ['Bend', 'Redmond', 'Sisters', 'Sunriver', 'La Pine', 'Crooked River Ranch']) {
+        expect(outOfAreaListingPolicy(city)).toBeNull()
+      }
+      // Case and padding are the feed's, not ours.
+      expect(outOfAreaListingPolicy('  bend ')).toBeNull()
+      expect(outOfAreaListingPolicy('REDMOND')).toBeNull()
+    })
+
+    it('returns the referral policy for the three measured Southern Oregon markets', () => {
+      // The cities named on SITE-33's live 2026-09-08 sitemap measurement.
+      expect(outOfAreaListingPolicy('Medford')).toEqual({
+        cityName: 'Medford',
+        citySlug: 'medford',
+        referralHref: '/oregon/medford',
+      })
+      expect(outOfAreaListingPolicy('Grants Pass')).toEqual({
+        cityName: 'Grants Pass',
+        citySlug: 'grants-pass',
+        referralHref: '/oregon/grants-pass',
+      })
+      expect(outOfAreaListingPolicy('Klamath Falls')).toEqual({
+        cityName: 'Klamath Falls',
+        citySlug: 'klamath-falls',
+        referralHref: '/oregon/klamath-falls',
+      })
+    })
+
+    it('agrees with the CITY tier on every city, so the two tiers cannot diverge', () => {
+      // The listing tier's answer must be the city tier's answer. isOutOfAreaCityKey
+      // is what /oregon/[city] and the sitemap emitter decide membership with.
+      for (const city of [
+        'Bend', 'Redmond', 'Sisters', 'Sunriver', 'La Pine', 'Prineville', 'Madras',
+        'Medford', 'Grants Pass', 'Klamath Falls', 'Ashland', 'Chiloquin',
+        'Eagle Point', 'Central Point', 'Portland', 'Eugene', 'Winston',
+      ]) {
+        expect(outOfAreaListingPolicy(city) !== null).toBe(isOutOfAreaCityKey(city))
+      }
+    })
+
+    it('builds the href on the city tier’s own slugger, so /oregon answers on it', () => {
+      const policy = outOfAreaListingPolicy('Klamath Falls')
+      expect(policy?.citySlug).toBe(outOfAreaCitySlug('Klamath Falls'))
+      expect(policy?.referralHref).toBe(`/oregon/${outOfAreaCitySlug('Klamath Falls')}`)
+    })
+
+    it('makes NO claim about a row with no city', () => {
+      // §0: absence of a city is not evidence a home is outside our market.
+      // The honest failure mode is silence, not a false disclosure.
+      expect(outOfAreaListingPolicy(null)).toBeNull()
+      expect(outOfAreaListingPolicy(undefined)).toBeNull()
+      expect(outOfAreaListingPolicy('   ')).toBeNull()
     })
   })
 })
