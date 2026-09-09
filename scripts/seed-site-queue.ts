@@ -509,6 +509,19 @@ const SEEDS: readonly Seed[] = [
     accept:
       "Mechanical, on a dev render: ten consecutive loads of /communities/tetherow/types/single-family at 1440 each contain the Atlas section or its placeholder, never neither; the first viewport at 1440 and 375 contains a sentence with a count and a price range with a source line; the page renders exactly one display-scale headline; hovering a listing row changes the state of the corresponding Atlas mark; the zoom control's bounding box is at least 44px on each side at 375. On the table instrument, place-type-community scores above 44 and place-type above 69. Receipts per TASTE.md.",
   },
+  {
+    versionGap: 'SITE-54',
+    domain: 'public-ux',
+    title:
+      '/sitemaps/geo.xml answers under the 300s ceiling on a cold request: two consecutive 504s on 2026-09-09 mean Google cannot read the place tree at all',
+    objective:
+      "Verified on production 2026-09-09 (Vercel runtime log, deploy dpl_9QqeGLbq9DugvMjmnk1M6G8AunRA, cache MISS): GET /sitemaps/geo.xml returned 504 'Task timed out after 300 seconds' at 05:18:53Z and again ~05:24Z, 108 bytes, on two consecutive browser-UA requests; core.xml, content.xml, listings.xml and matrix.xml were not measured in that pass. The route (app/sitemaps/[cls]/route.ts, maxDuration 300, dynamicParams true, revalidate 3600 via getClassRows in lib/sitemap-class-rows.ts) builds the whole ~10.7K-URL universe per class through the shared memo and then filters to the class; the repo records the cold cost at 106s (2026-08) and 235s with a 280s http=000 failure (handoff 'The sitemap P0 fix did not work'), so a cold request has drifted past the ceiling rather than crossed it today. The SITE-24 lane could not materialise geo.xml locally either: two attempts of 15 and 25 minutes, with [getSearchMatrixInventory] read failed: canceling statement due to statement timeout repeating in the log, so the matrix leg of the universe is the suspected cost, on a class that does not need it. The hourly warmer /api/cron/warm-sitemaps (vercel.json, 0 * * * *) fills all five classes from one in-process build; read its runtime log for the 06:00Z and 07:00Z runs on the current deploy first: if the warmer itself exceeds its budget every class is cold on every request and the 1h cache never fills. Fix the class, not the request: a geo class build must not depend on the matrix leg (build per class from its own DAL reads, the plat set now costs 644ms via getIndexableSubdivisions), or the universe memo must persist across invocations (a table or blob, not module scope), or the matrix inventory read must stop timing out. State the cost as crawl coverage: the place tree (cities, communities, neighborhoods, 2,486 indexable plats) has no sitemap while this 504s, and SITE-24's plats cannot be discovered through it. No rank claim.",
+    output:
+      'geo.xml (and each sibling class) answers 200 under the ceiling on a cold request; the warmer completes inside its budget and its log says so; a gate or smoke that fetches every class with a browser UA after deploy and fails on a non-200',
+    accept:
+      'curl with a browser UA, cold (immediately after a deploy READY, before the warmer): /sitemaps/geo.xml returns 200 in under 300s and contains /subdivisions/golf-homes-at-tetherow; each of core.xml, content.xml, listings.xml and matrix.xml returns 200; the Vercel runtime log for /api/cron/warm-sitemaps on the deployed SHA shows one completed run with per-class counts; a deploy smoke fails on any sitemap class that is not 200.',
+    dependsOn: [],
+  },
 ]
 
 async function main() {

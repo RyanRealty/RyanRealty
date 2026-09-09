@@ -1,3 +1,51 @@
+# Current — 2026-09-09 (site queue round two continued: SITE-25 and SITE-24 done in one push; geo.xml 504s on production, seeded as SITE-54)
+
+Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. One push for
+the round: `00f400b9..2a2a4220` (lanes 446d9567 and 603c3c22+d739ac3d, merges, and the follow-up
+2a2a4220). Deploy dpl_9QqeGLbq9DugvMjmnk1M6G8AunRA READY in 247s (SSG 756 pages, 21 rail
+timeouts during static generation; the previous deploy had 0). Every accept clause was re-run
+against ryan-realty.com with a browser UA after READY; observed values are on the nodes.
+
+**SITE-25 done.** pageMetadata never cuts a title; the 29-char registry-name budget is enforced by
+check-content-metadata (counts the suffix, covers parks, shrink-only baseline of 12 names); the
+four registries (parks, trails, events, venues) lead their description with the blurb's opening
+sentence, no brokerage tail, "Central Oregon" once in the title; noindex now emits
+"noindex, follow" (8 pageMetadata callers moved; the /lp pages never used it); the plat city has a
+fourth source, the county plat tree (getPlatBoundaryCity walks boundaries.parent_id, 2,491 of 3,223
+plats carry one), so courtyard-garages-at-broken-top names Bend with zero listings; a plat name that
+already ends in its city no longer doubles it in the title.
+
+**SITE-24 done, five of six.** subdivision_plat_closed_mv (applied and populated, 3,086 rows,
+nightly pg_cron 10:20Z) attributes lifetime closes to a recorded plat by point-in-polygon unioned
+with the MLS-name join over distinct listing_key; getIndexableSubdivisions reads it (2,486 plats,
+644 ms cold against ~100 s). golf-homes-at-tetherow 107, tennis-tracts 110, golf-tracts 54,
+rock-ridge 32 now index,follow with the lifetime figure and its §0 trace; outcrop keeps its index
+(20 = 8 polygon + 20 name). ridge-at-broken-top has 8 (< 10) and courtyard-garages is a 0.0003 sq
+mi tract with no sale inside it: both stay noindex and the floor did not move. Taste: subdivision
+class 61 → 74 → 77, rebaselined (different plat, six shots). Raised, not fixed: ~15 surfaces call a
+PropertyType 'A' set "single-family" (§0 mixed bucket, one cross-surface decision); no hero photo
+for golf-homes-at-tetherow (a registry alias asserts membership and scopes CMA comps, Matt's call).
+
+**Found on production and seeded as SITE-54.** /sitemaps/geo.xml returned 504 "Task timed out
+after 300 seconds" on two consecutive cold requests (05:18Z, ~05:24Z, cache MISS). The route builds
+the whole ~10.7K-URL universe per class; the repo records the cold cost at 106–235 s with a prior
+280 s failure, so this is drift past the ceiling, not a new join (the plat read got cheaper). While
+it 504s the place tree has no sitemap. SITE-54 carries the objective and the accept; the hourly
+warmer's 06:00Z/07:00Z runs on this deploy are the first thing to read.
+
+**Lanes in flight at the time of writing:** SITE-28 (compound community slugs get the plat's real
+name or refuse; community-class taste pass) and SITE-23 (Brasada Ranch under the outside-boundaries
+sentinel; polygon coverage), both this session. Elsewhere: SITE-20/21 (cloud-grinder),
+SITE-31 (claude-opus5). Round three (SITE-40..53) was seeded by another session from the taste table.
+
+**Lane lessons this round.** (1) A lane that dies on a rate limit leaves staged, uncommitted work
+in its worktree; a continuation agent in the SAME worktree (no new isolation) with the exact
+inherited state finished it, and lanes now commit a WIP with the trailer before anything else when
+a limit hits. (2) The seed file had grown past the number I grepped for: check
+`grep versionGap:` for the highest gap before appending, and the seed skips an existing gap rather
+than overwriting it (no damage, but the entry was renumbered to SITE-54). (3) Two lanes on one
+route file merged clean when each kept to its own region and the brief named the other's region.
+
 # Current — 2026-09-09 (site queue: a sold home stops publishing its asking price; one canonical per listing)
 
 Owner: Claude (Opus 5), cloud "Site queue grinder" routine, session 01DLfMFV. **main is at `8bef8ddde`.**
