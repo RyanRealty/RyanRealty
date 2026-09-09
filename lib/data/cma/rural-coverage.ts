@@ -31,6 +31,7 @@ async function zoningByKey(keys: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>()
   for (let i = 0; i < keys.length; i += 200) {
     const part = keys.slice(i, i + 200)
+    // @canonical-key — keys were read from listings a moment ago
     const { data, error } = await sb.from('listings').select('ListingKey, zoning:details->>Zoning').in('ListingKey', part)
     if (error) throw new Error(`zoningByKey: ${error.message}`)
     for (const r of (data ?? []) as Array<{ ListingKey: string; zoning: string | null }>) {

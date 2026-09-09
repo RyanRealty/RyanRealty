@@ -7,6 +7,7 @@ import { isRuralAcreage } from '@/lib/cma/comp-tiers'
 import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
 import type { CmaSubject } from '@/lib/cma/types'
 import { getSubdivisionRing, assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
+import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import {
   classifyHoa,
   classifyLot,
@@ -83,6 +84,8 @@ export function cmaSubjectToPricing(
 export async function selectPricingComps(
   subject: CmaSubject,
   opts: {
+    /** The subject's county base zone (lib/cma/county.ts), for the rural zoning-class split. */
+    subjectZoning?: string | null
     asOf?: string
     waterRaw?: unknown
     sewerRaw?: unknown
@@ -111,6 +114,7 @@ export async function selectPricingComps(
     sewerRaw: opts.sewerRaw,
     levelsRaw: opts.levelsRaw,
     irrigationClass: opts.subjectIrrigation,
+    zoning: opts.subjectZoning ?? null,
   })
   const asOf = (opts.asOf ?? new Date().toISOString()).slice(0, 10)
   const asOfYear = Number(asOf.slice(0, 4))
@@ -171,6 +175,22 @@ export async function selectPricingComps(
     sales.forEach((s, i) => {
       s.subdivisionSlug = slugs[i]
     })
+  }
+  // Delta 4 (Matt 2026-09-09): a rural sale's zoning class is a hard split,
+  // and the facts table carries no zone. Nearest rural sales first, county
+  // GIS through the cache, at most MAX_ZONE_LOOKUPS live queries a build.
+  if (pricingSubject.ruralAcreage || (pricingSubject.lotAcres ?? 0) >= 1) {
+    const sLat = pricingSubject.latitude ?? 0
+    const sLng = pricingSubject.longitude ?? 0
+    const rural = sales
+      .filter((x) => (x.lotAcres ?? 0) >= 1 && x.latitude != null && x.longitude != null)
+      .sort((a, b) => ((a.latitude! - sLat) ** 2 + (a.longitude! - sLng) ** 2) - ((b.latitude! - sLat) ** 2 + (b.longitude! - sLng) ** 2))
+      .slice(0, 160)
+    const zones = await resolveSaleZones(rural.map((x) => ({ listingKey: x.listingKey, latitude: x.latitude, longitude: x.longitude })))
+    for (const x of sales) {
+      const z = zones.get(x.listingKey)
+      if (z !== undefined) x.zoning = z
+    }
   }
   const walked = walkPricingLadder(pricingSubject, sales, { asOf, cells })
   return { ...walked, factsReady: true }
@@ -355,7 +375,7 @@ export function pickCompSource(match: {
 
 export async function selectCompsPreferringFacts(
   subject: CmaSubject,
-  opts: { subjectIrrigation?: IrrigationClass | null } = {},
+  opts: { subjectIrrigation?: IrrigationClass | null; subjectZoning?: string | null } = {},
 ): Promise<CompSelection> {
   // Classify BEFORE any ladder. Custom/new must never load listings SQL tiers
   // (subdivision / competing-area / citywide) — live Rim View after #187 still

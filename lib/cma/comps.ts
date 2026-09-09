@@ -63,6 +63,8 @@ import {
   type CompTierTrace,
 } from '@/lib/cma/comp-trace'
 import { compTierLadder, isRuralAcreage, realSubdivision } from '@/lib/cma/comp-tiers'
+import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible } from '@/lib/pricing/rural'
+import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
@@ -263,7 +265,7 @@ function emptyDiagnostics(
  */
 export async function selectComps(
   subject: CmaSubject,
-  opts: { subjectIrrigation?: IrrigationClass | null } = {},
+  opts: { subjectIrrigation?: IrrigationClass | null; subjectZoning?: string | null } = {},
 ): Promise<CompSelection> {
   const sqft = subject.sqft ?? 0
   // Land is priced per ACRE, not per square foot, so a land subject legitimately
@@ -434,6 +436,17 @@ export async function selectComps(
       propertyType: segment,
     })
     rung.rows_returned = rows.length
+    // Delta 4: on acreage the rows' county zones, nearest first, through the cache.
+    const ruralSubject = ruralAcreage || (subject.lotAcres ?? 0) >= 1
+    const rowZones = ruralSubject
+      ? await resolveSaleZones(
+          rows
+            .filter((r) => Number(r['lot_size_acres'] ?? 0) >= 1 && num(r['Latitude']) != null)
+            .map((r) => ({ listingKey: String(r['ListingKey'] ?? ''), latitude: num(r['Latitude']), longitude: num(r['Longitude']) }))
+            .filter((r) => r.listingKey)
+            .slice(0, 120),
+        )
+      : null
     // The adjacent rung needs each row's plat; one batched point lookup.
     const rowPlats = tier.adjacentSubdivisions
       ? await assignSubdivisionSlugs(rows.map((r) => ({ lat: num(r['Latitude']), lng: num(r['Longitude']) })))
@@ -507,6 +520,23 @@ export async function selectComps(
       ) {
         rung.excluded.acreage_infrastructure++
         continue
+      }
+      // Delta 4 (Matt 2026-09-09): zoning class, outbuildings and usable land
+      // are hard splits on acreage. Unknown sides keep the sale.
+      if (ruralSubject) {
+        const compZone = rowZones?.get(comp.listingKey) ?? null
+        if (!zoningClassCompatible(opts.subjectZoning ?? null, compZone)) {
+          rung.excluded.zoning_class++
+          continue
+        }
+        if (!outbuildingsCompatible(subject.publicRemarks, comp.publicRemarks)) {
+          rung.excluded.outbuildings++
+          continue
+        }
+        if (!terrainCompatible(subject.publicRemarks, comp.publicRemarks)) {
+          rung.excluded.terrain++
+          continue
+        }
       }
 
       // HARD EXCLUSION at every tier (Matt 2026-08-05, the no-brainer): a
@@ -821,6 +851,9 @@ const REFUSAL_CUT_LABELS: Partial<Record<keyof CompExclusionCounts, string>> = {
   unusable_row: 'no recorded price, close date, or living area',
   year_quality: 'a different construction generation',
   acreage_infrastructure: 'different acreage infrastructure',
+  zoning_class: 'a different zoning class',
+  outbuildings: 'different outbuildings',
+  terrain: 'different land',
 }
 
 export function brokerCompRefusal(args: {

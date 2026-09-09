@@ -336,7 +336,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const [selection, market] = await Promise.all([
       curatedKeys.length > 0
         ? selectCompsByKeys(subject, curatedKeys)
-        : selectCompsPreferringFacts(subject, { subjectIrrigation }),
+        : selectCompsPreferringFacts(subject, { subjectIrrigation, subjectZoning: site.zone }),
       marketPromise,
     ])
     compDiagnostics = selection.diagnostics

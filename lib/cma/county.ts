@@ -207,6 +207,28 @@ async function arcgisPointQuery(base: string, lng: number, lat: number, outField
   return data?.features?.[0]?.attributes ?? null
 }
 
+/**
+ * The county base zone at a point (Deschutes LandFD zoning layer), for the
+ * rural zoning-class split. Null when the point is outside the layer or the
+ * query fails — fail-open for the caller.
+ */
+export async function lookupCountyZone(
+  lat: number | null,
+  lng: number | null,
+): Promise<{ zone: string | null; zoneType: string | null } | null> {
+  if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) return null
+  try {
+    const z = await arcgisPointQuery(ARCGIS_ZONING, lng, lat, 'ZONE,ZONE_TYPE')
+    if (!z) return { zone: null, zoneType: null }
+    return {
+      zone: z.ZONE != null && String(z.ZONE).trim() ? String(z.ZONE).trim() : null,
+      zoneType: z.ZONE_TYPE != null && String(z.ZONE_TYPE).trim() ? String(z.ZONE_TYPE).trim() : null,
+    }
+  } catch {
+    return null
+  }
+}
+
 /** Boolean "does this point intersect this layer" — for overlay/boundary presence. */
 async function arcgisIntersects(base: string, lng: number, lat: number): Promise<Record<string, unknown> | null | undefined> {
   try {

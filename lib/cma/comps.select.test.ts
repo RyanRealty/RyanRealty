@@ -9,6 +9,7 @@ const { selectCmaCompsPool, selectCmaCompsByKeys } = vi.hoisted(() => ({
   selectCmaCompsByKeys: vi.fn(async (_keys?: unknown) => [] as CmaListingRow[]),
 }))
 
+vi.mock('@/lib/pricing/sale-zoning', () => ({ resolveSaleZones: async () => new Map() }))
 vi.mock('@/lib/data', () => ({
   getSubdivisionRing: async () => null,
   assignSubdivisionSlugs: async (pts: ReadonlyArray<unknown>) => pts.map(() => null),

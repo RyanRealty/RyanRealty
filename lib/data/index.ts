@@ -301,6 +301,8 @@ export type { GeoSnapshot, GeoSnapshotInput } from '@/lib/data/geo/getGeoSnapsho
 // Returns null when no boundary row exists for the geo.
 export { getBoundaryGeoJSON } from '@/lib/data/geo/getBoundaryGeoJSON'
 export { getSubdivisionRing, assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
+export { getSaleZoneCache, upsertSaleZoneCache } from '@/lib/data/cma/sale-zone-cache'
+export type { SaleZoneCacheRow } from '@/lib/data/cma/sale-zone-cache'
 export type { SubdivisionRing, SubdivisionRingPlat } from '@/lib/data/geo/subdivision-ring'
 export type { BoundaryGeoJSONInput, BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
 export { getResortBoundaryGeoJSON } from '@/lib/data/geo/getResortBoundaryGeoJSON'
