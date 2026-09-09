@@ -158,11 +158,25 @@ run('CMA kick-off is idempotent and dedupes open builds (D8)', () => {
     expect(seedErr).toBeNull()
     personBId = personB!.id as number
 
-    const res = await kickoffCmaCore({
+    // Matt 2026-09-09: the draft belongs to person A, so the first tap ASKS
+    // the broker instead of attaching; "same household" then attaches (D8).
+    const asked = await kickoffCmaCore({
       personId: personBId,
       address: ADDRESS,
       idempotencyKey: intId('kickoff-c'),
       actorBroker: 'rebecca',
+    })
+    expect(asked.ok).toBe(true)
+    if (asked.ok) {
+      expect(asked.needsChoice).toBe(true)
+      expect(asked.alreadyQueued).toBe(false)
+    }
+    const res = await kickoffCmaCore({
+      personId: personBId,
+      address: ADDRESS,
+      idempotencyKey: intId('kickoff-d'),
+      actorBroker: 'rebecca',
+      attachToExisting: true,
     })
     expect(res.ok).toBe(true)
     if (res.ok) expect(res.alreadyQueued).toBe(true)

@@ -41,6 +41,9 @@ type DoneState = {
   existingStatus: string | null
   /** The terminal state came from the explicit fresh-build confirmation. */
   freshBuild: boolean
+  /** The open draft belongs to another contact; the broker picks. */
+  needsChoice: boolean
+  existingOwnerName: string | null
 }
 
 export function CmaKickoffSheet({
@@ -70,6 +73,9 @@ export function CmaKickoffSheet({
   // still double-tap-safe.
   const idempotencyKey = useMemo(() => crypto.randomUUID(), [])
   const freshBuildKey = useMemo(() => crypto.randomUUID(), [])
+  // The "same household" answer is its own request too (the first key stored
+  // the needsChoice result).
+  const attachKey = useMemo(() => crypto.randomUUID(), [])
 
   const close = () => {
     setOpen(false)
@@ -85,15 +91,16 @@ export function CmaKickoffSheet({
     }
   }
 
-  const submit = (buildNewVersion = false) => {
+  const submit = (buildNewVersion = false, attachToExisting = false) => {
     setError(null)
     startTransition(async () => {
       const outcome = await resolveKickoff(() =>
         kickoffCmaForContactAction({
           personId,
           address,
-          idempotencyKey: buildNewVersion ? freshBuildKey : idempotencyKey,
+          idempotencyKey: buildNewVersion ? freshBuildKey : attachToExisting ? attachKey : idempotencyKey,
           buildNewVersion,
+          attachToExisting,
         }),
       )
       if (outcome.kind === 'done') {
@@ -103,6 +110,8 @@ export function CmaKickoffSheet({
           alreadyBuilt: outcome.result.alreadyBuilt ?? false,
           existingStatus: outcome.result.existingStatus ?? null,
           freshBuild: buildNewVersion,
+          needsChoice: outcome.result.needsChoice ?? false,
+          existingOwnerName: outcome.result.existingOwnerName ?? null,
         })
       } else {
         setError(outcome.message)
@@ -111,14 +120,18 @@ export function CmaKickoffSheet({
   }
 
   const contactLine = [personPhone, personEmail].filter(Boolean).join(' · ')
-  const doneTitle = done?.alreadyBuilt
+  const doneTitle = done?.needsChoice
+    ? 'This address already has an open draft'
+    : done?.alreadyBuilt
     ? 'CMA already on file'
     : done?.alreadyQueued
       ? 'Already building'
       : done?.freshBuild
         ? 'Fresh CMA build kicked off'
         : 'CMA build kicked off'
-  const doneBody = done?.alreadyBuilt
+  const doneBody = done?.needsChoice
+    ? `The draft for ${address.trim()} was built for ${done.existingOwnerName ?? 'another contact'}. Same household: attach ${personName ?? 'this contact'} to it. Different owner: build a new document for ${personName ?? 'this contact'}; the existing draft keeps its link.`
+    : done?.alreadyBuilt
     ? `A ${done.existingStatus ?? 'previous'} CMA for ${address.trim()} already exists. Nothing was rebuilt or overwritten — review it and send it from there, or build a fresh one with current comps.`
     : done?.alreadyQueued
       ? `A CMA for ${address.trim()} is already in the build queue. No duplicate was created — you'll get a text when the draft is ready to review.`
@@ -162,6 +175,18 @@ export function CmaKickoffSheet({
               The draft lands in the CMA queue for your review. Nothing is sent to the lead until
               you approve it.
             </p>
+          </div>
+        ) : done.needsChoice ? (
+          <div className="flex w-full flex-col gap-2">
+            <Button onClick={() => submit(false, true)} disabled={pending}>
+              {pending ? 'Working…' : 'Same household — attach to that draft'}
+            </Button>
+            <Button variant="quiet" onClick={() => submit(true)} disabled={pending}>
+              Different owner — build a new document
+            </Button>
+            <Button variant="quiet" onClick={close} disabled={pending}>
+              Not now
+            </Button>
           </div>
         ) : (
           <div className="flex w-full flex-col gap-2">

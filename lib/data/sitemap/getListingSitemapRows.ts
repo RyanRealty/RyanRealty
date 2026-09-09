@@ -18,6 +18,7 @@
  */
 import { supabaseAnon } from '@/lib/data/client'
 import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
+import { isServiceAreaCity } from '@/lib/data/listings/service-area'
 import {
   assembleListingSitemapRows,
   type ListingSitemapRow,
@@ -104,7 +105,38 @@ async function fetchActiveListingTiles(): Promise<ListingSitemapTile[]> {
   return rows
 }
 
+/**
+ * SITE-33 (Matt 2026-09-08). A noindexed URL does not belong in a sitemap.
+ *
+ * The listing detail page for a home outside the Central Oregon service area
+ * now renders "noindex, follow" and carries an honesty block
+ * (lib/data/listings/service-area.ts, `outOfAreaListingPolicy`). Submitting
+ * those URLs asks Google to crawl pages we have told it not to index. Measured
+ * live 2026-09-08 against https://ryan-realty.com/sitemaps/listings.xml: 4,190
+ * of 7,506 listing URLs (56%) were out-of-area — Medford 730, Klamath Falls
+ * 635, Grants Pass 541, Ashland 275, Chiloquin 184, Eagle Point 165, Central
+ * Point 149.
+ *
+ * THE FILTER IS IN JS, NOT IN THE QUERY, ON PURPOSE. The MV read above is
+ * pinned by ci:sitemap-listings-honest to a shape measured against production
+ * (count + ORDER BY listing_key + concurrent range pages); adding an
+ * `.in('city_lower', …)` predicate beside that ORDER BY changes the plan on a
+ * 589K-row MV under a build deadline. Verified this session: a `city_lower`
+ * equality filter with `.order('listing_key')` on this MV hit the statement
+ * timeout, while the same filter without the order returned instantly. The rows
+ * are already fetched and already carry `city`; dropping them here costs
+ * nothing and cannot regress the read.
+ *
+ * This is the SAME predicate the page's robots directive uses, so a URL cannot
+ * be in the sitemap and noindexed at the same time.
+ */
+export function serviceAreaSitemapTiles(
+  tiles: readonly ListingSitemapTile[],
+): ListingSitemapTile[] {
+  return tiles.filter((tile) => isServiceAreaCity(tile.city))
+}
+
 export async function getListingSitemapRows(now: Date = new Date()): Promise<ListingSitemapRow[]> {
   const tiles = await fetchActiveListingTiles()
-  return assembleListingSitemapRows(tiles, now)
+  return assembleListingSitemapRows(serviceAreaSitemapTiles(tiles), now)
 }

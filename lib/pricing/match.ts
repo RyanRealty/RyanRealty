@@ -45,6 +45,7 @@ import {
   type PricingTier,
   BOUNDARY_EXIT_BELOW,
 } from '@/lib/pricing/ladder'
+import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible, type RuralSplitCounts } from '@/lib/pricing/rural'
 
 export type PricingSubject = {
   listingKey: string | null
@@ -169,6 +170,12 @@ export type PricingMatchResult = {
   starved: boolean
   /** Every rung the ladder walked, in order. */
   rungs: PricingLadderRung[]
+  /**
+   * On acreage: how many rural sales in the pool each hard split set aside,
+   * counted once over the pool (the rungs reject inside passesTier without a
+   * reason). Absent for in-town subjects.
+   */
+  ruralSplits?: RuralSplitCounts
 }
 
 function monthsBetween(laterIso: string, earlierIso: string): number {
@@ -270,8 +277,15 @@ function applesOk(
   if (!irrigationCompatible(subjectIrrigation, saleIrrigation)) return false
   if (subject.ruralAcreage || (subject.lotAcres ?? 0) >= 1) {
     if (!horseInfrastructureCompatible(subject.publicRemarks, sale.publicRemarks)) return false
+    // Delta 4 (Matt 2026-09-09): outside a boundary the comparison is of the
+    // property. Zoning CLASS, outbuildings and usable land are hard splits,
+    // never dollar adjustments; every side that is unknown keeps the sale.
+    if (!zoningClassCompatible(subject.zoning, sale.zoning)) return false
+    if (!outbuildingsCompatible(subject.publicRemarks, sale.publicRemarks)) return false
+    if (!terrainCompatible(subject.publicRemarks, sale.publicRemarks)) return false
+  } else if (!zoningCompatible(subject.zoning, sale.zoning)) {
+    return false
   }
-  if (!zoningCompatible(subject.zoning, sale.zoning)) return false
   if (level === 'product_lot' || level === 'utilities') return true
   return hoaCompatible(subject.hoaClass, sale.hoaClass)
 }
@@ -593,12 +607,36 @@ export function walkPricingLadder(
   const rungs: PricingLadderRung[] = []
   const tiersUsed: string[] = []
   const trace: string[] = [
-    `As-of ${asOf}. Same subdivision first (3, 6, 9, then 12 months, and a wider GLA band on the same street), then the plats next to it inside the same neighborhood or community (3 to 12 months), then distance inside that boundary, then similar-performing subdivisions; the boundary is crossed only when it supplied fewer than ${BOUNDARY_EXIT_BELOW} sales. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, zoning when both sides have a zone, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
+    `As-of ${asOf}. Same subdivision first (3, 6, 9, then 12 months, and a wider GLA band on the same street), then the plats next to it inside the same neighborhood or community (3 to 12 months), then distance inside that boundary, then similar-performing subdivisions; the boundary is crossed only when it supplied fewer than ${BOUNDARY_EXIT_BELOW} sales. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, and on acreage the zoning class (farm or forest against rural residential), outbuildings, and usable land, zoning when both sides have a zone in town, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
   ]
 
   if (!subject.sqft || subject.sqft < 300) {
     const note = 'Subject has no usable living area, so there is nothing to compare.'
     return { comps: [], tiersUsed, trace: [note], reachedTarget: false, starved: true, rungs }
+  }
+
+  // Delta 4: the splits, counted over the rural pool for the reader's story.
+  let ruralSplits: RuralSplitCounts | undefined
+  if (subject.ruralAcreage || (subject.lotAcres ?? 0) >= 1) {
+    ruralSplits = { zoning_class: 0, outbuildings: 0, terrain: 0, acreage_infrastructure: 0 }
+    const subjectIrrigation = resolveIrrigationClass(subject.publicRemarks, null, subject.irrigationClass)
+    for (const sale of pool) {
+      if ((sale.lotAcres ?? 0) < 1) continue
+      if (!zoningClassCompatible(subject.zoning, sale.zoning)) ruralSplits.zoning_class++
+      else if (
+        !irrigationCompatible(subjectIrrigation, irrigationClassFromRemarks(sale.publicRemarks)) ||
+        !horseInfrastructureCompatible(subject.publicRemarks, sale.publicRemarks)
+      )
+        ruralSplits.acreage_infrastructure++
+      else if (!outbuildingsCompatible(subject.publicRemarks, sale.publicRemarks)) ruralSplits.outbuildings++
+      else if (!terrainCompatible(subject.publicRemarks, sale.publicRemarks)) ruralSplits.terrain++
+    }
+    const named = Object.entries(ruralSplits).filter(([, n]) => n > 0)
+    if (named.length > 0) {
+      trace.push(
+        `Acreage splits over the pool: ${named.map(([k, n]) => `${k.replace(/_/g, ' ')} ${n}`).join(', ')}.`,
+      )
+    }
   }
 
   for (const tier of tiers) {
@@ -671,5 +709,5 @@ export function walkPricingLadder(
   } else {
     trace.push(`Final set: ${comps.length} closed sales from ${tiersUsed.join(', ') || 'none'}.`)
   }
-  return { comps, tiersUsed, trace, reachedTarget, starved: !reachedTarget, rungs }
+  return { comps, tiersUsed, trace, reachedTarget, starved: !reachedTarget, rungs, ...(ruralSplits ? { ruralSplits } : {}) }
 }

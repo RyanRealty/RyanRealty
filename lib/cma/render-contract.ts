@@ -322,6 +322,8 @@ export type CompSearch = {
   keptBySubdivision: Record<string, number>
   /** The pricing side's own sentence. When present it is what prints. */
   sentence: string | null
+  /** On acreage: the splits that set sales aside, one sentence. */
+  ruralSentence?: string | null
 }
 
 /**
@@ -364,6 +366,7 @@ export function readCompSearch(args: unknown): CompSearch | null {
     rungs,
     keptBySubdivision: bySub,
     sentence: str(cs.sentence),
+    ruralSentence: str(cs.ruralSentence),
   }
 }
 

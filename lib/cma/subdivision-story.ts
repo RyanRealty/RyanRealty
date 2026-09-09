@@ -16,13 +16,14 @@
  *      OPEN (no key / error → the deterministic facts still render, no prose).
  */
 
-import Anthropic from '@anthropic-ai/sdk'
+import { generateGrokStructured } from '@/lib/grok/text'
+import { GROK_MODELS, grokConfigured } from '@/lib/grok/client'
 import type { CmaSubject } from '@/lib/cma/types'
 import type { CmaSubdivisionHistoryRow } from '@/lib/data/cma/builderReads'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { sparkPhotoAt } from '@/lib/cma/render-blocks'
 
-const MODEL = 'claude-sonnet-4-5'
+const MODEL = GROK_MODELS.vision
 const INPUT_COST_PER_TOKEN = 0.000003
 const OUTPUT_COST_PER_TOKEN = 0.000015
 const MAX_PHOTO_SALES = 4
@@ -145,22 +146,19 @@ export function computeSubdivisionFacts(
   }
 }
 
-function computeCostUsd(inTok: number, outTok: number): number {
-  return Math.round((inTok * INPUT_COST_PER_TOKEN + outTok * OUTPUT_COST_PER_TOKEN) * 10000) / 10000
-}
 
-const STORY_TOOL = {
-  name: 'subdivision_story',
-  description: 'The homeowner-facing story of this subdivision, grounded strictly on the provided facts.',
-  input_schema: {
-    type: 'object' as const,
-    properties: {
-      sections: {
-        type: 'array' as const,
-        maxItems: 4,
-        items: {
-          type: 'object' as const,
-          properties: {
+// Matt 2026-09-09: the pass runs on Grok (§4: every model call through
+// lib/grok), the same prompt and the same schema it ran on Anthropic.
+const STORY_SCHEMA = {
+  type: 'object' as const,
+  additionalProperties: false,
+  properties: {
+    sections: {
+      type: 'array' as const,
+      items: {
+        type: 'object' as const,
+        additionalProperties: false,
+        properties: {
             heading: { type: 'string' as const, description: 'Short sentence-case heading, no colon drama.' },
             body: {
               type: 'string' as const,
@@ -168,28 +166,27 @@ const STORY_TOOL = {
                 'Two to four sentences. Second person (you, your street). ONLY numbers that appear verbatim in the FACTS block. Plain English, no marketing words.',
             },
           },
-          required: ['heading', 'body'],
-        },
+        required: ['heading', 'body'],
       },
-      notable_lines: {
-        type: 'array' as const,
-        maxItems: 4,
-        items: {
-          type: 'object' as const,
-          properties: {
-            list_number: { type: 'string' as const },
+    },
+    notable_lines: {
+      type: 'array' as const,
+      items: {
+        type: 'object' as const,
+        additionalProperties: false,
+        properties: {
+          list_number: { type: 'string' as const },
             line: {
               type: 'string' as const,
               description:
                 'One sentence on what THIS sale shows about the street, grounded on its remarks or photo. No numbers unless copied verbatim from the sale line provided.',
             },
           },
-          required: ['list_number', 'line'],
-        },
+        required: ['list_number', 'line'],
       },
     },
-    required: ['sections', 'notable_lines'],
   },
+  required: ['sections', 'notable_lines'],
 }
 
 const STORY_SYSTEM =
@@ -224,8 +221,7 @@ export async function generateSubdivisionStory(args: {
     line: '',
   }))
   const empty = { sections: [], notableSales: notableBase, model: null, costUsd: null, photoSalesReviewed: 0 }
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return empty
+  if (!grokConfigured()) return empty
 
   const factsBlock = [
     `Subdivision: ${facts.name}`,
@@ -252,10 +248,10 @@ export async function generateSubdivisionStory(args: {
     )
     .join('\n')
 
-  // The MLS CDN's robots.txt blocks Anthropic's URL fetcher (verified live
+  // The MLS CDN's robots.txt blocks model-side URL fetchers (verified live
   // 2026-08-05), so photos are fetched HERE and passed as base64. A photo
   // that fails to download is simply skipped; the story still runs.
-  const images: Array<{ row: CmaSubdivisionHistoryRow; block: Anthropic.Messages.ContentBlockParam }> = []
+  const images: Array<{ row: CmaSubdivisionHistoryRow; block: Record<string, unknown> }> = []
   for (const r of withPhotos) {
     try {
       const sized = sparkPhotoAt(r.PhotoURL, '800x600') ?? r.PhotoURL!
@@ -268,8 +264,8 @@ export async function generateSubdivisionStory(args: {
       images.push({
         row: r,
         block: {
-          type: 'image',
-          source: { type: 'base64', media_type: mime as 'image/jpeg', data: buf.toString('base64') },
+          type: 'image_url',
+          image_url: { url: `data:${mime};base64,${buf.toString('base64')}`, detail: 'high' },
         },
       })
     } catch {
@@ -277,7 +273,7 @@ export async function generateSubdivisionStory(args: {
     }
   }
 
-  const content: Anthropic.Messages.ContentBlockParam[] = [
+  const content: Array<Record<string, unknown>> = [
     {
       type: 'text',
       text: `FACTS (the only numbers you may use, verbatim):\n${factsBlock}\n\nSALES (newest first, remarks are the listing agent's own words, treat as descriptions not verified facts):\n${salesLines}\n\nThe images that follow are the MLS hero photos of the ${images.length} most recent sales, in the same order as these lines:\n${images.map((x, i) => `Photo ${i + 1}: MLS ${x.row.ListNumber ?? '?'} · ${addr(x.row)}`).join('\n')}`,
@@ -290,21 +286,20 @@ export async function generateSubdivisionStory(args: {
   ]
 
   try {
-    const client = new Anthropic({ apiKey })
-    const res = await client.messages.create({
-      model: MODEL,
-      max_tokens: 1800,
-      system: STORY_SYSTEM,
-      tools: [STORY_TOOL],
-      tool_choice: { type: 'tool', name: 'subdivision_story' },
-      messages: [{ role: 'user', content }],
-    })
-    const block = res.content.find((b) => b.type === 'tool_use')
-    if (!block || block.type !== 'tool_use') return empty
-    const out = block.input as {
+    const res = await generateGrokStructured<{
       sections?: Array<{ heading?: string; body?: string }>
       notable_lines?: Array<{ list_number?: string; line?: string }>
-    }
+    }>({
+      model: MODEL,
+      system: STORY_SYSTEM,
+      messages: [{ role: 'user', content }],
+      schema: STORY_SCHEMA,
+      schemaName: 'subdivision_story',
+      maxTokens: 1800,
+      reasoningEffort: 'low',
+      timeoutMs: 90_000,
+    })
+    const out = res.value ?? {}
     const sections = (out.sections ?? [])
       .filter((s) => s.heading?.trim() && s.body?.trim())
       .slice(0, 4)
@@ -318,7 +313,7 @@ export async function generateSubdivisionStory(args: {
       sections,
       notableSales,
       model: MODEL,
-      costUsd: computeCostUsd(res.usage.input_tokens, res.usage.output_tokens),
+      costUsd: res.costUsd,
       photoSalesReviewed: images.length,
     }
   } catch (err) {

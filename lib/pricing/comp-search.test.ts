@@ -260,3 +260,18 @@ describe('rungLabel — the containment rungs in seller language', () => {
     expect(rungLabel('beyond-2mi-12mo', null)).toBe('outside your neighborhood, within 2 miles')
   })
 })
+
+describe('buildCompSearch — on acreage the record carries the split sentence', () => {
+  it('names the splits, and leaves the base sentence alone', () => {
+    const s = buildCompSearch({
+      subdivision: 'Diamond Bar Ranch',
+      ladder: diamondBarLadder,
+      keptComps: [...dbr(3), ...other(2)],
+      rural: { subjectZone: 'EFUTRB', counts: { zoning_class: 61, acreage_infrastructure: 70, outbuildings: 34, terrain: 0 } },
+    })
+    expect(s!.sentence).toContain('Three of the five sales are in Diamond Bar Ranch')
+    expect(s!.ruralSentence).toContain('61 sales on rural residential land')
+    const town = buildCompSearch({ subdivision: 'Diamond Bar Ranch', ladder: diamondBarLadder, keptComps: [...dbr(3), ...other(2)] })
+    expect(town!.ruralSentence).toBeNull()
+  })
+})

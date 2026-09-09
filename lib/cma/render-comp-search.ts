@@ -106,7 +106,7 @@ function monthTail(months: number | null): string {
  * `comps` is what the chapter PRINTS, which is the only set the reader can
  * count. Every branch below is checkable against the grid two inches under it.
  */
-export function compSearchSentence(input: {
+function baseCompSearchSentence(input: {
   subdivision: string | null | undefined
   /** `render_args.compSearch`, when the row carries it. */
   args?: unknown
@@ -194,4 +194,15 @@ export function claimsShortage(sentence: string, subdivision: string | null): bo
 
 function capitalise(s: string): string {
   return s ? `${s.charAt(0).toUpperCase()}${s.slice(1)}` : s
+}
+
+/**
+ * The search story a chapter prints: the base sentence, and on acreage the
+ * splits that set sales aside (Delta 4, Matt 2026-09-09: "the story names
+ * which set the price").
+ */
+export function compSearchSentence(input: Parameters<typeof baseCompSearchSentence>[0]): string {
+  const base = baseCompSearchSentence(input)
+  const rural = cleanText(readCompSearch(input.args)?.ruralSentence ?? null)
+  return rural ? `${base} ${rural}` : base
 }

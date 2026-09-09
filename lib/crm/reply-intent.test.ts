@@ -13,14 +13,15 @@ function forbidNetwork() {
   }))
 }
 
-/** A fetch stub returning a canned Anthropic Messages API response. */
+/** A fetch stub returning a canned Grok chat-completions response (lib/grok/text). */
 function stubModelResponse(json: unknown, ok = true, status = 200) {
+  const body = { choices: [{ message: { content: typeof json === 'string' ? json : JSON.stringify(json) } }], usage: {} }
   const fetchMock = vi.fn(async () => ({
     ok,
     status,
-    json: async () => ({
-      content: [{ type: 'text', text: typeof json === 'string' ? json : JSON.stringify(json) }],
-    }),
+    headers: new Headers({ 'content-type': 'application/json' }),
+    json: async () => body,
+    text: async () => JSON.stringify(body),
   }))
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
@@ -79,7 +80,7 @@ describe('deterministicReplyIntent (pre-pass, no model call)', () => {
 describe('classifyInboundReply — deterministic path never touches the network', () => {
   it('resolves STOP-adjacent without fetch and without an API key', async () => {
     forbidNetwork()
-    vi.stubEnv('ANTHROPIC_API_KEY', '')
+    vi.stubEnv('XAI_API_KEY', '')
     const r = await classifyInboundReply({ body: 'stop texting me', context: {} })
     expect(r?.intent).toBe('not_interested')
     expect(r?.source).toBe('deterministic')
@@ -94,7 +95,7 @@ describe('classifyInboundReply — deterministic path never touches the network'
 
   it('returns null (fail-open) when no deterministic match and no API key', async () => {
     forbidNetwork()
-    vi.stubEnv('ANTHROPIC_API_KEY', '')
+    vi.stubEnv('XAI_API_KEY', '')
     const r = await classifyInboundReply({ body: 'What do you think the house is worth?', context: {} })
     expect(r).toBeNull()
   })
@@ -102,7 +103,7 @@ describe('classifyInboundReply — deterministic path never touches the network'
 
 describe('classifyInboundReply — model path (mocked API)', () => {
   it('parses a valid model response and scrubs banned punctuation', async () => {
-    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
+    vi.stubEnv('XAI_API_KEY', 'test-key')
     const fetchMock = stubModelResponse({
       intent: 'interested',
       confidence: 0.87,
@@ -121,7 +122,7 @@ describe('classifyInboundReply — model path (mocked API)', () => {
   })
 
   it('voids a recommended reply containing a number the system did not provide (§0)', async () => {
-    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
+    vi.stubEnv('XAI_API_KEY', 'test-key')
     stubModelResponse({
       intent: 'interested',
       confidence: 0.9,
@@ -133,7 +134,7 @@ describe('classifyInboundReply — model path (mocked API)', () => {
   })
 
   it('keeps numbers the prospect themselves said', async () => {
-    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
+    vi.stubEnv('XAI_API_KEY', 'test-key')
     stubModelResponse({
       intent: 'question',
       confidence: 0.8,
@@ -147,31 +148,31 @@ describe('classifyInboundReply — model path (mocked API)', () => {
   })
 
   it('returns null on an invalid intent from the model', async () => {
-    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
+    vi.stubEnv('XAI_API_KEY', 'test-key')
     stubModelResponse({ intent: 'enthusiastic', confidence: 0.9, recommended_reply: 'x' })
     expect(await classifyInboundReply({ body: 'tell me more', context: {} })).toBeNull()
   })
 
   it('returns null on non-JSON output', async () => {
-    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
+    vi.stubEnv('XAI_API_KEY', 'test-key')
     stubModelResponse('The prospect sounds interested.')
     expect(await classifyInboundReply({ body: 'tell me more', context: {} })).toBeNull()
   })
 
   it('returns null on a non-2xx API response', async () => {
-    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
+    vi.stubEnv('XAI_API_KEY', 'test-key')
     stubModelResponse({ intent: 'interested', confidence: 1, recommended_reply: '' }, false, 529)
     expect(await classifyInboundReply({ body: 'tell me more', context: {} })).toBeNull()
   })
 
   it('returns null when fetch itself throws (network error)', async () => {
-    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
+    vi.stubEnv('XAI_API_KEY', 'test-key')
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('ECONNRESET') }))
     expect(await classifyInboundReply({ body: 'tell me more', context: {} })).toBeNull()
   })
 
   it('clamps out-of-range confidence and tolerates fenced JSON', async () => {
-    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
+    vi.stubEnv('XAI_API_KEY', 'test-key')
     stubModelResponse('```json\n{"intent":"later","confidence":7,"recommended_reply":"No rush at all. I will check back in a few months."}\n```')
     const r = await classifyInboundReply({ body: 'maybe down the road', context: {} })
     expect(r?.intent).toBe('later')

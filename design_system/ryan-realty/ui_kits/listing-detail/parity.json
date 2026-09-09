@@ -40,6 +40,11 @@
       "blocking": true
     },
     {
+      "name": "ListingOutOfAreaNotice",
+      "section": "SITE-33, out-of-area only (Matt 2026-09-08): the honesty block directly under the price strip on a home whose city is outside CENTRAL_OREGON_CITY_SLUGS. The city tier's claim one level down — 'Outside our home market · We don't work in <city>' — ending in that city's /oregon referral page. Same predicate as the page's noindex,follow directive and the listings.xml row drop (outOfAreaListingPolicy). Null on every Central Oregon listing.",
+      "blocking": true
+    },
+    {
       "name": "ListingOffMarketFacts",
       "section": "SITE-21, off market only: the sold facts as one claim. An Instrument when the close record carries figures, a Quiet block when the listing ended without a sale. Replaces the market-ask instrument, which compares a price nobody can pay against a market the house has left.",
       "blocking": true
@@ -287,24 +292,26 @@
   "openDefects": {
     "_": "Closed 2026-08-27. Insurance is now an editable input seeded at $1,000 per $300K per year with the assumption stated in the UI; the comparison sentence says 'median list price'; the grain item resolved below.",
     "items": [
-      "RESOLVED AS CLAIM-WRONG 2026-08-27: NeighborhoodMarketContext publishes the FINEST grain whose rows publish (neighborhood first, city fallback via leftoverListingGrains) and the heading names that grain. Subdivision-grain stats cannot ship honestly: subdivision monthly series are too sparse to chart and neighborhood sold attribution is a known text-join undercount. The page is truthful about its grain; the contract's flat subdivision-grain promise was the wrong side."
+      "RESOLVED AS CLAIM-WRONG 2026-08-27: NeighborhoodMarketContext publishes the FINEST grain whose rows publish (neighborhood first, city fallback via leftoverListingGrains) and the heading names that grain. Subdivision-grain stats cannot ship honestly: subdivision monthly series are too sparse to chart and neighborhood sold attribution is a known text-join undercount. The page is truthful about its grain; the contract's flat subdivision-grain promise was the wrong side.",
+      "OPEN, NEEDS MATT (SITE-33, 2026-09-09). On an OUT-OF-AREA listing the page now says \"We don't work in Medford\" and offers a broker introduction, while the sidebar card and the mobile bar still offer Tour / Call / Text, and the Payment section still computes a full monthly breakdown for that home. The separate evaluator called the first of these critical: two contradictory asks in one viewport. It was NOT changed in this pass. Matt's 2026-09-08 ruling was explicit and covered four things — the honesty block, noindex with follow preserved, the page still serving, and /oregon/[city] staying indexed — and did not rule on the ask. SITE-21 is the precedent for the fix (it already strips tel:, sms: and the payment from a home the brokerage cannot transact), but out-of-area is not off-market: Ryan Realty holds an Oregon licence and these are live leads, so suppressing the tour CTA on ~4,190 listings is a revenue decision, not a taste one. THE ASK FOR MATT: on an out-of-area listing, does the page keep Tour / Call / Text and the payment, or does it drop to the referral ask alone?"
     ]
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-08",
+    "evaluatedAt": "2026-09-09",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate Sonnet evaluator agent, SITE-33 out-of-area listing-tier pass, three independent scorings of one shot set in one call (77 / 78 / 76); the builder ran on Opus and did not grade its own page",
     "scores": [
-      87,
-      84,
-      88
+      77,
+      78,
+      76
     ],
-    "comparedToPrior": "first",
-    "shotsHash": "sha256:a75daedd342203007d3e3f33bea3c82c6610a40d86530ebd25e9a2f480d77754",
+    "score": 77,
     "shotSpec": {
       "routes": [
-        "/homes-for-sale/bend/60936-apollo-20260418225519255404000000"
+        "/homes-for-sale/bend/60936-apollo-20260418225519255404000000",
+        "/homes-for-sale/medford/aerial-heights/3655-aerial-heights-220226395"
       ],
       "viewports": [
         1440,
@@ -312,35 +319,60 @@
       ],
       "states": [
         "top",
-        "close"
+        "close",
+        "out-of-area"
       ]
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/mobile375.png",
       "closeDesktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/close-desktop.png",
-      "closeMobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/close-mobile375.png"
+      "closeMobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/close-mobile375.png",
+      "outOfAreaDesktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/outofarea-desktop.png",
+      "outOfAreaMobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/outofarea-mobile375.png"
     },
-    "beats": "Zillow Showcase, this file's own named target: it shows a Zestimate and a calculator but never a share-of-homes-that-cut graphic on the listing itself, nor a three-way ending.",
+    "shotsHash": "sha256:fb117fb484026aa7a63cabb32bcb3d6e8d878d0b232ea3e7f9623baef7ca6e1c",
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 87,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:a75daedd342203007d3e3f33bea3c82c6610a40d86530ebd25e9a2f480d77754"
+    },
+    "rebaselineReason": "shotsHash and shotSpec both differ: SITE-33 added an OUT-OF-AREA listing (/homes-for-sale/medford/aerial-heights/3655-aerial-heights-220226395) to the shot set, so the instrument now measures a state the 2026-09-08 mark never saw, and the Bend base + close pair were re-captured on this branch. The prior 87 is not a baseline for this set; the next pass on THIS instrument must rise above 77.",
+    "beats": "Zillow Showcase, this file's own named target. The evaluator's win: sourced, dated peer-cohort market context on the listing itself — #close's discount-distribution pictogram and days-to-offer range carry an explicit data window (Bend single family homes, every sale closed in the 12 months to 2026-09-08); Zillow's price history and Zestimate carry no cohort and no source trace. The evaluator explicitly did NOT count the out-of-area block as a competitive win: it is a compliance feature, and its execution is undercut by the asks named in the defects below.",
     "defects": [
       {
-        "section": "days on market",
-        "finding": "FIXED in d845f4c1e. The header pill read 106 and the close section 110 on one scroll: the pill printed row.DaysOnMarket, banned as DOM because it is list-to-close. One shared definition now feeds both; verified at 110 and 110."
+        "section": "#broker-card vs #out-of-area",
+        "severity": "critical",
+        "finding": "On the Medford listing the sidebar still offers Tour / Call / Text beside the block saying \"We don't work in Medford\" and pointing at the referral page — two contradictory asks in one viewport. NOT FIXED IN THIS PASS, deliberately: Matt's 2026-09-08 ruling covered the honesty block, the robots directive and the sitemap row, and did not rule on the ask. Suppressing the tour CTA on out-of-area inventory removes a live lead path and is his call, not the lane's."
+      },
+      {
+        "section": "#payment",
+        "severity": "defect",
+        "finding": "The mortgage calculator still computes a full $2,315/mo breakdown for the Medford lot beneath the disclosure that we do not work that market. Same class as the CTA above and unfixed for the same reason: SITE-21 established the precedent for turning payment off on a home the brokerage cannot transact, but extending it to out-of-area is a product ruling Matt has not made."
       },
       {
         "section": "breadcrumb",
-        "finding": "Reads 'Bend / Easton / EASTON COMMERCIAL' on a single-family home. Not MLS data: the record says subdivision Easton, sub-type Single Family Residence. Our plat-alias resolution picked a commercial plat; boundaries holds five Easton plats, two sharing a document number. Pre-existing and outside this node."
+        "severity": "defect",
+        "finding": "Reads Bend / Easton / EASTON COMMERCIAL on a 3 bd, 2 ba, 1,602 sqft single-family home — a commercial plat picked by alias resolution; boundaries holds five Easton plats, two sharing a document number. Unchanged from the 2026-09-08 pass and outside this node."
       },
       {
-        "section": "closing three-act chooser",
-        "finding": "The shot cuts off before the three cards fully render, so the chooser's interactivity cannot be confirmed from the record. Recapture with the chooser in frame."
+        "section": "#facts (out-of-area state)",
+        "severity": "taste",
+        "finding": "A full-weight H2 sits over one line, 'Residential lots · 3.03 acres'. An oversized label for a single fact, reading as an underbuilt section next to the block above it. Pre-existing on land listings, not introduced here."
       },
       {
-        "section": "close-section broker card",
-        "finding": "A 5-star, 25-review block appears in the broker card here but not in the same card in the main listing view — one component, inconsistent trust content between states."
+        "section": "#out-of-area",
+        "severity": "taste",
+        "finding": "Two paragraphs and one door, no figure — no map of the service-area boundary against this city. Within TASTE.md's two-paragraph prose budget (cut from three during the builder's own look pass) but it does not yet make the claim visually, on a site whose thesis is that the data is the spectacle."
+      },
+      {
+        "section": "broker review block",
+        "severity": "unconfirmed",
+        "finding": "Whether the 5.0 / 25-review block appears in the top-of-page card state could not be confirmed: desktop.png is viewport-framed and cuts at the Tour button, so its absence may be the frame rather than the page. Carried from the prior pass, still unresolved."
       }
-    ],
-    "score": 87,
-    "evaluator": "separate Sonnet evaluator, SITE-06 listing-ending pass, three independent scorings of one shot set (87 / 84 / 88)"
+    ]
   }
 }

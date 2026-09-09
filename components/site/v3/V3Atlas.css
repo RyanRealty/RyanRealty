@@ -81,6 +81,21 @@
   font-size: var(--v3-size-display-hero);
 }
 
+/* THE EYEBROW SETTING. AFTER both rules above, same reason as the note there:
+   equal specificity, so source order decides. Used when the Atlas opens
+   directly under a page H1 — the heading stays in the outline, but it is set
+   as a label so the top of the page is a title, a claim, and then the map,
+   instead of the same sentence twice in the same face. */
+.v3.v3-atlas .v3-atlas__headline--eyebrow {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  line-height: var(--v3-leading-control);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
 .v3-atlas__claim {
   margin: 0;
   max-width: var(--v3-measure-text);
@@ -871,6 +886,43 @@
   stroke-width: 4.2px;
 }
 /* The home a listing page is about: held above the rest, full ink, a ring. */
+/* THE LINKED MARK. The listing a sibling list is pointing at: a cream halo so
+   the ring reads over the density wash, then the navy mark over it. Two paths
+   and no filter, so the map does not repaint when the pointer moves down a
+   list. Non-scaling stroke like every other mark, so it stays the same size
+   at every zoom. */
+.v3-atlas__linked-halo,
+.v3-atlas__linked-mark {
+  fill: none;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.v3-atlas__linked-halo {
+  stroke: var(--v3-cream);
+  stroke-width: 15px;
+}
+
+.v3-atlas__linked-mark {
+  stroke: var(--v3-navy);
+  stroke-width: 9px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .v3-atlas__linked-mark {
+    animation: v3-atlas-linked 240ms var(--v3-ease-out);
+  }
+}
+
+@keyframes v3-atlas-linked {
+  from {
+    stroke-width: 4.2px;
+  }
+  to {
+    stroke-width: 9px;
+  }
+}
+
 .v3-atlas__dot.is-home {
   stroke: var(--v3-navy);
   stroke-width: 9px;

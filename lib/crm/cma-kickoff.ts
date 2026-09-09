@@ -53,6 +53,15 @@ export type CmaKickoffResult =
       /** A sibling request with the SAME key is still mid-flight — the caller
        *  should poll again rather than render a terminal success. */
       inFlight?: boolean
+      /**
+       * The open draft at this address belongs to ANOTHER contact (Matt
+       * 2026-09-09: ask the broker). Nothing was attached or built; the sheet
+       * offers "same household, attach" (attachToExisting) or "new document"
+       * (buildNewVersion).
+       */
+      needsChoice?: boolean
+      /** Who the open draft was built for, for the sheet's copy. */
+      existingOwnerName?: string | null
     }
   | { ok: false; error: string }
 
@@ -113,6 +122,9 @@ export async function kickoffCmaCore(input: {
    *  sends this ONLY from the "Build a fresh CMA" confirmation tap, with a
    *  new idempotency key. */
   buildNewVersion?: boolean
+  /** The broker's answer to needsChoice: this contact shares the household
+   *  with the draft's owner, attach to that draft (D8 semantics). */
+  attachToExisting?: boolean
 }): Promise<CmaKickoffResult> {
   const address = (input.address ?? '').trim()
   if (!address) return { ok: false, error: 'Enter the property address.' }
@@ -154,6 +166,30 @@ export async function kickoffCmaCore(input: {
       // request must never take over a person's draft (lib/cma/versions.ts).
       const slot = await resolveWritableCmaSlot(slug)
       if (!slot.ok) return { ok: false, error: slot.error }
+
+      // Someone else's open draft (Matt 2026-09-09): stop and ask the broker
+      // before attaching this contact to it or building over it. The intake
+      // opens a new version for a stranger on its own; a kick-off is the
+      // broker's act, so the broker decides household or new document.
+      if (slot.existing && !input.buildNewVersion && !input.attachToExisting) {
+        const row = slot.existing.row as { person_id?: unknown; client_email?: unknown; client_name?: unknown }
+        const ownerId = typeof row.person_id === 'number' && row.person_id > 0 ? row.person_id : null
+        const ownerEmail = String(row.client_email ?? '').trim().toLowerCase() || null
+        const claimed = ownerId != null || ownerEmail != null
+        const samePerson =
+          (ownerId != null && ownerId === person.id) ||
+          (ownerEmail != null && person.primaryEmail != null && ownerEmail === person.primaryEmail)
+        if (claimed && !samePerson) {
+          return {
+            ok: true,
+            slug: slot.slug,
+            alreadyQueued: false,
+            needsChoice: true,
+            existingOwnerName: (typeof row.client_name === 'string' && row.client_name.trim()) || ownerEmail,
+            existingStatus: 'draft',
+          }
+        }
+      }
 
       // Direction-explicit dedupe FIRST: attach to an in-flight build for this
       // slot rather than enqueueing a second one ("already building" is the

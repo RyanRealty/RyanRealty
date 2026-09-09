@@ -54,10 +54,16 @@ export interface CompExclusionCounts {
   year_quality: number
   /** Acreage remarks: irrigated / horse / barns vs a dry lot (or the reverse). */
   acreage_infrastructure: number
+  /** Rural: farm/forest zoning against rural residential (county GIS or MLS zone). */
+  zoning_class: number
+  /** Rural: a shop, barn, or arena on one side and none on the other. */
+  outbuildings: number
+  /** Rural: usable ground on one side, rock, slope, or wetland on the other. */
+  terrain: number
 }
 
 export function emptyExclusions(): CompExclusionCounts {
-  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, crossed_divide: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0, year_quality: 0, acreage_infrastructure: 0 }
+  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, crossed_divide: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0, year_quality: 0, acreage_infrastructure: 0, zoning_class: 0, outbuildings: 0, terrain: 0 }
 }
 
 export function addExclusions(into: CompExclusionCounts, from: CompExclusionCounts): void {
@@ -65,7 +71,7 @@ export function addExclusions(into: CompExclusionCounts, from: CompExclusionCoun
 }
 
 export function totalExclusions(x: CompExclusionCounts): number {
-  return x.product_type + x.bath_count + x.lot_character + x.resort_premium + x.market_area + x.crossed_divide + x.distance + x.duplicate + x.self + x.unusable_row + x.year_quality + x.acreage_infrastructure
+  return x.product_type + x.bath_count + x.lot_character + x.resort_premium + x.market_area + x.crossed_divide + x.distance + x.duplicate + x.self + x.unusable_row + x.year_quality + x.acreage_infrastructure + x.zoning_class + x.outbuildings + x.terrain
 }
 
 /** One rung of the ladder, whether it ran or was skipped. */
@@ -146,6 +152,9 @@ const EXCLUSION_LABELS: Record<keyof CompExclusionCounts, string> = {
     'they are a different construction generation or quality tier than a custom or new-construction subject (a 1970s–2000 ranch does not price a 2024 custom)',
   acreage_infrastructure:
     'their remarks describe different acreage infrastructure (irrigated land, horse property, or barns against a dry lot, or the reverse)',
+  zoning_class: 'their zoning class differs (farm or forest land against rural residential)',
+  outbuildings: 'their outbuildings differ (a shop, barn, or arena on one side and none on the other)',
+  terrain: 'their land differs (usable ground on one side, rock, slope, or wetland on the other)',
 }
 
 function band(d: CompSelectionDiagnostics): string {

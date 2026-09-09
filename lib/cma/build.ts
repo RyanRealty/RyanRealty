@@ -21,6 +21,7 @@ import {
   type CmaCompInsert,
 } from '@/lib/data'
 import { applySubjectFactOverrides, resolveCmaSubject } from '@/lib/cma/subject'
+import { pickCoverPhoto } from '@/lib/cma/cover-photo'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
 import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
 import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
@@ -264,6 +265,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       },
       input.subjectFacts,
     )
+    // The cover (Matt 2026-09-09): the best exterior among the listing's own
+    // photos, graded once each, the MLS hero kept when it already is one.
+    const coverPhoto = await pickCoverPhoto({ listingKey: subject.listingKey, heroUrl: subject.photoUrl })
+    if (coverPhoto.url) subject.photoUrl = coverPhoto.url
     // Stamp the failed last cycle onto the subject BEFORE pricing and audit.
     // The engine cap keys off standardStatus; the auditor reads lastListPrice.
     // Fetching this after the audit was why first builds failed on rec-above-ask
@@ -336,7 +341,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const [selection, market] = await Promise.all([
       curatedKeys.length > 0
         ? selectCompsByKeys(subject, curatedKeys)
-        : selectCompsPreferringFacts(subject, { subjectIrrigation }),
+        : selectCompsPreferringFacts(subject, { subjectIrrigation, subjectZoning: site.zone }),
       marketPromise,
     ])
     compDiagnostics = selection.diagnostics
@@ -1082,6 +1087,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         subdivision: c.subdivision,
         selectionTier: c.selectionTier,
       })),
+      // Delta 4: on acreage the story names the splits that set sales aside.
+      rural:
+        selection.diagnostics.rural_acreage || (subject.lotAcres ?? 0) >= 1
+          ? { subjectZone: site.zone, counts: selection.diagnostics.excluded_totals }
+          : null,
     })
 
     // R2h. ONE AREA, then the two sets that must come out of it (Matt
@@ -1207,6 +1217,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         : null
 
     const renderArgs = {
+      coverPhoto: {
+        url: coverPhoto.url,
+        source: coverPhoto.source,
+        reason: coverPhoto.reason,
+        graded: coverPhoto.graded,
+        costUsd: coverPhoto.costUsd,
+      },
       subject,
       comps: renderComps,
       compSearch,

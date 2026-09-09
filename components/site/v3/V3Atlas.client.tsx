@@ -156,6 +156,21 @@ export type V3AtlasProps = {
   /** The page H1 (D11 lock on the homepage), or the section title. */
   headline: V3Text
   headingLevel?: 1 | 2
+  /**
+   * How the headline is SET, independent of the level it renders at.
+   *
+   * `display` (the default, and what every caller before 2026-09-09 gets) is
+   * the Amboqia display line the homepage and the place pages open with.
+   *
+   * `eyebrow` is for the one composition where that is wrong: the Atlas opens
+   * DIRECTLY under the page's own H1, so a second display line repeats the
+   * title in the same face at the same size and the top of the page says the
+   * same thing twice ("Single-family in Bend" then "Single-family on the map"
+   * — taste table 2026-09-08, place-type, the passage the evaluator called the
+   * dullest on the page). The heading stays a real heading for the outline and
+   * for aria-labelledby; only its setting changes to a small tracked label.
+   */
+  headlineTone?: 'display' | 'eyebrow'
   dots: readonly AtlasDot[]
   regions: readonly AtlasRegion[]
   /** Type toggles, in display order. Keys match AtlasDot.t. */
@@ -223,6 +238,19 @@ export type V3AtlasProps = {
    * the photographed list below stays unfiltered at rest.
    */
   onViewChange?: (bounds: AtlasViewBounds | null) => void
+  /**
+   * ROW ↔ MARK LINK. The listing key a sibling list is pointing at: the map
+   * rings that mark and dims nothing else. One extra mark, so a hover over a
+   * list of 120 rows costs one small re-render and not 1,500 dot paths.
+   * Absent, nothing is drawn and the map behaves exactly as it did.
+   */
+  linkedKey?: string | null
+  /**
+   * The reverse direction: the key of the mark under the pointer, reported up
+   * so the sibling list can raise the matching row. Called with `null` when
+   * the pointer leaves every mark.
+   */
+  onLinkedKeyChange?: (key: string | null) => void
 }
 
 /* -------------------------------------------------------------------------- */
@@ -296,6 +324,7 @@ export function V3Atlas({
   id,
   headline,
   headingLevel = 1,
+  headlineTone = 'display',
   dots,
   regions,
   types,
@@ -314,6 +343,8 @@ export function V3Atlas({
   children,
   className,
   onViewChange,
+  linkedKey = null,
+  onLinkedKeyChange,
 }: V3AtlasProps) {
   const uid = useId()
   const router = useRouter()
@@ -752,6 +783,14 @@ export function V3Atlas({
     return salesHeatField(points, { width: proj.width, height: proj.height })
   }, [quiet, incomplete, closingsMap, dots, isOn, xy, proj.width, proj.height])
 
+  /* ROW ↔ MARK, the list's direction. One index, so a hover over a sibling
+     list re-renders one mark instead of every dot on the map. */
+  const linkedIndex = useMemo(() => {
+    if (!linkedKey) return null
+    const i = dots.findIndex((d) => d.k === linkedKey)
+    return i >= 0 ? i : null
+  }, [dots, linkedKey])
+
   const active = pinned?.id ?? hover
   const activeShape = active ? paths.find((s) => s.id === active) ?? null : null
   const activeStats = active ? regionStats.get(active) ?? { n: 0, median: null } : null
@@ -770,6 +809,13 @@ export function V3Atlas({
      (evaluator round five, LISTING-NOBOUNDARY-2, LISTING-BEND-7). */
   const [dotHit, setDotHit] = useState<number | null>(null)
   const REACH = 14
+
+  /* ROW ↔ MARK, the map's direction: the key under the pointer, reported up
+     so a sibling list can raise its own row. */
+  const hitKey = dotHit != null ? (dots[dotHit]?.k ?? null) : null
+  useEffect(() => {
+    onLinkedKeyChange?.(hitKey)
+  }, [hitKey, onLinkedKeyChange])
 
   const nearestDot = useCallback(
     (wx: number, wy: number, reach: number): number | null => {
@@ -1239,6 +1285,9 @@ export function V3Atlas({
       id={id}
       className={cn(V3_ROOT_CLASS, 'v3-atlas', wide && 'is-wide', fitsPhone && 'is-fits', !inView && 'is-offscreen', className)}
       aria-labelledby={`${uid}-h`}
+      /* The linked mark's state, on the section, so a sibling list and a test
+         can both read what the map is pointing at without walking the SVG. */
+      data-atlas-linked={linkedIndex != null ? (linkedKey ?? undefined) : undefined}
     >
       <div className="v3-atlas__grid">
         {/* The head: the H1 and the claim. On a phone the map follows at once. */}
@@ -1247,7 +1296,8 @@ export function V3Atlas({
             id={`${uid}-h`}
             className={cn(
               'v3-atlas__headline',
-              headingLevel === 1 && 'v3-atlas__headline--h1',
+              headingLevel === 1 && headlineTone === 'display' && 'v3-atlas__headline--h1',
+              headlineTone === 'eyebrow' && 'v3-atlas__headline--eyebrow',
             )}
           >
             {headline}
@@ -1561,6 +1611,26 @@ export function V3Atlas({
                         />
                       )
                     })}
+                  </g>
+                ) : null}
+                {/* 5b. The linked mark: the one listing a sibling list is
+                    pointing at, ringed so the row and the map are visibly the
+                    same object. Drawn as its own layer rather than a class on
+                    the dot so a hover costs one path, not 1,500. */}
+                {linkedIndex != null && xy[linkedIndex] ? (
+                  <g
+                    className="v3-atlas__linked"
+                    aria-hidden="true"
+                    data-atlas-linked-key={linkedKey ?? undefined}
+                  >
+                    <path
+                      d={`M${xy[linkedIndex]![0].toFixed(1)} ${xy[linkedIndex]![1].toFixed(1)}h0`}
+                      className="v3-atlas__linked-halo"
+                    />
+                    <path
+                      d={`M${xy[linkedIndex]![0].toFixed(1)} ${xy[linkedIndex]![1].toFixed(1)}h0`}
+                      className="v3-atlas__linked-mark"
+                    />
                   </g>
                 ) : null}
                 {/* 6. Lot lines. The assessor's recorded shape of a parcel:

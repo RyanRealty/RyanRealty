@@ -1,0 +1,17 @@
+{
+  "source": "public.boundaries geo_type='city' (TIGER/Line 2024 places and CDPs), ST_PointOnSurface(polygon), read 2026-09-09",
+  "note": "Town labels for the CMA map ground. Resort and planned communities come from data/resort-communities.json center_lon_lat at build time.",
+  "towns": [
+    { "slug": "bend", "label": "Bend", "lat": 44.06148, "lng": -121.31156, "sqMi": 35.4 },
+    { "slug": "culver", "label": "Culver", "lat": 44.52288, "lng": -121.21002, "sqMi": 0.7 },
+    { "slug": "la-pine", "label": "La Pine", "lat": 43.69009, "lng": -121.48215, "sqMi": 7.1 },
+    { "slug": "madras", "label": "Madras", "lat": 44.66635, "lng": -121.16046, "sqMi": 8.2 },
+    { "slug": "powell-butte", "label": "Powell Butte", "lat": 44.26275, "lng": -121.01981, "sqMi": 144.7 },
+    { "slug": "prineville", "label": "Prineville", "lat": 44.29806, "lng": -120.86195, "sqMi": 12.8 },
+    { "slug": "redmond", "label": "Redmond", "lat": 44.26434, "lng": -121.17405, "sqMi": 18.9 },
+    { "slug": "sisters", "label": "Sisters", "lat": 44.29265, "lng": -121.55456, "sqMi": 1.9 },
+    { "slug": "sunriver", "label": "Sunriver", "lat": 43.87992, "lng": -121.44163, "sqMi": 9.0 },
+    { "slug": "terrebonne", "label": "Terrebonne", "lat": 44.35248, "lng": -121.1804, "sqMi": 1.0 },
+    { "slug": "tumalo", "label": "Tumalo", "lat": 44.15663, "lng": -121.32616, "sqMi": 1.7 }
+  ]
+}

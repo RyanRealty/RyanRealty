@@ -90,3 +90,23 @@ describe('cover and immersive value blocks', () => {
     expect(html).toMatch(/capped below this range/)
   })
 })
+
+
+describe('coverWorthSentence — the number capped below the range', () => {
+  it("Concorde: says the sales support the range and the cap, never 'worth' beside a lower number", async () => {
+    const { coverWorthSentence } = await import('./cover-value')
+    const p = {
+      recommended: 1_473_000,
+      conservative: 1_413_000,
+      highEnd: 1_473_000,
+      valueLow: 1_550_000,
+      valueHigh: 3_255_000,
+      clamp: { kind: 'failed-ask', appliedTo: 'recommended', before: 2_235_000, after: 1_473_000, basis: { ratio: 0.982, source: 'x' }, applications: [], sentence: 's' },
+    } as unknown as import('@/lib/cma/types').CmaPricing
+    const t = coverWorthSentence(p, { omitAsk: true })
+    expect(t).toBe('The sales support $1,550,000 to $3,255,000. The list price is capped below that by the price that already failed to sell.')
+    expect(t).not.toMatch(/worth/)
+    const plain = coverWorthSentence({ ...p, clamp: null, recommended: 1_700_000 } as unknown as import('@/lib/cma/types').CmaPricing, { omitAsk: true })
+    expect(plain).toBe('Your home is worth $1,550,000 to $3,255,000 today.')
+  })
+})

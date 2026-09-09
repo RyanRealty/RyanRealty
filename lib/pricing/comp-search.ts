@@ -19,6 +19,7 @@
 
 import { countWord } from '@/lib/pricing/estimate'
 import { parseTierMonths, parseTierRadiusMiles } from '@/lib/pricing/search-story'
+import { ruralSplitsSentence, type RuralSplitCounts } from '@/lib/pricing/rural'
 
 /** One rung of the ladder as the selection recorded it. */
 export type CompSearchRungInput = {
@@ -56,6 +57,8 @@ export type CompSearch = {
   keptBySubdivision: Record<string, number>
   /** One sentence, generated from the counts above and from nothing else. */
   sentence: string
+  /** On acreage: the splits that set sales aside, as one sentence (lib/pricing/rural.ts). */
+  ruralSentence?: string | null
 }
 
 const BROKER_TIER = 'broker-selected'
@@ -154,6 +157,8 @@ export function buildCompSearch(input: {
   subdivision: string | null | undefined
   ladder: readonly CompSearchRungInput[]
   keptComps: readonly CompSearchKeptComp[]
+  /** On acreage: the subject's zone and the split counts, for the reader's sentence. */
+  rural?: { subjectZone: string | null | undefined; counts: Partial<RuralSplitCounts> | null | undefined } | null
 }): CompSearch | null {
   const subdivision = usableSubdivision(input.subdivision)
   const ran = input.ladder.filter((r) => r.ran && clean(r.tier))
@@ -226,7 +231,13 @@ export function buildCompSearch(input: {
     brokerOnly: ran.every((r) => r.tier === BROKER_TIER),
   })
 
-  return { subdivision, rungs, keptBySubdivision, sentence }
+  return {
+    subdivision,
+    rungs,
+    keptBySubdivision,
+    sentence,
+    ruralSentence: input.rural ? ruralSplitsSentence(input.rural) : null,
+  }
 }
 
 function writeSentence(args: {

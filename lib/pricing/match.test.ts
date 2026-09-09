@@ -1077,3 +1077,52 @@ describe('containment — the plats next to the subject, then the boundary (Matt
     expect(crossed.trace.join(' ')).toMatch(/crossed its boundary/)
   })
 })
+
+describe('Delta 4 — rural homes are read as property (Matt 2026-09-09)', () => {
+  const asOf = '2026-09-01'
+  const rural = { lotAcres: 5, lotClass: 'acreage' as const, ruralAcreage: true, marketArea: null, waterClass: 'well' as const, sewerClass: 'septic' as const }
+
+  it('farm or forest zoning never prices a rural-residential parcel, or the reverse', () => {
+    const subj = subject({ ...rural, zoning: 'EFUTRB', publicRemarks: 'Farm home on 5 irrigated acres with a barn.' })
+    const pool = [
+      sale({ ...rural, zoning: 'RR10', publicRemarks: 'Five irrigated acres with a barn.', listingKey: 'RR' }),
+      sale({ ...rural, zoning: 'EFU', publicRemarks: 'Five irrigated acres with a barn.', listingKey: 'EFU' }),
+      sale({ ...rural, zoning: null, publicRemarks: 'Five irrigated acres with a barn.', listingKey: 'UNK' }),
+    ]
+    const keys = walkPricingLadder(subj, pool, { asOf }).comps.map((c) => c.listingKey)
+    expect(keys).not.toContain('RR')
+    expect(keys).toContain('EFU')
+    expect(keys).toContain('UNK')
+  })
+
+  it('a shop-and-barn property and a bare house on land are different products', () => {
+    // No barn on the subject: the horse/barn split (already live) stays out of this case.
+    const subj = subject({ ...rural, publicRemarks: 'Dry 5 acres with a 40x60 shop.' })
+    const pool = [
+      sale({ ...rural, publicRemarks: 'Dry five acres, quiet, views.', listingKey: 'BARE' }),
+      sale({ ...rural, publicRemarks: 'Dry five acres with a shop.', listingKey: 'SHOP' }),
+      sale({ ...rural, publicRemarks: '', listingKey: 'SILENT' }),
+    ]
+    const keys = walkPricingLadder(subj, pool, { asOf }).comps.map((c) => c.listingKey)
+    expect(keys).not.toContain('BARE')
+    expect(keys).toContain('SHOP')
+    expect(keys).toContain('SILENT')
+  })
+
+  it('lava rock does not price level pasture', () => {
+    const subj = subject({ ...rural, publicRemarks: 'Dry acreage, level pasture, fully fenced.' })
+    const pool = [
+      sale({ ...rural, publicRemarks: 'Dry acreage of lava rock and juniper, steep at the back.', listingKey: 'ROCK' }),
+      sale({ ...rural, publicRemarks: 'Dry acreage, level and usable ground.', listingKey: 'LEVEL' }),
+    ]
+    const keys = walkPricingLadder(subj, pool, { asOf }).comps.map((c) => c.listingKey)
+    expect(keys).not.toContain('ROCK')
+    expect(keys).toContain('LEVEL')
+  })
+
+  it('in town the splits do not run', () => {
+    const subj = subject({ publicRemarks: 'Detached shop in the back yard.', zoning: 'RS' })
+    const pool = [sale({ publicRemarks: 'Nice yard.', zoning: 'RS', listingKey: 'TOWN' })]
+    expect(walkPricingLadder(subj, pool, { asOf }).comps.map((c) => c.listingKey)).toContain('TOWN')
+  })
+})
