@@ -19,6 +19,7 @@ import { cmaCityHref, cmaNeighborhoodHref, cmaSubdivisionHref } from '@/lib/cma/
 import { getListingTiles } from '@/lib/data/listings/getListingTiles'
 import { getPlatPublicInventory } from '@/lib/data/geo/plat-public-inventory'
 import { getSubdivisionCounts } from '@/lib/data/market-truth/subdivision-counts'
+import { getPlatUnsoldOutcome } from '@/lib/data/subdivisions/getPlatUnsoldOutcomes'
 import { getSubdivisionBoundarySlugs } from '@/lib/data/subdivisions/getSubdivisionBoundarySlugs'
 import { getSubdivisionSalesHistory } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 
@@ -27,6 +28,13 @@ export type FirstContactSubdivisionPlace = {
   href: string
   /** Closed sales in the last twelve months, as the page's instrument prints them. Null when withheld. */
   closed12mo: number | null
+  /**
+   * How many came off the market without selling in the same twelve months
+   * (SITE-55) — the page's own figure, from the same MV, so the letter and the
+   * page can never disagree. null when the read missed; 0 when nothing failed,
+   * which is a fact the letter is allowed to state.
+   */
+  unsold12mo: number | null
   active: number | null
   pending: number | null
   /**
@@ -111,7 +119,7 @@ export async function resolveFirstContactPlace(input: {
   const slug = subdivisionSlugFromHref(href)
   if (!slug) {
     // A registry community or an area redirect: its own page, no plat counts.
-    return { subdivision: { label: subdivision, href, closed12mo: null, active: null, pending: null, history: null }, wider }
+    return { subdivision: { label: subdivision, href, closed12mo: null, unsold12mo: null, active: null, pending: null, history: null }, wider }
   }
 
   const renders = await platPageRenders(slug)
@@ -128,6 +136,19 @@ export async function resolveFirstContactPlace(input: {
   } catch {
     // Counts are optional. The link is what must hold.
   }
+  // SITE-55: the same MV the plat page reads for its "what did not sell"
+  // section, so the letter's count and the page's count are one number.
+  // A read miss is null (say nothing); a plat with no row is 0 (nothing came
+  // off unsold), which the letter is allowed to state as the clean case.
+  let unsold12mo: number | null = null
+  try {
+    // null = the view does not cover this plat, so the letter says nothing;
+    // a row with 0 = measured and clean, which the letter may state.
+    const outcome = await getPlatUnsoldOutcome(slug)
+    unsold12mo = outcome ? outcome.unsoldCount : null
+  } catch {
+    // Optional, like the counts. The link is what must hold.
+  }
   let history: FirstContactSubdivisionPlace['history'] = null
   try {
     const rows = await getSubdivisionSalesHistory(slug)
@@ -141,5 +162,5 @@ export async function resolveFirstContactPlace(input: {
   } catch {
     // Same: optional.
   }
-  return { subdivision: { label: subdivision, href, closed12mo, active, pending, history }, wider }
+  return { subdivision: { label: subdivision, href, closed12mo, unsold12mo, active, pending, history }, wider }
 }

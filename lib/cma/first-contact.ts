@@ -225,10 +225,23 @@ function placeParagraph(facts: CmaFirstContactFacts): string | null {
     if (sub.pending != null && sub.pending > 0) {
       counts.push(`${countWord(sub.pending)} ${sub.pending === 1 ? 'is' : 'are'} under contract`)
     }
+    // SITE-55: the half that matters most to a seller whose own listing came
+    // off. Same MV the plat page reads, so the letter and the page cannot
+    // disagree. Zero is worth saying out loud — it is the strongest version of
+    // this sentence when it is true.
+    if (sub.unsold12mo != null && sub.unsold12mo > 0) {
+      counts.push(
+        `${countWord(sub.unsold12mo)} ${sub.unsold12mo === 1 ? 'came' : 'came'} off the market without selling`,
+      )
+    }
     if (counts.length) {
       const joined = counts.length === 1 ? counts[0]! : `${counts.slice(0, -1).join(', ')}, and ${counts[counts.length - 1]!}`
       parts.push(`In ${sub.label} itself, ${joined}.`)
-      parts.push(`Our ${sub.label} page keeps the running picture, what is for sale there and what has sold: ${sub.href}.`)
+      parts.push(
+        sub.unsold12mo === 0
+          ? `Every home that came off the market there in that stretch sold. Our ${sub.label} page keeps the running picture, what is for sale there, what has sold, and what did not: ${sub.href}.`
+          : `Our ${sub.label} page keeps the running picture, what is for sale there, what has sold, and what did not: ${sub.href}.`,
+      )
     } else {
       parts.push(`Our ${sub.label} page is at ${sub.href}.`)
     }

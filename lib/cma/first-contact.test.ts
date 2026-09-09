@@ -186,12 +186,12 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
       ...FACTS,
       city: 'Redmond',
       subdivision: 'Diamond Bar Ranch',
-      place: { subdivision: { ...DBR, closed12mo: 6, active: 2, pending: 1, history: null }, wider: REDMOND },
+      place: { subdivision: { ...DBR, closed12mo: 6, unsold12mo: null, active: 2, pending: 1, history: null }, wider: REDMOND },
     })
     expect(c.bodyText).toContain(
       'In Diamond Bar Ranch itself, six homes sold in the last twelve months, two are for sale right now, and one is under contract.',
     )
-    expect(c.bodyText).toContain(`Our Diamond Bar Ranch page keeps the running picture, what is for sale there and what has sold: ${DBR.href}.`)
+    expect(c.bodyText).toContain(`Our Diamond Bar Ranch page keeps the running picture, what is for sale there, what has sold, and what did not: ${DBR.href}.`)
     expect(c.bodyText).toContain(`The Redmond page shows the wider market it sits in: ${REDMOND.href}.`)
   })
 
@@ -199,7 +199,7 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
     const c = composeCmaFirstContact('expired', {
       ...FACTS,
       place: {
-        subdivision: { ...DBR, closed12mo: null, active: null, pending: null, history: { thisYear: 2026, closedThisYear: 12, closedSince: 367, sinceYear: 2005 } },
+        subdivision: { ...DBR, closed12mo: null, unsold12mo: null, active: null, pending: null, history: { thisYear: 2026, closedThisYear: 12, closedSince: 367, sinceYear: 2005 } },
         wider: REDMOND,
       },
     })
@@ -207,7 +207,7 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
     const one = composeCmaFirstContact('expired', {
       ...FACTS,
       place: {
-        subdivision: { ...DBR, closed12mo: null, active: null, pending: null, history: { thisYear: 2026, closedThisYear: 1, closedSince: 1, sinceYear: 2026 } },
+        subdivision: { ...DBR, closed12mo: null, unsold12mo: null, active: null, pending: null, history: { thisYear: 2026, closedThisYear: 1, closedSince: 1, sinceYear: 2026 } },
         wider: REDMOND,
       },
     })
@@ -217,7 +217,7 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
   it('prints the plain page line when the counts are withheld', () => {
     const c = composeCmaFirstContact('expired', {
       ...FACTS,
-      place: { subdivision: { ...DBR, closed12mo: null, active: null, pending: null, history: null }, wider: REDMOND },
+      place: { subdivision: { ...DBR, closed12mo: null, unsold12mo: null, active: null, pending: null, history: null }, wider: REDMOND },
     })
     expect(c.bodyText).toContain(`Our Diamond Bar Ranch page is at ${DBR.href}.`)
     expect(c.bodyText).not.toContain('sold in the last twelve months')
@@ -273,7 +273,7 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
         build_summary: { comp_selection: { final_tier_counts: { 'nearby-1mi-6mo': 1, 'subdivision-6mo': 1, 'subdivision-9mo': 1 } } },
         render_args: { market: { geoLabel: 'Redmond', geoSlug: 'redmond' } },
       },
-      { brokerName: 'Matt Ryan', lastListPrice: 460000, place: { subdivision: { ...DBR, closed12mo: 6, active: 2, pending: null, history: null }, wider: REDMOND } },
+      { brokerName: 'Matt Ryan', lastListPrice: 460000, place: { subdivision: { ...DBR, closed12mo: 6, unsold12mo: null, active: 2, pending: null, history: null }, wider: REDMOND } },
     )
     expect(facts.city).toBe('Redmond')
     expect(facts.subdivision).toBe('Diamond Bar Ranch')
@@ -287,5 +287,46 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
     expect(letter.bodyText).toContain('The last listing asked $460,000, a little above what those sales support.')
     expect(letter.bodyText).toContain('In Diamond Bar Ranch itself, six homes sold in the last twelve months, and two are for sale right now.')
     expect(letter.bodyText).toMatch(/\/subdivisions\/diamond-bar-ranch/)
+  })
+})
+
+describe('placeParagraph — what did not sell (SITE-55)', () => {
+  const DBR2 = {
+    label: 'Diamond Bar Ranch',
+    href: 'https://ryan-realty.com/subdivisions/diamond-bar-ranch',
+    closed12mo: 6,
+    active: 2,
+    pending: 1,
+    history: null,
+  }
+
+  function body(unsold12mo: number | null): string {
+    return composeCmaFirstContact('expired', {
+      ...FACTS,
+      city: 'Redmond',
+      subdivision: 'Diamond Bar Ranch',
+      place: { subdivision: { ...DBR2, unsold12mo }, wider: null },
+    }).bodyText
+  }
+
+  it('names the homes that came off the market without selling', () => {
+    const text = body(19)
+    expect(text).toContain('came off the market without selling')
+    // countWord spells the small numbers and prints the rest as digits.
+    expect(text).toMatch(/(nineteen|19) came off the market without selling/)
+  })
+
+  it('says the clean case out loud when nothing failed', () => {
+    expect(body(0)).toContain('Every home that came off the market there in that stretch sold')
+  })
+
+  it('says nothing about failures when the read missed', () => {
+    const text = body(null)
+    expect(text).not.toContain('came off the market without selling')
+    expect(text).not.toContain('Every home that came off the market')
+  })
+
+  it('the page sentence names all three states', () => {
+    expect(body(19)).toContain('what is for sale there, what has sold, and what did not')
   })
 })

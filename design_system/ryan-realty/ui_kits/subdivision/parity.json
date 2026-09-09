@@ -89,6 +89,11 @@
       "name": "V3Answers",
       "section": "Pattern 8, #faq, and this route's FIRST question set (site queue SITE-08). Verified questions from buildPlaceAnswers, each row carrying the ONE figure it is about — the figure on the closed row, the drawing and the §0 trace inside it — and the SAME array feeds the FAQPage JSON-LD through answersFaqItems, so the markup cannot describe a sentence the page does not print. WHAT THE PLAT GRAIN MAY ANSWER, and the short set is the point: REGISTRY §4 withholds every closed-price statistic at this grain (a closed median, a YoY of it, and a sale-to-list ratio, all off an MLS SubdivisionName join where most plats never reach ten detached sales in 36 months), and lib/market/geo-grain-trust.ts refuses this grain's closed attribution, so months of supply is withheld too. The verdict question is still ASKED and answered with the refusal plus the closed count behind it (the SITE-01 sentence pattern), never dropped. What publishes: the live list median of the plat's own actives (publishPlatFigures), median days on market from the plat's own market_stats_cache ytd row, the counted active set, the latest COMPLETE calendar year's closed count — never the running partial year — from getSubdivisionSalesHistory, or, when that name join is empty (every sub-plat of a resort: its homes are filed under the resort's MLS name), the same year off the boundary union, carrying its own trace and its own population noun because the boundary count is every property type; and the plat's lifetime closed count inside its recorded boundary, drawn as a tally (SITE-24). Doors are the browse path, the parent resort or city, and /how-we-get-our-numbers. Closes the page after SubdivisionDocuments, so no two adjacent sections share a pattern.",
       "blocking": true
+    },
+    {
+      "name": "V3Quiet",
+      "section": "#outcomes (SITE-55) — what did not sell in the plat over the trailing twelve months, and the wider market it sits in. The failed half is an AGGREGATE and never a list of addresses: Oregon MLS policy (docs/MASTER_SPEC.md §3.8) holds that Withdrawn, Expired and Cancelled listings may not be actively marketed, so the count, the days they ran and the cut they took first publish and the roll-call does not. Reads public.subdivision_plat_unsold_mv through getPlatUnsoldOutcome; a plat outside the measured set renders nothing rather than claiming a clean record. The wider-market door is a real anchor to the parent community, neighborhood or city, carrying that place's own months of supply or active count with its trace.",
+      "blocking": true
     }
   ],
   "layoutComponents": [
@@ -126,6 +131,7 @@
     "PlaceSplitView #homes",
     "SubdivisionSchools (Quiet: assigned schools when published, then every outbound edge)",
     "V3Instrument #market-report (own market, conditional)",
+    "V3Quiet #outcomes (what did not sell in the plat, and the wider market it sits in — conditional on the plat being inside the measured set)",
     "SubdivisionSalesHistory (yearly counts) with SubdivisionMarketCharts inside it",
     "V3PlaceCharacter (Quiet, conditional)",
     "SubdivisionDocuments (conditional)",
@@ -147,12 +153,12 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-09",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-47 build lane — spawned from the build lane with the same six-shot set, re-captured against the lane dev server after the caption composer, the Atlas claim+legend fold and the CTA doors landed, scored three times in one call, and asked explicitly whether the caption reads as a template (answer: no).",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-55 pass, session 019RdEm6 — the table instrument (first viewport at 1440x900 and 375x812, scripts/take-route-shots.mjs, scale 1, palette-quantized) on the lane's own dev server for /subdivisions/tetherow-phase-1, plus the new section's own pair; three independent scorings of one capture run, the median; no page code read, no live page opened. The builder ran on Opus and did not grade its own page. The prior mark is the route's committed receipt (65: 65·70·63).",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
       "routes": [
-        "/subdivisions/golf-homes-at-tetherow"
+        "/subdivisions/tetherow-phase-1"
       ],
       "viewports": [
         1440,
@@ -160,73 +166,74 @@
       ],
       "states": [
         "default",
-        "market-report",
-        "faq"
-      ]
+        "outcomes"
+      ],
+      "capture": "scripts/take-route-shots.mjs default first viewport for the instrument pair; `outcomes=#outcomes` for the section this pass added"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/subdivision/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/mobile375.png",
-      "marketDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/market-desktop.png",
-      "marketMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/market-mobile375.png",
-      "answersDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-desktop.png",
-      "answersMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-mobile375.png"
+      "outcomesDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/outcomes-desktop.png",
+      "outcomesMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/outcomes-mobile375.png"
     },
-    "shotsHash": "sha256:01a48bf3c24df75a3540f85cd7520ca4ba84f80c33bfcba31646d41ae277c3ba",
+    "shotsHash": "sha256:178b40664bbaef2e6a56d1942be14066e193d2952ade5f7434fd704b40c8fb99",
     "scores": [
-      65,
-      70,
-      63
+      74,
+      71,
+      76
     ],
-    "score": 65,
-    "breakdown": {
-      "design": 21,
-      "originality": 15,
-      "interaction": 10,
-      "craft": 11,
-      "honesty": 8
+    "score": 74,
+    "criteria": {
+      "designQuality": 22,
+      "originality": 22,
+      "interaction": 11,
+      "craft": 12,
+      "honestyFunction": 7
     },
-    "beats": "Beats generic and auto-generated brokerage subdivision pages and Zillow-style neighborhood boilerplate on trust and specificity for a sub-10-home plat: a named MLS source chip, a real filtered map, and a dot-encoded year-over-year comparison. Does not beat Redfin's neighborhood pages on interaction depth (chart hover states, heat-mapped price overlays, a denser filter surface) — the evaluator's own honest read, named rather than smoothed over.",
+    "beats": "Redfin — Redfin's neighborhood/subdivision pages surface active and sold homes but never the withdrawn/expired side; this page's 'What did not sell' block (count, median days, share and size of price cuts) publishes a number no major portal shows at the subdivision level.",
+    "tells": [],
+    "dullest": "The 'Bend, the wider market Tetherow Phase 1 sits in' row — it sits between two sharper ideas, its copy ('every neighborhood, every plat, and the pace the whole city is setting') is filler next to the specific did-not-sell number above it, and it carries the weakest interaction cue on the page.",
+    "verdict": "The did-not-sell addition is the right instinct: a specific, honest number paired with a sentence that actually explains it, which is exactly what the register calls for. But the page still opens its data section with a checkbox-and-slider control panel that could be lifted from any listing site, and the wider-market tie-in reads as connective filler between two stronger ideas. Fix the register break at the filter panel and make sure the section shapes below the fold don't converge on the same eyebrow-heading-row template.",
     "defects": [
       {
-        "section": "#market-report + #faq",
+        "section": "Tetherow Phase 1 right now (map + filters)",
         "severity": "taste",
-        "finding": "Eyebrow -> heading -> caption -> chart/list -> source repeats verbatim across the market-report and FAQ sections back to back — the stacked-section shape, unchanged by this pass (out of SITE-47 scope: neither section's code was touched)."
+        "finding": "The checkbox filters (House/Townhouse/Land), price slider, and gray-swatch 'fewer sales/more sales' legend read as a stock real-estate search-tool control panel, not the quiet/editorial register — a sharp register break right after an otherwise restrained hero.",
+        "primitive": "subdivision map/filter panel",
+        "fix": "Restyle the controls as minimal text toggles or a hairline segmented control instead of checkbox/slider form inputs, so the panel matches the hairline-rule editorial language of the hero above it.",
+        "viewport": "desktop"
       },
       {
-        "section": "hero caption",
-        "severity": "taste",
-        "finding": "\"one of Bend's subdivisions\" is a low-information appositive that would sit identically on any subdivision page — correct given the honest constraint (no resort, no neighborhood, no median for this specific plat) but not memorable."
+        "section": "Bend, the wider market Tetherow Phase 1 sits in",
+        "severity": "interaction",
+        "finding": "On desktop the only interactive affordance is a small trailing arrow implying navigate-away; on mobile that arrow is absent entirely, so the row shows no hover/tap affordance at all in the 375 shot.",
+        "primitive": "market-door widget",
+        "fix": "Give the row its own in-place interaction (e.g. a small sparkline that expands on tap) rather than relying on an arrow that disappears on mobile.",
+        "viewport": "both"
       },
       {
-        "section": "hero (#overview)",
-        "severity": "taste",
-        "finding": "No photography renders for this plat (no own hero image, and no resort image borrowed now that Golf Homes at Tetherow is correctly no longer a registered Tetherow alias per the 2026-08-26 membership audit) — a data-poverty condition of this specific plat, not a code defect; §0 forbids inventing or misattributing a photo to cover it."
-      },
-      {
-        "section": "atlas dock sold-density legend",
+        "section": "#outcomes stat source line",
         "severity": "craft",
-        "finding": "The \"FEWER SALES / MORE SALES\" gradient swatches read as near-white on the cream background in the still — a contrast issue in the existing dock legend, unrelated to the SITE-47 claim-sentence/key-in-head addition. Flagged as a follow-up, not fixed here (shared component, out of this node's scope)."
+        "finding": "At 375 the source line wraps mid-clause: 'SOURCE Central Oregon MLS, this plat' breaks and leaves a lone '· as of Sep 9, 2026' fragment on its own line before 'how we calculate this'.",
+        "fix": "Stack the source line as two clean rows on mobile (source name, then date + disclosure link) instead of letting it wrap inside one sentence.",
+        "viewport": "mobile"
       },
       {
-        "section": "hero (#overview)",
+        "section": "Tetherow Phase 1 · Housing stock (cut off at bottom of outcomes-desktop)",
         "severity": "taste",
-        "finding": "Two full-size display headlines still stack within about 150px of each other (pre-existing, out of SITE-47 scope)."
-      },
-      {
-        "section": "#overview source chip",
-        "severity": "honesty",
-        "finding": "The chip carries no as-of date, because getPlatPublicInventory publishes no read timestamp. FIXED in this pass: getPlatPublicInventory now stamps every row with readAt and the chip renders it — this defect from the prior mark is closed."
+        "finding": "The next section's visible eyebrow ('TETHEROW PHASE 1 · HOUSING STOCK') opens with the same eyebrow-then-heading shape already used two blocks above for 'What did not sell', risking the stacked eyebrow/heading/row/source pattern repeating down the page.",
+        "fix": "Open the housing-stock section with a different lead element (a visual or a number-first layout) so no two data sections share an opening shape.",
+        "viewport": "desktop"
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-09",
-      "score": 79,
+      "score": 65,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:865202efd96928262a0e74a24069a04b68675fdc48333cfd56d5df15bc605455"
+      "shotsHash": "sha256:01a48bf3c24df75a3540f85cd7520ca4ba84f80c33bfcba31646d41ae277c3ba"
     },
-    "rebaselineReason": "shotsHash differs: SITE-47 replaced the opening's caption composer (plat-caption.ts, a distinct authored sentence per plat setting instead of the single interpolated template line), added the CTA doors (\"See every home for sale\" / \"Talk to a broker\") in the fold, and moved the Atlas's claim sentence and dot key into the head above the map — all six shots were re-captured against the lane dev server. RAW COMPARISON, STATED PLAINLY: the new median (65) is BELOW the prior mark (79), not above it. Two independent evaluator passes on this build (median 70 before the caption reword, median 65 after) both came in under 79, while the SAME evaluator model scored the nearly-identical below-the-fold market-report and FAQ sections (untouched by this session) as part of a 79 only one lane earlier — TASTE.md's own SITE-11 note records one page swinging 75-88 across four passes on one commit, and this is offered as the likely explanation, not as an excuse: the numbers are recorded as they came back, not smoothed toward 79."
+    "rebaselineReason": "shotsHash: new first-viewport captures plus the did-not-sell section's own pair, which did not exist when the prior mark was taken; same evaluator model and rubric."
   }
 }

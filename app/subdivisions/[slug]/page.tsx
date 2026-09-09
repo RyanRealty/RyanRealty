@@ -136,6 +136,9 @@ import {
 } from '@/lib/explore/subdivision-page-extras'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { getPlatClosedCount } from '@/lib/data/subdivisions/getPlatClosedCounts'
+import { getPlatUnsoldOutcome } from '@/lib/data/subdivisions/getPlatUnsoldOutcomes'
+import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { publishPlatUnsold } from '@/lib/site/publish-plat-unsold'
 import { getPlatBoundaryCity } from '@/lib/data/subdivisions/getPlatBoundaryCity'
 import { platPageTitle } from './_v3/plat-title'
 import { platCaption } from './_v3/plat-caption'
@@ -528,6 +531,7 @@ export default async function SubdivisionPage({ params }: Props) {
     placeCharacter,
     publicSegments,
     platClosed,
+    platUnsold,
   ] = await Promise.all([
       withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
       withTimeoutFallback(
@@ -560,6 +564,12 @@ export default async function SubdivisionPage({ params }: Props) {
       // the page prints and the verdict the robots tag publishes can never
       // disagree. null on a miss — the figure is then absent, never a zero.
       withTimeoutFallback(getPlatClosedCount(slug), null, 4500, 'sub:platClosed'),
+      // POPULATION 6 (SITE-55): the other half of the same question. The plat's
+      // twelve-month DID-NOT-SELL aggregate, attributed the same two ways the
+      // closed count is, from public.subdivision_plat_unsold_mv. null is the
+      // clean case — the MV writes a row only where something came off unsold —
+      // and the publisher says so in words rather than hiding the section.
+      withTimeoutFallback(getPlatUnsoldOutcome(slug), null, 4500, 'sub:platUnsold'),
     ])
 
   // ── THE MARKET BAND READS ONE POPULATION AT A TIME ──────────────────────
@@ -768,6 +778,52 @@ export default async function SubdivisionPage({ params }: Props) {
   const marketTrace = marketClauses
     .map((clause, i) => (i === 0 ? clause : `${clause.charAt(0).toUpperCase()}${clause.slice(1)}`))
     .join(' ')
+
+  // ── WHAT DID NOT SELL, AND THE MARKET THE PLAT SITS IN (SITE-55) ────────
+  // Matt: "show them exactly what's going on there, including homes that sold
+  // and didn't sell… and then in the broader picture of the neighborhood or
+  // community within which that subdivision resides. That's the full loop."
+  //
+  // The failed half is an AGGREGATE and never a list of addresses: Oregon MLS
+  // policy holds that Withdrawn, Expired and Cancelled listings may not be
+  // actively marketed (docs/MASTER_SPEC.md §3.8), so a public roll-call of the
+  // homes that did not sell is Matt's ruling to make, not this page's. The
+  // count, the days they ran and the cut they took first are market reporting,
+  // the same class of figure as months of supply.
+  const unsoldRead = publishPlatUnsold({
+    placeName: displayName,
+    outcome: platUnsold,
+    windowEnd: platUnsold?.windowEnd ?? null,
+  })
+
+  // The wider market: the parent place, with ITS own figure, and a REAL anchor
+  // in the served HTML (the atlas-link finding on SITE-30). A neighborhood
+  // parent is preferred over the city because it is the nearer ring; the
+  // community/resort takes precedence over both when the plat sits in one,
+  // because that is the market a resort buyer compares against.
+  const widerPlace: { label: string; href: string; geoType: 'city' | 'neighborhood' } | null =
+    resortSlug && resortLabel
+      ? { label: resortLabel, href: `/communities/${resortSlug}`, geoType: 'neighborhood' }
+      : boundaryCity?.neighborhood?.label && boundaryCity.neighborhood.slug && citySlug
+        ? {
+            label: boundaryCity.neighborhood.label,
+            href: `/cities/${citySlug}/${boundaryCity.neighborhood.slug}`,
+            geoType: 'neighborhood',
+          }
+        : citySlug
+          ? { label: cityName, href: `/cities/${citySlug}`, geoType: 'city' }
+          : null
+
+  const widerOverlay = widerPlace
+    ? (
+        await withTimeoutFallback(
+          getDetachedOverlays([{ geoType: widerPlace.geoType, geoSlug: widerPlace.href.split('/').pop() ?? '' }]),
+          new Map(),
+          3500,
+          'sub:widerOverlay',
+        )
+      ).get(`${widerPlace.geoType}:${widerPlace.href.split('/').pop() ?? ''}`) ?? null
+    : null
 
   // ── THE CLOSING BLOCK'S OUTBOUND EDGES ───────────────────────────────────
   const edges = buildSubdivisionEdges({
@@ -1137,6 +1193,90 @@ export default async function SubdivisionPage({ params }: Props) {
               ? { chart: soldChart }
               : { note: v3Text(TOO_FEW_SALES_LINE) })}
           />
+        ) : null}
+
+        {/* Pattern 3, Quiet — the other half of the market question, and the
+            ring the plat sits inside (SITE-55). A Quiet between the Instrument
+            above and the sales table below, so no two adjacent sections share a
+            pattern. The figure carries its own §0 trace; the wider-market door
+            is a real anchor in the served HTML, not a client-side jump. */}
+        {unsoldRead.measured ? (
+        <V3Quiet
+          id="outcomes"
+          eyebrow={`${displayName} · What did not sell`}
+          heading={
+            unsoldRead.clean
+              ? `Everything that came off the market in ${displayName} sold`
+              : `What did not sell in ${displayName}`
+          }
+          headingLevel={2}
+          items={[
+            {
+              kind: 'prose' as const,
+              body: unsoldRead.sentence,
+              ...(unsoldRead.figure
+                ? {
+                    figure: {
+                      value: unsoldRead.figure.value,
+                      label: unsoldRead.figure.label,
+                      source: unsoldRead.source,
+                      sourceName: 'Central Oregon MLS, this plat',
+                      ...(platUnsold?.windowEnd ? { updatedAt: platUnsold.windowEnd } : {}),
+                    },
+                  }
+                : {}),
+            },
+            ...(unsoldRead.clean
+              ? [
+                  {
+                    kind: 'prose' as const,
+                    term: 'How this is counted',
+                    body: unsoldRead.source,
+                  },
+                ]
+              : []),
+            ...(widerPlace
+              ? [
+                  {
+                    label: `${widerPlace.label}, the wider market ${displayName} sits in`,
+                    href: widerPlace.href,
+                    lead: true,
+                    mark: 'market' as const,
+                    detail:
+                      widerPlace.geoType === 'city'
+                        ? `Every neighborhood, every plat, and the pace the whole city is setting.`
+                        : `The ring around this plat, with its own inventory and its own pace.`,
+                    ...(widerOverlay?.headlines
+                      ? {
+                          figure: {
+                            value: widerOverlay.headlines.mosLabel,
+                            unit: `months of supply · ${widerOverlay.headlines.verdictLabel.toLowerCase()}`,
+                            source:
+                              `Market Truth region row for ${widerPlace.label} (market_metric, detached segment): ` +
+                              `${widerOverlay.headlines.activeCount.toLocaleString('en-US')} active against the closed pace, ` +
+                              `complete through ${widerOverlay.headlines.completeThrough}. Months of supply is active listings over the last six months of closings divided by six.`,
+                            sourceName: `Central Oregon MLS, ${widerPlace.label}`,
+                            updatedAt: widerOverlay.headlines.computedAt,
+                          },
+                        }
+                      : widerOverlay?.inventory
+                        ? {
+                            figure: {
+                              value: widerOverlay.inventory.activeCount.toLocaleString('en-US'),
+                              unit: 'homes for sale there now',
+                              source:
+                                `Market Truth row for ${widerPlace.label} (market_metric, detached segment, active count), ` +
+                                `read ${widerOverlay.inventory.computedAt}. Months of supply is withheld at this grain: the sample is under the floor.`,
+                              sourceName: `Central Oregon MLS, ${widerPlace.label}`,
+                              updatedAt: widerOverlay.inventory.computedAt,
+                            },
+                          }
+                        : {}),
+                  },
+                ]
+              : []),
+          ]}
+        />
         ) : null}
 
         {/* Pattern 3, Ledger — one row per calendar year, every row a door, with
