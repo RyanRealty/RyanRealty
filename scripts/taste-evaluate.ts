@@ -11,9 +11,10 @@
  * scored itself" is the exact failure TASTE.md was written to end (Anthropic's
  * own harness work: agents "confidently praise their own work even when quality
  * is mediocre"). This routes the shots through lib/grok — the one surface any
- * model call in this repo is allowed to use (CLAUDE.md §4) — and prints the
- * three scorings, their median, and the named defects, in the shape the
- * route's parity.json tasteReview wants.
+ * model call in this repo is allowed to use (CLAUDE.md §4) — as
+ * GROK_MODELS.taste (`grok-4.5`), which differs from a Grok builder
+ * (`grok-4.6`). It prints the three scorings, their median, and the named
+ * defects, in the shape the route's parity.json tasteReview wants.
  *
  * IT DOES NOT WRITE THE RECEIPT. The builder reads the findings, fixes them,
  * re-shoots, re-runs this, and writes the receipt by hand — because
@@ -28,8 +29,11 @@
  */
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { config } from 'dotenv'
 import { GROK_MODELS, xaiFetch } from '../lib/grok/client'
 import { parseJsonLoose } from '../lib/grok/text'
+
+config({ path: '.env.local' })
 
 const UI_KITS = 'design_system/ryan-realty/ui_kits'
 
@@ -129,7 +133,7 @@ async function main() {
   const res = await xaiFetch('/chat/completions', {
     method: 'POST',
     body: JSON.stringify({
-      model: GROK_MODELS.vision,
+      model: GROK_MODELS.taste,
       messages: [
         {
           role: 'system',
@@ -161,7 +165,7 @@ async function main() {
   console.log(
     JSON.stringify(
       {
-        evaluatorModel: json.model ?? GROK_MODELS.vision,
+        evaluatorModel: GROK_MODELS.taste,
         shots: images.map((i) => i.name),
         result: parsed ?? content,
       },
