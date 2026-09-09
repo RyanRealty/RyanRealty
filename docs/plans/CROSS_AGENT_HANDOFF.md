@@ -32,6 +32,14 @@ adjacent subdivisions inside the boundary → then out); same property type on e
 ladder change is the next engine item and is NOT built yet — see the previous block for the
 tier order and the data to confirm first.
 
+**Matt's third rule today (memory `feedback_cma_comp_containment`, in build on
+`wt/cma-engine-20260907` as R2h):** unsold peers (Expired/Withdrawn/Canceled) come from the
+SAME area the kept comps came from, widening 3 → 6 → 9 → 12 → 18 → 24 months until at least
+three, each with its story; competition is limited to the neighborhood or community, and a
+subject outside any boundary uses the comp radius, never a city-wide band. Before this, peers
+were the market-area grain at a fixed 12 months and competition was city-wide nearest-first.
+`render_args.compArea` is the one area object; the renderer reads it for both chapters.
+
 **Still open:** the cover photo is whatever single MLS photo the row carries; the map is a
 Google tile with our pins; subdivision-story and voice-reviewer still call the Anthropic API
 and fail open; inbound EMAIL replies do not advance the CRM; D21 price-tier fallback is Matt's
