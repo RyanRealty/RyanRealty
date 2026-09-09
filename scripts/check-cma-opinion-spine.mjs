@@ -11,6 +11,11 @@
  */
 import { readFileSync, existsSync } from 'node:fs'
 
+// lib/cma/opinion-flyers.ts (assembleCompFlyerPages, a per-comp flyer page)
+// was removed from PATHS 2026-09-09 (ci:reachable-exports): render.ts calls
+// assembleOpinionPages from opinion-pages.ts for the comps matrix, and
+// opinion-flyers.ts's own export had zero production callers left — it was
+// deleted with letter-register.test.ts's one exercising test case.
 const PATHS = [
   'lib/cma/render.ts',
   'lib/cma/immersive.ts',
@@ -25,7 +30,6 @@ const PATHS = [
   'lib/cma/render-css.ts',
   'lib/cma/render-css-sections.ts',
   'lib/cma/immersive-css.ts',
-  'lib/cma/opinion-flyers.ts',
   'lib/cma/render-blocks.ts',
   'lib/cma/render-use-of-property.ts',
 ]

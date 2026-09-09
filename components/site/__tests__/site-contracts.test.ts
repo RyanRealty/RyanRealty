@@ -592,7 +592,6 @@ describe('design directive contracts', () => {
     // no curve builder inventing values between two measured points.
     expect(cma).not.toMatch(/from ['"]recharts['"]/)
     expect(cma).not.toMatch(/curveCardinal|curveCatmullRom|curveBasis|bezierCurveTo/)
-    expect(readSrc('lib/cma/comps-price-chart.ts')).toMatch(/from '@\/lib\/charts\/print-svg'/)
     const live = [
       'components/market/MarketCoreCharts.tsx',
       'components/reports/SalesReportCharts.tsx',
@@ -611,8 +610,9 @@ describe('design directive contracts', () => {
     expect(readSrc('lib/cma/opinion-scenes.ts')).toMatch(/from '@\/lib\/cma\/render-pricing-page'/)
     // The CMA's seasonality chart was the third skin over lib/charts/plot. Its
     // chapter is cut, so the file is gone; V3Chart and AChart above are the
-    // surviving screen skins and lib/charts/print-svg is the print one.
-    expect(readSrc('lib/charts/print-svg.ts')).toMatch(/from '\.\/plot'/)
+    // surviving screen skins. lib/charts/print-svg (the print skin) lost its
+    // last consumer, lib/cma/comps-price-chart.ts, to the month-ledger CMA
+    // comps matrix and was deleted with it (ci:reachable-exports, 2026-09-09).
     const rechartsHits = [...walkTs('app'), ...walkTs('components')].filter((file) =>
       /from ['"]recharts['"]/.test(readFileSync(file, 'utf8')),
     )

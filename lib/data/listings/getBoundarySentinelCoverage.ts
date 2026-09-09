@@ -1,4 +1,8 @@
 /**
+ * reachability: entry-point SITE-23 operations instrument — read by the loop
+ * and by gates for the before/after trace and the standing measurement,
+ * never by a request-path page (see below). No component imports this.
+ *
  * Boundary-classifier coverage instrument (SITE-23).
  *
  * `listings.boundary_city` is written by `refresh_listing_boundary_tags()`,
