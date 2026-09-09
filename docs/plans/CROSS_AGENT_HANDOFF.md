@@ -1,4 +1,65 @@
-# Current — 2026-09-09 (site queue round three: SITE-28 done, SITE-23 shipped and blocked on its recrawl window)
+# Current — 2026-09-09 (site queue round three: an off-market listing stops selling a home that already sold)
+
+Owner: Claude (Opus 5), cloud "Site queue grinder" routine, session 01DLfMFV. **main is at `650666bb2`.**
+SITE-21 shipped and is live. With SITE-20 and SITE-22 earlier in the same run, the listing page no
+longer publishes a price nobody paid, on any surface.
+
+**SITE-21.** A Closed or Expired listing showed a mortgage calculator computed on the OLD list price,
+a "this home's price sits 32.0% over the Bend median" ask on a dead price, and Tour / Call / Text the
+broker cannot fulfil — two contradictory prices for one home on a public page. It now shows the sale
+facts, promotes the active-inventory rail and offers a saved-search path. Verified on production
+across four statuses **resolved at query time**: Closed and Expired have no payment, no ask, and
+**zero listing-built `tel:`/`sms:`**; Pending and Active keep all of it. Closed `SoldOut`, Expired
+`OutOfStock`. Pending carries no availability *deliberately* — schema.org has no value meaning "under
+contract, not yet sold", and inventing one would publish a claim the record does not support.
+
+**Two more §0 defects, found by RENDERING rather than reading.** The history rail's `Sold` row
+published the ASK, not the sale — the change-log event that flips a listing to Closed carries the
+then-current list price, so one page could read sold for $827,000 in the header and $849,000 in the
+rail. And an **Expired** listing, which never sold, asked "what this one closed at". Both fixed.
+
+**The `tel:`/`sms:` clause cannot be satisfied literally, and the lane said so instead of redefining
+it.** `V3Chrome` and `V3Footer` publish the brokerage line on every page and the footer renders
+outside `<main>`. The two are cleanly separable: the listing's own controls build from bare digits
+(`tel:5417033095`), the chrome from the E.164 constant (`tel:+15417033095`). Off market: 0 and 7. On
+market: 7 and 7.
+
+**TASTE: the listing class scored 78 (80/74/78) against a standing 87 from the SAME instrument
+(`claude-sonnet-5`, `v1-2026-09-08`). No receipt was written and the 87 stands.** `ci:taste-canon`
+would have accepted a `rebaselined` claim, because `shotsHash` drifted — but it drifted only because
+this work added shots, and using that to paper over a 9-point fall is laundering. Same call as
+SITE-07's neighborhood class the day before, made the same way. **Read the drop carefully:** honesty
+scored 9/10 and the evaluator volunteered that the off-market treatment is "genuinely better than
+what it replaced". Every lost point is in sections these nodes do not own, and the prior 87 came from
+a different evaluator instance over a narrower shot set.
+
+**The best finding is a PRE-EXISTING dead control, and it is one line.** The hero's "N photos" caption
+pill does nothing: `ListingHero.tsx:224-228`, `openCaption()`'s `gallery` branch calls
+`setMediaTab('photos')` and returns, on a tab that already defaults to `photos` (line 126), while the
+`floor` branch beside it calls `setMediaTab` **and** `openGallery(0,'floor')`. Clicking a photo tile
+does open the lightbox — only the labelled CTA is dead. Introduced by `71c46099a`, an unrelated CMA
+commit. **Not fixed here on purpose**: it is outside both nodes, and this session declined to widen
+SITE-07 for *its* pre-existing sections, so widening here would be arbitrary. Recorded with file,
+line and remedy. Also unowned and worth a node: `#ask` is a static figure row with no interaction at
+all, `#similar` is a plain list, the mobile cookie pill overlaps the sticky CTA bar, and on an Expired
+subject the history rail's last price-change row ($120,000) disagrees with the published ask
+($119,900) by $100 — a §0 disagreement between two numbers on one page.
+
+**Probe a new gate with a SECOND SPELLING of the defect.** `check-offmarket-listing-cta.mjs` executes
+the predicate over the RESO enum (Pending === false is load-bearing), refuses a second status list,
+and checks guard **ancestry** rather than a spelling; 21 sandbox cases assert FAIL across fifteen
+defect spellings and PASS for two honest re-spellings. This discipline exists because
+`ci:listing-canonical-single` was caught earlier the same day passing 10/10 against the same defect
+written one character apart.
+
+**Both SITE-20 and SITE-21 are BLOCKED ON MATT**, functional halves shipped and live-verified, taste
+rise unmet: accept 78 as the honest mark for the class, or hold until a node exists for the
+pre-existing defects actually costing the score? SITE-07's neighborhood question (67 vs a standing 83)
+is still open too — it is the same question twice.
+
+---
+
+## Prior — 2026-09-09 (site queue round three: SITE-28 done, SITE-23 shipped and blocked on its recrawl window)
 
 Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. One push for
 the round: `fc77108b..bc7ce4b2` (lanes 5765494e and ef4cbd7d+74860b39, merges c4223b0c and
