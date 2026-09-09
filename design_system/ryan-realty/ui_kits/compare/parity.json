@@ -1,12 +1,12 @@
 {
   "route": "app/compare/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Utility comparison page: side-by-side property table. noindex \u2014 not an SEO surface.",
+  "competitiveTarget": "Utility comparison page: side-by-side property table. noindex — not an SEO surface.",
   "note": "E-HOMES-SEARCH 2026-08-13. Migrated /compare chrome onto the v3 barrel. Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount it. V3Breadcrumb belowNav=false. V3Footer outside <main>. Page contract carried unchanged: robots noindex,follow, revalidate 60, canonical /compare, DAL fetch (getListingTiles by listNumbers AND listingKeys, dedup, getListingDetailPhotos), CompareClient props, BreadcrumbList JSON-LD, KbSectionTracker pageType=compare. Shared /compare?ids= links keep resolving. Dual objectives unchanged. Capture does not live on this route. KB-era deletions: SmoothScrollProvider, KbBreadcrumb, KbFooter, kb-root, kb.css, navy header band. AICompare deleted 2026-08-18 (never wired). MetadataBlock and KbSectionTracker stay on non-v3 registers.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
-      "section": "JSON-LD \u2014 BreadcrumbList structured data (Home > Compare). No WebPage JSON-LD on a noindex utility route.",
+      "section": "JSON-LD — BreadcrumbList structured data (Home > Compare). No WebPage JSON-LD on a noindex utility route.",
       "blocking": true
     },
     {
@@ -26,7 +26,7 @@
     },
     {
       "name": "CompareClient",
-      "section": "interactive comparison surface \u2014 photo row, side-by-side feature table with best-in-class highlighting, Google Maps locations embed, Copy Link + Download PDF actions, empty/loading state",
+      "section": "interactive comparison surface — photo row, side-by-side feature table with best-in-class highlighting, Google Maps locations embed, Copy Link + Download PDF actions, empty/loading state",
       "blocking": true
     },
     {
@@ -53,5 +53,88 @@
   "openDefects": {
     "_": "Closed 2026-08-27.",
     "items": []
+  },
+  "tasteReview": {
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-40 V3Quiet pass, session 019RdEm6 — the table instrument (first viewport at 1440x900 and 375x812, scripts/take-route-shots.mjs, scale 1, palette-quantized) captured by the coordinator against next dev (localhost:3198) on the lane branch with the lane's patch applied and main merged through 0ba0358d (SITE-42's source line) for /compare; three independent scorings of one capture run, the median; no page code read, no live page opened. The lane's Opus worktree agent had no Agent tool, so the coordinator ran the evaluators: round one on the lane's own captures (invest 38, compare 30, about 45, market-report 49, reviews 57, contact 49; about drew the scrolling-lists tell on seven glyph-marked doors, contact tied its table mark, and the market hub's source clauses read as internal labels), then a second pass after the class-level fixes — a face in the person door's mark slot, the reviews figure on the reviews door, plain-words source clauses (sourceName) with the trace behind the disclosure, the newest weekly snapshot on the Sales / weekly door — re-captured on the merged tree; this receipt is that second round. The builder ran on Opus and did not grade its own page. The prior mark is the taste table of 2026-09-08 (median 29, scores 29·34·25), an instrument reading, not a route receipt (this file carried none).",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/compare"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default"
+      ],
+      "capture": "scripts/take-route-shots.mjs default first viewport"
+    },
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/compare/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/compare/shots/mobile375.png"
+    },
+    "shotsHash": "sha256:099fb0fe2259cac6d9717ee2d4acf34f5007781e045c45d6328a66f248232808",
+    "scores": [
+      42,
+      37,
+      45
+    ],
+    "score": 42,
+    "criteria": {
+      "designQuality": 15,
+      "originality": 9,
+      "interaction": 3,
+      "craft": 10,
+      "honestyFunction": 5
+    },
+    "beats": "No win named — the page shows no populated or sample state, so it cannot be judged as beating Zillow's, Redfin's, or Realtor.com's own compare-tool onboarding, which at minimum surface a populated tray or recently-viewed thumbnails.",
+    "tells": [],
+    "dullest": "The entire visible content block ('Up to four homes' plus its three links) — it is the only section on the page besides chrome, and it is text and arrows with nothing to look at.",
+    "verdict": "This still reads as a placeholder that grew better breadcrumbs, not a finished page. Turning one text link into three quick links answered the letter of the last critique without touching the substance: there is still nothing on screen that shows a visitor what a finished four-home comparison looks like, and still zero interaction in the first viewport. Ship the sample-populated state, or don't ship this screen as the page's front door.",
+    "defects": [
+      {
+        "section": "Up to four homes (empty state)",
+        "severity": "taste",
+        "finding": "No illustration of the populated comparison exists anywhere in the first viewport on either shot — no sample rows, thumbnails, or feature-table preview — so a visitor cannot see what a finished four-home comparison looks like before committing effort to adding homes.",
+        "primitive": "likely the V3Quiet-based empty-state block for the /compare route",
+        "fix": "Add a static mock of the populated table (2-4 photo thumbnails + a few feature rows: price, beds, baths) beneath the paragraph so the page demonstrates its own job.",
+        "viewport": "both"
+      },
+      {
+        "section": "quick-link row (Search homes for sale / Every city / Price drops)",
+        "severity": "interaction",
+        "finding": "The three rows are plain navigation links with a trailing arrow to other pages; none is a data section, so the first viewport contains zero in-page interaction that rewards a hover, tap, scrub or toggle with more data.",
+        "primitive": "link-row list component under the 'Up to four homes' heading",
+        "fix": "Replace at least one link with an inline interactive element, e.g. a hoverable sample comparison card that reveals feature columns on hover instead of navigating away.",
+        "viewport": "both"
+      },
+      {
+        "section": "descriptive paragraph under 'Up to four homes'",
+        "severity": "craft",
+        "finding": "The body copy ('Add homes from any search or listing page...') renders in a light gray whose luminance sits close to the #faf8f4 ground, a likely AA contrast shortfall at this text size.",
+        "fix": "Darken the paragraph color (or raise weight) to clear 4.5:1 contrast against cream.",
+        "viewport": "both"
+      },
+      {
+        "section": "page overall",
+        "severity": "taste",
+        "finding": "Nothing in the page's own content (as opposed to inherited nav, footer, and H1) is specific to home-comparison or Central Oregon — heading, one paragraph, three generic links is a shape any empty-list utility screen would use for any product.",
+        "fix": "Give the section a visual anchor unique to comparing homes, e.g. a stacked/fanned photo motif standing in for the four open slots.",
+        "viewport": "both"
+      }
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 29,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "table-instrument-2026-09-08 (scratch captures, no per-row hash)"
+    },
+    "rebaselineReason": "shotsHash: new first-viewport captures of the rebuilt Quiet; same evaluator model and rubric. This file carried no tasteReview before; the prior is the table row (an instrument reading, not a route receipt), per the node's 'never first'."
   }
 }

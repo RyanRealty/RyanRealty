@@ -33,6 +33,17 @@
   border-top: var(--v3-rule-section);
 }
 
+/* A block that announces nothing does not need a full section's air above it.
+   --v3-section-pad is 120px at 1440, and on /reviews — where the page opens on
+   a headless reach block — the evaluator measured "a blank band of roughly
+   160px between the breadcrumb and the first content block, with no image,
+   mark, or headline anchoring it, which reads as a missing hero". With no
+   eyebrow and no title there is nothing in that band to anchor, so the block
+   starts closer to the rule that introduces it. Air below is unchanged. */
+.v3.v3-quiet--headless {
+  padding-top: var(--v3-space-xl);
+}
+
 /* Head ---------------------------------------------------------------------
    Optional context line and optional title. Both absent is the common case:
    a Quiet block usually closes a node without announcing itself. */
@@ -70,18 +81,222 @@
 }
 
 /* Doors --------------------------------------------------------------------
-   The whole row is the target, at the 44px thumb minimum. */
+   A RUN OF DOORS IS ONE GROUP, NOT N ROWS (SITE-40).
+
+   The taste table's most repeated finding across the six lowest page classes
+   was a vertical column of identical hairline rows: seven on /about, five on
+   the market hub, four on /reviews, "a table wearing hairlines" applied to a
+   link menu. The fix is form, not color. Consecutive doors lay out 2-up (3-up
+   past 60rem), so no two consecutive doors share a left edge; each carries the
+   mark of the channel it opens; one may lead, spanning the group on the 2px
+   section rule at the larger size; and each may print a live figure with its
+   own source line. Six doors that used to be six full-width rows are three
+   short rows on a phone, which is how the fold reaches a face, a figure, or a
+   map instead of ending on a link menu.
+
+   No card, no box, no fill: the hairline stays the only chrome, moved from the
+   row to the cell so the columns rule across together. */
+.v3-quiet__item--doors {
+  border-top: 0;
+  padding: 0;
+}
+
+.v3-quiet__doors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--v3-space-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Two columns at every width, not an auto-fit that becomes four cells on a
+   desktop. Four equal cells in a row is the silhouette of the card grid this
+   file is not allowed to draw; two wide columns read as a set of doors, hold a
+   phone number and a figure without wrapping, and let a lead door absorb an odd
+   count. The only thing the wider viewport buys is air between the columns. */
+@media (min-width: 60rem) {
+  .v3-quiet__doors {
+    column-gap: var(--v3-space-3xl);
+  }
+}
+
+.v3-quiet__door {
+  min-width: 0;
+  border-top: var(--v3-rule-hairline);
+}
+
+/* One door in a run is a row, not a half-width orphan. */
+.v3-quiet__item--doors-one .v3-quiet__door,
+.v3-quiet__door--lead {
+  grid-column: 1 / -1;
+}
+
+/* The dominant door: the hierarchy TASTE.md asks for in place of N equal
+   cells. It opens on the section rule, so the eye lands on it first. */
+.v3-quiet__door--lead {
+  border-top: var(--v3-rule-section);
+}
+
+.v3-quiet__door--lead .v3-quiet__label {
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-medium);
+}
+
+/* The whole cell is the target, at the 44px thumb minimum. */
 .v3-quiet__link {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--v3-space-md);
+  column-gap: var(--v3-space-sm);
+  row-gap: var(--v3-space-3xs);
   min-height: var(--v3-tap);
   padding: var(--v3-space-sm) 0;
   color: var(--v3-ink);
   font-size: var(--v3-size-body);
   line-height: var(--v3-leading-body);
+  overflow-wrap: anywhere;
   text-decoration: none;
+}
+
+/* The channel mark. It is what makes two adjacent doors different objects
+   rather than two copies of one row, so it is never decoration and never
+   appears without the label it marks. */
+.v3-quiet__doormark {
+  display: flex;
+  flex: none;
+  color: var(--v3-ink-muted);
+  transition: color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-quiet__link:hover .v3-quiet__doormark,
+.v3-quiet__link:focus-visible .v3-quiet__doormark {
+  color: var(--v3-ink);
+}
+
+/* A face or a place in the mark's slot (SITE-40, second pass): a square the
+   size of the tap floor, cropped to cover, no frame — the transparent edge of
+   a headshot IS the composition (CLAUDE.md §3). The lead door's is a step
+   larger, because it is the door the section is about. */
+.v3-quiet__doormedia {
+  display: block;
+  flex: none;
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  object-fit: cover;
+  object-position: top center;
+  align-self: start;
+}
+
+.v3-quiet__door--lead .v3-quiet__doormedia {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.v3-quiet__door--pictured .v3-quiet__link {
+  align-items: start;
+}
+
+/* The lighter doors: one inline line spanning the group, mark + label, no
+   arrow and no cell. Four ways to reach one person are one line under the
+   door that is the person — not four more rows (the "scrolling lists as the
+   design" tell the evaluator named twice on /about). */
+.v3-quiet__door--inline {
+  grid-column: 1 / -1;
+  padding: var(--v3-space-xs) 0;
+}
+
+.v3-quiet__inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs) var(--v3-space-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-quiet__inlinelink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-xs);
+  min-height: var(--v3-tap);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  text-decoration: none;
+}
+
+.v3-quiet__inlinedetail {
+  color: var(--v3-ink-muted);
+}
+
+.v3-quiet__inlinelink:hover .v3-quiet__label,
+.v3-quiet__inlinelink:focus-visible .v3-quiet__label {
+  text-decoration-color: currentColor;
+}
+
+/* One ratio, one meter: a hairline track under a door's value, the fill at
+   the figure's share of its ceiling. Ink on a tint, no colour, no label —
+   the numeral beside it is the label. */
+.v3-quiet__doormeter {
+  flex-basis: 100%;
+  display: block;
+  height: 3px;
+  max-width: 9rem;
+  margin-top: var(--v3-space-2xs);
+  background: color-mix(in srgb, var(--v3-ink) 14%, transparent);
+}
+
+.v3-quiet__doormeter > span {
+  display: block;
+  height: 100%;
+  background: var(--v3-ink);
+}
+
+/* The figure a door carries: what is behind it, before the tap. Body-weight
+   numerals in Geist — a door is not an Instrument, and the display face is
+   reserved for the figure a section is ABOUT. */
+.v3-quiet__doorfigure {
+  grid-column: 2 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  /* No row gap: when the unit wraps under the value on a phone it should hug
+     the number it belongs to, not float a line away from it. */
+  gap: 0 var(--v3-space-2xs);
+  min-width: 0;
+}
+
+.v3-quiet__doorvalue {
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.v3-quiet__doorunit,
+.v3-quiet__doordetail {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3-quiet__doordetail {
+  grid-column: 2 / -1;
+}
+
+/* The §0 clause under a door's figure. Outside the anchor, so the link's
+   accessible name is the door, not the trace. */
+.v3-quiet__doorsource {
+  padding: 0 0 var(--v3-space-sm);
+  font-size: var(--v3-size-source);
+}
+
+/* On a phone the trailing arrow costs a quarter of the label's width and says
+   nothing the channel mark has not already said, and there is no hover for it
+   to answer. The mark stays; the arrow returns with the pointer. */
+@media (max-width: 39.999rem) {
+  .v3-quiet__link > .v3-quiet__mark {
+    display: none;
+  }
 }
 
 .v3-quiet__label {
@@ -121,6 +336,58 @@
    indexable rather than hiding behind a control. */
 .v3-quiet__item--prose {
   padding: var(--v3-space-md) 0;
+}
+
+/* THE MEASURE IS THE ROW (SITE-40). A passage with nothing to put beside it
+   used to keep the block's 72rem box and set its words at 44rem, so a
+   full-width hairline ran under a two-thirds-empty row — which four separate
+   evaluators read as an unfinished card rather than restraint. One track, and
+   the rule stops where the words stop. `display: grid` is not decoration here:
+   it is what makes "no empty second track" a property a test can read. */
+.v3-quiet__item--measure {
+  display: grid;
+  grid-template-columns: minmax(0, var(--v3-measure-text));
+  max-width: var(--v3-measure-text);
+}
+
+/* ...and when there IS something to put beside it, the passage keeps the block
+   and the figure takes the column that used to be void. */
+.v3-quiet__item--figured {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: var(--v3-space-md);
+}
+
+.v3-quiet__figure {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--v3-space-xs);
+  padding-top: var(--v3-space-sm);
+  border-top: var(--v3-rule-section);
+}
+
+.v3-quiet__figuresource {
+  max-width: var(--v3-measure-text);
+}
+
+@media (min-width: 60rem) {
+  .v3-quiet__item--figured {
+    grid-template-columns: minmax(0, 1fr) minmax(11rem, 16rem);
+    column-gap: var(--v3-space-2xl);
+    align-items: start;
+  }
+
+  .v3-quiet__item--figured > .v3-quiet__figure {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .v3-quiet__item--figured > .v3-quiet__pair,
+  .v3-quiet__item--figured > .v3-quiet__body {
+    grid-column: 1;
+    grid-row: 1;
+  }
 }
 
 .v3-quiet__pair {

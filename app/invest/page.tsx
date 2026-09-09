@@ -117,11 +117,32 @@ export default async function InvestPage() {
   })
   const [firstSearchRow, ...restSearchRows] = searchRows
 
+  /**
+   * The fold's number (SITE-40). The taste table scored this page 25 — the
+   * lowest class on the site — because "the page's stated 'live counts' never
+   * appear on screen" and each prose item reserved a right-hand column that
+   * rendered empty. This is that count, and it is not a new read: it is the
+   * sum of the SAME five INVEST_SEGMENTS rows the Ledger below prints one at a
+   * time, so the fold's figure and the section beneath it can never disagree.
+   * `rows` is already filtered to segments that returned a positive count, so
+   * a withheld segment is absent from the sum rather than counted as zero.
+   */
+  const incomeActive = rows.reduce((sum, row) => sum + (row.activeCount ?? 0), 0)
+
   const placeItems: V3QuietItem[] = [
     {
       kind: 'prose',
       term: 'What this page is',
-      body: 'Every multi-family, commercial, land, farm, and business listing on the regional MLS across Central Oregon, with the market data beside it. The counts below are live.',
+      body: 'Every multi-family, commercial, land, farm, and business listing on the regional MLS across Central Oregon, with the market data beside it. Every count on this page is live.',
+      ...(incomeActive > 0
+        ? {
+            figure: {
+              value: incomeActive.toLocaleString('en-US'),
+              label: 'income and land listings',
+              source: `${SEGMENT_TRACE}. This figure is the sum of the ${rows.length} segment rows printed below (${rows.map((row) => `${publicSegmentNoun(row.segment, row.activeCount ?? 0)} ${(row.activeCount ?? 0).toLocaleString('en-US')}`).join(', ')})`,
+            },
+          }
+        : {}),
     },
     {
       kind: 'prose',
@@ -131,7 +152,12 @@ export default async function InvestPage() {
   ]
 
   const toolItems: V3QuietItem[] = [
-    { label: 'Rental property calculator', href: '/tools/rental-property-calculator' },
+    {
+      label: 'Rental property calculator',
+      href: '/tools/rental-property-calculator',
+      detail: 'Your rent, your rate, your expenses — the answer before the tour.',
+      lead: true,
+    },
     { label: 'Mortgage calculator', href: '/tools/mortgage-calculator' },
     { label: 'Central Oregon market report', href: '/housing-market' },
     { label: 'Every city', href: '/cities' },

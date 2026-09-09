@@ -105,13 +105,84 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-06",
-    "score": 51,
-    "beats": "Windermere Central Oregon About: Call and Text are first-viewport doors instead of a mission paragraph.",
-    "evaluator": "separate grok-4.6 evaluator, remaining-issues pass, about",
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-40 V3Quiet pass, session 019RdEm6 — the table instrument (first viewport at 1440x900 and 375x812, scripts/take-route-shots.mjs, scale 1, palette-quantized) captured by the coordinator against next dev (localhost:3198) on the lane branch with the lane's patch applied and main merged through 0ba0358d (SITE-42's source line) for /about; three independent scorings of one capture run, the median; no page code read, no live page opened. The lane's Opus worktree agent had no Agent tool, so the coordinator ran the evaluators: round one on the lane's own captures (invest 38, compare 30, about 45, market-report 49, reviews 57, contact 49; about drew the scrolling-lists tell on seven glyph-marked doors, contact tied its table mark, and the market hub's source clauses read as internal labels), then a second pass after the class-level fixes — a face in the person door's mark slot, the reviews figure on the reviews door, plain-words source clauses (sourceName) with the trace behind the disclosure, the newest weekly snapshot on the Sales / weekly door — re-captured on the merged tree; then a third pass after the second still named the scrolling-lists tell on six glyph rows (41): the four channels became one inline line of secondary doors under the person door, the reviews figure gained its ratio meter; this receipt is that third round. The builder ran on Opus and did not grade its own page. The prior mark is the route's committed receipt (51 on 2026-09-06, grok-4.6, no instrument keys) and the taste table of 2026-09-08 (median 31, scores 31·35·28).",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/about"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default"
+      ],
+      "capture": "scripts/take-route-shots.mjs default first viewport"
+    },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png"
-    }
+    },
+    "shotsHash": "sha256:7a1a68e7cc888e4fa07f976660e88875b2753bbbc0e3afa92cb53e2a84d8f802",
+    "scores": [
+      47,
+      49,
+      52
+    ],
+    "score": 49,
+    "criteria": {
+      "designQuality": 18,
+      "originality": 9,
+      "interaction": 5,
+      "craft": 11,
+      "honestyFunction": 6
+    },
+    "beats": "Realtor.com agent-profile pages — this page wins on honesty: the 5.0 review score names its source ('SOURCE Google reviews') and exposes an expandable 'how we calculate this' methodology note, where Realtor.com/Zillow agent star ratings show a bare number with no source trace or calculation shown.",
+    "tells": [],
+    "dullest": "The Call / Text / Email / Schedule row — four generic icon-plus-label contact buttons indistinguishable from a template contact block, carrying no information and rewarding no interaction beyond firing a tel:/sms:/mailto:/calendar link.",
+    "verdict": "This build fixes the exact defect the last review named — the review score now carries a visual proportion bar and a sourced, expandable methodology disclosure instead of being one more anonymous link row, and the row count is short enough that it no longer reads as the banned scrolling-list tell. But the fold is still four sparse rows on mostly empty cream: one small headshot thumbnail is the only image, there's no map, no Bend context, nothing a stranger would screenshot to show a friend. Ship the honesty fix as a genuine improvement, then come back for the composition — an About page for a boutique brokerage should feel inhabited, not administered.",
+    "defects": [
+      {
+        "section": "full fold (hero + rows)",
+        "severity": "taste",
+        "finding": "The entire visible fold is a hero line plus three low-height information rows on otherwise empty cream — no photograph beyond a small headshot thumbnail, no map graphic, no texture — so an About page reads as a compact administrative contact card rather than an inhabited brand moment.",
+        "fix": "Add one real visual anchor to the fold — an office/team photo, a static map thumbnail for 'The office' row, or a Bend-context image — so the page carries brand warmth, not just text rows.",
+        "viewport": "both"
+      },
+      {
+        "section": "Call / Text / Email / Schedule row",
+        "severity": "interaction",
+        "finding": "All four actions fire an external protocol (tel:/sms:/mailto:/calendar) immediately; none rewards a tap or hover with more information first — the row's only function is leaving the page, same complaint as the prior mark's link menu.",
+        "fix": "Give at least one action (e.g. Schedule) an inline expansion — available times, response-time note — before it hands off to another app or page.",
+        "viewport": "both"
+      },
+      {
+        "section": "bottom of fold",
+        "severity": "craft",
+        "finding": "At 375px the fold ends with 'SOURCE Google reviews' flush to the bottom edge with no partial reveal of, or cue toward, further content below — a visitor scanning quickly reads the fold as the complete, finished page.",
+        "fix": "Let the next section's edge (a photo strip, a heading) peek into the last 40-60px of the viewport, or add a visible scroll affordance.",
+        "viewport": "mobile"
+      },
+      {
+        "section": "broker row / contact row / reviews-office row",
+        "severity": "taste",
+        "finding": "The three information rows below the hero share one left-label/right-value hairline shape; varied in content but not in structure, so the section still reads primarily as a form being filled in rather than an edited page.",
+        "fix": "Give one row a genuinely different shape — e.g. render 'The office' as a small map graphic instead of an address line — so the rhythm isn't three repeats of the same row template.",
+        "viewport": "desktop"
+      }
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-06",
+      "score": 51,
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "not recorded (pre-instrument receipt)",
+      "shotsHash": "not recorded (pre-instrument receipt)"
+    },
+    "rebaselineReason": "evaluatorModel, rubricVersion, shotsHash: the route's committed receipt (2026-09-06, 51) predates the table instrument and records none of the three; this mark is the first on the v1-2026-09-08 rubric with hashed first-viewport shots. The table row for the class (2026-09-08, median 31) is the working prior."
   }
 }

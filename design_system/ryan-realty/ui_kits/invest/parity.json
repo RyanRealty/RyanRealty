@@ -56,5 +56,87 @@
     "V3Footer"
   ],
   "superseded": [],
-  "openDefects": {}
+  "openDefects": {},
+  "tasteReview": {
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-40 V3Quiet pass, session 019RdEm6 — the table instrument (first viewport at 1440x900 and 375x812, scripts/take-route-shots.mjs, scale 1, palette-quantized) captured by the coordinator against next dev (localhost:3198) on the lane branch with the lane's patch applied and main merged through 0ba0358d (SITE-42's source line) for /invest; three independent scorings of one capture run, the median; no page code read, no live page opened. The lane's Opus worktree agent had no Agent tool, so the coordinator ran the evaluators: round one on the lane's own captures (invest 38, compare 30, about 45, market-report 49, reviews 57, contact 49; about drew the scrolling-lists tell on seven glyph-marked doors, contact tied its table mark, and the market hub's source clauses read as internal labels), then a second pass after the class-level fixes — a face in the person door's mark slot, the reviews figure on the reviews door, plain-words source clauses (sourceName) with the trace behind the disclosure, the newest weekly snapshot on the Sales / weekly door — re-captured on the merged tree; then a third pass fixed the one honesty defect the second round named (the passage said the counts were below while the figure sat beside it) and re-captured; this receipt is that third round. The builder ran on Opus and did not grade its own page. The prior mark is the taste table of 2026-09-08 (median 25, scores 25·19·29), an instrument reading, not a route receipt (this file carried none).",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/invest"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default"
+      ],
+      "capture": "scripts/take-route-shots.mjs default first viewport"
+    },
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/invest/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/invest/shots/mobile375.png"
+    },
+    "shotsHash": "sha256:9ca2c915599514d0e9c4284be3a1bfa4480d9e8f517ad5722ea76a5190884ff3",
+    "scores": [
+      63,
+      54,
+      60
+    ],
+    "score": 60,
+    "criteria": {
+      "designQuality": 21,
+      "originality": 13,
+      "interaction": 7,
+      "craft": 12,
+      "honestyFunction": 7
+    },
+    "beats": "No win named — the shot shows one sourced live count and a methodology footnote, but no map, filter, chart, or segmentation; that is not yet more than what a saved Zillow or Redfin search already surfaces, so no demonstrable edge is visible in this viewport.",
+    "tells": [],
+    "dullest": "\"How to underwrite here\" — pure prose advice with no number, no source line, and no interactive element; it sits directly under the one part of the page that does have a figure, so it reads as the section a reader's eye slides past on the way down.",
+    "verdict": "Real progress over the last mark: there is finally a figure with a source trace instead of two empty prose blocks, and the type, hairlines, and navy-on-cream discipline are genuinely on-brand. But it still reads like release notes with a stat pasted on top — two identically-shaped paragraphs under headers that explain the page to itself, one small toggle standing in for the interactivity a data page should deliver, and a right rail that runs out of things to say halfway down. Ship the number, then build the page around it — segment it, let it move — instead of writing about it.",
+    "defects": [
+      {
+        "section": "content row below hero (\"What this page is\" / \"How to underwrite here\")",
+        "severity": "originality",
+        "finding": "The two body items repeat the identical heading-over-one-paragraph-over-hairline shape back to back, the same doc-style pattern the prior mark named on this route",
+        "fix": "Give the two items different visual treatments (e.g. one as a short numbered underwriting checklist, the other as plain copy) so no shape repeats twice in the same section",
+        "viewport": "both"
+      },
+      {
+        "section": "content row below hero",
+        "severity": "taste",
+        "finding": "Headers 'What this page is' and 'How to underwrite here' read as internal documentation describing the page to itself, not a claim a visitor came for",
+        "fix": "Replace with a benefit-forward line the reader cares about, e.g. 'Every income listing on the MLS, priced for cash flow'",
+        "viewport": "both"
+      },
+      {
+        "section": "762 stat / source card",
+        "severity": "interaction",
+        "finding": "The one visible interactive affordance is a small 'how we calculate this' text toggle attached to methodology; the 762 count itself is not segmented (by multi-family / commercial / land / farm) or otherwise explorable, so the page's single data element rewards a tap with definitions, not with more data",
+        "primitive": "stat/source card component",
+        "fix": "Make the 762 figure break down by asset type on hover or tap instead of only exposing a methodology footnote",
+        "viewport": "both"
+      },
+      {
+        "section": "right column below the source toggle",
+        "severity": "craft",
+        "finding": "On desktop the right column runs out of content well before the left column does, leaving a tall empty gap beneath the toggle — a smaller echo of the empty-column defect named on the prior build",
+        "fix": "Either narrow the column to its content height or add one supporting figure (e.g. median cap rate) beneath the count",
+        "viewport": "desktop"
+      }
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 25,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "table-instrument-2026-09-08 (scratch captures, no per-row hash)"
+    },
+    "rebaselineReason": "shotsHash: new first-viewport captures of the rebuilt Quiet; same evaluator model and rubric. This file carried no tasteReview before; the prior is the table row (an instrument reading, not a route receipt), per the node's 'never first'."
+  }
 }

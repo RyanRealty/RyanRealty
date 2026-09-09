@@ -65,5 +65,100 @@
     "V3Proof #reviews -- strip, year chips, reading pane, archive disclosure",
     "V3Doors #next -- write, team, homes, Value my home",
     "V3Footer"
-  ]
+  ],
+  "tasteReview": {
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-40 V3Quiet pass, session 019RdEm6 — the table instrument (first viewport at 1440x900 and 375x812, scripts/take-route-shots.mjs, scale 1, palette-quantized) captured by the coordinator against next dev (localhost:3198) on the lane branch with the lane's patch applied and main merged through 0ba0358d (SITE-42's source line) for /reviews; three independent scorings of one capture run, the median; no page code read, no live page opened. The lane's Opus worktree agent had no Agent tool, so the coordinator ran the evaluators: round one on the lane's own captures (invest 38, compare 30, about 45, market-report 49, reviews 57, contact 49; about drew the scrolling-lists tell on seven glyph-marked doors, contact tied its table mark, and the market hub's source clauses read as internal labels), then a second pass after the class-level fixes — a face in the person door's mark slot, the reviews figure on the reviews door, plain-words source clauses (sourceName) with the trace behind the disclosure, the newest weekly snapshot on the Sales / weekly door — re-captured on the merged tree; this receipt is that second round. The builder ran on Opus and did not grade its own page. The prior mark is the taste table of 2026-09-08 (median 48, scores 45·51·48), an instrument reading, not a route receipt (this file carried none).",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/reviews"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default"
+      ],
+      "capture": "scripts/take-route-shots.mjs default first viewport"
+    },
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/reviews/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/reviews/shots/mobile375.png"
+    },
+    "shotsHash": "sha256:f171fe4d38e2f0f6e91a20008101f8b3af3f1da131a99497259cfbeb31ec7cff",
+    "scores": [
+      48,
+      55,
+      50
+    ],
+    "score": 50,
+    "criteria": {
+      "designQuality": 16,
+      "originality": 17,
+      "interaction": 5,
+      "craft": 9,
+      "honestyFunction": 3
+    },
+    "beats": "Zillow/Realtor.com agent-profile review tabs, which show only an aggregate star badge plus a scrolling list of quote snippets — this page instead plots every individual review on a dated timeline, a real per-review data structure competitors don't expose (the interaction itself isn't verifiable from a static shot, only the visual encoding is).",
+    "tells": [],
+    "dullest": "The Call/Text/Email/Schedule contact rail — four identical hairline rows with an icon, a label and an arrow, no visual differentiation between them, indistinguishable from the top of any brokerage's generic contact page.",
+    "verdict": "Two ideas are fighting for the top of this page and the wrong one is winning: a generic contact rail leads, and the actual proof — 5.0 across 25 reviews, plotted over seven years — is pushed down past a gap that reads like a bug. The timeline chart is the one genuinely original device here, and it's the one thing not actually visible or usable in either captured fold, worst on mobile where it doesn't appear at all. Close the dead gap and lead with the argument the page exists to make; right now it's one resequencing away from working.",
+    "defects": [
+      {
+        "section": "gap between contact rail and headline",
+        "severity": "taste",
+        "finding": "A blank vertical gap of roughly 150-170px separates the four contact rows from the 'RYAN REALTY · GOOGLE' eyebrow, with no image, rule, or content anchoring it — reads as an accidental layout gap, not deliberate whitespace.",
+        "fix": "Remove the excess vertical padding, or fill the gap with a supporting image, pull quote, or visible section rule so it reads as intentional.",
+        "viewport": "both"
+      },
+      {
+        "section": "contact rail (Call/Text/Email/Schedule)",
+        "severity": "taste",
+        "finding": "Four uniform hairline-divided rows (icon, label, arrow) with identical visual weight are the first content on the page, ahead of any proof of the 5.0 rating that the route exists to show.",
+        "fix": "Move the rating proof (25 reviews, 5.0 stars) above the contact rail, or compress the rail into one inline strip so the reviews content leads.",
+        "viewport": "both"
+      },
+      {
+        "section": "stat row (25 / 5.0 / 4 / Nov 2019 / Jul 2026)",
+        "severity": "craft",
+        "finding": "Three of five tiles ('4 IN 2026', 'Nov 2019 FIRST REVIEW', 'Jul 2026 NEWEST') are bare figures over a caption with no visual encoding differentiating them, even though the sentence above only interprets the first two tiles (25 and 5.0).",
+        "fix": "Give each tile a distinct visual device (a tick on the timeline for the two dates, a small count-bar for '4 in 2026') instead of repeating the same number-over-caption block five times.",
+        "viewport": "both"
+      },
+      {
+        "section": "review timeline chart",
+        "severity": "interaction",
+        "finding": "On mobile the entire first viewport (contact rail, heading, start of the stat row) is static; the only interactive element the copy promises ('Point at a mark to read it, or pick a year') is entirely below the fold.",
+        "fix": "Pull a compressed version of the timeline, or its first few marks, above the fold on mobile so the page's one interactive element is visible at first paint.",
+        "viewport": "mobile"
+      },
+      {
+        "section": "review timeline chart",
+        "severity": "interaction",
+        "finding": "On desktop the chart only just enters the bottom of the fold as unlabeled dots, with the instruction line as the last visible pixel row — a visitor sees the chart exists but cannot see or try the interaction it promises without scrolling.",
+        "fix": "Reduce the height of the contact rail and the gap above it so a labeled/hovered mark sits inside the 900px fold.",
+        "viewport": "desktop"
+      },
+      {
+        "section": "contact rail, 'Schedule with a broker' tile",
+        "severity": "craft",
+        "finding": "At 375px 'Schedule with a broker' wraps to two lines and its subtext 'Pick a time that works' also wraps to two lines, while the paired 'Email' tile's subtext fits on one line — uneven row heights between siblings in the two-column grid.",
+        "fix": "Shorten the label/subtext, or switch to a single-column stack at this breakpoint so paired tiles keep equal height.",
+        "viewport": "mobile"
+      }
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 48,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "table-instrument-2026-09-08 (scratch captures, no per-row hash)"
+    },
+    "rebaselineReason": "shotsHash: new first-viewport captures of the rebuilt Quiet; same evaluator model and rubric. This file carried no tasteReview before; the prior is the table row (an instrument reading, not a route receipt), per the node's 'never first'."
+  }
 }

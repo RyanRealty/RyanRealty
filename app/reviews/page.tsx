@@ -91,11 +91,19 @@ export default async function ReviewsPage() {
     ...(newestDate ? [{ value: formatDate(newestDate, { month: 'short', day: undefined, year: 'numeric' }), label: 'newest' }] : []),
   ]
 
+  /**
+   * SITE-40. The taste table scored this page 48 and named the opening: "four
+   * hairline-divided rows, identical apart from label text and a trailing
+   * arrow glyph, are the very first content the reader meets on a reviews page
+   * — before any proof of the 5.0 rating", the "scrolling lists as the design"
+   * tell. Same four reaches, two-up, each with its channel mark, so the strip
+   * is one compact action band rather than four rows of the same object.
+   */
   const reachItems: V3QuietItem[] = [
-    { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
-    { label: `Text ${CONTACT.phoneDirect}`, href: `sms:${CONTACT.phoneDirectTel}` },
-    { label: `Email ${CONTACT.email.primary}`, href: `mailto:${CONTACT.email.primary}` },
-    { label: 'Schedule with a broker', href: '/book' },
+    { label: 'Call', detail: CONTACT.phoneDirect, href: `tel:${CONTACT.phoneDirectTel}` },
+    { label: 'Text', detail: CONTACT.phoneDirect, href: `sms:${CONTACT.phoneDirectTel}` },
+    { label: 'Email', detail: CONTACT.email.primary, href: `mailto:${CONTACT.email.primary}` },
+    { label: 'Schedule with a broker', detail: 'Pick a time that works', href: '/book' },
   ]
 
   return (

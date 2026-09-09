@@ -89,6 +89,8 @@ export default async function AboutPage() {
   const reviewCount = reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : quotes.length
   const reviewAverage = reviewSummary && reviewSummary.count > 0 ? reviewSummary.averageRating : 5
   const firmRows = publishFirmClosingRows(brokerageTiles)
+  const principal =
+    brokers.find((b) => b.isPrincipal) ?? brokers.find((b) => b.slug === BROKERS.matt.slug) ?? null
 
   const orderedBrokers = [...brokers].sort(
     (a, b) => (TEAM_RANK[a.slug.split('-')[0] ?? ''] ?? 9) - (TEAM_RANK[b.slug.split('-')[0] ?? ''] ?? 9),
@@ -98,27 +100,66 @@ export default async function AboutPage() {
     .map((b) => aboutFaceFromBroker(b))
     .filter((face): face is AboutFace => face !== null)
 
+  /**
+   * SITE-40. The taste table scored this page 31 and named one cause: "below
+   * the Amboqia H1 the entire remaining fold at both viewports is seven
+   * identical hairline-divided link rows — each just text plus a trailing arrow
+   * glyph", TASTE.md's "scrolling lists as the design" applied to a link menu.
+   * Nothing here is removed: the same seven destinations are one lead door
+   * (the principal broker, who is the page's actual proof) and six channels
+   * laid 2-up, each with the mark of the channel it opens, so the phone and the
+   * email are two different objects rather than two copies of one row. The
+   * licenses ride on the lead door's detail line and still print in full in
+   * #about below.
+   */
   const whoItems: V3QuietItem[] = [
     {
       kind: 'prose',
       body: `A boutique brokerage in Bend. Ryan Realty LLC since ${BRAND.llcSince}, Bend office open since ${BRAND.foundedLabel}.`,
     },
     {
-      kind: 'prose',
-      term: 'Office',
-      body: `${BRAND.address.street}, ${BRAND.address.city}, ${BRAND.address.region} ${BRAND.address.postalCode}`,
-    },
-    { kind: 'fact', term: 'Firm license', value: FIRM_LICENSE },
-    {
-      label: `Principal broker OR #${BROKERS.matt.license}`,
+      label: `${BROKERS.matt.name}, principal broker`,
+      detail: `Oregon license #${BROKERS.matt.license} · firm license ${FIRM_LICENSE}`,
       href: teamPath(BROKERS.matt.slug),
+      mark: 'person',
+      lead: true,
+      // The face is the mark (SITE-40, second evaluator pass): seven doors
+      // with seven glyphs read as "an icon card grid"; the person door with
+      // the person's photograph reads as a person.
+      ...(principal ? { media: { src: principal.headshotPng, alt: principal.fullName } } : {}),
     },
-    { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
-    { label: `Text ${CONTACT.phoneDirect}`, href: `sms:${CONTACT.phoneDirectTel}` },
-    { label: `Email ${CONTACT.email.primary}`, href: `mailto:${CONTACT.email.primary}` },
-    { label: 'Schedule with a broker', href: '/book' },
-    { label: 'Client reviews', href: '/reviews' },
-    { label: 'Contact', href: '/contact' },
+    // The four ways to reach him are one line under his door (V3Quiet
+    // `weight: 'secondary'`), not four more rows: the evaluator named the
+    // seven-row grid "scrolling lists as the design" on two passes.
+    { label: 'Call', detail: CONTACT.phoneDirect, href: `tel:${CONTACT.phoneDirectTel}`, weight: 'secondary' },
+    { label: 'Text', href: `sms:${CONTACT.phoneDirectTel}`, weight: 'secondary' },
+    { label: 'Email', detail: CONTACT.email.primary, href: `mailto:${CONTACT.email.primary}`, weight: 'secondary' },
+    { label: 'Schedule', href: '/book', weight: 'secondary' },
+    {
+      label: 'Client reviews',
+      href: '/reviews',
+      // The 5.0 the page is about, on the door that opens to it — from the
+      // same getReviews read the proof block below already makes. Printed only
+      // when the read returned rows: the fallback average is not a figure (§0).
+      ...(reviewSummary && reviewSummary.count > 0
+        ? {
+            figure: {
+              value: reviewSummary.averageRating.toFixed(1),
+              unit: `of 5, from ${reviewSummary.count} Google reviews`,
+              ratio: reviewSummary.averageRating / 5,
+              source:
+                'Google Business Profile reviews of Ryan Realty — every non-hidden review row in public.reviews, ratings averaged to a tenth, read live at render.',
+              sourceName: 'Google reviews',
+            },
+          }
+        : {}),
+    },
+    {
+      label: 'The office',
+      detail: `${BRAND.address.street}, ${BRAND.address.city}, ${BRAND.address.region} ${BRAND.address.postalCode}`,
+      href: BRAND.social.googleBusinessProfile,
+      mark: 'map',
+    },
   ]
 
   const originItems: V3QuietItem[] = [

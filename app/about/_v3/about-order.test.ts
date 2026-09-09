@@ -15,8 +15,18 @@ describe('/about section order (PAGE_INVENTORY §6)', () => {
     expect(at('id="who"')).toBeLessThan(at('<AboutFaces'))
     expect(BODY).toContain('heading="About Ryan Realty · Bend"')
     expect(BODY).toContain('headingLevel={1}')
-    expect(PAGE).toContain('Call ${CONTACT.phoneDirect}')
-    expect(PAGE).toContain('Text ${CONTACT.phoneDirect}')
+    // The CONTRACT is that the opening carries call and text on the direct
+    // line, not the spelling of the label. SITE-40 moved the number from the
+    // label into the door's `detail` (`{ label: 'Call', detail:
+    // CONTACT.phoneDirect, href: tel:… }`) so four channels could fold into
+    // one inline line instead of four hairline rows; the frozen literal
+    // `Call ${CONTACT.phoneDirect}` failed a change that kept the contract.
+    // Matched per field, the way lib/crm/email-intent-note.contract.test.ts
+    // matches its push literal.
+    for (const channel of ['Call', 'Text']) {
+      expect(PAGE, channel).toMatch(new RegExp(`label: '${channel}'`))
+    }
+    expect(PAGE).toContain('CONTACT.phoneDirect')
     expect(PAGE).toContain('tel:${CONTACT.phoneDirectTel}')
     expect(PAGE).toContain('sms:${CONTACT.phoneDirectTel}')
   })

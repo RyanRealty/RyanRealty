@@ -2,7 +2,7 @@
   "route": "app/housing-market/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat Zillow / Redfin / Windermere regional market entry pages. The answer in the first viewport (verdict, four live figures, one source trace, one stamp), every city a row that is a door to its own report, last-full-year closed-sales size with its own population and trace, and a single low-pressure ask. No aggregator publishes the trace under the number.",
-  "note": "Migrated off the KB register onto the v3 barrel 2026-08-12 (P9). Rhythm: no two adjacent sections share a pattern. There is NO cap on how many patterns a page uses (the four-pattern cap was killed 2026-08-27) and the pattern set is OPEN, chrome exempt. Order is Breadcrumb, Instrument level 1, Ledger (cities), Instrument level 2 (closed sales), Ledger (guides), Quiet (FAQ), Sheet (inquiry), Quiet (edges), Footer. THE VERDICT IS DERIVED ONCE and it classifies the RAW months-of-supply value; display goes through formatMonthsOfSupply (lib/format/months-of-supply.ts), never Math.round, so the printed digits never cross a threshold the raw value did not. Classifying the rounded value walks the verdict across a canonical threshold in both directions (4.02 rounds to 4.0 and prints seller's, 5.97 rounds to 6.0 and prints buyer's), which is the CLAUDE.md section 0 defect the repair of 2026-08-12 closed and the 2026-08-13 display-formatter repair closed from the other end. The page's guard is buildMarketFaq's own (months of supply above 0), so the H1 cannot assert a verdict the shared builder declined to answer. D9: the region monthly median series mounts as Instrument.chart, not as a seventh pattern. The city Ledger stays type (each city is a door; a line through cities invents a sequence). Closed-sales dollars publish as whole dollars, not formatPrice, because formatPrice rounds to the nearest $1,000 and the same string goes into the FAQPage JSON-LD. A covered city with no live market row is dropped from the Ledger and linked from the closing Quiet block instead of being synthesized as zero under a live-MLS source line. The KB-era deletions this migration made: KbHero's property search and voice-search button, KbSell's address prefill field, RegionalSfrAlertsBand, CoMarketSizeStrip, CoMarketComposition, KbArticles thumbnails, MarketSources, SmoothScrollProvider. 2026-08-19 (Unit HUB): the long-view section landed \u2014 a third Instrument (level 2, id long-view) between the guides Ledger and the FAQ Quiet, carrying the approved chart-room forms as V3ChartCard entries under one KPI row: the YoY rate clock with its 1Y/3Y/5Y/ALL/YoY segmented control, the price and homes-sold switch, real-vs-nominal (CPI), Central-Oregon-vs-nation indexed to 1998, concessions by quarter, and the mortgage-Treasury spread against its full-history norm. Every card title is a finding computed from the same rows its chart draws; every trace lives in a collapsed Source disclosure (Matt 2026-08-19), never a visible paragraph.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-12 (P9). Rhythm: no two adjacent sections share a pattern. There is NO cap on how many patterns a page uses (the four-pattern cap was killed 2026-08-27) and the pattern set is OPEN, chrome exempt. Order is Breadcrumb, Instrument level 1, Ledger (cities), Instrument level 2 (closed sales), Ledger (guides), Quiet (FAQ), Sheet (inquiry), Quiet (edges), Footer. THE VERDICT IS DERIVED ONCE and it classifies the RAW months-of-supply value; display goes through formatMonthsOfSupply (lib/format/months-of-supply.ts), never Math.round, so the printed digits never cross a threshold the raw value did not. Classifying the rounded value walks the verdict across a canonical threshold in both directions (4.02 rounds to 4.0 and prints seller's, 5.97 rounds to 6.0 and prints buyer's), which is the CLAUDE.md section 0 defect the repair of 2026-08-12 closed and the 2026-08-13 display-formatter repair closed from the other end. The page's guard is buildMarketFaq's own (months of supply above 0), so the H1 cannot assert a verdict the shared builder declined to answer. D9: the region monthly median series mounts as Instrument.chart, not as a seventh pattern. The city Ledger stays type (each city is a door; a line through cities invents a sequence). Closed-sales dollars publish as whole dollars, not formatPrice, because formatPrice rounds to the nearest $1,000 and the same string goes into the FAQPage JSON-LD. A covered city with no live market row is dropped from the Ledger and linked from the closing Quiet block instead of being synthesized as zero under a live-MLS source line. The KB-era deletions this migration made: KbHero's property search and voice-search button, KbSell's address prefill field, RegionalSfrAlertsBand, CoMarketSizeStrip, CoMarketComposition, KbArticles thumbnails, MarketSources, SmoothScrollProvider. 2026-08-19 (Unit HUB): the long-view section landed — a third Instrument (level 2, id long-view) between the guides Ledger and the FAQ Quiet, carrying the approved chart-room forms as V3ChartCard entries under one KPI row: the YoY rate clock with its 1Y/3Y/5Y/ALL/YoY segmented control, the price and homes-sold switch, real-vs-nominal (CPI), Central-Oregon-vs-nation indexed to 1998, concessions by quarter, and the mortgage-Treasury spread against its full-history norm. Every card title is a finding computed from the same rows its chart draws; every trace lives in a collapsed Source disclosure (Matt 2026-08-19), never a visible paragraph.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -114,13 +114,87 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-06",
-    "score": 54,
-    "beats": "Zillow Bend housing market: live actives vs a month of closes as two bars instead of a lone MOS tile",
-    "evaluator": "separate grok-4.6 evaluator, remaining-issues pass, market",
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-40 V3Quiet pass, session 019RdEm6 — the table instrument (first viewport at 1440x900 and 375x812, scripts/take-route-shots.mjs, scale 1, palette-quantized) captured by the coordinator against next dev (localhost:3198) on the lane branch with the lane's patch applied and main merged through 0ba0358d (SITE-42's source line) for /housing-market; three independent scorings of one capture run, the median; no page code read, no live page opened. The lane's Opus worktree agent had no Agent tool, so the coordinator ran the evaluators: round one on the lane's own captures (invest 38, compare 30, about 45, market-report 49, reviews 57, contact 49; about drew the scrolling-lists tell on seven glyph-marked doors, contact tied its table mark, and the market hub's source clauses read as internal labels), then a second pass after the class-level fixes — a face in the person door's mark slot, the reviews figure on the reviews door, plain-words source clauses (sourceName) with the trace behind the disclosure, the newest weekly snapshot on the Sales / weekly door — re-captured on the merged tree; then a third pass renamed the two doors the second-round evaluator read as internal labels (Explore → Every closed sale, Sales / weekly → Weekly snapshots) and re-captured; this receipt is that third round. The builder ran on Opus and did not grade its own page. The prior mark is the route's committed receipt (54 on 2026-09-06, grok-4.6, no instrument keys) and the taste table of 2026-09-08 (median 41, scores 44·38·41).",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/housing-market"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default"
+      ],
+      "capture": "scripts/take-route-shots.mjs default first viewport"
+    },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/market-report/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/market-report/shots/mobile375.png"
-    }
+    },
+    "shotsHash": "sha256:eb7f52062d31892a753d8c8cca7a63095773ef6bd16cfa63870a1ba60998ae8b",
+    "scores": [
+      51,
+      54,
+      58
+    ],
+    "score": 54,
+    "criteria": {
+      "designQuality": 19,
+      "originality": 12,
+      "interaction": 5,
+      "craft": 10,
+      "honestyFunction": 8
+    },
+    "beats": "Zillow — every single row on this page carries a named source and an \"as of\" date plus a methodology-disclosure toggle; Zillow's own market-data entry points show neither on a menu page. No competing page wins on interaction or originality here, since the chooser is still text-and-number rows with no chart, map, or hover reveal.",
+    "tells": [
+      "\"icon card grids\" — the four-cell grid (By city, Every closed sale, Weekly snapshots, Months of supply) is an icon-topped stat-card repeated four times in an identical shape, visible on both desktop and mobile",
+      "\"Raw slugs, internal labels or methodology jargon in anything a visitor reads\" — the subhead literally reads \"Five products\", naming the page's own internal inventory rather than a question a buyer or seller would ask"
+    ],
+    "dullest": "Weekly snapshots — the only row whose figure is just a date (\"Sep 5, 2026\") with no live count, verdict, or comparison behind it, so it carries the least reason to click of the five.",
+    "verdict": "Real progress over the version this replaced: every row now shows a live number and cites its source, which is more discipline than most of this site shows on a menu page. But it is still a directory dressed as a page — five rows built from the same icon-title-number-sentence-source cell, and the one row claiming to hold 'the verdict, the inventory, and the chart' shows none of them here. Keep the sourcing rigor, then make the cells actually carry data instead of pointing at where it lives.",
+    "defects": [
+      {
+        "section": "By city / Every closed sale / Weekly snapshots / Months of supply grid",
+        "severity": "taste",
+        "finding": "Four of the five rows are an icon-title-bignumber-sentence-source cell repeated with no variation in shape — a generic card-grid pattern reskinned in navy/cream rather than a composition a template wouldn't produce.",
+        "fix": "Give at least one cell a distinct visual encoding — a tiny sparkline on Every closed sale, a small map-pin cluster on By city — so the grid stops reading as four identical templated cells.",
+        "viewport": "both"
+      },
+      {
+        "section": "Live market (hero row)",
+        "severity": "interaction",
+        "finding": "The row's own copy promises 'the verdict, the inventory, and the chart, without leaving this page' but shows none of the three in the chooser itself — just one bold number and a sentence, no inline verdict pill or mini chart.",
+        "fix": "Render a small inline sparkline or verdict pill directly in this row so the richest data on the site previews as data, not as a promise pointing elsewhere.",
+        "viewport": "both"
+      },
+      {
+        "section": "By city / Every closed sale grid",
+        "severity": "craft",
+        "finding": "At 375px this pair sits in two ~160px columns, forcing multi-line wraps ('Every closed' / 'sale' as its own line) and cramped padding around the icon, number, and sentence.",
+        "fix": "Collapse the grid to a single column below roughly 480px instead of forcing two narrow columns.",
+        "viewport": "mobile"
+      },
+      {
+        "section": "Five products subhead",
+        "severity": "taste",
+        "finding": "\"Five products\" names the page's own internal inventory count rather than reader-facing language; no Central Oregon buyer or seller thinks of these as \"products.\"",
+        "fix": "Replace with reader-facing framing, e.g. \"Five ways to see the market,\" or drop the count.",
+        "viewport": "both"
+      }
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-06",
+      "score": 54,
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "not recorded (pre-instrument receipt)",
+      "shotsHash": "not recorded (pre-instrument receipt)"
+    },
+    "rebaselineReason": "evaluatorModel, rubricVersion, shotsHash: the route's committed receipt (2026-09-06, 54) predates the table instrument and records none of the three; this mark is the first on the v1-2026-09-08 rubric with hashed first-viewport shots. The table row for the class (2026-09-08, median 41) is the working prior."
   }
 }

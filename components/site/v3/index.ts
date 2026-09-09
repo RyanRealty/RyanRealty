@@ -445,6 +445,8 @@ export type {
   V3QuietFact,
   V3QuietChips,
   V3QuietFold,
+  V3QuietFigure,
+  V3QuietMark,
 } from './V3Quiet'
 
 /* -------------------------------------------------------------------------- */

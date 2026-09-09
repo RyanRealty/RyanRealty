@@ -84,75 +84,77 @@
     "V3Footer"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-08",
-    "score": 54,
-    "beats": "Cascade Sotheby's Bend contact page on personal accountability: three named, licensed brokers with OR license numbers, direct phone and email, and honest copy ('answer you personally') with zero unverified SLA claims (curl: zero 'business day' hits on /contact and the ?listingKey= tour variant). Still loses to Zillow's contact-agent flow on measured response time: Zillow surfaces a data-backed 'usually responds in X'; this page says nothing quantified about speed, which is honest but not yet the differentiator. The false claim was subtracted, not replaced with a true, sourced one.",
-    "evaluator": "separate Sonnet evaluator, SITE-09 response-clock pass 2, contact page class (pass 1: 43, same model, same day)",
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-40 V3Quiet pass, session 019RdEm6 — the table instrument (first viewport at 1440x900 and 375x812, scripts/take-route-shots.mjs, scale 1, palette-quantized) captured by the coordinator against next dev (localhost:3198) on the lane branch with the lane's patch applied and main merged through 0ba0358d (SITE-42's source line) for /contact; three independent scorings of one capture run, the median; no page code read, no live page opened. The lane's Opus worktree agent had no Agent tool, so the coordinator ran the evaluators: round one on the lane's own captures (invest 38, compare 30, about 45, market-report 49, reviews 57, contact 49; about drew the scrolling-lists tell on seven glyph-marked doors, contact tied its table mark, and the market hub's source clauses read as internal labels), then a second pass after the class-level fixes — a face in the person door's mark slot, the reviews figure on the reviews door, plain-words source clauses (sourceName) with the trace behind the disclosure, the newest weekly snapshot on the Sales / weekly door — re-captured on the merged tree; then a third pass after the second tied under the table mark (46): the principal broker's door carries the sourced 5.0 with its ratio meter; the third round scored 55 (55·51·58) and read the door's 'replies the same day' as an unsourced claim beside a sourced figure — a §0 slip, cut; a fourth capture and scoring followed that cut, and this receipt is that fourth round. The builder ran on Opus and did not grade its own page. The prior mark is the route's committed receipt (54 on 2026-09-08, claude-sonnet (version not recorded), no instrument keys) and the taste table of 2026-09-08 (median 49, scores 46·49·54).",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/contact"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default"
+      ],
+      "capture": "scripts/take-route-shots.mjs default first viewport"
+    },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/contact/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/contact/shots/mobile375.png",
-      "tourDesktop": "design_system/ryan-realty/ui_kits/contact/shots/tour-desktop.png",
-      "sentDesktop": "design_system/ryan-realty/ui_kits/contact/shots/sent-desktop.png",
-      "sentMobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-mobile375.png",
-      "sentFocusDesktop": "design_system/ryan-realty/ui_kits/contact/shots/sent-focus-desktop.png",
-      "sentFocusMobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-focus-mobile375.png",
-      "adminCrmDesktop": "design_system/ryan-realty/ui_kits/contact/shots/admin-crm-desktop.png",
-      "adminCrmMobile375": "design_system/ryan-realty/ui_kits/contact/shots/admin-crm-mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/contact/shots/mobile375.png"
     },
-    "breakdown": {
-      "design": 17,
-      "originality": 12,
-      "interaction": 7,
+    "shotsHash": "sha256:2beff7986e208bc90659b199ef745d266b73064add89c673f43c1c343a30e42e",
+    "scores": [
+      62,
+      59,
+      66
+    ],
+    "score": 62,
+    "criteria": {
+      "designQuality": 21,
+      "originality": 15,
+      "interaction": 8,
       "craft": 11,
-      "honesty": 7
+      "honestyFunction": 7
     },
-    "firstPass": {
-      "evaluatedAt": "2026-09-08",
-      "score": 43,
-      "breakdown": {
-        "design": 14,
-        "originality": 10,
-        "interaction": 6,
-        "craft": 10,
-        "honesty": 3
-      },
-      "evaluator": "separate Sonnet evaluator, SITE-09 response-clock pass 1, contact page class"
-    },
-    "fixedFromThisPass": [
-      "Honesty: meta/og/twitter description no longer promises a reply within one business day; verified live on /contact and the tour variant, zero hits in the rendered HTML.",
-      "Taste: call/text/email/schedule appear once, in the doors row; the hero carries the intro line, the office address, and the listing door on the tour variant.",
-      "Taste: the sent state echoes the submission ('Sent: Buying') and offers two next actions (pick a time, send another message) instead of one bare door.",
-      "Craft: the SMS consent checkbox measures 44 by 44 at 375 in the DOM; the pass-1 finding was withdrawn."
-    ],
-    "openRaise": [
-      "Page composition: hero, form, brokers and FAQ still run as four consecutive eyebrow, heading, rows, hairline sections (the stacked-section tell); fold the brokers band into the hero/doors area or give one section a different form.",
-      "Response clock on the page: replace the removed SLA with a sourced figure once the rails have stamped enough rows ('brokers typically reply in N minutes, from the last N inquiries', with the section-0 trace from getResponseClockReport); today the median is unproven, so nothing ships.",
-      "Brokers roster: a flat hairline row; give it visual weight (larger headshots, a specialty line).",
-      "FAQ: a plain three-item accordion; a stronger form or a disclosure beside a display.",
-      "Full-page desktop capture shows the broker avatars as gray boxes while the viewport crop shows the photos: a lazy-load capture artifact to confirm on first paint."
-    ],
+    "beats": "Beats a Zillow/Realtor.com agent card on trust transparency: a named Oregon license number and a sourced, expandable ratings methodology ('SOURCE Google reviews' / 'how we calculate this') rather than a generic, unlinked review badge.",
+    "tells": [],
+    "dullest": "The office row — a pin icon, a static address, and an arrow with no map, photo, or live data attached; next to the broker row's rating bar and expandable methodology it reads as pure filler text.",
+    "verdict": "This is a real step up from the prior build — a photo, a sourced rating with a disclosure toggle, and a location line replace what was pure eyebrow-heading-paragraph text. But the page is still named for an action ('Call, text, or write') that isn't visible on either device without scrolling, and the fold spends more of its space on hairlines and blank cream than on anything a visitor can do or look at. Fix the fold before polishing anything else.",
     "defects": [
       {
-        "section": "Page composition",
-        "severity": "taste",
-        "finding": "Hero, form, brokers and FAQ repeat the same eyebrow-heading-rows-hairline shape end to end."
+        "section": "CTA row (Call/Text/Email/Schedule)",
+        "severity": "interaction",
+        "finding": "The headline reads 'Call, text, or write' but no actionable call/text/email/schedule control appears in either captured viewport — the row is entirely off-screen at 375x812, and at 1440x900 only its four column labels ('CALL', 'TEXT', 'EMAIL', 'SCHEDULE') peek in at the very bottom edge with nothing else legible.",
+        "fix": "Bring at least one real action (a phone/text link, or the first CTA cell) above the fold so the headline's promise is backed by something clickable without scrolling.",
+        "viewport": "both"
       },
       {
-        "section": "Brokers roster",
-        "severity": "taste",
-        "finding": "Flat list row per broker with no visual encoding beyond hairlines."
+        "section": "hero",
+        "severity": "craft",
+        "finding": "On desktop there is a large dead band of plain cream between 'The office' row and the thick hairline that opens the next block, with no image, map, or secondary visual filling it — the single 60px-ish broker headshot is the only departure from navy-on-cream text anywhere in the fold.",
+        "fix": "Either tighten the vertical rhythm so the CTA row surfaces higher, or use that space for a real visual (office photo, map thumbnail) instead of empty cream.",
+        "viewport": "desktop"
       },
       {
-        "section": "FAQ",
+        "section": "office row ('The office')",
         "severity": "taste",
-        "finding": "Plain three-item accordion with no figure, image or interaction beyond expand/collapse."
-      },
-      {
-        "section": "Response-clock claim",
-        "severity": "copy",
-        "finding": "The false SLA was removed but no sourced response-time figure replaces it yet."
+        "finding": "The location entry is a pin icon, plain address text, and an arrow — visually identical in weight to the broker row above it, with no map thumbnail, photo, or live data (hours, open-now) attached. It is the least distinctive block on the page.",
+        "fix": "Attach a small static map or office photo, or surface live hours/availability, so the row rewards a look the way the ratings row does.",
+        "viewport": "both"
       }
     ],
-    "note": "SITE-09 (response clock). /contact had no prior tasteReview (unreviewed baseline); pass 1 set the first mark and pass 2 graded the fixes. Admin panel shots are the CRM flag surface for the same node, not a public page."
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 54,
+      "evaluatorModel": "claude-sonnet (version not recorded)",
+      "rubricVersion": "not recorded (pre-instrument receipt)",
+      "shotsHash": "not recorded (pre-instrument receipt)"
+    },
+    "rebaselineReason": "evaluatorModel, rubricVersion, shotsHash: the route's committed receipt (2026-09-08, 54) predates the table instrument and records none of the three; this mark is the first on the v1-2026-09-08 rubric with hashed first-viewport shots. The table row for the class (2026-09-08, median 49) is the working prior."
   }
 }
