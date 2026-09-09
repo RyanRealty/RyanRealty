@@ -8,7 +8,8 @@
  * BUILD ONLY — never sends anything. Drafts surface at /admin/cmas.
  *
  * Auth: Authorization: Bearer $CRON_SECRET (same pattern as sibling crons).
- * Query params: ?limit=N (1-10, default 3) for manual invocations.
+ * Query params: ?limit=N (1-10, default 3) for manual invocations;
+ * ?slug=<cma slug> runs only that document's open build (the intake kick).
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -25,8 +26,13 @@ export async function GET(request: NextRequest) {
   const limitParam = parseInt(url.searchParams.get('limit') ?? '3', 10)
   const limit = Math.min(Math.max(Number.isFinite(limitParam) ? limitParam : 3, 1), 10)
 
+  // ?slug=<cma slug> — the intake kick (lib/cma/kick.ts): run only that
+  // document's open build. Without it, the sweep.
+  const slugParam = (url.searchParams.get('slug') ?? '').trim().toLowerCase()
+  const slug = /^[a-z0-9-]{3,80}$/.test(slugParam) ? slugParam : null
+
   try {
-    const result = await runCmaBuildWorker(limit)
+    const result = await runCmaBuildWorker(limit, { slug })
     return NextResponse.json({ ok: true, ...result })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)

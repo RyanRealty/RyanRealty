@@ -46,6 +46,52 @@ export async function listOpenCmaActions(limit: number): Promise<CmaActionRow[]>
 }
 
 /**
+ * The open build actions for ONE slug — what an intake kick asks the worker to
+ * run (Matt 2026-09-09: kick on intake). Same shape as listOpenCmaActions.
+ */
+export async function listOpenCmaActionsForSlug(slug: string): Promise<CmaActionRow[]> {
+  const sb = client()
+  if (!sb) return []
+  const { data, error } = await sb
+    .from('marketing_brain_actions')
+    .select('id, status, target, payload, data_evidence, executor_response, failure_log, created_at')
+    .eq('action_type', 'content:cma')
+    .eq('target', `cma:${slug.trim().toLowerCase()}`)
+    .in('status', ['pending', 'in_production'])
+    .order('created_at', { ascending: true })
+    .limit(5)
+  if (error) {
+    console.error('[listOpenCmaActionsForSlug]', error.message)
+    return []
+  }
+  return (data ?? []) as unknown as CmaActionRow[]
+}
+
+/**
+ * Take a build action for this run, atomically. Wins when the row is still
+ * `pending`, or `in_production` with an `executed_at` older than `staleBefore`
+ * (a build whose function died). Loses — returns false — when another run
+ * holds it: the intake kick and the :14/:44 cron can both reach the same row
+ * within seconds, and before this both built it.
+ */
+export async function claimCmaAction(id: string, staleBefore: string): Promise<boolean> {
+  const sb = client()
+  if (!sb) return false
+  const now = new Date().toISOString()
+  const { data, error } = await sb
+    .from('marketing_brain_actions')
+    .update({ status: 'in_production', executed_at: now, updated_at: now })
+    .eq('id', id)
+    .or(`status.eq.pending,and(status.eq.in_production,executed_at.lt.${staleBefore})`)
+    .select('id')
+  if (error) {
+    console.error('[claimCmaAction]', error.message)
+    return false
+  }
+  return (data ?? []).length > 0
+}
+
+/**
  * Is a build for this CMA slug already open (pending or in_production)?
  * Backs the kick-off dedupe (D8): a second "Build CMA" for the same address
  * must attach to the in-flight build, never enqueue a duplicate action row.

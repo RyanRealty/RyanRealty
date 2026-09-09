@@ -10,13 +10,24 @@
  * the action row with the reason recorded.
  */
 
-import { listOpenCmaActions, updateCmaActionRow, getCmaActionPayload, getCmaServeHead, attachCmaToPerson } from '@/lib/data'
+import {
+  listOpenCmaActions,
+  listOpenCmaActionsForSlug,
+  claimCmaAction,
+  updateCmaActionRow,
+  getCmaActionPayload,
+  getCmaServeHead,
+  attachCmaToPerson,
+} from '@/lib/data'
 import { isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
 import { parsePositiveInt, parsePositiveNumber } from '@/lib/cma/client-link'
 import type { CmaActionRow } from '@/lib/data'
 import { buildCma } from '@/lib/cma/build'
 import { autoSendBuiltCma } from '@/lib/cma/auto-send'
 import { slugifyAddress } from '@/lib/cma-request'
+
+/** An in_production row older than this is a dead build and may be re-claimed. */
+const STALE_BUILD_MS = 10 * 60 * 1000
 
 const MAX_ATTEMPTS = 3
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -26,6 +37,8 @@ export interface CmaWorkerRunResult {
   built: number
   failed: number
   killed: number
+  /** Rows another run already held (the kick and the cron met on one row). */
+  skipped: number
   results: Array<{ actionId: string; slug: string; status: string; error?: string }>
 }
 
@@ -107,10 +120,12 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
   const prior = (action.executor_response ?? {}) as Record<string, unknown>
   const attempts = (num(prior['build_attempts']) ?? 0) + 1
 
-  await updateCmaActionRow(action.id, {
-    status: 'in_production',
-    executed_at: new Date().toISOString(),
-  })
+  // One run builds a row. The intake kick and the cron can reach the same
+  // action seconds apart; the claim is a conditional update, and the loser
+  // walks away. A row stuck in_production for STALE_BUILD_MS is re-claimable.
+  const staleBefore = new Date(Date.now() - STALE_BUILD_MS).toISOString()
+  const claimed = await claimCmaAction(action.id, staleBefore)
+  if (!claimed) return { slug, status: 'skipped', error: 'another run holds this build' }
 
   const payload = action.payload
   const homeDetails =
@@ -276,15 +291,20 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
   return { slug, status: 'retry-pending', error: result.error }
 }
 
-export async function runCmaBuildWorker(maxPerRun = 3): Promise<CmaWorkerRunResult> {
-  const actions = await listOpenCmaActions(maxPerRun)
-  const out: CmaWorkerRunResult = { scanned: actions.length, built: 0, failed: 0, killed: 0, results: [] }
+export async function runCmaBuildWorker(
+  maxPerRun = 3,
+  opts: { slug?: string | null } = {},
+): Promise<CmaWorkerRunResult> {
+  const slug = opts.slug?.trim().toLowerCase() || null
+  const actions = slug ? await listOpenCmaActionsForSlug(slug) : await listOpenCmaActions(maxPerRun)
+  const out: CmaWorkerRunResult = { scanned: actions.length, built: 0, failed: 0, killed: 0, skipped: 0, results: [] }
   for (const action of actions) {
     try {
       const r = await processOne(action)
       out.results.push({ actionId: action.id, ...r })
       if (r.status === 'ready') out.built++
       else if (r.status === 'killed') out.killed++
+      else if (r.status === 'skipped') out.skipped++
       else out.failed++
     } catch (e) {
       out.failed++

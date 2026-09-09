@@ -12,6 +12,7 @@
  * boxes unchecked and the report opens either way.
  */
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { getSession, getSignInUrl } from '@/app/actions/auth'
 import { getCmaAccessIdentity } from '@/lib/data'
 import { decideCmaAccess } from '@/lib/cma/register-gate'
@@ -36,24 +37,41 @@ export async function POST(request: Request) {
   const slug = String(form.get('slug') ?? '').trim().toLowerCase()
   if (!SLUG_RE.test(slug)) return NextResponse.json({ error: 'Invalid slug' }, { status: 400 })
 
-  const session = await getSession()
-  const viewerEmail = session?.user?.email?.trim().toLowerCase()
-  if (!viewerEmail) return NextResponse.redirect(new URL(`/cma/${slug}`, request.url))
-
   const identity = await getCmaAccessIdentity(slug)
   if (!identity) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const decision = decideCmaAccess({
-    isAdmin: false,
-    viewerEmail,
-    clientEmail: identity.clientEmail,
-    personEmails: identity.personEmails,
-    claimedBy: identity.claimedBy,
-    consentRecorded: false,
-  })
+  const session = await getSession()
+  let viewerEmail = session?.user?.email?.trim().toLowerCase() || null
+  // The consent bar inside the report (Matt 2026-09-09): no Google session,
+  // the form carries the person id, and it must match BOTH the document's
+  // person and the rr_pid cookie the tracked link set. Anything else goes back
+  // to the document, which shows the door or the bar again.
+  let barPersonId: number | null = null
+  if (!viewerEmail) {
+    const pid = Number.parseInt(String(form.get('pid') ?? ''), 10)
+    const cookiePid = Number.parseInt((await cookies()).get('rr_pid')?.value ?? '', 10)
+    if (Number.isFinite(pid) && pid > 0 && identity.personId === pid && cookiePid === pid) {
+      barPersonId = pid
+    } else {
+      return NextResponse.redirect(new URL(`/cma/${slug}`, request.url))
+    }
+  }
+
+  const decision = viewerEmail
+    ? decideCmaAccess({
+        isAdmin: false,
+        viewerEmail,
+        clientEmail: identity.clientEmail,
+        personEmails: identity.personEmails,
+        claimedBy: identity.claimedBy,
+        consentRecorded: false,
+      })
+    : ({ kind: 'serve', via: 'recipient' } as const)
   if (decision.kind === 'wrong-person') {
     return NextResponse.redirect(new URL(`/cma/${slug}`, request.url))
   }
+  // A bar answer is written under the person's own email, or their id.
+  viewerEmail = viewerEmail ?? identity.personEmails[0] ?? identity.clientEmail ?? `person:${barPersonId}`
 
   const smsOptIn = form.get('smsOptIn') === '1'
   const emailOptIn = form.get('emailOptIn') === '1'
@@ -78,7 +96,7 @@ export async function POST(request: Request) {
       // Bind-on-first-register for phone-only leads (no email anywhere on
       // file): the claimer's email becomes the doc's identity AND a contact
       // point, so later visits email-match normally.
-      const claiming = decision.kind === 'claim-and-consent'
+      const claiming = decision.kind === 'claim-and-consent' && barPersonId == null
       if (claiming) custom.cmaClaimedBy = viewerEmail
       const emails = ((person.emails as Array<{ value?: string }> | null) ?? []).slice()
       if (claiming && !emails.some((e) => String(e?.value ?? '').trim().toLowerCase() === viewerEmail)) {
@@ -95,7 +113,7 @@ export async function POST(request: Request) {
       await sb.from('crm_timeline').insert({
         person_id: identity.personId,
         kind: 'system',
-        title: `CMA page registered by ${viewerEmail}`,
+        title: barPersonId ? `CMA report bar answered (${viewerEmail})` : `CMA page registered by ${viewerEmail}`,
         body: smsOptIn
           ? `SMS consent captured at registration. Wording: ${SMS_CONSENT_TEXT}`
           : `Registered to view /cma/${slug}. SMS consent: declined. Email updates: ${emailOptIn ? 'yes' : 'no'}.`,

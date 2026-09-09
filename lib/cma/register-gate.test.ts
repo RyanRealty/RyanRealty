@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { blamesPriorAgent, isWorthQuestionCopy } from '@/lib/crm/first-touch-copy'
-import { decideCmaAccess, renderConsentShell, renderRegisterShell } from './register-gate'
+import { decideCmaAccess, renderConsentBarHtml, renderConsentShell, renderRegisterShell } from './register-gate'
 
 describe('CMA register shell — inbound packet', () => {
   it('names THIS home and the price opinion, never a worth-question', () => {
@@ -81,5 +81,46 @@ describe('CMA access gate — Google comms cookie skips Almost there', () => {
     expect(html).not.toMatch(/Almost there/i)
     expect(html).toContain('I agree to receive text messages from Ryan Realty')
     expect(isWorthQuestionCopy(html)).toBe(false)
+  })
+})
+
+describe('CMA access gate — the recipient reads without the door (Matt 2026-09-09)', () => {
+  const doc = {
+    isAdmin: false,
+    viewerEmail: null,
+    clientEmail: 'avery@example.com',
+    personEmails: ['avery@example.com'],
+    claimedBy: null,
+    consentRecorded: false,
+    personId: 63297,
+  }
+
+  it('the person the email went to is served straight away, consent or not', () => {
+    expect(decideCmaAccess({ ...doc, recipientPersonId: 63297 })).toEqual({ kind: 'serve', via: 'recipient' })
+  })
+
+  it('anyone else still meets the door', () => {
+    expect(decideCmaAccess({ ...doc, recipientPersonId: 99 })).toEqual({ kind: 'register' })
+    expect(decideCmaAccess({ ...doc, recipientPersonId: null })).toEqual({ kind: 'register' })
+    expect(decideCmaAccess({ ...doc, personId: null, recipientPersonId: 63297 })).toEqual({ kind: 'register' })
+  })
+
+  it('a signed-in stranger with the recipient cookie is still the recipient', () => {
+    // The document belongs to the person, and they arrived on their link.
+    expect(decideCmaAccess({ ...doc, viewerEmail: 'other@example.com', recipientPersonId: 63297 })).toEqual({
+      kind: 'serve',
+      via: 'recipient',
+    })
+  })
+
+  it('the bar carries the slug, the person, both optional choices and a way out', () => {
+    const html = renderConsentBarHtml({ slug: 'cma-2465', personId: 63297, address: '2465 NE 7th', smsConsentText: 'SMS WORDING' })
+    expect(html).toContain('name="slug" value="cma-2465"')
+    expect(html).toContain('name="pid" value="63297"')
+    expect(html).toContain('name="emailOptIn"')
+    expect(html).toContain('name="smsOptIn"')
+    expect(html).toContain('SMS WORDING')
+    expect(html).toContain('Not now')
+    expect(html).toContain('action="/api/cma/register"')
   })
 })

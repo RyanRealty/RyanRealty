@@ -52,7 +52,7 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
   let sb: import('@supabase/supabase-js').SupabaseClient
   let baseSlug: string
 
-  const allSlugs = () => [baseSlug, `${baseSlug}--v2`, `${baseSlug}--v3`]
+  const allSlugs = () => [baseSlug, `${baseSlug}--v2`, `${baseSlug}--v3`, `${baseSlug}--v4`]
 
   afterAll(async () => {
     if (!sb || !baseSlug) return
@@ -128,7 +128,7 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
     expect((actions ?? []).length).toBeGreaterThanOrEqual(1)
   }, 120_000)
 
-  it('a repeat intake refreshes the open --v2 draft (no --v3) and never resets a built draft', async () => {
+  it('a repeat intake by the SAME person refreshes the open --v2 draft (no --v3) and never resets a built draft', async () => {
     expect(baseSlug).toBeTruthy()
     const v2Slug = `${baseSlug}--v2`
 
@@ -146,8 +146,8 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
       parsedCity: 'Bend',
       parsedState: 'OR',
       parsedPostalCode: null,
-      leadEmail: SECOND_EMAIL,
-      leadName: 'Second Lead',
+      leadEmail: NEW_EMAIL,
+      leadName: 'New Lead, again',
       requestSource: 'seller-lp',
       notifyLead: false,
     })
@@ -166,7 +166,7 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
       .eq('slug', v2Slug)
       .single()
     expect(v2!.status).toBe('draft')
-    expect(v2!.client_email).toBe(SECOND_EMAIL)
+    expect(v2!.client_email).toBe(NEW_EMAIL)
     expect(v2!.html_path).toBe(`db:cmas.html_content:${v2Slug}`)
     expect(v2!.html_content).toBe('<html>built draft</html>')
 
@@ -190,22 +190,54 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
       .eq('target', `cma:${v2Slug}`)
       .in('status', ['pending', 'in_production'])
     const carriesSecondLead = (openActions ?? []).some(
-      (a) => ((a.payload ?? {}) as Record<string, unknown>).client_email === SECOND_EMAIL,
+      (a) => ((a.payload ?? {}) as Record<string, unknown>).client_email === NEW_EMAIL,
     )
     expect(carriesSecondLead).toBe(true)
   }, 120_000)
 
-  it('an ARCHIVED document is protected the same way (fail-safe: any non-draft status)', async () => {
+  it("a DIFFERENT person's intake opens --v3 and never rewrites the first person's open draft", async () => {
+    // Send walk 2026-09-08: two requests landed on Rob Voth's and Merle
+    // Lookabaugh's open drafts and rewrote their client fields to the new
+    // requester. An open draft is a person's document from the moment it is
+    // claimed (lib/cma/versions.ts, requester-aware slot).
     expect(baseSlug).toBeTruthy()
     const v2Slug = `${baseSlug}--v2`
-    // Archive the v2 draft — the next intake must step to --v3, not resurrect it.
-    const { error } = await sb.from('cmas').update({ status: 'archived' }).eq('slug', v2Slug)
+    const { createCmaRequest } = await import('@/lib/cma-request')
+    const res = await createCmaRequest({
+      rawAddress: ADDRESS,
+      parsedStreet: STREET,
+      parsedCity: 'Bend',
+      parsedState: 'OR',
+      parsedPostalCode: null,
+      leadEmail: SECOND_EMAIL,
+      leadName: 'Second Lead',
+      requestSource: 'seller-lp',
+      notifyLead: false,
+    })
+    expect(res.ok).toBe(true)
+    if (!res.ok) return
+    expect(res.slug).toBe(`${baseSlug}--v3`)
+
+    const { data: v2 } = await sb.from('cmas').select('status, client_email, html_content').eq('slug', v2Slug).single()
+    expect(v2!.status).toBe('draft')
+    expect(v2!.client_email).toBe(NEW_EMAIL)
+    expect(v2!.html_content).toBe('<html>built draft</html>')
+    const { data: v3 } = await sb.from('cmas').select('status, client_email').eq('slug', `${baseSlug}--v3`).single()
+    expect(v3!.status).toBe('draft')
+    expect(v3!.client_email).toBe(SECOND_EMAIL)
+  }, 120_000)
+
+  it('an ARCHIVED document is protected the same way (fail-safe: any non-draft status)', async () => {
+    expect(baseSlug).toBeTruthy()
+    const v3Slug = `${baseSlug}--v3`
+    // Archive the newest draft — the next intake must step to --v4, not resurrect it.
+    const { error } = await sb.from('cmas').update({ status: 'archived' }).eq('slug', v3Slug)
     expect(error).toBeNull()
-    // Close the open action row so the attach path doesn't intercept.
+    // Close the open action rows so the attach path doesn't intercept.
     await sb
       .from('marketing_brain_actions')
-      .update({ status: 'killed', killed_reason: 'int-test: closing before the --v3 assertion' })
-      .eq('target', `cma:${v2Slug}`)
+      .update({ status: 'killed', killed_reason: 'int-test: closing before the --v4 assertion' })
+      .in('target', [`cma:${baseSlug}--v2`, `cma:${v3Slug}`])
 
     const { createCmaRequest } = await import('@/lib/cma-request')
     const res = await createCmaRequest({
@@ -221,10 +253,10 @@ run('createCmaRequest never clobbers a protected CMA (upsert-by-slug class)', ()
     })
     expect(res.ok).toBe(true)
     if (!res.ok) return
-    expect(res.slug).toBe(`${baseSlug}--v3`)
+    expect(res.slug).toBe(`${baseSlug}--v4`)
 
-    const { data: v2 } = await sb.from('cmas').select('status, client_email').eq('slug', v2Slug).single()
-    expect(v2!.status).toBe('archived')
-    expect(v2!.client_email).toBe(SECOND_EMAIL)
+    const { data: v3 } = await sb.from('cmas').select('status, client_email').eq('slug', v3Slug).single()
+    expect(v3!.status).toBe('archived')
+    expect(v3!.client_email).toBe(SECOND_EMAIL)
   }, 120_000)
 })
