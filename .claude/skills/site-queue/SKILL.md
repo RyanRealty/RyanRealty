@@ -97,6 +97,11 @@ against the live tree before building on it (2026-09-02 lesson: a stale finding
 gets rebuilt).
 
 ### 2. Pick the lanes
+**Serve order (Matt 2026-09-09):** a fleet p0 or major first; then round three, the taste-sourced
+primitive nodes SITE-40 to SITE-53, and SITE-31, ahead of everything else; then the rest, oldest
+first. `siteServeTier` in `lib/data/loop/work-node.ts` is the one function; the brief, `loop
+status` and the routine all read it. Take the first eligible items in that order.
+
 Up to four lanes per round, each on a disjoint file set. The lane plan and the
 shared files to watch are in `docs/plans/CROSS_AGENT_HANDOFF.md` ("Parallel lanes").
 Only nodes that draw the answer (SITE-03, SITE-06, SITE-07) wait on SITE-02b. Two
@@ -309,9 +314,14 @@ skill has.
 
 ## When it stops, and only then
 
-1. **The queue is empty.** No open SITE node is eligible: every node is done, blocked
-   on a dated measurement window, or blocked on a decision only Matt can make with
-   the question written in `blocked_reason`. Write the handoff, then stop the loop
+1. **The queue is empty AND the site clears the finish line.** No open SITE node is
+   eligible: every node is done, blocked on a dated measurement window, or blocked on a
+   decision only Matt can make with the question written in `blocked_reason`. And every
+   public page class scores **70 or above on the table instrument** (Matt 2026-09-09;
+   `design_system/public/taste-table.json`, first-viewport shots, claude-sonnet-5, rubric
+   v1-2026-09-08, three scorings, median). A class that lands its node and is still under
+   70 gets a node from the next table, never a lower bar. The best class on 2026-09-08
+   was 69, so the line means every page beats that day's best page. Write the handoff, then stop the loop
    (`ScheduleWakeup` with `stop: true`) and say so in one line.
 2. **Context nearly spent.** Finish the in-flight round or commit the lanes locally,
    write the handoff, and continue: in dynamic `/loop` mode schedule the next wake;
