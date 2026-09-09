@@ -17,6 +17,29 @@ const resolveFilename = (Module as unknown as { _resolveFilename: (r: string, ..
   return resolveFilename.call(this, req, ...args)
 }
 
+/**
+ * Every link the letter prints must land on a real page: HTTP 200 and not the
+ * site's own refusal shell (a plat page renders 200 with "No subdivision at this
+ * address" when nothing resolves). Printed under the letter so the proof is on
+ * the same screen as the copy.
+ */
+async function checkLinks(bodyText: string): Promise<void> {
+  const urls = [...new Set(bodyText.match(/https:\/\/[^\s]+?(?=\.?(?:\s|$))/g) ?? [])]
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        headers: { 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36' },
+        redirect: 'follow',
+      })
+      const body = await res.text()
+      const refused = /No subdivision at this address|NEXT_HTTP_ERROR_FALLBACK|No community at this address/.test(body)
+      console.log(`LINK ${res.status}${refused ? ' REFUSAL-SHELL' : ' ok'} ${url}`)
+    } catch (e) {
+      console.log(`LINK FAIL ${url} ${(e as Error).message}`)
+    }
+  }
+}
+
 async function main() {
   const { getCmaAdminRowBySlug, getCmaProspectAsk } = await import('@/lib/data/cma/documents')
   const { getCmaBrokerBySlugOrEmail } = await import('@/lib/data/cma/builderReads')
@@ -25,6 +48,7 @@ async function main() {
   const { resolveTheirPrice } = await import('@/lib/cma/queue-view')
   const { formatPublishedPhone } = await import('@/lib/cma/format-phone')
   const { cmaFirstContactFactsFromRow, composeCmaFirstContact } = await import('@/lib/cma/first-contact')
+  const { resolveFirstContactPlace } = await import('@/lib/cma/first-contact-place')
 
   const argv = process.argv.slice(2)
   const slugs: string[] = []
@@ -52,12 +76,14 @@ async function main() {
       firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
       lastListPrice,
     })
+    facts.place = await resolveFirstContactPlace(facts)
     const copy = composeCmaFirstContact(origin, facts)
     console.log(`\n=== ${slug} · origin ${origin} · status ${String(row.status)} · comps ${String(row.comps_count)} · scope ${facts.salesScope ?? 'none'} · last ${lastListPrice ?? 'none'}`)
     console.log(`Subject: ${copy.subject}`)
     console.log(`Preview: ${copy.previewText}\n`)
     console.log(copy.bodyText)
     console.log(`\n${brokerName.split(/\s+/)[0]}\nRyan Realty${brokerPhone ? `\n${brokerPhone}` : ''}`)
+    await checkLinks(copy.bodyText)
   }
 }
 main().catch((e) => { console.error(e); process.exit(1) })

@@ -21,7 +21,7 @@ describe('composeCmaEmail (seller-LP instant valuation, Matt 2026-09-09 register
     expect(text).toContain('Hi Sarah,')
     expect(text).toContain('My name is Matt Ryan with Ryan Realty in Bend. Thank you for asking what 123 NW Cascade Ave is worth.')
     expect(text).toContain('Closed sales nearby support $625,000 to $655,000. We would recommend listing at $649,000.')
-    expect(text).toContain('nailing the price')
+    expect(text).toContain('the price is everything')
     expect(text).toContain('earn your business')
     expect(text).toContain('https://ryan-realty.com/reviews')
     expect(text).toContain('Please let me know if you have any questions.')
@@ -30,7 +30,7 @@ describe('composeCmaEmail (seller-LP instant valuation, Matt 2026-09-09 register
     expect(html).toContain('<strong>123 NW Cascade Ave</strong>')
     expect(html).toContain('<a href="https://ryan-realty.com/reviews"')
     expect(html).toContain('mailto:matt%40ryan-realty.com')
-    for (const sentence of ['Thank you for asking', 'nailing the price', 'earn your business']) {
+    for (const sentence of ['Thank you for asking', 'the price is everything', 'earn your business']) {
       expect(html).toContain(sentence)
     }
   })

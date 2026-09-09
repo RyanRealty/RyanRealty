@@ -30,6 +30,29 @@ instant email (`lib/cma-delivery.ts composeCmaEmail`). `scripts/cma-first-messag
 by it. Tests: first-contact (17), first-touch-copy (10), fsbo-cma-templates (12), crm-compose-copy,
 cma-delivery.compose.
 
+**The subdivision is the loop (Matt 2026-09-09, second directive).** "Show that we are true market
+experts by being able to dive into that subdivision they're in, not just the neighborhood… drive
+them back to that subdivision page… homes that sold and didn't sell… then the broader picture of
+the neighborhood or community… That's the full loop. We need to make sure those links always
+work. You can't just have some bullshit link." Done in the letter: the pricing paragraph is
+tighter ("the price is everything… pricing low is rarely the danger people think it is");
+`lib/cma/first-contact-place.ts` resolves the place BEFORE composing and links a plat page only
+when it renders, decided the way the page decides (`app/subdivisions/[slug]/page.tsx`
+loadSubdivisionCore: a polygon in `boundaries`, counted registry inventory, or live SFR homes under
+the MLS name), with the page's own figures (`getSubdivisionCounts` twelve-month instrument when
+published, else `getSubdivisionSalesHistory`: this year to date and the lifetime count since the
+first recorded year) and the wider place (Bend neighborhood or city). The letter now reads "In
+Diamond Bar Ranch itself, twelve homes have sold so far in 2026, and 367 have closed there since
+2005. Our Diamond Bar Ranch page keeps the running picture… The Redmond page shows the wider
+market it sits in…" (verified against the live page's own sentences). `scripts/cma-first-message.ts`
+fetches every link in the letter and prints `LINK 200 ok` or the refusal shell; all four links on
+each of the three review rows are 200 ok. The subdivision page itself does not yet show what did
+NOT sell, so the sentence says "what is for sale there and what has sold"; that page work is the
+site lane's, seeded as **SITE-55** (loop_work_nodes, open, after SITE-47 on the same route): the
+plat-outcomes DAL read, a "What did not sell in {name}" section, a wider-market block with a real
+anchor, and the letter sentence updated to "and what did not" when it ships. Not touched: the
+subdivision page (SITE-47 is in progress on it).
+
 **"The ask" is gone from what we send.** Matt: "we don't say things like, 'The ask was this.' No one
 says that." Every rendered "the ask" is now "the asking price" (or "a price cut"): the public
 listing read (`lib/pricing/public-read-copy.ts`, "How the asking price sits against nearby sales",

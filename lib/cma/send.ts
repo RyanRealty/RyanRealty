@@ -35,6 +35,7 @@ import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
 import { composeCmaFirstContact, cmaFirstContactFactsFromRow, streetOnly, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
+import { resolveFirstContactPlace } from '@/lib/cma/first-contact-place'
 import { cmaReportButtonHtml, previewTextFromCustomBody } from '@/lib/cma/report-button'
 import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
@@ -100,10 +101,13 @@ async function resolveSendContext(
   const clientName = (row.client_name as string | null) ?? null
   const facts = cmaFirstContactFactsFromRow(row as Record<string, unknown>, {
     brokerName: brokerRow.displayName,
-      brokerPhone: brokerRow.phone,
+    brokerPhone: brokerRow.phone,
     firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
     lastListPrice,
   })
+  // The place links are resolved here, not in the composer: a subdivision link
+  // goes in only when that plat page renders, with the counts the page prints.
+  facts.place = await resolveFirstContactPlace(facts)
   return {
     ctx: {
       slug,
@@ -339,11 +343,12 @@ export async function prepareCmaSendPreview(slug: string): Promise<
       lastListPrice,
       facts: cmaFirstContactFactsFromRow(row as Record<string, unknown>, {
         brokerName: brokerRow.displayName,
-      brokerPhone: brokerRow.phone,
+        brokerPhone: brokerRow.phone,
         firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
         lastListPrice,
       }),
     }
+    fakeCtx.facts.place = await resolveFirstContactPlace(fakeCtx.facts)
     const body = buildLeadBody(fakeCtx)
     return {
       ok: true,
