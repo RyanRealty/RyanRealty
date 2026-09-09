@@ -136,6 +136,8 @@ import {
 } from '@/lib/explore/subdivision-page-extras'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { getPlatClosedCount } from '@/lib/data/subdivisions/getPlatClosedCounts'
+import { getPlatBoundaryCity } from '@/lib/data/subdivisions/getPlatBoundaryCity'
+import { platPageTitle } from './_v3/plat-title'
 import { getSubdivisionSalesHistory } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 import { getSubdivisionSchools } from '@/lib/data/subdivisions/getSubdivisionSchools'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
@@ -293,16 +295,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Oregon" while its own listings named a real city. The boundary read the
   // route already performs (cache()d, so this costs nothing) is the third
   // source: the modal city of the plat's own in-boundary listings.
+  //
+  // The fourth source is the county plat tree itself (SITE-25 follow-up): a
+  // plat with no listing on record — courtyard-garages-at-broken-top, a garage
+  // tract with zero sales inside it — has no listing-derived city at all, but
+  // its polygon sits inside a neighborhood polygon inside the Bend city polygon.
   const indexableEntry = (await getIndexableSubdivisions()).find((s) => s.slug === slug)
   const cityName =
     registryMatch?.city ??
     titleCaseSlug(indexableEntry?.citySlug) ??
     derivePlatCity((await loadSubdivisionCore(slug)).mapTiles)?.city ??
+    (await getPlatBoundaryCity(slug))?.city ??
     null
   return pageMetadata({
-    title: cityName
-      ? `Homes for Sale in ${name} | ${cityName}, Oregon`
-      : `Homes for Sale in ${name} | Central Oregon`,
+    title: platPageTitle(name, cityName),
     description: cityName
       ? `Active homes in ${name}, a subdivision in ${cityName}. Boundary map and live MLS listings.`
       : `Active homes in ${name}, a Central Oregon subdivision. Boundary map and live MLS listings.`,
@@ -417,8 +423,12 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   // among the plat's own in-boundary listings, already fetched — derived from
   // data, never guessed (§0). Claimed only when a strict majority agrees.
   const derivedPlatCity = derivePlatCity(mapTiles)
-  const cityName = registryMatch?.city ?? derivedPlatCity?.city ?? 'Central Oregon'
-  const citySlug = registryMatch?.citySlug ?? derivedPlatCity?.citySlug ?? null
+  // Fourth source, the county plat tree (see generateMetadata). Cached per
+  // slug, so the head and the body read it once.
+  const boundaryCity =
+    registryMatch?.city || derivedPlatCity?.city ? null : await getPlatBoundaryCity(slug)
+  const cityName = registryMatch?.city ?? derivedPlatCity?.city ?? boundaryCity?.city ?? 'Central Oregon'
+  const citySlug = registryMatch?.citySlug ?? derivedPlatCity?.citySlug ?? boundaryCity?.citySlug ?? null
   const resortLabel = registryMatch?.resortLabel ?? null
   const resortSlug = registryMatch?.resortSlug ?? null
   const placeCity = cityName === 'Central Oregon' ? null : cityName
