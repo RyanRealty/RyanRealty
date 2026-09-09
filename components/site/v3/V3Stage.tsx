@@ -39,6 +39,17 @@
  *  - Every color resolves from ./tokens.css via ./V3Stage.css. No raw hex here.
  *  - Data arrives as props. This primitive never fetches and never formats.
  *
+ * "NEVER OVER A NUMBER", AND THE INVENTORY VARIANT (SITE-46, 2026-09-09). The
+ * locked definition above ends with that clause, and it is kept, not bent: the
+ * variant's figures do not sit on the photograph. The media still carries one
+ * line of type and one action and nothing else; the figures sit BELOW it on a
+ * solid navy band at the base of the section, which is a ground, not media.
+ * That distinction is the whole reason the band exists rather than an overlay —
+ * the first build did float the figures on the photo, and it read as a stat
+ * overlay on a hero, which is the pattern's own prohibition (and, separately,
+ * put 0.74rem type over whatever the photographer pointed at). See
+ * V3StageInventory below and section 3 of ./V3Stage.css.
+ *
  * MOUNTING: the section carries V3_ROOT_CLASS itself, so the token scope always
  * resolves and a Stage mounted outside a .v3 ancestor renders correctly rather
  * than dropping its ground, its scrim, and its padding (see the SCOPE note in
@@ -48,12 +59,15 @@
  */
 import { useEffect, useId, useState } from 'react'
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import {
   V3_ROOT_CLASS,
   V3Button,
   V3Eyebrow,
+  V3Figure,
   V3Heading,
+  V3SourceLine,
   type V3NonEmpty,
 } from './atoms'
 import './tokens.css'
@@ -79,6 +93,64 @@ export type V3StageAction = {
  * only stop that leans on the text shadow to hold the line.
  */
 export type V3StageOverlay = 'light' | 'standard' | 'deep'
+
+/**
+ * ONE FIGURE IN THE INVENTORY STRIP. The value arrives already formatted, like
+ * every other figure in this register (V3Figure's contract): the caller keeps
+ * the rounding rule and the source trace beside the number that came from them,
+ * and this pattern never invents, derives, or re-rounds a figure.
+ */
+export type V3StageFigure = {
+  /** Already formatted by lib/format: "1,813", "$725,000", "28 days". */
+  value: string
+  /**
+   * What the number means, in plain words a buyer uses — "homes for sale right
+   * now", not "active count" and not "median to pending · 90 days". A figure
+   * with no plain sentence beside it is the KPI grid TASTE.md bans.
+   */
+  label: string
+  /**
+   * Optional destination. A figure that has a surface behind it (the search
+   * that holds those homes, the report that plots that median) becomes the door
+   * to it, so the strip rewards a click with more of the same data rather than
+   * sitting there as decoration. Omit it and the figure renders as plain text.
+   */
+  href?: string
+}
+
+/**
+ * THE INVENTORY VARIANT (SITE-46, taste table 2026-09-08: /buy scored 42,
+ * "competent, on-brand and inert" — a full-bleed photo, an eyebrow, a headline
+ * and one button on the one page whose job is helping someone buy a house).
+ *
+ * Passing this prop is what opts a Stage in. It is a PROP, NOT A FORK: a Stage
+ * with no inventory behind it renders byte-identically to the quiet photo form
+ * it always had, because every element and every rule this variant adds is
+ * mounted only when `inventory` is present, and every rule is scoped to
+ * `.v3-stage--inventory` in ./V3Stage.css.
+ *
+ * What it changes, and only this:
+ *  1. a strip of live figures inside the hero, each with its plain label and
+ *     each optionally a door,
+ *  2. one section 0 trace under them carrying the as-of stamp — one row read,
+ *     one refresh time, so one line covers every figure in the strip,
+ *  3. a shorter vertical footprint, so the section under the Stage (on /buy the
+ *     live listing Field) breaks the fold instead of showing 60px of photo,
+ *  4. the navy primary action treatment (see the CTA block in ./V3Stage.css).
+ */
+export type V3StageInventory = {
+  /**
+   * Two or more. Two is the floor because a single number in a hero is a
+   * headline statistic, not a market: the reader cannot tell whether it is a
+   * lot or a little. A caller that can only source one figure honestly ships no
+   * strip (§0: the deliverable goes out with fewer numbers, never a wrong one).
+   */
+  figures: V3StageFigure[]
+  /** The trace, without the word "Source" — V3SourceLine renders that prefix. */
+  source: string
+  /** When the row behind these figures was last refreshed. */
+  updatedAt?: string | number | Date | null
+}
 
 /**
  * Rejects the empty string LITERAL while leaving a plain `string` alone. Used
@@ -137,6 +209,12 @@ export type V3StageProps = {
   /** 'tall' when the next section should peek under the fold on 390. 'compact' when the next section (the ask) must fit in the first 390 viewport. */
   height?: 'standard' | 'tall' | 'compact'
   /**
+   * Live inventory behind this page, carried INSIDE the hero. Opt-in: omit it
+   * and this pattern is exactly the Stage it has always been. See
+   * V3StageInventory for what it changes and why.
+   */
+  inventory?: V3StageInventory
+  /**
    * Optional working control in the copy stack (homepage search). When this
    * is the Stage action, omit `action` so a second button does not ship.
    */
@@ -191,6 +269,41 @@ function assertNamed(headline: string, label?: string): void {
   }
 }
 
+/**
+ * The strip's own run-time invariants, in the same register as assertNamed:
+ * loud in development, silent in production, because crashing a visitor's page
+ * is worse than the fault being reported.
+ *
+ * A blank value or a blank label is the failure this catches. Both arrive as
+ * `string` from a query, so no type can see inside them — the same hole the
+ * headline has, and the same mechanism closes it. A figure whose value came
+ * back empty would render a label with nothing over it; a figure with no label
+ * is a number with no meaning, which is the KPI tell.
+ */
+function assertInventory(inventory: V3StageInventory | undefined): void {
+  if (process.env.NODE_ENV === 'production' || inventory == null) return
+
+  if (inventory.figures.length < 2) {
+    throw new Error(
+      `V3Stage: \`inventory.figures\` has ${inventory.figures.length}. Two is the floor — a single number in a hero is a headline statistic, not a market. If only one figure can be sourced honestly, pass no \`inventory\` at all.`,
+    )
+  }
+
+  for (const figure of inventory.figures) {
+    if (isBlank(figure.value) || isBlank(figure.label)) {
+      throw new Error(
+        'V3Stage: an `inventory.figures` entry has a blank value or a blank label. A figure renders as its number over what the number means; either one blank ships half a claim. Withhold the figure instead (§0).',
+      )
+    }
+  }
+
+  if (isBlank(inventory.source)) {
+    throw new Error(
+      'V3Stage: `inventory.source` is blank. Every figure on a public page renders with the trace that says where it came from (CLAUDE.md §0). A strip with no trace does not ship.',
+    )
+  }
+}
+
 export function V3Stage<H extends string, L extends string>({
   headline,
   posterSrc,
@@ -202,6 +315,7 @@ export function V3Stage<H extends string, L extends string>({
   altEyebrow,
   headingLevel = 2,
   height = 'standard',
+  inventory,
   children,
   id,
   className,
@@ -220,6 +334,10 @@ export function V3Stage<H extends string, L extends string>({
       : null
 
   assertNamed(headline, action?.label)
+  assertInventory(inventory)
+  /* Production never throws, so the floor is enforced here as well: one figure
+     renders no strip rather than a lone number under a headline. */
+  const strip = inventory && inventory.figures.length >= 2 ? inventory : null
 
   return (
     <section
@@ -231,6 +349,7 @@ export function V3Stage<H extends string, L extends string>({
         height === 'tall' && 'v3-stage--tall',
         height === 'compact' && 'v3-stage--compact',
         Boolean(children) && 'v3-stage--with-slot',
+        strip && 'v3-stage--inventory',
         className,
       )}
       aria-labelledby={headingId}
@@ -309,6 +428,49 @@ export function V3Stage<H extends string, L extends string>({
           </V3Button>
         ) : null}
       </div>
+
+      {/* THE BAND. Outside the copy stack and full bleed, because it is a
+          different material from the photograph above it: solid navy, a cream
+          hairline at its top edge, the live market across the base of the hero.
+          The first build floated these figures on the photograph itself, and a
+          separate evaluator scored that fold as "one hero moment, not a
+          composed page" — a full-bleed photo followed immediately by the
+          Field's full-bleed photo, two adjacent sections wearing one shape.
+          A band ends the hero on its own material and gives small type a
+          ground instead of a gradient.
+
+          A list, because it is a set of peer facts and a screen reader should
+          be told how many there are before it reads the first one. Each cell
+          with an href is the door into the surface that shows that same figure
+          at depth, and the link's accessible name is the figure and its
+          sentence together — "1,563 houses for sale right now". */}
+      {strip ? (
+        <div className="v3-stage-band">
+          <div className="v3-stage-band__inner">
+            <ul className="v3-stage-strip__row">
+              {strip.figures.map((figure) => (
+                <li key={`${figure.label}·${figure.value}`} className="v3-stage-strip__cell">
+                  {figure.href ? (
+                    <Link href={figure.href} className="v3-stage-strip__door">
+                      <V3Figure onMedia value={figure.value} label={figure.label} />
+                    </Link>
+                  ) : (
+                    <V3Figure onMedia value={figure.value} label={figure.label} />
+                  )}
+                </li>
+              ))}
+            </ul>
+            {/* One trace for the whole band: one row read at one moment, so a
+                per-figure line would be the same sentence three times. */}
+            <V3SourceLine
+              onMedia
+              source={strip.source}
+              updatedAt={strip.updatedAt}
+              className="v3-stage-strip__source"
+            />
+          </div>
+        </div>
+      ) : null}
     </section>
   )
 }

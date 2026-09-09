@@ -336,7 +336,13 @@ export type { V3ListingRowData, V3ListingRowBadge } from './V3ListingRow'
 
 export { V3Stage } from './V3Stage'
 
-export type { V3StageProps, V3StageAction, V3StageOverlay } from './V3Stage'
+export type {
+  V3StageProps,
+  V3StageAction,
+  V3StageOverlay,
+  V3StageFigure,
+  V3StageInventory,
+} from './V3Stage'
 
 /* -------------------------------------------------------------------------- */
 /* Pattern 5 — SHEET: the working surface for a step                           */

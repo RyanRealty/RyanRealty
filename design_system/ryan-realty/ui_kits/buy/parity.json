@@ -1,8 +1,8 @@
 {
   "route": "app/buy/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat generic buyer-intent pages: live MLS search as the next step, a specific process walkthrough, buyer strategy sub-pages, and a listing-alerts ask. Zero invented stats.",
-  "note": "E-HOMES-SEARCH 2026-08-13. Migrated /buy onto the v3 barrel. Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount it. V3Breadcrumb tone=on-media overlays the Stage (ci:kb-breadcrumb-overlay). V3Footer outside <main>. Page contract carried unchanged: pageMetadata title/description/path, revalidate 300, getSurfaceImage hero, BreadcrumbList + WebPage + FAQPage JSON-LD, KbSectionTracker pageType=buy, listing-alert capture via submitSearchAlertSignup (email + propertyType A + company honeypot), exits to /homes-for-sale, /buy/[intent], /open-houses, /price-drops, /contact. Dual objectives unchanged. KB-era deletions: SmoothScrollProvider, KbBreadcrumb, KbFooter, kb-root, kb.css, RegionalSfrAlertsBand / KbCommunityAlerts markup, six hero chips (Search homes stays as the Stage primary; the rest moved to the closing Quiet), the no-hand-off pitch. MetadataBlock and KbSectionTracker stay on non-v3 registers (JSON-LD + analytics, not visual language). /buy/[intent] still renders LeadLandingPage and is out of this lease.",
+  "competitiveTarget": "Beat generic buyer-intent pages: live MLS search as the next step, a specific process walkthrough, buyer strategy sub-pages, and a listing-alerts ask. Zero invented stats. Above the fold at 1440x900 the page answers 'what is the market doing' with sourced figures and shows a real listing, which is where the portal search pages are beaten: they show inventory but no trace, no as-of date, and no broker.",
+  "note": "E-HOMES-SEARCH 2026-08-13. Migrated /buy onto the v3 barrel. Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount it. V3Breadcrumb tone=on-media overlays the Stage (ci:kb-breadcrumb-overlay). V3Footer outside <main>. Page contract carried unchanged: pageMetadata title/description/path, revalidate 300, getSurfaceImage hero, BreadcrumbList + WebPage + FAQPage JSON-LD, KbSectionTracker pageType=buy, listing-alert capture via submitSearchAlertSignup (email + propertyType A + company honeypot), exits to /homes-for-sale, /buy/[intent], /open-houses, /price-drops, /contact. Dual objectives unchanged. KB-era deletions: SmoothScrollProvider, KbBreadcrumb, KbFooter, kb-root, kb.css, RegionalSfrAlertsBand / KbCommunityAlerts markup, six hero chips (Search homes stays as the Stage primary; the rest moved to the closing Quiet), the no-hand-off pitch. MetadataBlock and KbSectionTracker stay on non-v3 registers (JSON-LD + analytics, not visual language). /buy/[intent] still renders LeadLandingPage and is out of this lease. SITE-46 2026-09-09: the taste table scored this route 42 -- 'competent, on-brand and inert', the whole fold a photo, an eyebrow, a headline and one button. The fix is in the primitive, not the page: components/site/v3/V3Stage.tsx gained an opt-in `inventory` prop (a figure band inside the hero, a shorter frame, the navy on-media primary), and this page opts in. Every other Stage caller renders byte-identically -- proved by diffing /sell's Stage region HTML before and after.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -16,7 +16,12 @@
     },
     {
       "name": "V3Stage",
-      "section": "Pattern 4, once, heading level 1. Owned photo from getSurfaceImage. Headline keeps the money-route head term. Primary action: Search homes → /homes-for-sale. At 390 the chrome CTA sits in the menu, so this is the visible filled control in the first viewport.",
+      "section": "Pattern 4, once, heading level 1. Owned photo from getSurfaceImage. Headline keeps the money-route head term. Primary action: Search homes -> the regional search, in the on-media NAVY fill the inventory variant paints. INVENTORY VARIANT (SITE-46, 2026-09-09): this Stage passes `inventory`, so it carries a navy band across the base of the hero holding three live figures from the Central Oregon region row of market_pulse_live -- houses for sale, median asking price, days to an offer -- each a door into the surface that publishes that same figure, under one section 0 trace with its as-of stamp. app/buy/_v3/buy-hero-inventory.ts turns the row into those props and withholds any figure it cannot source; fewer than two and the Stage is the quiet photo form again. The variant also shortens the frame so the Field below breaks the fold at 1440x900.",
+      "blocking": true
+    },
+    {
+      "name": "HomeHomesField",
+      "section": "Pattern 2, Field, once, directly under the Stage: the live listing set (app/_v3/HomeHomesField.tsx), the same one the homepage mounts. It was in sectionOrder from 2026-08-27 but never in this list, so the page could have lost its only inventory without failing a gate. SITE-46 depends on it being here AND on the Stage being short enough that it breaks the fold.",
       "blocking": true
     },
     {
@@ -49,7 +54,7 @@
   ],
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
-    "V3Stage #top -- the opening",
+    "V3Stage #top -- the opening, inventory variant: photo + H1 + the navy action, then the live market band across the base (SITE-46)",
     "V3Breadcrumb",
     "HomeHomesField -- the live inventory: the same Field as the homepage (PlaceFieldMap inside the frame), towns as doors (added 2026-08-27, closing this contract's own openDefect)",
     "V3Ledger #buyer-guides -- first-time, relocation, investment",
@@ -61,5 +66,68 @@
   "openDefects": {
     "_": "Closed 2026-08-27.",
     "items": []
+  },
+  "tasteReview": {
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate Agent (Task tool), spawned by the SITE-46 build lane on a different model from the builder, given only the two shots below, the rubric in design_system/public/TASTE.md, and a regression list from the previous round; asked to score the same shots three times in one call, to name a fold-visible win against Zillow's or Redfin's Bend search page, and to sample the CTA's pixels before describing it. Four rounds were run on this node: 42 (the table capture), 62, 61, and this one.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/buy"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default"
+      ],
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized",
+      "baseUrl": "http://localhost:4317 (next dev, lane worktree, branch worktree-agent-a1dfba16d5addebe4)"
+    },
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/buy/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/buy/shots/mobile375.png"
+    },
+    "shotsHash": "sha256:2a7293b047f0ab300749bcc4a2e97595e2160739472cd514da2c1240f2a29960",
+    "scores": [
+      60,
+      62,
+      60
+    ],
+    "score": 60,
+    "beats": "Against Zillow's Bend search page (zillow.com/bend-or/) and Redfin's Bend page, on data provenance in the fold: this fold carries a sourced, dated market band -- 1,563 houses for sale, $749,900 median ask, 29 days to an offer -- over the line 'Source: live MLS through Oregon Data Share - single-family houses across Central Oregon - updated Sep 9, 2026', before the visitor has searched anything. The evaluator verified the Ryan Realty side from the shot and flagged the competitor side as asserted from product knowledge, not from a capture it took, so the claim is stated at that grain.",
+    "defects": [
+      {
+        "section": "#top",
+        "severity": "taste",
+        "finding": "The fold's composition is still the generic real-estate-landing shape: photo, eyebrow, serif headline, CTA, one figure row. The band is well executed and sourced, but the shape is the floor form, not a display a template would not produce. Going past it means a data GRAPHIC in the hero (a supply meter, a price distribution), which TASTE.md's variants rule says is built as two or three named variants for Matt to pick -- not a build-lane decision."
+      },
+      {
+        "section": "#top",
+        "severity": "craft",
+        "finding": "Each figure carries a chevron implying more, and what it delivers is outbound navigation, not an on-screen reveal. The doors are honest (each lands on the surface that publishes that same figure) but nothing in the fold rewards interrogation on the same screen."
+      },
+      {
+        "section": "#top",
+        "severity": "taste",
+        "finding": "The middle figure's caption, 'half the houses ask more', still leans on its proximity to $749,900 to complete its meaning. Two earlier wordings failed the other way: 'median asking price' was called KPI jargon, and 'half ask more than this' a fragment."
+      },
+      {
+        "section": "HomeHomesField",
+        "severity": "honesty",
+        "finding": "The listing photograph that breaks the fold under the band shows no price and no address inside the first viewport, so the page's strongest competitive claim -- real inventory, not just a search box -- is not provable from the fold alone. The card treatment belongs to V3Field / app/_v3/HomeHomesField.tsx, which is outside this node's file set; recorded here for the lane that owns them."
+      }
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 42,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08"
+    },
+    "rebaselineReason": "The prior mark is the taste table's row for this route (design_system/public/taste-table.json, median 42, 'competent, on-brand and inert'). It came from the same evaluatorModel and the same rubricVersion, so those two identity keys match, but it carries no shotsHash: its shots were captured on main at a different commit and are not the ones this receipt binds. shotsHash is therefore the differing key, and this mark rebaselines rather than claiming a rise the gate could verify. The number did rise on the comparable keys -- 42 to 60 on the same model and rubric, and the evaluator, given the 42 verdict as calibration, named a fold-visible win it could not name before."
   }
 }

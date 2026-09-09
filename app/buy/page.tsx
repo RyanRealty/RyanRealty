@@ -1,9 +1,9 @@
 /**
  * /buy — buyer-education layer of Homes, on the components/site/v3 barrel.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Homes opens on Field for
- * inventory. This route has no inventory, so it opens on Stage (owned photo)
- * then Ledger, Quiet, Sheet. Four of the six, no two adjacent alike.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Stage (owned photo,
+ * carrying the live market in its inventory variant), then Field, Ledger,
+ * Quiet, Sheet. Five of the six, no two adjacent alike.
  *
  * THE PAGE CONTRACT, carried across unchanged: pageMetadata title/description/
  * path, revalidate 300, getSurfaceImage hero, BreadcrumbList + WebPage +
@@ -26,8 +26,7 @@
  * Parity: design_system/ryan-realty/ui_kits/buy/parity.json.
  */
 
-import { getSurfaceImage } from '@/lib/data'
-import { getListingTiles } from '@/lib/data'
+import { getSurfaceImage, getListingTiles, getMarketPulseRegionSnapshot } from '@/lib/data'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
 import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { homeFieldItems } from '@/app/_v3/home-field-items'
@@ -48,6 +47,7 @@ import {
   V3SectionTracker,
 } from '@/components/site/v3'
 import { BuyAlertsSheet } from './_v3/BuyAlertsSheet.client'
+import { buyHeroInventory } from './_v3/buy-hero-inventory'
 import {
   BUY_EXITS,
   BUY_FACTS,
@@ -79,9 +79,19 @@ export default async function BuyPage() {
   // buyer-intent page with no houses on it, recorded in openDefects and closed
   // here. Same Field as the homepage: HomeHomesField owns the map slot
   // (PlaceFieldMap inside the frame). Types are the lead chips.
-  const [buyTiles, buyCities] = await Promise.all([
+  //
+  // THE HERO'S OWN FIGURES (SITE-46, 2026-09-09). The Field was below the fold,
+  // so the first viewport still carried no data at all and the taste table
+  // scored this page 42. One more DAL read, one row: the Central Oregon region
+  // row of market_pulse_live, carrying the same Market Truth detached overlay
+  // and the same 90-day pace metric the region deep dive publishes -- so the
+  // three figures in the hero and the two sections its doors open print the
+  // same numbers. No second query and no aggregate in page code (§0, §7 rule
+  // 2); ./_v3/buy-hero-inventory.ts turns the row into props.
+  const [buyTiles, buyCities, regionPulse] = await Promise.all([
     getListingTiles({ status: 'active', propertySubType: 'Single Family Residence', limit: HOME_TILE_FETCH }).catch(() => []),
     getMarketPulseAllCitySnapshots().catch(() => []),
+    getMarketPulseRegionSnapshot('central-oregon').catch(() => null),
   ])
   // The same six towns the homepage leads with, same order, off the pulse
   // snapshots (a lib/data read; ci:page-action-imports bans a new page->action
@@ -140,9 +150,19 @@ export default async function BuyPage() {
             headline="Buy a home in Central Oregon"
             posterSrc={heroSrc ?? OLD_MILL_HERO}
             overlayStrength="standard"
+            /* The live market, inside the hero. Undefined when fewer than two
+               figures could be sourced, and then this Stage is the quiet photo
+               form it has always been. */
+            inventory={buyHeroInventory(regionPulse)}
             action={{ label: 'Search homes', href: REGIONAL_SEARCH_HREF }}
           />
-          <div className="absolute inset-x-0 top-0 z-10 bg-primary/70">
+          {/* One band, one navy. bg-primary/70 left a seam: V3Breadcrumb's
+              on-media form paints --v3-surface-inverse across the 72rem
+              measure, so a translucent full-bleed wrapper behind it rendered a
+              lighter navy to the left and right of a darker navy bar. bg-navy
+              is the same token the component paints, so the band is one color
+              across the frame. */}
+          <div className="absolute inset-x-0 top-0 z-10 bg-navy">
             <V3Breadcrumb
               tone="on-media"
               belowNav={false}
