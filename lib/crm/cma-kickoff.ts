@@ -148,7 +148,11 @@ export async function kickoffCmaCore(input: {
       // plus a newer --vN document, so the open-build check, the existing-
       // document guard, and the stub carve-out below all operate on the
       // chain's writable end — never blindly on the base slug.
-      const slot = await resolveWritableCmaSlot(slug, { personId: person.id })
+      // No requester here on purpose: a kick-off is the broker's own act, and
+      // D8 attaches a second kicker for the same address to the open build
+      // (lib/crm/cma-kickoff.int.test.ts). The intake is where a stranger's
+      // request must never take over a person's draft (lib/cma/versions.ts).
+      const slot = await resolveWritableCmaSlot(slug)
       if (!slot.ok) return { ok: false, error: slot.error }
 
       // Direction-explicit dedupe FIRST: attach to an in-flight build for this

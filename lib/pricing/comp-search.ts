@@ -100,6 +100,11 @@ export function rungLabel(tier: string, subdivision: string | null): string {
     const where = subdivision ? `inside ${subdivision}` : 'inside your subdivision'
     return tier.endsWith('-wide') ? `${where}, any floorplan` : where
   }
+  if (tier.startsWith('adjacent-sub')) return 'the subdivisions next to yours'
+  if (tier.startsWith('beyond-')) {
+    const miles = parseTierRadiusMiles(tier)
+    return miles != null ? `outside your neighborhood, within ${milesPhrase(miles)}` : 'outside your neighborhood'
+  }
   if (tier.startsWith('similar-sub')) return 'subdivisions that price like yours'
   // The listings ladder (lib/cma/comp-tiers.ts) — the path a subject takes
   // when the facts table cannot price it. 1617 NW 8th printed the bare tier

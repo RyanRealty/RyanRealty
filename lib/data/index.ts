@@ -294,6 +294,8 @@ export type { GeoSnapshot, GeoSnapshotInput } from '@/lib/data/geo/getGeoSnapsho
 // Geo — boundary polygon (PostGIS → GeoJSON) via boundary_geojson RPC.
 // Returns null when no boundary row exists for the geo.
 export { getBoundaryGeoJSON } from '@/lib/data/geo/getBoundaryGeoJSON'
+export { getSubdivisionRing, assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
+export type { SubdivisionRing, SubdivisionRingPlat } from '@/lib/data/geo/subdivision-ring'
 export type { BoundaryGeoJSONInput, BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
 export { getResortBoundaryGeoJSON } from '@/lib/data/geo/getResortBoundaryGeoJSON'
 

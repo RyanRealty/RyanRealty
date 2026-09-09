@@ -157,7 +157,29 @@ for (const row of picked) {
   for (const c of cellRes.data ?? []) {
     if (c.subdivision_norm) cells.set(`${c.city_slug}:${c.subdivision_norm}`, { medianPpsf: Number(c.median_ppsf), n: Number(c.n) })
   }
-  const match = walkPricingLadder(subject, (poolRes.data ?? []).map(toSale), { asOf, cells })
+  // Containment (2026-09-09): the subject's plat ring and each sale's plat,
+  // the same two RPCs lib/data/geo/subdivision-ring.ts wraps for the build.
+  const sales = (poolRes.data ?? []).map(toSale)
+  if (lat != null && lng != null) {
+    const ringRes = await sb.rpc('cma_subdivision_ring', { p_lat: lat, p_lng: lng })
+    const ringRows = ringRes.data ?? []
+    if (ringRows[0]?.home_slug) {
+      subject.subdivisionSlug = ringRows[0].home_slug
+      subject.adjacentSubdivisionSlugs = ringRows.filter((r) => r.geo_slug && r.in_neighborhood !== false).map((r) => r.geo_slug)
+      const pts = []
+      sales.forEach((s, idx) => {
+        if (s.latitude != null && s.longitude != null) pts.push({ idx, lat: s.latitude, lon: s.longitude })
+      })
+      for (let i = 0; i < pts.length; i += 400) {
+        const part = pts.slice(i, i + 400)
+        const assign = await sb.rpc('geo_assign_batch', { points: part })
+        for (const r of assign.data ?? []) {
+          if (r.geo_type === 'subdivision' && sales[r.idx].subdivisionSlug == null) sales[r.idx].subdivisionSlug = r.geo_slug
+        }
+      }
+    }
+  }
+  const match = walkPricingLadder(subject, sales, { asOf, cells })
   const points = (idxRes.data ?? []).map((p) => ({
     month: String(p.month).slice(0, 10),
     ppsf: Number(p.median_ppsf),

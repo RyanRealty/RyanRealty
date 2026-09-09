@@ -140,11 +140,11 @@ describe('matchToCompSelection', () => {
 })
 
 describe('pickCompSource', () => {
-  it('stays on facts when facts produced at least 3 sales', () => {
-    expect(pickCompSource({ factsReady: true, comps: [{}, {}, {}] })).toBe('facts')
+  it("stays on facts when facts produced at least 5 sales, the document's own minimum", () => {
+    expect(pickCompSource({ factsReady: true, comps: [{}, {}, {}, {}, {}] })).toBe('facts')
   })
 
-  it('falls back to listings when ordinary facts starve under 3', () => {
+  it('falls back to listings when ordinary facts starve under the minimum', () => {
     expect(pickCompSource({ factsReady: true, comps: [{}, {}] })).toBe('listings')
     expect(pickCompSource({ factsReady: true, comps: [] })).toBe('listings')
   })
@@ -202,4 +202,14 @@ describe('pickCompSource', () => {
     expect(pickCompSource({ factsReady: true, comps: [], customOrNew: ynFalse })).toBe('facts')
   })
 
+})
+
+describe('pickCompSource — below the document minimum the listings ladder is the fallback', () => {
+  it('three or four facts sales are not enough to price a document alone (Merle 1617, 2026-09-09)', async () => {
+    const { pickCompSource } = await import('./select')
+    expect(pickCompSource({ factsReady: true, comps: [1, 2, 3] })).toBe('listings')
+    expect(pickCompSource({ factsReady: true, comps: [1, 2, 3, 4] })).toBe('listings')
+    expect(pickCompSource({ factsReady: true, comps: [1, 2, 3, 4, 5] })).toBe('facts')
+    expect(pickCompSource({ factsReady: true, comps: [1, 2], customOrNew: true })).toBe('facts')
+  })
 })

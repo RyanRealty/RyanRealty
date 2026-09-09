@@ -7,6 +7,10 @@ const selectComps = vi.hoisted(() =>
   }),
 )
 
+vi.mock('@/lib/data/geo/subdivision-ring', () => ({
+  getSubdivisionRing: async () => null,
+  assignSubdivisionSlugs: async (pts: ReadonlyArray<unknown>) => pts.map(() => null),
+}))
 vi.mock('@/lib/cma/comps', () => ({
   selectComps,
   selectCompsByKeys: vi.fn(),

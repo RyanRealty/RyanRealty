@@ -29,6 +29,8 @@ export type CompTier = {
   ignoreCity?: boolean
   /** Only run this rung for a rural acreage subject. */
   ruralOnly?: boolean
+  /** Membership is the ring of plats next to the subject's (lib/data/geo/subdivision-ring.ts). */
+  adjacentSubdivisions?: boolean
   /** Disclosure appended to the trace when the rung yields a comp. */
   disclosure?: string
 }
@@ -74,6 +76,13 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
     // BEFORE any geographic widening.
     { name: 'subdivision-6mo', subdivisionIlike, monthsBack: 6, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
     { name: 'subdivision-12mo', subdivisionIlike, monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
+    // 2a-2b. The plats that TOUCH the subject's, inside the same neighborhood
+    // or community (Matt 2026-09-08 containment): the most adjacent
+    // subdivisions before the whole polygon, and never a plat across the
+    // boundary. Unmapped cities (Redmond, Sisters) still get the ring — it is
+    // tighter than any distance rung — bounded by the city.
+    { name: 'adjacent-subdivision-6mo', monthsBack: 6, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
+    { name: 'adjacent-subdivision-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
     // 3-4. The neighborhood — the group of subdivisions around the subject, as
     // the City of Bend GIS mesh draws it. Same widen-time-first order.
     { name: 'neighborhood-6mo', monthsBack: 6, sqftBand: 0.25, sameArea: true, competing: false, maxMiles: null },

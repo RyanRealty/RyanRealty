@@ -6,6 +6,7 @@
 import { isRuralAcreage } from '@/lib/cma/comp-tiers'
 import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
 import type { CmaSubject } from '@/lib/cma/types'
+import { getSubdivisionRing, assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
 import {
   classifyHoa,
   classifyLot,
@@ -30,7 +31,7 @@ import { estimateClosePrice, pricingSaleToCmaComp } from '@/lib/pricing/estimate
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CompSelection } from '@/lib/cma/comps'
 import { emptyExclusions } from '@/lib/cma/comp-trace'
-import { PRICING_MIN_COMPS, PRICING_TARGET_COMPS } from '@/lib/pricing/ladder'
+import { FACTS_STANDALONE_MIN, PRICING_MIN_COMPS, PRICING_TARGET_COMPS } from '@/lib/pricing/ladder'
 import { walkPricingLadder, type PricingMatchResult, type PricingSubject } from '@/lib/pricing/match'
 import type { CmaMarketContext, CmaPricing } from '@/lib/cma/types'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
@@ -127,7 +128,7 @@ export async function selectPricingComps(
   const closeAfter = new Date(asOf)
   closeAfter.setMonth(closeAfter.getMonth() - (customOrNew ? 30 : 18))
   const sqft = pricingSubject.sqft
-  const [pool, ruralPool, cells] = await Promise.all([
+  const [pool, ruralPool, cells, ring] = await Promise.all([
     selectPricingFactsPool({
       citySlug: pricingSubject.citySlug,
       closeBefore: asOf,
@@ -150,17 +151,28 @@ export async function selectPricingComps(
         })
       : Promise.resolve([]),
     getPricingSubdivisionCells(pricingSubject.citySlug),
+    getSubdivisionRing(subject.latitude, subject.longitude),
   ])
   const byKey = new Map(pool.map((s) => [s.listingKey, s]))
   for (const s of ruralPool) if (!byKey.has(s.listingKey)) byKey.set(s.listingKey, s)
-  const walked = walkPricingLadder(
-    pricingSubject,
-    [...byKey.values()].map((s) => ({
-      ...s,
-      marketArea: s.marketArea ?? resolveMarketArea(s.latitude, s.longitude),
-    })),
-    { asOf, cells },
-  )
+  const sales = [...byKey.values()].map((s) => ({
+    ...s,
+    marketArea: s.marketArea ?? resolveMarketArea(s.latitude, s.longitude),
+  }))
+  // Containment (Matt 2026-09-08): the subject's plat and the plats next to it
+  // inside its boundary, and each sale's plat, so the adjacent rung can run.
+  // A plat outside the neighborhood polygon is not "next to" for this purpose.
+  if (ring) {
+    pricingSubject.subdivisionSlug = ring.homeSlug
+    pricingSubject.adjacentSubdivisionSlugs = ring.ring
+      .filter((r) => r.inNeighborhood !== false)
+      .map((r) => r.slug)
+    const slugs = await assignSubdivisionSlugs(sales.map((s) => ({ lat: s.latitude, lng: s.longitude })))
+    sales.forEach((s, i) => {
+      s.subdivisionSlug = slugs[i]
+    })
+  }
+  const walked = walkPricingLadder(pricingSubject, sales, { asOf, cells })
   return { ...walked, factsReady: true }
 }
 
@@ -337,7 +349,7 @@ export function pickCompSource(match: {
   if (match.customOrNew) return 'facts'
   if (!match.factsReady) return 'listings'
   const n = match.comps?.length ?? 0
-  if (n >= 3) return 'facts'
+  if (n >= FACTS_STANDALONE_MIN) return 'facts'
   return 'listings'
 }
 

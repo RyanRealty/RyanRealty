@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-09T07:01:41.142Z
+**Generated:** 2026-09-09T11:59:04.750Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -808,7 +808,7 @@ Companion files:
 
 ### `lib/data/cma/queue.ts`
 
-**Exports:** `listOpenCmaActions`, `findOpenCmaActionBySlug`, `appendCmaActionNotify`, `mergeCmaActionContact`, `getCmaActionPayload`, `updateCmaActionRow`
+**Exports:** `listOpenCmaActions`, `listOpenCmaActionsForSlug`, `claimCmaAction`, `findOpenCmaActionBySlug`, `appendCmaActionNotify`, `mergeCmaActionContact`, `getCmaActionPayload`, `updateCmaActionRow`
 
 **Tables:** `marketing_brain_actions`
 
@@ -2633,6 +2633,12 @@ Companion files:
 ### `lib/data/geo/resolvePlaceContext.ts`
 
 **Exports:** `PLACE_NOISE_SLUGS`, `resolvePlaceContextFromListing`
+
+---
+
+### `lib/data/geo/subdivision-ring.ts`
+
+**Exports:** `getSubdivisionRing`, `assignSubdivisionSlugs`
 
 ---
 
@@ -4738,7 +4744,7 @@ Companion files:
 | `market_reports` | `getMarketReportBySlug()`, `listMarketReports()`, `getReportImageUrl()` <br /> `lib/data/market/getMarketReports.ts` |
 | `market_stats_cache` | `findCmaSubjectByMls()`, `findCmaSubjectByAddress()`, `getListingPhotosCount()`, `selectCmaCompsPool()`, `selectCmaCompsByKeys()`, `getCmaMarketStatsRow()`, `getCmaMarketPulseRow()`, `CMA_MARKET_TREND_MEASURE()`, `getCmaMarketTrendRows()`, `getCmaBrokerBySlugOrEmail()`, `listActiveBrokersForCma()`, `getCmaCityClosedSkinny()`, `getCmaSubdivisionClosed()`, `getCmaSubdivisionHistory()`, `getCmaPriorSaleAtAddress()`, `getCityMarketDetail()`, `getCityMarketDetailByTimeframe()`, `getCompleteMonthlyMarketDetail()`, `getMarketStats()`, `getMarketStatsCacheRowForGeo()`, `getReportingCacheMonthlyRows()`, `getMarketStatsCacheRowsByGeoType()`, `getMarketStatsCacheRowForPeriod()`, `getMarketPulseRowsByGeoType()`, `upsertMarketPulseLiveRow()`, `getMarketPulseRowForGeo()`, `getMarketStatsCacheRowsForGeos()`, `isCurrentMonth()`, `getMarketTrend()`, `getPriceHistory()`, `generateAndStoreMarketNarrative()`, `generateNarrativesForReportGeos()` <br /> `lib/data/cma/builderReads.ts` · `lib/data/market/city-archive-depth.int.test.ts` · `lib/data/market/getCityMarketDetail.ts` · `lib/data/market/getMarketStats.ts` · `lib/data/market/getMarketStatsCacheRows.ts` · `lib/data/market/getMarketTrend.ts` · `lib/data/market/getPriceHistory.ts` · `lib/data/market/market-history-depth.int.test.ts` · `lib/data/market/marketNarrativeWrites.int.test.ts` · `lib/data/market/marketNarrativeWrites.ts` · `lib/data/market/subdivision-stats.int.test.ts` |
 | `marketing_assignments` | `MARKETING_ASSIGNMENT_CONFLICT_TARGET()`, `buildMarketingAssignmentRow()`, `recordMarketingAssignment()` <br /> `lib/data/crm/recordMarketingAssignment.ts` |
-| `marketing_brain_actions` | `BROKER_ACTIVE_STATUSES()`, `createActionRow()`, `listBrokerJobs()`, `getActionForBroker()`, `appendChangeRequest()`, `approveAction()`, `unapproveAction()`, `setInProduction()`, `getBrokerAgentDigest()`, `listOpenCmaActions()`, `findOpenCmaActionBySlug()`, `appendCmaActionNotify()`, `mergeCmaActionContact()`, `getCmaActionPayload()`, `updateCmaActionRow()`, `collectCompanyScoreboardSignals()`, `resolveDocsBatch()`, `resolveComplianceBatch()`, `verifyNotRelisted()`, `verifyFsboStillActive()`, `getBuiltDocForProspect()`, `findLiveListingForImagine()`, `insertImagineDraftPending()`, `storeImagineMedia()`, `markImagineDraftReady()`, `killImagineDraft()`, `insertStudioDraft()`, `storeStudioMedia()`, `markStudioDraftReady()`, `killStudioDraft()`, `approveStudioDraft()`, `listStudioDrafts()`, `countStudioDraftsByStatus()`, `countStudioDraftsSince()` <br /> `lib/data/agent/actions.ts` · `lib/data/agent/digest.ts` · `lib/data/cma/queue.ts` · `lib/data/loop/signals.ts` · `lib/data/prospecting/batch.ts` · `lib/data/prospecting/docs.ts` · `lib/data/social/imagine-drafts.ts` · `lib/data/studio/drafts.ts` |
+| `marketing_brain_actions` | `BROKER_ACTIVE_STATUSES()`, `createActionRow()`, `listBrokerJobs()`, `getActionForBroker()`, `appendChangeRequest()`, `approveAction()`, `unapproveAction()`, `setInProduction()`, `getBrokerAgentDigest()`, `listOpenCmaActions()`, `listOpenCmaActionsForSlug()`, `claimCmaAction()`, `findOpenCmaActionBySlug()`, `appendCmaActionNotify()`, `mergeCmaActionContact()`, `getCmaActionPayload()`, `updateCmaActionRow()`, `collectCompanyScoreboardSignals()`, `resolveDocsBatch()`, `resolveComplianceBatch()`, `verifyNotRelisted()`, `verifyFsboStillActive()`, `getBuiltDocForProspect()`, `findLiveListingForImagine()`, `insertImagineDraftPending()`, `storeImagineMedia()`, `markImagineDraftReady()`, `killImagineDraft()`, `insertStudioDraft()`, `storeStudioMedia()`, `markStudioDraftReady()`, `killStudioDraft()`, `approveStudioDraft()`, `listStudioDrafts()`, `countStudioDraftsByStatus()`, `countStudioDraftsSince()` <br /> `lib/data/agent/actions.ts` · `lib/data/agent/digest.ts` · `lib/data/cma/queue.ts` · `lib/data/loop/signals.ts` · `lib/data/prospecting/batch.ts` · `lib/data/prospecting/docs.ts` · `lib/data/social/imagine-drafts.ts` · `lib/data/studio/drafts.ts` |
 | `marketing_channel_daily` | `getGscScopeAggregate()`, `getGscAccountTotals()`, `rangeToIso()`, `personName()`, `personHref()`, `readPeople()`, `readSessions()`, `countAudienceSessions()`, `readAccountSnapshots()`, `readDeals()`, `readWorkingPersonIds()`, `sellerClientPersonIds()`, `readActiveBrokers()`, `readJoinConverts()`, `namesForIds()` <br /> `lib/data/analytics/getGscMetrics.ts` · `lib/data/analytics/salesFunnelRead.ts` |
 | `marketing_cost_ledger` | `recordAgentCost()`, `laDayWindowUtc()`, `brokerSpendTodayUsd()` <br /> `lib/data/agent/cost-ledger.ts` |
 | `meta_audience_log` | `writeAudienceLedger()`, `CRM_AUDIENCE_ID()`, `WESTSIDE_AUDIENCE_ID()`, `META_AUDIENCE_HOLD_START()`, `META_AUDIENCE_HOLD_END()`, `META_AUDIENCE_HOLD_DAYS()`, `META_AUDIENCE_CURRENT_HOURS()`, `utcDay()`, `ageHoursSince()`, `isMetaAudienceCurrent()`, `computeAudienceHold()`, `readMetaAudienceHold()` <br /> `lib/data/crm/writeAudienceLedger.ts` · `lib/data/loop/meta-audience-hold.ts` |

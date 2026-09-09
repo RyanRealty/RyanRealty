@@ -10,6 +10,8 @@ const { selectCmaCompsPool, selectCmaCompsByKeys } = vi.hoisted(() => ({
 }))
 
 vi.mock('@/lib/data', () => ({
+  getSubdivisionRing: async () => null,
+  assignSubdivisionSlugs: async (pts: ReadonlyArray<unknown>) => pts.map(() => null),
   selectCmaCompsPool,
   selectCmaCompsByKeys,
 }))

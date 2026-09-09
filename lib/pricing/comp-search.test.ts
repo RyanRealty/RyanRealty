@@ -11,6 +11,7 @@
  * that contradicts it.
  */
 import { describe, expect, it } from 'vitest'
+import { rungLabel } from '@/lib/pricing/comp-search'
 import { buildCompSearch, usableSubdivision, type CompSearchRungInput } from './comp-search'
 
 const rung = (over: Partial<CompSearchRungInput>): CompSearchRungInput => ({
@@ -249,5 +250,13 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
       keptComps: Array.from({ length: 4 }, () => ({ subdivision: 'Kenwood' })),
     })
     expect(s!.sentence).toContain('chosen by your broker')
+  })
+})
+
+describe('rungLabel — the containment rungs in seller language', () => {
+  it('names the touching plats and the boundary exit, never the tier name', () => {
+    expect(rungLabel('adjacent-sub-6mo', 'Kenwood')).toBe('the subdivisions next to yours')
+    expect(rungLabel('adjacent-subdivision-12mo', null)).toBe('the subdivisions next to yours')
+    expect(rungLabel('beyond-2mi-12mo', null)).toBe('outside your neighborhood, within 2 miles')
   })
 })
