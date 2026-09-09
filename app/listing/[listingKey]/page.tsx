@@ -44,6 +44,7 @@ import { ListingHero } from '@/components/site/listing-detail/ListingHero'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
 import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
+import { DescriptionBlock } from '@/components/site/listing-detail/DescriptionBlock'
 import { GoverningDocumentsBlock } from '@/components/site/listing-detail/GoverningDocumentsBlock'
 import { getPlaceDocumentsForListing } from '@/lib/data/places/getPlaceDocumentsForListing'
 import { MortgageCalculator } from '@/components/site/listing-detail/MortgageCalculator'
@@ -107,20 +108,21 @@ void ListingVideoEmbed
 void V3ListingRow
 
 /**
- * One house. PAGE_INVENTORY listing (house URL), 12 rows, Zillow Showcase to beat.
+ * One house. PAGE_INVENTORY listing (house URL), 13 rows, Zillow Showcase to beat.
  *
  *   1 breadcrumb   City → neighborhood → community → plat → street
  *   2 media        price, beds, baths, sqft, street on the media; tabs we have
  *   3 ask          Tour / Call / Text (cookies cannot cover)
  *   4 facts        type, lot, year, HOA, $/sqft
- *   5 payment      computeMonthlyPiti only; P&I, tax, HOA
- *   6 map          this lot + climb, Atlas, assessor lines
- *   7 schools      nearby unless a zone is known
- *   8 parks        same thumbs as the indexes
- *   9 tax          one assessed figure + county link
- *  10 CC&Rs        published plat docs
- *  11 similar      same parent, same house row
- *  12 who listed   live broker; firm proof if no personal record
+ *   5 about        the MLS public remarks, as written (§2)
+ *   6 payment      computeMonthlyPiti only; P&I, tax, HOA
+ *   7 map          this lot + climb, Atlas, assessor lines
+ *   8 schools      nearby unless a zone is known
+ *   9 parks        same thumbs as the indexes
+ *  10 tax         one assessed figure + county link
+ *  11 CC&Rs       published plat docs
+ *  12 similar     same parent, same house row
+ *  13 who listed  live broker; firm proof if no personal record
  */
 
 type PageProps = { params: Promise<{ listingKey: string }> }
@@ -708,6 +710,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
         />
       ) : null}
       <PropertySpecs listing={listingWithPhotos} />
+      {/* The listing agent's own words, as written (CLAUDE.md §2; Matt
+          2026-09-09: "mls descriptions must come back"). The 12-section rebuild
+          dropped this import while getListingDetail kept reading public_remarks,
+          so the remarks travelled to the page in the payload and were never
+          rendered; ci:listing-remarks-rendered now fails that shape. Nothing is
+          rewritten or summarised, and the clamp reveals the rest in place. */}
+      <DescriptionBlock publicRemarks={listing.publicRemarks} />
       {/* No payment on a home that is not for sale. The founding case computed
           principal and interest on a $1,250,000 ask under a $1,100,000 sold
           headline; even fed the close price it is a loan nobody can take out

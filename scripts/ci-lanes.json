@@ -1274,6 +1274,12 @@
       "lib/crm/review-ask.ts",
       "app/cities/**",
       "app/communities/**"
+    ],
+    "ci:listing-remarks-rendered": [
+      "app/listing/**",
+      "components/site/listing-detail/**",
+      "lib/listing/publish-listing-remarks.ts",
+      "lib/data/listings/getListingDetail.ts"
     ]
   },
   "nightly": [
