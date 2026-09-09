@@ -22,13 +22,32 @@ export default function ListingBrokerBar({
   brokers,
   listingKey,
   lockToDefault = false,
+  offMarket = false,
+  similarHref,
+  alertsHref,
 }: {
   defaultBroker: Broker
   brokers: Broker[]
   listingKey: string
   lockToDefault?: boolean
+  /**
+   * SITE-21. Passed straight through: the bar's own file decides what an
+   * off-market row offers, because that file is where the tel: and sms: hrefs
+   * are built (client side, after this payload lands).
+   */
+  offMarket?: boolean
+  similarHref?: string
+  alertsHref?: string
 }) {
   // assign: false — the card owns the sticky assignment, this reads it.
   const broker = useAttributedBroker({ defaultBroker, brokers, lockToDefault })
-  return <ListingMobileContactBar broker={broker} listingKey={listingKey} />
+  return (
+    <ListingMobileContactBar
+      broker={broker}
+      listingKey={listingKey}
+      offMarket={offMarket}
+      similarHref={similarHref}
+      alertsHref={alertsHref}
+    />
+  )
 }

@@ -41,6 +41,12 @@ const FILES = [
   'lib/search-presets.ts',
   'lib/listing-status-public.ts',
   'lib/data/types/listing.ts',
+  // SITE-21: the public status module re-exports SITE-20's off-market set
+  // rather than typing a second list of statuses, so the sandbox that esbuilds
+  // it needs that file and the import-free contract under it. Without them the
+  // bundle fails, the seed dies, and this suite silently skips its live half.
+  'lib/listing/publish-listing-published-price.ts',
+  'lib/listing/publish-listing-figure.ts',
 ]
 
 function repoEnvLocal() {
