@@ -24,6 +24,10 @@
  */
 
 import type { ListingStatus } from '@/lib/data/types/listing'
+import {
+  OFF_MARKET_STATUSES,
+  listingIsOffMarket,
+} from '@/lib/listing/publish-listing-published-price'
 
 /** The literal MLS StandardStatus string for pre-marketing listings. */
 export const COMING_SOON_STATUS = 'Coming Soon' as const
@@ -42,6 +46,30 @@ export const PUBLIC_ON_MARKET_STATUSES: ListingStatus[] = [
   ...PUBLIC_ACTIVE_STATUSES,
   ...PUBLIC_PENDING_STATUSES,
 ]
+
+/**
+ * OFF MARKET, for a PUBLIC surface (SITE-21).
+ *
+ * The list itself is SITE-20's, one file over
+ * (lib/listing/publish-listing-published-price.ts OFF_MARKET_STATUSES): the
+ * same four statuses that make the published price a close price rather than
+ * an ask are the four that make the page's ask unfulfillable. Re-exported here
+ * rather than retyped, because two lists of statuses is exactly the drift that
+ * put Coming Soon on the public site — see this file's header.
+ *
+ * PENDING IS NOT OFF MARKET, and this is the load-bearing half of the rule. A
+ * pending home is still marketable: backup offers are real, the tour is real,
+ * and the page is a live lead source. Do NOT reach for the inverse of
+ * PUBLIC_ACTIVE_STATUSES to answer "is this off market" — that set excludes
+ * Pending, so its complement would silently strip the ask off every
+ * under-contract home on the site.
+ */
+export { OFF_MARKET_STATUSES }
+
+/** Public-surface predicate: the home cannot be bought, toured, or asked about. */
+export function isPublicOffMarketStatus(s: string | null | undefined): boolean {
+  return listingIsOffMarket(s)
+}
 
 /**
  * On-market statuses for ADMIN / broker surfaces. Includes Coming Soon because

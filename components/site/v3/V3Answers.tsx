@@ -123,6 +123,26 @@ export type V3AnswersDoor = {
   /** The visible row text, and therefore the link's accessible name. */
   label: string
   href: string
+  /**
+   * What kind of destination this is — "Recorded documents", "Golf",
+   * "Nearby resorts", "Around the site". Optional, and a set with no groups at
+   * all renders exactly as it did before.
+   *
+   * WHY IT EXISTS. Folding the doors fixed the height and not the shape: two
+   * separate evaluator rounds (2026-09-08, then again after) opened the fold on
+   * /communities/tetherow and found 41 undifferentiated hairline rows, and on
+   * /communities/redmond-odin-crest-estate found 31 — governing documents,
+   * golf courses, sibling resorts and generic site links interleaved with
+   * nothing between them. That is TASTE's "a table wearing hairlines", just
+   * deferred behind a click, and the second round proved it systemic rather
+   * than one page's miss. A reader opening a set of exits is looking for a KIND
+   * of destination, so the set says which kind.
+   *
+   * Order is the caller's: groups appear in the order their first door does, so
+   * the builder's reading order survives. Doors with no group sort last, under
+   * no label, which is what a small leftover set should look like.
+   */
+  group?: string
 }
 
 export type V3AnswersProps = {
@@ -154,6 +174,38 @@ export type V3AnswersProps = {
    */
   doorsLabel?: string
   className?: string
+}
+
+/**
+ * The folded set, split into the groups the caller named, in first-appearance
+ * order, with the ungrouped remainder last under no label. A set where nobody
+ * named a group comes back as one unlabelled block — byte-identical output to
+ * the flat list this replaced.
+ */
+export function groupDoors(
+  doors: readonly V3AnswersDoor[],
+): { label: string | null; doors: V3AnswersDoor[] }[] {
+  const order: string[] = []
+  const byGroup = new Map<string, V3AnswersDoor[]>()
+  const loose: V3AnswersDoor[] = []
+  for (const door of doors) {
+    const key = door.group?.trim()
+    if (!key) {
+      loose.push(door)
+      continue
+    }
+    if (!byGroup.has(key)) {
+      byGroup.set(key, [])
+      order.push(key)
+    }
+    byGroup.get(key)!.push(door)
+  }
+  const groups: { label: string | null; doors: V3AnswersDoor[] }[] = order.map((label) => ({
+    label,
+    doors: byGroup.get(label)!,
+  }))
+  if (loose.length > 0) groups.push({ label: null, doors: loose })
+  return groups
 }
 
 /**
@@ -289,7 +341,8 @@ function toDoors(doors: readonly V3AnswersDoor[] | undefined): V3AnswersDoor[] {
     const label = text(door.label)
     const href = text(door.href)
     if (!label || !href) continue
-    out.push({ label, href })
+    const group = text(door.group)
+    out.push(group ? { label, href, group } : { label, href })
   }
   return out
 }
@@ -389,18 +442,28 @@ export function V3Answers({
                     <span aria-hidden="true" className="v3-answers__mark" />
                   </span>
                 </summary>
-                <ul className="v3-answers__doors">
-                  {edges.map((door) => (
-                    <li key={door.href} className="v3-answers__door-item">
-                      <Link href={door.href} className="v3-answers__door">
-                        <span className="v3-answers__door-label">{door.label}</span>
-                        <span aria-hidden="true" className="v3-answers__door-mark">
-                          →
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                {groupDoors(edges).map((group, groupIndex) => (
+                  <div
+                    key={group.label ?? `ungrouped-${groupIndex}`}
+                    className="v3-answers__door-group"
+                  >
+                    {group.label ? (
+                      <p className="v3-answers__door-group-label">{group.label}</p>
+                    ) : null}
+                    <ul className="v3-answers__doors">
+                      {group.doors.map((door) => (
+                        <li key={door.href} className="v3-answers__door-item">
+                          <Link href={door.href} className="v3-answers__door">
+                            <span className="v3-answers__door-label">{door.label}</span>
+                            <span aria-hidden="true" className="v3-answers__door-mark">
+                              →
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </details>
             ) : (
               <ul className="v3-answers__doors">

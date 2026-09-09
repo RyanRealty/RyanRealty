@@ -9,6 +9,7 @@ import {
 import { cn } from '@/lib/utils'
 import { displaySubdivision } from '@/lib/slug'
 import { daysLiveOnMarket } from '@/lib/listing/days-live'
+import { isPublicOffMarketStatus } from '@/lib/listing-status-public'
 import { redirectToLoginForSave } from '@/lib/pending-save'
 import { ListingGuestSaveSheet } from '@/components/site/listing-detail/ListingGuestSaveSheet.client'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
@@ -111,6 +112,14 @@ type Props = {
   showAlerts?: boolean
   callHref?: string | null
   textHref?: string | null
+  /**
+   * Where the off-market ask sends a reader who wants a home they can actually
+   * buy: the active-inventory rail on this page. Required for the branch to
+   * render its primary door.
+   */
+  similarHref?: string
+  /** The saved-search capture on this page. The off-market secondary. */
+  alertsHref?: string
   className?: string
 }
 
@@ -140,10 +149,23 @@ export function PriceCtaStrip({
   showAlerts = true,
   callHref,
   textHref,
+  similarHref = '#similar',
+  alertsHref = '#listing-like-alerts',
   className,
 }: Props) {
-  // See the pill below: one shared definition of days on market.
-  const daysLive = daysLiveOnMarket(listing.onMarketDate ?? null)
+  // SITE-21. The four statuses under which nobody can buy this home. Read from
+  // lib/listing-status-public.ts, which re-exports SITE-20's set — never from
+  // the inverse of PUBLIC_ACTIVE_STATUSES, which would take the ask off every
+  // Pending home on the site (a pending home takes backup offers and is a live
+  // lead source).
+  const offMarket = isPublicOffMarketStatus(listing.status)
+  // See the pill below: one shared definition of days on market. It counts to
+  // TODAY, which is a fact about a home that is still for sale and a fiction
+  // about one that is not — an Expired 2022 listing read "1,153 days on
+  // market". Off market, the day count is the sold instrument's, measured to
+  // the close (lib/listing/days-live.ts daysOnMarketToClose), and this strip
+  // publishes none.
+  const daysLive = offMarket ? null : daysLiveOnMarket(listing.onMarketDate ?? null)
   const [saveState, setSaveState] = useState<SaveState>(initialSaved ? 'saved' : 'idle')
   const [guestSaveOpen, setGuestSaveOpen] = useState(false)
 
@@ -199,11 +221,18 @@ export function PriceCtaStrip({
     sqft: livingSqft,
     acres: listing.lotSizeAcres,
   }).join(' · ')
-  const publishedDrop = publishListingDrop({
-    listPrice: headlinePrice,
-    originalListPrice: listing.originalListPrice,
-    historyPrices: history?.map((row) => row.price) ?? [],
-  })
+  // "Down $150,000 from $1,250,000" reads as a price cut. Off market the
+  // headline figure is the CLOSE price, so the same subtraction silently
+  // becomes sold-versus-asked wearing a price-cut label — two different claims
+  // in one sentence (§0.5). Sold versus asked is the sold instrument's, stated
+  // as what it is; the price cuts stay in the history rail below.
+  const publishedDrop = offMarket
+    ? null
+    : publishListingDrop({
+        listPrice: headlinePrice,
+        originalListPrice: listing.originalListPrice,
+        historyPrices: history?.map((row) => row.price) ?? [],
+      })
   const contactKey = publishListingContactKey({
     listNumber: listing.listNumber,
     listingKey: listing.listingKey,
@@ -226,7 +255,7 @@ export function PriceCtaStrip({
         mortgageRate: ratePct,
       })?.label ?? null
     : null
-  const lastDrop = history ? publishListingLastDrop(history) : null
+  const lastDrop = offMarket || !history ? null : publishListingLastDrop(history)
   const listedBy = publishListingListedBy({
     listAgentName: listing.listAgentName,
     listOfficeName: listing.listOfficeName,
@@ -382,27 +411,56 @@ export function PriceCtaStrip({
       {/* CTA hierarchy: primary full-width on mobile, secondaries even 3-col.
           Desktop keeps the inline wrap. */}
       <div className="listing-ask-row mt-5">
-        <a
-          href={tourHref}
-          className="btn alt"
-          style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-        >
-          Tour
-        </a>
-        {callHref ? (
-          <a href={callHref} className="btn" style={OUTLINE_BTN_STYLE}>
-            Call
-          </a>
+        {/* SITE-21: THE ASK A BROKER CAN FULFIL.
+            Off market, Tour / Call / Text are three requests nobody can act
+            on: there is no showing to book on a home that closed, and the
+            phone call it starts ends with "that one sold." So the ask becomes
+            the two things this reader can actually get — the homes in this
+            city that ARE for sale, and an email when the next one lists. Save
+            and Share stay: a sold comparable is worth keeping. */}
+        {offMarket ? (
+          <>
+            {/* Two words each. This row is a three-column grid, and at 375
+                "Homes for sale in Bend" / "Email me new listings" wrapped to
+                three lines and clipped the middle button (looked at 2026-09-09).
+                The city is in the H1 and the breadcrumb above; the labels match
+                the phone's sticky bar so a reader sees one vocabulary. */}
+            <a
+              href={similarHref}
+              className="btn alt"
+              style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              Homes for sale
+            </a>
+            <a href={alertsHref} className="btn" style={OUTLINE_BTN_STYLE}>
+              Get alerts
+            </a>
+          </>
         ) : (
-          <a href={askHrefResolved} className="btn" style={OUTLINE_BTN_STYLE}>
-            Ask a question
-          </a>
+          <>
+            <a
+              href={tourHref}
+              className="btn alt"
+              style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              Tour
+            </a>
+            {callHref ? (
+              <a href={callHref} className="btn" style={OUTLINE_BTN_STYLE}>
+                Call
+              </a>
+            ) : (
+              <a href={askHrefResolved} className="btn" style={OUTLINE_BTN_STYLE}>
+                Ask a question
+              </a>
+            )}
+            {textHref ? (
+              <a href={textHref} className="btn" style={OUTLINE_BTN_STYLE}>
+                Text
+              </a>
+            ) : null}
+          </>
         )}
-        {textHref ? (
-          <a href={textHref} className="btn" style={OUTLINE_BTN_STYLE}>
-            Text
-          </a>
-        ) : null}
         <button
           type="button"
           className="btn"

@@ -1,4 +1,4 @@
-# Current — 2026-09-09 (SITE-31: eleven community guides as drafts, four titles rewritten live, the blog class's first mark — the flip is Matt's)
+## Prior — 2026-09-09 (SITE-31: eleven community guides as drafts, four titles rewritten live, the blog class's first mark — the flip is Matt's)
 
 Owner: Claude (Fable 5.1), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, landing at
 `c99cf61b`. Node `0bacd965` is `blocked` with NO date: blocked on Matt for one action, below.
@@ -294,6 +294,170 @@ listing", given the hourly cron batches sends.
 ## Prior — 2026-09-08 PM (round four closed: A–F shipped, the contract fails closed on type)
 
 ## Prior — 2026-09-09 (site queue: a sold home stops publishing its asking price; one canonical per listing)
+
+## Prior — 2026-09-09 (site queue round three: an off-market listing stops selling a home that already sold)
+
+Owner: Claude (Opus 5), cloud "Site queue grinder" routine, session 01DLfMFV. **main is at `650666bb2`.**
+SITE-21 shipped and is live. With SITE-20 and SITE-22 earlier in the same run, the listing page no
+longer publishes a price nobody paid, on any surface.
+
+**SITE-21.** A Closed or Expired listing showed a mortgage calculator computed on the OLD list price,
+a "this home's price sits 32.0% over the Bend median" ask on a dead price, and Tour / Call / Text the
+broker cannot fulfil — two contradictory prices for one home on a public page. It now shows the sale
+facts, promotes the active-inventory rail and offers a saved-search path. Verified on production
+across four statuses **resolved at query time**: Closed and Expired have no payment, no ask, and
+**zero listing-built `tel:`/`sms:`**; Pending and Active keep all of it. Closed `SoldOut`, Expired
+`OutOfStock`. Pending carries no availability *deliberately* — schema.org has no value meaning "under
+contract, not yet sold", and inventing one would publish a claim the record does not support.
+
+**Two more §0 defects, found by RENDERING rather than reading.** The history rail's `Sold` row
+published the ASK, not the sale — the change-log event that flips a listing to Closed carries the
+then-current list price, so one page could read sold for $827,000 in the header and $849,000 in the
+rail. And an **Expired** listing, which never sold, asked "what this one closed at". Both fixed.
+
+**The `tel:`/`sms:` clause cannot be satisfied literally, and the lane said so instead of redefining
+it.** `V3Chrome` and `V3Footer` publish the brokerage line on every page and the footer renders
+outside `<main>`. The two are cleanly separable: the listing's own controls build from bare digits
+(`tel:5417033095`), the chrome from the E.164 constant (`tel:+15417033095`). Off market: 0 and 7. On
+market: 7 and 7.
+
+**TASTE: the listing class scored 78 (80/74/78) against a standing 87 from the SAME instrument
+(`claude-sonnet-5`, `v1-2026-09-08`). No receipt was written and the 87 stands.** `ci:taste-canon`
+would have accepted a `rebaselined` claim, because `shotsHash` drifted — but it drifted only because
+this work added shots, and using that to paper over a 9-point fall is laundering. Same call as
+SITE-07's neighborhood class the day before, made the same way. **Read the drop carefully:** honesty
+scored 9/10 and the evaluator volunteered that the off-market treatment is "genuinely better than
+what it replaced". Every lost point is in sections these nodes do not own, and the prior 87 came from
+a different evaluator instance over a narrower shot set.
+
+**The best finding is a PRE-EXISTING dead control, and it is one line.** The hero's "N photos" caption
+pill does nothing: `ListingHero.tsx:224-228`, `openCaption()`'s `gallery` branch calls
+`setMediaTab('photos')` and returns, on a tab that already defaults to `photos` (line 126), while the
+`floor` branch beside it calls `setMediaTab` **and** `openGallery(0,'floor')`. Clicking a photo tile
+does open the lightbox — only the labelled CTA is dead. Introduced by `71c46099a`, an unrelated CMA
+commit. **Not fixed here on purpose**: it is outside both nodes, and this session declined to widen
+SITE-07 for *its* pre-existing sections, so widening here would be arbitrary. Recorded with file,
+line and remedy. Also unowned and worth a node: `#ask` is a static figure row with no interaction at
+all, `#similar` is a plain list, the mobile cookie pill overlaps the sticky CTA bar, and on an Expired
+subject the history rail's last price-change row ($120,000) disagrees with the published ask
+($119,900) by $100 — a §0 disagreement between two numbers on one page.
+
+**Probe a new gate with a SECOND SPELLING of the defect.** `check-offmarket-listing-cta.mjs` executes
+the predicate over the RESO enum (Pending === false is load-bearing), refuses a second status list,
+and checks guard **ancestry** rather than a spelling; 21 sandbox cases assert FAIL across fifteen
+defect spellings and PASS for two honest re-spellings. This discipline exists because
+`ci:listing-canonical-single` was caught earlier the same day passing 10/10 against the same defect
+written one character apart.
+
+**Both SITE-20 and SITE-21 are BLOCKED ON MATT**, functional halves shipped and live-verified, taste
+rise unmet: accept 78 as the honest mark for the class, or hold for SITE-41 and SITE-52? SITE-07's
+neighborhood question (67 vs a standing 83) is still open too — it is the same question twice.
+
+**CORRECTION, and it changes the answer.** An earlier version of that question said to hold "until a
+node exists" for the pre-existing defects. Wrong: **the queue already owns them.** SITE-41
+(*V3Instrument: the opening is a claim and a drawing, not a KPI grid*) is exactly the static `#ask`
+figure row, and SITE-52 (*V3Ledger: a row past six carries a visible mark, hover reveals more*) is
+exactly the plain `#similar` list and the city page's five same-shaped sections. Both are v3
+**primitives**, so landing them raises every calling class at once rather than one page, and their
+prior marks are LOW (annual-review 31, oregon-city 41, `/cities` 30) — so unlike the 87 a genuine
+rise is achievable there. **They are the highest-leverage work left in the queue.** Both nodes carry
+this reasoning in their evidence.
+
+**Round four was claimed and aborted before it produced anything.** Both lanes died on their first
+calls: `You've hit your session limit · resets 8am (UTC)` (HTTP 429). That is the ONE shared account
+allowance the skill names. SITE-41 and SITE-52 were released to `open` with `owner_session` null,
+verified to have produced no commit, no branch and no worktree content, so the next session takes
+them clean. **This session deliberately did not retry** — two other workers were mid-flight, and
+re-consuming the allowance is precisely what killed the whole fleet on 2026-09-08.
+
+---
+
+## Prior — 2026-09-09 (site queue round three: SITE-28 done, SITE-23 shipped and blocked on its recrawl window)
+
+Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. One push for
+the round: `fc77108b..bc7ce4b2` (lanes 5765494e and ef4cbd7d+74860b39, merges c4223b0c and
+bc7ce4b2). Deploy READY in 266s. Accept clauses re-run on ryan-realty.com with a browser UA after
+READY; observed values on the nodes (`loop status`).
+
+**SITE-28 done.** /communities/prineville-oll, madras-parkpl and prineville-pleasvh refuse
+("No community at this address", robots unchanged at noindex, follow); odin-crest-estate and
+ponderosa-park-phase-1 keep their real names; tetherow and brasada-ranch index, follow. No recorded
+mapping exists for the three slugs (boundaries holds Deschutes plats only; 'oll' has zero listings
+under two shapes) and the geometry-majority path was refuted (aspenb → 3 plats, clab → 28, an MLS
+area code), so the resolver reads four recorded sources and refuses otherwise; 32 of 1,014
+Central Oregon SubdivisionNames are withheld, every one an MLS token. Community-class taste
+rebaselined on a three-route instrument: 64 → 68 → 69 (prior 80 scored tetherow alone). Fixed in
+the primitives: the no-photo opening's H1/breadcrumb misalignment, grouped door folds in
+V3Answers, a source prop on V3Quiet. Open raises on the receipt: dead cream in the plat opening,
+#belonging block-level trace, #atlas 26 vs #faq 16–17 (a product decision on which population a
+community page publishes), conifa/oww2 resolve unanimously by geometry but wait for a human entry
+in data/subdivision-alias-plats.json.
+
+**SITE-23 shipped, blocked on measurement until 2026-10-07.** The defect was data, not the URL
+builder: no city polygon for Powell Butte (not a Census place; imported the Powell Butte CCD from
+TIGER/Line 2024 County Subdivisions, 144.665 sq mi, reconciles to AREALAND+AREAWATER), and a
+classifier that never revisited a row once it took the sentinel (refresh_listing_boundary_tags
+batched on boundary_city IS NULL; now re-examines once per change to the boundary set via
+boundary_tagged_at). 181 listings reclassified (Powell Butte 180 → 0 under the sentinel; Brasada
+111 of 2,297 geocoded now carry the neighborhood); live: the sentinel URL for 220219020 serves the
+powell-butte canonical. ci:boundary-provenance city floor 10 → 11. The Search Console re-pull after
+the recrawl window is the only open clause (45 sentinel pages, 1,043 impressions, 0 clicks before).
+
+**SITE-54** carries two independent traces now (mine: two 504s and the warmer's statement
+timeouts; session 01NESdvn: the 525 MB all-history tile view refreshing every 30 minutes, the 8 s
+API statement timeout, the sitemap paging 129K Bend rows). Next lane takes it in the order
+01NESdvn wrote: sitemap reads getIndexableSubdivisions, warmer avoids the refresh window, deploy
+smoke on every class; the tile-view refresh itself needs a data-plane node.
+
+**Lane lessons this round.** (1) Two lanes regenerating the auto-generated docs conflict on both
+files every time; resolve by regenerating once more with `ci:data-access --refresh` on the merged
+tree, never by hand. (2) A lane that widens the taste instrument (one route → three) rebaselines
+honestly; the number going down is not a regression. (3) A data lane that finds the URL builder
+already correct should say so first and keep looking; the residual index was the symptom.
+
+# Current — 2026-09-09 (fleet full, no lane; SITE-54's 504 traced to the tile view's refresh and an 8-second API timeout)
+
+Owner: Claude (Fable 5.1), session 01NESdvn, main checkout. **Nothing was built or changed in
+production this session.** `main` is at `92137b5b5` plus this note. The container restarted after
+round 4 landed (`b9da5d2e6`, deploy `dpl_q2yrS6o3G1fHfPwmNpeqpeHxLG7W`, both nodes blocked with
+evidence); on return the brief served SITE-29, another session (`claude-opus5-019RdEm6`) claimed it
+one minute before I tried, and the claim tool refused a fourth worker — cloud-grinder, 9d4aa6fc and
+019RdEm6 all hold live heartbeats. The rule is do not start a lane, so I did not. I hold no claims.
+
+**What I did instead: read-only triage of SITE-54, and the answer is not the sitemap route.** The
+full finding, every number sourced, is on the node (objective addendum + evidence). The short
+version:
+
+- `listing_tile_mv` is a view over `listing_tile_mv_src`, a **593,525-row, 525 MB** materialized
+  view of every listing ever seen. pg_cron refreshes it CONCURRENTLY every 30 minutes; the last 24
+  hours of runs total **29,711 s — 8.25 hours of refreshing**, and overnight each run took 13–21
+  minutes of its 30-minute slot.
+- The API roles run at **`statement_timeout = 8s`** (3s for anon). During a refresh, reads of that
+  view die. The biggest single source of statement timeouts on the whole database over 24 hours
+  (**19,655**, ten times anything else) is `getSubdivisionBrowseSlugsByCity` paging ~129K Bend rows
+  through PostgREST, 12 pages at a time, 6 cities at a time, three retries each — and its only
+  caller is `app/sitemap.ts`.
+- The hourly warmer starts at :00 and the refresh at :02, so the warmer's per-city loop runs into
+  the refresh every hour. Its 06:00Z run on the current deploy logged fetch failures for eight
+  cities; the geo class never fills; cold requests hit the 300 s ceiling. `core.xml` 504'd at
+  05:39Z and 05:43Z as well, not only `geo.xml`.
+- Collateral: PostgREST timeouts ran **2,110 → 3,180 an hour from midnight to 05:00Z**, and the
+  Vercel error clusters show the resulting "could not query the database for the schema cache" on
+  listing pages, tiles, boundaries, metrics and the blog. The public site degrades for roughly 15
+  of every 30 minutes overnight.
+
+**For the lane that takes SITE-54, in order:** (a) `app/sitemap.ts` reads the subdivision set from
+`getIndexableSubdivisions` (644 ms, the SITE-24 source) instead of paging the history view;
+(b) the warmer must not start inside a refresh window; (c) the deploy smoke on every sitemap class,
+per the accept. **Not SITE-54, needs its own data-plane node:** a 525 MB all-history MV refreshed
+every 30 minutes is the structural load — the active subset is ~7,835 rows.
+
+**Also carried from round 4, still open:** the wrong `Node:` uuid on `7e2086647` and `b70aafff4`
+(the real SITE-12 id ends `-eff3-4763-aeaf-e7f3617a9cb3`; `post-commit` now warns when an id
+resolves to no row); listing rows still print the raw MLS "Ridge At Eagle Crest"; the community
+`#belonging` block restates $2,052 with no source line.
+
+---
 
 ## Prior — 2026-09-09 (site queue round two continued: SITE-25 and SITE-24 done in one push; geo.xml 504s on production, seeded as SITE-54)
 

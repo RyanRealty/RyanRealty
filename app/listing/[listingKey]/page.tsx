@@ -25,6 +25,10 @@ import {
   publishListingPublishedWholePropertyPrice,
   publishListingStatusWord,
 } from '@/lib/listing/publish-listing-published-price'
+import { isPublicOffMarketStatus } from '@/lib/listing-status-public'
+import { publishListingOffMarketFacts } from '@/lib/listing/publish-listing-offmarket'
+import { ListingOffMarketFacts } from '@/components/site/listing-detail/ListingOffMarketFacts'
+import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
 import { listingMlsAddressFull, listingMlsStreetLine } from '@/lib/listing/publish-street-line'
 import { homesForSalePath, listingCanonicalHref, subdivisionListingsPath } from '@/lib/slug'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
@@ -117,6 +121,13 @@ void V3ListingRow
 
 type PageProps = { params: Promise<{ listingKey: string }> }
 
+/**
+ * MASTER_SPEC §4.9: an off-market page shows "3-4 active listings". Below three
+ * the rail is not an onward path, so the place filter is dropped before the
+ * rail is — the city is still the right place, the plat was only the preference.
+ */
+const OFF_MARKET_SIMILAR_MIN = 3
+
 export const revalidate = 300
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -207,6 +218,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
     city: listing.city,
     listNumber: listing.listNumber,
   })
+
+  // SITE-21: THE HOME IS NOT FOR SALE. Closed, Expired, Canceled, Withdrawn —
+  // and deliberately NOT Pending, which is under contract, takes backup offers,
+  // and is one of this site's better lead sources. Everything this flag turns
+  // off is an ask the broker cannot fulfil or a figure about a price nobody can
+  // pay; everything it turns on is a door that goes somewhere.
+  const offMarket = isPublicOffMarketStatus(listing.status)
 
   const { placeContext, marketGeo } = resolveListingPlaceAndMarket(listing)
   const featuredGeoName =
@@ -328,18 +346,29 @@ export default async function ListingDetailPage({ params }: PageProps) {
         : []
   const listingWithPhotos = { ...listing, photos: galleryPhotos }
 
-  const similarPool = listingSimilarDedupe(
-    listingSimilarInPlace(
-      relatedHomes.nearby.length > 0
-        ? relatedHomes.nearby
-        : [...relatedHomes.similar, ...relatedHomes.primary],
-      [
-        placeContext.curatedCommunity?.label,
-        placeContext.neighborhood?.label,
-        listing.subdivisionName,
-      ].filter((n): n is string => !!n && n !== 'N/A'),
-    ),
-  )
+  // SITE-21. relatedHomes.nearby is the only ACTIVE-only pool: fetchNearbyTiles
+  // queries status 'active', while relatedHomes.similar hydrates the similar MV
+  // at status 'all' and happily returns closed rows. On a page that exists to
+  // send a reader from a home they cannot buy to homes they can, a closed
+  // comparable in the rail is the same dead end one row down, so an off-market
+  // page never widens past the active pool — and when the place filter leaves
+  // fewer than MASTER_SPEC §4.9's three, it drops the filter rather than the
+  // rail. An on-market page keeps the behaviour it had.
+  const placeNames = [
+    placeContext.curatedCommunity?.label,
+    placeContext.neighborhood?.label,
+    listing.subdivisionName,
+  ].filter((n): n is string => !!n && n !== 'N/A')
+  const similarBase = offMarket
+    ? relatedHomes.nearby
+    : relatedHomes.nearby.length > 0
+      ? relatedHomes.nearby
+      : [...relatedHomes.similar, ...relatedHomes.primary]
+  const similarInPlace = listingSimilarDedupe(listingSimilarInPlace(similarBase, placeNames))
+  const similarPool =
+    offMarket && similarInPlace.length < OFF_MARKET_SIMILAR_MIN
+      ? listingSimilarDedupe(similarBase)
+      : similarInPlace
   const similarRows = listingSimilarRail(similarPool)
   const inventoryDoor = listingInventoryDoor(placeContext)
   const placeBoundary = await (async () => {
@@ -411,13 +440,48 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const contactKey =
     publishListingContactKey({ listNumber: listing.listNumber, listingKey: listing.listingKey }) ??
     listing.listingKey
-  const askClaim = buildListingAskClaim({
-    ask: publishedSaleAsk,
-    wholePropertyPrice,
-    hud: leftoverHud,
-    grain: leftoverGrain,
-    updatedAt: leftoverLayers?.headlines?.computedAt ?? leftoverLayers?.inventory?.computedAt ?? null,
-  })
+  // SITE-21. The market instrument asks how THIS price compares to what is on
+  // the market in this place, and prints "$1,250,000 this price". On a sold
+  // home that sentence compares a price nobody can pay against a market the
+  // house has left, and on the founding case it printed the ask beside a
+  // headline reading the close price — two prices for one home. Off market the
+  // claim is the sale itself.
+  const askClaim = offMarket
+    ? null
+    : buildListingAskClaim({
+        ask: publishedSaleAsk,
+        wholePropertyPrice,
+        hud: leftoverHud,
+        grain: leftoverGrain,
+        updatedAt:
+          leftoverLayers?.headlines?.computedAt ?? leftoverLayers?.inventory?.computedAt ?? null,
+      })
+  const offMarketFacts = offMarket
+    ? publishListingOffMarketFacts({
+        status: listing.status,
+        closePrice: listing.closePrice,
+        closeDate: listing.closeDate,
+        listPrice: listing.listPrice,
+        onMarketDate: listing.onMarketDate,
+        publishedPrice: wholePropertyPrice,
+      })
+    : null
+  // The broker card asks a different question of a sale than of a listing that
+  // ended without one — an EXPIRED home carried "Ask what this one closed at"
+  // on the first render (§0.5, looked at 2026-09-09).
+  const offMarketKind: 'sold' | 'unsold' | null = offMarket
+    ? offMarketFacts?.statusWord === 'Sold'
+      ? 'sold'
+      : 'unsold'
+    : null
+  const similarLabel = listing.city ? `Homes for sale in ${listing.city}` : 'Homes for sale'
+  // Every off-market door points at something that exists. The rail is an
+  // anchor only when the rail rendered; with no active inventory to show, the
+  // same label opens the city search rather than jumping to nothing. Same rule
+  // for the saved search, which needs a city to pre-fill and renders nothing
+  // without one.
+  const similarHref = similarRows.length > 0 ? '#similar' : homesForSalePath(listing.city)
+  const alertsHref = listing.city ? '#listing-like-alerts' : '/contact?intent=question'
   const ctaTel = brokerTelDigits(ctaBroker?.phoneDirect ?? ctaBroker?.phoneFub)
   // /book only knows three slugs (app/book/page.tsx BROKER_SLUGS). Map the
   // routed broker's first name onto one; anything unexpected books with Matt,
@@ -535,11 +599,49 @@ export default async function ListingDetailPage({ params }: PageProps) {
         ratePct={calcDefaults?.mortgageRate ?? null}
         showEstPayment={false}
         showAlerts={false}
-        callHref={ctaTel ? `tel:${ctaTel}` : null}
-        textHref={ctaTel ? `sms:${ctaTel}` : null}
+        callHref={ctaTel && !offMarket ? `tel:${ctaTel}` : null}
+        textHref={ctaTel && !offMarket ? `sms:${ctaTel}` : null}
+        similarHref={similarHref}
+        alertsHref={alertsHref}
       />
+      {/* SITE-21 — THE SOLD FACTS, first thing under the price. What happened
+          to this house is the answer the reader came for, and it is the only
+          claim about its price that is still true. */}
+      {offMarketFacts ? (
+        <ListingOffMarketFacts
+          facts={offMarketFacts}
+          browseHref={homesForSalePath(listing.city)}
+          browseLabel={similarLabel}
+        />
+      ) : null}
+      {/* The homes a reader CAN buy get the prominence on a page about one
+          they cannot: the rail moves from the bottom of the page to directly
+          under the sold facts. MASTER_SPEC §4.9. */}
+      {offMarket ? (
+        <ListingSimilarStrip
+          rows={similarRows}
+          placeName={featuredGeoName}
+          viewMoreHref={featuredViewAllHref}
+        />
+      ) : null}
+      {/* And the ask that replaces the tour: tell me when the next one lists.
+          Same capture contract the page has always carried, city and price
+          band and beds pre-filled from this home (parity.json capture). */}
+      {offMarket ? (
+        <ListingLikeThisAlerts
+          city={listing.city}
+          listPrice={wholePropertyPrice}
+          beds={listing.beds}
+          photoUrl={galleryPhotos[0]?.url ?? listing.photoUrl}
+          showCoach={false}
+        />
+      ) : null}
       <PropertySpecs listing={listingWithPhotos} />
-      {wholePropertyPrice != null ? (
+      {/* No payment on a home that is not for sale. The founding case computed
+          principal and interest on a $1,250,000 ask under a $1,100,000 sold
+          headline; even fed the close price it is a loan nobody can take out
+          on a house nobody can buy. */}
+      {!offMarket && wholePropertyPrice != null ? (
         <div id="payment">
           <MortgageCalculator
             listPrice={wholePropertyPrice}
@@ -555,9 +657,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
         <SchoolsBlock listing={listingWithPhotos} />
       </div>
       <ListingAroundHere lat={listing.lat} lng={listing.lng} />
-      {askClaim ? <ListingAskInstrument claim={askClaim} /> : null}
+      {!offMarket && askClaim ? <ListingAskInstrument claim={askClaim} /> : null}
       <div id="history">
-        <PropertyHistory history={history} mode="meaningful-only" />
+        <PropertyHistory
+          history={history}
+          mode="meaningful-only"
+          closePrice={listing.closePrice}
+        />
       </div>
       <div id="tax">
         <ListingTaxHistory
@@ -578,7 +684,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           />
         </div>
       ) : null}
-      {similarRows.length > 0 ? (
+      {!offMarket && similarRows.length > 0 ? (
         <ListingSimilarStrip
           rows={similarRows}
           placeName={featuredGeoName}
@@ -590,14 +696,20 @@ export default async function ListingDetailPage({ params }: PageProps) {
           drawing, one decision) and "who listed it" is the signature under it.
           Two asks side by side would be the stacked-section tell TASTE.md bans,
           so the close is a CHOOSER — three doors, one panel. */}
-      <V3ListingClose
-        id="close"
-        listingKey={listing.listingKey}
-        addressLine={street}
-        bookHref={`/book?agent=${encodeURIComponent(ctaBrokerSlug)}&listing=${encodeURIComponent(listing.listingKey)}`}
-        paymentHref="#payment"
-        view={cutFacts ? buildCloseView(cutFacts, closeSubject) : null}
-      />
+      {/* All three of the close's acts are asks about a live listing: watch
+          THIS price, book a walk-through of THIS house, email me THIS payment.
+          None of them survives the home leaving the market, so off market the
+          ending is the saved search up top instead. */}
+      {!offMarket ? (
+        <V3ListingClose
+          id="close"
+          listingKey={listing.listingKey}
+          addressLine={street}
+          bookHref={`/book?agent=${encodeURIComponent(ctaBrokerSlug)}&listing=${encodeURIComponent(listing.listingKey)}`}
+          paymentHref="#payment"
+          view={cutFacts ? buildCloseView(cutFacts, closeSubject) : null}
+        />
+      ) : null}
       {ctaBroker ? (
         <div id="listed" className="listing-who listing-who--flow">
           <ListingBrokerCTA
@@ -606,6 +718,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
             listingKey={contactKey}
             reviews={genericReviews}
             lockToDefault={listingAgent != null}
+            offMarket={offMarketKind}
           />
         </div>
       ) : null}
@@ -624,6 +737,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
       brokers={brokers}
       listingKey={contactKey}
       lockToDefault={listingAgent != null}
+      offMarket={offMarket}
+      similarHref={similarHref}
+      alertsHref={alertsHref}
     />
   ) : null
 
@@ -634,6 +750,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       listingKey={contactKey}
       reviews={genericReviews}
       lockToDefault={listingAgent != null}
+      offMarket={offMarketKind}
     />
   ) : null
 

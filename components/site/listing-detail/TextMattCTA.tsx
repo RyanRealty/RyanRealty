@@ -5,6 +5,7 @@ import {
   H3,
   Stack,
 } from '@/components/site/primitives'
+import { valuationHref } from '@/lib/site/valuation-href'
 import type { Broker } from '@/lib/data/types/broker'
 import type { ReviewsSummary } from '@/lib/data/reviews/getReviews'
 
@@ -34,6 +35,23 @@ type Props = {
   headline?: string
   body?: string
   primaryCta?: { href: string; label: string }
+  /**
+   * SITE-21. Null on market; 'sold' for Closed; 'unsold' for Expired, Canceled
+   * and Withdrawn.
+   *
+   * The card's whole ask is a showing: "Tour" over "Tour requests usually get a
+   * same-day reply", with Call and Text under it. On a home that is not for
+   * sale that is three unfulfillable requests, and the call it starts ends with
+   * "that one sold." Off market the card asks the two questions a broker CAN
+   * answer — what happened with this listing, and what it means for the
+   * reader's own house — and it builds no `tel:` or `sms:` URI, so the page's
+   * only click-to-call is the brokerage line in the site footer.
+   *
+   * SOLD AND UNSOLD ARE NOT THE SAME QUESTION, and the first render proved it:
+   * an EXPIRED listing carried "Questions about this sale? · Ask what this one
+   * closed at and why" over a home that never sold (§0.5, looked at 2026-09-09).
+   */
+  offMarket?: 'sold' | 'unsold' | null
   className?: string
 }
 
@@ -48,10 +66,16 @@ export function TextMattCTA({
   headline,
   body,
   primaryCta,
+  offMarket = null,
   className,
 }: Props) {
-  const tourHref = primaryCta?.href ?? `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`
-  const tourLabel = primaryCta?.label ?? 'Tour'
+  const askHref = `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=question`
+  const tourHref =
+    primaryCta?.href ??
+    (offMarket ? askHref : `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`)
+  const tourLabel =
+    primaryCta?.label ??
+    (offMarket === 'sold' ? 'Ask about this sale' : offMarket ? 'Ask about this home' : 'Tour')
   const phone = broker.phoneDirect ?? broker.phoneFub ?? null
 
   const quote = reviews?.reviews?.[0] ?? null
@@ -68,9 +92,14 @@ export function TextMattCTA({
     >
       <Stack gap="default">
         <Eyebrow>Talk to a broker</Eyebrow>
-        <H3>{headline ?? 'Questions about this home?'}</H3>
+        <H3>{headline ?? (offMarket === 'sold' ? 'Questions about this sale?' : 'Questions about this home?')}</H3>
         <Body size="small" tone="muted" className="leading-relaxed">
-          {body ?? 'Tour requests usually get a same-day reply.'}
+          {body ??
+            (offMarket === 'sold'
+              ? 'Ask what this one closed at and why, or what it says about the house you own.'
+              : offMarket
+                ? 'It came off the market without selling. Ask what happened, or what it means for the house you own.'
+                : 'Tour requests usually get a same-day reply.')}
         </Body>
 
         {/* Broker — large photo on the left, all contact on the right */}
@@ -98,7 +127,7 @@ export function TextMattCTA({
                 ) : null}
               </div>
             </div>
-            {phone ? (
+            {phone && !offMarket ? (
               <a
                 href={`tel:${digits(phone)}`}
                 className="flex items-center gap-2 text-sm font-semibold tabular-nums"
@@ -126,18 +155,24 @@ export function TextMattCTA({
           <a href={tourHref} className="btn alt" style={{ justifyContent: 'center' }}>
             {tourLabel}
           </a>
-          <div className="grid grid-cols-2 gap-2.5">
-            {phone ? (
-              <a href={`tel:${digits(phone)}`} className="btn" style={OUTLINE_BTN}>
-                Call
-              </a>
-            ) : null}
-            {phone ? (
-              <a href={`sms:${digits(phone)}`} className="btn" style={OUTLINE_BTN}>
-                Text
-              </a>
-            ) : null}
-          </div>
+          {offMarket ? (
+            <a href={valuationHref('/listing')} className="btn" style={OUTLINE_BTN}>
+              What is my home worth?
+            </a>
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5">
+              {phone ? (
+                <a href={`tel:${digits(phone)}`} className="btn" style={OUTLINE_BTN}>
+                  Call
+                </a>
+              ) : null}
+              {phone ? (
+                <a href={`sms:${digits(phone)}`} className="btn" style={OUTLINE_BTN}>
+                  Text
+                </a>
+              ) : null}
+            </div>
+          )}
         </div>
 
         {/* Social proof — large screens only (verified Google reviews) */}

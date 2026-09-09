@@ -32,6 +32,7 @@ export default function ListingBrokerCTA({
   reviews,
   className,
   lockToDefault = false,
+  offMarket = null,
 }: {
   defaultBroker: Broker
   brokers: Broker[]
@@ -42,6 +43,11 @@ export default function ListingBrokerCTA({
   /** True when defaultBroker is the resolved Ryan Realty listing agent for THIS
    *  home — keep them as the contact; never random-reassign over them. */
   lockToDefault?: boolean
+  /**
+   * SITE-21: the home is not for sale, so the card's ask is not a showing.
+   * 'sold' and 'unsold' ask different questions — see TextMattCTA.
+   */
+  offMarket?: 'sold' | 'unsold' | null
 }) {
   // assign: true — the card owns the sticky assignment for an unattributed
   // visitor, and the bar reads the cookie it writes.
@@ -52,6 +58,7 @@ export default function ListingBrokerCTA({
       broker={broker}
       listingKey={listingKey}
       reviews={reviews}
+      offMarket={offMarket}
       className={['listing-broker-card', className].filter(Boolean).join(' ')}
     />
   )

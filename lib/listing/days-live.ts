@@ -75,3 +75,56 @@ export function daysLiveOnMarket(
   if (days < 0 || days >= 4000) return null
   return days
 }
+
+/**
+ * The civil day an MLS CloseDate names.
+ *
+ * A close date is a DATE in the MLS and arrives here as a timestamptz pinned to
+ * midnight UTC (`2026-09-08T00:00:00+00:00`). Zoning that instant into Central
+ * Oregon lands on 5pm the previous day, so `civilDay` — right for OnMarketDate,
+ * which is a real instant — moves every close date back one day. Measured
+ * 2026-09-09 while building the sold instrument: a home that came on the market
+ * on 2026-09-07 and closed on 2026-09-08 counted 0 days.
+ *
+ * So the date part is taken verbatim. It is what the MLS recorded and what a
+ * reader can reproduce from the record beside it.
+ */
+export function closeCivilDay(closeDate: string | null | undefined): string | null {
+  if (!closeDate) return null
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(String(closeDate).trim())
+  return match ? match[1]! : null
+}
+
+/**
+ * How long the home was on the market before it closed: on-market date to
+ * CLOSE date, in Central Oregon calendar days.
+ *
+ * SITE-21. daysLiveOnMarket counts to TODAY, which is the right count for a
+ * home that is still for sale and a false one for a home that is not. The
+ * listing page ran it on every status: a listing that came on the market on
+ * 2022-07-14 and expired that October published "1,153 days on market" beside
+ * a closed pill, a figure describing nothing that happened — the §0 failure of
+ * a number whose stated basis does not produce it.
+ *
+ * It stays in this file, beside the live count, because CLAUDE.md §7's rule is
+ * that days on market has ONE definition per surface and both surfaces read it
+ * from here. Same calendar-day arithmetic, same zone, same fault guards; the
+ * only difference is which day ends the count.
+ *
+ * Null when either date is missing or the pair is incoherent (a close date
+ * before the on-market date is a data fault, not a zero-day sale) — an
+ * off-market listing with no close date, which is most Expired, Canceled and
+ * Withdrawn rows, publishes no day count at all rather than a count to today.
+ */
+export function daysOnMarketToClose(
+  onMarketDate: string | null | undefined,
+  closeDate: string | null | undefined,
+): number | null {
+  if (!onMarketDate || !closeDate) return null
+  const started = civilDay(onMarketDate)
+  const ended = closeCivilDay(closeDate)
+  if (!started || !ended) return null
+  const days = daysBetweenKeys(started, ended)
+  if (days < 0 || days >= 4000) return null
+  return days
+}

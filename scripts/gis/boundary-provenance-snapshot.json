@@ -1,13 +1,14 @@
 {
   "note": "Provenance snapshot of public.boundaries — the input to ci:boundary-provenance (scripts/check-boundary-provenance.mjs). OBSERVATIONS ONLY: the POLICY (which geo_types may exist, which publishers count as authoritative, the non-official ratchet caps) lives in the gate script, so refreshing this file can never loosen the policy. Refresh with: node scripts/gis/import-ode-school-districts.mjs --snapshot",
   "query": "select geo_type, source, count(*) from public.boundaries group by 1,2 -- read here via PostgREST select=geo_type,source (paged 1000); publisher = source split on ' — ' / ' (' / ';'",
-  "generatedAt": "2026-07-25T01:36:43.905Z",
-  "totalRows": 3312,
+  "generatedAt": "2026-09-09T05:48:59.518Z",
+  "totalRows": 3323,
   "geoTypes": {
     "city": {
-      "rows": 10,
+      "rows": 11,
       "publishers": {
         "TIGER/Line 2024 Census Designated Places": 3,
+        "TIGER/Line 2024 County Subdivisions": 1,
         "TIGER/Line 2024 Incorporated Places": 7
       }
     },
@@ -15,8 +16,9 @@
       "rows": 28,
       "publishers": {
         "City of Bend GIS": 14,
-        "Deschutes County GIS Subdivisions": 1,
-        "Ryan Realty spatial discovery v6": 12,
+        "Crook County GIS Subdivisions": 1,
+        "Deschutes County GIS Subdivisions": 10,
+        "Deschutes County GIS Unincorporated Communities": 2,
         "county_plat_union": 1
       }
     },
@@ -40,21 +42,23 @@
       }
     },
     "subdivision": {
-      "rows": 3213,
+      "rows": 3223,
       "publishers": {
-        "Deschutes County GIS Subdivisions": 3213
+        "Deschutes County GIS Subdivisions": 3223
       }
     }
   },
   "publishers": {
     "City of Bend GIS": 14,
+    "Crook County GIS Subdivisions": 1,
     "Deschutes County GIS": 37,
-    "Deschutes County GIS Subdivisions": 3214,
+    "Deschutes County GIS Subdivisions": 3233,
+    "Deschutes County GIS Unincorporated Communities": 2,
     "OpenStreetMap contributors": 12,
     "Oregon Department of Education": 6,
     "Oregon State Parks": 6,
-    "Ryan Realty spatial discovery v6": 12,
     "TIGER/Line 2024 Census Designated Places": 3,
+    "TIGER/Line 2024 County Subdivisions": 1,
     "TIGER/Line 2024 Incorporated Places": 7,
     "county_plat_union": 1
   }

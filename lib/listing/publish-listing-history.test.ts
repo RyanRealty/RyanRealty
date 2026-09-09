@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  publishHistoryRowPrice,
   publishListingHistory,
   publishListingHistoryDeltaLabel,
   publishListingHistoryDescription,
@@ -192,5 +193,24 @@ describe('publishListingHistory', () => {
     expect(rows).toEqual([
       { event: 'listed', event_date: '2026-07-31', price: 889000, price_change: null, description: null },
     ])
+  })
+})
+
+describe('publishHistoryRowPrice', () => {
+  it('leaves every non-sale row exactly as the merge published it', () => {
+    expect(publishHistoryRowPrice({ isSale: false, rowPrice: 849_000, closePrice: 827_000 })).toBe(849_000)
+    expect(publishHistoryRowPrice({ isSale: false, rowPrice: null, closePrice: 827_000 })).toBeNull()
+  })
+
+  it('publishes the CLOSE price on the sale row, never the ask the change-log carried', () => {
+    // MLS 220224752, dev render 2026-09-09: the Sold row carried 849000, the
+    // then-current list price, on a home that sold for 827000.
+    expect(publishHistoryRowPrice({ isSale: true, rowPrice: 849_000, closePrice: 827_000 })).toBe(827_000)
+  })
+
+  it('withholds rather than falling back to the ask when no close price publishes', () => {
+    expect(publishHistoryRowPrice({ isSale: true, rowPrice: 849_000, closePrice: null })).toBeNull()
+    expect(publishHistoryRowPrice({ isSale: true, rowPrice: 849_000, closePrice: 0 })).toBeNull()
+    expect(publishHistoryRowPrice({ isSale: true, rowPrice: 849_000, closePrice: Number.NaN })).toBeNull()
   })
 })

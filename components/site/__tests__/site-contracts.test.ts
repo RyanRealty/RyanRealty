@@ -136,11 +136,18 @@ describe('design directive contracts', () => {
       '<ListingAroundHere',
       '<ListingTaxHistory',
       '<GoverningDocumentsBlock',
-      '<ListingSimilarStrip',
-      '<ListingBrokerCTA',
-      '<ListingAttribution',
     ]
-    const positions = order.map((token) => main.indexOf(token))
+    // SITE-21 gave the off-market page a SECOND ListingSimilarStrip mount, high
+    // up: on a home nobody can buy, the homes they can get the prominence
+    // (MASTER_SPEC §4.9). The on-market rail is therefore the LAST mount, and
+    // indexOf would now read the off-market one and call this page reordered
+    // when it is not.
+    const positions = [
+      ...order.map((token) => main.indexOf(token)),
+      main.lastIndexOf('<ListingSimilarStrip'),
+      main.indexOf('<ListingBrokerCTA'),
+      main.indexOf('<ListingAttribution'),
+    ]
     expect(positions.every((p) => p >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
   })
@@ -184,7 +191,12 @@ describe('design directive contracts', () => {
     expect(ld).toMatch(/type:\s*'breadcrumb'/)
     expect(src).toMatch(/<V3SectionTracker[\s/>]/)
     expect(src).toMatch(/<PriceCtaStrip\b/)
-    expect(src).not.toMatch(/<ListingLikeThisAlerts\b/)
+    // SITE-21: the saved search is back on this page, OFF MARKET ONLY. It was
+    // banned outright because an on-market listing already carries one ask
+    // (Tour / Call / Text) and a second capture under it is the stacked-ask
+    // tell. A Closed, Expired, Canceled or Withdrawn home has no first ask —
+    // there is no showing to book — so this is the one, guarded by offMarket.
+    expect(src).toMatch(/\{offMarket \? \(\s*<ListingLikeThisAlerts\b/)
     expect(src).toMatch(/<ListingAskInstrument\b/)
     expect(src).toMatch(/buildListingAskClaim/)
     expect(src).not.toMatch(/<LivePricingRead\b/)

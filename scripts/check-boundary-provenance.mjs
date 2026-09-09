@@ -56,7 +56,11 @@ const REPORT = process.argv.includes('--report')
 
 /** geo_type -> { minRows, why } — the declared surface of public.boundaries. */
 const DECLARED_GEO_TYPES = {
-  city: { minRows: 10, why: 'Census TIGER/Line 2024 places — city + CDP pages' },
+  // Raised 10 -> 11 on 2026-09-08 (SITE-23) when Powell Butte was added. The
+  // floor is what stops a DELETE going unnoticed, so it moves with the layer:
+  // Powell Butte's absence is exactly the failure this node was, and at a floor
+  // of 10 removing it again would still pass.
+  city: { minRows: 11, why: 'Census TIGER/Line 2024 places + CCDs — city, CDP and unincorporated-community coverage' },
   neighborhood: { minRows: 28, why: 'City of Bend GIS neighborhood districts + county plat unions — community pages' },
   subdivision: { minRows: 3200, why: 'Deschutes County GIS subdivision plats — subdivision pages' },
   park: { minRows: 18, why: 'Oregon State Parks (OPRD via Oregon GEO) + tracked OSM debt — park pages' },
@@ -77,10 +81,27 @@ const AUTHORITATIVE_PUBLISHERS = new Set([
   'City of Bend GIS',
   'Deschutes County GIS',
   'Deschutes County GIS Subdivisions',
+  // The county's own layer for its named unincorporated communities. Same
+  // publisher as the line above; a different layer, so it surfaces here under
+  // its own name once rows carry it.
+  'Deschutes County GIS Unincorporated Communities',
+  // Same layer class as Deschutes', published by the neighbouring county. Central
+  // Oregon does not stop at the Deschutes line: Brasada Ranch, Powell Butte and
+  // the rest of the Prineville side are Crook County, and their plat geometry
+  // comes from Crook County's GIS, not from Deschutes'.
+  'Crook County GIS Subdivisions',
   'Oregon Department of Education',
   'Oregon State Parks',
   'TIGER/Line 2024 Census Designated Places',
   'TIGER/Line 2024 Incorporated Places',
+  // County Subdivisions (CCDs, MTFCC G4040) — the Census layer that covers an
+  // UNINCORPORATED community. Powell Butte is neither an incorporated place nor
+  // a CDP (verified 2026-09-08 against TIGERweb layers 4 and 5, name and
+  // envelope queries both, with Tumalo as the control), so its only authoritative
+  // Census geometry is its CCD. CCDs tile a county and do not overlap each other,
+  // so a CCD row cannot fight a city row; the classifier takes the smallest
+  // containing polygon per geo_type in any case.
+  'TIGER/Line 2024 County Subdivisions',
   // A dissolve of Deschutes County GIS plat polygons — county geometry, aggregated, not redrawn.
   'county_plat_union',
 ])

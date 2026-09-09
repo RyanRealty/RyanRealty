@@ -3,9 +3,21 @@ import { valuationHref } from '@/lib/site/valuation-href'
 
 /**
  * The ONE refusal body for a listing URL we cannot display — an invalid key, a
- * sold/stale key, a seller internet opt-out (permit_internet_yn = false), a
- * non-IDX-participant broker, or a Coming Soon pre-marketing row. Every one of
- * those resolves to `getListingDetail(...) === null`.
+ * seller internet opt-out (permit_internet_yn = false), a non-IDX-participant
+ * broker, or a Coming Soon pre-marketing row. Every one of those resolves to
+ * `getListingDetail(...) === null`.
+ *
+ * A SOLD KEY IS NOT ONE OF THEM, and this header said it was until 2026-09-09
+ * (SITE-21). getListingDetail refuses exactly two things — the IDX opt-outs and
+ * Coming Soon (lib/data/listings/getListingDetail.ts) — so a Closed, Expired,
+ * Canceled or Withdrawn listing has always resolved and always rendered the
+ * full page. The false line here is how the off-market state came to be
+ * believed handled while the live page was computing a mortgage on a sold
+ * home's old ask and offering a tour of it. The real off-market state is the
+ * page itself: isPublicOffMarketStatus in lib/listing-status-public.ts, the
+ * sold facts in ListingOffMarketFacts, the active-inventory rail and the saved
+ * search. MASTER_SPEC §4.9 is explicit that a sold listing returns 200 with
+ * that state rather than this refusal.
  *
  * WHY THIS IS A COMPONENT AND NOT ONLY `not-found.tsx` (2026-08-19).
  * /listing/[listingKey] renders dynamically, and `app/loading.tsx` (inherited

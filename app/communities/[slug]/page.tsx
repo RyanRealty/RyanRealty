@@ -112,6 +112,10 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import { CommunityAlertsStrip } from './_v3/CommunityAlertSheet.client'
 import { buildCommunitySchemas, communityMetadataInput } from './_v3/community-metadata'
+import { resolveCommunityDisplayName } from './_v3/community-display-name'
+import { CommunityUnavailable } from './_v3/CommunityUnavailable'
+import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
+import { getRecordedPlatLabel } from '@/lib/data/subdivisions/getRecordedPlatLabel'
 import {
   buildExploreEdges,
   communityDocumentItems,
@@ -119,7 +123,7 @@ import {
   reconcileListedVsDetachedFaq,
   reconcilePlaceHoaFaq,
 } from './_v3/community-figures'
-import { buildPlaceKnowledge } from './_v3/place-knowledge'
+import { buildPlaceKnowledge, placeKnowledgeSource } from './_v3/place-knowledge'
 import { measuredPlaceHoaInput } from './_v3/place-hoa-measured'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import {
@@ -159,17 +163,65 @@ function isBoundaryReliable(slug: string): boolean {
   return !UNRELIABLE_BOUNDARY_SLUGS.has(slug)
 }
 
+/**
+ * SITE-28. The one place this route decides what to CALL its place — and
+ * whether it is allowed to call it anything. generateMetadata and the page body
+ * both go through here so a <title> can never name a place the body refuses.
+ * getRecordedPlatLabel is cached per slug, so the two calls are one read.
+ */
+async function resolvePublicName(
+  slug: string,
+  rawName: string,
+  community: { city: string; subdivision: string },
+) {
+  // The MLS spelling of this community's own name, from the snapshot the page
+  // already reads and caches under the same key (getCommunityBySlug computes
+  // the identical geoKey). Interior capitals are the evidence the abbreviation
+  // test needs and slugToTitle has already destroyed — see
+  // community-display-name.ts. A miss is null and the resolver falls back.
+  const geoKey = `${community.city.toLowerCase().trim()}:${community.subdivision.toLowerCase().trim()}`
+  const snapshot = await getGeoSnapshot({ geoType: 'community', geoKey }).catch(() => null)
+  return resolveCommunityDisplayName({
+    rawName,
+    mlsName: snapshot?.geoLabel ?? null,
+    isCanonicalSlug: isCanonicalCommunitySlug(slug),
+    readRecordedPlatLabel: (platSlug) => getRecordedPlatLabel(platSlug),
+  })
+}
+
+/**
+ * The raw name BEFORE SITE-28 resolution, derived exactly once so the <title>
+ * and the <h1> cannot disagree. generateMetadata used to read
+ * getResortCommunityBySlug(slug) while the body read the alias-aware
+ * resortMatch, which is a real divergence on alias slugs (sisters-bbr: the head
+ * said "Bbr", the body said "Black Butte Ranch"). Both now call this.
+ */
+function communityRegistryContext(community: { citySlug: string; subdivision: string; name: string }, slug: string) {
+  const subdivisionLc = community.subdivision.toLowerCase().trim()
+  const resortMatch = cityResorts(community.citySlug).find(
+    (r) =>
+      r.slug === slug ||
+      r.label.toLowerCase().trim() === subdivisionLc ||
+      (r.subdivision_aliases ?? []).some((a) => a.toLowerCase().trim() === subdivisionLc),
+  )
+  const resortSlug = resortMatch?.slug ?? slug
+  const registryEntry = getResortCommunityBySlug(resortSlug)
+  return { resortMatch, resortSlug, registryEntry, rawName: registryEntry?.label ?? community.name }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const community = await getCommunityBySlug(slug)
   if (!community) notFound()
-  const publicName = getResortCommunityBySlug(slug)?.label ?? community.name
+  const { rawName } = communityRegistryContext(community, slug)
+  const resolved = await resolvePublicName(slug, rawName, community)
   return pageMetadata(
     communityMetadataInput({
       slug,
-      name: publicName,
+      name: resolved.kind === 'publish' ? resolved.name : rawName,
       city: community.city,
       heroImageUrl: community.heroImageUrl,
+      refused: resolved.kind === 'refuse',
     }),
   )
 }
@@ -180,6 +232,17 @@ export default async function CommunityDetailPage({ params }: Props) {
   const community = await getCommunityBySlug(slug)
   if (!community) notFound()
 
+  // SITE-28 — NAME FIRST, BEFORE ANY OTHER READ. If this URL has no real place
+  // name, nothing below it should be built: every section, every FAQ sentence
+  // and the JSON-LD all interpolate the name. REFUSAL, not notFound(): under
+  // app/loading.tsx's Suspense boundary a throw ships a hollow 200 with no
+  // <h1> — see CommunityUnavailable.tsx.
+  const registryContext = communityRegistryContext(community, slug)
+  const resolvedName = await resolvePublicName(slug, registryContext.rawName, community)
+  if (resolvedName.kind === 'refuse') {
+    return <CommunityUnavailable city={community.city} citySlug={community.citySlug} />
+  }
+
   const cityName = community.city
 
   const [openHouses, communityActivity] = await Promise.all([
@@ -188,22 +251,17 @@ export default async function CommunityDetailPage({ params }: Props) {
   ])
   const citySlug = community.citySlug
 
-  const subdivisionLc = community.subdivision.toLowerCase().trim()
-  const resortMatch = cityResorts(citySlug).find(
-    (r) =>
-      r.slug === slug ||
-      r.label.toLowerCase().trim() === subdivisionLc ||
-      (r.subdivision_aliases ?? []).some((a) => a.toLowerCase().trim() === subdivisionLc),
-  )
-  const resortSlug = resortMatch?.slug ?? slug
-  const registryEntry = getResortCommunityBySlug(resortSlug)
+  const { resortMatch, resortSlug, registryEntry } = registryContext
   const isResort = registryEntry?.is_resort === true || community.isResort
   const isResortInCity = Boolean(resortMatch)
 
   const childAliases = registryEntry
     ? childAliasesOf(registryEntry, registryEntry.subdivision_aliases)
     : []
-  const publicName = registryEntry?.label ?? community.name
+  // SITE-28: the resolved name, not the raw MLS token. Every downstream
+  // sentence, heading, FAQ and JSON-LD payload reads this one variable, which
+  // is why fixing it here fixes the H1 and the <title> together.
+  const publicName = resolvedName.name
   const placeAliases = [community.subdivision, publicName, ...childAliases]
   const placeNameMatch = (raw: string | null | undefined): boolean => {
     const sub = raw?.trim().toLowerCase()
@@ -866,6 +924,13 @@ export default async function CommunityDetailPage({ params }: Props) {
             eyebrow={`${publicName} · Belonging`}
             heading={`Living in ${publicName}`}
             items={knowledgeItems}
+            // §0. These rows are authored facts, so the block names who
+            // published them. Built from the community config's own sources[].
+            source={placeKnowledgeSource({
+              name: publicName,
+              content: richContent,
+              hasMeasuredHoa: Boolean(measuredPlaceHoaInput(placeCharacter).measuredAnnual),
+            })}
           />
         ) : null}
 
@@ -948,9 +1013,11 @@ export default async function CommunityDetailPage({ params }: Props) {
           questions={placeAnswers}
           sourceKey={answerSourceKey}
           doors={[
-            { label: `See ${publicName} houses`, href: '#homes' },
+            { label: `See ${publicName} houses`, href: '#homes', group: publicName },
             ...exploreItems.flatMap((item) =>
-              'href' in item && item.href ? [{ label: item.label, href: item.href }] : [],
+              'href' in item && item.href
+                ? [{ label: item.label, href: item.href, group: item.group }]
+                : [],
             ),
           ]}
           note={`Each answer carries the one figure it is about and where that figure came from. Market figures on this page come from the regional MLS through Oregon Data Share.${
