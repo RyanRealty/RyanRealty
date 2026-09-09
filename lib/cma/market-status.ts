@@ -5,6 +5,8 @@
  */
 
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
+import { compAreaIn, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
+import { countWord } from '@/lib/pricing/estimate'
 import { keepSameProductType } from '@/lib/cma/market-area'
 import { realSubdivision } from '@/lib/cma/comp-tiers'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
@@ -64,6 +66,13 @@ export type CmaExpiredPeer = {
   onMarketDate: string | null
   photoUrl: string | null
   listingHistoryLine: string | null
+  /**
+   * Why this home sat, from the row and nothing else: days on the market, what
+   * it did with its opening ask, and its last ask per square foot against what
+   * the sales behind the subject's price actually closed at. Null when the row
+   * carries none of the three — a peer with no evidence gets no explanation.
+   */
+  whyItSat?: string | null
   beds: number | null
   baths: number | null
   sqft: number | null
@@ -580,4 +589,177 @@ export function computeMarketArea(input: {
     }),
     expiredPeers,
   }
+}
+
+/**
+ * THE PEER LADDER — Matt 2026-09-08: "when we're looking at expireds, we can go
+ * back until we have at least 3 expired, withdrawn, or canceled, and then we
+ * have to be able to tell the story."
+ *
+ * Twelve months was a fixed window whether it held thirty failed listings or
+ * one. These are the steps it opens through, stopping at the first that holds
+ * three. The rows come from ONE read at the widest step
+ * (getCmaAreaUnsoldCycles), so the ladder is a walk, not six queries.
+ */
+export const EXPIRED_PEER_WINDOWS = [3, 6, 9, 12, 18, 24] as const
+export const EXPIRED_PEER_MIN = 3
+
+export type CmaExpiredPeerSet = {
+  /** The area these came from — the same object the comps and the competition use. */
+  area: CompArea
+  /** The window that produced them. */
+  windowMonths: number
+  /** Every window the ladder tried, in order. */
+  windowsTried: number[]
+  /** The window it had to open to, or null when the tightest one already held three. */
+  widenedTo: number | null
+  count: number
+  /** True when even 24 months inside the area holds fewer than three. */
+  shortfall: boolean
+  sentence: string
+  peers: CmaExpiredPeer[]
+}
+
+function usd(n: number): string {
+  return `$${Math.round(n).toLocaleString('en-US')}`
+}
+
+/** "3" → "three"; "24" stays "24". Nine is where the words stop (countWord). */
+function monthsWord(months: number): string {
+  return countWord(months)
+}
+
+/** "a, b and c" — no Oxford comma. */
+function joinBits(parts: readonly string[]): string {
+  if (parts.length === 0) return ''
+  if (parts.length === 1) return parts[0]!
+  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+}
+
+/**
+ * Why this home sat. Every clause is a number off the row: days, what it did
+ * with its opening ask, and its last ask per square foot beside the median
+ * $/sqft of the sales that set the subject's price. No adjectives, no motive,
+ * nothing about the sellers.
+ */
+export function whyItSat(
+  peer: CmaExpiredPeer,
+  keptCompMedianPpsf: number | null | undefined,
+): string | null {
+  const bits: string[] = []
+  if (peer.daysOnMarket != null && peer.daysOnMarket > 0) {
+    bits.push(`${peer.daysOnMarket} ${peer.daysOnMarket === 1 ? 'day' : 'days'} on the market`)
+  }
+  const open = peer.originalListPrice
+  if (open != null && Number.isFinite(open) && open > 0 && peer.listPrice > 0) {
+    if (open > peer.listPrice) bits.push(`came down ${usd(open - peer.listPrice)} from ${usd(open)}`)
+    else if (open === peer.listPrice) bits.push(`never came down from ${usd(open)}`)
+  }
+  if (peer.sqft != null && peer.sqft > 0 && peer.listPrice > 0) {
+    // Round the $/sqft FIRST, then take the gap off the rounded figure, so the
+    // percentage a reader checks reproduces from the two numbers printed here.
+    const ppsf = Math.round(peer.listPrice / peer.sqft)
+    const bench =
+      keptCompMedianPpsf != null && Number.isFinite(keptCompMedianPpsf) && keptCompMedianPpsf > 0
+        ? Math.round(keptCompMedianPpsf)
+        : null
+    if (bench != null && ppsf !== bench) {
+      const pct = ((ppsf - bench) / bench) * 100
+      const shown = Math.abs(pct) >= 10 ? Math.round(Math.abs(pct)) : Math.round(Math.abs(pct) * 10) / 10
+      bits.push(
+        `a last ask of ${usd(ppsf)} a square foot, ${shown} percent ${pct > 0 ? 'above' : 'below'} the ${usd(
+          bench,
+        )} the sales behind your price closed at`,
+      )
+    } else {
+      bits.push(`a last ask of ${usd(ppsf)} a square foot`)
+    }
+  }
+  return bits.length > 0 ? `${joinBits(bits)}.` : null
+}
+
+/** Months between an off-market day and as-of. Null when the row carries no date. */
+function offMarketMonths(row: CmaMarketAreaRow, asOf: Date): number | null {
+  const raw = row.status_change_timestamp?.trim()
+  if (!raw) return null
+  const t = new Date(raw.length <= 10 ? `${raw}T12:00:00.000Z` : raw)
+  if (Number.isNaN(t.getTime())) return null
+  const months = (asOf.getTime() - t.getTime()) / (30.44 * 24 * 3600e3)
+  return months >= 0 ? months : 0
+}
+
+/**
+ * Build the peer set from rows ALREADY scoped to the area and the price band.
+ * This function never widens the geography — only the clock. When 24 months
+ * inside the area still holds fewer than three, it returns what exists with
+ * `shortfall` set and a sentence that says nothing was brought in from
+ * outside. §0: the document goes out with fewer facts rather than a padded set.
+ */
+export function buildExpiredPeerSet(input: {
+  rows: readonly CmaMarketAreaRow[]
+  subject: ExpiredPeerSubject
+  area: CompArea
+  asOf?: Date
+  /** Median $/sqft of the sales that set the price, for `whyItSat`. */
+  keptCompMedianPpsf?: number | null
+  cap?: number
+}): CmaExpiredPeerSet {
+  const asOf = input.asOf ?? new Date()
+  const cap = input.cap ?? EXPIRED_PEER_CAP
+  const dated = input.rows
+    .map((row) => ({ row, months: offMarketMonths(row, asOf) }))
+    // A row with no off-market date cannot support "in the last N months", so
+    // it is not evidence for any window. It is dropped, never dated.
+    .filter((x): x is { row: CmaMarketAreaRow; months: number } => x.months != null)
+
+  const windows = [...EXPIRED_PEER_WINDOWS]
+  let windowMonths = windows[windows.length - 1]!
+  let peers: CmaExpiredPeer[] = []
+  const tried: number[] = []
+  for (const w of windows) {
+    tried.push(w)
+    const inWindow = dated.filter((x) => x.months <= w).map((x) => x.row)
+    peers = pickExpiredPeers(inWindow, input.subject, cap)
+    windowMonths = w
+    if (peers.length >= EXPIRED_PEER_MIN) break
+  }
+
+  const withWhy = peers.map((p) => ({ ...p, whyItSat: whyItSat(p, input.keptCompMedianPpsf) }))
+  const count = withWhy.length
+  const shortfall = count < EXPIRED_PEER_MIN
+  const widenedTo = !shortfall && windowMonths > windows[0]! ? windowMonths : null
+
+  return {
+    area: input.area,
+    windowMonths,
+    windowsTried: tried,
+    widenedTo,
+    count,
+    shortfall,
+    sentence: peerSetSentence({ area: input.area, count, windowMonths, shortfall }),
+    peers: withWhy,
+  }
+}
+
+function peerSetSentence(input: {
+  area: CompArea
+  count: number
+  windowMonths: number
+  shortfall: boolean
+}): string {
+  const where = compAreaIn(input.area)
+  const w = monthsWord(input.windowMonths)
+  if (input.count === 0) {
+    return `No home ${where} came off the market without selling in the last ${w} months.`
+  }
+  const homes = `${countWord(input.count)} ${input.count === 1 ? 'home' : 'homes'}`
+  if (!input.shortfall) {
+    const head = `${countWord(input.count, true)} ${input.count === 1 ? 'home' : 'homes'}`
+    return `${head} ${where} came off the market without selling in the last ${w} months.`
+  }
+  // Fewer than three even at the widest window. Say the number, say the
+  // window, and say plainly that nothing was brought in from outside.
+  const outside =
+    input.area.kind === 'radius' ? 'further out' : `outside ${compAreaPhrase(input.area)}`
+  return `Only ${homes} ${where} came off the market without selling in the last ${w} months, and nothing from ${outside} was added to make up the number.`
 }

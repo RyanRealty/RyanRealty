@@ -29,7 +29,13 @@
  */
 
 import polygonData from '@/data/bend/bend-neighborhood-polygons.json'
-import { distanceMiles, resolveMarketArea } from '@/lib/cma/market-area'
+import {
+  distanceMiles,
+  marketAreaBounds,
+  radiusBounds,
+  resolveMarketArea,
+  type LatLngBounds,
+} from '@/lib/cma/market-area'
 import { usableSubdivision } from '@/lib/pricing/comp-search'
 import { countWord } from '@/lib/pricing/estimate'
 
@@ -409,4 +415,84 @@ export function resolveCompetitionArea(input: {
     }) and the ${measured.toFixed(2)}-mile distance to the farthest sale behind the price`,
   }
   return { ...base, sentence: areaSentence(base, null) }
+}
+
+/**
+ * The area as a phrase that follows a verb: "came off the market in Diamond Bar
+ * Ranch", "for sale within one mile of your home". A radius phrase already
+ * carries its own preposition; a name does not.
+ */
+export function compAreaIn(area: CompArea): string {
+  const phrase = compAreaPhrase(area)
+  return area.kind === 'radius' ? phrase : `in ${phrase}`
+}
+
+/**
+ * The GIS slug this area is bounded by, or null when it is not a boundary.
+ * Resolved from the subject's own coordinates — the same call that chose the
+ * boundary in the first place — so the name and the polygon can never drift.
+ */
+export function compAreaSlug(area: CompArea): string | null {
+  if (area.kind !== 'neighborhood' && area.kind !== 'community') return null
+  if (!area.centre) return null
+  return resolveMarketArea(area.centre.lat, area.centre.lng)
+}
+
+/**
+ * Axis-aligned bounding box for pushing the area INTO a query.
+ *
+ * A superset of the exact shape, never a subset: the polygon and the circle
+ * are re-tested row by row in `compAreaContains`. Null means the area is not
+ * geometric — a subdivision list or a city, which scope by column instead.
+ */
+export function compAreaBounds(area: CompArea): LatLngBounds | null {
+  if (area.kind === 'neighborhood' || area.kind === 'community') {
+    return marketAreaBounds(compAreaSlug(area))
+  }
+  if (area.kind === 'radius' && area.centre && area.radiusMiles != null) {
+    return radiusBounds({ lat: area.centre.lat, lng: area.centre.lng }, area.radiusMiles)
+  }
+  return null
+}
+
+/** A row a reader is deciding whether to keep. */
+export type CompAreaRow = {
+  latitude?: number | null
+  longitude?: number | null
+  subdivision?: string | null
+  city?: string | null
+}
+
+/**
+ * THE EXACT MEMBERSHIP TEST — one definition, used to narrow every read the
+ * document makes. The bounding box above is what the database sees; this is
+ * what decides. A boundary area runs the same point-in-polygon
+ * `resolveMarketArea` used to place the subject.
+ */
+export function compAreaContains(area: CompArea, row: CompAreaRow): boolean {
+  switch (area.kind) {
+    case 'subdivision':
+    case 'subdivisions': {
+      const name = usableSubdivision(row.subdivision)
+      return name != null && area.names.includes(name)
+    }
+    case 'neighborhood':
+    case 'community': {
+      const slug = compAreaSlug(area)
+      if (!slug) return false
+      const lat = row.latitude ?? null
+      const lng = row.longitude ?? null
+      if (lat == null || lng == null) return false
+      return resolveMarketArea(lat, lng) === slug
+    }
+    case 'radius': {
+      if (!area.centre || area.radiusMiles == null) return false
+      const d = distanceMiles(area.centre, { lat: row.latitude ?? null, lng: row.longitude ?? null })
+      return d != null && d <= area.radiusMiles
+    }
+    case 'city': {
+      const city = clean(row.city)
+      return city != null && area.names.some((n) => n.toLowerCase() === city.toLowerCase())
+    }
+  }
 }

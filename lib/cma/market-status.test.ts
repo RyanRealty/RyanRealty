@@ -3,6 +3,7 @@ import {
   collapseExpiredPeerCycles,
   computeMarketArea,
   marketAreaPriceBand,
+  buildExpiredPeerSet,
   pickExpiredPeers,
   similarBedRange,
   type CmaExpiredPeer,
@@ -13,6 +14,7 @@ import { renderImmersiveCmaHtml } from './immersive'
 import type { RenderCmaArgs } from './render'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
 import type { CmaMarketAreaRow as AreaRow } from '@/lib/data/cma/marketAreaReads'
+import type { CompArea } from '@/lib/pricing/comp-area'
 
 const subject: CmaSubject = {
   listingKey: null,
@@ -665,5 +667,167 @@ describe('chapter order', () => {
     expect(html).toMatch(/seller(&#39;|')s market territory/)
     expect(html).toContain('class="szn mos-wide"')
     expect(html).toContain('homes are for sale in')
+  })
+})
+
+describe('buildExpiredPeerSet — the window opens until three homes failed', () => {
+  const AREA: CompArea = {
+    kind: 'subdivision',
+    names: ['Diamond Bar Ranch'],
+    radiusMiles: null,
+    centre: { lat: 44.2726, lng: -121.1739 },
+    source: 'test',
+    sentence: 'Diamond Bar Ranch, your own subdivision.',
+  }
+  const ASOF = new Date('2026-09-08T12:00:00.000Z')
+  const subj = {
+    beds: 3,
+    sqft: 1450,
+    latitude: 44.2726,
+    longitude: -121.1739,
+    listingKey: 'SUBJ',
+    mlsNumber: '220000000',
+    streetAddress: '2465 SW 7th',
+  }
+
+  /** An unsold cycle that came off `monthsAgo` months before as-of. */
+  function unsold(key: string, street: string, monthsAgo: number, over: Partial<AreaRow> = {}): AreaRow {
+    const off = new Date(ASOF.getTime() - monthsAgo * 30.44 * 24 * 3600e3).toISOString().slice(0, 10)
+    return row({
+      ListingKey: key,
+      StreetNumber: street.split(' ')[0],
+      StreetName: street.split(' ').slice(1).join(' '),
+      StandardStatus: 'Expired',
+      ListPrice: 500_000,
+      OriginalListPrice: 525_000,
+      ClosePrice: null,
+      CloseDate: null,
+      DaysOnMarket: 150,
+      CumulativeDaysOnMarket: 150,
+      BedroomsTotal: 3,
+      TotalLivingAreaSqFt: 1450,
+      SubdivisionName: 'Diamond Bar Ranch',
+      status_change_timestamp: off,
+      OnMarketDate: new Date(ASOF.getTime() - (monthsAgo + 5) * 30.44 * 24 * 3600e3).toISOString().slice(0, 10),
+      ...over,
+    })
+  }
+
+  it('stops at the first window holding three', () => {
+    const set = buildExpiredPeerSet({
+      rows: [
+        unsold('A', '10 Aspen', 1),
+        unsold('B', '20 Birch', 2),
+        unsold('C', '30 Cedar', 5),
+        unsold('D', '40 Dogwood', 20),
+      ],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+    })
+    expect(set.windowMonths).toBe(6)
+    expect(set.count).toBe(3)
+    expect(set.widenedTo).toBe(6)
+    expect(set.shortfall).toBe(false)
+    expect(set.peers.map((p) => p.address)).toEqual(['10 Aspen', '20 Birch', '30 Cedar'])
+    expect(set.sentence).toBe(
+      'Three homes in Diamond Bar Ranch came off the market without selling in the last six months.',
+    )
+  })
+
+  it('does not widen when the first window already holds three', () => {
+    const set = buildExpiredPeerSet({
+      rows: [unsold('A', '10 Aspen', 1), unsold('B', '20 Birch', 2), unsold('C', '30 Cedar', 2)],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+    })
+    expect(set.windowMonths).toBe(3)
+    expect(set.widenedTo).toBeNull()
+    expect(set.sentence).toBe(
+      'Three homes in Diamond Bar Ranch came off the market without selling in the last three months.',
+    )
+  })
+
+  it('reaches 24 months and says so rather than pad from outside the area', () => {
+    const set = buildExpiredPeerSet({
+      rows: [unsold('A', '10 Aspen', 20), unsold('B', '20 Birch', 22)],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+    })
+    expect(set.windowMonths).toBe(24)
+    expect(set.count).toBe(2)
+    expect(set.shortfall).toBe(true)
+    expect(set.sentence).toContain('two homes in Diamond Bar Ranch')
+    expect(set.sentence).toContain('nothing from outside Diamond Bar Ranch was added')
+  })
+
+  it('says plainly when nothing in the area failed', () => {
+    const set = buildExpiredPeerSet({ rows: [], subject: subj, area: AREA, asOf: ASOF })
+    expect(set.count).toBe(0)
+    expect(set.shortfall).toBe(true)
+    expect(set.peers).toEqual([])
+    expect(set.sentence).toBe(
+      'No home in Diamond Bar Ranch came off the market without selling in the last 24 months.',
+    )
+  })
+
+  it('drops a row with no off-market date rather than date it', () => {
+    const set = buildExpiredPeerSet({
+      rows: [
+        unsold('A', '10 Aspen', 1),
+        unsold('B', '20 Birch', 1, { status_change_timestamp: null }),
+      ],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+    })
+    expect(set.peers.map((p) => p.address)).toEqual(['10 Aspen'])
+  })
+
+  it('writes whyItSat from the data on the row and nothing else', () => {
+    const set = buildExpiredPeerSet({
+      rows: [unsold('A', '10 Aspen', 1, { ListPrice: 500_000, OriginalListPrice: 525_000 })],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+      keptCompMedianPpsf: 300,
+    })
+    const why = set.peers[0]!.whyItSat!
+    expect(why).toContain('150 days on the market')
+    expect(why).toContain('came down $25,000 from $525,000')
+    // 500,000 / 1,450 sqft = $345/sqft, 15% above the $300 the sales closed at.
+    expect(why).toContain('$345 a square foot')
+    expect(why).toContain('15 percent above the $300')
+  })
+
+  it('says a home never came down when the opening ask is on the record and equal', () => {
+    const set = buildExpiredPeerSet({
+      rows: [unsold('A', '10 Aspen', 1, { ListPrice: 500_000, OriginalListPrice: 500_000 })],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+    })
+    expect(set.peers[0]!.whyItSat).toContain('never came down from $500,000')
+  })
+
+  it('claims nothing when the row carries no days, no opening ask and no size', () => {
+    const set = buildExpiredPeerSet({
+      rows: [
+        unsold('A', '10 Aspen', 1, {
+          DaysOnMarket: null,
+          CumulativeDaysOnMarket: null,
+          OnMarketDate: null,
+          ListDate: null,
+          OriginalListPrice: null,
+          TotalLivingAreaSqFt: null,
+        }),
+      ],
+      subject: { ...subj, sqft: null },
+      area: AREA,
+      asOf: ASOF,
+    })
+    expect(set.peers[0]!.whyItSat).toBeNull()
   })
 })

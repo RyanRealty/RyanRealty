@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildCompArea,
+  compAreaBounds,
+  compAreaContains,
+  compAreaIn,
   compAreaPhrase,
+  compAreaSlug,
   resolveCompetitionArea,
   rungRadiusMiles,
   type CompAreaKeptComp,
@@ -310,5 +314,90 @@ describe('compAreaPhrase', () => {
         sentence: '',
       }),
     ).toBe('Diamond Bar Ranch and Obsidian Estates')
+  })
+})
+
+describe('compAreaContains — one membership test for every read', () => {
+  const subdivisions = buildCompArea({
+    subject: { ...REDMOND, subdivision: 'Diamond Bar Ranch', city: 'Redmond' },
+    rungs: [rung('subdivision-3mo', 2), rung('similar-sub-6mo', 1)],
+    keptComps: [
+      comp('Diamond Bar Ranch', 'subdivision-3mo'),
+      comp('Diamond Bar Ranch', 'subdivision-3mo'),
+      comp('Obsidian Estates', 'similar-sub-6mo'),
+    ],
+  })!
+
+  it('keeps a row in one of the named subdivisions and drops the rest', () => {
+    expect(compAreaContains(subdivisions, { subdivision: 'Diamond Bar Ranch' })).toBe(true)
+    expect(compAreaContains(subdivisions, { subdivision: 'Obsidian Estates' })).toBe(true)
+    expect(compAreaContains(subdivisions, { subdivision: 'Somewhere Else' })).toBe(false)
+    expect(compAreaContains(subdivisions, { subdivision: 'N/A' })).toBe(false)
+    expect(compAreaContains(subdivisions, { subdivision: null })).toBe(false)
+  })
+
+  const boundary = buildCompArea({
+    subject: { ...OLD_BEND, subdivision: null, city: 'Bend' },
+    rungs: [rung('neighborhood-6mo', 3)],
+    keptComps: [
+      comp(null, 'neighborhood-6mo', OLD_BEND),
+      comp(null, 'neighborhood-6mo', OLD_BEND),
+      comp(null, 'neighborhood-6mo', OLD_BEND),
+    ],
+  })!
+
+  it('runs the same point-in-polygon the subject was placed by', () => {
+    expect(compAreaSlug(boundary)).toBe('bend-old-bend')
+    expect(compAreaContains(boundary, { latitude: OLD_BEND.latitude, longitude: OLD_BEND.longitude })).toBe(true)
+    // Broken Top is a different polygon entirely.
+    expect(compAreaContains(boundary, { latitude: BROKEN_TOP.latitude, longitude: BROKEN_TOP.longitude })).toBe(false)
+    expect(compAreaContains(boundary, { latitude: null, longitude: null })).toBe(false)
+  })
+
+  it('gives the boundary a bounding box that is a superset of it', () => {
+    const b = compAreaBounds(boundary)
+    expect(b).not.toBeNull()
+    expect(OLD_BEND.latitude).toBeGreaterThanOrEqual(b!.latMin)
+    expect(OLD_BEND.latitude).toBeLessThanOrEqual(b!.latMax)
+    expect(OLD_BEND.longitude).toBeGreaterThanOrEqual(b!.lngMin)
+    expect(OLD_BEND.longitude).toBeLessThanOrEqual(b!.lngMax)
+  })
+
+  const circle = buildCompArea({
+    subject: { ...REDMOND, subdivision: null, city: 'Redmond' },
+    rungs: [rung('nearby-1mi-6mo', 3)],
+    keptComps: [comp(null, 'nearby-1mi-6mo'), comp(null, 'nearby-1mi-6mo'), comp(null, 'nearby-1mi-6mo')],
+  })!
+
+  it('measures the radius in miles, not degrees', () => {
+    // Half a mile north: in. Two miles north: out.
+    expect(
+      compAreaContains(circle, { latitude: REDMOND.latitude + 0.0072, longitude: REDMOND.longitude }),
+    ).toBe(true)
+    expect(
+      compAreaContains(circle, { latitude: REDMOND.latitude + 0.029, longitude: REDMOND.longitude }),
+    ).toBe(false)
+    expect(compAreaBounds(circle)).not.toBeNull()
+  })
+
+  it('has no bounding box for an area scoped by name', () => {
+    expect(compAreaBounds(subdivisions)).toBeNull()
+  })
+})
+
+describe('compAreaIn', () => {
+  it('does not put a preposition in front of one that has its own', () => {
+    const named = {
+      kind: 'neighborhood' as const,
+      names: ['Old Bend'],
+      radiusMiles: null,
+      centre: null,
+      source: '',
+      sentence: '',
+    }
+    expect(compAreaIn(named)).toBe('in Old Bend')
+    expect(
+      compAreaIn({ ...named, kind: 'radius', names: [], radiusMiles: 2, centre: { lat: 1, lng: 2 } }),
+    ).toBe('within two miles of your home')
   })
 })
