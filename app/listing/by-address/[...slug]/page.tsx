@@ -86,6 +86,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Measured over GSC 2026-06-08..2026-09-05, 2,363 of 8,724 listing ids
   // appeared at more than one URL: 4,995 URLs and 21,808 impressions.
   //
+  // SITE-32 (Matt ruled 2026-09-08). This route adds NOTHING to the robots
+  // directive, and that is the policy, not an omission: off-market listing URLs
+  // stay index,follow with SITE-21's honest state, and this is the path most of
+  // them are indexed under. Do not add a `robots` or `noindex` override here —
+  // that would put the directive in two places for one page, which is the exact
+  // shape of the self-canonical defect described above. docs/MASTER_SPEC.md
+  // §4.9 is the one policy statement; ci:listing-offmarket-index holds it.
+  //
   // DO NOT reach for redirect()/permanentRedirect() here. This route has a
   // loading.tsx, and so does app/, so the shell is flushed before any throw and
   // the visitor gets a blank 200 — the consequence recorded at :62-64 above,

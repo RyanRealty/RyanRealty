@@ -38,9 +38,21 @@ import { valuationHref } from '@/lib/site/valuation-href'
  * keeps the soft-200 out of the index. `not-found.tsx` renders the same body
  * for the router-level 404s that never reach the page component.
  *
- * Copy is unchanged from the shipped not-found.tsx — it states only what we can
- * know from the visitor's side and never discloses why a specific listing is
- * withheld (a seller opt-out is confidential, ODS Rule B/G).
+ * THE COPY (rewritten 2026-09-09, SITE-32). It used to read "This home may no
+ * longer be on the market · It may have sold or been taken off the market",
+ * inherited from not-found.tsx. That was the one thing this page never means.
+ * A sold home does not reach here — Matt ruled 2026-09-08 that off-market URLs
+ * stay indexed and serve the honest off-market state, so Closed, Expired,
+ * Canceled and Withdrawn all render the full page. Sending a visitor who typed
+ * a wrong address, or who followed a link to a listing we may not publish, away
+ * with "it probably sold" is a false statement of fact about a specific home.
+ *
+ * What replaces it says only what is true of ALL THREE refusals and never which
+ * one applies: the address matches nothing we hold, or the listing is one we
+ * are not permitted to display publicly. That second clause covers the seller
+ * internet opt-out, the non-IDX-participant broker and Coming Soon alike —
+ * which is what keeps it compliant, because naming the reason for a particular
+ * listing would disclose a confidential seller instruction (ODS Rule B/G).
  */
 export function ListingUnavailable() {
   return (
@@ -48,12 +60,12 @@ export function ListingUnavailable() {
       <main className={V3_ROOT_CLASS}>
         <V3Quiet
           id="missing"
-          heading="This home may no longer be on the market"
+          heading="We can't show this home"
           headingLevel={1}
           items={[
             {
               kind: 'prose',
-              body: 'It may have sold or been taken off the market. Here is where to look next.',
+              body: 'This address does not match a listing we hold, or it is one we are not permitted to display publicly. A broker can look it up for you. Here is where to go next.',
             },
             { label: 'Homes for sale', href: '/homes-for-sale?view=list' },
             { label: 'Central Oregon housing market', href: '/housing-market/central-oregon' },
@@ -74,6 +86,6 @@ export function ListingUnavailable() {
  * canonical — never canonicalise a page we are refusing to serve.
  */
 export const LISTING_UNAVAILABLE_METADATA = {
-  title: 'This home may no longer be on the market',
+  title: "We can't show this home",
   robots: { index: false, follow: true },
 } as const

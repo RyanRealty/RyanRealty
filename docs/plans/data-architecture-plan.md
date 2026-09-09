@@ -1085,16 +1085,13 @@ These become part of the GitHub Actions pipeline documented in `AGENTS.md`.
 
 Things the plan didn't originally cover that could undermine the entire effort if ignored.
 
-### 1. Sold/Expired Listing Pages (SEO Strategy)
+### 1. Sold/Expired Listing Pages (SEO Strategy) — RULED AND CLOSED, 2026-09-08
 
-**The problem**: When a listing sells or expires, what happens to its URL? Currently undefined. Options:
-- **410 Gone**: Google drops the page. Clean but loses all link equity.
-- **Keep with noindex**: Page stays for users who bookmarked it, shows "Sold" status + related listings. Google removes from index over time. Best for UX.
-- **301 to community page**: Misleading per Google guidelines. Don't do this.
+**This section's recommendation has been deleted, not amended.** It read: keep the page but add `noindex`, set JSON-LD `Offer.availability` to `SoldOut`, and optionally 410 after 12 months. It contradicted `docs/MASTER_SPEC.md` §4.9, which said keep the URL indexed; both had sat in writing, unimplemented, for months, and a surface with two written policies has none.
 
-**Recommendation**: Keep sold listing pages with `noindex`, update JSON-LD `Offer.availability` to `SoldOut`, show sold price and date, display related active listings. This serves both SEO (no dead links) and UX (users can still see the property info). After 12 months, optionally 410.
+**Matt ruled 2026-09-08 (SITE-32): off-market listing URLs stay INDEXED, `index, follow`.** The measurement is what settled it — off-market detail URLs earn roughly 324–577 organic clicks per 90 days at a CTR that straddles or beats Active, and an address query has no Active substitute, so a `noindex` deletes those clicks instead of redistributing them.
 
-**Impact on plan**: Add logic to listing detail page for sold/expired state. Update `generateMetadata` to add `noindex` for non-active listings.
+**The one policy statement now lives in `docs/MASTER_SPEC.md` §4.9 ("Listing not found / sold / withdrawn"). Read it there; do not restate it here.** What ships against it: SITE-21's honest off-market state on the page, and `scripts/check-listing-offmarket-index.mjs` (`ci:listing-offmarket-index`) holding the two metadata chokepoints so no `noindex` can reappear for an off-market status.
 
 ### 2. Image Alt Text (Currently Generic or Missing)
 
