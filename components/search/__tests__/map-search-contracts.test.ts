@@ -686,13 +686,20 @@ describe('SearchMapClustered map primitive', () => {
     expect(src).toMatch(/buildPricePillElement\([^)]*\bhover:/)
   })
 
-  it('hovered pin enlarges and inverts type color on cream, not red', () => {
+  it('hovered pin enlarges and inverts navy on cream, and every mark is navy', () => {
     const map = readSrc('components/SearchMapClustered.tsx')
+    const style = readSrc('lib/place/place-type-style.ts')
     expect(map).toMatch(/MAP_CREAM/)
     expect(map).toMatch(/invert \? MAP_CREAM : fill/)
-    expect(map).toMatch(/placeTypePinFill/)
     expect(map).toMatch(/transform:scale\(1\.18\)/)
     expect(map).not.toMatch(/#dc2626/)
+    // SITE-44: the ten-hue property-type pin palette is gone. It had one
+    // consumer — this map — and a hue per category is the dataviz method's
+    // banned rainbow ramp on a two-color brand. Every mark is MAP_NAVY.
+    expect(map).not.toMatch(/placeTypePinFill/)
+    expect(map).toMatch(/const fill = MAP_NAVY/)
+    expect(style).not.toMatch(/PLACE_TYPE_PIN_FILL|placeTypePinFill/)
+    expect(style).not.toMatch(/#[0-9a-fA-F]{6}/)
   })
 
   it('marker popup is a brand card (not stock Google InfoWindow chrome)', () => {
@@ -934,31 +941,57 @@ describe('map craft: selection + zoom storytelling + basemap', () => {
     expect(view).toMatch(/lg:hidden/)
   })
 
-  it('uses SuperCluster maxZoom and photo stamps at close zoom', () => {
+  it('clusters at every zoom, at a full mark width, with photo stamps close in', () => {
     const map = readSrc('components/SearchMapClustered.tsx')
     expect(map).toMatch(/SuperClusterAlgorithm/)
-    expect(map).toMatch(/maxZoom:\s*14/)
+    // SITE-44: clustering used to stop at zoom 14, which is what left the price
+    // pills stacked on each other past that. The radius and the ceiling are now
+    // the shared frame constants, so a change moves both the merge and the fit.
+    expect(map).toMatch(/maxZoom:\s*V3_CLUSTER_MAX_ZOOM/)
+    expect(map).toMatch(/radius:\s*V3_CLUSTER_RADIUS_PX/)
+    expect(map).not.toMatch(/maxZoom:\s*14/)
     expect(map).toMatch(/buildPhotoStampElement/)
     expect(map).toMatch(/zoomMode/)
   })
 
-  it('ships editorial MAP_SEARCH_STYLES for cream/muted basemap', () => {
+  it('the search basemap is the one V3 navy-on-cream style array, never a Map ID', () => {
     const markers = readSrc('lib/maps/markers.ts')
-    expect(markers).toMatch(/MAP_SEARCH_STYLES/)
-    expect(markers).toMatch(/f3f0e8/)
-    expect(markers).toMatch(/c5d8e0/)
+    const basemap = readSrc('lib/maps/v3-basemap.ts')
+    const map = readSrc('components/SearchMapClustered.tsx')
+    // One array, shared by search and every V3Field mapSlot.
+    expect(markers).toMatch(/MAP_SEARCH_STYLES: google\.maps\.MapTypeStyle\[\] = V3_BASEMAP_STYLE/)
+    expect(markers).toMatch(/return getV3MapOptions\(\{ gestureHandling: 'greedy' \}\)/)
+    expect(markers).toMatch(/return getV3MapOptions\(\{ gestureHandling: 'cooperative' \}\)/)
+    // A mapId makes Google discard `styles` and serve a Cloud style this repo
+    // cannot read. No public map may pass one.
+    // (The words appear in both files' comments explaining WHY. What must not
+    // appear is an assignment; lib/maps/v3-basemap.test.ts asserts the returned
+    // options object has no mapId key at all.)
+    expect(markers).not.toMatch(/opts\.mapId|mapId:/)
+    expect(basemap).not.toMatch(/mapId:/)
+    expect(map).not.toMatch(/process\.env\.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID/)
+    // Google's own colored glyphs are the loudest default-map tell.
+    expect(basemap).toMatch(/labels\.icon', stylers: \[\{ visibility: 'off' \}\]/)
+    expect(basemap).toMatch(/featureType: 'poi', stylers: \[\{ visibility: 'off' \}\]/)
+    expect(basemap).toMatch(/featureType: 'transit', stylers: \[\{ visibility: 'off' \}\]/)
+    // Cartography ladder is derived from the brand navy, so it carries no hex.
+    expect(basemap).not.toMatch(/#[0-9a-fA-F]{6}/)
   })
 
   it('search map drops Google Draw/Roboto chrome and mounts MapChrome', () => {
     const markers = readSrc('lib/maps/markers.ts')
+    const basemap = readSrc('lib/maps/v3-basemap.ts')
     const clustered = readSrc('components/SearchMapClustered.tsx')
     const chrome = readSrc('components/search/MapChrome.tsx')
     const css = readSrc('components/search/search-ledger.css')
     expect(markers).toMatch(/export function getSearchMapOptions/)
-    expect(markers).toMatch(/mapTypeControl: false/)
-    expect(markers).toMatch(/zoomControl: false/)
-    expect(markers).toMatch(/disableDefaultUI: true/)
-    expect(markers).toMatch(/keyboardShortcuts: false/)
+    // SITE-44: every Google-drawn control is named and switched off in ONE
+    // place, so a new map surface cannot quietly reintroduce the +/- stack or
+    // the Map/Satellite dropdown by inheriting a different base.
+    expect(basemap).toMatch(/mapTypeControl: false/)
+    expect(basemap).toMatch(/zoomControl: false/)
+    expect(basemap).toMatch(/disableDefaultUI: true/)
+    expect(basemap).toMatch(/keyboardShortcuts: false/)
     expect(clustered).toMatch(/import MapChrome from '@\/components\/search\/MapChrome'/)
     expect(clustered).toMatch(/<MapChrome map=\{mapInstance\} \/>/)
     expect(chrome).toMatch(/aria-label="Map layers"/)

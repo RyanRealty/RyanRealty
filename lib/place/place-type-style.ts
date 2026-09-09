@@ -1,9 +1,15 @@
 /**
- * One color + card key per leftover property type.
- * Pins, type-card ticks, and search hrefs share this map so a condo on the
- * map is the same color as the Condo card that opens its search.
+ * One card key per leftover property type, shared by the type cards and the
+ * search hrefs they open.
  *
- * Hex lives here and in v3 tokens (Maps overlays cannot read CSS variables).
+ * SITE-44, 2026-09-09: the ten-hue pin palette that used to live here is gone.
+ * It claimed to be mirrored by `--place-type-*` tokens in v3 tokens.css; those
+ * tokens do not exist and never did, so the ten values were ten off-brand hexes
+ * (§3: the public palette is navy and cream) with exactly one consumer, the
+ * search map — where a teal condo beside an ochre manufactured home beside a
+ * brown business is the "hue per rank" the dataviz method bans outright. Every
+ * mark on the map is navy now; property type is a filter and a line on the
+ * card, which is where a category belongs.
  */
 export const PLACE_TYPE_KEYS = [
   'sfr',
@@ -19,20 +25,6 @@ export const PLACE_TYPE_KEYS = [
 ] as const
 
 export type PlaceTypeKey = (typeof PLACE_TYPE_KEYS)[number]
-
-/** Map-overlay fills (also declared as --place-type-* in v3 tokens). */
-export const PLACE_TYPE_PIN_FILL: Record<PlaceTypeKey, string> = {
-  sfr: '#102742',
-  condo: '#1f5c66',
-  townhome: '#3d5a3c',
-  manufactured_land: '#7a5c2e',
-  manufactured_park: '#6e3f2d',
-  multifamily_2_4: '#3f3a5c',
-  land: '#4d6a45',
-  farm: '#5c6b32',
-  commercial_sale: '#3a4654',
-  business: '#5a4638',
-}
 
 const SUBTYPE_TO_KEY: Record<string, PlaceTypeKey> = {
   'Single Family Residence': 'sfr',
@@ -73,11 +65,4 @@ export function placeTypeKey(
   const type = (propertyType ?? '').trim()
   if (type && TYPE_TO_KEY[type]) return TYPE_TO_KEY[type]
   return 'sfr'
-}
-
-export function placeTypePinFill(
-  propertyType?: string | null,
-  propertySubType?: string | null,
-): string {
-  return PLACE_TYPE_PIN_FILL[placeTypeKey(propertyType, propertySubType)]
 }
