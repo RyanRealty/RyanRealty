@@ -576,3 +576,18 @@ export type { V3SectionTrackerProps } from './V3SectionTracker.client'
  * SWEEP_MS = 900 mirroring --v3-dur-sequence, one duration with two definitions,
  * which drifts the moment the token moves.
  */
+
+/* -------------------------------------------------------------------------- */
+/* LIVE STATE — appended 2026-09-09 (SITE-48). Not a seventh pattern.          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The published hours against the clock, for a reach control that would
+ * otherwise be four static links. It claims hours and nothing else: the
+ * refusal to publish a reply-time figure, and the SITE-09 read behind it,
+ * are argued in V3OnDuty.view.ts.
+ */
+export { V3OnDuty } from './V3OnDuty.client'
+export type { V3OnDutyProps } from './V3OnDuty.client'
+export { onDutyLabel, onDutyState } from './V3OnDuty.view'
+export type { V3OnDutyState } from './V3OnDuty.view'

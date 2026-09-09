@@ -1,8 +1,8 @@
 {
   "route": "app/contact/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md, built from components/site/v3. THIS FILE BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat five-step contact wizards and generic 'get in touch' pages: one-screen V3Ask, local brokers with real phone numbers as doors, FAQ as disclosures.",
-  "note": "Live 2026-09-03 leftover. Order is Breadcrumb, Quiet (H1 Call, text, or write), V3Doors (call/text, email, book), V3Ask (one screen, every field, one button — not the old five-step sheet), V3Ledger (who answers), V3Answers (CONTACT_FAQ_ITEMS as disclosures), Footer. Consent checkbox is padded to --v3-tap on this route without changing SMS_CONSENT_TEXT. tasteReview is withheld until a separate evaluator grades the rendered page (design_system/public/TASTE.md). Do not invent a score.",
+  "competitiveTarget": "Beat five-step contact wizards and generic 'get in touch' pages: one-screen V3Ask, a reach control with one dominant call door carrying a live hours state, and the brokers who answer shown as photographs rather than a flat hairline list.",
+  "note": "SITE-48 2026-09-09. Order is Breadcrumb, Quiet (H1 Call, text, or write), V3Doors #reach as a REACH CONTROL (one call door at display scale with the V3OnDuty live hours under it, then text, email and the calendar as lighter links), V3Ask (one screen, every field, one button), AboutFaces (who answers \u2014 the same roster primitive /team and /about use, replacing the flat V3Ledger row the 2026-09-08 evaluator called 'a flat hairline row \u2026 give it visual weight'), V3Answers, Footer. Consent checkbox is padded to --v3-tap on this route without changing SMS_CONSENT_TEXT. The live state is PUBLISHED HOURS, never a reply time: SITE-09's response clock is still unproven and its answered ratio is a backlog, not a promise.",
   "requiredComponents": [
     {
       "name": "V3SectionTracker",
@@ -21,17 +21,12 @@
     },
     {
       "name": "V3Doors",
-      "section": "The three fastest reaches, above the form: call/text, email, book. A visitor who wants a human should not have to find a form field first.",
+      "section": "#reach. One reach control, not four equal cells: `primary` on the call door (display scale, a larger bounding box than any other door) carrying the V3OnDuty live state and its trace; text, email and Schedule as lighter alternatives. A visitor who wants a human should not have to find a form field first, and should not meet four interchangeable boxes when they get there.",
       "blocking": true
     },
     {
       "name": "ContactAsk",
       "section": "One-screen V3Ask. Same submitContactForm fields as the old five-step sheet. SMS consent checkbox padded to 44px on this route. Consent copy is SMS_CONSENT_TEXT, untouched.",
-      "blocking": true
-    },
-    {
-      "name": "V3Ledger",
-      "section": "Who answers. One row per broker from getBrokers, Matt-Rebecca-Paul, door to /team.",
       "blocking": true
     },
     {
@@ -42,6 +37,16 @@
     {
       "name": "V3Footer",
       "section": "Chrome. V3_FOOTER_COLUMNS. Rendered OUTSIDE <main>.",
+      "blocking": true
+    },
+    {
+      "name": "AboutFaces",
+      "section": "Who answers, headingLevel 2 \u2014 the same roster primitive /team and /about use, with the canonical broker cutouts and their reach chips. No record figures here: this route is dynamic and the per-broker MLS reads belong on the two cached pages.",
+      "blocking": true
+    },
+    {
+      "name": "V3OnDuty",
+      "section": "The live state on the reach control: published booking hours against the Pacific clock, from crm_company_settings.booking_hours \u2014 the same rows /book offers time from. NEVER a reply-time figure (SITE-09, V3OnDuty.view.ts).",
       "blocking": true
     }
   ],
@@ -67,6 +72,10 @@
     {
       "name": "V3Proof",
       "reason": "Reviews live on /reviews. A proof band here would restated that page."
+    },
+    {
+      "name": "V3Ledger",
+      "reason": "The brokers band was a flat hairline row per broker with no visual encoding \u2014 the 2026-09-08 evaluator's own finding. AboutFaces does that job on every other page; a second, flatter way of listing the same three people is how one site becomes two (TASTE.md consistency)."
     }
   ],
   "removedComponents": [
@@ -77,82 +86,121 @@
     "V3SectionTracker + ContactPage / BreadcrumbList / FAQPage JSON-LD (not sections)",
     "V3Breadcrumb",
     "V3Quiet #contact -- H1 and the one true line",
-    "V3Doors #reach -- call, write, book",
+    "V3Doors #reach -- one call door at display scale with the live hours, then text, email, calendar",
     "ContactAsk -- one screen",
-    "V3Ledger #office -- the brokers who answer",
+    "AboutFaces -- who answers, the brokers with their photographs",
     "V3Answers #faq -- before you write",
     "V3Footer"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-08",
-    "score": 54,
-    "beats": "Cascade Sotheby's Bend contact page on personal accountability: three named, licensed brokers with OR license numbers, direct phone and email, and honest copy ('answer you personally') with zero unverified SLA claims (curl: zero 'business day' hits on /contact and the ?listingKey= tour variant). Still loses to Zillow's contact-agent flow on measured response time: Zillow surfaces a data-backed 'usually responds in X'; this page says nothing quantified about speed, which is honest but not yet the differentiator. The false claim was subtracted, not replaced with a true, sourced one.",
-    "evaluator": "separate Sonnet evaluator, SITE-09 response-clock pass 2, contact page class (pass 1: 43, same model, same day)",
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate Sonnet evaluator agent, SITE-48 pass three, contact page class \u2014 one call, three independent scorings of the same two shots, run against the rubric table in design_system/public/TASTE.md and asked explicitly whether a contact list is the first content of the page",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/contact"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default"
+      ],
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, against the lane's own dev server before the push"
+    },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/contact/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/contact/shots/mobile375.png",
-      "tourDesktop": "design_system/ryan-realty/ui_kits/contact/shots/tour-desktop.png",
-      "sentDesktop": "design_system/ryan-realty/ui_kits/contact/shots/sent-desktop.png",
-      "sentMobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-mobile375.png",
-      "sentFocusDesktop": "design_system/ryan-realty/ui_kits/contact/shots/sent-focus-desktop.png",
-      "sentFocusMobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-focus-mobile375.png",
-      "adminCrmDesktop": "design_system/ryan-realty/ui_kits/contact/shots/admin-crm-desktop.png",
-      "adminCrmMobile375": "design_system/ryan-realty/ui_kits/contact/shots/admin-crm-mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/contact/shots/mobile375.png"
     },
+    "shotsHash": "sha256:6a33c010e9e12ef34f81572e06025e0e075645ac580f2c209d677001037cfc32",
+    "scores": [
+      58,
+      59,
+      61
+    ],
+    "score": 59,
     "breakdown": {
-      "design": 17,
-      "originality": 12,
-      "interaction": 7,
+      "design": 18,
+      "originality": 14,
+      "interaction": 8,
       "craft": 11,
-      "honesty": 7
+      "honesty": 8
     },
-    "firstPass": {
-      "evaluatedAt": "2026-09-08",
-      "score": 43,
-      "breakdown": {
-        "design": 14,
-        "originality": 10,
-        "interaction": 6,
-        "craft": 10,
-        "honesty": 3
-      },
-      "evaluator": "separate Sonnet evaluator, SITE-09 response-clock pass 1, contact page class"
-    },
-    "fixedFromThisPass": [
-      "Honesty: meta/og/twitter description no longer promises a reply within one business day; verified live on /contact and the tour variant, zero hits in the rendered HTML.",
-      "Taste: call/text/email/schedule appear once, in the doors row; the hero carries the intro line, the office address, and the listing door on the tour variant.",
-      "Taste: the sent state echoes the submission ('Sent: Buying') and offers two next actions (pick a time, send another message) instead of one bare door.",
-      "Craft: the SMS consent checkbox measures 44 by 44 at 375 in the DOM; the pass-1 finding was withdrawn."
-    ],
-    "openRaise": [
-      "Page composition: hero, form, brokers and FAQ still run as four consecutive eyebrow, heading, rows, hairline sections (the stacked-section tell); fold the brokers band into the hero/doors area or give one section a different form.",
-      "Response clock on the page: replace the removed SLA with a sourced figure once the rails have stamped enough rows ('brokers typically reply in N minutes, from the last N inquiries', with the section-0 trace from getResponseClockReport); today the median is unproven, so nothing ships.",
-      "Brokers roster: a flat hairline row; give it visual weight (larger headshots, a specialty line).",
-      "FAQ: a plain three-item accordion; a stronger form or a disclosure beside a display.",
-      "Full-page desktop capture shows the broker avatars as gray boxes while the viewport crop shows the photos: a lazy-load capture artifact to confirm on first paint."
-    ],
+    "beats": "Beats a static brokerage contact page (a form and a phone number) on one checkable thing: an open/closed state computed from our published booking hours against the clock, traced to the same crm_company_settings.booking_hours rows /book fills its calendar from, so a reader can verify it in one tap. The evaluator called that a real but modest edge and declined to claim a page-beating win, and that is how it is recorded here.",
+    "contactListIsFirstContent": false,
+    "contactListAnswer": "The V3Quiet hero: eyebrow, H1 'Call, text, or write', one service-area sentence and an Office address row. Legitimate hero content, not an undifferentiated list; the reach control itself does not start until the second section.",
     "defects": [
       {
-        "section": "Page composition",
-        "severity": "taste",
-        "finding": "Hero, form, brokers and FAQ repeat the same eyebrow-heading-rows-hairline shape end to end."
+        "section": "#reach live state",
+        "severity": "craft",
+        "finding": "At 1440x900 the \"Open now, until 5:00 pm\" chip and its source disclosure are clipped at the bottom edge of the first viewport, so the page's one live element is only half-legible on first paint."
       },
       {
-        "section": "Brokers roster",
+        "section": "#contact intro (V3Quiet)",
         "severity": "taste",
-        "finding": "Flat list row per broker with no visual encoding beyond hairlines."
+        "finding": "Two-thirds of the desktop fold is eyebrow, heading, one paragraph and an address row on cream, with no image, mark or figure \u2014 the default stacked-section shape. NOT TOUCHED this pass: V3Quiet is held by SITE-40 and its spacing is that item's to change."
       },
       {
-        "section": "FAQ",
-        "severity": "taste",
-        "finding": "Plain three-item accordion with no figure, image or interaction beyond expand/collapse."
-      },
-      {
-        "section": "Response-clock claim",
-        "severity": "copy",
-        "finding": "The false SLA was removed but no sourced response-time figure replaces it yet."
+        "section": "#reach light doors",
+        "severity": "interaction",
+        "finding": "Text, Email and Schedule are static rows; only the primary door carries a live state. The Schedule door could read the next open slot from lib/booking/slots.ts."
       }
     ],
-    "note": "SITE-09 (response clock). /contact had no prior tasteReview (unreviewed baseline); pass 1 set the first mark and pass 2 graded the fixes. Admin panel shots are the CRM flag surface for the same node, not a public page."
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 49,
+      "scores": [
+        46,
+        49,
+        54
+      ],
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "not recorded \u2014 the cross-class table predates per-row shot hashes",
+      "source": "design_system/public/taste-table.json"
+    },
+    "rebaselineReason": "The prior mark is the cross-class taste table of 2026-09-08 (design_system/public/taste-table.json), which is the instrument SITE-48's accept test names. Same evaluatorModel and same rubricVersion; the shots are new captures of a rebuilt page, so shotsHash differs and the mark re-baselines rather than \"rises\". The raw numbers, plainly: before 49 (raw [46, 49, 54]), after 59 (raw [58, 59, 61]), a rise of 10 points on the same rubric and the same evaluator model. The shotsHash is the only identity key that differs.",
+    "verdict": "The reach control has a hierarchy and a live state: one call door at display scale carrying the published-hours clock and its trace, three lighter links beside it, and the phone number printed once instead of twice. The hero above it is still the shared Quiet, and it is still what fills most of the first screen.",
+    "priorRouteMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 54,
+      "evaluator": "separate Sonnet evaluator, SITE-09 response-clock pass 2, contact page class (pass 1: 43, same model, same day)",
+      "note": "the route's own receipt at HEAD, on a different instrument (a different evaluator model and/or a different shot set). Kept so the history is readable; the mark this pass is measured against is priorMark, the cross-class table SITE-48's accept test names."
+    },
+    "supersededShots": {
+      "note": "states captured for the SITE-09 pass (the tour variant, the sent state, the admin CRM panel). Still on disk and still true; they are not in `shots` because this score was given for the default-state pair only, and shotsHash must cover exactly what was scored.",
+      "files": {
+        "tourDesktop": "design_system/ryan-realty/ui_kits/contact/shots/tour-desktop.png",
+        "sentDesktop": "design_system/ryan-realty/ui_kits/contact/shots/sent-desktop.png",
+        "sentMobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-mobile375.png",
+        "sentFocusDesktop": "design_system/ryan-realty/ui_kits/contact/shots/sent-focus-desktop.png",
+        "sentFocusMobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-focus-mobile375.png",
+        "adminCrmDesktop": "design_system/ryan-realty/ui_kits/contact/shots/admin-crm-desktop.png",
+        "adminCrmMobile375": "design_system/ryan-realty/ui_kits/contact/shots/admin-crm-mobile375.png"
+      }
+    },
+    "passes": {
+      "note": "Three build-and-score rounds ran in this lane before the mark above, each on its own shots. The score recorded here is the LAST one, on the shots this receipt hashes.",
+      "roundOne": {
+        "score": 56,
+        "scores": [
+          56,
+          54,
+          59
+        ]
+      },
+      "roundTwo": {
+        "score": 67,
+        "scores": [
+          64,
+          67,
+          71
+        ]
+      }
+    }
   }
 }
