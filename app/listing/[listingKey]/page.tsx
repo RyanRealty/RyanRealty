@@ -466,6 +466,14 @@ export default async function ListingDetailPage({ params }: PageProps) {
         publishedPrice: wholePropertyPrice,
       })
     : null
+  // The broker card asks a different question of a sale than of a listing that
+  // ended without one — an EXPIRED home carried "Ask what this one closed at"
+  // on the first render (§0.5, looked at 2026-09-09).
+  const offMarketKind: 'sold' | 'unsold' | null = offMarket
+    ? offMarketFacts?.statusWord === 'Sold'
+      ? 'sold'
+      : 'unsold'
+    : null
   const similarLabel = listing.city ? `Homes for sale in ${listing.city}` : 'Homes for sale'
   // Every off-market door points at something that exists. The rail is an
   // anchor only when the rail rendered; with no active inventory to show, the
@@ -602,8 +610,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
       {offMarketFacts ? (
         <ListingOffMarketFacts
           facts={offMarketFacts}
-          similarHref={similarHref}
-          similarLabel={similarLabel}
+          browseHref={homesForSalePath(listing.city)}
+          browseLabel={similarLabel}
         />
       ) : null}
       {/* The homes a reader CAN buy get the prominence on a page about one
@@ -625,6 +633,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           listPrice={wholePropertyPrice}
           beds={listing.beds}
           photoUrl={galleryPhotos[0]?.url ?? listing.photoUrl}
+          showCoach={false}
         />
       ) : null}
       <PropertySpecs listing={listingWithPhotos} />
@@ -709,7 +718,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
             listingKey={contactKey}
             reviews={genericReviews}
             lockToDefault={listingAgent != null}
-            offMarket={offMarket}
+            offMarket={offMarketKind}
           />
         </div>
       ) : null}
@@ -741,7 +750,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       listingKey={contactKey}
       reviews={genericReviews}
       lockToDefault={listingAgent != null}
-      offMarket={offMarket}
+      offMarket={offMarketKind}
     />
   ) : null
 

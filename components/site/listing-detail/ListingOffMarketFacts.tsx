@@ -27,13 +27,20 @@ import type { ListingOffMarketFacts as Facts } from '@/lib/listing/publish-listi
  */
 export function ListingOffMarketFacts({
   facts,
-  similarHref,
-  similarLabel,
+  browseHref,
+  browseLabel,
 }: {
   facts: Facts
-  /** The active-inventory door this answer earns. */
-  similarHref: string
-  similarLabel: string
+  /**
+   * The city's live inventory — a PAGE, not the anchor of the rail 50px below
+   * this block. Used only on the no-figures shape, where the doors are the
+   * section's whole content. When the Instrument renders it carries no door at
+   * all: the rail is the next thing on the page and the price strip's primary
+   * button already says the same words, so a third identical door between them
+   * is noise (looked at 1440 and 375, 2026-09-09).
+   */
+  browseHref: string
+  browseLabel: string
 }) {
   const [first, ...rest] = facts.figures
   if (!first) {
@@ -48,7 +55,7 @@ export function ListingOffMarketFacts({
             body:
               'The listing ended without a recorded sale, so there is no sale price and no closing date to show. Everything below is the last the MLS recorded about the house itself.',
           },
-          { label: similarLabel, href: similarHref },
+          { label: browseLabel, href: browseHref },
           { label: 'What is my home worth?', href: valuationHref('/listing') },
         ]}
         note={facts.source}
@@ -70,7 +77,6 @@ export function ListingOffMarketFacts({
       headline={v3Text(facts.headline)}
       figures={[head, ...tail]}
       source={v3Text(facts.source)}
-      action={{ label: v3Text(similarLabel), href: similarHref, variant: 'ghost' }}
     />
   )
 }

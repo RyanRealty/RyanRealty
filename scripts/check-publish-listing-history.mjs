@@ -57,7 +57,22 @@ checks.push({
   label: 'listing detail renders PropertyHistory from getListingDetailHistory',
   ok:
     /readListingDetailHistory/.test(page) &&
-    /<PropertyHistory history=\{history\}/.test(page),
+    // The mount takes more than one prop since SITE-21, so it wraps. Match the
+    // element and its history prop across the wrap rather than on one line: a
+    // formatter must not be able to fail this gate.
+    /<PropertyHistory[\s\S]{0,200}history=\{history\}/.test(page),
+})
+
+checks.push({
+  label: 'the history rail is handed the CLOSE price, so its Sold row is the sale',
+  ok:
+    /<PropertyHistory[\s\S]{0,300}closePrice=\{listing\.closePrice\}/.test(page) &&
+    /export function publishHistoryRowPrice/.test(helper) &&
+    /publishHistoryRowPrice\(/.test(src('components/site/listing-detail/PropertyHistory.tsx')),
+  detail:
+    'SITE-21: the MLS change-log event that flips a listing to Closed carries the then-current ' +
+    'LIST price, so a row labelled Sold published the ask — $849,000 under the word Sold on MLS ' +
+    '220224752, a home the same page said sold for $827,000.',
 })
 
 const reader = src('lib/listing/read-listing-detail-history.ts')

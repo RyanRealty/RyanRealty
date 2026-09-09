@@ -420,15 +420,20 @@ export function PriceCtaStrip({
             and Share stay: a sold comparable is worth keeping. */}
         {offMarket ? (
           <>
+            {/* Two words each. This row is a three-column grid, and at 375
+                "Homes for sale in Bend" / "Email me new listings" wrapped to
+                three lines and clipped the middle button (looked at 2026-09-09).
+                The city is in the H1 and the breadcrumb above; the labels match
+                the phone's sticky bar so a reader sees one vocabulary. */}
             <a
               href={similarHref}
               className="btn alt"
               style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              {listing.city ? `Homes for sale in ${listing.city}` : 'Homes for sale'}
+              Homes for sale
             </a>
             <a href={alertsHref} className="btn" style={OUTLINE_BTN_STYLE}>
-              Email me new listings
+              Get alerts
             </a>
           </>
         ) : (

@@ -86,14 +86,14 @@ describe('publishSaleToListPct', () => {
 })
 
 describe('formatSaleToList', () => {
-  it('names an at-ask sale rather than printing 100.0%', () => {
-    expect(formatSaleToList(100)).toBe('At the asking price')
-    expect(formatSaleToList(100.04)).toBe('At the asking price')
-  })
-
-  it('prints one tenth either side of the ask', () => {
-    expect(formatSaleToList(88)).toBe('88.0% of asking')
-    expect(formatSaleToList(101.23)).toBe('101.2% of asking')
+  it('is a bare display numeral — no phrase inside the figure value', () => {
+    // The first render at 1440 put "97.4% of asking" in an Instrument figure
+    // value, set in the display face at figure size; it ran through the next
+    // column and collided with the day count. The words live in the label.
+    expect(formatSaleToList(100)).toBe('100.0%')
+    expect(formatSaleToList(88)).toBe('88.0%')
+    expect(formatSaleToList(101.23)).toBe('101.2%')
+    expect(formatSaleToList(97.4)).not.toMatch(/[a-z]/)
   })
 
   it('withholds a missing ratio', () => {
@@ -124,22 +124,31 @@ describe('publishListingOffMarketFacts', () => {
     expect(facts?.headline).toBe('Sold for $1,100,000 on September 8, 2026')
   })
 
-  it('carries the sold price, the ask, the ratio, the day and the market time', () => {
+  it('carries only what the headline does NOT already say', () => {
     const facts = publishListingOffMarketFacts(CLOSED)
     expect(facts?.figures).toEqual([
-      { value: '$1,100,000', label: 'sold for' },
       { value: '$1,250,000', label: 'last asked' },
-      { value: '88.0% of asking', label: 'sale to list' },
-      { value: 'September 8, 2026', label: 'closed' },
+      { value: '88.0%', label: 'of the asking price' },
       { value: '41', label: 'days on market' },
     ])
+    // The sale price and the close date are the headline's; the page's H1
+    // prints the sale price a third time above it. One more tile saying it
+    // again is restatement, not a figure.
+    expect(facts?.figures.some((f) => f.label === 'sold for')).toBe(false)
+    expect(facts?.figures.some((f) => f.label === 'closed')).toBe(false)
   })
 
   it('never publishes the ask as the sold figure when the close price is withheld', () => {
     const facts = publishListingOffMarketFacts({ ...CLOSED, closePrice: null, publishedPrice: null })
     expect(facts?.headline).toBe('This home sold and is no longer on the market')
     expect(facts?.figures.some((f) => f.label === 'sold for')).toBe(false)
-    expect(facts?.figures.some((f) => f.label === 'sale to list')).toBe(false)
+    expect(facts?.figures.some((f) => f.label === 'of the asking price')).toBe(false)
+    // With no sale price to head the sentence the date becomes a figure — the
+    // one thing the record still supports.
+    expect(facts?.figures).toEqual([
+      { value: 'September 8, 2026', label: 'closed' },
+      { value: '41', label: 'days on market' },
+    ])
     expect(JSON.stringify(facts)).not.toContain('1,250,000')
   })
 

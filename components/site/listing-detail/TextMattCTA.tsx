@@ -36,18 +36,22 @@ type Props = {
   body?: string
   primaryCta?: { href: string; label: string }
   /**
-   * SITE-21. Closed, Expired, Canceled or Withdrawn — isPublicOffMarketStatus.
+   * SITE-21. Null on market; 'sold' for Closed; 'unsold' for Expired, Canceled
+   * and Withdrawn.
    *
    * The card's whole ask is a showing: "Tour" over "Tour requests usually get a
    * same-day reply", with Call and Text under it. On a home that is not for
    * sale that is three unfulfillable requests, and the call it starts ends with
    * "that one sold." Off market the card asks the two questions a broker CAN
-   * answer about a home that changed hands — what happened in this sale, and
-   * what it means for the reader's own house — and it builds no `tel:` or
-   * `sms:` URI, so the page's only click-to-call is the brokerage line in the
-   * site footer.
+   * answer — what happened with this listing, and what it means for the
+   * reader's own house — and it builds no `tel:` or `sms:` URI, so the page's
+   * only click-to-call is the brokerage line in the site footer.
+   *
+   * SOLD AND UNSOLD ARE NOT THE SAME QUESTION, and the first render proved it:
+   * an EXPIRED listing carried "Questions about this sale? · Ask what this one
+   * closed at and why" over a home that never sold (§0.5, looked at 2026-09-09).
    */
-  offMarket?: boolean
+  offMarket?: 'sold' | 'unsold' | null
   className?: string
 }
 
@@ -62,14 +66,16 @@ export function TextMattCTA({
   headline,
   body,
   primaryCta,
-  offMarket = false,
+  offMarket = null,
   className,
 }: Props) {
   const askHref = `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=question`
   const tourHref =
     primaryCta?.href ??
     (offMarket ? askHref : `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`)
-  const tourLabel = primaryCta?.label ?? (offMarket ? 'Ask about this sale' : 'Tour')
+  const tourLabel =
+    primaryCta?.label ??
+    (offMarket === 'sold' ? 'Ask about this sale' : offMarket ? 'Ask about this home' : 'Tour')
   const phone = broker.phoneDirect ?? broker.phoneFub ?? null
 
   const quote = reviews?.reviews?.[0] ?? null
@@ -86,12 +92,14 @@ export function TextMattCTA({
     >
       <Stack gap="default">
         <Eyebrow>Talk to a broker</Eyebrow>
-        <H3>{headline ?? (offMarket ? 'Questions about this sale?' : 'Questions about this home?')}</H3>
+        <H3>{headline ?? (offMarket === 'sold' ? 'Questions about this sale?' : 'Questions about this home?')}</H3>
         <Body size="small" tone="muted" className="leading-relaxed">
           {body ??
-            (offMarket
+            (offMarket === 'sold'
               ? 'Ask what this one closed at and why, or what it says about the house you own.'
-              : 'Tour requests usually get a same-day reply.')}
+              : offMarket
+                ? 'It came off the market without selling. Ask what happened, or what it means for the house you own.'
+                : 'Tour requests usually get a same-day reply.')}
         </Body>
 
         {/* Broker — large photo on the left, all contact on the right */}
