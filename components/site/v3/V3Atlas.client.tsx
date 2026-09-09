@@ -157,12 +157,54 @@ export type V3AtlasProps = {
    * for aria-labelledby; only its setting changes to a small tracked label.
    */
   headlineTone?: 'display' | 'eyebrow'
+  /**
+   * OPT-IN (SITE-47). Whether the Atlas prints a CLAIM SENTENCE above the map
+   * on a live-inventory map.
+   *
+   * `none` is the default and what every caller before 2026-09-09 renders: an
+   * inventory map's claim is the empty string, because PLACE_PAGES §4 killed
+   * the "91 listings of every type for sale, 48 pending, 17 sold in the last 30
+   * days. Pinch or scroll to zoom." line that used to sit there. That kill was
+   * right about the how-to and the triple count; it left the section opening on
+   * a bare label, which the taste table of 2026-09-08 scored as a first read
+   * that requires a hover to discover what the marks mean.
+   *
+   * `inventory` restores ONE clause, built from the SAME filtered counts the
+   * marks are drawn from — so it moves with the type toggles and the price
+   * scrubber instead of describing a set the reader has already changed — and
+   * it names its own feed from the `source` trace. No pending count (the key
+   * carries that beside its own mark) and no zoom instruction.
+   */
+  claimTone?: 'none' | 'inventory'
+  /**
+   * OPT-IN (SITE-47). Where the dot KEY sits.
+   *
+   * `dock` is the default and what every caller before 2026-09-09 renders: in
+   * the dock, which is a left column beside the map at 64rem but drops BELOW
+   * the map on a phone and on a wide boundary (`.v3-atlas.is-wide`, the plat
+   * case). On those the encoding is not on screen with the map it explains.
+   *
+   * `head` moves the same list into the head, under the claim and above the
+   * map, in every layout. The key is rendered once either way.
+   */
+  keyPlacement?: 'dock' | 'head'
   dots: readonly AtlasDot[]
   regions: readonly AtlasRegion[]
   /** Type toggles, in display order. Keys match AtlasDot.t. */
   types: readonly AtlasType[]
   /** The section 0 trace: what the dots are and where they come from. */
   source?: string
+  /**
+   * The FEED's short name, for the attribution clause on a `claimTone`
+   * `inventory` claim ("…, live MLS through Oregon Data Share."). Passed by the
+   * caller and never derived: this component's `source` traces are written
+   * population-first ("Every active and pending listing … through Oregon Data
+   * Share inside the recorded boundary of Park Addition."), so V3SourceLine's
+   * leading-segment rule folds them to the whole sentence and the claim came
+   * out ungrammatical. Absent, the claim states the count and stops — the full
+   * trace is still under the map in the source disclosure either way.
+   */
+  sourceName?: string
   /** "Sep 1, 2026, 9:40 PM" — when the dots were read, already formatted. */
   stamp?: string
   /** The caller's read came back short: the Atlas prints no counts. */
@@ -311,10 +353,13 @@ export function V3Atlas({
   headline,
   headingLevel = 1,
   headlineTone = 'display',
+  claimTone = 'none',
+  keyPlacement = 'dock',
   dots,
   regions,
   types,
   source,
+  sourceName,
   stamp,
   fit = 'regions',
   highlight,
@@ -696,14 +741,26 @@ export function V3Atlas({
 
   const claim = useMemo(() => {
     if (incomplete) return 'Live counts are unavailable right now. The map shows what could be read.'
-    // SITE_PAGES / PLACE_PAGES kill list: no "N listings of every type for sale…"
-    // under the Atlas headline. Inventory counts live in the dock; the map is
-    // the spectacle. Closings maps may still name the close count without the
-    // "every type" filler.
-    if (!closingsMap) return ''
+    // SITE_PAGES / PLACE_PAGES kill list: no "N listings of every type for sale,
+    // N pending, N sold in the last 30 days. Pinch or scroll to zoom." under the
+    // Atlas headline. The how-to and the triple count stay dead. A caller that
+    // asks for `claimTone="inventory"` gets ONE clause off the same filtered
+    // count the marks use, with the feed named — the first read the taste table
+    // of 2026-09-08 said this section did not have.
+    if (!closingsMap) {
+      if (claimTone !== 'inventory') return ''
+      const ceiling = atCeiling ? '' : ` under ${fmtShort(maxPrice)}`
+      // "ON THIS MAP" IS NOT FILLER, it is §0 rule 5. The Atlas draws every
+      // property type inside the boundary; the page's own opening counts the
+      // single-family set the browse door opens. On /subdivisions/park-addition
+      // those are 4 and 3, a screen apart, and without a phrase scoping this
+      // one to the map a reader meets two counts of what looks like one thing.
+      const sentence = `${counts.forSale.toLocaleString('en-US')} ${filterPhrase}${noun(counts.forSale)} for sale on this map right now${ceiling}`
+      return sourceName ? `${sentence}, ${sourceName}.` : `${sentence}.`
+    }
     const ceiling = atCeiling ? '' : ` under ${fmtShort(maxPrice)}`
     return `${counts.closed.toLocaleString('en-US')} ${filterPhrase}${noun(counts.closed)}${ceiling}.`
-  }, [counts, atCeiling, maxPrice, noun, incomplete, filterPhrase, closingsMap])
+  }, [counts, atCeiling, maxPrice, noun, incomplete, filterPhrase, closingsMap, claimTone, sourceName])
 
   /* The pulses: the newest real events, with slots per kind so closes always
      show; capped so the map breathes and the main thread never notices. */
@@ -1153,6 +1210,20 @@ export function V3Atlas({
     return out
   }, [counts, closingsMap, noun, incomplete])
 
+  /* The key, rendered once. `keyPlacement` decides which slot holds it; the
+     markup is identical in both, so a reader and a test see one list. */
+  const keyList =
+    keyItems.length > 0 ? (
+      <ul className="v3-atlas__key" aria-label="What the marks mean">
+        {keyItems.map((k) => (
+          <li key={k.kind} className="v3-atlas__key-item">
+            <span className={`v3-atlas__key-mark v3-atlas__key-mark--${k.kind}`} aria-hidden="true" />
+            {k.label}
+          </li>
+        ))}
+      </ul>
+    ) : null
+
   const dock = (
     <div className="v3-atlas__dock">
       {heat.cells.length > 0 ? (
@@ -1171,16 +1242,7 @@ export function V3Atlas({
           <p className="v3-atlas__sales-legend-window">{atlasHeatWindowLabel(ATLAS_HEAT_WINDOW_DAYS)}</p>
         </div>
       ) : null}
-      {keyItems.length > 0 ? (
-        <ul className="v3-atlas__key" aria-label="What the marks mean">
-          {keyItems.map((k) => (
-            <li key={k.kind} className="v3-atlas__key-item">
-              <span className={`v3-atlas__key-mark v3-atlas__key-mark--${k.kind}`} aria-hidden="true" />
-              {k.label}
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      {keyPlacement === 'dock' ? keyList : null}
       <div className="v3-atlas__types" role="group" aria-label="Property types">
         {types.map((t) => (
           <button
@@ -1241,6 +1303,10 @@ export function V3Atlas({
               {claim}
             </p>
           )}
+          {/* The key in the head (SITE-47, opt-in): the encoding sits with the
+              claim, above the map, so the first read lands without a hover and
+              without the reader finding the dock below a tall frame. */}
+          {quiet || keyPlacement !== 'head' ? null : keyList}
         </div>
 
         <div className="v3-atlas__body">
