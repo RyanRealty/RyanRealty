@@ -112,6 +112,41 @@ describe('slug', () => {
     ).toBe('/homes-for-sale/bend/lakes-at-tanager-pud/63435-palla-220225078')
   })
 
+  it('SITE-23: a Brasada Ranch home resolves to Powell Butte, from its own boundary fields', () => {
+    // 220193364, 17938 Chaparral, Brasada Ranch — one of the 45 listing pages
+    // Search Console had indexed under /homes-for-sale/outside-boundaries/
+    // brasada-ranch/. The sentinel fired because `boundaries` held no polygon
+    // for Powell Butte at any geo_type, so the classifier had nothing to put in
+    // boundary_city; the Brasada Ranch neighbourhood polygon was there the whole
+    // time and the home's point is inside it. Migration 20260908210000 added the
+    // Powell Butte CCD polygon and re-classified the row, so these are the values
+    // the row now carries — read live 2026-09-08, boundary_city 'Powell Butte',
+    // boundary_neighborhood 'Brasada Ranch'.
+    //
+    // The test above proves the URL builder REFUSES the sentinel. This one pins
+    // the other half: that a real registry community's home names its city and
+    // its community, rather than falling through to the MLS city with no
+    // community and no polygon behind it.
+    expect(
+      listingDetailPath(
+        '20241121235215245034000000',
+        {
+          streetNumber: '17938',
+          streetName: 'Chaparral',
+          city: 'Powell Butte',
+          state: 'OR',
+          postalCode: '97753',
+        },
+        {
+          city: 'Powell Butte',
+          neighborhood: 'Brasada Ranch',
+          subdivision: 'Brasada Ranch',
+        },
+        { mlsNumber: '220193364' }
+      )
+    ).toBe('/homes-for-sale/powell-butte/brasada-ranch/17938-chaparral-220193364')
+  })
+
   it('includes neighborhood segment before subdivision when provided', () => {
     expect(
       listingDetailPath(
