@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-09-09T07:01:41.079Z
+**Generated:** 2026-09-09T12:05:39.986Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -356,7 +356,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 16,988**
+### `market_stats_cache` · **rows ≈ 17,069**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -539,7 +539,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 458**
+### `cmas` · **rows ≈ 459**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -689,7 +689,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_idempotency_key` | text | yes |  |
 | `outreach_email_queued_at` | timestamp with time zone | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 920**
+### `marketing_brain_actions` · **rows ≈ 921**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -759,7 +759,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `related_campaign` | text | yes |  |
 | `related_post_id` | text | yes |  |
 
-### `saved_listings` · **rows ≈ 6**
+### `saved_listings` · **rows ≈ 7**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -4654,6 +4654,15 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `year_filter` | integer | yes |  |
 | `duration_ms` | integer | yes |  |
 | `error_message` | text | yes |  |
+
+### `subdivision_city_inventory_mv`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `city_lower` | text | yes |  |
+| `subdivision_name` | text | yes |  |
+| `listing_count` | integer | yes |  |
+| `status_counts` | jsonb | yes |  |
 
 ### `subdivision_descriptions`
 

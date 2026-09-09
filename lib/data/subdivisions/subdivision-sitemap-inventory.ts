@@ -77,18 +77,35 @@ export function classifyLifetimeBuckets(status: string | null | undefined): Life
   return buckets
 }
 
-/** One row read from listing_tile_mv for a single city (subdivision_name +
- * standard_status only, the sitemap needs nothing else). */
+/** One counted (subdivision_name, standard_status) row — the sitemap needs
+ * nothing else.
+ *
+ * `n` (SITE-54, 2026-09-09) is how many listings the row stands for. It was
+ * always implicitly 1, back when a row WAS one listing_tile_mv row and the
+ * caller paged 129,192 of them per city through PostgREST. The counting now
+ * happens once a night inside subdivision_city_inventory_mv, so a row arrives
+ * pre-counted; absent it still means 1 and every existing caller and test is
+ * unchanged. */
 export type SubdivisionInventoryRow = {
   subdivision_name?: string | null
   standard_status?: string | null
+  n?: number
+}
+
+/** Listings a counted row stands for. Absent, zero and negative all mean one
+ * row = one listing, which is what the per-listing readers passed. */
+function rowWeight(row: SubdivisionInventoryRow): number {
+  const n = Number(row.n)
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 1
 }
 
 /**
- * Aggregate a city's listing_tile_mv rows into the set of subdivision slugs
- * that meet the lifetime-listing floor, exactly mirroring the RPC-based loop
- * this replaces (dedup by slugify, drop empty/'N/A' names, drop the
- * 'unknown' slug).
+ * Aggregate a city's counted rows into the set of subdivision slugs that meet
+ * the lifetime-listing floor, exactly mirroring the RPC-based loop this
+ * replaces (dedup by slugify, drop empty/'N/A' names, drop the 'unknown'
+ * slug). Rows now arrive pre-counted out of subdivision_city_inventory_mv;
+ * subdivision-sitemap-inventory.test.ts pins that against the per-listing
+ * form it replaced.
  */
 export function buildSubdivisionSlugsForCity(
   rows: readonly SubdivisionInventoryRow[],
@@ -105,7 +122,7 @@ export function buildSubdivisionSlugsForCity(
     nameSeenForSlug.add(slug)
     const buckets = classifyLifetimeBuckets(row.standard_status)
     if (buckets.length === 0) continue
-    lifetimeBySlug.set(slug, (lifetimeBySlug.get(slug) ?? 0) + buckets.length)
+    lifetimeBySlug.set(slug, (lifetimeBySlug.get(slug) ?? 0) + buckets.length * rowWeight(row))
   }
 
   const out: string[] = []

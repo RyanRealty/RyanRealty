@@ -22,7 +22,20 @@
  * with the TypeScript compiler and looks for a real CallExpression to the guard —
  * a comment or string mention cannot satisfy it.
  *
- * Exit: 0 = both surfaces call the guard, 1 = a surface dropped it.
+ * app/sitemap.ts's link CHANGED SHAPE (SITE-54, 2026-09-09), not dropped. It used
+ * to call getMatrixCityPresetNoIndex(city, preset) once per (city, preset) combo —
+ * up to ~1,080 sequential awaits. Measured against production: each call
+ * independently rebuilt the ~8.3s search-matrix (getSearchMatrix's React `cache()`
+ * does not dedupe across the unstable_cache revalidation context buildAllUrls runs
+ * inside), so the loop degenerated into ~1,080 sequential rebuilds and blew every
+ * sitemap deadline — the exact class of failure this node exists to kill, one leg
+ * over. The fix resolves the matrix ONCE (getMatrixCityPresetDecisionSet) and
+ * applies the SAME branches synchronously per combo
+ * (matrixCityPresetNoIndexFromSet — byte-for-byte the same logic as
+ * getMatrixCityPresetNoIndex, see lib/seo/getSearchMatrixEntries.ts). The gate now
+ * requires BOTH calls on app/sitemap.ts instead of one call to the async form.
+ *
+ * Exit: 0 = every surface wires the guard, 1 = a surface dropped it.
  */
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -30,16 +43,21 @@ import ts from 'typescript'
 
 // The 2-segment zero-inventory guard must be wired on every surface. The search
 // page calls it via resolveMatrixNoIndex (the shared wrapper — keeps the search
-// route god-file lean); the sitemap and the wrapper both call the underlying
-// getMatrixCityPresetNoIndex. All three links must hold, or the guard is dead.
+// route god-file lean); the sitemap calls the batched decision-set form (SITE-54)
+// and the wrapper calls the underlying per-combo getMatrixCityPresetNoIndex. Every
+// link must hold, or the guard is dead somewhere on the path.
 const CHECKS = [
-  { file: 'app/sitemap.ts', guard: 'getMatrixCityPresetNoIndex', why: 'omit a zero-count combo from the sitemap' },
+  {
+    file: 'app/sitemap.ts',
+    guards: ['getMatrixCityPresetDecisionSet', 'matrixCityPresetNoIndexFromSet'],
+    why: 'omit a zero-count combo from the sitemap',
+  },
   // The search route's metadata assembly moved to the colocated module in the
   // 2026-07-31 file-size split; page.tsx's generateMetadata forwards to it.
-  { file: 'app/search/[...slug]/search-metadata.ts', guard: 'resolveMatrixNoIndex', why: 'noindex a zero-count combo at render' },
+  { file: 'app/search/[...slug]/search-metadata.ts', guards: ['resolveMatrixNoIndex'], why: 'noindex a zero-count combo at render' },
   {
     file: 'lib/seo/getSearchMatrixEntries.ts',
-    guard: 'getMatrixCityPresetNoIndex',
+    guards: ['getMatrixCityPresetNoIndex'],
     why: 'resolveMatrixNoIndex must actually consult the 2-segment count',
   },
 ]
@@ -47,13 +65,7 @@ const CHECKS = [
 const problems = []
 
 /** True if the file contains a real CallExpression whose callee is `name`. */
-function callsFunction(rel, name) {
-  const p = join(process.cwd(), rel)
-  if (!existsSync(p)) {
-    problems.push(`${rel}: file not found`)
-    return false
-  }
-  const sf = ts.createSourceFile(rel, readFileSync(p, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+function callsFunction(rel, name, sf) {
   let found = false
   const visit = (node) => {
     if (ts.isCallExpression(node)) {
@@ -69,9 +81,18 @@ function callsFunction(rel, name) {
   return found
 }
 
-for (const { file, guard, why } of CHECKS) {
-  if (!callsFunction(file, guard)) {
-    problems.push(`${file}: does not CALL ${guard}() — the 2-segment {city}/{preset} guard cannot ${why}.`)
+for (const { file, guards, why } of CHECKS) {
+  const p = join(process.cwd(), file)
+  if (!existsSync(p)) {
+    problems.push(`${file}: file not found`)
+    continue
+  }
+  const sf = ts.createSourceFile(file, readFileSync(p, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const missing = guards.filter((g) => !callsFunction(file, g, sf))
+  if (missing.length > 0) {
+    problems.push(
+      `${file}: does not CALL ${missing.map((g) => `${g}()`).join(' and ')} — the 2-segment {city}/{preset} guard cannot ${why}.`,
+    )
   }
 }
 
