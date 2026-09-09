@@ -1345,3 +1345,35 @@ card per row with the same fields, same order.
 **Sentences.** Over matrix 2: "These asked and never came down to the range." Over matrix 3:
 "These are asking in this range now. Asking is not selling." Both from data; counts and the
 range from `render_args`.
+
+## Delta 4, 2026-09-08 (Matt): rural homes get read as property, not as a house
+
+"For rural homes it's really important to look deeper at the property. Some are farm or have
+irrigation, some are just a plain home on a bunch of unusable land. Zoning, irrigation, other
+buildings, etc. should all factor in. Rural homes are hard so we need to nail this."
+
+**Rule.** Outside a neighborhood or community boundary the comparison is of the PROPERTY:
+the home, the land it sits on, what the land can do, and what else stands on it. A sale is
+comparable to a rural subject only when it matches on: zoning class (EFU / MUA / RR / F and
+the like, from the county), irrigation (water rights: yes/no, acres, district), usable versus
+unusable acreage (irrigated or level versus slope, rock, juniper), outbuildings (shop, barn,
+arena, ADU, guest house, with size where recorded), well and septic, and farm use or deferral
+where recorded. Each of those is a hard split before price, the way product class already is,
+or it is an itemised adjustment line with its basis printed. The document's rural grid carries
+them as rows with the source named, and the story sentences say which of them set the price
+("Both sales carry COID water; yours has none, so …").
+
+**What exists today (verified in code and memory):** `landProduct` and the acreage threshold
+(`lib/cma/land-pricing.ts`), the irrigation hard-split and custom year-quality on the facts
+path (`fe98e4bb`), the county acreage beside the MLS figure and the recorded lot drawn
+(`52083998`, `64eb7ecf`), well / septic / zoning from the county GIS
+(`reference_bend_land_data_sources`), the D18 condo site-data defect. NOT yet in the engine:
+outbuildings, farm use or deferral, usable-acre share, irrigation acres and district as
+adjustment lines, zoning as a hard split on every rural rung.
+
+**Next engine item after the containment ladder:** confirm which MLS `listings` /
+`details` fields and which county layers carry each factor (do not assume; print the
+population rate over the rural closes), add the hard splits and the itemised lines with tests
+and a rural backtest slice, and put every factor on `render_args` with its source so the rural
+grid can print it. Concorde (6.38 acres) is the exemplar; the round-four audit noted its land
+was never valued, compared, or disclosed as excluded.
