@@ -7,7 +7,7 @@
  * chapter shows.
  */
 import { describe, expect, it } from 'vitest'
-import { pricingPage } from '@/lib/cma/render-pricing-page'
+import { pricingPage, salesThatSetItPage } from '@/lib/cma/render-pricing-page'
 import { keptCompCount, setAsideRows, clampSentence } from '@/lib/cma/set-aside'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
@@ -104,8 +104,15 @@ function pricing(over: Record<string, unknown> = {}): CmaPricing {
   } as unknown as CmaPricing
 }
 
+/**
+ * Delta 3 split chapter 3: the number and the method stay in `pricingPage`,
+ * the sales that prove it (and everything read off them — the set-aside list,
+ * the reconciliation, the per-foot check) became matrix 1. Both bodies are
+ * what a reader meets, so the assertions read both.
+ */
 function chapter(p: CmaPricing): string {
-  return pricingPage({ subject, comps, market: null, pricing: p, tiersUsed: [] }).body
+  const input = { subject, comps, market: null, pricing: p, tiersUsed: [] }
+  return `${pricingPage(input).body}\n${salesThatSetItPage(input)?.body ?? ''}`
 }
 
 describe('set aside', () => {

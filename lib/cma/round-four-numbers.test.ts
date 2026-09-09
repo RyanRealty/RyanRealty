@@ -28,6 +28,7 @@ import {
   keptSaleCount,
   listRangeBounds,
   pricingPage,
+  salesThatSetItPage,
   whatItsWorthLead,
 } from '@/lib/cma/render-pricing-page'
 import { compSearchSentence, keptInSubdivision } from '@/lib/cma/render-comp-search'
@@ -153,8 +154,12 @@ function trimmedPricing(over: Record<string, unknown> = {}): CmaPricing {
   })
 }
 
+/**
+ * The number chapter and matrix 1. Delta 3 split them; every count E3 checks
+ * has to agree across both, which is the whole point of the check.
+ */
 function chapter(p: CmaPricing, comps: CmaAdjustedComp[], over: Record<string, unknown> = {}): string {
-  return pricingPage({
+  const input = {
     subject: subject(),
     comps,
     market: null,
@@ -162,7 +167,8 @@ function chapter(p: CmaPricing, comps: CmaAdjustedComp[], over: Record<string, u
     tiersUsed: [],
     askCtx: { asOfIso: AS_OF, hasFinalCycle: true },
     ...over,
-  }).body
+  }
+  return `${pricingPage(input).body}\n${salesThatSetItPage(input)?.body ?? ''}`
 }
 
 function opinionArgs(over: Partial<OpinionPageArgs> = {}): OpinionPageArgs {

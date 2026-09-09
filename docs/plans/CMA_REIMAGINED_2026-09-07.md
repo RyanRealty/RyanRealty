@@ -1299,3 +1299,49 @@ prices, so the lowest sale renders outside the shading captioned "what your home
 **Method note for the next round: cap the fan-out.** This run spawned 631 agents on an
 uncapped findings-to-refuters expansion and exhausted the session. Cap findings per lens and
 use two refuters, not three.
+
+## Delta 3, 2026-09-08 (Matt): one map, three pin families, three matrices
+
+"We can use one map for that, and we'll just have to make the map look cooler and put better
+pins on it to show the comps and the expired or canceled as a different kind of subset. We want
+to actually have the actives, the closed, and the expired or canceled as three different icon
+sets: these are the ones that closed, this is where we're getting our number from; these are
+the ones that are active in this market right now; these are the ones that expired or canceled.
+We always have to be able to tell the tale of how long they've been on the market and how many
+price changes they've had. That has to be clear on all of those: how long it took them to sell.
+Look, once they dropped it down into this range, it sold, but these people never got down to
+that range. One comprehensive map, and then we'll break out the matrices of comparables so that
+we start with the closed comparables, the ones that set the price. We look at people that
+expired in that same area, and we have ours right next to it. All of our subject properties in
+that matrix, with all of the details: year built, notes on remodel, size, lot size, rooms,
+bathrooms, bedrooms. We do the same thing for these homes that were listed in the same area but
+were not able to sell. This is who your competition is right now in the same area at the
+recommended price point: these people are here at this price, it doesn't mean they're going to
+sell at this price."
+
+**The map.** One map for the whole document, drawn on the comp area (`render_args.compArea`).
+Three pin families, one glyph each, legend keyed to the three matrices: closed (filled navy,
+numbered, "set the price"), active or pending (hollow navy, lettered, "for sale now"), expired,
+withdrawn or canceled (navy with a strike or hollow with a bar, roman, "came off unsold"). The
+subject is the star. Every pin's label and tap reveal the same two facts: days on market and
+the count of price changes, plus the outcome (sold $X · offer in N days / asking $X · N days /
+came off after N days). Not a Google default: monochrome basemap, our pins, no attribution tell
+beyond what the license requires.
+
+**The three matrices, in this order, one column set, the subject column first in each:**
+1. Closed sales that set the price.
+2. Expired, withdrawn or canceled in the same area (the peers from Delta 1, now from the
+   comp area, widened until at least three).
+3. Active and pending in the same area at the recommended price.
+
+Columns: photo · address (tracked link) · outcome line · year built · remodel or update notes
+(the MLS remark fragment, shown as written, only when the remarks say updated / remodeled /
+new roof / new kitchen and the like; otherwise "none noted") · size · lot size · rooms · beds ·
+baths · days on market · price changes (count and the path drawn) · first ask → last ask →
+outcome. The price path row is the story Matt tells at the table: the range shaded on every
+path so the reader sees who dropped into it and sold, and who never got down to it. Phone: one
+card per row with the same fields, same order.
+
+**Sentences.** Over matrix 2: "These asked and never came down to the range." Over matrix 3:
+"These are asking in this range now. Asking is not selling." Both from data; counts and the
+range from `render_args`.

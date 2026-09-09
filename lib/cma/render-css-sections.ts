@@ -354,6 +354,83 @@ export function cmaSectionStyles(): string {
   /* The lit pin comes to the front, whatever it was sitting under. */
   .pin-hit.is-on, .pin-hit:focus-visible { z-index: 3; }
   .pin-hit.is-subject .pin-dot { border-radius: 2px; }
+  /* THREE FAMILIES, THREE GLYPHS (Delta 3). Filled navy for a sale that
+     closed, hollow for a home on the market, hollow with a bar across it for a
+     listing that came off unsold — one look per set, so a reader never has to
+     consult the legend twice. */
+  .pin-hit.is-active .pin-dot,
+  .pin-hit.is-unsold .pin-dot {
+    background: var(--cream);
+    color: var(--navy);
+    box-shadow: 0 0 0 2px var(--navy);
+  }
+  .pin-hit.is-unsold .pin-dot { position: relative; }
+  .pin-hit.is-unsold .pin-dot::after {
+    content: '';
+    position: absolute;
+    left: -4px;
+    right: -4px;
+    top: 50%;
+    height: 1.5px;
+    background: var(--navy);
+  }
+  /* Every pin tells the tale on tap: days on market, price changes, outcome.
+     Print has no hover, so the sheet shows nothing until a pin is lit — the
+     matrix under it carries the same three facts as columns. */
+  .pin-note { display: none; }
+  .pin-hit.is-on .pin-note {
+    display: block;
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translate(-50%, 6px);
+    width: 168px;
+    padding: 6px 8px;
+    background: var(--cream);
+    border: 1px solid var(--navy);
+    color: var(--navy);
+    font-size: 9px;
+    line-height: 1.35;
+    text-align: left;
+    z-index: 4;
+  }
+  .pin-note .pn-a { display: block; font-weight: 700; }
+  .pin-note .pn-o, .pin-note .pn-d { display: block; }
+  /* The legend, keyed to the three matrices below it. */
+  .pin-legend {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    font-size: 9.5px;
+    color: var(--muted);
+  }
+  .pin-legend .pl-i { display: flex; align-items: center; gap: 5px; }
+  .pin-legend .pl-k {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 8px;
+    font-weight: 700;
+  }
+  .pin-legend .is-active .pl-k, .pin-legend .is-unsold .pl-k {
+    background: var(--cream);
+    color: var(--navy);
+    box-shadow: inset 0 0 0 1.5px var(--navy);
+  }
+  .pin-legend .is-subject .pl-k { background: transparent; color: var(--navy); }
+  /* Each unsold peer's dollars-a-foot story, keyed to its pin. */
+  .peer-stories { list-style: none; margin: 8px 0 0; padding: 0; }
+  .peer-stories li { display: flex; align-items: baseline; gap: 6px; margin: 0 0 5px; font-size: 10.5px; line-height: 1.45; }
+  .peer-stories .ps-a { font-weight: 600; white-space: nowrap; }
+  .peer-stories .ps-r { min-width: 0; }
   /* Chapter 3's lead line, under the number that is the chapter title. */
   .worth-lead { font-size: 13.5px; line-height: 1.5; margin: 0 0 12px; }
   .worth-lead-note { font-size: 13px; line-height: 1.5; margin: 0 0 12px; border-left: 2px solid var(--navy); padding-left: 9px; }
@@ -542,6 +619,15 @@ export function cmaSectionStyles(): string {
   .addr-row.is-card .comp-stack-addr { margin: 0; flex: 1 1 auto; min-width: 0; }
   /* The map's pin, at reading size: the number is the key to the pin, not a
      rank. print-color-adjust is exact on * in the sheet, so it prints filled. */
+  .pin-badge.is-active, .pin-badge.is-unsold {
+    background: var(--cream);
+    color: var(--navy);
+    box-shadow: inset 0 0 0 1.5px var(--navy);
+  }
+  .pin-badge.is-subject { background: transparent; color: var(--navy); }
+  /* The adjustment grid repeats the columns and drops the photographs. */
+  table.comp-matrix.is-adjustments thead th.v { padding-top: 2px; }
+  .subhead.adjustments-h { margin-top: 12px; }
   .pin-badge { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: var(--navy); color: var(--cream); font-size: 9px; font-weight: 700; line-height: 1; margin-right: 5px; flex: 0 0 auto; vertical-align: middle; }
   table.comp-matrix th, table.comp-matrix td {
     padding: 5px 6px;

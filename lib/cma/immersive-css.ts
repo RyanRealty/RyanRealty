@@ -196,6 +196,28 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
    pin a reader lit comes to the front, whatever it was sitting under. */
 .pin-hit.is-on,.pin-hit:focus-visible{z-index:3}
 .pin-hit.is-on .pin-dot{background:var(--cream);color:var(--navy);box-shadow:0 0 0 3px var(--navy)}
+/* THREE FAMILIES, THREE GLYPHS (Delta 3): filled numbered for a sale that
+   closed, hollow lettered for a home on the market, hollow barred roman for a
+   listing that came off unsold. */
+.pin-hit.is-active .pin-dot,.pin-hit.is-unsold .pin-dot{background:var(--cream);color:var(--navy);box-shadow:0 0 0 2px var(--navy),0 1px 6px rgba(16,39,66,.25)}
+.pin-hit.is-unsold .pin-dot{position:relative}
+.pin-hit.is-unsold .pin-dot::after{content:'';position:absolute;left:-5px;right:-5px;top:50%;height:2px;background:var(--navy)}
+/* Every pin tells the tale: days on market, price changes, the outcome. */
+.pin-note{position:absolute;left:50%;top:100%;transform:translate(-50%,8px);width:210px;padding:9px 11px;background:var(--cream);border:1px solid var(--navy);color:var(--navy);font-size:12px;line-height:1.4;text-align:left;z-index:4;opacity:0;pointer-events:none;transition:opacity 200ms ease-out}
+.pin-hit.is-on .pin-note,.pin-hit:hover .pin-note,.pin-hit:focus-visible .pin-note{opacity:1}
+@media (prefers-reduced-motion:reduce){.pin-note{transition:none}}
+.pin-note .pn-a{display:block;font-weight:600}
+.pin-note .pn-o,.pin-note .pn-d{display:block;opacity:.8}
+.pin-legend{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;opacity:.75}
+.pin-legend .pl-i{display:flex;align-items:center;gap:8px}
+.pin-legend .pl-k{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--navy);color:var(--cream);font-size:11px;font-weight:600;flex:0 0 auto}
+.pin-legend .is-active .pl-k,.pin-legend .is-unsold .pl-k{background:transparent;color:var(--navy);box-shadow:inset 0 0 0 2px var(--navy)}
+.pin-legend .is-subject .pl-k{background:transparent;color:var(--navy)}
+.peer-stories{list-style:none;margin:14px 0 0;padding:0}
+.peer-stories li{display:flex;align-items:baseline;gap:10px;margin:0 0 8px;font-size:14px;line-height:1.5}
+.peer-stories .ps-a{font-weight:600;white-space:nowrap}
+.peer-stories .ps-r{min-width:0;opacity:.85}
+@media (max-width:700px){.peer-stories li{flex-direction:column;gap:2px}.peer-stories .ps-a{white-space:normal}}
 .lot-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin:14px 0 8px}
 .lot-tile{margin:0}
 .lot-tile svg{width:100%;height:auto;display:block;border:1px solid var(--ink12);border-radius:10px}
@@ -324,6 +346,9 @@ table.comp-matrix .matrix-addr{display:block}
 /* The map's pin, at reading size. The number beside a sale is the KEY to that
    pin, not a rank, and drawn as the pin it cannot be misread as one after the
    grid is sorted. */
+.pin-badge.is-active,.pin-badge.is-unsold{background:transparent;color:var(--navy);box-shadow:inset 0 0 0 2px var(--navy)}
+.pin-badge.is-subject{background:transparent;color:var(--navy)}
+.subhead.adjustments-h,h4.adjustments-h{margin-top:22px}
 .pin-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--navy);color:var(--cream);font-size:11px;font-weight:700;line-height:1;margin-right:7px;flex:0 0 auto;vertical-align:middle}
 .addr-row{display:flex;align-items:center;justify-content:center}
 .addr-row .matrix-addr{min-width:0}

@@ -55,7 +55,7 @@ describe('renderCompMatrixHtml', () => {
   it('prints your home first, then one column per sale, with the blueprint rows', () => {
     const html = renderCompMatrixHtml(subject, padSales(comp))
     expect(html).toContain('The sales that set this price')
-    expect(html).toContain('class="kv is-wide comp-matrix"')
+    expect(html).toContain('class="kv is-wide comp-matrix is-closed"')
     // The seller's column is headed "Your home", with their ask and size under
     // it — never a price in a "Sold for" cell on a home that has not sold.
     expect(html).toContain('Your home')
@@ -66,7 +66,7 @@ describe('renderCompMatrixHtml', () => {
     // And it sits OUTSIDE the anchor, so innerText reads "947 6th" and a
     // copy-paste carries no rank (tasteReview round three, §4 item 6).
     expect(html).toMatch(
-      /<span class="pin-badge" aria-hidden="true">1<\/span><a class="matrix-addr"[^>]*>947 6th<\/a>/,
+      /<span class="pin-badge is-closed" aria-hidden="true">1<\/span><a class="matrix-addr"[^>]*>947 6th<\/a>/,
     )
     expect(html).not.toContain('1. 947 6th')
     expect(html).toContain('data-comp="1"')
@@ -74,13 +74,21 @@ describe('renderCompMatrixHtml', () => {
     // Seven rows, and only these. The identity rows (property type, beds and
     // baths, year built) fold into one sentence when the whole table shares a
     // value, which on this fixture they do.
-    for (const row of ['Sold for', 'Sold', 'Size', 'Days to offer', 'Sale price today']) {
+    // Delta 3's column set, exactly, plus the adjustment grid under matrix 1.
+    for (const row of [
+      'Outcome',
+      'Size',
+      'Days on market',
+      'Price changes',
+      'How the price moved',
+      'First ask \u2192 last ask \u2192 outcome',
+      'Sold for',
+      'Sale price today',
+    ]) {
       expect(html, row).toContain(row)
     }
     // ONE sentence, not one per folded row (tasteReview round three, §3).
-    expect(html).toContain(
-      'Every home here is a single family residence, 3 bd / 1 ba, built in 1978.',
-    )
+    expect(html).toContain('Every home here is 3 bd, 1 ba, built in 1978.')
     expect(html).toContain('$495,000')
     expect(html).toContain('$465,744')
     expect(html).toContain('Jun 25, 2026')
@@ -94,8 +102,8 @@ describe('renderCompMatrixHtml', () => {
     // TARGET_COMPS is 5 and MIN_COMPS is 5 (lib/cma/comps.ts), so the priced
     // set renders as a single table with no group captions.
     const html = renderCompMatrixHtml(subject, padSales(comp, 5))
-    expect(html.match(/<table class="kv is-wide comp-matrix">/g)).toHaveLength(1)
-    expect(html).not.toContain('<h4 class="subhead">')
+    expect(html.match(/<table class="kv is-wide comp-matrix is-closed">/g)).toHaveLength(1)
+    expect(html).not.toContain('matrix-group-h')
   })
 
   // The floor is the pricing unit's floor (PRICING_MIN_COMPS = 3), not the
@@ -117,7 +125,13 @@ describe('renderCompMatrixHtml', () => {
     // whole CMA has one.
     for (let n = 6; n <= 13; n++) {
       const html = renderCompMatrixHtml(subject, Array.from({ length: n }, () => comp))
-      const sizes = [...html.matchAll(/<colgroup>(.*?)<\/colgroup>/g)].map(
+      // The SHARED tables only. The adjustment grid under matrix 1 repeats
+      // the same columns and would double every count.
+      const sizes = [
+        ...html.matchAll(
+          /<table class="kv is-wide comp-matrix is-closed">\s*<colgroup>(.*?)<\/colgroup>/g,
+        ),
+      ].map(
         // minus the label column and the repeated subject column
         (m) => (m[1]!.match(/<col /g) ?? []).length - 2,
       )
@@ -131,7 +145,7 @@ describe('renderCompMatrixHtml', () => {
 
   it('captions each table with the sales it holds, and loses none of them', () => {
     const twelve = renderCompMatrixHtml(subject, Array.from({ length: 12 }, () => comp))
-    expect(twelve.match(/<table class="kv is-wide comp-matrix">/g)).toHaveLength(3)
+    expect(twelve.match(/<table class="kv is-wide comp-matrix is-closed">/g)).toHaveLength(3)
     // A CONTINUATION label, never a range of positions. "Sales 5 through 8"
     // forced the sort to run inside each table so the heading stayed true, and
     // a reader who asked for price order then got two descending runs.
@@ -139,11 +153,12 @@ describe('renderCompMatrixHtml', () => {
     expect(twelve).not.toMatch(/Sales \d+ through \d+/)
     // The defect this whole shape exists to prevent: sales falling off the page.
     expect(twelve).toMatch(
-      /<span class="pin-badge" aria-hidden="true">12<\/span><a class="matrix-addr"[^>]*>947 6th<\/a>/,
+      /<span class="pin-badge is-closed" aria-hidden="true">12<\/span><a class="matrix-addr"[^>]*>947 6th<\/a>/,
     )
-    // Three table heads, plus the phone stack's own "Your home" card, which
-    // the desktop grid had and the phone drawing did not (tasteReview item 1).
-    expect(twelve.match(/Your home/g)).toHaveLength(4)
+    // Three shared table heads, three adjustment-grid heads, plus the phone
+    // stack's own "Your home" card, which the desktop grid had and the phone
+    // drawing did not (tasteReview item 1).
+    expect(twelve.match(/Your home/g)).toHaveLength(7)
     expect(twelve.replace(/&[a-z]+;/g, '')).not.toMatch(/[—;]/)
 
     const thirteen = renderCompMatrixHtml(subject, Array.from({ length: 13 }, () => comp))
@@ -155,16 +170,18 @@ describe('renderCompMatrixHtml', () => {
     // Fixed layout plus a colgroup is what makes the width independent of how
     // long an address or a subdivision name happens to be.
     const html = renderCompMatrixHtml(subject, Array.from({ length: 5 }, () => comp))
-    const cols = html.match(/<col style="width:[\d.]+%">/g) ?? []
+    const shared =
+      /<table class="kv is-wide comp-matrix is-closed">\s*<colgroup>(.*?)<\/colgroup>/.exec(html)?.[1] ?? ''
+    const cols = shared.match(/<col style="width:[\d.]+%">/g) ?? []
     expect(cols).toHaveLength(7) // label + subject + 5 sales
     const widths = cols.map((c) => Number(c.match(/([\d.]+)%/)![1]))
     expect(widths[0]).toBe(20)
     expect(widths.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(100)
     // Figures never wrap; free text does. Both classes must actually be emitted.
     expect(html).toMatch(/<td class="v n[^"]*">\$495,000<\/td>/)
-    // Property type is identical across the table, so it folds into a
-    // sentence above it rather than repeating one value six times.
-    expect(html).toContain('Every home here is a single family residence,')
+    // Beds, baths, year built and the lot are identical across the table, so
+    // they fold into one sentence rather than repeating a value six times.
+    expect(html).toContain('Every home here is 3 bd, 1 ba, built in 1978.')
   })
 
   it('does not print MLS N/A into the grid', () => {
@@ -198,7 +215,9 @@ describe('land columns', () => {
 
   it('never prints a living area of 0 for a land comp', () => {
     const html = renderCompMatrixHtml(landSubject, padSales(landComp))
-    expect(html).not.toMatch(/>0</)
+    const sizeRow = /<tr><th>Size<\/th>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
+    expect(sizeRow).not.toMatch(/>0</)
+    expect(html).not.toMatch(/>0 sqft</)
   })
 
   it('leaves the per-sqft rows blank rather than dividing by zero', () => {
@@ -272,13 +291,16 @@ describe('the rows the blueprint cuts', () => {
         listingHistoryLine: 'Listed at $510,000, cut to $499,000, sold at $495,000 · 29 days on market',
       }),
     )
-    expect(html).not.toContain('data-fact="dom"')
     expect(html).not.toContain('data-fact="listing-history"')
-    expect(html).not.toContain('Days on market')
     expect(html).not.toContain('Listing history')
     expect(html).not.toContain('Listed at $510,000, cut to $499,000')
-    // Days to offer stays, because that is the days figure chapter 2 argues on.
-    expect(html).toContain('Days to offer')
+    // Delta 3 puts days on market back, as one of the twelve shared columns —
+    // the same measure in all three matrices, because an unsold listing has no
+    // offer to count days to. The days-to-offer figure travels in the outcome
+    // line instead, where it names its own measure.
+    expect(html).toContain('data-fact="dom"')
+    expect(html).toContain('Days on market')
+    expect(html).not.toContain('Days to offer')
   })
 })
 
@@ -376,7 +398,7 @@ describe('the adjustment grid, line by line', () => {
     // path was drawn twice, once in the card and once again under the grid
     // (tasteReview item 3).
     expect(html).not.toContain('How each of these sales was priced')
-    expect(html).toContain('Price history')
+    expect(html).toContain('How the price moved')
     expect(html).toContain('class="pp-spark"')
     expect(html).toContain('class="price-path"')
     // The cell holds a drawing, not an escaped string.

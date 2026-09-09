@@ -3,15 +3,24 @@
  * stay in immersive.ts. Same order as the print pages.
  */
 
-import { renderBandRivalsSceneHtml } from '@/lib/cma/band-rivals'
-import { pricingPage, whatItsWorthHeading } from '@/lib/cma/render-pricing-page'
+import { competitionHeading } from '@/lib/cma/band-rivals'
+import {
+  MAP_HEADING,
+  mapBodyHtml,
+  pricingPage,
+  salesThatSetItPage,
+  whatItsWorthHeading,
+} from '@/lib/cma/render-pricing-page'
 import type { OpinionPageArgs } from '@/lib/cma/opinion-pages'
 import {
   BASIS_AND_LIMITS_HEADING,
   OPINION_CHAPTER_ORDER,
-  competitionArgs,
-  didNotSellArgs,
+  competitionBodyMatrixHtml,
+  didNotSellBodyMatrixHtml,
   failedAskBacktestHtml,
+  mapArgs,
+  salesThatSetItArgs,
+
   nextStepButtonsHtml,
   nextStepHeading,
   nextStepNoteHtml,
@@ -26,8 +35,7 @@ import {
   whatHappenedHeading,
   type OpinionChapterId,
 } from '@/lib/cma/opinion-pages'
-import { subjectAskContext } from '@/lib/cma/opinion-pages'
-import { DID_NOT_SELL_HEADING, didNotSellBodyHtml } from '@/lib/cma/did-not-sell'
+import { DID_NOT_SELL_HEADING } from '@/lib/cma/did-not-sell'
 import { escapeHtml } from '@/lib/cma/render-blocks'
 import type { CmaBroker } from '@/lib/cma/types'
 import { formatDate } from '@/lib/format/date'
@@ -47,17 +55,7 @@ export type OpinionSceneArgs = OpinionPageArgs & {
 
 function priceScene(a: OpinionSceneArgs): string {
   const page = pricingPage({
-    subject: a.subject,
-    comps: a.comps,
-    market: a.market,
-    pricing: a.pricing,
-    tiersUsed: a.tiersUsed,
-    mapDataUri: a.mapDataUri,
-    mapOverlay: a.mapOverlay,
-    docLinks: a.docLinks,
-    renderArgs: a,
-    compTrace: a.compTrace,
-    askCtx: subjectAskContext(a),
+    ...salesThatSetItArgs(a),
     // The immersive prints the number as the chapter title, so the letter's
     // own heading block is suppressed and the lead line reprinted below it.
     omitLeadPrices: true,
@@ -72,9 +70,38 @@ function priceScene(a: OpinionSceneArgs): string {
   </section>`
 }
 
+/** The one map. Web twin of theMapPage. */
+function mapScene(a: OpinionSceneArgs): string {
+  const body = mapBodyHtml(mapArgs(a))
+  if (!body.trim()) return ''
+  return `
+  <section class="sc sc-cream pack" id="the-map">
+    <div class="in wide">
+      <div class="kick r">The map</div>
+      <h2 class="h r">${esc(MAP_HEADING)}</h2>
+      <div class="r">${body}</div>
+    </div>
+  </section>`
+}
+
+/** Matrix 1. Web twin of salesThatSetItPage. */
+function salesThatSetItScene(a: OpinionSceneArgs): string {
+  const page = salesThatSetItPage(salesThatSetItArgs(a))
+  return page ? wrapLetterBody('sales-that-set-it', 'The evidence', page.body) : ''
+}
+
+/** Matrix 3. Web twin of competitionPage. */
 function competitionScene(a: OpinionSceneArgs): string {
-  if (!a.extras?.band) return ''
-  return renderBandRivalsSceneHtml(competitionArgs(a))
+  const body = competitionBodyMatrixHtml(a)
+  if (!body.trim()) return ''
+  return `
+  <section class="sc sc-cream pack" id="competition">
+    <div class="in wide">
+      <div class="kick r">At this price</div>
+      <h2 class="h r">${esc(competitionHeading(a.pricing.recommended))}</h2>
+      <div class="r">${body}</div>
+    </div>
+  </section>`
 }
 
 
@@ -108,7 +135,7 @@ function whatHappenedScene(a: OpinionSceneArgs): string {
 
 /** Chapter 2. The listings near you that did not sell. Web twin of didNotSellPage. */
 function didNotSellScene(a: OpinionSceneArgs): string {
-  const body = didNotSellBodyHtml(didNotSellArgs(a))
+  const body = didNotSellBodyMatrixHtml(a)
   if (!body.trim()) return ''
   return `
   <section class="sc sc-cream pack" id="did-not-sell">
@@ -234,6 +261,8 @@ export function assembleOpinionScenes(a: OpinionSceneArgs): string {
     'did-not-sell': () => didNotSellScene(a),
     'priced-right': () => pricedRightScene(a),
     'what-its-worth': () => priceScene(a),
+    'the-map': () => mapScene(a),
+    'sales-that-set-it': () => salesThatSetItScene(a),
     competition: () => competitionScene(a),
     'this-market': () => thisMarketScene(a),
     'net-at-list': () => sellerNetScene(a),

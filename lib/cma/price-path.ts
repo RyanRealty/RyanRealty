@@ -118,7 +118,7 @@ function today(): string {
 }
 
 /** $465K. Thousands, because a price path is read at a glance, not audited. */
-function shortUsd(n: number): string {
+export function shortUsd(n: number): string {
   if (n >= 1_000_000) {
     const m = n / 1_000_000
     return `$${m >= 10 || n % 1_000_000 === 0 ? m.toFixed(0) : m.toFixed(2)}M`
@@ -298,7 +298,56 @@ export function cutCountOf(path: PricePath): number {
     (path.undatedCutTo != null && path.undatedCutTo < path.startPrice ? 1 : 0)
 }
 
+/**
+ * How many times the ask MOVED, up or down (Delta 3: "how many price changes
+ * they've had").
+ *
+ * A raise is a price change and a seller reading a competitor's path can see
+ * it on the line, so counting only the cuts would print a number the drawing
+ * beside it contradicts. Zero is a real answer here — "no price changes" is
+ * the whole story on a home that sold at its opening ask — so this returns a
+ * number whenever there is a path at all.
+ */
+export function priceChangeCountOf(path: PricePath): number {
+  let n = 0
+  let prev = path.startPrice
+  for (const c of path.cuts) {
+    if (c.price !== prev) n++
+    prev = c.price
+  }
+  if (path.undatedCutTo != null && path.undatedCutTo !== prev) n++
+  return n
+}
+
 // ── the drawing ─────────────────────────────────────────────────────────────
+
+/** The worth range, shaded across every path so the reader can compare. */
+export type PricePathRange = { low: number; high: number }
+
+/**
+ * The band's rectangle in the drawing's own units, or null when the range
+ * misses this listing's domain entirely.
+ *
+ * Clamped rather than dropped when it overlaps: a path that ends just above
+ * the range should show the top of the band under its last mark, which is the
+ * reading Matt makes at the table.
+ */
+function bandRect(
+  range: PricePathRange,
+  y: (v: number) => number,
+  top: number,
+  bottom: number,
+): { y: number; h: number } | null {
+  const lo = Math.min(range.low, range.high)
+  const hi = Math.max(range.low, range.high)
+  if (!(lo > 0) || !(hi > 0)) return null
+  const yHi = y(hi)
+  const yLo = y(lo)
+  const y0 = Math.max(top, Math.min(yHi, yLo))
+  const y1 = Math.min(bottom, Math.max(yHi, yLo))
+  if (y1 <= y0) return null
+  return { y: y0, h: y1 - y0 }
+}
 
 type Geometry = {
   t0: number
@@ -391,6 +440,7 @@ export function priceHistoryLineSvg(
   path: PricePath,
   layout: PricePathLayout = PRICE_PATH_WIDE,
   id?: string,
+  range?: PricePathRange | null,
 ): string {
   const g = geometry(path)
   if (!g) return ''
@@ -473,9 +523,22 @@ export function priceHistoryLineSvg(
   const bare = layout.bare === true
   const openLabel = shortUsd(path.startPrice)
   const startY = y(path.startPrice)
+  // THE WORTH RANGE, SHADED ON EVERY PATH (Delta 3). Matt: "Look, once they
+  // dropped it down into this range, it sold, but these people never got down
+  // to that range." A band drawn on one card and not another would be exactly
+  // the comparison a reader cannot make; drawn on all of them, the story reads
+  // itself off the page. Clipped to the plot, so a range wholly outside this
+  // listing's own domain draws as an edge rather than as a full wash.
+  const bandY = range ? bandRect(range, y, top, bottom) : null
+  const band = bandY
+    ? `<rect x="${left}" y="${bandY.y.toFixed(1)}" width="${(right - left).toFixed(1)}" height="${bandY.h.toFixed(
+        1,
+      )}" fill="rgba(16,39,66,0.10)"/>`
+    : ''
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" class="price-path" aria-label="${esc(
-    priceHistoryReading(path),
+    priceHistoryReading(path, range),
   )}"${id ? ` data-path="${esc(id)}"` : ''}>
+  ${band}
   <line x1="${left}" y1="${(bottom + 6).toFixed(1)}" x2="${right.toFixed(1)}" y2="${(bottom + 6).toFixed(1)}" stroke="${EDGE}" stroke-width="0.75"/>
   <path d="${askPath}" fill="none" stroke="${INK}" stroke-width="2" stroke-linejoin="miter" stroke-linecap="butt"/>
   ${undated}
@@ -506,8 +569,12 @@ export function priceHistoryLineSvg(
 </svg>`
 }
 
-export function priceHistoryLinePhoneSvg(path: PricePath, id?: string): string {
-  return priceHistoryLineSvg(path, PRICE_PATH_PHONE, id)
+export function priceHistoryLinePhoneSvg(
+  path: PricePath,
+  id?: string,
+  range?: PricePathRange | null,
+): string {
+  return priceHistoryLineSvg(path, PRICE_PATH_PHONE, id, range)
 }
 
 /** "sold $457K · offer in 25 days" — the mark at the end names its own measure. */
@@ -536,7 +603,7 @@ export function priceHistoryDaysClause(path: PricePath, lead = ''): string {
  * The line in words, for a screen reader and for anything that has to state
  * the path in prose. Every figure in it is drawn above it.
  */
-export function priceHistoryReading(path: PricePath): string {
+export function priceHistoryReading(path: PricePath, range?: PricePathRange | null): string {
   const bits: string[] = [`${path.label}: asked ${shortUsd(path.startPrice)} on ${monthDay(path.startDate)}`]
   for (const c of path.cuts) bits.push(`cut to ${shortUsd(c.price)} on ${monthDay(c.date)}`)
   if (path.undatedCutTo != null) bits.push(`later asked ${shortUsd(path.undatedCutTo)}, date not recorded`)
@@ -552,6 +619,18 @@ export function priceHistoryReading(path: PricePath): string {
   bits.push(end)
   const days = priceHistoryDaysClause(path)
   if (days) bits.push(days)
+  // The band is drawn, so it is read. Whether the last ask ever entered the
+  // range is the one thing this drawing exists to answer.
+  if (range && range.low > 0 && range.high > 0) {
+    const lo = Math.min(range.low, range.high)
+    const hi = Math.max(range.low, range.high)
+    const last = path.closePrice ?? finalAskOf(path)
+    bits.push(
+      `shaded range ${shortUsd(lo)} to ${shortUsd(hi)}, ${
+        last >= lo && last <= hi ? 'which it came into' : last > hi ? 'which it never came down to' : 'which it sat below'
+      }`,
+    )
+  }
   return `${bits.join(', ')}.`
 }
 
@@ -560,11 +639,15 @@ export function priceHistoryReading(path: PricePath): string {
  * drawing on paper and at reading width, the fitted one below 700px. Nothing
  * on this document sits in a pan box on a phone (blueprint § The register).
  */
-export function priceHistoryLineHtml(path: PricePath | null, id?: string): string {
+export function priceHistoryLineHtml(
+  path: PricePath | null,
+  id?: string,
+  range?: PricePathRange | null,
+): string {
   if (!path) return ''
-  const wide = priceHistoryLineSvg(path, PRICE_PATH_WIDE, id)
+  const wide = priceHistoryLineSvg(path, PRICE_PATH_WIDE, id, range)
   if (!wide) return ''
-  const phone = priceHistoryLinePhoneSvg(path, id)
+  const phone = priceHistoryLinePhoneSvg(path, id, range)
   return `<div class="pp-wrap"${ppData(path, id)}><div class="pp pp-wide">${wide}</div><div class="pp pp-phone">${phone}</div></div>`
 }
 
@@ -583,16 +666,23 @@ export function priceHistoryLineHtml(path: PricePath | null, id?: string): strin
  * stays on the phone card, which is where a reader on a phone reads this
  * chapter anyway.
  */
-export function priceHistorySparkHtml(path: PricePath | null): string {
+export function priceHistorySparkHtml(
+  path: PricePath | null,
+  range?: PricePathRange | null,
+): string {
   if (!path) return ''
-  const svg = priceHistoryLineSvg(path, PRICE_PATH_SPARK)
+  const svg = priceHistoryLineSvg(path, PRICE_PATH_SPARK, undefined, range)
   if (!svg) return ''
-  return `<span class="pp-spark" title="${esc(priceHistoryReading(path))}">${svg}</span>`
+  return `<span class="pp-spark" title="${esc(priceHistoryReading(path, range))}">${svg}</span>`
 }
 
-export function priceHistoryLineCompactHtml(path: PricePath | null, id?: string): string {
+export function priceHistoryLineCompactHtml(
+  path: PricePath | null,
+  id?: string,
+  range?: PricePathRange | null,
+): string {
   if (!path) return ''
-  const svg = priceHistoryLineSvg(path, PRICE_PATH_CARD, id)
+  const svg = priceHistoryLineSvg(path, PRICE_PATH_CARD, id, range)
   if (!svg) return ''
   // The reading stays on the wrapper: the drawing itself drops the labels the
   // card already prints, so the words are what a screen reader gets.
