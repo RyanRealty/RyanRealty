@@ -21,3 +21,4 @@ This project includes:
 ## Global skills
 
 Personal skills for all repos: `~/.cursor/skills/` (see `README.md` there if present).
+- `site-queue/` — run the site queue (loop_work_nodes SITE-*) from Cursor or a Grok agent; pointer to the canonical `.claude/skills/site-queue/SKILL.md` plus the non-Claude builder rules (2026-09-09).
