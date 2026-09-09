@@ -30,6 +30,21 @@ describe('composeCmaEmail (seller-LP instant valuation, Matt 2026-09-09 register
     expect(html).toContain('<strong>123 NW Cascade Ave</strong>')
     expect(html).toContain('<a href="https://ryan-realty.com/reviews"')
     expect(html).toContain('mailto:matt%40ryan-realty.com')
+  })
+
+  it('signs with the system signature when the broker row has one', () => {
+    const { html, text } = composeCmaEmail({
+      leadFirstName: 'Sarah',
+      fullAddress: '123 NW Cascade Ave, Bend, OR 97703',
+      cma: CMA,
+      brokerName: 'Matt Ryan',
+      brokerEmail: 'matt@ryan-realty.com',
+      brokerPhone: '(541) 703-3095',
+      signature: { html: '<table id="sig">Matt Ryan · Owner</table>', plain: '--\nMatt Ryan · Owner' },
+    })
+    expect(html).toContain('<table id="sig">')
+    expect(html).not.toContain('style="margin-top:28px"')
+    expect(text.trimEnd().endsWith('Matt Ryan · Owner')).toBe(true)
     for (const sentence of ['Thank you for asking', 'the price is everything', 'earn your business']) {
       expect(html).toContain(sentence)
     }

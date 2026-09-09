@@ -17,7 +17,6 @@ const FACTS = {
   valueHigh: 625_000,
   recommendedList: 605_000,
   brokerName: 'Matt Ryan',
-  brokerPhone: '541.555.0100',
   city: 'Bend',
   closedSalesCount: 5,
   salesScope: 'near' as const,
@@ -156,11 +155,19 @@ describe('first-contact copy (Matt 2026-09-09 register)', () => {
     }
   })
 
-  it('reaches for the broker phone when the row has one', () => {
-    const withPhone = composeCmaFirstContact('expired', FACTS)
-    expect(withPhone.bodyText).toContain('Reply to this email or call or text me at 541.555.0100.')
-    const without = composeCmaFirstContact('expired', { ...FACTS, brokerPhone: null })
-    expect(without.bodyText).toContain('Reply to this email or give me a call.')
+  it('prints no contact details of its own: the system signature carries them', () => {
+    for (const o of ORIGINS) {
+      const c = composeCmaFirstContact(o, FACTS)
+      expect(c.bodyText).toContain('Please let me know if you have any questions.')
+      expect(c.bodyText).not.toMatch(/\d{3}[.\-]\d{3}[.\-]\d{4}|\(\d{3}\)\s?\d{3}/)
+      expect(c.bodyText).not.toContain('call or text')
+      expect(c.bodyText).not.toContain('give me a call')
+      expect(c.bodyText).not.toMatch(/@ryan-realty\.com/)
+      // No sign-off either: the signature IS the sign-off.
+      expect(c.bodyText.trimEnd().endsWith('Ryan Realty')).toBe(false)
+    }
+    expect(composeCmaFirstContact('expired', FACTS).bodyText).toContain('Best of luck in the future.')
+    expect(composeCmaFirstContact('fsbo', FACTS).bodyText).toContain('Best of luck with the sale.')
   })
 
   it('introduces another broker as with Ryan Realty', () => {

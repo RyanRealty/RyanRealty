@@ -55,7 +55,6 @@ export type CmaSalesScope = 'subdivision' | 'near' | 'area'
 
 export type CmaFirstContactFacts = InboundPacketFacts & {
   brokerName?: string | null
-  brokerPhone?: string | null
   city?: string | null
   subdivision?: string | null
   neighborhoodName?: string | null
@@ -240,12 +239,17 @@ function placeParagraph(facts: CmaFirstContactFacts): string | null {
   return null
 }
 
-function closingFor(origin: CmaOrigin, facts: CmaFirstContactFacts): string {
-  const phone = trim(facts.brokerPhone)
-  const reach = phone ? `Reply to this email or call or text me at ${phone}.` : 'Reply to this email or give me a call.'
-  if (origin === 'expired') return `Please let me know if you have any questions. ${reach} Best of luck in the future.`
-  if (origin === 'fsbo') return `Please let me know if you have any questions. ${reach} Best of luck with the sale.`
-  return `Please let me know if you have any questions. ${reach}`
+/**
+ * Matt 2026-09-09: "we will always use my signature from the system." The rail
+ * appends `buildSignature` (Gmail-synced, else the broker's saved signature,
+ * else the generated identity block, always with the Oregon pamphlet line), so
+ * the letter never prints a phone, an email or a name of its own. The closing
+ * is his: questions, and best of luck.
+ */
+function closingFor(origin: CmaOrigin): string {
+  if (origin === 'expired') return 'Please let me know if you have any questions. Best of luck in the future.'
+  if (origin === 'fsbo') return 'Please let me know if you have any questions. Best of luck with the sale.'
+  return 'Please let me know if you have any questions.'
 }
 
 export function cmaFirstContactPreview(origin: CmaOrigin, address: string | null): string {
@@ -279,7 +283,7 @@ export function composeCmaFirstContact(
     honestNote(origin),
     askFor(origin, facts),
     placeParagraph(facts),
-    closingFor(origin, facts),
+    closingFor(origin),
   ]
     .filter((p): p is string => Boolean(p && p.trim()))
     .join('\n\n')
@@ -348,7 +352,6 @@ export function cmaFirstContactFactsFromRow(
   row: Record<string, unknown>,
   extra?: {
     brokerName?: string | null
-    brokerPhone?: string | null
     firstName?: string | null
     lastListPrice?: number | null
     place?: FirstContactPlace | null
@@ -368,7 +371,6 @@ export function cmaFirstContactFactsFromRow(
     recommendedList: moneyField(row.recommended_list),
     lastListPrice: extra?.lastListPrice ?? null,
     brokerName: extra?.brokerName ?? null,
-    brokerPhone: extra?.brokerPhone ?? null,
     city: strField(row.subject_city) ?? strField(subject?.city),
     subdivision: strField(row.subject_subdivision) ?? strField(subject?.subdivision),
     neighborhoodName: strField(market?.geoLabel),

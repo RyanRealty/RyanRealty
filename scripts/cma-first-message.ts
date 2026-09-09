@@ -47,6 +47,8 @@ async function main() {
   const { classifyCmaOrigin } = await import('@/lib/cma/origin')
   const { resolveTheirPrice } = await import('@/lib/cma/queue-view')
   const { formatPublishedPhone } = await import('@/lib/cma/format-phone')
+  const { buildSignature } = await import('@/lib/crm/email-signature')
+  const { getBrokers } = await import('@/lib/data')
   const { cmaFirstContactFactsFromRow, composeCmaFirstContact } = await import('@/lib/cma/first-contact')
   const { resolveFirstContactPlace } = await import('@/lib/cma/first-contact-place')
 
@@ -82,7 +84,12 @@ async function main() {
     console.log(`Subject: ${copy.subject}`)
     console.log(`Preview: ${copy.previewText}\n`)
     console.log(copy.bodyText)
-    console.log(`\n${brokerName.split(/\s+/)[0]}\nRyan Realty${brokerPhone ? `\n${brokerPhone}` : ''}`)
+    // The signature the rail appends at send: Gmail-synced, else the saved one,
+    // else the generated identity block, always with the Oregon pamphlet line.
+    const brokers = await getBrokers()
+    const brokerRow = brokers.find((b) => (b.email ?? '').toLowerCase() === (brokerRaw?.email as string | null ?? '').toLowerCase())
+    const sig = brokerRow ? buildSignature(brokerRow) : null
+    console.log(sig ? sig.plain : '(no system signature for this broker)')
     await checkLinks(copy.bodyText)
   }
 }

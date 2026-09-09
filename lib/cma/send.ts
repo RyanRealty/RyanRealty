@@ -27,7 +27,7 @@ import {
   logCmaTimelineEvent,
 } from '@/lib/data'
 import { renderCmaPdfBuffer, CmaNotFoundError } from '@/lib/cma-pdf'
-import { wrapBrandedEmail, brandedTextFooter, escapeHtml, type ShellBroker } from '@/lib/email/shell'
+import { wrapBrandedEmail, brandedTextFooter, escapeHtml } from '@/lib/email/shell'
 import { brokerSendIdentity } from '@/lib/email/broker-identity'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
@@ -36,6 +36,8 @@ import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
 import { composeCmaFirstContact, cmaFirstContactFactsFromRow, streetOnly, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
 import { resolveFirstContactPlace } from '@/lib/cma/first-contact-place'
+import { buildSignature } from '@/lib/crm/email-signature'
+import { getBrokers } from '@/lib/data'
 import { cmaReportButtonHtml, previewTextFromCustomBody } from '@/lib/cma/report-button'
 import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
@@ -181,7 +183,31 @@ function emphasizeAddress(text: string, address: string | null): string {
   return out
 }
 
-function buildLeadBody(ctx: CmaSendContext, override?: CmaSendOverride): { html: string; text: string; subject: string } {
+/**
+ * The broker's own signature, from the system (Matt 2026-09-09: "we will always
+ * use my signature from the system"). Gmail-synced wins, then the signature they
+ * saved in Settings, then the generated identity block — and every variant
+ * carries the Oregon agency-pamphlet line, so the letter is compliant by
+ * construction. Null only when the broker row cannot be read; the letter then
+ * ships with the branded footer alone rather than a made-up sign-off.
+ */
+async function signatureFor(email: string | null): Promise<{ html: string; plain: string } | null> {
+  const mailbox = (email ?? '').trim().toLowerCase()
+  if (!mailbox) return null
+  try {
+    const brokers = await getBrokers()
+    const broker = brokers.find((b) => (b.email ?? '').toLowerCase() === mailbox)
+    return broker ? buildSignature(broker) : null
+  } catch {
+    return null
+  }
+}
+
+function buildLeadBody(
+  ctx: CmaSendContext,
+  override?: CmaSendOverride,
+  signature?: { html: string; plain: string } | null,
+): { html: string; text: string; subject: string } {
   const copy = composeCmaFirstContact(ctx.origin, inboundFacts(ctx))
   const brokerFirst = ctx.brokerRow.displayName.split(/\s+/)[0]
   const viewUrl = `${SITE_URL}/cma/${ctx.slug}`
@@ -197,27 +223,12 @@ function buildLeadBody(ctx: CmaSendContext, override?: CmaSendOverride): { html:
 <div style="padding:32px 34px 8px;">
   ${paras}
   ${cmaReportButtonHtml(viewUrl)}
-  <p style="margin:0 0 8px 0;">${escapeHtml(brokerFirst)}<br/>Ryan Realty${ctx.brokerRow.phone ? `<br/>${escapeHtml(ctx.brokerRow.phone)}` : ''}</p>
+  ${signature?.html ?? ''}
 </div>`
     const text = `${raw}
 
 Read the full report: ${viewUrl}
-
-${brokerFirst}
-Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedTextFooter()}`
-    const shellBroker: ShellBroker = {
-      name: ctx.brokerRow.displayName,
-      firstName: brokerFirst,
-      title: ctx.brokerRow.title,
-      phone: ctx.brokerRow.phone,
-      email: ctx.brokerRow.email,
-      headshotUrl: ctx.brokerRow.photoUrl
-        ? ctx.brokerRow.photoUrl.startsWith('http')
-          ? ctx.brokerRow.photoUrl
-          : `${SITE_URL}${ctx.brokerRow.photoUrl}`
-        : `${SITE_URL}/images/brokers/ryan-matt.png`,
-      isOwner: ctx.brokerRow.slug === 'matthew-ryan',
-    }
+${signature?.plain ?? ''}${brandedTextFooter()}`
     const html = wrapBrandedEmail({
       bodyHtml,
       // A broker-typed note previews as its own first sentence, not the
@@ -225,7 +236,9 @@ Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedText
       previewText: previewTextFromCustomBody(raw, copy.previewText),
       mastheadLine: copy.mastheadLine,
       heroUrl: null,
-      senderBroker: shellBroker,
+      // One close: the broker's own signature, appended above. The navy
+      // "talk to" card would be a second sign-off under it (Matt 2026-09-09).
+      senderBroker: null,
       unsubscribeUrl: null,
       audienceLine: null,
     })
@@ -236,33 +249,18 @@ Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedText
 <div style="padding:32px 34px 8px;">
   ${bodyParagraphsHtml(copy.bodyText, ctx.subjectAddress)}
   ${cmaReportButtonHtml(viewUrl)}
-  <p style="margin:0 0 8px 0;">${escapeHtml(brokerFirst)}<br/>Ryan Realty${ctx.brokerRow.phone ? `<br/>${escapeHtml(ctx.brokerRow.phone)}` : ''}</p>
+  ${signature?.html ?? ''}
 </div>`
 
   const text = `${copy.bodyText.replace(copy.close, `${copy.close} ${viewUrl}`)}
+${signature?.plain ?? ''}${brandedTextFooter()}`
 
-${brokerFirst}
-Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedTextFooter()}`
-
-  const shellBroker: ShellBroker = {
-    name: ctx.brokerRow.displayName,
-    firstName: brokerFirst,
-    title: ctx.brokerRow.title,
-    phone: ctx.brokerRow.phone,
-    email: ctx.brokerRow.email,
-    headshotUrl: ctx.brokerRow.photoUrl
-      ? ctx.brokerRow.photoUrl.startsWith('http')
-        ? ctx.brokerRow.photoUrl
-        : `${SITE_URL}${ctx.brokerRow.photoUrl}`
-      : `${SITE_URL}/images/brokers/ryan-matt.png`,
-    isOwner: ctx.brokerRow.slug === 'matthew-ryan',
-  }
   const html = wrapBrandedEmail({
     bodyHtml,
     previewText: copy.previewText,
     mastheadLine: copy.mastheadLine,
     heroUrl: null,
-    senderBroker: shellBroker,
+    senderBroker: null,
     unsubscribeUrl: null,
     audienceLine: null,
   })
@@ -343,7 +341,6 @@ export async function prepareCmaSendPreview(slug: string): Promise<
       lastListPrice,
       facts: cmaFirstContactFactsFromRow(row as Record<string, unknown>, {
         brokerName: brokerRow.displayName,
-        brokerPhone: brokerRow.phone,
         firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
         lastListPrice,
       }),
@@ -398,7 +395,7 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
     return { ok: false, error: 'The rendered PDF exceeds the 25 MB attachment cap.' }
   }
 
-  const body = buildLeadBody(ctx, override)
+  const body = buildLeadBody(ctx, override, await signatureFor(ctx.brokerRow.email))
   const crmBrokerSlug = CRM_BROKER_BY_EMAIL[(ctx.brokerRow.email ?? '').toLowerCase()] ?? 'matt'
   const emailKey = `cma:${slug}`
   const trackedHtml = attributeOutbound(body.html, {
