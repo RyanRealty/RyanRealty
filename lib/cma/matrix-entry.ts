@@ -70,6 +70,12 @@ export type MatrixEntry = {
   longitude: number | null
   /** Sort attributes the interactive layer re-orders on. */
   sort: string
+  /**
+   * `active` / `pending` on matrix 3, so the chapter's filter can hide a
+   * column by what a reader asked to see. Absent on the other two families:
+   * every closed sale closed, and every unsold listing came off.
+   */
+  status?: 'active' | 'pending'
 }
 
 // ── the remodel fragment ────────────────────────────────────────────────────
@@ -353,6 +359,7 @@ export function activeEntries(
       endLabel: pending ? 'under contract' : 'still for sale',
       latitude: r.latitude ?? null,
       longitude: r.longitude ?? null,
+      status: pending ? ('pending' as const) : ('active' as const),
       sort: sortAttrs([
         ['price', num(r.listPrice)],
         ['size', r.sqft != null ? Math.round(r.sqft) : null],

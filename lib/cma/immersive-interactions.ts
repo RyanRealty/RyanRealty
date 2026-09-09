@@ -437,42 +437,57 @@ try{
   })
 }catch(e){}
 
-/* ── 5. chapter 3: put the working away, and re-order the sales ──────────── */
+/* ── 5. every matrix: put the working away, re-order it, filter it ───────── */
+/*
+ * DELTA 3: three matrices, one column set, so ONE wiring runs over all three.
+ * It used to be scoped to #what-its-worth and to the one grid that lived
+ * there; a control that only existed on matrix 1 would tell a reader the other
+ * two are not the same object, which is the whole point of the shared columns.
+ *
+ * Per matrix: the adjustments toggle when that matrix has working to put away
+ * (matrix 1 only), the order select always, and the status filter on the one
+ * matrix whose homes are in two states (matrix 3, for sale and under contract).
+ */
 try{
-  var worth=document.getElementById('what-its-worth')
-  var tables=worth?[].slice.call(worth.querySelectorAll('table.comp-matrix')):[]
-  if(worth&&tables.length){
-    var stack=worth.querySelector('.comp-stack')
-    var anchor=worth.querySelector('.comp-matrix-wrap')||tables[0]
+  var MATRIX_CHAPTERS=['sales-that-set-it','did-not-sell','competition']
+  MATRIX_CHAPTERS.forEach(function(id){
+    var chapter=document.getElementById(id)
+    if(!chapter)return
+    // The SHARED tables. The adjustment grid under matrix 1 repeats the same
+    // columns and is moved by the same sort, but it is not what the controls
+    // are counted over.
+    var tables=[].slice.call(chapter.querySelectorAll('table.comp-matrix'))
+    var shared=tables.filter(function(t){return !t.classList.contains('is-adjustments')})
+    if(!shared.length)return
+    var stack=chapter.querySelector('.comp-stack')
+    var anchor=chapter.querySelector('.comp-matrix-wrap')||shared[0]
 
-    // ONE ROW, TWO CONTROLS. Raising the pills to 44px pushed this chapter's
-    // controls onto four rows at 375 — 208px of stacked buttons with "The
-    // sales:" and "Order:" orphaned beside wrapped groups, before the reader
-    // reached a single sale (tasteReview round two, §2.3). The toggle stays a
-    // segmented pair, because it is two states of one thing; the order becomes
-    // a select, because four mutually exclusive options is what a select is.
+    // ONE ROW OF CONTROLS. Raising the pills to 44px pushed this chapter's
+    // controls onto four rows at 375 — 208px of stacked buttons before the
+    // reader reached a single sale (tasteReview round two, §2.3). The toggle
+    // stays a segmented pair, because it is two states of one thing; the order
+    // becomes a select, because four mutually exclusive options is a select.
     var box=controls(anchor,'')
     box.className='rr-controls is-row'
-    var seg=el('div','rr-seg')
-    box.appendChild(seg)
-    // The toggle is a class on the chapter, so it works whatever the grid was
-    // chunked into. It hides the working and keeps the conclusion.
-    button(seg,'With the adjustments',true,function(){worth.classList.remove('is-plain')})
-    button(seg,'Sale prices only',false,function(){worth.classList.add('is-plain')})
+    var hasAdj=chapter.querySelectorAll('tr[data-adj]').length>0
+    if(hasAdj){
+      var seg=el('div','rr-seg')
+      box.appendChild(seg)
+      button(seg,'With the adjustments',true,function(){chapter.classList.remove('is-plain')})
+      button(seg,'Sale prices only',false,function(){chapter.classList.add('is-plain')})
+    }
 
-    // The sort runs ACROSS every table, not within each one. It used to run
-    // within: a wide grid splits into two or three tables so it fits the page,
-    // and "Price today" then returned $2.65M, $1.75M, $1.49M | $1.73M, $1.26M,
-    // $970K — six sales in two descending runs, which a reader reads as a sort
-    // that did not work. The tables are a page-width mechanism, so they are no
-    // longer headed by position ("Sales 4 through 6"), and a sale is free to
-    // move between them.
+    // The sort runs ACROSS every table, not within each one. A wide grid splits
+    // into two or three tables so it fits the page, and a within-table sort
+    // returned two descending runs, which a reader reads as a sort that did not
+    // work. The tables are a page-width mechanism, so a home is free to move
+    // between them.
     var groups=tables.map(function(t){
       return {
         table:t,
         head:t.querySelector('thead tr'),
-        // How many SALE columns this table holds. The shape stays put; only
-        // which sale sits in each slot changes.
+        // How many HOME columns this table holds. The shape stays put; only
+        // which home sits in each slot changes.
         size:t.querySelectorAll('thead th.v').length-1
       }
     })
@@ -480,26 +495,26 @@ try{
     // to it. Restoring "the original" by leaving the DOM alone stopped working
     // the moment the sort could move a column between tables.
     var printed=[]
-    groups.forEach(function(g){
-      [].slice.call(g.table.querySelectorAll('thead th.v')).slice(1).forEach(function(h){
-        printed.push(h.getAttribute('data-comp'))
-      })
+    ;[].slice.call(shared[0].querySelectorAll('thead th.v')).slice(1).forEach(function(h){
+      printed.push(h.getAttribute('data-comp'))
     })
     function order(key,dir){
-      // Every sale column in the chapter, with the cell it owns in each row.
+      // Every home column in the chapter, with the cell it owns in each row.
       // Captured BEFORE anything moves: the references have to outlive the
-      // reshuffle.
-      var items=[]
-      groups.forEach(function(g){
+      // reshuffle. Each TABLE is sorted from its own columns, so the shared
+      // grid and the adjustment grid under it stay in step.
+      var byTable=groups.map(function(g){
         var heads=[].slice.call(g.table.querySelectorAll('thead th.v'))
         var rows=[].slice.call(g.table.querySelectorAll('tbody tr'))
+        var items=[]
         heads.forEach(function(h,i){
           // Column 0 is the reader's own home, in every table, and never moves.
           if(i===0)return
           items.push({head:h,cells:rows.map(function(tr){return tr.querySelectorAll('td')[i]})})
         })
+        return {g:g,items:items,rows:rows}
       })
-      items.sort(function(a,b){
+      function cmp(a,b){
         if(!key){
           return printed.indexOf(a.head.getAttribute('data-comp'))-printed.indexOf(b.head.getAttribute('data-comp'))
         }
@@ -509,16 +524,35 @@ try{
         if(vb==null)return -1
         if(key==='date')return dir*(va<vb?-1:va>vb?1:0)
         return dir*(Number(va)-Number(vb))
-      })
+      }
+      // ACROSS the shared tables, then the adjustment tables realigned to the
+      // same result, so the two grids can never show a different order.
+      var sharedTables=byTable.filter(function(t){return !t.g.table.classList.contains('is-adjustments')})
+      var adjTables=byTable.filter(function(t){return t.g.table.classList.contains('is-adjustments')})
+      var pool=[]
+      sharedTables.forEach(function(t){pool=pool.concat(t.items)})
+      pool.sort(cmp)
       var at=0,global=[]
-      groups.forEach(function(g){
-        var rows=[].slice.call(g.table.querySelectorAll('tbody tr'))
-        for(var k=0;k<g.size;k++){
-          var it=items[at++]
+      sharedTables.forEach(function(t){
+        for(var k=0;k<t.g.size;k++){
+          var it=pool[at++]
           if(!it)break
-          g.head.appendChild(it.head)
-          rows.forEach(function(tr,ri){if(it.cells[ri])tr.appendChild(it.cells[ri])})
+          t.g.head.appendChild(it.head)
+          t.rows.forEach(function(tr,ri){if(it.cells[ri])tr.appendChild(it.cells[ri])})
           global.push(it.head.getAttribute('data-comp'))
+        }
+      })
+      var adjPool=[]
+      adjTables.forEach(function(t){adjPool=adjPool.concat(t.items)})
+      var byKey={}
+      adjPool.forEach(function(it){byKey[it.head.getAttribute('data-comp')]=it})
+      var ai=0
+      adjTables.forEach(function(t){
+        for(var k=0;k<t.g.size;k++){
+          var it=byKey[global[ai++]]
+          if(!it)break
+          t.g.head.appendChild(it.head)
+          t.rows.forEach(function(tr,ri){if(it.cells[ri])tr.appendChild(it.cells[ri])})
         }
       })
       function reflow(container,sel){
@@ -531,47 +565,61 @@ try{
       }
       reflow(stack,'.comp-stack-card:not(.is-yours)')
     }
-    // "As weighted" was a lie: the printed order is the sales newest first, and
-    // the weights ran 31.9, 14.2, 15.1, 27.3, 11.6 down the row under a pill
+    // "As weighted" was a lie: the printed order is newest first, and the
+    // weights ran 31.9, 14.2, 15.1, 27.3, 11.6 down the row under a pill
     // claiming they were sorted by it.
-    var ORDERS=[['As printed',null,1],['Most recent','date',-1],['Price today','price',-1],['Size','size',-1]]
-    var sel=el('select','rr-select')
-    sel.setAttribute('aria-label','Order the sales')
-    ORDERS.forEach(function(o,i){
-      var opt=el('option',null,o[0])
-      opt.value=String(i)
-      sel.appendChild(opt)
-    })
-    sel.addEventListener('change',function(){
-      var o=ORDERS[Number(sel.value)||0]
-      order(o[1],o[2])
-    })
-    box.appendChild(sel)
-  }
-}catch(e){}
-
-/* ── 6. chapter 4: for sale · under contract · all ───────────────────────── */
-try{
-  var comp=document.getElementById('competition')
-  var grids=comp?[].slice.call(comp.querySelectorAll('.rival-grid')):[]
-  if(comp&&grids.length>1){
-    var blocks=grids.map(function(g){
-      var head=g.previousElementSibling
-      var status=(g.querySelector('[data-status]')||{getAttribute:function(){return ''}}).getAttribute('data-status')
-      return {grid:g,head:head&&head.tagName==='H3'?head:null,status:status}
-    })
-    var fbox=controls(blocks[0].head||blocks[0].grid,'Show:')
-    function only(status){
-      blocks.forEach(function(b){
-        var on=!status||b.status===status
-        b.grid.hidden=!on
-        if(b.head)b.head.hidden=!on
+    var ORDERS=[['As printed',null,1],['Most recent','date',-1],['Price today','price',-1],['Size','size',-1],['Days on market','days',-1]]
+      .filter(function(o){
+        return o[1]===null||chapter.querySelector('thead th.v[data-sort-'+o[1]+']')!=null
       })
+    if(ORDERS.length>1){
+      var sel=el('select','rr-select')
+      sel.setAttribute('aria-label','Order the homes in this table')
+      ORDERS.forEach(function(o,i){
+        var opt=el('option',null,o[0])
+        opt.value=String(i)
+        sel.appendChild(opt)
+      })
+      sel.addEventListener('change',function(){
+        var o=ORDERS[Number(sel.value)||0]
+        order(o[1],o[2])
+      })
+      box.appendChild(sel)
     }
-    button(fbox,'All',true,function(){only(null)})
-    button(fbox,'For sale',false,function(){only('active')})
-    button(fbox,'Under contract',false,function(){only('pending')})
-  }
+
+    /* Matrix 3 only: for sale · under contract · all. A home already under
+     * contract is not something a seller competes with in the same way, and
+     * the chapter prints both, so the filter hides COLUMNS by their status
+     * rather than splitting the matrix into two tables. */
+    var statuses={}
+    ;[].slice.call(chapter.querySelectorAll('thead th.v[data-status]')).forEach(function(h){
+      statuses[h.getAttribute('data-status')]=true
+    })
+    if(statuses.active&&statuses.pending){
+      var fbox=controls(anchor,'Show:')
+      function only(status){
+        tables.forEach(function(t){
+          var heads=[].slice.call(t.querySelectorAll('thead th.v'))
+          var rows=[].slice.call(t.querySelectorAll('tbody tr'))
+          heads.forEach(function(h,i){
+            if(i===0)return
+            var on=!status||h.getAttribute('data-status')===status
+            h.hidden=!on
+            rows.forEach(function(tr){
+              var td=tr.querySelectorAll('td')[i]
+              if(td)td.hidden=!on
+            })
+          })
+        })
+        ;[].slice.call(chapter.querySelectorAll('.comp-stack-card[data-status]')).forEach(function(c){
+          c.hidden=!!status&&c.getAttribute('data-status')!==status
+        })
+      }
+      button(fbox,'All',true,function(){only(null)})
+      button(fbox,'For sale',false,function(){only('active')})
+      button(fbox,'Under contract',false,function(){only('pending')})
+    }
+  })
 }catch(e){}
 
 /* ── 7. chapter 1's line draws itself, once, for a reader who wants motion ─ */

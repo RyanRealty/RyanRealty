@@ -117,6 +117,9 @@ img{max-width:100%;display:block}
 table.comp-matrix{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
 table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px solid var(--ink12);text-align:right;white-space:normal;overflow-wrap:anywhere}
 table.comp-matrix td.n{white-space:nowrap}
+/* Matrix 3's status filter hides COLUMNS. A table cell needs the rule said
+   out loud: our own padding rule would otherwise fight the UA [hidden]. */
+table.comp-matrix th[hidden],table.comp-matrix td[hidden]{display:none}
 table.comp-matrix thead th:first-child,table.comp-matrix tbody th{text-align:left}
 table.comp-matrix td.is-diff{font-weight:600}
 table.comp-matrix tr.is-total th,table.comp-matrix tr.is-total td{border-top:1px solid var(--navy);font-weight:600}

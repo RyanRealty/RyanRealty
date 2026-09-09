@@ -525,6 +525,25 @@ const INTERACT_STEPS: InteractStep[] = [
     })()`,
   },
   {
+    // Delta 3: the ONE map, and its three pin families. A tap on any pin
+    // reveals days on market, the count of price changes and the outcome, and
+    // lights the row that pin keys in whichever matrix owns it.
+    name: 'map-pin-reveal',
+    shot: '#the-map',
+    run: `(() => {
+      const pins = ${VISIBLE('#the-map .pin-hit:not(.is-subject)')}
+      const target = pins[pins.length - 1]
+      if (!target) return null
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      const key = target.getAttribute('data-pin')
+      const note = target.querySelector('.pin-note')
+      const lit = document.querySelectorAll('[data-comp="' + key + '"].is-on, [data-pin="' + key + '"].is-on')
+      const families = Array.from(document.querySelectorAll('#the-map .pin-legend .pl-i')).length
+      if (!note || !note.textContent.trim()) return ''
+      return 'pin ' + key + ' — ' + note.textContent.trim() + ' — lit ' + lit.length + ' element(s), ' + families + ' legend row(s)'
+    })()`,
+  },
+  {
     name: 'curve-scrub',
     shot: '#priced-right',
     run: `(() => {
@@ -551,41 +570,42 @@ const INTERACT_STEPS: InteractStep[] = [
   },
   {
     name: 'sale-and-pin',
-    shot: '#what-its-worth',
+    shot: '#sales-that-set-it',
     run: `(() => {
-      const pin = document.querySelector('#what-its-worth .pin-map [data-pin], #what-its-worth .pin-map-wrap [data-pin]')
-      const row = document.querySelector('#what-its-worth th.v[data-comp="2"], #what-its-worth .comp-stack-card[data-comp="2"]')
-      const target = pin || row
-      if (!target) return null
-      target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      const lit = document.querySelectorAll('#what-its-worth .is-on')
-      return lit.length ? 'lit ' + lit.length + ' element(s)' : ''
+      const row = ${VISIBLE('#sales-that-set-it th.v[data-comp="2"] .matrix-hit')}[0] ||
+        ${VISIBLE('#sales-that-set-it .comp-stack-card[data-comp="2"]')}[0]
+      if (!row) return null
+      row.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      // Row → pin, both ways: the pin lives in the map chapter now.
+      const lit = document.querySelectorAll('.is-on')
+      const onMap = document.querySelectorAll('#the-map .pin-hit.is-on').length
+      return lit.length ? 'lit ' + lit.length + ' element(s), ' + onMap + ' on the map' : ''
     })()`,
   },
   {
     name: 'adjustments-off',
-    shot: '#what-its-worth',
+    shot: '#sales-that-set-it',
     run: `(() => {
-      const btns = Array.from(document.querySelectorAll('#what-its-worth .rr-btn'))
+      const btns = Array.from(document.querySelectorAll('#sales-that-set-it .rr-btn'))
       const b = btns.find((x) => /sale prices only/i.test(x.textContent || ''))
       if (!b) return null
-      const before = document.querySelectorAll('#what-its-worth tr[data-adj]').length
+      const before = document.querySelectorAll('#sales-that-set-it tr[data-adj]').length
       b.click()
-      const hidden = Array.from(document.querySelectorAll('#what-its-worth tr[data-adj]'))
+      const hidden = Array.from(document.querySelectorAll('#sales-that-set-it tr[data-adj]'))
         .filter((tr) => getComputedStyle(tr).display === 'none').length
       return before > 0 && hidden === before ? 'hid ' + hidden + ' adjustment rows' : ''
     })()`,
   },
   {
     name: 'sort-by-price',
-    shot: '#what-its-worth',
+    shot: '#sales-that-set-it',
     run: `(() => {
-      const btns = Array.from(document.querySelectorAll('#what-its-worth .rr-btn'))
+      const btns = Array.from(document.querySelectorAll('#sales-that-set-it .rr-btn'))
       const plain = btns.find((x) => /with the adjustments/i.test(x.textContent || ''))
       if (plain) plain.click()
       // The order is a select now, not a fourth row of pills (tasteReview
       // round two, §2.3).
-      const sel = document.querySelector('#what-its-worth select.rr-select')
+      const sel = document.querySelector('#sales-that-set-it select.rr-select')
       if (!sel) return null
       const opt = Array.from(sel.options).find((o) => /price today/i.test(o.textContent || ''))
       if (!opt) return null
@@ -596,7 +616,7 @@ const INTERACT_STEPS: InteractStep[] = [
       // descending runs — which a reader reads as a sort that did not work.
       // So the columns must come back descending read left to right, table
       // after table, and the cards must follow them.
-      const perTable = Array.from(document.querySelectorAll('#what-its-worth table.comp-matrix')).map((t) =>
+      const perTable = Array.from(document.querySelectorAll('#sales-that-set-it table.comp-matrix.is-closed')).map((t) =>
         Array.from(t.querySelectorAll('thead th.v'))
           .map((th) => th.getAttribute('data-sort-price'))
           .filter((v) => v != null)
@@ -610,7 +630,7 @@ const INTERACT_STEPS: InteractStep[] = [
       // Their own home is the first card and never sorts, the way it is the
       // first column and never sorts.
       const cards = Array.from(
-        document.querySelectorAll('#what-its-worth .comp-stack-card:not(.is-yours)'),
+        document.querySelectorAll('#sales-that-set-it .comp-stack-card:not(.is-yours)'),
       ).map((c) => Number(c.getAttribute('data-sort-price')))
       const follows = (a) => a.length === 0 || a.join(',') === keys.join(',')
       return sorted && follows(cards)
@@ -621,27 +641,23 @@ const INTERACT_STEPS: InteractStep[] = [
   {
     name: 'competition-pending',
     // Nothing to filter when every competitor is in one status.
-    when: `document.querySelectorAll('#competition .rival-grid').length > 1`,
+    when: `new Set(Array.from(document.querySelectorAll('#competition [data-status]')).map((n) => n.getAttribute('data-status'))).size > 1`,
     shot: '#competition',
     run: `(() => {
       const btns = Array.from(document.querySelectorAll('#competition .rr-btn'))
       const b = btns.find((x) => /under contract/i.test(x.textContent || ''))
       if (!b) return null
       b.click()
-      // NOT "a grid carries the hidden attribute" — the defect was that the
+      // NOT "a column carries the hidden attribute" — the defect was that the
       // attribute was set and the CSS ignored it, so four for-sale homes stayed
-      // on screen under the "Under contract" heading. Measure what a reader can
-      // actually see, and check its status.
-      const visible = Array.from(document.querySelectorAll('#competition .rival-card'))
-        .filter((c) => c.getClientRects().length > 0)
+      // on screen. Measure what a reader can actually see, and check its status.
+      const visible = Array.from(
+        document.querySelectorAll('#competition th.v[data-status], #competition .comp-stack-card[data-status]'),
+      ).filter((c) => c.getClientRects().length > 0)
       if (visible.length === 0) return ''
       const wrong = visible.filter((c) => c.getAttribute('data-status') !== 'pending')
-      const heads = Array.from(document.querySelectorAll('#competition h3'))
-        .filter((h) => h.getClientRects().length > 0)
-        .map((h) => (h.textContent || '').trim())
       if (wrong.length > 0) return ''
-      if (heads.some((h) => /for sale/i.test(h))) return ''
-      return 'showing ' + visible.length + ' under-contract card(s) under ' + heads.join(' + ')
+      return 'showing ' + visible.length + ' under-contract column(s) and card(s)'
     })()`,
   },
   {

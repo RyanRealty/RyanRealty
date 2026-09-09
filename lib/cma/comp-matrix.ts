@@ -196,6 +196,8 @@ type Col = {
   sub: string | null
   cells: string[]
   photoUrl: string | null
+  /** Matrix 3 only: what the chapter's filter hides a column by. */
+  status?: 'active' | 'pending'
 }
 
 /** The map's pin, at reading size, so the two read as one object. */
@@ -347,6 +349,7 @@ function colFor(entry: MatrixEntry, range?: PricePathRange | null): Col {
         : null,
     photoUrl: entry.photoUrl,
     sort: entry.sort,
+    status: entry.status,
     cells: sharedCells(entry, range),
   }
 }
@@ -550,7 +553,8 @@ function matrixTable(
           : `<span class="matrix-hit" role="button" tabindex="0" aria-label="${esc(
               `Show ${c.label} on the map`,
             )}" data-comp="${esc(pin)}" data-pin="${esc(pin)}"></span>`
-      return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${c.sort}>${control}${img}${name}${
+      const status = c.status ? ` data-status="${esc(c.status)}"` : ''
+      return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${status}${c.sort}>${control}${img}${name}${
         // `sub` is composed here, from figures already escaped by usd()/int(),
         // and carries one <br/> of our own — never reader input.
         c.sub ? `<span class="matrix-sub">${c.sub}</span>` : ''
@@ -660,7 +664,9 @@ function matrixStack(input: {
     )}${adjLines ? `<div class="comp-stack-grid">${adjLines}</div>` : ''}</div>`
     return `<article class="comp-stack-card${
       col.key === 'subject' ? ' is-yours' : ''
-    }" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${col.sort}>${img}<span class="addr-row is-card">${pinBadge(
+    }" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${
+      col.status ? ` data-status="${esc(col.status)}"` : ''
+    }${col.sort}>${img}<span class="addr-row is-card">${pinBadge(
       col.pin,
       col.key === 'subject' ? 'subject' : input.family,
     )}${addr}</span>${headline ? `<div class="comp-stack-grid is-answer">${headline}</div>` : ''}${
