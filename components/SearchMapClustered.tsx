@@ -24,7 +24,13 @@ import {
   MAP_WHITE,
   MAP_CREAM,
 } from '@/lib/maps/markers'
-import { placeTypePinFill } from '@/lib/place/place-type-style'
+import {
+  V3_CLUSTER_EXTENT,
+  V3_CLUSTER_MAX_ZOOM,
+  V3_CLUSTER_RADIUS_PX,
+  v3FitPadding,
+} from '@/lib/maps/v3-basemap'
+import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import './search/search-map-marks.css'
 
 /**
@@ -34,23 +40,18 @@ import './search/search-map-marks.css'
  */
 const MARK_CLASS = 'rr-map-mark'
 
-// Map ID strategy (dual-path, P0-1 fix 2026-06-10):
-//   - With NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID set (Vercel env): vector map via
-//     `mapId` + AdvancedMarkerElement price pills. Raster `styles` must NOT be
-//     passed alongside `mapId` — Google ignores them and logs a warning.
-//   - Without it: Google HARD-REQUIRES a valid Map ID for AdvancedMarkerElement.
-//     Constructing them on a mapId-less map rejects every marker, logs
-//     "initialized without a valid Map ID" once per marker, and drops the map
-//     into degraded mode (the "Do you own this website?" error dialog). So in
-//     this mode we render the SAME price-pill HTML through a classic
-//     google.maps.OverlayView subclass (PricePillOverlay below) on a raster map
-//     with `styles` — no Map ID required, no degraded mode.
-// Matt: to enable the vector path, create a Map ID in Google Cloud Console
-// (Maps Platform → Map IDs → Create Map ID → Type: JavaScript, Map type:
-// Vector) and set NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID in Vercel + .env.local.
-const MAP_ID =
-  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID) || ''
-const HAS_MAP_ID = MAP_ID.length > 0
+// There is ONE marker path here, and it is the raster one (SITE-44, 2026-09-09).
+//
+// This file used to branch on NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID: a Map ID bought a
+// vector map plus AdvancedMarkerElement, and no Map ID fell back to a classic
+// google.maps.OverlayView subclass (PricePillOverlay, below) on a raster map.
+// The branch is gone because the Map ID took the CARTOGRAPHY with it — Google
+// ignores a `styles` array next to a `mapId` and serves whatever Cloud Console
+// style is attached to that ID by hand. On 2026-09-08 nothing was attached, so
+// the largest object on the page was a stock Google basemap, which is the
+// defect SITE-44 exists to close. A style we can read in lib/maps/v3-basemap.ts
+// beats vector tiles we cannot promise. The OverlayView pills were already the
+// tested path for every environment without the env var.
 
 type GeoJSONPolygon = { type: 'Polygon'; coordinates: number[][][] | number[][] }
 type GeoJSONMultiPolygon = { type: 'MultiPolygon'; coordinates: number[][][][] }
@@ -177,21 +178,22 @@ type Props = {
 }
 
 /**
- * Build the HTML element for an AdvancedMarkerElement price pill.
- * Returns a <div> that Google Maps renders as a custom marker via the
- * content property of AdvancedMarkerElement.
+ * Build the HTML element for a price pill. Returns a <div> that Google Maps
+ * renders as a custom marker through PricePillOverlay's content.
  *
  * Navy pill + cream text, caret pointing down, hover/active scale ring.
  * Isolated from Tailwind (rendered in Maps overlay context) — inline styles only.
  */
 function buildPricePillElement(
   label: string,
-  opts?: { hover?: boolean; active?: boolean; saved?: boolean; fill?: string },
+  opts?: { hover?: boolean; active?: boolean; saved?: boolean },
 ): HTMLDivElement {
   const hover = opts?.hover ?? false
   const active = opts?.active ?? false
   const saved = opts?.saved ?? false
-  const fill = opts?.fill ?? MAP_NAVY
+  // One fill, and it is the brand navy. SITE-44 removed the ten-hue
+  // property-type palette this used to take (lib/place/place-type-style.ts).
+  const fill = MAP_NAVY
   const invert = hover || active
 
   const el = document.createElement('div')
@@ -229,12 +231,15 @@ function buildPricePillElement(
   ].join(';')
   pill.textContent = label + (saved ? ' ♥' : '')
 
-  // Caret (downward triangle)
+  // Caret (downward triangle). `--rr-mark-nudge-x` is written by the overlay
+  // when it has to slide a pill off the frame edge: the box moves, the caret
+  // stays over the coordinate, so a nudged mark still points at its own house.
   const caret = document.createElement('div')
+  caret.dataset.caret = '1'
   caret.style.cssText = [
     'position:absolute',
     'bottom:-6px',
-    'left:50%',
+    'left:calc(50% - var(--rr-mark-nudge-x, 0px))',
     'transform:translateX(-50%)',
     'width:0',
     'height:0',
@@ -242,6 +247,7 @@ function buildPricePillElement(
     `border-right:6px solid transparent`,
     `border-top:7px solid ${invert ? MAP_CREAM : fill}`,
   ].join(';')
+  caret.dataset.caretColor = invert ? MAP_CREAM : fill
 
   el.appendChild(pill)
   el.appendChild(caret)
@@ -249,15 +255,27 @@ function buildPricePillElement(
 }
 
 /**
- * Build the HTML element for a cluster bubble.
- * Navy circle with white count — AdvancedMarkerElement version.
+ * Build the HTML element for a cluster badge.
  *
- * The circle stays 32/38/44px. `position:relative` is the anchor the 44px tap
- * pseudo in search-map-marks.css positions against; it moves nothing.
+ * SITE-44: the badge is no longer a count in a circle and nothing else. A
+ * cluster is the only thing standing between the reader and a dozen homes, so
+ * hovering it says what it is holding — the count and the ask range of its own
+ * members — and clicking it still zooms in. That is the "reveals more data"
+ * rule from TASTE.md applied to the one mark on this canvas that hides data by
+ * design.
+ *
+ * The disc stays 32/38/44px so the 44px tap pseudo in search-map-marks.css has
+ * the geometry it expects; the caption is an absolutely-positioned sibling that
+ * costs the layer no width until it is asked for.
  */
-function buildClusterElement(count: number): HTMLDivElement {
-  const size = count >= 100 ? 44 : count >= 20 ? 38 : 32
-  const fontSize = count >= 100 ? 11 : count >= 20 ? 12 : 13
+function buildClusterElement(count: number, range: { min: number; max: number } | null): HTMLDivElement {
+  // Size IS the density encoding, and the old 32/38/44 ladder was too tight to
+  // read: a badge holding 74 homes and one holding 2 looked the same size, which
+  // an evaluator named as the map's most obvious wasted signal. Five rungs
+  // across 28 to 54 make a full frame legible at a glance without any badge
+  // growing past a tap target's neighbourhood.
+  const size = count >= 150 ? 54 : count >= 60 ? 46 : count >= 25 ? 40 : count >= 10 ? 34 : 28
+  const fontSize = count >= 150 ? 13 : count >= 60 ? 13 : count >= 25 ? 12 : count >= 10 ? 12 : 11
   const el = document.createElement('div')
   el.className = MARK_CLASS
   el.style.cssText = [
@@ -266,21 +284,87 @@ function buildClusterElement(count: number): HTMLDivElement {
     `height:${size}px`,
     `border-radius:50%`,
     `background:${MAP_NAVY}`,
-    `border:2px solid ${MAP_WHITE}`,
+    `border:1.5px solid ${MAP_CREAM}`,
     `display:flex`,
     `align-items:center`,
     `justify-content:center`,
-    `color:${MAP_WHITE}`,
+    `color:${MAP_CREAM}`,
     `font-family:system-ui,-apple-system,sans-serif`,
     `font-size:${fontSize}px`,
     `font-weight:700`,
     `font-variant-numeric:tabular-nums`,
+    `letter-spacing:-0.02em`,
     `cursor:pointer`,
     `box-shadow:0 2px 8px color-mix(in srgb, var(--v3-navy) 40%, transparent)`,
-    `transition:transform 120ms ease`,
+    `transition:transform 150ms ease`,
   ].join(';')
-  el.textContent = String(count)
+
+  const disc = document.createElement('span')
+  disc.textContent = String(count)
+  el.appendChild(disc)
+
+  const caption = document.createElement('span')
+  const homes = count === 1 ? '1 home' : `${count.toLocaleString('en-US')} homes`
+  caption.textContent = range
+    ? range.min === range.max
+      ? `${homes} · ${formatPriceLabel(range.min)}`
+      : `${homes} · ${formatPriceLabel(range.min)} to ${formatPriceLabel(range.max)}`
+    : homes
+  caption.style.cssText = [
+    'position:absolute',
+    `bottom:calc(100% + 6px)`,
+    'left:50%',
+    'transform:translateX(-50%)',
+    'white-space:nowrap',
+    `background:${MAP_CREAM}`,
+    `color:${MAP_NAVY}`,
+    `border:1px solid ${MAP_NAVY}`,
+    'padding:3px 8px',
+    'border-radius:999px',
+    'font-size:11px',
+    'font-weight:600',
+    'letter-spacing:0',
+    'opacity:0',
+    'pointer-events:none',
+    'transition:opacity 150ms ease',
+  ].join(';')
+  el.appendChild(caption)
+
+  el.setAttribute('role', 'button')
+  el.setAttribute('aria-label', `${caption.textContent}. Zoom in to see them.`)
+  el.title = caption.textContent
+
+  const expand = () => {
+    el.style.transform = 'scale(1.14)'
+    caption.style.opacity = '1'
+  }
+  const collapse = () => {
+    el.style.transform = 'scale(1)'
+    caption.style.opacity = '0'
+  }
+  el.addEventListener('mouseenter', expand)
+  el.addEventListener('focus', expand)
+  el.addEventListener('mouseleave', collapse)
+  el.addEventListener('blur', collapse)
   return el
+}
+
+/**
+ * The ask range a cluster is holding, read off its own members' marks. Prices
+ * come from the same ListPrice the pill printed (stamped on the content element
+ * when the marker was built), so the caption cannot drift from the pins.
+ */
+function clusterPriceRange(markers: readonly unknown[]): { min: number; max: number } | null {
+  let min = Infinity
+  let max = -Infinity
+  for (const m of markers) {
+    const content = (m as { content?: HTMLElement }).content
+    const raw = Number(content?.dataset?.price ?? NaN)
+    if (!Number.isFinite(raw) || raw <= 0) continue
+    if (raw < min) min = raw
+    if (raw > max) max = raw
+  }
+  return Number.isFinite(min) && Number.isFinite(max) ? { min, max } : null
 }
 
 /**
@@ -290,12 +374,12 @@ function buildClusterElement(count: number): HTMLDivElement {
 function buildPhotoStampElement(
   photoURL: string | null | undefined,
   priceLabel: string,
-  opts?: { active?: boolean; hover?: boolean; fill?: string },
+  opts?: { active?: boolean; hover?: boolean },
 ): HTMLDivElement {
   const active = opts?.active ?? false
   const hover = opts?.hover ?? false
   const invert = active || hover
-  const fill = opts?.fill ?? MAP_NAVY
+  const fill = MAP_NAVY
   const wrap = document.createElement('div')
   wrap.className = MARK_CLASS
   wrap.style.cssText = [
@@ -357,9 +441,9 @@ function markerModeForZoom(zoom: number | undefined): 'pill' | 'photo' {
 // ─── Classic OverlayView price pill (no-Map-ID raster path) ────────────────────
 
 /**
- * Marker-like surface shared by AdvancedMarkerElement and PricePillOverlay so
- * the marker layer + emphasis effect are path-agnostic. `content` / `zIndex`
- * mirror the AdvancedMarkerElement property API.
+ * The marker surface the layer and the emphasis effect talk to. `content` /
+ * `zIndex` keep the AdvancedMarkerElement property shape they were written
+ * against, so the emphasis code reads the same as before.
  */
 interface PricePillOverlayHandle {
   content: HTMLElement
@@ -369,7 +453,8 @@ interface PricePillOverlayHandle {
   getVisible(): boolean
 }
 
-type PriceMarker = google.maps.marker.AdvancedMarkerElement | PricePillOverlayHandle
+/** The one marker implementation on this canvas since SITE-44. */
+type PriceMarker = PricePillOverlayHandle
 
 interface PricePillOverlayOptions {
   position: google.maps.LatLng | google.maps.LatLngLiteral
@@ -426,7 +511,8 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
     onAdd() {
       const div = document.createElement('div')
       div.style.position = 'absolute'
-      // Anchor bottom-center so the caret tip sits on the exact lat/lng.
+      // Anchor bottom-center so the caret tip sits on the exact lat/lng. draw()
+      // rewrites this transform when a mark has to be nudged off an edge.
       div.style.transform = 'translate(-50%, -100%)'
       div.style.zIndex = String(this.zIndexValue)
       div.style.cursor = 'pointer'
@@ -449,6 +535,18 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
       this.container = div
     }
 
+    /**
+     * Place the mark, and keep its painted box inside the frame.
+     *
+     * SITE-44: a padded opening fit stops the FIRST frame slicing a badge, but
+     * search-as-you-move refetches by bounding box, so every pan returns homes
+     * sitting right on the edge and their pills drew half off the canvas. A
+     * mark that is half outside the map is not a mark. So the box slides back
+     * in, the caret slides the opposite way (via --rr-mark-nudge-x) so it still
+     * sits on the coordinate, and a pill that would cross the TOP edge flips to
+     * hang below its point with the caret pointing up. Nothing moves that does
+     * not have to.
+     */
     draw() {
       const div = this.container
       if (!div) return
@@ -458,6 +556,42 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
       if (!pt) return
       div.style.left = `${pt.x}px`
       div.style.top = `${pt.y}px`
+
+      const host = this.getMap()
+      const frame = host && 'getDiv' in host ? (host as google.maps.Map).getDiv() : null
+      const cp = proj.fromLatLngToContainerPixel(this.latLng)
+      if (!frame || !cp) return
+      const w = div.offsetWidth
+      const h = div.offsetHeight
+      if (w === 0 || h === 0) return
+
+      // The box as painted: centred on the point, hanging above it.
+      let nudgeX = 0
+      const left = cp.x - w / 2
+      const right = cp.x + w / 2
+      if (left < MARK_EDGE_MARGIN_PX) nudgeX = MARK_EDGE_MARGIN_PX - left
+      else if (right > frame.clientWidth - MARK_EDGE_MARGIN_PX) {
+        nudgeX = frame.clientWidth - MARK_EDGE_MARGIN_PX - right
+      }
+      const flip = cp.y - h < MARK_EDGE_MARGIN_PX && cp.y + h < frame.clientHeight
+
+      div.style.transform = `translate(calc(-50% + ${nudgeX}px), ${flip ? '0' : '-100%'})`
+      this.contentEl.style.setProperty('--rr-mark-nudge-x', `${nudgeX}px`)
+      const caret = this.contentEl.querySelector<HTMLElement>('[data-caret]')
+      if (caret) {
+        const color = caret.dataset.caretColor ?? ''
+        if (flip) {
+          caret.style.bottom = 'auto'
+          caret.style.top = '-6px'
+          caret.style.borderTop = '0'
+          caret.style.borderBottom = `7px solid ${color}`
+        } else {
+          caret.style.top = 'auto'
+          caret.style.bottom = '-6px'
+          caret.style.borderBottom = '0'
+          caret.style.borderTop = `7px solid ${color}`
+        }
+      }
     }
 
     onRemove() {
@@ -465,14 +599,18 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
       this.container = null
     }
 
-    // AdvancedMarkerElement-compatible accessors (the emphasis effect mutates
-    // these on hover/select).
+    // Accessors the emphasis effect mutates on hover/select.
     get content(): HTMLElement {
       return this.contentEl
     }
     set content(el: HTMLElement) {
       if (this.container) this.contentEl.replaceWith(el)
       this.contentEl = el
+      // The emphasis effect swaps this element on hover and select, and the
+      // replacement arrives without the nudge the old one was carrying — an
+      // edge pill would jump back out of the frame the moment you pointed at
+      // it. Re-place it now rather than waiting for the next projection change.
+      this.draw()
     }
     get zIndex(): number {
       return this.zIndexValue
@@ -494,6 +632,9 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
   PricePillOverlayClass = PricePillOverlay as unknown as PricePillOverlayCtor
   return PricePillOverlayClass
 }
+
+/** How close a mark's painted box may come to the frame edge before it slides in. */
+const MARK_EDGE_MARGIN_PX = 14
 
 /** The target every mark carries, matching --v3-tap in components/site/v3/tokens.css. */
 const MARK_TAP_PX = 44
@@ -526,8 +667,7 @@ function fitMapMarkTaps(root: HTMLElement | null) {
   // Read all geometry before writing anything: one layout pass, not one per mark.
   const marks = els.map((el, i) => {
     const r = el.getBoundingClientRect()
-    // Google writes an AdvancedMarkerElement's z-index inline on the host; the
-    // raster OverlayView path writes it on its own container. Equal z falls
+    // The OverlayView writes its z-index on its own container. Equal z falls
     // back to DOM order, which is what the browser paints by.
     const z = Number(el.parentElement?.style.zIndex ?? '') || 0
     return { el, cx: r.x + r.width / 2, cy: r.y + r.height / 2, w: r.width, h: r.height, z, i }
@@ -626,14 +766,10 @@ function setMarkTap(
   }
 }
 
-/** Detach a marker from the map, whichever implementation it is. */
+/** Detach a marker from the map. */
 function detachMarker(m: PriceMarker) {
   try {
-    if ('setMap' in m && typeof m.setMap === 'function') {
-      m.setMap(null)
-    } else {
-      ;(m as google.maps.marker.AdvancedMarkerElement).map = null
-    }
+    m.setMap(null)
   } catch {
     // marker already torn down mid-unmount — ignore
   }
@@ -672,8 +808,7 @@ export default function SearchMapClustered({
   // mapInstance drives MapContext.Provider so <Polygon> children work.
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null)
   const clustererRef = useRef<MarkerClusterer | null>(null)
-  // Price-pill marker refs — AdvancedMarkerElement on the vector map (Map ID
-  // present), PricePillOverlay on the raster map (no Map ID).
+  // Price-pill marker refs — PricePillOverlay on the styled raster map.
   const advMarkersRef = useRef<PriceMarker[]>([])
   const markersByKeyRef = useRef<Map<string, PriceMarker>>(new Map())
   const placeViewportRef = useRef<google.maps.LatLngBounds | null>(null)
@@ -705,10 +840,10 @@ export default function SearchMapClustered({
     })
   }, [])
 
-  // 'marker' library only needed for AdvancedMarkerElement (vector/Map ID path).
-  // The raster path uses OverlayView from the core 'maps' module.
+  // OverlayView ships with the core 'maps' module, so the marker library is not
+  // loaded at all any more — one fewer script on the page's critical path.
   const { ready: isLoaded, error: loadError } = useGoogleMapsReady({
-    libraries: HAS_MAP_ID ? ['places', 'marker'] : ['places'],
+    libraries: ['places'],
   })
 
   // Track zoom so markers can switch pill ↔ photo stamp without a full remount
@@ -801,34 +936,16 @@ export default function SearchMapClustered({
     const viewport = placeViewportRef.current
     if (!map || !viewport) return
     setShowBoundary(true)
-    map.fitBounds(viewport, { top: 48, right: 48, bottom: 48, left: 48 })
+    map.fitBounds(viewport, v3FitPadding(map.getDiv()))
     if (onBoundsChanged) setTimeout(reportBounds, 300)
   }, [onBoundsChanged, reportBounds])
 
-  // Map options: greedy gesture handling. See the MAP_ID strategy comment at the
-  // top of this file — `mapId` (vector / Cloud styling) and raster `styles` are
-  // mutually exclusive, so we guard against ever passing both.
-  //
-  // Declared before any effects that use it to avoid TS2448 forward-reference error.
+  // Map options: greedy gestures on the V3 navy-on-cream basemap. No mapId —
+  // see the note at the top of this file. Declared before any effect that uses
+  // it, to avoid a TS2448 forward reference.
   const mapOptions = useMemo(() => {
-    const base = getSearchMapOptions()
-    if (HAS_MAP_ID) {
-      // Map ID present: vector map. Strip raster `styles` (Google ignores them
-      // alongside mapId and logs a warning).
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { styles: _styles, ...baseWithoutStyles } = base
-      return {
-        ...baseWithoutStyles,
-        mapId: MAP_ID,
-        draggable: !drawingMode && !multiDrawActive,
-        clickableIcons: !drawingMode && !multiDrawActive,
-      }
-    }
-    // No Map ID: raster map with `styles` for POI suppression. Markers render
-    // via PricePillOverlay — AdvancedMarkerElement is never constructed in this
-    // mode because Google hard-requires a valid Map ID for Advanced Markers.
     return {
-      ...base,
+      ...getSearchMapOptions(),
       draggable: !drawingMode && !multiDrawActive,
       clickableIcons: !drawingMode && !multiDrawActive,
     }
@@ -908,7 +1025,12 @@ export default function SearchMapClustered({
   const onLoad = useCallback(
     (map: google.maps.Map) => {
       mapRef.current = map
-      const padding = { top: 48, right: 48, bottom: 48, left: 48 }
+      // SITE-44: the opening frame clears a full mark's width on every edge, so
+      // no price pill or cluster badge is sliced by the viewport on load. The
+      // padding scales with the frame (v3FitPadding) rather than a flat 48,
+      // which was under half a pill and produced the clipped badges the
+      // 2026-09-08 taste table named.
+      const padding = v3FitPadding(map.getDiv())
 
       // Attach the idle listener HERE — inside onLoad — so we always have a
       // reference to the live map instance. The separate useEffect below had a
@@ -942,29 +1064,31 @@ export default function SearchMapClustered({
           { lat: initialBounds.north, lng: initialBounds.east },
         )
         if (!locked.isEmpty()) {
-          map.fitBounds(locked)
+          map.fitBounds(locked, padding)
           return
         }
       }
 
-      // Preferred frame: the actual city/neighborhood/community boundary polygon,
-      // so the map opens fit to that area's true extent (the "not zoomed in
-      // enough" complaint) instead of a fixed zoom or the listing bbox. Clamp to a
-      // readable band so a tiny subdivision doesn't zoom to street level and a big
-      // city doesn't pull back too far.
-      if (boundaryPaths.flat().length >= 2) {
-        const bb = new google.maps.LatLngBounds()
-        for (const ring of boundaryPaths) for (const p of ring) bb.extend(p)
-        if (!bb.isEmpty()) {
-          map.fitBounds(bb, padding)
-          const z = map.getZoom()
-          if (typeof z === 'number') {
-            if (z > 15) map.setZoom(15)
-            else if (z < 9) map.setZoom(9)
-          }
-          // idle listener above will fire reportBounds after tiles settle
-          return
-        }
+      // Preferred frame: the city/neighborhood/community boundary polygon AND
+      // every home this view is about to draw, so the map opens on that area's
+      // true extent instead of a fixed zoom or a bare bbox.
+      //
+      // SITE-44 added the pins to that union. Fitting the polygon alone framed
+      // the boundary and let the homes just outside it — a Bend address a block
+      // past the city line is still a Bend result — render sliced against the
+      // right edge, which is the "badges at the frame edge are sliced on load"
+      // finding. A frame that does not contain what it is drawing is not a
+      // frame. The zoom clamp only pulls BACK now: a setZoom that zooms IN
+      // after a fit undoes the padding it was just given.
+      const frame = new google.maps.LatLngBounds()
+      for (const ring of boundaryPaths) for (const p of ring) frame.extend(p)
+      for (const l of validListings) frame.extend({ lat: l.Latitude, lng: l.Longitude })
+      if (!frame.isEmpty() && (boundaryPaths.flat().length >= 2 || validListings.length > 1)) {
+        map.fitBounds(frame, padding)
+        const z = map.getZoom()
+        if (typeof z === 'number' && z > 15) map.setZoom(15)
+        // idle listener above will fire reportBounds after tiles settle
+        return
       }
 
       if (placeQuery?.trim() && window.google?.maps?.places) {
@@ -995,14 +1119,14 @@ export default function SearchMapClustered({
           { lat: bounds.maxLat, lng: bounds.maxLng }
         )
         map.fitBounds(b, padding)
-        const zoom = map.getZoom()
-        if (typeof zoom === 'number' && zoom < 12) map.setZoom(12)
+        // No zoom bump here: the fit already framed every pin with a mark's
+        // clearance, and zooming in past it puts marks back under the edge.
         // idle listener fires reportBounds once the map settles
       }
       // If neither case applies the idle listener above will still fire once
       // the map renders its initial center/zoom position.
     },
-    [validListings.length, bounds, placeQuery, onBoundsChanged, reportBounds, boundaryPaths, lockBounds, initialBounds]
+    [validListings, bounds, placeQuery, onBoundsChanged, reportBounds, boundaryPaths, lockBounds, initialBounds]
   )
 
   // Place SELECT / search→city: re-fit when placeQuery or boundary changes.
@@ -1012,7 +1136,7 @@ export default function SearchMapClustered({
   useEffect(() => {
     const map = mapRef.current
     if (!map || !window.google?.maps) return
-    const padding = { top: 48, right: 48, bottom: 48, left: 48 }
+    const padding = v3FitPadding(map.getDiv())
     const key = `${placeQuery ?? ''}|${boundaryPaths.flat().length}`
     if (placeFitKeyRef.current === null) {
       // First paint: onLoad already fitted (bbox / boundary / places). Seed key.
@@ -1030,10 +1154,7 @@ export default function SearchMapClustered({
       if (!bb.isEmpty()) {
         map.fitBounds(bb, padding)
         const z = map.getZoom()
-        if (typeof z === 'number') {
-          if (z > 15) map.setZoom(15)
-          else if (z < 9) map.setZoom(9)
-        }
+        if (typeof z === 'number' && z > 15) map.setZoom(15)
         return
       }
     }
@@ -1078,21 +1199,13 @@ export default function SearchMapClustered({
   })
 
   // Create the price-pill marker layer + clusterer when map and listings are
-  // ready. Dual-path: AdvancedMarkerElement on the vector map (Map ID present),
-  // classic OverlayView pills on the raster map (no Map ID) — see the MAP_ID
-  // strategy comment at the top of this file.
+  // ready. One path: classic OverlayView pills on the styled raster map — see
+  // the note at the top of this file.
   useEffect(() => {
     const map = mapInstance
     if (!map || !window.google || validListings.length === 0) return
 
-    // Vector path: AdvancedMarkerElement requires the 'marker' library (loaded
-    // via useGoogleMapsReady). Bail gracefully if not yet available (edge case
-    // on slow load). Raster path: OverlayView ships with the core 'maps' module.
-    const AdvancedMarkerElement = HAS_MAP_ID
-      ? window.google.maps.marker?.AdvancedMarkerElement
-      : undefined
-    if (HAS_MAP_ID && !AdvancedMarkerElement) return
-    const PricePillOverlay = AdvancedMarkerElement ? null : getPricePillOverlayClass()
+    const PricePillOverlay = getPricePillOverlayClass()
 
     // Clear previous clusterer and markers.
     if (clustererRef.current) {
@@ -1106,15 +1219,32 @@ export default function SearchMapClustered({
     const mode = zoomMode
     const newMarkers: PriceMarker[] = validListings.map((l, i) => {
       const listingKey = (l.ListNumber ?? l.ListingKey ?? `point-${i}`).toString()
-      const price = Number(l.ListPrice ?? 0)
-      const label = formatPriceLabel(price)
+      // Section 0: what a pill may print.
+      //
+      // ListPrice is not always the price of a home. On MLS PropertyType 'G' it
+      // is a commercial lease rate per square foot, and on a fractional
+      // interest it is the price of a week, not the cabin — so the raw field
+      // was painting "$3" over an office sublease and "$60k" over a share at
+      // Inn of the 7th Mountain. `publishWholePropertyAmount` is the publisher
+      // for a figure that stands alone, which is exactly what a map pill is:
+      // there is no room beside it for the share label that makes the smaller
+      // number true, and the card in the rail still carries both. A home with
+      // no publishable whole-property price keeps its mark — it has a location
+      // and the list still holds it — and prints the same em dash the card does.
+      const price = publishWholePropertyAmount({
+        price: l.ListPrice,
+        propertyType: l.PropertyType,
+        propertySubType: l.PropertySubType,
+        subdivisionName: l.SubdivisionName,
+        city: l.City,
+        listNumber: l.ListNumber != null ? String(l.ListNumber) : null,
+      })
+      const label = price == null ? '—' : formatPriceLabel(price)
       const isSaved = savedSetRef.current.has(listingKey)
-      const fill = placeTypePinFill(l.PropertyType, l.PropertySubType)
-
       const contentEl =
         mode === 'photo' && l.PhotoURL
-          ? buildPhotoStampElement(l.PhotoURL, label, { active: false, fill })
-          : buildPricePillElement(label, { saved: isSaved, fill })
+          ? buildPhotoStampElement(l.PhotoURL, label, { active: false })
+          : buildPricePillElement(label, { saved: isSaved })
       const title = `${label} — ${[l.StreetNumber, l.StreetName].filter(Boolean).join(' ') || 'View listing'}`
       const handleClick = () => {
         // Multi-shape draw armed: MapDrawTools consumes the tap (a vertex in
@@ -1143,32 +1273,20 @@ export default function SearchMapClustered({
       // The hover listener is delegated to the map container. Both the content
       // and the wrapper that outlives a content swap carry the key it reports.
       contentEl.dataset.listingKey = listingKey
+      // The cluster caption reads its range off its own members' marks, so the
+      // ask travels with the pill rather than being re-derived from a second
+      // array that could have been filtered differently (section 0).
+      if (price != null) contentEl.dataset.price = String(price)
 
-      let marker: PriceMarker
-      if (AdvancedMarkerElement) {
-        const adv = new AdvancedMarkerElement({
-          position: { lat: l.Latitude, lng: l.Longitude },
-          map,
-          content: contentEl,
-          title,
-          zIndex: 1,
-          gmpClickable: true,
-        })
-        // 'gmp-click' replaces the deprecated 'click' listener on Advanced Markers.
-        adv.addEventListener('gmp-click', handleClick)
-        adv.dataset.listingKey = listingKey
-        marker = adv
-      } else {
-        marker = new PricePillOverlay!({
-          position: { lat: l.Latitude, lng: l.Longitude },
-          map,
-          content: contentEl,
-          title,
-          zIndex: 1,
-          onClick: handleClick,
-          listingKey,
-        })
-      }
+      const marker: PriceMarker = new PricePillOverlay({
+        position: { lat: l.Latitude, lng: l.Longitude },
+        map,
+        content: contentEl,
+        title,
+        zIndex: 1,
+        onClick: handleClick,
+        listingKey,
+      })
 
       markersByKeyRef.current.set(listingKey, marker)
       return marker
@@ -1176,12 +1294,26 @@ export default function SearchMapClustered({
 
     advMarkersRef.current = newMarkers
 
-    // Cluster renderer: navy count bubble in whichever marker tech is active.
-    // maxZoom 14: far/mid = clusters; closer = individual pills or photo stamps.
+    // Cluster renderer: a navy count badge that says what it holds on hover.
+    //
+    // SITE-44 changed two numbers here and they are the whole overlap fix. The
+    // radius is now a full mark's width (V3_CLUSTER_RADIUS_PX), so any two
+    // marks closer than one pill collapse into a badge instead of stacking. And
+    // clustering no longer STOPS at zoom 14 (V3_CLUSTER_MAX_ZOOM is the map's
+    // own max), which is what left the SW Bend pile in the 2026-09-08 shots:
+    // past 14 every pin drew raw, on top of its neighbours. Supercluster
+    // separates points on its own as the zoom climbs, so at street level almost
+    // nothing is still merged — only the homes that genuinely share a corner.
     clustererRef.current = new MarkerClusterer({
       map,
       markers: newMarkers as unknown as google.maps.Marker[],
-      algorithm: new SuperClusterAlgorithm({ maxZoom: 14, radius: 60 }),
+      algorithm: new SuperClusterAlgorithm({
+        maxZoom: V3_CLUSTER_MAX_ZOOM,
+        radius: V3_CLUSTER_RADIUS_PX,
+        // Supercluster measures radius in units of `extent`; its default 512 is
+        // twice a Google tile, which halved every radius this file ever set.
+        extent: V3_CLUSTER_EXTENT,
+      }),
       // Draw mode: the default handler zooms into the cluster, which yanks the
       // viewport mid-outline and strands the user's partial polygon across two
       // zoom levels. Clusters go inert while drawing.
@@ -1193,21 +1325,11 @@ export default function SearchMapClustered({
         render: (cluster, _stats, map) => {
           const count = cluster.count
           const position = cluster.position
-          const bubbleEl = buildClusterElement(count)
+          const bubbleEl = buildClusterElement(count, clusterPriceRange(cluster.markers ?? []))
           const zIndex = Number(google.maps.Marker.MAX_ZINDEX) + count
-          if (AdvancedMarkerElement) {
-            const clusterMarker = new AdvancedMarkerElement({
-              position,
-              map,
-              content: bubbleEl,
-              zIndex,
-              gmpClickable: true,
-            })
-            return clusterMarker as unknown as google.maps.Marker
-          }
           // OverlayView bubble: its DOM click re-fires as a Maps 'click' event,
           // which drives MarkerClusterer's default zoom-into-cluster handler.
-          const clusterOverlay = new PricePillOverlay!({
+          const clusterOverlay = new PricePillOverlay({
             position,
             map,
             content: bubbleEl,
@@ -1298,14 +1420,20 @@ export default function SearchMapClustered({
         const listing = validListings.find(
           (l) => (l.ListNumber ?? l.ListingKey ?? '').toString() === key
         )
-        const price = Number(listing?.ListPrice ?? 0)
-        const label = formatPriceLabel(price)
+        const price = publishWholePropertyAmount({
+          price: listing?.ListPrice,
+          propertyType: listing?.PropertyType,
+          propertySubType: listing?.PropertySubType,
+          subdivisionName: listing?.SubdivisionName,
+          city: listing?.City,
+          listNumber: listing?.ListNumber != null ? String(listing.ListNumber) : null,
+        })
+        const label = price == null ? '—' : formatPriceLabel(price)
         const isSaved = savedSet.has(key)
-        const fill = placeTypePinFill(listing?.PropertyType, listing?.PropertySubType)
         const newEl =
           zoomMode === 'photo' && listing?.PhotoURL
-            ? buildPhotoStampElement(listing.PhotoURL, label, { active: isActive, hover: isHover, fill })
-            : buildPricePillElement(label, { hover: emphasized, active: isActive, saved: isSaved, fill })
+            ? buildPhotoStampElement(listing.PhotoURL, label, { active: isActive, hover: isHover })
+            : buildPricePillElement(label, { hover: emphasized, active: isActive, saved: isSaved })
         newEl.dataset.listingKey = key
         marker.content = newEl
         // Above every cluster bubble, which sits at MAX_ZINDEX + its count. At
@@ -1434,7 +1562,35 @@ export default function SearchMapClustered({
                 drawClickRef={multiDrawClickRef}
               />
             )}
-            <MapChrome map={mapInstance} />
+            {/* The map's own corner: one column, one hairline register.
+                SITE-44 — Remove boundary and Re-center used to be a SECOND
+                absolutely-positioned box at top-14, which landed on top of the
+                layers strip the moment the chrome became one panel. They belong
+                to the same corner, so they live in the same column. */}
+            <div className="pointer-events-none absolute right-3 top-3 z-[100] flex flex-col items-end gap-2">
+              <MapChrome map={mapInstance} />
+              {showBoundaryControls && !hideBoundaryToggle ? (
+                <div
+                  className="map-search-chrome map-search-chrome--optional pointer-events-auto"
+                  aria-label="Map controls"
+                >
+                  {showBoundary && hasBoundary && (
+                    <button
+                      type="button"
+                      className="map-search-locate"
+                      onClick={() => setShowBoundary(false)}
+                    >
+                      Remove boundary
+                    </button>
+                  )}
+                  {placeViewport && (
+                    <button type="button" className="map-search-locate" onClick={recenterMap}>
+                      Re-center
+                    </button>
+                  )}
+                </div>
+              ) : null}
+            </div>
             {/* Completed drawn polygon (legacy single-polygon mode only) */}
             {!multiShape && !drawingMode && activePolygon && activePolygon.length >= 3 && (
               <Polygon
@@ -1587,28 +1743,6 @@ export default function SearchMapClustered({
         </div>
       )}
 
-      {showBoundaryControls && !hideBoundaryToggle && (
-        <div className="absolute right-3 top-14 z-[100] flex flex-col gap-2 rounded-lg border border-border bg-card p-1.5 shadow-md" aria-label="Map controls">
-          {showBoundary && hasBoundary && (
-            <Button
-              type="button"
-              onClick={() => setShowBoundary(false)}
-              className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-primary shadow-sm hover:bg-muted"
-            >
-              Remove boundary
-            </Button>
-          )}
-          {placeViewport && (
-            <Button
-              type="button"
-              onClick={recenterMap}
-              className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90"
-            >
-              Re-center
-            </Button>
-          )}
-        </div>
-      )}
     </div>
   )
 }

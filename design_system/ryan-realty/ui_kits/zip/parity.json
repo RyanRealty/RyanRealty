@@ -105,5 +105,75 @@
   "openDefects": {
     "_": "Closed 2026-08-27.",
     "items": []
+  },
+  "tasteReview": {
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "SITE-44. Separate evaluator agent (Agent tool, model selector \"sonnet\" — the harness default Sonnet, a different model from the builder), handed the two committed shots and TASTE.md's rubric quoted in the prompt, asked to score the same shots three times in one call and to answer explicitly whether it saw a Google default map. It did not build the page and could not edit anything.",
+    "evaluatorModel": "sonnet",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/zip/97702"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default"
+      ]
+    },
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/zip/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/zip/shots/mobile375.png"
+    },
+    "shotsHash": "sha256:09d231428f1eb00b3f916fca7f94a8bd903da88be83f8d3b5dc6802418e68455",
+    "scores": [
+      60,
+      57,
+      64
+    ],
+    "score": 60,
+    "beats": "Zillow's and Redfin's 97702 results on visual identity and restraint: one quiet navy-on-cream system, the ZIP's own listings as photographed rows bound to a map drawn in the house cartography, and no ad badges or agent headshots crowding either. It still trails them on hover-linked map and list interaction, which is the next item.",
+    "defects": [
+      {
+        "section": "#hero",
+        "severity": "taste",
+        "finding": "Roughly 100px of unstructured empty cream separates the H1's navy rule from the Field, reading as an unfinished gap rather than intentional breathing room."
+      },
+      {
+        "section": "#map",
+        "severity": "craft",
+        "finding": "At 375 the mandatory Google attribution bar (wordmark, Map data, Terms) sits in Google's own type on an otherwise navy-on-cream page. The Maps terms of service forbid hiding or restyling it, so it is recorded here rather than fixed."
+      },
+      {
+        "section": "#map",
+        "severity": "taste",
+        "finding": "Every pin is an identical navy dot with no size or value encoding, so the map cannot separate the $8.75M listing from the cheapest of the 24 it draws."
+      },
+      {
+        "section": "#rows",
+        "severity": "taste",
+        "finding": "The right-hand list is a standard portal row — photo, price, address, facts — with no sort, filter or property-type toggle inside the first viewport."
+      },
+      {
+        "section": "#rows",
+        "severity": "interaction",
+        "finding": "Nothing static signals the two-way binding between a row and its pin, so the frame does not tell a reader that hovering one lights the other."
+      },
+      {
+        "section": "#head",
+        "severity": "taste",
+        "finding": "The H1 is a bare category label with no market claim sentence above the map; the count caption sits under the frame instead."
+      }
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 33,
+      "note": "The site-queue taste table's mark for /zip/97702, which is what SITE-44 was opened against. It is not a committed tasteReview on this route: this parity.json carried none, and the table recorded no evaluator model, no rubric version and no shots hash, so there is no instrument behind it to compare with."
+    },
+    "rebaselineReason": "The prior mark of 33 came from the 2026-09-08 site-queue taste table, which recorded none of the three identity keys: evaluatorModel, rubricVersion and shotsHash are all absent from it, and the shots it saw predate this build. A different instrument is not a baseline, so this 60 is the first mark on the current one and the next pass must rise above it."
   }
 }

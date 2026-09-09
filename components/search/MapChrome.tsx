@@ -4,6 +4,12 @@
  * Search Field map chrome. Google tiles stay. Google Draw / Map dropdown /
  * zoom / Roboto controls do not. Ledger hairline. Floating layers + locate
  * for Zillow map-first mobile (draw stays in MapDrawTools).
+ *
+ * SITE-44: the three controls used to float as three separate boxes down the
+ * right edge, which reads as a portal's control cluster however it is colored.
+ * They are one hairline panel now — a single instrument in the corner of the
+ * frame, in the register V3Atlas uses for its own toggles. Nothing was added or
+ * removed; the aria contract (Map layers / Map zoom / Locate me) is unchanged.
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -50,8 +56,8 @@ export default function MapChrome({ map }: { map: google.maps.Map }) {
   }, [map])
 
   return (
-    <div className="pointer-events-none absolute right-3 top-3 z-[100] flex flex-col items-end gap-2">
-      <div className="map-search-views pointer-events-auto" role="radiogroup" aria-label="Map layers">
+    <div className="map-search-chrome pointer-events-auto">
+      <div className="map-search-views" role="radiogroup" aria-label="Map layers">
         <button
           type="button"
           role="radio"
@@ -71,7 +77,7 @@ export default function MapChrome({ map }: { map: google.maps.Map }) {
           Satellite
         </button>
       </div>
-      <div className="map-search-zoom pointer-events-auto" role="group" aria-label="Map zoom">
+      <div className="map-search-zoom" role="group" aria-label="Map zoom">
         <button
           type="button"
           aria-label="Zoom in"
@@ -91,7 +97,7 @@ export default function MapChrome({ map }: { map: google.maps.Map }) {
       </div>
       <button
         type="button"
-        className="map-search-locate pointer-events-auto"
+        className="map-search-locate"
         aria-label="Locate me"
         disabled={locating}
         onClick={locateMe}
