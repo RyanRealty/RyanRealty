@@ -279,7 +279,7 @@
     },
     {
       "path": "/api/cron/warm-sitemaps",
-      "schedule": "0 * * * *"
+      "schedule": "26 * * * *"
     },
     {
       "path": "/api/cron/weekly-pipeline-digest",

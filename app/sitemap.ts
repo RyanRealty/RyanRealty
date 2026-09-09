@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { cityEntityKey, cityNeighborhoodPath, listingsBrowsePath, teamPath, valuationPath } from '../lib/slug'
 import { filterRogueCityUrls } from '../lib/sitemap-guard'
+import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { getIndexablePresetSlugs } from '../lib/search-presets'
 import { PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
 
@@ -15,8 +16,12 @@ import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { getAllNeighborhoodsWithCity } from '@/lib/data'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { subdivisionSitemapUrls } from '@/lib/data/subdivisions/subdivision-index'
-import { getSubdivisionBrowseSlugsByCity } from '@/lib/data/subdivisions/getSubdivisionBrowseSlugsByCity'
-import { getSearchMatrixSitemapEntries, getMatrixCityPresetNoIndex } from '@/lib/seo/getSearchMatrixEntries'
+import { getSubdivisionBrowsePairsByCity } from '@/lib/data/subdivisions/getSubdivisionCityInventory'
+import {
+  getSearchMatrixSitemapEntries,
+  getMatrixCityPresetDecisionSet,
+  matrixCityPresetNoIndexFromSet,
+} from '@/lib/seo/getSearchMatrixEntries'
 import { getOutOfAreaCitySitemapEntries } from '@/lib/data/geo/getOutOfAreaCities'
 import { getListingSitemapRows } from '@/lib/data/sitemap/getListingSitemapRows'
 import { CO_EVENTS } from '@/data/co-events'
@@ -260,11 +265,40 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
   const supabase = createClient(supabaseUrl, supabaseKey)
   const dynamicPages: MetadataRoute.Sitemap = []
 
+  // ── the build deadline (SITE-54, 2026-09-09) ──────────────────────────────
+  //
+  // Every leg below is a database read, and until this change a single slow one
+  // could consume the route's entire maxDuration=300 budget. That is what
+  // happened: the per-city subdivision leg threw hundreds of 8s-bound queries at
+  // a database that was mid-REFRESH, and /sitemaps/geo.xml returned 504 'Task
+  // timed out after 300 seconds' twice on 2026-09-09 — no headers, no bytes, no
+  // log line naming the leg. A 504 tells Google nothing at all.
+  //
+  // So the legs share a deadline instead. A leg that overruns it resolves to its
+  // own empty fallback with a `[withTimeoutFallback:sitemap:<leg>]` warning
+  // naming it, every later leg gets the 1s floor and falls back fast, and the
+  // response is an HONEST PARTIAL that says in the log exactly what is missing.
+  // A partial sitemap is a smaller crawl map; a 504 is no crawl map.
+  //
+  // 210s leaves ~90s of the 300s ceiling for serialization and the response.
+  // SITEMAP_BUILD_BUDGET_MS overrides it for local measurement.
+  const buildBudgetMs = Number(process.env.SITEMAP_BUILD_BUDGET_MS ?? 210_000)
+  const deadlineAt = Date.now() + buildBudgetMs
+  /** Whatever is left of the shared budget, never less than 1s. */
+  const remainingMs = () => Math.max(1_000, deadlineAt - Date.now())
+  /** Run one leg under the shared deadline; on overrun, log and fall back. */
+  const leg = <T,>(label: string, work: Promise<T>, fallback: T): Promise<T> =>
+    withTimeoutFallback(work, fallback, remainingMs(), `sitemap:${label}`)
+
   try {
     // Cities — paginate to get ALL cities (Supabase caps at 1,000 per request)
-    const cityRows = await fetchAllRows<{ City?: string | null }>(
-      supabase, 'listings', 'City',
-      (q) => q.or(ACTIVE_STATUS_OR).not('City', 'is', null),
+    const cityRows = await leg(
+      'cities',
+      fetchAllRows<{ City?: string | null }>(
+        supabase, 'listings', 'City',
+        (q) => q.or(ACTIVE_STATUS_OR).not('City', 'is', null),
+      ),
+      [] as Array<{ City?: string | null }>,
     )
 
     const cities = Array.from(
@@ -276,6 +310,31 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
           // crawl + index 404'ing pages. Also scopes the per-city subdivision loop.
           .filter((city) => city.length > 0 && isCentralOregonCity(city))
       )
+    )
+
+    // The city x preset noindex decision, resolved ONCE (SITE-54, 2026-09-09).
+    //
+    // The loop below used to call getMatrixCityPresetNoIndex(key, preset) —
+    // one `await` per combo — for up to 24 cities x 45 presets = ~1,080 calls.
+    // getSearchMatrix() is React `cache()`-wrapped to dedupe within one call
+    // tree, but buildAllUrls() runs inside unstable_cache's revalidation
+    // context (lib/sitemap-class-rows.ts), which is not the request-scoped
+    // AsyncLocalStorage `cache()` dedupes against. Measured directly against
+    // production: each combo independently rebuilt the matrix
+    // (assembleSearchMatrix -> getSearchMatrixInventory, ~8.3s per rebuild —
+    // confirmed with a standalone timed read of listing_search_mv). At ~8.3s
+    // a combo, the first ~25 silently consumed the whole 210s leg budget and
+    // every combo after that hit the exhausted-budget 1s floor and still
+    // couldn't finish inside it — /sitemaps/geo.xml (which shares
+    // buildAllUrls with every class) never returned within maxDuration 300.
+    //
+    // getMatrixCityPresetDecisionSet() resolves the same matrix once; the
+    // loop then does a synchronous Set lookup per combo
+    // (matrixCityPresetNoIndexFromSet), same classification, same output.
+    const matrixCityPresetDecision = await leg(
+      'matrix-city-preset-decision',
+      getMatrixCityPresetDecisionSet(),
+      null as Awaited<ReturnType<typeof getMatrixCityPresetDecisionSet>>,
     )
 
     for (const city of cities) {
@@ -294,7 +353,10 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
       for (const preset of presetSlugs) {
         // W3.1: skip a {city}/{preset} combo with a VERIFIED zero city-wide count
         // (§0 — the search page noindexes it too; unknown states fail OPEN).
-        if (await getMatrixCityPresetNoIndex(key, preset)) continue
+        // Fails OPEN on a failed/never-resolved matrix read, exactly as
+        // before: an unknown inventory state emits the URL rather than
+        // silently dropping a live page from the sitemap.
+        if (matrixCityPresetNoIndexFromSet(matrixCityPresetDecision, key, preset)) continue
         dynamicPages.push({
           url: `${baseUrl}/homes-for-sale/${key}/${preset}`,
           lastModified: now,
@@ -327,23 +389,31 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // submitting 404s poisons the programmatic-page quality signal. The
     // neighborhood URLs are emitted below from the table the page resolves.
     //
-    // Pairs come from listing_tile_mv (indexed on city_lower), NOT the
-    // get_subdivision_status_counts RPC. That RPC's `TRIM("City") ILIKE
-    // TRIM(p_city)` forces a sequential scan of the 589K-row listings table
-    // per city (measured against production 2026-08-02: Bend 41.3s, Sisters
-    // 32.0s, Redmond 14.6s, 104.7s total for just eight cities, the root
-    // cause of the /sitemaps/*.xml 504s). The sitemap only needs the slugs of
-    // subdivisions that clear the lifetime floor, not the RPC's
-    // active/pending/closed split. See
-    // lib/data/subdivisions/subdivision-sitemap-inventory.ts for the
-    // classification this replicates and its one deliberate divergence
-    // (listing_tile_mv excludes internet-display-opted-out listings, which
-    // the RPC's raw-table scan does not).
+    // Pairs come from public.subdivision_city_inventory_mv — ONE filtered read
+    // of 2,216 pre-counted rows (the 24 Central Oregon city_lower values out of
+    // the MV's 6,885; measured 2026-09-09) in 929 ms cold (SITE-54).
+    //
+    // Two sources ago this was get_subdivision_status_counts(p_city), whose
+    // `TRIM("City") ILIKE TRIM(p_city)` forced a sequential scan of the
+    // 589K-row listings table per city (104.7s for eight cities, 2026-08-02).
+    // The fix for that read listing_tile_mv directly instead — correct, but it
+    // paged the whole HISTORY view per city through PostgREST (Bend ~129,192
+    // rows, 32.7s for the 24-city set) against an 8s statement timeout, while
+    // pg_cron job 164 holds that view under REFRESH ... CONCURRENTLY for 13-21
+    // minutes of every 30-minute slot overnight. Grouped by query_id over 24h
+    // it was the single largest statement-timeout source on the database
+    // (19,655 + 1,136), it took listing detail, tiles and blog down with it
+    // through the connection pool, and it is why /sitemaps/geo.xml returned
+    // 504 'Task timed out after 300 seconds' twice on 2026-09-09.
+    //
+    // The aggregate now happens once a night inside the MV. Same rows, same
+    // classification (classifyLifetimeBuckets), same floor, same output set —
+    // see lib/data/subdivisions/getSubdivisionCityInventory.ts.
     const subdivisionCitySlugs = [...CENTRAL_OREGON_CITY_SLUGS]
-    const subdivisionSlugsByCity = await getSubdivisionBrowseSlugsByCity(
-      supabase,
-      subdivisionCitySlugs,
-      SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS,
+    const subdivisionSlugsByCity = await leg(
+      'subdivision-browse-pairs',
+      getSubdivisionBrowsePairsByCity(subdivisionCitySlugs, SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS),
+      new Map<string, string[]>(),
     )
     for (const [citySlug, subSlugs] of subdivisionSlugsByCity) {
       for (const subSlug of subSlugs) {
@@ -361,7 +431,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // lib/data/subdivisions/subdivision-index.test.ts). Distinct from the
     // browse-pair floor above: detail pages carry the sold-history section, so
     // they earn indexation with real sold depth, not a listing trickle.
-    const indexableSubdivisions = await getIndexableSubdivisions()
+    const indexableSubdivisions = await leg('indexable-subdivisions', getIndexableSubdivisions(), [])
     for (const url of subdivisionSitemapUrls(indexableSubdivisions, baseUrl)) {
       dynamicPages.push({
         url,
@@ -373,7 +443,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
 
     // Neighborhood pages — /cities/{city}/{neighborhood} resolves ONLY for
     // rows in the neighborhoods table; emit exactly those.
-    const neighborhoodRows = await getAllNeighborhoodsWithCity()
+    const neighborhoodRows = await leg('neighborhoods', getAllNeighborhoodsWithCity(), [])
     for (const n of neighborhoodRows) {
       const cityRel = Array.isArray(n.cities) ? n.cities[0] : n.cities
       const citySlug = cityRel?.slug
@@ -394,17 +464,23 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // URLs for curated geos, emitted only with >= 1 verified active listing AND
     // depth content. Returns [] when the cached inventory read fails, so a
     // transient DB error thins the sitemap instead of fabricating entries.
-    dynamicPages.push(...(await getSearchMatrixSitemapEntries(baseUrl, now)))
+    dynamicPages.push(
+      ...(await leg('search-matrix', getSearchMatrixSitemapEntries(baseUrl, now), [])),
+    )
 
     // Out-of-area referral-tier city pages (W12) — only the indexable top set
     // (>= 5 active listings, top 25 by active count); every other out-of-area
     // city renders noindex and is never emitted.
-    dynamicPages.push(...(await getOutOfAreaCitySitemapEntries()))
+    dynamicPages.push(...(await leg('out-of-area-cities', getOutOfAreaCitySitemapEntries(), [])))
 
     // Team members
-    const brokers = await fetchAllRows<{ slug: string; updated_at?: string }>(
-      supabase, 'brokers', 'slug, updated_at',
-      (q) => q.eq('is_active', true),
+    const brokers = await leg(
+      'brokers',
+      fetchAllRows<{ slug: string; updated_at?: string }>(
+        supabase, 'brokers', 'slug, updated_at',
+        (q) => q.eq('is_active', true),
+      ),
+      [] as Array<{ slug: string; updated_at?: string }>,
     )
 
     for (const b of brokers) {
@@ -421,7 +497,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // 7,586 rows / 5,827 unique keys on 2026-08-19, so 1,759 live listings
     // never reached listings.xml. Paths use listingTileHref so locs match
     // the listing-page canonical.
-    const listingRows = await getListingSitemapRows(now)
+    const listingRows = await leg('listing-rows', getListingSitemapRows(now), [])
     for (const r of listingRows) {
       dynamicPages.push({
         url: `${baseUrl}${r.path}`,
@@ -432,9 +508,13 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     }
 
     // ZIP codes — paginate
-    const zipRows = await fetchAllRows<{ PostalCode?: string | null }>(
-      supabase, 'listings', 'PostalCode',
-      (q) => q.or(ACTIVE_STATUS_OR).not('PostalCode', 'is', null),
+    const zipRows = await leg(
+      'zips',
+      fetchAllRows<{ PostalCode?: string | null }>(
+        supabase, 'listings', 'PostalCode',
+        (q) => q.or(ACTIVE_STATUS_OR).not('PostalCode', 'is', null),
+      ),
+      [] as Array<{ PostalCode?: string | null }>,
     )
 
     const zips = Array.from(
@@ -454,9 +534,13 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     }
 
     // Blog posts — paginate
-    const posts = await fetchAllRows<{ slug: string; published_at?: string | null }>(
-      supabase, 'blog_posts', 'slug, published_at',
-      (q) => q.eq('status', 'published'),
+    const posts = await leg(
+      'blog-posts',
+      fetchAllRows<{ slug: string; published_at?: string | null }>(
+        supabase, 'blog_posts', 'slug, published_at',
+        (q) => q.eq('status', 'published'),
+      ),
+      [] as Array<{ slug: string; published_at?: string | null }>,
     )
 
     for (const p of posts) {
@@ -472,8 +556,12 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
 
     // Market reports — restored 2026-06-01 (the HTTP 500 was jsdom failing to
     // load in serverless; fixed in lib/sanitize.ts, pages now 200).
-    const reports = await fetchAllRows<{ slug: string; created_at?: string | null }>(
-      supabase, 'market_reports', 'slug, created_at',
+    const reports = await leg(
+      'market-reports',
+      fetchAllRows<{ slug: string; created_at?: string | null }>(
+        supabase, 'market_reports', 'slug, created_at',
+      ),
+      [] as Array<{ slug: string; created_at?: string | null }>,
     )
     for (const r of reports) {
       dynamicPages.push({
