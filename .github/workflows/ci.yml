@@ -315,7 +315,10 @@ jobs:
 
       # Run E2E tests (critical flows only — visual regression needs baselines)
       - name: Run E2E tests
-        run: npx playwright test e2e/critical-flows.spec.ts --project=chromium
+        # gate-tap-targets exercises scripts/check-tap-targets.mjs's in-page
+        # collector in a real Chromium; it needs a layout engine, which only
+        # this lane installs. It sets its own content and never navigates.
+        run: npx playwright test e2e/critical-flows.spec.ts e2e/gate-tap-targets.spec.ts --project=chromium
 
       # Upload test artifacts on failure
       - name: Upload test results
