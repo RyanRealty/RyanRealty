@@ -72,7 +72,7 @@ function dist2(
   return dLat * dLat + dLng * dLng
 }
 
-function rivalFitsSubject(
+export function rivalFitsSubject(
   r: CmaBandRival,
   subject?: { beds?: number | null; sqft?: number | null } | null,
 ): boolean {
@@ -257,6 +257,8 @@ export function competitionSentence(input: {
   activeCount: number
   pendingCount: number
   shown: number
+  /** True when the homes drawn were narrowed to ones like the subject. */
+  likeYours?: boolean
 }): string {
   const bits = [
     `${int(input.activeCount)} home${input.activeCount === 1 ? ' is' : 's are'} for sale between ${usd(input.lo)} and ${usd(input.hi)}.`,
@@ -441,6 +443,8 @@ export function competitionAreaSentence(input: {
   activeCount: number
   pendingCount: number
   shown: number
+  /** True when the homes drawn were narrowed to ones like the subject. */
+  likeYours?: boolean
 }): string {
   const where = compAreaIn(input.area)
   if (input.activeCount === 0 && input.pendingCount === 0) {
@@ -457,7 +461,15 @@ export function competitionAreaSentence(input: {
       : 'None are under contract right now.',
   ]
   if (input.shown > 0 && input.shown < input.activeCount + input.pendingCount) {
-    bits.push(`The nearest ${countWord(input.shown)} are below.`)
+    // "like yours" when the pick narrowed: the counts above are every home in
+    // the band, the cards below are the ones at the subject's bed count and
+    // within 25% of its size. Without the qualifier the sentence says the
+    // nearest of one set and then draws another (§0).
+    bits.push(
+      `The nearest ${countWord(input.shown)}${input.likeYours ? ' like yours' : ''} ${
+        input.shown === 1 ? 'is' : 'are'
+      } below.`,
+    )
   }
   return bits.join(' ')
 }
@@ -495,6 +507,7 @@ export function buildBandRivalSet(input: {
   asOfIso?: string | null
 }): CmaBandRivalSet {
   const rivals = pickBandRivals(input.rivals, input.subject ?? null, input.cap ?? BAND_RIVAL_CAP)
+  const likeYours = input.rivals.some((r) => rivalFitsSubject(r, input.subject ?? null))
   return {
     area: input.area,
     lo: input.lo,
@@ -509,6 +522,7 @@ export function buildBandRivalSet(input: {
       activeCount: input.activeCount,
       pendingCount: input.pendingCount,
       shown: rivals.length,
+      likeYours,
     }),
     source: competitionAreaSourceLine({
       area: input.area,

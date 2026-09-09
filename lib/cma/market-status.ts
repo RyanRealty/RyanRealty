@@ -251,7 +251,7 @@ export function peerMatchesSubject(
   return false
 }
 
-function peerFitsSubject(
+export function peerFitsSubject(
   row: CmaMarketAreaRow,
   subject: Pick<CmaSubject, 'beds' | 'sqft'>,
 ): boolean {
@@ -614,6 +614,16 @@ export type CmaExpiredPeerSet = {
   /** The window it had to open to, or null when the tightest one already held three. */
   widenedTo: number | null
   count: number
+  /** Every unsold home inside the area, the band and the window, one per address. */
+  areaTotal: number
+  /**
+   * How many the sentence claims: `areaTotal`, or the subset like the subject
+   * when the pick narrowed to those. `count` is what the document PRINTS, and
+   * it is capped, so the sentence must never be built on it (§0).
+   */
+  found: number
+  /** True when the printed peers were narrowed to homes like the subject. */
+  likeYours: boolean
   /** True when even 24 months inside the area holds fewer than three. */
   shortfall: boolean
   sentence: string
@@ -715,11 +725,33 @@ export function buildExpiredPeerSet(input: {
   const windows = [...EXPIRED_PEER_WINDOWS]
   let windowMonths = windows[windows.length - 1]!
   let peers: CmaExpiredPeer[] = []
+  let areaTotal = 0
+  let found = 0
+  let likeYours = false
   const tried: number[] = []
   for (const w of windows) {
     tried.push(w)
     const inWindow = dated.filter((x) => x.months <= w).map((x) => x.row)
     peers = pickExpiredPeers(inWindow, input.subject, cap)
+    // How many homes came off in the area at all, one per address, subject
+    // excluded. The narrowed set is what the document prints; this is what the
+    // sentence would otherwise silently claim to be counting.
+    // What the SENTENCE counts. `peers` is capped at five columns, so a
+    // sentence built on its length would say five homes came off the market
+    // in a neighborhood where seven did. These mirror pickExpiredPeers' own
+    // pool rule: the homes like the subject when there are any, else all.
+    const key = (r: CmaMarketAreaRow) =>
+      normalizePeerAddress(peerAddress(r)) || String(r.ListingKey ?? '')
+    const eligible = inWindow.filter(
+      (r) =>
+        !isSubjectExpiredRow(r, input.subject) &&
+        peerAddress(r).length > 0 &&
+        Number(r.ListPrice) > 0,
+    )
+    areaTotal = new Set(eligible.map(key).filter((k) => k.length > 0)).size
+    const similar = eligible.filter((r) => peerFitsSubject(r, input.subject))
+    likeYours = similar.length > 0
+    found = likeYours ? new Set(similar.map(key).filter((k) => k.length > 0)).size : areaTotal
     windowMonths = w
     if (peers.length >= EXPIRED_PEER_MIN) break
   }
@@ -735,8 +767,18 @@ export function buildExpiredPeerSet(input: {
     windowsTried: tried,
     widenedTo,
     count,
+    areaTotal,
+    found,
+    likeYours,
     shortfall,
-    sentence: peerSetSentence({ area: input.area, count, windowMonths, shortfall }),
+    sentence: peerSetSentence({
+      area: input.area,
+      count,
+      found,
+      windowMonths,
+      shortfall,
+      likeYours,
+    }),
     peers: withWhy,
   }
 }
@@ -744,22 +786,51 @@ export function buildExpiredPeerSet(input: {
 function peerSetSentence(input: {
   area: CompArea
   count: number
+  found: number
   windowMonths: number
   shortfall: boolean
+  likeYours: boolean
 }): string {
   const where = compAreaIn(input.area)
   const w = monthsWord(input.windowMonths)
-  if (input.count === 0) {
-    return `No home ${where} came off the market without selling in the last ${w} months.`
+  // "like yours" is not decoration: the peers are narrowed to the subject's
+  // bedroom count and within 25% of its size, so a bare "three homes in X" —
+  // over an area that may hold thirty unsold listings — would be a count of
+  // one set attached to the name of another (§0).
+  const like = input.likeYours ? ' like yours' : ''
+  const n = input.found
+  if (n === 0) {
+    return `No home${like} ${where} came off the market without selling in the last ${w} months.`
   }
-  const homes = `${countWord(input.count)} ${input.count === 1 ? 'home' : 'homes'}`
+  // The columns are capped; the sentence is not. Say how many were found and
+  // then say how many of them are drawn below.
+  const shown =
+    input.count > 0 && input.count < n
+      ? ` The ${countWord(input.count)} closest to your home ${input.count === 1 ? 'is' : 'are'} below.`
+      : ''
+  const homes = `${countWord(n)} ${n === 1 ? 'home' : 'homes'}${like}`
   if (!input.shortfall) {
-    const head = `${countWord(input.count, true)} ${input.count === 1 ? 'home' : 'homes'}`
-    return `${head} ${where} came off the market without selling in the last ${w} months.`
+    const head = `${countWord(n, true)} ${n === 1 ? 'home' : 'homes'}${like}`
+    return `${head} ${where} came off the market without selling in the last ${w} months.${shown}`
   }
   // Fewer than three even at the widest window. Say the number, say the
   // window, and say plainly that nothing was brought in from outside.
   const outside =
     input.area.kind === 'radius' ? 'further out' : `outside ${compAreaPhrase(input.area)}`
   return `Only ${homes} ${where} came off the market without selling in the last ${w} months, and nothing from ${outside} was added to make up the number.`
+}
+
+/**
+ * Median close $/sqft over the sales that set the price — the benchmark
+ * `whyItSat` measures a failed home's last ask against. Raw close price over
+ * size, not the time-adjusted figure: the comparison is to what buyers
+ * actually paid, not to what the grid restated those sales as.
+ */
+export function keptCompMedianPpsf(
+  comps: readonly { closePrice: number; sqft: number }[],
+): number | null {
+  const values = comps
+    .filter((c) => c.closePrice > 0 && c.sqft > 0)
+    .map((c) => c.closePrice / c.sqft)
+  return median(values)
 }

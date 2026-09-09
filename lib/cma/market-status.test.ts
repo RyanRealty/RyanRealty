@@ -4,6 +4,7 @@ import {
   computeMarketArea,
   marketAreaPriceBand,
   buildExpiredPeerSet,
+  keptCompMedianPpsf,
   pickExpiredPeers,
   similarBedRange,
   type CmaExpiredPeer,
@@ -731,7 +732,7 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     expect(set.shortfall).toBe(false)
     expect(set.peers.map((p) => p.address)).toEqual(['10 Aspen', '20 Birch', '30 Cedar'])
     expect(set.sentence).toBe(
-      'Three homes in Diamond Bar Ranch came off the market without selling in the last six months.',
+      'Three homes like yours in Diamond Bar Ranch came off the market without selling in the last six months.',
     )
   })
 
@@ -745,7 +746,7 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     expect(set.windowMonths).toBe(3)
     expect(set.widenedTo).toBeNull()
     expect(set.sentence).toBe(
-      'Three homes in Diamond Bar Ranch came off the market without selling in the last three months.',
+      'Three homes like yours in Diamond Bar Ranch came off the market without selling in the last three months.',
     )
   })
 
@@ -758,8 +759,11 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     })
     expect(set.windowMonths).toBe(24)
     expect(set.count).toBe(2)
+    expect(set.areaTotal).toBe(2)
+    expect(set.found).toBe(2)
+    expect(set.likeYours).toBe(true)
     expect(set.shortfall).toBe(true)
-    expect(set.sentence).toContain('two homes in Diamond Bar Ranch')
+    expect(set.sentence).toContain('two homes like yours in Diamond Bar Ranch')
     expect(set.sentence).toContain('nothing from outside Diamond Bar Ranch was added')
   })
 
@@ -829,5 +833,73 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       asOf: ASOF,
     })
     expect(set.peers[0]!.whyItSat).toBeNull()
+  })
+})
+
+describe('keptCompMedianPpsf', () => {
+  it('is the median close price over size, and null when nothing is measurable', () => {
+    expect(
+      keptCompMedianPpsf([
+        { closePrice: 300_000, sqft: 1000 },
+        { closePrice: 440_000, sqft: 1100 },
+        { closePrice: 700_000, sqft: 2000 },
+      ]),
+    ).toBe(350)
+    expect(keptCompMedianPpsf([{ closePrice: 300_000, sqft: 0 }])).toBeNull()
+    expect(keptCompMedianPpsf([])).toBeNull()
+  })
+})
+
+describe('the peer sentence counts what was found, not what is drawn', () => {
+  const AREA: CompArea = {
+    kind: 'neighborhood',
+    names: ['River West'],
+    radiusMiles: null,
+    centre: { lat: 44.0645, lng: -121.3237 },
+    source: 'test',
+    sentence: 'River West, the neighborhood around your home.',
+  }
+  const ASOF = new Date('2026-09-08T12:00:00.000Z')
+
+  it('says seven came off and five are below, never five came off', () => {
+    const rows = Array.from({ length: 7 }, (_, i) =>
+      row({
+        ListingKey: `K${i}`,
+        StreetNumber: String(100 + i),
+        StreetName: 'Portland',
+        StandardStatus: 'Canceled',
+        ListPrice: 900_000 + i * 1000,
+        ClosePrice: null,
+        CloseDate: null,
+        BedroomsTotal: 4,
+        TotalLivingAreaSqFt: 2400,
+        SubdivisionName: null,
+        status_change_timestamp: '2026-08-20',
+        OnMarketDate: '2026-05-01',
+      }),
+    )
+    const set = buildExpiredPeerSet({
+      rows,
+      // Nothing in the set matches three beds at 1,200 sqft, so the pick is
+      // not narrowed and the sentence may not say "like yours".
+      subject: {
+        beds: 3,
+        sqft: 1200,
+        latitude: 44.0645,
+        longitude: -121.3237,
+        listingKey: 'SUBJ',
+        mlsNumber: '1',
+        streetAddress: '1617 NW 8th',
+      },
+      area: AREA,
+      asOf: ASOF,
+    })
+    expect(set.areaTotal).toBe(7)
+    expect(set.found).toBe(7)
+    expect(set.likeYours).toBe(false)
+    expect(set.count).toBe(5)
+    expect(set.sentence).toBe(
+      'Seven homes in River West came off the market without selling in the last three months. The five closest to your home are below.',
+    )
   })
 })

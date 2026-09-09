@@ -293,7 +293,7 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
     })
     expect(set.area).toBe(OLD_BEND)
     expect(set.sentence).toBe(
-      '27 homes are for sale in Old Bend between $350,000 and $428,000. 14 are under contract. The nearest three are below.',
+      '27 homes are for sale in Old Bend between $350,000 and $428,000. 14 are under contract. The nearest three like yours are below.',
     )
     expect(set.rivals.map((r) => r.address)).toEqual(['10 Aspen', '20 Birch', '30 Cedar'])
   })

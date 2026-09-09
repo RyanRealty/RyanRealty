@@ -108,7 +108,7 @@ export function areaFilterTrace(area: CompArea): string {
       }`
     }
     case 'radius':
-      return `within ${area.radiusMiles} miles of ${area.centre?.lat.toFixed(5)}, ${area.centre?.lng.toFixed(5)} (bbox, then great-circle distance per row)`
+      return `within ${area.radiusMiles} mi of ${area.centre?.lat.toFixed(5)}, ${area.centre?.lng.toFixed(5)} (bbox, then great-circle distance per row)`
     case 'city':
       return `City = '${area.names[0] ?? ''}'`
   }

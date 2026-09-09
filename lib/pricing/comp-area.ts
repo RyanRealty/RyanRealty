@@ -322,7 +322,7 @@ export function buildCompArea(input: {
       radiusMiles,
       centre,
       source: trace(
-        `no subdivision or boundary rung bounds the printed set, so the area is the widest distance cap a printed sale came under: ${radiusMiles} miles`,
+        `no subdivision or boundary rung bounds the printed set, so the area is the widest distance cap a printed sale came under: ${milesPhrase(radiusMiles)}`,
       ),
     }
     return { ...base, sentence: areaSentence(base, subjectSubdivision) }
@@ -410,8 +410,10 @@ export function resolveCompetitionArea(input: {
     names: [],
     radiusMiles,
     centre,
-    source: `competition: the subject is outside every mapped neighborhood or community polygon, so the area is a ${radiusMiles}-mile radius — the wider of the comp search's own cap (${
-      input.compArea.radiusMiles ?? 'none'
+    source: `competition: the subject is outside every mapped neighborhood or community polygon, so the area is a radius of ${milesPhrase(
+      radiusMiles,
+    )} — the wider of the comp search's own cap (${
+      input.compArea.radiusMiles != null ? milesPhrase(input.compArea.radiusMiles) : 'none'
     }) and the ${measured.toFixed(2)}-mile distance to the farthest sale behind the price`,
   }
   return { ...base, sentence: areaSentence(base, null) }
