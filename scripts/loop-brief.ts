@@ -20,7 +20,7 @@ import { DOMAIN_REQUIRED_READS, type CompanyImprovementDomain } from '../lib/dat
 import { runFleetIntake } from '../lib/data/loop/fleet-intake-core'
 import { collectCompanyScoreboardSignals } from '../lib/data/loop/signals'
 import { formatPunchSliceBrief, selectShipClass } from '../lib/data/loop/ship-class'
-import { fleetNodePriority, isMeasurementWindowDue, isSiteClaim, isStaleInProgress, MAX_SITE_WORKERS, SITE_CLAIM_IDLE_HOURS, STALE_IN_PROGRESS_DAYS, type WorkNodeState } from '../lib/data/loop/work-node'
+import { siteServeTier, isMeasurementWindowDue, isSiteClaim, isStaleInProgress, MAX_SITE_WORKERS, SITE_CLAIM_IDLE_HOURS, STALE_IN_PROGRESS_DAYS, type WorkNodeState } from '../lib/data/loop/work-node'
 import { execFileSync } from 'node:child_process'
 import { reconcileShips, formatReconcileReport } from '../lib/data/loop/ship-reconcile'
 import { classifyFeed, formatSilentZeroReport } from '../lib/data/loop/silent-zero'
@@ -196,7 +196,7 @@ async function main() {
     .filter((n) => n.state === 'open' && n.depends_on.every((d) => doneIds.has(d)))
     .sort(
       (a, b) =>
-        fleetNodePriority(a.title) - fleetNodePriority(b.title) ||
+        siteServeTier(a.version_gap ?? null, a.title) - siteServeTier(b.version_gap ?? null, b.title) ||
         gapOrder(a.version_gap) - gapOrder(b.version_gap),
     )
 

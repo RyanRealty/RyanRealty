@@ -11,7 +11,7 @@
  */
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'
-import { MAX_SITE_CLAIMS_PER_SESSION, MAX_SITE_WORKERS, SITE_CLAIM_IDLE_HOURS } from '../lib/data/loop/work-node'
+import { MAX_SITE_CLAIMS_PER_SESSION, MAX_SITE_WORKERS, SITE_CLAIM_IDLE_HOURS, siteServeTier } from '../lib/data/loop/work-node'
 
 config({ path: '.env.local' })
 
@@ -219,9 +219,16 @@ async function main() {
   const doneIds = new Set(rows.filter((r) => r.state === 'done').map((r) => r.id))
   const gapOf = (id: string) => byId.get(id)?.version_gap ?? id.slice(0, 8)
 
+  // Serve order (Matt 2026-09-09): tier from siteServeTier, then oldest first. The
+  // routine claims the first eligible items in this order, so the JSON and the
+  // table print it rather than a gap-number sort.
   const view = rows
     .slice()
-    .sort((a, b) => String(a.version_gap).localeCompare(String(b.version_gap), 'en', { numeric: true }))
+    .sort(
+      (a, b) =>
+        siteServeTier(a.version_gap, a.title) - siteServeTier(b.version_gap, b.title) ||
+        Date.parse(a.created_at) - Date.parse(b.created_at),
+    )
     .map((r) => {
       const waits = r.depends_on.filter((d) => !doneIds.has(d)).map(gapOf)
       const eligible = r.state === 'open' && waits.length === 0
@@ -239,13 +246,13 @@ async function main() {
       }
       if (r.state === 'done') note = oneLine(r.evidence)
       if (r.state === 'killed') note = oneLine(r.blocked_reason)
-      return { gap: r.version_gap ?? '-', state: r.state, moved: ago(r.updated_at, now), title: r.title, note, eligible, owner: r.owner_session, stale }
+      return { gap: r.version_gap ?? '-', state: r.state, moved: ago(r.updated_at, now), title: r.title, note, eligible, owner: r.owner_session, stale, tier: siteServeTier(r.version_gap, r.title) }
     })
 
   if (process.argv.includes('--json')) {
     const liveWorkers = new Set(view.filter((v) => v.state === 'in_progress' && !v.stale).map((v) => v.owner ?? '?')).size
     const staleClaims = view.filter((v) => v.state === 'in_progress' && v.stale).map((v) => v.gap)
-    console.log(JSON.stringify({ readAt: now.toISOString(), liveWorkers, staleClaims, maxWorkers: MAX_SITE_WORKERS, items: view }, null, 2))
+    console.log(JSON.stringify({ readAt: now.toISOString(), serveOrder: 'items are in serve order: tier (fleet p0, fleet major, round three + SITE-31, the rest; Matt 2026-09-09) then oldest first', liveWorkers, staleClaims, maxWorkers: MAX_SITE_WORKERS, items: view }, null, 2))
     return
   }
 
@@ -254,7 +261,7 @@ async function main() {
   console.log(`SITE QUEUE — ${view.length} items · ${Object.entries(counts).map(([k, n]) => `${k} ${n}`).join(' · ')} · read ${now.toISOString().slice(0, 16)}Z`)
   console.log(`next served: ${next ? `${next.gap} ${oneLine(next.title, 80)}` : 'nothing eligible'}`)
   console.log('')
-  console.log('gap       state        moved  item')
+  console.log('gap       state        moved  item  (serve order: round three + SITE-31 first, then oldest; Matt 2026-09-09)')
   for (const v of view) {
     console.log(`${v.gap.padEnd(9)} ${v.state.padEnd(12)} ${v.moved.padStart(5)}  ${oneLine(v.title, 90)}`)
     if (v.note) console.log(`${''.padEnd(29)}${v.note}`)

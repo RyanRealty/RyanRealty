@@ -60,6 +60,21 @@ export function assertTransition(from: WorkNodeState, to: WorkNodeState): void {
  * outrank planned gap work: a p0 (money path broken / wrong public number)
  * beats everything, a major beats gap order. Lower = served first.
  */
+/**
+ * Serve order for the site queue (Matt 2026-09-09, asked and answered): a fleet p0 or
+ * major still comes first; then round three, the taste-sourced primitive nodes
+ * SITE-40..53, and SITE-31 (the eleven guides) ahead of everything else; then the
+ * rest, oldest first. The brief, scripts/site-queue-status.ts and the cloud routine
+ * all read this one function, so "what is served next" has one answer. Lower = first.
+ */
+export function siteServeTier(versionGap: string | null | undefined, title: string): number {
+  const fleet = fleetNodePriority(title)
+  if (fleet < 2) return fleet
+  const g = versionGap ?? ''
+  if (g === 'SITE-31' || /^SITE-(4\d|5[0-3])$/.test(g)) return 2
+  return 3
+}
+
 export function fleetNodePriority(title: string): number {
   if (title.startsWith('Fleet finding [p0]') || title.startsWith('Matt ADD [p0]') || title.startsWith('Matt CHANGE [p0]')) {
     return 0
