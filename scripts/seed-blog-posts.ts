@@ -1,6 +1,7 @@
 /**
  * Seed blog posts into the database.
- * Run: npx tsx scripts/seed-blog-posts.ts
+ * Run: npx tsx scripts/seed-blog-posts.ts            (every seed file)
+ *      npx tsx scripts/seed-blog-posts.ts --only <file-without-.ts>   (one file)
  * Requires SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL in env or .env.local.
  *
  * Idempotent: uses upsert on slug. Safe to run multiple times.
@@ -56,9 +57,26 @@ export type BlogPostSeed = {
 }
 
 async function seedPosts() {
-  // Dynamically import all post files
+  // Dynamically import all post files — or only the ones named with --only.
+  // Every upsert REPLACES the whole row on its slug, so seeding every file
+  // rewrites every post from its seed, including rows edited live since (Broken
+  // Top, 2026-09-07). `--only community-guides-2026-09` seeds one file's posts
+  // and leaves the rest of the table alone (SITE-31, 2026-09-09).
   const contentDir = path.resolve(__dirname, 'blog-content')
-  const files = fs.readdirSync(contentDir).filter((f) => f.endsWith('.ts') && f !== 'index.ts')
+  const onlyArg = process.argv.indexOf('--only')
+  const only = onlyArg >= 0 ? process.argv[onlyArg + 1] : null
+  if (onlyArg >= 0 && !only) {
+    console.error('--only needs a file name (without .ts), e.g. --only community-guides-2026-09')
+    process.exit(2)
+  }
+  const files = fs
+    .readdirSync(contentDir)
+    .filter((f) => f.endsWith('.ts') && f !== 'index.ts')
+    .filter((f) => !only || f === `${only}.ts` || f === only)
+  if (only && files.length === 0) {
+    console.error(`--only ${only}: no such file in scripts/blog-content/`)
+    process.exit(2)
+  }
 
   let allPosts: BlogPostSeed[] = []
   for (const file of files) {
