@@ -32,12 +32,22 @@ const strip = src('components/site/listing-detail/PriceCtaStrip.tsx')
 // its ListPrice is rent and there is no sale ask to print. 735 Purcell (MLS
 // 220174840) published an H1 of "$3" off a $2.50/sq ft lease rate. The strip
 // must use the SALE-aware publisher, not the bare one.
+//
+// EXTENDED 2026-09-08 (SITE-20). The sale-aware publisher is now reached
+// through the STATUS-aware one, which chooses ClosePrice over ListPrice for a
+// Closed row. The strip used to make that choice itself with a hand-written
+// ternary, and it was the only surface on the page that made it — so the H1
+// read $1,100,000 while the meta description, og:description, JSON-LD
+// description, hero caption and map card all read $1,250,000 on 55550 Heidi
+// Court (MLS 220219603). The ternary may not come back: a second copy of the
+// branch is how the surfaces disagreed in the first place.
 checks.push({
-  label: 'PriceCtaStrip H1 and drop gate through publishListingSaleAsk / Drop + Price exact',
+  label: 'PriceCtaStrip H1 and drop gate through publishListingPublishedPrice / Drop + Price exact',
   ok:
-    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(strip) &&
-    /publishListingSaleAsk\(\{[^}]*propertyType:/s.test(strip) &&
+    /from ['"]@\/lib\/listing\/publish-listing-published-price['"]/.test(strip) &&
+    /publishListingPublishedPrice\(\{[^}]*status: listing\.status[^}]*closePrice: listing\.closePrice/s.test(strip) &&
     /publishListingDrop\(/.test(strip) &&
+    !/isClosed \? listing\.closePrice : listing\.listPrice/.test(strip) &&
     strip.includes('<Price value={headlinePrice} exact />') &&
     strip.includes('<Price value={publishedDrop.drop} exact />'),
 })
@@ -55,11 +65,88 @@ const ld = src('app/listing/[listingKey]/listing-json-ld.ts')
 checks.push({
   label: 'listing JSON-LD offer uses the published whole-property price (exact, or withheld)',
   ok:
-    /publishListingSaleAsk\(\{[^}]*propertyType:/s.test(page) &&
-    /publishWholePropertyAmount\(\{[^}]*propertySubType:/s.test(page) &&
+    /publishListingPublishedPrice\(\{[^}]*propertyType:/s.test(page) &&
+    /publishListingPublishedWholePropertyPrice\(\{[^}]*propertySubType:/s.test(page) &&
     /wholePropertyPrice,/.test(page) &&
     /listPrice: wholePropertyPrice \?\? undefined/.test(ld) &&
     !/listPrice: listing\.listPrice/.test(ld),
+})
+
+// ─── SITE-20: the status branch, and the surfaces that must not lose it ─────
+//
+// Verified live 2026-09-08 on https://ryan-realty.com/listing/220219603
+// (55550 Heidi Court, Bend — Closed, listed $1,250,000, closed $1,100,000):
+// generateMetadata had no status branch, so <meta name=description>,
+// og:description and the RealEstateListing description all carried the ask;
+// the <title> carried only the address; and because buildOffer correctly drops
+// the Offer for a Closed row, the emitted node had no availability at all — so
+// nothing machine-readable said the home had sold. The on-media hero caption
+// and the map card followed the same unbranched value.
+//
+// Scale, measured 2026-09-08: Search Console page rows 2026-06-08..2026-09-05
+// grouped by trailing 9-digit MLS id and joined to `listings` on ListNumber —
+// 1,714 Closed ids drew impressions, 1,713 carry both figures, and 1,288 of
+// those have ListPrice != ClosePrice.
+//
+// These five checks fail the moment the branch is removed from any one of the
+// surfaces that carried the defect.
+const publisher = src('lib/listing/publish-listing-published-price.ts')
+checks.push({
+  label: 'SITE-20 the publisher branches on status and never falls back to the ask',
+  ok:
+    /export function publishListingPublishedPrice/.test(publisher) &&
+    /export function publishListingPublishedWholePropertyPrice/.test(publisher) &&
+    /export function publishListingStatusWord/.test(publisher) &&
+    /export function publishListingSchemaAvailability/.test(publisher) &&
+    /listingPublishesClosePrice\(input\.status\) \? input\.closePrice : input\.listPrice/.test(
+      publisher,
+    ) &&
+    // A Closed row with no ClosePrice publishes nothing. `closePrice ?? listPrice`
+    // would quietly reinstate the exact figure this item removed.
+    !/input\.closePrice \?\? input\.listPrice/.test(publisher) &&
+    publisher.includes('https://schema.org/SoldOut') &&
+    publisher.includes('https://schema.org/OutOfStock'),
+})
+
+checks.push({
+  label: 'SITE-20 generateMetadata prefixes the status word on the title and the description',
+  ok:
+    /publishListingStatusWord\(listing\.status\)/.test(page) &&
+    /statusWord \? `\$\{statusWord\} · \$\{addressTitle\}` : addressTitle/.test(page) &&
+    /statusWord,/.test(page),
+})
+
+checks.push({
+  label: 'SITE-20 the structured-data description carries the status word too',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-listing-published-price['"]/.test(ld) &&
+    /statusWord: publishListingStatusWord\(listing\.status\)/.test(ld),
+})
+
+// The RealEstateListing NODE states availability whether or not an Offer is
+// emitted beside it. Before this, an off-market listing published a price, a
+// description and no statement at all of what it was.
+const jsonLd = src('lib/site/json-ld.ts')
+checks.push({
+  label: 'SITE-20 the RealEstateListing node emits availability, not only the Offer',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-listing-published-price['"]/.test(jsonLd) &&
+    /availability: publishListingSchemaAvailability\(input\.availability\) \?\? undefined/.test(
+      jsonLd,
+    ) &&
+    /offers: buildOffer\(input\.listPrice, input\.availability\)/.test(jsonLd),
+})
+
+// The two in-page figures the node named: the on-media hero caption
+// (ListingHero price) and the map card (ListingLocationMap price). Both take
+// `publishedSaleAsk`, which is now the status-aware figure — so the assertion
+// is that neither has been re-pointed at a raw listPrice.
+checks.push({
+  label: 'SITE-20 the hero caption and the map card take the status-aware published price',
+  ok:
+    /const publishedSaleAsk = publishListingPublishedPrice\(\{/.test(page) &&
+    (page.match(/price=\{publishedSaleAsk\}/g) ?? []).length >= 2 &&
+    !/price=\{listing\.listPrice\}/.test(page),
 })
 
 // PlaceMapListSplit left with the KB register (2026-08-26). The place-page

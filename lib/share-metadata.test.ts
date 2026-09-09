@@ -129,6 +129,31 @@ describe('share-metadata', () => {
       const result = listingShareSummary({ price: 0 })
       expect(result).not.toContain('$0')
     })
+
+    // SITE-20: the snippet is read by a person scanning a SERP, so the status
+    // word leads. 55550 Heidi Court shipped "$1,250,000 · 3 bed …" for a home
+    // that sold for $1,100,000, with nothing saying it had sold.
+    it('leads with the status word when the listing is off market', () => {
+      const result = listingShareSummary({
+        price: 1_100_000,
+        statusWord: 'Sold',
+        beds: 3,
+        baths: 3,
+        sqft: 3174,
+        address: '55550 Heidi Court, Bend, OR 97707',
+      })
+      expect(result).toBe('Sold $1,100,000 · 3 bed, 3 bath · 3,174 sq ft · 55550 Heidi Court, Bend, OR 97707')
+    })
+
+    it('still says the status word when there is no publishable price', () => {
+      expect(listingShareSummary({ price: null, statusWord: 'Off market', beds: 3 })).toBe(
+        'Off market · 3 bed',
+      )
+    })
+
+    it('says nothing extra for an on-market listing', () => {
+      expect(listingShareSummary({ price: 500000, statusWord: null })).toBe('$500,000')
+    })
   })
 
   describe('listingShareText', () => {

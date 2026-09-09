@@ -50,6 +50,41 @@ describe('buildJsonLd', () => {
     })
   })
 
+  // SITE-20. Dropping the Offer is right; dropping the FACT with it is not. On
+  // 55550 Heidi Court (MLS 220219603, Closed) the emitted node carried a
+  // $1,250,000 description, no offers node and no availability — nothing
+  // machine-readable said the home had sold.
+  describe('realEstateListing node availability (the fact survives the dropped Offer)', () => {
+    const base = { type: 'realEstateListing', name: '123 Main St', listPrice: 750000 } as const
+
+    it('Closed states SoldOut on the node and still emits no Offer', () => {
+      const node = buildJsonLd({ ...base, availability: 'Closed' })
+      expect(node.availability).toBe('https://schema.org/SoldOut')
+      expect(node.offers).toBeUndefined()
+    })
+
+    it.each(['Withdrawn', 'Expired', 'Canceled'])('%s states OutOfStock and no Offer', (s) => {
+      const node = buildJsonLd({ ...base, availability: s })
+      expect(node.availability).toBe('https://schema.org/OutOfStock')
+      expect(node.offers).toBeUndefined()
+    })
+
+    it('the node and the Offer agree on the on-market statuses', () => {
+      const active = buildJsonLd({ ...base, availability: 'Active' })
+      expect(active.availability).toBe('https://schema.org/InStock')
+      expect(rec(active.offers)?.availability).toBe('https://schema.org/InStock')
+      const auc = buildJsonLd({ ...base, availability: 'Active Under Contract' })
+      expect(auc.availability).toBe('https://schema.org/PreOrder')
+      expect(rec(auc.offers)?.availability).toBe('https://schema.org/PreOrder')
+    })
+
+    it('Coming Soon states nothing at all', () => {
+      const node = buildJsonLd({ ...base, availability: 'Coming Soon' })
+      expect(node.availability).toBeUndefined()
+      expect(node.offers).toBeUndefined()
+    })
+  })
+
   it('breadcrumb numbers positions from 1 and absolutizes item URLs', () => {
     const r = buildJsonLd({
       type: 'breadcrumb',
