@@ -100,6 +100,9 @@ export type OpinionPageArgs = {
   market: CmaMarketContext | null
   pricing: CmaPricing
   extras?: CmaExtras | null
+  compArea?: import('@/lib/pricing/comp-area').CompArea | null
+  expiredPeers?: import('@/lib/cma/market-status').CmaExpiredPeerSet | null
+  bandRivals?: import('@/lib/cma/band-rivals').CmaBandRivalSet | null
   subdivisionStory?: SubdivisionStory | null
   mapDataUri: string | null
   /** Centre, zoom and pin coordinates for the map's own DOM pins. */
@@ -202,12 +205,12 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
     }),
     closed: closedEntries(a.comps, a.docLinks ?? null),
     unsold: unsoldEntries(
-      unsoldPeersFor({ subject: a.subject, peers: a.extras?.marketArea?.expiredPeers }),
+      unsoldPeersFor({ subject: a.subject, peers: a.expiredPeers?.peers ?? a.extras?.marketArea?.expiredPeers }),
       a.docLinks ?? null,
       a.subject.city,
     ),
     active: activeEntries(
-      activeRivalsFor(a.extras?.band?.rivals),
+      activeRivalsFor(a.bandRivals?.rivals ?? a.extras?.band?.rivals),
       a.docLinks ?? null,
       a.subject.city,
     ),
@@ -750,7 +753,7 @@ export function didNotSellArgs(a: OpinionPageArgs): DidNotSellArgs {
     subject: a.subject,
     comps: a.comps,
     market: a.market,
-    peers: a.extras?.marketArea?.expiredPeers,
+    peers: a.expiredPeers?.peers ?? a.extras?.marketArea?.expiredPeers,
     finalCycle: a.expiredAudit?.finalCycle ?? null,
     docLinks: a.docLinks ?? null,
     rangeLow: a.pricing.valueLow,
@@ -791,7 +794,9 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
     id: 'did-not-sell',
     family: 'unsold',
     heading: 'The listings in this area that came off unsold',
-    lead: unsoldMatrixLead(sets.unsold, range),
+    // The area set's own sentence first (how many came off inside the comp
+    // area, over which window, and whether it fell short), then the matrix lead.
+    lead: [a.expiredPeers?.sentence, unsoldMatrixLead(sets.unsold, range)].filter(Boolean).join(' '),
     entries: [sets.subject, ...sets.unsold],
     range,
   })
@@ -1256,7 +1261,9 @@ export function nextStepSignatureHtml(a: OpinionPageArgs): string {
  * the table against.
  */
 export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
-  const b = a.extras?.band
+  // The area-scoped set (R2h) wins; the city-wide band is the fallback for
+  // rows built before it landed.
+  const b = a.bandRivals ?? a.extras?.band
   if (!b) return ''
   const sets = matrixEntriesFor(a)
   const args = competitionArgs(a)
@@ -1277,17 +1284,19 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
           range,
         })
       : ''
-  const sentence = competitionSentence({
-    lo: b.lo,
-    hi: b.hi,
-    activeCount: b.activeCount,
-    pendingCount: b.pendingCount,
-    shown: sets.active.length,
-  })
+  const sentence =
+    a.bandRivals?.sentence ??
+    competitionSentence({
+      lo: b.lo,
+      hi: b.hi,
+      activeCount: b.activeCount,
+      pendingCount: b.pendingCount,
+      shown: sets.active.length,
+    })
   const cut = competitorCutLine(args.rivals)
   return `<p>${esc(sentence)}</p>
   ${cut ? `<p>${esc(cut)}</p>` : ''}
-  <p class="small">${esc(competitionSourceLine(args))}</p>
+  <p class="small">${esc(a.bandRivals?.source ?? competitionSourceLine(args))}</p>
   ${matrix}`
 }
 
@@ -1305,7 +1314,7 @@ export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {
 
 /** Shared by the letter chapter and its immersive twin. */
 export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
-  const b = a.extras!.band!
+  const b = a.bandRivals ?? a.extras!.band!
   return {
     city: a.subject.city,
     lo: b.lo,
