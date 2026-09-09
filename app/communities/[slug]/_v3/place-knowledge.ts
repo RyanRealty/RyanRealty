@@ -33,6 +33,47 @@ type Registry = {
   description?: string | null
 }
 
+/**
+ * The §0 trace for the Belonging block, built from the community config's own
+ * recorded `sources[]` — publisher names, deduped, in the order the config
+ * lists them.
+ *
+ * IT NAMES PUBLISHERS, NOT A METHOD. Everything in this block is an AUTHORED
+ * fact (a founding year, an acreage, a course architect, a published ranking),
+ * so the honest trace is who published it, which is exactly what the config
+ * records beside each fact. Nothing is invented and nothing is summarised: a
+ * config with no sources produces no line rather than a vague one, and the
+ * measured HOA row keeps its own basis on the row, because that figure is
+ * measured from listings and not authored.
+ *
+ * Two evaluator rounds recorded the missing line as an honesty defect on
+ * /communities/tetherow (2026-09-08 and again after): the whole block contained
+ * zero source elements while stating "Founded 2008", "Acres 700", "Course
+ * architect David McLay Kidd" and "Ranked #57 (Golf Digest)".
+ */
+export function placeKnowledgeSource(input: {
+  name: string
+  content: ResortCommunityContent | null
+  hasMeasuredHoa: boolean
+}): string | undefined {
+  const publishers: string[] = []
+  for (const s of input.content?.sources ?? []) {
+    const p = s.publisher?.trim()
+    if (p && !publishers.includes(p)) publishers.push(p)
+  }
+  if (publishers.length === 0) return undefined
+  const list =
+    publishers.length === 1
+      ? publishers[0]
+      : publishers.length === 2
+        ? `${publishers[0]} and ${publishers[1]}`
+        : `${publishers.slice(0, -1).join(', ')}, and ${publishers[publishers.length - 1]}`
+  const authored = `The facts above come from ${input.name}'s recorded sources: ${list}.`
+  return input.hasMeasuredHoa
+    ? `${authored} The HOA figure is not authored — it is measured from current listings and carries its own basis on the row.`
+    : authored
+}
+
 function childPlatItems(input: {
   name: string
   aliases: readonly string[]

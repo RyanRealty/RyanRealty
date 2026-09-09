@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-09-09T04:51:31.578Z
+**Generated:** 2026-09-09T06:25:16.203Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -222,6 +222,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 | `permit_internet_yn` | boolean | yes |  |
 | `permit_address_internet_yn` | boolean | yes |  |
 | `idx_participant` | boolean | yes |  |
+| `boundary_tagged_at` | timestamp with time zone | yes |  |
 
 ### `open_houses` · **rows ≈ 20**
 

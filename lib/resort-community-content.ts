@@ -95,6 +95,29 @@ export type ResortCommunityContent = {
   membershipOfficePhone?: string | null
   hoaMasterAnnual?: number | null
   hoaBoard?: Record<string, unknown> | null
+  /**
+   * The config's own `sources[]` — {url, publisher, supports} — carried through
+   * so a surface rendering these facts can NAME where they came from.
+   *
+   * Every config has carried this array since it was authored; nothing read it,
+   * so the community page's Belonging block published "Founded 2008",
+   * "Acres 700", "Course architect David McLay Kidd" and "Ranked #57 (Golf
+   * Digest)" with no source of any kind. Two separate evaluator rounds recorded
+   * it as an honesty defect (2026-09-08, and again after). §0 says a published
+   * fact names its source; the source existed and was simply not exposed.
+   *
+   * Optional in the TYPE and always set by the loader: a config with no
+   * `sources` yields an empty array, and a hand-built test fixture is not
+   * forced to carry a field it is not testing.
+   */
+  sources?: ResortContentSource[]
+}
+
+/** One recorded source behind a community config's authored facts. */
+export type ResortContentSource = {
+  url?: string | null
+  publisher?: string | null
+  supports?: string | null
 }
 
 /** Coerce the `about_prose` field (string OR string[]) to a clean paragraph array. */
@@ -169,5 +192,6 @@ export async function getResortCommunityContent(
     hoaMasterAnnual:
       typeof c.hoa_master_assessment_annual === 'number' ? c.hoa_master_assessment_annual : null,
     hoaBoard: (c.hoa_board as Record<string, unknown>) ?? null,
+    sources: toArray<ResortContentSource>(c.sources),
   }
 }

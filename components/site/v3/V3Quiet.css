@@ -160,6 +160,15 @@
   color: var(--v3-ink-muted);
 }
 
+/* The §0 trace under a Quiet holding authored fact rows. V3SourceLine already
+   carries the site's source register; this only gives it the block's measure
+   and its top spacing, so it sits where a reader looks for a source and never
+   competes with the facts above it. */
+.v3-quiet__source {
+  max-width: var(--v3-measure-text);
+  margin: var(--v3-space-md) 0 0;
+}
+
 /* --- Fact rows -------------------------------------------------------------
    A label and its figure, and the figure drawn as a length when the caller
    supplies a share. These replaced `·`-joined prose: the community pages hold

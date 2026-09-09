@@ -693,6 +693,24 @@
   transform: rotate(0deg);
 }
 
+/* A named kind of destination inside the folded exit set. The label is the
+   eyebrow register — the same small caps the section's own eyebrow uses — so it
+   reads as a divider between kinds and never competes with a door. A group with
+   no label (the ungrouped remainder) renders no heading and no extra space, so
+   an ungrouped set is the flat list it always was. */
+.v3-answers__door-group + .v3-answers__door-group {
+  margin-top: var(--v3-space-lg);
+}
+
+.v3-answers__door-group-label {
+  margin: 0 0 var(--v3-space-2xs);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+}
+
 .v3-answers__doors {
   margin: 0;
   padding: 0;

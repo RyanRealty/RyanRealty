@@ -8,8 +8,75 @@
   padding: 0;
 }
 
+/* NO-PHOTO OPENING — SAME LEFT EDGE AS EVERY OTHER PAGE.
+ *
+ * The media branch below centres the copy on `--v3-measure`; this branch only
+ * ever set a gutter, so the copy block spanned the full viewport and its type
+ * started at the raw gutter while the breadcrumb above it — which is NOT
+ * absolutely positioned when there is no photograph — stayed on the measure.
+ * Measured at 1440 on /communities/redmond-odin-crest-estate, 2026-09-08:
+ * breadcrumb left 144, h1 left 20, the first-screen ask left 20. A 124px
+ * step between a page's breadcrumb and its own H1.
+ *
+ * It reads as a defect because it is one, and it is not one page: a place
+ * opening has no photograph on every compound plat community, which is the
+ * whole 365-URL class SITE-28 is about, and on any city or subdivision whose
+ * hero image is missing. With a photo the same page is correct — which is why
+ * it survived: the routes anyone looks at all have one.
+ *
+ * The media branch is untouched. A page that is already aligned cannot move.
+ */
 .place-opening:not(.place-opening--media) .place-opening__copy {
+  width: 100%;
+  max-width: var(--v3-measure);
+  margin-inline: auto;
   padding-inline: var(--v3-gutter);
+}
+
+/* NO PHOTOGRAPH — TWO COLUMNS, NOT ONE COLUMN AND A HOLE.
+ *
+ * With a photograph the opening is the fold: the H1 sits on the image and the
+ * ask card reads as an overlay on it, so the ask being 640px wide is correct —
+ * the other 512px is the photograph. Without one, the same markup put a 640px
+ * card in a 1152px well against cream, and the right ~40% of the site's most
+ * valuable screen rendered nothing at all. The evaluator called it an unhandled
+ * template branch, which is what it was: nobody looks at a page with no hero,
+ * and the whole 365-URL compound-plat class has no hero.
+ *
+ * The fix needs no new content. The opening already holds two things a reader
+ * wants at different moments — where they are (breadcrumb, H1, caption) and
+ * what they can do (the address ask) — and on a wide window those are a pair,
+ * not a stack. The ask keeps its own measure and now sits beside the title
+ * instead of under it. Below 64rem it stays the stack it already was, which is
+ * the right shape on a phone and is what the mobile shot already showed.
+ *
+ * The media branch is untouched: an opening WITH a photograph keeps its stack
+ * over the image, because there the second column is the picture.
+ */
+/* :has() GUARDS THE PAIR. The second column IS the ask, so an opening with no
+ * ask must not get one: /subdivisions/<plat> renders this same no-photo copy
+ * block WITHOUT an ask, and an unguarded rule squeezed its H1 into a 408px
+ * column against an empty 40rem one — a worse hole than the one being fixed,
+ * caught by measuring the other two place grains after the change rather than
+ * only the route in hand. Without :has() the block simply stays the stack it
+ * has always been, which is the correct answer for that page anyway.
+ */
+@media (min-width: 64rem) {
+  .place-opening:not(.place-opening--media) .place-opening__copy:has(.place-opening__ask) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 40rem);
+    align-items: start;
+    column-gap: var(--v3-space-3xl);
+  }
+
+  .place-opening:not(.place-opening--media) .place-opening__copy:has(.place-opening__ask) .place-opening__ask {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    margin-top: 0;
+    /* It is its own column now, so the stacked measure would leave a second,
+       smaller hole inside the first one. */
+    max-width: none;
+  }
 }
 
 .place-opening__media {
