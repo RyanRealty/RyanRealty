@@ -16,6 +16,7 @@
 import type { ReactNode } from 'react'
 import type { MarketDetail, MarketPulseSnapshot } from '@/lib/data'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { MARKET_FOLD_LABEL, MARKET_LEAD_FIGURES } from '../../_v3/opening'
 import { formatDate } from '@/lib/format/date'
 import {
   v3Text,
@@ -111,9 +112,13 @@ export function CommunityMarketView({
           eyebrow={v3Text(`${geoName}, Oregon`)}
           headline={v3Text(headline)}
           figures={[firstFigure, ...restFigures] as readonly [V3InstrumentFigure, ...V3InstrumentFigure[]]}
-          /* First viewport is the verdict + chart, not the leftover KPI wall. */
+          /* Same opening as the city branch of this route (SITE-41): four lead
+             figures that each say what they mean, the tail behind a summary that
+             names it. buildLiveFigures carries those sentences, so a community and
+             its city cannot drift into two different openings. */
           chartFirst
-          foldAfter={0}
+          foldAfter={MARKET_LEAD_FIGURES}
+          foldLabel={v3Text(MARKET_FOLD_LABEL)}
           source={v3Text(trace)}
           updated={
             live.figures.length > 0 && closed.length === 0 && refreshedAt

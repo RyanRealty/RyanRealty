@@ -94,12 +94,19 @@ export function buildRegionInstruments(
   // ── Live inventory ────────────────────────────────────────────────────────────
   // Every figure is a door where a node behind it shows that figure's window.
   // PUBLIC-PRODUCT-OS calls dead text naming a linkable thing a defect.
+  // EACH LEAD FIGURE SAYS WHAT IT MEANS (SITE-41). Same four measures, same order and
+  // the same wording as /housing-market/<city>, because a reader who learns them on the
+  // region page must not have to learn them again on Bend. Section 0: the sentence
+  // explains its own figure and never carries a second number.
   const liveFigures: V3InstrumentFigure[] = []
   if (medianListPrice != null) {
     liveFigures.push({
       value: v3Text(formatPriceExact(medianListPrice)),
       label: v3Text('median list price, single-family'),
       href: listingsBrowsePath(),
+      sentence: v3Text(
+        'Half the houses for sale across Central Oregon ask more than this, half ask less.',
+      ),
     })
   }
   if (activeCount != null) {
@@ -107,12 +114,14 @@ export function buildRegionInstruments(
       value: v3Text(activeCount.toLocaleString('en-US')),
       label: v3Text('homes for sale, single-family'),
       href: listingsBrowsePath(),
+      sentence: v3Text('Single-family houses on the market across the region right now.'),
     })
   }
   if (hud.pending != null && hud.pending > 0) {
     liveFigures.push({
       value: v3Text(hud.pending.toLocaleString('en-US')),
       label: v3Text('under contract now'),
+      sentence: v3Text('Sellers who have accepted an offer and have not closed yet.'),
     })
   }
   if (mosText != null) {
@@ -120,6 +129,9 @@ export function buildRegionInstruments(
       value: v3Text(mosText),
       label: v3Text(MOS_PLAIN_LABEL),
       href: '/months-of-supply',
+      sentence: v3Text(
+        'How long the houses listed today would last at the pace of the last six months, with nothing new coming on.',
+      ),
     })
   }
 
@@ -139,17 +151,26 @@ export function buildRegionInstruments(
   // days-to-pending, and the closed-sales explorer is a calendar-year surface, so
   // pointing a rolling-30-day count at ?year=2024 would name a window the destination
   // does not have. A wrong door is worse than no door.
+  // The 2026-09-09 evaluator called this the dullest section on the page: two numbers,
+  // two labels, nothing to read and nothing to do. The figures are right, so what was
+  // missing is what they mean (SITE-41). Both sentences state the definition the trace
+  // below already carries — the 90-day list-to-pending median off the pulse row, and
+  // the closings counted inside a 30-day window — in the words a reader uses.
   const paceFigures: V3InstrumentFigure[] = []
   if (daysToPending != null) {
     paceFigures.push({
       value: v3Text(String(daysToPending)),
       label: v3Text('days to an offer, last 90 days'),
+      sentence: v3Text(
+        'The middle of the wait between a house going on the market and a seller accepting an offer.',
+      ),
     })
   }
   if (closedLast30Days != null) {
     paceFigures.push({
       value: v3Text(closedLast30Days.toLocaleString('en-US')),
       label: v3Text('closed in the last 30 days'),
+      sentence: v3Text('Sales that finished and changed hands in the last month.'),
     })
   }
 

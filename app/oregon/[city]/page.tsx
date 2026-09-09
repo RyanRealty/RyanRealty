@@ -94,6 +94,8 @@ import {
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
+  type V3ChartProps,
+  type V3ChartRangeRow,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
   type V3LedgerPlainRow,
@@ -191,24 +193,33 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   // ── The place answer. All three figures are one snapshot row, which is exactly
   // what the trace beneath them describes. The active count is a door into the
   // browse surface; the other two have no node of their own. ──────────────────
+  // Each figure says what it means (SITE-41). Three numbers with plain labels and
+  // nothing else was the banned KPI grid, and it made ~360 city pages read as one
+  // template with the noun swapped. Section 0: every sentence explains the figure it
+  // sits under and introduces no number of its own.
   const figures: V3InstrumentFigure[] = []
   if (city.activeAllCount > 0) {
     figures.push({
       value: v3Text(city.activeAllCount.toLocaleString('en-US')),
       label: v3Text('active listings, all property types'),
       href: browsePath,
+      sentence: v3Text(
+        `Everything on the market in ${city.name} right now, houses and condos and bare land together.`,
+      ),
     })
   }
   if (city.activeSfrCount > 0) {
     figures.push({
       value: v3Text(city.activeSfrCount.toLocaleString('en-US')),
       label: v3Text('active single-family listings'),
+      sentence: v3Text('Of those, the ones that are a house on its own lot.'),
     })
   }
   if (city.medianListPrice != null) {
     figures.push({
       value: v3Text(formatPrice(city.medianListPrice)),
       label: v3Text('median single-family list price'),
+      sentence: v3Text('Half of those houses ask more than this, half ask less.'),
     })
   }
   const [firstFigure, ...restFigures] = figures
@@ -276,6 +287,66 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
     })
   }
   const [firstListingRow, ...restListingRows] = listingRows
+
+  // ── THE PLACE MARK (SITE-41). ────────────────────────────────────────────────
+  // Three numbers under a heading is the same screen for Medford, Salem and the
+  // ~360 other cities this one file renders: nothing on it belongs to the place it
+  // names. This is the one drawing that does. Every row is a real street in this
+  // city at the price it is actually asking, so the shape of the strip, the names
+  // down its side and the spread across it are all this town's and nobody else's.
+  //
+  // Section 0: the rows ARE the population — the same live tiles the Ledger below
+  // prints, same dedupe, newest first, capped at eight so the strip stays readable
+  // and the trace says so. No median rule is drawn across it: the snapshot's median
+  // covers single-family listings only and these rows are every property type, and
+  // one scale carrying two populations is a comparison that is not true.
+  const STRIP_ROWS = 8
+  const stripRows: V3ChartRangeRow[] = listingRows.slice(0, STRIP_ROWS).flatMap((row) => {
+    const tile = tiles.find((t) => t.listingKey === row.id)
+    const price = tile?.listPrice
+    if (!tile || price == null || !Number.isFinite(price) || price <= 0) return []
+    const street = [tile.streetNumber, tile.streetName, tile.streetSuffix]
+      .filter(Boolean)
+      .join(' ')
+      .trim()
+    if (!street) return []
+    return [
+      {
+        tick: v3Text(street),
+        value: price,
+        label: v3Text(formatPrice(price)),
+        ...(row.detail ? { note: row.detail } : {}),
+      },
+    ]
+  })
+  // Ordered by price, not by age. The population is the newest listings; the ORDER
+  // is what the strip is for. Left as the feed's newest-first order the rows read as
+  // noise, and a set of named things on one scale is a ranking or it is nothing
+  // (the dataviz skill's form-from-the-job rule).
+  stripRows.sort((a, b) => b.value - a.value)
+  const stripPrices = stripRows.map((r) => r.value).sort((a, b) => a - b)
+  const stripLow = stripPrices[0]
+  const stripHigh = stripPrices[stripPrices.length - 1]
+  const askStrip: V3ChartProps | undefined =
+    stripRows.length >= 3 && stripLow != null && stripHigh != null
+      ? {
+          caption: v3Text(`What the newest listings in ${city.name} are asking`),
+          kind: 'range',
+          claim: v3Text(
+            stripLow === stripHigh
+              ? `The newest listings here all ask ${formatPrice(stripLow)}.`
+              : `Asking prices on the newest listings run from ${formatPrice(stripLow)} to ${formatPrice(stripHigh)}.`,
+          ),
+          rows: stripRows,
+          id: 'top-asks',
+        }
+      : undefined
+  // The strip's own clause, appended to the snapshot trace only when the strip
+  // draws: the figures and the rows are two different reads of one feed, and the
+  // trace has to cover both or it covers the wrong one.
+  const stripTrace = askStrip
+    ? `The strip beside them is a separate live read: the ${stripRows.length} newest active listings in ${city.name} with both a price and a street address, every property type, at their asking price as listed.`
+    : ''
   // "listing," not "home": a bare parcel can reach this set (see the
   // isLand branch above), and the trace must not claim a population it does
   // not print.
@@ -373,7 +444,10 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
             eyebrow={v3Text(`${city.name} · Oregon`)}
             headline={v3Text(headline)}
             figures={[firstFigure, ...restFigures]}
-            source={v3Text(snapshotTrace)}
+            chart={askStrip}
+            source={v3Text(askStrip ? `${snapshotTrace} ${stripTrace}` : snapshotTrace)}
+            sourceName={v3Text('Oregon Data Share MLS')}
+            asOf={city.refreshedAt ?? undefined}
             updated={city.refreshedAt ? v3Text(formatDate(city.refreshedAt)) : undefined}
             // PRIMARY at 390: the chrome CTA sits in the menu. The ask this
             // node earns is the referral, not a Central Oregon valuation.

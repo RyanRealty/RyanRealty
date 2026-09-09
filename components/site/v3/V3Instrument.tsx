@@ -107,6 +107,21 @@ export type V3InstrumentFigure = {
    * plus "Supply" reads fine; a bare percent may not). Never a substitute for `label`.
    */
   ariaLabel?: V3Text
+  /**
+   * WHAT THE NUMBER MEANS FOR THE READER, in one plain sentence (SITE-41).
+   *
+   * TASTE.md names the banned tell exactly: "KPI grids — a number, a percentage, and
+   * jargon — a figure with no plain sentence beside it saying what it means for the
+   * reader." A label is not that sentence: "days to an offer, last 90 days" names the
+   * measurement, and a visitor who does not sell houses still does not know whether
+   * that is fast.
+   *
+   * Section 0 binds here as hard as anywhere else, and in one specific way: the
+   * sentence may explain the figure it sits under, and it may not carry a SECOND
+   * number. A number in this slot would be a figure with no label, no href and no
+   * trace of its own. Say what the measurement is; the value beside it is the value.
+   */
+  sentence?: V3Text
 }
 
 /**
@@ -165,6 +180,20 @@ export type V3InstrumentProps = {
    */
   foldAfter?: number
   /**
+   * WHAT THE FOLD REVEALS, in the reader's words (SITE-41).
+   *
+   * The default summary is "All {n} figures", and on a market page that renders as
+   * "ALL 42 FIGURES +": a database row count offered as a reason to tap. It says
+   * nothing about what is behind it, so nobody taps, and the long tail the fold exists
+   * to protect goes unread.
+   *
+   * Pass the name of the thing inside — "Supply by property type, and how fast homes
+   * are selling" — and the summary says that instead. A count is not a name: keep a
+   * bare integer out of this string. Omitted, the count-shaped default stands, so a
+   * caller that has not been given a name renders exactly as it did before.
+   */
+  foldLabel?: V3Text
+  /**
    * Draw the chart after the verdict (and note) and before the figure tiles.
    * Market hub / MOS definition: the drawing IS the number.
    */
@@ -184,6 +213,26 @@ export type V3InstrumentProps = {
    * no date in it, an em dash in public copy, and neither one visible to the caller.
    */
   updated?: V3Text
+  /**
+   * The source's NAME, when the caller has it (SITE-42 landed the slot on V3SourceLine;
+   * SITE-41 opens it here). V3SourceLine renders one compact clause — the name and the
+   * stamp — with the full trace behind its disclosure. Given nothing, it derives the
+   * name from the trace's own leading segment, which is a structural guess: on the
+   * market pages that guess reaches into a methodology clause and reads as internal
+   * shorthand. This primitive owns the prop surface on those pages, so without a
+   * pass-through the caller cannot say the name it already knows.
+   *
+   * The full trace, stamp and all, still reaches the HTML through `source` either way.
+   */
+  sourceName?: V3Text
+  /**
+   * The freshness date for the compact clause. RAW here, not preformatted: unlike
+   * `updated`, which this component joins into the trace string itself, this value is
+   * handed to the atom, and the atom runs it through the canonical `formatDate`. Pass
+   * the timestamp the row carries. Given neither this nor a stamp inside the trace, the
+   * atom prints the name alone rather than inventing a date.
+   */
+  asOf?: string | number | Date | null
   /** The context line above the verdict: where the visitor is. One line, never a sentence. */
   eyebrow?: V3Text
   /**
@@ -247,10 +296,13 @@ const NO_DATE = /^[\s\u002D\u2010-\u2015\u2212]*$/
 export function V3Instrument({
   headline,
   foldAfter,
+  foldLabel,
   chartFirst = false,
   figures,
   source,
   updated,
+  sourceName,
+  asOf,
   eyebrow,
   note,
   action,
@@ -290,10 +342,22 @@ export function V3Instrument({
   // it. Two or more read as a set and stay the same weight.
   const emphasis = figures.length === 1 ? 'lead' : 'standard'
 
+  // The opening is a claim and a drawing, not a KPI grid (SITE-41). A figure set that
+  // says what its numbers mean is a different object from a tile row: it is read left to
+  // right as sentences, so it takes wider tracks and one column on a phone. The class is
+  // opt-in through the data — no caller passes a sentence, no caller moves.
+  const said = figures.some((f) => f.sentence)
+
   return (
     <section
       id={id}
-      className={cn(V3_ROOT_CLASS, 'v3-instrument', chartFirst && 'v3-instrument--chart-first', className)}
+      className={cn(
+        V3_ROOT_CLASS,
+        'v3-instrument',
+        chartFirst && 'v3-instrument--chart-first',
+        said && 'v3-instrument--said',
+        className,
+      )}
       aria-labelledby={headlineId}
       aria-label={headlineId ? undefined : headline}
     >
@@ -337,6 +401,28 @@ export function V3Instrument({
           const rendered = (
             <V3Figure value={figure.value} label={figure.label} emphasis={emphasis} />
           )
+          // The sentence is a SIBLING of the figure, inside the figure's own cell, so a
+          // door still wraps only the number and its label: the sentence explains the
+          // figure, it is not another thing to click. A figure with no sentence renders
+          // the two branches this component has always rendered, byte for byte.
+          if (figure.sentence) {
+            return (
+              <div key={key} className="v3-instrument__cell">
+                {figure.href ? (
+                  <Link
+                    href={figure.href}
+                    className="v3-instrument__door"
+                    aria-label={figure.ariaLabel}
+                  >
+                    {rendered}
+                  </Link>
+                ) : (
+                  rendered
+                )}
+                <p className="v3-instrument__said">{figure.sentence}</p>
+              </div>
+            )
+          }
           return figure.href ? (
             <Link
               key={key}
@@ -386,8 +472,13 @@ export function V3Instrument({
             ) : null}
             {tail.length > 0 ? (
               <details className="v3-instrument__fold">
+                {/* The default is the original JSX, not a joined string: React
+                    separates adjacent text nodes with a comment marker in the
+                    stream, so `All {n} figures` and `${'All '}${n} figures` are
+                    the same words and different bytes. A caller that passes no
+                    label must diff clean. */}
                 <summary className="v3-instrument__fold-summary">
-                  All {figures.length} figures
+                  {foldLabel ? foldLabel : <>All {figures.length} figures</>}
                 </summary>
                 <div className="v3-instrument__figures">
                   {tail.map((figure, i) => renderFigure(figure, i + lead.length))}
@@ -409,7 +500,12 @@ export function V3Instrument({
         )
       })()}
 
-      <V3SourceLine source={trace} className="v3-instrument__source" />
+      <V3SourceLine
+        source={trace}
+        sourceName={sourceName}
+        asOf={asOf}
+        className="v3-instrument__source"
+      />
 
       {action ? (
         <div className="v3-instrument__action">

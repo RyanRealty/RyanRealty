@@ -100,6 +100,9 @@ export function buildRegionFigures(
       value: v3Text(formatMonthsOfSupply(mosRaw)),
       label: v3Text('months of supply'),
       href: '/months-of-supply',
+      sentence: v3Text(
+        'How long the homes listed today would last if they sold at the pace of the last six months, and nothing new came on.',
+      ),
     })
   }
   if (hud != null && hud.active != null && hud.active > 0) {
@@ -107,6 +110,9 @@ export function buildRegionFigures(
       value: v3Text(hud.active.toLocaleString('en-US')),
       label: v3Text('active single-family listings'),
       href: listingsBrowsePath(),
+      sentence: v3Text(
+        'Every single-family house for sale right now across the Central Oregon service area.',
+      ),
     })
   }
   if (medianListDisplay != null) {
@@ -114,6 +120,9 @@ export function buildRegionFigures(
       value: v3Text(formatPriceExact(medianListDisplay)),
       label: v3Text('median list price'),
       href: REGION_REPORT_PATH,
+      sentence: v3Text(
+        'The middle of what sellers are asking. Half the houses on the market ask more than this, half ask less.',
+      ),
     })
   }
   if (hud?.daysToPending != null && hud.daysToPending > 0) {
@@ -121,6 +130,9 @@ export function buildRegionFigures(
       value: v3Text(String(hud.daysToPending)),
       label: v3Text('days to an offer, last 90 days'),
       href: REGION_REPORT_PATH,
+      sentence: v3Text(
+        'The typical wait between a house going on the market and going under contract.',
+      ),
     })
   }
   return figures
@@ -266,12 +278,28 @@ export function buildClosedInstrument(detail: MarketDetail | null): ClosedInstru
   const yoyDom = formatDayDelta(detail?.yoyDomChange)
   const yoyPpsf = formatPercentDelta(detail?.yoyPpsfChangePct)
 
+  // EACH FIGURE SAYS WHAT IT MEANS (SITE-41), and each sentence describes the MEASURE
+  // rather than the population, because this instrument carries two: the median and
+  // the count come from the Market Truth detached rows the page overlays, the other
+  // three from the region cache row. The section's own note and trace name both. A
+  // sentence that claimed one population for all five would be the thing section 0
+  // forbids — a narrative overriding the data underneath it.
+  //
+  // The wait figure and the ratio are both stated from their VERIFIED definitions in
+  // compute_and_cache_period_stats (2026-04-25 rewrite, the live body):
+  // median_dom is percentile_cont over `days_to_pending`, which
+  // docs/DATABASE_FOR_AI_AGENTS.md defines as OnMarketDate to pending — list to
+  // OFFER, not list to close, and not the raw feed days-on-market column CLAUDE.md
+  // section 7 warns against publishing as DOM. avg_sale_to_list_ratio averages
+  // ClosePrice / OriginalListPrice, so it is measured against the FIRST asking price,
+  // which is what the label now says.
   const figures: V3InstrumentFigure[] = []
   if (median) {
     figures.push({
       value: v3Text(median),
       label: v3Text(yoyPrice ? `median sale price, ${yoyPrice}` : 'median sale price'),
       href: REGION_REPORT_PATH,
+      sentence: v3Text('Half the homes that sold closed above this, half below.'),
     })
   }
   if (sold) {
@@ -279,6 +307,7 @@ export function buildClosedInstrument(detail: MarketDetail | null): ClosedInstru
       value: v3Text(sold),
       label: v3Text('single-family homes sold'),
       href: CITY_REPORTS_PATH,
+      sentence: v3Text('Sales the MLS recorded closing inside the window named below.'),
     })
   }
   if (dom) {
@@ -286,13 +315,19 @@ export function buildClosedInstrument(detail: MarketDetail | null): ClosedInstru
       value: v3Text(dom),
       label: v3Text(yoyDom ? `median days on market, ${yoyDom}` : 'median days on market'),
       href: REGION_REPORT_PATH,
+      sentence: v3Text(
+        'The middle of the wait between a home going on the market and an offer being accepted.',
+      ),
     })
   }
   if (ratio) {
     figures.push({
       value: v3Text(ratio),
-      label: v3Text('average sale price to list price'),
+      label: v3Text('average sale price against the first asking price'),
       href: REGION_REPORT_PATH,
+      sentence: v3Text(
+        'Each sale measured against the price its seller asked on day one, then averaged.',
+      ),
     })
   }
   if (ppsf) {
@@ -302,6 +337,7 @@ export function buildClosedInstrument(detail: MarketDetail | null): ClosedInstru
         yoyPpsf ? `median price per square foot, ${yoyPpsf}` : 'median price per square foot',
       ),
       href: REGION_REPORT_PATH,
+      sentence: v3Text('The middle of what a square foot of finished living space sold for.'),
     })
   }
 

@@ -101,11 +101,15 @@ export function buildAllTypeFigures(opts: {
 }): V3InstrumentFigure[] {
   const volume = volumeCompact(opts.totalVolume)
   const figures: V3InstrumentFigure[] = []
+  // "Every type" is a filter, not a meaning (SITE-41). Each figure says what it counts
+  // in the reader's words; none of them introduces a number, so the section's one trace
+  // still covers everything on screen.
   if (volume) {
     figures.push({
       value: v3Text(volume),
       label: v3Text('Closed volume, every type'),
       href: opts.historyHref,
+      sentence: v3Text('Every dollar that changed hands, added up.'),
     })
   }
   if (opts.soldCount > 0) {
@@ -113,6 +117,7 @@ export function buildAllTypeFigures(opts: {
       value: v3Text(opts.soldCount.toLocaleString('en-US')),
       label: v3Text('Closed sales, every type'),
       href: opts.historyHref,
+      sentence: v3Text('Houses, condos, bare land and commercial buildings together.'),
     })
   }
   const median = opts.includeMedian ? medianCloseLabel(opts.medianClose) : null
@@ -121,6 +126,7 @@ export function buildAllTypeFigures(opts: {
       value: v3Text(median),
       label: v3Text('Median close, every type'),
       href: opts.historyHref,
+      sentence: v3Text('Half of those sales closed above this, half below.'),
     })
   }
   return figures

@@ -168,6 +168,7 @@ import {
   WRITTEN_VALUATION_HREF,
   dbGeoSlug,
 } from './_v3/annual-constants'
+import { CLOSED_LEAD_FIGURES, MARKET_LEAD_FIGURES } from '../_v3/opening'
 import {
   CITY_REPORTS_PATH,
   REGION_REPORT_PATH,
@@ -568,8 +569,20 @@ export default async function AnnualReviewPage() {
                 : `Central Oregon housing market annual review: a ${verdict.label}`,
             )}
             figures={[firstRegionFigure, ...restRegionFigures]}
+            /* THE OPENING IS A CLAIM AND A DRAWING (SITE-41). This page used to open
+               on sixteen number-and-label tiles in a four-column grid, with the year
+               overlay pushed a thousand pixels below the fold and the seventh row cut
+               mid-figure at 375. The four figures that answer "what is the Central
+               Oregon market doing" lead, each saying what it means; the long tail of
+               property-type supply and pace measures keeps every one of its figures,
+               one tap away, behind a summary that names them. */
+            chartFirst
+            foldAfter={MARKET_LEAD_FIGURES}
+            foldLabel={v3Text('Supply by property type, and how fast homes are selling')}
             source={v3Text(regionTrace)}
+            sourceName={v3Text('Oregon Data Share MLS')}
             updated={inventoryAsOf ? v3Text(formatDate(inventoryAsOf)) : undefined}
+            asOf={inventoryAsOf ?? undefined}
             action={{ label: v3Text('Live Central Oregon market report'), href: REGION_REPORT_PATH }}
             chart={annualCharts.region}
           />
@@ -617,7 +630,13 @@ export default async function AnnualReviewPage() {
             eyebrow={v3Text('Trailing 12 months')}
             headline={v3Text(closed.headline)}
             figures={[firstClosedFigure, ...restClosedFigures]}
+            /* Three lead, two folded (SITE-41): the same cap the opening keeps, so the
+               page never shows a row of five silent tiles under a row of four that
+               speak. */
+            foldAfter={CLOSED_LEAD_FIGURES}
+            foldLabel={v3Text('Sale price against asking, and price per square foot')}
             source={v3Text(closed.source)}
+            sourceName={v3Text('Oregon Data Share MLS')}
             updated={salesAsOf ? v3Text(formatDate(salesAsOf)) : undefined}
             action={{
               label: v3Text('Weekly market reports by city'),

@@ -79,7 +79,9 @@ import {
   buildCityMedianChart,
   buildCityPeriodFigures,
   buildMonthlyMedianChart,
+  financingSentence,
 } from './_v3/geo-figures'
+import { buildAmenityShareChart } from '../_v3/market-charts'
 import { CityMarketView } from './_v3/city-view'
 import { CommunityMarketView } from './_v3/community-view'
 import { GeoInquirySheet } from './_v3/GeoInquirySheet.client'
@@ -476,6 +478,21 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             note={v3Text(
               `Across every property type the MLS closed here: houses, condos, land, commercial. The figures above cover detached homes only.`,
             )}
+            /* THE SHARE IS A LENGTH, NOT A TILE (SITE-41). The 2026-09-09 evaluator
+               called this the dullest section on the page: four percentages with no
+               bar, no hover, and no sentence, closing the page on its most
+               template-shaped display. The drawing leads, the four figures keep their
+               digits, and each one says in plain words what that way of paying IS —
+               which is the thing a buyer reading this page does not already know.
+               The label's old "· 21 days to pending · 12 months" was the raw
+               methodology jargon TASTE.md names; same fact, said. */
+            chartFirst
+            chart={buildAmenityShareChart(
+              financingMix.rows
+                .filter((r) => r.financing !== 'Other')
+                .map((r) => ({ name: r.financing, sharePct: r.pctOfSales })),
+              `How buyers paid for ${cityName} homes, last 12 months`,
+            )}
             figures={
               financingMix.rows
                 .filter((r) => r.financing !== 'Other')
@@ -483,9 +500,10 @@ export default async function HousingMarketGeoPage({ params }: Props) {
                   value: v3Text(`${r.pctOfSales.toFixed(1)}%`),
                   label: v3Text(
                     r.medianDaysToPending != null
-                      ? `${r.financing.toLowerCase()} · ${r.medianDaysToPending} days to pending · 12 months`
-                      : `${r.financing.toLowerCase()} · 12 months`,
+                      ? `${r.financing.toLowerCase()} · typically under contract in ${r.medianDaysToPending} days`
+                      : `${r.financing.toLowerCase()} · last 12 months`,
                   ),
+                  sentence: v3Text(financingSentence(r.financing)),
                 })) as unknown as readonly [V3InstrumentFigure, ...V3InstrumentFigure[]]
             }
             source={v3Text(

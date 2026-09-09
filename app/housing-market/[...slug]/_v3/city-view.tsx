@@ -25,6 +25,7 @@ import {
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import type { MarketKind } from '@/lib/market/classify'
+import { MARKET_FOLD_LABEL, MARKET_LEAD_FIGURES } from '../../_v3/opening'
 import {
   buildCityLedger,
   buildExploreItems,
@@ -147,13 +148,19 @@ export function CityMarketView({
           eyebrow={v3Text(`${cityName}, Oregon`)}
           headline={v3Text(headline)}
           figures={[firstFigure, ...restFigures] as readonly [V3InstrumentFigure, ...V3InstrumentFigure[]]}
-          /* First viewport is the verdict + chart, not the leftover KPI wall.
-             Pace, mix, extra-type, and closed-period tiles fold the way city
-             place pages fold the long tail. */
+          /* THE OPENING IS A CLAIM AND A DRAWING (SITE-41). foldAfter={0} put the
+             whole figure set behind one summary reading "ALL 41 FIGURES", which is a
+             row count offered as a reason to tap, and left the fold with nothing in
+             front of it but the chart. Four lead figures now answer the page's own
+             question, each with a sentence saying what it means; the long tail keeps
+             every figure behind a summary that names what is in it. */
           chartFirst
-          foldAfter={0}
+          foldAfter={MARKET_LEAD_FIGURES}
+          foldLabel={v3Text(MARKET_FOLD_LABEL)}
           source={v3Text(trace)}
+          sourceName={v3Text('Oregon Data Share MLS')}
           updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
+          asOf={refreshedAt ?? undefined}
           chart={chart}
         />
       ) : (

@@ -154,7 +154,12 @@ export type { V3JsonLdProps } from './V3JsonLd'
  */
 export { V3ChartHover } from './V3ChartHover.client'
 
-export type { V3ChartHoverProps, V3ChartHoverColumn, V3ChartHoverReading } from './V3ChartHover.client'
+export type {
+  V3ChartHoverProps,
+  V3ChartHoverColumn,
+  V3ChartHoverReading,
+  V3ChartHoverFrame,
+} from './V3ChartHover.client'
 
 /**
  * Proof: verified third-party words with their record — figures the source

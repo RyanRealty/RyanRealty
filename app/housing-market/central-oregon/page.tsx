@@ -149,6 +149,11 @@ import {
 } from './_v3/region-sections'
 import { buildRegionMedianChart, dropInProgressMonth } from '../_v3/market-charts'
 import {
+  CLOSED_YEAR_LEAD_FIGURES,
+  MARKET_FOLD_LABEL,
+  MARKET_LEAD_FIGURES,
+} from '../_v3/opening'
+import {
   marketReportDoorLinks,
 } from '@/lib/market/report-doors'
 import '../_v3/tremor-density.css'
@@ -445,12 +450,18 @@ export default async function CentralOregonRegionPage() {
               `Region deep dive · Central Oregon${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
             )}
             figures={[firstLiveFigure, ...restLiveFigures]}
-            /* First viewport is the verdict + chart, not the leftover KPI wall.
-               Extra-type, pace, and mix tiles fold the way city pages fold. */
+            /* THE OPENING IS A CLAIM AND A DRAWING (SITE-41). foldAfter={0} hid every
+               figure behind a summary reading "ALL 42 FIGURES", a row count offered as
+               a reason to tap. The four measures that answer what the region is doing
+               lead, each with a sentence; the tail keeps every figure behind a summary
+               that names what is in it. */
             chartFirst
-            foldAfter={0}
+            foldAfter={MARKET_LEAD_FIGURES}
+            foldLabel={v3Text(MARKET_FOLD_LABEL)}
             source={v3Text(liveTrace)}
+            sourceName={v3Text('Oregon Data Share MLS')}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
+            asOf={refreshedAt ?? undefined}
             chart={regionChart}
           />
         ) : (
@@ -521,7 +532,14 @@ export default async function CentralOregonRegionPage() {
                 : 'Central Oregon closed sales',
             )}
             figures={[firstLeadFigure, ...restLeadFigures]}
+            /* The two totals lead; the eight property-type shares fold (SITE-41).
+               They are not lost and they were never the answer: the composition chart
+               under this instrument draws the same eight, which is what a share is
+               for. */
+            foldAfter={CLOSED_YEAR_LEAD_FIGURES}
+            foldLabel={v3Text('The same year broken out by property type')}
             source={v3Text(lead.source)}
+            sourceName={v3Text('Oregon Data Share MLS')}
             updated={
               lead.latest?.computedAt ? v3Text(formatDate(lead.latest.computedAt)) : undefined
             }

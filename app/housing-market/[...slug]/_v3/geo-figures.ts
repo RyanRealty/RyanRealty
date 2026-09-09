@@ -39,6 +39,7 @@ import {
   type V3QuietItem,
 } from '@/components/site/v3'
 import { publishCompleteMonthMedian } from '@/lib/market/publish-complete-month-median'
+import { YEAR_OVERLAY_READING } from '../../_v3/market-charts'
 import { COMPARISON_CITY_LABELS, COMPARISON_CITY_SLUG } from './geo-constants'
 import { marketReportDoorLinks } from '@/lib/market/report-doors'
 
@@ -77,6 +78,29 @@ export type CityLedger = {
  * 12-month close via buildCityPeriodFigures, and the monthly median series
  * via Instrument.chart.
  */
+/**
+ * WHAT THAT WAY OF PAYING IS (SITE-41). The financing section publishes four shares —
+ * conventional, cash, FHA, VA — and a share is meaningless to a reader who does not
+ * already know what the word buys them. These are definitions, not measurements: no
+ * sentence here carries a figure, so none of them needs a trace of its own.
+ */
+export function financingSentence(financing: string): string {
+  switch (financing) {
+    case 'Conventional':
+      return 'An ordinary mortgage from a bank or credit union, with no government backing.'
+    case 'Cash':
+      return 'Paid outright, with no lender and no appraisal contingency to clear.'
+    case 'FHA':
+      return 'A loan insured by the Federal Housing Administration, usually a smaller down payment.'
+    case 'VA':
+      return 'A loan backed by the Department of Veterans Affairs, for buyers who have served.'
+    case 'USDA':
+      return 'A rural-development loan backed by the Department of Agriculture.'
+    default:
+      return 'A share of the closed sales the MLS recorded a financing method for.'
+  }
+}
+
 export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | null, geoName: string): LiveSection {
   const medianListPrice = hud?.medianList != null && hud.medianList > 0 ? hud.medianList : null
   const activeCount = hud?.active != null && hud.active > 0 ? hud.active : null
@@ -94,6 +118,14 @@ export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | 
       value: v3Text(formatPriceExact(medianListPrice)),
       label: v3Text('median list price'),
       href: listingsBrowsePath(),
+      // THE SENTENCE BESIDE THE NUMBER (SITE-41). TASTE.md's banned KPI grid is "a
+      // number, a percentage, and jargon" — a figure with nothing saying what it means
+      // for the reader. These four lead the opening on every market report, so these
+      // four say it. Section 0 binds: each sentence explains its own figure and never
+      // introduces a second number, which would be a figure with no label and no trace.
+      sentence: v3Text(
+        `Half the houses for sale in ${geoName} ask more than this, half ask less.`,
+      ),
     })
   }
   if (activeCount != null) {
@@ -101,12 +133,14 @@ export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | 
       value: v3Text(activeCount.toLocaleString('en-US')),
       label: v3Text('homes for sale'),
       href: listingsBrowsePath(),
+      sentence: v3Text(`Single-family houses on the market in ${geoName} right now.`),
     })
   }
   if (pendingCount != null) {
     figures.push({
       value: v3Text(pendingCount.toLocaleString('en-US')),
       label: v3Text('under contract now'),
+      sentence: v3Text('Sellers who have accepted an offer and have not closed yet.'),
     })
   }
   if (mosText != null) {
@@ -114,6 +148,9 @@ export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | 
       value: v3Text(mosText),
       label: v3Text(MOS_PLAIN_LABEL),
       href: '/months-of-supply',
+      sentence: v3Text(
+        'How long the houses listed today would last at the pace of the last six months, with nothing new coming on.',
+      ),
     })
   }
   if (daysToPending != null) {
@@ -511,6 +548,11 @@ export function buildCityMedianChart(
       ...(claim ? { claim: v3Text(claim) } : {}),
       series: overlay,
       emphasize: 'last',
+      // ONE marker rule, stated in ../../_v3/market-charts.ts. The city overlay and
+      // the region overlay are the same drawing on two routes; a reader who learns
+      // the beads on /housing-market/central-oregon must find them on
+      // /housing-market/bend (SITE-41).
+      ...YEAR_OVERLAY_READING,
       ...(yTicks.length ? { yTicks } : {}),
       xTicks: monthTicks(MONTH_TICK),
     }

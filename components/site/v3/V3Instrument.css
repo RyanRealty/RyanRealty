@@ -138,6 +138,40 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* ---------------------------------------------------------------------------
+   THE SAID FIGURE (SITE-41). A figure that carries its sentence is not a tile
+   in a grid; it is a short paragraph with a number for a first word. So the
+   set stacks into ONE column on a phone rather than pairing off into cells
+   two words wide, and the sentence takes the reading measure under the value
+   it explains.
+
+   Scoped to --said, which the component adds only when a figure was given a
+   sentence. A caller that passes none keeps the two-up tile grid exactly.
+   --------------------------------------------------------------------------- */
+.v3.v3-instrument.v3-instrument--said .v3-instrument__figures {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-lg) var(--v3-space-lg);
+}
+
+.v3.v3-instrument .v3-instrument__cell {
+  min-width: 0;
+}
+
+.v3.v3-instrument .v3-instrument__said {
+  margin: var(--v3-space-xs) 0 0;
+  max-width: 30ch;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+  text-wrap: pretty;
+}
+
+/* A door's own cell: the link holds the 44px target, so the sentence under it
+   does not need the min-height and must not inherit the hover underline. */
+.v3.v3-instrument .v3-instrument__cell .v3-instrument__door {
+  min-height: 0;
+}
+
 @media (min-width: 48rem) {
   .v3.v3-instrument .v3-instrument__figures {
     /* 10rem was too tight for a list price in display numerals: $950,000
@@ -147,6 +181,13 @@
 
   .v3.v3-instrument .v3-instrument__figures--single {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Four said figures across a 72rem measure: 16rem tracks, so a sentence gets
+     two or three lines instead of seven. Below four they spread, as auto-fit
+     always has. */
+  .v3.v3-instrument.v3-instrument--said .v3-instrument__figures {
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   }
 }
 
