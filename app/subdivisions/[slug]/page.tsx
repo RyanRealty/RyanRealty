@@ -112,7 +112,7 @@ import type { Metadata } from 'next'
 import { SubdivisionUnavailable, SUBDIVISION_UNAVAILABLE_METADATA } from './SubdivisionUnavailable'
 import { subdivisionListingsPath } from '@/lib/slug'
 import { publishPlaceBrowseHref } from '@/lib/search/publish-place-browse-href'
-import { getAreaGuideVideo, getGeoBoundaryMapData, getListingTiles, getMarketStats } from '@/lib/data'
+import { getAreaGuideVideo, getBoundaryGeoJSON, getGeoBoundaryMapData, getListingTiles, getMarketStats } from '@/lib/data'
 import { areaGuideRow } from '@/app/cities/[slug]/_v3/city-sections'
 import { areaGuideLookupSlugs, areaGuideVideoSchema } from '@/lib/site/area-guide-schema'
 import { cityStagePoster, placeLibraryHero } from '@/app/cities/[slug]/_v3/city-opening'
@@ -173,7 +173,7 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { V3Atlas, V3Quiet, type AtlasRegion } from '@/components/site/v3'
-import { getTaxlotsInBoundary, TAXLOT_DISCLAIMER } from '@/lib/data'
+import { getTaxlotsInBoundary, getTaxlotsNear, TAXLOT_DISCLAIMER } from '@/lib/data'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
@@ -204,7 +204,21 @@ import {
   salesHistoryTrace,
   type PlatScope,
 } from './_v3/subdivision-traces'
-import { basemapForRegions } from '@/lib/geo/basemap-source'
+import { basemapForFrame, basemapForRegions, bboxOfGeometry } from '@/lib/geo/basemap-source'
+import { outerRings } from '@/lib/geo/project-svg'
+import {
+  ATLAS_FRAME_PAD,
+  bboxOfPoints,
+  platFrame,
+  platGround,
+} from './_v3/plat-ground'
+import { platListingPhoto, platOpeningPhoto } from './_v3/plat-opening-image'
+import {
+  footprintProvenance,
+  getSubdivisionFootprint,
+  type PlatFootprint,
+} from '@/lib/data/subdivisions/getSubdivisionFootprint'
+import { getPlatFootprintTaxlots } from '@/lib/data/subdivisions/getPlatFootprintTaxlots'
 
 export const dynamicParams = true
 // FORCE-DYNAMIC, NOT ISR — this is the fix for the fleet's oldest silent 500.
@@ -393,20 +407,51 @@ const loadSubdivisionCore = cache(async (slug: string) => {
     if (nameTilesRead.ok && nameTilesRead.value.length > 0) mapTiles = nameTilesRead.value
   }
 
+  /* THE RECORDED FOOTPRINT, WHEN THE EXACT SLUG MISSED (SITE-56).
+     The MLS files a COARSER name than the county records a plat under, so
+     `boundary_geojson` at this slug finds nothing for a fifth of the class
+     while the polygons sit in the same table under longer names. Measured
+     2026-09-09 over the 1,087 distinct SubdivisionName values on the 3,572
+     active single-family listings: 175 exact, 208 more whose recorded PHASES
+     carry the name, 74 more whose own homes already name the plat they were
+     classified into. Diamond Bar Ranch is the founding case — four recorded
+     plats, one listing already stamped 'Diamond Bar Ranch Phase 1', and a page
+     that opened on cream over a collapsed frame because the county never filed
+     a plat called exactly that.
+
+     Read ONLY when the exact slug missed, and after the tiles, because the
+     third resolution path is the `boundary_subdivision` the tiles carry. */
+  const footprintRead = hasBoundary
+    ? null
+    : await withTimeoutFallbackResult(
+        getSubdivisionFootprint({
+          slug,
+          memberNames: mapTiles.map((t) => t.boundarySubdivision),
+        }),
+        null,
+        4500,
+        'sub:footprint',
+      )
+  const footprint: PlatFootprint | null = footprintRead?.ok ? footprintRead.value : null
+
   // REFUSAL, not notFound(): under the streamed shell a throw ships a hollow
   // 200 with no <h1> — see SubdivisionUnavailable.tsx. Refuse only when all
   // resolution paths are empty AND every read actually answered (§0: unknown
-  // is not empty — a degraded read must not delete a real plat).
+  // is not empty — a degraded read must not delete a real plat). The recorded
+  // footprint is a fourth path: a plat whose phases are on file is a real
+  // place whether or not one of its homes happens to be for sale today.
   const hasListings = mapTiles.length > 0
   const refused =
     !hasBoundary &&
     !registryMatch &&
     !hasListings &&
+    footprint == null &&
     inventoryRead.ok &&
     boundaryRead.ok &&
+    (footprintRead == null || footprintRead.ok) &&
     (nameTilesRead == null || nameTilesRead.ok)
 
-  return { boundaryRead, inventoryRead, mtCounts, boundary, inventory, hasBoundary, registryMatch, inventoryOk, countedKeys, mapTiles, refused }
+  return { boundaryRead, inventoryRead, mtCounts, boundary, footprint, inventory, hasBoundary, registryMatch, inventoryOk, countedKeys, mapTiles, refused }
 })
 
 // ---------------------------------------------------------------------------
@@ -417,7 +462,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   const { slug } = await params
   const sp = await searchParams
 
-  const { inventoryRead, mtCounts, boundary, inventory, hasBoundary, registryMatch, mapTiles, refused } =
+  const { inventoryRead, mtCounts, boundary, footprint, inventory, hasBoundary, registryMatch, mapTiles, refused } =
     await loadSubdivisionCore(slug)
   if (refused) return <SubdivisionUnavailable />
 
@@ -465,10 +510,19 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
         { kind: 'registry', subdivisionName: displayName, city: registryMatch.city }
       : { kind: 'pins', displayName }
 
+  /* THE POLYGON THIS PAGE DRAWS (SITE-56). The exact-slug row when the county
+     filed one under this page's own name, and otherwise the recorded FOOTPRINT
+     — its phases unioned into one shape, or the plats its own homes were
+     classified into. Both come out of public.boundaries through PostGIS; the
+     page never joins geometry itself, and never hulls pins into a fake plat.
+     What the shape IS travels with it as a sentence (footprintProvenance) and
+     is printed under the map, because a drawn boundary is a claim (§0). */
+  const platPolygon = boundary.polygon ?? footprint?.geometry ?? null
+  const footprintNote = footprint ? footprintProvenance(footprint, displayName) : null
   // Split listings are the counted plat inventory, not a viewport fetch.
   // Seed a ring only when GIS actually stored a usable polygon. Ridge has
   // none historically — pin bbox is the camera, never a convex hull.
-  const seedRing = hasRealPlatPolygon(boundary.polygon)
+  const seedRing = hasRealPlatPolygon(platPolygon)
   // The living map, scoped to the plat: every listing inside its recorded
   // polygon. Needs a real polygon and a known city (the read is city-scoped).
   // A plat the county never filed has no polygon, and the page used to render
@@ -481,7 +535,21 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   // neither, the section is omitted rather than rendering the sentence a
   // failed read prints — a plat with no boundary and no listings has nothing
   // to draw, and nothing failed.
-  const canMapAtlas = placeCity != null && (Boolean(seedRing && boundary.polygon) || mapTiles.length > 0)
+  const canMapAtlas = placeCity != null && (Boolean(seedRing && platPolygon) || mapTiles.length > 0)
+  /* THE FRAME, WITH A REAL SPAN (SITE-56). A single home has no extent, and
+     framing the map by the dots' own extent collapsed the projection: the
+     stage shipped viewBox="0 0 1000 NaN" and every road path read
+     "MInfinity -Infinity", so the frame sampled flat cream at nine points
+     (/subdivisions/diamond-bar-ranch, lane server, 2026-09-09). The frame is
+     the plat's footprint when it has one and the box holding its homes when it
+     does not, widened on a ladder until the compiled TIGER basemap actually
+     draws the streets around it — see ./_v3/plat-ground.ts. */
+  const platHomePoints = mapTiles
+    .filter((t) => t.lat != null && t.lng != null)
+    .map((t) => ({ lat: t.lat as number, lng: t.lng as number }))
+  const frame = platFrame(
+    (platPolygon ? bboxOfGeometry(platPolygon) : null) ?? bboxOfPoints(platHomePoints),
+  )
   // The lots inside the plat: what a plat actually is. Capped, simplified
   // server-side, and only where the county has a recorded boundary to clip to.
   // No `hasBoundary` gate: the page reads its boundary as geo_type
@@ -489,8 +557,30 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   // under 'neighborhood', so the gate was false on exactly the plats with the
   // most lots. The RPC finds the row by slug and returns nothing when there is
   // none, which is the same answer at one indexed query.
+  /* A PLAT THE COUNTY NEVER FILED STILL HAS LOTS (SITE-56). With no polygon to
+     clip to, the parcels come from a RADIUS around the plat's own homes — the
+     lot fabric they stand in. They are NOT a boundary and the source line says
+     so in as many words; without them the map of an unrecorded plat is a dozen
+     marks on empty cream (measured at /subdivisions/willowbrook, 2026-09-09:
+     the frame sampled one colour at nine points). */
+  const nearLotsCentre = !seedRing && frame ? frame : null
+  const nearLotsRadiusM = nearLotsCentre
+    ? Math.min(1500, Math.round(nearLotsCentre.latSpanDeg * (1 + 2 * ATLAS_FRAME_PAD) * 111_320 * 0.6))
+    : 0
   const platLots = await withTimeoutFallback(
-        getTaxlotsInBoundary({ geoType: null, geoSlug: slug, maxLots: 320 }).catch((err) => {
+        (footprint && footprint.source !== 'exact'
+          ? // The footprint has no boundaries row of its own: clip to each
+            // recorded part instead (SITE-56).
+            getPlatFootprintTaxlots({ partSlugs: footprint.partSlugs, maxLots: 320 })
+          : nearLotsCentre
+            ? getTaxlotsNear({
+                lat: (nearLotsCentre.bbox.minLat + nearLotsCentre.bbox.maxLat) / 2,
+                lng: (nearLotsCentre.bbox.minLon + nearLotsCentre.bbox.maxLon) / 2,
+                radiusMeters: nearLotsRadiusM,
+                maxLots: 320,
+              })
+            : getTaxlotsInBoundary({ geoType: null, geoSlug: slug, maxLots: 320 })
+        ).catch((err) => {
           // Fail-open, but never silent: a lot line must not break a page, and
           // an empty parcel layer that nobody logged is how this shipped
           // drawing nothing for a day.
@@ -501,22 +591,50 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
     8000,
     'sub:taxlots',
   )
-  const atlas = canMapAtlas && placeCity != null
-    ? await withTimeoutFallback(
-        buildPlaceAtlas(
-          seedRing && boundary.polygon
-            ? { cities: [placeCity], boundary: boundary.polygon, label: displayName }
-            : { cities: [placeCity], label: displayName, listingKeys: mapTiles.map((t) => t.listingKey) },
-        ),
-        null,
-        6000,
-        'sub:atlas',
-      )
+  /* THE DOTS. Inside the recorded polygon when there is one — what a visitor
+     means by "in Diamond Bar Ranch" — and the MLS-filed set when there is not.
+     A polygon that keeps NOTHING while the page holds homes is a scope this
+     map cannot draw (the homes' MLS city and the polygon can disagree), so it
+     falls back to the filed set rather than shipping an outline with no marks
+     inside it; buildPlaceAtlas says which population it drew either way. */
+  const atlasScope = seedRing && platPolygon
+    ? { cities: [placeCity as string], boundary: platPolygon, label: displayName }
+    : { cities: [placeCity as string], label: displayName, listingKeys: mapTiles.map((t) => t.listingKey) }
+  let atlas = canMapAtlas && placeCity != null
+    ? await withTimeoutFallback(buildPlaceAtlas(atlasScope), null, 6000, 'sub:atlas')
     : null
+  if (atlas && atlas.dots.length === 0 && mapTiles.length > 0 && 'boundary' in atlasScope) {
+    atlas = await withTimeoutFallback(
+      buildPlaceAtlas({
+        cities: [placeCity as string],
+        label: displayName,
+        listingKeys: mapTiles.map((t) => t.listingKey),
+      }),
+      atlas,
+      6000,
+      'sub:atlas-filed',
+    )
+  }
+  /* THE TOWN, WHEN THE PLAT HAS NO SHAPE OF ITS OWN (SITE-56). A map of a
+     dozen marks on empty ground does not tell a reader where they are: the
+     silhouette of the city does, and it is the same recorded polygon
+     /cities/{slug} draws. Only on the unrecorded path — a plat with its own
+     outline is its own subject and does not want a second shape under it. */
+  const cityRegionPolygon =
+    !seedRing && citySlug
+      ? await withTimeoutFallback(
+          getBoundaryGeoJSON({ geoType: 'city', geoSlug: citySlug }),
+          null,
+          3000,
+          'sub:cityRegion',
+        )
+      : null
   const atlasRegions: AtlasRegion[] =
-    seedRing && boundary.polygon
-      ? [{ id: `subdivision:${slug}`, kind: 'town', kindLabel: 'Subdivision', name: displayName, href: `/subdivisions/${slug}`, geometry: boundary.polygon }]
-      : []
+    seedRing && platPolygon
+      ? [{ id: `subdivision:${slug}`, kind: 'town', kindLabel: 'Subdivision', name: displayName, href: `/subdivisions/${slug}`, geometry: platPolygon }]
+      : cityRegionPolygon && citySlug && placeCity
+        ? [{ id: `city:${citySlug}`, kind: 'town', kindLabel: 'City', name: placeCity, href: `/cities/${citySlug}`, geometry: cityRegionPolygon }]
+        : []
   const splitListings = mapTiles.map(toSplitListing)
   const pinBounds = boundsFromListingPins(mapTiles)
   const hasMap =
@@ -618,10 +736,40 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
      resort, and it is CAPTIONED with the resort's name, so nothing on the page
      implies the frame was taken on this plat. Never a city photo, never
      another plat's, never a listing photo standing in for a place (§0 applies
-     to a picture that makes a claim exactly as it applies to a number). */
+     to a picture that makes a claim exactly as it applies to a number).
+
+     SITE-56 CONTINUES THE LADDER PAST THE RESORT, because the two rungs above
+     leave most of the class on cream — Matt, reading the page the expired CMA
+     links: "There's no map on the diamond bar sub page and no photo." Rung 3
+     is one of the plat's OWN HOMES, captioned with that listing's address so
+     nothing implies the frame is of the subdivision; rung 4 is the plat's own
+     GROUND, drawn from the same public-domain TIGER geometry the Atlas draws,
+     captioned as a drawing. The refusal above is unchanged and still absolute:
+     never a city photograph, never another plat's, and never a listing
+     photograph standing in for the place UNNAMED. See ./_v3/plat-opening-image.ts. */
   const platOwnPoster = cityStagePoster(communityImage(slug), platLibraryHeroUrl)
   const resortPoster = platOwnPoster ? null : resortSlug ? communityImage(resortSlug) : null
-  const stagePosterSrc = platOwnPoster ?? resortPoster
+  /* The opening's drawn ground: the plat's own frame, its recorded outline when
+     it has one, and its homes as marks. Built only when the rungs above have
+     nothing, so a plat with a photograph pays nothing for it. */
+  const platGroundSrc =
+    platOwnPoster || resortPoster || frame == null
+      ? null
+      : (platGround({
+          // The box a reader sees, not the box the Atlas is handed: the homes
+          // sit inside the padded frame, and the hero must not crop them.
+          frame: frame.visibleBbox,
+          rings: platPolygon ? outerRings(platPolygon) : [],
+          homes: platHomePoints,
+        })?.src ?? null)
+  const openingPhoto = platOpeningPhoto({
+    ownPosterSrc: platOwnPoster,
+    resortPosterSrc: resortPoster,
+    resortLabel,
+    listingPhoto: platListingPhoto(mapTiles),
+    groundSrc: platGroundSrc,
+  })
+  const stagePosterSrc = openingPhoto?.src ?? null
 
   // THE DOOR BEHIND THE FIGURE, PUBLISHED NOT ASSEMBLED. publishPlaceBrowseHref
   // returns null for anything that resolves to the unfiltered regional index, so
@@ -652,10 +800,18 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
     resortLabel,
     neighborhoodLabel: boundaryCity?.neighborhood?.label ?? null,
     cityName: placeCity,
-    // Present ONLY when the frame is the resort's rather than this place's, so
-    // the sentence says whose photograph it is (§0 applies to a picture that
-    // makes a claim exactly as it applies to a number).
-    photographOf: resortPoster && resortLabel ? resortLabel : null,
+    // WHAT THE OPENING FRAME IS, when it is not a photograph of this place:
+    // the resort it borrowed, one of its own homes, or its own drawn ground.
+    // The caption names it before it says anything else (§0 applies to a
+    // picture that makes a claim exactly as it applies to a number).
+    photograph:
+      openingPhoto == null || openingPhoto.kind === 'own'
+        ? null
+        : openingPhoto.kind === 'resort'
+          ? { kind: 'resort' as const, label: openingPhoto.resortLabel }
+          : openingPhoto.kind === 'listing'
+            ? { kind: 'listing' as const, address: openingPhoto.address }
+            : { kind: 'ground' as const },
     activeForSale: captionActive,
     // The same median the market Instrument prints, formatted the same way, so
     // one figure is not spelled two ways on one page.
@@ -1048,43 +1204,76 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
             sourceName={PLAT_FEED}
             dots={atlasView.dots}
             regions={atlasRegions}
-            basemap={basemapForRegions(atlasRegions, {
-              dots: atlasView.dots,
-              fit: atlasRegions.length > 0 ? 'regions' : 'dots',
-            })}
+            /* THE FRAME IS NAMED, NOT INFERRED (SITE-56). The plat's footprint
+               or the box holding its homes, widened until the basemap draws a
+               real map — so a plat with one home gets a map of the streets it
+               stands on instead of a projection divided by zero. V3Atlas pads
+               what it is given by 60%, and the basemap is clipped at the same
+               padding so the ground reaches the frame's edges. */
+            {...(frame ? { frame: frame.geometry } : {})}
+            basemap={
+              frame
+                ? basemapForFrame({ bbox: frame.bbox, pad: ATLAS_FRAME_PAD })
+                : basemapForRegions(atlasRegions, {
+                    dots: atlasView.dots,
+                    fit: atlasRegions.length > 0 ? 'regions' : 'dots',
+                  })
+            }
             parcels={platLots.map((lot) => ({ id: lot.taxlot, subject: false, geometry: lot.geometry }))}
             types={atlasView.types}
             events={atlasView.events}
-            source={platLots.length > 0 ? `${atlasView.source} ${TAXLOT_DISCLAIMER}` : atlasView.source}
+            /* WHAT THE OUTLINE IS, IN WORDS (§0). A drawn boundary makes a
+               claim about the world exactly as a printed figure does, and a
+               footprint joined out of four recorded phases is not the same
+               claim as one filed polygon. The sentence names the parts and the
+               county that recorded them. */
+            source={[
+              atlasView.source,
+              footprintNote,
+              platLots.length > 0 && nearLotsCentre
+                ? `The lot lines are every parcel within ${Math.round(nearLotsRadiusM)} m of these homes, not a boundary of ${displayName}: the county recorded no plat under this name.`
+                : null,
+              platLots.length > 0 ? TAXLOT_DISCLAIMER : null,
+            ]
+              .filter(Boolean)
+              .join(' ')}
             stamp={atlasView.stamp}
             incomplete={!atlasView.complete}
-            {...(atlasRegions.length === 0 ? { fit: 'dots' as const } : {})}
+            {...(frame == null && atlasRegions.length === 0 ? { fit: 'dots' as const } : {})}
           />
         )}
 
         <PlaceTypeSlider cards={typeCards} label={`${displayName} property types`} />
 
-        {/* The map search counts what its VIEW holds, which is not what the
-            plat holds: a reader met "100 homes" under an atlas saying 15, with
-            nothing between them to say they count different things (evaluator
-            round six, SUBDIVISION-R6-2). The section says what it searches. */}
+        {/* THE SECTION SAYS WHAT IT IS, AND IT IS NOT A MAP (SITE-56).
+            It opened on "Search the map" over "Every home on the market AROUND
+            {name}", with a sentence saying the counts follow the map view —
+            three claims about a map that has not been in this section since
+            2026-09-03, when PlaceSplitView was set `listOnly` and the Atlas
+            above became the page's map ("Google Field and the place Split
+            canvas are off: the atlas is the map", c75222a9). Measured on the
+            lane server 2026-09-09: zero requests to maps.googleapis.com from
+            this route and no .gm-style node in #homes. What the section
+            actually holds is this plat's own counted homes, filterable — so
+            that is what it now says, and the count cannot disagree with the
+            Atlas above because it is the same set. */}
         <div id="homes">
           <V3Quiet
             id="homes-head"
-            eyebrow={v3Text('Search the map')}
+            eyebrow={v3Text('Every home, filtered')}
             headingLevel={2}
-            heading={v3Text(`Every home on the market around ${displayName}`)}
+            heading={v3Text(`Every home for sale in ${displayName}`)}
             items={[
               {
                 kind: 'prose' as const,
-                body: `Counts here follow the map view and the filters, so they run wider than the ${displayName} inventory above.`,
+                body: `The same homes the map above marks, with price, beds and property type on the filters. Sold and pending homes are counted on the market section further down, not here.`,
               },
             ]}
           />
           <PlaceSplitView
             city={splitCity}
             subdivision={splitSubdivision}
-            boundaryGeojson={seedRing ? boundary.polygon : null}
+            boundaryGeojson={seedRing ? platPolygon : null}
             overlayBoundaries={overlaysFromRegions(atlasRegions.slice(1))}
             seedRing={seedRing}
             placeQuery={placeQuery}
