@@ -466,6 +466,14 @@ export function priceHistoryLineSvg(
   // document.
   const endFs = need > reserve ? Math.max(fs * (reserve / need), 9) : fs
   const right = W - reserve
+  // AND WHEN NINE STILL DOES NOT FIT, THE LABEL TURNS ROUND. At 320 units
+  // "under contract $449K · 497 days on market" is 186 units at the nine-pixel
+  // floor and starts at 136, so it ran two units past its own viewBox and the
+  // look-pass caught it clipping (2026-09-08). Shrinking further would put a
+  // §0 figure below the readable floor; anchoring the label to the right edge
+  // costs nothing and cannot clip.
+  const endWidth = endText.length * endFs * 0.56
+  const endOverflows = !minimal && right + 8 + endWidth > W - 1
   const x = (t: number) => left + ((right - left) * (t - g.t0)) / Math.max(g.t1 - g.t0, 1)
   const y = (v: number) => bottom - ((bottom - top) * (v - g.lo)) / Math.max(g.hi - g.lo, 1)
 
@@ -533,7 +541,13 @@ export function priceHistoryLineSvg(
   const band = bandY
     ? `<rect x="${left}" y="${bandY.y.toFixed(1)}" width="${(right - left).toFixed(1)}" height="${bandY.h.toFixed(
         1,
-      )}" fill="rgba(16,39,66,0.10)"/>`
+      )}" fill="rgba(16,39,66,0.09)"/>
+  <line x1="${left}" y1="${bandY.y.toFixed(1)}" x2="${right.toFixed(1)}" y2="${bandY.y.toFixed(
+    1,
+  )}" stroke="rgba(16,39,66,0.32)" stroke-width="0.75"/>
+  <line x1="${left}" y1="${(bandY.y + bandY.h).toFixed(1)}" x2="${right.toFixed(1)}" y2="${(
+        bandY.y + bandY.h
+      ).toFixed(1)}" stroke="rgba(16,39,66,0.32)" stroke-width="0.75"/>`
     : ''
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" class="price-path" aria-label="${esc(
     priceHistoryReading(path, range),
@@ -554,7 +568,9 @@ export function priceHistoryLineSvg(
   ${
     minimal
       ? ''
-      : `<text x="${(endX + 8).toFixed(1)}" y="${(endY + 4).toFixed(1)}" font-size="${endFs.toFixed(
+      : `<text x="${endOverflows ? (W - 2).toFixed(1) : (endX + 8).toFixed(1)}" y="${(
+          endY + 4
+        ).toFixed(1)}"${endOverflows ? ' text-anchor="end"' : ''} font-size="${endFs.toFixed(
           2,
         )}" font-weight="600" fill="${INK}">${esc(endText)}</text>
   <text x="${left}" y="${(H - 3).toFixed(1)}" font-size="${fs}" fill="${MUTED}">${esc(monthDay(path.startDate))}</text>

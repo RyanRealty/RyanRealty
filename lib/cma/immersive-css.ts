@@ -114,7 +114,14 @@ img{max-width:100%;display:block}
    193px of photo above 240px of facts, five times over. */
 @media (max-width:560px){.comp-stack-card .matrix-thumb{aspect-ratio:2/1}}
 @media print{.comp-stack{display:none!important}.comp-matrix-wrap,.matrix-group-h{display:block!important}.comp-matrix-wrap{overflow-x:visible}}
-table.comp-matrix{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+/* FIXED LAYOUT, the same as the print sheet. Without it the browser sized the
+   columns from their content, so one long MLS remodel remark widened its
+   column to a third of the table and squeezed four addresses into "840 Qui
+   nce" (look-pass, 2026-09-08). The colgroup is the contract. */
+table.comp-matrix{width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+/* The MLS sentence, as written, reads as prose: left-aligned and a size down
+   from the figures beside it. */
+table.comp-matrix td.is-note{text-align:left;font-size:12px;line-height:1.4;opacity:.85}
 table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px solid var(--ink12);text-align:right;white-space:normal;overflow-wrap:anywhere}
 table.comp-matrix td.n{white-space:nowrap}
 /* Matrix 3's status filter hides COLUMNS. A table cell needs the rule said

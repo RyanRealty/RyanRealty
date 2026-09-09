@@ -219,6 +219,8 @@ type MatrixRow = {
   grid?: boolean
   /** The cell holds a drawing, not a figure. Printed as written, never escaped. */
   html?: boolean
+  /** The cell holds an MLS sentence as written, so it reads as prose. */
+  note?: boolean
 }
 
 /**
@@ -235,7 +237,7 @@ type MatrixRow = {
 const SHARED_ROWS: ReadonlyArray<MatrixRow> = [
   { label: 'Outcome', figure: false },
   { label: 'Year built', figure: true },
-  { label: 'Remodel or update notes', figure: false },
+  { label: 'Remodel or update notes', figure: false, note: true },
   { label: 'Size', figure: true },
   { label: 'Lot size', figure: true },
   { label: 'Rooms', figure: true },
@@ -326,7 +328,13 @@ function sharedCells(entry: MatrixEntry, range?: PricePathRange | null): string[
     entry.beds != null ? int(entry.beds) : '-',
     entry.baths != null ? dec(entry.baths, entry.baths % 1 !== 0 ? 1 : 0) : '-',
     entry.domDays != null ? `${int(entry.domDays)} ${entry.domDays === 1 ? 'day' : 'days'}` : '-',
-    entry.priceChanges == null ? '-' : entry.priceChanges === 0 ? 'none' : int(entry.priceChanges),
+    entry.priceChanges == null
+      ? '-'
+      : entry.priceChanges === 0
+        ? 'none'
+        : entry.priceChangesExact
+          ? int(entry.priceChanges)
+          : 'at least 1',
     priceHistorySparkHtml(entry.path, range) || '-',
     askArcCell(entry),
   ]
@@ -469,6 +477,10 @@ function foldIdenticalRows(
     // that no style adjustment was made, which the legend already covers.
     if (values.length === 0) return
     if (values.every((v) => v === '$0')) return
+    // A row only the reader's own home fills is not a comparison either: the
+    // MLS carries no remarks on a live rival, so "Remodel or update notes"
+    // arrived as one cell and four dashes (look-pass, 2026-09-08).
+    if (cols.slice(1).every((c) => (c.cells[i] ?? '-') === '-')) return
     const phrase = SHARED_PHRASE[row.label]
     const same = phrase != null && values.length >= 2 && values.every((v) => v === values[0])
     if (same) {
@@ -570,7 +582,9 @@ function matrixTable(
           const diff =
             row.html !== true && ci > 0 && val !== subjectVal && val !== '-' && subjectVal !== '-'
           const cell = row.html === true ? val : esc(val)
-          return `<td class="v${row.figure ? ' n' : ''}${row.html === true ? ' is-draw' : ''}${diff ? ' is-diff' : ''}">${cell}</td>`
+          return `<td class="v${row.figure ? ' n' : ''}${row.html === true ? ' is-draw' : ''}${
+            row.note === true ? ' is-note' : ''
+          }${diff ? ' is-diff' : ''}">${cell}</td>`
         })
         .join('')
       const factAttr = row.fact ? ` data-fact="${row.fact}"` : ''
@@ -641,12 +655,23 @@ function matrixStack(input: {
     // history and every adjustment line sit behind the card's own expand,
     // built by the interaction layer, so the print letter and a reader with no
     // JavaScript still see all of it.
+    // WHAT STAYS ON THE CARD, AND WHAT GOES UNDER IT. Three matrices of full
+    // cards took the phone document from 15,832px to 20,763px in one pass
+    // (look-pass, 2026-09-08). Nothing is removed — every one of the twelve
+    // columns is still on the card — but only the four a reader compares homes
+    // on are open: what happened, what it asked and got, how long it took, and
+    // how big it is. The rest opens with the price path and the working.
+    const OPEN = new Set(['Outcome', 'First ask \u2192 last ask \u2192 outcome', 'Days on market', 'Size'])
     const headline = facts
       .filter(({ row }) => row.label === 'Outcome')
       .map(({ row, value }) => line(row.label, value, row.html === true, false, false))
       .join('')
     const body = facts
-      .filter(({ row }) => row.label !== 'Outcome' && row.label !== 'How the price moved')
+      .filter(({ row }) => row.label !== 'Outcome' && OPEN.has(row.label))
+      .map(({ row, value }) => line(row.label, value, row.html === true, false, false))
+      .join('')
+    const rest = facts
+      .filter(({ row }) => !OPEN.has(row.label) && row.label !== 'How the price moved')
       .map(({ row, value }) => line(row.label, value, row.html === true, false, false))
       .join('')
     const adjCol = input.adjustment?.cols[i] ?? null
@@ -657,11 +682,11 @@ function matrixStack(input: {
           .map(({ row, value }) => line(row.label, value, false, row.rule !== true, row.rule === true))
           .join('')
       : ''
-    const fold = `<div class="comp-fold" data-fold-label="How this price moved">${priceHistoryLineHtml(
-      entry?.path ?? null,
-      `${input.family}-${pin}`,
-      input.range,
-    )}${adjLines ? `<div class="comp-stack-grid">${adjLines}</div>` : ''}</div>`
+    const fold = `<div class="comp-fold" data-fold-label="The rest of this home">${
+      rest ? `<div class="comp-stack-grid">${rest}</div>` : ''
+    }${priceHistoryLineHtml(entry?.path ?? null, `${input.family}-${pin}`, input.range)}${
+      adjLines ? `<div class="comp-stack-grid">${adjLines}</div>` : ''
+    }</div>`
     return `<article class="comp-stack-card${
       col.key === 'subject' ? ' is-yours' : ''
     }" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${

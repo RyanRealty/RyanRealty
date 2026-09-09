@@ -515,11 +515,27 @@ const INTERACT_STEPS: InteractStep[] = [
   },
   {
     name: 'did-not-sell-history',
+    // The dated list is the PHONE card's own expand: at reading width the
+    // matrix draws each path in its own row and the "first ask → last ask →
+    // outcome" column beside it carries the figures, so there is no toggle to
+    // drive and nothing hidden (Delta 3).
+    when: `${VISIBLE('#did-not-sell .pp-toggle')}.length > 0`,
     shot: '#did-not-sell',
     run: `(() => {
-      const t = ${VISIBLE('#did-not-sell .pp-toggle')}[0]
-      if (!t) return null
-      t.click()
+      // The dated list sits one fold deeper than it used to: Delta 3's card
+      // opens on the four facts a reader compares homes on, and the price path
+      // — with its own expand — is inside "The rest of this home". So open
+      // every disclosure this card carries, outermost first, until the dated
+      // rows are on screen.
+      const seen = new Set()
+      for (let pass = 0; pass < 3; pass++) {
+        const list = document.querySelector('#did-not-sell .pp-list')
+        if (list && !list.hidden) return 'expanded ' + list.children.length + ' dated rows'
+        const next = ${VISIBLE('#did-not-sell .pp-toggle')}.find((t) => !seen.has(t))
+        if (!next) break
+        seen.add(next)
+        next.click()
+      }
       const list = document.querySelector('#did-not-sell .pp-list')
       return list && !list.hidden ? 'expanded ' + list.children.length + ' dated rows' : ''
     })()`,
@@ -616,7 +632,7 @@ const INTERACT_STEPS: InteractStep[] = [
       // descending runs — which a reader reads as a sort that did not work.
       // So the columns must come back descending read left to right, table
       // after table, and the cards must follow them.
-      const perTable = Array.from(document.querySelectorAll('#sales-that-set-it table.comp-matrix.is-closed')).map((t) =>
+      const perTable = Array.from(document.querySelectorAll('#sales-that-set-it table.comp-matrix.is-closed:not(.is-adjustments)')).map((t) =>
         Array.from(t.querySelectorAll('thead th.v'))
           .map((th) => th.getAttribute('data-sort-price'))
           .filter((v) => v != null)

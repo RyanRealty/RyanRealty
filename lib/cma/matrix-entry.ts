@@ -60,7 +60,18 @@ export type MatrixEntry = {
   beds: number | null
   baths: number | null
   domDays: number | null
+  /**
+   * How many times the ask moved — and whether that count is EXACT.
+   *
+   * The record carries two different things. A dated cycle (the seller's own
+   * listing) holds every change with its date, so the count is a count. Every
+   * other row holds an opening ask and today's ask and nothing between them,
+   * so what is known is whether the price moved AT ALL — and printing "1" or
+   * "none" there states something the MLS never said (CLAUDE.md §0). A closed
+   * sale with no original ask on the row knows neither, and prints nothing.
+   */
   priceChanges: number | null
+  priceChangesExact: boolean
   path: PricePath | null
   firstAsk: number | null
   lastAsk: number | null
@@ -162,6 +173,18 @@ function days(n: number | null | undefined): number | null {
   return n != null && Number.isFinite(n) && n >= 0 ? Math.round(n) : null
 }
 
+/**
+ * DID THE PRICE MOVE, from an opening ask and an ask today.
+ *
+ * 1 means "at least once" and the cell says so; 0 means the two figures are
+ * the same, which IS a fact; null means the record carries no opening ask and
+ * the question cannot be answered at all.
+ */
+function movedOrNull(first: number | null, last: number | null): number | null {
+  if (first == null || !(first > 0) || last == null || !(last > 0)) return null
+  return first === last ? 0 : 1
+}
+
 // ── the three builders ──────────────────────────────────────────────────────
 
 /**
@@ -219,7 +242,12 @@ export function closedEntries(
       // ON MARKET, not to offer: this row is the same measure in all three
       // matrices, and an unsold listing has no offer to count days to.
       domDays: ran ?? toOffer,
-      priceChanges: path ? priceChangeCountOf(path) : null,
+      // `pricePathFromSale` draws from the ask the sale went under contract
+      // at; no original ask reaches the renderer for a comparable sale, so the
+      // path's own change count is always zero and would assert something the
+      // record does not say. Only an original ask on the row makes it knowable.
+      priceChanges: movedOrNull(num(c.originalListPrice), num(c.listPrice)),
+      priceChangesExact: false,
       path,
       firstAsk: num(c.originalListPrice) ?? num(c.listPrice),
       lastAsk: num(c.listPrice),
@@ -283,7 +311,8 @@ export function unsoldEntries(
       beds: p.beds ?? null,
       baths: p.baths ?? null,
       domDays: dom,
-      priceChanges: path ? priceChangeCountOf(path) : null,
+      priceChanges: movedOrNull(num(p.originalListPrice), num(p.listPrice)),
+      priceChangesExact: false,
       path,
       firstAsk: num(p.originalListPrice) ?? num(p.listPrice),
       lastAsk: num(p.listPrice),
@@ -352,7 +381,8 @@ export function activeEntries(
       beds: r.beds ?? null,
       baths: r.baths ?? null,
       domDays: dom,
-      priceChanges: path ? priceChangeCountOf(path) : null,
+      priceChanges: movedOrNull(num(r.originalListPrice), num(r.listPrice)),
+      priceChangesExact: false,
       path,
       firstAsk: num(r.originalListPrice) ?? num(r.listPrice),
       lastAsk: num(r.listPrice),
@@ -424,7 +454,9 @@ export function subjectEntry(input: {
     beds: s.beds ?? null,
     baths: s.baths ?? null,
     domDays: input.domDays,
+    // The one row whose changes ARE dated: the seller's own final cycle.
     priceChanges: path ? priceChangeCountOf(path) : null,
+    priceChangesExact: (input.finalCycle?.cutsDated ?? false) === true,
     path,
     firstAsk: path?.startPrice ?? input.printableAsk,
     lastAsk: path ? finalAskOf(path) : input.printableAsk,
@@ -447,6 +479,7 @@ export function pinFactsFor(entries: readonly MatrixEntry[]): CmaPinFact[] {
       outcome: e.outcome,
       domDays: e.domDays,
       priceChanges: e.priceChanges,
+      priceChangesExact: e.priceChangesExact,
       latitude: e.latitude,
       longitude: e.longitude,
     }))

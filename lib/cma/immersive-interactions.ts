@@ -467,6 +467,9 @@ try{
     // reader reached a single sale (tasteReview round two, §2.3). The toggle
     // stays a segmented pair, because it is two states of one thing; the order
     // becomes a select, because four mutually exclusive options is a select.
+    // ONE HOME IS NOT AN ORDER. A matrix holding the reader plus a single
+    // listing offered "Most recent / Price today / Size" over nothing.
+    var homeCount=shared.reduce(function(n,t){return n+t.querySelectorAll('thead th.v').length-1},0)
     var box=controls(anchor,'')
     box.className='rr-controls is-row'
     var hasAdj=chapter.querySelectorAll('tr[data-adj]').length>0
@@ -572,7 +575,7 @@ try{
       .filter(function(o){
         return o[1]===null||chapter.querySelector('thead th.v[data-sort-'+o[1]+']')!=null
       })
-    if(ORDERS.length>1){
+    if(ORDERS.length>1&&homeCount>1){
       var sel=el('select','rr-select')
       sel.setAttribute('aria-label','Order the homes in this table')
       ORDERS.forEach(function(o,i){

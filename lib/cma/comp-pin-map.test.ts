@@ -37,6 +37,7 @@ const facts: CmaPinFact[] = [
     outcome: 'came off after 36 days',
     domDays: 36,
     priceChanges: 2,
+    priceChangesExact: true,
     latitude: 44.2705,
     longitude: -121.1765,
   },
@@ -58,7 +59,7 @@ describe('renderCompPinMapHtml', () => {
     const html = renderCompPinMapHtml({ subject, facts })
     expect(html).toContain('sold $457K · offer in 25 days')
     expect(html).toContain('36 days on market · 2 price changes')
-    expect(html).toContain('13 days on market · no price changes')
+    expect(html).toContain('13 days on market · no price change')
   })
 
   it('uses the street map when a static image is already built', () => {
@@ -100,8 +101,18 @@ describe('pinLegendHtml', () => {
 })
 
 describe('pinRevealLine', () => {
-  it('says no price changes rather than dropping the fact', () => {
-    expect(pinRevealLine({ ...facts[0]!, priceChanges: 0 })).toContain('no price changes')
+  it('says no price change rather than dropping the fact', () => {
+    expect(pinRevealLine({ ...facts[0]!, priceChanges: 0 })).toContain('no price change')
+  })
+
+  it('never states a COUNT the record cannot support', () => {
+    // An opening ask and today's ask say THAT the price moved, not how often.
+    expect(pinRevealLine({ ...facts[0]!, priceChanges: 1, priceChangesExact: false })).toContain(
+      'came down at least once',
+    )
+    expect(pinRevealLine({ ...facts[0]!, priceChanges: 1, priceChangesExact: true })).toContain(
+      '1 price change',
+    )
   })
 
   it('omits a measure the record does not carry', () => {

@@ -640,6 +640,7 @@ export function cmaSectionStyles(): string {
   }
   /* Only figures hold the line. Free text wraps rather than widening a column. */
   table.comp-matrix td.n { white-space: nowrap; }
+  table.comp-matrix td.is-note { text-align: left; font-size: 9.5px; line-height: 1.35; }
   table.comp-matrix th[hidden], table.comp-matrix td[hidden] { display: none; }
   table.comp-matrix thead th:first-child, table.comp-matrix tbody th { text-align: left; }
   table.comp-matrix td.is-diff { font-weight: 600; }

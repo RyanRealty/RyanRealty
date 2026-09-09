@@ -57,6 +57,8 @@ export type CmaPinFact = {
   outcome: string
   domDays: number | null
   priceChanges: number | null
+  /** False when the record says only THAT the price moved, not how often. */
+  priceChangesExact?: boolean
   latitude?: number | null
   longitude?: number | null
 }
@@ -112,8 +114,10 @@ export function pinRevealLine(fact: CmaPinFact): string {
   if (fact.priceChanges != null && fact.priceChanges >= 0) {
     bits.push(
       fact.priceChanges === 0
-        ? 'no price changes'
-        : `${int(fact.priceChanges)} price change${fact.priceChanges === 1 ? '' : 's'}`,
+        ? 'no price change'
+        : fact.priceChangesExact
+          ? `${int(fact.priceChanges)} price change${fact.priceChanges === 1 ? '' : 's'}`
+          : 'came down at least once',
     )
   }
   return bits.join(' · ')

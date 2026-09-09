@@ -79,7 +79,6 @@ describe('renderCompMatrixHtml', () => {
       'Outcome',
       'Size',
       'Days on market',
-      'Price changes',
       'How the price moved',
       'First ask \u2192 last ask \u2192 outcome',
       'Sold for',
