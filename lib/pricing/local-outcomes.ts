@@ -446,10 +446,10 @@ export function computeAskOutcome(args: {
     city: args.city,
     windowMonths,
     groups: [
-      group('sold-no-cut', noCutDays, `sales in ${args.city} closed without the ask coming down`, {
+      group('sold-no-cut', noCutDays, `sales in ${args.city} closed without a price cut`, {
         realizationPcts: noCutRealization,
       }),
-      group('sold-after-cut', cutDays, `sales in ${args.city} closed after the ask came down`, {
+      group('sold-after-cut', cutDays, `sales in ${args.city} closed after a price cut`, {
         cutPcts,
         realizationPcts: cutRealization,
       }),

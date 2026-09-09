@@ -213,7 +213,7 @@ export function computeLocalFailedThenSold(args: {
       `Sales: StandardStatus='Closed', CloseDate >= ${args.sinceIso}; ${args.closedRows.length} sale(s) read. ` +
       `A pair is the same street number + street name + city, the sale's ListDate (or CloseDate when it has none) ` +
       `on or after the failure's off-market date, closing within ${relistWindowMonths} months of it, earliest close wins. ` +
-      `Figure = median ClosePrice / the ask that failed (ListPrice on the failed cycle), over ${n} pair(s). ` +
+      `Figure = median ClosePrice / the asking price that failed (ListPrice on the failed cycle), over ${n} pair(s). ` +
       `Same pairing rules as scripts/cma-backtest.mjs, narrowed to one city and single-family homes.`,
     fetchedAt: args.fetchedAt,
     query:

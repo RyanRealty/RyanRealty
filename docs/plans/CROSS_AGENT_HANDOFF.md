@@ -30,6 +30,14 @@ instant email (`lib/cma-delivery.ts composeCmaEmail`). `scripts/cma-first-messag
 by it. Tests: first-contact (17), first-touch-copy (10), fsbo-cma-templates (12), crm-compose-copy,
 cma-delivery.compose.
 
+**"The ask" is gone from what we send.** Matt: "we don't say things like, 'The ask was this.' No one
+says that." Every rendered "the ask" is now "the asking price" (or "a price cut"): the public
+listing read (`lib/pricing/public-read-copy.ts`, "How the asking price sits against nearby sales",
+"Versus the asking price"), the listing close line ("came off the asking price"), the document's
+did-not-sell figure and outcome labels (`opinion-pages.ts`, `local-outcomes.ts`), the BPO offer and
+history lines, the expired audit fact, and the failed-then-sold citation. Comments and test titles
+keep the word; only copy a person reads changed. 25 test files / 452 tests green.
+
 **Open.** (1) Matt has not yet said the words are right; Auto-send for expired and FSBO stays OFF
 until he does, then: harness send walk, second walk on the FSBO and expired lanes, flip the
 switches for clean documents (audit pass, no review reason, range inside the 8% share). (2) Fixed

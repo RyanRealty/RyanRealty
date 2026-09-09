@@ -9,9 +9,9 @@ import type { PublicRefuseReason } from '@/lib/pricing/public-contract'
 
 export function overUnderPhrase(deltaPct: number): string {
   const pct = Math.round(Math.abs(deltaPct) * 100)
-  if (pct < 1) return 'in line with the ask'
-  if (deltaPct < 0) return `${pct}% under the ask`
-  return `${pct}% over the ask`
+  if (pct < 1) return 'in line with the asking price'
+  if (deltaPct < 0) return `${pct}% under the asking price`
+  return `${pct}% over the asking price`
 }
 
 export function listedReadSentence(n: number, deltaPct: number): string {
@@ -53,13 +53,13 @@ export const PUBLIC_READ_DISCLAIMER =
   'This is an estimate, not an appraisal. It is not a guarantee of price.'
 
 export const PUBLIC_READ_EYEBROW = 'Our read'
-export const PUBLIC_READ_TITLE = 'How the ask sits against nearby sales'
+export const PUBLIC_READ_TITLE = 'How the asking price sits against nearby sales'
 export const PUBLIC_READ_TITLE_UNLISTED = 'What nearby sales imply'
 export const PUBLIC_READ_TITLE_REFUSE = 'Why this page has no number'
 
 export const HOUSEME_EYEBROW = 'This house'
 export const HOUSEME_TITLE_FACTS = 'What this listing shows'
-export const HOUSEME_LABEL_READ = 'Versus the ask'
+export const HOUSEME_LABEL_READ = 'Versus the asking price'
 export const HOUSEME_LABEL_READ_UNLISTED = 'Nearby sales'
 export const HOUSEME_LABEL_READ_REFUSE = 'Why no number'
 export const HOUSEME_LABEL_COMPS = 'Comps'

@@ -77,7 +77,7 @@ describe('buildHouseMeRows', () => {
     const comps = rows.find((r) => r.id === 'comps')
     expect(read?.source).toBe('listing_pricing_reads')
     expect(read?.label).toBe(HOUSEME_LABEL_READ)
-    expect(read?.value).toBe('3% under the ask')
+    expect(read?.value).toBe('3% under the asking price')
     expect(read?.detail).toBe('$637,000 to $763,000')
     expect(comps?.source).toBe('listing_pricing_reads')
     expect(comps?.label).toBe(HOUSEME_LABEL_COMPS)

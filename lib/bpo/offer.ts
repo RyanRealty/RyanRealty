@@ -69,7 +69,7 @@ function buildLeverageBullets(
     )
   }
   if (history.totalDeclineFromPeakPct != null && history.totalDeclineFromPeakPct <= -8) {
-    out.push(`The ask is down ${Math.abs(history.totalDeclineFromPeakPct)}% from its peak, a sign of a motivated seller.`)
+    out.push(`The asking price is down ${Math.abs(history.totalDeclineFromPeakPct)}% from its peak, a sign of a motivated seller.`)
   }
   if (market?.marketVerdict) {
     out.push(

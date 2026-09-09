@@ -146,7 +146,7 @@ export function analyzeListingHistory(
     signals.push({
       code: 'chronic_overpricing',
       severity: 'strong',
-      text: `The ask has fallen ${Math.abs(totalDeclineFromPeakPct)}% from a peak of ${usd(peakAskingPrice!)} to ${usd(currentListPrice!)} and has still not sold.`,
+      text: `The asking price has fallen ${Math.abs(totalDeclineFromPeakPct)}% from a peak of ${usd(peakAskingPrice!)} to ${usd(currentListPrice!)} and has still not sold.`,
     })
   }
 

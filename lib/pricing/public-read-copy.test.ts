@@ -8,16 +8,16 @@ import {
 
 describe('overUnderPhrase', () => {
   it('names under, over, and in-line without a single public dollar', () => {
-    expect(overUnderPhrase((700_000 - 725_000) / 725_000)).toBe('3% under the ask')
-    expect(overUnderPhrase((750_000 - 725_000) / 725_000)).toBe('3% over the ask')
-    expect(overUnderPhrase(0.004)).toBe('in line with the ask')
+    expect(overUnderPhrase((700_000 - 725_000) / 725_000)).toBe('3% under the asking price')
+    expect(overUnderPhrase((750_000 - 725_000) / 725_000)).toBe('3% over the asking price')
+    expect(overUnderPhrase(0.004)).toBe('in line with the asking price')
   })
 })
 
 describe('listedReadSentence', () => {
   it('talks about a range, not the comps close as the price', () => {
     expect(listedReadSentence(5, (700_000 - 725_000) / 725_000)).toBe(
-      'Nearby sales put a close in this range. That is 3% under the ask.',
+      'Nearby sales put a close in this range. That is 3% under the asking price.',
     )
   })
 })
