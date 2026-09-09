@@ -11,9 +11,8 @@
  *      - STOP-adjacent phrasing or profanity  -> not_interested
  *      - explicit "wrong number" phrasing     -> wrong_number
  *      - empty body or a bare acknowledgement -> other (no suggested reply)
- *   2. Model call (Anthropic Messages API, haiku-class — same conventions as
- *      lib/marketing-brain/inbox-parser.ts: ANTHROPIC_API_KEY env, JSON-only
- *      output, fenced-JSON tolerated).
+ *   2. Model call through lib/grok (Matt 2026-09-09: every model pass on
+ *      Grok), schema-bound JSON.
  *
  * FAIL-OPEN CONTRACT: any failure (kill switch, missing key, network error,
  * timeout, non-2xx, bad JSON, invalid intent) returns null. The caller treats
@@ -26,6 +25,9 @@
  * voids the suggestion (empty string). Banned punctuation (em/en dashes,
  * semicolons) is scrubbed.
  */
+
+import { generateGrokStructured } from '@/lib/grok/text'
+import { GROK_MODELS, grokConfigured } from '@/lib/grok/client'
 
 export type ReplyIntent =
   | 'interested'
@@ -74,9 +76,6 @@ export interface ReplyClassification {
 
 // Same API conventions as lib/marketing-brain/inbox-parser.ts (kept local —
 // that module does not export them).
-const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
-const ANTHROPIC_VERSION = '2023-06-01'
-const HAIKU_MODEL = 'claude-haiku-4-5-20251001'
 /** Twilio webhooks time out at 15s — cap the model call well under that. */
 const MODEL_TIMEOUT_MS = 6000
 
@@ -227,10 +226,6 @@ ${(input.body ?? '').slice(0, 500)}
 // Classifier entry point
 // ---------------------------------------------------------------------------
 
-interface AnthropicResponse {
-  content: Array<{ type: string; text: string }>
-}
-
 /**
  * Classify an inbound prospect reply. Deterministic pre-pass first, then a
  * haiku-class model call. Returns null whenever classification cannot run —
@@ -245,49 +240,34 @@ export async function classifyInboundReply(
   const deterministic = deterministicReplyIntent(input.body)
   if (deterministic) return deterministic
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return null
+  // Matt 2026-09-09: every model pass through lib/grok (§4). The prompt is
+  // unchanged; the answer is the same JSON, now schema-bound.
+  if (!grokConfigured()) return null
 
   const { system, user } = buildReplyIntentPrompt(input)
 
-  let response: Response
-  try {
-    response = await fetch(ANTHROPIC_API, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': ANTHROPIC_VERSION,
-      },
-      body: JSON.stringify({
-        model: HAIKU_MODEL,
-        max_tokens: 300,
-        system,
-        messages: [{ role: 'user', content: user }],
-      }),
-      signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
-    })
-  } catch {
-    return null
-  }
-  if (!response.ok) return null
-
-  let textBlock: string
-  try {
-    const data = (await response.json()) as AnthropicResponse
-    textBlock = data.content?.find((b) => b.type === 'text')?.text ?? ''
-  } catch {
-    return null
-  }
-
-  const cleaned = textBlock
-    .replace(/^\s*```(?:json)?\s*/i, '')
-    .replace(/\s*```\s*$/i, '')
-    .trim()
-
   let parsed: Record<string, unknown>
   try {
-    parsed = JSON.parse(cleaned) as Record<string, unknown>
+    const res = await generateGrokStructured<Record<string, unknown>>({
+      model: GROK_MODELS.textFast,
+      system,
+      prompt: user,
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          intent: { type: 'string' },
+          confidence: { type: 'number' },
+          recommended_reply: { type: 'string' },
+        },
+        required: ['intent', 'confidence', 'recommended_reply'],
+      },
+      schemaName: 'reply_intent',
+      maxTokens: 300,
+      reasoningEffort: 'low',
+      timeoutMs: MODEL_TIMEOUT_MS,
+    })
+    parsed = res.value ?? {}
   } catch {
     return null
   }
@@ -310,6 +290,6 @@ export async function classifyInboundReply(
     confidence,
     recommendedReply,
     source: 'model',
-    model: HAIKU_MODEL,
+    model: GROK_MODELS.textFast,
   }
 }

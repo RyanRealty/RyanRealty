@@ -1,4 +1,48 @@
-# Current — 2026-09-09 (round two of Matt's calls: the story on Grok, the kick-off asks, Delta 4 rural splits are live)
+# Current — 2026-09-09 (engine items 3 and 4: the map's own ground and the graded cover; an inbound email advances the CRM)
+
+Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
+(`wt/cma-ship-20260907`). Commits be982f27 (map ground, cover pick, capped cover line) and the
+item-4 commit after it; one gated push after this was written — `git log origin/main --oneline -6`.
+
+**Map (item 3).** `lib/cma/map-ground.ts` draws the ground the site's Atlas draws — TIGER
+highways, rivers, lakes, local streets (lib/geo/basemap), the comp-area outline, the search ring,
+and the towns — as an SVG data URI in the same Web Mercator view the DOM pins use, so the pins,
+the matrices and the print letter are untouched. `fitStaticMapView({ fractional: true })` fits
+the pins tight (the Google tile's integer zoom left frames up to twice too wide); MAP_H is 360 so
+the immersive stops stretching a 640×400 tile into 16:9. Towns from `data/cma/map-labels.json`
+(TIGER place polygons, point-on-surface) and the resort registry; labels nudge around the pins
+and a city is never dropped. Google stays as the fallback for a frame outside the basemap tiers.
+Concorde, look-pass OK: Bend, Redmond, Tumalo, Sisters, Terrebonne, Prineville, Powell Butte and
+the communities named, no logo, "Roads and water: US Census TIGER" in the corner. A taste pass
+could still thin the community labels on the west side and darken the Deschutes.
+
+**Cover (item 3).** `lib/cma/cover-photo.ts` grades the MLS hero and the listing's Spark photos
+with the Studio vision pass (subject, quality, overlay), one grade in the common case, at most
+six, keeps the best exterior (front > aerial > rear > view, clean before overlaid), the home's own
+exterior always ahead of the brand frame; provenance on `render_args.coverPhoto`. Concorde kept
+its hero (exterior front, 86/100, $0.02); 1617 NW 8th too (78); 2465's only exterior is an
+overlaid aerial and it stays. The Spark CDN needs the 26-digit id with `-o.jpg` and refuses
+model-side fetchers, so photos are fetched in node as data URLs. The local Spark API token is
+invalid (401) — the feed is fail-open, production's token is the sync's. Cover copy: when the
+failed-ask cap sits the number under the sales' range the cover says so instead of "worth".
+
+**Inbound email (item 4).** `lib/crm/gmail.ts syncMailboxWindow` now hands every fresh, human
+inbound email to `handleInboundReply` (channel 'email'): stage Lead/Nurture → Engaged, running
+sequence paused, a "Reply back" task, a broker text — the same four things a text has done since
+2026-08-26. `lib/crm/inbound-email-advance.ts` picks one message per person inside the window
+and skips robots (out-of-office, bounces, calendar, no-reply senders). Proven on Avery by calling
+the handler directly (Nurture → Engaged, task, alert queued) — the Gmail sync itself cannot match
+a harness alias because `SELF_DOMAINS` drops our own addresses; the live proof is Matt replying
+to a CMA email from mattmryan2@gmail.com (person 18194) and watching the next :09/:24/:39/:54
+sync. Reply intent (`lib/crm/reply-intent.ts`) runs on Grok now (grok-4.5 fast, schema-bound),
+so the suggested-reply note returns after weeks of "credit balance too low".
+
+**Next.** All four of Matt's engine items are done. Open from before: CmaLaneFunnel not mounted,
+8 zz-test-rebrand fixtures in production `cmas`, all four lane Auto-send switches OFF, the
+usable-acreage GIS measure, `lib/marketing-brain/inbox-parser.ts` and `lib/agent/*` still call
+Anthropic.
+
+## Prior — 2026-09-09 (round two of Matt's calls: the story on Grok, the kick-off asks, Delta 4 rural splits are live)
 
 Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
 (`wt/cma-ship-20260907`). Commits d2bc4235 (Grok story + kick-off ask), f13cfd53 (Delta 4),

@@ -291,6 +291,8 @@ export async function syncMailboxWindow(params: {
     subject: string | null
     /** Gmail internalDate as ISO — a backfill walk must not alert on old mail. */
     ts: string
+    /** Who sent it — an autoresponder or a robot never advances anyone. */
+    fromEmails: string[]
   }> = []
   // carry walk-wide max across resumed invocations (a long mailbox walk spans
   // many invocations; the page token below persists mid-walk progress)
@@ -397,6 +399,7 @@ export async function syncMailboxWindow(params: {
               body,
               subject,
               ts: new Date(internal || Date.now()).toISOString(),
+              fromEmails: from,
             })
           }
         }
@@ -485,6 +488,22 @@ export async function syncMailboxWindow(params: {
     }
   } catch (err) {
     console.warn('[gmail-sync] CMA reply routing failed (fail-open)', err)
+  }
+
+  // Engine item 4 (Matt 2026-09-09): an inbound EMAIL now does what an inbound
+  // text has done since 2026-08-26 — advances the stage to Engaged, pauses the
+  // running sequence, tasks the broker, and texts them (lib/crm/on-reply.ts,
+  // one nudge per person per window). Recent mail only, humans only
+  // (lib/crm/inbound-email-advance.ts). Fail-open: the rows are committed.
+  try {
+    const { handleInboundReply } = await import('@/lib/crm/on-reply')
+    const { inboundEmailRepliesToAdvance } = await import('@/lib/crm/inbound-email-advance')
+    const freshAfter = new Date(Date.now() - CMA_REPLY_ALERT_WINDOW_DAYS * 86_400_000).toISOString()
+    for (const r of inboundEmailRepliesToAdvance(inboundForIntent, freshAfter)) {
+      await handleInboundReply({ personId: r.personId, broker: brokerSlug, channel: 'email', preview: r.preview })
+    }
+  } catch (err) {
+    console.warn('[gmail-sync] inbound-reply advance failed (fail-open)', err)
   }
 
   // Persist progress EVERY invocation: mid-walk runs save the Gmail page
