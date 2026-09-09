@@ -261,10 +261,11 @@ function mapLegend(
   boundaryShown?: boolean,
 ): string {
   const name = cleanText(subdivision)
-  if (!name || boundaryShown === false) return 'The pins are the sales above.'
+  const pins = 'Every pin below is a row in one of the three tables that follow.'
+  if (!name || boundaryShown === false) return pins
   return boundaryShown === true
-    ? `The pins are the sales above. The outline is ${name}.`
-    : `The pins are the sales above. The outline is ${name}, when that boundary is on file.`
+    ? `${pins} The outline is ${name}.`
+    : `${pins} The outline is ${name}, when that boundary is on file.`
 }
 
 /**
@@ -393,7 +394,7 @@ function renderSetAsideHtml(pricing: CmaPricing, comps: readonly CmaAdjustedComp
   <ul class="rejected-list">${items}</ul>`
 }
 
-export function pricingPage(input: {
+export type PricingPageInput = {
   subject: CmaSubject
   comps: CmaAdjustedComp[]
   market: CmaMarketContext | null
@@ -409,7 +410,20 @@ export function pricingPage(input: {
   compTrace?: readonly string[] | null
   /** Whether the subject's stored ask is still this listing's ask (class E). */
   askCtx?: SubjectAskContext
-}): CmaPageDef {
+  /** The seller's own failed listing, for their column's price path. */
+  finalCycle?: import('@/lib/cma/expired-audit').ExpiredFinalCycle | null
+}
+
+/**
+ * CHAPTER 3, AFTER DELTA 3: the number, the range, and the method. Nothing
+ * else.
+ *
+ * The map left this chapter and became its own (`theMapPage`), and the sales
+ * that prove the number became matrix 1 (`salesThatSetItPage`). Matt's order
+ * is the number → the map → the three matrices, and a chapter that holds all
+ * three is the "scrolling list" TASTE.md bans.
+ */
+export function pricingPage(input: PricingPageInput): CmaPageDef {
   const p = input.pricing
   const s = input.subject
   const search = describeCompSearch({ subdivision: s.subdivision, tiersUsed: input.tiersUsed ?? [] })
@@ -421,13 +435,6 @@ export function pricingPage(input: {
     comps: input.comps,
     fallback: search.body,
   })
-  const pinMap = renderCompPinMapHtml(
-    s,
-    input.comps,
-    input.mapDataUri ?? null,
-    'Map of the sales that set this price',
-    input.mapOverlay ?? null,
-  )
   const heading = whatItsWorthHeading(p)
   // THE CLAMP, UNDER THE NUMBER IT MOVED. When the failed-ask clamp binds, the
   // printed price is not the one the method above it produces — Concorde
@@ -478,24 +485,103 @@ export function pricingPage(input: {
   ${clampHtml}` : ''}
   ${strip}
   ${method}
-  ${renderCompMatrixHtml(
+`,
+  }
+}
+
+/**
+ * MATRIX 1. The closed sales that set the price, with the adjustment grid.
+ *
+ * Delta 3: "we'll break out the matrices of comparables so that we start with
+ * the closed comparables, the ones that set the price." Everything that reads
+ * off those sales and off nothing else travels with them: the set-aside list,
+ * the reconciliation, the per-foot check and the sales the selector rejected.
+ */
+export function salesThatSetItPage(input: PricingPageInput): CmaPageDef | null {
+  const p = input.pricing
+  const s = input.subject
+  const aside = setAsideCompIndexes(p, input.comps)
+  const matrix = renderCompMatrixHtml(
     s,
     input.comps,
     tableLead({ comps: input.comps, pricing: p }),
     input.docLinks,
     weightsWithoutSetAside(p, input.comps, aside),
     input.askCtx,
-  )}
-  ${concessionsCaption(input.comps)}
-  ${renderSetAsideHtml(p, input.comps)}
+    {
+      range: worthRangeRounded(p),
+      finalCycle: input.finalCycle ?? null,
+      footer: `${concessionsCaption(input.comps)}
   ${renderReconciliationHtml(p)}
-  ${perSquareFootLine({ subject: s, pricing: p })}
+  ${perSquareFootLine({ subject: s, pricing: p })}`,
+    },
+  )
+  if (!matrix.trim()) return null
+  return {
+    meta: `${esc(s.streetAddress)} · The sales that set this price`,
+    toc: 'The sales that set this price',
+    body: `
+  <h2 class="section">${esc(SALES_THAT_SET_IT_HEADING)}</h2>
+  ${matrix}
+  ${renderSetAsideHtml(p, input.comps)}
   ${renderRejectedSalesHtml(p, input.comps)}
-  ${
-    pinMap
-      ? `<div class="pin-map-wrap">${pinMap}</div><p class="small">${esc(mapLegend(s.subdivision, input.mapOverlay?.boundaryShown))}</p>`
-      : ''
-  }
 `,
   }
+}
+
+/** The chapter title, in one place so the letter and the scene cannot drift. */
+export const SALES_THAT_SET_IT_HEADING = 'The sales that set this price.'
+
+/**
+ * THE ONE MAP (Delta 3).
+ *
+ * Matt: "One comprehensive map." It sits under the number and above the three
+ * matrices, carries all three pin families, and is the only map in the
+ * document — the competition map and the market map were removed at C9 and do
+ * not come back.
+ */
+export function mapPage(input: {
+  subject: CmaSubject
+  facts: readonly import('@/lib/cma/comp-pin-map').CmaPinFact[]
+  mapDataUri?: string | null
+  mapOverlay?: import('@/lib/cma/comp-pin-map').CompPinMapOverlay | null
+  /** `render_args.compArea.sentence`, when the row carries one. */
+  areaSentence?: string | null
+}): CmaPageDef | null {
+  const body = mapBodyHtml(input)
+  if (!body.trim()) return null
+  return {
+    meta: `${esc(input.subject.streetAddress)} · ${esc(MAP_HEADING)}`,
+    toc: MAP_HEADING,
+    body: `
+  <h2 class="section">${esc(MAP_HEADING)}</h2>
+  ${body}`,
+  }
+}
+
+export const MAP_HEADING = 'Where all of this is.'
+
+/** Shared by the letter chapter and its immersive twin. */
+export function mapBodyHtml(input: {
+  subject: CmaSubject
+  facts: readonly import('@/lib/cma/comp-pin-map').CmaPinFact[]
+  mapDataUri?: string | null
+  mapOverlay?: import('@/lib/cma/comp-pin-map').CompPinMapOverlay | null
+  areaSentence?: string | null
+}): string {
+  const pinMap = renderCompPinMapHtml({
+    subject: input.subject,
+    facts: input.facts,
+    mapDataUri: input.mapDataUri ?? null,
+    alt: 'Map of the sales, the homes for sale and the listings that came off',
+    overlay: input.mapOverlay ?? null,
+  })
+  if (!pinMap.trim()) return ''
+  const area = cleanText(input.areaSentence ?? null)
+  return `<div class="pin-map-wrap">${pinMap}</div>
+  <p class="small">${esc(
+    [area, mapLegend(input.subject.subdivision, input.mapOverlay?.boundaryShown)]
+      .filter(Boolean)
+      .join(' '),
+  )}</p>`
 }

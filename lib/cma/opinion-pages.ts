@@ -7,7 +7,13 @@
  * rather than printing an empty frame.
  */
 
-import { competitionHeading, renderBandRivalsHtml, type BandRivalsInput } from '@/lib/cma/band-rivals'
+import {
+  competitionHeading,
+  competitionSentence,
+  competitionSourceLine,
+  competitorCutLine,
+  type BandRivalsInput,
+} from '@/lib/cma/band-rivals'
 import { formatClientMlsField } from '@/lib/cma/client-facing'
 import { trackedDocLink } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
@@ -24,19 +30,37 @@ import {
 } from '@/lib/cma/market-area-chapters'
 import {
   DID_NOT_SELL_HEADING,
-  didNotSellBodyHtml,
+  askAgainstSoldSentence,
+  didNotSellLeadSentence,
+  soldPpsfRange,
   type DidNotSellArgs,
 } from '@/lib/cma/did-not-sell'
 import { FAILED_ASK_BACKTEST, resolveListingTimeline } from '@/lib/cma/expired-audit'
 import { listingTimelinePhoneSvg, listingTimelineSvg } from '@/lib/cma/market-charts'
 import { subjectDomDays, type SubjectAskContext } from '@/lib/cma/comp-matrix'
 import {
+  MAP_HEADING,
+  SALES_THAT_SET_IT_HEADING,
   failedSubjectAsk,
   keptSaleCount,
   listRangeBounds,
+  mapPage,
   pricingPage,
+  salesThatSetItPage,
   worthRangeRounded,
+  type PricingPageInput,
 } from '@/lib/cma/render-pricing-page'
+import { activeRivalsFor, unsoldPeersFor } from '@/lib/cma/matrix-sets'
+import {
+  activeEntries,
+  closedEntries,
+  pinFactsFor,
+  subjectEntry,
+  unsoldEntries,
+  type MatrixEntry,
+} from '@/lib/cma/matrix-entry'
+import { renderMatrixHtml, subjectListingFailed, subjectPrintableAsk } from '@/lib/cma/comp-matrix'
+import { compAreaSentence } from '@/lib/cma/matrix-sets'
 import { setAsideCompIndexes } from '@/lib/cma/set-aside'
 import type { CmaBroker, CmaClient } from '@/lib/cma/types'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
@@ -76,6 +100,9 @@ export type OpinionPageArgs = {
   market: CmaMarketContext | null
   pricing: CmaPricing
   extras?: CmaExtras | null
+  compArea?: import('@/lib/pricing/comp-area').CompArea | null
+  expiredPeers?: import('@/lib/cma/market-status').CmaExpiredPeerSet | null
+  bandRivals?: import('@/lib/cma/band-rivals').CmaBandRivalSet | null
   subdivisionStory?: SubdivisionStory | null
   mapDataUri: string | null
   /** Centre, zoom and pin coordinates for the map's own DOM pins. */
@@ -153,6 +180,127 @@ export function subjectAskContext(a: OpinionPageArgs): SubjectAskContext {
     asOfIso: a.generatedAtIso,
     hasFinalCycle: a.expiredAudit ? a.expiredAudit.finalCycle != null : undefined,
   }
+}
+
+/**
+ * THE THREE SETS, KEYED ONCE, FOR THE WHOLE DOCUMENT (Delta 3).
+ *
+ * The map's pins and the three matrices' columns are the same objects to a
+ * reader — a tap on pin `iii` lights row `iii` — so which homes are in each
+ * set, and in what order, is decided here and nowhere else.
+ */
+export function matrixEntriesFor(a: OpinionPageArgs): {
+  subject: MatrixEntry
+  closed: MatrixEntry[]
+  unsold: MatrixEntry[]
+  active: MatrixEntry[]
+} {
+  const askCtx = subjectAskContext(a)
+  return {
+    subject: subjectEntry({
+      subject: a.subject,
+      finalCycle: a.expiredAudit?.finalCycle ?? null,
+      domDays: subjectDomDays(a.subject),
+      printableAsk: subjectPrintableAsk(a.subject, askCtx),
+    }),
+    closed: closedEntries(a.comps, a.docLinks ?? null),
+    unsold: unsoldEntries(
+      unsoldPeersFor({ subject: a.subject, peers: a.expiredPeers?.peers ?? a.extras?.marketArea?.expiredPeers }),
+      a.docLinks ?? null,
+      a.subject.city,
+    ),
+    active: activeEntries(
+      activeRivalsFor(a.bandRivals?.rivals ?? a.extras?.band?.rivals),
+      a.docLinks ?? null,
+      a.subject.city,
+    ),
+  }
+}
+
+/** The worth range, shaded on every price path in every matrix. */
+export function pathRangeFor(a: OpinionPageArgs): { low: number; high: number } | null {
+  const worth = worthRangeRounded(a.pricing)
+  return worth.low > 0 && worth.high > 0 ? worth : null
+}
+
+/** Chapter 3b. The one map, under the number. Both documents. */
+export function theMapPage(a: OpinionPageArgs): CmaPageDef | null {
+  return mapPage(mapArgs(a))
+}
+
+export function mapArgs(a: OpinionPageArgs) {
+  const sets = matrixEntriesFor(a)
+  return {
+    subject: a.subject,
+    facts: pinFactsFor([...sets.closed, ...sets.active, ...sets.unsold]),
+    mapDataUri: a.mapDataUri,
+    mapOverlay: a.mapOverlay,
+    areaSentence: compAreaSentence(a),
+  }
+}
+
+/** Chapter 3a. Matrix 1, and the working under it. */
+export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
+  return {
+    subject: a.subject,
+    comps: a.comps,
+    market: a.market,
+    pricing: a.pricing,
+    tiersUsed: a.tiersUsed,
+    docLinks: a.docLinks,
+    renderArgs: a,
+    compTrace: a.compTrace,
+    askCtx: subjectAskContext(a),
+    finalCycle: a.expiredAudit?.finalCycle ?? null,
+  }
+}
+
+/**
+ * MATRIX 2. The listings in the same area that came off unsold.
+ *
+ * Delta 3's sentence over it — "These asked and never came down to the range."
+ * — is a CLAIM about every row under it, so it only prints when every row
+ * carries it. When some of them did come into the range, the sentence says how
+ * many did not, which is the same argument told truthfully (CLAUDE.md §0).
+ */
+export function unsoldMatrixLead(
+  entries: readonly MatrixEntry[],
+  range: { low: number; high: number } | null,
+): string {
+  if (entries.length === 0) return ''
+  if (!range) return ''
+  const above = entries.filter((e) => e.lastAsk != null && e.lastAsk > range.high)
+  if (above.length === entries.length) {
+    return `<p class="chart-read">${esc('These asked and never came down to the range.')}</p>`
+  }
+  if (above.length === 0) return ''
+  return `<p class="chart-read">${esc(
+    `${int(above.length)} of ${
+      entries.length === 1 ? 'the one listing' : `these ${int(entries.length)} listings`
+    } never came down to the range.`,
+  )}</p>`
+}
+
+/**
+ * MATRIX 3. The homes asking in this range now.
+ *
+ * "These are asking in this range now. Asking is not selling." — true only
+ * while every home printed is inside the range the chapter names. When one
+ * sits outside it the sentence says "near", because a reader can check.
+ */
+export function activeMatrixLead(
+  entries: readonly MatrixEntry[],
+  band: { lo: number; hi: number } | null,
+): string {
+  if (entries.length === 0) return ''
+  const inside =
+    band != null &&
+    entries.every((e) => e.lastAsk != null && e.lastAsk >= band.lo && e.lastAsk <= band.hi)
+  return `<p class="chart-read">${esc(
+    inside
+      ? 'These are asking in this range now. Asking is not selling.'
+      : 'These are asking near this range now. Asking is not selling.',
+  )}</p>`
 }
 
 /**
@@ -605,7 +753,7 @@ export function didNotSellArgs(a: OpinionPageArgs): DidNotSellArgs {
     subject: a.subject,
     comps: a.comps,
     market: a.market,
-    peers: a.extras?.marketArea?.expiredPeers,
+    peers: a.expiredPeers?.peers ?? a.extras?.marketArea?.expiredPeers,
     finalCycle: a.expiredAudit?.finalCycle ?? null,
     docLinks: a.docLinks ?? null,
     rangeLow: a.pricing.valueLow,
@@ -615,8 +763,77 @@ export function didNotSellArgs(a: OpinionPageArgs): DidNotSellArgs {
   }
 }
 
+/**
+ * MATRIX 2, and the peer stories under it.
+ *
+ * Delta 3 turned the five story CARDS into a matrix — same column set as the
+ * closed sales, subject column first — because the comparison Matt makes at
+ * the table is across the same twelve facts, and five cards of prose cannot be
+ * read across. The one thing the cards carried that a column cannot is the
+ * dollars-a-foot sentence, so it survives as a short keyed list under the
+ * matrix: one line per peer, badged with the pin that names it on the map.
+ */
+export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
+  const sets = matrixEntriesFor(a)
+  const lead0 = didNotSellLeadSentence({ market: a.market, city: a.subject.city })
+  if (sets.unsold.length === 0) {
+    // NO PEERS ON THE ROW, AND THE SELLER'S OWN LISTING IS STILL ONE OF THEM.
+    // A one-column matrix is not a comparison, so the chapter degrades to the
+    // city's own count and the reader's own outcome rather than vanishing and
+    // taking the ask that failed with it.
+    if (!subjectListingFailed(a.subject) || !sets.subject.outcome) return ''
+    const ask = sets.subject.lastAsk
+    const own = `Your own listing ${
+      ask != null && ask > 0 ? `asked ${usd(ask)} and ` : ''
+    }${sets.subject.outcome.charAt(0).toLowerCase()}${sets.subject.outcome.slice(1)}.`
+    return `${lead0 ? `<p class="chart-read">${esc(lead0)}</p>` : ''}
+  <p>${esc(own)}</p>`
+  }
+  const range = pathRangeFor(a)
+  const matrix = renderMatrixHtml({
+    id: 'did-not-sell',
+    family: 'unsold',
+    heading: 'The listings in this area that came off unsold',
+    // The area set's own sentence first (how many came off inside the comp
+    // area, over which window, and whether it fell short), then the matrix lead.
+    lead: [a.expiredPeers?.sentence, unsoldMatrixLead(sets.unsold, range)].filter(Boolean).join(' '),
+    entries: [sets.subject, ...sets.unsold],
+    range,
+  })
+  if (!matrix.trim()) return ''
+  const lead = lead0
+  return `${lead ? `<p class="chart-read">${esc(lead)}</p>` : ''}
+  ${matrix}
+  ${peerStoriesHtml(a, sets.unsold)}`
+}
+
+/**
+ * Each peer's story line: what it asked a foot against what homes like it
+ * actually closed at. The same sentence the cards printed, off the same
+ * function, keyed to the pin so a reader can find the row and the pin.
+ */
+function peerStoriesHtml(a: OpinionPageArgs, peers: readonly MatrixEntry[]): string {
+  const range = soldPpsfRange(a.comps)
+  if (!range) return ''
+  const items = peers
+    .map((p) => {
+      const sentence = askAgainstSoldSentence({ ask: p.lastAsk, sqft: p.sqft, range })
+      if (!sentence) return ''
+      return `<li data-comp="${esc(p.key)}" data-pin="${esc(p.key)}"><span class="pin-badge is-unsold" aria-hidden="true">${esc(
+        p.key,
+      )}</span><span class="ps-a">${esc(p.address)}</span><span class="ps-r">${esc(sentence)}</span></li>`
+    })
+    .filter(Boolean)
+    .join('')
+  if (!items) return ''
+  return `<ul class="peer-stories">${items}</ul>
+  <p class="small">${esc(
+    `The dollars a foot come from the ${int(range.n)} closed sales in this report, at their own sale price over their own living area.`,
+  )}</p>`
+}
+
 export function didNotSellPage(a: OpinionPageArgs): CmaPageDef | null {
-  const body = didNotSellBodyHtml(didNotSellArgs(a))
+  const body = didNotSellBodyMatrixHtml(a)
   if (!body.trim()) return null
   return {
     meta: `${esc(a.subject.streetAddress)} · Did not sell`,
@@ -1033,20 +1250,71 @@ export function nextStepSignatureHtml(a: OpinionPageArgs): string {
   )}</p>`
 }
 
-/** Chapter 4. Who you would compete with at the recommended list. */
+/**
+ * MATRIX 3. Who you would compete with at the recommended list.
+ *
+ * Delta 3: "This is who your competition is right now in the same area at the
+ * recommended price point: these people are here at this price, it doesn't
+ * mean they're going to sell at this price." The four-up card grid became the
+ * same matrix the other two chapters use — the counts, the cut line and the
+ * source trace still open the chapter, because they are what a reader checks
+ * the table against.
+ */
+export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
+  // The area-scoped set (R2h) wins; the city-wide band is the fallback for
+  // rows built before it landed.
+  const b = a.bandRivals ?? a.extras?.band
+  if (!b) return ''
+  const sets = matrixEntriesFor(a)
+  const args = competitionArgs(a)
+  const range = pathRangeFor(a)
+  // THE COUNTS SURVIVE AN EMPTY MATRIX. How many homes are for sale in this
+  // range, and how many are under contract, is the chapter's own figure — it
+  // comes off `extras.band`, not off the named rivals — so a document whose
+  // row carries no named competitor still tells a seller what they are up
+  // against, and simply prints no table.
+  const matrix =
+    sets.active.length > 0
+      ? renderMatrixHtml({
+          id: 'competition',
+          family: 'active',
+          heading: 'Asking in this range now',
+          lead: activeMatrixLead(sets.active, { lo: b.lo, hi: b.hi }),
+          entries: [sets.subject, ...sets.active],
+          range,
+        })
+      : ''
+  const sentence =
+    a.bandRivals?.sentence ??
+    competitionSentence({
+      lo: b.lo,
+      hi: b.hi,
+      activeCount: b.activeCount,
+      pendingCount: b.pendingCount,
+      shown: sets.active.length,
+    })
+  const cut = competitorCutLine(args.rivals)
+  return `<p>${esc(sentence)}</p>
+  ${cut ? `<p>${esc(cut)}</p>` : ''}
+  <p class="small">${esc(a.bandRivals?.source ?? competitionSourceLine(args))}</p>
+  ${matrix}`
+}
+
 export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {
-  const b = a.extras?.band
-  if (!b) return null
+  const body = competitionBodyMatrixHtml(a)
+  if (!body.trim()) return null
   return {
     meta: `${esc(a.subject.streetAddress)} · At this price`,
     toc: competitionHeading(a.pricing.recommended),
-    body: renderBandRivalsHtml(competitionArgs(a)),
+    body: `
+  <h2 class="section">${esc(competitionHeading(a.pricing.recommended))}</h2>
+  ${body}`,
   }
 }
 
 /** Shared by the letter chapter and its immersive twin. */
 export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
-  const b = a.extras!.band!
+  const b = a.bandRivals ?? a.extras!.band!
   return {
     city: a.subject.city,
     lo: b.lo,
@@ -1103,12 +1371,28 @@ export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
  * An asked origin (someone who requested a value) has no failed listing, so
  * chapter 1 returns null and the order closes over it.
  */
+/**
+ * DELTA 3'S ORDER, 2026-09-08. The answer, where it is, and then the three
+ * sets of evidence in the order Matt tells them at the table:
+ *
+ *   cover → what happened → the number → the map → the closed sales that set
+ *   it → the listings that came off unsold → who is asking now → what price
+ *   and time look like here → the market → net → basis → next step
+ *
+ * What moved and why: the number now arrives BEFORE its evidence rather than
+ * after two chapters of argument, the one map sits under it so every set that
+ * follows has a place, and the three matrices run closed → unsold → active
+ * because that is the order the argument needs — this is what sold, this is
+ * what did not, this is who you are up against.
+ */
 export const OPINION_CHAPTER_ORDER = [
   'what-happened',
-  'did-not-sell',
-  'priced-right',
   'what-its-worth',
+  'the-map',
+  'sales-that-set-it',
+  'did-not-sell',
   'competition',
+  'priced-right',
   'this-market',
   'net-at-list',
   'disclosure',
@@ -1123,20 +1407,9 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
     'what-happened': () => whatHappenedPage(a),
     'did-not-sell': () => didNotSellPage(a),
     'priced-right': () => pricedRightPage(a),
-    'what-its-worth': () =>
-      pricingPage({
-        subject: a.subject,
-        comps: a.comps,
-        market: a.market,
-        pricing: a.pricing,
-        tiersUsed: a.tiersUsed,
-        mapDataUri: a.mapDataUri,
-        mapOverlay: a.mapOverlay,
-        docLinks: a.docLinks,
-        renderArgs: a,
-        compTrace: a.compTrace,
-        askCtx: subjectAskContext(a),
-      }),
+    'what-its-worth': () => pricingPage(salesThatSetItArgs(a)),
+    'the-map': () => theMapPage(a),
+    'sales-that-set-it': () => salesThatSetItPage(salesThatSetItArgs(a)),
     competition: () => competitionPage(a),
     'this-market': () => thisMarketPage(a),
     'net-at-list': () => sellerNetPage(a),

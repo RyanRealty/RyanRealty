@@ -278,7 +278,10 @@ describe('web and print tell the same comps story', () => {
     // Distance is cut by CMA_REIMAGINED_2026-09-07.md chapter 3 — the map
     // answers where the sales are.
     expect(html).not.toContain('0.4 miles NW')
-    expect(html).toContain('Days to offer')
+    // Delta 3's shared column set: days on market in all three matrices,
+    // and the days-to-offer figure inside the outcome line.
+    expect(html).toContain('Days on market')
+    expect(html).toContain('offer in')
     expect(html).toContain('Sale price today')
     expect(html).toContain('$511,000')
     expect(html).not.toContain('class="flyer-title"')

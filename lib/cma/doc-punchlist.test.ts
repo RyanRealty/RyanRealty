@@ -369,12 +369,17 @@ describe('chapter 2 — priced right sells, priced high sits', () => {
     expect(immersive()).not.toContain('ruler-wide')
   })
 
-  it('tells one story per unsold listing, never a matrix', () => {
+  it('lays the unsold listings out as matrix 2, subject column first', () => {
+    // Delta 3, 2026-09-08: the five story cards became the same column set the
+    // closed sales use, so a reader can carry a comparison across the three
+    // matrices. Each peer keeps its dollars-a-foot story line under the table.
     const chapter = letter().split('The listings near you that did not sell.')[1]!.split('</section>')[0]!
-    expect(chapter).toContain('dns-card')
+    expect(chapter).toContain('comp-matrix is-unsold')
     expect(chapter).toContain('class="price-path"')
-    expect(chapter).not.toContain('comp-matrix')
-    expect(chapter).toMatch(/<a class="dns-addr" href="https:\/\/ryan-realty\.com\/[^"]*utm_source=cma/)
+    expect(chapter).toContain('Your home')
+    expect(chapter).not.toContain('dns-card')
+    expect(chapter).toMatch(/<a class="matrix-addr" href="https:\/\/ryan-realty\.com\/[^"]*utm_source=cma/)
+    expect(chapter).toContain('class="peer-stories"')
   })
 })
 
@@ -1148,7 +1153,7 @@ describe('tasteReview 2 — the answer is drawn, and nothing floats over it', ()
       expect(html).toContain('Where the sales put this home, and where we would list it')
       // The strip sits ABOVE the method sentences and the grid.
       const strip = html.indexOf('class="szn worth-wide"')
-      const grid = html.indexOf('table class="kv is-wide comp-matrix"')
+      const grid = html.indexOf('table class="kv is-wide comp-matrix is-closed"')
       expect(strip).toBeGreaterThan(-1)
       expect(grid).toBeGreaterThan(strip)
       expect(worth.length).toBeGreaterThan(0)
@@ -1176,15 +1181,18 @@ describe('tasteReview 2 — the answer is drawn, and nothing floats over it', ()
       mapOverlay: {
         view: { centerLat: 44.2726, centerLng: -121.1745, zoom: 15, width: 640, height: 360 },
         pins: [
-          { n: null, lat: 44.272, lng: -121.174 },
-          { n: 1, lat: 44.273, lng: -121.175 },
+          { key: null, family: 'subject', lat: 44.272, lng: -121.174 },
+          { key: '1', family: 'closed', lat: 44.273, lng: -121.175 },
         ],
       },
     } as never)
     expect(html).toContain('class="pin-map-frame"')
     expect(html).toContain('class="pin-hit is-subject"')
-    expect(html).toMatch(/<button type="button" class="pin-hit" data-comp="1" data-pin="1"/)
-    expect(html).toContain('aria-label="1. 730 Quince"')
+    expect(html).toMatch(/<button type="button" class="pin-hit is-closed" data-comp="1" data-pin="1"/)
+    // Delta 3: every pin tells the tale — days on market, price changes, and
+    // the outcome — on tap and on hover.
+    expect(html).toMatch(/aria-label="1\. 730 Quince[^"]*days on market/)
+    expect(html).toContain('class="pin-legend"')
     // A cropped tile and a percentage-positioned pin cannot both be right.
     for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {
       expect(css.replace(/\s+/g, ' ')).toMatch(
@@ -1293,7 +1301,7 @@ describe('tasteReview 2 — the answer is drawn, and nothing floats over it', ()
     // Sorting the grid reorders the columns; the pins keep their numbers,
     // because a number here is an identity. Drawn as the pin's own badge it
     // says so, and no caption has to.
-    expect(html).toContain('class="pin-badge"')
+    expect(html).toMatch(/class="pin-badge is-(closed|unsold|active)"/)
     // In the SORTABLE grid and its cards. The number still reads as "1. 730
     // Quince" inside the two charts that list the sales in a fixed order,
     // where nothing reorders and a key before a name is just a key.
@@ -1321,14 +1329,18 @@ describe('tasteReview 3 — the phone document, and the close', () => {
     const first = stack.split('comp-stack-card')[1] ?? ''
     expect(first).toContain('is-yours')
     expect(first).toContain('Your home · 2465 7th')
-    expect(first).toContain('Listed $460,000')
+    // The subject's outcome line, which is where the ask that failed lives in
+    // Delta 3's shared column set.
+    expect(first).toMatch(/Came off after \d+ days|Listed \$460,000/)
   })
 
   it('draws every price path exactly once', () => {
     const html = immersive()
     expect(html).not.toContain('How each of these sales was priced')
-    // One sparkline per sale in the grid, one full drawing per phone card.
-    expect((html.match(/class="pp-spark"/g) ?? []).length).toBe(5)
+    // One sparkline per home per matrix — five closed sales, and the subject
+    // column that leads each of the three matrices.
+    const closed = html.split('id="did-not-sell"')[0] ?? ''
+    expect((closed.match(/class="pp-spark"/g) ?? []).length).toBe(6)
   })
 
   it('gives every chart mark a real tap target, not a 7px dot', () => {

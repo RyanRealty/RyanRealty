@@ -76,6 +76,12 @@ export interface RenderCmaArgs {
    * `compTrace` and the printed sales (round-four class E).
    */
   compSearch?: unknown
+  /** The one area the comps, the unsold peers and the competition share (R2h). */
+  compArea?: import('@/lib/pricing/comp-area').CompArea | null
+  /** Unsold peers from `compArea`, widened until at least three. Absent on rows built before it landed. */
+  expiredPeers?: import('@/lib/cma/market-status').CmaExpiredPeerSet | null
+  /** Active and pending inside the boundary or the comp radius, never city-wide. */
+  bandRivals?: import('@/lib/cma/band-rivals').CmaBandRivalSet | null
   excludedOutliers: Array<{ address: string; closePrice: number; ppsf: number; reason: string }>
   sellerImprovementsText?: string | null
   site?: CmaSiteData | null

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pricingPage } from '@/lib/cma/render-pricing-page'
+import { pricingPage, salesThatSetItPage } from '@/lib/cma/render-pricing-page'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const subject = {
@@ -51,15 +51,12 @@ const market = {
 
 describe('pricingPage', () => {
   it('leads with one list sentence, then how the matcher works', () => {
-    const page = pricingPage({
-      subject,
-      comps,
-      market,
-      pricing,
-      tiersUsed: ['subdivision-3mo'],
-    })
+    const input = { subject, comps, market, pricing, tiersUsed: ['subdivision-3mo'] }
+    const page = pricingPage(input)
     expect(page.toc).toBe('$655,000.')
-    const html = page.body
+    // Delta 3 split the chapter: the number and the method here, the sales
+    // that prove it in matrix 1. Both are what a reader meets.
+    const html = `${page.body}\n${salesThatSetItPage(input)?.body ?? ''}`
     expect(html).toContain('$655,000.')
     // P5, Matt 2026-09-07: the search story is one sentence, not a bulleted
     // heading whose other items restate the table below it.
