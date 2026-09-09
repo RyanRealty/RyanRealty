@@ -1,3 +1,46 @@
+# Current — 2026-09-09 (site queue round three: SITE-28 done, SITE-23 shipped and blocked on its recrawl window)
+
+Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. One push for
+the round: `fc77108b..bc7ce4b2` (lanes 5765494e and ef4cbd7d+74860b39, merges c4223b0c and
+bc7ce4b2). Deploy READY in 266s. Accept clauses re-run on ryan-realty.com with a browser UA after
+READY; observed values on the nodes (`loop status`).
+
+**SITE-28 done.** /communities/prineville-oll, madras-parkpl and prineville-pleasvh refuse
+("No community at this address", robots unchanged at noindex, follow); odin-crest-estate and
+ponderosa-park-phase-1 keep their real names; tetherow and brasada-ranch index, follow. No recorded
+mapping exists for the three slugs (boundaries holds Deschutes plats only; 'oll' has zero listings
+under two shapes) and the geometry-majority path was refuted (aspenb → 3 plats, clab → 28, an MLS
+area code), so the resolver reads four recorded sources and refuses otherwise; 32 of 1,014
+Central Oregon SubdivisionNames are withheld, every one an MLS token. Community-class taste
+rebaselined on a three-route instrument: 64 → 68 → 69 (prior 80 scored tetherow alone). Fixed in
+the primitives: the no-photo opening's H1/breadcrumb misalignment, grouped door folds in
+V3Answers, a source prop on V3Quiet. Open raises on the receipt: dead cream in the plat opening,
+#belonging block-level trace, #atlas 26 vs #faq 16–17 (a product decision on which population a
+community page publishes), conifa/oww2 resolve unanimously by geometry but wait for a human entry
+in data/subdivision-alias-plats.json.
+
+**SITE-23 shipped, blocked on measurement until 2026-10-07.** The defect was data, not the URL
+builder: no city polygon for Powell Butte (not a Census place; imported the Powell Butte CCD from
+TIGER/Line 2024 County Subdivisions, 144.665 sq mi, reconciles to AREALAND+AREAWATER), and a
+classifier that never revisited a row once it took the sentinel (refresh_listing_boundary_tags
+batched on boundary_city IS NULL; now re-examines once per change to the boundary set via
+boundary_tagged_at). 181 listings reclassified (Powell Butte 180 → 0 under the sentinel; Brasada
+111 of 2,297 geocoded now carry the neighborhood); live: the sentinel URL for 220219020 serves the
+powell-butte canonical. ci:boundary-provenance city floor 10 → 11. The Search Console re-pull after
+the recrawl window is the only open clause (45 sentinel pages, 1,043 impressions, 0 clicks before).
+
+**SITE-54** carries two independent traces now (mine: two 504s and the warmer's statement
+timeouts; session 01NESdvn: the 525 MB all-history tile view refreshing every 30 minutes, the 8 s
+API statement timeout, the sitemap paging 129K Bend rows). Next lane takes it in the order
+01NESdvn wrote: sitemap reads getIndexableSubdivisions, warmer avoids the refresh window, deploy
+smoke on every class; the tile-view refresh itself needs a data-plane node.
+
+**Lane lessons this round.** (1) Two lanes regenerating the auto-generated docs conflict on both
+files every time; resolve by regenerating once more with `ci:data-access --refresh` on the merged
+tree, never by hand. (2) A lane that widens the taste instrument (one route → three) rebaselines
+honestly; the number going down is not a regression. (3) A data lane that finds the URL builder
+already correct should say so first and keep looking; the residual index was the symptom.
+
 # Current — 2026-09-09 (fleet full, no lane; SITE-54's 504 traced to the tile view's refresh and an 8-second API timeout)
 
 Owner: Claude (Fable 5.1), session 01NESdvn, main checkout. **Nothing was built or changed in
