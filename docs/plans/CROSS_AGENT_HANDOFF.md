@@ -1,3 +1,47 @@
+# Current — 2026-09-09 (fleet full, no lane; SITE-54's 504 traced to the tile view's refresh and an 8-second API timeout)
+
+Owner: Claude (Fable 5.1), session 01NESdvn, main checkout. **Nothing was built or changed in
+production this session.** `main` is at `92137b5b5` plus this note. The container restarted after
+round 4 landed (`b9da5d2e6`, deploy `dpl_q2yrS6o3G1fHfPwmNpeqpeHxLG7W`, both nodes blocked with
+evidence); on return the brief served SITE-29, another session (`claude-opus5-019RdEm6`) claimed it
+one minute before I tried, and the claim tool refused a fourth worker — cloud-grinder, 9d4aa6fc and
+019RdEm6 all hold live heartbeats. The rule is do not start a lane, so I did not. I hold no claims.
+
+**What I did instead: read-only triage of SITE-54, and the answer is not the sitemap route.** The
+full finding, every number sourced, is on the node (objective addendum + evidence). The short
+version:
+
+- `listing_tile_mv` is a view over `listing_tile_mv_src`, a **593,525-row, 525 MB** materialized
+  view of every listing ever seen. pg_cron refreshes it CONCURRENTLY every 30 minutes; the last 24
+  hours of runs total **29,711 s — 8.25 hours of refreshing**, and overnight each run took 13–21
+  minutes of its 30-minute slot.
+- The API roles run at **`statement_timeout = 8s`** (3s for anon). During a refresh, reads of that
+  view die. The biggest single source of statement timeouts on the whole database over 24 hours
+  (**19,655**, ten times anything else) is `getSubdivisionBrowseSlugsByCity` paging ~129K Bend rows
+  through PostgREST, 12 pages at a time, 6 cities at a time, three retries each — and its only
+  caller is `app/sitemap.ts`.
+- The hourly warmer starts at :00 and the refresh at :02, so the warmer's per-city loop runs into
+  the refresh every hour. Its 06:00Z run on the current deploy logged fetch failures for eight
+  cities; the geo class never fills; cold requests hit the 300 s ceiling. `core.xml` 504'd at
+  05:39Z and 05:43Z as well, not only `geo.xml`.
+- Collateral: PostgREST timeouts ran **2,110 → 3,180 an hour from midnight to 05:00Z**, and the
+  Vercel error clusters show the resulting "could not query the database for the schema cache" on
+  listing pages, tiles, boundaries, metrics and the blog. The public site degrades for roughly 15
+  of every 30 minutes overnight.
+
+**For the lane that takes SITE-54, in order:** (a) `app/sitemap.ts` reads the subdivision set from
+`getIndexableSubdivisions` (644 ms, the SITE-24 source) instead of paging the history view;
+(b) the warmer must not start inside a refresh window; (c) the deploy smoke on every sitemap class,
+per the accept. **Not SITE-54, needs its own data-plane node:** a 525 MB all-history MV refreshed
+every 30 minutes is the structural load — the active subset is ~7,835 rows.
+
+**Also carried from round 4, still open:** the wrong `Node:` uuid on `7e2086647` and `b70aafff4`
+(the real SITE-12 id ends `-eff3-4763-aeaf-e7f3617a9cb3`; `post-commit` now warns when an id
+resolves to no row); listing rows still print the raw MLS "Ridge At Eagle Crest"; the community
+`#belonging` block restates $2,052 with no source line.
+
+---
+
 # Current — 2026-09-09 (site queue round two continued: SITE-25 and SITE-24 done in one push; geo.xml 504s on production, seeded as SITE-54)
 
 Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. One push for
