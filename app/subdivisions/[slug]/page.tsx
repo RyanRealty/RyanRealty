@@ -223,6 +223,30 @@ type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
+/**
+ * The plat's parent city, derived from the plat's OWN in-boundary listings —
+ * the modal city among them, claimed only on a strict majority. Data, never a
+ * guess (§0). Shared by generateMetadata and the body so a noindexed plat's
+ * title names its real city instead of falling back to "Central Oregon"
+ * (SITE-25).
+ */
+function derivePlatCity(
+  tiles: ReadonlyArray<{ city?: string | null; citySlug?: string | null }>,
+): { city: string; citySlug: string | null } | null {
+  const counts = new Map<string, { citySlug: string | null; n: number }>()
+  for (const t of tiles) {
+    if (!t.city) continue
+    const cur = counts.get(t.city) ?? { citySlug: t.citySlug ?? null, n: 0 }
+    cur.n += 1
+    if (!cur.citySlug && t.citySlug) cur.citySlug = t.citySlug
+    counts.set(t.city, cur)
+  }
+  const modal = [...counts.entries()].sort((a, b) => b[1].n - a[1].n)[0]
+  const total = [...counts.values()].reduce((s, v) => s + v.n, 0)
+  if (!modal || total === 0 || modal[1].n / total <= 0.5) return null
+  return { city: modal[0], citySlug: modal[1].citySlug }
+}
+
 /** Title-case a slug for display, null in / null out. */
 function titleCaseSlug(slug: string | null | undefined): string | null {
   return slug ? slugToTitle(slug) : null
@@ -235,7 +259,7 @@ function publishSubdivisionPageName(slug: string, registryMatch: { canonicalName
 }
 
 // ---------------------------------------------------------------------------
-// Metadata — unchanged, both branches
+// Metadata — same two branches; the city now has a third source (SITE-25).
 // ---------------------------------------------------------------------------
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -253,8 +277,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // most closed sales), so the title gets a REAL city from one read. §0: when
   // the city is genuinely unknown the page says nothing about it rather than
   // naming a place that does not exist.
+  //
+  // A plat below the indexability bar has no entry, and resolving the city ONLY
+  // from the indexable set is what titled every noindexed plat "| Central
+  // Oregon" while its own listings named a real city. The boundary read the
+  // route already performs (cache()d, so this costs nothing) is the third
+  // source: the modal city of the plat's own in-boundary listings.
   const indexableEntry = (await getIndexableSubdivisions()).find((s) => s.slug === slug)
-  const cityName = registryMatch?.city ?? titleCaseSlug(indexableEntry?.citySlug)
+  const cityName =
+    registryMatch?.city ??
+    titleCaseSlug(indexableEntry?.citySlug) ??
+    derivePlatCity((await loadSubdivisionCore(slug)).mapTiles)?.city ??
+    null
   return pageMetadata({
     title: cityName
       ? `Homes for Sale in ${name} | ${cityName}, Oregon`
@@ -372,20 +406,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   // Parent city for plain GIS plats (W2.4 parent cross-link): the MODAL city
   // among the plat's own in-boundary listings, already fetched — derived from
   // data, never guessed (§0). Claimed only when a strict majority agrees.
-  const tileCityCounts = new Map<string, { citySlug: string | null; n: number }>()
-  for (const t of mapTiles) {
-    if (!t.city) continue
-    const cur = tileCityCounts.get(t.city) ?? { citySlug: t.citySlug ?? null, n: 0 }
-    cur.n += 1
-    if (!cur.citySlug && t.citySlug) cur.citySlug = t.citySlug
-    tileCityCounts.set(t.city, cur)
-  }
-  const modalTileCity = [...tileCityCounts.entries()].sort((a, b) => b[1].n - a[1].n)[0]
-  const tileTotal = [...tileCityCounts.values()].reduce((s, v) => s + v.n, 0)
-  const derivedPlatCity =
-    modalTileCity && tileTotal > 0 && modalTileCity[1].n / tileTotal > 0.5
-      ? { city: modalTileCity[0], citySlug: modalTileCity[1].citySlug }
-      : null
+  const derivedPlatCity = derivePlatCity(mapTiles)
   const cityName = registryMatch?.city ?? derivedPlatCity?.city ?? 'Central Oregon'
   const citySlug = registryMatch?.citySlug ?? derivedPlatCity?.citySlug ?? null
   const resortLabel = registryMatch?.resortLabel ?? null
