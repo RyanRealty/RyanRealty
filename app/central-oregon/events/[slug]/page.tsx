@@ -26,6 +26,7 @@ import { CO_VENUES } from '@/data/co-venues'
 import { formatEventDate, buildEventFaq } from '@/lib/events-format'
 import { publishPlaceInCity } from '@/lib/place/publish-place-in-city'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { registryDescription, registryTitle } from '@/lib/site/registry-metadata'
 import { publishNearbyListingsSource } from '@/lib/site/publish-nearby-listings-source'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -67,13 +68,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const event = getEventBySlug(slug)
   if (!event) notFound()
 
-  const when = formatEventDate(event.nextConfirmedDate, event.endDate)
-  const timing = when ? `${when}.` : `${event.recurrence}.`
-  const desc = `${event.name} in ${event.city}, Central Oregon. ${timing} See the details and the homes for sale near the venue, from Ryan Realty, a local Central Oregon brokerage.`
-
+  // Registry-only, and the event's OWN words (lib/site/registry-metadata.ts).
+  // nextConfirmedDate is registry data and generateMetadata may read it, but it
+  // does NOT lead the description: only 15 of 48 events carry one, so a date
+  // prefix would split the family into two shapes, and the roll-forward
+  // (check-content-freshness) would leave a stale date in a snippet Google
+  // caches for weeks. The date is on the page, in the Event JSON-LD, and in the
+  // FAQ, where it stays current.
   return pageMetadata({
-    title: `${event.name} | Central Oregon Events`,
-    description: desc,
+    title: registryTitle(event.name),
+    description: registryDescription(event.blurb),
     path: `/central-oregon/events/${slug}`,
   })
 }

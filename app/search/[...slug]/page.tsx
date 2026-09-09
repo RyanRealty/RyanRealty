@@ -9,7 +9,7 @@ import {
 import { getSession } from '../../actions/auth'
 import { SearchAlertCapture } from '../../../components/search/SearchAlertCapture'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
-import { cityEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath } from '../../../lib/slug'
+import { cityEntityKey, getSubdivisionDisplayName, homesForSalePath, listingTileHref } from '../../../lib/slug'
 import { getPopularSearchesForCity, getAllCityHomesLink } from '../../../lib/popular-searches'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -466,23 +466,16 @@ export default async function SearchPage({
                 .map((l) => {
                   const key = l.ListNumber ?? l.ListingKey
                   if (!key) return ''
-                  return `${siteUrl}${listingDetailPath(
-                    String(key),
-                    {
-                      streetNumber: l.StreetNumber ?? null,
-                      streetName: l.StreetName ?? null,
-                      city: l.City ?? city ?? null,
-                      state: l.State ?? null,
-                      postalCode: l.PostalCode ?? null,
-                    },
-                    {
-                      city: l.City ?? city ?? null,
-                      subdivision: l.SubdivisionName ?? decodedSubdivision ?? null,
-                    },
-                    {
-                      mlsNumber: l.ListNumber ?? null,
-                    }
-                  )}`
+                  return `${siteUrl}${listingTileHref({
+                    listingKey: String(key),
+                    listNumber: l.ListNumber ?? null,
+                    streetNumber: l.StreetNumber ?? null,
+                    streetName: l.StreetName ?? null,
+                    city: l.City ?? city ?? null,
+                    boundaryCity: l.BoundaryCity ?? null,
+                    boundaryNeighborhood: l.BoundaryNeighborhood ?? null,
+                    subdivisionName: l.SubdivisionName ?? decodedSubdivision ?? null,
+                  })}`
                 })
                 .filter(Boolean)}
             />

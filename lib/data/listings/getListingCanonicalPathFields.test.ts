@@ -165,8 +165,14 @@ describe('listing by-key handler uses the slim lookup', () => {
     expect(src).not.toMatch(/select\(['"]\*['"]\)/)
   })
 
-  it('builds listingDetailPath from the slim columns and 308s to it', () => {
-    expect(src).toMatch(/listingDetailPath\(/)
+  it('builds the canonical from the slim columns through the ONE URL builder and 308s to it', () => {
+    // SITE-22: this used to require a DIRECT listingDetailPath( call. That is
+    // now the wrong shape to demand — a hand-rolled call beside the canonical
+    // builder is exactly how the same listing came to live at four URLs. The
+    // route reaches the path through listingCanonicalHref, which is itself
+    // pinned to listingDetailPath and to its output in lib/slug.test.ts, so the
+    // chain is asserted end to end rather than by grepping this one file.
+    expect(src).toMatch(/listingCanonicalHref\(|listingTileHref\(|listingDetailPath\(/)
     expect(src).toMatch(/boundary_neighborhood/)
     expect(src).toMatch(/redirectTo\(canonicalPathFromFields\(row\), 308\)/)
   })

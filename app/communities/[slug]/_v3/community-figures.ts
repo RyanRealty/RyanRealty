@@ -155,6 +155,19 @@ export function reconcilePlaceHoaFaq(
  * is this program's KPI. lib/site/valuation-href.ts is the one way to build it
  * (PUBLIC_UI.md §3), and `pagePath` is what it carries.
  */
+/**
+ * A Quiet item that also declares which kind of destination it is, for
+ * V3Answers' grouped exit fold. `group` is only meaningful on link rows; the
+ * prose rows in documentItems ("About these documents") carry it harmlessly and
+ * are dropped by the caller's href filter, exactly as before.
+ */
+export type ExploreEdge = V3QuietItem & { group?: string }
+
+/** Tag a Quiet item with its destination kind without disturbing its shape. */
+function withGroup(item: V3QuietItem, group: string): ExploreEdge {
+  return { ...item, group }
+}
+
 export function buildExploreEdges(input: {
   communityName: string
   cityName: string
@@ -188,26 +201,41 @@ export function buildExploreEdges(input: {
   golfCourses: readonly { slug: string, name: string }[]
   /** Registry resort list. Quiet doors, not a second hardcoded set. */
   resortItems: readonly V3QuietItem[]
-}): V3QuietItem[] {
+}): ExploreEdge[] {
   const { citySlug, cityName } = input
+  // EVERY DOOR SAYS WHAT KIND OF DESTINATION IT IS.
+  //
+  // Folding the set fixed its height and not its shape: two evaluator rounds
+  // opened the fold and found 41 undifferentiated hairline rows here, and 31 on
+  // the compound-plat member of the same class — governing documents, golf
+  // courses, sibling resorts and generic site links interleaved. TASTE calls
+  // that a table wearing hairlines, and the second round proved it systemic.
+  // The groups already existed in the reading order below; they were simply not
+  // named. V3Answers renders them in first-appearance order, so naming them
+  // moves no door.
   return [
-    ...input.documentItems,
-    { label: `Search ${input.communityName} homes`, href: input.browseHref },
-    { label: `${input.communityName} market report`, href: input.communityMarketHref },
-    { label: 'Manage your listing alerts', href: '/login?returnUrl=%2Faccount%2Fsaved-searches' },
-    ...(citySlug ? [{ label: `${cityName} homes for sale`, href: homesForSalePath(cityName) }] : []),
-    { label: `${cityName} market report`, href: input.cityReportHref },
-    ...(citySlug ? [{ label: `About ${cityName}`, href: `/cities/${citySlug}` }] : []),
-    ...(citySlug ? [{ label: `Open houses in ${cityName}`, href: `/open-houses/${citySlug}` }] : []),
+    ...input.documentItems.map((item) => withGroup(item, 'Recorded documents')),
+    { label: `Search ${input.communityName} homes`, href: input.browseHref, group: input.communityName },
+    { label: `${input.communityName} market report`, href: input.communityMarketHref, group: input.communityName },
+    { label: 'Manage your listing alerts', href: '/login?returnUrl=%2Faccount%2Fsaved-searches', group: input.communityName },
+    ...(citySlug ? [{ label: `${cityName} homes for sale`, href: homesForSalePath(cityName), group: cityName }] : []),
+    { label: `${cityName} market report`, href: input.cityReportHref, group: cityName },
+    ...(citySlug ? [{ label: `About ${cityName}`, href: `/cities/${citySlug}`, group: cityName }] : []),
+    ...(citySlug ? [{ label: `Open houses in ${cityName}`, href: `/open-houses/${citySlug}`, group: cityName }] : []),
     ...input.golfCourses.map((c) => ({
       label: `${c.name} golf course`,
       href: `/central-oregon/golf/${c.slug}`,
+      group: 'Golf',
     })),
-    ...input.resortItems,
-    { label: 'Every Central Oregon community', href: '/communities' },
-    { label: 'Central Oregon housing market', href: '/housing-market' },
-    { label: 'Value my home', href: valuationHref(input.pagePath) },
-    { label: 'Talk to a broker', href: '/contact' },
+    // The resort doors name their own group (their registry city), so they are
+    // passed through; only one that carries none falls back to the generic set.
+    ...input.resortItems.map((item) =>
+      (item as ExploreEdge).group ? (item as ExploreEdge) : withGroup(item, 'Nearby resorts'),
+    ),
+    { label: 'Every Central Oregon community', href: '/communities', group: 'Around the site' },
+    { label: 'Central Oregon housing market', href: '/housing-market', group: 'Around the site' },
+    { label: 'Value my home', href: valuationHref(input.pagePath), group: 'Around the site' },
+    { label: 'Talk to a broker', href: '/contact', group: 'Around the site' },
   ]
 }
 

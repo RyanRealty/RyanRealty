@@ -9,6 +9,7 @@ import {
   valuationPath,
   listingDetailPath,
   listingTileHref,
+  listingCanonicalHref,
   subdivisionListingsPath,
   listingKeyFromSlug,
 } from './slug'
@@ -109,6 +110,41 @@ describe('slug', () => {
         { mlsNumber: '220225078' }
       )
     ).toBe('/homes-for-sale/bend/lakes-at-tanager-pud/63435-palla-220225078')
+  })
+
+  it('SITE-23: a Brasada Ranch home resolves to Powell Butte, from its own boundary fields', () => {
+    // 220193364, 17938 Chaparral, Brasada Ranch — one of the 45 listing pages
+    // Search Console had indexed under /homes-for-sale/outside-boundaries/
+    // brasada-ranch/. The sentinel fired because `boundaries` held no polygon
+    // for Powell Butte at any geo_type, so the classifier had nothing to put in
+    // boundary_city; the Brasada Ranch neighbourhood polygon was there the whole
+    // time and the home's point is inside it. Migration 20260908210000 added the
+    // Powell Butte CCD polygon and re-classified the row, so these are the values
+    // the row now carries — read live 2026-09-08, boundary_city 'Powell Butte',
+    // boundary_neighborhood 'Brasada Ranch'.
+    //
+    // The test above proves the URL builder REFUSES the sentinel. This one pins
+    // the other half: that a real registry community's home names its city and
+    // its community, rather than falling through to the MLS city with no
+    // community and no polygon behind it.
+    expect(
+      listingDetailPath(
+        '20241121235215245034000000',
+        {
+          streetNumber: '17938',
+          streetName: 'Chaparral',
+          city: 'Powell Butte',
+          state: 'OR',
+          postalCode: '97753',
+        },
+        {
+          city: 'Powell Butte',
+          neighborhood: 'Brasada Ranch',
+          subdivision: 'Brasada Ranch',
+        },
+        { mlsNumber: '220193364' }
+      )
+    ).toBe('/homes-for-sale/powell-butte/brasada-ranch/17938-chaparral-220193364')
   })
 
   it('includes neighborhood segment before subdivision when provided', () => {
@@ -236,5 +272,101 @@ describe('slug', () => {
         subdivisionName: 'N/A',
       }),
     ).toBe('/homes-for-sale/redmond/100-main-st-220189456')
+  })
+
+  /*
+   * SITE-22 — the two retired canonical SHAPES, asserted on fixtures on purpose.
+   *
+   * Both still sit in Search Console as duplicate URLs for live listings:
+   * /homes-for-sale/outside-boundaries/... from before the sentinel fix in
+   * lib/slug.ts, and /homes-for-sale/jacksonville/na/... from before the N/A
+   * filter. Neither can be caught by sampling live URLs — the sitemap's 7,506
+   * listing rows contain zero of either, so a live sample would stay green for
+   * the wrong reason and prove only that the corpus has moved on. A fixture
+   * asserts the RULE, which is what a regression would break.
+   */
+  it('SITE-22: listingTileHref never emits the outside-boundaries sentinel, in either slot', () => {
+    // The sentinel arrives display-cased in boundary_city (verified against
+    // listing_tile_mv for 220225078) and slug-cased in boundary_neighborhood.
+    expect(
+      listingTileHref({
+        listingKey: 'spark-key-palla',
+        listNumber: '220225078',
+        streetNumber: '63435',
+        streetName: 'Palla',
+        city: 'Bend',
+        boundaryCity: 'Outside Boundaries',
+        boundaryNeighborhood: 'outside-boundaries',
+        subdivisionName: 'Lakes At Tanager PUD',
+      }),
+    ).toBe('/homes-for-sale/bend/lakes-at-tanager-pud/63435-palla-220225078')
+
+    for (const sentinel of ['Outside Boundaries', 'outside-boundaries', 'OUTSIDE BOUNDARIES', 'Outside  Boundaries']) {
+      const href = listingTileHref({
+        listingKey: 'k',
+        listNumber: '220000001',
+        streetNumber: '1',
+        streetName: 'Main St',
+        city: 'Bend',
+        boundaryCity: sentinel,
+        boundaryNeighborhood: sentinel,
+      })
+      expect(href).not.toContain('outside')
+      expect(href).toBe('/homes-for-sale/bend/1-main-st-220000001')
+    }
+  })
+
+  it('SITE-22: listingTileHref never emits an /na/ segment from an MLS N/A', () => {
+    // The Jacksonville shape: a literal "N/A" SubdivisionName slugified into a
+    // place segment that is not a place.
+    for (const noise of ['N/A', 'n/a', 'N/a', 'None']) {
+      const href = listingTileHref({
+        listingKey: 'k',
+        listNumber: '220000002',
+        streetNumber: '500',
+        streetName: 'Oregon St',
+        city: 'Jacksonville',
+        boundaryCity: 'Jacksonville',
+        subdivisionName: noise,
+      })
+      expect(href).toBe('/homes-for-sale/jacksonville/500-oregon-st-220000002')
+      expect(href).not.toMatch(/\/(na|none)\//)
+    }
+  })
+
+  it('SITE-22: listingCanonicalHref and listingTileHref are the same URL for one listing', () => {
+    // The whole item in one assertion: the canonical the detail page publishes
+    // and the href an index links with are one expression, not two copies.
+    const listing = {
+      listingKey: '20260418234131878480000000',
+      listNumber: '220219603',
+      streetNumber: '55550',
+      streetName: 'Heidi',
+      city: 'Bend',
+      boundaryCity: 'Bend',
+      boundaryNeighborhood: null,
+      subdivisionName: 'N/A',
+    }
+    expect(listingCanonicalHref(listing)).toBe(listingTileHref(listing))
+    expect(listingCanonicalHref(listing)).toBe('/homes-for-sale/bend/55550-heidi-220219603')
+  })
+
+  it('SITE-22: a row with no MLS number falls back to the key, and that is the URL to avoid', () => {
+    // 885 URLs / 3,348 impressions in GSC 2026-06-08..2026-09-05 look like this,
+    // because buildActivityItems passed no listNumber. The fallback is correct
+    // and still valid; the fix is that callers pass the fields.
+    const key = '20260418234131878480000000'
+    expect(
+      listingTileHref({ listingKey: key, streetNumber: '55550', streetName: 'Heidi', city: 'Bend' }),
+    ).toBe(`/homes-for-sale/bend/55550-heidi-${key}`)
+    expect(
+      listingTileHref({
+        listingKey: key,
+        listNumber: '220219603',
+        streetNumber: '55550',
+        streetName: 'Heidi',
+        city: 'Bend',
+      }),
+    ).toBe('/homes-for-sale/bend/55550-heidi-220219603')
   })
 })

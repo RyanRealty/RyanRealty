@@ -12,13 +12,25 @@
  *   in the sitemap + enumerated in llms.txt) when BOTH hold:
  *     1. the slug has an authoritative GIS polygon in public.boundaries
  *        (geo_type='subdivision' — Deschutes County plats, never approximated),
- *     2. the subdivision has >= SUBDIVISION_INDEX_MIN_LIFETIME_SALES lifetime
- *        CLOSED sales (summed across Central Oregon cities, sourced from
- *        listing_tile_mv — see getIndexableSubdivisions.ts for why that
- *        replaced the get_subdivision_status_counts RPC as the source here).
+ *     2. at least SUBDIVISION_INDEX_MIN_LIFETIME_SALES lifetime CLOSED sales
+ *        sit INSIDE that polygon (point-in-polygon, subdivision_plat_closed_mv
+ *        via getPlatClosedCounts.ts).
  *   Below the threshold the page still renders — it just carries noindex via
  *   pageMetadata({ noindex: true }) so thin plat pages never dilute the
  *   programmatic-page quality signal.
+ *
+ * WHY (2) IS A POLYGON JOIN AND NOT A NAME JOIN (SITE-24, 2026-09-08). Until
+ * this change the two halves were measured on two different grains: the polygon
+ * at RECORDED-PLAT grain, the sales by a text join on MLS "SubdivisionName" at
+ * RESORT grain. Every home inside Ridge At Broken Top, Tennis Tracts At Broken
+ * Top, Courtyard Garages At Broken Top and Golf Tracts At Broken Top is listed
+ * under the single name "Broken Top"; every home in Golf Homes At Tetherow is
+ * listed under "Tetherow". No sale is ever recorded under a sub-plat name, so
+ * every sub-plat of a resort scored ZERO against any nonzero floor, forever,
+ * however many houses sold inside it — 18 of the top 25 /subdivisions pages by
+ * Search Console impressions were served noindex by that mismatch and Google
+ * had started dropping them on recrawl. The threshold was never the variable.
+ * The join was, and the floor below is unchanged at 10.
  *
  * NOTE this is deliberately stricter than the /homes-for-sale/{city}/{sub}
  * browse-pair floor (SUBDIVISION_SITEMAP_MIN_LIFETIME_LISTINGS = 3, all
@@ -35,77 +47,103 @@ import { slugify } from '@/lib/slug'
  */
 export const SUBDIVISION_INDEX_MIN_LIFETIME_SALES = 10
 
-/** One row of the get_subdivision_status_counts RPC result (per city). */
-export type SubdivisionStatusCountRow = {
-  subdivision_name?: string | null
-  active?: number | null
-  pending?: number | null
-  closed?: number | null
-}
-
-/** Per-city RPC result bundle, as fetched by the DAL. */
-export type CitySubdivisionCounts = {
-  citySlug: string
-  rows: SubdivisionStatusCountRow[]
+/**
+ * One plat's polygon-attributed lifetime closed sales — one row of
+ * public.subdivision_plat_closed_mv, as the DAL hands it over
+ * (getPlatClosedCounts.ts owns the query and its §0 trace).
+ */
+export type PlatClosedCount = {
+  /** Recorded-plat slug — boundaries.geo_slug, geo_type='subdivision'. */
+  slug: string
+  /** Recorded-plat label — boundaries.geo_label, the county's own spelling. */
+  label: string
+  /**
+   * Lifetime closed sales attributed to this plat, every property type. The
+   * UNION over distinct listing_key of the two attributions below, so a sale
+   * that is both inside the polygon and named for the plat counts once.
+   */
+  closedCount: number
+  /** Of those, the ones whose point falls inside the recorded plat polygon. */
+  closedInPolygon: number
+  /** Of those, the ones recorded under this plat's own MLS SubdivisionName. */
+  closedByName: number
+  /** The PropertyType 'A' subset of closedCount. */
+  closedCountSfr: number
+  /** MLS city most of those sales were listed under. Display context only; null when unknown. */
+  topCityLower: string | null
+  /** Most recent close date among them, ISO. Null when the MV carries none. */
+  lastCloseDate: string | null
+  /**
+   * The SAME sales, by calendar year of the close: `{ 2013: 4, 2014: 11, … }`.
+   * The plat's own series, and on a sub-plat of a resort the only series there
+   * is — the yearly table the page already prints is an MLS SubdivisionName
+   * join and is empty for it.
+   *
+   * It comes off the same MV row as `closedCount`, so it is the same population
+   * counted one level finer: the years sum to `closedCount` minus only the
+   * sales carrying no close date. Empty when the MV holds no dated close.
+   */
+  closedByYear: Readonly<Record<number, number>>
 }
 
 export type IndexableSubdivision = {
-  /** URL slug — slugify(MLS SubdivisionName), matches boundaries.geo_slug. */
+  /** URL slug — boundaries.geo_slug for the recorded plat. */
   slug: string
-  /** Display name — the trimmed MLS SubdivisionName that produced the slug. */
+  /** Display name — the recorded plat label the county assigned the polygon. */
   name: string
-  /** Slug of the city contributing the most closed sales (display context). */
+  /**
+   * Slug of the MLS city most of the plat's closed sales were listed under
+   * (display context for the title). Empty string when unknown — §0: the page
+   * says nothing about the city rather than naming one that may not apply.
+   */
   citySlug: string
-  /** Lifetime closed-sale count summed across all Central Oregon cities. */
+  /** Lifetime closed sales inside the plat polygon. */
   closedCount: number
 }
 
 /**
- * Intersect the boundary-polygon slug set with the per-city closed-sale counts
- * and apply the threshold. Deterministic + pure: same inputs, same output,
- * sorted by slug so sitemap/llms output is stable across regenerations.
+ * Intersect the boundary-polygon slug set with the polygon-attributed closed
+ * counts and apply the threshold. Deterministic + pure: same inputs, same
+ * output, sorted by slug so sitemap/llms output is stable across regenerations.
+ *
+ * The boundary-slug argument is redundant by construction — subdivision_plat_closed_mv
+ * is built BY joining boundaries, so every row already has a polygon — and it
+ * is required anyway: it keeps the two-condition contract visible in one pure
+ * function, and it is the guard that stops a plat surviving in a stale MV after
+ * its polygon was withdrawn from `boundaries`.
  */
 export function buildIndexableSubdivisions(
   boundarySlugs: ReadonlySet<string>,
-  cityCounts: readonly CitySubdivisionCounts[],
+  platCounts: readonly PlatClosedCount[],
   minLifetimeSales: number = SUBDIVISION_INDEX_MIN_LIFETIME_SALES,
 ): IndexableSubdivision[] {
-  // slug -> accumulated closed count + best (name, city) by per-city closed.
-  const acc = new Map<
-    string,
-    { name: string; citySlug: string; closedCount: number; bestCityClosed: number }
-  >()
-
-  for (const { citySlug, rows } of cityCounts) {
-    for (const row of rows) {
-      const name = (row.subdivision_name ?? '').trim()
-      // 'N/A' would slugify into a bogus /n-a/ segment — same guard as the
-      // sitemap browse-pair loop.
-      if (!name || name === 'N/A') continue
-      const slug = slugify(name)
-      if (slug === 'unknown') continue
-      // Polygon requirement: no GIS plat boundary, no index slot.
-      if (!boundarySlugs.has(slug)) continue
-      const closed = row.closed ?? 0
-      const existing = acc.get(slug)
-      if (existing) {
-        existing.closedCount += closed
-        if (closed > existing.bestCityClosed) {
-          existing.bestCityClosed = closed
-          existing.citySlug = citySlug
-          existing.name = name
-        }
-      } else {
-        acc.set(slug, { name, citySlug, closedCount: closed, bestCityClosed: closed })
-      }
-    }
-  }
-
   const out: IndexableSubdivision[] = []
-  for (const [slug, v] of acc) {
-    if (v.closedCount < minLifetimeSales) continue
-    out.push({ slug, name: v.name, citySlug: v.citySlug, closedCount: v.closedCount })
+  const seen = new Set<string>()
+
+  for (const row of platCounts) {
+    const slug = (row.slug ?? '').trim()
+    if (!slug || slug === 'unknown' || slug === 'n-a') continue
+    // Polygon requirement: no GIS plat boundary, no index slot.
+    if (!boundarySlugs.has(slug)) continue
+    if (row.closedCount < minLifetimeSales) continue
+    // The MV's unique key is plat_slug, so a duplicate here means a corrupted
+    // read; keep the first and never sum two rows into a doubled count.
+    if (seen.has(slug)) continue
+    seen.add(slug)
+    const name = (row.label ?? '').trim() || slug
+    // slugify() returns the literal 'unknown' for an empty or unslugglable
+    // string, which would title the page "… | Unknown, Oregon". §0: an unknown
+    // city is absent, never a place named Unknown.
+    const rawCity = (row.topCityLower ?? '').trim()
+    const citySlug = rawCity ? slugify(rawCity) : ''
+    out.push({
+      slug,
+      name,
+      citySlug: citySlug === 'unknown' ? '' : citySlug,
+      closedCount: row.closedCount,
+    })
   }
+
   out.sort((a, b) => (a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0))
   return out
 }
@@ -145,7 +183,10 @@ export function subdivisionLlmsLines(
   siteUrl: string,
 ): string[] {
   const base = siteUrl.replace(/\/$/, '')
-  return subdivisions.map(
-    (s) => `- ${s.name} (${cityLabel(s.citySlug)}): ${base}${subdivisionDetailPath(s.slug)}`,
-  )
+  return subdivisions.map((s) => {
+    const url = `${base}${subdivisionDetailPath(s.slug)}`
+    // No city, no parenthetical. "(  )" or "(Unknown)" would be a claim about
+    // a place, and §0 forbids naming one the data did not give us.
+    return s.citySlug ? `- ${s.name} (${cityLabel(s.citySlug)}): ${url}` : `- ${s.name}: ${url}`
+  })
 }

@@ -160,6 +160,22 @@
   color: var(--v3-ink-muted);
 }
 
+/* The §0 trace under a Quiet holding authored fact rows. V3SourceLine already
+   carries the site's source register; the row it sits in owns the spacing.
+
+   THE TRACE CLOSES THE FACT RUN, so it is a row of the list and not a footer,
+   and it carries no hairline of its own: the last fact's rule is already the
+   line above it, and a second would read as an empty row. */
+.v3-quiet__item--source {
+  border-top: 0;
+  padding: var(--v3-space-2xs) 0 var(--v3-space-md);
+}
+
+.v3-quiet__source {
+  max-width: var(--v3-measure-text);
+  margin: 0;
+}
+
 /* --- Fact rows -------------------------------------------------------------
    A label and its figure, and the figure drawn as a length when the caller
    supplies a share. These replaced `·`-joined prose: the community pages hold

@@ -97,6 +97,15 @@ export type PlaceAnswersFigures = {
     windowLabel: string
     trace?: string | null
     /**
+     * What these closes ARE, when they are not the page's population.
+     * `populationLabel` above names the set the page mostly talks about
+     * (single-family homes); this figure can come from a different one. The
+     * plat grain's boundary-attributed closes are EVERY property type, and Golf
+     * Homes At Tetherow is a townhome plat — calling its 107 closes
+     * "single-family homes" would be §0 rule 5 in one word.
+     */
+    populationLabel?: string | null
+    /**
      * The SAME count over the window before it, drawn as a second run of marks
      * under the first (SITE-08 pass 2). Only from the same query as `count` —
      * the plat grain's yearly closed counts are one sales-history RPC read
@@ -104,6 +113,26 @@ export type PlaceAnswersFigures = {
      */
     priorWindow?: { count: number; label: string } | null
   } | null
+  /**
+   * EVERY closed sale on record inside the place's own recorded boundary,
+   * attributed by geometry rather than by an MLS name (SITE-24).
+   *
+   * It is a different question from `closedCount` and it exists because on a
+   * sub-plat of a resort `closedCount` cannot be asked at all: the yearly
+   * series behind it is a join on MLS SubdivisionName, every home inside Golf
+   * Homes At Tetherow is recorded under "Tetherow", and the plat therefore
+   * answered ZERO questions with a number — /subdivisions/golf-homes-at-tetherow
+   * shipped a section headed "questions, answered with the number" whose only
+   * row was the valuation ask. The polygon count is the one figure that grain
+   * can state, and 107 sales inside a recorded boundary is a fact about the
+   * place, not a statistic about its prices.
+   *
+   * A COUNT, never a rate and never a price. `trace` is required in practice
+   * for the same reason every object figure above carries one: this figure
+   * comes from its own query (public.subdivision_plat_closed_mv) and the
+   * page-level population clause describes a different one.
+   */
+  lifetimeClosedCount?: { count: number; trace?: string | null } | null
   /** Median list-to-pending days. NOT active-inventory age (ci:days-to-pending-source). */
   daysToPending?: number | null
   /** The same statistic for the parent city, drawn as the context mark. */
@@ -244,6 +273,8 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
   const place = input.placeName.trim()
   const city = input.cityName?.trim() || null
   const homes = input.populationLabel?.trim() || 'single-family homes'
+  // The closed figure may measure a wider set than the page's own population.
+  const closedHomes = input.figures.closedCount?.populationLabel?.trim() || homes
   const f = input.figures
   const answers: V3Answer[] = []
   const traces: string[] = []
@@ -340,12 +371,12 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       question: `Is ${place} a buyer's or seller's market?`,
       body: [
         `${place} has had fewer sales we can attribute to it on its own than a fair buyer's or seller's verdict needs, so we are not printing one.`,
-        `${count.toLocaleString('en-US')} ${homes} closed in ${place} ${windowLabel}${city ? `, and ${city} as a whole is the wider reading we do stand behind` : ''}. Ask us and we will read the comparable sales for your street instead.`,
+        `${count.toLocaleString('en-US')} ${closedHomes} closed in ${place} ${windowLabel}${city ? `, and ${city} as a whole is the wider reading we do stand behind` : ''}. Ask us and we will read the comparable sales for your street instead.`,
         // The drawing carries the window before as a second run of marks, so
         // the sentence carries it too — the FAQPage payload is derived from
         // these lines, and a schema that omits what the page shows is the
         // drift this module exists to prevent.
-        ...priorSentence(f.closedCount.priorWindow, homes),
+        ...priorSentence(f.closedCount.priorWindow, closedHomes),
       ],
       figure: {
         value: count.toLocaleString('en-US'),
@@ -585,8 +616,8 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       id: 'answer-sales',
       question: `How many homes sold in ${place} in the last year?`,
       body: [
-        `${count.toLocaleString('en-US')} ${homes} closed in ${place} ${windowLabel}.`,
-        ...priorSentence(f.closedCount.priorWindow, homes),
+        `${count.toLocaleString('en-US')} ${closedHomes} closed in ${place} ${windowLabel}.`,
+        ...priorSentence(f.closedCount.priorWindow, closedHomes),
       ],
       figure: {
         value: count.toLocaleString('en-US'),
@@ -599,6 +630,39 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
     for (const line of priorTrace(f.closedCount.priorWindow, traceWith(f.closedCount.trace, 'closed sales, grouped by calendar year'))) {
       traces.push(line)
     }
+  }
+
+  // How many have EVER sold here — the boundary question, not the name question
+  // (SITE-24). It rides after the yearly count because a reader asks "how is it
+  // selling now" before "how big is it", and it is the only figure a sub-plat of
+  // a resort can answer at all: its sales are all recorded under the resort's
+  // MLS name, so every row above this one is absent for it.
+  if (f.lifetimeClosedCount && positive(f.lifetimeClosedCount.count)) {
+    const lifetime = f.lifetimeClosedCount.count
+    const lifetimeTrace = traceWith(
+      f.lifetimeClosedCount.trace,
+      'closed sales inside the recorded boundary, every year on record',
+    )
+    answers.push({
+      id: 'answer-lifetime-sales',
+      question: `How many homes have ever sold in ${place}?`,
+      body: [
+        `${lifetime.toLocaleString('en-US')} sales have closed inside the ${place} boundary across every year the MLS holds.`,
+        // The method is the point of the figure, so it is said in the body and
+        // not only in the trace: this is the count a name join cannot produce.
+        `They are counted by where the home actually sits, not by the subdivision name a listing was filed under, so a home inside ${place} counts here even when the MLS recorded it under a larger name.`,
+      ],
+      figure: {
+        value: lifetime.toLocaleString('en-US'),
+        label: 'sales on record',
+        // No runLabel: there is no second run under it, and the question above
+        // already named the window (every year on record).
+        mark: { kind: 'tally', count: lifetime, unitLabel: 'closed sale', unitPlural: 'closed sales' },
+      },
+      source: lifetimeTrace,
+    })
+    traces.push(`${lifetime} closed sales inside the recorded boundary — ${lifetimeTrace}`)
+    ask(`How many homes have ever sold in ${place}?`)
   }
 
   // ── The questions with no figure, after the ones that have one ───────────

@@ -6,7 +6,7 @@
 import type { V3LedgerFigureRow } from '@/components/site/v3'
 import { v3Text } from '@/components/site/v3'
 import type { PriceDropTile } from '@/lib/data'
-import { listingDetailPath } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 import { livePrice } from '@/app/_v3/live-format'
 
 export const SHOWN_LISTINGS = 6
@@ -42,12 +42,16 @@ export function sellListingRows(
     const city = listing.City?.trim()
     rows.push({
       id: key,
-      href: listingDetailPath(
-        key,
-        { streetNumber: listing.StreetNumber, streetName: listing.StreetName, city: listing.City },
-        { city: listing.City, subdivision: listing.SubdivisionName },
-        { mlsNumber: listing.ListNumber },
-      ),
+      href: listingTileHref({
+        listingKey: key,
+        listNumber: listing.ListNumber,
+        streetNumber: listing.StreetNumber,
+        streetName: listing.StreetName,
+        city: listing.City,
+        boundaryCity: listing.boundary_city,
+        boundaryNeighborhood: listing.boundary_neighborhood,
+        subdivisionName: listing.SubdivisionName,
+      }),
       what: v3Text(street),
       value: v3Text(price),
       ...(city ? { when: v3Text(city) } : {}),

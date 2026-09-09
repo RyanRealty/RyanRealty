@@ -156,6 +156,12 @@ export type V3InstrumentProps = {
    * /cities/bend ran 31 figures deep at 390px) — the lead figures answer the
    * page's question, the tail stays one tap away without leaving the section.
    * Omit to render every figure open (the default, unchanged).
+   *
+   * `0` folds every figure, and is honored ONLY when a chart or a card set is
+   * carrying the answer above the fold and there is more than one figure to
+   * fold. A section with no visual and a closed <details> shows the reader no
+   * number, and a fold of one figure is a disclosure hiding the answer behind
+   * the words "All 1 figures" (SITE-24). In both cases the figures render open.
    */
   foldAfter?: number
   /**
@@ -344,8 +350,22 @@ export function V3Instrument({
             <Fragment key={key}>{rendered}</Fragment>
           )
         }
+        // A FOLD IS ONLY LEGAL WHEN SOMETHING IS STILL ANSWERING (SITE-24).
+        // `foldAfter={0}` folds EVERY figure, which is the right shape for the
+        // chart-first sections it was written for — the drawing is the answer
+        // and the tiles are the appendix. With no chart it left the section as a
+        // heading, a note, and a closed <details>: a market section showing no
+        // number at all, first read of nothing. And with a single figure the
+        // summary read "All 1 figures" while hiding the one figure the section
+        // exists to print — /subdivisions/golf-homes-at-tetherow, whose lifetime
+        // closed count is the whole point of the page's market band.
+        //
+        // So a full fold now requires a visual carrying the answer above it, and
+        // a lone figure is never folded. `foldAfter > 0` is untouched: it always
+        // leaves lead figures on screen by construction.
+        const hasVisual = Boolean(chart) || Boolean(chartSecondary) || (cards?.length ?? 0) > 0
         const foldAt =
-          foldAfter === 0 && figures.length > 0
+          foldAfter === 0 && figures.length > 1 && hasVisual
             ? 0
             : foldAfter != null && foldAfter > 0 && figures.length > foldAfter + 1
               ? foldAfter

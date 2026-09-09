@@ -5,7 +5,7 @@
 
 import type { V3FieldItem } from '@/components/site/v3'
 import type { PriceDropTile } from '@/lib/data'
-import { listingDetailPath, slugify } from '@/lib/slug'
+import { listingTileHref, slugify } from '@/lib/slug'
 import { livePrice } from '@/app/_v3/live-format'
 
 export const SHOWN_LISTINGS = 12
@@ -62,12 +62,16 @@ export function ourHomesFieldItems(listings: readonly PriceDropTile[]): V3FieldI
     const lng = listing.Longitude
     items.push({
       id: key,
-      href: listingDetailPath(
-        key,
-        { streetNumber: listing.StreetNumber, streetName: listing.StreetName, city: listing.City },
-        { city: listing.City, subdivision: listing.SubdivisionName },
-        { mlsNumber: listing.ListNumber },
-      ),
+      href: listingTileHref({
+        listingKey: key,
+        listNumber: listing.ListNumber,
+        streetNumber: listing.StreetNumber,
+        streetName: listing.StreetName,
+        city: listing.City,
+        boundaryCity: listing.boundary_city,
+        boundaryNeighborhood: listing.boundary_neighborhood,
+        subdivisionName: listing.SubdivisionName,
+      }),
       priceLabel: price,
       title: street,
       ...(photo ? { photoSrc: photo } : {}),

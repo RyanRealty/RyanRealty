@@ -145,6 +145,22 @@ describe('subdivision page first screen', () => {
     expect(code).not.toMatch(/getCityHeroUrlsBySlug/)
     expect(code).toMatch(/chartFirst/)
     expect(code).toMatch(/foldAfter=\{0\}/)
-    expect(code).toMatch(/tooFewSalesItems/)
+  })
+
+  /**
+   * SITE-24. The chart refusal is still printed, but it no longer takes the
+   * figures with it. Before this the no-chart branch rendered a V3Quiet
+   * carrying only tooFewSalesItems() and DROPPED every market figure — which on
+   * a sub-plat of a resort said "too few recent sales" over a plat with 107
+   * closed sales on record, because the yearly series behind the chart is
+   * name-joined and a sub-plat's sales are all recorded under the resort name.
+   * The refusal moved into the Instrument's note slot; the figures survive.
+   */
+  it('keeps the too-few-sales refusal as a note on the Instrument, never instead of the figures', () => {
+    expect(code).toMatch(/TOO_FEW_SALES_LINE/)
+    expect(code).not.toMatch(/tooFewSalesItems/)
+    // The gate on the section is the figures, not the chart.
+    expect(code).toMatch(/\{firstPlatFigure \? \(/)
+    expect(code).toMatch(/note: v3Text\(TOO_FEW_SALES_LINE\)/)
   })
 })

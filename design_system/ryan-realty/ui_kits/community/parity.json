@@ -7,7 +7,8 @@
     "figureCorrected": "The reliable-boundary branch published listings_in_boundary's pin count under the label 'Active single-family'. That RPC filters on status only and caps at 200 rows, so the number counted condos, land, and townhomes, and the median printed beside it came from a DIFFERENT set (the same listings narrowed to propertyType 'A'). The count is now the single-family actives inside the same boundary: the set the label claims and the set its median is computed from. On a community with no condos or land it is the same number.",
     "monthsOfSupplyPublicationRule": "REPAIR 2026-08-12. Months of supply, and the verdict clause it puts in the H1, publish ONLY when the market pulse row's own active_count equals the count this page publishes. Months of supply is actives over average monthly closings and this page prints that formula, so the reader can check it against the count beside it. The pulse row computed the ratio from ITS numerator (the literal-subdivision-name count for the slug) while the page publishes the alias-aware one, and on 2026-08-12 they differed on every community carrying a row: tetherow 20 against 36, vandevert-ranch 12 against 0, broken-top 205 against 21. The arithmetic refuted the page in both directions: vandevert-ranch printed 'a buyer's market' and '72.0 months of supply' over '0 homes for sale' (0 actives yields 0 months, and zero inventory is definitionally not a buyer's market), and tetherow printed 'a balanced market' where its own 36 actives against the same denominator give 9.0, a buyer's. The figure now publishes on exactly the communities whose count came FROM that row (three-rivers: 91 actives, 16.1 months, 'a buyer's market', self-consistent) and is cut everywhere else, in the Instrument, in the visible FAQ, and in the Dataset's variableMeasured, from the one buildMarketFaq call. Median days to pending survives the same disagreement: it is a timing median over homes that went pending, prints no formula, and drives no verdict, and its trace names the pulse row.",
     "monthsOfSupplyDisplay": "REPAIR 2026-08-12. The figure prints through lib/format/months-of-supply (formatMonthsOfSupply), the single boundary-safe rule: 4.02 prints 4.1, 5.97 prints 5.9. The migration had used Math.round(x*10)/10 with toFixed(1), which is the expression lib/site/market-faq.ts replaced in the same changeset for the reason written in its own comment, and it put three values of one statistic on one page: 4.0 in the Instrument, 4.1 in the visible FAQ answer, 4.1 in the Dataset variable.",
-    "unchanged": "Every other figure, filter, window, and unit. The alias-aware resort count, the oversized-hull fallback, the county-plat-union polygon rule, the median-list/median-sold split, the rolling-365d window on closed sales, the registry HOA fallback chain, and the school-district registry as the only permitted schools source all behave exactly as before."
+    "unchanged": "Every other figure, filter, window, and unit. The alias-aware resort count, the oversized-hull fallback, the county-plat-union polygon rule, the median-list/median-sold split, the rolling-365d window on closed sales, the registry HOA fallback chain, and the school-district registry as the only permitted schools source all behave exactly as before.",
+    "nameOrRefusal": "SITE-28, 2026-09-08. THIS ROUTE CAN NOW RENDER A REFUSAL, and every component below is conditional on it not doing so. A compound slug /communities/<city>-<token> derived its display name from the URL and from MLS SubdivisionName, and MLS SubdivisionName is an ingest key: /communities/prineville-oll shipped the title 'Oll Homes for Sale | Prineville, OR' over the H1 'Oll homes for sale', madras-parkpl shipped 'ParkPL', prineville-pleasvh 'PleasVH', bend-aspenb 'Aspenb', sisters-clas 'Clas'. app/communities/[slug]/_v3/community-display-name.ts now resolves the name against four RECORDED sources and nothing else — publishPlatDisplayName (the one abbreviation test in the repo, shared with /subdivisions), its recorded expansions, the reviewed alias map data/subdivision-alias-plats.json, and an EXACT geo_slug hit in public.boundaries via lib/data/subdivisions/getRecordedPlatLabel.ts. Nothing resolves and the page renders _v3/CommunityUnavailable.tsx: a real body with a real h1, not a notFound(), because a throw under app/loading.tsx's Suspense boundary ships a hollow 200 with no h1 (the mechanism SubdivisionUnavailable exists for). The abbreviation test reads the MLS SPELLING from geo_snapshot_mv.geo_label, because slugToTitle flattens the interior capital that is the evidence. Robots is untouched — a refusing slug keeps the 'noindex, follow' every compound non-community slug has carried since 95672822. 32 of 1,014 Central Oregon SubdivisionNames are withheld; every one is an MLS token, and a geometry majority vote over them was measured and refused (aspenb falls in 3 plats, clab in 28)."
   },
   "requiredComponents": [
     {
@@ -227,18 +228,39 @@
   ],
   "superseded": [],
   "openDefects": {
-    "_": "Closed 2026-08-27.",
-    "items": []
+    "_": "Reopened 2026-09-08 by the SITE-28 evaluator rounds. These are measured, not suspected, and none is caused by SITE-28 — they are what the widened three-route instrument could see that the single-route one could not.",
+    "items": [
+      {
+        "route": "/communities/tetherow",
+        "section": "#atlas vs #faq",
+        "severity": "honesty",
+        "finding": "Three different for-sale counts on one page, measured live 2026-09-08 at 1440: #atlas says \"26 for sale\", #faq says \"25 homes listed across its named subdivisions when every property type is counted\", and the #faq inventory row says 16 homes for sale. The 16 vs 25 IS reconciled on the page (listedVsDetachedNote: detached single-family vs every property type). The 26 vs 25 is NOT: the Atlas counts inside the recorded polygon and the answer counts the alias-name set, and neither says so. Not fixed here on purpose — deciding which population a community page publishes is a product decision with a documented history of being got wrong in both directions (neighborhood sold attribution), and guessing it would be the defect one field over. It belongs to the unit that owns the Atlas caption."
+      },
+      {
+        "route": "/communities/tetherow",
+        "section": "#belonging",
+        "severity": "honesty",
+        "finding": "The authored facts (Founded, Acres, Course architect, Ranked) now carry a §0 trace, but it is ONE block-level disclosure naming the ten publishers the community config records, not a source per fact. A per-fact trace is not derivable from what is recorded: data/resort-community-tetherow.json holds sources[] as {url, publisher, supports}, and no supports string maps onto \"Founded\" or \"Course architect\" for Tetherow specifically. Assigning one would be inventing provenance. Closing it properly means recording per-fact sources in the config, which is authoring work, not rendering work."
+      },
+      {
+        "route": "/communities/<city>-<plat>",
+        "section": "opening",
+        "severity": "craft",
+        "finding": "A compound plat page has no hero photograph and no authored knowledge, so its first screen is now a two-column pairing of the H1 and the address ask rather than a column and a 350px hole — but the left column still ends well above the right one. The class has no counterweight element for a place with no owned photograph (a plat outline, one sourced fact, a map thumbnail). Named by two evaluator rounds; a real design decision for the place-hero owner."
+      }
+    ]
   },
   "tasteReview": {
     "evaluatedAt": "2026-09-08",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator, SITE-08 round 2 — scored the MERGED build after the round-1 defects were fixed and the pages recaptured; three scorings of one shot set, median reported",
+    "evaluator": "separate claude-sonnet-5 evaluator, SITE-28. THE INSTRUMENT WIDENED THIS ROUND and that is the whole reason the number falls: the prior 80 scored ONE route, /communities/tetherow, the best page in the class. SITE-28 is a defect of the compound-plat members, so the shot set now carries all three kinds of page this route can render — a registry community, a compound plat with no hero photograph and no authored knowledge, and the new refusal — and TASTE scores a class by its weakest member. Three rounds were run against this widened set: [64,69,59] median 64, then [65,71,68] median 68 after the doors fold was grouped and the opening was rebuilt, then the round recorded here. Three scorings per round, median reported.",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
       "routes": [
-        "/communities/tetherow"
+        "/communities/tetherow",
+        "/communities/redmond-odin-crest-estate",
+        "/communities/prineville-oll"
       ],
       "viewports": [
         1440,
@@ -246,54 +268,80 @@
       ],
       "states": [
         "default",
-        "answers-first-row-open"
+        "answers-first-row-open",
+        "doors-fold-open",
+        "belonging-source-open"
       ]
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/community/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/community/shots/mobile375.png",
       "answersDesktop": "design_system/ryan-realty/ui_kits/community/shots/answers-desktop.png",
-      "answersMobile375": "design_system/ryan-realty/ui_kits/community/shots/answers-mobile375.png"
+      "answersMobile375": "design_system/ryan-realty/ui_kits/community/shots/answers-mobile375.png",
+      "doorsDesktop": "design_system/ryan-realty/ui_kits/community/shots/doors-desktop.png",
+      "doorsMobile375": "design_system/ryan-realty/ui_kits/community/shots/doors-mobile375.png",
+      "belongingDesktop": "design_system/ryan-realty/ui_kits/community/shots/belonging-desktop.png",
+      "belongingMobile375": "design_system/ryan-realty/ui_kits/community/shots/belonging-mobile375.png",
+      "platDesktop": "design_system/ryan-realty/ui_kits/community/shots/plat-desktop.png",
+      "platMobile375": "design_system/ryan-realty/ui_kits/community/shots/plat-mobile375.png",
+      "refusalDesktop": "design_system/ryan-realty/ui_kits/community/shots/refusal-desktop.png",
+      "refusalMobile375": "design_system/ryan-realty/ui_kits/community/shots/refusal-mobile375.png"
     },
-    "shotsHash": "sha256:b5c7e39e1680040d9f5243a052e84fd1cd320fa68ea345b5ad5a200d47c1510c",
+    "shotsHash": "sha256:a364c1e66a0eeb7fb85b3ca325a0ba01f508a0f3c2b34eb56b06846b432e6d51",
     "scores": [
-      78,
-      80,
-      83
+      69,
+      72,
+      68
     ],
-    "score": 80,
+    "score": 69,
     "breakdown": {
-      "design": 25,
-      "originality": 24,
-      "interaction": 13,
-      "craft": 12,
+      "design": 21,
+      "originality": 23,
+      "interaction": 12,
+      "craft": 7,
       "honesty": 6
     },
-    "beats": "Tetherow's own resort site (tetherow.com) on data ownership: live closed-sale evidence, a sourced HOA figure, and an address-in/valuation-out tool one tap from the hero, versus the resort's lifestyle-only copy with no pricing data at all.",
+    "beats": "Tetherow's #belonging (measured-HOA fact pairs, drive times drawn as weighted bars, a foldable course-spec sheet) plus #faq's dot strip for its 24 closed sales and a 41-door exit set grouped and folded behind one disclosure beat both tetherow.com and the portal community pages on data depth and on interaction: no competing page shows an HOA measured from current listings, a bar-weighted drive-time comparison and a categorised link graph in one scroll. On the compound-plat member it beats them on something else entirely — it is the only page in the field that checks an MLS subdivision token against a recorded-name source before publishing it as a neighborhood, and declines to name the place when nothing resolves.",
     "defects": [
       {
-        "section": "#belonging",
-        "severity": "honesty",
-        "finding": "The claimed fix ('the HOA dollar figure now carries its own §0 source line, like every other figure') only reached the FAQ's HOA row. The identical $2,052/year HOA figure is restated in the 'Living in Tetherow' fact list (#belonging) with a bare population clause ('median of the 135 current listings that report dues') and no 'Source:' line at all — verified: the whole #belonging block contains zero v3-source elements. The same section also states 'Founded 2008', '700 acres', 'Course architect David McLay Kidd', and 'Ranked #57 (Golf Digest)' with no source of any kind, named or linked, for any of them."
+        "route": "/communities/redmond-odin-crest-estate",
+        "section": "opening",
+        "severity": "craft",
+        "finding": "Measured live at 1440: .place-opening__copy is a 408px + 640px grid, the H1 is 77px tall in a 407px row, so ~330px of plain cream sits in the left column beside the ask card. Round one named a ~350px hole to the RIGHT of the card; this session moved it rather than removed it. The :has(.place-opening__ask) guard shipped with it is a real fix for a real regression — without it /subdivisions/<plat>, the same copy block with no ask, lost its H1 to a 408px column beside an empty one — but it is a no-op on the page the defect was named on. NOT CLOSED, and deliberately not papered over: the honest fill for that column is content this class does not have (a plat with no photograph, no authored knowledge, and — by SITE-01, Matt 2026-09-07 — no figure permitted before the visitor types an address). It is a design decision for the place-hero owner, not a CSS one."
       },
       {
-        "section": "#faq (doors fold)",
+        "route": "/communities/tetherow",
+        "section": "#belonging",
+        "severity": "honesty",
+        "finding": "The block went from ZERO source elements to a §0 trace naming the ten publishers the community config records, rendered as the site's own V3SourceDisclosure and moved to close the fact run (measured gap to the last fact row: 5.6px, down from ~2,000px at the end of the block). It is still not a trace per fact, and the four facts it was named for — Founded, Acres, Course architect, Ranked — sit ~1,660px above it with 17 more fact rows between. The evaluator partly accepts the reason: no sources[] entry supports \"700 acres\", so a per-fact citation there would be invented; but two entries name David McLay Kidd directly, so \"Course architect\" WAS derivable and was folded into the aggregate instead. Ranked already carries its own inline citation, which proves the shape works. Closing it properly is authoring work in data/resort-community-<slug>.json, not rendering work."
+      },
+      {
+        "route": "/communities/tetherow",
+        "section": "#faq vs #atlas",
+        "severity": "honesty",
+        "finding": "Two for-sale totals in one scroll: #atlas \"26 for sale\" (every property type inside the recorded boundary, all filters on by default) and the #faq inventory row 16-17 (detached single-family). Each now says what it counts, which is progress on round two, but nothing on the page says why they differ, so a reader can still read them as contradictory. Not reconciled here on purpose: deciding which population a community page publishes is a product decision with a documented history of being got wrong in both directions, and guessing it would be the same defect one field over."
+      },
+      {
+        "route": "/communities/redmond-odin-crest-estate",
+        "section": "field / map",
         "severity": "taste",
-        "finding": "41 outbound doors fold behind one 'Where to go next' disclosure. Correct pattern for the volume, but once opened it is still one flat, uncategorized list of 41 hairline rows (governing documents, golf, sibling resorts, generic site links all interleaved) — the exact 'table wearing hairlines' shape TASTE bans, just deferred behind a click instead of removed."
+        "finding": "The sparse-inventory map reads as inert — a large empty canvas under one honest \"0 homes in this map view\" banner — rather than as a deliberately minimal design. Honest, and not yet designed."
       }
     ],
     "openRaise": [
-      "Does the Belonging fact list need the same closing §0 note pattern #character already carries (one shared population/feed sentence for the whole block), given it restates a figure the FAQ just sourced individually?",
-      "Worth grouping the 41 folded doors by type (documents / golf / nearby resorts / site) now that the count is verified at 41, rather than one flat alphabetical-by-source list?"
+      "Acres (700) has no supporting entry in the community config's sources[]. Under §0 should it drop from the page until one is recorded, rather than ride under an aggregate trace that does not actually cover it?",
+      "The compound-plat opening has now been flagged three rounds running. What fills that left column — a plat outline, the parent-city door, one sourced fact — given SITE-01 forbids a figure before the visitor types an address?",
+      "Should the FAQ single-family count and the Atlas all-types count carry one shared reconciling line, the way the closed-sales answer already explains its Tetherow-only scope?",
+      "conifa resolves unanimously to Conifer Acres (13/13 in-polygon) and oww2 to Oregon Water Wonderland Unit 2 (20/20). Both are honest names the resolver currently refuses, because the only path to them is a geometry vote the repo bans at request time. Do they get reviewed rows in data/subdivision-alias-plats.json, which would need a boundaries union row each?"
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-08",
-      "score": 77,
+      "score": 80,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:1190c1436a67ff05c2e13297504297c385a6698f73c35cd4b7a4b4b3759d8b87"
+      "shotsHash": "sha256:b5c7e39e1680040d9f5243a052e84fd1cd320fa68ea345b5ad5a200d47c1510c"
     },
-    "rebaselineReason": "The prior 77 was scored on a different shotsHash — shots of the pre-fix build, before the source lines were rewritten, the plat name recased and the reference rows split. Same evaluatorModel and same rubricVersion, but a different artifact, so this is a rebaseline and not a rise. Round 1 marks for the record: neighborhood 82, community 79, subdivision 73."
+    "rebaselineReason": "The shotsHash differs, and it differs because the INSTRUMENT WIDENED, not because the same pages were re-shot. The prior 80 and this mark are not comparable. Same evaluatorModel and same rubricVersion, but the prior shotSpec held ONE route (/communities/tetherow) and this one holds three: the registry community, a compound plat page with no hero photograph and no authored knowledge, and the SITE-28 refusal. TASTE scores a page class by its weakest member, and the two members added here are the ones this item is about, so the number is lower and more honest. Within the widened instrument the mark DID rise across the session: 64 to 68 to the score recorded here, each round re-shot and re-scored after the round before it named its defects. Round one's two inherited defects — #belonging publishing four authored facts with no source of any kind, and 41 undifferentiated exits behind the doors fold — were both closed, the second in the shared V3Answers primitive so every route carrying it moves."
   }
 }

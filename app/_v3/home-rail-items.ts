@@ -10,7 +10,7 @@ import type { ListingTile } from '@/lib/data/types/listing'
 import { REPORT_CITY_LABELS } from '@/lib/data/geo/report-cities'
 import { publishListingCardBadges } from '@/lib/listing/publish-listing-card-badges'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
-import { listingDetailPath } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 import type { V3ListingRowBadge } from '@/components/site/v3'
 import type { ListingCardExtras } from '@/lib/data/listings/attachListingCardExtras'
 
@@ -89,12 +89,7 @@ function toCard(
 
   return {
     listingKey: tile.listingKey,
-    href: listingDetailPath(
-      tile.listingKey,
-      { streetNumber: tile.streetNumber, streetName: tile.streetName, city: tile.city },
-      { city: tile.city, subdivision: tile.subdivisionName },
-      { mlsNumber: tile.listNumber },
-    ),
+    href: listingTileHref(tile),
     photoUrls: [tile.photoUrl!.trim()],
     price: tile.listPrice,
     addressLine: street,

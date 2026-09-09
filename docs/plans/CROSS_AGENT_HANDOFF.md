@@ -1,4 +1,298 @@
-# Current — 2026-09-09 (the CMA send walked end to end on the email harness; the intake stops taking over other people's drafts)
+# Current — 2026-09-09 (site queue round three: an off-market listing stops selling a home that already sold)
+
+Owner: Claude (Opus 5), cloud "Site queue grinder" routine, session 01DLfMFV. **main is at `650666bb2`.**
+SITE-21 shipped and is live. With SITE-20 and SITE-22 earlier in the same run, the listing page no
+longer publishes a price nobody paid, on any surface.
+
+**SITE-21.** A Closed or Expired listing showed a mortgage calculator computed on the OLD list price,
+a "this home's price sits 32.0% over the Bend median" ask on a dead price, and Tour / Call / Text the
+broker cannot fulfil — two contradictory prices for one home on a public page. It now shows the sale
+facts, promotes the active-inventory rail and offers a saved-search path. Verified on production
+across four statuses **resolved at query time**: Closed and Expired have no payment, no ask, and
+**zero listing-built `tel:`/`sms:`**; Pending and Active keep all of it. Closed `SoldOut`, Expired
+`OutOfStock`. Pending carries no availability *deliberately* — schema.org has no value meaning "under
+contract, not yet sold", and inventing one would publish a claim the record does not support.
+
+**Two more §0 defects, found by RENDERING rather than reading.** The history rail's `Sold` row
+published the ASK, not the sale — the change-log event that flips a listing to Closed carries the
+then-current list price, so one page could read sold for $827,000 in the header and $849,000 in the
+rail. And an **Expired** listing, which never sold, asked "what this one closed at". Both fixed.
+
+**The `tel:`/`sms:` clause cannot be satisfied literally, and the lane said so instead of redefining
+it.** `V3Chrome` and `V3Footer` publish the brokerage line on every page and the footer renders
+outside `<main>`. The two are cleanly separable: the listing's own controls build from bare digits
+(`tel:5417033095`), the chrome from the E.164 constant (`tel:+15417033095`). Off market: 0 and 7. On
+market: 7 and 7.
+
+**TASTE: the listing class scored 78 (80/74/78) against a standing 87 from the SAME instrument
+(`claude-sonnet-5`, `v1-2026-09-08`). No receipt was written and the 87 stands.** `ci:taste-canon`
+would have accepted a `rebaselined` claim, because `shotsHash` drifted — but it drifted only because
+this work added shots, and using that to paper over a 9-point fall is laundering. Same call as
+SITE-07's neighborhood class the day before, made the same way. **Read the drop carefully:** honesty
+scored 9/10 and the evaluator volunteered that the off-market treatment is "genuinely better than
+what it replaced". Every lost point is in sections these nodes do not own, and the prior 87 came from
+a different evaluator instance over a narrower shot set.
+
+**The best finding is a PRE-EXISTING dead control, and it is one line.** The hero's "N photos" caption
+pill does nothing: `ListingHero.tsx:224-228`, `openCaption()`'s `gallery` branch calls
+`setMediaTab('photos')` and returns, on a tab that already defaults to `photos` (line 126), while the
+`floor` branch beside it calls `setMediaTab` **and** `openGallery(0,'floor')`. Clicking a photo tile
+does open the lightbox — only the labelled CTA is dead. Introduced by `71c46099a`, an unrelated CMA
+commit. **Not fixed here on purpose**: it is outside both nodes, and this session declined to widen
+SITE-07 for *its* pre-existing sections, so widening here would be arbitrary. Recorded with file,
+line and remedy. Also unowned and worth a node: `#ask` is a static figure row with no interaction at
+all, `#similar` is a plain list, the mobile cookie pill overlaps the sticky CTA bar, and on an Expired
+subject the history rail's last price-change row ($120,000) disagrees with the published ask
+($119,900) by $100 — a §0 disagreement between two numbers on one page.
+
+**Probe a new gate with a SECOND SPELLING of the defect.** `check-offmarket-listing-cta.mjs` executes
+the predicate over the RESO enum (Pending === false is load-bearing), refuses a second status list,
+and checks guard **ancestry** rather than a spelling; 21 sandbox cases assert FAIL across fifteen
+defect spellings and PASS for two honest re-spellings. This discipline exists because
+`ci:listing-canonical-single` was caught earlier the same day passing 10/10 against the same defect
+written one character apart.
+
+**Both SITE-20 and SITE-21 are BLOCKED ON MATT**, functional halves shipped and live-verified, taste
+rise unmet: accept 78 as the honest mark for the class, or hold for SITE-41 and SITE-52? SITE-07's
+neighborhood question (67 vs a standing 83) is still open too — it is the same question twice.
+
+**CORRECTION, and it changes the answer.** An earlier version of that question said to hold "until a
+node exists" for the pre-existing defects. Wrong: **the queue already owns them.** SITE-41
+(*V3Instrument: the opening is a claim and a drawing, not a KPI grid*) is exactly the static `#ask`
+figure row, and SITE-52 (*V3Ledger: a row past six carries a visible mark, hover reveals more*) is
+exactly the plain `#similar` list and the city page's five same-shaped sections. Both are v3
+**primitives**, so landing them raises every calling class at once rather than one page, and their
+prior marks are LOW (annual-review 31, oregon-city 41, `/cities` 30) — so unlike the 87 a genuine
+rise is achievable there. **They are the highest-leverage work left in the queue.** Both nodes carry
+this reasoning in their evidence.
+
+**Round four was claimed and aborted before it produced anything.** Both lanes died on their first
+calls: `You've hit your session limit · resets 8am (UTC)` (HTTP 429). That is the ONE shared account
+allowance the skill names. SITE-41 and SITE-52 were released to `open` with `owner_session` null,
+verified to have produced no commit, no branch and no worktree content, so the next session takes
+them clean. **This session deliberately did not retry** — two other workers were mid-flight, and
+re-consuming the allowance is precisely what killed the whole fleet on 2026-09-08.
+
+---
+
+## Prior — 2026-09-09 (site queue round three: SITE-28 done, SITE-23 shipped and blocked on its recrawl window)
+
+Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. One push for
+the round: `fc77108b..bc7ce4b2` (lanes 5765494e and ef4cbd7d+74860b39, merges c4223b0c and
+bc7ce4b2). Deploy READY in 266s. Accept clauses re-run on ryan-realty.com with a browser UA after
+READY; observed values on the nodes (`loop status`).
+
+**SITE-28 done.** /communities/prineville-oll, madras-parkpl and prineville-pleasvh refuse
+("No community at this address", robots unchanged at noindex, follow); odin-crest-estate and
+ponderosa-park-phase-1 keep their real names; tetherow and brasada-ranch index, follow. No recorded
+mapping exists for the three slugs (boundaries holds Deschutes plats only; 'oll' has zero listings
+under two shapes) and the geometry-majority path was refuted (aspenb → 3 plats, clab → 28, an MLS
+area code), so the resolver reads four recorded sources and refuses otherwise; 32 of 1,014
+Central Oregon SubdivisionNames are withheld, every one an MLS token. Community-class taste
+rebaselined on a three-route instrument: 64 → 68 → 69 (prior 80 scored tetherow alone). Fixed in
+the primitives: the no-photo opening's H1/breadcrumb misalignment, grouped door folds in
+V3Answers, a source prop on V3Quiet. Open raises on the receipt: dead cream in the plat opening,
+#belonging block-level trace, #atlas 26 vs #faq 16–17 (a product decision on which population a
+community page publishes), conifa/oww2 resolve unanimously by geometry but wait for a human entry
+in data/subdivision-alias-plats.json.
+
+**SITE-23 shipped, blocked on measurement until 2026-10-07.** The defect was data, not the URL
+builder: no city polygon for Powell Butte (not a Census place; imported the Powell Butte CCD from
+TIGER/Line 2024 County Subdivisions, 144.665 sq mi, reconciles to AREALAND+AREAWATER), and a
+classifier that never revisited a row once it took the sentinel (refresh_listing_boundary_tags
+batched on boundary_city IS NULL; now re-examines once per change to the boundary set via
+boundary_tagged_at). 181 listings reclassified (Powell Butte 180 → 0 under the sentinel; Brasada
+111 of 2,297 geocoded now carry the neighborhood); live: the sentinel URL for 220219020 serves the
+powell-butte canonical. ci:boundary-provenance city floor 10 → 11. The Search Console re-pull after
+the recrawl window is the only open clause (45 sentinel pages, 1,043 impressions, 0 clicks before).
+
+**SITE-54** carries two independent traces now (mine: two 504s and the warmer's statement
+timeouts; session 01NESdvn: the 525 MB all-history tile view refreshing every 30 minutes, the 8 s
+API statement timeout, the sitemap paging 129K Bend rows). Next lane takes it in the order
+01NESdvn wrote: sitemap reads getIndexableSubdivisions, warmer avoids the refresh window, deploy
+smoke on every class; the tile-view refresh itself needs a data-plane node.
+
+**Lane lessons this round.** (1) Two lanes regenerating the auto-generated docs conflict on both
+files every time; resolve by regenerating once more with `ci:data-access --refresh` on the merged
+tree, never by hand. (2) A lane that widens the taste instrument (one route → three) rebaselines
+honestly; the number going down is not a regression. (3) A data lane that finds the URL builder
+already correct should say so first and keep looking; the residual index was the symptom.
+
+# Current — 2026-09-09 (fleet full, no lane; SITE-54's 504 traced to the tile view's refresh and an 8-second API timeout)
+
+Owner: Claude (Fable 5.1), session 01NESdvn, main checkout. **Nothing was built or changed in
+production this session.** `main` is at `92137b5b5` plus this note. The container restarted after
+round 4 landed (`b9da5d2e6`, deploy `dpl_q2yrS6o3G1fHfPwmNpeqpeHxLG7W`, both nodes blocked with
+evidence); on return the brief served SITE-29, another session (`claude-opus5-019RdEm6`) claimed it
+one minute before I tried, and the claim tool refused a fourth worker — cloud-grinder, 9d4aa6fc and
+019RdEm6 all hold live heartbeats. The rule is do not start a lane, so I did not. I hold no claims.
+
+**What I did instead: read-only triage of SITE-54, and the answer is not the sitemap route.** The
+full finding, every number sourced, is on the node (objective addendum + evidence). The short
+version:
+
+- `listing_tile_mv` is a view over `listing_tile_mv_src`, a **593,525-row, 525 MB** materialized
+  view of every listing ever seen. pg_cron refreshes it CONCURRENTLY every 30 minutes; the last 24
+  hours of runs total **29,711 s — 8.25 hours of refreshing**, and overnight each run took 13–21
+  minutes of its 30-minute slot.
+- The API roles run at **`statement_timeout = 8s`** (3s for anon). During a refresh, reads of that
+  view die. The biggest single source of statement timeouts on the whole database over 24 hours
+  (**19,655**, ten times anything else) is `getSubdivisionBrowseSlugsByCity` paging ~129K Bend rows
+  through PostgREST, 12 pages at a time, 6 cities at a time, three retries each — and its only
+  caller is `app/sitemap.ts`.
+- The hourly warmer starts at :00 and the refresh at :02, so the warmer's per-city loop runs into
+  the refresh every hour. Its 06:00Z run on the current deploy logged fetch failures for eight
+  cities; the geo class never fills; cold requests hit the 300 s ceiling. `core.xml` 504'd at
+  05:39Z and 05:43Z as well, not only `geo.xml`.
+- Collateral: PostgREST timeouts ran **2,110 → 3,180 an hour from midnight to 05:00Z**, and the
+  Vercel error clusters show the resulting "could not query the database for the schema cache" on
+  listing pages, tiles, boundaries, metrics and the blog. The public site degrades for roughly 15
+  of every 30 minutes overnight.
+
+**For the lane that takes SITE-54, in order:** (a) `app/sitemap.ts` reads the subdivision set from
+`getIndexableSubdivisions` (644 ms, the SITE-24 source) instead of paging the history view;
+(b) the warmer must not start inside a refresh window; (c) the deploy smoke on every sitemap class,
+per the accept. **Not SITE-54, needs its own data-plane node:** a 525 MB all-history MV refreshed
+every 30 minutes is the structural load — the active subset is ~7,835 rows.
+
+**Also carried from round 4, still open:** the wrong `Node:` uuid on `7e2086647` and `b70aafff4`
+(the real SITE-12 id ends `-eff3-4763-aeaf-e7f3617a9cb3`; `post-commit` now warns when an id
+resolves to no row); listing rows still print the raw MLS "Ridge At Eagle Crest"; the community
+`#belonging` block restates $2,052 with no source line.
+
+---
+
+# Current — 2026-09-09 (site queue round two continued: SITE-25 and SITE-24 done in one push; geo.xml 504s on production, seeded as SITE-54)
+
+Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. One push for
+the round: `00f400b9..2a2a4220` (lanes 446d9567 and 603c3c22+d739ac3d, merges, and the follow-up
+2a2a4220). Deploy dpl_9QqeGLbq9DugvMjmnk1M6G8AunRA READY in 247s (SSG 756 pages, 21 rail
+timeouts during static generation; the previous deploy had 0). Every accept clause was re-run
+against ryan-realty.com with a browser UA after READY; observed values are on the nodes.
+
+**SITE-25 done.** pageMetadata never cuts a title; the 29-char registry-name budget is enforced by
+check-content-metadata (counts the suffix, covers parks, shrink-only baseline of 12 names); the
+four registries (parks, trails, events, venues) lead their description with the blurb's opening
+sentence, no brokerage tail, "Central Oregon" once in the title; noindex now emits
+"noindex, follow" (8 pageMetadata callers moved; the /lp pages never used it); the plat city has a
+fourth source, the county plat tree (getPlatBoundaryCity walks boundaries.parent_id, 2,491 of 3,223
+plats carry one), so courtyard-garages-at-broken-top names Bend with zero listings; a plat name that
+already ends in its city no longer doubles it in the title.
+
+**SITE-24 done, five of six.** subdivision_plat_closed_mv (applied and populated, 3,086 rows,
+nightly pg_cron 10:20Z) attributes lifetime closes to a recorded plat by point-in-polygon unioned
+with the MLS-name join over distinct listing_key; getIndexableSubdivisions reads it (2,486 plats,
+644 ms cold against ~100 s). golf-homes-at-tetherow 107, tennis-tracts 110, golf-tracts 54,
+rock-ridge 32 now index,follow with the lifetime figure and its §0 trace; outcrop keeps its index
+(20 = 8 polygon + 20 name). ridge-at-broken-top has 8 (< 10) and courtyard-garages is a 0.0003 sq
+mi tract with no sale inside it: both stay noindex and the floor did not move. Taste: subdivision
+class 61 → 74 → 77, rebaselined (different plat, six shots). Raised, not fixed: ~15 surfaces call a
+PropertyType 'A' set "single-family" (§0 mixed bucket, one cross-surface decision); no hero photo
+for golf-homes-at-tetherow (a registry alias asserts membership and scopes CMA comps, Matt's call).
+
+**Found on production and seeded as SITE-54.** /sitemaps/geo.xml returned 504 "Task timed out
+after 300 seconds" on two consecutive cold requests (05:18Z, ~05:24Z, cache MISS). The route builds
+the whole ~10.7K-URL universe per class; the repo records the cold cost at 106–235 s with a prior
+280 s failure, so this is drift past the ceiling, not a new join (the plat read got cheaper). While
+it 504s the place tree has no sitemap. SITE-54 carries the objective and the accept; the hourly
+warmer's 06:00Z/07:00Z runs on this deploy are the first thing to read.
+
+**Lanes in flight at the time of writing:** SITE-28 (compound community slugs get the plat's real
+name or refuse; community-class taste pass) and SITE-23 (Brasada Ranch under the outside-boundaries
+sentinel; polygon coverage), both this session. Elsewhere: SITE-20/21 (cloud-grinder),
+SITE-31 (claude-opus5). Round three (SITE-40..53) was seeded by another session from the taste table.
+
+**Lane lessons this round.** (1) A lane that dies on a rate limit leaves staged, uncommitted work
+in its worktree; a continuation agent in the SAME worktree (no new isolation) with the exact
+inherited state finished it, and lanes now commit a WIP with the trailer before anything else when
+a limit hits. (2) The seed file had grown past the number I grepped for: check
+`grep versionGap:` for the highest gap before appending, and the seed skips an existing gap rather
+than overwriting it (no damage, but the entry was renumbered to SITE-54). (3) Two lanes on one
+route file merged clean when each kept to its own region and the brief named the other's region.
+
+# Current — 2026-09-09 (site queue: a sold home stops publishing its asking price; one canonical per listing)
+
+Owner: Claude (Opus 5), cloud "Site queue grinder" routine, session 01DLfMFV. **main is at `8bef8ddde`.**
+Three SITE nodes moved this run: SITE-07 shipped and live, SITE-22 DONE, SITE-20 shipped and
+live-verified but deliberately left OPEN. Four pushes, each gated, each live-checked.
+
+**The one that mattered: SITE-20, a §0 defect that was live under a principal broker's licence.**
+Every Closed listing published its LIST price as the headline of its search snippet, its share
+card and its RealEstateListing JSON-LD — and because `buildOffer` correctly drops the Offer for a
+sold home, dropping it also dropped the only machine-readable statement that the home had sold.
+55550 Heidi Court published $1,250,000 against an $1,100,000 sale; 1117 Peco Road published
+$1,199,000 against $1,000,000. 1,282 of 1,708 comparable Closed rows have ListPrice != ClosePrice.
+`lib/listing/publish-listing-published-price.ts` is now the one publisher for every surface, and it
+REFUSES to fall back from a missing ClosePrice to the ask — that fallback is the defect, so it may
+not come back as error handling. Pending stays unmapped in schema availability because schema.org
+has no value meaning "under contract, not yet sold" and inventing one publishes a claim the record
+does not support.
+
+**SITE-22 is done.** One listing could be reached at four URLs, each self-canonical: 2,363 of 8,724
+listing ids at more than one URL, 47.7% of listing-class impressions. There is now ONE builder —
+`listingTileHref` / `listingCanonicalHref`, both through `listingDetailPath` — making the canonical,
+the sitemap row and every internal href. Eight of eight production variants (including an invented
+`/portland/` path and an `/na/` segment) resolve to the one canonical; `/cities/bend` went from 8
+raw-ListingKey hrefs to 0. Harm was index fragmentation, not clicks — do not read a rank change into it.
+
+**The container restarted mid-round and killed the build lane. Read this before trusting a lane.**
+SITE-20 survived as a commit. SITE-22 survived as 44 files STAGED AND NEVER EXECUTED — no test, no
+gate, no live assertion had ever run against them. Replaying that work found three things the lane
+never saw: two contract tests that demanded a DIRECT `listingDetailPath(` call and so failed the
+refactor that fixes what they guard, and `ci:listing-figure-publish` rejecting the sold-price
+publisher for the same reason. All three were legitimate to update — each now asserts the shared
+builder, whose OUTPUT is pinned by seventeen behavioural assertions in `lib/slug.test.ts`, which is
+a stronger contract than grepping one file. Nothing landed on the strength of a diff looking right.
+
+**A gate held the spelling it was tested against, not the defect.** SITE-22's accept requires the new
+`ci:listing-canonical-single` to FAIL when the by-address override returns. It does. But probed with
+the same defect one character apart — `base.alternates = { canonical }` instead of
+`alternates: { canonical }` — it passed 10/10. Hardened in `8bef8ddde` and re-probed three ways
+(clean 10/10, historical override FAILs, assignment form FAILs). **Worth generalising: when you add a
+gate, probe it with a second spelling of the same defect before you believe it.**
+
+**SITE-20 is OPEN, not done, and that is deliberate.** Everything functional is shipped and verified on
+production against a pre-fix baseline captured BEFORE the deploy (all four listings publish Sold + the
+exact ClosePrice, `schema.org/SoldOut`, still no offers node; Active listings resolved at query time
+still publish list price, InStock, a real offer). What is NOT done is its taste half: the listing-detail
+evaluator rising above **87** on the same instrument. That pass was not run and nothing claims it. A
+future session owes only that.
+
+**A question is still with Matt from SITE-07** (place-page affordability instrument, live on
+`/cities/bend`, `/cities/redmond`, `/cities/bend/awbrey-butte`). The city class rebaselined honestly at
+65 — the prior 67 was grok-4.6 with no rubric version and no shots hash, so all three identity keys
+drift. The neighborhood class scored **67 against a standing 83 from the same evaluator model and the
+same rubric**. Only `shotsHash` differed, and only because the change added shots. `ci:taste-canon`
+would have ACCEPTED a "rebaselined" claim on that key alone; writing one would have laundered a
+16-point fall past a gate that reads three keys, so the 83 stands and the rise is recorded as unmet.
+The evaluator found ZERO defects in the new section and called it the best thing on both page classes —
+every point lost belongs to sections SITE-07 does not own (the city FAQ is the weaker of two builds of
+one component and carries no per-answer source line; five consecutive sections share one shape; the
+property-type tiles are a KPI grid; the neighborhood subdivision grid repeats indistinguishable
+truncated labels, which is information loss). **Accept 67 as the honest mark for that class, or hold
+SITE-07 until a node fixes those sections?**
+
+**Two traps that cost this run real time.**
+1. **A count taken from an unchecked response is not a measurement.** The first production pass on
+   SITE-22 reported failures and once made SITE-20 look like it had regressed off production. Several
+   of those reads were failed fetches (`http 000`) whose empty bodies `grep -c` happily counted as
+   zero. Check the status code before you parse the body; every figure recorded on these nodes comes
+   from a confirmed 200.
+2. **`next dev --webpack` and `next build --webpack` both fail in a worktree on this repo, on main,
+   before any change** — `getPlaceDocuments` reaches the client graph through the v3 barrel via
+   `V3PlaceDocuments` and webpack errors on `next/headers`. The fix is NOT the flag:
+   `cp -al <main>/node_modules ./node_modules` (hardlinks, seconds) makes Turbopack's workspace-root
+   inference succeed. A bare symlink is rejected. **`.claude/skills/site-queue/SKILL.md` still tells
+   every cloud lane to use `--webpack`; that line is wrong in a worktree and should be corrected.**
+   Also: `npm run ci:runtime-gates` times out against a healthy server because its `wait-on` uses
+   axios, which `middleware.ts` 403s; `scripts/run-runtime-gates.sh` on main is the working path.
+
+**Queue.** 43 items, 23 open. SITE-22 done. SITE-20 open (taste only). SITE-07 was claimed by another
+session after this run released it. Fleet discipline held throughout: never more than three workers.
+
+---
+
+## Prior — 2026-09-09 (the CMA send walked end to end on the email harness; the intake stops taking over other people's drafts)
 
 Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
 (`wt/cma-ship-20260907`). Commit 021e0e9a, merged with main at 31eef8d8, gated push in flight

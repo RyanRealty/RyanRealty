@@ -29,6 +29,7 @@ import {
 } from '@/data/co-trails'
 import { buildTrailFaq } from '@/lib/trails-format'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { registryDescription, registryTitle } from '@/lib/site/registry-metadata'
 import { publishNearbyListingsSource } from '@/lib/site/publish-nearby-listings-source'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -69,12 +70,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const trail = getTrailBySlug(slug)
   if (!trail) notFound()
-  const useWord =
-    trail.use === 'mtb' ? 'mountain-bike trail' : trail.use === 'both' ? 'hiking and biking trail' : 'hiking trail'
-  const desc = `${trail.name}, a ${useWord} near ${trail.city}, Central Oregon. What it is, where the trailhead is, and the homes for sale nearby, from Ryan Realty.`
+  // Registry-only, and the trail's OWN words (lib/site/registry-metadata.ts).
   return pageMetadata({
-    title: `${trail.name} | Central Oregon Trails`,
-    description: desc,
+    title: registryTitle(trail.name),
+    description: registryDescription(trail.blurb),
     path: `/central-oregon/trails/${slug}`,
   })
 }

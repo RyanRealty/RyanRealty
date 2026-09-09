@@ -412,10 +412,18 @@ describe('price-drops browse grids also subtract hidden homes (W7.2, 2026-07-22)
     })
   }
 
-  it('price-drop Field rows open the listing via listingDetailPath', () => {
+  it('price-drop Field rows open the listing through the ONE URL builder', () => {
+    // SITE-22: was a direct listingDetailPath( call. Every internal builder now
+    // goes through listingTileHref, which takes the whole ListingUrlSubject —
+    // the fix for rows that passed {city, subdivision} while the canonical
+    // passed {boundaryCity, boundaryNeighborhood, subdivision} and so linked to
+    // a URL the page did not canonicalise to. listingTileHref's own output is
+    // pinned in lib/slug.test.ts.
     const src = readSrc('app/price-drops/_v3/drops-field-items.ts')
-    expect(src).toMatch(/listingDetailPath\(/)
-    expect(src).toMatch(/mlsNumber: drop\.listNumber/)
+    // The row is passed WHOLE. Hand-picking fields into the builder is how a
+    // caller drops listNumber or boundaryNeighborhood and silently links to a
+    // URL the listing does not canonicalise to; PriceDrop already carries both.
+    expect(src).toMatch(/listingTileHref\(drop\)/)
   })
 })
 
