@@ -1,4 +1,42 @@
-# Current — 2026-09-09 (engine items 3 and 4: the map's own ground and the graded cover; an inbound email advances the CRM)
+# Current — 2026-09-09 (round three: the first message is drafted for Matt, the parser and the agent are on Grok, the queue is clean)
+
+Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
+(`wt/cma-ship-20260907`). Commits 3264efb3 (inbox parser on Grok), eca69b97 (agent on Grok);
+one gated push after this was written — `git log origin/main --oneline -6`. Matt's answers in
+memory `feedback_cma_send_walk_decisions` (round three).
+
+**Auto-send waits on the first message.** Matt: today's letter is "too brief and does not really
+follow my voice… it's really important that we nail that first message." The rewrite — expired,
+FSBO, seller-valuation, each filled with a real document, plus the brief the composer will
+follow and the merge fields — is the artifact "The First Message"
+(https://claude.ai/code/artifact/a4f1379b-c4d8-4bba-9274-3138b858ed02). When he approves or
+edits it: put the wording into `lib/cma/first-contact.ts` (planFor / offerFor / resourceParagraphs
+become the paragraphs on the page; new facts — comps count, comp-area place, the expired ask
+exposure — come off `render_args` in `cmaFirstContactFactsFromRow`), keep every number
+row-bound (drop the sentence when its fact is missing), rerun the harness walk, and only then
+flip the expired and FSBO switches for clean documents (audit pass, no review reason, range
+inside the 8% share).
+
+**Done this round.** The lane funnel is live on /admin/cmas ("CMA funnel by lane", wired by
+545e4e50 from another session; the earlier "not mounted" note was stale). The 8 zz-test-rebrand
+fixtures and the six harness documents are archived. `lib/marketing-brain/inbox-parser.ts` and
+the broker SMS agent (`lib/agent/runtime.ts` tool loop, `tools/law.ts` classifier,
+`assets.ts` photo grade) run on Grok; verified live as Matt's harness: a Bend inventory question
+called the market tool and answered with fetched figures ($0.12), a lead-paint question failed
+safe and flagged Matt ($0.19). At ~$0.15 a turn the $3 daily cap is ~20 turns; grok-4.5 would
+halve it if he wants more. No Anthropic caller is left outside `lib/ai/anthropic.ts` itself.
+
+**Dropped by Matt.** The usable-acreage GIS measure ("remarks are enough").
+
+**Running.** The containment backtest at N=2,000, before (worktree
+`~/RyanRealty-wt-backtest-before` at 63e78f72) and after; `scripts/pricing-backtest.mjs`'s
+subject pool now follows N (it was capped at 800 rows whatever N asked). Results go beside
+`docs/research/pricing-backtest-containment-2026-09-09.md`.
+
+**Next, in Matt's order:** the first message (on his edits) → the second send walk on the FSBO
+and expired lanes → the switches.
+
+## Prior — 2026-09-09 (engine items 3 and 4: the map's own ground and the graded cover; an inbound email advances the CRM)
 
 Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
 (`wt/cma-ship-20260907`). Commits be982f27 (map ground, cover pick, capped cover line) and the
