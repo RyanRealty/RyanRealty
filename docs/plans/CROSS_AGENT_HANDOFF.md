@@ -53,6 +53,16 @@ plat-outcomes DAL read, a "What did not sell in {name}" section, a wider-market 
 anchor, and the letter sentence updated to "and what did not" when it ships. Not touched: the
 subdivision page (SITE-47 is in progress on it).
 
+**Matt, reading the Diamond Bar Ranch page the letter links: "There's no map… and no photo."**
+Verified in a headless render (scratchpad dbr-top2.png): the opening is cream with no photograph,
+the atlas is an empty grey frame with a legend, and the split-view Google map paints no tiles.
+Cause: no polygon in `boundaries`, so the page renders through the MLS-name path with an atlas
+framed around one dot and a poster that is null by design (SITE-08 pass 2 refuses stand-in
+photos). At least 265 plain plats with live SFR homes are in this class (511 homes, lower bound,
+`scripts/_plats-without-polygons.ts`). Seeded as **SITE-56** in the site lane (open, after
+SITE-47): the no-polygon atlas frame, the split-view map painting, and an honest opening image on
+every plat. Not touched from this tree.
+
 **"The ask" is gone from what we send.** Matt: "we don't say things like, 'The ask was this.' No one
 says that." Every rendered "the ask" is now "the asking price" (or "a price cut"): the public
 listing read (`lib/pricing/public-read-copy.ts`, "How the asking price sits against nearby sales",
