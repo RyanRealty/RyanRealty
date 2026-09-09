@@ -1,12 +1,12 @@
 {
   "route": "app/compare/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Utility comparison page: side-by-side property table. noindex \u2014 not an SEO surface.",
-  "note": "E-HOMES-SEARCH 2026-08-13. Migrated /compare chrome onto the v3 barrel. Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount it. V3Breadcrumb belowNav=false. V3Footer outside <main>. Page contract carried unchanged: robots noindex,follow, revalidate 60, canonical /compare, DAL fetch (getListingTiles by listNumbers AND listingKeys, dedup, getListingDetailPhotos), CompareClient props, BreadcrumbList JSON-LD, KbSectionTracker pageType=compare. Shared /compare?ids= links keep resolving. Dual objectives unchanged. Capture does not live on this route. KB-era deletions: SmoothScrollProvider, KbBreadcrumb, KbFooter, kb-root, kb.css, navy header band. AICompare deleted 2026-08-18 (never wired). MetadataBlock and KbSectionTracker stay on non-v3 registers.",
+  "competitiveTarget": "Utility comparison page: side-by-side property table. noindex — not an SEO surface. The landing state is the competitive surface: Redfin and Zillow open their compare screens on the visitor's own saved thumbnails, and this page has no saved-homes rail to open on. It wins instead by showing the finished object to a visitor who arrives with nothing — four real homes for sale right now, in the real table, labelled as an example, each one a single tap into their own comparison.",
+  "note": "E-HOMES-SEARCH 2026-08-13. Migrated /compare chrome onto the v3 barrel. Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount it. V3Breadcrumb belowNav=false. V3Footer outside <main>. Page contract carried unchanged: robots noindex,follow, revalidate 60, canonical /compare, DAL fetch (getListingTiles by listNumbers AND listingKeys, dedup, getListingDetailPhotos), CompareClient props, BreadcrumbList JSON-LD, V3SectionTracker pageType=compare. Shared /compare?ids= links keep resolving. Dual objectives unchanged. Capture does not live on this route. KB-era deletions: SmoothScrollProvider, KbBreadcrumb, KbFooter, kb-root, kb.css, navy header band. AICompare deleted 2026-08-18 (never wired). MetadataBlock and KbSectionTracker stay on non-v3 registers. SITE-50 (2026-09-09): the empty state left V3Quiet for V3Slots, a new barrel pattern. The taste table scored this class 29 with the verdict 'an empty form label, not a product demo'; Quiet has no slot, no table and no figure by contract, so the fix could never be a prop on Quiet. Two more defects were fixed in the same change: the H1 sat in a bare <header> with no measure and no gutter and was clipped at x=0 at both 1440 and 375, and the visually-hidden spans inside the new table escaped their scroll container (no positioned ancestor) and made the document scroll sideways at 375 — html.scrollWidth 602 against a 375 viewport.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
-      "section": "JSON-LD \u2014 BreadcrumbList structured data (Home > Compare). No WebPage JSON-LD on a noindex utility route.",
+      "section": "JSON-LD — BreadcrumbList structured data (Home > Compare). No WebPage JSON-LD on a noindex utility route.",
       "blocking": true
     },
     {
@@ -16,17 +16,22 @@
     },
     {
       "name": "V3Heading",
-      "section": "H1 Compare homes. Display face via the barrel atom.",
+      "section": "H1 Compare homes on the POPULATED page, inside a masthead that carries the section measure and gutter. On the empty page V3Slots carries the H1 itself.",
+      "blocking": true
+    },
+    {
+      "name": "CompareEmpty",
+      "section": "#compare-empty — the empty state, which mounts V3Slots and binds it to ComparisonContext so the slots show the visitor's own tray and an add from the example lands in the same list a search-result add does.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
-      "section": "Empty state when ?ids= is missing: how to add homes, plus a Search homes exit.",
+      "section": "#compare-empty fallback — when the live example read returns nothing there is no example to show, so the page opens with its own name and the way to fill it rather than a half-drawn table.",
       "blocking": true
     },
     {
       "name": "CompareClient",
-      "section": "interactive comparison surface \u2014 photo row, side-by-side feature table with best-in-class highlighting, Google Maps locations embed, Copy Link + Download PDF actions, empty/loading state",
+      "section": "interactive comparison surface — photo row, side-by-side feature table with best-in-class highlighting, Google Maps locations embed, Copy Link + Download PDF actions, empty/loading state",
       "blocking": true
     },
     {
@@ -46,12 +51,72 @@
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "V3Heading + V3Quiet #compare-empty -- up to four homes",
+    "CompareEmpty -> V3Slots #compare-empty -- the H1, four slots, the labelled worked example (empty queue only)",
+    "V3Heading masthead -- the H1 on the populated page only",
     "CompareClient -- the side-by-side table",
     "V3Footer"
   ],
   "openDefects": {
-    "_": "Closed 2026-08-27.",
+    "_": "Closed 2026-08-27; reopened and closed again 2026-09-09 (SITE-50).",
     "items": []
+  },
+  "tasteReview": {
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "SITE-50 lane, round three. A separate Agent given only TASTE.md, the two shots below and the mark to beat, with no access to the builder's reasoning; it scored the same shots three times in one call. Rounds one and two, against earlier shots of the same rebuild, returned medians 59 and 50; this receipt records round three because these are the shots on disk.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": ["/compare"],
+      "viewports": [1440, 375],
+      "states": ["empty-queue"]
+    },
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/compare/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/compare/shots/mobile375.png"
+    },
+    "shotsHash": "sha256:f541dd6d4bea0aa03bb14eba85e7fe3c6517076eef541aa71fd164a0f7844da0",
+    "scores": [53, 52, 56],
+    "score": 53,
+    "criteria": {
+      "designQuality": 18,
+      "originality": 12,
+      "interaction": 6,
+      "craft": 9,
+      "honestyFunction": 8
+    },
+    "beats": "Redfin's and Zillow's compare and saved-homes screens render nothing until the visitor has already saved homes, and once populated they show a flat table with no encoding of the spread and no named source. This page shows a real four-home comparison on first load, with a length under each figure for the rows where the spread is the point and 'Regional MLS through Oregon Data Share' named in the same screen.",
+    "defects": [
+      {
+        "section": "#compare-empty",
+        "severity": "taste",
+        "finding": "the four queue slots are dashed placeholder boxes carrying a numeral and 'Add a home' — the form of a generic dropzone rather than something built for houses",
+        "fix": "give a slot a photo-aspect seat so an empty one reads as a house-shaped hole, not a form field",
+        "viewport": "both"
+      },
+      {
+        "section": "#compare-empty",
+        "severity": "craft",
+        "finding": "the second example column is sliced at the 375 viewport edge; the scroll shadow marks it as a scroller but the cut still reads as a crop before the reader pushes it",
+        "fix": "size the columns so two sit whole inside 335px, or leave a deliberate half-column peek",
+        "viewport": "mobile"
+      },
+      {
+        "section": "#compare-empty",
+        "severity": "interaction",
+        "finding": "the lengths under the figures are static in a still; the row hover that lifts a field across all four homes cannot be seen in a shot, and nothing else in the example rewards a hover",
+        "fix": "give the example a reveal that survives a screenshot — a per-row reading, or a control that changes which field is drawn",
+        "viewport": "both"
+      },
+      {
+        "section": "#compare-empty",
+        "severity": "taste",
+        "finding": "the empty tray and the worked example are two four-across blocks stacked, rather than one object where the example fills the tray it is teaching",
+        "fix": "consider making the example columns BE the four slots, pre-filled and swappable, instead of an empty set above a demo set",
+        "viewport": "both"
+      }
+    ],
+    "comparedToPrior": "first",
+    "notes": "The route had no committed tasteReview before this one, so this is its first receipt and comparedToPrior is 'first'. The class's mark on the STANDING TABLE instrument (design_system/public/taste-table.json, 2026-09-08) was median 29 from scorings 29/34/25, with the verdict 'an empty form label, not a product demo'. That table's shots are not in the repo, so its shotsHash differs and it is not a valid priorMark here — the table's own note says so. On the same rubric, the same evaluator model and the same capture spec, the class now medians 53."
   }
 }
