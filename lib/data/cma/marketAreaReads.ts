@@ -16,6 +16,8 @@ function client() {
 
 export type CmaMarketAreaRow = {
   ListingKey?: string | null
+  /** Selected only by the area-scoped reads; the city-scoped ones already know the city. */
+  City?: string | null
   StreetNumber?: string | null
   StreetName?: string | null
   PhotoURL?: string | null

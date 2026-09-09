@@ -78,6 +78,11 @@ import { renderCmaHtml } from '@/lib/cma/render'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { buildSubjectStatus } from '@/lib/pricing/subject-status'
 import { buildCompSearch } from '@/lib/pricing/comp-search'
+import { buildCompArea, resolveCompetitionArea } from '@/lib/pricing/comp-area'
+import { getCmaAreaUnsoldCycles } from '@/lib/data/cma/areaUnsoldReads'
+import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
+import { buildExpiredPeerSet, keptCompMedianPpsf, marketAreaPriceBand } from '@/lib/cma/market-status'
+import { bandAroundList, bandRowToRival, buildBandRivalSet } from '@/lib/cma/band-rivals'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
@@ -1076,10 +1081,111 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       })),
     })
 
+    // R2h. ONE AREA, then the two sets that must come out of it (Matt
+    // 2026-09-08: "we want to use the same area that we searched and where we
+    // actually retrieved comps ... Same thing with the competition").
+    //
+    // The unsold peers and the competition used to be city-wide reads, so one
+    // document carried three different maps. `compArea` is derived from the
+    // counted ladder above and the sales this document prints; both reads
+    // below are scoped to it and to nothing wider.
+    const compArea = buildCompArea({
+      subject: {
+        latitude: subject.latitude,
+        longitude: subject.longitude,
+        subdivision: selection.diagnostics.subject.subdivision ?? subject.subdivision,
+        city: subject.city,
+      },
+      rungs: (compSearch?.rungs ?? []).map((r) => ({ key: r.key, kept: r.kept, added: r.added })),
+      keptComps: renderComps.map((c) => ({
+        subdivision: c.subdivision,
+        selectionTier: c.selectionTier,
+        latitude: c.latitude,
+        longitude: c.longitude,
+      })),
+    })
+    const competitionArea = compArea
+      ? resolveCompetitionArea({
+          compArea,
+          subject: { latitude: subject.latitude, longitude: subject.longitude, city: subject.city },
+          keptComps: renderComps.map((c) => ({ latitude: c.latitude, longitude: c.longitude })),
+        })
+      : null
+
+    // The peer band is the market-area band (0.55x-1.85x of the anchor) the
+    // status grid already uses; the competition band is the +/-10% live band
+    // the competition chapter already uses. Same two definitions, read inside
+    // the area instead of inside the city.
+    const peerBand = marketAreaPriceBand(pricing.recommended || subject.lastListPrice || 0)
+    const rivalBand = bandAroundList(pricing.recommended)
+    const [unsoldRead, areaInventory] = await Promise.all([
+      compArea && peerBand
+        ? getCmaAreaUnsoldCycles({
+            area: compArea,
+            city: subject.city,
+            propertySubType: subject.propertySubType,
+            priceLo: peerBand.lo,
+            priceHi: peerBand.hi,
+          }).catch(() => null)
+        : Promise.resolve(null),
+      competitionArea && rivalBand
+        ? getCmaAreaBandInventory({
+            area: competitionArea,
+            city: subject.city,
+            lo: rivalBand.lo,
+            hi: rivalBand.hi,
+            propertySubType: subject.propertySubType,
+          }).catch(() => null)
+        : Promise.resolve(null),
+    ])
+
+    const expiredPeers =
+      compArea && unsoldRead
+        ? buildExpiredPeerSet({
+            rows: unsoldRead.rows,
+            subject: {
+              beds: subject.beds,
+              sqft: subject.sqft,
+              latitude: subject.latitude,
+              longitude: subject.longitude,
+              listingKey: subject.listingKey,
+              mlsNumber: subject.mlsNumber,
+              streetAddress: subject.streetAddress,
+            },
+            area: compArea,
+            keptCompMedianPpsf: keptCompMedianPpsf(renderComps),
+          })
+        : null
+
+    const bandRivals =
+      competitionArea && areaInventory
+        ? buildBandRivalSet({
+            area: competitionArea,
+            lo: areaInventory.lo,
+            hi: areaInventory.hi,
+            activeCount: areaInventory.activeCount,
+            pendingCount: areaInventory.pendingCount,
+            rivals: [
+              ...areaInventory.activeRows.map((r) => bandRowToRival(r, 'Active')),
+              ...areaInventory.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
+            ].filter((r): r is NonNullable<typeof r> => r != null),
+            subject: {
+              latitude: subject.latitude,
+              longitude: subject.longitude,
+              beds: subject.beds,
+              sqft: subject.sqft,
+            },
+            asOfIso: generatedAtIso,
+          })
+        : null
+
     const renderArgs = {
       subject,
       comps: renderComps,
       compSearch,
+      compArea,
+      expiredPeers,
+      bandRivals,
       market,
       pricing,
       client: input.client,
@@ -1174,6 +1280,25 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             photo_sales_reviewed: subdivisionStory.photoSalesReviewed,
             photo_sales: subdivisionStory.notableSales.map((n) => ({ mls: n.listNumber, address: n.address })),
           }
+        : { source: 'none' },
+      // R2h: one entry per read, so a reviewer can re-run the exact scope the
+      // peers and the competition were taken over.
+      comp_area: compArea
+        ? { ...compArea, competition_area: competitionArea }
+        : { source: 'none', note: 'No sale was printed, so no area was derived.' },
+      unsold_peers: unsoldRead
+        ? {
+            ...unsoldRead.citation,
+            window_months: expiredPeers?.windowMonths ?? null,
+            windows_tried: expiredPeers?.windowsTried ?? [],
+            widened_to: expiredPeers?.widenedTo ?? null,
+            count: expiredPeers?.count ?? 0,
+            shortfall: expiredPeers?.shortfall ?? true,
+            price_band: peerBand,
+          }
+        : { source: 'none' },
+      competition: areaInventory
+        ? { ...areaInventory.citation, active: areaInventory.activeCount, pending: areaInventory.pendingCount, price_band: rivalBand }
         : { source: 'none' },
       equity_position: equity ?? { source: 'none' },
       listing_plan: listingPlan ?? { source: 'none' },

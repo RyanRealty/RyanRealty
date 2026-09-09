@@ -7,6 +7,9 @@ import { UNADDRESSED_DOC_LINKS, escapeHtml, int, sparkPhotoAt, usd } from '@/lib
 import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { formatDate } from '@/lib/format/date'
 import { priceHistoryLineCompactHtml, pricePathFromListing } from '@/lib/cma/price-path'
+import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import { compAreaIn, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
+import { countWord } from '@/lib/pricing/estimate'
 
 const esc = escapeHtml
 
@@ -69,7 +72,7 @@ function dist2(
   return dLat * dLat + dLng * dLng
 }
 
-function rivalFitsSubject(
+export function rivalFitsSubject(
   r: CmaBandRival,
   subject?: { beds?: number | null; sqft?: number | null } | null,
 ): boolean {
@@ -254,6 +257,8 @@ export function competitionSentence(input: {
   activeCount: number
   pendingCount: number
   shown: number
+  /** True when the homes drawn were narrowed to ones like the subject. */
+  likeYours?: boolean
 }): string {
   const bits = [
     `${int(input.activeCount)} home${input.activeCount === 1 ? ' is' : 's are'} for sale between ${usd(input.lo)} and ${usd(input.hi)}.`,
@@ -389,4 +394,207 @@ export function renderBandRivalsSceneHtml(input: BandRivalsInput): string {
       <div class="r">${competitionBody(input)}</div>
     </div>
   </section>`
+}
+
+/**
+ * THE COMPETITION IS THE NEIGHBOURHOOD, NEVER THE CITY.
+ *
+ * Matt 2026-09-08: "Same thing with the competition: we want to limit it to the
+ * neighborhood or community. Unless it's not part of that, then we'll have to
+ * use a radius."
+ *
+ * `getCmaBandInventory` reads City + price band + sub type, so a seller in Old
+ * Bend was shown the four nearest homes out of every listing in Bend inside
+ * their band, and the counts in the first sentence — "34 homes are for sale
+ * between $356,000 and $435,000" — were citywide counts under a chapter about
+ * their street. `buildBandRivalSet` takes the area the document already
+ * resolved and states the counts inside it.
+ */
+
+/** ±10% of the recommended list — the band the competition chapter has always used. */
+export const BAND_HALF_WIDTH_PCT = 0.1
+
+export function bandAroundList(recommendedList: number): { lo: number; hi: number } | null {
+  if (!Number.isFinite(recommendedList) || recommendedList <= 0) return null
+  return {
+    lo: Math.round((recommendedList * (1 - BAND_HALF_WIDTH_PCT)) / 1000) * 1000,
+    hi: Math.round((recommendedList * (1 + BAND_HALF_WIDTH_PCT)) / 1000) * 1000,
+  }
+}
+
+export type CmaBandRivalSet = {
+  /** The area these counts are taken over — the same object the comps and peers use. */
+  area: CompArea
+  lo: number
+  hi: number
+  /** Listings INSIDE the area, not inside the city. */
+  activeCount: number
+  pendingCount: number
+  rivals: CmaBandRival[]
+  sentence: string
+  source: string
+}
+
+/** "27 homes are for sale in Old Bend between $350,000 and $428,000. 14 are under contract." */
+export function competitionAreaSentence(input: {
+  area: CompArea
+  lo: number
+  hi: number
+  activeCount: number
+  pendingCount: number
+  shown: number
+  /** True when the homes drawn were narrowed to ones like the subject. */
+  likeYours?: boolean
+}): string {
+  const where = compAreaIn(input.area)
+  if (input.activeCount === 0 && input.pendingCount === 0) {
+    return `No home ${where} is for sale between ${usd(input.lo)} and ${usd(
+      input.hi,
+    )}, and none is under contract.`
+  }
+  const bits = [
+    `${int(input.activeCount)} home${input.activeCount === 1 ? ' is' : 's are'} for sale ${where} between ${usd(
+      input.lo,
+    )} and ${usd(input.hi)}.`,
+    input.pendingCount > 0
+      ? `${int(input.pendingCount)} ${input.pendingCount === 1 ? 'is' : 'are'} under contract.`
+      : 'None are under contract right now.',
+  ]
+  if (input.shown > 0 && input.shown < input.activeCount + input.pendingCount) {
+    // "like yours" when the pick narrowed: the counts above are every home in
+    // the band, the cards below are the ones at the subject's bed count and
+    // within 25% of its size. Without the qualifier the sentence says the
+    // nearest of one set and then draws another (§0).
+    bits.push(
+      `The nearest ${countWord(input.shown)}${input.likeYours ? ' like yours' : ''} ${
+        input.shown === 1 ? 'is' : 'are'
+      } below.`,
+    )
+  }
+  return bits.join(' ')
+}
+
+/** The §0 trace for the two counts: the area, the band, the source and the day. */
+export function competitionAreaSourceLine(input: {
+  area: CompArea
+  lo: number
+  hi: number
+  asOfIso?: string | null
+}): string {
+  const formatted = input.asOfIso ? formatDate(input.asOfIso) : ''
+  const when = formatted && formatted !== '—' ? ` as of ${formatted}` : ''
+  const where =
+    input.area.kind === 'radius' ? compAreaPhrase(input.area) : `in ${compAreaPhrase(input.area)}`
+  return `Homes for sale and under contract ${where} between ${usd(input.lo)} and ${usd(
+    input.hi,
+  )}, from the Oregon Data Share MLS${when}.`
+}
+
+export function buildBandRivalSet(input: {
+  area: CompArea
+  lo: number
+  hi: number
+  activeCount: number
+  pendingCount: number
+  rivals: readonly CmaBandRival[]
+  subject?: {
+    latitude: number | null
+    longitude: number | null
+    beds?: number | null
+    sqft?: number | null
+  } | null
+  cap?: number
+  asOfIso?: string | null
+}): CmaBandRivalSet {
+  const rivals = pickBandRivals(input.rivals, input.subject ?? null, input.cap ?? BAND_RIVAL_CAP)
+  const likeYours = input.rivals.some((r) => rivalFitsSubject(r, input.subject ?? null))
+  return {
+    area: input.area,
+    lo: input.lo,
+    hi: input.hi,
+    activeCount: input.activeCount,
+    pendingCount: input.pendingCount,
+    rivals,
+    sentence: competitionAreaSentence({
+      area: input.area,
+      lo: input.lo,
+      hi: input.hi,
+      activeCount: input.activeCount,
+      pendingCount: input.pendingCount,
+      shown: rivals.length,
+      likeYours,
+    }),
+    source: competitionAreaSourceLine({
+      area: input.area,
+      lo: input.lo,
+      hi: input.hi,
+      asOfIso: input.asOfIso ?? null,
+    }),
+  }
+}
+
+/** An MLS row as the band reads carry it. Structural so this file stays server-free. */
+export type BandInventoryRow = BandStreetRow & {
+  ListingKey: string
+  ListPrice: number | null
+  OriginalListPrice?: number | null
+  DaysOnMarket: number | null
+  OnMarketDate: string | null
+  PhotoURL: string | null
+  Latitude: number | null
+  Longitude: number | null
+  BedroomsTotal?: number | null
+  BathroomsTotal?: number | null
+  TotalLivingAreaSqFt?: number | null
+  year_built?: number | null
+  lot_size_acres?: number | null
+  property_sub_type?: string | null
+}
+
+function finiteOrNull(v: unknown): number | null {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : null
+}
+
+/** Whole days since a listing went on market. Null when the date is unusable. */
+function daysSinceOnMarket(onMarketDate: string | null | undefined): number | null {
+  if (!onMarketDate) return null
+  const then = new Date(onMarketDate)
+  if (Number.isNaN(then.getTime())) return null
+  const days = Math.floor((Date.now() - then.getTime()) / 86_400_000)
+  return days >= 0 ? days : null
+}
+
+/** One MLS row as a named competitor. Null when it has no address or no ask. */
+export function bandRowToRival(row: BandInventoryRow, status: 'Active' | 'Pending'): CmaBandRival | null {
+  const address = rivalAddress(row)
+  const listPrice = Number(row.ListPrice)
+  if (!address || !Number.isFinite(listPrice) || listPrice <= 0) return null
+  const originalListPrice = finiteOrNull(row.OriginalListPrice)
+  const daysOnMarket = daysSinceOnMarket(row.OnMarketDate) ?? finiteOrNull(row.DaysOnMarket)
+  return {
+    listingKey: row.ListingKey,
+    address,
+    listPrice,
+    status,
+    daysOnMarket,
+    photoUrl: row.PhotoURL,
+    latitude: row.Latitude,
+    longitude: row.Longitude,
+    beds: finiteOrNull(row.BedroomsTotal),
+    baths: finiteOrNull(row.BathroomsTotal),
+    sqft: finiteOrNull(row.TotalLivingAreaSqFt),
+    yearBuilt: finiteOrNull(row.year_built),
+    lotAcres: finiteOrNull(row.lot_size_acres),
+    propertySubType: row.property_sub_type ?? null,
+    originalListPrice,
+    onMarketDate: row.OnMarketDate,
+    listingHistoryLine: buildListingHistoryLine({
+      listPrice,
+      originalListPrice,
+      status,
+      onMarketDate: row.OnMarketDate,
+      daysOnMarket,
+    }),
+  }
 }
