@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+  bandAroundList,
+  buildBandRivalSet,
   competitorCutLine,
   pickBandRivals,
   renderBandRivalsHtml,
   rivalAddress,
   type CmaBandRival,
 } from '@/lib/cma/band-rivals'
+import type { CompArea } from '@/lib/pricing/comp-area'
 
 function rival(over: Partial<CmaBandRival> = {}): CmaBandRival {
   return {
@@ -253,5 +256,98 @@ describe('who has already come down', () => {
     // the drawing does not repeat it — the reading does, for a screen reader.
     expect(html).toContain('later asked $470K, date not recorded, still for sale')
     expect(html).toContain('already come down')
+  })
+})
+
+describe('buildBandRivalSet — the competition is the neighborhood, never the city', () => {
+  const OLD_BEND: CompArea = {
+    kind: 'neighborhood',
+    names: ['Old Bend'],
+    radiusMiles: null,
+    centre: { lat: 44.0554, lng: -121.3153 },
+    source: 'test',
+    sentence: 'Old Bend, the neighborhood around your home.',
+  }
+  const CIRCLE: CompArea = {
+    kind: 'radius',
+    names: [],
+    radiusMiles: 1,
+    centre: { lat: 44.2726, lng: -121.1739 },
+    source: 'test',
+    sentence: 'Within one mile of your home.',
+  }
+
+  it('names the area in the sentence and carries the area on the set', () => {
+    const set = buildBandRivalSet({
+      area: OLD_BEND,
+      lo: 350_000,
+      hi: 428_000,
+      activeCount: 27,
+      pendingCount: 14,
+      rivals: [
+        rival({ listingKey: 'A1', address: '10 Aspen', status: 'Active' }),
+        rival({ listingKey: 'A2', address: '20 Birch', status: 'Active' }),
+        rival({ listingKey: 'P1', address: '30 Cedar', status: 'Pending' }),
+      ],
+      subject: { latitude: 44.0554, longitude: -121.3153, beds: 3, sqft: 1280 },
+    })
+    expect(set.area).toBe(OLD_BEND)
+    expect(set.sentence).toBe(
+      '27 homes are for sale in Old Bend between $350,000 and $428,000. 14 are under contract. The nearest three like yours are below.',
+    )
+    expect(set.rivals.map((r) => r.address)).toEqual(['10 Aspen', '20 Birch', '30 Cedar'])
+  })
+
+  it('says the radius when the subject sits outside every boundary', () => {
+    const set = buildBandRivalSet({
+      area: CIRCLE,
+      lo: 400_000,
+      hi: 480_000,
+      activeCount: 4,
+      pendingCount: 0,
+      rivals: [rival({ listingKey: 'A1', address: '10 Aspen', status: 'Active' })],
+      subject: { latitude: 44.2726, longitude: -121.1739, beds: 3, sqft: 1280 },
+    })
+    expect(set.sentence).toContain('for sale within one mile of your home between $400,000 and $480,000')
+    expect(set.sentence).toContain('None are under contract right now.')
+  })
+
+  it('says plainly when nothing in the area is for sale in the band', () => {
+    const set = buildBandRivalSet({
+      area: OLD_BEND,
+      lo: 350_000,
+      hi: 428_000,
+      activeCount: 0,
+      pendingCount: 0,
+      rivals: [],
+      subject: null,
+    })
+    expect(set.rivals).toEqual([])
+    expect(set.sentence).toBe(
+      'No home in Old Bend is for sale between $350,000 and $428,000, and none is under contract.',
+    )
+  })
+
+  it('carries a source line naming the area, the band and the day', () => {
+    const set = buildBandRivalSet({
+      area: OLD_BEND,
+      lo: 350_000,
+      hi: 428_000,
+      activeCount: 27,
+      pendingCount: 14,
+      rivals: [],
+      subject: null,
+      asOfIso: '2026-09-08T12:00:00.000Z',
+    })
+    expect(set.source).toContain('Old Bend')
+    expect(set.source).toContain('$350,000')
+    expect(set.source).toContain('Oregon Data Share MLS')
+  })
+})
+
+describe('bandAroundList', () => {
+  it('is the same ten percent either side the competition chapter has always used', () => {
+    expect(bandAroundList(475_000)).toEqual({ lo: 428_000, hi: 523_000 })
+    expect(bandAroundList(0)).toBeNull()
   })
 })
