@@ -82,5 +82,79 @@
     "V3Quiet #edges -- keep looking",
     "V3Footer"
   ],
-  "competitiveTarget": "Beat Zillow's and Redfin's price-cut filters on a page a search engine can actually rank. Their reductions live behind a filter state with no indexable URL; this is a standing page for 'price reductions bend oregon' and 'price drops central oregon' that publishes the cut homes themselves, each one a door, with the source trace and the refresh stamp under the set. The answer -- how many homes cut price and by how much -- is in text, not only in the list."
+  "competitiveTarget": "Beat Zillow's and Redfin's price-cut filters on a page a search engine can actually rank. Their reductions live behind a filter state with no indexable URL; this is a standing page for 'price reductions bend oregon' and 'price drops central oregon' that publishes the cut homes themselves, each one a door, with the source trace and the refresh stamp under the set. The answer -- how many homes cut price and by how much -- is in text, not only in the list.",
+  "tasteReview": {
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-42 round 1 — spawned from the build lane with the four shots and the lane dev server URL, scored the same shot set three times in one call. The prior number for this class is the 2026-09-08 taste table mark of 30, which came from a different instrument (no receipt, no recorded evaluator model, no shots on disk), so it is named here rather than as a priorMark.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/price-drops"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default",
+        "source-line"
+      ]
+    },
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/price-drops/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/mobile375.png",
+      "sourceDesktop": "design_system/ryan-realty/ui_kits/price-drops/shots/source-desktop.png",
+      "sourceMobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/source-mobile375.png"
+    },
+    "shotsHash": "sha256:ad260cf1e502c4bc700aa1531b96e472603181165eeda7dd76880c904e120c5b",
+    "scores": [
+      43,
+      46,
+      39
+    ],
+    "score": 43,
+    "breakdown": {
+      "design": 13,
+      "originality": 7,
+      "interaction": 3,
+      "craft": 12,
+      "honesty": 8
+    },
+    "beats": "Zillow's and Redfin's price-reduced filtered search. This page wins on methodology and freshness: the section 0 line names the window (last 7 days), the cut definition (previous list price to current list price) and a dated as-of stamp, all openable in place. Neither portal states a definition, an exclusion rule, or a dated freshness claim on its price-drop badge.",
+    "defects": [
+      {
+        "section": "listing grid (all 48 cards)",
+        "severity": "taste",
+        "finding": "48 cards repeat one shape top to bottom — photo, percent chip, price, address, was-line — for the whole page. This is the banned scrolling-list-as-design tell illustrated with photographs instead of hairlines. It is the dullest section on the page and it is almost the whole page."
+      },
+      {
+        "section": "listing grid (all 48 cards)",
+        "severity": "taste",
+        "finding": "The only interactive elements on the page are the 48 listing links. No sort by dollar drop against percent drop, no city or price filter, no map, no distribution of the 48 cuts. The one data section rewards nothing but a click away."
+      },
+      {
+        "section": "percent-drop badge",
+        "severity": "taste",
+        "finding": "Drop magnitude is encoded only as text on a chip, 48 times, so a reader cannot scan who cut hardest or tell a 5.2% cut on $2.6M from a 9.7% cut on $315K. No mark, no bar, no length."
+      },
+      {
+        "section": "#source-line",
+        "severity": "taste",
+        "finding": "The trace now folds correctly, but it sits between the end of the grid and an unrelated email capture, so three jobs — methodology, capture, sitewide nav — run together with no separation of purpose at the close of the page."
+      },
+      {
+        "section": "hero caption",
+        "severity": "craft",
+        "finding": "\"60 price cuts this week · 48 shown below\" is the one number that could anchor a real figure and instead sits as plain caption text beside the H1, doing no visual work."
+      },
+      {
+        "section": "V3Field photo slot (fixed this round)",
+        "severity": "craft",
+        "finding": "Before this round the photographed Field released the map box height but not V3Field absolute fill, so the 48-photo list painted OUT of flow across the email sheet and the closing Quiet while the section itself occupied 66px. Fixed in app/price-drops/_v3/price-drops-field.css; recorded because the shots that scored 30 on the taste table contained it."
+      }
+    ],
+    "comparedToPrior": "first"
+  }
 }
