@@ -42,6 +42,14 @@ export type MapGroundInput = {
   labels: readonly MapGroundLabel[]
   /** Where the pins will sit (DOM, on top): labels are packed around them. */
   pins: readonly MapLatLng[]
+  /**
+   * OPT-IN (SITE-56). Points drawn INTO the SVG as marks, for a surface that
+   * has no DOM layer over the ground — the subdivision opening's own drawn
+   * ground, where the homes have to be in the image itself. Absent (every
+   * caller before 2026-09-09, the CMA letter included) draws none and the SVG
+   * is byte-identical to what it was.
+   */
+  marks?: readonly MapLatLng[]
 }
 
 export type MapGroundResult = {
@@ -149,6 +157,16 @@ export function renderMapGroundSvg(input: MapGroundInput): MapGroundResult {
   if (input.radius && input.radius.miles > 0) {
     const d = pathD(ringAround(input.radius.centre, input.radius.miles).map(project), true)
     if (d) parts.push(`<path d="${d}" fill="${NAVY}" fill-opacity="0.07" stroke="${NAVY}" stroke-opacity="0.6" stroke-width="1" stroke-dasharray="4 3"/>`)
+  }
+
+  // Marks drawn INTO the ground (SITE-56), before the labels so a town name's
+  // cream halo stays readable over them. Same ink as everything else here.
+  for (const m of input.marks ?? []) {
+    const at = project(m)
+    if (at.x < -8 || at.x > W + 8 || at.y < -8 || at.y > H + 8) continue
+    parts.push(
+      `<circle cx="${fmt(at.x)}" cy="${fmt(at.y)}" r="6" fill="${NAVY}" fill-opacity="0.9" stroke="${CREAM}" stroke-width="2.5"/>`,
+    )
   }
 
   // Towns, packed around each other and around the pins (which sit on top as
