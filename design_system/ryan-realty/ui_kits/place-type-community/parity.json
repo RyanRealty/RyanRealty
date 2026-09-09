@@ -2,7 +2,7 @@
   "route": "app/communities/[slug]/types/[type]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. Built from components/site/v3. Same place-type class as /cities/[slug]/types/[type].",
   "competitiveTarget": "Beat Zillow / Redfin community type filters. A dedicated community+type page with leftover/segment stats, the parent community atlas, and photographed listings of that type, instead of a search-results URL. Unique title, canonical, ItemList when listings exist. Breadcrumb is City then type, no Home.",
-  "note": "H1 is `{Type} in {Place}` (Condos in Sunriver). Face is leftover HUD for single-family (community grain, no MOS) and getPublicPlaceSegments for extra types. Unknown type notFound().",
+  "note": "Same composition as /cities/[slug]/types/[type], from that route's _v3 components. H1 `{Type} in {Place}` is the only display line; the Atlas wears an eyebrow under it; one section-0 claim sentence with its source line, single-sourced on listing_tile_mv. The page still reads the recorded boundary itself because the LIST depends on its pins (Sunriver: 52 listings by polygon, 0 by subdivision name, measured 2026-09-09); the Atlas re-reads the resort outline on its own streamed budget so one miss is not both. Communities with no trusted polygon and no resort GeoJSON (sunriver, brasada-ranch) render the standin's unavailable state instead of nothing. Unknown type notFound().",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -16,22 +16,37 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "City → type name. No Home.",
+      "section": "City then type name. No Home.",
       "blocking": true
     },
     {
       "name": "V3Heading",
-      "section": "H1 `{Type} in {Place}`.",
+      "section": "H1 `{Type} in {Place}` \u2014 the page's ONE display line.",
       "blocking": true
     },
     {
-      "name": "V3Atlas",
-      "section": "Parent community atlas when a trusted boundary exists.",
+      "name": "PlaceTypeField",
+      "section": "The client island that shares one hovered listing key between the map and the list, and holds the sort.",
       "blocking": true
     },
     {
-      "name": "V3ListingRow",
-      "section": "Photographed listings of this type.",
+      "name": "PlaceTypeAtlasSection",
+      "section": "The Atlas, streamed. Resolves the boundary on its own budget and renders V3Atlas with an eyebrow.",
+      "blocking": true
+    },
+    {
+      "name": "PlaceTypeAtlasStandin",
+      "section": "The Suspense fallback and the miss branch. The map section is never absent \u2014 that absence was the 2026-09-08 taste defect.",
+      "blocking": true
+    },
+    {
+      "name": "PlaceTypeSortBar",
+      "section": "Price and beds sort above the list, as real anchors.",
+      "blocking": true
+    },
+    {
+      "name": "PlaceTypeRows",
+      "section": "Photographed V3ListingRow rows, each linked to its mark. The count on the claim is the MV's, not this list's length.",
       "blocking": true
     },
     {
@@ -41,18 +56,78 @@
     }
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-04",
-    "score": 62,
-    "beats": "Zillow and Redfin community type filters: leftover community stats and photographed listings on a real URL, not a search preset.",
-    "evaluator": "structure-pass pending rendered desktop and 375px"
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "Separate Agent subagent, one per class, spawned by the builder with the rubric table, the two shot paths and TASTE.md, told not to read page source; three independent scorings in the one call, median recorded. Four scoring rounds ran on this node (medians place-type 71/69/67/77, place-type-community 73/70/68/70); the recorded round is the last one, whose prompt carries no round history, matching the conditions of the 2026-09-08 table instrument.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/communities/tetherow/types/single-family"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default"
+      ],
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, next dev on the lane's own branch"
+    },
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/place-type-community/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/mobile375.png"
+    },
+    "shotsHash": "sha256:fa44d188a91d3953fef55b305b2c57c13424b8126afe2973e59e232cb6cbb208",
+    "scores": [
+      70,
+      68,
+      72
+    ],
+    "score": 70,
+    "beats": "Zillow's Tetherow search shows undifferentiated MLS pins with no recorded community boundary and no property-type slice; this page draws the recorded polygon, slices to one type, states the count and the asking band in a sentence, and stamps when it read them. tetherow.com owns the photography and carries no live inventory at all.",
+    "defects": [
+      {
+        "section": "V3Breadcrumb",
+        "severity": "taste",
+        "finding": "The trail reads Bend then Single-family and never names Tetherow, so the one place the page is about appears only in the H1. Changing it is a schema and parity-spec change for the class and was left for a node that owns the breadcrumb."
+      },
+      {
+        "section": "Atlas rail activity lines",
+        "severity": "taste",
+        "finding": "Just listed / Went pending / Sold are three plain sentences with a dot and no encoding of the list-to-pending-to-sold spread \u2014 the least composed passage in the fold, and shared V3Atlas markup."
+      },
+      {
+        "section": "Atlas density legend",
+        "severity": "minor",
+        "finding": "The four fewer-sales to more-sales swatches carry no counts, so the reader trusts a gradient instead of reading a number off it. Shared V3Atlas markup."
+      },
+      {
+        "section": "mobile375 fold",
+        "severity": "major",
+        "finding": "At 375 the legend, counts, type toggle, price scrubber and both next-actions sit below the map. Moving them above it was tried this session and scored worse on both classes because it buried the map; the answer is a compact control bar inside V3Atlas, for every caller."
+      },
+      {
+        "section": "Atlas map skin",
+        "severity": "taste",
+        "finding": "The boundary fill, the roads and the dots read as neutral greys rather than the cream field and navy marks TASTE names as the Atlas reference; a crop of the map alone does not say Ryan Realty. Shared V3Atlas."
+      }
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-04",
+      "score": 62,
+      "note": "structure pass, no rendered shots; the 2026-09-08 taste table scored this class 44 (39/44/48) on the same rubric and shot spec \u2014 the lowest place page on the site."
+    },
+    "rebaselineReason": "The committed mark carries no evaluatorModel, no rubricVersion and no shotsHash \u2014 it was a structure pass with no rendered shots \u2014 so it is not the same instrument and cannot be risen above. Recorded here as the first mark on the versioned instrument. For reference, the 2026-09-08 taste table scored this class on the same rubric and the same shot spec."
   },
   "sectionOrder": [
     "V3SectionTracker",
     "MetadataBlock",
     "V3Breadcrumb",
-    "V3Heading",
-    "V3Atlas",
-    "photographed listings #homes",
+    "V3Heading + claim sentence + source line",
+    "PlaceTypeAtlasSection (#atlas, streamed, standin fallback)",
+    "PlaceTypeSortBar + PlaceTypeRows (#homes)",
     "V3Quiet",
     "V3Footer"
   ]

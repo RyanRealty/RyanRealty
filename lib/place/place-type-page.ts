@@ -94,6 +94,112 @@ export function placeTypeHeadline(spec: PlaceTypePageSpec, placeName: string): s
   return `${spec.h1Type} in ${placeName}`
 }
 
+/**
+ * The Atlas eyebrow when the map opens directly under the page H1. The H1
+ * already says "{Type} in {Place}"; the map's own heading used to say
+ * "{Type} on the map" in the same face at the same size, so the top of the
+ * page said one thing twice (taste table 2026-09-08, place-type: "the single
+ * least-composed passage on the page"). Set as a label, it is a section marker
+ * instead of a second title.
+ */
+export function placeTypeAtlasEyebrow(
+  spec: PlaceTypePageSpec,
+  dotsAreTyped: boolean,
+  /**
+   * What the map counts, when that is NOT what the claim sentence counts.
+   *
+   * §0, and it is visible on one screen: the claim counts every listing with a
+   * Bend address (768 single-family, 2026-09-09) while the Atlas clips its
+   * marks to the recorded city boundary and its legend says 493. Both are true
+   * and neither is the other, so the map's label says which population it is
+   * drawing rather than leaving a reader to reconcile 768 against 493. On a
+   * community page the two are the same set (Tetherow: 16 and 16) and this
+   * stays undefined.
+   */
+  scopeLabel?: string,
+): string {
+  const subject = dotsAreTyped ? spec.h1Type : 'Listings'
+  return scopeLabel ? `${subject} ${scopeLabel}` : `${subject} on the map`
+}
+
+/* -------------------------------------------------------------------------- */
+/* The claim sentence                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * What the page can say about its own inventory, as ONE read.
+ *
+ * §0, the whole reason this type exists: the count and the price band must
+ * come from the SAME source, because they describe the same set. Measured
+ * 2026-09-09, Bend single-family: leftover market truth publishes 658 active,
+ * the listing tile MV holds 768 — a 14% delta between two pipelines that both
+ * mean "active single-family listings in Bend". A sentence that took its count
+ * from one and its lowest/highest ask from the other would claim homes start
+ * at a price that may belong to a listing the count never included. So the
+ * claim sentence is single-sourced on the MV, which is also the source of the
+ * Atlas marks and every row in the list below it: the page's visible figures
+ * all count the same listings.
+ *
+ * `count` is `number | null` on purpose (ci:count-degraded-read): the reads
+ * behind it are guarded, and a guarded miss must be able to say "unknown"
+ * rather than fall to zero.
+ */
+export type PlaceTypeInventory = {
+  /** Active listings of this type in this place. `null` = the read missed. */
+  count: number | null
+  /** Lowest active list price in that same set. `null` = the read missed. */
+  low: number | null
+  /** Highest active list price in that same set. */
+  high: number | null
+  /** When the read ran, already formatted. */
+  stamp: string | null
+  /**
+   * How the set was drawn, in the reader's words, for the source line: a city
+   * page counts an MLS city, a community page counts what falls inside a
+   * recorded boundary. Naming the wrong one would make the trace unauditable.
+   */
+  scopeNote: string
+}
+
+export type PlaceTypeClaim = { sentence: string; source: string }
+
+/**
+ * The one plain sentence under the H1: what is for sale here and what it
+ * costs. Every part of it is measured or it does not print — a miss omits the
+ * whole sentence rather than shipping half a claim.
+ *
+ * The count is NOT rounded and the prices are exact whole dollars: $474,500
+ * printed as "$475K" is fine on a tile and wrong in the sentence that states
+ * the floor of a market.
+ */
+export function placeTypeClaim(input: {
+  spec: PlaceTypePageSpec
+  placeName: string
+  inventory: PlaceTypeInventory
+}): PlaceTypeClaim | null {
+  const { count, low, high, stamp, scopeNote } = input.inventory
+  if (count == null || !Number.isFinite(count) || count <= 0) return null
+  if (low == null || high == null || !Number.isFinite(low) || !Number.isFinite(high)) return null
+  if (low <= 0 || high <= 0 || high < low) return null
+
+  const n = Math.floor(count)
+  const noun = n === 1 ? input.spec.nounOne : input.spec.nounMany
+  const sentence =
+    low === high
+      ? `${n.toLocaleString('en-US')} ${noun} for sale in ${input.placeName}, asking ${formatPriceExact(low)}.`
+      : `${n.toLocaleString('en-US')} ${noun} for sale in ${input.placeName}, asking ${formatPriceExact(low)} to ${formatPriceExact(high)}.`
+
+  /* One line, not a paragraph: the trace names the set, the source and the
+     time. The rest of the audit (that all three figures come from one read)
+     lives in this function's own contract and its tests, not in the reader's
+     first viewport. */
+  const source =
+    `Every active ${input.spec.nounOne} ${scopeNote}, from the regional MLS through Oregon Data Share` +
+    `${stamp ? ` · read ${stamp}` : ''}`
+
+  return { sentence, source }
+}
+
 export function placeTypeFaceStats(input: {
   spec: PlaceTypePageSpec
   count: number | null
