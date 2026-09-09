@@ -21,7 +21,7 @@ function subject(overrides: Partial<CmaSubject> = {}): CmaSubject {
     baths: 2,
     sqft: 2000,
     lotAcres: 0.25,
-    propertySubType: null,
+    propertySubType: 'Single Family Residence',
     yearBuilt: 2005,
     garageSpaces: 2,
     photoUrl: null,
@@ -50,7 +50,7 @@ function comp(overrides: Partial<CmaComp> = {}): CmaComp {
     baths: 2,
     sqft: 2000,
     lotAcres: 0.25,
-    propertySubType: null,
+    propertySubType: 'Single Family Residence',
     yearBuilt: 2004,
     photoUrl: null,
     publicRemarks: null,
@@ -124,6 +124,7 @@ function run(args: {
   history?: Partial<BpoListingHistory>
   audit?: CmaAudit | null
   judgment?: CompJudgment | null
+  subjectSubType?: string | null
 }) {
   const comps = tightSet()
   const adjusted = adjustComps(subject(), comps, null)
@@ -135,6 +136,7 @@ function run(args: {
     audit: args.audit === undefined ? cleanAudit() : args.audit,
     opinion: opinion({ confidence: pricing.confidence, ...args.opinion }),
     history: history(args.history),
+    subjectSubType: args.subjectSubType === undefined ? 'Single Family Residence' : args.subjectSubType,
     minComps: 6,
     marketContextPresent: true,
   })
@@ -145,6 +147,13 @@ describe('evaluateBpoAccuracyContract', () => {
     const contract = run({})
     expect(contract.pass).toBe(true)
     expect(contract.forceReview).toBe(false)
+  })
+
+  it('forces review when the subject type was never stored (apples to apples only)', () => {
+    const contract = run({ subjectSubType: null })
+    expect(contract.pass).toBe(true)
+    expect(contract.forceReview).toBe(true)
+    expect(contract.checks.find((c) => c.id === 'product-type-match')?.pass).toBe(false)
   })
 
   it('hard-fails when the opinion sits outside its own range', () => {

@@ -3,6 +3,7 @@ import legacyRedirects from '@/data/legacy-redirects.json'
 import { resolvePreRenderHop } from '@/lib/routing/pre-render-hops'
 import { shouldRefuseDevRoute, DEV_NOT_FOUND_HTML } from '@/lib/routing/dev-only'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
+import { isPresetSlug } from '@/lib/search-presets'
 import resortCommunitiesRegistry from '@/data/resort-communities.json'
 
 /**
@@ -291,6 +292,27 @@ function isInvalidGeoSlug(pathname: string): boolean {
  * /cities/xyz slug ends as 308 -> real 404 — the same terminal signal Google
  * got from the old edge 404, while real cities get a page. Edge-safe: static
  * set lookups only, no DB.
+ *
+ * SITE-27 (2026-09-08): /cities was not the only city-slug family. Both
+ * /open-houses/<slug> and /homes-for-sale/<slug> resolve their city segment
+ * through getCityFromSlug, which reads the STATEWIDE feed — so
+ * /open-houses/grants-pass and /homes-for-sale/grants-pass each served an
+ * indexable 200 under a "Central Oregon" title. Out-of-area slugs were 325 of
+ * the class's 633 Search Console impressions. The fix has to live HERE, not in
+ * the pages: app/loading.tsx wraps every route, so a notFound() thrown after
+ * the shell flushes ships HTTP 200 (see lib/routing/pre-render-hops.ts).
+ *
+ * Both new rules match EXACTLY ONE segment. That is deliberate:
+ *   - /homes-for-sale/<city>/<listing-slug> rewrites to /listing/by-address/*
+ *     (next.config.ts afterFiles) and out-of-area listing detail pages are
+ *     legitimate — a rule that fired on the city segment of a deeper path
+ *     would break them.
+ *   - /homes-for-sale/<preset> (luxury, manufactured, under-500k, ...) is an
+ *     all-cities preset search, not a city at all, so preset slugs are exempt.
+ *   - /open-houses/[city] has no nested routes.
+ * dynamicParams stays true on /open-houses/[city]: OH_CITY_SLUGS is a 10-slug
+ * seed, and in-market slugs outside it (metolius, paulina, post, ashwood,
+ * brothers, ...) carry impressions today.
  */
 function resolveGeoCityRedirect(pathname: string): string | null {
   const cityMatch = pathname.match(/^\/cities\/([^/]+)\/?$/)
@@ -308,6 +330,31 @@ function resolveGeoCityRedirect(pathname: string): string | null {
     slug = slug.toLowerCase()
     if (CENTRAL_OREGON_CITY_SLUGS.has(slug)) return `/cities/${encodeURIComponent(slug)}`
     return null
+  }
+  const openHouseMatch = pathname.match(/^\/open-houses\/([^/]+)\/?$/)
+  if (openHouseMatch) {
+    let slug = openHouseMatch[1]
+    try { slug = decodeURIComponent(slug) } catch { /* raw */ }
+    slug = slug.toLowerCase()
+    if (!CENTRAL_OREGON_CITY_SLUGS.has(slug)) return `/oregon/${encodeURIComponent(slug)}`
+    return null
+  }
+  const homesForSaleMatch = pathname.match(/^\/homes-for-sale\/([^/]+)\/?$/)
+  if (homesForSaleMatch) {
+    let slug = homesForSaleMatch[1]
+    try { slug = decodeURIComponent(slug) } catch { /* raw */ }
+    slug = slug.toLowerCase()
+    // A preset is a filter across the whole service area, never a place.
+    if (isPresetSlug(slug)) return null
+    if (CENTRAL_OREGON_CITY_SLUGS.has(slug)) return null
+    // A Central Oregon community (tetherow, brasada-ranch, bend-northwest-crossing)
+    // is in market but is not a city: /homes-for-sale/tetherow served a phantom
+    // "Homes for Sale in tetherow" search before this rule, and /oregon/tetherow
+    // would answer "City not found". Its place page is the honest destination.
+    if (RESORT_COMMUNITY_SLUGS.has(slug) || isCentralOregonCommunitySlug(slug)) {
+      return `/communities/${encodeURIComponent(slug)}`
+    }
+    return `/oregon/${encodeURIComponent(slug)}`
   }
   return null
 }
@@ -501,9 +548,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   // ─── (0d) Out-of-area city routing (W12 referral tier) ─────────────────
-  // Non-service-area /cities/* slugs 308 to /oregon/[city] (which validates
-  // against live inventory and 404s garbage); /oregon/* slugs that ARE
-  // service-area cities 308 back to their real /cities/* page.
+  // Non-service-area /cities/*, /open-houses/* and /homes-for-sale/* city
+  // slugs 308 to /oregon/[city] (which validates against live inventory and
+  // 404s garbage); /oregon/* slugs that ARE service-area cities 308 back to
+  // their real /cities/* page.
   if (!pathname.startsWith('/api/')) {
     const geoCityDest = resolveGeoCityRedirect(pathname)
     if (geoCityDest) {

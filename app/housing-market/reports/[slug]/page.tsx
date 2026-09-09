@@ -22,6 +22,7 @@ import { getMarketReportBySlug, getReportImageUrl } from '@/lib/data'
 import ShareButton from '@/components/ShareButton'
 import { sanitizeHtml } from '@/lib/sanitize'
 import { formatDate } from '@/lib/format/date'
+import { pageMetadata } from '@/lib/site/page-metadata'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
@@ -38,29 +39,62 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 
 type Props = { params: Promise<{ slug: string }> }
 
+/**
+ * A stored calendar day is not a date a person reads. This page shipped
+ * "2026-08-30 to 2026-09-05" in its meta description, its og:description, its
+ * twitter:description and its Report JSON-LD, under a 97-character document
+ * title Google truncates. Both are formatted here, once, through
+ * lib/format/date (ci:date-format), and the two callers below read the same
+ * two strings so the head and the body can never print the window differently.
+ *
+ * `timeZone: 'UTC'` on a YYYY-MM-DD calendar day: formatDate anchors a bare
+ * date at noon UTC, so this returns the stored civil day rather than the
+ * Pacific evening before it.
+ */
+function reportWindow(report: { period_start: string; period_end: string }): {
+  full: string
+  short: string
+} {
+  const day = (d: string, opts?: Intl.DateTimeFormatOptions) =>
+    formatDate(d, { timeZone: 'UTC', ...opts })
+  return {
+    full: `${day(report.period_start)} to ${day(report.period_end)}`,
+    // The document title carries the layout's 31-character brand suffix, so the
+    // window drops its year to keep the whole SERP title inside 65 characters.
+    // The year is still in the description, in the H1, and in the slug.
+    short: `${day(report.period_start, { year: undefined })} to ${day(report.period_end, { year: undefined })}`,
+  }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const report = await getMarketReportBySlug(slug)
-  if (!report) return { title: 'Market report' }
-  const reportUrl = `${siteUrl}/housing-market/reports/${slug}`
+  const path = `/housing-market/reports/${slug}`
+  if (!report) {
+    return pageMetadata({
+      title: 'Market report not found',
+      description: 'We do not publish a market report at this address.',
+      path,
+      noindex: true,
+    })
+  }
   const imageUrl = await getReportImageUrl(report.image_storage_path)
+  const window = reportWindow(report)
+  const description = `Central Oregon weekly market report, ${window.full}. Pending and closed sales by city.`
+  const base = pageMetadata({
+    title: `Market report: ${window.short}`,
+    description,
+    path,
+    ogType: 'article',
+  })
+  if (!imageUrl) return base
+  // The report banner is 1200x336, not the 1200x630 pageMetadata declares for
+  // the default card, so its real dimensions are restored here.
+  const images = [{ url: imageUrl, width: 1200, height: 336, alt: report.title }]
   return {
-    title: report.title,
-    description: `Central Oregon weekly market report, ${report.period_start} to ${report.period_end}. Pending and closed sales by city.`,
-    alternates: { canonical: reportUrl },
-    openGraph: {
-      title: report.title,
-      description: `Pending and closed sales by city for ${report.period_start} to ${report.period_end}.`,
-      url: reportUrl,
-      type: 'article',
-      ...(imageUrl && { images: [{ url: imageUrl, width: 1200, height: 336, alt: report.title }] }),
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: report.title,
-      description: `Pending and closed sales by city for ${report.period_start} to ${report.period_end}.`,
-      ...(imageUrl && { images: [{ url: imageUrl, width: 1200, height: 336, alt: report.title }] }),
-    },
+    ...base,
+    openGraph: { ...base.openGraph, images },
+    twitter: { ...base.twitter, images: [imageUrl] },
   }
 }
 
@@ -73,14 +107,14 @@ export default async function ReportPage({ params }: Props) {
   const imageUrl = await getReportImageUrl(report.image_storage_path)
   const title = report.title.trim()
   if (!title) notFound()
-  const windowLabel = `${formatDate(report.period_start, { timeZone: 'UTC' })} to ${formatDate(report.period_end, { timeZone: 'UTC' })}`
+  const windowLabel = reportWindow(report).full
   const sellHref = valuationHref(`/housing-market/reports/${slug}`)
 
   const reportSchema = {
     '@context': 'https://schema.org',
     '@type': 'Report',
     name: report.title,
-    description: `Central Oregon weekly market report, ${report.period_start} to ${report.period_end}. Pending and closed sales by city.`,
+    description: `Central Oregon weekly market report, ${windowLabel}. Pending and closed sales by city.`,
     url: reportUrl,
     datePublished: report.created_at,
     ...(imageUrl && { image: imageUrl }),

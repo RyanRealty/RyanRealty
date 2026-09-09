@@ -10,6 +10,7 @@
  * KbSell, KbFooter, SmoothScrollProvider. Capture contract kept on the Sheet.
  */
 
+import { cache } from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getCityFromSlug } from '@/app/actions/listings'
@@ -60,6 +61,40 @@ export function generateStaticParams(): Array<{ city: string }> {
 
 type Props = { params: Promise<{ city: string }> }
 
+/**
+ * ONE set of reads per request, shared by generateMetadata and the body.
+ * React cache() keys on Object.is per argument, so every argument is a
+ * primitive — an options object would never dedupe and the page would pay the
+ * window read, the tile read and the hero read twice.
+ */
+const loadOpenHouseWindow = cache(
+  async (dateFromIso: string, dateToIso: string, todayIso: string, city: string) => {
+    const rows = await getUpcomingOpenHouses({ dateFromIso, dateToIso, todayIso, city })
+    const listingKeys = [...new Set(rows.map((r) => r.listing_key))]
+    if (listingKeys.length === 0) {
+      return { rows, tiles: [], heroes: new Map<string, string>() } as const
+    }
+    const [tiles, heroes] = await Promise.all([
+      getListingTiles({ listingKeys: listingKeys.slice(0, 5000), status: 'all', limit: 500 }),
+      getHeroPhotosByListingKeys(listingKeys),
+    ])
+    return { rows, tiles, heroes } as const
+  },
+)
+
+/**
+ * SITE-27: a city whose calendar is EMPTY in the window renders "Nothing on the
+ * calendar" — so it must not promise "Times, addresses, and prices" in the SERP,
+ * and it must not be indexed. Verified 2026-09-08 on /open-houses/culver and
+ * /open-houses/prineville, both of which shipped index,follow over that block.
+ *
+ * The decision reads the CANONICAL window (today through six days out, Pacific,
+ * no narrowing searchParams) through the same cached reads the body renders, so
+ * the count behind the robots value is the count on the page.
+ *
+ * pageMetadata's `noindex` emits "noindex, nofollow" — it has no noindex,follow
+ * form today. Taken as it is; lib/site/page-metadata.ts is owned by SITE-25.
+ */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { city: citySlug } = await params
   const cityName = await getCityFromSlug(citySlug)
@@ -68,11 +103,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: 'Open Houses in Central Oregon',
       description: "This week's open houses across Central Oregon.",
       path: `/open-houses/${citySlug}`,
+      noindex: true,
     })
   }
+  const todayIso = pacificTodayIso()
+  const { rows, tiles, heroes } = await loadOpenHouseWindow(
+    todayIso,
+    addIsoDays(todayIso, 6),
+    todayIso,
+    cityName,
+  )
+  const count = assembleOpenHouses(rows, tiles, heroes, { city: cityName }).length
+  if (count === 0) {
+    return pageMetadata({
+      title: `Open Houses in ${cityName}, Oregon`,
+      description: `No open house is on the ${cityName}, Oregon calendar in the next seven days. The Central Oregon calendar has the rest of the week.`,
+      path: `/open-houses/${citySlug}`,
+      noindex: true,
+    })
+  }
+  const noun = count === 1 ? 'open house' : 'open houses'
   return pageMetadata({
     title: `Open Houses in ${cityName}, Oregon`,
-    description: `This week's open houses in ${cityName}, Oregon. Times, addresses, and prices from the regional MLS.`,
+    description: `${count.toLocaleString('en-US')} ${noun} in ${cityName}, Oregon this week. Times, addresses, and prices from the regional MLS.`,
     path: `/open-houses/${citySlug}`,
   })
 }
@@ -110,20 +163,7 @@ export default async function OpenHousesCityPage({
   const beds = sp.beds ? Number(sp.beds) : undefined
   const baths = sp.baths ? Number(sp.baths) : undefined
 
-  const rows = await getUpcomingOpenHouses({
-    dateFromIso: dateFrom,
-    dateToIso: dateTo,
-    todayIso,
-    city: cityName,
-  })
-  const listingKeys = [...new Set(rows.map((r) => r.listing_key))]
-  const [tiles, heroes] =
-    listingKeys.length > 0
-      ? await Promise.all([
-          getListingTiles({ listingKeys: listingKeys.slice(0, 5000), status: 'all', limit: 500 }),
-          getHeroPhotosByListingKeys(listingKeys),
-        ])
-      : [[], new Map<string, string>()]
+  const { rows, tiles, heroes } = await loadOpenHouseWindow(dateFrom, dateTo, todayIso, cityName)
 
   const openHouses = assembleOpenHouses(rows, tiles, heroes, {
     community,

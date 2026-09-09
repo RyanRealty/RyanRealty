@@ -245,6 +245,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       opinion,
       history,
       site,
+      subjectSubType: subject.propertySubType,
       minComps: MIN_COMPS,
       marketContextPresent: market != null,
     })

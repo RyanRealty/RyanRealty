@@ -74,6 +74,13 @@ The rest of what differs, none of it optional:
 - **Deleting:** name each file, `rm <file>`. A repo hook refuses recursive and
   glob deletes, and it matches the literal text of your command — so it also fires on a
   command that merely quotes one.
+- **Git locks:** never run any command that names `.git/index.lock`, not even `rm -f`
+  ahead of a checkout. The cloud platform raises a sensitive-file permission prompt on that
+  path that no unattended session can answer; two fires parked for hours on exactly that
+  on 2026-09-08, the second holding two nearly finished items. The sandbox is
+  single-session, so a stale lock does not happen here. If git ever reports one, wait ten
+  seconds and retry; if it persists, release your claims and end. CLAUDE.md §8's
+  "proactively clear git locks" is a local-machine rule.
 - **Sends:** never message a real person (CLAUDE.md §1). A test submit uses an address
   whose local part contains `fleet-test`, which the CRM suppresses by design.
 - **Push:** `npm run push` runs a full `next build`. On a 16 GB cloud box that can
@@ -153,6 +160,16 @@ appends to the node's evidence with its own before-and-after marks, so when the 
 due the conversion numbers can be read against a page that is known to have changed
 mid-window. A window is there to measure whether the page converts, not to protect a page
 Matt does not want to look at.
+
+**How a quality pass is served (first used on SITE-07, 2026-09-09).** The brief serves
+`open` nodes, so a pass on a windowed item is put in front of a lane by reopening the node
+with `QUALITY PASS DUE:` at the head of its objective — what the evaluator named, the mark
+to beat, and the ORIGINAL `blocked_until` date — while the column itself keeps that date and
+`blocked_reason` keeps the measurement text. The node is then the oldest open item and is
+served next. The lane fixes the named defects in the primitive they live in, re-captures,
+re-scores on the same instrument, and when the median has risen it re-blocks the node to the
+original date with the measurement reason unchanged. A pass never mints a new node and never
+touches the calendar.
 
 **Heartbeat, or lose the claim (2026-09-08).** A SITE-* claim untouched for
 `SITE_CLAIM_IDLE_HOURS` (3, `lib/data/loop/work-node.ts`, the grinder's own guard) is

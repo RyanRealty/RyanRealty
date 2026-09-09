@@ -20,6 +20,7 @@
  * Data ONLY through @/lib/data (G8).
  */
 
+import { cache } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getCityArchive, type CityArchive } from '@/lib/data/market/getCityArchive'
@@ -39,10 +40,23 @@ import {
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { countTicks, yearTicks, yoyClaim } from '@/lib/charts/ticks'
+import { pageMetadata } from '@/lib/site/page-metadata'
+import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { ArchiveYearTable } from './_v3/ArchiveYearTable'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+/**
+ * ONE read for the metadata and the body. getCityArchive composes an
+ * unstable_cache price-history read with an uncached leftover-monthly read, so
+ * a snippet that quotes the archive's own totals would otherwise buy a second
+ * round trip. React cache() memoizes it per request across generateMetadata and
+ * the render: the figure in the description is the figure in the Instrument.
+ */
+const loadArchive = cache(async (city: string) => getCityArchive(city))
+
+function archivePath(slug: string): string {
+  return `/housing-market/reports/archive/${slug}`
+}
 
 function buildArchiveSoldChart(archive: CityArchive): V3ChartProps | undefined {
   const points: V3ChartPoint[] = [...archive.years]
@@ -74,42 +88,76 @@ function buildArchiveSoldChart(archive: CityArchive): V3ChartProps | undefined {
 
 type PageProps = { params: Promise<{ city: string }> }
 
+/** Years with at least one recorded close. Metadata and body read the one rule. */
+function archiveYearsCovered(archive: CityArchive): number {
+  return archive.years.filter((y) => y.homesSold > 0).length
+}
+
+/** The archive's covered span, or null when nothing closed. */
+function archiveSpan(archive: CityArchive): string | null {
+  if (archive.earliestYear != null && archive.latestYear != null && archive.earliestYear !== archive.latestYear) {
+    return `${archive.earliestYear} to ${archive.latestYear}`
+  }
+  if (archive.latestYear != null) return String(archive.latestYear)
+  if (archive.earliestYear != null) return String(archive.earliestYear)
+  return null
+}
+
 export function generateStaticParams(): Array<{ city: string }> {
   return REPORT_CITY_SLUGS.map((city) => ({ city }))
+}
+
+/**
+ * The snippet carries the archive's own totals. The old one was a number-free
+ * template on a page whose subject is a decade of counts, and its baked
+ * "| Ryan Realty" met the layout's own suffix to publish the brand twice.
+ */
+function archiveDescription(archive: CityArchive, yearsCovered: number, span: string | null): string {
+  const sold = archive.totalSold.toLocaleString('en-US')
+  const window = span ? `, ${span}` : ''
+  const head = `${sold} closed single-family sales in ${archive.label}, Oregon${window}: ${yearsCovered} years of Oregon Data Share closes, with median sale price by year.`
+  return head.length <= 155
+    ? head
+    : `${sold} closed single-family sales in ${archive.label}, Oregon${window}, with median sale price by year, from Oregon Data Share.`
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { city } = await params
   const entry = REPORT_CITIES.find((c) => c.slug === city)
-  if (!entry) return { title: 'Archive Not Found | Ryan Realty' }
-  const title = `${entry.label} home sales archive | Ryan Realty`
-  const description = `A decade of single-family home sales in ${entry.label}, Oregon: closed sales and median sale price by year.`
-  const canonical = `${siteUrl}/housing-market/reports/archive/${entry.slug}`
-  return {
-    title,
-    description,
-    alternates: { canonical },
-    openGraph: { title, description, url: canonical, type: 'article', siteName: 'Ryan Realty' },
-    twitter: { card: 'summary_large_image', title, description },
+  if (!entry) {
+    return pageMetadata({
+      title: 'Archive not found',
+      description: 'We do not publish a sales archive for this city.',
+      path: archivePath(city),
+      noindex: true,
+    })
   }
+  const archive = await loadArchive(city)
+  if (!archive) {
+    return pageMetadata({
+      title: `${entry.label} home sales archive`,
+      description: `The ${entry.label}, Oregon sales archive has no recorded closes to publish yet.`,
+      path: archivePath(entry.slug),
+      noindex: true,
+    })
+  }
+  return pageMetadata({
+    title: `${entry.label} home sales archive`,
+    description: archiveDescription(archive, archiveYearsCovered(archive), archiveSpan(archive)),
+    path: archivePath(archive.slug),
+    ogType: 'article',
+  })
 }
 
 export default async function CityArchivePage({ params }: PageProps) {
   const { city } = await params
-  const archive = await getCityArchive(city)
+  const archive = await loadArchive(city)
   if (!archive) notFound()
 
-  const yearsCovered = archive.years.filter((y) => y.homesSold > 0).length
-  const span =
-    archive.earliestYear != null && archive.latestYear != null && archive.earliestYear !== archive.latestYear
-      ? `${archive.earliestYear} to ${archive.latestYear}`
-      : archive.latestYear != null
-        ? String(archive.latestYear)
-        : archive.earliestYear != null
-          ? String(archive.earliestYear)
-          : null
+  const yearsCovered = archiveYearsCovered(archive)
+  const span = archiveSpan(archive)
 
-  const canonical = `${siteUrl}/housing-market/reports/archive/${archive.slug}`
+  const canonical = `${getCanonicalSiteUrl()}${archivePath(archive.slug)}`
   const liveHref = `/housing-market/${archive.slug}`
 
   const figures: V3InstrumentFigure[] = [

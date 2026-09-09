@@ -36,6 +36,7 @@
  * ci:date-format requires the canonical formatter.
  */
 
+import { cache } from 'react'
 import type { Metadata } from 'next'
 import { getFinancingMix } from '@/lib/data/analytics/getFinancingMix'
 import { notFound } from 'next/navigation'
@@ -59,6 +60,7 @@ import type { SchemaInput } from '@/lib/site/json-ld'
 import { marketVerdict } from '@/lib/market/classify'
 import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { formatPriceExact } from '@/lib/format/money'
 import { zonedDateKey } from '@/lib/format/date'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -91,39 +93,42 @@ export const revalidate = 300
 
 type Props = { params: Promise<{ slug: string[] }> }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params
-  if (!slug || slug.length === 0) return {}
-
-  const { geoName, citySlug } = resolveGeo(slug)
-  const canonicalPath = `/housing-market/${slug.map(encodeURIComponent).join('/')}`
-
-  return pageMetadata({
-    title: `${geoName} housing market`,
-    description:
-      `Live ${geoName} market data: active inventory, median list price, months of supply, and pace. ` +
-      `Single-family homes. Updated every 15 minutes from Oregon Data Share.`,
-    path: canonicalPath,
-    keywords: [
-      `${geoName} housing market`,
-      `${geoName} real estate`,
-      `${citySlug} market stats`,
-      'Central Oregon',
-      'Ryan Realty',
-    ],
-  })
-}
-
-export default async function HousingMarketGeoPage({ params }: Props) {
-  const { slug } = await params
-  if (!slug || slug.length === 0) notFound()
-
+/**
+ * ONE read for the metadata and the body (SITE-26).
+ *
+ * generateMetadata used to validate nothing: resolveGeo only title-cases the URL
+ * segment, so /housing-market/grants-pass produced a confident "Grants Pass
+ * housing market" head with index,follow, and the real guard below threw
+ * notFound() only AFTER the head had flushed. Twenty-four real out-of-market
+ * Oregon town slugs (grants-pass, medford, salem, ashland, mcminnville,
+ * brookings and 18 more; 203 impressions, 0 clicks) were indexed as hollow 200s
+ * that way. The guard now runs where the head is written, against the SAME
+ * cached read the body renders, so those slugs serve the not-found shell with
+ * robots noindex instead of an indexable market page.
+ *
+ * STILL A 200, NOT A 404, and that is a property of this route tree rather than
+ * of this guard: app/loading.tsx and app/housing-market/loading.tsx make Next
+ * stream the shell, so a notFound() thrown anywhere in the render — head
+ * included — cannot set the status. middleware.ts already carries the repo's
+ * answer for /cities and /communities (validate the slug at the edge against a
+ * STATIC set and emit a real 404) and is the place to add these; it is owned by
+ * another node this round. noindex is what this route can do on its own, and it
+ * is what takes the pages out of the index.
+ *
+ * React cache() memoizes per request across generateMetadata and the render, so
+ * this adds no round trip: the description's figures are the identical values
+ * the Instrument and the Dataset JSON-LD are built from. dynamicParams stays
+ * true — CORE_CITY_SLUGS is a presentation list, not a registry, and madras,
+ * culver, powell-butte, camp-sherman and every two-segment community URL render
+ * legitimately outside it.
+ */
+const loadGeoMarket = cache(async (slugKey: string) => {
+  const slug = slugKey.split('/')
   const geo = resolveGeo(slug)
-  const { geoType, geoSlug, citySlug, geoName, cityName, communityName } = geo
+  const { geoType, geoSlug, geoName, cityName } = geo
   const canonicalPath = `/housing-market/${slug.map(encodeURIComponent).join('/')}`
   const isCity = geoType === 'city'
   const priceHistoryLimit = isCity ? 60 : 24
-  const valuationHrefValue = valuationHref(canonicalPath)
 
   // Data, all through the DAL (G8). No catch-and-swallow: every function below
   // is resilient-cached and answers a transient failure with its own documented
@@ -154,9 +159,6 @@ export default async function HousingMarketGeoPage({ params }: Props) {
       ? getDetachedOverlays([{ geoType: leftoverGeo, geoSlug }])
       : Promise.resolve(new Map()),
   ])
-  const detailYtd = timeframes?.ytd ?? null
-  const detail = timeframes?.monthly ?? null
-  const detailRolling = timeframes?.rolling_365d ?? null
 
   const completePriceMonths = priceHistory.filter((p) => p.periodStart.slice(0, 7) !== currentMonthKey)
   const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, completePriceMonths)
@@ -172,7 +174,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   // Unknown-geo guard: leftover HUD miss and no leftover/cache monthly series
   // is not a place we cover. dynamicParams is true, so without this the route
   // is an infinite thin-page space.
-  if (!leftoverHudPublishes(hud) && chartMonths.months.length === 0) notFound()
+  const publishes = leftoverHudPublishes(hud) || chartMonths.months.length > 0
 
   const mosRaw = hud.monthsSupply
   const mosText = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
@@ -182,7 +184,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   // The FAQ's sale price is the chart's latest complete month, so the two
   // cannot disagree on the same page.
   const saleMedian = latestSaleMedian(chartMonths.months, currentMonthKey)
-  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
+  const faq = buildMarketFaq(
     geoName,
     {
       grain: geoType,
@@ -205,7 +207,142 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   // it beside the detached finance cells (two cash shares under near-identical
   // labels was the defect that pulled it off /cities/bend the day it shipped).
   // Here it gets its own section with the population NAMED in the heading.
-  const financingMix = isCity ? await getFinancingMix({ city: cityName, days: 365 }) : null
+  const financingMix = publishes && isCity ? await getFinancingMix({ city: cityName, days: 365 }) : null
+
+  return {
+    geo,
+    canonicalPath,
+    isCity,
+    publishes,
+    currentMonthKey,
+    citySnapshots,
+    timeframes,
+    lastCompleteMonthly,
+    blogPosts,
+    publicSegments,
+    publicPace,
+    publicMix,
+    chartMonths,
+    hud,
+    mosText,
+    verdict,
+    refreshedAt,
+    faqs: faq.faqs,
+    datasetVariables: faq.datasetVariables,
+    asOfIso: faq.asOfIso,
+    asOfLabel: faq.asOfLabel,
+    financingMix,
+  }
+})
+
+/**
+ * The snippet's figures ARE the Dataset JSON-LD's figures — same values, same
+ * request. The old description was a constant that overflowed MAX_DESC (155)
+ * for every geo name on the route (Bend 157, Redmond 160, Caldera Springs 168)
+ * and truncated to "…from Oregon Data…", so the one thing every search result
+ * showed was a cut-off sentence with no number in it.
+ *
+ * Reading `datasetVariables` rather than the HUD is deliberate: buildMarketFaq
+ * applies publishMonthsOfSupply's withholding rules, so a figure it declined to
+ * publish cannot reappear in the snippet, and the months-of-supply value here
+ * is the same one the Dataset variable carries, formatted once by
+ * formatMonthsOfSupply. The verdict word comes from marketVerdict() on the raw
+ * value — the canonical thresholds in lib/market/classify.ts (ci:market-formula).
+ */
+function geoTitle(input: {
+  geoName: string
+  datasetVariables: ReadonlyArray<{ name: string; value: string | number }>
+}): string {
+  const active = input.datasetVariables.find((v) => v.name === 'Active Listings')?.value ?? null
+  if (active == null) return `${input.geoName} housing market`
+  return `${input.geoName} housing market: ${Number(active).toLocaleString('en-US')} homes for sale`
+}
+
+function geoDescription(input: {
+  geoName: string
+  datasetVariables: ReadonlyArray<{ name: string; value: string | number; unitText?: string }>
+  verdictLabel: string
+}): string {
+  const read = (name: string) => input.datasetVariables.find((v) => v.name === name)?.value ?? null
+  const active = read('Active Listings')
+  const medianList = read('Median List Price')
+  const supply = read('Months of Supply')
+
+  const clauses: string[] = []
+  if (active != null) clauses.push(`${Number(active).toLocaleString('en-US')} homes for sale`)
+  if (medianList != null) clauses.push(`${formatPriceExact(Number(medianList))} median list price`)
+  if (supply != null) clauses.push(`${supply} months of supply`)
+
+  if (clauses.length === 0) {
+    return `Single-family market data for ${input.geoName}, Oregon: inventory, list prices, and how fast homes go under contract.`
+  }
+  const verdictClause = supply != null ? ` A ${input.verdictLabel}.` : ''
+  const head = `${input.geoName} single-family homes: ${clauses.join(', ')}.${verdictClause}`
+  const tail = ' Live from Oregon Data Share.'
+  return head.length + tail.length <= 155 ? head + tail : head
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params
+  if (!slug || slug.length === 0) notFound()
+
+  const data = await loadGeoMarket(slug.join('/'))
+  // The head is where the guard belongs: a geo we do not cover never gets an
+  // indexable <head>. The body keeps the same check as a second line.
+  if (!data.publishes) notFound()
+
+  const { geoName, citySlug } = data.geo
+  return pageMetadata({
+    title: geoTitle({ geoName, datasetVariables: data.datasetVariables }),
+    description: geoDescription({
+      geoName,
+      datasetVariables: data.datasetVariables,
+      verdictLabel: data.verdict.label,
+    }),
+    path: data.canonicalPath,
+    keywords: [
+      `${geoName} housing market`,
+      `${geoName} real estate`,
+      `${citySlug} market stats`,
+      'Central Oregon',
+      'Ryan Realty',
+    ],
+  })
+}
+
+export default async function HousingMarketGeoPage({ params }: Props) {
+  const { slug } = await params
+  if (!slug || slug.length === 0) notFound()
+
+  const data = await loadGeoMarket(slug.join('/'))
+  if (!data.publishes) notFound()
+
+  const {
+    canonicalPath,
+    isCity,
+    currentMonthKey,
+    citySnapshots,
+    timeframes,
+    lastCompleteMonthly,
+    blogPosts,
+    publicSegments,
+    publicPace,
+    publicMix,
+    chartMonths,
+    hud,
+    mosText,
+    verdict,
+    refreshedAt,
+    faqs,
+    datasetVariables,
+    asOfIso,
+    asOfLabel,
+    financingMix,
+  } = data
+  const { geoType, citySlug, geoName, cityName, communityName } = data.geo
+  const valuationHrefValue = valuationHref(canonicalPath)
+  const detailYtd = timeframes?.ytd ?? null
+  const detail = timeframes?.monthly ?? null
 
 
   const schemas: SchemaInput[] = [
