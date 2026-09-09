@@ -112,14 +112,36 @@ export function splitSourceStamp(source: string): { body: string; stamp: string 
 export function sourceNameFromTrace(body: string): string {
   const trimmed = body.trim()
   const candidates: string[] = []
-  const comma = trimmed.indexOf(',')
+  const comma = balancedCut(trimmed, ',')
   if (comma > 0) candidates.push(trimmed.slice(0, comma).trim())
-  const sentence = /^[^.;]+/.exec(trimmed)
-  if (sentence) candidates.push(sentence[0].trim())
+  const stop = balancedCut(trimmed, '.;')
+  if (stop > 0) candidates.push(trimmed.slice(0, stop).trim())
+  else candidates.push(trimmed)
   const best = candidates
     .filter((c) => c.length > 0)
     .sort((a, b) => a.length - b.length)[0]
   return best ?? trimmed
+}
+
+/**
+ * The first cut character at depth zero, or -1.
+ *
+ * A trace often puts its population in a parenthesis — "…in the last 7 days
+ * (the same pull the list below renders, 60 in the window)." — and the first
+ * comma then sits INSIDE it, so a naive cut ends the visible clause on an open
+ * bracket: "…(the same pull the list below renders" (evaluator on /price-drops,
+ * 2026-09-09: "the parenthetical never closes"). A clause is a thing a person
+ * reads aloud, so it never ends mid-bracket.
+ */
+function balancedCut(text: string, cuts: string): number {
+  let depth = 0
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i]!
+    if (ch === '(' || ch === '[') depth += 1
+    else if (ch === ')' || ch === ']') depth = Math.max(0, depth - 1)
+    else if (depth === 0 && cuts.includes(ch)) return i
+  }
+  return -1
 }
 
 /**

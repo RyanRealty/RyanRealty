@@ -39,7 +39,19 @@ export function PriceDropPhotos({ items }: { items: readonly PriceDropFieldItem[
             ) : item.overlay ? (
               <span className="text-sm text-muted-foreground">{item.overlay}</span>
             ) : null}
-            <span className="text-base font-medium tabular-nums">{item.priceLabel}</span>
+            <span className="pd-card__ask">
+              <span className="text-base font-medium tabular-nums">{item.priceLabel}</span>
+              {/* THE CUT AS A MARK, not only as a percent in the meta line
+                  (SITE-49). One ratio, one meter: the fill is this home's cut
+                  as a share of the deepest cut on the page, so the rows read
+                  against each other the way the strip above reads. A row with
+                  no percent draws no track. */}
+              {item.cutShare != null ? (
+                <span className="pd-card__cut" aria-hidden="true">
+                  <span style={{ width: `${(item.cutShare * 100).toFixed(1)}%` }} />
+                </span>
+              ) : null}
+            </span>
             <span className="break-words text-sm">{item.title}</span>
             {item.meta ? (
               <span className="text-sm text-muted-foreground">{item.meta}</span>
@@ -65,7 +77,12 @@ export function PriceDropsOpening({
   const title = headline ?? heading
   return (
     <div className={cn(V3_ROOT_CLASS, 'mx-auto max-w-6xl px-4 pt-8')}>
-      <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+      {/* THE COUNT SITS UNDER THE HEADING AT EVERY WIDTH. Split across the row
+          at md and up, it floated alone in the top-right with nothing aligning
+          it to the H1 or to the drawing that counts the same cuts — "a stray
+          fragment" (evaluator, 2026-09-09), while the phone layout already had
+          it right. One placement, the one that reads. */}
+      <div className="mb-6 flex flex-col gap-2">
         <V3Heading level={1}>{title}</V3Heading>
         <p className="text-sm text-muted-foreground">
           <span className="tabular-nums text-foreground">{captionValue}</span>
