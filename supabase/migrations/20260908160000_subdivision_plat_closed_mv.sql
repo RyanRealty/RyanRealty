@@ -95,7 +95,20 @@
 -- all of MLS history and only moves when a sale closes.
 --
 -- Built WITH NO DATA (instant); populated by refresh_subdivision_plat_closed_mv()
--- and wired into /api/cron/refresh-mvs.
+-- and refreshed nightly by pg_cron (see the schedule at the bottom of this file).
+--
+-- PROD APPLY NOTE (2026-09-09). This file is ONE object; production reached it
+-- in six steps through the Supabase apply channel while it was being built,
+-- registered in supabase_migrations.schema_migrations as
+-- subdivision_plat_closed_mv, _top_city, _union_attribution, _gist_reachable,
+-- refresh_subdivision_plat_closed_mv_nightly and _closed_by_year. The last of
+-- those is a DROP + CREATE, because a materialized view cannot gain a column;
+-- nothing in production code read the object at the time, so the window cost
+-- nothing. The end state was read back out of pg_matviews and matches the
+-- definition below statement for statement, the unique index and the grants are
+-- in place, cron.job 210 refresh_subdivision_plat_closed_mv_nightly is active on
+-- '20 10 * * *', and mv_refresh_state stamps the last run. A replay of this file
+-- against an empty database produces the same object in one step.
 
 -- NEITHER BRANCH MAY PUT `boundaries` BEHIND A CTE. A CTE referenced more than
 -- once is MATERIALIZED, and a materialized `plats` has no GIST index, so the
