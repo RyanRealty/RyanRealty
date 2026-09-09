@@ -1,0 +1,46 @@
+/* ===========================================================================
+   V3OnDuty. Styles for V3OnDuty.client.tsx and nothing else. Every value
+   resolves from ./tokens.css: no raw color, no second hue. The open and closed
+   states differ by the mark's fill and the label's weight, never by red and
+   green — a status light would be the one thing the two-color system exists to
+   refuse, and --rr-exception means a DATA exception, not a shop that is shut.
+   =========================================================================== */
+
+.v3-onduty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--v3-space-2xs) var(--v3-space-xs);
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+
+.v3-onduty__dot {
+  align-self: center;
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  border: var(--v3-rule-weight-hairline) solid var(--v3-ink);
+  border-radius: 50%;
+  background: transparent;
+}
+
+.v3-onduty.is-open .v3-onduty__dot {
+  background: var(--v3-ink);
+}
+
+.v3-onduty__label {
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-onduty.is-open .v3-onduty__label {
+  color: var(--v3-ink);
+  font-weight: var(--v3-weight-medium);
+}
+
+.v3-onduty__note::before {
+  /* A middot rather than a border: the note is the same sentence continued. */
+  content: '· ';
+}

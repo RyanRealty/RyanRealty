@@ -53,10 +53,93 @@
   display: flex;
   align-items: center;
   gap: var(--v3-space-md);
+  /* The band is a SCORE, not a shelf: at 1440 a full-measure wash bar with a
+     G mark at the far left and 1,100px of empty fill beside it was the widest
+     thing on the page and said nothing (SITE-48). It takes the width of what
+     it holds, with a floor so it is still a plate and not a chip. */
+  width: fit-content;
+  min-width: min(100%, 20rem);
+  max-width: 100%;
   margin: var(--v3-space-lg) 0 0;
-  padding: var(--v3-space-md);
+  padding: var(--v3-space-md) var(--v3-space-lg) var(--v3-space-md) var(--v3-space-md);
   border: 1px solid var(--v3-edge);
   background: var(--v3-wash);
+}
+
+/* THE SCORE, EDITORIAL (SITE-48 round two). On a record page the plate read as
+   "a plain grey rounded rectangle holding an icon, a number, five stars and a
+   caption — a generic review-widget shape", the kind any plugin ships. The
+   fill and the border go; what is left is a rule, the aggregate at display
+   scale, the stars drawn to it, and the count. The compact bands keep the
+   plate, because there the wash is what separates proof from the page around
+   it. */
+.v3-proof--score .v3-proof__face {
+  align-items: flex-start;
+  gap: var(--v3-space-sm);
+  width: auto;
+  min-width: 0;
+  padding: var(--v3-space-md) 0 0;
+  border: 0;
+  border-top: var(--v3-rule-section);
+  background: transparent;
+}
+
+.v3-proof--score .v3-proof__face-mark {
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  background: transparent;
+}
+
+.v3-proof--score .v3-proof__face-mark svg {
+  width: 22px;
+  height: 22px;
+}
+
+.v3-proof--score .v3-proof__face-value {
+  font-size: var(--v3-size-num-lead);
+}
+
+.v3-proof--score .v3-proof__face .v3-proof__star {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+/* The span and the tally, as one caption line under the headline. */
+.v3-proof__context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem var(--v3-space-sm);
+  margin: var(--v3-space-md) 0 0;
+  padding: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+
+.v3-proof__context-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.v3-proof__context-item + .v3-proof__context-item::before {
+  content: '·';
+  margin-right: 0.35rem;
+  color: var(--v3-ink-muted);
+}
+
+.v3-proof__context-value {
+  margin: 0;
+  color: var(--v3-ink);
+  font-weight: var(--v3-weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-proof__context-label {
+  margin: 0;
 }
 
 .v3-proof__face-mark {
@@ -152,6 +235,96 @@
   letter-spacing: var(--v3-track-eyebrow);
   text-transform: uppercase;
   color: var(--v3-ink-muted);
+}
+
+/* The context figures, when the score face already carries the average and the
+   count (SITE-48). What is left is span and tally, so the row reads as a
+   caption under the score, not as a second instrument: no rules top and
+   bottom, smaller values, packed tighter. */
+.v3-proof__figures--context {
+  /* Flex, not the stretched auto-fit grid: three context figures spread
+     across 1440 read as three columns of an instrument. Packed left they
+     read as the caption they are. */
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-sm) var(--v3-space-xl);
+  margin: var(--v3-space-md) 0 0;
+  padding: 0;
+  border-top: 0;
+  border-bottom: 0;
+}
+
+.v3-proof__figures--context .v3-proof__figure-value {
+  font-size: var(--v3-size-body-lg);
+}
+
+/* The reach, folded into the band: one slim row of links under the opening,
+   never four hairline cells stacked as a section of their own. */
+.v3-proof__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs) var(--v3-space-md);
+  margin: var(--v3-space-md) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-proof__action-item {
+  min-width: 0;
+}
+
+.v3-proof__action {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  text-decoration: underline;
+  text-decoration-thickness: var(--v3-rule-weight-hairline);
+  text-underline-offset: 0.28em;
+  transition: color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-proof__action:hover,
+.v3-proof__action:focus-visible {
+  color: var(--v3-ink-muted);
+}
+
+/* THE COMPOSED OPENING (SITE-48). Only when a record page leads with the score
+   plate: the headline and its claim take the text measure on the left, the
+   plate stands beside them on the right, and the context caption sits under
+   the headline rather than under the plate. Everything after the opening spans
+   both tracks and reads at full measure as before. Narrow windows keep the
+   plain block flow — two columns at 375 would be two cramped ones. */
+@media (min-width: 64rem) {
+  .v3-proof--score {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
+    column-gap: var(--v3-space-2xl);
+    align-items: start;
+  }
+
+  .v3-proof--score > * {
+    grid-column: 1 / -1;
+  }
+
+  .v3-proof--score > .v3-proof__head {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .v3-proof--score > .v3-proof__face {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    margin-top: 0;
+    min-width: 0;
+  }
+
+  .v3-proof--score > .v3-proof__context {
+    grid-column: 1;
+    grid-row: 2;
+  }
 }
 
 /* The record strip: one mark per review on its month. */
@@ -571,6 +744,30 @@
   padding: var(--v3-space-md) 0;
   border-top: var(--v3-rule-hairline);
   scroll-margin-top: calc(var(--v3-chrome-h) + 9rem);
+}
+
+/* The lead reading pane (SITE-48): the same element, mounted above the strip
+   so a client's own words are the first thing under the score rather than the
+   last thing under the instrument. It carries the opening's own top spacing
+   and holds the text measure, because at 1440 a full quote set on the 72rem
+   grid is a 140-character line. */
+.v3-proof__reading--lead {
+  max-width: var(--v3-measure-text);
+  /* Tight to the caption above it: the opening's job is to reach the strip
+     inside the first viewport, and the pane was paying a full section step
+     for a quote that already reads as the next beat. */
+  margin: var(--v3-space-md) 0 0;
+  padding-block: var(--v3-space-sm) 0;
+  min-height: 0;
+  border-top: 0;
+}
+
+.v3-proof--score .v3-proof__actions {
+  margin-top: var(--v3-space-sm);
+}
+
+.v3-proof--score .v3-proof__record {
+  margin-top: var(--v3-space-md);
 }
 
 .v3-proof__reading-empty {

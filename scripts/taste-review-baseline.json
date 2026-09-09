@@ -1,19 +1,11 @@
 {
-  "note": "ci:taste-canon — SHRINK-ONLY. Public routes whose parity.json has no tasteReview block yet. A route leaves by earning an evaluator pass (design_system/public/TASTE.md); no route may be added.",
-  "generatedAt": "2026-09-02T03:49:30.976Z",
+  "note": "ci:taste-canon — SHRINK-ONLY. Public routes whose parity.json has no tasteReview JSON yet. A route leaves by earning an evaluator pass; no route may be added.",
+  "generatedAt": "2026-09-09T19:40:35.976Z",
   "routes": [
-    "design_system/ryan-realty/ui_kits/buy/parity.json",
     "design_system/ryan-realty/ui_kits/cities/parity.json",
     "design_system/ryan-realty/ui_kits/compare/parity.json",
     "design_system/ryan-realty/ui_kits/invest/parity.json",
-    "design_system/ryan-realty/ui_kits/listing-detail/parity.json",
     "design_system/ryan-realty/ui_kits/market-report-annual/parity.json",
-    "design_system/ryan-realty/ui_kits/market-report-detail/parity.json",
-    "design_system/ryan-realty/ui_kits/market-report-region/parity.json",
-    "design_system/ryan-realty/ui_kits/oregon-city/parity.json",
-    "design_system/ryan-realty/ui_kits/price-drops/parity.json",
-    "design_system/ryan-realty/ui_kits/reviews/parity.json",
-    "design_system/ryan-realty/ui_kits/sell/parity.json",
-    "design_system/ryan-realty/ui_kits/subdivision/parity.json"
+    "design_system/ryan-realty/ui_kits/oregon-city/parity.json"
   ]
 }

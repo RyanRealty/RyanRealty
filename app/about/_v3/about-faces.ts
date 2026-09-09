@@ -8,6 +8,34 @@
 import { BROKERS, type BrokerKey } from '@/lib/brand/contact'
 import { teamPath } from '@/lib/slug'
 
+/**
+ * One differentiator per broker, beyond contact plumbing (SITE-48).
+ *
+ * The taste table scored /team 39 and named the cause: "three identical
+ * directory cards … with no bio, specialty, tenure, or sales fact to
+ * differentiate one broker from another". The fix has to be a FIGURE that is
+ * this broker's and no one else's, and section 0 decides where it may come
+ * from — the MLS record SITE-11 reads, never a self-declared specialty tag.
+ *
+ * A broker with nothing on the record carries NO record block. Unknown is not
+ * zero: a card that printed "0 closings" would be publishing a number the data
+ * does not support about a licensed broker.
+ */
+export type AboutFaceRecord = {
+  /** The figure itself, formatted. */
+  value: string
+  /** The plain sentence beside it: "closings in the last 12 months". */
+  label: string
+  /** Where those transactions were, largest first. Empty is allowed. */
+  places: readonly { name: string; n: number }[]
+  /** The disclosure's control: "Where those closings were". */
+  placesSummary: string
+  /** The section 0 trace for the figure and the places. */
+  trace: string
+  /** The source's short name for the folded clause. */
+  sourceName: string
+}
+
 export type AboutFace = {
   href: string
   src: string
@@ -21,6 +49,8 @@ export type AboutFace = {
   license: string | null
   /** Readable dotted phone for above-the-fold contact (not icon-only). */
   phoneDisplay: string | null
+  /** This broker's own MLS record, when there is one. See AboutFaceRecord. */
+  record?: AboutFaceRecord | null
 }
 
 const CANONICAL_HEADSHOT = /^\/images\/brokers\/[a-z0-9-]+\.png$/

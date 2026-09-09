@@ -1,8 +1,8 @@
 {
   "route": "app/about/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat generic national-brokerage profile pages by leading with Call/Text and firm proof, then brokers as doors. Origin is short Quiet below the fold. Licenses are one sourced line, not a KPI hero.",
-  "note": "PAGE_INVENTORY §6 / PAGE_OUTLINE 2026-09-05. Order is Breadcrumb, Quiet #who (H1 About Ryan Realty · Bend, one line, Call/Text), V3Proof (firm Google), FirmClosings (house-row closings), AboutFaces headingLevel 2 (doors, not a fold poster), Atlas, Quiet #about (How it started + firm/PB license line, OREA source), V3Answers, Footer. No V3Instrument. D11 mission is off this page. Dates render in Pacific through formatDate.",
+  "competitiveTarget": "Beat generic national-brokerage profile pages by OPENING on proof \u2014 the three brokers' faces and the firm's Google record with its trace \u2014 and then one reach control, rather than a license line over seven identical contact rows. Origin is short Quiet below the fold.",
+  "note": "SITE-48 2026-09-09 (supersedes the PAGE_OUTLINE 2026-09-05 lock). Order is Breadcrumb, AboutFaces (H1 About Ryan Realty \u00b7 Bend, eyebrow, one claim, the firm's figures with a V3SourceLine, the three brokers), V3Doors #reach as a REACH CONTROL (one call door at display scale carrying the live hours state, then text, email and the calendar as lighter links), V3Proof (the words, headline 'In their own words' \u2014 the score is in the fold and is not restated), FirmClosings, V3Atlas, Quiet #about (How it started + firm/PB license line, OREA source), V3Answers, Footer. No V3Instrument. The V3Quiet #who that used to open the page is GONE: the taste table of 2026-09-08 scored that fold 31 with the verdict 'a phone book, not a proof point'. Dates render in Pacific through formatDate.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -16,12 +16,12 @@
     },
     {
       "name": "AboutFaces",
-      "section": "Brokers as doors after firm proof, headingLevel 2. Canonical /images/brokers/*.png at conversation scale. Name, title, Call, Text. Not the fold poster.",
+      "section": "OPENS THE PAGE, headingLevel 1. Carries the H1, the eyebrow, one claim sentence, the firm's figures (Google average and count from getReviews, roster size from getBrokers) with a V3SourceLine under them, then the three brokers as doors. Canonical /images/brokers/*.png at conversation scale. Name, title, licence, Call, Text, Email, Schedule.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
-      "section": "Twice, not adjacent: #who (H1 + Call/Text) then later #about (short origin + firm/PB license as sourced facts, not a KPI Instrument).",
+      "section": "Once: #about, late \u2014 a short origin plus the firm and principal-broker licences as sourced facts, never a KPI Instrument. The second instance (#who, seven contact rows as the fold) was deleted by SITE-48; the reach it carried is the V3Doors reach control.",
       "blocking": true
     },
     {
@@ -31,7 +31,7 @@
     },
     {
       "name": "V3Answers",
-      "section": "Pattern 8, closing. The same ABOUT_FAQ_ITEMS array the FAQPage JSON-LD emits, as native disclosures, with the three edges /about has not offered yet (Value my home, Homes for sale, Central Oregon housing market) in the left rail. Replaces the closing V3Quiet 2026-09-02: as prose it measured 1,491px at 1440 with 8 paragraphs, no figure and no control, which is the wall of text TASTE.md bans by name, and four of those paragraphs restated a section above them. The D11 mission sentence went with them — VOICE.md permits it on About and requires it nowhere, and it opened on smallness positioning. No answer moved behind script: a closed disclosure is still in the served HTML.",
+      "section": "Pattern 8, closing. The same ABOUT_FAQ_ITEMS array the FAQPage JSON-LD emits, as native disclosures, with the three edges /about has not offered yet (Value my home, Homes for sale, Central Oregon housing market) in the left rail. Replaces the closing V3Quiet 2026-09-02: as prose it measured 1,491px at 1440 with 8 paragraphs, no figure and no control, which is the wall of text TASTE.md bans by name, and four of those paragraphs restated a section above them. The D11 mission sentence went with them \u2014 VOICE.md permits it on About and requires it nowhere, and it opened on smallness positioning. No answer moved behind script: a closed disclosure is still in the served HTML.",
       "blocking": true
     },
     {
@@ -41,12 +41,22 @@
     },
     {
       "name": "V3Proof",
-      "section": "The newest verified Google reviews with their record (count, average, newest), headingLevel 2, a door to /reviews. Same DAL read (getReviews) and the same quote shaping as /reviews.",
+      "section": "The newest verified Google reviews AS WORDS, headingLevel 2, a door to /reviews. Same DAL read (getReviews) and the same quote shaping as /reviews. The count and the average are NOT the headline here \u2014 the opening already prints them, and printing them again is one page written twice.",
       "blocking": true
     },
     {
       "name": "V3Footer",
       "section": "Chrome. V3_FOOTER_COLUMNS. Rendered OUTSIDE <main> so the footer maps to role=contentinfo.",
+      "blocking": true
+    },
+    {
+      "name": "V3Doors",
+      "section": "#reach, the one reach control. `primary` on the call door (display scale, larger bounding box) with the V3OnDuty live state and its trace under it; text, email and Schedule as the lighter alternatives. Replaces the seven-row contact list SITE-48 removed.",
+      "blocking": true
+    },
+    {
+      "name": "V3OnDuty",
+      "section": "The live state on the reach control: our published booking hours against the Pacific clock, from the same crm_company_settings.booking_hours rows /book offers time from. NEVER a reply-time figure \u2014 see components/site/v3/V3OnDuty.view.ts and SITE-09.",
       "blocking": true
     }
   ],
@@ -76,25 +86,25 @@
     }
   ],
   "removedComponents": [
-    "KbHero — brand eyebrow, poetry H1, Central Oregon photo, property search.",
-    "KbAbout — origin story and facts, rebuilt as the opening V3Quiet plus the Instrument.",
-    "KbExploreTowns — city ledger, rebuilt as V3Ledger from getMarketPulseCitySnapshots.",
-    "KbTestimonials — eight Google reviews. Canonical set lives on /reviews. Door in the closing Quiet.",
-    "KbArticles — getRecentBlogPosts rail. Dropped; the read is gone.",
-    "KbSell — address prefill to /sell/valuation. Replaced by valuationHref('/about') on the Instrument.",
-    "KbTeam — already removed 2026-07-08 as a duplicate of /team.",
-    "FAQBlock — rebuilt as V3Quiet prose from the same ABOUT_FAQ_ITEMS array MetadataBlock emits as FAQPage.",
-    "SmoothScrollProvider — Lenis + GSAP. v3 motion is CSS tokens.",
-    "KbFooter — replaced by V3Footer outside <main>.",
+    "KbHero \u2014 brand eyebrow, poetry H1, Central Oregon photo, property search.",
+    "KbAbout \u2014 origin story and facts, rebuilt as the opening V3Quiet plus the Instrument.",
+    "KbExploreTowns \u2014 city ledger, rebuilt as V3Ledger from getMarketPulseCitySnapshots.",
+    "KbTestimonials \u2014 eight Google reviews. Canonical set lives on /reviews. Door in the closing Quiet.",
+    "KbArticles \u2014 getRecentBlogPosts rail. Dropped; the read is gone.",
+    "KbSell \u2014 address prefill to /sell/valuation. Replaced by valuationHref('/about') on the Instrument.",
+    "KbTeam \u2014 already removed 2026-07-08 as a duplicate of /team.",
+    "FAQBlock \u2014 rebuilt as V3Quiet prose from the same ABOUT_FAQ_ITEMS array MetadataBlock emits as FAQPage.",
+    "SmoothScrollProvider \u2014 Lenis + GSAP. v3 motion is CSS tokens.",
+    "KbFooter \u2014 replaced by V3Footer outside <main>.",
     "kb-root and the kb.css import."
   ],
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "V3Quiet #who -- About Ryan Realty · Bend, Call, Text",
-    "V3Proof #proof -- firm Google reviews",
+    "AboutFaces -- H1 About Ryan Realty \u00b7 Bend, the firm's figures with their trace, the three brokers",
+    "V3Doors #reach -- one call door at display scale with the live hours, then text, email, calendar",
+    "V3Proof #proof -- the firm's Google reviews as words",
     "FirmClosings #firm-sales -- recent Ryan Realty closings, house row",
-    "AboutFaces -- the three brokers as doors, headingLevel 2",
     "V3Atlas #service-area -- where we work",
     "V3Quiet #about -- how it started plus licenses as one sourced line",
     "V3Answers #faq -- working with Ryan Realty",
@@ -105,13 +115,107 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-06",
-    "score": 51,
-    "beats": "Windermere Central Oregon About: Call and Text are first-viewport doors instead of a mission paragraph.",
-    "evaluator": "separate grok-4.6 evaluator, remaining-issues pass, about",
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate Sonnet evaluator agent, SITE-48 pass three, about page class \u2014 one call, three independent scorings of the same two shots, run against the rubric table in design_system/public/TASTE.md and asked explicitly whether a contact list is the first content of the page",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/about"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default"
+      ],
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, against the lane's own dev server before the push"
+    },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png"
+    },
+    "shotsHash": "sha256:98f090cf3a341efc8d4f4b42660c18b4610ad28f9d48cb00fce6425813f1fe32",
+    "scores": [
+      53,
+      55,
+      58
+    ],
+    "score": 55,
+    "breakdown": {
+      "design": 15,
+      "originality": 15,
+      "interaction": 7,
+      "craft": 10,
+      "honesty": 8
+    },
+    "beats": "Beats the fold it replaced, and that is the win this pass claims: a visitor now meets the firm's Google record with its trace and three broker faces before any bare link, where the 2026-09-08 table found \"a phone book, not a proof point\". The evaluator named NO win over a live competitor page (Cascade Sotheby's Bend, a Zillow agent-team module) from the captured viewport, and TASTE.md forbids inventing one, so none is claimed here.",
+    "contactListIsFirstContent": false,
+    "contactListAnswer": "The H1 'About Ryan Realty \u00b7 Bend' with a one-sentence claim, then three sourced figures (5.0 Google rating, 25 client reviews, 3 licensed Oregon brokers) and a 'how we calculate this' disclosure. Contact links start below that, at the bottom of the desktop fold and off-screen at 375.",
+    "defects": [
+      {
+        "section": "#faces figures (5.0 / 25 / 3)",
+        "severity": "taste",
+        "finding": "Three bare figures with no plain sentence beside any of them saying what it means for the reader, and none opens the rows behind it \u2014 the KPI-grid tell in a softer form."
+      },
+      {
+        "section": "#faces reach row",
+        "severity": "taste",
+        "finding": "The four reach chips repeat identically on all three cards. Call now carries the weight and the number, but Text, Email and Schedule are still three boxed controls per card rather than plain links under one button."
+      },
+      {
+        "section": "#faces figures at 375",
+        "severity": "craft",
+        "finding": "The three opening figures wrap 2-up then 1, so \"3 licensed Oregon brokers\" is orphaned on its own row instead of a deliberate stack or a three-across line."
+      },
+      {
+        "section": "#faces record",
+        "severity": "interaction",
+        "finding": "The per-broker MLS record that /team now carries is NOT wired on /about, so this page's faces are still name, licence and reach with no figure of their own. Left on purpose this pass: /about's subject is the firm, and adding three per-broker MLS reads to it is a change with its own shots and its own score."
+      }
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 31,
+      "scores": [
+        31,
+        35,
+        28
+      ],
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "not recorded \u2014 the cross-class table predates per-row shot hashes",
+      "source": "design_system/public/taste-table.json"
+    },
+    "rebaselineReason": "The prior mark is the cross-class taste table of 2026-09-08 (design_system/public/taste-table.json), which is the instrument SITE-48's accept test names. Same evaluatorModel and same rubricVersion; the shots are new captures of a rebuilt page, so shotsHash differs and the mark re-baselines rather than \"rises\". The raw numbers, plainly: before 31 (raw [31, 35, 28]), after 55 (raw [53, 55, 58]), a rise of 24 points on the same rubric and the same evaluator model. The shotsHash is the only identity key that differs.",
+    "verdict": "No longer a phone book: the fold opens on a claim, three sourced figures with a left-aligned trace, and the three brokers standing on a hairline shelf with Call weighted above the rest. What is left is that the figure row is still three bare numerals and the per-broker record does not reach this page.",
+    "priorRouteMark": {
+      "evaluatedAt": "2026-09-06",
+      "score": 51,
+      "evaluator": "separate grok-4.6 evaluator, remaining-issues pass, about",
+      "note": "the route's own receipt at HEAD, on a different instrument (a different evaluator model and/or a different shot set). Kept so the history is readable; the mark this pass is measured against is priorMark, the cross-class table SITE-48's accept test names."
+    },
+    "passes": {
+      "note": "Three build-and-score rounds ran in this lane before the mark above, each on its own shots. The score recorded here is the LAST one, on the shots this receipt hashes.",
+      "roundOne": {
+        "score": 46,
+        "scores": [
+          46,
+          46,
+          47
+        ]
+      },
+      "roundTwo": {
+        "score": 60,
+        "scores": [
+          58,
+          60,
+          62
+        ]
+      }
     }
   }
 }
