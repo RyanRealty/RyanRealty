@@ -603,59 +603,6 @@
   }
 }
 
-.listing-mosaic__on-media {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 3;
-  padding: var(--v3-space-md) var(--v3-space-sm) 3.25rem;
-  /* SITE-20: the ramp reaches the TEXT, not just the frame edge. The old stops
-     (78% at the bottom, 28% by 55%) put the caption block itself in the thin
-     part of the scrim, so on 55550 Heidi Court the sale price sat as cream
-     text on a sunlit gravel driveway and could not be read at either width.
-     The number this caption carries is now the price the home SOLD for, so it
-     is the one figure on the page that may not be squinted at. Same two
-     colours, same scrim, a ramp that covers the words. */
-  background: linear-gradient(
-    to top,
-    color-mix(in srgb, var(--v3-navy) 84%, transparent) 0%,
-    color-mix(in srgb, var(--v3-navy) 66%, transparent) 46%,
-    color-mix(in srgb, var(--v3-navy) 20%, transparent) 80%,
-    transparent 100%
-  );
-  color: var(--v3-cream);
-  pointer-events: none;
-}
-
-.listing-mosaic__on-ask {
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body-lg);
-  font-weight: var(--v3-weight-num);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.15;
-}
-
-/* The status word rides the ask at a smaller size and a wider track, so the
-   figure keeps the weight and the word supplies the frame. */
-.listing-mosaic__on-status {
-  font-size: 0.6em;
-  font-weight: var(--v3-weight-medium);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  margin-right: 0.55em;
-  vertical-align: 0.14em;
-  opacity: 0.92;
-}
-
-.listing-mosaic__on-facts,
-.listing-mosaic__on-street {
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body);
-  font-weight: var(--v3-weight-medium);
-  line-height: 1.3;
-}
-
 .listing-mosaic__pane {
   position: relative;
   width: 100%;
@@ -760,6 +707,115 @@
   }
 }
 
+/* THE PRICE CUT AS TWO POINTS (SITE-45). A button so a tap focuses it; the
+   reading opens on :hover and :focus-within, absolutely placed so nothing
+   under it moves. Navy on cream, the "from" point hollow. */
+.listing-drop {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-xs);
+  min-height: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--v3-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-strong);
+  cursor: default;
+  text-align: left;
+}
+
+.listing-drop__mark {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.listing-drop__mark line {
+  stroke: var(--v3-navy);
+  stroke-width: 1.5;
+}
+
+.listing-drop__mark circle {
+  fill: var(--v3-navy);
+}
+
+.listing-drop__mark .listing-drop__from {
+  fill: var(--v3-cream);
+  stroke: var(--v3-navy);
+  stroke-width: 1.5;
+}
+
+.listing-drop__reading {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 6;
+  display: none;
+  gap: var(--v3-space-sm);
+  align-items: baseline;
+  padding: var(--v3-space-2xs) var(--v3-space-sm);
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  font-weight: var(--v3-weight-medium);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.listing-drop:hover .listing-drop__reading,
+.listing-drop:focus-within .listing-drop__reading {
+  display: inline-flex;
+}
+
+.listing-drop__prices s {
+  opacity: 0.7;
+}
+
+.listing-drop__pct {
+  font-weight: var(--v3-weight-num);
+}
+
+.listing-drop__date {
+  opacity: 0.85;
+}
+
+/* THE PILLS' PLAIN READ (SITE-45). One sentence under the row, its trace
+   behind a disclosure. */
+.listing-read {
+  margin-top: var(--v3-space-sm);
+  max-width: var(--v3-measure-text);
+}
+
+.listing-read__sentence {
+  margin: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-navy);
+}
+
+.listing-read__source {
+  margin-top: var(--v3-space-3xs);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+}
+
+.listing-read__source summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  cursor: pointer;
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  font-size: var(--v3-size-eyebrow);
+}
+
+.listing-read__source p {
+  margin: 0;
+}
+
 .listing-address {
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-body-lg);
@@ -819,79 +875,227 @@
   background: var(--v3-cream);
 }
 
+/* THE FRAME AND THE FILMSTRIP (SITE-45) --------------------------------------
+   One photograph in the frame, a navy strip under it indexing every photo,
+   the media controls on the strip. The frame is the column's width (the
+   shell seats the hero in the main column, ListingDetailShell heroInMain), so
+   a 3:2 photograph keeps its crop and the broker card's Tour sits beside it
+   inside the first viewport at 1440x900. Below 64rem the swipe carousel is
+   the frame and the strip is a control bar under it, off the sky. */
+.listing-frame {
+  display: flex;
+  flex-direction: column;
+}
+
+.listing-frame__media {
+  position: relative;
+  height: var(--v3-carousel-h);
+  background: var(--v3-cream);
+  overflow: hidden;
+}
+
+/* Desktop's stage and the phone's carousel are both in the DOM; each width
+   shows one. */
+.listing-frame__stage {
+  display: none;
+}
+
+.listing-frame__step {
+  display: none;
+}
+
+.listing-strip {
+  --listing-strip-h: 3.5rem;
+  --listing-strip-thumb: 2.75rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--v3-space-xs);
+  min-height: var(--listing-strip-h);
+  padding: 0 var(--v3-space-xs) 0 0;
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  transition: min-height var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.listing-strip__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: 0;
+  background: transparent;
+  color: var(--v3-cream);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--v3-track-label);
+  cursor: pointer;
+}
+
+.listing-strip__chevron {
+  display: inline-block;
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.listing-strip[data-open='true'] .listing-strip__chevron {
+  transform: rotate(180deg);
+}
+
+.listing-strip__reel {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  padding: 0.375rem 0;
+}
+
+.listing-strip__reel::-webkit-scrollbar {
+  display: none;
+}
+
+.listing-strip__thumb {
+  position: relative;
+  flex: 0 0 auto;
+  height: var(--listing-strip-thumb);
+  aspect-ratio: 3 / 2;
+  padding: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: color-mix(in srgb, var(--v3-cream) 12%, var(--v3-navy));
+  opacity: 0.66;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    height var(--v3-dur-state) var(--v3-ease-out),
+    opacity var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.listing-strip__thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.listing-strip__thumb:hover,
+.listing-strip__thumb:focus-visible {
+  opacity: 1;
+}
+
+.listing-strip__thumb.is-current {
+  opacity: 1;
+  border-bottom-color: var(--v3-cream);
+}
+
+/* Expanded: on hover (desktop) and on the toggle (any width) the thumbs
+   double, so the index becomes a contact sheet without leaving the fold. */
+.listing-strip[data-open='true'] {
+  --listing-strip-thumb: 5.5rem;
+}
+
+@media (hover: hover) and (min-width: 64rem) {
+  .listing-strip:hover {
+    --listing-strip-thumb: 5.5rem;
+  }
+}
+
+.listing-strip__tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  position: relative;
+}
+
+.listing-strip__tool,
+.listing-strip__more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: 0;
+  background: transparent;
+  color: var(--v3-cream);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.listing-strip__tool--primary {
+  background: color-mix(in srgb, var(--v3-cream) 14%, var(--v3-navy));
+}
+
+.listing-strip__tool.is-on {
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+}
+
+.listing-strip__tool:hover,
+.listing-strip__more:hover {
+  background: color-mix(in srgb, var(--v3-cream) 20%, var(--v3-navy));
+}
+
+.listing-strip__tool.is-on:hover {
+  background: var(--v3-cream);
+}
+
+/* The phone's overflow: closed, the remaining controls are gone; open, they
+   drop as a column under the strip's right edge, on navy, not on the sky. */
+.listing-strip__overflow {
+  display: none;
+}
+
+.listing-strip__overflow.is-open {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--v3-navy);
+  border-top: 1px solid color-mix(in srgb, var(--v3-cream) 20%, transparent);
+}
+
+.listing-strip__overflow.is-open .listing-strip__tool {
+  justify-content: flex-start;
+  min-width: 11rem;
+}
+
 @media (min-width: 64rem) {
+  .listing-frame__media {
+    height: var(--v3-mosaic-h);
+  }
+
   .listing-mosaic__carousel {
     display: none;
   }
 
-  .listing-mosaic__grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 2px;
-    height: var(--v3-mosaic-h);
-  }
-
-  .listing-mosaic__lead {
-    grid-column: 1;
-    grid-row: 1 / span 2;
-  }
-
-  .listing-mosaic__lead,
-  .listing-mosaic__thumb {
-    position: relative;
-    min-width: 0;
-    min-height: 0;
-    border: 0;
+  .listing-frame__stage {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
     padding: 0;
+    border: 0;
     background: var(--v3-cream);
     cursor: zoom-in;
   }
 
-  .listing-mosaic__lead--empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: default;
-    background: var(--v3-cream);
-  }
-
-  .listing-mosaic__empty-label {
-    margin: 0;
-    padding: var(--v3-space-sm);
-    color: var(--v3-navy);
-    font-family: var(--v3-font-body);
-    font-size: var(--v3-size-body);
-    text-align: center;
-  }
-
-  .listing-mosaic__thumbs {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 2px;
-    min-height: 0;
-  }
-
-  .listing-mosaic__thumbs.is-wide {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-  }
-
-  .listing-mosaic__thumbs.is-wide .listing-mosaic__thumb:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-  }
-
-  .listing-mosaic__thumbs:not(.is-wide) .listing-mosaic__thumb:only-child {
-    grid-row: 1 / -1;
-  }
-
-  .listing-mosaic__lead img,
-  .listing-mosaic__lead video,
-  .listing-mosaic__lead iframe,
-  .listing-mosaic__thumb img {
+  .listing-frame__stage img,
+  .listing-frame__stage video,
+  .listing-frame__stage iframe {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -900,8 +1104,78 @@
     border: 0;
   }
 
-  .listing-mosaic__thumb.is-plan img {
-    object-fit: contain;
+  .listing-frame__stage.listing-mosaic__lead--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+  }
+
+  /* The steps: quiet cream squares on the frame's edges, visible on hover of
+     the frame, always reachable by keyboard. */
+  .listing-frame__step {
+    position: absolute;
+    top: 50%;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--v3-tap);
+    height: var(--v3-tap);
+    margin-top: calc(-1 * var(--v3-tap) / 2);
+    border: 0;
+    background: color-mix(in srgb, var(--v3-cream) 88%, transparent);
+    color: var(--v3-navy);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--v3-dur-state) var(--v3-ease-out);
+  }
+
+  .listing-frame__step--prev {
+    left: var(--v3-space-sm);
+  }
+
+  .listing-frame__step--next {
+    right: var(--v3-space-sm);
+  }
+
+  .listing-frame__media:hover .listing-frame__step,
+  .listing-frame__step:focus-visible {
+    opacity: 1;
+  }
+
+  .listing-frame__step:disabled {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Desktop shows every control inline; the overflow is not a menu. */
+  .listing-strip__more {
+    display: none;
+  }
+
+  .listing-strip__overflow,
+  .listing-strip__overflow.is-open {
+    position: static;
+    display: flex;
+    flex-direction: row;
+    gap: 2px;
+    background: transparent;
+    border-top: 0;
+  }
+
+  .listing-strip__overflow.is-open .listing-strip__tool {
+    justify-content: center;
+    min-width: 0;
+  }
+}
+
+/* Under 64rem the column is the page: the frame runs edge to edge. */
+@media (max-width: 63.99rem) {
+  .listing-hero-column {
+    margin-inline: calc(-1 * var(--v3-gutter));
   }
 }
 

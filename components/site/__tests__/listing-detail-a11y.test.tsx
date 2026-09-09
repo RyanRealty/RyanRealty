@@ -291,7 +291,7 @@ describe('listing mosaic lead and empty thumbs', () => {
     'utf8',
   )
 
-  it('names the iframe lead Open video from the reel; 3D stays a pill', () => {
+  it('names the iframe lead Open video from the reel; 3D stays a strip tool', () => {
     expect(hero).toMatch(/lead\?\.kind === 'video' \? 'Open video'/)
     expect(hero).not.toMatch(/lead\?\.kind === 'tour' \? 'Open tour'/)
     expect(hero).not.toMatch(/emptyThumbSlots/)
@@ -299,9 +299,15 @@ describe('listing mosaic lead and empty thumbs', () => {
     expect(hero).not.toMatch(/publishListingFaceMapSrc/)
     expect(hero).toMatch(/ListingStreetViewOverlay/)
     expect(hero).toMatch(/hasStreetView/)
-    expect(hero).toMatch(/publishListingMosaicTiles/)
+    // SITE-45: one frame and a filmstrip, no 2x2 mosaic and no pill row on the
+    // photograph. The strip indexes every photo and carries the media tools.
+    expect(hero).not.toMatch(/publishListingMosaicTiles/)
+    expect(hero).toMatch(/listing-strip__thumb/)
+    expect(hero).toMatch(/listing-strip__tools/)
+    expect(hero).toMatch(/listing-frame__stage/)
+    expect(css).not.toMatch(/grid-template-columns: 2fr 1fr/)
+    expect(css).toMatch(/\.listing-strip\[data-open='true'\]/)
     expect(hero).toMatch(/autoPlay/)
-    expect(css).toMatch(/grid-template-columns: 2fr 1fr/)
     expect(hero).toMatch(/isOffsiteTourHost/)
     const overlay = readFileSync(
       join(__dirname, '../../..', 'components/site/listing-detail/ListingTourOverlay.tsx'),

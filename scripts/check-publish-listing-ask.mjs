@@ -138,15 +138,23 @@ checks.push({
 })
 
 // The two in-page figures the node named: the on-media hero caption
-// (ListingHero price) and the map card (ListingLocationMap price). Both take
-// `publishedSaleAsk`, which is now the status-aware figure — so the assertion
-// is that neither has been re-pointed at a raw listPrice.
+// (ListingHero price) and the map card (ListingLocationMap price). SITE-45
+// (2026-09-09) took the caption off the photograph altogether: the hero is
+// media-only and the price it used to repeat is the PriceCtaStrip directly
+// under the filmstrip. So the assertion is now that the hero carries NO price
+// prop (a bare figure cannot come back onto the picture without one), that the
+// map card still takes `publishedSaleAsk`, the status-aware figure, and that
+// nothing on the page is re-pointed at a raw listPrice.
+const heroSrc = src('components/site/listing-detail/ListingHero.tsx')
 checks.push({
-  label: 'SITE-20 the hero caption and the map card take the status-aware published price',
+  label: 'SITE-20/45 the hero writes no price on the media; the map card takes the status-aware published price',
   ok:
     /const publishedSaleAsk = publishListingPublishedPrice\(\{/.test(page) &&
-    (page.match(/price=\{publishedSaleAsk\}/g) ?? []).length >= 2 &&
-    !/price=\{listing\.listPrice\}/.test(page),
+    /price=\{publishedSaleAsk\}/.test(page) &&
+    !/price=\{listing\.listPrice\}/.test(page) &&
+    !/<ListingHero[\s\S]*?price=/.test(page.slice(page.indexOf('<ListingHero'), page.indexOf('<ListingHero') + 1500)) &&
+    !/price\?: number/.test(heroSrc) &&
+    !/formatPriceExact|formatPriceCompact/.test(heroSrc),
 })
 
 // PlaceMapListSplit left with the KB register (2026-08-26). The place-page
