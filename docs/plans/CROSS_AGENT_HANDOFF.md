@@ -53,9 +53,25 @@ defect spellings and PASS for two honest re-spellings. This discipline exists be
 written one character apart.
 
 **Both SITE-20 and SITE-21 are BLOCKED ON MATT**, functional halves shipped and live-verified, taste
-rise unmet: accept 78 as the honest mark for the class, or hold until a node exists for the
-pre-existing defects actually costing the score? SITE-07's neighborhood question (67 vs a standing 83)
-is still open too — it is the same question twice.
+rise unmet: accept 78 as the honest mark for the class, or hold for SITE-41 and SITE-52? SITE-07's
+neighborhood question (67 vs a standing 83) is still open too — it is the same question twice.
+
+**CORRECTION, and it changes the answer.** An earlier version of that question said to hold "until a
+node exists" for the pre-existing defects. Wrong: **the queue already owns them.** SITE-41
+(*V3Instrument: the opening is a claim and a drawing, not a KPI grid*) is exactly the static `#ask`
+figure row, and SITE-52 (*V3Ledger: a row past six carries a visible mark, hover reveals more*) is
+exactly the plain `#similar` list and the city page's five same-shaped sections. Both are v3
+**primitives**, so landing them raises every calling class at once rather than one page, and their
+prior marks are LOW (annual-review 31, oregon-city 41, `/cities` 30) — so unlike the 87 a genuine
+rise is achievable there. **They are the highest-leverage work left in the queue.** Both nodes carry
+this reasoning in their evidence.
+
+**Round four was claimed and aborted before it produced anything.** Both lanes died on their first
+calls: `You've hit your session limit · resets 8am (UTC)` (HTTP 429). That is the ONE shared account
+allowance the skill names. SITE-41 and SITE-52 were released to `open` with `owner_session` null,
+verified to have produced no commit, no branch and no worktree content, so the next session takes
+them clean. **This session deliberately did not retry** — two other workers were mid-flight, and
+re-consuming the allowance is precisely what killed the whole fleet on 2026-09-08.
 
 ---
 
