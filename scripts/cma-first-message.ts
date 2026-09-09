@@ -23,6 +23,7 @@ async function main() {
   const { listCmaQueue } = await import('@/lib/data/cma/unified-queue')
   const { classifyCmaOrigin } = await import('@/lib/cma/origin')
   const { resolveTheirPrice } = await import('@/lib/cma/queue-view')
+  const { formatPublishedPhone } = await import('@/lib/cma/format-phone')
   const { cmaFirstContactFactsFromRow, composeCmaFirstContact } = await import('@/lib/cma/first-contact')
 
   const argv = process.argv.slice(2)
@@ -41,7 +42,7 @@ async function main() {
     if (!row) { console.log(`\n=== ${slug}: not found`); continue }
     const brokerRaw = await getCmaBrokerBySlugOrEmail({ slug: (row.broker_slug as string | null) ?? null })
     const brokerName = (brokerRaw?.display_name as string) ?? 'Matt Ryan'
-    const brokerPhone = (brokerRaw?.phone as string | null) ?? null
+    const brokerPhone = formatPublishedPhone((brokerRaw?.twilio_number as string | null) ?? null)
     const origin = classifyCmaOrigin((row.request_source as string | null) ?? null, (row.doc_type as string | null) ?? null)
     const lastListPrice = resolveTheirPrice(origin, row.build_summary, await getCmaProspectAsk(String(row.id)))
     const clientName = (row.client_name as string | null) ?? null

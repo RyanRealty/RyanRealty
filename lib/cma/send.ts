@@ -34,10 +34,11 @@ import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
-import { composeCmaFirstContact, cmaFirstContactFactsFromRow, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
+import { composeCmaFirstContact, cmaFirstContactFactsFromRow, streetOnly, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
 import { cmaReportButtonHtml, previewTextFromCustomBody } from '@/lib/cma/report-button'
 import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
+import { formatPublishedPhone } from '@/lib/cma/format-phone'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const MAX_PDF_BYTES = 25 * 1024 * 1024
@@ -84,7 +85,7 @@ async function resolveSendContext(
     displayName: (brokerRaw?.display_name as string) ?? 'Matt Ryan',
     title: (brokerRaw?.title as string) ?? 'Owner & Principal Broker',
     email: (brokerRaw?.email as string | null) ?? 'matt@ryan-realty.com',
-    phone: (brokerRaw?.phone as string | null) ?? null,
+    phone: formatPublishedPhone((brokerRaw?.twilio_number as string | null) ?? null),
     photoUrl: (brokerRaw?.photo_url as string | null) ?? null,
   }
   const origin = classifyCmaOrigin(
@@ -163,8 +164,17 @@ function emphasizeAddress(text: string, address: string | null): string {
   const named = address?.trim() || ''
   const escaped = escapeHtml(text)
   if (!named) return escaped
-  const needle = escapeHtml(named)
-  return escaped.split(needle).join(`<strong>${needle}</strong>`)
+  // The letter names the street ("2465 7th"), the row holds the full line
+  // ("2465 7th, Redmond, OR 97756"). Bold whichever form the paragraph uses,
+  // longest first so the full line never gets a nested tag.
+  const forms = [named, streetOnly(named)].filter((f): f is string => Boolean(f))
+  let out = escaped
+  for (const form of forms) {
+    const needle = escapeHtml(form)
+    if (!needle || out.includes(`<strong>${needle}</strong>`)) continue
+    out = out.split(needle).join(`<strong>${needle}</strong>`)
+  }
+  return out
 }
 
 function buildLeadBody(ctx: CmaSendContext, override?: CmaSendOverride): { html: string; text: string; subject: string } {
@@ -312,7 +322,7 @@ export async function prepareCmaSendPreview(slug: string): Promise<
       displayName: (brokerRaw?.display_name as string) ?? 'Matt Ryan',
       title: (brokerRaw?.title as string) ?? 'Owner & Principal Broker',
       email: (brokerRaw?.email as string | null) ?? 'matt@ryan-realty.com',
-      phone: (brokerRaw?.phone as string | null) ?? null,
+      phone: formatPublishedPhone((brokerRaw?.twilio_number as string | null) ?? null),
       photoUrl: (brokerRaw?.photo_url as string | null) ?? null,
     }
     const clientName = (row.client_name as string | null) ?? null
