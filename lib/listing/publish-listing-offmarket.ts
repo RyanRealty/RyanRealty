@@ -74,12 +74,19 @@ export function publishSaleToListPct(
   return (closePrice / listPrice) * 100
 }
 
-/** "98.3% of asking" / "at the asking price" / "101.2% of asking". */
+/**
+ * The ratio as a display numeral: "97.4%". One tenth, and NOTHING ELSE in the
+ * value.
+ *
+ * It carried its own words once ("97.4% of asking"), and the first render of
+ * the sold instrument at 1440 showed why that is wrong: an Instrument figure
+ * value is set in the display face at figure size, so a value with a phrase in
+ * it ran straight through the next column and collided with the day count.
+ * The words belong in the label, which is what a label is for.
+ */
 export function formatSaleToList(pct: number | null): string | null {
   if (pct == null || !Number.isFinite(pct)) return null
-  const tenths = Math.round(pct * 10) / 10
-  if (tenths === 100) return 'At the asking price'
-  return `${tenths.toFixed(1)}% of asking`
+  return `${(Math.round(pct * 10) / 10).toFixed(1)}%`
 }
 
 export type ListingOffMarketSubject = {
@@ -133,26 +140,6 @@ export function publishListingOffMarketFacts(
   const saleToList = sold ? publishSaleToListPct(subject.closePrice, subject.listPrice) : null
   const marketDays = sold ? daysOnMarketToClose(subject.onMarketDate, subject.closeDate) : null
 
-  const figures: ListingOffMarketFigure[] = []
-  if (soldPrice != null) figures.push({ value: formatPriceExact(soldPrice), label: 'sold for' })
-  // The ask publishes ONLY beside the sale it is being compared to. SITE-20's
-  // rule is that a Closed listing publishes its close price or no price at
-  // all: a sold home whose ClosePrice the feed withholds would otherwise print
-  // its list price as the one figure on the section, which is the defect that
-  // file exists to end, wearing a "last asked" label.
-  if (soldPrice != null && subject.listPrice != null && subject.listPrice > 0) {
-    figures.push({ value: formatPriceExact(subject.listPrice), label: 'last asked' })
-  }
-  const ratio = formatSaleToList(saleToList)
-  if (ratio) figures.push({ value: ratio, label: 'sale to list' })
-  if (soldDay) figures.push({ value: soldDay, label: 'closed' })
-  if (marketDays != null) {
-    figures.push({
-      value: marketDays.toLocaleString('en-US'),
-      label: marketDays === 1 ? 'day on market' : 'days on market',
-    })
-  }
-
   const headline =
     soldPrice != null && soldDay
       ? `Sold for ${formatPriceExact(soldPrice)} on ${soldDay}`
@@ -162,9 +149,38 @@ export function publishListingOffMarketFacts(
           ? 'This home sold and is no longer on the market'
           : 'This home came off the market without selling'
 
+  // NOTHING THE HEADLINE ALREADY SAYS BECOMES A FIGURE. The sale price is
+  // printed by the page's H1, then by this sentence; a third print as a "sold
+  // for" tile inside the same 200px is the stacked-restatement TASTE.md calls
+  // out, not a figure set. The figures carry only what the sentence does not:
+  // what the seller last asked, how the sale compares to it, and how long the
+  // home waited. Same rule for the close date.
+  const figures: ListingOffMarketFigure[] = []
+  if (soldPrice == null && sold) {
+    // No sale price to head the sentence, so the date is a figure rather than a
+    // clause, and it is all the record supports.
+    if (soldDay) figures.push({ value: soldDay, label: 'closed' })
+  }
+  // The ask publishes ONLY beside the sale it is being compared to. SITE-20's
+  // rule is that a Closed listing publishes its close price or no price at
+  // all: a sold home whose ClosePrice the feed withholds would otherwise print
+  // its list price as the one figure on the section, which is the defect that
+  // file exists to end, wearing a "last asked" label.
+  if (soldPrice != null && subject.listPrice != null && subject.listPrice > 0) {
+    figures.push({ value: formatPriceExact(subject.listPrice), label: 'last asked' })
+  }
+  const ratio = formatSaleToList(saleToList)
+  if (ratio) figures.push({ value: ratio, label: 'of the asking price' })
+  if (marketDays != null) {
+    figures.push({
+      value: marketDays.toLocaleString('en-US'),
+      label: marketDays === 1 ? 'day on market' : 'days on market',
+    })
+  }
+
   const source = sold
-    ? 'MLS close record for this listing: ClosePrice, CloseDate, final ListPrice and OnMarketDate on the row. Sale to list is the close price over the FINAL list price; days on market are calendar days from the on-market date to the close.'
-    : 'MLS status record for this listing. The listing ended without a recorded sale, so no sale price, sale-to-list ratio or close date publishes.'
+    ? 'This listing’s MLS close record: ClosePrice, CloseDate, the final ListPrice and OnMarketDate on the row. The percentage is the close price over the FINAL list price. Days on market are calendar days from the on-market date to the close.'
+    : 'This listing’s MLS status record. It ended without a recorded sale, so no sale price, no percentage of asking and no close date publish.'
 
   return { statusWord, headline, eyebrow: statusWord, figures, source }
 }
