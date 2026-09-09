@@ -132,3 +132,82 @@ describe('placeFigureRows weights', () => {
     expect(rows[0]!.weight).toBeUndefined()
   })
 })
+
+/**
+ * SITE-52: what the primitive does past the bar. Media is all-or-none per
+ * list, a reveal band sits in every row of a list that reveals (hidden at
+ * rest by CSS, one height per row), a drawing seats under the note, and the
+ * twelve-month run obeys the small-n floor.
+ */
+describe('V3Ledger media: all or none per list', () => {
+  it('puts the glyph on every photo-less row once any row has a photo', () => {
+    const html = render([
+      row({ media: { src: '/images/bend.jpg' } }),
+      row({ href: '/cities/redmond', what: v3Text('Redmond') }),
+      row({ href: '/cities/sisters', what: v3Text('Sisters') }),
+    ])
+    expect(html.match(/v3-ledger__thumb/g)).toHaveLength(1)
+    expect(html.match(/v3-ledger__glyph/g)).toHaveLength(2)
+    expect(html).toMatch(/v3-ledger__glyph" aria-hidden="true">R</)
+    expect(html).toMatch(/v3-ledger__glyph" aria-hidden="true">S</)
+    // Every row carries the media column, so the name column keeps one edge.
+    expect(html.match(/v3-ledger__what--media/g)).toHaveLength(3)
+  })
+
+  it('draws no glyph in a list with no photos at all', () => {
+    const html = render([row(), row({ href: '/cities/redmond' })])
+    expect(html).not.toContain('v3-ledger__glyph')
+    expect(html).not.toContain('v3-ledger__what--media')
+  })
+})
+
+describe('V3Ledger reveal', () => {
+  const twelve = [40, 38, 52, 61, 70, 66, 58, 49, 44, 51, 47, 45]
+
+  it('renders the reveal on the row that has one, and the island once per list', () => {
+    const html = render([
+      row({ reveal: { line: v3Text("Seller's market · 3.8 months of supply"), series: twelve, seriesLabel: v3Text('closes by month') } }),
+      row({ href: '/cities/redmond' }),
+    ])
+    expect(html.match(/class="v3-ledger__reveal"/g)).toHaveLength(1)
+    expect(html.match(/v3-ledger__hold/g)).toHaveLength(1)
+    expect(html).toContain('v3-ledger--reveal')
+    expect(html).toContain("Seller&#x27;s market · 3.8 months of supply")
+    expect(html.match(/<svg class="v3-ledger__spark"/g)).toHaveLength(1)
+    expect(html).toMatch(/<path d="M[\d.]+ [\d.]+ L/)
+    expect(html).toContain('<circle')
+  })
+
+  it('renders no band, no island and no class when nothing reveals', () => {
+    const html = render([row(), row({ href: '/cities/redmond' })])
+    expect(html).not.toContain('v3-ledger__reveal')
+    expect(html).not.toContain('v3-ledger__hold')
+    expect(html).not.toContain('v3-ledger--reveal')
+  })
+
+  it('draws no run under the small-n floor and never draws a null as zero', () => {
+    const thin = [40, null, null, 61, null, null, 58, null, null, 51, null, null]
+    const html = render([row({ reveal: { line: v3Text('No published months-of-supply reading'), series: thin } })])
+    expect(html).toContain('No published months-of-supply reading')
+    expect(html).not.toContain('v3-ledger__spark')
+  })
+})
+
+describe('V3Ledger drawing slot', () => {
+  it('seats a drawing under the note, before the rows', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Ledger, {
+        heading: v3Text('Central Oregon cities'),
+        note: v3Text('Every city with live inventory.'),
+        drawing: createElement('div', { className: 'stub-drawing' }, 'two bars'),
+        source: v3Text('live MLS'),
+        rows: [row({ weight: 1 })],
+        encode: 'bar',
+      }),
+    )
+    const drawing = html.indexOf('v3-ledger__drawing')
+    expect(drawing).toBeGreaterThan(html.indexOf('v3-ledger__note'))
+    expect(drawing).toBeLessThan(html.indexOf('v3-ledger__list'))
+    expect(html).toContain('stub-drawing')
+  })
+})

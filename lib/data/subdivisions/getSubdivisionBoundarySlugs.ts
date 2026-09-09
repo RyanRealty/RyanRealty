@@ -1,7 +1,7 @@
 /**
  * getSubdivisionBoundarySlugs — the full set of plat slugs holding an
  * authoritative GIS polygon in public.boundaries (geo_type='subdivision',
- * 3,213 Deschutes County plats as of 2026-09-01).
+ * 3,427 plats as of 2026-09-09: 3,223 Deschutes + 204 Crook).
  *
  * This is the BOUNDARY-ONLY set: strictly larger than
  * getIndexableSubdivisions(), which additionally requires
@@ -32,7 +32,7 @@ async function fetchSubdivisionBoundarySlugs(): Promise<string[]> {
   )
   const slugs = [...new Set(rows.map((r) => (r.geo_slug ?? '').trim()).filter((s) => s.length > 0))]
   if (slugs.length === 0) {
-    // 3,213 plats exist in production — an empty read is a failed read, not a
+    // 3,427 plats exist in production — an empty read is a failed read, not a
     // genuine empty. Throw so makeResilientCached never caches it.
     throw new Error('getSubdivisionBoundarySlugs: boundaries returned 0 subdivision slugs')
   }

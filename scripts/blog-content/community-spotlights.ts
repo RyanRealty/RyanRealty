@@ -3,7 +3,7 @@ import type { BlogPostSeed } from '../seed-blog-posts'
 export const posts: BlogPostSeed[] = [
   // ─── 1. Living in NW Crossing: Bend's Walkable West Side ───
   {
-    title: "Living in NW Crossing Bend's Walkable West Side",
+    title: "NW Crossing in Bend: What Walkable Living Costs",
     slug: 'living-in-nw-crossing-bend',
     category: 'Community Spotlights',
     tags: ['nw crossing', 'bend', 'neighborhoods', 'walkable'],
@@ -11,41 +11,41 @@ export const posts: BlogPostSeed[] = [
       'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920&q=80',
     published_at: '2025-11-08T09:00:00Z',
     status: 'published',
-    seo_title: "Living in NW Crossing Bend's Walkable Neighborhood",
+    seo_title: "NW Crossing in Bend: What Walkable Living Costs",
     seo_description:
       'Explore NW Crossing in Bend, Oregon. Walkable streets, local shops, parks, schools, and home prices from the $500Ks to over $1M. A practical neighborhood guide.',
     excerpt:
       'NW Crossing is one of the few neighborhoods in Bend where you can walk to coffee, groceries, and a park without touching your car keys. Here is what it actually costs and feels like to live there.',
     content: `
-<p>NW Crossing occupies an unusual position in Bend's real estate landscape. In a city built around the car, this west-side neighborhood was designed from the start around walkability, something that sounds obvious until you realize how rare it actually is in Central Oregon. If you have been searching for a place where your daily errands do not require a fifteen-minute drive, NW Crossing deserves a serious look, and this guide will give you the unvarnished details.</p>
+<p>NW Crossing is a west-side Bend neighborhood designed around walkability, with a village center, sidewalks on both sides of the street, and homes built closer together than the Central Oregon norm.</p>
 
-<h2>Location and Layout</h2>
+<h2>Location and layout</h2>
 
 <p>NW Crossing sits on Bend's west side, roughly bounded by Skyliners Road to the north and Mt. Washington Drive to the south. The neighborhood is about a ten-minute drive from downtown Bend and five minutes from the Cascade Lakes Highway, which puts you within easy reach of Mt. Bachelor, Todd Lake, and the Deschutes National Forest trail system.</p>
 
-<p>The development was designed as a New Urbanist community, meaning homes are closer together than typical Central Oregon subdivisions, streets have sidewalks on both sides, and there is a commercial village center baked into the plan rather than bolted on as an afterthought. The result is a neighborhood that feels more like a small Pacific Northwest town than a standard subdivision.</p>
+<p>The development was designed as a New Urbanist community: homes are closer together than typical Central Oregon subdivisions, streets have sidewalks on both sides, and a commercial village center was part of the original plan.</p>
 
-<p>The west-side location also means you are on the "mountain side" of Bend. Elevation is slightly higher than the east side, which brings a bit more snow in winter and slightly cooler summer evenings. Sunsets behind the Cascades are a daily event that long-time residents still notice, which says something.</p>
+<p>The west-side location means slightly higher elevation than the east side, which brings a bit more snow in winter and cooler summer evenings. Sunsets behind the Cascades are visible from much of the neighborhood.</p>
 
-<h2>The Village Center and Walkability</h2>
+<h2>The village center and walkability</h2>
 
-<p>The heart of NW Crossing is its village, a cluster of shops and restaurants along NW Crossing Drive. You will find Thump Coffee, a small grocery and deli, a pub, a pizza spot, a wine bar, and a handful of other businesses. The business mix rotates occasionally, but the core tenants have been stable for years. It is not a full downtown, but it covers the daily essentials without a car trip.</p>
+<p>NW Crossing's village is a cluster of shops and restaurants along NW Crossing Drive: Thump Coffee, a small grocery and deli, a pub, a pizza spot, a wine bar, and a handful of other businesses. The mix rotates occasionally, but core tenants have been stable for years. It is not a full downtown, but it covers daily errands without a car trip.</p>
 
-<p>Several parks are woven through the neighborhood, connected by paved paths. Discovery Park is the largest, with play structures, open fields, and a community gathering area. The path system also connects to Bend's larger trail network, so you can bike or walk to other parts of the west side without riding along major roads. In summer, you will see people commuting to coffee on foot, kids riding bikes to friends' houses, and dog walkers on every path. In winter, the paths are cleared but see less traffic; the village still functions as a walking destination year-round.</p>
+<p>Several parks are woven through the neighborhood, connected by paved paths. Discovery Park is the largest, with play structures, open fields, and a community gathering area. The path system also connects to Bend's larger trail network, so you can bike or walk to other parts of the west side without riding along major roads. In summer, you will see people commuting to coffee on foot, kids riding bikes to friends' houses, and dog walkers on every path. In winter, the paths are cleared but see less traffic. The village still functions as a walking destination year-round.</p>
 
 <p>For families, the walkability extends to schools. NW Crossing is zoned for Elk Meadow Elementary and Cascade Middle School, both within reasonable walking or biking distance for older kids. High school students attend Summit High, which is a short drive or bus ride away.</p>
 
-<h2>Home Styles and Architecture</h2>
+<h2>Home styles and architecture</h2>
 
-<p>NW Crossing has a distinct architectural identity compared to much of Bend. The design guidelines favor Craftsman, Northwest Contemporary, and cottage-style homes. You will not find the stucco-and-tile look common in some of Bend's newer east-side developments. Homes tend to feature covered front porches, natural materials like stone and wood siding, and muted earth-tone color palettes. The architectural coherence gives the neighborhood a visual identity that is recognizable even to people who do not know Bend well, and it contributes to the property value stability discussed below.</p>
+<p>NW Crossing has a distinct architectural identity compared to much of Bend. The design guidelines favor Craftsman, Northwest Contemporary, and cottage-style homes, rather than the stucco-and-tile style common in some of Bend's newer east-side developments. Homes tend to feature covered front porches, natural materials like stone and wood siding, and muted earth-tone color palettes.</p>
 
-<p>Lot sizes are notably smaller than the Central Oregon norm, typically ranging from 3,000 to 7,000 square feet. If you are coming from a place where quarter-acre lots are standard, this will feel compact. The trade-off is that the community common spaces, parks, and paths make up for smaller private yards. Many homeowners find they use the neighborhood parks more than they expected and their yards less.</p>
+<p>Lot sizes are smaller than the Central Oregon norm, typically ranging from 3,000 to 7,000 square feet, compact compared to a quarter-acre lot. Community parks and paths are part of the layout alongside smaller private yards.</p>
 
-<p>Home sizes range from around 1,200 square feet for smaller cottages up to about 3,200 square feet for larger single-family homes. There are also townhouses and attached homes in the mix, which provide lower entry points into the neighborhood. Garages are typically two-car, which is worth noting because storage space matters in Central Oregon, between ski gear, bikes, kayaks, and the other equipment that comes with living here.</p>
+<p>Home sizes range from about 1,200 square feet for smaller cottages up to about 3,200 square feet for larger single-family homes. Townhouses and attached homes are also in the mix, with lower entry prices. Garages are typically two-car.</p>
 
-<h2>Price Ranges and Market Trends</h2>
+<h2>Price ranges and market trends</h2>
 
-<p>NW Crossing commands a premium for its walkability and design. As of recent sales data, expect the following ranges:</p>
+<p>NW Crossing prices run higher than many Bend neighborhoods. As of recent sales data, expect the following ranges:</p>
 
 <ul>
 <li><strong>Townhouses and attached homes:</strong> $475,000 to $650,000</li>
@@ -54,55 +54,55 @@ export const posts: BlogPostSeed[] = [
 <li><strong>Premium lots or custom builds:</strong> $1,000,000 and up</li>
 </ul>
 
-<p>These prices are higher per square foot than many other Bend neighborhoods, and that premium has been consistent. NW Crossing homes tend to hold value well and sell quickly because the supply of walkable neighborhoods in Bend is essentially fixed. You cannot replicate the neighborhood's location and design elsewhere in town, which gives it a structural pricing advantage.</p>
+<p>These prices run higher per square foot than many other Bend neighborhoods. NW Crossing has no new phases or expansion areas, so the supply of homes in the neighborhood is fixed.</p>
 
 <p>Check current <a href="/homes-for-sale">Bend listings</a> to see what is available right now, or visit our <a href="/housing-market">Central Oregon market data</a> for broader pricing trends.</p>
 
-<h2>HOA and Community Rules</h2>
+<h2>HOA and community rules</h2>
 
 <p>NW Crossing has an active homeowners association that manages the common areas, parks, paths, and architectural review process. Monthly dues typically run between $100 and $175 depending on the sub-area within the development. These cover landscape maintenance in common areas, path upkeep, and community events.</p>
 
-<p>The architectural review committee enforces design standards, which keeps the neighborhood's visual coherence intact. If you want to paint your house bright purple or put up a chain-link fence, NW Crossing is not the place. If you appreciate consistent neighborhood aesthetics, this is a feature, not a bug.</p>
+<p>The architectural review committee enforces design standards. NW Crossing is not the place for a bright paint color or a chain-link fence.</p>
 
-<h2>Who Lives Here</h2>
+<h2>Who lives here</h2>
 
-<p>NW Crossing attracts a mix of demographics, but a few groups are particularly well-represented:</p>
+<p>NW Crossing attracts a mix of buyers, including:</p>
 
 <ul>
-<li><strong>Young families:</strong> The walkability, nearby schools, and parks make this a natural fit for families with kids. You will see strollers and bikes everywhere.</li>
+<li><strong>Walkers and cyclists:</strong> The village center, the parks, and the paths are within a short walk of most homes. You will see bikes around the neighborhood.</li>
 <li><strong>Active professionals:</strong> People who work remotely or have flexible schedules and value being able to walk to coffee or lunch without a commute.</li>
 <li><strong>Downsizers:</strong> Some retirees and empty-nesters who want to trade a larger property for a low-maintenance home in a walkable setting.</li>
 </ul>
 
-<p>The community vibe is friendly but not aggressively social. There are neighborhood events throughout the year, including a summer concert series, holiday gatherings, and seasonal farmers market appearances, but nobody is going to knock on your door if you prefer to keep to yourself. It has the feel of people who chose this neighborhood deliberately and appreciate what makes it different.</p>
+<p>The community is friendly but not heavily social. There are neighborhood events throughout the year, including a summer concert series, holiday gatherings, and seasonal farmers market appearances.</p>
 
-<h2>Practical Considerations</h2>
+<h2>Practical considerations</h2>
 
-<h3>Winter Access</h3>
+<h3>Winter access</h3>
 
 <p>The west side of Bend generally gets more snow than the east side, and NW Crossing is no exception. Streets are plowed, but the neighborhood's narrower roads can take longer to clear after a significant storm. Four-wheel drive or all-wheel drive is advisable for Central Oregon winters in general.</p>
 
-<h3>Traffic and Parking</h3>
+<h3>Traffic and parking</h3>
 
 <p>The smaller lot sizes and narrower streets mean on-street parking can get tight, especially during community events or when residents have guests. If you have more than two cars, garage and driveway space matters. Most homes have two-car garages, but a third vehicle will end up on the street.</p>
 
-<h3>Proximity to Recreation</h3>
+<h3>Proximity to recreation</h3>
 
-<p>NW Crossing is one of the closest neighborhoods in Bend to the Cascade Lakes corridor. Phil's Trail, one of Bend's most popular mountain biking trail systems, is a short drive or a longer bike ride from the neighborhood. Mt. Bachelor is about 25 minutes away. Tumalo Falls is even closer.</p>
+<p>NW Crossing is one of the closest neighborhoods in Bend to the Cascade Lakes corridor. Phil's Trail is a short drive or a longer bike ride from the neighborhood. Mt. Bachelor is about 25 minutes away. Tumalo Falls is even closer.</p>
 
-<h3>Groceries and Services</h3>
+<h3>Groceries and services</h3>
 
 <p>While the village center covers casual dining and coffee, you will still need to drive for a full grocery run. The nearest large grocery stores (Newport Market, Trader Joe's, Whole Foods) are about five to ten minutes away. Medical facilities, including St. Charles Bend, are a ten to fifteen minute drive.</p>
 
-<h3>Resale and Turnover</h3>
+<h3>Resale and turnover</h3>
 
-<p>NW Crossing homes do not sit on the market long. The neighborhood's limited size (there are no new phases or expansion areas) and strong demand mean listings typically go under contract within days or a few weeks. This is good news for sellers and a reminder for buyers to be prepared to move quickly. Having your financing in order before homes hit the market is not optional here; it is a practical necessity.</p>
+<p>NW Crossing homes do not sit on the market long. The neighborhood has no new phases or expansion areas, and listings typically go under contract within days or a few weeks. Buyers should have financing in order before homes hit the market.</p>
 
-<h2>Is NW Crossing Right for You</h2>
+<h2>Is NW Crossing right for you</h2>
 
 <p>NW Crossing is a strong fit if you prioritize walkability, appreciate architectural standards, and do not mind smaller lots in exchange for community amenities. It is less ideal if you want acreage, need to keep costs under $500,000, or prefer a more rural Central Oregon feel.</p>
 
-<p>The neighborhood has earned its premium pricing by delivering something genuinely scarce in Bend: a place where you can live your daily life on foot. That is not going away, and neither is the demand for it. If you are thinking about the long game, NW Crossing's position as one of the only walkable neighborhoods in a car-dependent city gives it a structural advantage that is unlikely to erode.</p>
+<p>NW Crossing is one of the few walkable neighborhoods in Bend. There are no new phases planned, so the number of homes in the neighborhood is fixed.</p>
 
 <p>If you want to explore what is currently for sale in NW Crossing or elsewhere on Bend's west side, browse <a href="/homes-for-sale">available homes</a> or reach out to our <a href="/team">team</a> for a conversation about which Bend neighborhoods fit your priorities.</p>
 `,
@@ -110,7 +110,7 @@ export const posts: BlogPostSeed[] = [
 
   // ─── 2. Broken Top: One of Bend's Premier Golf Communities ───
   {
-    title: "Broken Top One of Bend's Premier Golf Communities",
+    title: "Broken Top in Bend: Is the Golf Membership Worth It?",
     slug: 'broken-top-bend-golf-community',
     category: 'Community Spotlights',
     tags: ['broken top', 'bend', 'golf community', 'luxury'],
@@ -118,23 +118,21 @@ export const posts: BlogPostSeed[] = [
       'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=1920&q=80',
     published_at: '2025-10-15T09:00:00Z',
     status: 'published',
-    seo_title: 'Broken Top Bend Oregon Premier Golf Community Guide',
+    seo_title: "Broken Top in Bend: Is the Golf Membership Worth It?",
     seo_description:
       'Broken Top in Bend, Oregon: Tom Fazio designed golf course, Cascade Mountain views, homes from $800K to $3M+. HOA details, membership, and buyer guide.',
     excerpt:
       'Broken Top pairs a Tom Fazio golf course with Cascade Mountain views and a Bend address. Here is what homes actually cost, what the HOA covers, and whether the membership is worth it.',
     content: `
-<p>Broken Top has been one of Bend's most sought-after addresses since it opened in the early 1990s, and the reasons are straightforward: a top-tier golf course designed by Tom Fazio, direct views of the Cascade Range, and a location that puts you minutes from downtown Bend. But prestige aside, buying here involves real financial commitments that go well beyond the purchase price. This guide covers what you actually need to know.</p>
+<p>Broken Top opened in the early 1990s: an 18-hole golf course designed by Tom Fazio, views of the Cascade Range, and a location minutes from downtown Bend. Buying here involves financial commitments beyond the purchase price.</p>
 
 <h2>The Golf Course</h2>
 
-<p>The centerpiece of Broken Top is its 18-hole golf course, designed by Tom Fazio and consistently ranked among Oregon's best. The layout winds through high desert terrain with native grasses, juniper, and ponderosa pine, and several holes offer unobstructed views of Mt. Bachelor, Broken Top (the mountain the community is named for), and the Three Sisters.</p>
+<p>The centerpiece of Broken Top is its 18-hole golf course, designed by Tom Fazio. The layout winds through high desert terrain with native grasses, juniper, and ponderosa pine, and several holes offer unobstructed views of Mt. Bachelor, Broken Top (the mountain the community is named for), and the Three Sisters.</p>
 
-<p>This is a private club, which means tee times are not an issue the way they can be at resort courses. You will not be waiting behind a foursome of visiting golfers on a Saturday morning. The course is well-maintained and the pace of play is generally relaxed.</p>
+<p>This is a private club, so tee times go to members rather than resort guests. You will not be waiting behind a foursome of visiting golfers on a Saturday morning.</p>
 
 <p>Membership is separate from home ownership. Buying a home in Broken Top does not automatically make you a club member, and membership involves its own initiation fee and monthly dues. Current initiation fees vary by membership type but generally range from $25,000 to $75,000, with monthly dues around $500 to $800. Social memberships with pool and dining access but no golf are also available at lower rates.</p>
-
-<p>One practical note: the private nature of the course means maintenance quality stays consistently high because the course is not generating revenue by pushing through as many rounds as possible. The greens staff can focus on conditions rather than throughput, and it shows in the quality of the playing surfaces throughout the season.</p>
 
 <h2>Location and Access</h2>
 
@@ -142,7 +140,7 @@ export const posts: BlogPostSeed[] = [
 
 <p>The community is gated, with a staffed entry gate during business hours. This provides a degree of privacy and traffic control but is not a full-security operation. The gate keeps through-traffic out, which keeps the interior roads quiet and safe for walking and biking.</p>
 
-<p>For skiing, Mt. Bachelor is about 25 minutes away via Century Drive and the Cascade Lakes Highway. The route is scenic but can be slow in heavy snow. Most winter weekday mornings, Broken Top residents can be on the mountain within 30 minutes of leaving their driveway, which is faster than many Bend neighborhoods that are technically closer to town but farther from the highway access point.</p>
+<p>For skiing, Mt. Bachelor is about 25 minutes away via Century Drive and the Cascade Lakes Highway. The route is scenic but can be slow in heavy snow. Most winter weekday mornings, Broken Top residents can be on the mountain within 30 minutes of leaving their driveway.</p>
 
 <h2>Home Styles and Price Ranges</h2>
 
@@ -151,7 +149,7 @@ export const posts: BlogPostSeed[] = [
 <ul>
 <li><strong>Townhomes and smaller homes:</strong> $800,000 to $1,200,000. These are typically 1,600 to 2,200 square feet, two to three bedrooms, and offer a lower-maintenance entry into the community.</li>
 <li><strong>Mid-range single-family homes:</strong> $1,200,000 to $2,000,000. Generally 2,200 to 3,500 square feet with three to four bedrooms. Many have golf course frontage or mountain views.</li>
-<li><strong>Premium custom homes:</strong> $2,000,000 to $3,500,000 and above. Larger custom builds on premier view lots, often 3,500 to 5,000+ square feet with high-end finishes, outdoor living spaces, and direct Cascade views.</li>
+<li><strong>Premium custom homes:</strong> $2,000,000 to $3,500,000 and above. Larger custom builds on the community's best-view lots, often 3,500 to 5,000+ square feet with high-end finishes, outdoor living spaces, and direct Cascade views.</li>
 </ul>
 
 <p>Price per square foot in Broken Top typically runs higher than Bend averages, reflecting the golf course access, views, and community amenities. As with any golf community, homes on the course or with direct mountain views command significant premiums over interior lots.</p>
@@ -160,7 +158,7 @@ export const posts: BlogPostSeed[] = [
 
 <h2>The Cascade Views</h2>
 
-<p>This deserves its own section because it is a genuine differentiator. Many Broken Top homes have direct, unobstructed views of the Cascade Range, including Mt. Bachelor, Broken Top, South Sister, and sometimes all three. Unlike some Bend neighborhoods where views are partially blocked by other homes or trees, Broken Top's layout and the golf course's open fairways create sight lines that are hard to replicate elsewhere in town.</p>
+<p>Many Broken Top homes have direct, unobstructed views of the Cascade Range, including Mt. Bachelor, Broken Top, South Sister, and sometimes all three. Unlike some Bend neighborhoods where views are partially blocked by other homes or trees, Broken Top's layout and the golf course's open fairways create longer, unobstructed sight lines.</p>
 
 <p>Not every lot has these views. Interior lots surrounded by trees may have limited or no mountain views. If views are a priority, work with an agent who knows the community well enough to tell you which streets and lot positions deliver and which do not. Our <a href="/team">team</a> can walk you through the specifics.</p>
 
@@ -168,9 +166,9 @@ export const posts: BlogPostSeed[] = [
 
 <p>Broken Top's HOA fees typically run $300 to $500 per month, depending on property type. These cover common area maintenance, road maintenance within the community, gate staffing, landscaping in shared spaces, and access to community trails.</p>
 
-<p>Important to understand: the HOA fee is separate from club membership dues. A homeowner who does not join the club still pays HOA fees and gets access to common areas, trails, and the community, but not the golf course, pool, fitness center, or dining facilities. Many non-golfing homeowners choose a social membership to access the pool and restaurant.</p>
+<p>The HOA fee is separate from club membership dues. A homeowner who does not join the club still pays HOA fees and gets access to common areas, trails, and the community, but not the golf course, pool, fitness center, or dining facilities. Many non-golfing homeowners choose a social membership to access the pool and restaurant.</p>
 
-<p>Between the HOA and a full golf membership, the ongoing costs beyond your mortgage can run $1,000 to $1,300 per month. Budget accordingly.</p>
+<p>Between the HOA and a full golf membership, the ongoing costs beyond your mortgage can run $800 to $1,300 per month. Budget accordingly.</p>
 
 <h2>Amenities Beyond Golf</h2>
 
@@ -196,27 +194,27 @@ export const posts: BlogPostSeed[] = [
 <li><strong>Part-time residents:</strong> Some homes are second homes or seasonal residences, particularly for people from Portland, the Bay Area, or Seattle. This is less prevalent than in resort communities like Sunriver but still noticeable.</li>
 </ul>
 
-<p>The community feels established and low-key. It is not a party neighborhood or a place with a lot of turnover. Many residents have been here for a decade or more, which creates neighborhood stability and a sense of knowing your neighbors that transient communities lack.</p>
+<p>Many residents have been here for a decade or more.</p>
 
 <h2>Investment Perspective</h2>
 
-<p>Broken Top has historically been one of Bend's more resilient real estate markets. The limited supply of homes (the community is fully built out with no new construction), the private golf course, and the west-side Bend location create a pricing floor that has held up even during broader market corrections.</p>
+<p>Broken Top is fully built out, with no new construction and no additional home sites planned. The private golf course and west-side Bend location are fixed features of the community.</p>
 
-<p>That said, golf community real estate is subject to its own dynamics. Club membership costs can affect resale values, and a national trend away from traditional golf has softened demand in some parts of the country. In Central Oregon, however, the outdoor lifestyle and the quality of the courses have kept golf community demand relatively strong.</p>
+<p>Golf community real estate has its own dynamics, and club membership costs can affect resale values.</p>
 
-<p>The limited supply is worth emphasizing. Unlike newer developments where additional phases can add inventory, Broken Top is fully developed. There are no new lots being created, no new construction phases planned, and no mechanism by which a competitor can build an equivalent community in the same location. When inventory is fixed and demand holds steady, pricing tends to be stable with upward bias. That has been the pattern here for over a decade.</p>
+<p>Unlike newer developments where additional phases can add inventory, Broken Top is fully developed. There are no new lots being created and no new construction phases planned.</p>
 
 <p>For broader market context, visit our <a href="/housing-market">Central Oregon housing market page</a>.</p>
 
 <h2>Is Broken Top Right for You</h2>
 
-<p>Broken Top works well for buyers who want a private golf community experience within easy reach of a real town (not a resort island). It is ideal for people who value quality construction, mountain views, and a quiet residential setting with access to club amenities.</p>
+<p>Broken Top is a private golf community inside Bend, not a standalone resort, with mountain views and a quiet residential setting near club amenities.</p>
 
-<p>It is less suited for buyers on a tight budget, those who want large acreage, or people who prefer a more casual community without architectural review and HOA oversight. The ongoing fees are significant and need to be part of your financial planning from day one, not an afterthought that surprises you after closing.</p>
+<p>It is less suited for buyers on a tight budget, those who want large acreage, or people who prefer a casual community without architectural review and HOA oversight. Budget for the ongoing fees from day one.</p>
 
-<p>For buyers who can comfortably manage the costs, Broken Top delivers a lifestyle that is hard to find elsewhere in Central Oregon: private golf, mountain views, and a quiet community, all within ten minutes of a thriving downtown. That combination is why people pay the premium, and why they tend to stay once they arrive.</p>
+<p>Broken Top combines private golf, mountain views, and a quiet community within ten minutes of downtown Bend.</p>
 
-<p>If Broken Top aligns with what you are looking for, explore current <a href="/homes-for-sale">listings</a> or connect with our <a href="/team">team</a> to tour available properties. We know this community well and can help you understand which lots and locations within Broken Top match your priorities.</p>
+<p>If Broken Top matches what you are looking for, explore current <a href="/homes-for-sale">listings</a> or connect with our <a href="/team">team</a> to tour available properties and review specific lots and locations.</p>
 `,
   },
 
@@ -468,7 +466,7 @@ export const posts: BlogPostSeed[] = [
 
   // ─── 5. Brasada Ranch: Central Oregon's Desert Resort ───
   {
-    title: "Brasada Ranch Central Oregon's Desert Resort",
+    title: "Brasada Ranch: Full-Time Home or Rental? The Costs to Know",
     slug: 'brasada-ranch-central-oregon',
     category: 'Community Spotlights',
     tags: ['brasada ranch', 'powell butte', 'resort', 'golf community'],
@@ -476,71 +474,71 @@ export const posts: BlogPostSeed[] = [
       'https://images.unsplash.com/photo-1724533687925-aa205b97e60e?w=1920&q=80',
     published_at: '2026-01-15T09:00:00Z',
     status: 'published',
-    seo_title: 'Brasada Ranch Resort Community Powell Butte Oregon',
+    seo_title: "Brasada Ranch: Full-Time Home or Rental? The Costs to Know",
     seo_description:
       'Brasada Ranch near Bend, Oregon: high desert golf resort with equestrian center, spa, and homes from $700K to $3M+. Rental program, fees, and buyer guide.',
     excerpt:
       'Brasada Ranch sits in the high desert east of Bend with views, a golf course, equestrian facilities, and a resort infrastructure that most communities cannot match. Here is the full picture for buyers.',
     content: `
-<p>Brasada Ranch occupies a landscape that looks nothing like the pine forests and rivers most people associate with Central Oregon. Set in the high desert near Powell Butte, about 20 minutes northeast of Bend, this resort community trades forest canopy for open sky, rimrock, and panoramic views of the Cascade Range. It is a deliberate choice, not a compromise, and buyers who connect with the setting tend to connect strongly. This guide covers everything you need to evaluate whether Brasada Ranch belongs on your shortlist.</p>
+<p>Brasada Ranch sits in the high desert near Powell Butte, about 20 minutes northeast of Bend. The landscape is sagebrush, juniper, and rimrock, with views of the Cascade Range, different from the pine forests at Bend, Sunriver, or Black Butte Ranch.</p>
 
-<h2>The Setting</h2>
+<h2>The setting</h2>
 
-<p>Brasada Ranch encompasses roughly 1,800 acres of high desert terrain at about 3,600 feet of elevation. The landscape is sagebrush, juniper, rimrock formations, and native grasses, dramatically different from the ponderosa pine forests found in Bend, Sunriver, or Black Butte Ranch. On a clear day (which is most days in Central Oregon), you can see Mt. Hood, Mt. Jefferson, Three Fingered Jack, Mt. Washington, the Three Sisters, Broken Top, and Mt. Bachelor from various points on the property.</p>
+<p>Brasada Ranch covers about 1,800 acres of high desert terrain at about 3,600 feet of elevation. The landscape is sagebrush, juniper, rimrock formations, and native grasses, different from the ponderosa pine forests at Bend, Sunriver, or Black Butte Ranch. On clear days, you can see Mt. Hood, Mt. Jefferson, Three Fingered Jack, Mt. Washington, the Three Sisters, Broken Top, and Mt. Bachelor from points on the property.</p>
 
-<p>The terrain has a stark, open beauty that some people find immediately compelling and others find barren. If you have spent time in the American West and appreciate sage-country aesthetics, you will understand the appeal. If your mental image of a mountain resort involves towering conifers and rushing streams, adjust your expectations before visiting.</p>
+<p>The terrain is open, and reactions vary: some buyers find it compelling, others find it bare. Buyers expecting towering conifers and rushing streams, the typical image of a mountain resort, will find a different landscape here.</p>
 
-<p>The high desert setting also means different light than the forested west side of Bend. Sunrises paint the Cascades in alpenglow visible from the property, and the lack of tall trees means you see the full sky at all times. The night sky here, far from Bend's light pollution, is remarkably clear. Several homes have been designed with stargazing decks and outdoor fire features that take advantage of the open overhead views. For people who find the dense forest canopy of Sunriver or Black Butte Ranch claustrophobic, Brasada's openness is genuinely refreshing.</p>
+<p>The high desert setting means different light than the forested west side of Bend. Without tall trees, the sky is visible from the property at all times, and the night sky is darker, with less light pollution than in town. Several homes are designed with stargazing decks and outdoor fire features that take advantage of the open views.</p>
 
-<h2>Location and Access</h2>
+<h2>Location and access</h2>
 
-<p>Brasada Ranch is located off Highway 126 near the community of Powell Butte. The drive to downtown Bend takes about 20 to 25 minutes, depending on traffic. Redmond (and the Roberts Field airport, which has commercial service) is about 15 minutes away.</p>
+<p>Brasada Ranch is located off Highway 126 near the community of Powell Butte. The drive to downtown Bend takes about 20 to 25 minutes, depending on traffic. Redmond, and the Roberts Field airport, which has commercial service, is about 15 minutes away.</p>
 
-<p>This distance from Bend is worth considering carefully. You are far enough out that a run to the grocery store or a dinner in town is a real trip, not a quick errand. Full-time residents generally accept this trade-off for the space and quiet, but it is different from living in Bend proper or even Sunriver.</p>
+<p>A grocery run or dinner in town is a real trip at this distance. Full-time residents accept the drive for the space and quiet. Living here differs from living in Bend proper or Sunriver.</p>
 
-<p>That said, the drive is scenic and low-stress. Highway 126 is a well-maintained two-lane highway that rarely sees heavy traffic. The commute to Bend feels shorter than the mileage suggests because you are not sitting in stoplights or dealing with city congestion. Many residents describe the drive as a transition from the world's pace to their own, which is either poetic or a rationalization depending on your perspective.</p>
+<p>Highway 126 is a two-lane highway with light traffic. The drive to Bend has no stoplights or city congestion.</p>
 
 <h2>Golf</h2>
 
-<p>The Brasada Canyons golf course, designed by Peter Jacobsen and Jim Hardy, is an 18-hole layout that works with the natural terrain rather than imposing a manicured parkland design onto the desert. The course winds through canyons and along ridgelines, and several holes have views that will distract you from your backswing.</p>
+<p>The Brasada Canyons golf course, designed by Peter Jacobsen and Jim Hardy, is an 18-hole layout built into the natural terrain rather than a manicured parkland design. The course runs through canyons and along ridgelines.</p>
 
-<p>The course is semi-private, open to resort guests and members. This means the play volume is lower than a fully public course but not as exclusive as a private club like Broken Top. Membership options include golf, social, and fitness tiers with varying access levels and pricing. The course is playable from roughly April through October, with shoulder season access depending on weather conditions and course readiness.</p>
+<p>The course is semi-private, open to resort guests and members. Play volume is lower than a fully public course, though not as restricted as a private club like Broken Top. Membership options include golf, social, and fitness tiers with varying access levels and pricing. The course is playable from roughly April through October, with shoulder season access depending on weather and course readiness.</p>
 
 <h2>Amenities</h2>
 
-<p>Brasada Ranch's amenity package goes well beyond golf:</p>
+<p>Brasada Ranch's amenities include:</p>
 
 <ul>
-<li><strong>Equestrian center:</strong> This is a genuine, full-service equestrian facility with guided trail rides, riding lessons, and boarding. It is not a token offering; the center is staffed and operated year-round and is a significant draw for horse enthusiasts.</li>
-<li><strong>Spa and fitness:</strong> A full-service spa, fitness center, and multiple pools (including an adults-only pool) are part of the resort complex.</li>
+<li><strong>Equestrian center:</strong> A full-service facility with guided trail rides, riding lessons, and boarding, staffed and operated year-round.</li>
+<li><strong>Spa and fitness:</strong> A full-service spa, fitness center, and multiple pools, including an adults-only pool, are part of the resort complex.</li>
 <li><strong>Athletic center:</strong> Tennis courts, pickleball, basketball, and a rock climbing wall.</li>
-<li><strong>Dining:</strong> The Range restaurant at the lodge, plus more casual poolside dining during summer. The food is genuinely good, not just resort-adequate.</li>
-<li><strong>Kids programs:</strong> Seasonal camps and activities for children, making the resort family-friendly during peak seasons.</li>
+<li><strong>Dining:</strong> The Range restaurant at the lodge, plus poolside dining during summer.</li>
+<li><strong>Kids programs:</strong> Seasonal camps and activities for children.</li>
 <li><strong>Hiking and biking trails:</strong> Miles of on-property trails for hiking, mountain biking, and horseback riding.</li>
 </ul>
 
-<h2>Home Types and Price Ranges</h2>
+<h2>Home types and price ranges</h2>
 
 <p>Brasada Ranch offers several distinct product types:</p>
 
 <ul>
-<li><strong>Ranch cabins:</strong> $700,000 to $1,000,000. These are designed as rental-friendly vacation homes, typically two to three bedrooms with approximately 1,200 to 1,800 square feet. They feature Brasada's signature modern-rustic design and come furnished.</li>
+<li><strong>Ranch cabins:</strong> $700,000 to $1,000,000. Rental-friendly vacation homes, typically two to three bedrooms with about 1,200 to 1,800 square feet, built in Brasada's modern-rustic style and sold furnished.</li>
 <li><strong>Larger estate cabins:</strong> $1,000,000 to $1,500,000. Three to four bedrooms, 1,800 to 2,800 square feet, with more premium finishes and often better view lots.</li>
-<li><strong>Custom homesites:</strong> $1,500,000 to $3,000,000+ for home and land. Premium lots with panoramic Cascade views where buyers can work with approved architects to build custom homes. These represent the top of the market at Brasada.</li>
+<li><strong>Custom homesites:</strong> $1,500,000 to $3,000,000+ for home and land. Lots with Cascade views where buyers work with approved architects to build custom homes, the top price tier at Brasada.</li>
 <li><strong>Vacant lots:</strong> $150,000 to $600,000+ depending on size, location, and views. Building a custom home on a Brasada lot requires working within the community's architectural guidelines.</li>
 </ul>
 
 <p>Check <a href="/homes-for-sale">current listings</a> for what is available today.</p>
 
-<h2>The Rental Program</h2>
+<h2>The rental program</h2>
 
 <p>Brasada Ranch operates a rental pool program through its resort management team. Homeowners can place their properties into the rental program when not using them, and the resort handles bookings, guest services, cleaning, and maintenance.</p>
 
-<p>The revenue split varies by property type and agreement, but typically the owner receives 50% to 60% of net rental revenue after expenses. For a well-positioned cabin, this can generate $25,000 to $50,000+ in annual owner revenue, though this varies significantly based on the property, season, and occupancy rates.</p>
+<p>The revenue split varies by property type and agreement, but typically the owner receives 50% to 60% of net rental revenue after expenses. For a cabin with strong occupancy, this can generate $25,000 to $50,000+ in annual owner revenue. This varies by property, season, and occupancy rates.</p>
 
-<p>Participation in the rental program is optional, not mandatory. Some owners use their properties exclusively and do not rent at all. Others rent aggressively and use the property only a few weeks per year.</p>
+<p>Participation in the rental program is optional. Some owners use their properties exclusively and do not rent at all. Others rent aggressively and use the property only a few weeks per year.</p>
 
-<h2>HOA and Resort Fees</h2>
+<h2>HOA and resort fees</h2>
 
 <p>Brasada Ranch's ongoing costs include HOA assessments and resort fees that typically total $500 to $900+ per month. These cover:</p>
 
@@ -551,31 +549,31 @@ export const posts: BlogPostSeed[] = [
 <li>Security</li>
 </ul>
 
-<p>Golf and equestrian memberships are additional costs. Full golf membership initiation fees and monthly dues add to the total carrying cost. Budget all of these into your ownership cost analysis.</p>
+<p>Golf and equestrian memberships are additional costs, including initiation fees and monthly dues.</p>
 
-<h2>Full-Time Living at Brasada Ranch</h2>
+<h2>Full-time living at Brasada Ranch</h2>
 
-<p>A growing number of residents live at Brasada Ranch full time, drawn by the space, quiet, and views. The community is less seasonal than Sunriver, partly because its landscape does not change as dramatically between summer and winter (sage country is always sage country) and partly because the resort operates year-round with consistent programming.</p>
+<p>Some residents live at Brasada Ranch full time, drawn by the space, quiet, and views. The community is less seasonal than Sunriver. The landscape changes less between summer and winter, and the resort operates year-round with consistent programming.</p>
 
-<p>That said, full-time living at Brasada means accepting the distance to Bend, limited on-site dining and shopping options, and a community that is still primarily a resort rather than a town. There are no schools on-site; families with children attend schools in the Redmond or Bend-La Pine districts.</p>
+<p>Full-time living at Brasada means the distance to Bend, limited on-site dining and shopping, and a community that is still primarily a resort, not a town. There are no schools on-site. Families with children attend schools in the Redmond or Bend-La Pine districts.</p>
 
-<p>Healthcare access means driving to St. Charles in Redmond (about 15 minutes) or Bend (about 25 minutes). For retirees considering full-time residence, this distance to medical care is worth serious evaluation. Routine appointments are manageable, but if you have chronic conditions requiring frequent specialist visits, the commute adds up.</p>
+<p>Healthcare access means driving to St. Charles in Redmond, about 15 minutes, or Bend, about 25 minutes. Routine appointments are manageable. Frequent specialist visits add drive time for residents with chronic conditions.</p>
 
-<h2>Investment Perspective</h2>
+<h2>Rental income and carrying costs</h2>
 
-<p>Brasada Ranch has shown strong appreciation since its development, driven by the scarcity of high-end resort real estate in Central Oregon and the quality of the amenity package. The community continues to develop new lots and homesites, which adds supply but also signals ongoing demand and investment by the developer.</p>
+<p>Brasada Ranch has continued to develop new lots and homesites since it opened.</p>
 
-<p>The rental program provides income potential that can offset carrying costs, though it should not be expected to generate significant cash flow after all expenses. The primary investment thesis for Brasada Ranch is appreciation driven by the limited supply of comparable resort communities in the region.</p>
+<p>The rental program can offset carrying costs. It should not be expected to generate cash flow beyond expenses.</p>
 
 <p>For market context, visit our <a href="/housing-market">Central Oregon housing market page</a>.</p>
 
-<h2>Who Brasada Ranch Is For</h2>
+<h2>Who Brasada Ranch is for</h2>
 
-<p>Brasada Ranch attracts buyers who want a resort lifestyle in a distinctive landscape, not a copy of what they could find in Sunriver or Bend. The typical buyer is an established professional or retiree, often from Portland, Seattle, or California, who appreciates the desert setting, values the breadth of the amenity package (especially the equestrian center and spa), and has the budget for the ongoing costs.</p>
+<p>Brasada Ranch attracts buyers who want a resort lifestyle in a high desert landscape. The typical buyer is a professional or retiree, often from Portland, Seattle, or California, who prefers the desert setting, uses the amenity package, especially the equestrian center and spa, and can carry the ongoing costs.</p>
 
-<p>It is less suited for buyers who want to be close to town, need affordable pricing, or prefer a traditional forested mountain setting. The high desert is a specific taste, and Brasada embraces it completely.</p>
+<p>It is less suited for buyers who want to be close to town, need affordable pricing, or prefer a forested mountain setting.</p>
 
-<p>If the setting and lifestyle resonate with you, explore <a href="/homes-for-sale">available properties</a> or connect with our <a href="/team">team</a> to schedule a tour. Brasada Ranch is the kind of place that photographs well but needs to be experienced in person to fully appreciate. The scale of the views, the quality of the silence, and the character of the high desert landscape do not translate completely to a screen. Visit before you decide, preferably in more than one season, and let the place make its case on its own terms.</p>
+<p>Explore <a href="/homes-for-sale">available properties</a> or connect with our <a href="/team">team</a> to schedule a tour.</p>
 `,
   },
 
@@ -692,7 +690,7 @@ export const posts: BlogPostSeed[] = [
 
   // ─── 7. Black Butte Ranch: The Original Central Oregon Resort ───
   {
-    title: 'Black Butte Ranch The Original Central Oregon Resort',
+    title: "Black Butte Ranch: Costs, HOA Fees, and Rental Rules",
     slug: 'black-butte-ranch-guide',
     category: 'Community Spotlights',
     tags: ['black butte ranch', 'sisters', 'resort', 'family community'],
@@ -700,109 +698,109 @@ export const posts: BlogPostSeed[] = [
       'https://images.unsplash.com/photo-1724536523240-1cfdf382f590?w=1920&q=80',
     published_at: '2025-11-22T09:00:00Z',
     status: 'published',
-    seo_title: 'Black Butte Ranch Near Sisters Oregon Community Guide',
+    seo_title: "Black Butte Ranch: Costs, HOA Fees, and Rental Rules",
     seo_description:
       'Black Butte Ranch near Sisters, Oregon: 50+ years of family resort living, two golf courses, meadow views, homes from $400K to $2M+. Full buyer guide.',
     excerpt:
       'Black Butte Ranch has been a family gathering place in Central Oregon for over 50 years. If you are considering buying here, this is what the community is really like beyond the brochure.',
     content: `
-<p>Black Butte Ranch has something most Central Oregon resort communities cannot claim: more than half a century of history. While Caldera Springs and Brasada Ranch are still establishing their identities, Black Butte has been quietly operating as a family-oriented resort community since 1970. That longevity shapes everything about the place, from the character of the homes to the generational ownership patterns to the community culture. If you are looking at resort property in Central Oregon, Black Butte Ranch offers a fundamentally different experience than its newer competitors.</p>
+<p>Black Butte Ranch has operated since 1970, longer than most resort communities in Central Oregon. Homes here range from original 1970s cabins to modern custom builds, and many properties have stayed in the same family for two or three generations.</p>
 
-<h2>History and Setting</h2>
+<h2>History and setting</h2>
 
-<p>Black Butte Ranch was developed in the early 1970s on a former cattle ranch at the base of Black Butte, a prominent volcanic cinder cone near Sisters. The ranch encompasses about 1,800 acres of meadows, ponderosa pine forest, and wetlands, with the Cascade Range forming a dramatic backdrop to the west.</p>
+<p>Black Butte Ranch was developed in the early 1970s on a former cattle ranch at the base of Black Butte, a volcanic cinder cone near Sisters. The ranch covers about 1,800 acres of meadows, ponderosa pine forest, and wetlands, with views of the Cascade Range to the west.</p>
 
-<p>The setting is markedly different from the high desert landscape around Bend or the dense forest of Sunriver. Black Butte's meadows provide open, pastoral views framed by old-growth ponderosa pines, with Mount Washington and the Three Sisters visible from many locations. It is, by any honest assessment, a beautiful place.</p>
+<p>The setting differs from the high desert around Bend or the forest at Sunriver: open meadows framed by ponderosa pine, with views of Mount Washington and the Three Sisters from many locations.</p>
 
-<p>The town of Sisters is about eight miles east. Bend is approximately 30 minutes away via Highway 20. Redmond and the airport are about 35 minutes.</p>
+<p>The town of Sisters is about eight miles east. Bend is about 30 minutes away via Highway 20. Redmond and the airport are about 35 minutes.</p>
 
-<h2>Two Golf Courses</h2>
+<h2>Two golf courses</h2>
 
-<p>Black Butte Ranch has two golf courses, Big Meadow and Glaze Meadow, both winding through the property's namesake meadows and pine groves. Neither is a championship-level facility that will attract touring professionals, but both are well-maintained, scenic, and perfectly suited for recreational golfers. The courses are available to homeowners, resort guests, and the public, with homeowners receiving preferred rates and tee times.</p>
+<p>Black Butte Ranch has two golf courses, Big Meadow and Glaze Meadow, both running through the property's meadows and pine groves. Neither course is built for tournament play. Both are open to homeowners, resort guests, and the public, with homeowners getting preferred rates and tee times.</p>
 
-<p>If you are evaluating golf communities purely on course design and exclusivity, Broken Top, Tetherow, and Pronghorn rank higher. If you want pleasant golf in a gorgeous setting without pretension, Black Butte delivers.</p>
+<p>Broken Top, Tetherow, and Pronghorn have higher-rated golf courses. Black Butte's courses are recreational.</p>
 
-<h2>Amenities and Recreation</h2>
+<h2>Amenities and recreation</h2>
 
-<p>Black Butte Ranch's amenity list reflects its family-oriented identity:</p>
+<p>Black Butte Ranch's amenities reflect its family orientation:</p>
 
 <ul>
 <li><strong>Swimming pools:</strong> Multiple pools and hot tubs located throughout the property, open seasonally.</li>
 <li><strong>Tennis and sports:</strong> Tennis courts, pickleball courts, basketball, and a sports court complex.</li>
 <li><strong>Equestrian:</strong> A seasonal horse program with guided trail rides through the meadows and forest.</li>
-<li><strong>Bike paths:</strong> An extensive network of paved paths connecting neighborhoods, recreation areas, and the two golf courses.</li>
-<li><strong>Nature and kids programs:</strong> Seasonal naturalist-led hikes, kids camps, and family activities. These are long-established programs that many families have been attending for generations.</li>
-<li><strong>Dining:</strong> The Lodge restaurant, the Lakeside Bistro, and seasonal poolside service. The dining is casual and family-friendly.</li>
+<li><strong>Bike paths:</strong> Paved paths connect neighborhoods, recreation areas, and the two golf courses.</li>
+<li><strong>Nature and kids programs:</strong> Naturalist-led hikes, kids camps, and family activities, held each summer.</li>
+<li><strong>Dining:</strong> The Lodge restaurant, the Lakeside Bistro, and seasonal poolside service, all casual.</li>
 <li><strong>Fishing:</strong> Several small lakes and ponds stocked for catch-and-release fishing.</li>
 </ul>
 
-<p>The overall feel is more summer camp for all ages than luxury resort. This is part of Black Butte's charm and also its limitation, depending on what you are looking for.</p>
+<p>The overall feel runs like a summer camp for all ages.</p>
 
-<p>The community also has a general store and several casual dining options on-site, along with a fly shop and a small conference facility. These are seasonal in nature, with reduced hours and some closures during the winter months.</p>
+<p>The community also has a general store and several casual dining options on-site, along with a fly shop and a small conference facility. These are seasonal, with reduced hours and some closures during the winter months.</p>
 
-<h2>Home Styles and Architecture</h2>
+<h2>Home styles and architecture</h2>
 
 <p>Because Black Butte Ranch has been developing for over 50 years, the housing stock spans a wide range of ages and styles. You will find:</p>
 
 <ul>
-<li><strong>Original 1970s cabins:</strong> Smaller, simpler structures that have been maintained or renovated to varying degrees. Some retain their original character; others have been significantly updated.</li>
+<li><strong>Original 1970s cabins:</strong> Smaller, simpler structures that have been maintained or renovated to varying degrees. Some retain their original character. Others have been significantly updated.</li>
 <li><strong>1980s and 1990s homes:</strong> Mid-range construction, often with more square footage and updated floor plans compared to the original cabins.</li>
-<li><strong>Custom homes:</strong> Larger, modern builds on premium lots, often with significant views and high-end finishes. These represent the top of the market.</li>
+<li><strong>Custom homes:</strong> Larger, modern builds on premium lots, often with views and high-end finishes.</li>
 </ul>
 
-<p>Architectural standards at Black Butte are less restrictive than at communities like Tetherow or Caldera Springs. The aesthetic tends toward rustic mountain lodge rather than contemporary, with wood siding, stone accents, and earth tones predominating. The community does have design review, but it is less about enforcing a specific modern style and more about maintaining compatibility with the natural setting.</p>
+<p>Architectural standards at Black Butte are less restrictive than at communities like Tetherow or Caldera Springs. The style tends toward rustic mountain lodge rather than contemporary, with wood siding, stone accents, and earth tones. The community has design review, focused on compatibility with the natural setting rather than a specific modern style.</p>
 
-<h2>Price Ranges</h2>
+<h2>Price ranges</h2>
 
 <ul>
 <li><strong>Condos and smaller cabins:</strong> $400,000 to $650,000. These are the most accessible entry points and often work well as vacation rentals.</li>
-<li><strong>Mid-range homes (3 bed, updated):</strong> $650,000 to $1,000,000. Solid family homes with decent lot sizes, often with views of the meadows or golf course.</li>
+<li><strong>Mid-range homes (3 bed, updated):</strong> $650,000 to $1,000,000. Family homes with decent lot sizes, often with views of the meadows or golf course.</li>
 <li><strong>Larger and custom homes:</strong> $1,000,000 to $1,800,000. Premium lots, more square footage, higher-end finishes.</li>
-<li><strong>Estate properties:</strong> $1,800,000 to $2,500,000+. The most desirable lots with sweeping meadow and Cascade views, custom architecture.</li>
+<li><strong>Estate properties:</strong> $1,800,000 to $2,500,000+. The largest lots, with meadow and Cascade views and custom architecture.</li>
 </ul>
 
-<p>Black Butte Ranch generally offers better value per square foot than Tetherow, Broken Top, or Brasada Ranch, partly because the housing stock includes older homes that have not been fully renovated. This creates opportunities for buyers willing to invest in updating an existing home. A 1970s cabin purchased at the low end and thoughtfully renovated can become a property worth significantly more than the total investment, which is a value-add strategy that does not work as easily in newer communities where homes are already at modern standards.</p>
+<p>Black Butte Ranch's housing stock includes original 1970s cabins that have not been renovated. These can cost less per square foot than comparable homes in newer communities like Tetherow, Broken Top, or Brasada Ranch, and give buyers the option to update rather than pay for updates already done.</p>
 
 <p>See what is currently available on our <a href="/homes-for-sale">listings page</a>.</p>
 
-<h2>HOA and Community Fees</h2>
+<h2>HOA and community fees</h2>
 
 <p>Black Butte Ranch's annual assessments typically run $2,000 to $4,000 per year, depending on the property type. These cover road maintenance, common area upkeep, recreation facility operations, and community services. Golf memberships and pool passes are additional costs.</p>
 
-<p>By Central Oregon resort community standards, these fees are moderate. The lower cost structure reflects Black Butte's older infrastructure and less lavish amenity package compared to newer communities like Brasada Ranch or Caldera Springs.</p>
+<p>Black Butte's older infrastructure and smaller amenity package than newer communities like Brasada Ranch or Caldera Springs account for the lower fee.</p>
 
-<h2>Generational Ownership</h2>
+<h2>Generational ownership</h2>
 
-<p>This is something that genuinely sets Black Butte Ranch apart. Many properties have been in the same families for two or three generations. Grandparents bought cabins in the 1970s, their children grew up spending summers here, and now the grandchildren are bringing their own kids.</p>
+<p>Many properties at Black Butte Ranch have been in the same family for two or three generations. Grandparents bought cabins in the 1970s, their children grew up spending summers here, and now the grandchildren are bringing their own kids.</p>
 
-<p>This generational pattern creates a community culture that is unusually strong for a resort development. People know their neighbors. The summer traditions, from the Fourth of July celebration to the kids' tennis clinic, have been running for decades. There is a continuity and depth of relationship here that newer communities have not had time to develop.</p>
+<p>People know their neighbors. Traditions like the Fourth of July celebration and the kids' tennis clinic have run for decades.</p>
 
-<p>It also means that properties sometimes change hands within families rather than hitting the open market, which can limit inventory and create a somewhat opaque market for outsiders. When properties do come to market, they often attract buyers who already know the ranch from years of visiting, which means competition can be brisk even though the community does not generate the same buzz as newer developments.</p>
+<p>Properties sometimes change hands within families rather than reaching the open market, which limits inventory. Listings that do reach the market often draw buyers who already know the ranch from years of visiting.</p>
 
-<p>The generational aspect also means the community has an established social fabric. New residents typically find it welcoming but not instant. Relationships build over seasons, not weekends, which suits people who value genuine connection over superficial socializing.</p>
+<p>New residents typically find the community welcoming, though relationships take more than one season to build.</p>
 
-<h2>Rental Policies</h2>
+<h2>Rental policies</h2>
 
-<p>Black Butte Ranch allows vacation rentals, managed primarily through the on-site resort management company. Individual owners can also use independent property managers. Rental income potential is moderate, with three-bedroom homes generating $20,000 to $40,000 in gross annual revenue during peak seasons.</p>
+<p>Black Butte Ranch allows vacation rentals, managed primarily through the on-site resort management company. Individual owners can also use independent property managers. Three-bedroom homes generate $20,000 to $40,000 in gross annual revenue during peak seasons.</p>
 
-<p>The community has not experienced the same level of short-term rental intensity as Sunriver, partly because the ownership structure skews toward families who use their properties rather than pure investors. This keeps the year-round community feel more stable but also means rental income potential is somewhat lower than in more commercially oriented resort communities.</p>
+<p>The community has not seen the level of short-term rental activity found at Sunriver, partly because ownership skews toward families who use their properties rather than investors. Rental income is lower than in resort communities built around short-term rental investment.</p>
 
-<h2>Practical Considerations</h2>
+<h2>Practical considerations</h2>
 
 <ul>
-<li><strong>Distance from services:</strong> Sisters is a small town with limited services. Serious grocery shopping, medical care, and most retail require a trip to Bend or Redmond (30 to 35 minutes).</li>
+<li><strong>Distance from services:</strong> Sisters is a small town with limited services. Grocery shopping, medical care, and most retail require a trip to Bend or Redmond, 30 to 35 minutes away.</li>
 <li><strong>Winter access:</strong> Highway 20 between Sisters and Bend crosses the Cascades and can be affected by winter weather. Within the ranch, roads are maintained but can be slow to clear after heavy snowfall.</li>
-<li><strong>Wildfire considerations:</strong> Like all forested communities in Central Oregon, Black Butte Ranch exists in a fire-prone landscape. The community has firewise programs, fuel reduction zones, and ongoing forest management practices, but wildfire risk is a reality that affects insurance costs and availability and should be part of any buying decision. Some insurers have tightened underwriting for properties in wildfire interface zones; verify insurance availability and cost before making an offer.</li>
-<li><strong>Schools:</strong> The Sisters School District serves the area and has a strong reputation, particularly for its arts and outdoor education programs. For families living at Black Butte full time, the Sisters schools are a genuine asset.</li>
+<li><strong>Wildfire considerations:</strong> Like all forested communities in Central Oregon, Black Butte Ranch is in a fire-prone landscape. The community has firewise programs, fuel reduction zones, and ongoing forest management. Some insurers have tightened underwriting for properties in wildfire interface zones. Verify insurance availability and cost before making an offer.</li>
+<li><strong>Schools:</strong> The Sisters School District serves the area, with arts and outdoor education programs. For families living at Black Butte full time, the Sisters schools are an asset.</li>
 </ul>
 
-<h2>Who Should Buy at Black Butte Ranch</h2>
+<h2>Who should buy at Black Butte Ranch</h2>
 
-<p>Black Butte Ranch is for buyers who value tradition, family orientation, and natural beauty over modern luxury and nightlife. It attracts people who want a place their family will return to for decades, not just a property they will hold for five years and flip.</p>
+<p>Black Butte Ranch suits buyers who want a family property to return to for decades, in a community with a 50-year history.</p>
 
-<p>If you want a polished, contemporary resort experience, look at Tetherow or Caldera Springs. If you want a place with history, community depth, and a landscape that has been making families happy for half a century, Black Butte Ranch deserves serious consideration.</p>
+<p>Tetherow and Caldera Springs offer a more contemporary resort experience. Black Butte Ranch offers 50 years of family history.</p>
 
-<p>Explore <a href="/communities">Central Oregon communities</a> to compare your options, or talk to our <a href="/team">team</a> about what is currently available at Black Butte Ranch.</p>
+<p>Explore <a href="/communities">Central Oregon communities</a>, or talk to our <a href="/team">team</a> about what is currently available at Black Butte Ranch.</p>
 `,
   },
 

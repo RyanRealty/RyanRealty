@@ -1,8 +1,8 @@
 {
   "route": "app/team/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat generic brokerage team pages: real broker names, Oregon licenses, transparent-PNG headshots, verbatim Google reviews, and a door to each /team/[slug] profile.",
-  "note": "PAGE_INVENTORY §6 / PAGE_OUTLINE 2026-09-05. /team is roster only: Breadcrumb, AboutFaces (H1 The brokers, Call/Text, door to each /team/[slug]), Footer. Not a second About. No Proof, no FAQ, no seller ask. Per-broker page: portrait face, license + firm 25/5.0 door, Call/Text/Email, firm proof + firm sales default, personal Atlas/Ledger only when hasRealPersonalRecord. No CMA form; valuation is /sell.",
+  "competitiveTarget": "Beat generic brokerage team pages AND Cascade Sotheby's Bend agent directory: real broker names, Oregon licenses, transparent-PNG headshots, and \u2014 the thing a directory does not have \u2014 each broker's OWN MLS record as a figure with the places behind a disclosure, plus a map of every closing the three of them hold.",
+  "note": "SITE-48 2026-09-09. /team is the roster and its coverage: Breadcrumb, AboutFaces (H1 The brokers, one claim, per-broker record figure + places disclosure + trace, Call/Text/Email/Schedule, door to each /team/[slug]), V3Atlas #closings of every Ryan Realty broker closing with a coordinate, Footer. Still not a second About: no Proof, no FAQ, no seller ask. The per-broker figure comes off getBrokerSales (SITE-11) through app/team/_v3/broker-roster-record.ts and follows a documented ladder \u2014 closings in the last 12 months, else closings on record, else live listings, else NOTHING. A broker with no record prints no zero. Per-broker page unchanged.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -16,7 +16,12 @@
     },
     {
       "name": "AboutFaces",
-      "section": "First viewport. Same AboutFaces row as /about. Live brokers from getBrokers, canonical /images/brokers/*.png cutouts at conversation scale. Name is the door to /team/[slug]. Title, Call, and Text sit under the portrait from the live broker phone and title. No card, no wash, no rectangular box. Compact H1 lives here. No eyebrow, no card graf, no seller ask. This is the only roster on the page.",
+      "section": "First viewport. Same AboutFaces roster as /about. Live brokers from getBrokers, canonical /images/brokers/*.png cutouts at conversation scale. Name is the door to /team/[slug]. Title, licence, Call, Text, Email and Schedule sit under the portrait from the live broker phone and email. EACH CARD ALSO CARRIES ONE RECORD FIGURE that is that broker's and no one else's, with the places and the section 0 trace behind one native disclosure. No card, no wash, no rectangular box. Compact H1 lives here.",
+      "blocking": true
+    },
+    {
+      "name": "V3Atlas",
+      "section": "#closings. Every closing the three brokers hold on the MLS that carries a coordinate, on one field, built with the same dot builder /team/[slug] uses for one broker. Answers the taste table's 'no map of where they sell' and gives the route a second section.",
       "blocking": true
     },
     {
@@ -42,10 +47,6 @@
       "reason": "Pattern 4 needs owned media and is never allowed over a number. V3Stage is one full-bleed frame with a navy scrim, which would put a rectangle behind the transparent broker PNGs. AboutFaces does that owned-media job on cream instead."
     },
     {
-      "name": "V3Instrument",
-      "reason": "Index publishes people, not a market answer. Per-broker closings live on /team/[slug] as Instrument + Atlas."
-    },
-    {
       "name": "V3Ledger",
       "reason": "A license ledger under the faces was a second broker roster. Licenses sit on each /team/[slug] Quiet and on /about's origin Quiet."
     },
@@ -64,22 +65,26 @@
     {
       "name": "V3Field",
       "reason": "Pattern 2 is live inventory. It opens Homes."
+    },
+    {
+      "name": "V3Instrument",
+      "reason": "Index publishes people, not a market answer. The per-broker figure is one number on the card with its own trace, not a KPI row; the full per-broker Instrument stays on /team/[slug]."
     }
   ],
   "removedComponents": [
-    "KbHero — Old Mill poster and 'the broker you call' poetry H1.",
-    "KbAbout — intro prose and license ledger, rebuilt as Faces.",
-    "KbTeam — broker grid, rebuilt as AboutFaces. A later V3Ledger of the same three people was a second roster and is gone 2026-09-03.",
-    "KbTestimonials — rebuilt as V3Proof (newest four, record off) from getReviews / TESTIMONIALS.",
-    "KbSell — address capture. Index ask is /contact.",
-    "FAQBlock — rebuilt as V3Answers from TEAM_FAQ_ITEMS (was V3Quiet prose 2026-08, a wall).",
+    "KbHero \u2014 Old Mill poster and 'the broker you call' poetry H1.",
+    "KbAbout \u2014 intro prose and license ledger, rebuilt as Faces.",
+    "KbTeam \u2014 broker grid, rebuilt as AboutFaces. A later V3Ledger of the same three people was a second roster and is gone 2026-09-03.",
+    "KbTestimonials \u2014 rebuilt as V3Proof (newest four, record off) from getReviews / TESTIMONIALS.",
+    "KbSell \u2014 address capture. Index ask is /contact.",
+    "FAQBlock \u2014 rebuilt as V3Answers from TEAM_FAQ_ITEMS (was V3Quiet prose 2026-08, a wall).",
     "SmoothScrollProvider.",
-    "KbFooter — replaced by V3Footer outside <main>.",
+    "KbFooter \u2014 replaced by V3Footer outside <main>.",
     "kb-root and the kb.css import."
   ],
   "perBrokerPage": {
     "route": "app/team/[slug]/page.tsx",
-    "note": "PAGE_INVENTORY §6 2026-09-05. Order is Breadcrumb, AboutFaces portrait (not poster), Quiet license + firm review door, V3Doors Call/Text/Email, V3Proof firm reviews, V3Ledger firm sales, personal Instrument/Atlas/Ledger only if hasRealPersonalRecord, Quiet bio + team/reviews/sell. Valuation is /sell; no CMA sheet on this page. Invariants: (1) firm reviews, not a thin personal wall. (2) getBrokerSales still loads the personal set; display is gated. (3) JSON-LD RealEstateAgent + BreadcrumbList. (4) 977 zip filter on firm closings. (5) Direct call/text/email from live phone/email only.",
+    "note": "PAGE_INVENTORY \u00a76 2026-09-05. Order is Breadcrumb, AboutFaces portrait (not poster), Quiet license + firm review door, V3Doors Call/Text/Email, V3Proof firm reviews, V3Ledger firm sales, personal Instrument/Atlas/Ledger only if hasRealPersonalRecord, Quiet bio + team/reviews/sell. Valuation is /sell; no CMA sheet on this page. Invariants: (1) firm reviews, not a thin personal wall. (2) getBrokerSales still loads the personal set; display is gated. (3) JSON-LD RealEstateAgent + BreadcrumbList. (4) 977 zip filter on firm closings. (5) Direct call/text/email from live phone/email only.",
     "requiredComponents": [
       {
         "name": "V3SectionTracker",
@@ -141,7 +146,8 @@
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "AboutFaces -- the brokers, the only roster",
+    "AboutFaces -- the brokers, each with one record figure of their own",
+    "V3Atlas #closings -- every Ryan Realty broker closing with a coordinate",
     "V3Footer"
   ],
   "perBrokerSectionOrder": [
@@ -158,13 +164,112 @@
     "V3Footer"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-06",
-    "score": 47,
-    "beats": "Compass agent profiles: Call, Text, and Email sit on the fold with no CMA sheet above them.",
-    "evaluator": "separate grok-4.6 evaluator, remaining-issues pass, team",
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate Sonnet evaluator agent, SITE-48 pass three, team page class \u2014 one call, three independent scorings of the same two shots, run against the rubric table in design_system/public/TASTE.md and asked explicitly whether a contact list is the first content of the page",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/team"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default"
+      ],
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, against the lane's own dev server before the push"
+    },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/team/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/team/shots/mobile375.png"
+    },
+    "shotsHash": "sha256:f7c2912212a3d1dde5838a467dc4b3ad568d88e36721b4025247c7b9fa0f83cc",
+    "scores": [
+      62,
+      65,
+      64
+    ],
+    "score": 64,
+    "breakdown": {
+      "design": 20,
+      "originality": 15,
+      "interaction": 10,
+      "craft": 11,
+      "honesty": 8
+    },
+    "beats": "Beats Cascade Sotheby's Bend agent directory and a portal agent profile on data honesty, which is the metric this pass targeted: every broker here carries a figure traced to an MLS closing or an active listing, with the places and the full section 0 trace one tap away, where a directory carries a self-declared specialty tag. The evaluator was explicit that no VISUAL win is demonstrated in the captured viewport, because the coverage Atlas that is the page's other differentiator sits below it.",
+    "contactListIsFirstContent": false,
+    "contactListAnswer": "Breadcrumb, then the H1 'The brokers', then a one-sentence claim, then the three broker cards beginning with the photograph. The contact chips are the bottom of each card, not the page's first content.",
+    "defects": [
+      {
+        "section": "AboutFaces roster",
+        "severity": "originality",
+        "finding": "All three cards share one template \u2014 photo, name, title pill, licence, figure, disclosure, reach row \u2014 so only the digits differ and the section still scans as a staff directory at a glance."
+      },
+      {
+        "section": "roster reach row",
+        "severity": "taste",
+        "finding": "The four-chip reach row repeated three times is the \"card grids with icons\" tell, even with Call weighted above the other three."
+      },
+      {
+        "section": "first viewport",
+        "severity": "taste",
+        "finding": "The coverage Atlas \u2014 the page's one genuinely differentiating object \u2014 sits entirely below the fold at 1440x900, so the screen a visitor meets shows no map and nothing signalling one is there."
+      },
+      {
+        "section": "record disclosure",
+        "severity": "interaction",
+        "finding": "\"Where those closings were\" renders as small muted text with a caret; nothing in the static render insists it is a control rather than a caption."
+      },
+      {
+        "section": "roster at 375",
+        "severity": "craft",
+        "finding": "At 375 the photo sits in a narrow left rail with the text stacked beside it, which breaks from the desktop rhythm of photo-over-content."
+      }
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 39,
+      "scores": [
+        36,
+        43,
+        39
+      ],
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "not recorded \u2014 the cross-class table predates per-row shot hashes",
+      "source": "design_system/public/taste-table.json"
+    },
+    "rebaselineReason": "The prior mark is the cross-class taste table of 2026-09-08 (design_system/public/taste-table.json), which is the instrument SITE-48's accept test names. Same evaluatorModel and same rubricVersion; the shots are new captures of a rebuilt page, so shotsHash differs and the mark re-baselines rather than \"rises\". The raw numbers, plainly: before 39 (raw [36, 43, 39]), after 64 (raw [62, 65, 64]), a rise of 25 points on the same rubric and the same evaluator model. The shotsHash is the only identity key that differs.",
+    "verdict": "The three cards now carry three different MLS-sourced figures \u2014 7 closings in the last twelve months, 3, and one live listing for the broker with no closing on the feed \u2014 with the places and the trace behind one disclosure, and the route gained a second section: every Ryan Realty closing with a coordinate on one Atlas. The form is still three columns on one template, and the map is below the fold.",
+    "priorRouteMark": {
+      "evaluatedAt": "2026-09-06",
+      "score": 47,
+      "evaluator": "separate grok-4.6 evaluator, remaining-issues pass, team",
+      "note": "the route's own receipt at HEAD, on a different instrument (a different evaluator model and/or a different shot set). Kept so the history is readable; the mark this pass is measured against is priorMark, the cross-class table SITE-48's accept test names."
+    },
+    "passes": {
+      "note": "Three build-and-score rounds ran in this lane before the mark above, each on its own shots. The score recorded here is the LAST one, on the shots this receipt hashes.",
+      "roundOne": {
+        "score": 60,
+        "scores": [
+          60,
+          56,
+          63
+        ]
+      },
+      "roundTwo": {
+        "score": 51,
+        "scores": [
+          48,
+          53,
+          51
+        ]
+      }
     }
   }
 }

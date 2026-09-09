@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   anchorPassed,
   isPlausibleEmail,
+  stickyAskClosed,
   stickyDismissKey,
+  stickyEligible,
   stickyVisible,
   V3_ALERTS_STICKY_INITIAL,
   type V3AlertsStickyState,
@@ -36,6 +38,52 @@ describe('stickyVisible', () => {
 
   it('scrolling back up above the anchor hides it again', () => {
     expect(stickyVisible({ ...past, passed: false }, 'idle')).toBe(false)
+  })
+})
+
+/**
+ * The page reserves the strip's height while the strip can COME BACK, not only
+ * while it is on screen — a reservation that tracked visibility would add and
+ * remove the strip's own height every time the footer arrived.
+ */
+describe('stickyEligible', () => {
+  it('ignores the two conditions that flip on every scroll', () => {
+    expect(stickyEligible({ ...past, calloutVisible: true }, 'idle')).toBe(true)
+    expect(stickyEligible({ ...past, footerVisible: true }, 'idle')).toBe(true)
+  })
+
+  it('ends with the three that hold for the rest of the visit', () => {
+    expect(stickyEligible(V3_ALERTS_STICKY_INITIAL, 'idle')).toBe(false)
+    expect(stickyEligible({ ...past, dismissed: true }, 'idle')).toBe(false)
+    expect(stickyEligible(past, 'sent')).toBe(false)
+  })
+
+  it('is implied by visibility, always', () => {
+    const states: V3AlertsStickyState[] = [
+      V3_ALERTS_STICKY_INITIAL,
+      past,
+      { ...past, calloutVisible: true },
+      { ...past, footerVisible: true },
+      { ...past, dismissed: true },
+    ]
+    for (const state of states) {
+      for (const status of ['idle', 'sending', 'sent', 'failed'] as const) {
+        if (stickyVisible(state, status)) expect(stickyEligible(state, status)).toBe(true)
+      }
+    }
+  })
+})
+
+/** The strip's control opens the ask when the field renders no box at all. */
+describe('stickyAskClosed', () => {
+  it('reads the field the visitor is actually looking at', () => {
+    expect(stickyAskClosed({ getClientRects: () => ({ length: 0 }) })).toBe(true)
+    expect(stickyAskClosed({ getClientRects: () => ({ length: 1 }) })).toBe(false)
+  })
+
+  it('treats a missing field as closed: there is nothing to submit', () => {
+    expect(stickyAskClosed(null)).toBe(true)
+    expect(stickyAskClosed(undefined)).toBe(true)
   })
 })
 

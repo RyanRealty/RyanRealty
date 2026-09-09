@@ -63,6 +63,7 @@ import { publishPlaceAffordability } from '@/lib/place/publish-place-affordabili
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
+import { publishPlaceDoor } from '@/lib/market/publish-place-door'
 import { CITY_TILE_FETCH_LIMIT } from '@/lib/market/publish-city-inventory'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
@@ -95,6 +96,7 @@ import {
   V3_FOOTER_COLUMNS,
   V3Heading,
   V3Instrument,
+  V3PlaceDoor,
   V3Ledger,
   V3Answers,
   V3PlaceAffordability,
@@ -180,7 +182,6 @@ export const revalidate = 60
 
 type Props = {
   params: Promise<{ slug: string }>
-  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 /** Polygon / MultiPolygon, or a Feature wrapping one. Miss is null. */
@@ -214,9 +215,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
 }
 
-export default async function CityDetailPage({ params, searchParams }: Props) {
+export default async function CityDetailPage({ params }: Props) {
   const { slug } = await params
-  const sp = await searchParams
 
   const snapshot = await getGeoSnapshot({ geoType: 'city', geoKey: slug })
   if (!snapshot) notFound()
@@ -547,6 +547,27 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
   const marketHeadline = `Typical price in ${cityName}`
   const verdictCaption = cityVerdictCaption({ mos: mosRaw, verdict: face.verdict })
 
+  // SITE-03: the door beside the H1. ONE live fact — the active count — as the
+  // way into this city's own pre-filtered inventory. No median, no months, no
+  // days-to-pending: that five-figure strip is the leftover HUD ci:taste-canon
+  // fails. AND NO VERDICT: `verdictCaption` below is the verdict's one home
+  // (DATA_GRAPHICS.md), and the door printing "in a seller's market" one node
+  // above a caption reading "A seller's market." was the duplicate the
+  // 2026-09-08 review caught. The count comes off the face this page already
+  // published — no new read — and `grain` derives the door's own trace, so the
+  // sentence under it always describes the read the count came from.
+  // The href goes through publishPlaceBrowseHref inside the publisher, so a
+  // candidate that would land on the unfiltered regional index, or that
+  // middleware would 301 away, renders no door at all.
+  const placeDoor = publishPlaceDoor({
+    face,
+    grain: 'city',
+    placeName: cityName,
+    href: homesForSalePath(cityName),
+    // The stamp belongs to the same Market Truth read as the count.
+    readDate: leftoverStamp ? formatDate(leftoverStamp) : null,
+  })
+
   // SITE-07: the affordability instrument, opened at the SAME median this
   // page's market section prints (hud.medianList), so the calculator can never
   // disagree with the figure above it.
@@ -694,7 +715,10 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
 
   // V3Ledger's rows prop is a non-empty tuple, so each section destructures a
   // head and renders nothing when there is none.
-  const [firstNbh, ...restNbh] = placeFigureRows(bendNeighborhoodItems, `${cityName} neighborhood`)
+  // Its own children: a neighborhood named with the city in front drops it
+  // (placeFigureRows, `within`); none of Bend's thirteen is, so this is the
+  // rule, not a change.
+  const [firstNbh, ...restNbh] = placeFigureRows(bendNeighborhoodItems, `${cityName} neighborhood`, cityName)
   const [firstRail, ...restRail] = communityRows(communityItems)
   const [firstGolf, ...restGolf] = placeFigureRows(golfLedgerItems, 'Golf and master-planned')
   const [firstOther, ...restOther] = placeFigureRows(otherCityItems, 'Central Oregon city')
@@ -761,6 +785,16 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
             </V3Heading>
+            {placeDoor ? (
+              <V3PlaceDoor
+                href={placeDoor.href}
+                count={placeDoor.count}
+                countLabel={placeDoor.countLabel}
+                updated={placeDoor.readDate}
+                trace={placeDoor.trace}
+                onMedia={Boolean(stagePosterSrc)}
+              />
+            ) : null}
             {verdictCaption ? <p className="place-opening__caption">{verdictCaption}</p> : null}
           </div>
         </div>
@@ -776,6 +810,11 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
           newCount30d={publicPace.newCount30d}
           updatedAt={leftoverStamp}
           browseHref={homesForSalePath(cityName)}
+          // ONE filled control in the first viewport, and never none: the strip
+          // steps down to the outline only when the door above it actually
+          // rendered. A city whose Market Truth read published no active count
+          // has no door, and then the strip's submit is the fold's primary.
+          demote={placeDoor != null}
         />
 
         {(
@@ -826,7 +865,6 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
           overlayBoundaries={overlaysFromRegions(atlasRegions.slice(1))}
           seedRing
           placeQuery={`${cityName} Oregon`}
-          searchParams={sp}
         />
 
         {/* D83: the DESIGNATED Bend polygons, and only those. */}
@@ -897,10 +935,15 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
             source={v3Text(cityInstrumentSource(cityMarketTrace(cityName, mosLabel != null), mart, cityName))}
             chart={costChart}
             updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
+            // SITE-03: the place door in the opening is the filled control to
+            // this exact URL. A second solid navy button to the same href, six
+            // sections down, was two primaries to one destination on one page,
+            // so the Instrument's way in steps down to the outline. The link,
+            // the label and the destination are unchanged.
             action={{
               label: v3Text(`See every ${cityName} home for sale`),
               href: homesForSalePath(cityName),
-              variant: 'primary',
+              variant: 'ghost',
             }}
           />
         ) : firstMarketFigure && !costChart ? (

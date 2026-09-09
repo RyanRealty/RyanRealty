@@ -29,17 +29,16 @@ routine reads. Nothing in the queue depends on which model builds.
 
 ## What changes when the builder is Grok
 
-- **Owner name:** `grok-<model>-<YYYY-MM-DD>` (for example `grok-4-2026-09-09`) so `loop
+- **Owner name:** `grok-<model>-<YYYY-MM-DD>` (for example `grok-4.6-2026-09-09`) so `loop
   status` says who holds what and the cap counts you.
-- **The evaluator.** The receipt gate refuses `evaluatorModel == builderModel`, and the
-  round-three accept tests name "the table instrument": `claude-sonnet-5`, rubric
-  `v1-2026-09-08`, three scorings, median. Keep the instrument: call the Claude API with
-  `ANTHROPIC_API_KEY` (present in `.env.local`; billed per token to the API, not to the
-  Claude Code subscription) using the evaluator's words from `design_system/public/TASTE.md`,
-  model `claude-sonnet-5`, one call, three scorings, and write `evaluatorModel:
-  "claude-sonnet-5"`, `builderModel: "<your grok model id>"`. A different Grok model id is
-  allowed by the gate if the API is unavailable, but it re-baselines the class
-  (`comparedToPrior: "rebaselined"`, the differing key named); say so in the receipt.
+- **The evaluator.** The receipt gate refuses `evaluatorModel == builderModel`. A Grok
+  builder is `grok-4.6`. Score with `npx tsx scripts/taste-evaluate.ts <route-key>` (shots
+  already in `ui_kits/<route>/shots/`, optional `--url` of the lane's own dev server). That
+  command is the evaluator: it sends the shots through `lib/grok` as `GROK_MODELS.taste`
+  (`grok-4.5`), three scorings in one call, TASTE.md rubric, JSON on stdout. Write
+  `evaluatorModel: "grok-4.5"` and `builderModel: "grok-4.6"`. A class whose prior mark is
+  Claude rebaselines on this instrument (`comparedToPrior: "rebaselined"`, the differing
+  key named); the next pass must rise above the new mark.
 - **The machine.** On Matt's Mac `.env.local` is present; run `npm ci` and
   `npm run setup:browsers` once; the git hooks are installed. The canonical skill's
   "If you are a cloud session" section (no browser pane, the sandbox, the
@@ -55,9 +54,10 @@ routine reads. Nothing in the queue depends on which model builds.
 > Run the site queue. Read `.cursor/skills/site-queue/SKILL.md`, then the four documents it
 > names. Run `npx tsx scripts/site-queue-status.ts --json`; if `liveWorkers` is at or above
 > `maxWorkers`, stop and say so. Otherwise claim the first two eligible items in the JSON's
-> order with `--claim SITE-XX,SITE-YY --owner grok-<model>-<date>`, heartbeat hourly with
-> `--touch`, build per the canonical skill in a worktree, run the separate evaluator on
-> `claude-sonnet-5` through the Claude API before the push, get the gates green, `npm run push`
-> from the main checkout, verify the deploy and the live page, write the evidence on the
-> node, then take the next two until nothing is eligible. Never wait on me: if a question
-> would block you, take the safe path the skill allows and write what you chose on the node.
+> order with `--claim SITE-XX,SITE-YY --owner grok-4.6-<date>`, heartbeat hourly with
+> `--touch`, build per the canonical skill in a worktree, score with
+> `npx tsx scripts/taste-evaluate.ts <route-key>` (`grok-4.5`) before the push, get the
+> gates green, `npm run push` from the main checkout, verify the deploy and the live page,
+> write the evidence on the node, then take the next two until nothing is eligible. Never
+> wait on me: if a question would block you, take the safe path the skill allows and write
+> what you chose on the node.

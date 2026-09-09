@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 53,
+    "nonV3ImportSites": 52,
     "legacyPages": 0,
-    "mixedPages": 52
+    "mixedPages": 51
   },
   "frozenNoindexLps": [
     "app/lp/tetherow/heath/page.tsx"
@@ -37,7 +37,10 @@
     "app/area-guides/page.tsx",
     "app/areas/[slug]/page.tsx",
     "app/blog/[slug]/page.tsx",
+    "app/blog/category/[category]/page.tsx",
+    "app/blog/category/[category]/page/[n]/page.tsx",
     "app/blog/page.tsx",
+    "app/blog/page/[n]/page.tsx",
     "app/book/page.tsx",
     "app/builders/[slug]/page.tsx",
     "app/builders/page.tsx",
@@ -62,8 +65,6 @@
     "app/compare/page.tsx",
     "app/contact/page.tsx",
     "app/cookies/page.tsx",
-    "app/dashboard/marketing/inbox/page.tsx",
-    "app/dashboard/marketing/page.tsx",
     "app/data-deletion/page.tsx",
     "app/dmca/page.tsx",
     "app/fair-housing/page.tsx",
@@ -123,6 +124,9 @@
     "app/search/[...slug]/page.tsx",
     "app/search/page.tsx",
     "app/sell/[intent]/page.tsx",
+    "app/sell/expired-listings/page.tsx",
+    "app/sell/for-sale-by-owner/page.tsx",
+    "app/sell/inherited-home/page.tsx",
     "app/sell/page.tsx",
     "app/sell/valuation/page.tsx",
     "app/sign/[token]/page.tsx",
@@ -163,8 +167,16 @@
       "v3": 2,
       "legacy": 1
     },
+    "app/blog/category/[category]/page.tsx": {
+      "v3": 1
+    },
+    "app/blog/category/[category]/page/[n]/page.tsx": {
+      "v3": 1
+    },
     "app/blog/page.tsx": {
-      "legacy": 1,
+      "v3": 1
+    },
+    "app/blog/page/[n]/page.tsx": {
       "v3": 1
     },
     "app/book/page.tsx": {
@@ -386,6 +398,12 @@
       "v3": 1
     },
     "app/search/page.tsx": {
+      "v3": 1
+    },
+    "app/sell/expired-listings/page.tsx": {
+      "v3": 1
+    },
+    "app/sell/for-sale-by-owner/page.tsx": {
       "v3": 1
     },
     "app/sell/page.tsx": {

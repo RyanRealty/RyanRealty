@@ -1,0 +1,434 @@
+/* ===========================================================================
+   The blog article's reading apparatus (SITE-31, 2026-09-09).
+
+   Not a second design system and not a seventh pattern: every value below
+   resolves from components/site/v3/tokens.css, and the shapes are the ones
+   Broadside already uses — hairlines, zero radius, navy on cream, the display
+   face on a figure and Geist on everything a person reads in sentences. What
+   is blog-specific is the LAYOUT of a CMS body against its own figures, which
+   is a job no page-agnostic primitive can be handed as props.
+
+   It answers the 52-mark's named defects: prose that is one undifferentiated
+   column (now a document with its figures beside it), a Questions block that
+   was six paragraphs in a row (now disclosures), and numbers with no visible
+   apparatus (now a quoted trace and a footnoted host on every outbound link).
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   1. THE MASTHEAD BYLINE — one row under the Stage, and where Share lives.
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-blog-byline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-sm) var(--v3-space-lg);
+  padding: var(--v3-space-lg) 0 var(--v3-space-md);
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.v3 .v3-blog-byline-meta {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink-muted);
+  margin: 0;
+}
+
+.v3 .v3-blog-byline-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-sm);
+}
+
+.v3 .v3-blog-byline-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+/* Share ships from components/ui and arrives wearing the product register's
+   pill and card shadow. On a Broadside page the box is square, the rule is a
+   hairline, and nothing casts. Two-class specificity so the utilities on the
+   button lose without !important. */
+.v3 .v3-blog-share {
+  min-height: var(--v3-tap);
+  border-radius: var(--v3-radius-control);
+  border: var(--v3-rule-hairline);
+  background: transparent;
+  box-shadow: none;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3 .v3-blog-share:hover {
+  background: var(--v3-wash);
+}
+
+.v3 .v3-blog-dek {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+  max-width: var(--v3-measure-text);
+  margin: var(--v3-space-lg) 0 0;
+}
+
+/* ---------------------------------------------------------------------------
+   2. THE TWO-COLUMN READ — prose at the text measure, apparatus beside it.
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-blog-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-xl);
+  margin-top: var(--v3-space-lg);
+}
+
+@media (min-width: 64rem) {
+  .v3 .v3-blog-layout {
+    grid-template-columns: minmax(0, var(--v3-measure-text)) minmax(15rem, 19rem);
+    gap: var(--v3-space-3xl);
+    align-items: start;
+  }
+
+  /* The rail is FIRST in the source so a small screen meets the figures before
+     the prose; on a wide one it takes the second column and stays put. */
+  .v3 .v3-blog-rail {
+    grid-column: 2;
+    grid-row: 1;
+    position: sticky;
+    top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+    max-height: calc(100vh - var(--v3-chrome-h) - var(--v3-space-xl));
+    overflow-y: auto;
+  }
+
+  .v3 .v3-blog-prose {
+    grid-column: 1;
+    grid-row: 1;
+  }
+}
+
+.v3 .v3-blog-rail {
+  border-top: var(--v3-rule-section);
+  padding-top: var(--v3-space-md);
+}
+
+.v3 .v3-blog-rail-block + .v3-blog-rail-block {
+  margin-top: var(--v3-space-xl);
+}
+
+.v3 .v3-blog-rail-label {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+  margin: 0 0 var(--v3-space-sm);
+}
+
+.v3 .v3-blog-rail-source {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+  margin: 0 0 var(--v3-space-sm);
+  max-width: var(--v3-measure-text);
+}
+
+/* ---------------------------------------------------------------------------
+   3. THE FIGURES — a number, the question it answers, and its own sentence.
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-blog-figs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.v3 .v3-blog-figs > li + li {
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3 .v3-blog-fig {
+  border-radius: var(--v3-radius-card);
+}
+
+.v3 .v3-blog-fig-summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0 var(--v3-space-sm);
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-sm) 0;
+  cursor: pointer;
+  list-style: none;
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-blog-fig-summary::-webkit-details-marker {
+  display: none;
+}
+
+.v3 .v3-blog-fig-summary:hover {
+  background: var(--v3-wash);
+}
+
+.v3 .v3-blog-fig-summary:focus-visible {
+  outline: 3px solid var(--v3-focus);
+  outline-offset: 2px;
+}
+
+.v3 .v3-blog-fig-value {
+  grid-column: 1;
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-display-2);
+  line-height: var(--v3-leading-heading);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink);
+}
+
+.v3 .v3-blog-fig-question {
+  grid-column: 1;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+/* The affordance: a hairline plus sign that becomes a minus when open. Two
+   pseudo rules, no icon font, no library. */
+.v3 .v3-blog-fig-mark {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  position: relative;
+  width: 0.85rem;
+  height: 0.85rem;
+  align-self: center;
+}
+
+.v3 .v3-blog-fig-mark::before,
+.v3 .v3-blog-fig-mark::after {
+  content: '';
+  position: absolute;
+  inset: 50% 0 auto 0;
+  height: var(--v3-rule-weight-hairline);
+  background: var(--v3-ink);
+}
+
+.v3 .v3-blog-fig-mark::after {
+  transform: rotate(90deg);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-blog-fig[open] .v3-blog-fig-mark::after {
+  transform: rotate(0deg);
+}
+
+.v3 .v3-blog-fig-trace {
+  padding: 0 0 var(--v3-space-md);
+  border-left: var(--v3-rule-hairline);
+  padding-left: var(--v3-space-sm);
+  margin-left: 0;
+}
+
+.v3 .v3-blog-fig-sentence {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+  margin: 0;
+}
+
+.v3 .v3-blog-fig-link {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
+  margin: var(--v3-space-xs) 0 0;
+}
+
+.v3 .v3-blog-fig-jump {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+/* ---------------------------------------------------------------------------
+   4. THE CONTENTS — the guide's own questions, tracking the reader.
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-blog-toc {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: v3-blog-toc;
+}
+
+.v3 .v3-blog-toc-link {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-2xs) 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+  text-decoration: none;
+  border-left: var(--v3-rule-weight-section) solid transparent;
+  padding-left: var(--v3-space-sm);
+  transition:
+    color var(--v3-dur-state) var(--v3-ease-out),
+    border-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-blog-toc-link:hover {
+  color: var(--v3-ink);
+  border-left-color: var(--v3-edge);
+}
+
+.v3 .v3-blog-toc-link.is-current {
+  color: var(--v3-ink);
+  border-left-color: var(--v3-navy);
+}
+
+.v3 .v3-blog-toc-link:focus-visible {
+  outline: 3px solid var(--v3-focus);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   5. THE BODY — headings that read as questions, and sourced links that show
+      where they go. The prose measure and typography stay Tailwind's; what is
+      added here is the apparatus, not a second body style.
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-blog-prose h2 {
+  font-family: var(--v3-font-display);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-heading);
+  border-top: var(--v3-rule-hairline);
+  padding-top: var(--v3-space-md);
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
+/* Layered on purpose (ci:css-layers): an un-layered element color rule beats
+   the whole Tailwind utilities layer regardless of specificity, which is the
+   invisible-CTA-text failure of 2026-07-08. */
+@layer base {
+  .v3 .v3-blog-prose a {
+    color: var(--v3-ink);
+  }
+}
+
+.v3 .v3-blog-prose a {
+  text-underline-offset: 0.2em;
+}
+
+/* The footnote: the host of every outbound citation, in the margin of the line
+   it belongs to. A reader can see, without clicking, whose document a claim
+   rests on. */
+.v3 .v3-blog-cite {
+  display: inline-block;
+  margin-left: 0.3em;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: lowercase;
+  color: var(--v3-ink-muted);
+  vertical-align: 0.35em;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------
+   6. THE QUESTIONS — the FAQ block as answers a reader opens, not a wall.
+      The text is unchanged and stays in the DOM, so the FAQPage schema built
+      from the raw body still matches what is on screen.
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-blog-questions {
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3 .v3-blog-q {
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.v3 .v3-blog-q-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v3-space-md);
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-sm) 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.v3 .v3-blog-q-summary::-webkit-details-marker {
+  display: none;
+}
+
+.v3 .v3-blog-q-summary:focus-visible {
+  outline: 3px solid var(--v3-focus);
+  outline-offset: 2px;
+}
+
+.v3 .v3-blog-q-text {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-blog-q-mark {
+  position: relative;
+  flex: none;
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.v3 .v3-blog-q-mark::before,
+.v3 .v3-blog-q-mark::after {
+  content: '';
+  position: absolute;
+  inset: 50% 0 auto 0;
+  height: var(--v3-rule-weight-hairline);
+  background: var(--v3-ink);
+}
+
+.v3 .v3-blog-q-mark::after {
+  transform: rotate(90deg);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-blog-q[open] .v3-blog-q-mark::after {
+  transform: rotate(0deg);
+}
+
+.v3 .v3-blog-q-answer {
+  padding-bottom: var(--v3-space-md);
+  max-width: var(--v3-measure-text);
+}
+
+.v3 .v3-blog-q-answer p {
+  margin: 0 0 var(--v3-space-sm);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}

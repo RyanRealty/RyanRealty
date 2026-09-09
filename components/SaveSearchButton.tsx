@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
+import { useUrlSearchParams } from '@/lib/search/url-search-params.client'
 import { createSavedSearch } from '@/app/actions/saved-searches'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { normalizeSavedSearchFilters } from '@/lib/search-filters'
@@ -49,7 +50,7 @@ type Props = {
 export default function SaveSearchButton({ user, pathContext }: Props) {
   const pathFilters = pathContext ? buildSavedSearchPathFilters(pathContext) : undefined
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const searchParams = useUrlSearchParams()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')

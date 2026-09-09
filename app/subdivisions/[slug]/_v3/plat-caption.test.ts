@@ -9,7 +9,7 @@ describe('platCaption', () => {
       platCaption({
         displayName: 'Ridge at Eagle Crest',
         resortLabel: 'Eagle Crest',
-        photographOf: 'Eagle Crest',
+        photograph: { kind: 'resort', label: 'Eagle Crest' },
         cityName: 'Redmond',
         activeForSale: 14,
         medianAsking: '$910,000',
@@ -24,7 +24,7 @@ describe('platCaption', () => {
       platCaption({
         displayName: 'Ridge at Eagle Crest',
         resortLabel: 'Eagle Crest',
-        photographOf: 'Eagle Crest',
+        photograph: { kind: 'resort', label: 'Eagle Crest' },
         activeForSale: null,
       }),
     ).toBe('That photograph is Eagle Crest. Ridge at Eagle Crest is one of the subdivisions inside it.')
@@ -111,9 +111,55 @@ describe('platCaption', () => {
     expect(platCaption({ displayName: '   ' })).toBeNull()
   })
 
+  it('names the home in the frame when the opening is one of the plat’s own listings', () => {
+    expect(
+      platCaption({
+        displayName: 'Diamond Bar Ranch',
+        cityName: 'Redmond',
+        activeForSale: 1,
+        photograph: { kind: 'listing', address: '2623 6th Drive' },
+      }),
+    ).toBe(
+      "Diamond Bar Ranch, one of Redmond's subdivisions, has 1 home for sale right now. The photograph is 2623 6th Drive \u2014 that home.",
+    )
+  })
+
+  it('says which of them the frame is when the plat holds more than one', () => {
+    expect(
+      platCaption({
+        displayName: 'Willowbrook',
+        cityName: 'Madras',
+        activeForSale: 13,
+        photograph: { kind: 'listing', address: '280 Double Eagle Avenue' },
+      }),
+    ).toContain('The photograph is 280 Double Eagle Avenue, one of them.')
+  })
+
+  it('says a drawing is a drawing, and where the lines came from', () => {
+    const line = platCaption({
+      displayName: 'Willowbrook',
+      cityName: 'Madras',
+      activeForSale: 13,
+      photograph: { kind: 'ground' },
+    })
+    expect(line).toContain('The drawing above is the ground under Willowbrook: its streets and water, from US Census TIGER data.')
+  })
+
+  it('carries the credit even when there is no setting sentence to carry it', () => {
+    expect(platCaption({ displayName: 'A', photograph: { kind: 'ground' } })).toBe(
+      'The drawing above is the ground under A: its streets and water, from US Census TIGER data.',
+    )
+  })
+
+  it('drops a listing credit with no address rather than crediting nothing', () => {
+    expect(
+      platCaption({ displayName: 'A', cityName: 'C', photograph: { kind: 'listing', address: '  ' } }),
+    ).toBe("A is one of C's subdivisions.")
+  })
+
   it('never says plat, the county word parity.json keeps off the public page', () => {
     const all = [
-      platCaption({ displayName: 'A', photographOf: 'R', activeForSale: 2 }),
+      platCaption({ displayName: 'A', photograph: { kind: 'resort', label: 'R' }, activeForSale: 2 }),
       platCaption({ displayName: 'A', resortLabel: 'R', activeForSale: 2, medianAsking: '$1.2M' }),
       platCaption({ displayName: 'A', neighborhoodLabel: 'N', cityName: 'C' }),
       platCaption({ displayName: 'A', cityName: 'C', activeForSale: 2 }),

@@ -31,3 +31,52 @@
   inset: auto;
   height: auto;
 }
+
+/* The drawing above the grid opens the page, so it carries the page's gutter
+   and the space the Field takes below it (SITE-49). */
+.pd-spread.v3 {
+  padding: 0 var(--v3-gutter) var(--v3-space-xl);
+}
+
+/* FORTY-EIGHT CUTS STACK INTO A TALL PILE. The strip's default lane step is
+   sized for a dozen marks; at this n the track took the whole 900px fold and
+   the first house fell below it — the page would have traded one defect (only
+   a portal card in the fold) for its mirror (only a chart). A tighter lane
+   keeps the distribution's shape and leaves the first card's photograph in
+   view at 1440. The dots keep their own hit box; only the row spacing moves. */
+.pd-spread .v3-drawing__strip {
+  --v3-drawing-lane-step: 0.85rem;
+}
+
+/* A THUMB NEEDS ROOM INSIDE A DENSE CLUSTER. At 375 the tight lane packs a
+   column of dots into what reads as one stroke, and the 1.5rem hit boxes then
+   overlap: the nicest thing on the page becomes fiddly to use with a thumb
+   (evaluator, 2026-09-09). The phone gets its lane back — the distribution's
+   shape survives a taller stack, a merged column does not survive a finger. */
+@media (max-width: 47.999rem) {
+  .pd-spread .v3-drawing__strip {
+    /* Over the mark's own 1.5rem box, so two stacked hit areas never overlap. */
+    --v3-drawing-lane-step: 1.65rem;
+  }
+}
+
+/* THE CUT AS A MARK ON THE CARD. A short ink track under the ask, filled to
+   this home's cut as a share of the deepest cut on the page. No colour: a
+   price cut is not an exception, it is the page's subject. */
+.pd-card__ask {
+  display: grid;
+  gap: var(--v3-space-3xs);
+}
+
+.pd-card__cut {
+  display: block;
+  height: 3px;
+  max-width: 8rem;
+  background: color-mix(in srgb, var(--v3-ink) 14%, transparent);
+}
+
+.pd-card__cut > span {
+  display: block;
+  height: 100%;
+  background: var(--v3-ink);
+}

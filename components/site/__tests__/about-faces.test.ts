@@ -19,10 +19,30 @@ describe('about faces fold', () => {
     expect(css).not.toMatch(/\.about-faces__photo\s*\{[\s\S]*?height:\s*auto/)
   })
 
-  it('crops roster photos head-and-shoulders so faces stay in frame (H12)', () => {
+  /**
+   * SITE-48 (2026-09-09) split this contract in two, so the assertion says
+   * which mount it is talking about.
+   *
+   * The COMPACT homepage table still crops head-and-shoulders (H12): its
+   * cutouts are column heads at small scale and a whole-frame fit would put a
+   * thumbnail in a shelf built for a face.
+   *
+   * The ROSTER does not. Two separate evaluators read the cover crop's straight
+   * line at the shoulders as a rectangular box drawn behind the portrait — the
+   * thing CLAUDE.md section 3 bans by name — and measurement settled it: the
+   * PNGs ARE alpha-matted (corners rgba 0,0,0,0, 26-35% of every file
+   * transparent) and what ends flat is the photograph, which frames each
+   * subject to the chest. `contain` keeps the whole cutout and the shelf makes
+   * that flat edge the design, the same device the compact table has used since
+   * SITE-M1.
+   */
+  it('crops the compact table head-and-shoulders (H12) and lets the roster cutout stand whole', () => {
     const css = readFileSync('app/about/_v3/about-faces.css', 'utf8')
     expect(css).toMatch(/\.about-faces__photo\s*\{[\s\S]*?object-fit:\s*cover/)
     expect(css).toMatch(/object-position:\s*center 18%/)
+    expect(css).toMatch(
+      /\.about-faces:not\(\.about-faces--compact\) \.about-faces__photo\s*\{[\s\S]*?object-fit:\s*contain/,
+    )
   })
 })
 

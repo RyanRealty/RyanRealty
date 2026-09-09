@@ -153,6 +153,22 @@ module.exports = {
       numberOfRuns: 3,
       settings: {
         preset: "desktop",
+        // Audit as a crawler sees the page (SITE-29, 2026-09-09). Next 16
+        // STREAMS metadata for any user agent outside its HTML_LIMITED_BOT_UA_RE
+        // (node_modules/next/dist/shared/lib/router/utils/html-bots.js): when
+        // generateMetadata resolves after the shell, the <title>, description
+        // and robots tags land in the body and are hoisted only after
+        // hydration. Lighthouse 12's desktop UA carries no bot marker, and its
+        // meta gatherer reads <head> only, so on a CI runner with a slow
+        // database the listing page (a dynamic route with a DB read in
+        // generateMetadata) failed `meta-description` at 0.92 three runs out
+        // of three while the same URL scored 1.0 locally. Googlebot and
+        // Chrome-Lighthouse are in Next's bot list and get BLOCKING metadata;
+        // this is that treatment, so the SEO audit measures what a crawler
+        // reads and stops depending on runner speed. Lighthouse's own desktop
+        // UA string, plus the marker Lighthouse ≤11 used to append.
+        emulatedUserAgent:
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Chrome-Lighthouse",
       },
     },
     assert: {

@@ -47,6 +47,8 @@
  *                `a`          scroll to `#a` when it exists, else shoot the top
  *                `b=SEL`      scroll SEL into view, then shoot the viewport
  *                `c=SEL!click` scroll to SEL, click it, then shoot the viewport
+ *                `c=SEL!hover` scroll to SEL, rest the pointer on it, then
+ *                             shoot — the record of a hover reveal (SITE-52)
  *                `d=SEL!type:TEXT` scroll to SEL, fill it with TEXT, submit its
  *                             form, wait for the answer, then shoot. A states
  *                             argument containing `!type:` is separated by
@@ -118,11 +120,19 @@
  *     was correct. The scroll now reserves the target's own
  *     `scroll-margin-top`, or the pinned chrome's height plus 24 when it
  *     declares none.
+ * 12. Streamed sections. A place page streams: at domcontentloaded the
+ *     document holds one section and the rest land over the next two seconds
+ *     as their reads resolve. A `--states` selector for a late section came
+ *     back "not found" while the same URL curled with it every time
+ *     (2026-09-09, #subdivisions on /cities/bend/mountain-view). The stream
+ *     closing is the document's `load` event, so `loadPage` waits for it,
+ *     bounded at 30s, before anything is measured.
  *
  * RUNNING A SERVER FOR IT. In a git worktree use `npx next dev --webpack`:
  * Turbopack refuses the symlinked `node_modules` a worktree gets. Any port is
  * fine; pass it in the base URL.
  */
+import { execFile } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import sharp from 'sharp'
@@ -192,12 +202,13 @@ export function parseStates(raw) {
     .filter(Boolean)) {
     const eq = chunk.indexOf('=')
     if (eq === -1) {
-      states.push({ name: chunk, selector: `#${chunk}`, anchor: null, click: false, type: null, selectorImplied: true })
+      states.push({ name: chunk, selector: `#${chunk}`, anchor: null, click: false, hover: false, type: null, selectorImplied: true })
       continue
     }
     const name = chunk.slice(0, eq).trim()
     let selector = chunk.slice(eq + 1).trim()
     let click = false
+    let hover = false
     let type = null
     const bang = selector.indexOf('!type:')
     if (bang !== -1) {
@@ -206,6 +217,9 @@ export function parseStates(raw) {
     } else if (selector.endsWith('!click')) {
       click = true
       selector = selector.slice(0, -'!click'.length).trim()
+    } else if (selector.endsWith('!hover')) {
+      hover = true
+      selector = selector.slice(0, -'!hover'.length).trim()
     }
     // `SEL@ANCHOR` — click SEL, frame ANCHOR. A control and the thing it
     // changes are usually not the same element: the homepage Sell tab sits at
@@ -219,7 +233,7 @@ export function parseStates(raw) {
       anchor = selector.slice(at + 1).trim() || null
       selector = selector.slice(0, at).trim()
     }
-    states.push({ name, selector, anchor, click, type, selectorImplied: false })
+    states.push({ name, selector, anchor, click, hover, type, selectorImplied: false })
   }
   return states
 }
@@ -407,12 +421,96 @@ const HIDE_DEV_CHROME = `
 `
 
 async function dismissOverlays(page) {
+  // The dev-server build badge is a <nextjs-portal> shadow host pinned to the
+  // bottom-left corner, so it lands in the corner of every record taken against
+  // `next dev` — which is every record these lanes take. It is not the page.
+  await page.evaluate(() => document.querySelectorAll('nextjs-portal').forEach((n) => n.remove())).catch(() => {})
   for (const name of ['Maybe later', 'Accept All', 'Accept all', 'Essential only', 'Got it']) {
     try {
       const btn = page.getByRole('button', { name }).first()
       if (await btn.isVisible({ timeout: 250 })) await btn.click({ timeout: 600 })
     } catch {}
   }
+}
+
+/**
+ * Trap 11 — the pinned browser is not the installed browser. A cloud sandbox
+ * ships one chromium build under PLAYWRIGHT_BROWSERS_PATH; bump the playwright
+ * package and its expected build moves ahead of it, so `chromium.launch()` dies
+ * with "Executable doesn't exist" and tells you to run `npx playwright install`,
+ * which these images forbid (PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD). Both lanes
+ * working on 2026-09-08 hit it and each hand-passed an executablePath.
+ *
+ * So: use playwright's own resolution when the file is really there, and
+ * otherwise fall back to the newest chromium actually installed. Returns an
+ * empty object on a normal machine, where nothing needs saying.
+ */
+function installedChromium() {
+  const override = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+  if (override && existsSync(override)) return { executablePath: override }
+  try {
+    if (existsSync(chromium.executablePath())) return {}
+  } catch {
+    /* playwright cannot even name it — fall through to the scan */
+  }
+  const root = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers'
+  if (!existsSync(root)) return {}
+  const builds = readdirSync(root)
+    .filter((d) => /^chromium-\d+$/.test(d))
+    .sort((a, b) => Number(b.split('-')[1]) - Number(a.split('-')[1]))
+  for (const build of builds) {
+    const bin = join(root, build, 'chrome-linux', 'chrome')
+    if (existsSync(bin)) {
+      console.log(`  browser    ${bin} (playwright's pinned build is not installed)`)
+      return { executablePath: bin }
+    }
+  }
+  return {}
+}
+
+/**
+ * Trap 10 — a cloud agent's browser cannot reach the image hosts, so the record
+ * shows a page nobody ships. In the sandboxes these lanes run in, the browser's
+ * egress refuses the Supabase storage bucket, the Spark photo CDN and the
+ * YouTube thumbnail host (ERR_CONNECTION_RESET) while curl reaches all three
+ * through the agent proxy. Lanes each discovered this separately on 2026-09-08
+ * and one shipped a whole set of records with a navy void where the hero is.
+ *
+ * So: try the browser's own stack first (on a normal machine that is the whole
+ * story and costs one extra hop), and only when it throws, fetch the same URL
+ * with curl and fulfil the real bytes. Never a substitute image — if curl fails
+ * too, the request is aborted and waitImages simply records what loaded.
+ */
+const RELAY_WHEN_BLOCKED = [/\/storage\/v1\/object\/public\//, /cdn\.resize\.sparkplatform\.com/, /i\.ytimg\.com/]
+
+const CONTENT_TYPE_BY_EXT = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', avif: 'image/avif', gif: 'image/gif', svg: 'image/svg+xml' }
+
+async function relayBlockedAssets(page) {
+  await page.route(
+    (u) => RELAY_WHEN_BLOCKED.some((re) => re.test(u.href)),
+    async (route) => {
+      try {
+        const direct = await route.fetch()
+        await route.fulfill({ response: direct })
+        return
+      } catch {
+        /* browser egress refused it — fall through to curl */
+      }
+      const href = route.request().url()
+      try {
+        const body = await new Promise((ok, no) =>
+          execFile('curl', ['-sSL', '--max-time', '30', href], { encoding: 'buffer', maxBuffer: 96 * 1024 * 1024 }, (err, out) =>
+            err ? no(err) : ok(out),
+          ),
+        )
+        if (!body || body.length === 0) throw new Error('empty body')
+        const ext = (href.split('?')[0].split('.').pop() ?? '').toLowerCase()
+        await route.fulfill({ status: 200, body, contentType: CONTENT_TYPE_BY_EXT[ext] ?? 'application/octet-stream' })
+      } catch {
+        await route.abort().catch(() => {})
+      }
+    },
+  )
 }
 
 /** Trap 5 — webfonts reflow every heading after first paint. */
@@ -471,6 +569,20 @@ async function settleText(page, selector, { every = 500, cap = 45000 } = {}) {
  * the page will not move (a scroll-locked modal, a shorter page than expected).
  */
 async function wheelTo(page, targetY) {
+  // Trap 13 — wheel from the top-right corner, not the viewport centre. A
+  // wheel event lands on whatever is under the pointer, and a hydrated
+  // V3Atlas (or any scroll container) under the centre eats it as a zoom,
+  // so the page stops moving and this loop reads a stall: on 2026-09-09
+  // every anchor below the atlas on /cities/bend/awbrey-butte shot the atlas
+  // instead, on a production server, where the atlas hydrates before the
+  // first wheel (a dev server's late chunk had hidden this). The corner is
+  // header chrome on every route, and wheel over it scrolls the document.
+  // Side effect, deliberate: the centre pointer also raised the atlas's hover
+  // card into every atlas-bearing record (the "NEIGHBORHOOD · 98 listings"
+  // card in the 2026-09-08 shots); records now show the page as a reader
+  // sees it before any pointer intent.
+  const vp = page.viewportSize()
+  if (vp) await page.mouse.move(Math.max(2, vp.width - 4), 2)
   let current = await readScrollY(page)
   let stalled = 0
   for (let guard = 0; guard < 160 && Math.abs(current - targetY) > 48; guard += 1) {
@@ -503,15 +615,65 @@ async function primeReveals(page) {
   return height
 }
 
-async function loadPage(page, url) {
+/**
+ * Trap 12 — a record must not quietly show the page's degraded read. Every
+ * place read here is wrapped in a 3.5-4s timeout fallback, and a dev server
+ * compiling under load blows straight through it: the page then renders its
+ * honest withheld state ("Live counts are unavailable right now", a callout
+ * with no figure) and the capture writes THAT as the record. It happened on
+ * 2026-09-08 to a whole mobile set, and the evaluator scored the withheld copy
+ * as the shipped design and marked the feature missing.
+ *
+ * The withheld state is a real state and worth capturing deliberately, so this
+ * does not ban it: it reloads, and only fails when the page will not come back.
+ * A degraded record is worse than no record, because a number gets written
+ * against it.
+ */
+const DEGRADED_SENTINELS = [
+  'Live counts are unavailable right now',
+  'counts are unavailable',
+  'could not be read right now',
+]
+
+async function degradedRead(page) {
+  const text = await page.evaluate(() => document.body.innerText || '').catch(() => '')
+  return DEGRADED_SENTINELS.find((s) => text.includes(s)) ?? null
+}
+
+async function loadPage(page, url, { attempt = 1 } = {}) {
   // Trap 6 — domcontentloaded plus an explicit settle, never networkidle.
   const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 })
+  // Trap 12 — streamed sections. App Router streams a place page: at
+  // domcontentloaded the document holds ONE section, and the other seventeen
+  // land over the next two seconds as their reads resolve. Fonts, images and
+  // the scroll walk are not that signal (a shell with no images is "90%
+  // decoded" at once), so a `--states` selector for a late section came back
+  // "not found" while the same URL curled with it every time (2026-09-09,
+  // #subdivisions on /cities/bend/mountain-view). The stream closing IS the
+  // `load` event; wait for it, bounded, and fall through if a socket the page
+  // keeps warm holds it open.
+  await page.waitForLoadState('load', { timeout: 30000 }).catch(() => {})
   await waitFonts(page)
   await page.waitForTimeout(1200)
   await dismissOverlays(page)
   const height = await primeReveals(page)
   await waitImages(page)
   await page.waitForTimeout(600)
+
+  const degraded = await degradedRead(page)
+  if (degraded) {
+    if (attempt >= 3) {
+      throw new Error(
+        `the page is still serving its degraded read after ${attempt} loads ("${degraded}"). ` +
+          `Warm the route first (curl it with a browser user agent until it is fast) and re-run — ` +
+          `a record captured in this state understates the page and any score written against it is wrong.`,
+      )
+    }
+    console.log(`  reload     degraded read ("${degraded}") — attempt ${attempt + 1} of 3`)
+    await page.waitForTimeout(2500)
+    return loadPage(page, url, { attempt: attempt + 1 })
+  }
+
   return { status: response?.status() ?? 0, height }
 }
 
@@ -582,9 +744,11 @@ async function main() {
   console.log(`  capture    ${opts.full ? `full page (height-capped at ${MAX_FULL_PAGE_HEIGHT}px)` : 'first viewport'} · scale 1 · palette-quantized`)
   console.log('')
 
+  // An explicit CHROMIUM_EXECUTABLE wins; otherwise fall back to the newest
+  // installed chromium under /opt/pw-browsers, which is what this image ships.
   const browser = await chromium.launch({
     args: LAUNCH_ARGS,
-    ...(CHROMIUM_EXECUTABLE ? { executablePath: CHROMIUM_EXECUTABLE } : {}),
+    ...(CHROMIUM_EXECUTABLE ? { executablePath: CHROMIUM_EXECUTABLE } : installedChromium()),
   })
   const written = []
   let failed = false
@@ -601,6 +765,7 @@ async function main() {
       const mediaStats = { served: 0 }
       await installRemoteMediaProxy(context, new URL(url).origin, mediaStats)
       const page = await context.newPage()
+      await relayBlockedAssets(page)
       const consoleErrors = []
       page.on('console', (m) => {
         if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 160))
@@ -666,7 +831,13 @@ async function main() {
 
         if (target == null) {
           if (!state.selectorImplied) {
-            console.error(`  ${viewport.key}: state "${state.name}" — selector ${frameSel} not found`)
+            // Say what IS there: a "not found" with no context cost an hour on
+            // 2026-09-09 (#subdivisions rendered for curl and for a bare
+            // Playwright context, and this tool alone could not see it).
+            const present = await page
+              .evaluate(() => [...document.querySelectorAll('[id]')].map((e) => e.id).filter((id) => /^[a-z][a-z0-9-]*$/.test(id)).slice(0, 40).join(', '))
+              .catch(() => '')
+            console.error(`  ${viewport.key}: state "${state.name}" — selector ${frameSel} not found (ids present: ${present || 'none'})`)
             failed = true
             continue
           }
@@ -686,6 +857,16 @@ async function main() {
               const framed = await measure(state.anchor)
               if (framed) await wheelTo(page, Math.max(0, framed.top - framed.reserve))
             }
+          }
+          if (state.hover) {
+            // The pointer rests on SEL and the shot records what that reveals.
+            // The tool parks the pointer top-right before every plain shot
+            // (Trap 13), so a reveal is only ever in a record that asked for it.
+            await page.hover(state.selector, { timeout: 5000 }).catch((err) => {
+              console.error(`  ${viewport.key}: state "${state.name}" — hover failed: ${err.message.split('\n')[0]}`)
+              failed = true
+            })
+            await page.waitForTimeout(400)
           }
           if (state.type != null) {
             // Fill, submit the owning form, and wait for the ANSWER — not for

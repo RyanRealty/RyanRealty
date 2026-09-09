@@ -5,7 +5,7 @@ import { flushSync } from 'react-dom'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
 import type { FormEvent } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useUrlSearchParams } from '@/lib/search/url-search-params.client'
 import { BellAlertIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -29,7 +29,7 @@ import {
  * ANONYMOUS visitors on /search (signed-in users already have save-search).
  *
  * The URL is the source of truth for the current search on /search, so we read
- * the live filters from useSearchParams(). The captured alert matches exactly
+ * the live filters from the URL query store. The captured alert matches exactly
  * what the visitor is looking at, even after they change a filter client-side.
  *
  * Variants:
@@ -134,7 +134,7 @@ export function SearchAlertCapture({
    */
   variant?: 'sticky' | 'inline'
 }) {
-  const searchParams = useSearchParams()
+  const searchParams = useUrlSearchParams()
   const [email, setEmail] = useState('')
   const [company, setCompany] = useState('') // honeypot, humans never see this
   const [state, setState] = useState<'idle' | 'done' | 'error'>('idle')

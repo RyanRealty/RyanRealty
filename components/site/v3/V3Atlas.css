@@ -13,6 +13,14 @@
   background: var(--v3-surface);
 }
 
+/* Hash landing (#atlas). The chrome is sticky at --v3-chrome-h, and without
+   this the section's H2 landed under it with only its descenders showing
+   (three evaluators, 2026-09-09). Same offset the alerts strip and the pulse
+   use. */
+.v3.v3-atlas[id] {
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
 /* The grid. Phone: head, map, legend, aside. From 64rem: head, legend and
    aside in a left column, the map a tall panel on the right (the basin is
    portrait, so the map takes the whole frame height). */
@@ -1353,7 +1361,16 @@ a.v3-atlas__card-home {
    silhouettes are under 20px, and on a desktop because the left column was
    otherwise 400px of empty cream beside a map full of places nobody could
    read the name of (evaluator round five, TEAM-MATT-5). Tapping one pins its
-   card from the place's own centre. Wrapped here, a scroll rail on a phone. */
+   card from the place's own centre.
+
+   WRAPPED AT EVERY WIDTH (SITE-07 quality pass, 2026-09-09). Under 48rem this
+   was a hidden-scrollbar rail with no cue, and the neighborhood record showed
+   the third chip cut mid-word at the viewport edge, which reads as a bug and
+   not as a rail. decisions.md bans horizontal-scroll section rails and the
+   mobile mandate bans horizontal scroll outright, so the chips wrap. A long
+   set on a phone folds behind one trailing chip instead. The thesis: a
+   neighborhood's plats read as its own children, and a page shows the first
+   of its children and says how many more there are rather than a wall. */
 .v3-atlas__chips {
   display: flex;
   flex-wrap: wrap;
@@ -1361,23 +1378,22 @@ a.v3-atlas__card-home {
   margin-top: var(--v3-space-2xs);
 }
 
-@media (max-width: 47.99rem) {
-  .v3-atlas__chips {
-    flex-wrap: nowrap;
-    margin: var(--v3-space-2xs) calc(-1 * var(--v3-gutter)) 0;
-    padding: 0 var(--v3-gutter) var(--v3-space-3xs);
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
-    scrollbar-width: none;
-  }
-
-  .v3-atlas__chips::-webkit-scrollbar {
-    display: none;
-  }
+/* The rest of a folded set. `display: contents` so the chips inside it sit in
+   the same wrapping row as the first eight; the wrapper exists so the trailing
+   chip has one element to point aria-controls at. */
+.v3-atlas__chips-rest,
+.v3-atlas__chips-rest-wide {
+  display: contents;
 }
 
+/* Wide enough that an ellipsis is the exception: sibling plats that shared a
+   long prefix used to ellipsize to one identical string at 11rem, and at
+   14rem four "Awbrey Glen Homesites Phase …" chips still did (the shared
+   prefix is another place's name, which the door label must keep). 18rem
+   holds "Awbrey Glen Homesites Phase Eight" whole and still fits inside the
+   375 column, so the pill stays one line and the name stays distinct. */
 .v3-atlas__chip-name {
-  max-width: 11rem;
+  max-width: 18rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1402,7 +1418,6 @@ a.v3-atlas__card-home {
   font-weight: var(--v3-weight-medium);
   line-height: var(--v3-leading-control);
   cursor: pointer;
-  scroll-snap-align: start;
   transition: background var(--v3-dur-state) var(--v3-ease-out), color var(--v3-dur-state) var(--v3-ease-out);
 }
 
@@ -1425,6 +1440,45 @@ a.v3-atlas__card-home {
 
 .v3-atlas__chip.is-active .v3-atlas__chip-n {
   color: color-mix(in srgb, var(--v3-cream) 80%, transparent);
+}
+
+/* The fold. A set past the cap shows its first chips and one trailing chip
+   reading "+ N more" (aria-expanded, aria-controls on the rest); opened, it
+   reads "Fewer" and the whole set wraps. The cap is eight on a phone and
+   twenty-four from 48rem: the first 1440 record showed seventeen rows of
+   chips beside empty cream, which is the wall the fold exists to prevent, so
+   the column folds too, later. The markup carries both rests and both
+   labels; each width shows one of each, and a hidden label is out of the
+   accessible name. Same chip, same pill, same 44px: a control in the
+   register's own style and never a new look. */
+.v3-atlas__chip--more {
+  display: inline-flex;
+}
+
+@media (max-width: 47.99rem) {
+  .v3-atlas__chips-rest.is-folded,
+  .v3-atlas__chips-rest-wide.is-folded {
+    display: none;
+  }
+
+  .v3-atlas__chip-name--wide {
+    display: none;
+  }
+}
+
+@media (min-width: 48rem) {
+  .v3-atlas__chips-rest-wide.is-folded {
+    display: none;
+  }
+
+  .v3-atlas__chip-name--narrow {
+    display: none;
+  }
+
+  /* Nothing past twenty-four: the column shows the whole set and no chip. */
+  .v3-atlas__chip--more-narrow-only {
+    display: none;
+  }
 }
 
 /* A mount inside a narrow column (a listing page's main column) stacks at

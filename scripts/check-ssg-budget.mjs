@@ -32,6 +32,14 @@ const REPORT = process.argv.includes('--report')
 const ZERO_PRERENDER = [
   'app/subdivisions/[slug]/page.tsx',
   'app/oregon/[city]/page.tsx',
+  // SITE-29: the blog post and the blog index's category/page views serve
+  // on demand under `revalidate`. A segment with NO generateStaticParams is
+  // never cached at all, so the empty list is what makes them ISR; a real
+  // list would put every post's DAL chain back into the build.
+  'app/blog/[slug]/page.tsx',
+  'app/blog/category/[category]/page.tsx',
+  'app/blog/page/[n]/page.tsx',
+  'app/blog/category/[category]/page/[n]/page.tsx',
 ]
 
 const failures = []

@@ -75,8 +75,10 @@ export function marketHubChooser(): ReadonlyArray<{ label: string; href: string 
   return [
     { label: 'Live market', href: '/housing-market' },
     { label: 'By city', href: '/housing-market#cities' },
-    { label: 'Explore', href: '/housing-market/history' },
-    { label: 'Sales / weekly', href: '/housing-market/reports' },
+    // Reader language, not our IA (evaluator, 2026-09-09: "Explore" names a
+    // sitemap entry and "Sales / weekly" reads as a URL path).
+    { label: 'Every closed sale', href: '/housing-market/history' },
+    { label: 'Weekly snapshots', href: '/housing-market/reports' },
     { label: 'Months of supply', href: '/months-of-supply' },
   ]
 }

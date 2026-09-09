@@ -15,6 +15,15 @@ type ListingDetailShellProps = {
    * subtree; this slot is where it goes.
    */
   floating?: ReactNode
+  /**
+   * SITE-45. The hero sits INSIDE the main column, beside the sidebar from the
+   * top, instead of full-bleed above the grid. One frame at the column's width
+   * keeps a 3:2 photograph's crop honest where an edge-to-edge frame at 1440
+   * cut roofs off, and it puts the broker card's Tour in the first viewport
+   * at 900px tall, which the full-width hero pushed under the fold. Below
+   * 64rem the column is the page, so the frame still runs edge to edge.
+   */
+  heroInMain?: boolean
   className?: string
 }
 
@@ -29,11 +38,12 @@ export function ListingDetailShell({
   main,
   sidebar,
   floating,
+  heroInMain = false,
   className,
 }: ListingDetailShellProps) {
   return (
     <div className={className}>
-      {hero ? (
+      {hero && !heroInMain ? (
         <section aria-label="Listing hero" className="listing-hero-bleed">
           {hero}
         </section>
@@ -42,6 +52,11 @@ export function ListingDetailShell({
         <div className={cn('listing-detail-grid', sidebar && 'has-sidebar')}>
           <div className="listing-detail-main">
             <BackToResults />
+            {hero && heroInMain ? (
+              <section aria-label="Listing hero" className="listing-hero-column">
+                {hero}
+              </section>
+            ) : null}
             {main}
           </div>
           {sidebar ? (

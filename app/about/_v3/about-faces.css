@@ -466,3 +466,332 @@
     display: inline-block;
   }
 }
+
+/* ===========================================================================
+   SITE-48 (2026-09-09). Two additions, both about the same finding: these
+   cards were "three identical directory cards … with no bio, specialty,
+   tenure, or sales fact to differentiate one broker from another" (taste
+   table, /team 39), sitting under a page opening that was "a phone book, not
+   a proof point" (/about 31).
+
+   1. The head slots — eyebrow, claim, figures, trace — so /about can OPEN on
+      this section rather than on a stack of contact links.
+   2. The per-broker record — one figure, its sentence, and a native
+      disclosure holding the places and the section 0 trace.
+
+   Every value resolves from components/site/v3/tokens.css. No raw color.
+   =========================================================================== */
+
+.about-faces__claim {
+  max-width: var(--v3-measure-text);
+  margin: var(--v3-space-2xs) 0 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-body);
+}
+
+/* The firm's own figures beside the claim: a row, not a KPI grid — each value
+   keeps a plain sentence under it, and the trace sits below the row. */
+.about-faces__figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-sm) var(--v3-space-xl);
+  margin: var(--v3-space-md) 0 0;
+  padding: 0;
+}
+
+.about-faces__figure {
+  min-width: 0;
+}
+
+.about-faces__figure-value {
+  margin: 0;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  font-weight: var(--v3-weight-display);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.about-faces__figure-label {
+  margin: var(--v3-space-3xs) 0 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+}
+
+/* The trace under the opening figures sits where the figures sit. The block
+   mount centres itself (`margin-inline: auto` against --v3-measure, so a line
+   mounted on a page root is not against the viewport edge), which inside this
+   head put the one sentence that explains the numbers in the middle of a
+   left-aligned page. Same specificity as the primitive's own rule, so the
+   measure it wants still applies to every other caller. */
+.v3 .about-faces__head details.v3-source {
+  margin: var(--v3-space-sm) 0 0;
+  max-inline-size: var(--v3-measure-text);
+}
+
+/* ---------------------------------------------------------------------------
+   The broker's own record. It opens the card's lower half on a hairline so it
+   reads as evidence about this person, not as another caption under the
+   licence line.
+   --------------------------------------------------------------------------- */
+
+.about-faces__record {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--v3-space-3xs);
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
+  margin-top: var(--v3-space-2xs);
+  padding-top: var(--v3-space-2xs);
+  border-top: var(--v3-rule-hairline);
+}
+
+.about-faces__record-figure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--v3-space-2xs);
+  margin: 0;
+  min-width: 0;
+}
+
+.about-faces__record-value {
+  color: var(--v3-ink);
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.about-faces__record-label {
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  text-wrap: balance;
+}
+
+/* The reveal: where those transactions were. Native disclosure, so the rows
+   are in the served HTML and no script is needed to read them. */
+.about-faces__where {
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.about-faces__where-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: var(--v3-tap);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  cursor: pointer;
+  list-style: none;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: var(--v3-rule-weight-hairline);
+  text-underline-offset: 0.28em;
+  transition: color var(--v3-dur-state) var(--v3-ease-out),
+    text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* Safari draws its own triangle through ::-webkit-details-marker even with
+   list-style:none, which would sit beside the caret below. */
+.about-faces__where-summary::-webkit-details-marker {
+  display: none;
+}
+
+/* The affordance. Without it the summary read as a caption, not a control:
+   at 375 "WHERE THOSE CLOSINGS WERE" wrapped to two lines of small caps with
+   nothing saying it opened. */
+.about-faces__where-caret {
+  flex-shrink: 0;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-right: var(--v3-rule-weight-hairline) solid currentColor;
+  border-bottom: var(--v3-rule-weight-hairline) solid currentColor;
+  transform: translateY(-0.12em) rotate(45deg);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.about-faces__where[open] > .about-faces__where-summary .about-faces__where-caret {
+  transform: translateY(0.06em) rotate(-135deg);
+}
+
+.about-faces__where-summary:hover,
+.about-faces__where[open] > .about-faces__where-summary {
+  text-decoration-color: currentColor;
+}
+
+/* The section 0 trace, folded behind the same control as the places. */
+.about-faces__where-trace {
+  margin: var(--v3-space-2xs) 0 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  line-height: var(--v3-leading-note);
+}
+
+.about-faces__where-trace-label {
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+}
+
+.about-faces__where-summary:hover,
+.about-faces__where[open] > .about-faces__where-summary {
+  color: var(--v3-ink);
+}
+
+.about-faces__where-summary:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.about-faces__where-list {
+  margin: 0 0 var(--v3-space-2xs);
+  padding: 0;
+  list-style: none;
+}
+
+.about-faces__where-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  padding: var(--v3-space-3xs) 0;
+  border-top: var(--v3-rule-hairline);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+}
+
+.about-faces__where-n {
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+
+
+/* ===========================================================================
+   NO BOX BEHIND A PORTRAIT — the roster catches up with the compact table
+   (SITE-48 round two, 2026-09-09).
+
+   Two separate evaluators, on /about and on /team, wrote the same craft
+   finding: "each portrait sits inside a hard-edged rectangular photo box with
+   a visible straight crop line at the shoulders", and both cited the rule in
+   CLAUDE.md section 3 — the headshots are alpha-matted so the subject drops
+   onto any background, and re-creating a rectangle behind one is banned. The
+   compact homepage table has said so in its own comment since SITE-M1; the
+   roster was the surface that never got it.
+
+   Two causes, both here: `.about-faces__item` drew a hairline box with a
+   near-white fill, and `object-fit: cover` sliced the cutout at the shoulders
+   so the alpha never showed. The cards become columns divided by a hairline,
+   and the portrait stands on the cream.
+   =========================================================================== */
+
+.about-faces:not(.about-faces--compact) .about-faces__item {
+  padding: var(--v3-space-sm) 0;
+  border: 0;
+  background: transparent;
+}
+
+/* 375: the three stack, so the rule runs between them. */
+.about-faces:not(.about-faces--compact) .about-faces__item + .about-faces__item {
+  border-top: var(--v3-rule-hairline);
+}
+
+@media (min-width: 48rem) {
+  /* Columns, not boxes: the grid gap becomes the gutter and the divider is a
+     single hairline on the inner edges. */
+  .about-faces:not(.about-faces--compact) .about-faces__item + .about-faces__item {
+    padding-left: var(--v3-space-lg);
+    border-top: 0;
+    border-left: var(--v3-rule-hairline);
+  }
+
+  .about-faces:not(.about-faces--compact) .about-faces__grid {
+    gap: 0 var(--v3-space-lg);
+  }
+}
+
+/* The cutout, whole. `contain` keeps the alpha edge; `bottom` stands the
+   subject on the shelf instead of floating it in a letterbox. */
+.about-faces:not(.about-faces--compact) .about-faces__photo {
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+/* ---------------------------------------------------------------------------
+   CALL CARRIES THE WEIGHT. Four chips of identical weight is the "card grids
+   with icons" tell, and it also said Schedule matters as much as Call on a
+   page whose job is to get a person on the phone.
+   --------------------------------------------------------------------------- */
+
+.about-faces:not(.about-faces--compact) .about-faces__reach--call {
+  color: var(--v3-cream);
+  background: var(--v3-navy);
+  border-color: var(--v3-navy);
+}
+
+/* Pressed/hover is navy at 85%, expressed off the token so a template swap
+   reaches it (ci:one-design-system) — the same value CLAUDE.md section 3 names
+   for hover, said in the token's own terms rather than as a raw rgba. */
+.about-faces:not(.about-faces--compact) .about-faces__reach--call:hover,
+.about-faces:not(.about-faces--compact) .about-faces__reach--call:focus-visible {
+  background: color-mix(in srgb, var(--v3-navy) 85%, transparent);
+  border-color: color-mix(in srgb, var(--v3-navy) 85%, transparent);
+}
+
+/* The number rides inside the Call chip on a wide window: a tel: link on a
+   desk is not a tap, the same reason the compact rows print it. */
+.about-faces__reach-num {
+  display: none;
+}
+
+@media (min-width: 48rem) {
+  .about-faces:not(.about-faces--compact) .about-faces__reach-num {
+    display: inline;
+    margin-left: 0.4em;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* THE SHELF. Two evaluators read a "straight crop line at the shoulders" as a
+   box drawn behind the portrait. Measured, it is neither: the canonical PNGs
+   ARE alpha-matted (corners and mid-left read rgba 0,0,0,0; 26–35% of every
+   file is transparent), and what ends in a straight line is the PHOTOGRAPH —
+   each subject is framed to the chest, so the cutout's own bottom edge is
+   flat. The homepage compact table solved this in SITE-M1 by standing the
+   three cutouts on a shared hairline shelf, which makes that edge the design
+   rather than an accident. The roster does the same, at its own scale. */
+/* The shelf is the ROSTER's, so the selector says so rather than granting it to
+   every mount and then handing two of them back. The solo and portrait mounts
+   keep the 2:3 reserved box they already had, untouched, so nothing here has to
+   hand a photo box back to the browser to size — which is the CLS regression
+   the roster's own unit test watches for, and which it greps this file for. */
+@media (min-width: 48rem) {
+  .about-faces:not(.about-faces--compact):not(.about-faces--solo):not(.about-faces--portrait)
+    .about-faces__photo-link {
+    width: 100%;
+    /* A column-wide shelf: the box is as wide as the column and as tall as a
+       card photo, and `contain` scales the cutout to that height. The box is
+       still reserved before the PNG decodes — by an explicit height rather
+       than by the ratio. */
+    aspect-ratio: auto;
+    height: calc(var(--v3-card-photo-h) * 1.9);
+    border-bottom: var(--v3-rule-hairline);
+  }
+
+  .about-faces:not(.about-faces--compact) .about-faces__photo {
+    object-position: left bottom;
+  }
+}

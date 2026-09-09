@@ -11,17 +11,36 @@
  *       figure counts, one email field, one button, the standing disclosure
  *       beside them. The count arrives preformatted and only when it earns a
  *       display numeral; this file formats nothing (components/site/v3/index.ts).
- *       With `href` the numeral is a door to the newest-first search (Instrument
- *       door idiom: nothing at rest, underline on hover and focus) and a ghost
- *       link under the claim carries the same door where the numeral is not
- *       a comfortable target or is absent.
+ *
+ *       ONE DOOR, AND IT IS THE LABELLED ONE (evaluator, 2026-09-08). The
+ *       numeral used to be a link with no affordance at rest — no underline, no
+ *       weight, no colour — while a ghost button under the claim went to the
+ *       same place, hidden at wide windows. A door a reader cannot see is not a
+ *       door, and two doors to one place is a question. So the numeral is now a
+ *       FIGURE, never a control, and `href` draws exactly one door: the ghost
+ *       button under the claim, at every width, labelled with the place it
+ *       opens ("See the newest Bend listings"). A word beats a bare numeral as
+ *       a link name, and the Broadside numeral goes back to being the spectacle.
  *   (b) THE STICKY REPEAT, a fixed strip that shows once the visitor has
  *       scrolled past the section named by `stickyAfter` (the Atlas), and
  *       hides again while the callout or the footer is on screen, for the
  *       session after a dismissal, and for good after a successful subscribe.
- *       It carries its own one-line disclosure (`stickyNote`) so the repeat
- *       promises nothing the callout does not. The rules are pure functions in
- *       V3AlertsStrip.logic.ts.
+ *       It carries its own one line (`stickyNote`) — the scope and the cadence,
+ *       at reading size — so the repeat promises nothing the callout does not.
+ *       The rules are pure functions in V3AlertsStrip.logic.ts.
+ *
+ *       IT COSTS A PHONE ONE ROW UNTIL IT IS ASKED FOR. Measured at 375x812 the
+ *       strip was 142-155px — a fifth of the fold, carrying a form nobody had
+ *       asked for yet, sitting on a source trace and a ledger row. Below 48rem
+ *       it now rests as ONE row (the sentence, the control, the close) and opens
+ *       into the field and the disclosure on the visitor's own tap, which is
+ *       what `armed` is. Nothing about the wide layout moved: the field is
+ *       there from the start, and the same button submits it.
+ *
+ *       AND IT NEVER SITS ON CONTENT IT DID NOT PAY FOR. While the strip is
+ *       eligible the page root carries bottom padding and scroll padding equal
+ *       to the strip's measured height, so the last row of the page and any
+ *       in-page jump clear it.
  *
  * The capture is the caller's. `onSubmit` receives the email, the honeypot's
  * own value under the trap's name, and which of the two mounts sent it, and
@@ -39,13 +58,14 @@
  */
 
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react'
-import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading, V3SourceDisclosure } from './atoms'
 import {
   anchorPassed,
   isPlausibleEmail,
+  stickyAskClosed,
   stickyDismissKey,
+  stickyEligible,
   stickyVisible,
   V3_ALERTS_STICKY_INITIAL,
   type V3AlertsStatus,
@@ -81,13 +101,13 @@ export type V3AlertsStripProps = {
   claim: string
   /** One line under the claim that reconciles the figure with the offer, or null. */
   scopeLine?: string | null
-  /** The newest-first search for this place. Makes the numeral a door and adds the ghost link. */
+  /** The newest-first search for this place. Draws the section's one door, the ghost button. */
   href?: string
-  /** The ghost link's label ("See the newest Bend listings"). Required with `href`. */
+  /** The door's label ("See the newest Bend listings"). Required with `href`. */
   browseLabel?: string
-  /** The strip's one line, in parts, after the figure. */
+  /** The strip's one line, in parts, after the figure. The callout's claim joined. */
   stickyClaim: V3AlertsStickyClaim
-  /** The strip's one-line disclosure: frequency and unsubscribe, short. */
+  /** The strip's one line: the scope where the alert sends wider than the count, and the cadence. */
   stickyNote?: string
   /** The standing disclosure: how often, what else, how to stop. */
   promise: string
@@ -153,7 +173,10 @@ export function V3AlertsStrip({
   const [email, setEmail] = useState<string>('')
   const [bait, setBait] = useState<string>('')
   const [sticky, setSticky] = useState<V3AlertsStickyState>(V3_ALERTS_STICKY_INITIAL)
+  /** The visitor opened the strip's ask. Only the narrow layout rests closed. */
+  const [armed, setArmed] = useState(false)
   const sectionRef = useRef<HTMLElement | null>(null)
+  const stickyRef = useRef<HTMLElement | null>(null)
   const calloutInputRef = useRef<HTMLInputElement | null>(null)
   const stickyInputRef = useRef<HTMLInputElement | null>(null)
   const inFlight = useRef(false)
@@ -177,12 +200,33 @@ export function V3AlertsStrip({
     const footer = document.querySelector('.v3-footer') ?? document.querySelector('footer')
     const observers: IntersectionObserver[] = []
 
+    // "Passed" from the anchor's rect. An IntersectionObserver alone is not
+    // enough: it fires only when intersection CHANGES, so a jump from below the
+    // Atlas to above it (both non-intersecting, an anchor link or the Home key)
+    // would leave `passed` true with the callout back on screen. The observer
+    // gives the initial state and every crossing; a passive, frame-throttled
+    // scroll read keeps it honest across jumps.
+    const readPassed = () => {
+      if (!anchor) return
+      const rect = anchor.getBoundingClientRect()
+      const intersecting = rect.bottom > 0 && rect.top < window.innerHeight
+      setSticky((s) => ({ ...s, passed: anchorPassed({ isIntersecting: intersecting, boundingClientRect: rect }) }))
+    }
+    let frame = 0
+    const onScroll = () => {
+      if (frame) return
+      frame = window.requestAnimationFrame(() => {
+        frame = 0
+        readPassed()
+      })
+    }
     if (anchor) {
       const io = new IntersectionObserver(([entry]) => {
         if (entry) setSticky((s) => ({ ...s, passed: anchorPassed(entry) }))
       })
       io.observe(anchor)
       observers.push(io)
+      window.addEventListener('scroll', onScroll, { passive: true })
     }
     if (section) {
       const io = new IntersectionObserver(([entry]) => {
@@ -198,7 +242,11 @@ export function V3AlertsStrip({
       io.observe(footer)
       observers.push(io)
     }
-    return () => observers.forEach((io) => io.disconnect())
+    return () => {
+      observers.forEach((io) => io.disconnect())
+      window.removeEventListener('scroll', onScroll)
+      if (frame) window.cancelAnimationFrame(frame)
+    }
   }, [id, stickyAfter])
 
   const dismiss = useCallback(() => {
@@ -253,13 +301,76 @@ export function V3AlertsStrip({
     [send],
   )
 
+  /**
+   * THE STRIP'S ONE CONTROL DOES WHAT THE STRIP IS SHOWING. Where the layout
+   * rests closed (the phone) the field is not rendered to the eye or to the
+   * accessibility tree, so the button's job is to open the ask and put the
+   * caret in it; where the field is on screen (every wider window, and the
+   * phone once opened) the same button submits it.
+   *
+   * The test is the field's own rendered box, not a breakpoint copied into JS:
+   * a media query in two places drifts, and matchMedia at render is a hydration
+   * mismatch. This runs in an event handler, after layout, and cannot disagree
+   * with what the visitor is looking at.
+   */
   const onStickySubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault()
+      if (stickyAskClosed(stickyInputRef.current)) {
+        setArmed(true)
+        return
+      }
       void send('sticky')
     },
     [send],
   )
+
+  // The caret follows the ask it just opened; without this the visitor taps and
+  // then has to find the field that appeared under their thumb.
+  useEffect(() => {
+    if (!armed) return
+    stickyInputRef.current?.focus()
+  }, [armed])
+
+  const reserving = stickyEligible(sticky, status)
+
+  /**
+   * THE ROOM THE STRIP OCCUPIES IS PAID FOR BY THE PAGE, not taken from it. A
+   * fixed strip covers whatever the bottom of the viewport is showing; the two
+   * things a reader can be robbed of are the last row before the footer and the
+   * landing of an in-page jump, so the root carries bottom padding and scroll
+   * padding equal to the strip's own measured height for as long as the strip
+   * can return. Measured, never assumed: the strip is one row on a phone and
+   * two once the visitor opens it, and a hard-coded number would be wrong in
+   * both states. The page background runs under the footer, so the reserved
+   * band is invisible until the strip stands in it.
+   */
+  useEffect(() => {
+    const root = document.documentElement
+    const clear = () => {
+      document.body.style.removeProperty('padding-bottom')
+      root.style.removeProperty('scroll-padding-bottom')
+    }
+    const strip = stickyRef.current
+    if (!reserving || !strip) {
+      clear()
+      return clear
+    }
+    const apply = () => {
+      const height = Math.round(strip.getBoundingClientRect().height)
+      if (height <= 0) return
+      document.body.style.paddingBottom = `${height}px`
+      root.style.scrollPaddingBottom = `${height}px`
+    }
+    apply()
+    if (typeof ResizeObserver === 'undefined') return clear
+    const ro = new ResizeObserver(apply)
+    ro.observe(strip)
+    return () => {
+      ro.disconnect()
+      clear()
+    }
+  }, [reserving])
 
   const sending = status === 'sending'
   const isSent = status === 'sent'
@@ -267,6 +378,7 @@ export function V3AlertsStrip({
   const problemId = `${uid}-problem`
   const on = stickyVisible(sticky, status)
   const door = href && href.trim() ? href.trim() : null
+  const noteId = `${uid}-sticky-note`
 
   const trapField = (formId: string) =>
     trap ? (
@@ -284,15 +396,8 @@ export function V3AlertsStrip({
       </div>
     ) : null
 
-  const numeral = count ? (
-    door ? (
-      <Link href={door} className="v3-alerts__num v3-alerts__num--door">
-        {count}
-      </Link>
-    ) : (
-      <span className="v3-alerts__num">{count}</span>
-    )
-  ) : null
+  // A figure, not a control: the one door is the labelled button under the claim.
+  const numeral = count ? <span className="v3-alerts__num">{count}</span> : null
 
   return (
     <>
@@ -369,7 +474,13 @@ export function V3AlertsStrip({
       </section>
 
       <aside
-        className={cn(V3_ROOT_CLASS, 'v3-alerts-sticky', on && 'v3-alerts-sticky--on')}
+        ref={stickyRef}
+        className={cn(
+          V3_ROOT_CLASS,
+          'v3-alerts-sticky',
+          on && 'v3-alerts-sticky--on',
+          armed && 'v3-alerts-sticky--armed',
+        )}
         aria-label={stickyLabel}
         aria-hidden={!on}
         inert={!on}
@@ -382,7 +493,11 @@ export function V3AlertsStrip({
               {stickyClaim.before} <span className="v3-alerts-sticky__place">{stickyClaim.place}</span>{' '}
               {stickyClaim.after}
             </p>
-            {stickyNote ? <p className="v3-alerts-sticky__note">{stickyNote}</p> : null}
+            {stickyNote ? (
+              <p className="v3-alerts-sticky__note" id={noteId}>
+                {stickyNote}
+              </p>
+            ) : null}
           </div>
           <div className="v3-alerts-sticky__controls">
             <label htmlFor={`${uid}-sticky-email`} className="v3-alerts-sticky__sr">
@@ -401,6 +516,7 @@ export function V3AlertsStrip({
               placeholder={placeholder}
               value={email}
               aria-invalid={invalid || undefined}
+              aria-describedby={stickyNote ? noteId : undefined}
               onChange={(e) => setEmail(e.target.value)}
             />
             <V3Button type="submit" variant="ghost" onMedia disabled={sending}>

@@ -41,9 +41,15 @@ import {
   LISTING_UNAVAILABLE_METADATA,
 } from '@/components/site/listing-detail/ListingUnavailable'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
+import { publishListingDropMark } from '@/lib/listing/publish-listing-drop-mark'
+import { publishListingPillRead } from '@/lib/listing/publish-listing-pill-read'
+import { daysLiveOnMarket } from '@/lib/listing/days-live'
+import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
+import { formatDate as formatCalendarDate } from '@/lib/format/date'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
 import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
+import { DescriptionBlock } from '@/components/site/listing-detail/DescriptionBlock'
 import { GoverningDocumentsBlock } from '@/components/site/listing-detail/GoverningDocumentsBlock'
 import { getPlaceDocumentsForListing } from '@/lib/data/places/getPlaceDocumentsForListing'
 import { MortgageCalculator } from '@/components/site/listing-detail/MortgageCalculator'
@@ -107,20 +113,21 @@ void ListingVideoEmbed
 void V3ListingRow
 
 /**
- * One house. PAGE_INVENTORY listing (house URL), 12 rows, Zillow Showcase to beat.
+ * One house. PAGE_INVENTORY listing (house URL), 13 rows, Zillow Showcase to beat.
  *
  *   1 breadcrumb   City → neighborhood → community → plat → street
  *   2 media        price, beds, baths, sqft, street on the media; tabs we have
  *   3 ask          Tour / Call / Text (cookies cannot cover)
  *   4 facts        type, lot, year, HOA, $/sqft
- *   5 payment      computeMonthlyPiti only; P&I, tax, HOA
- *   6 map          this lot + climb, Atlas, assessor lines
- *   7 schools      nearby unless a zone is known
- *   8 parks        same thumbs as the indexes
- *   9 tax          one assessed figure + county link
- *  10 CC&Rs        published plat docs
- *  11 similar      same parent, same house row
- *  12 who listed   live broker; firm proof if no personal record
+ *   5 about        the MLS public remarks, as written (§2)
+ *   6 payment      computeMonthlyPiti only; P&I, tax, HOA
+ *   7 map          this lot + climb, Atlas, assessor lines
+ *   8 schools      nearby unless a zone is known
+ *   9 parks        same thumbs as the indexes
+ *  10 tax         one assessed figure + county link
+ *  11 CC&Rs       published plat docs
+ *  12 similar     same parent, same house row
+ *  13 who listed  live broker; firm proof if no personal record
  */
 
 type PageProps = { params: Promise<{ listingKey: string }> }
@@ -382,6 +389,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
   let leftoverHud: ReturnType<typeof leftoverHudKpis> | null = null
   let leftoverLayers: ReturnType<typeof leftoverOverlays.get> = undefined
   let leftoverGrain = leftoverGrains[leftoverGrains.length - 1] ?? null
+  /** SITE-45: the pace row behind the HUD that published, for the pills' read. */
+  let leftoverPace: typeof EMPTY_PUBLIC_PACE | null = null
   for (let i = 0; i < leftoverGrains.length; i++) {
     const grain = leftoverGrains[i]!
     const slug = cityDetachedSlug(grain.geoSlug)
@@ -397,6 +406,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       leftoverHud = hud
       leftoverLayers = layers
       leftoverGrain = grain
+      leftoverPace = pace
       break
     }
   }
@@ -519,6 +529,32 @@ export default async function ListingDetailPage({ params }: PageProps) {
         updatedAt:
           leftoverLayers?.headlines?.computedAt ?? leftoverLayers?.inventory?.computedAt ?? null,
       })
+  // SITE-45. The fold's two drawn facts. The price cut as two points off the
+  // same history rail the page renders below (publishListingDropMark reads the
+  // row publishListingLastDrop labels); the pills' plain read from the reads
+  // the ask instrument already makes (days to contract from the HUD, the
+  // closed median $/sqft from the pace row), at the grain that published.
+  const dropMark = offMarket ? null : publishListingDropMark(history)
+  const pillRead = offMarket
+    ? null
+    : publishListingPillRead({
+        daysLive: daysLiveOnMarket(listing.onMarketDate ?? null),
+        daysToPending: leftoverHud?.daysToPending ?? null,
+        ppsf: publishListingSharePricePerSqft({
+          propertyType: listing.propertyType,
+          propertySubType: listing.propertySubType,
+          subdivisionName: listing.subdivisionName,
+          city: listing.city,
+          listNumber: listing.listNumber,
+          pricePerSqft: listing.pricePerSqft,
+        }),
+        medianPpsf: leftoverPace?.medianPpsf ?? null,
+        placeName: leftoverGrain?.name ?? null,
+        asOfLabel: (() => {
+          const iso = leftoverLayers?.headlines?.computedAt ?? leftoverLayers?.inventory?.computedAt ?? null
+          return iso ? formatCalendarDate(iso) : null
+        })(),
+      })
   const offMarketFacts = offMarket
     ? publishListingOffMarketFacts({
         status: listing.status,
@@ -564,11 +600,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
       addressLine={street}
       lat={listing.lat}
       lng={listing.lng}
-      price={publishedSaleAsk}
-      priceStatusWord={publishListingStatusWord(listing.status)}
-      beds={listing.beds}
-      baths={listing.baths}
-      sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
       openHouseLabel={
         openHouses[0]
           ? publishOpenHouseBadgeLabel(openHouses[0].event_date, openHouses[0].start_time)
@@ -666,6 +697,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
         textHref={ctaTel && !offMarket ? `sms:${ctaTel}` : null}
         similarHref={similarHref}
         alertsHref={alertsHref}
+        dropMark={dropMark}
+        read={pillRead}
       />
       {/* SITE-33 — THIS IS NOT OUR MARKET, said before the page says anything
           else about the home. A reader who scrolls past the price strip on a
@@ -708,6 +741,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
         />
       ) : null}
       <PropertySpecs listing={listingWithPhotos} />
+      {/* The listing agent's own words, as written (CLAUDE.md §2; Matt
+          2026-09-09: "mls descriptions must come back"). The 12-section rebuild
+          dropped this import while getListingDetail kept reading public_remarks,
+          so the remarks travelled to the page in the payload and were never
+          rendered; ci:listing-remarks-rendered now fails that shape. Nothing is
+          rewritten or summarised, and the clamp reveals the rest in place. */}
+      <DescriptionBlock publicRemarks={listing.publicRemarks} />
       {/* No payment on a home that is not for sale. The founding case computed
           principal and interest on a $1,250,000 ask under a $1,100,000 sold
           headline; even fed the close price it is a loan nobody can take out
@@ -856,6 +896,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         <V3Breadcrumb trail={breadcrumbs} />
         <ListingDetailShell
           hero={hero}
+          heroInMain
           main={main}
           sidebar={sidebar}
           floating={floating}

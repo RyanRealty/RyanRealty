@@ -94,7 +94,9 @@ export default async function SubdivisionsPage() {
       return {
         ...p,
         href: `/subdivisions/${p.slug}`,
-        sentence: `${p.name} is in ${p.parent}, ${p.city}.`,
+        // "Deer Park is in Sunriver, Sunriver." named one place twice when the
+        // community is the city (SITE-52 when audit).
+        sentence: p.parent === p.city ? `${p.name} is in ${p.parent}.` : `${p.name} is in ${p.parent}, ${p.city}.`,
         photoSrc,
         photoAlt: placeOwned ? `${p.name}, ${p.city} Oregon` : fallbackHero.alt,
         photoIsPlat: placeOwned,
@@ -129,7 +131,10 @@ export default async function SubdivisionsPage() {
   const rowBase = featured.map((p) => ({
     id: p.slug,
     href: p.href,
-    when: v3Text(`${p.parent} · ${p.city} · Oregon`),
+    // No `when`: the row's sentence already says where the plat is, and the
+    // phone printed the same place twice, once as an eyebrow and once in the
+    // sentence ("SUNRIVER" over "Deer Park is in Sunriver.", evaluator
+    // 2026-09-09). The desktop encode hides `when` anyway (SITE-52 when audit).
     what: v3Text(p.name),
     detail: (() => {
       const median = fmtPrice(p.medianPrice)
@@ -162,7 +167,7 @@ export default async function SubdivisionsPage() {
 
   const caption =
     totalActive != null && totalActive > 0
-      ? `${formatCount(totalActive)} homes for sale across ${formatCount(platCount)} subdivisions.`
+      ? `${formatCount(totalActive)} homes for sale across ${formatCount(platCount)} subdivisions. Each bar is the subdivision's share of the largest live count on the list.`
       : `${formatCount(platCount)} subdivisions inside the known communities.`
 
   return (

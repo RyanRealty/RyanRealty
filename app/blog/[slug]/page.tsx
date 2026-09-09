@@ -1,3 +1,5 @@
+// @no-static-params — on-demand ISR (SITE-29): generateStaticParams returns [] on purpose so nothing
+// prerenders at build (ci:ssg-budget); the first hit renders and caches under `revalidate`.
 /**
  * /blog/[slug] — one published article, on the components/site/v3 barrel.
  *
@@ -35,6 +37,9 @@ import {
 } from '@/lib/blog/publish-blog-related-homes'
 import { publishBlogReportPeriod } from '@/lib/blog/publish-blog-report-period'
 import { blogRelatedHomeRows } from './_v3/blog-related-homes'
+import { buildBlogArticleView } from './_v3/article-view'
+import { BlogArticleRail } from './_v3/BlogArticleRail.client'
+import './_v3/blog-article.css'
 import {
   BLOG_CURRENT_MOS_PLACES,
   blogClaimsCurrentMos,
@@ -44,8 +49,6 @@ import {
 import { rewriteBlogMosVerdicts } from '@/lib/blog/publish-blog-mos-verdicts'
 import { publishBlogFaq } from '@/lib/blog/publish-blog-faq'
 import '@/components/site/v3/V3ArticleIsland.css'
-import { getSession } from '@/app/actions/auth'
-import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { generateBlogSchema } from '@/lib/structured-data'
 import ShareButton from '@/components/ShareButton'
 import { formatDate } from '@/lib/format/date'
@@ -55,11 +58,14 @@ import {
   V3_ROOT_CLASS,
   v3Text,
   V3Breadcrumb,
+  V3Doors,
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
+  V3Stage,
+  type V3Door,
   type V3LedgerFigureRow,
   type V3LedgerPlainRow,
   type V3QuietItem,
@@ -83,7 +89,12 @@ function estimateReadTime(content: string | null | undefined): number {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
   const post = await getBlogPostBySlug(slug)
-  if (!post) return { title: 'Post Not Found | Ryan Realty', robots: { index: false, follow: true } }
+  // notFound() here, in generateMetadata: app/loading.tsx opens a Suspense
+  // boundary on every route, so the page body's notFound() lands after the
+  // shell's 200 has flushed and a crawler reads a 200 "Post Not Found" with no
+  // H1 (measured 2026-09-09 on next start). Metadata resolves before the
+  // shell, so this one is a real 404 (SITE-29).
+  if (!post) notFound()
 
   const period = publishBlogReportPeriod({
     title: post.title,
@@ -123,13 +134,30 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
+// ISR ON DEMAND, ZERO BUILD-TIME FAN-OUT (SITE-29). A dynamic segment with no
+// generateStaticParams at all is never cached: Next classifies it fully
+// dynamic and every request rendered at origin (private, no-store, measured
+// 2026-09-09 on next start). The empty list below is the on-demand shape
+// ci:ssg-budget prescribes for /subdivisions: nothing prerenders at build (a
+// fan-out over every post chains getBlogRelatedHomes → getCityListings and
+// getDetachedMarket and cost 11.2 of 14 build minutes), the first hit renders
+// and caches, and later hits are served for 300s. The months-of-supply guard
+// below then re-runs at most every 300s, inside its intent.
+export const dynamicParams = true
+export const revalidate = 300
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  return []
+}
+
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params
-  const [post] = await Promise.all([
-    getBlogPostBySlug(slug),
-    getSession(),
-    getPersonIdFromCookie(),
-  ])
+  // No per-visitor read here. Until 2026-09-09 this awaited the session and the
+  // identity cookie beside the post and discarded both; each reads cookies(),
+  // which made every blog post render at request time (private, no-store, CDN
+  // MISS, ~100ms of TTFB) on the site's highest-impression class, for nothing:
+  // ShareButton and V3SectionTracker are client components and hydrate their
+  // own state (SITE-29).
+  const post = await getBlogPostBySlug(slug)
   if (!post) notFound()
 
   const relatedPosts = await getRelatedBlogPosts(post.slug, post.category, 3)
@@ -207,24 +235,71 @@ export default async function BlogPostPage({ params }: PageProps) {
       )
     : rawBody
   const articleBody = rewriteBlogMosVerdicts(currentMosBody)
+  // The reading apparatus, derived from the body and from nothing else: the
+  // figures the writer already sourced in a sentence, the questions the post
+  // answers, the Questions block as disclosures, every citation wearing its
+  // host. ./_v3/article-view.ts states what it refuses to infer.
+  const view = buildBlogArticleView(articleBody)
   const title = period.displayTitle.trim()
   if (!title) notFound()
   const category = post.category?.trim()
   const publishedLabel = post.published_at ? formatDate(post.published_at) : null
+  // A dateline, the way a printed guide carries one — not a taxonomy label. The
+  // category still does real work one line down, as a link to its archive.
+  const mastheadEyebrow = [category ?? 'Central Oregon', publishedLabel].filter(Boolean).join(' · ')
+  // The crumb names the SUBJECT. A guide title states a decision ("Awbrey Glen:
+  // A $1,349,000 Median and an $87 HOA") and at 375 it wraps inside its own
+  // crumb, leaving the separator hanging on a line by itself; the part before
+  // the colon is both shorter and a better name for where the reader is. The
+  // full title is the H1 one element below, and is what the BreadcrumbList
+  // JSON-LD carries.
+  const crumbSubject = title.split(':')[0]?.trim() ?? title
+  const crumbLabel =
+    crumbSubject !== title && crumbSubject.length >= 4 && crumbSubject.length <= 26
+      ? crumbSubject
+      : title.length > 34
+        ? `${title.slice(0, 34).replace(/[\s:,–-]+\S*$/, '')}…`
+        : title
+  const bylineLine = [
+    post.author_name?.trim() ? post.author_name.trim() : 'Ryan Realty',
+    publishedLabel ?? 'Date not recorded',
+    `${readMinutes} min read`,
+  ].join(' · ')
 
   const relatedRows: V3LedgerPlainRow[] = []
   for (const related of relatedPosts) {
     const relatedTitle = related.title?.trim()
     const relatedSlug = related.slug?.trim()
     if (!relatedTitle || !relatedSlug) continue
+    // SITE-52: the heading is already "Related posts", so a 'Guide' fallback
+    // would only repeat it — the published date is the context line worth
+    // printing, and a post with none carries no when at all.
     relatedRows.push({
       href: `/blog/${relatedSlug}`,
-      when: v3Text(related.published_at ? formatDate(related.published_at) : 'Guide'),
+      ...(related.published_at ? { when: v3Text(formatDate(related.published_at)) } : {}),
       what: v3Text(relatedTitle),
       id: relatedSlug,
     })
   }
   const [firstRelated, ...restRelated] = relatedRows
+  // Keep reading is a DOOR, not a second Ledger. Two Ledgers in a row is the
+  // stacked-section page PUBLIC_UI's rhythm rule and TASTE.md both name: the
+  // homes above are rows of figures, so the posts below are photographs.
+  const relatedDoors: V3Door[] = relatedPosts.flatMap((related) => {
+    const relatedTitle = related.title?.trim()
+    const relatedSlug = related.slug?.trim()
+    if (!relatedTitle || !relatedSlug) return []
+    return [
+      {
+        kicker: v3Text(related.published_at ? formatDate(related.published_at) : 'Guide'),
+        label: v3Text(relatedTitle),
+        href: `/blog/${relatedSlug}`,
+        ...(related.hero_image_url
+          ? { imageSrc: related.hero_image_url, imageAlt: relatedTitle }
+          : {}),
+      },
+    ]
+  })
 
   const geoItems: V3QuietItem[] = matchGeoLinksForPost(post).map((geo) => ({
     label: `${geo.label}, ${geo.city}`,
@@ -256,60 +331,73 @@ export default async function BlogPostPage({ params }: PageProps) {
           trail={[
             { label: 'Home', href: '/' },
             { label: 'Blog', href: '/blog' },
-            { label: title },
+            { label: crumbLabel },
           ]}
         />
 
-        <V3Quiet
-          id="post"
-          heading={title}
-          headingLevel={1}
-          eyebrow={category ? `${category} · Central Oregon` : 'Central Oregon market writing'}
-          items={[
-            {
-              kind: 'prose',
-              body: [
-                post.author_name?.trim()
-                  ? post.author_name.trim()
-                  : 'Ryan Realty',
-                publishedLabel ?? 'Date not recorded',
-                `${readMinutes} min read`,
-              ].join(' · '),
-            },
-            ...(period.periodNote ? [{ kind: 'prose' as const, body: period.periodNote }] : []),
-          ]}
-        />
+        {/* THE MASTHEAD. The photograph is the ground the title stands on, not a
+            screen of scenery the reader scrolls past: `compact` takes the Stage's
+            height from its own copy, so the byline and the first figures are in
+            the same first view on desktop. A post with no owned image keeps the
+            Quiet masthead rather than borrowing someone else's photograph. */}
+        {post.hero_image_url ? (
+          <V3Stage
+            id="post"
+            headline={title}
+            headingLevel={1}
+            height="compact"
+            overlayStrength="deep"
+            posterSrc={post.hero_image_url}
+            eyebrow={mastheadEyebrow}
+          />
+        ) : (
+          <V3Quiet
+            id="post"
+            heading={title}
+            headingLevel={1}
+            eyebrow={mastheadEyebrow}
+            items={[{ kind: 'prose', body: bylineLine }]}
+          />
+        )}
 
         <article id="article-body" aria-label={title}>
-          {post.hero_image_url ? (
-            <div className="relative mt-8 aspect-video overflow-hidden">
-              <Image
-                src={post.hero_image_url}
-                alt={title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 880px"
-                priority
-              />
-            </div>
-          ) : null}
-
           <div className="v3-article-island">
-            {articleBody ? (
-              <div className="prose mt-8 max-w-prose" dangerouslySetInnerHTML={{ __html: articleBody }} />
-            ) : (
-              <p>This article is being updated.</p>
-            )}
-
-            <div className="mt-8">
-              <ShareButton
-                url={pageUrl}
-                title={period.displayTitle}
-                text={post.excerpt ?? undefined}
-                trackContext="blog_post"
-                variant="default"
-              />
+            <div className="v3-blog-byline">
+              <p className="v3-blog-byline-meta">{bylineLine}</p>
+              <div className="v3-blog-byline-actions">
+                {category ? (
+                  <Link
+                    className="v3-blog-byline-link"
+                    href={`/blog?category=${encodeURIComponent(category)}`}
+                  >
+                    More in {category}
+                  </Link>
+                ) : null}
+                <ShareButton
+                  url={pageUrl}
+                  title={period.displayTitle}
+                  text={post.excerpt ?? undefined}
+                  trackContext="blog_post"
+                  variant="default"
+                  className="v3-blog-share"
+                />
+              </div>
             </div>
+
+            {post.excerpt?.trim() ? <p className="v3-blog-dek">{post.excerpt.trim()}</p> : null}
+            {period.periodNote ? <p className="v3-blog-dek">{period.periodNote}</p> : null}
+
+            {view.html ? (
+              <div className="v3-blog-layout">
+                <BlogArticleRail figures={view.figures} sections={view.sections} title={title} />
+                <div
+                  className="v3-blog-prose prose max-w-prose"
+                  dangerouslySetInnerHTML={{ __html: view.html }}
+                />
+              </div>
+            ) : (
+              <p className="v3-blog-dek">This article is being updated.</p>
+            )}
 
             {post.author_name ? (
               <section className="mt-10" aria-label="About the author">
@@ -346,7 +434,13 @@ export default async function BlogPostPage({ params }: PageProps) {
           />
         ) : null}
 
-        {firstRelated ? (
+        {relatedDoors.length >= 2 ? (
+          <V3Doors
+            id="related"
+            name={v3Text('Keep reading')}
+            doors={relatedDoors as [V3Door, V3Door, ...V3Door[]]}
+          />
+        ) : firstRelated ? (
           <V3Ledger
             id="related"
             eyebrow={v3Text('Keep reading')}

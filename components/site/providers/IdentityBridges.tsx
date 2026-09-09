@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import PersonIdentityBridge from '@/components/PersonIdentityBridge'
 import AgentAttributionBridge from '@/components/AgentAttributionBridge'
 import AnalyticsIdentityBridge from '@/components/AnalyticsIdentityBridge'
+import { UrlSearchParamsBridge } from '@/lib/search/url-search-params.client'
 
 /**
  * Identity + attribution bridges that run on every route, including LPs.
@@ -14,6 +15,10 @@ import AnalyticsIdentityBridge from '@/components/AnalyticsIdentityBridge'
  * the whole group lives inside a single Suspense boundary so the static
  * shell can still prerender.
  *
+ * UrlSearchParamsBridge (SITE-29) is the fourth: it mirrors the live query
+ * into the static-safe store the split view's client tree reads, so a
+ * statically rendered place page can honor a filtered URL after mount.
+ *
  * Used only by RootProvider.
  */
 export function IdentityBridges() {
@@ -22,6 +27,7 @@ export function IdentityBridges() {
       <PersonIdentityBridge />
       <AgentAttributionBridge />
       <AnalyticsIdentityBridge />
+      <UrlSearchParamsBridge />
     </Suspense>
   )
 }

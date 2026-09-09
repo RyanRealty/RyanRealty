@@ -57,6 +57,7 @@ import type { Metadata } from 'next'
 import {
   getRecentBlogPosts,
   getPriceHistory,
+  listMarketReports,
 } from '@/lib/data'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
 import {
@@ -167,6 +168,7 @@ export default async function HousingMarketHubPage() {
     publicMix,
     leftoverMonthly,
     regionOverlays,
+    marketReports,
   ] = await Promise.all([
     getMarketPulseAllCitySnapshots(),
     getRecentBlogPosts({ limit: 3 }),
@@ -185,6 +187,9 @@ export default async function HousingMarketHubPage() {
       currentMonthKey: todayKey.slice(0, 7),
     }),
     getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }]),
+    // The published reports list the /housing-market/reports door opens to
+    // (SITE-40): the newest weekly snapshot's week is the figure on that door.
+    listMarketReports(60),
   ])
   const regionMt = regionOverlays.get('region:central-oregon')
   const hud = leftoverHudKpis({
@@ -368,9 +373,12 @@ export default async function HousingMarketHubPage() {
     const slug = post.slug?.trim()
     if (!title || !slug) continue
     const excerpt = post.excerpt?.trim()
+    // SITE-52: the eyebrow is already "Guides and insights", so a 'Guide'
+    // fallback would only repeat it — the published date is the context
+    // line worth printing, and a post with none carries no when at all.
     guideRows.push({
       href: `/blog/${slug}`,
-      when: v3Text(post.publishedAt ? formatDate(post.publishedAt) : 'Guide'),
+      ...(post.publishedAt ? { when: v3Text(formatDate(post.publishedAt)) } : {}),
       what: v3Text(title),
       detail: excerpt ? v3Text(excerpt) : undefined,
       id: slug,
@@ -391,6 +399,133 @@ export default async function HousingMarketHubPage() {
   if (hud.active != null) {
     faqEdges.push({ label: 'Browse homes for sale', href: listingsBrowsePath() })
   }
+
+  /**
+   * THE CHOOSER CARRIES THE MARKET (SITE-40).
+   *
+   * The taste table scored this page 41 and named the cause: "the entire
+   * visible viewport on both desktop and mobile is one hairline list of five
+   * plain links, each row identical: label, hairline, arrow. For a page titled
+   * housing market, the first thing a visitor sees carries no market data at
+   * all." So each door now prints what is behind it, from the reads this page
+   * already makes — no new query, no new population, and every figure the same
+   * number the section it points at prints:
+   *
+   *   Live market      hud.active            (the Instrument's own homes-for-sale bar)
+   *   By city          cityLedger.rows       (the rows the Ledger below renders)
+   *   Explore          closed.soldCount      (the closed year the Instrument prints)
+   *   Months of supply mosText               (the one derivation, above)
+   *
+   * Each figure gets a plain sentence beside it, because a figure with no
+   * sentence is the KPI-grid tell. "Live market" pointed at this page from
+   * this page; it points at the answer section instead, so the door works.
+   */
+  // The trace names the table (§0); the CLAUSE a visitor reads is in their
+  // words. "Market Truth region row" reached the fold on the first pass and
+  // the evaluator read it as an internal label handed to a visitor.
+  const chooserSource =
+    'Market Truth region row (market_metric, detached segment, region:central-oregon), the same row the Instrument and the months-of-supply chart on this page print, live'
+  const chooserSourceName = 'Central Oregon MLS, single-family homes, live'
+  // Weekly snapshots are the `weekly-<period end>` rows; the list is ordered by
+  // created_at, so the newest WEEK is the max period_end, not the first row.
+  const newestWeekly =
+    marketReports
+      .filter((r) => r.slug.startsWith('weekly-') && /^\d{4}-\d{2}-\d{2}$/.test(r.period_end))
+      .sort((a, b) => b.period_end.localeCompare(a.period_end))[0] ?? null
+  const chooserItems: V3QuietItem[] = marketHubChooser().map((door) => {
+    if (door.label === 'Live market') {
+      return {
+        ...door,
+        href: '#market',
+        lead: true,
+        mark: 'market' as const,
+        detail: 'The verdict, the inventory, and the chart, without leaving this page.',
+        ...(hud.active != null && hud.active > 0
+          ? {
+              figure: {
+                value: hud.active.toLocaleString('en-US'),
+                unit: 'single-family homes for sale',
+                source: chooserSource,
+                sourceName: chooserSourceName,
+                updatedAt: refreshedAt,
+              },
+            }
+          : {}),
+      }
+    }
+    if (door.label === 'By city') {
+      return {
+        ...door,
+        mark: 'map' as const,
+        detail: 'One live row per city, each with its own median and its own pace.',
+        ...(cityLedger.rows.length > 0
+          ? {
+              figure: {
+                value: String(cityLedger.rows.length),
+                unit: 'cities with a live row',
+                source:
+                  'MarketPulse city snapshots (market_pulse_live, one row per city), counting the cities that returned a median list price — the rows the city Ledger below renders',
+                sourceName: 'Central Oregon MLS, by city, live',
+                updatedAt: cityRefreshedAt,
+              },
+            }
+          : {}),
+      }
+    }
+    if (door.label === 'Every closed sale') {
+      return {
+        ...door,
+        mark: 'history' as const,
+        detail: 'Every closed sale we hold, by city, type, and year.',
+        ...(closed && closed.soldCount > 0
+          ? {
+              figure: {
+                value: closed.soldCount.toLocaleString('en-US'),
+                unit: `closed sales in ${closed.year}, all types`,
+                source: `closed MLS sales across the Central Oregon service-area cities, calendar year ${closed.year} (co_market_annual, all property types) — the closed year the Instrument on this page prints`,
+                sourceName: `Central Oregon MLS closed sales, ${closed.year}`,
+              },
+            }
+          : {}),
+      }
+    }
+    if (door.label === 'Months of supply') {
+      return {
+        ...door,
+        mark: 'supply' as const,
+        detail:
+          verdict.kind === 'unknown'
+            ? 'What the number means, and how it is worked out.'
+            : `Central Oregon reads as a ${verdict.label} at that pace.`,
+        ...(mosText != null
+          ? {
+              figure: {
+                value: mosText,
+                unit: 'months of supply',
+                source: chooserSource,
+                sourceName: chooserSourceName,
+                updatedAt: refreshedAt,
+              },
+            }
+          : {}),
+      }
+    }
+    return {
+      ...door,
+      mark: 'page' as const,
+      detail: 'Published sales reports and the dated weekly snapshots.',
+      ...(newestWeekly
+        ? {
+            figure: {
+              value: formatDate(newestWeekly.period_end),
+              unit: 'newest weekly snapshot',
+              source: `market_reports, the published weekly snapshot with the latest period_end (slug ${newestWeekly.slug}) among the ${marketReports.length} most recent reports read; the reports page lists the same rows.`,
+              sourceName: 'Published weekly snapshots',
+            },
+          }
+        : {}),
+    }
+  })
 
   // The closing edges. Every internal link the KB hub carried, plus the outbound MLS
   // citation MarketSources used to render, plus any city with no live row.
@@ -484,7 +619,7 @@ export default async function HousingMarketHubPage() {
               term: 'Five products',
               body: 'Live market · City pulse · Sales reports · Weekly snapshots · Market stories. Choose a door below.',
             },
-            ...marketHubChooser(),
+            ...chooserItems,
           ]}
         />
 

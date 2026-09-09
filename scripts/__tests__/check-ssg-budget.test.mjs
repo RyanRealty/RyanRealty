@@ -24,6 +24,12 @@ const FILES = [
   'scripts/check-ssg-budget.mjs',
   'app/subdivisions/[slug]/page.tsx',
   'app/oregon/[city]/page.tsx',
+  // SITE-29: the blog post and the index's category/page views joined the
+  // zero-fan-out list (on-demand ISR).
+  'app/blog/[slug]/page.tsx',
+  'app/blog/category/[category]/page.tsx',
+  'app/blog/page/[n]/page.tsx',
+  'app/blog/category/[category]/page/[n]/page.tsx',
 ]
 
 function reset() {

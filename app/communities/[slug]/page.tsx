@@ -158,7 +158,6 @@ export const revalidate = 60
 
 type Props = {
   params: Promise<{ slug: string }>
-  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 const BOUNDARY_ROW_CAP = 200
@@ -231,9 +230,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   )
 }
 
-export default async function CommunityDetailPage({ params, searchParams }: Props) {
+export default async function CommunityDetailPage({ params }: Props) {
   const { slug } = await params
-  const sp = await searchParams
 
   const community = await getCommunityBySlug(slug)
   if (!community) notFound()
@@ -388,7 +386,14 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
   // on a Tetherow page is wrong). A door in a ledger below the fold, never a
   // looping hero: the first fold stays Split + leftover face.
   const areaGuideVideo = await withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'comm:areaGuide')
-  const [firstGuide, ...restGuide] = areaGuideRow(publicName, areaGuideVideo)
+  // SITE-52: this Ledger's own heading is "{publicName} area guide", so the
+  // row's 'Area guide' when would repeat it — drop it, unlike the mixed
+  // guides-and-news Ledger on the city and neighborhood nodes where the same
+  // row sits beside dated blog rows and the label still differentiates.
+  const [firstGuide, ...restGuide] = areaGuideRow(publicName, areaGuideVideo).map((row) => ({
+    ...row,
+    when: undefined,
+  }))
   const stagePosterSrc = stagePoster(slug, community.heroImageUrl, libraryHero)
   const headline = belongingHeadline(publicName, richContent)
   const belonging = belongingFigures(richContent, placeCharacter)
@@ -495,9 +500,12 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
       ]
     })
     .sort((a, b) => (b.activeCount ?? 0) - (a.activeCount ?? 0) || a.name.localeCompare(b.name))
+  // Its own children: the rows drop the community's name where a plat's
+  // name opens with it (placeFigureRows, `within`).
   const [firstChildSub, ...restChildSub] = placeFigureRows(
     childSubdivisionItems,
     `${publicName} subdivision`,
+    publicName,
   )
 
   const marketHeadline = `Typical price in ${publicName}`
@@ -942,7 +950,6 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
           listings={splitListings}
           totalCount={splitListings?.length}
           degraded={!citySfrRead.ok && isResortInCity}
-          searchParams={sp}
         />
 
         {/* Subdivisions inside the community - every row is a door, mirroring

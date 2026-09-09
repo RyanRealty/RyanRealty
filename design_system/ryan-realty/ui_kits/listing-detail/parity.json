@@ -298,16 +298,10 @@
   },
   "tasteReview": {
     "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-45 listing-opening pass, session 019RdEm6 — the table instrument (first viewport at 1440x900 and 375x812, scripts/take-route-shots.mjs, scale 1, palette-quantized) on the lane's own dev server (localhost:3198) for the Bend route at the top of the page and at its close section, the Medford route at its out-of-area notice, plus two hover records per viewport (the pointer on the filmstrip, the pointer on the price-cut mark) read only for the Interaction criterion; three independent scorings of one capture run, the median; no page code read, no live page opened. The builder ran on Opus and did not grade its own page. The prior mark is this file's committed receipt (77: 77·78·76, 2026-09-09, the SITE-33 out-of-area pass on the mosaic build).",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate Sonnet evaluator agent, SITE-33 out-of-area listing-tier pass, three independent scorings of one shot set in one call (77 / 78 / 76); the builder ran on Opus and did not grade its own page",
-    "scores": [
-      77,
-      78,
-      76
-    ],
-    "score": 77,
     "shotSpec": {
       "routes": [
         "/homes-for-sale/bend/60936-apollo-20260418225519255404000000",
@@ -320,8 +314,11 @@
       "states": [
         "top",
         "close",
-        "out-of-area"
-      ]
+        "out-of-area",
+        "strip",
+        "drop"
+      ],
+      "capture": "scripts/take-route-shots.mjs default first viewport for the instrument pair; `close` for the close section; `outofarea=#out-of-area` on the Medford route; `strip=#listing-hero-visual .listing-strip@#listing-hero-visual!hover` and `drop=.listing-drop!hover` for the hover records"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/desktop.png",
@@ -329,50 +326,90 @@
       "closeDesktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/close-desktop.png",
       "closeMobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/close-mobile375.png",
       "outOfAreaDesktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/outofarea-desktop.png",
-      "outOfAreaMobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/outofarea-mobile375.png"
+      "outOfAreaMobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/outofarea-mobile375.png",
+      "stripDesktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/strip-desktop.png",
+      "stripMobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/strip-mobile375.png",
+      "dropDesktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/drop-desktop.png",
+      "dropMobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/drop-mobile375.png"
     },
-    "shotsHash": "sha256:fb117fb484026aa7a63cabb32bcb3d6e8d878d0b232ea3e7f9623baef7ca6e1c",
-    "comparedToPrior": "rebaselined",
-    "priorMark": {
-      "evaluatedAt": "2026-09-08",
-      "score": 87,
-      "evaluatorModel": "claude-sonnet-5",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:a75daedd342203007d3e3f33bea3c82c6610a40d86530ebd25e9a2f480d77754"
+    "shotsHash": "sha256:cf333b150afc06061998a6dc1aa87fd91af7748e5e391168ad16117d62013d88",
+    "scores": [
+      80,
+      78,
+      79
+    ],
+    "score": 79,
+    "criteria": {
+      "designQuality": 25,
+      "originality": 26,
+      "interaction": 12,
+      "craft": 10,
+      "honestyFunction": 6
     },
-    "rebaselineReason": "shotsHash and shotSpec both differ: SITE-33 added an OUT-OF-AREA listing (/homes-for-sale/medford/aerial-heights/3655-aerial-heights-220226395) to the shot set, so the instrument now measures a state the 2026-09-08 mark never saw, and the Bend base + close pair were re-captured on this branch. The prior 87 is not a baseline for this set; the next pass on THIS instrument must rise above 77.",
-    "beats": "Zillow Showcase, this file's own named target. The evaluator's win: sourced, dated peer-cohort market context on the listing itself — #close's discount-distribution pictogram and days-to-offer range carry an explicit data window (Bend single family homes, every sale closed in the 12 months to 2026-09-08); Zillow's price history and Zestimate carry no cohort and no source trace. The evaluator explicitly did NOT count the out-of-area block as a competitive win: it is a compliance feature, and its execution is undercut by the asks named in the defects below.",
+    "beats": "Redfin — this page's #close section turns a bare price-history table into a plain-English narrative ('46% of homes that sold had dropped price') backed by a dot-matrix chart and a day-count comparison; Redfin shows the same underlying facts as an unglossed table with no interpretation.",
+    "tells": [
+      "Raw slugs, internal labels or methodology jargon in anything a visitor reads — the breadcrumb reads 'Bend / Easton / EASTON COMMERCIAL / 60936 SE Apollo Place' on a single-family home, both desktop.png and mobile375.png."
+    ],
+    "dullest": "The #out-of-area prose block — two paragraphs of unencoded text with a single link is the only section on the route that isn't carrying a figure, chart, or interactive element, so it's the one a reader's eye slides past.",
+    "verdict": "This build fixed real things: the broker card and reviews now sit inside the fold, the price cut is a hover-reveal instead of static text, and the KPI pills finally carry a plain-English sentence. But the same three named defects from the prior mark survive untouched — the Medford CTA contradicting 'we don't work here,' a mortgage calculator computing a confident dollar figure on a lot it just admitted no local knowledge of, and a raw plat alias leaking into the breadcrumb — and those are exactly the kind of thing a demanding director would call unacceptable on a second pass. Ship the interaction and layout wins; treat the Medford contradiction as a blocker, not a backlog item.",
     "defects": [
       {
-        "section": "#broker-card vs #out-of-area",
-        "severity": "critical",
-        "finding": "On the Medford listing the sidebar still offers Tour / Call / Text beside the block saying \"We don't work in Medford\" and pointing at the referral page — two contradictory asks in one viewport. NOT FIXED IN THIS PASS, deliberately: Matt's 2026-09-08 ruling covered the honesty block, the robots directive and the sitemap row, and did not rule on the ask. Suppressing the tour CTA on out-of-area inventory removes a live lead path and is his call, not the lane's."
-      },
-      {
-        "section": "#payment",
-        "severity": "defect",
-        "finding": "The mortgage calculator still computes a full $2,315/mo breakdown for the Medford lot beneath the disclosure that we do not work that market. Same class as the CTA above and unfixed for the same reason: SITE-21 established the precedent for turning payment off on a home the brokerage cannot transact, but extending it to out-of-area is a product ruling Matt has not made."
-      },
-      {
-        "section": "breadcrumb",
-        "severity": "defect",
-        "finding": "Reads Bend / Easton / EASTON COMMERCIAL on a 3 bd, 2 ba, 1,602 sqft single-family home — a commercial plat picked by alias resolution; boundaries holds five Easton plats, two sharing a document number. Unchanged from the 2026-09-08 pass and outside this node."
-      },
-      {
-        "section": "#facts (out-of-area state)",
+        "section": "breadcrumb (global header)",
         "severity": "taste",
-        "finding": "A full-weight H2 sits over one line, 'Residential lots · 3.03 acres'. An oversized label for a single fact, reading as an underbuilt section next to the block above it. Pre-existing on land listings, not introduced here."
+        "finding": "Breadcrumb shows the raw plat/subdivision alias 'EASTON COMMERCIAL' in all caps ahead of the address on a residential listing — reads as an internal slug, not a place a buyer would recognize.",
+        "primitive": "listing breadcrumb / place-hierarchy component",
+        "fix": "Suppress or humanize the subdivision alias before render; drop 'COMMERCIAL' segments on residential listings.",
+        "viewport": "both"
+      },
+      {
+        "section": "#out-of-area sidebar",
+        "severity": "honesty",
+        "finding": "The broker card still offers Tour / Call / Text for the Medford lot directly beside copy stating 'We don't work in Medford' — the CTA contradicts the disclaimer in the same viewport.",
+        "primitive": "broker contact card (shared sidebar component)",
+        "fix": "On out-of-area listings, replace Tour/Call/Text with the 'introduce me to a Medford broker' action; do not show the generic tour CTA.",
+        "viewport": "both"
+      },
+      {
+        "section": "#out-of-area Payment",
+        "severity": "honesty",
+        "finding": "The mortgage calculator still renders a precise $2,315/month, line-item breakdown for the Medford lot in the same block that admits Ryan Realty has no local knowledge of Medford — a specific number implies authority the copy just disclaimed.",
+        "primitive": "payment/mortgage calculator component",
+        "fix": "Hide or generic-ize the calculator on out-of-area listings, or caveat it explicitly as a statewide-rate estimate carrying no local knowledge.",
+        "viewport": "both"
+      },
+      {
+        "section": "breadcrumb (mobile)",
+        "severity": "craft",
+        "finding": "At 375, the breadcrumb wraps into an orphaned second line ('/ 60936 SE Apollo Place') separated from 'Bend / Easton / EASTON COMMERCIAL' above it.",
+        "primitive": "breadcrumb component, mobile wrap behavior",
+        "fix": "Truncate to the last one or two segments at 375, or collapse to a back-chevron, instead of wrapping the full trail.",
+        "viewport": "mobile"
       },
       {
         "section": "#out-of-area",
         "severity": "taste",
-        "finding": "Two paragraphs and one door, no figure — no map of the service-area boundary against this city. Within TASTE.md's two-paragraph prose budget (cut from three during the builder's own look pass) but it does not yet make the claim visually, on a site whose thesis is that the data is the spectacle."
+        "finding": "The explanation is two paragraphs of prose plus one text link and nothing else visual — the one section on the route with no figure, chart, or map, even though it stays under the two-paragraph banned-tell line.",
+        "primitive": "out-of-area notice section",
+        "fix": "Replace one paragraph with a simple service-area map or a labeled distance stat ('Medford is X miles outside our 14-community coverage').",
+        "viewport": "both"
       },
       {
-        "section": "broker review block",
-        "severity": "unconfirmed",
-        "finding": "Whether the 5.0 / 25-review block appears in the top-of-page card state could not be confirmed: desktop.png is viewport-framed and cuts at the Tour button, so its absence may be the frame rather than the page. Carried from the prior pass, still unresolved."
+        "section": "#facts",
+        "severity": "interaction",
+        "finding": "The Facts block (lot size / year built / HOA) is plain static text with no hover, tap, or expand — the one clearly non-interactive data block on the route.",
+        "primitive": "Facts list component",
+        "fix": "Add a lightweight interaction, e.g. tap-to-expand each fact with its source, or link acreage to a map overlay.",
+        "viewport": "both"
       }
-    ]
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-09",
+      "score": 77,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:fb117fb484026aa7a63cabb32bcb3d6e8d878d0b232ea3e7f9623baef7ca6e1c"
+    },
+    "rebaselineReason": "shotsHash: new first-viewport captures of the rebuilt opening (hero in the main column, filmstrip, price-cut mark, pill read) plus four hover records the prior set did not have; same routes, same evaluator model, same rubric"
   }
 }

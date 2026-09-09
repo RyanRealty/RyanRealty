@@ -116,6 +116,15 @@ export type V3DrawingFigure = {
   /** `strip`: what the marks counted, drawn once beside n. */
   sampleKey?: string
   /**
+   * What a reader gets by asking, in this figure's own terms. The defaults
+   * below describe a strip of SALES BY MONTH, because that is what the first
+   * strip on the site drew; on /price-drops the marks are price cuts and the
+   * reading carries an address, a percent and a dollar amount, so the default
+   * "for its size and its month" promised a month no mark had (evaluator,
+   * 2026-09-09). A figure whose marks carry something else says so here.
+   */
+  askHint?: string
+  /**
    * A real decline, drawdown or breached threshold. The ONLY thing that puts
    * --rr-exception on this surface (CLAUDE.md section 3). Never decoration.
    */
@@ -457,7 +466,7 @@ function V3DrawingFigureView({
             className={cn('v3-drawing__reading', !live && 'is-idle')}
             aria-live="polite"
           >
-            {live ?? (first ? IDLE_LEAD[figure.draw] : IDLE_REST[figure.draw])}
+            {live ?? figure.askHint ?? (first ? IDLE_LEAD[figure.draw] : IDLE_REST[figure.draw])}
           </p>
         ) : (
           <span />

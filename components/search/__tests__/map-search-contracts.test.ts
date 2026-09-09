@@ -129,9 +129,12 @@ describe('MapSearchView orchestrator', () => {
   })
 
   it('place Split defaults to map; view switch lives in the map shell', () => {
+    // Static shell (SITE-29): the server renders the default view; a ?view=
+    // in the URL applies on the client through the staticShell merge.
     const place = readSrc('components/search/PlaceSplitView.tsx')
-    expect(place).toMatch(/viewRaw === 'list' \|\| viewRaw === 'split' \|\| viewRaw === 'map' \? viewRaw : 'map'/)
+    expect(place).toMatch(/const view = 'map'/)
     expect(place).toMatch(/hideViewToggle/)
+    expect(place).toMatch(/staticShell/)
     const map = readSrc('components/search/MapSearchView.tsx')
     expect(map).toMatch(/applyView/)
     expect(map).toMatch(/map-search-views/)
@@ -143,10 +146,13 @@ describe('MapSearchView orchestrator', () => {
   })
 
   it('place Split opens on every property type in the boundary', () => {
+    // Static shell (SITE-29): the server search carries NO type filter, and
+    // the filter row's chip reads 'all'; a URL type applies on the client.
     const place = readSrc('components/search/PlaceSplitView.tsx')
-    expect(place).toMatch(/allTypes/)
     expect(place).not.toMatch(/Single Family Residence/)
-    expect(place).toMatch(/propertyType: allTypes \? 'all'/)
+    expect(place).toMatch(/propertyType: 'all'/)
+    const viewportBlock = place.slice(place.indexOf('const viewportFilters'), place.indexOf('const empty'))
+    expect(viewportBlock).not.toMatch(/propertyType|propertySubTypes|minPrice|beds/)
   })
 
   it('clears Search this area when filters re-seed the list', () => {

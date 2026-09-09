@@ -147,12 +147,13 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-09",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-47 build lane — spawned from the build lane with the same six-shot set, re-captured against the lane dev server after the caption composer, the Atlas claim+legend fold and the CTA doors landed, scored three times in one call, and asked explicitly whether the caption reads as a template (answer: no).",
+    "evaluator": "separate evaluator Agent spawned from the SITE-56 build lane on the `sonnet` model (never the builder, which is Opus 5), given design_system/public/TASTE.md and TWO sets of the same eight frames — the committed state at d5b982e8 and this branch's — every one captured by scripts/take-route-shots.mjs at the first viewport, 1440x900 and 375x812, scale 1, on the lane's own dev server. It scored each set three times in one call, was told to judge interaction only from what a still shows and to say so, and was asked to name which shots dragged the class. It scored the committed state at a median of 54 (54, 53, 56) and this state at 72 (72, 72, 73), and reported that the four market-report and FAQ frames are unchanged between the sets: the whole rise is the two openings and the map that now paints.",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
       "routes": [
-        "/subdivisions/golf-homes-at-tetherow"
+        "/subdivisions/golf-homes-at-tetherow",
+        "/subdivisions/diamond-bar-ranch"
       ],
       "viewports": [
         1440,
@@ -170,63 +171,65 @@
       "marketDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/market-desktop.png",
       "marketMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/market-mobile375.png",
       "answersDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-desktop.png",
-      "answersMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-mobile375.png"
+      "answersMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-mobile375.png",
+      "unrecordedDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/unrecorded-desktop.png",
+      "unrecordedMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/unrecorded-mobile375.png"
     },
-    "shotsHash": "sha256:01a48bf3c24df75a3540f85cd7520ca4ba84f80c33bfcba31646d41ae277c3ba",
+    "shotsHash": "sha256:0ab853ce2c90e751248dd6d121e80d816ea3d515b9c03cc7baf01f36da003767",
     "scores": [
-      65,
-      70,
-      63
+      72,
+      72,
+      73
     ],
-    "score": 65,
+    "score": 72,
     "breakdown": {
       "design": 21,
-      "originality": 15,
-      "interaction": 10,
-      "craft": 11,
-      "honesty": 8
+      "originality": 18,
+      "interaction": 11,
+      "craft": 13,
+      "honesty": 9
     },
-    "beats": "Beats generic and auto-generated brokerage subdivision pages and Zillow-style neighborhood boilerplate on trust and specificity for a sub-10-home plat: a named MLS source chip, a real filtered map, and a dot-encoded year-over-year comparison. Does not beat Redfin's neighborhood pages on interaction depth (chart hover states, heat-mapped price overlays, a denser filter surface) — the evaluator's own honest read, named rather than smoothed over.",
+    "beats": "Beats Zillow's and Redfin's neighborhood pages on identity — a photograph of a live, named listing on arrival, which a portal's generic map view never shows, over the county's own recorded plat and its lot lines. It does not beat a resort developer's own site on photography: the frame is one MLS listing photo, not a commissioned shoot.",
     "defects": [
       {
-        "section": "#market-report + #faq",
+        "section": "#market-report",
         "severity": "taste",
-        "finding": "Eyebrow -> heading -> caption -> chart/list -> source repeats verbatim across the market-report and FAQ sections back to back — the stacked-section shape, unchanged by this pass (out of SITE-47 scope: neither section's code was touched)."
+        "finding": "Repeats the eyebrow-heading-rule-sentence-chart-stat-source shape of the sections above and below it; past the first screen the page still reads as a stacked list. Unchanged by this lane."
       },
       {
-        "section": "hero caption",
+        "section": "#faq",
         "severity": "taste",
-        "finding": "\"one of Bend's subdivisions\" is a low-information appositive that would sit identically on any subdivision page — correct given the honest constraint (no resort, no neighborhood, no median for this specific plat) but not memorable."
+        "finding": "The 2025-against-2024 dot comparison shows no hover or tap cue in the still, so it reads as a picture of data rather than something a reader can interrogate."
       },
       {
-        "section": "hero (#overview)",
-        "severity": "taste",
-        "finding": "No photography renders for this plat (no own hero image, and no resort image borrowed now that Golf Homes at Tetherow is correctly no longer a registered Tetherow alias per the 2026-08-26 membership audit) — a data-poverty condition of this specific plat, not a code defect; §0 forbids inventing or misattributing a photo to cover it."
-      },
-      {
-        "section": "atlas dock sold-density legend",
+        "section": "hero (#overview) at 375, both routes",
         "severity": "craft",
-        "finding": "The \"FEWER SALES / MORE SALES\" gradient swatches read as near-white on the cream background in the still — a contrast issue in the existing dock legend, unrelated to the SITE-47 claim-sentence/key-in-head addition. Flagged as a follow-up, not fixed here (shared component, out of this node's scope)."
+        "finding": "The H1 sits close against the source chip row at 375; nothing clips, but it is tighter than the vertical rhythm the rest of the page keeps."
       },
       {
-        "section": "hero (#overview)",
+        "section": "#homes",
         "severity": "taste",
-        "finding": "Two full-size display headlines still stack within about 150px of each other (pre-existing, out of SITE-47 scope)."
+        "finding": "The filter rail and legend under the opening still look like a portal search widget bolted beneath an editorial hero rather than the navy-on-cream register the Atlas above it uses."
       },
       {
-        "section": "#overview source chip",
-        "severity": "honesty",
-        "finding": "The chip carries no as-of date, because getPlatPublicInventory publishes no read timestamp. FIXED in this pass: getPlatPublicInventory now stamps every row with readAt and the chip renders it — this defect from the prior mark is closed."
+        "section": "#faq valuation row",
+        "severity": "taste",
+        "finding": "The what-is-my-home-worth row is the page’s lead-generation moment and renders at the same weight as every other disclosure row."
+      },
+      {
+        "section": "#atlas, unrecorded plats",
+        "severity": "taste",
+        "finding": "On a plat with no recorded polygon the map is roads and marks over open ground: the counties that dominate that class (Jefferson, Crook) publish neither plats nor parcels, so there is no lot fabric to draw and the frame reads thin."
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-09",
-      "score": 79,
+      "score": 65,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:865202efd96928262a0e74a24069a04b68675fdc48333cfd56d5df15bc605455"
+      "shotsHash": "sha256:01a48bf3c24df75a3540f85cd7520ca4ba84f80c33bfcba31646d41ae277c3ba"
     },
-    "rebaselineReason": "shotsHash differs: SITE-47 replaced the opening's caption composer (plat-caption.ts, a distinct authored sentence per plat setting instead of the single interpolated template line), added the CTA doors (\"See every home for sale\" / \"Talk to a broker\") in the fold, and moved the Atlas's claim sentence and dot key into the head above the map — all six shots were re-captured against the lane dev server. RAW COMPARISON, STATED PLAINLY: the new median (65) is BELOW the prior mark (79), not above it. Two independent evaluator passes on this build (median 70 before the caption reword, median 65 after) both came in under 79, while the SAME evaluator model scored the nearly-identical below-the-fold market-report and FAQ sections (untouched by this session) as part of a 79 only one lane earlier — TASTE.md's own SITE-11 note records one page swinging 75-88 across four passes on one commit, and this is offered as the likely explanation, not as an excuse: the numbers are recorded as they came back, not smoothed toward 79."
+    "rebaselineReason": "shotsHash differs: every frame was re-captured through scripts/take-route-shots.mjs on this branch, and two frames of an unrecorded plat (/subdivisions/diamond-bar-ranch at 1440 and 375) joined the set, so the prior mark of 65 was taken on a different instrument. The same evaluator, same rubric, scored the committed state of this branch's base at a median of 54 on THIS set and this state at 72: the class rose 18 against the instrument that measured both, and sits above the prior 65 as well."
   }
 }

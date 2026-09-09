@@ -5,11 +5,15 @@ import { describe, expect, it } from 'vitest'
 const PAGE = readFileSync(resolve('app/listing/[listingKey]/page.tsx'), 'utf8')
 
 describe('listing remainder composition', () => {
-  it('states the 12-section house page on the route', () => {
-    expect(PAGE).toMatch(/PAGE_INVENTORY listing \(house URL\), 12 rows/)
+  it('states the 13-section house page on the route', () => {
+    // 12 became 13 on 2026-09-09 when the MLS public remarks came back as row 5
+    // (Matt: "mls descriptions must come back"; CLAUDE.md §2). The count and the
+    // comment move together, which is the whole point of pinning it here.
+    expect(PAGE).toMatch(/PAGE_INVENTORY listing \(house URL\), 13 rows/)
+    expect(PAGE).toMatch(/<DescriptionBlock publicRemarks=\{listing\.publicRemarks\} \/>/)
   })
 
-  it('composes inventory order: media, ask, facts, payment, map, schools, parks, tax, CC&Rs, similar, broker', () => {
+  it('composes inventory order: media, ask, facts, about, payment, map, schools, parks, tax, CC&Rs, similar, broker', () => {
     const main = PAGE.slice(PAGE.indexOf('const main = ('), PAGE.indexOf('const floating ='))
     // SITE-21 put a SECOND ListingSimilarStrip mount high in the page for the
     // off-market composition, so the on-market rail is the last one, not the
@@ -18,6 +22,7 @@ describe('listing remainder composition', () => {
     const order = [
       '<PriceCtaStrip',
       '<PropertySpecs',
+      '<DescriptionBlock',
       '<MortgageCalculator',
       '{atlasBlock}',
       '<SchoolsBlock',

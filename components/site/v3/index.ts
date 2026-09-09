@@ -262,6 +262,19 @@ export type {
   V3AlertsTrap,
 } from './V3AlertsStrip.client'
 
+/**
+ * The place-page door (SITE-03, 2026-09-08): beside the place H1, ONE live fact
+ * — the active count — as a filled plate that opens that place's own
+ * pre-filtered inventory. ONE fact at every grain: no median, no months of
+ * supply, no days-to-pending (unpublishable below city grain,
+ * lib/market/geo-grain-trust.ts) and no verdict either, because the verdict's
+ * one home is the opening's caption. `publishPlaceDoor()` turns a face that
+ * publishPlaceFace() already produced into these props; the primitive
+ * classifies nothing and formats nothing.
+ */
+export { V3PlaceDoor } from './V3PlaceDoor'
+export type { V3PlaceDoorProps } from './V3PlaceDoor'
+
 export type { V3AskProps, V3AskField, V3AskOption, V3AskResult } from './V3Ask.client'
 
 export { V3ChartSwitch } from './V3ChartSwitch.client'
@@ -328,7 +341,11 @@ export type {
   V3LedgerFigureRow,
   V3LedgerPlainRow,
   V3LedgerRows,
+  V3LedgerReveal,
 } from './V3Ledger'
+export { V3_LEDGER_SPARK_MIN } from './V3Ledger'
+/** The Ledger's phone hold (SITE-52); mounted by V3Ledger itself, exported so the barrel gate sees one register. */
+export { V3LedgerRevealIsland, V3_LEDGER_HOLD_MS } from './V3LedgerReveal.client'
 
 /**
  * The listing unit for Ledger-register search surfaces: one live listing as a
@@ -428,6 +445,8 @@ export type {
   V3QuietFact,
   V3QuietChips,
   V3QuietFold,
+  V3QuietFigure,
+  V3QuietMark,
 } from './V3Quiet'
 
 /* -------------------------------------------------------------------------- */
@@ -474,6 +493,27 @@ export type {
 export { V3PlaceIndex, placeIndexRows } from './V3PlaceIndex'
 
 export type { V3PlaceIndexProps, V3PlaceIndexEntry } from './V3PlaceIndex'
+
+/* -------------------------------------------------------------------------- */
+/* Pattern 10 — SLOTS: a tool's empty state, drawn as the thing it makes       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A tool with nothing in it yet, shown as the object it becomes: one outlined
+ * slot per place the tool holds, and a WORKED EXAMPLE of the finished output
+ * over real rows, labelled in a visible word so nobody mistakes the example
+ * for their own.
+ *
+ * Quiet was standing in for this on /compare and the 2026-09-08 taste table
+ * named the result: "heading, sentence, link — indistinguishable from any SaaS
+ * empty-cart screen", with "no visible slot the visitor can watch fill". Quiet
+ * has no slot, no table and no figure by contract, so the fix was never a prop
+ * on Quiet. Any tool with a bounded tray and an output worth previewing takes
+ * this instead.
+ */
+export { V3Slots } from './V3Slots.client'
+
+export type { V3SlotsProps, V3SlotsColumn, V3SlotsFill } from './V3Slots.client'
 
 /* -------------------------------------------------------------------------- */
 /* PLACE SECTIONS — compositions of the six, not a seventh                     */
@@ -576,3 +616,18 @@ export type { V3SectionTrackerProps } from './V3SectionTracker.client'
  * SWEEP_MS = 900 mirroring --v3-dur-sequence, one duration with two definitions,
  * which drifts the moment the token moves.
  */
+
+/* -------------------------------------------------------------------------- */
+/* LIVE STATE — appended 2026-09-09 (SITE-48). Not a seventh pattern.          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The published hours against the clock, for a reach control that would
+ * otherwise be four static links. It claims hours and nothing else: the
+ * refusal to publish a reply-time figure, and the SITE-09 read behind it,
+ * are argued in V3OnDuty.view.ts.
+ */
+export { V3OnDuty } from './V3OnDuty.client'
+export type { V3OnDutyProps } from './V3OnDuty.client'
+export { onDutyLabel, onDutyState } from './V3OnDuty.view'
+export type { V3OnDutyState } from './V3OnDuty.view'

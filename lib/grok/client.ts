@@ -21,6 +21,12 @@ export const GROK_MODELS = {
   textFast: 'grok-4.5',
   /** Image understanding. Grok 4 chat models take image_url content parts. */
   vision: 'grok-4.6',
+  /**
+   * Site-queue taste evaluator (`scripts/taste-evaluate.ts`). Must differ from
+   * `text` / `vision`: a Grok builder is grok-4.6, and ci:taste-canon refuses
+   * evaluatorModel == builderModel. grok-4.5 still takes image_url parts.
+   */
+  taste: 'grok-4.5',
   /** Stills. $0.04/image. */
   image: 'grok-imagine-image-2.0',
   /** Cheap stills for candidate sweeps. $0.02/image. */

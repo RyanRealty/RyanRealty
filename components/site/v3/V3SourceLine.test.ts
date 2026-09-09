@@ -114,3 +114,27 @@ describe('v3SourceParts', () => {
     )
   })
 })
+
+describe('sourceNameFromTrace — a clause never ends mid-bracket', () => {
+  it('skips a comma inside a parenthetical', () => {
+    expect(
+      sourceNameFromTrace(
+        'Active single-family listings in the Central Oregon service area with a documented asking-price cut in the last 7 days (the same pull the list below renders, 60 in the window). One mark per cut.',
+      ),
+    ).toBe(
+      'Active single-family listings in the Central Oregon service area with a documented asking-price cut in the last 7 days (the same pull the list below renders, 60 in the window)',
+    )
+  })
+
+  it('still cuts at the first comma outside brackets', () => {
+    expect(sourceNameFromTrace('Market Truth region row, detached, live')).toBe('Market Truth region row')
+  })
+
+  it('cuts at the first sentence when there is no comma', () => {
+    expect(sourceNameFromTrace('Google reviews. Averaged to a tenth.')).toBe('Google reviews')
+  })
+
+  it('returns the whole trace when it carries no cut at all', () => {
+    expect(sourceNameFromTrace('Google reviews')).toBe('Google reviews')
+  })
+})

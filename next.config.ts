@@ -281,6 +281,25 @@ const nextConfig: NextConfig = {
       // with no h1/main (fleet 57eefae9 / df8ca55f). The 308 must live here.
       { source: '/motivated-sellers', destination: '/price-drops', permanent: true },
       { source: '/motivated-sellers/:city', destination: '/price-drops/:city', permanent: true },
+      // SITE-29: the blog index reads no query so it can prerender. Category
+      // and page views live on paths (app/blog/_v3/blog-index-paths.ts); the
+      // old ?category= / ?page= forms 308 to them, and the two spellings of
+      // the bare index (category All, page 1) fold back to it.
+      {
+        source: '/blog',
+        has: [
+          { type: 'query', key: 'category', value: '(?<category>.+)' },
+          { type: 'query', key: 'page', value: '(?<page>\\d+)' },
+        ],
+        destination: '/blog/category/:category/page/:page',
+        permanent: true,
+      },
+      { source: '/blog', has: [{ type: 'query', key: 'category', value: '(?<category>.+)' }], destination: '/blog/category/:category', permanent: true },
+      { source: '/blog', has: [{ type: 'query', key: 'page', value: '(?<page>\\d+)' }], destination: '/blog/page/:page', permanent: true },
+      { source: '/blog/category/All/page/:page', destination: '/blog/page/:page', permanent: true },
+      { source: '/blog/category/All', destination: '/blog', permanent: true },
+      { source: '/blog/category/:category/page/1', destination: '/blog/category/:category', permanent: true },
+      { source: '/blog/page/1', destination: '/blog', permanent: true },
       // P3: /feed folds into /videos?view=feed. Same Next 16 200-shell class.
       { source: '/feed', has: [{ type: 'query', key: 'start', value: '(?<start>.*)' }], destination: '/videos?view=feed&start=:start', permanent: true },
       { source: '/feed', destination: '/videos?view=feed', permanent: true },
