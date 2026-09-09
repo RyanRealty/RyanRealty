@@ -83,7 +83,12 @@ function estimateReadTime(content: string | null | undefined): number {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
   const post = await getBlogPostBySlug(slug)
-  if (!post) return { title: 'Post Not Found | Ryan Realty', robots: { index: false, follow: true } }
+  // notFound() here, in generateMetadata: app/loading.tsx opens a Suspense
+  // boundary on every route, so the page body's notFound() lands after the
+  // shell's 200 has flushed and a crawler reads a 200 "Post Not Found" with no
+  // H1 (measured 2026-09-09 on next start). Metadata resolves before the
+  // shell, so this one is a real 404 (SITE-29).
+  if (!post) notFound()
 
   const period = publishBlogReportPeriod({
     title: post.title,

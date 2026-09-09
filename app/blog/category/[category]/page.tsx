@@ -31,8 +31,14 @@ export async function generateStaticParams(): Promise<Array<Record<string, strin
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { category } = await params
   const cat = decodeBlogCategorySegment(category)
+  // notFound() HERE, in generateMetadata, not only in the page: app/loading.tsx
+  // opens a Suspense boundary on every route, so a page-body notFound() lands
+  // after the shell (and its 200) has flushed and a crawler reads a 200 with no
+  // H1. Metadata resolves before the shell; the communities route earns its
+  // real 404 the same way (ci:streamed-redirect's class of defect).
+  if (!isBlogCategoryPath(cat)) notFound()
   return {
-    ...blogIndexMetadata({ category: cat ?? 'All', page: 1 }),
+    ...blogIndexMetadata({ category: cat, page: 1 }),
     alternates: { canonical: BLOG_INDEX_CANONICAL },
   }
 }

@@ -1,3 +1,104 @@
+# Current — 2026-09-09 (SITE-29: place pages and the blog are static shells that revalidate; the node's diagnosis was stale and the real cause was in the client tree)
+
+Owner: Claude (Fable 5.1), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
+`8dc9b550`, main merged at `07441b9e` (through `a97023d6`), the landing commit is the one carrying this block. Node
+`e3d1713f` is `blocked` until 2026-09-11 as shipped-and-measuring: its accept is a production CDN
+header and runs only after PR #200 merges and Vercel deploys.
+
+**What the node said, and what was true.** The node blamed a `cookies()` read in
+`PlaceSplitView`; that read left on 2026-09-01. Three things actually kept the pages dynamic, each
+proven on `next build`'s route table and on `next start`, not by reasoning:
+1. All four place pages awaited `searchParams` and threaded it into `PlaceSplitView`. Under Next 16
+   without `cacheComponents` that read alone classifies the route dynamic, whatever else is clean.
+2. Every client component under the split view called `useSearchParams()` from `next/navigation`.
+   Inside a static render Next throws `BailoutToCSRError` from it (`dynamic-rendering.js`, case
+   `prerender-legacy`) and React client-renders the tree up to the nearest Suspense boundary, which
+   on a place page is `loading.tsx`: the page's static HTML would have been the loading skeleton,
+   listing cards and all. Deleting the page-level read would have shipped exactly that.
+3. The blog post had two dead cookie awaits and, once those were gone, **no `generateStaticParams`
+   at all, which Next never caches** (the route table shows ƒ and `next start` served
+   `private, no-store`); the blog index read `?category=`/`?page=` on every hit.
+
+**What shipped (`8dc9b550`).**
+- `lib/search/url-search-params.client.tsx`: the query string as a static-safe external store.
+  Server render and hydration read `''` on a static shell (or the request's query through
+  `UrlSearchParamsProvider`, which `/search` and `/homes-for-sale` now wrap); after hydration the
+  store reads `window.location` and one root bridge in `IdentityBridges` keeps it current — that
+  bridge holds the only real `useSearchParams()`, inside its own Suspense.
+- `SearchFilters`, `MapSearchView`, `AllFiltersSheet`, `SearchAlertCapture`, `SaveSearchButton` read
+  the store. Under `staticShell` the URL is laid over the server defaults
+  (`components/search/merge-url-search-filters.ts`, geo keys locked on a place), a query change
+  refetches the viewport **inside the place's own seed polygon** (`scopePolygon`), and URL writes go
+  to `history.pushState` (Next's patched one, so the router syncs) instead of a router round trip.
+- `PlaceSplitView` renders the default list; the four place pages drop the read; `/subdivisions`
+  goes from `force-dynamic` to `revalidate = 60` (its cause is gone).
+- Blog: `[slug]` gets `generateStaticParams` returning `[]` + `revalidate = 300`; `/blog` reads no
+  query; category and page views live on `/blog/category/<c>`, `/blog/page/<n>`,
+  `/blog/category/<c>/page/<n>` (on-demand ISR, each with its own breadcrumb, noindex as the query
+  forms were); `next.config` 308s the old `?category=`/`?page=` forms to them.
+- Middleware: unknown blog categories and malformed page numbers are real 404s at the edge
+  (`lib/blog/index-path-guard.ts`, the soft-404 class the middleware already kills for `/communities`).
+- Held mechanically: `components/search/__tests__/static-shell-url-params.test.ts` (no
+  `useSearchParams` under the split view, no request-state read on the place pages, the footprint
+  passed to the map); `check-ssg-budget` now lists the four blog routes; `check-seo-authoring`,
+  `check-publish-blog-index-list`, `index-ledger-openings`, `seo-route-contracts` and
+  `site-contracts` were repointed from the old shapes they encoded (the plat-detail contract
+  literally asserted `force-dynamic`).
+
+**Measured on the served build.** `/cities/bend`, `/communities/sunriver`, `/cities/bend/awbrey-butte`:
+`Cache-Control: public, s-maxage=60, stale-while-revalidate=600`, `x-nextjs-prerender: 1`, H1 and
+13/10/12 h2 in the static HTML, the split view's 48 cards in it. `/subdivisions/ridge-at-eagle-crest`:
+MISS then HIT. On the merged build: `/blog` prerendered (served from the cache, `s-maxage=60`, H1 present); `/blog/sunriver-year-round-living-vs-vacation` MISS then HIT with H1 and 11 h2; `/blog/category/Market%20Reports` and `/blog/page/2` MISS then HIT, `noindex, follow`, canonical `/blog`; `/blog?category=Market%20Reports` → 308 `/blog/category/Market%20Reports` (the query is carried along, harmless), `/blog/page/1` and `/blog/category/All` → 308 `/blog`. A missing post, an unknown category or a malformed page number used to stream a hollow 200 (the whole site does, `app/loading.tsx` flushes the shell before a page-body `notFound()`; only `/communities` answers 404, from the middleware's slug allow-list): the blog now does the same at the edge (`lib/blog/index-path-guard.ts`), `/blog/category/Nope`, `/blog/page/0`, `/blog/page/x` are real 404s; a page past the last is still a streamed 200 (the edge cannot know the post count), and `/blog/<missing-post>` still streams a 200 — same class, its own node. Deep links: `/cities/bend?beds=4` on desktop and 375 shows the Beds chip
+as "4+ bd", refetches to "215 homes in this map view · Bend · 4+ bd", 48 cards and none under four
+beds; a chip change writes `?beds=3` with no document load and refetches ("594+ homes · 3+ bd");
+back restores the bare URL and the default list. Receipts: the four classes' records re-captured
+against the served build differ from the shots on disk by 0–1% outside live listing and market data
+(and the atlas records lose the pointer's hover card, below); shots, hashes and scores unchanged
+(city 69, neighborhood 65, community 80, blog 52).
+
+**Two defects found by measuring, both fixed before landing.**
+- The first refetch effect seeded its "last fetched" ref from the merged snapshot; on desktop the
+  atlas remounts the list after its first camera fit, by which time the store already carried the
+  URL, so a deep link updated the chip and never the cards (a Sonnet Playwright pass and my own
+  card-level count both caught it; phones refetched, desktop did not). Seeded from the server
+  defaults instead: a mount under a filtered URL is a change.
+- The refetch first searched the bounding box plus the place's name tag, a different population
+  from the seed polygon the server searched (243 vs 215 homes for Bend · 4+ bd). The map now
+  carries the place's footprint and keeps it whenever no shape is drawn.
+
+**The shot tool could not pass a hydrated atlas.** `take-route-shots` wheels the page from the
+viewport centre; a hydrated V3Atlas under the pointer eats the wheel as a zoom, the loop reads a
+stall and gives up, and every anchor below the atlas shot the atlas — on a production server, where
+the atlas hydrates before the first wheel (the dev server's late chunk had hidden it). It now parks
+the pointer in the top-right corner first. Deliberate side effect: the centre pointer also raised the
+atlas hover card ("NEIGHBORHOOD · 98 listings") into every atlas-bearing record on disk; records now
+show the page before any pointer intent.
+
+**Known, not this lane's.** The count row hides its figure when the filter-match count equals the
+viewport count (`publishSearchCountPair`'s equality rule): `/cities/bend/awbrey-butte?propertyType=Residential`
+shows "57 homes" for a moment and then "Bend · Residential"; the mobile sheet still prints the
+number. Pre-existing on the dynamic page too (same two queries), worth a node. Three CMA integration
+tests (`lib/cma-request.int.test.ts`, `lib/crm/cma-kickoff.int.test.ts`) fail on live
+`cma-zztest-clobber` row state; nothing in this lane touches them. A deep-linked filter renders the
+default list in the static HTML until hydration — inherent to a static shell; no indexed URL carries
+a filter (canonical and sitemap are bare).
+
+**The accept, after deploy.** Twice each with a browser UA: `https://ryan-realty.com/communities/sunriver`,
+`/cities/bend`, `/blog`, `/blog/sunriver-year-round-living-vs-vacation` → second response
+`cache-control` contains `public` and `s-maxage`, `x-vercel-cache: HIT`; Sunriver's H1 and ≥8 h2;
+the post's H1 and ≥8 h2. Also `curl -sI "/blog?category=Market%20Reports"` → 308 to
+`/blog/category/Market%20Reports` (check the Location's encoding of the space; Next compiles the
+captured query into the path). The exact commands are on the node.
+
+**Lane lessons.** Verify a caching claim on the route table AND on `next start`: the blog post
+looked fixed after the cookie reads went and was still `no-store`. The session limit suspended this
+lane for four hours mid-build; the tree survived, the claim did not (re-claimed), and the build had
+to be restarted — commit before a long build. `useSearchParams` under a static route is a silent
+skeleton, not an error: the structural test is the guard.
+
+**Queue at handoff.** Lanes at 12:10Z: SITE-30 and SITE-54 in progress elsewhere; SITE-29 blocked
+until 2026-09-11 (deploy + accept). Never run prettier in this repo.
+
 ## Prior — 2026-09-09 (SITE-31: eleven community guides as drafts, four titles rewritten live, the blog class's first mark — the flip is Matt's)
 
 Owner: Claude (Fable 5.1), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, landing at
