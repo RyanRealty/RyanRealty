@@ -12,12 +12,12 @@ describe('cma compose copy', () => {
   it('keeps SE on 648 SE Douglas and never bare-CMA subjects', () => {
     const address = '648 SE Douglas, Bend, OR 97702'
     const subject = cmaComposeEmailSubject(address)
-    expect(subject).toBe('Pricing report for 648 SE Douglas, Bend, OR 97702')
+    expect(subject).toBe('A market analysis for 648 SE Douglas')
     expect(subjectHasBareCma(subject)).toBe(false)
     expect(cmaComposeEmailBody(address)).toContain('648 SE Douglas')
     expect(cmaComposeEmailBody(address)).not.toContain('/cma/')
     expect(cmaComposeEmailBody(address)).not.toMatch(/\bCMA\b/)
-    expect(cmaComposeSmsBody(address)).toBe('Pricing report for 648 SE Douglas, Bend, OR 97702 is attached.')
+    expect(cmaComposeSmsBody(address)).toBe('Our market analysis for 648 SE Douglas is attached.')
     expect(cmaComposePdfFilename('cma-648-se-douglas')).toBe('cma-648-se-douglas.pdf')
   })
 
@@ -31,7 +31,7 @@ describe('cma compose copy', () => {
       calendarLink: 'https://ryan-realty.com/book/matt',
       agentName: 'Matt Ryan',
     })
-    expect(out.subject).toContain('Pricing report')
+    expect(out.subject).toBe('A market analysis for 123 NW Cascade Ave')
     expect(out.body).toContain('Hi Sarah')
     expect(out.body).toContain('$649,000')
     expect(out.requiresPdfAttachment).toBe(true)

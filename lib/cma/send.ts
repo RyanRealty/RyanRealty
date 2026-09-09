@@ -99,6 +99,7 @@ async function resolveSendContext(
   const clientName = (row.client_name as string | null) ?? null
   const facts = cmaFirstContactFactsFromRow(row as Record<string, unknown>, {
     brokerName: brokerRow.displayName,
+      brokerPhone: brokerRow.phone,
     firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
     lastListPrice,
   })
@@ -328,6 +329,7 @@ export async function prepareCmaSendPreview(slug: string): Promise<
       lastListPrice,
       facts: cmaFirstContactFactsFromRow(row as Record<string, unknown>, {
         brokerName: brokerRow.displayName,
+      brokerPhone: brokerRow.phone,
         firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
         lastListPrice,
       }),

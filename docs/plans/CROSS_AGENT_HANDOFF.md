@@ -1,4 +1,47 @@
-# Current — 2026-09-09 (round three: the first message is drafted for Matt, the parser and the agent are on Grok, the queue is clean)
+# Current — 2026-09-09 (round four: the first message is in Matt's register, and so is every first touch)
+
+Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
+(`wt/cma-ship-20260907`). One gated push after this was written — `git log origin/main --oneline -6`.
+The directive is in memory `feedback_cma_first_message_register`; his exemplar letter is quoted there.
+
+**What Matt said.** "We're professionals. We're sorry their home didn't sell. This is a big deal. This
+is someone's home. We're not going to say, 'Hey, your home came off the market. Here's what we got.'
+… You're going to have to adjust that big time in any stuff that comes out from us." Also: no one
+says "the ask was", no one says "our desk", "a full report instead of a form letter" is corny, "no
+mannered prose allowed on my website", and "you never have to overexplain anything". He kept the
+numbers paragraph, the report paragraph, the what-you-get line and the fifteen-minute close from
+the earlier draft and asked for his letter and that draft merged.
+
+**Done.** `lib/cma/first-contact.ts` is the merge, one composer for every lane: who we are, why we
+wrote (sorry it did not sell / respect for a FSBO / thank you for asking), the numbers off the row
+(`comps_count`, the tier every priced sale came from via `salesScopeFromTierCounts` on
+`build_summary.comp_selection.final_tier_counts`, the value range, the recommended list, the last
+list set against the range only when it sits above, gently), his pricing paragraph
+(`CMA_PRICING_PHILOSOPHY`, exported and reused), what the report walks through (the three chapters
+the document really has), the ask to earn their business, a sit-down or fifteen minutes on the
+phone, the premium-product line, reviews and about, the place page, questions, best of luck.
+Subjects are plain ("A market analysis for 2465 7th"). Street only inside sentences (`streetOnly`).
+The same register now runs the expired and FSBO text messages (`lib/crm/first-touch-copy.ts` V3
+templates, recognized as canonical so the live seed rows compose the new body), the CRM compose
+prefill and its seed (`lib/cma/fsbo-cma-templates.ts`, `crm-compose-copy.ts`), and the seller-LP
+instant email (`lib/cma-delivery.ts composeCmaEmail`). `scripts/cma-first-message.ts <slug>` or
+`--lane fsbo` prints the letter exactly as the rail sends it; the review page "The First Message"
+(https://claude.ai/code/artifact/a4f1379b-c4d8-4bba-9274-3138b858ed02) is three real rows printed
+by it. Tests: first-contact (17), first-touch-copy (10), fsbo-cma-templates (12), crm-compose-copy,
+cma-delivery.compose.
+
+**Open.** (1) Matt has not yet said the words are right; Auto-send for expired and FSBO stays OFF
+until he does, then: harness send walk, second walk on the FSBO and expired lanes, flip the
+switches for clean documents (audit pass, no review reason, range inside the 8% share). (2) The
+broker record for Matt has no phone, so the letter says "give me a call" and the signature has no
+number; add it on the broker record and both fill in. (3) `subject_address` comes off the MLS
+without a street suffix ("2465 7th"). (4) Some rows carry a recommended list outside the value
+range (e.g. cma-148728-snuffy-la-pine: range $470k–$497k, recommended $412k); the letter prints
+what the row says, so the review gate should catch it before a send. (5) The N=2,000 containment
+backtest (before/after) is still running in the background; add the result to
+`docs/research/pricing-backtest-containment-2026-09-09.md` when the waiter prints it.
+
+## Prior — 2026-09-09 (round three: the first message is drafted for Matt, the parser and the agent are on Grok, the queue is clean)
 
 Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
 (`wt/cma-ship-20260907`). Commits 3264efb3 (inbox parser on Grok), eca69b97 (agent on Grok);

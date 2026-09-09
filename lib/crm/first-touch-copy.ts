@@ -40,6 +40,17 @@ export const EXPIRED_FIRST_TOUCH_TEMPLATE_V2 =
 export const FSBO_FIRST_TOUCH_TEMPLATE_V2 =
   'Hi, %sender_first_name% with Ryan Realty. %address% is listed by owner. We built a market analysis for %address% and the plan we would run on that address: listing video, flyers, and a photo set made for this house. %cma_link%'
 
+/**
+ * Matt 2026-09-09: the register is his. Sorry it did not sell, the analysis,
+ * the ask to earn their business. A FSBO gets respect and a second set of
+ * numbers, no charge and no strings. Same shape as the composed body below.
+ */
+export const EXPIRED_FIRST_TOUCH_TEMPLATE_V3 =
+  "Hi, %sender_first_name% with Ryan Realty. We noticed %address% came off the market without selling, and we're sorry it didn't. We put together a market analysis for %address%. We would like the opportunity to earn your business should you decide to relist. %cma_link%"
+
+export const FSBO_FIRST_TOUCH_TEMPLATE_V3 =
+  "Hi, %sender_first_name% with Ryan Realty. We noticed %address% is for sale by owner. We respect that. We put together a market analysis for %address%. If a second set of numbers helps, it's yours, no charge and no strings. %cma_link%"
+
 const WORTH_QUESTION =
   /what(?:'s| is) (?:my|your|the) home worth|what is (?:my|your) home worth|what'?s it worth/i
 const PRIOR_AGENT_BLAME =
@@ -80,9 +91,9 @@ export function isCanonicalFirstTouchBody(kind: FirstTouchKind, body: string): b
   const t = body.trim()
   switch (kind) {
     case 'expired':
-      return t === EXPIRED_FIRST_TOUCH_SEED_V1 || t === EXPIRED_FIRST_TOUCH_TEMPLATE_V2
+      return t === EXPIRED_FIRST_TOUCH_SEED_V1 || t === EXPIRED_FIRST_TOUCH_TEMPLATE_V2 || t === EXPIRED_FIRST_TOUCH_TEMPLATE_V3
     case 'fsbo':
-      return t === FSBO_FIRST_TOUCH_SEED_V1 || t === FSBO_FIRST_TOUCH_TEMPLATE_V2
+      return t === FSBO_FIRST_TOUCH_SEED_V1 || t === FSBO_FIRST_TOUCH_TEMPLATE_V2 || t === FSBO_FIRST_TOUCH_TEMPLATE_V3
     default:
       return assertNever(kind)
   }
@@ -90,30 +101,31 @@ export function isCanonicalFirstTouchBody(kind: FirstTouchKind, body: string): b
 
 export function composeThisHomeMarketClause(address: string | null): string {
   const named = trim(address)
-  if (named) {
-    return `We built a market analysis for ${named} and the plan we would run on that address: listing video, flyers, and a photo set made for this house.`
-  }
-  return 'We built a market analysis for this home and the plan we would run on it: listing video, flyers, and a photo set made for this house.'
+  return `We put together a market analysis for ${named ?? 'this home'}.`
 }
 
 // Matt 2026-09-07 (hard lock, said twice): the owner lived their own listing.
 // Never state their list price, days on market, or price cuts back at them —
 // not "the ask," not a dollar figure, not a day count. State only that it
-// did not sell / that they are listing it themselves. Personalization comes
-// from the address and from what is actually NEW to them (our numbers, the
-// plan), never from reciting their own history.
+// did not sell / that they are listing it themselves.
+//
+// Matt 2026-09-09: and say it the way we talk. We are sorry their home did
+// not sell. This is someone's home. Not "here's what we got".
 
 export function composeExpiredKnowClause(facts: FirstTouchFacts): string {
   const address = trim(facts.address)
-  const head = address ?? 'This home'
-  return `${head} came off the market without a sale.`
+  const head = address ?? 'your home'
+  return `We noticed ${head} came off the market without selling, and we're sorry it didn't.`
 }
 
 export function composeFsboKnowClause(facts: FirstTouchFacts): string {
   const address = trim(facts.address)
-  const head = address ?? 'This home'
-  return `${head} is listed by owner.`
+  const head = address ?? 'your home'
+  return `We noticed ${head} is for sale by owner. We respect that.`
 }
+
+const EXPIRED_ASK = 'We would like the opportunity to earn your business should you decide to relist.'
+const FSBO_ASK = "If a second set of numbers helps, it's yours, no charge and no strings."
 
 function joinSms(parts: Array<string | null>): string {
   return parts
@@ -132,11 +144,11 @@ function withSenderAndLink(facts: FirstTouchFacts, mid: string): string {
 }
 
 export function buildExpiredFirstTouchSms(facts: FirstTouchFacts): string {
-  return withSenderAndLink(facts, `${composeExpiredKnowClause(facts)} ${composeThisHomeMarketClause(facts.address)}`)
+  return withSenderAndLink(facts, `${composeExpiredKnowClause(facts)} ${composeThisHomeMarketClause(facts.address)} ${EXPIRED_ASK}`)
 }
 
 export function buildFsboFirstTouchSms(facts: FirstTouchFacts): string {
-  return withSenderAndLink(facts, `${composeFsboKnowClause(facts)} ${composeThisHomeMarketClause(facts.address)}`)
+  return withSenderAndLink(facts, `${composeFsboKnowClause(facts)} ${composeThisHomeMarketClause(facts.address)} ${FSBO_ASK}`)
 }
 
 export function buildFirstTouchSms(kind: FirstTouchKind, facts: FirstTouchFacts): string {

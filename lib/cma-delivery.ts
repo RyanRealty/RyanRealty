@@ -29,6 +29,7 @@
  * which transitions the row to 'sent' and adds a FUB Note.
  */
 
+import { CMA_PRICING_PHILOSOPHY } from '@/lib/cma/first-contact'
 import 'server-only'
 
 import React from 'react'
@@ -613,42 +614,48 @@ export function composeCmaEmail(params: {
   const { leadFirstName, fullAddress, cma, brokerName, brokerEmail, brokerPhone } =
     params
   const greeting = leadFirstName ? `Hi ${leadFirstName},` : 'Hi,'
+  const street = fullAddress.split(',')[0]?.trim() || fullAddress
   const value = formatUsd(cma.estimatedValue)
   const low = formatUsd(cma.valueLow)
   const high = formatUsd(cma.valueHigh)
-  const range = low !== '—' && high !== '—' ? ` (range ${low}–${high})` : ''
+  const hasRange = low !== '—' && high !== '—'
+  const hasValue = value !== '—'
 
-  const subject = `Your Bend home value for ${fullAddress}`
+  const subject = `Your report on ${street}`
 
-  const text = [
-    greeting,
-    '',
-    `The report for ${fullAddress} is attached.`,
-    '',
-    `Closed sales nearby support the number in the report. Recommended list ${value}${range}.`,
-    '',
-    `Reply or call to walk through the numbers.`,
-    '',
-    brokerName ? brokerName : 'Ryan Realty',
-    brokerEmail || '',
-    brokerPhone || '',
-  ]
-    .filter((l) => l !== null && l !== undefined)
-    .join('\n')
+  // Matt 2026-09-09: the register is his. They asked, so it opens with thank
+  // you, then the numbers off the valuation, his pricing paragraph, the ask to
+  // earn their business, the reviews. No "reply or call to walk through the
+  // numbers" and nothing clipped.
+  const intro = brokerName
+    ? `My name is ${brokerName} with Ryan Realty in Bend. Thank you for asking what ${street} is worth. We researched your property and the comparable sales, and the full report is attached.`
+    : `This is Ryan Realty in Bend. Thank you for asking what ${street} is worth. We researched your property and the comparable sales, and the full report is attached.`
+  const numbers = hasRange
+    ? hasValue
+      ? `Closed sales nearby support ${low} to ${high}. We would recommend listing at ${value}.`
+      : `Closed sales nearby support ${low} to ${high}.`
+    : hasValue
+      ? `We would recommend listing at ${value}.`
+      : null
+  const ask =
+    'If you are considering selling, we would love the opportunity to earn your business. We could sit down, or take fifteen minutes on the phone, and talk about how we sell homes. We feel we offer a premium product, and you can read our reviews at https://ryan-realty.com/reviews.'
+  const questions = 'Please let me know if you have any questions.'
+
+  const paragraphs = [greeting, intro, numbers, CMA_PRICING_PHILOSOPHY, ask, questions].filter(
+    (p): p is string => Boolean(p),
+  )
+  const signature = [brokerName ? brokerName : 'Ryan Realty', brokerEmail || '', brokerPhone || ''].filter(Boolean)
+
+  const text = [...paragraphs.flatMap((p) => [p, '']), ...signature].join('\n')
 
   // Same sentences as `text` above: both are sent, so change one, change both.
-  // No `!`, no em dash as punctuation (it stays as the formatUsd null placeholder).
+  const para = (p: string) =>
+    `<p>${escapeHtml(p)
+      .replace(new RegExp(escapeHtml(street).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `<strong>${escapeHtml(street)}</strong>`)
+      .replace(/https:\/\/ryan-realty\.com\/reviews/g, '<a href="https://ryan-realty.com/reviews" style="color:#102742">https://ryan-realty.com/reviews</a>')}</p>`
   const html = `
 <div style="font-family:${EMAIL_FONT_STACK};font-size:16px;line-height:1.55;color:#102742;max-width:580px;margin:0 auto">
-  <p>${greeting}</p>
-  <p>The report for <strong>${escapeHtml(fullAddress)}</strong> is attached.</p>
-  <p>Closed sales nearby support the number in the report. Recommended list
-    <strong style="font-variant-numeric:tabular-nums;font-size:18px">${escapeHtml(
-      value
-    )}</strong>${
-      range ? `<span style="color:#102742aa">${escapeHtml(range)}</span>` : ''
-    }.</p>
-  <p>Reply or call to walk through the numbers.</p>
+  ${paragraphs.map(para).join('\n  ')}
   <p style="margin-top:28px">${escapeHtml(brokerName ?? 'Ryan Realty')}<br>
   ${brokerEmail ? `<a href="mailto:${encodeURIComponent(brokerEmail)}" style="color:#102742">${escapeHtml(brokerEmail)}</a><br>` : ''}
   ${brokerPhone ? `<a href="tel:${encodeURIComponent(brokerPhone)}" style="color:#102742">${escapeHtml(brokerPhone)}</a>` : ''}

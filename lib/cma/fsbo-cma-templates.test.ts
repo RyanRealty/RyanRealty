@@ -37,29 +37,43 @@ const FULL = {
 }
 
 describe('fsbo_cma_first_touch_v1', () => {
- it('uses pricing-report subjects without bare CMA', () => {
+ it('uses plain market-analysis subjects without bare CMA', () => {
  const email = composeFsboCmaFirstTouchEmail(FULL)
  expect(email.templateId).toBe(FSBO_CMA_FIRST_TOUCH_V1)
  expect(email.requiresPdfAttachment).toBe(true)
- expect(email.subject).toBe('Pricing report for 123 NW Cascade Ave, Bend, OR 97703')
+ expect(email.subject).toBe('A market analysis for 123 NW Cascade Ave')
  expect(subjectHasBareCma(email.subject)).toBe(false)
- expect(pickFsboCmaFirstTouchSubject(FULL, 2)).toContain('Nearby sales')
- expect(pickFsboCmaFirstTouchSubject(FULL, 3)).toContain('Market snapshot')
+ expect(pickFsboCmaFirstTouchSubject(FULL, 2)).toContain('Your home at')
+ expect(pickFsboCmaFirstTouchSubject(FULL, 3)).toContain('Your market analysis')
  for (const opt of [1, 2, 3] as const) {
  expect(subjectHasBareCma(pickFsboCmaFirstTouchSubject(FULL, opt))).toBe(false)
  expect(pickFsboCmaFirstTouchSubject(FULL, opt)).not.toMatch(/\bCMA\b/)
  }
  })
 
- it('names the property, range, and CTA', () => {
+ it('names the property, range, and CTA in Matt\'s register', () => {
  const { body } = composeFsboCmaFirstTouchEmail(FULL)
- expect(body).toContain('Sarah')
- expect(body).toContain('123 NW Cascade Ave, Bend, OR 97703')
- expect(body).toContain('$625,000 to $655,000')
- expect(body).toContain('Recommended list: $649,000')
- expect(body).toContain('https://ryan-realty.com/book/matt')
+ expect(body).toContain('Hi Sarah,')
+ expect(body).toContain('My name is Matt Ryan with Ryan Realty in Bend.')
+ expect(body).toContain('your home at 123 NW Cascade Ave is for sale by owner')
+ expect(body).toContain('no charge and no strings')
+ expect(body).toContain('Closed sales nearby support $625,000 to $655,000. We would recommend listing at $649,000.')
+ expect(body).toContain('nailing the price')
+ expect(body).toContain('earn your business')
+ expect(body).toContain('https://ryan-realty.com/reviews')
+ expect(body).toContain('book a time here: https://ryan-realty.com/book/matt')
+ expect(body).toContain('Best of luck with the sale.')
+ expect(body).not.toContain('Reply or call')
  expect(body).not.toMatch(/net more/i)
  expect(body).not.toMatch(/\bCMA\b/)
+ expect(body).not.toMatch(/[—–;!]/)
+ const expired = composeFsboCmaFirstTouchEmail({ ...FULL, leadType: 'expired' }).body
+ expect(expired).toContain("came off the market recently without selling. We're sorry it didn't sell")
+ expect(expired).toContain('Again, we are sorry your home did not sell.')
+ expect(expired).toContain('Best of luck in the future.')
+ const asked = composeFsboCmaFirstTouchEmail({ ...FULL, leadType: null }).body
+ expect(asked).toContain('Thank you for asking what 123 NW Cascade Ave is worth.')
+ expect(asked).not.toContain('sorry')
  })
 
  it('omits suggested list and range digits when missing - invents nothing', () => {

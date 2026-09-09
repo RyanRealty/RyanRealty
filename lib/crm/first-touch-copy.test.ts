@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   EXPIRED_FIRST_TOUCH_SEED_V1,
   EXPIRED_FIRST_TOUCH_TEMPLATE_V2,
+  EXPIRED_FIRST_TOUCH_TEMPLATE_V3,
   FSBO_FIRST_TOUCH_SEED_V1,
   FSBO_FIRST_TOUCH_TEMPLATE_V2,
+  FSBO_FIRST_TOUCH_TEMPLATE_V3,
   blamesPriorAgent,
   buildExpiredFirstTouchSms,
   buildFirstTouchSms,
@@ -46,7 +48,7 @@ describe('first-touch SMS — expired', () => {
     const body = buildExpiredFirstTouchSms(FULL)
     assertCBar(body, '1842 NW Foo St')
     expect(body).toBe(
-      'Hi, Matt with Ryan Realty. 1842 NW Foo St came off the market without a sale. We built a market analysis for 1842 NW Foo St and the plan we would run on that address: listing video, flyers, and a photo set made for this house. https://ryan-realty.com/cma/1842-nw-foo-st',
+      "Hi, Matt with Ryan Realty. We noticed 1842 NW Foo St came off the market without selling, and we're sorry it didn't. We put together a market analysis for 1842 NW Foo St. We would like the opportunity to earn your business should you decide to relist. https://ryan-realty.com/cma/1842-nw-foo-st",
     )
     expect(body).not.toMatch(/\$\d/)
     expect(body).not.toMatch(/\d+ days/)
@@ -57,7 +59,7 @@ describe('first-touch SMS — expired', () => {
   it('does not invent an address', () => {
     const body = buildExpiredFirstTouchSms(emptyFirstTouchFacts())
     assertCBar(body, null)
-    expect(body).toContain('This home came off')
+    expect(body).toContain('your home came off')
     expect(body).not.toMatch(/\d{3,}/)
   })
 })
@@ -72,9 +74,10 @@ describe('first-touch SMS — FSBO', () => {
       daysOnMarket: 14,
     })
     assertCBar(body, '1842 NW Foo St')
-    expect(body).toContain('listed by owner')
-    expect(body).toContain('listing video')
+    expect(body).toContain('is for sale by owner. We respect that.')
+    expect(body).toContain('no charge and no strings')
     expect(body).not.toContain('good luck')
+    expect(body).not.toContain('sorry')
     expect(body).not.toMatch(/\$\d/)
     expect(body).not.toMatch(/\d+ days/)
   })
@@ -86,34 +89,41 @@ describe('first-touch SMS — FSBO', () => {
     })
     assertCBar(body, '9 Pine Rd')
     expect(body).toBe(
-      '9 Pine Rd is listed by owner. We built a market analysis for 9 Pine Rd and the plan we would run on that address: listing video, flyers, and a photo set made for this house.',
+      "We noticed 9 Pine Rd is for sale by owner. We respect that. We put together a market analysis for 9 Pine Rd. If a second set of numbers helps, it's yours, no charge and no strings.",
     )
   })
 })
 
 describe('buildFirstTouchSms', () => {
   it('routes both kinds', () => {
-    expect(buildFirstTouchSms('expired', FULL)).toContain('came off the market without a sale')
-    expect(buildFirstTouchSms('fsbo', FULL)).toContain('listed by owner')
+    expect(buildFirstTouchSms('expired', FULL)).toContain("came off the market without selling, and we're sorry it didn't")
+    expect(buildFirstTouchSms('fsbo', FULL)).toContain('is for sale by owner')
   })
 })
 
 describe('canonical template detection', () => {
-  it('recognizes the live seed and the v2 rewrite', () => {
+  it('recognizes the live seed, the v2 rewrite and the v3 register', () => {
     expect(isCanonicalFirstTouchBody('expired', EXPIRED_FIRST_TOUCH_SEED_V1)).toBe(true)
     expect(isCanonicalFirstTouchBody('expired', EXPIRED_FIRST_TOUCH_TEMPLATE_V2)).toBe(true)
+    expect(isCanonicalFirstTouchBody('expired', EXPIRED_FIRST_TOUCH_TEMPLATE_V3)).toBe(true)
     expect(isCanonicalFirstTouchBody('fsbo', FSBO_FIRST_TOUCH_SEED_V1)).toBe(true)
     expect(isCanonicalFirstTouchBody('fsbo', FSBO_FIRST_TOUCH_TEMPLATE_V2)).toBe(true)
+    expect(isCanonicalFirstTouchBody('fsbo', FSBO_FIRST_TOUCH_TEMPLATE_V3)).toBe(true)
     expect(isCanonicalFirstTouchBody('expired', 'Hi, custom Matt rewrite.')).toBe(false)
   })
 
-  it('v2 templates name the address token and the this-home plan', () => {
-    for (const body of [EXPIRED_FIRST_TOUCH_TEMPLATE_V2, FSBO_FIRST_TOUCH_TEMPLATE_V2]) {
+  it('v3 templates carry the address token and the composed body, token for token', () => {
+    for (const body of [EXPIRED_FIRST_TOUCH_TEMPLATE_V3, FSBO_FIRST_TOUCH_TEMPLATE_V3]) {
       expect(body).toContain('%address%')
-      expect(body).toContain('listing video')
+      expect(body).toContain('%cma_link%')
+      expect(body).not.toContain('listing video')
       expect(isWorthQuestionCopy(body)).toBe(false)
       expect(blamesPriorAgent(body)).toBe(false)
     }
+    const merge = (tpl: string) =>
+      tpl.replace(/%sender_first_name%/g, 'Matt').replace(/%address%/g, '1842 NW Foo St').replace(/%cma_link%/g, FULL.cmaLink)
+    expect(merge(EXPIRED_FIRST_TOUCH_TEMPLATE_V3)).toBe(buildExpiredFirstTouchSms(FULL))
+    expect(merge(FSBO_FIRST_TOUCH_TEMPLATE_V3)).toBe(buildFsboFirstTouchSms(FULL))
   })
 })
 
