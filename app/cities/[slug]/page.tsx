@@ -46,7 +46,9 @@ import {
   getCityBoundaryGeoJSON,
   getCommunitySubdivisions,
   getAllNeighborhoodsWithCity,
+  getIndexableSubdivisions,
 } from '@/lib/data'
+import { SUBDIVISION_INDEX_MIN_LIFETIME_SALES } from '@/lib/data/subdivisions/subdivision-index'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import {
@@ -101,10 +103,10 @@ import {
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { V3Atlas, type AtlasRegion } from '@/components/site/v3'
+import { V3Atlas, V3PlaceIndex, type AtlasRegion, type V3PlaceIndexEntry } from '@/components/site/v3'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
-import { atlasRegionName } from '@/lib/atlas/place-names'
+import { atlasRegionName, atlasRegionNames } from '@/lib/atlas/place-names'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
@@ -155,6 +157,18 @@ import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
 import { getCoMarketAnnualCity } from '@/lib/data/analytics/getCoMarketAnnualCity'
 import { buildCitySchemas } from './_v3/city-metadata'
 import { areaGuideVideoSchema } from '@/lib/site/area-guide-schema'
+
+/**
+ * How many of a city's recorded plats the #plats index prints (SITE-30).
+ *
+ * Measured 2026-09-09: 2,486 plats clear the indexable floor across Central
+ * Oregon, 1,519 of them attributed to Bend. Printing all of them would make the
+ * city page a link farm and would move ~1.4 MB of anchors through the payload
+ * budget. Sixty is the Atlas's own child cap, so the two sections of this page
+ * that name plats agree on how many a page can hold, and /subdivisions carries
+ * the rest.
+ */
+const CITY_PLAT_INDEX_CAP = 60
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   // Seed the primary Central Oregon cities (finite, in-repo). Long-tail city
@@ -367,10 +381,63 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
   // PMMS, so the calculator can publish a rate with its own week stamp. A null
   // here is not a zero and not a default dressed as a measurement: the section
   // then says the rate is an assumption the visitor sets.
-  const [areaGuideVideo, liveRate] = await Promise.all([
+  const [areaGuideVideo, liveRate, indexablePlats] = await Promise.all([
     withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'area-guide-video'),
     withTimeoutFallback(getLiveMortgageRate(), null, 2500, 'city:mortgageRate'),
+    // SITE-30. The recorded-plat set the sitemap, llms.txt and the
+    // /subdivisions robots tag all read. Four scalar columns, no geometry,
+    // already cached 6h — this is a page's cheapest way to name its plats.
+    withTimeoutFallback(getIndexableSubdivisions(), [], 4000, 'city:indexablePlats'),
   ])
+
+  /**
+   * THE PLAT INDEX, IN SERVER HTML (site queue SITE-30, 2026-09-09).
+   *
+   * The Atlas is a client component: measured on 2026-09-09, the served HTML of
+   * /cities/bend held ZERO `<a href="/subdivisions/…">` — its only 22
+   * occurrences of that string were storage image URLs — while the page carried
+   * 42 crawlable community links, all of them sitewide chrome. The 511
+   * sitemapped plat pages therefore had essentially no contextual inbound link
+   * from the city that contains them. A link that lives only in a hydration
+   * payload is not a link.
+   *
+   * TWO SOURCES, ONE LIST, AND THEY CANNOT DISAGREE. First the indexable set —
+   * every plat in THIS city whose page we submit to Google — each carrying its
+   * own lifetime closed sales. Then every plat the Atlas above actually draws,
+   * so the map can never show an outline the index omits. The order is the
+   * dedupe: a plat in both keeps its figure, and a drawn plat below the
+   * publishing floor prints no figure rather than borrowing one (§0 — unknown
+   * is not zero, and a noindexed plat still renders its page).
+   *
+   * On Bend the Atlas draws NEIGHBORHOODS, whose doors are already crawlable
+   * (13 of them, in the #neighborhoods Ledger). So the second source
+   * contributes nothing there and the index is the plat tier alone, which is
+   * the tier that had no inbound links at all.
+   */
+  const cityIndexablePlats = indexablePlats.filter((p) => p.citySlug === slug)
+  const platIndexSource: Array<{ raw: string; href: string; count: number | null }> = [
+    ...cityIndexablePlats
+      // Deepest sale history first, then capped: Bend alone holds 1,519 plats
+      // above the publishing floor, and a page that prints all of them is a
+      // link farm, not an index. /subdivisions is the door to the whole set and
+      // the section carries it.
+      .slice()
+      .sort((a, b) => b.closedCount - a.closedCount)
+      .slice(0, CITY_PLAT_INDEX_CAP)
+      .map((p) => ({ raw: p.name, href: `/subdivisions/${p.slug}`, count: p.closedCount })),
+    ...atlasRegions
+      .slice(1)
+      .filter((r) => r.href?.startsWith('/subdivisions/'))
+      .map((r) => ({ raw: r.name, href: r.href as string, count: null })),
+  ]
+  // Names through the set-aware publisher: stripping the recorder's residue can
+  // fold two plats onto one string, and two rows reading the same while opening
+  // different pages is worse than a long name.
+  const platIndexNames = atlasRegionNames(platIndexSource.map((p) => p.raw))
+  const platIndexEntries: V3PlaceIndexEntry[] = platIndexSource.flatMap((p, i) => {
+    const name = platIndexNames[i]
+    return name ? [{ name, href: p.href, count: p.count }] : []
+  })
   const libraryHero = await withTimeoutFallback(cityLibraryHero(slug), null, 3000, 'city:libraryHero')
   const stagePosterSrc = cityStagePoster(indexCities[slug], libraryHero)
   const typeCovers = await withTimeoutFallback(
@@ -726,6 +793,29 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
             incomplete={!atlasView.complete}
           />
         )}
+
+        {/* SITE-30: the map's legend, in the served HTML. Every plat the Atlas
+            draws plus every plat in this city with a page of its own, each one
+            a real anchor a crawler can follow. */}
+        <V3PlaceIndex
+          id="plats"
+          eyebrow={`${cityName} · Recorded plats`}
+          heading={`The plats of ${cityName}`}
+          lede={
+            cityIndexablePlats.length > platIndexEntries.length
+              ? `A plat is the subdivision the county recorded when the ground was divided. ${cityName} holds ${cityIndexablePlats.length.toLocaleString('en-US')} of them with a page of their own; these are the ${platIndexEntries.length} with the deepest sale history.`
+              : `A plat is the subdivision the county recorded when the ground was divided. Each one below has its own page — what has sold there, what is for sale, and where its lines run.`
+          }
+          countLabel="sales"
+          entries={platIndexEntries}
+          foldAfter={12}
+          action={
+            cityIndexablePlats.length > platIndexEntries.length
+              ? { label: `Every Central Oregon subdivision`, href: '/subdivisions' }
+              : undefined
+          }
+          source={`recorded plat polygons from public.boundaries (geo_type='subdivision', Deschutes County DIAL). The figure is the plat's LIFETIME closed sales from public.subdivision_plat_closed_mv, attributed two ways and unioned over distinct listing: every closed listing in listing_tile_mv whose point falls inside the recorded polygon, plus every closed listing recorded under that plat's own name. Both are needed — a sub-plat's homes are listed under the resort's name and never its own, while a coarse builder geocode can put a correctly-named sale outside its own lines. Every property type, no date filter. This is the same read that decides whether the plat's page is indexable (floor: ${SUBDIVISION_INDEX_MIN_LIFETIME_SALES} lifetime sales), so the figure here and the robots tag there can never disagree. A plat drawn on the map above but below that floor still has a page and still appears here; it prints no figure rather than one measured a different way.`}
+        />
 
         <PlaceTypeSlider cards={typeCards} label={`${cityName} property types`} />
 

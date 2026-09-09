@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
-import { buildPlaceKnowledge } from './place-knowledge'
+import { matchGeoLinksForPost } from '@/lib/blog-geo-links'
+import { buildPlaceKnowledge, communityGuides } from './place-knowledge'
 
 describe('master-plan belonging Quiet', () => {
   it('opens with the membership number when HOA exists', () => {
@@ -166,5 +167,66 @@ describe('master-plan belonging Quiet', () => {
     expect(items.some((item) => item.kind === 'prose' && 'term' in item && item.term === 'Second homes')).toBe(
       false,
     )
+  })
+})
+
+describe('communityGuides — the place→blog direction', () => {
+  const matcher = matchGeoLinksForPost
+
+  type Post = { slug: string; title: string; excerpt: string | null; publishedAt: string; tags: string[] }
+  const post = (over: Partial<Post> = {}): Post => ({
+    slug: 'tetherow-resort-living-real-estate',
+    title: 'Tetherow resort living',
+    excerpt: null,
+    publishedAt: '2026-09-08T09:00:00+00:00',
+    tags: [],
+    ...over,
+  })
+
+  it('keeps a post the shared matcher would link to this community', () => {
+    const guides = communityGuides('tetherow', [post()], matcher)
+    expect(guides.map((g) => g.slug)).toEqual(['tetherow-resort-living-real-estate'])
+  })
+
+  it('does not hand a community somebody else’s post', () => {
+    expect(communityGuides('brasada-ranch', [post()], matcher)).toEqual([])
+  })
+
+  it('matches on tags as well as the slug, exactly as the blog direction does', () => {
+    const guides = communityGuides(
+      'sunriver',
+      [post({ slug: 'second-home-vs-investment-property', title: 'Second home or investment', tags: ['sunriver'] })],
+      matcher,
+    )
+    expect(guides).toHaveLength(1)
+  })
+
+  it('is newest first and capped', () => {
+    const guides = communityGuides(
+      'sunriver',
+      [
+        post({ slug: 'sunriver-a', title: 'Sunriver A', publishedAt: '2025-01-01T00:00:00+00:00' }),
+        post({ slug: 'sunriver-b', title: 'Sunriver B', publishedAt: '2026-05-01T00:00:00+00:00' }),
+        post({ slug: 'sunriver-c', title: 'Sunriver C', publishedAt: '2026-09-01T00:00:00+00:00' }),
+      ],
+      matcher,
+      2,
+    )
+    expect(guides.map((g) => g.slug)).toEqual(['sunriver-c', 'sunriver-b'])
+  })
+
+  it('answers empty for a blank slug without consulting the matcher', () => {
+    let calls = 0
+    const spy = (p: { slug: string; title?: string | null; tags?: string[] | null }) => {
+      calls += 1
+      return matcher(p)
+    }
+    expect(communityGuides('   ', [post()], spy)).toEqual([])
+    expect(calls).toBe(0)
+  })
+
+  it('carries the excerpt through so a row can print a sentence', () => {
+    const guides = communityGuides('tetherow', [post({ excerpt: 'What living here costs.' })], matcher)
+    expect(guides[0]?.excerpt).toBe('What living here costs.')
   })
 })

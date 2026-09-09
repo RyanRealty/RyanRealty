@@ -214,6 +214,12 @@ export type { UpcomingOpenHouseRow } from '@/lib/data/open-houses/getUpcomingOpe
 export { getRecentBlogPosts } from '@/lib/data/blog/getRecentBlogPosts'
 export type { BlogPostCard } from '@/lib/data/blog/getRecentBlogPosts'
 
+// Blog — EVERY published post, for the place→blog direction. The rail read
+// above sees a 24-post window, which cannot answer "which post is about this
+// place" once a community's guide falls out of it (SITE-30).
+export { getAllPublishedBlogRefs, PUBLISHED_BLOG_REF_CAP } from '@/lib/data/blog/getAllPublishedBlogRefs'
+export type { PublishedBlogRef } from '@/lib/data/blog/getAllPublishedBlogRefs'
+
 // Blog — fetch a set of posts by slug (amenity topic-cluster SEO).
 export { getBlogPostsBySlugs } from '@/lib/data/blog/getBlogPostsBySlugs'
 export type { AmenityBlogPost } from '@/lib/data/blog/getBlogPostsBySlugs'
@@ -335,6 +341,12 @@ export type {
   CommunitySubdivisionInput,
   CommunitySubdivision,
 } from '@/lib/data/geo/getCommunitySubdivisions'
+
+// The indexable recorded-plat set — the same read the sitemap, llms.txt and the
+// /subdivisions/[slug] robots tag make. A city page renders it as its plat index
+// (SITE-30), so the pages we submit to Google are the pages we link to.
+export { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
+export type { IndexableSubdivision } from '@/lib/data/subdivisions/subdivision-index'
 
 // Market (real impls — no MV dependency, usable today)
 export { getMarketStats } from '@/lib/data/market/getMarketStats'
