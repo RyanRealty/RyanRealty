@@ -1,4 +1,6 @@
-import 'dotenv/config'
+import { config as loadEnv } from 'dotenv'
+loadEnv({ path: '.env.local' })
+loadEnv()
 import path from 'node:path'
 import Module from 'node:module'
 const STUB = path.resolve(__dirname, '../test/server-only-stub.ts')
@@ -36,7 +38,16 @@ async function main() {
   // is paged — a class list built from a 1,000-row sample undercounts the class.
   const tiles: Array<{ subdivisionName?: string | null; boundarySubdivision?: string | null }> = []
   for (let offset = 0; offset < 20_000; offset += 1000) {
-    const page = await getListingTiles({ status: 'active', propertySubType: 'Single Family Residence', limit: 1000, offset })
+    const page = await getListingTiles({
+      status: 'active',
+      propertySubType: 'Single Family Residence',
+      limit: 1000,
+      offset,
+      // Statewide: the unresolved class is the plats outside Deschutes.
+      // The default service-area guard would hide Klamath/Jefferson/Crook,
+      // which is the class SITE-58 exists to shrink.
+      scope: 'all',
+    })
     tiles.push(...page)
     if (page.length < 1000) break
   }

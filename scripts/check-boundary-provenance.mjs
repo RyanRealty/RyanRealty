@@ -62,7 +62,10 @@ const DECLARED_GEO_TYPES = {
   // of 10 removing it again would still pass.
   city: { minRows: 11, why: 'Census TIGER/Line 2024 places + CCDs — city, CDP and unincorporated-community coverage' },
   neighborhood: { minRows: 28, why: 'City of Bend GIS neighborhood districts + county plat unions — community pages' },
-  subdivision: { minRows: 3200, why: 'Deschutes County GIS subdivision plats — subdivision pages' },
+  subdivision: {
+    minRows: 3427,
+    why: 'Deschutes County GIS subdivision plats + Crook County GIS Subdivisions (LandGroup/7) — subdivision pages',
+  },
   park: { minRows: 18, why: 'Oregon State Parks (OPRD via Oregon GEO) + tracked OSM debt — park pages' },
   school: { minRows: 37, why: 'Deschutes County GIS school ATTENDANCE areas (BoundaryFD/19) — school pages' },
   school_district: {

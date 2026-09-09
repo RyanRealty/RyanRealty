@@ -1,4 +1,150 @@
-# Current — 2026-09-09 (SITE-55: the plat says what did not sell, and names the market it sits in)
+# Current — 2026-09-09 (the subdivision class re-scored on the COMBINED page, and the number went down)
+
+Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, merge `d3713768`,
+then main merged through `506a7d0c`.
+
+**This answers the note the landing session left.** When `6c648787` landed this branch's four stranded
+nodes it recorded: *"neither receipt scored the combined page. SITE-55's unsold work and SITE-56's
+resolver and opening are both live now and no evaluator has seen them together; re-score before
+building."* That re-score is done, and the result is worth more than the number.
+
+**Four rounds on the union of both shot sets** — ten shots, two routes, four anchors — by a separate
+Sonnet evaluator: **69, 72, 70, 71**. SITE-55 had scored 74 on four shots of a page with `#outcomes`
+and the old opening. SITE-56 had scored 72 on eight shots of a page with the new opening and no
+`#outcomes`. Both rebaselined from the same 65, so they are siblings, not a sequence. **71 is below
+the higher prior, and the receipt says so rather than rebaselining the drop out of sight.**
+
+**Why it fell is the finding.** Round one named it exactly: *"the two halves each reached for the same
+eyebrow-heading-bignumber-source primitive, and stacked together the repetition is visible in a way it
+wasn't when each half was judged alone."* Two lanes, two sections, **two passing receipts, one page
+that repeats itself.** A per-section receipt structurally cannot see this. Only a whole-page capture
+can. Read the instrument as having caught a real defect that two green receipts hid — not as a
+regression the merge introduced.
+
+**Fixed, all of it inside `#outcomes` or the primitive it needed:**
+
+- The standalone number cell is gone. The count was printed twice — in the sentence and as a display
+  numeral — and the numeral was the third such cell in a row down the page.
+- **`V3Quiet` gained `source` on a prose passage.** Until now the ONLY outlet for a §0 trace was a
+  figure cell, so a section had to print a display numeral to be allowed to cite its own number. That
+  is the structural cause of the repeat, and every caller gets the fix.
+- The trace sits under the sentence it documents, flush with its left edge. At the section foot it
+  landed directly beneath the wider-market door's citation and the two read as one duplicated
+  component. `V3SourceLine`'s base rule centres itself in any box wider than the measure, which had
+  put the trace 100px right of its own paragraph.
+- The trace opens with its source's NAME. It opened `public.subdivision_plat_unsold_mv, …`, and
+  `V3SourceLine` derives its one visible clause structurally, so the page published the words
+  **SOURCE public**.
+- **One home reads as one home.** A render published *"One home came off the market … and every one
+  cut the ask first, a median of 7.1%"* — plural grammar over a single row, and a "median" that is one
+  value, which is a §0 claim the publisher never computed. The trace said "median over the 1 that cut"
+  beside it.
+- The sentence is two sentences; joining the clauses on commas ran the run through a date that already
+  carries one. The eyebrow stopped repeating its own heading, which orphaned the word SELL at 375.
+
+**Not fixed, named with its owner.** Every remaining blocking defect is in a section this merge did not
+build: the standalone numerals in `#market-report` and `#faq` (shared primitives, and **the repetition
+exists only ACROSS three sections, so no lane owning one of them can fix it**), the FAQ third row
+breaking the contract its own subhead states, and the Diamond Bar Ranch hero dek orphaning a word at
+375. They go to the **/subdivisions composition node**. One low defect is this branch's and is recorded
+open rather than silently rolled in: the wider-market row's arrow does not name its destination, found
+on the fourth round after the hashed shots were taken.
+
+**One evaluator finding was checked and rejected.** Round three called the display serif on a numeral a
+break of the dataviz rule "Amboqia never sits on a number". `--v3-font-num` in
+`components/site/v3/tokens.css` is a deliberate register decision — "Amboqia in Broadside, Geist Mono
+in Ledger" — on every `V3Figure` across 118 pages, and that dataviz rule governs type ON A GRAPHIC:
+axis ticks and data labels. An evaluator is not the authority on the design system. The token stands;
+the next round was told so explicitly and still scored 71.
+
+**A guard worth taking.** The landing session found `subdivision_plat_unsold_mv` carries a row with
+`geo_slug 'na'`, `geo_label 'N/A'`, 2,885 unsold — the MLS null bucket at place grain. `/subdivisions/na`
+correctly refuses, so nothing publishes it, but the row should be excluded at the view rather than
+relied on to be unreachable.
+
+**Verification.** `ci:gates` 177/177, tsc clean, the full unit suite 10,509 passing, the subdivision
+accept 20/20 across both routes (including that the passage trace shares its paragraph's left edge and
+that no address is published beside the failures), and the expired-seller letter still reads "two came
+off the market without selling" for Diamond Bar Ranch with every link 200.
+
+**Next.** SITE-58's Crook plats are on main. The queue's remaining open node is SITE-43, which waits on
+SITE-03 (blocked until 2026-10-06). PR #200 stays watched.
+
+## Prior — 2026-09-09 (SITE-58: Crook plats ingested; Jefferson publishes none)
+
+Owner: Grok (grok-01a0884a-2026-09-09), main checkout. Push `ea8be553`; deploy
+`dpl_DbJGeqPE7ce5WzUBn8EY1kWtcqqb` READY in 280s.
+
+**SITE-58 done.** Crook County GIS `Public/LandGroup/MapServer/7` ("Sudivisions")
+is the recorded-plat layer: 211 polygons, 204 new `public.boundaries` subdivision
+rows (falcon-ridge, grandridge, west-hills already existed as Deschutes slugs and
+were skipped). Brasada Ranch (OBJECTID 186, 888 acres) and Ochoco Pointe
+(OBJECTID 8, 59.5 acres, phases 1–4 and South) resolve exact.
+`subdivision_footprint` returns `source=exact` with the Crook MultiPolygon.
+Live: `/subdivisions/ochoco-pointe` 200, H1 Ochoco Pointe, `boundaryGeojson` is
+the Crook polygon. `/subdivisions/brasada-ranch` 308s to `/communities/brasada-ranch`.
+
+**Jefferson publishes no recorded-plat layer.** GIS data is sold; the public web
+map is "temporarily unavailable"; `maps.co.jefferson.or.us` timed out; county
+REST hosts 302 with no services directory. Haystack Butte (7) and Willowbrook (13)
+stay on SITE-56's no-polygon path. Klamath's live catalog has taxlots and
+`KC_Surveys` (10,571 survey-document polygons), not a subdivision plat layer.
+
+**Crooked River Ranch.** Not on Crook's 211 names. The spelled-out slug
+phase-matches Deschutes plats 4 and 5. MLS `Crr` (13 homes) still has no polygon.
+
+Class list, statewide: 626 none → 592 none. Provenance floor 3200 → 3427
+(3,223 Deschutes + 204 Crook). Ingest: `scripts/gis/import-county-subdivisions.mjs`.
+
+**Queue:** SITE-41 in flight (claude-opus5). SITE-43 open, waits on SITE-03
+(measurement window to 2026-10-06). Nothing else eligible.
+
+**Skills read:** site-queue, loop-status, database-canonical-reference,
+TASTE.md, frontend-design, DATABASE_FOR_AI_AGENTS.md §2a.
+
+## Prior — 2026-09-09 (four nodes said done and were not on main; landed, plus SITE-31's eleven guides)
+
+Owner: Claude (Opus 5), session claude-opus5-9d4aa6fc-2026-09-09, main checkout. Pushes
+`38e2f6c3` (SITE-31) and `6c648787` (the stranded branch); both deploys READY.
+
+**Read this one first: done is not landed.** SITE-40, SITE-49, SITE-51 and SITE-55 were all
+`done` in the work graph with landing commits recorded, and not one of their commits was an
+ancestor of `origin/main`. One session built them on `claude/run-loop-w8f3ep`, merged
+`origin/main` INTO that branch after every round, and never merged back. 230 files, ~13,900
+insertions. SITE-55 made it unmistakable: its migration was applied and populated in
+production (`subdivision_plat_unsold_mv`, 7,846 rows) while the site that reads it was not
+deployed — **the database had the work and the site did not.** SITE-51 was the costly one:
+with `scripts/taste-table.mjs` off main the queue had no measurer, so the taste table was
+still the 2026-09-08 baseline while a dozen classes had been rebuilt that day. All four are
+now on main, verified live: /price-drops draws the week's cuts (12 svgs in main),
+/subdivisions/deschutes-river-woods says "did not sell in Deschutes River Woods" beside 68
+closings in 2025 and 57 in 2024, /contact renders V3Quiet's new form. Memory:
+`reference_done_is_not_landed`. **Before trusting any node's done, run
+`git merge-base --is-ancestor <lane commit> origin/main`.**
+
+**SITE-31 landed the same way** — eleven community guides finished on `wt/site-31-guides`
+and released on an idle heartbeat before merging. All eleven are published and live; four
+sampled at 200 with their titles. Every title states a number or a decision: "Awbrey Glen: A
+$1,349,000 Median and an $87 HOA", "Crosswater Sold Just One Home in the Last 12 Months",
+"What $620 a Month Buys You at Mt. Bachelor Village". Blog class 52 → 74.
+
+**Conflict resolutions worth knowing.** Two taste receipts collided. Blog resolved to main's
+74/68/77 over the branch's older 52/44/57. Subdivision resolved to main's SITE-56 pass
+(72/72/73) over the branch's SITE-55 pass (74/71/76), each with its own shots so the
+`shotsHash` still matches disk. **Neither receipt scored the combined subdivision page** —
+SITE-55's unsold work and SITE-56's resolver and opening are both live and no evaluator has
+seen them together. Re-score before building on that class.
+
+**In flight:** SITE-41 (V3Instrument, this session). SITE-58 (Crook and Jefferson plats) was
+taken by a grok session. Nothing else is eligible; SITE-43 waits on SITE-03, which is on a
+measurement window to 2026-10-06.
+
+**The finish line is not close.** The taste table lists 25 classes and, on the 2026-09-08
+instrument, every one is under 70 — best was 69. Many have been rebuilt since and the table
+is stale; now that the measurer is on main, the next round should re-run it and seed from the
+bottom rather than from last week's numbers.
+
+## Prior — 2026-09-09 (SITE-55: the plat says what did not sell, and names the market it sits in)
 
 Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
 `9eb4c1fb`, then main merged through `d5b982e8` (round eight: SITE-48 and SITE-50). Node
