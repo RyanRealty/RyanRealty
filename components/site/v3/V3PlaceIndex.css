@@ -197,18 +197,19 @@
   transform: rotate(90deg);
 }
 
-/* The action is a standalone control, not an inline link in prose, so it
-   carries the tap floor (WCAG 2.5.8, ci:tap-targets): the text variant's
-   min-height: auto is for links that sit inside a line. Found 2026-09-09 as a
-   224.9x35.3 hit area on /cities/bend. */
-.v3-place-index__action .v3-btn {
-  min-height: var(--v3-tap);
-}
-
 .v3-place-index__action {
   margin: var(--v3-space-lg) 0 0;
 }
 
 .v3-place-index__source {
   margin-top: var(--v3-space-lg);
+}
+
+/* THE ACTION IS A DOOR, NOT A RUN OF PROSE. `.v3-btn--text` deliberately drops
+   min-height so a tertiary link can sit inside a sentence; this one is a
+   standing block at the end of the index with nothing beside it, so it owes the
+   44px box (WCAG 2.5.8 — ci:tap-targets measures the BOX). Caught by
+   ci:tap-targets on /cities/bend at both widths after the plat index landed. */
+.v3.v3-place-index .v3-place-index__action .v3-btn {
+  min-height: var(--v3-tap);
 }

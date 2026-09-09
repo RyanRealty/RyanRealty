@@ -27,7 +27,7 @@
  *                 refusal (h1 + robots noindex). Temporary, not permanent: a
  *                 Coming Soon or opted-out row can become displayable later.
  *                 Reusing that page keeps ONE refusal surface — no second copy
- *                 of the "may no longer be on the market" body to drift.
+ *                 of the "We can't show this home" body to drift.
  */
 
 import { NextResponse, type NextRequest } from 'next/server'

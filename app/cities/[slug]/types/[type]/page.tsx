@@ -1,37 +1,42 @@
 /**
  * /cities/[slug]/types/[type] — one property type in one city.
  *
- * H1 `{Type} in {Place}`. Atlas is the parent city map, type-filtered on
- * dots when the leftover type is 1:1 with the atlas. Photographed listings
- * are their own set. Miss omits. Do not invent a count from list length.
- * Do not print leftover KPIs on the opening.
+ * THE OPENING IS A TITLE, A CLAIM, AND A MAP, IN THAT ORDER (2026-09-09).
+ * H1 `{Type} in {Place}`, then one plain sentence with the count and the price
+ * band, then the Atlas wearing an eyebrow rather than a second display line —
+ * the top of the page used to say "Single-family in Bend" and then
+ * "Single-family on the map" in the same face at the same size and never state
+ * a fact (taste table 2026-09-08).
+ *
+ * THE ATLAS IS GUARANTEED. It renders inside a Suspense boundary with a
+ * standin of its own footprint, so the shell never waits on the boundary read
+ * and the section is never simply absent. See _v3/PlaceTypeAtlasSection.tsx.
+ *
+ * ONE SOURCE FOR THE FIGURES (§0). Count and price band both come from the
+ * listing tile MV, the same read the map's marks and the list's rows come
+ * from, because a count from one pipeline beside a band from another describes
+ * two different sets. Measured 2026-09-09, Bend single-family: leftover market
+ * truth 658 active, tile MV 768.
+ *
+ * Photographed listings are their own set. Miss omits. Do not invent a count
+ * from list length.
  *
  * Parity: design_system/ryan-realty/ui_kits/place-type/parity.json.
  */
 
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import {
-  getBoundaryGeoJSON,
-  getCityBoundaryGeoJSON,
-  getCityDetachedInventory,
-  getCityDetachedMarket,
-  getGeoSnapshot,
-  getListingTiles,
-} from '@/lib/data'
-import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
-import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
-import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { getGeoSnapshot, getListingTiles, getListingTilesCount } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { PRIMARY_CITIES } from '@/lib/cities'
 import { slugify } from '@/lib/slug'
-import { basemapForRegions } from '@/lib/geo/basemap-source'
-import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
+import { formatDateTime } from '@/lib/format/date'
 import { PLACE_TYPE_PAGE_SLUGS } from '@/lib/place/publish-place-type-cards'
 import {
-  asPlaceBoundary,
-  atlasViewForType,
+  placeTypeAtlasEyebrow,
+  placeTypeClaim,
   placeTypeHeadline,
   placeTypeListingRows,
   placeTypeMetadataCopy,
@@ -39,22 +44,25 @@ import {
   resolvePlaceTypePage,
 } from '@/lib/place/place-type-page'
 import {
-  V3_LEDGER_CLASS,
   V3_ROOT_CLASS,
-  v3Text,
-  V3Atlas,
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Heading,
-  V3ListingRow,
   V3Quiet,
   V3SectionTracker,
   MetadataBlock,
-  type AtlasRegion,
 } from '@/components/site/v3'
 import { cn } from '@/lib/utils'
+import {
+  PlaceTypeField,
+  PlaceTypeRows,
+  PlaceTypeSortBar,
+} from './_v3/PlaceTypeField.client'
+import { PlaceTypeAtlasSection } from './_v3/PlaceTypeAtlasSection'
+import { PlaceTypeAtlasStandin } from './_v3/PlaceTypeAtlasStandin'
 import '@/components/search/search-ledger.css'
+import '@/components/place/place-opening.css'
 import './_v3/place-type-page.css'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string; type: string }>> {
@@ -76,26 +84,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const snapshot = await getGeoSnapshot({ geoType: 'city', geoKey: slug })
   if (!snapshot) notFound()
   const cityName = snapshot.geoLabel
-  const [detached, detachedInv, publicPace, publicSegments] = await Promise.all([
-    withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city-type:detached'),
-    withTimeoutFallback(getCityDetachedInventory(slug), null, 3000, 'city-type:detachedInv'),
-    withTimeoutFallback(
-      getPublicDetachedPace({ geoType: 'city', geoSlug: slug }),
-      EMPTY_PUBLIC_PACE,
-      3000,
-      'city-type:pace',
-    ),
-    withTimeoutFallback(getPublicPlaceSegments({ geoType: 'city', geoSlug: slug }), [], 3000, 'city-type:segments'),
-  ])
-  const hud = leftoverHudKpis({
-    grain: 'city',
-    headlines: detached,
-    inventory: detachedInv,
-    pace: publicPace,
-  })
-  const segment = publicSegments.find((row) => row.segment === spec.key)
-  const count = spec.key === 'sfr' ? hud.active : (segment?.activeCount ?? null)
-  const copy = placeTypeMetadataCopy({ spec, placeName: cityName, count })
+  const activeCount: number | null = await withTimeoutFallback(
+    getListingTilesCount({ city: cityName, status: 'active', ...spec.listingFilter }),
+    null,
+    3000,
+    'city-type:count',
+  )
+  const copy = placeTypeMetadataCopy({ spec, placeName: cityName, count: activeCount })
   return pageMetadata({
     title: copy.title,
     description: copy.description,
@@ -113,70 +108,73 @@ export default async function CityPlaceTypePage({ params }: Props) {
   const cityName = snapshot.geoLabel
   const placeHref = `/cities/${slug}`
   const pagePath = `/cities/${slug}/types/${spec.slug}`
+  const scope = { city: cityName, status: 'active' as const, ...spec.listingFilter }
 
-  const [detached, detachedInv, publicPace, publicSegments, cityBoundary, cityBoundaryFallback, listRead] =
-    await Promise.all([
-      withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city-type:detached'),
-      withTimeoutFallback(getCityDetachedInventory(slug), null, 3000, 'city-type:detachedInv'),
-      withTimeoutFallback(
-        getPublicDetachedPace({ geoType: 'city', geoSlug: slug }),
-        EMPTY_PUBLIC_PACE,
-        3000,
-        'city-type:pace',
-      ),
-      withTimeoutFallback(getPublicPlaceSegments({ geoType: 'city', geoSlug: slug }), [], 3000, 'city-type:segments'),
-      withTimeoutFallback(getBoundaryGeoJSON({ geoType: 'city', geoSlug: slug }), null, 2000, 'city-type:boundary'),
-      withTimeoutFallback(getCityBoundaryGeoJSON(cityName), null, 2000, 'city-type:boundaryFallback'),
-      withTimeoutFallbackResult(
-        getListingTiles({
-          city: cityName,
-          status: 'active',
-          sort: 'newest',
-          limit: 120,
-          ...spec.listingFilter,
-        }),
-        [],
-        4500,
-        'city-type:list',
-      ),
-    ])
+  /* ONE READ SET. The count, the cheapest ends of the price band, and the
+     photographed rows all describe the same filter, so the sentence, the marks
+     and the rows are the same listings. The band is two limit-1 reads on the
+     MV's own price index rather than a scan: the whole active set can be 768
+     rows and the sentence needs two of them. */
+  const [countRead, lowRead, highRead, listRead] = await Promise.all([
+    withTimeoutFallbackResult(getListingTilesCount(scope), null, 4500, 'city-type:count'),
+    withTimeoutFallbackResult(
+      getListingTiles({ ...scope, sort: 'price-asc', limit: 1 }),
+      [],
+      4500,
+      'city-type:low',
+    ),
+    withTimeoutFallbackResult(
+      getListingTiles({ ...scope, sort: 'price-desc', limit: 1 }),
+      [],
+      4500,
+      'city-type:high',
+    ),
+    withTimeoutFallbackResult(
+      getListingTiles({ ...scope, sort: 'newest', limit: 120 }),
+      [],
+      4500,
+      'city-type:list',
+    ),
+  ])
 
-  const hud = leftoverHudKpis({
-    grain: 'city',
-    headlines: detached,
-    inventory: detachedInv,
-    pace: publicPace,
+  /* §0 and ci:count-degraded-read: a guarded read must be able to say unknown.
+     The DAL's own resilient wrapper answers 0 on a failed count, so a zero is
+     treated as unmeasured here — the sentence omits rather than claiming a
+     market has nothing in it. */
+  const activeCount: number | null =
+    countRead.ok && countRead.value != null && countRead.value > 0 ? countRead.value : null
+  /* A zero is only publishable when a SECOND, differently-shaped read agrees
+     (§0: absence needs a second query shape). The count's own zero could be
+     the resilient wrapper's fallback; a zero count beside an empty tile page is
+     a measurement. */
+  const measuredEmpty =
+    countRead.ok && countRead.value === 0 && listRead.ok && listRead.value.length === 0
+  const claim = placeTypeClaim({
+    spec,
+    placeName: cityName,
+    inventory: {
+      count: activeCount,
+      low: lowRead.ok ? (lowRead.value[0]?.listPrice ?? null) : null,
+      high: highRead.ok ? (highRead.value[0]?.listPrice ?? null) : null,
+      stamp: formatDateTime(new Date()),
+      scopeNote: `with a ${cityName} address`,
+    },
   })
-  const segment = publicSegments.find((row) => row.segment === spec.key)
-  const count = spec.key === 'sfr' ? hud.active : (segment?.activeCount ?? null)
+
   const headline = placeTypeHeadline(spec, cityName)
-  const copy = placeTypeMetadataCopy({ spec, placeName: cityName, count })
+  const copy = placeTypeMetadataCopy({ spec, placeName: cityName, count: activeCount })
   const listOk = listRead.ok
   const rows = listOk ? placeTypeListingRows(listRead.value) : []
+  /* The map clips to the recorded city boundary; the claim above it counts
+     every listing with this city's MLS address. Bend: 768 and 493. The label
+     says which one the map is drawing so the two figures are two facts and not
+     a contradiction. */
+  const eyebrow = placeTypeAtlasEyebrow(
+    spec,
+    spec.atlasDotType != null,
+    `inside the ${cityName} city limits`,
+  )
 
-  const atlasBoundary = asPlaceBoundary(cityBoundary) ?? asPlaceBoundary(cityBoundaryFallback)
-  const atlas = atlasBoundary
-    ? await withTimeoutFallback(
-        buildPlaceAtlas({ cities: [cityName], boundary: atlasBoundary, label: cityName }),
-        null,
-        6000,
-        'city-type:atlas',
-      )
-    : null
-  const atlasView = atlas ?? EMPTY_PLACE_ATLAS
-  const typedAtlas = atlasViewForType(atlasView, spec.atlasDotType)
-  const atlasRegions: AtlasRegion[] = atlasBoundary
-    ? [
-        {
-          id: `city:${slug}`,
-          kind: 'town',
-          kindLabel: 'City',
-          name: cityName,
-          href: placeHref,
-          geometry: atlasBoundary,
-        },
-      ]
-    : []
   const schemas = placeTypeSchemas({
     spec,
     placeName: cityName,
@@ -197,61 +195,74 @@ export default async function CityPlaceTypePage({ params }: Props) {
             <V3Heading level={1} size="field">
               {headline}
             </V3Heading>
+            {claim ? (
+              <>
+                <p className="place-type-claim">{claim.sentence}</p>
+                <p className="place-type-claim__source">{claim.source}</p>
+              </>
+            ) : null}
           </div>
         </div>
-        {atlasRegions.length > 0 ? (
-          <V3Atlas
-            id="atlas"
-            headingLevel={2}
-            headline={v3Text(
-              spec.atlasDotType && typedAtlas.dots !== atlasView.dots
-                ? `${spec.h1Type} on the map`
-                : `${spec.h1Type} in ${cityName}`,
-            )}
-            dots={typedAtlas.dots}
-            regions={atlasRegions}
-            basemap={basemapForRegions(atlasRegions)}
-            types={typedAtlas.types}
-            events={atlasView.events}
-            source={atlasView.source}
-            stamp={atlasView.stamp}
-            incomplete={!atlasView.complete}
-            noun={{ one: spec.nounOne, many: spec.nounMany }}
-          />
-        ) : null}
 
-        <section id="homes" className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'place-type-homes')}>
-          <V3Heading level={2}>Photographed listings</V3Heading>
-          {rows.length > 0 ? (
-            <div className="v3-lrow-list">
-              {rows.map((listing, index) => (
-                <V3ListingRow
-                  key={listing.listingKey}
-                  listing={listing}
-                  priority={index < 3}
-                />
-              ))}
+        <PlaceTypeField>
+          <Suspense
+            fallback={
+              <PlaceTypeAtlasStandin
+                id="atlas"
+                eyebrow={eyebrow}
+                placeName={cityName}
+                state="loading"
+                placeHref={placeHref}
+              />
+            }
+          >
+            <PlaceTypeAtlasSection
+              id="atlas"
+              eyebrow={eyebrow}
+              placeName={cityName}
+              placeHref={placeHref}
+              cities={[cityName]}
+              spec={spec}
+              region={{
+                id: `city:${slug}`,
+                kind: 'town',
+                kindLabel: 'City',
+                name: cityName,
+                href: placeHref,
+              }}
+              listingsCount={activeCount}
+              source={{ kind: 'city', geoSlug: slug, cityName }}
+            />
+          </Suspense>
+
+          <section id="homes" className={cn(V3_ROOT_CLASS, 'place-type-homes')}>
+            <div className="place-type-homes__head">
+              <V3Heading level={2}>Photographed listings</V3Heading>
+              {rows.length > 1 ? <PlaceTypeSortBar pagePath={pagePath} /> : null}
             </div>
-          ) : listOk && count != null && count > 0 ? (
-            <V3Quiet
-              ariaLabel="Photographed listings"
-              items={[
-                {
-                  kind: 'prose',
-                  body: 'None of these listings have a photograph in this refresh.',
-                },
-              ]}
-            />
-          ) : listOk && count === 0 ? (
-            <V3Quiet
-              ariaLabel="Photographed listings"
-              items={[{ kind: 'prose', body: 'None for sale in this refresh.' }]}
-            />
-          ) : null}
-        </section>
+            {rows.length > 0 ? (
+              <PlaceTypeRows rows={rows} />
+            ) : listOk && activeCount != null && activeCount > 0 ? (
+              <V3Quiet
+                ariaLabel="Photographed listings"
+                items={[
+                  {
+                    kind: 'prose',
+                    body: 'None of these listings have a photograph in this refresh.',
+                  },
+                ]}
+              />
+            ) : measuredEmpty ? (
+              <V3Quiet
+                ariaLabel="Photographed listings"
+                items={[{ kind: 'prose', body: 'None for sale in this refresh.' }]}
+              />
+            ) : null}
+          </section>
+        </PlaceTypeField>
 
         <V3Quiet
-          heading={`${cityName} homes`}
+          ariaLabel={`${cityName} homes`}
           items={[{ label: `${cityName} homes for sale`, href: placeHref }]}
         />
       </main>

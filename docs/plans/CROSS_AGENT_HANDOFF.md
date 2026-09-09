@@ -43,6 +43,34 @@ usable-acreage GIS measure, `lib/marketing-brain/inbox-parser.ts` and `lib/agent
 Anthropic.
 
 ## Prior — 2026-09-09 (round two of Matt's calls: the story on Grok, the kick-off asks, Delta 4 rural splits are live)
+## Prior — 2026-09-09 (site queue round five: SITE-33 done; the plat-index tap floor; two main-checkout build traps recorded)
+
+Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. Push
+`d51aa362..e112178f` (lane 11cfbe52 + the tap-floor fix e112178f); deploy READY in 271s, sitemap
+smoke green (geo warm 0.3 s).
+
+**SITE-33 done.** Out-of-area listing pages (Medford, Grants Pass, Klamath Falls) carry the
+honesty block with a door to /oregon/<city>, serve noindex, follow with the canonical, and leave
+the listings sitemap (builder 7,501 → 3,312; production shows the old class until the next warm);
+/oregon/[city] stays index, follow (W12.4); Bend listings unchanged. Listing-detail taste
+rebaselined at 77 on a widened instrument. **Open for Matt (revenue call, not ruled):** on an
+out-of-area listing the sidebar still offers Tour / Call / Text and a monthly payment beside
+"we don't work in Medford" — keep the asks or drop to the referral ask alone?
+
+**Two traps in the main checkout, both fixed, both in memory.** (1) node_modules/.bin/.bin was a
+self-symlink since Sep 3 and made a local `next build` panic (Turbopack infinite loop); worktree
+clones and Vercel never saw it; removed by name. (2) An untracked scratch/audit-social-profiles.ts
+with a type error failed the build's type check; moved into scratchpad/ (tsconfig-excluded).
+After both, runtime gates on the merged tree: route-smoke 145/145, page-payload OK, tap-targets
+0 unexcused everywhere — including the /cities/bend plat-index action SITE-30 had left at 35 px
+(the V3Button text variant sets min-height auto; the index action now carries --v3-tap).
+
+**In flight:** SITE-53 (place-type pages) and SITE-32 (off-market index policy, keep-indexed gate),
+both this session. Elsewhere: SITE-31, SITE-41 (cloud-grinder). SITE-45 carries the missing MLS
+remarks finding.
+
+## Prior — 2026-09-09 (site queue round four: SITE-54 and SITE-30 done, 28 orphans settled; the sitemap classes answer cold under 40 s)
+## Prior — 2026-09-09 (round two of Matt's calls: the story on Grok, the kick-off asks, Delta 4 rural splits are live)
 
 Owner: Claude (Fable 5.1), session 9d18a832, worktree `~/RyanRealty-wt-cma-ship`
 (`wt/cma-ship-20260907`). Commits d2bc4235 (Grok story + kick-off ask), f13cfd53 (Delta 4),
@@ -150,7 +178,7 @@ held their staged files and a continuation agent in the same worktree finished. 
 fails on origin/main blocks every push; check the full chain on origin/main before a round,
 not only the lane's path-selected subset.
 
-# Current — 2026-09-09 (site queue round three: an off-market listing stops selling a home that already sold)
+## Prior — 2026-09-09 (site queue round three: an off-market listing stops selling a home that already sold)
 
 Owner: Claude (Opus 5), cloud "Site queue grinder" routine, session 01DLfMFV. **main is at `650666bb2`.**
 SITE-21 shipped and is live. With SITE-20 and SITE-22 earlier in the same run, the listing page no
@@ -270,7 +298,7 @@ tree, never by hand. (2) A lane that widens the taste instrument (one route → 
 honestly; the number going down is not a regression. (3) A data lane that finds the URL builder
 already correct should say so first and keep looking; the residual index was the symptom.
 
-# Current — 2026-09-09 (fleet full, no lane; SITE-54's 504 traced to the tile view's refresh and an 8-second API timeout)
+## Prior — 2026-09-09 (fleet full, no lane; SITE-54's 504 traced to the tile view's refresh and an 8-second API timeout)
 
 Owner: Claude (Fable 5.1), session 01NESdvn, main checkout. **Nothing was built or changed in
 production this session.** `main` is at `92137b5b5` plus this note. The container restarted after
@@ -314,7 +342,7 @@ resolves to no row); listing rows still print the raw MLS "Ridge At Eagle Crest"
 
 ---
 
-# Current — 2026-09-09 (site queue round two continued: SITE-25 and SITE-24 done in one push; geo.xml 504s on production, seeded as SITE-54)
+## Prior — 2026-09-09 (site queue round two continued: SITE-25 and SITE-24 done in one push; geo.xml 504s on production, seeded as SITE-54)
 
 Owner: Claude (Fable 5.1), session claude-fable-9d4aa6fc-2026-09-08, main checkout. One push for
 the round: `00f400b9..2a2a4220` (lanes 446d9567 and 603c3c22+d739ac3d, merges, and the follow-up
@@ -362,7 +390,7 @@ a limit hits. (2) The seed file had grown past the number I grepped for: check
 than overwriting it (no damage, but the entry was renumbered to SITE-54). (3) Two lanes on one
 route file merged clean when each kept to its own region and the brief named the other's region.
 
-# Current — 2026-09-09 (site queue: a sold home stops publishing its asking price; one canonical per listing)
+## Prior — 2026-09-09 (site queue: a sold home stops publishing its asking price; one canonical per listing)
 
 Owner: Claude (Opus 5), cloud "Site queue grinder" routine, session 01DLfMFV. **main is at `8bef8ddde`.**
 Three SITE nodes moved this run: SITE-07 shipped and live, SITE-22 DONE, SITE-20 shipped and
@@ -566,7 +594,7 @@ barrel); Turbopack works in a worktree whose node_modules is an APFS clone, not 
 distinctly. (5) `git worktree add` of origin/main plus a node_modules symlink is enough to run
 one vitest file at a given SHA (used to prove the BPO test was red before this round).
 
-# Current — 2026-09-08 PM (round four closed: A–F shipped, the contract fails closed on type)
+## Prior — 2026-09-08 PM (round four closed: A–F shipped, the contract fails closed on type)
 
 Owner: Claude (Fable). Integration branch `wt/cma-ship-20260907` → main. Blueprint, four
 evaluator rounds, and the round-four audit: `docs/plans/CMA_REIMAGINED_2026-09-07.md`.
@@ -640,7 +668,7 @@ call; `CmaLaneFunnel` not mounted; 8 `zz-test-rebrand-*` fixtures in production 
 `lib/cma-request.int.test.ts` is flaky under the parallel full suite (shared DB). Every ready
 row still needs a rebuild on this engine before any send; all lane switches are OFF.
 
-# Current — 2026-09-08 (site queue round two seeded from Search Console; two policy questions on Matt; the cloud fleet can take a screenshot)
+## Prior — 2026-09-08 (site queue round two seeded from Search Console; two policy questions on Matt; the cloud fleet can take a screenshot)
 
 Owner: Claude (Fable 5.1), session 3db16241, main checkout. Three commits on this program today:
 `e09771ea` (a cloud lane installs the browser its taste pass needs; `tsx` declared), `a5dbf484`
@@ -709,7 +737,7 @@ file documents it). Gate on `PUBLIC_ACTIVE_STATUSES` for off-market behaviour (i
 
 ---
 
-# Current — 2026-09-08 (CMA reimagined: round four audit, WIP on two branches, and Matt's comp-containment rule)
+## Prior — 2026-09-08 (CMA reimagined: round four audit, WIP on two branches, and Matt's comp-containment rule)
 
 Owner: Claude (Fable). Integration branch `wt/cma-ship-20260907`; WIP on `wt/cma-engine-20260907`
 (`910b2261`) and `wt/cma-doc-20260907` (`c7be141b`, which already merges the engine WIP).
@@ -784,7 +812,7 @@ fail open; inbound EMAIL replies do not advance the CRM; D21 price-tier fallback
 `CmaLaneFunnel` not mounted; 8 `zz-test-rebrand-*` fixtures in production `cmas`; the cover
 photo is whatever single photo the MLS carries; the map is a monochrome Google tile.
 
-# Current — 2026-09-08 (round 4: SITE-08 and SITE-12 landed, and three false-pass traps closed)
+## Prior — 2026-09-08 (round 4: SITE-08 and SITE-12 landed, and three false-pass traps closed)
 
 Owner: Claude (Opus 5), session 01NESdvn. **main is at `b9da5d2e6`**, Vercel
 `dpl_q2yrS6o3G1fHfPwmNpeqpeHxLG7W` READY in production and live-checked on ryan-realty.com.
@@ -881,7 +909,7 @@ session's work is whatever reopens, or whatever those two lanes hand back.
 
 ---
 
-# Current — 2026-09-08 (round 3 landed, deploy verified, and the live check found two more §0 defects)
+## Prior — 2026-09-08 (round 3 landed, deploy verified, and the live check found two more §0 defects)
 
 Owner: Claude (Opus 5), session 01Aubwpa. **main is at `9efa2cf32`.** Round 3 is on main, gated,
 deployed, live-checked, and both nodes are blocked on measurement to 2026-10-06 with their
@@ -1145,11 +1173,11 @@ beautiful, interactive and engaging."
   "credit balance too low"; move to `lib/grok` or delete.
 - Main retired the voice canon and gates today (`352d4351`); CLAUDE.md §2 text is stale.
 
-# Current — 2026-09-07 (site queue mechanism + the place-page value ask, SITE-01)
+## Prior — 2026-09-07 (site queue mechanism + the place-page value ask, SITE-01)
 
-# Current — 2026-09-08 (SITE-09 response clock landed; the site queue runs in four sessions at once)
+## Prior — 2026-09-08 (SITE-09 response clock landed; the site queue runs in four sessions at once)
 
-# Current — 2026-09-08 (round 1 of session 01Aubwpa: SITE-05 and SITE-11 built unwired; five base defects fixed; PR #199)
+## Prior — 2026-09-08 (round 1 of session 01Aubwpa: SITE-05 and SITE-11 built unwired; five base defects fixed; PR #199)
 
 Owner: Claude (Fable 5.1), cloud session 01Aubwpa (Matt: "Run loop", then "Go"), branch
 `claude/run-loop-pcp7q3`, draft PR #199, landed on `origin/main` through `npm run push`.
@@ -1559,7 +1587,7 @@ tracked … approved and then sent out and tracked so that we can get leads."
 - Grok session 2026-09-06 parked three public-page commits on `wt/public-pages-20260906` and
   left `stash@{22}` `wip-before-vercel-prod-cma` (two publish-check script edits).
 
-# Current — 2026-09-07 (AEO guide pack, backlog grind, title)
+## Prior — 2026-09-07 (AEO guide pack, backlog grind, title)
 
 Owner: Claude (Fable). Worktree `~/RyanRealty-wt-aeo-audit`, branch
 `wt/aeo-landing-20260907` (squash of `wt/aeo-briefs-audit-20260907` onto the
@@ -2782,7 +2810,7 @@ pushing if the other has uncommitted work in your path.
 
 ---
 
-# Current — 2026-09-01 (Claude Code admin/delivery session, main, through `b583dc63`) — Messages fold FINAL, CMA send queue, gap-audit sweep
+## Prior — 2026-09-01 (Claude Code admin/delivery session, main, through `b583dc63`) — Messages fold FINAL, CMA send queue, gap-audit sweep
 
 **Shipped on origin/main, production READY, live-verified in Matt's browser:**
 - Messages fold FINAL: `/admin/crm/inbox` 307s to `/admin/messages` (config redirect, legacy
@@ -3042,7 +3070,7 @@ covers only form requests or everything.
 Full triage list (18 named, with why each failed):
 https://claude.ai/code/artifact/59cad4eb-0a80-4b04-afaf-cabf5cb8c0ac
 
-# Current — 2026-08-26 (Claude Code) — resort membership audit: 23 false children removed, now gated
+## Prior — 2026-08-26 (Claude Code) — resort membership audit: 23 false children removed, now gated
 
 **Surface:** `origin/main` `238c2f31`.
 
@@ -3095,7 +3123,7 @@ already fetches.
 
 # Prior — 2026-08-26 (Claude Code) — CMA client document, FSBO first touch unblocked, dashboard gap closed
 
-# Current — 2026-08-26 (Claude Code) — Grok Studio: the social/media producer rebuilt
+## Prior — 2026-08-26 (Claude Code) — Grok Studio: the social/media producer rebuilt
 
 **Surface:** `origin/main`. Matt: "rebuild our social media / media content
 producer using grok imagine and all of the other grok features, easy and
@@ -3147,7 +3175,7 @@ have not been run live end to end (listing_motion and place_video have).
 `/admin/studio` renders behind admin auth and was verified by compile + the cron
 path, not by a signed-in browser pass.
 
-# Current — 2026-08-26 (Claude Code) — CMA client document, FSBO first touch unblocked, dashboard gap closed
+## Prior — 2026-08-26 (Claude Code) — CMA client document, FSBO first touch unblocked, dashboard gap closed
 
 
 **Surface:** `origin/main`. Continues the "buyer/seller journeys" block below.
@@ -3359,7 +3387,7 @@ drafts existed), and 677 "CMA" broker alerts looked healthy (~672 were fixtures
 from one day). Also nearly reported a dead button that was drifted coordinates.
 Run the second query shape before escalating a null result.
 
-# Current — 2026-08-21 (Claude worktree) — SSG rail timeouts zeroed (G70 round 2)
+## Prior — 2026-08-21 (Claude worktree) — SSG rail timeouts zeroed (G70 round 2)
 
 **Surface:** `main` `9162c204`, deployed `dpl_C7NtuaxP3KRrpzR9CE9qHKS8dqmn` READY, verified in a real browser on ryan-realty.com.
 
@@ -4977,7 +5005,7 @@ run exists for the new SHA before waiting on it.
 
 **Skills read:** frontend-design, design_system/ryan-realty, CROSS_AGENT_HANDOFF.
 
-# Current — 2026-08-14 (Grok, imagery canon) — local, not pushed
+## Prior — 2026-08-14 (Grok, imagery canon) — local, not pushed
 
 **Track:** Kill the prohibitive "AI never renders real life" lock. We are better at this now.
 
@@ -5909,7 +5937,7 @@ dropped at random per build, silently. Both readers now order by
 > Picks up and closes the "Open for Matt" list from the cloud session below.
 > Prior: website audit + remediation + CI unblock (2026-08-02, cloud); CMA/report depth (2026-07-30).
 
-# Current — 2026-08-02 (Claude Code, local session)
+## Prior — 2026-08-02 (Claude Code, local session)
 
 | Field | Value |
 |---|---|
@@ -6235,7 +6263,7 @@ runner (`kill -- -$PGID` — background jobs inherit the runner's process group)
   change what the inventory means — left as Matt's call
 
 
-# Current — 2026-07-30 (Claude Code)
+## Prior — 2026-07-30 (Claude Code)
 
 | Field | Value |
 |---|---|
