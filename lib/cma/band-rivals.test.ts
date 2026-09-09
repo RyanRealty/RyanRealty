@@ -2,13 +2,32 @@ import { describe, expect, it } from 'vitest'
 import {
   bandAroundList,
   buildBandRivalSet,
+  competitionAreaSentence,
   competitorCutLine,
   pickBandRivals,
+  pickCompetitionRing,
   renderBandRivalsHtml,
   rivalAddress,
   type CmaBandRival,
 } from '@/lib/cma/band-rivals'
 import type { CompArea } from '@/lib/pricing/comp-area'
+
+/** A rural radius ring — the only kind `pickCompetitionRing`'s ladder narrows past the widest. */
+function ring(radiusMiles: number, centre = { lat: 44.2726, lng: -121.1739 }): CompArea {
+  return {
+    kind: 'radius',
+    names: [],
+    radiusMiles,
+    centre,
+    source: 'test',
+    sentence: `Within ${radiusMiles} miles of your home.`,
+  }
+}
+
+/** A row at a given distance north of the ring centre, in whole-ish miles (1 degree lat ~= 69 miles). */
+function rowAt(milesNorth: number, centre = { lat: 44.2726, lng: -121.1739 }) {
+  return { Latitude: centre.lat + milesNorth / 69, Longitude: centre.lng }
+}
 
 function rival(over: Partial<CmaBandRival> = {}): CmaBandRival {
   return {
@@ -296,6 +315,9 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
       '27 homes are for sale in Old Bend between $350,000 and $428,000. 14 are under contract. The nearest three like yours are below.',
     )
     expect(set.rivals.map((r) => r.address)).toEqual(['10 Aspen', '20 Birch', '30 Cedar'])
+    // A mapped boundary never widens: no ladder, nothing to report.
+    expect(set.widenedFrom).toBeNull()
+    expect(set.ringsTried).toEqual([])
   })
 
   it('says the radius when the subject sits outside every boundary', () => {
@@ -342,6 +364,152 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
     expect(set.source).toContain('Old Bend')
     expect(set.source).toContain('$350,000')
     expect(set.source).toContain('Oregon Data Share MLS')
+  })
+
+  it('says so in the sentence and carries widenedFrom/ringsTried when a rural ring widened', () => {
+    const TEN_MILE: CompArea = ring(10)
+    const set = buildBandRivalSet({
+      area: TEN_MILE,
+      lo: 400_000,
+      hi: 480_000,
+      activeCount: 1,
+      pendingCount: 4,
+      rivals: [rival({ listingKey: 'A1', address: '10 Aspen', status: 'Active' })],
+      subject: { latitude: 44.2726, longitude: -121.1739, beds: 3, sqft: 1280 },
+      widenedFrom: 5,
+      ringsTried: [5, 10],
+    })
+    expect(set.sentence).toContain('within 10 miles of your home')
+    expect(set.sentence).toContain('We widened from five miles to find three.')
+    expect(set.widenedFrom).toBe(5)
+    expect(set.ringsTried).toEqual([5, 10])
+  })
+
+  it('says nothing about widening when the first ring already held three', () => {
+    const FIVE_MILE: CompArea = ring(5)
+    const set = buildBandRivalSet({
+      area: FIVE_MILE,
+      lo: 400_000,
+      hi: 480_000,
+      activeCount: 3,
+      pendingCount: 0,
+      rivals: [],
+      subject: null,
+      widenedFrom: null,
+      ringsTried: [5],
+    })
+    expect(set.sentence).not.toContain('widened')
+  })
+})
+
+describe('competitionAreaSentence — widening note', () => {
+  it('appends the widened note even when nothing is for sale', () => {
+    const sentence = competitionAreaSentence({
+      area: ring(10),
+      lo: 400_000,
+      hi: 480_000,
+      activeCount: 0,
+      pendingCount: 0,
+      shown: 0,
+      widenedFrom: 5,
+    })
+    expect(sentence).toBe(
+      'No home within 10 miles of your home is for sale between $400,000 and $480,000, and none is under contract. We widened from five miles to find three.',
+    )
+  })
+
+  it('never claims a widening the ring did not do', () => {
+    // area.radiusMiles (5) does not exceed widenedFrom (5) — same ring, no widening.
+    const sentence = competitionAreaSentence({
+      area: ring(5),
+      lo: 400_000,
+      hi: 480_000,
+      activeCount: 3,
+      pendingCount: 0,
+      shown: 0,
+      widenedFrom: 5,
+    })
+    expect(sentence).not.toContain('widened')
+  })
+})
+
+describe('pickCompetitionRing — the rural ring ladder', () => {
+  it('stops at five miles when it already holds three', () => {
+    const rings = [ring(5), ring(10), ring(15)]
+    const pick = pickCompetitionRing({
+      rings,
+      activeRows: [rowAt(1), rowAt(2), rowAt(4)],
+      pendingRows: [],
+    })
+    expect(pick.area.radiusMiles).toBe(5)
+    expect(pick.ringsTried).toEqual([5])
+    expect(pick.widenedFrom).toBeNull()
+    expect(pick.activeCount).toBe(3)
+    expect(pick.pendingCount).toBe(0)
+  })
+
+  it('widens to ten when five holds one and ten holds four, and names five as the start', () => {
+    const rings = [ring(5), ring(10), ring(15)]
+    const pick = pickCompetitionRing({
+      rings,
+      // One inside 5mi; three more between 5 and 10 (so ten holds 1+3=4 total).
+      activeRows: [rowAt(1), rowAt(7), rowAt(8), rowAt(9)],
+      pendingRows: [],
+    })
+    expect(pick.area.radiusMiles).toBe(10)
+    expect(pick.ringsTried).toEqual([5, 10])
+    expect(pick.widenedFrom).toBe(5)
+    expect(pick.activeCount).toBe(4)
+  })
+
+  it('never exceeds the comp search reach even when it still holds fewer than three', () => {
+    const rings = [ring(5), ring(10), ring(15)]
+    const pick = pickCompetitionRing({
+      rings,
+      activeRows: [rowAt(1)],
+      pendingRows: [rowAt(12)],
+    })
+    expect(pick.area.radiusMiles).toBe(15)
+    expect(pick.ringsTried).toEqual([5, 10, 15])
+    expect(pick.widenedFrom).toBe(5)
+    expect(pick.activeCount).toBe(1)
+    expect(pick.pendingCount).toBe(1)
+  })
+
+  it('uses the comp search reach directly when it is the only ring (already under five)', () => {
+    const rings = [ring(3)]
+    const pick = pickCompetitionRing({
+      rings,
+      activeRows: [rowAt(1)],
+      pendingRows: [],
+    })
+    expect(pick.area.radiusMiles).toBe(3)
+    expect(pick.ringsTried).toEqual([3])
+    expect(pick.widenedFrom).toBeNull()
+    expect(pick.activeCount).toBe(1)
+  })
+
+  it('leaves a mapped boundary untouched — one ring, no widening, no distance re-test', () => {
+    const boundary: CompArea = {
+      kind: 'neighborhood',
+      names: ['Old Bend'],
+      radiusMiles: null,
+      centre: { lat: 44.0554, lng: -121.3153 },
+      source: 'test',
+      sentence: 'Old Bend, the neighborhood around your home.',
+    }
+    const pick = pickCompetitionRing({
+      rings: [boundary],
+      // Rows with no lat/lng at all: the last (only) ring is trusted as-is,
+      // never re-tested, so this must not throw or drop them.
+      activeRows: [{}, {}],
+      pendingRows: [{}],
+    })
+    expect(pick.area).toBe(boundary)
+    expect(pick.ringsTried).toEqual([])
+    expect(pick.widenedFrom).toBeNull()
+    expect(pick.activeCount).toBe(2)
+    expect(pick.pendingCount).toBe(1)
   })
 })
 

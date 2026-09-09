@@ -146,7 +146,7 @@ function clean(s: string | null | undefined): string | null {
 }
 
 /** "one mile" / "two miles" / "2.5 miles" — never "1 mile(s)". */
-function milesPhrase(miles: number): string {
+export function milesPhrase(miles: number): string {
   const whole = Number.isInteger(miles)
   const n = whole && miles <= 12 ? countWord(miles) : String(miles)
   return `${n} ${miles === 1 ? 'mile' : 'miles'}`
@@ -359,28 +359,43 @@ function radiusStep(miles: number): number {
  *
  * So this is NOT the comp area verbatim: a subject whose sales all came from
  * one subdivision still competes with the whole neighborhood around it. The
- * boundary wins whenever the subject sits in one; otherwise the circle, sized
- * to hold the sales the price was built on. Never the city — a Redmond seller
- * is not competing with a house four miles away on the other side of town.
+ * boundary wins whenever the subject sits in one; otherwise a circle sized to
+ * hold the sales the price was built on. Never the city — a Redmond seller is
+ * not competing with a house four miles away on the other side of town.
+ *
+ * Matt 2026-09-08, "definitely tighter on rural homes, make the best
+ * decision": when the subject sits in NO mapped boundary, the circle no
+ * longer jumps straight to the farthest comp. It starts at five miles and
+ * widens — 5, then 10, then the comp search's own reach — and only as far as
+ * it has to. This function does not read inventory, so it cannot decide when
+ * three homes have been found; it returns the RING ORDER to try, widest last
+ * and never past the comp search's reach. The caller reads the band once, at
+ * the widest ring, and walks this order stopping at the first ring that
+ * holds three (see `pickCompetitionRing` in lib/cma/band-rivals.ts).
+ *
+ * A mapped boundary or a subject with no coordinates never widens — there is
+ * exactly one ring to try, same as before this change.
  */
 export function resolveCompetitionArea(input: {
   compArea: CompArea
   subject: { latitude: number | null; longitude: number | null; city: string }
   keptComps: readonly CompAreaKeptComp[]
-}): CompArea {
+}): CompArea[] {
   const centre = centreOf({ ...input.subject, subdivision: null })
   if (!centre) {
     // No coordinates, no circle and no polygon test. Say so rather than draw a
     // radius from a point we do not have.
-    return {
-      ...input.compArea,
-      kind: 'city',
-      names: input.subject.city ? [input.subject.city] : input.compArea.names,
-      radiusMiles: null,
-      centre: null,
-      source: `${input.compArea.source}; competition: the subject carries no coordinates, so neither a boundary nor a radius can be drawn`,
-      sentence: `${input.subject.city || 'Your city'}.`,
-    }
+    return [
+      {
+        ...input.compArea,
+        kind: 'city',
+        names: input.subject.city ? [input.subject.city] : input.compArea.names,
+        radiusMiles: null,
+        centre: null,
+        source: `${input.compArea.source}; competition: the subject carries no coordinates, so neither a boundary nor a radius can be drawn`,
+        sentence: `${input.subject.city || 'Your city'}.`,
+      },
+    ]
   }
 
   const slug = resolveMarketArea(centre.lat, centre.lng)
@@ -394,29 +409,48 @@ export function resolveCompetitionArea(input: {
       centre,
       source: `competition: the subject sits inside the ${kind} polygon ${slug}, so only listings inside that boundary count`,
     }
-    return { ...base, sentence: areaSentence(base, null) }
+    return [{ ...base, sentence: areaSentence(base, null) }]
   }
 
-  // Outside every mapped boundary. The circle is the widest of: the radius the
-  // comp area already names, and the distance to the farthest sale the price
-  // was built on. Both are facts about this document, not a default.
+  // Outside every mapped boundary — rural. The comp search's own reach is the
+  // ceiling: the wider of the radius the comp area already names, and the
+  // distance to the farthest sale the price was built on, rounded up to a
+  // radius a seller can read. Both are facts about this document, not a
+  // default.
   const farthest = input.keptComps
     .map((c) => distanceMiles(centre, { lat: c.latitude ?? null, lng: c.longitude ?? null }))
     .filter((d): d is number => d != null && Number.isFinite(d))
   const measured = farthest.length > 0 ? Math.max(...farthest) : 0
-  const radiusMiles = radiusStep(Math.max(input.compArea.radiusMiles ?? 0, measured, 1))
-  const base = {
-    kind: 'radius' as const,
-    names: [],
-    radiusMiles,
-    centre,
-    source: `competition: the subject is outside every mapped neighborhood or community polygon, so the area is a radius of ${milesPhrase(
+  const compSearchRadiusMiles = radiusStep(Math.max(input.compArea.radiusMiles ?? 0, measured, 1))
+
+  // Already tighter than five miles: use it as-is, nothing to widen into.
+  // Otherwise: 5, then 10, then the comp search's reach — deduped, capped at
+  // that reach, ascending. (A reach of exactly 5 or 10 collapses the ladder
+  // to one or two rungs rather than repeating a mile value.)
+  const milesLadder =
+    compSearchRadiusMiles < 5
+      ? [compSearchRadiusMiles]
+      : [...new Set([5, 10, compSearchRadiusMiles].filter((m) => m <= compSearchRadiusMiles))].sort(
+          (a, b) => a - b,
+        )
+
+  return milesLadder.map((radiusMiles) => {
+    const widest = radiusMiles === compSearchRadiusMiles
+    const base = {
+      kind: 'radius' as const,
+      names: [],
       radiusMiles,
-    )} — the wider of the comp search's own cap (${
-      input.compArea.radiusMiles != null ? milesPhrase(input.compArea.radiusMiles) : 'none'
-    }) and the ${measured.toFixed(2)}-mile distance to the farthest sale behind the price`,
-  }
-  return { ...base, sentence: areaSentence(base, null) }
+      centre,
+      source: `competition: the subject is outside every mapped neighborhood or community polygon; ring of ${milesPhrase(
+        radiusMiles,
+      )}${
+        widest
+          ? ` — the comp search's own reach, the widest this ring may go`
+          : `, tried before widening toward the comp search's reach of ${milesPhrase(compSearchRadiusMiles)}`
+      }`,
+    }
+    return { ...base, sentence: areaSentence(base, null) }
+  })
 }
 
 /**

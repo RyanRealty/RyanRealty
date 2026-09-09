@@ -213,6 +213,8 @@ type RivalsLike = {
   pendingCount: number
   sentence: string
   area: AreaLike
+  widenedFrom: number | null
+  ringsTried: number[]
   rivals: Array<{ address: string; status: string; listPrice: number; daysOnMarket: number | null }>
 }
 
@@ -249,7 +251,9 @@ function printArea(r: DryRun): void {
     console.log(
       `   render_args.bandRivals · ${rivals.activeCount} active · ${rivals.pendingCount} pending · area ${
         rivals.area?.kind
-      } ${(rivals.area?.names ?? []).join(', ')}${rivals.area?.radiusMiles ? ` ${rivals.area.radiusMiles} mi` : ''}`,
+      } ${(rivals.area?.names ?? []).join(', ')}${rivals.area?.radiusMiles ? ` ${rivals.area.radiusMiles} mi` : ''} · ringsTried ${rivals.ringsTried.join(
+        '/',
+      )} · widenedFrom ${rivals.widenedFrom ?? 'none'}`,
     )
     console.log(`     ${rivals.sentence}`)
     for (const v of rivals.rivals) {
@@ -528,7 +532,9 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { getCmaAreaUnsoldCycles } = await import('@/lib/data/cma/areaUnsoldReads')
   const { getCmaAreaBandInventory } = await import('@/lib/data/cma/bandInventory')
   const { buildExpiredPeerSet, keptCompMedianPpsf, marketAreaPriceBand } = await import('@/lib/cma/market-status')
-  const { bandAroundList, bandRowToRival, buildBandRivalSet } = await import('@/lib/cma/band-rivals')
+  const { bandAroundList, bandRowToRival, buildBandRivalSet, pickCompetitionRing } = await import(
+    '@/lib/cma/band-rivals'
+  )
 
   const compArea = buildCompArea({
     subject: {
@@ -545,16 +551,20 @@ async function dryRun(slug: string): Promise<DryRun> {
       longitude: c.longitude,
     })),
   })
-  const competitionArea = compArea
+  // Matt 2026-09-08: rural competition widens only as far as it has to.
+  // `resolveCompetitionArea` returns the ring order to try; the widest one
+  // bounds the single read, and `pickCompetitionRing` walks the rest.
+  const competitionRings = compArea
     ? resolveCompetitionArea({
         compArea,
         subject: { latitude: subject.latitude, longitude: subject.longitude, city: subject.city },
         keptComps: adjusted.map((c) => ({ latitude: c.latitude, longitude: c.longitude })),
       })
-    : null
+    : []
+  const widestCompetitionRing = competitionRings[competitionRings.length - 1] ?? null
   const peerBand = marketAreaPriceBand(pricing.recommended || subject.lastListPrice || 0)
   const rivalBand = bandAroundList(pricing.recommended)
-  const [unsoldRead, areaInventory] = await Promise.all([
+  const [unsoldRead, widestAreaInventory] = await Promise.all([
     compArea && peerBand
       ? getCmaAreaUnsoldCycles({
           area: compArea,
@@ -564,9 +574,9 @@ async function dryRun(slug: string): Promise<DryRun> {
           priceHi: peerBand.hi,
         }).catch(() => null)
       : Promise.resolve(null),
-    competitionArea && rivalBand
+    widestCompetitionRing && rivalBand
       ? getCmaAreaBandInventory({
-          area: competitionArea,
+          area: widestCompetitionRing,
           city: subject.city,
           lo: rivalBand.lo,
           hi: rivalBand.hi,
@@ -591,17 +601,26 @@ async function dryRun(slug: string): Promise<DryRun> {
           keptCompMedianPpsf: keptCompMedianPpsf(adjusted),
         })
       : null
+  const competitionRing =
+    widestAreaInventory && competitionRings.length > 0
+      ? pickCompetitionRing({
+          rings: competitionRings,
+          activeRows: widestAreaInventory.activeRows,
+          pendingRows: widestAreaInventory.pendingRows,
+        })
+      : null
+  const competitionArea = competitionRing?.area ?? widestCompetitionRing
   const bandRivals =
-    competitionArea && areaInventory
+    competitionRing && widestAreaInventory
       ? buildBandRivalSet({
-          area: competitionArea,
-          lo: areaInventory.lo,
-          hi: areaInventory.hi,
-          activeCount: areaInventory.activeCount,
-          pendingCount: areaInventory.pendingCount,
+          area: competitionRing.area,
+          lo: widestAreaInventory.lo,
+          hi: widestAreaInventory.hi,
+          activeCount: competitionRing.activeCount,
+          pendingCount: competitionRing.pendingCount,
           rivals: [
-            ...areaInventory.activeRows.map((r) => bandRowToRival(r, 'Active')),
-            ...areaInventory.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
+            ...competitionRing.activeRows.map((r) => bandRowToRival(r, 'Active')),
+            ...competitionRing.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
           ].filter((r): r is NonNullable<typeof r> => r != null),
           subject: {
             latitude: subject.latitude,
@@ -610,6 +629,8 @@ async function dryRun(slug: string): Promise<DryRun> {
             sqft: subject.sqft,
           },
           asOfIso: new Date().toISOString(),
+          widenedFrom: competitionRing.widenedFrom,
+          ringsTried: competitionRing.ringsTried,
         })
       : null
 
@@ -744,7 +765,18 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsBandRivals: bandRivals,
     areaCitations: [
       unsoldRead ? { read: 'unsold peers', ...unsoldRead.citation, price_band: peerBand } : null,
-      areaInventory ? { read: 'competition', ...areaInventory.citation, price_band: rivalBand } : null,
+      widestAreaInventory && competitionRing
+        ? {
+            read: 'competition',
+            ...widestAreaInventory.citation,
+            active: competitionRing.activeCount,
+            pending: competitionRing.pendingCount,
+            price_band: rivalBand,
+            ring_miles: competitionRing.area.kind === 'radius' ? competitionRing.area.radiusMiles : null,
+            rings_tried: competitionRing.ringsTried,
+            widened_from: competitionRing.widenedFrom,
+          }
+        : null,
     ].filter((c) => c != null),
     renderArgsPricingTimeAdjustment: pricing.timeAdjustment ?? null,
     timeAdjustmentMeasure: pricing.timeAdjustment?.measure ?? null,
