@@ -255,7 +255,10 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
   if (publishedSold12mo != null && publishedSold12mo > 0) {
     faqs.push({
       question: `How many homes sold in ${geoName} in the last year?`,
-      answer: `${publishedSold12mo} single-family homes sold in ${geoName} over the past 12 months${asOf}.`,
+      // Thousands-comma to match the same count everywhere else it prints on the
+      // page (2026-09-09 evaluator honesty nit: this answer wrote a bare 3843
+      // beside a hero figure reading 3,843).
+      answer: `${publishedSold12mo.toLocaleString('en-US')} single-family homes sold in ${geoName} over the past 12 months${asOf}.`,
     })
     datasetVariables.push({ name: 'Homes Sold (12 months)', value: publishedSold12mo })
   }

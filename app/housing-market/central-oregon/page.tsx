@@ -99,14 +99,9 @@ import {
 } from '@/lib/data'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
 import { getCoMarketAnnualSeries } from '@/lib/data/analytics/getCoMarketAnnual'
-import {
-  getPublicPlaceSegments,
-  publicSegmentBrowseHref,
-  publicSegmentDisplayBits,
-  publicSegmentNoun,
-} from '@/lib/data/market-truth/public-segments'
-import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
-import { getPublicDetachedMix, publicMixItems } from '@/lib/data/market-truth/public-mix'
+import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
+import { getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { getPublicDetachedMix, publicMixHasRow } from '@/lib/data/market-truth/public-mix'
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly } from '@/lib/data/market-truth/public-monthly'
 import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
@@ -153,6 +148,7 @@ import {
   MARKET_FOLD_LABEL,
   MARKET_LEAD_FIGURES,
 } from '../_v3/opening'
+import { buildPaceTailFigures, buildSegmentTailFigures } from '../_v3/tail-figures'
 import {
   marketReportDoorLinks,
 } from '@/lib/market/report-doors'
@@ -271,33 +267,20 @@ export default async function CentralOregonRegionPage() {
   const region = buildRegionInstruments(hud, mosText)
   const lead = buildRegionLead(closedSeries)
   const [firstLeadFigure, ...restLeadFigures] = lead.figures
-  const extraLive: V3InstrumentFigure[] = []
-  for (const row of publicSegments) {
-    if (row.activeCount == null || row.activeCount <= 0) continue
-    // Mobile audit 2026-08-27 (group-c): trimmed to the first 3 bits (price,
-    // months of supply, verdict) — see app/housing-market/page.tsx for the
-    // full rationale. The rest stays reachable via the tile's href.
-    const bits = publicSegmentDisplayBits(row).slice(0, 3)
-    extraLive.push({
-      value: v3Text(row.activeCount.toLocaleString('en-US')),
-      label: v3Text(
-        [`${publicSegmentNoun(row.segment, row.activeCount)} for sale`, ...bits].join(' · '),
-      ),
-      href: publicSegmentBrowseHref(null, row.segment),
-    })
-  }
-  for (const item of publicPaceItems(publicPace)) {
-    extraLive.push({
-      value: v3Text(item.value),
-      label: v3Text(item.label),
-    })
-  }
-  for (const item of publicMixItems(publicMix)) {
-    extraLive.push({
-      value: v3Text(item.value),
-      label: v3Text(item.label),
-    })
-  }
+  // CURATED, NOT DUMPED (SITE-41 round two): this fold used to merge every
+  // property-type row, every 12-month pace cell, and every financing/feature/
+  // bedroom mix cell into one tail with no sentence — the same KPI-grid tell the
+  // 2026-09-09 evaluator named on the annual and city-detail classes. Segment and
+  // pace now come captioned from ../_v3/tail-figures, pace capped at the five cells
+  // a buyer or seller actually asks about. Mix is dropped outright rather than
+  // sentenced — nothing on this page draws it as a chart, and a dozen more
+  // uncaptioned financing/feature/bedroom cells is the wall this fix removes, not
+  // a wall this page should keep with sentences bolted on. publicMixItems still
+  // reaches that data for a future dedicated section.
+  const extraLive: V3InstrumentFigure[] = [
+    ...buildSegmentTailFigures(publicSegments, null),
+    ...buildPaceTailFigures(publicPace),
+  ]
   // 2026-08-27 hero-reorder fix (parity.json market-report-region openDefects
   // item 1): region.live.figures now KEEPS months of supply. This is the
   // level-1 hero, not the old level-2 "sfr-pulse" section that had to strip it
@@ -307,7 +290,16 @@ export default async function CentralOregonRegionPage() {
     region.live.trace +
     (extraLive.length > 0
       ? ' Extra product-type inventory and the 12-month pace figures are withheld below a ' +
-        'minimum sample, so a figure that is not here was not published.'
+        'minimum sample, and the pace figures shown are the priority subset behind the fold ' +
+        'below rather than every cell the pace metric layer publishes.'
+      : '') +
+    // Read but not printed here (SITE-41 round two): financing, feature, and bedroom
+    // mix is fetched for this page's own KPI-grid decision (a dozen more uncaptioned
+    // cells was the wall this round removed, not a wall to keep with sentences bolted
+    // on), so the trace states that honestly rather than staying silent about a read
+    // that returned real data the page chose not to show.
+    (publicMixHasRow(publicMix)
+      ? ' Financing, feature, and bedroom mix cells are read for this refresh but not shown on this page.'
       : '')
   const [firstPaceFigure, ...restPaceFigures] = region.pace.figures
   const cityLedger = buildCityLedger(citySnapshots, {
@@ -498,6 +490,7 @@ export default async function CentralOregonRegionPage() {
             )}
             updated={cityLedger.stamp ? v3Text(formatDate(cityLedger.stamp)) : undefined}
             action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
+            encode="bar"
           />
         ) : (
           <V3Ledger
@@ -593,6 +586,7 @@ export default async function CentralOregonRegionPage() {
               label: v3Text('Closed sales explorer'),
               href: HISTORY_PATH,
             }}
+            encode="bar"
           />
         ) : (
           // The declared degraded form, and it is why this section is unconditional.

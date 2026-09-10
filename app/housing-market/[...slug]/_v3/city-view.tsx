@@ -26,15 +26,8 @@ import {
 } from '@/components/site/v3'
 import type { MarketKind } from '@/lib/market/classify'
 import { MARKET_FOLD_LABEL, MARKET_LEAD_FIGURES } from '../../_v3/opening'
-import {
-  buildCityLedger,
-  buildExploreItems,
-  buildFaqItems,
-  buildLiveFigures,
-  buildPublicMixFigures,
-  buildPublicPaceFigures,
-  buildPublicSegmentFigures,
-} from './geo-figures'
+import { buildPaceTailFigures, buildSegmentTailFigures } from '../../_v3/tail-figures'
+import { buildCityLedger, buildExploreItems, buildFaqItems, buildLiveFigures } from './geo-figures'
 import type { PublicSegmentRow } from '@/lib/data/market-truth/public-segments'
 import type { PublicPaceRow } from '@/lib/data/market-truth/public-pace'
 import type { PublicMixRow } from '@/lib/data/market-truth/public-mix'
@@ -76,15 +69,28 @@ export function CityMarketView({
   sheet,
   publicSegments = [],
   publicPace = null,
-  publicMix = null,
+  // publicMix is not destructured: SITE-41 round two drops mix cells from this
+  // view's fold (see the comment below). The Props field stays for callers and for
+  // a future dedicated mix section; unread here on purpose.
 }: Props) {
   const live = buildLiveFigures(hud, mosText, cityName)
-  const segmentFigures = buildPublicSegmentFigures(publicSegments, citySlug)
-  const paceFigures = buildPublicPaceFigures(publicPace)
-  const mixFigures = buildPublicMixFigures(publicMix)
-  // ONE FIGURE PER LABEL (2026-08-27 audit): pace and mix both read the
-  // finance cells, so "cash closes" printed twice in this run. First mount wins.
-  const figures = [...live.figures, ...segmentFigures, ...paceFigures, ...mixFigures, ...closedFigures].filter(
+  // CURATED, NOT DUMPED (SITE-41 round two): the fold used to merge every property-type
+  // supply row, all twelve-plus pace cells, and every financing/feature/bedroom mix
+  // cell into one tail with no sentence — the KPI-grid tell TASTE.md bans by name,
+  // named directly by the 2026-09-09 evaluator on this class. Segment and pace figures
+  // now come from ../../_v3/tail-figures, which sentences every figure it returns and
+  // caps pace at the five cells a buyer or seller actually asks about. Mix is dropped
+  // outright: its financing share was the same number the dedicated "How <city> homes
+  // get bought" Instrument below already draws with a chart and a sentence
+  // (id="financing" in page.tsx) — the evaluator's second finding on this page, a
+  // 4-up row silently repeating that section's own figures. Feature and bedroom mix
+  // cells go uncaptured rather than reintroduce the wall; publicMixItems still reaches
+  // them for a future dedicated section. publicMix stays a Props field for that reason.
+  const segmentFigures = buildSegmentTailFigures(publicSegments, citySlug)
+  const paceFigures = buildPaceTailFigures(publicPace)
+  // ONE FIGURE PER LABEL (2026-08-27 audit): live and pace both read the pending
+  // count, so "under contract now" could print twice. First mount wins.
+  const figures = [...live.figures, ...segmentFigures, ...paceFigures, ...closedFigures].filter(
     (f, i, arr) => arr.findIndex((g) => String(g.label) === String(f.label)) === i,
   )
   const [firstFigure, ...restFigures] = figures
@@ -120,17 +126,19 @@ export function CityMarketView({
 
   const traceParts = [
     live.figures.length > 0 ? live.trace.replace(/\.$/, '') : null,
+    // NO INTERNAL LABEL IN A VISITOR-FACING TRACE (SITE-41 round two): "(mt-v1)" is a
+    // cache/table version tag, banned by TASTE.md by name ("raw slugs, internal
+    // labels, methodology jargon in anything a visitor reads") even one click deep
+    // inside this disclosure. Says the same fact — a separate data source from the
+    // live pulse row above it — without the internal tag.
     segmentFigures.length > 0
-      ? 'condo and townhome counts come from the Market Truth metric layer (mt-v1) and are ' +
-          'withheld below a minimum sample, so they are a different population from the ' +
+      ? 'condo and townhome counts come from a separate data source and are withheld ' +
+          'below a minimum sample, so they are a different population from the ' +
           'detached figures above'
       : null,
     paceFigures.length > 0
-      ? 'the pace figures come from the same metric layer (mt-v1) over the window each one ' +
-          'names, not from the live 30-day pulse'
-      : null,
-    mixFigures.length > 0
-      ? 'feature shares other than garage are floors: the figure means at least that share'
+      ? 'the pace figures come from that same separate source, each over the window ' +
+          'its own label names, not from the live 30-day pulse'
       : null,
     closedTrace,
   ].filter((part): part is string => Boolean(part))
@@ -189,6 +197,11 @@ export function CityMarketView({
           )}
           updated={cityLedger.stamp ? v3Text(formatDate(cityLedger.stamp)) : undefined}
           action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
+          /* THE LIST IS THE COMPARISON (SITE-41): the 2026-09-09 evaluator named this
+             sibling-city ledger "a plain hairline row list." weight is
+             buildCityLedger's own arithmetic, a share of this list's own largest
+             median list price. */
+          encode="bar"
         />
       ) : (
         <V3Ledger

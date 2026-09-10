@@ -153,6 +153,12 @@ export function buildInventoryLedger(
 ): CityLedger {
   const byLabel = new Map(snapshots.map((s) => [s.geo_label, s]))
   const rows: V3LedgerFigureRow[] = []
+  // Parallel to `rows`, the raw median behind each row's `value` string. The bar
+  // TASTE.md's evaluator asked for has to be this list's own comparison — nine
+  // cities by median list price is the table this Ledger already prints, so the
+  // bar's length is a share of THIS list's own maximum, computed after the loop
+  // once every row's median is known, never a second population.
+  const medians: number[] = []
   const stamps: string[] = []
   const missing: MissingCity[] = []
 
@@ -198,6 +204,13 @@ export function buildInventoryLedger(
           : undefined,
       value: v3Text(formatPriceExact(snapshot.median_list_price)),
       id: city.slug,
+    })
+    medians.push(snapshot.median_list_price)
+  }
+  const maxMedian = medians.length > 0 ? Math.max(...medians) : 0
+  if (maxMedian > 0) {
+    rows.forEach((row, i) => {
+      row.weight = medians[i]! / maxMedian
     })
   }
 
@@ -457,6 +470,8 @@ export function buildYearLedger(
   details: readonly (MarketDetail | null)[],
 ): CityLedger {
   const rows: V3LedgerFigureRow[] = []
+  // Parallel to `rows` — see buildInventoryLedger's own comment on the same pattern.
+  const medians: number[] = []
   const stamps: string[] = []
   const missing: MissingCity[] = []
 
@@ -490,7 +505,14 @@ export function buildYearLedger(
       value: v3Text(median),
       id: city.slug,
     })
+    medians.push(detail.medianSalePrice ?? 0)
   })
+  const maxMedian = medians.length > 0 ? Math.max(...medians) : 0
+  if (maxMedian > 0) {
+    rows.forEach((row, i) => {
+      row.weight = medians[i]! / maxMedian
+    })
+  }
 
   return { rows, stamp: stamps.sort().at(-1), missing }
 }

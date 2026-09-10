@@ -160,6 +160,7 @@ export function CommunityMarketView({
           )}
           updated={cityLedger.stamp ? v3Text(formatDate(cityLedger.stamp)) : undefined}
           action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
+          encode="bar"
         />
       ) : (
         <V3Ledger

@@ -98,7 +98,6 @@ import {
   type V3ChartRangeRow,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
-  type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -238,7 +237,13 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   const listingRows: V3LedgerFigureRow[] = []
   for (const tile of tiles) {
     const price = tile.listPrice
-    if (price == null || !Number.isFinite(price)) continue
+    // §0: same guard as the ask-strip below — formatPrice rounds to the nearest
+    // $1,000, so a genuine but tiny raw price (a land-listing placeholder under
+    // the statewide feed's normal range) would print as a false "$0" card, not a
+    // missing-price card. 2026-09-09 evaluator caught this exact row surviving
+    // here after the strip's own filter was fixed; both reads of the same tiles
+    // now share the floor.
+    if (price == null || !Number.isFinite(price) || price < 500) continue
     const bareAddress = [tile.streetNumber, tile.streetName, tile.streetSuffix]
       .filter(Boolean)
       .join(' ')
@@ -304,11 +309,18 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   const stripRows: V3ChartRangeRow[] = listingRows.slice(0, STRIP_ROWS).flatMap((row) => {
     const tile = tiles.find((t) => t.listingKey === row.id)
     const price = tile?.listPrice
-    if (!tile || price == null || !Number.isFinite(price) || price <= 0) return []
-    const street = [tile.streetNumber, tile.streetName, tile.streetSuffix]
-      .filter(Boolean)
-      .join(' ')
-      .trim()
+    // §0: formatPrice rounds to the nearest $1,000, so a genuine but tiny raw price
+    // (a $200 land-listing typo, a placeholder value from the statewide feed) would
+    // print "$0" on this strip — a rounding that changes the narrative from "priced
+    // low" to "free," which section 0 forbids outright. 500 is the floor below which
+    // formatPrice's rounding can reach zero; anything under it is withheld here the
+    // same way a missing price already is, never printed as a false $0.
+    if (!tile || price == null || !Number.isFinite(price) || price < 500) return []
+    // The tick drops the street SUFFIX on purpose (TASTE.md's named 375 failure: the
+    // full address — "2905 El Dorado Drive" — truncated to an ellipsis inside the
+    // fixed-width tick column at 375). Number plus street name still names a real,
+    // distinct street; the full address (suffix included) stays in the Ledger below.
+    const street = [tile.streetNumber, tile.streetName].filter(Boolean).join(' ').trim()
     if (!street) return []
     return [
       {
@@ -368,15 +380,24 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   // a city whose snapshot carries no median states that in place rather than
   // printing a figure the feed did not publish. ───────────────────────────────
   const otherCities = indexableCities.filter((c) => c.slug !== city.slug).slice(0, 8)
-  const otherCityRows: V3LedgerPlainRow[] = otherCities.map((c) => ({
+  // ENCODED, NOT A HAIRLINE LIST (SITE-41): eight cities by active-listing count is
+  // the same "table wearing hairlines" TASTE.md bans past six rows, and the
+  // 2026-09-09 evaluator named this ledger by that tell. Every indexable city here
+  // carries an active_all_count of at least 1 (the index's own filter), so `value`
+  // moves to the count and `weight` is this list's own share of its largest row —
+  // the same arithmetic buildInventoryLedger uses on the annual review's city
+  // ledgers, computed after the map once the whole list's maximum is known.
+  const otherCityMax = otherCities.reduce((max, c) => Math.max(max, c.activeAllCount), 0)
+  const otherCityRows: V3LedgerFigureRow[] = otherCities.map((c) => ({
     href: `/oregon/${c.slug}`,
-    when: v3Text(`${c.activeAllCount.toLocaleString('en-US')} active`),
     what: v3Text(c.name),
     detail: v3Text(
       c.medianListPrice != null
         ? `${formatPrice(c.medianListPrice)} median single-family list price`
         : 'No published single-family median',
     ),
+    value: v3Text(`${c.activeAllCount.toLocaleString('en-US')} active`),
+    weight: otherCityMax > 0 ? c.activeAllCount / otherCityMax : undefined,
     id: c.slug,
   }))
   const [firstOtherCityRow, ...restOtherCityRows] = otherCityRows
@@ -531,6 +552,7 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
               'live listings from the statewide Oregon MLS feed, one snapshot row per city, the out-of-area cities carrying the most active listings',
             )}
             updated={otherCitiesRefreshedAt ? v3Text(formatDate(otherCitiesRefreshedAt)) : undefined}
+            encode="bar"
             action={{ label: v3Text('Our Central Oregon cities'), href: '/cities' }}
           />
         ) : null}

@@ -157,12 +157,16 @@ export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | 
     figures.push({
       value: v3Text(String(daysToPending)),
       label: v3Text('days to an offer, last 90 days'),
+      sentence: v3Text(
+        `The typical wait between a house going on the market in ${geoName} and a seller accepting an offer.`,
+      ),
     })
   }
   if (closed30 != null) {
     figures.push({
       value: v3Text(closed30.toLocaleString('en-US')),
       label: v3Text('closed in the last 30 days'),
+      sentence: v3Text('Sales that finished and changed hands in the last month.'),
     })
   }
 
@@ -203,6 +207,13 @@ function isLeftoverPeriodKey(key: string): boolean {
 function leftoverPeriodItems(row: PublicPaceRow | null | undefined) {
   if (!row) return []
   return publicPaceItems(row).filter((item) => isLeftoverPeriodKey(item.key))
+}
+
+/** What each of the three leftover-period cells means, in plain words (SITE-41). */
+const LEFTOVER_PERIOD_SENTENCE: Record<string, string> = {
+  medClose: 'Half the homes that sold in this window closed above this, half below.',
+  closed: 'Sales the MLS recorded closing over the trailing 12 months.',
+  yoy: "How this year's median sale price compares with the same 12 months a year earlier.",
 }
 
 /** Leftover pace. Miss omitted. Under contract now lives on leftover HUD live figures. */
@@ -251,42 +262,51 @@ export function buildClosedFigures(
       figures.push({
         value: v3Text(formatted),
         label: v3Text(publishedMonth.label),
+        sentence: v3Text('Half the homes that closed sold above this, half below.'),
       })
     }
   } else if (detail?.medianSalePrice != null && detail.medianSalePrice > 0) {
     figures.push({
       value: v3Text(formatPrice(detail.medianSalePrice)),
       label: v3Text('median sale price'),
+      sentence: v3Text('Half the homes that closed sold above this, half below.'),
     })
   }
   if (detail?.soldCount != null && detail.soldCount > 0) {
     figures.push({
       value: v3Text(detail.soldCount.toLocaleString('en-US')),
       label: v3Text('homes sold'),
+      sentence: v3Text('Sales the MLS recorded closing in this window.'),
     })
   }
   if (detail?.avgSaleToListRatio != null && Number.isFinite(detail.avgSaleToListRatio)) {
     figures.push({
       value: v3Text(`${(detail.avgSaleToListRatio * 100).toFixed(1)}%`),
       label: v3Text('sale to list'),
+      sentence: v3Text("Each sale measured against the seller's final asking price, then averaged."),
     })
   }
   if (detail?.medianDom != null && detail.medianDom > 0) {
     figures.push({
       value: v3Text(`${Math.round(detail.medianDom)} days`),
       label: v3Text('median days on market'),
+      sentence: v3Text(
+        'The middle of the wait between a home going on the market and an offer being accepted.',
+      ),
     })
   }
   if (detail?.medianPricePerSqft != null && detail.medianPricePerSqft > 0) {
     figures.push({
       value: v3Text(`$${Math.round(detail.medianPricePerSqft).toLocaleString('en-US')} per sq ft`),
       label: v3Text('price per sq ft'),
+      sentence: v3Text('The middle of what a square foot of finished living space sold for.'),
     })
   }
   if (detail?.totalVolume != null && detail.totalVolume > 0) {
     figures.push({
       value: v3Text(formatPriceExact(detail.totalVolume)),
       label: v3Text('closed volume'),
+      sentence: v3Text('The combined sale price of every closed sale in this window.'),
     })
   }
   return figures
@@ -306,6 +326,11 @@ export function buildCityLedger(snapshots: MarketPulseSnapshot[], currentCitySlu
   const byLabel = new Map(snapshots.map((s) => [s.geo_label, s]))
   const rows: V3LedgerFigureRow[] = []
   const rowed = new Set<string>()
+  // Parallel to `rows`: the raw median behind each row's printed value, so the
+  // bar TASTE.md's evaluator asked for ("a plain hairline row list") is this
+  // list's own share of its own maximum, computed once every row is known —
+  // the same pattern annual-review's city ledgers use (annual-sections.ts).
+  const medians: number[] = []
 
   for (const label of COMPARISON_CITY_LABELS) {
     const slug = COMPARISON_CITY_SLUG[label]
@@ -323,6 +348,13 @@ export function buildCityLedger(snapshots: MarketPulseSnapshot[], currentCitySlu
           : undefined,
       value: v3Text(formatPriceExact(snapshot.median_list_price)),
       id: slug,
+    })
+    medians.push(snapshot.median_list_price)
+  }
+  const maxMedian = medians.length > 0 ? Math.max(...medians) : 0
+  if (maxMedian > 0) {
+    rows.forEach((row, i) => {
+      row.weight = medians[i]! / maxMedian
     })
   }
 
@@ -468,9 +500,11 @@ export function buildCityPeriodFigures(args: {
   const figures: V3InstrumentFigure[] = []
   const leftoverPeriod = leftoverPeriodItems(args.leftover)
   for (const item of leftoverPeriod) {
+    const sentence = LEFTOVER_PERIOD_SENTENCE[item.key]
     figures.push({
       value: v3Text(item.value),
       label: v3Text(item.label),
+      ...(sentence ? { sentence: v3Text(sentence) } : {}),
     })
   }
   if (figures.length === 0) return { figures, trace: null }

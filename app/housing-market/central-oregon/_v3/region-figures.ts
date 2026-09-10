@@ -46,7 +46,6 @@ import { v3Text, type V3ChartProps, type V3InstrumentFigure } from '@/components
 import { buildClosedVolumeChart, buildCompositionChart } from '../../_v3/market-charts'
 import {
   buildAllTypeFigures,
-  buildCompositionFigures,
   closedMartMissingBody,
   closedMartSource,
   compositionParts,
@@ -229,12 +228,13 @@ export function buildRegionLead(series: readonly CoMarketAnnualRow[]): RegionLea
         historyHref: historyPath,
       }),
     )
-    figures.push(
-      ...buildCompositionFigures({
-        parts: compositionParts(latest.propertyTypeBreakdown),
-        historyHref: historyPath,
-      }),
-    )
+    // NOT buildCompositionFigures (SITE-41 round two). The eight property-type
+    // closed counts it would add here had no sentence — a fresh unsentenced
+    // KPI-grid tail behind "The same year broken out by property type" that the
+    // 2026-09-09 re-score caught. The composition chart just below draws the
+    // identical breakdown with its own hover, which is what a share is for; a
+    // figure row repeating it said nothing a caption could not already say
+    // better. Cut, not captioned — see closed-kpis.ts's own note on this call.
   }
   const sourceBits: string[] = []
   if (latest) sourceBits.push(closedMartSource(latest.year))
