@@ -272,11 +272,16 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
    modules from https://beautifului.dev, https://beui.dev, https://rareui.com,
    https://transitions.dev, and https://ui.shadcn.com (or the local
    `components/ui` file when shadcn is already installed). Adapt the JOB into
-   the v3 / listing foundation. Navy, cream, Geist, Amboqia stay. Do not
-   npm-install any of those catalogs onto `app/` or `components/site/`. Do not
-   shrink a working full-bleed layout (listing hero: `listing-hero-bleed`).
-   Record `adaptedFrom`. Empty adaptedFrom is inventing a layout — that is how
-   SITE-45 lost the full-width hero.
+   the v3 / listing foundation. **If the job has no house primitive, ADD one
+   to `components/site/v3`** (OPEN pattern set) and export it from the barrel.
+   Growing the barrel is the one design system. Installing beUI/Rare/Beautiful
+   as a second look is Frankenstein. Admin jobs go in `components/admin/v2`.
+   `npx shadcn add` is allowed into `components/ui` for console/account only.
+   Navy, cream, Geist, Amboqia stay. Do not shrink a working full-bleed layout
+   (listing hero: `listing-hero-bleed`). Record `adaptedFrom`. Empty adaptedFrom
+   is inventing a layout — that is how SITE-45 lost the full-width hero. The
+   evaluator already injects this catalog; a stacked-section page that ignored
+   it is a defect.
 1. Builds, and runs the builder ritual in `design_system/public/TASTE.md` with
    its own eyes on the screenshots.
 2. Captures the shots from its own `next dev` into `ui_kits/<route>/shots/`,
@@ -359,7 +364,8 @@ line, and keep building the other lanes.
 - Invent a layout from a taste adjective. Fetch `node scripts/lib/taste-catalog.mjs <class>`
   (shadcn docs + house modules) and adapt. Empty `adaptedFrom` is a miss.
 - `npx shadcn add` onto `app/` or `components/site/`. Public paint is v3. Admin
-  already lives in `components/ui`.
+  interiors are `components/admin/v2`. Product/console may add into `components/ui`.
+  Skipping a catalog job because the barrel has no primitive is a miss — add the primitive.
 - Shrink a working full-bleed layout to dodge a "looks like Zillow" tell
   (SITE-45 listing hero).
 - Write a new audit, punch list, or plan for the site. Append to a node.

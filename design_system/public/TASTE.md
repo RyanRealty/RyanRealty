@@ -282,11 +282,21 @@ as a second look — navy, cream, Geist, Amboqia stay. The frozen lists live in
 node scripts/lib/taste-catalog.mjs listing-detail
 ```
 
-That prints the layout lock, house modules, shadcn picks, and takeable
-modules from the other four. Fetch each named URL. Adapt the JOB into
-`components/site/v3` / the listing stack. Record `adaptedFrom`. SITE-45
+That prints the layout lock, house modules, shadcn picks, takeable modules
+from the other four, and `primitivesToAdd`. Fetch each named URL. Adapt the
+JOB into `components/site/v3` / the listing stack. **If the job has no house
+primitive, add one to the v3 barrel** (the pattern set is OPEN). That is not
+Frankenstein — a second kit, a second stylesheet, or a catalog palette on a
+public page is. Admin jobs land in `components/admin/v2`. Product/console may
+`npx shadcn add` into `components/ui` only. Record `adaptedFrom`. SITE-45
 invented "one frame in the column" instead of fetching a carousel into the
 full-bleed hero, and Matt lost the hero, the facts, and the buttons.
+
+The evaluator (`scripts/taste-evaluate.ts` and `scripts/taste-table.mjs`)
+injects `evaluatorBrief(class)` so a node is judged against this catalog, not
+against "clean." A stacked-section page that ignored the catalog is a named
+defect. `replaceWith` names a house primitive (`V3Carousel`, `V3ButtonGroup`,
+`V3Sheet`, …) or a catalog module id.
 
 Before composing a page class, write down three to five references and *what
 specifically works in each*, and design against those sentences. Two stronger

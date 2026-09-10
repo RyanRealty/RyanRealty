@@ -28,8 +28,10 @@ routine reads. Nothing in the queue depends on which model builds.
   the score must rise. The finish line is 70 on the table instrument (Matt 2026-09-09).
   **Before building:** `node scripts/lib/taste-catalog.mjs <class>` — fetch
   modules from beautifului.dev, beui.dev, rareui.com, transitions.dev, and
-  ui.shadcn.com, adapt into v3, record `adaptedFrom`. Do not invent a layout.
-  Do not shrink the listing hero off full-bleed. Navy/cream/Geist/Amboqia stay.
+  ui.shadcn.com. Adapt into v3. If the job has no house primitive, ADD one to
+  `components/site/v3`. Do not invent a layout. Do not shrink the listing hero
+  off full-bleed. Navy/cream/Geist/Amboqia stay. The evaluator injects this
+  catalog so a stacked-section page that ignored it is a defect.
 
 ## What changes when the builder is Grok
 

@@ -1,0 +1,70 @@
+/* Swipeable track. Tokens only. No elevation, no 3D, no second palette. */
+.v3.v3-carousel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.v3 .v3-carousel__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.v3 .v3-carousel__viewport {
+  overflow: hidden;
+  width: 100%;
+  min-height: var(--v3-carousel-h);
+}
+
+.v3 .v3-carousel__track {
+  display: flex;
+  touch-action: pan-y pinch-zoom;
+}
+
+.v3 .v3-carousel__slide {
+  position: relative;
+  flex: 0 0 100%;
+  min-width: 0;
+  min-height: var(--v3-carousel-h);
+}
+
+.v3 .v3-carousel__nav {
+  display: flex;
+  gap: var(--v3-space-xs);
+  margin-top: var(--v3-space-xs);
+}
+
+.v3 .v3-carousel__step {
+  appearance: none;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-md);
+  border: 1px solid var(--v3-navy);
+  background: transparent;
+  color: var(--v3-navy);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-strong);
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-carousel__step:hover {
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+}
+
+.v3 .v3-carousel__step:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}

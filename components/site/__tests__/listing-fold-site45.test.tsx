@@ -122,6 +122,17 @@ describe("the pills' plain read", () => {
   })
 })
 
+describe('the ask as one grouped control', () => {
+  it('renders Tour / Call / Text through V3ButtonGroup, not leftover ghost buttons', () => {
+    const html = strip({ callHref: 'tel:+15412136706', textHref: 'sms:+15412136706' })
+    expect(html).toContain('v3-btn-group')
+    expect(html).toContain('Tour')
+    expect(html).toContain('Call')
+    expect(html).toContain('Text')
+    expect(html).not.toMatch(/class="btn alt"/)
+  })
+})
+
 describe('the hero in the main column', () => {
   it('seats the hero inside .listing-detail-main when heroInMain is set, else above the grid', () => {
     const inMain = renderToStaticMarkup(

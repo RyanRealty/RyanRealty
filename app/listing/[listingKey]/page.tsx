@@ -896,7 +896,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
         <V3Breadcrumb trail={breadcrumbs} />
         <ListingDetailShell
           hero={hero}
-          heroInMain
           main={main}
           sidebar={sidebar}
           floating={floating}

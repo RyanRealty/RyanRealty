@@ -9,7 +9,8 @@
  * This module is that contract for Ryan Realty: the catalog lives at
  * design_system/public/taste-catalog.json. A lane names the class, gets the
  * modules it must fetch, and records which one it adapted. Installing the
- * catalog as a second design system is refused.
+ * catalog as a second design system is refused. A missing house primitive is
+ * a NEW file in the v3 barrel (OPEN set), not a skip.
  */
 import { readFileSync } from 'node:fs'
 import { isNonEmptyString, isPlainObject } from './taste-receipt.mjs'
@@ -85,7 +86,19 @@ export function loadTasteCatalog(raw) {
       modules.push({ id: m.id, catalog: m.catalog ?? null, url: m.url, job: m.job })
     }
     if (modules.length < 2) problems.push(`classes.${key}: need at least two modules (house + something to beat)`)
-    classes[key] = { layoutLock: entry.layoutLock ?? '', modules }
+    const primitivesToAdd = Array.isArray(entry.primitivesToAdd)
+      ? entry.primitivesToAdd.filter((n) => isNonEmptyString(n))
+      : []
+    classes[key] = { layoutLock: entry.layoutLock ?? '', modules, primitivesToAdd }
+  }
+  for (const required of ['listing-detail', 'homepage-v6', 'search', 'sell', 'city']) {
+    if (!classes[required]) problems.push(`classes must include "${required}" so a lane has a catalog, not adjectives`)
+  }
+  if (!classes['listing-detail']?.primitivesToAdd?.includes('V3Carousel')) {
+    problems.push('classes.listing-detail.primitivesToAdd must include V3Carousel — missing house primitive is a new barrel file, not a skip')
+  }
+  if (!classes['listing-detail']?.primitivesToAdd?.includes('V3ButtonGroup')) {
+    problems.push('classes.listing-detail.primitivesToAdd must include V3ButtonGroup')
   }
 
   const shadcnRaw = isPlainObject(raw.shadcn) ? raw.shadcn : {}
@@ -102,7 +115,9 @@ export function loadTasteCatalog(raw) {
       jobs: Array.isArray(c.jobs) ? c.jobs.filter((j) => isNonEmptyString(j)) : [],
     })
   }
-  if (shadcnComponents.length < 20) problems.push('shadcn.components must be the fetched list from ui.shadcn.com/docs/components (20+ names)')
+  if (shadcnComponents.length < 50) {
+    problems.push('shadcn.components must be the fetched ui.shadcn.com/docs/components list (50+ names)')
+  }
 
   const catalogIds = new Set(catalogs.map((c) => c.id))
   for (const id of EXM7777_IDS) {
@@ -114,8 +129,10 @@ export function loadTasteCatalog(raw) {
   for (const id of EXM7777_IDS) {
     if (id === 'shadcn') continue
     const block = listsRaw[id]
-    if (!isPlainObject(block) || !Array.isArray(block.components) || block.components.length < 3) {
-      problems.push(`lists.${id} must freeze 3+ named components from that catalog`)
+    const minById = { beautifului: 20, beui: 40, rareui: 15, transitions: 25 }
+    const min = minById[id] ?? 3
+    if (!isPlainObject(block) || !Array.isArray(block.components) || block.components.length < min) {
+      problems.push(`lists.${id} must freeze the fetched catalog (${min}+ named components), not a handful`)
       continue
     }
     const components = []
@@ -124,14 +141,26 @@ export function loadTasteCatalog(raw) {
         problems.push(`lists.${id}.components[${i}]: need name and url`)
         continue
       }
+      const surfaces = Array.isArray(c.surfaces)
+        ? c.surfaces.filter((s) => ['public', 'admin', 'product'].includes(s))
+        : c.take === true
+          ? ['public']
+          : []
       components.push({
         name: c.name,
         url: c.url,
         take: c.take === true,
+        surfaces,
         jobs: Array.isArray(c.jobs) ? c.jobs.filter((j) => isNonEmptyString(j)) : [],
       })
     }
     lists[id] = { url: block.url ?? EXM7777_URLS[EXM7777_IDS.indexOf(id)], components }
+  }
+
+  const routeClasses = {}
+  const routeRaw = isPlainObject(raw.routeClasses) ? raw.routeClasses : {}
+  for (const [routeKey, mapped] of Object.entries(routeRaw)) {
+    if (isNonEmptyString(routeKey) && isNonEmptyString(mapped)) routeClasses[routeKey] = mapped
   }
 
   return {
@@ -142,6 +171,7 @@ export function loadTasteCatalog(raw) {
     catalogs,
     classes,
     lists,
+    routeClasses,
     shadcn: { docs: shadcnRaw.docs ?? 'https://ui.shadcn.com/docs/components', components: shadcnComponents },
     problems,
   }
@@ -179,6 +209,47 @@ export function layoutLockForClass(catalog, classKey) {
   return catalog.classes?.[classKey]?.layoutLock ?? null
 }
 
+export function classForRoute(catalog, routeKey) {
+  if (!isPlainObject(catalog) || !isNonEmptyString(routeKey)) return null
+  const mapped = catalog.routeClasses?.[routeKey]
+  if (isNonEmptyString(mapped) && catalog.classes?.[mapped]) return mapped
+  if (catalog.classes?.[routeKey]) return routeKey
+  return null
+}
+
+export function primitivesToAddForClass(catalog, classKey) {
+  if (!isPlainObject(catalog) || !isNonEmptyString(classKey)) return []
+  const list = catalog.classes?.[classKey]?.primitivesToAdd
+  return Array.isArray(list) ? list : []
+}
+
+/**
+ * Short prompt the evaluator and the table inject so a node is judged against
+ * the catalog, not against "clean". Keep it short — the grok CLI prompt budget
+ * is the shots plus this, not the whole inventory.
+ */
+export function evaluatorBrief(catalog, classKey) {
+  const key = isNonEmptyString(classKey) ? classKey : ''
+  const lock = layoutLockForClass(catalog, key)
+  const modules = modulesForClass(catalog, key)
+  const shadcn = shadcnPicksForClass(catalog, key)
+  const lists = listPicksForClass(catalog, key)
+  const add = primitivesToAddForClass(catalog, key)
+  const lines = [
+    'CATALOG (Machina / EXM7777). Fetch the named module, adapt the JOB into the house barrel. Do not install a second look. Growing components/site/v3 with a new primitive IS the OPEN pattern set. A second kit, a second stylesheet, or a catalog palette on a public page is Frankenstein.',
+    'Registers: public = components/site/v3 (tokens.css). Admin = components/admin/v2. Product/console/account = components/ui (npx shadcn add allowed there only).',
+  ]
+  if (lock) lines.push(`Layout lock: ${lock}`)
+  if (add.length) lines.push(`If missing, ADD these house primitives: ${add.join(', ')}.`)
+  for (const m of modules) lines.push(`- ${m.id}: ${m.job} (${m.url})`)
+  for (const c of shadcn.slice(0, 8)) lines.push(`- shadcn:${c.name} ${c.docs}`)
+  for (const c of lists.slice(0, 12)) lines.push(`- ${c.id} ${c.url}`)
+  lines.push(
+    'A stacked-section page that ignored this catalog is a defect. Name replaceWith as a house primitive (V3Carousel, V3ButtonGroup, V3Sheet, V3Segmented, …) or a catalog module id. Refuse purple, orbs, gooey, magnetic/metallic buttons, and agent-chat chrome on a public page. Navy #102742, cream #faf8f4, Geist, Amboqia stay.',
+  )
+  return lines.join('\n')
+}
+
 /**
  * A lane that built a NEW or REPLACED section must name the module it adapted.
  * Empty is a miss — that is how SITE-45 invented a column hero from an adjective.
@@ -197,6 +268,7 @@ export function adaptedFromProblems(catalog, classKey, adaptedFrom) {
     ...modules.flatMap((m) => [m.id, m.url]),
     ...shadcn.flatMap((c) => [c.name, `shadcn:${c.name}`, c.docs]),
     ...lists.flatMap((c) => [c.id, c.name, c.url, `${c.listId}:${c.name}`]),
+    ...primitivesToAddForClass(catalog, classKey),
   ])
   const problems = []
   for (const [i, hit] of adaptedFrom.entries()) {
@@ -210,7 +282,11 @@ export function adaptedFromProblems(catalog, classKey, adaptedFrom) {
 
 export function publicInstallForbidden(text) {
   const blob = String(text ?? '')
-  return /npx shadcn add|@beui\/|@rare-ui|magicui|aceternity|fluid-orb|gravity.?letter/i.test(blob)
+  // Third-party registries and named novelty kits onto the public tree = Frankenstein.
+  // `npx shadcn add carousel` into components/ui (console/account) is the product path.
+  if (/npx shadcn add\s+@/i.test(blob)) return true
+  if (/npx shadcn add.+(?:app\/|components\/site\/)/i.test(blob)) return true
+  return /(?:^|[^\w])(@beui\/|@rare-ui|magicui|aceternity|fluid-orb|gravity.?letter)/i.test(blob)
 }
 
 function main() {
@@ -246,9 +322,11 @@ function main() {
         modules,
         shadcn: shadcnPicksForClass(loaded, classKey),
         lists: listPicksForClass(loaded, classKey),
+        primitivesToAdd: primitivesToAddForClass(loaded, classKey),
+        evaluatorBrief: evaluatorBrief(loaded, classKey),
         refuse: loaded.refuse,
         fetch:
-          'Fetch the five EXM7777 catalogs (beautifului, beui, rareui, transitions, shadcn). Open each named module URL. Adapt the JOB into v3 tokens (navy, cream, Geist, Amboqia). Do not npm-install any catalog onto app/ or components/site/.',
+          'Fetch the five EXM7777 catalogs. Open each named module URL. Adapt the JOB into the house barrel. If the job has no house primitive, ADD one to components/site/v3 (public) or components/admin/v2 (admin). Do not npm-install a catalog onto app/ or components/site/. Navy, cream, Geist, Amboqia stay.',
       },
       null,
       2,

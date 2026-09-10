@@ -4,6 +4,7 @@ import {
   EXM7777_IDS,
   EXM7777_URLS,
   adaptedFromProblems,
+  evaluatorBrief,
   layoutLockForClass,
   listPicksForClass,
   loadTasteCatalog,
@@ -97,8 +98,44 @@ describe('the other four EXM7777 catalogs', () => {
 })
 
 describe('publicInstallForbidden', () => {
-  it('flags installing a catalog onto the public site', () => {
+  it('flags installing a third-party kit onto the public site', () => {
     expect(publicInstallForbidden('npx shadcn add @beui/tilt-card')).toBe(true)
+    expect(publicInstallForbidden('npx shadcn add carousel onto app/listing')).toBe(true)
     expect(publicInstallForbidden('adapt the tab indicator into V3Quiet')).toBe(false)
+    expect(publicInstallForbidden('npx shadcn add carousel')).toBe(false)
+  })
+})
+
+describe('the full EXM7777 inventories', () => {
+  it('freezes the fetched lists, not a handful', () => {
+    expect(loaded.lists.beui.components.length).toBeGreaterThanOrEqual(40)
+    expect(loaded.lists.beautifului.components.length).toBeGreaterThanOrEqual(20)
+    expect(loaded.lists.rareui.components.length).toBeGreaterThanOrEqual(15)
+    expect(loaded.lists.transitions.components.length).toBeGreaterThanOrEqual(25)
+    expect(loaded.shadcn.components.length).toBeGreaterThanOrEqual(50)
+  })
+
+  it('covers the public classes a lane actually builds', () => {
+    expect(Object.keys(loaded.classes)).toEqual(
+      expect.arrayContaining(['listing-detail', 'homepage-v6', 'search', 'sell', 'city']),
+    )
+    expect(loaded.classes['listing-detail'].primitivesToAdd).toEqual(
+      expect.arrayContaining(['V3Carousel', 'V3ButtonGroup']),
+    )
+  })
+})
+
+describe('evaluatorBrief', () => {
+  it('tells the judge to use the catalog and to add a primitive when the barrel is missing one', () => {
+    const brief = evaluatorBrief(loaded, 'listing-detail')
+    expect(brief).toMatch(/V3Carousel/)
+    expect(brief).toMatch(/listing-hero-bleed/)
+    expect(brief).toMatch(/Frankenstein/)
+    expect(brief).toMatch(/stacked-section/)
+  })
+
+  it('accepts a new house primitive as adaptedFrom', () => {
+    expect(adaptedFromProblems(loaded, 'listing-detail', [{ id: 'V3Carousel' }])).toEqual([])
+    expect(adaptedFromProblems(loaded, 'listing-detail', [{ id: 'V3ButtonGroup' }])).toEqual([])
   })
 })

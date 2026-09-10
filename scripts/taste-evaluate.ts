@@ -32,6 +32,11 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { config } from 'dotenv'
 import { parseJsonLoose } from '../lib/grok/text'
+import {
+  classForRoute,
+  evaluatorBrief,
+  loadTasteCatalog,
+} from './lib/taste-catalog.mjs'
 
 /**
  * THE ONE INSTRUMENT (Matt 2026-09-09: "default to always having Grok 4.6 do the
@@ -126,8 +131,18 @@ async function main() {
 
   const images = files.map((f) => ({
     name: f.split('/').pop()!,
-    dataUrl: `data:image/png;base64,${readFileSync(f).toString('base64')}`,
+    path: resolve(f),
   }))
+
+  let catalogNote = ''
+  try {
+    const raw = JSON.parse(readFileSync('design_system/public/taste-catalog.json', 'utf8'))
+    const loaded = loadTasteCatalog(raw)
+    const classKey = classForRoute(loaded, args.routeKey) ?? args.routeKey
+    catalogNote = evaluatorBrief(loaded, classKey)
+  } catch {
+    catalogNote = ''
+  }
 
   const bar =
     args.beat == null
@@ -141,6 +156,7 @@ async function main() {
     'Names ending -desktop are 1440px wide; names ending -mobile375 are 375px wide.',
     args.url ? `The page is rendered at ${args.url}.` : '',
     args.focus ? `What changed in this pass: ${args.focus}` : '',
+    catalogNote,
     bar,
     '',
     'Score the SAME shots THREE separate times, independently, as three different reviewers would. One pass is noise.',

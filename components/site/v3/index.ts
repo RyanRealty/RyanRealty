@@ -432,6 +432,16 @@ export type { V3FilterProps } from './V3Filter.client'
 export { V3Segmented } from './V3Segmented.client'
 export type { V3SegmentedProps, V3SegmentedOption } from './V3Segmented.client'
 
+/**
+ * Catalog jobs that had no house primitive (Matt 2026-09-10): add them HERE.
+ * Carousel = shadcn carousel / listing filmstrip. Button group = Tour/Call/Text.
+ * Growing this barrel is the OPEN pattern set. Installing a second kit is not.
+ */
+export { V3Carousel } from './V3Carousel.client'
+export type { V3CarouselProps } from './V3Carousel.client'
+export { V3ButtonGroup } from './V3ButtonGroup'
+export type { V3ButtonGroupProps } from './V3ButtonGroup'
+
 export { V3Placeholder } from './V3Placeholder'
 export type { V3PlaceholderProps } from './V3Placeholder'
 

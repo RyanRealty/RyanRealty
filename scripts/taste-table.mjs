@@ -50,6 +50,11 @@ import { join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import Anthropic from '@anthropic-ai/sdk'
 import {
+  classForRoute,
+  evaluatorBrief,
+  loadTasteCatalog,
+} from './lib/taste-catalog.mjs'
+import {
   FINISH_LINE,
   RUBRIC_VERSION,
   buildRow,
@@ -253,12 +258,26 @@ function normalizeScoring(parsed) {
   }
 }
 
+function catalogNoteFor(key) {
+  try {
+    const raw = JSON.parse(readFileSync(join(REPO_ROOT, 'design_system/public/taste-catalog.json'), 'utf8'))
+    const loaded = loadTasteCatalog(raw)
+    const classKey = classForRoute(loaded, key) ?? key
+    return evaluatorBrief(loaded, classKey)
+  } catch {
+    return ''
+  }
+}
+
 function buildPrompt({ key, route, url }, instrumentText) {
+  const catalog = catalogNoteFor(key)
   return (
     `${instrumentText}\n\n---\n\n` +
     `Class: ${key}\nRoute file: ${route}\nURL captured: ${url}\n\n` +
+    (catalog ? `${catalog}\n\n` : '') +
     'The model that built this page is NOT you. You are a separate evaluator ' +
-    'judging only the two screenshots — no code, no live browsing, no DOM.'
+    'judging only the two screenshots — no code, no live browsing, no DOM. ' +
+    'A stacked-section page that ignored the catalog is a defect.'
   )
 }
 

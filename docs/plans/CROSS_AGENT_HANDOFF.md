@@ -1,3 +1,24 @@
+# Current — 2026-09-10 (catalog primitives + evaluator; no SITE claim)
+
+Owner: grok-4.6 this session. **No SITE claims.** Did not steal SITE-60 / SITE-63 / SITE-64 / SITE-65.
+
+Matt: whole-site UX/UI from the five EXM7777 catalogs, no Frankenstein, new primitives allowed, evaluator must use them. Landed locally (not pushed — local `main` still has unpushed SITE-64/65 `036a4276` whose owner asked not to mix, plus SITE-66 `fcc683dc`):
+
+- Full inventories in `design_system/public/taste-catalog.json` (beUI 65, Beautiful UI 27, Rare UI 19, transitions 34, shadcn 64) with public/admin/product surfaces and classes for listing, homepage, search, sell, city.
+- New v3 primitives **V3Carousel** and **V3ButtonGroup**, wired onto listing (G73). Listing hero restored to `listing-hero-bleed`. Tour/Call/Text is one grouped control.
+- `scripts/taste-evaluate.ts` and `scripts/taste-table.mjs` inject `evaluatorBrief(class)` so a stacked-section page that ignored the catalog is a defect.
+- Navy/cream/Geist/Amboqia stay. Admin interiors stay `components/admin/v2`. `npx shadcn add` into `components/ui` only.
+
+# Current — 2026-09-10 04:45Z (15m grinder 01a0894e: claimed SITE-64 + SITE-65)
+
+Owner: Grok scheduler `01a0894e` / `grok-4.5-2026-09-10-04`. Fleet 3/3.
+
+Did **not** bulk-insert SITE-64…87 from the 2026-09-08 table (stale). Live first-viewport shots on production: about still opens on a 5.0/25/3 KPI grid; compare still leads with four dashed empty slots. Seeded those two only.
+
+**Held:** SITE-64 (`13814dc4-…`) about KPI cut; SITE-65 (`ee7852f3-…`) compare sample-first. Local commit `036a4276` on main, **not pushed** — taste receipts + `deploy:verify` still due. Do not mix listing/catalog dirty files (SITE-60 / shadcn Lego) into that commit.
+
+Do not steal SITE-60 or SITE-63.
+
 # Current — 2026-09-10 (Matt: keep running as nodes get entered)
 
 Owner: Grok (grok-01a08945-2026-09-09). **No claims.** Durable 15m site-queue task `01a0898e` is armed; a watcher wakes this session when an eligible SITE-* appears and the fleet has a slot. Empty of eligible is a quiet fire, not a stop. Do not auto-seed SITE-64…87.
