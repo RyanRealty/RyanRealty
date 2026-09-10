@@ -262,6 +262,14 @@ counted 17 of 37 item commits (45.9%) as evaluator rework — SITE-09 was 4 of i
 costs a fix. The same defect found after the merge costs a public commit, a
 re-capture of the whole page, and the 869-file unit suite. So the lane, in order:
 
+0. **Lego (https://ui.shadcn.com/ — EXM7777).** Before composing or replacing a
+   public section, `node scripts/lib/taste-catalog.mjs <class>`. Fetch the
+   printed shadcn docs URLs (or the local `components/ui` file when installed).
+   Adapt into the v3 / listing foundation. Do not `npx shadcn add` onto `app/`
+   or `components/site/`. Do not shrink a working full-bleed layout (listing
+   hero: `listing-hero-bleed`, not `listing-hero-column`). Record `adaptedFrom`
+   on the node. An empty adaptedFrom is inventing a layout — that is how
+   SITE-45 lost the full-width hero.
 1. Builds, and runs the builder ritual in `design_system/public/TASTE.md` with
    its own eyes on the screenshots.
 2. Captures the shots from its own `next dev` into `ui_kits/<route>/shots/`,
@@ -340,6 +348,12 @@ line, and keep building the other lanes.
 
 ## Do not
 
+- Invent a layout from a taste adjective. Fetch `node scripts/lib/taste-catalog.mjs <class>`
+  (shadcn docs + house modules) and adapt. Empty `adaptedFrom` is a miss.
+- `npx shadcn add` onto `app/` or `components/site/`. Public paint is v3. Admin
+  already lives in `components/ui`.
+- Shrink a working full-bleed layout to dodge a "looks like Zillow" tell
+  (SITE-45 listing hero).
 - Write a new audit, punch list, or plan for the site. Append to a node.
 - Rebuild a page for taste outside a node. A page with no node is not touched.
 - Land a site primitive that only a dev page imports. On 2026-09-08 two items merged

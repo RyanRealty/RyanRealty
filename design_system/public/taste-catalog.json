@@ -1,0 +1,134 @@
+{
+  "source": "https://x.com/EXM7777/status/2092250905655812121",
+  "catalogUrl": "https://ui.shadcn.com/docs/components",
+  "note": "Machina (@EXM7777): send the agent a catalog URL, fetch the FULL list, integrate into the existing foundation. Matt pointed at ui.shadcn.com as that catalog. This file is the frozen list (docs page 2026-09-10) plus our installed paths. Public pages still render from components/site/v3. A lane FETCHES the shadcn docs (or the local components/ui file) and ADAPTS the job into v3. It does not npx shadcn add onto app/ or components/site/. Admin/product already lives on @/components/ui. SITE-45 is why this exists: an evaluator said 'looks like Zillow', the lane invented a column filmstrip, and Matt lost the full-width hero, the facts, and decent buttons.",
+  "refuse": [
+    "npx shadcn add onto app/ or components/site/",
+    "Install beUI / Rare UI / Magic UI / Aceternity as a second public design system",
+    "Shrink a working full-bleed layout to dodge a 'looks like Zillow' tell",
+    "Drop PropertySpecs, description, schools, or Tour/Call/Text to make the fold quieter"
+  ],
+  "catalogs": [
+    {
+      "id": "shadcn",
+      "name": "shadcn/ui",
+      "url": "https://ui.shadcn.com/docs/components",
+      "kind": "admin",
+      "take": "The full component list. Fetch the docs page for a named component, then the local file if we already installed it. Adapt composition (carousel, sheet, button group, dialog, tabs, accordion, empty, skeleton) into v3 on public pages. Install into components/ui only for admin/product.",
+      "refuse": "Copying shadcn's default look onto a listing page. Public paint is v3 tokens."
+    },
+    {
+      "id": "house-v3",
+      "name": "Ryan Realty v3 barrel",
+      "url": "components/site/v3/",
+      "kind": "house",
+      "take": "The public foundation. Fetch the actual TSX/CSS of the primitive that already does the job.",
+      "refuse": "A second primitive for a job one already does."
+    },
+    {
+      "id": "house-listing",
+      "name": "Listing-detail stack",
+      "url": "components/site/listing-detail/",
+      "kind": "house",
+      "take": "ListingHero, PropertySpecs, PriceCtaStrip, DescriptionBlock, SchoolsBlock — the sections a listing page must keep.",
+      "refuse": "Dropping a requiredComponent to make the fold quieter."
+    }
+  ],
+  "shadcn": {
+    "docs": "https://ui.shadcn.com/docs/components",
+    "docsItem": "https://ui.shadcn.com/docs/components/{name}",
+    "installedDir": "components/ui",
+    "components": [
+      { "name": "accordion", "installed": "components/ui/accordion.tsx", "jobs": ["listing-detail:facts"] },
+      { "name": "alert", "installed": "components/ui/alert.tsx", "jobs": [] },
+      { "name": "alert-dialog", "installed": "components/ui/alert-dialog.tsx", "jobs": [] },
+      { "name": "aspect-ratio", "installed": null, "jobs": ["listing-detail:hero"] },
+      { "name": "avatar", "installed": "components/ui/avatar.tsx", "jobs": ["team:faces"] },
+      { "name": "badge", "installed": "components/ui/badge.tsx", "jobs": ["listing-detail:status"] },
+      { "name": "breadcrumb", "installed": null, "jobs": ["listing-detail:trail"] },
+      { "name": "button", "installed": "components/ui/button.tsx", "jobs": ["listing-detail:ask"] },
+      { "name": "button-group", "installed": null, "jobs": ["listing-detail:ask"] },
+      { "name": "calendar", "installed": null, "jobs": ["listing-detail:tour"] },
+      { "name": "card", "installed": "components/ui/card.tsx", "jobs": [] },
+      { "name": "carousel", "installed": null, "jobs": ["listing-detail:gallery"] },
+      { "name": "chart", "installed": null, "jobs": [] },
+      { "name": "checkbox", "installed": "components/ui/checkbox.tsx", "jobs": [] },
+      { "name": "collapsible", "installed": null, "jobs": ["listing-detail:facts"] },
+      { "name": "command", "installed": "components/ui/command.tsx", "jobs": ["search:field"] },
+      { "name": "dialog", "installed": "components/ui/dialog.tsx", "jobs": ["listing-detail:lightbox"] },
+      { "name": "drawer", "installed": null, "jobs": ["listing-detail:ask"] },
+      { "name": "dropdown-menu", "installed": "components/ui/dropdown-menu.tsx", "jobs": [] },
+      { "name": "empty", "installed": null, "jobs": ["listing-detail:gallery"] },
+      { "name": "field", "installed": null, "jobs": ["sell:address"] },
+      { "name": "hover-card", "installed": null, "jobs": ["listing-detail:facts"] },
+      { "name": "input", "installed": "components/ui/input.tsx", "jobs": ["sell:address"] },
+      { "name": "input-group", "installed": "components/ui/input-group.tsx", "jobs": ["sell:address"] },
+      { "name": "label", "installed": "components/ui/label.tsx", "jobs": [] },
+      { "name": "pagination", "installed": null, "jobs": ["search:results"] },
+      { "name": "popover", "installed": "components/ui/popover.tsx", "jobs": [] },
+      { "name": "progress", "installed": "components/ui/progress.tsx", "jobs": [] },
+      { "name": "radio-group", "installed": "components/ui/radio-group.tsx", "jobs": [] },
+      { "name": "scroll-area", "installed": "components/ui/scroll-area.tsx", "jobs": ["listing-detail:gallery"] },
+      { "name": "select", "installed": "components/ui/select.tsx", "jobs": [] },
+      { "name": "separator", "installed": "components/ui/separator.tsx", "jobs": [] },
+      { "name": "sheet", "installed": "components/ui/sheet.tsx", "jobs": ["listing-detail:ask"] },
+      { "name": "skeleton", "installed": "components/ui/skeleton.tsx", "jobs": ["listing-detail:gallery"] },
+      { "name": "slider", "installed": "components/ui/slider.tsx", "jobs": ["search:price"] },
+      { "name": "sonner", "installed": "components/ui/sonner.tsx", "jobs": [] },
+      { "name": "switch", "installed": "components/ui/switch.tsx", "jobs": [] },
+      { "name": "table", "installed": "components/ui/table.tsx", "jobs": ["listing-detail:tax"] },
+      { "name": "tabs", "installed": "components/ui/tabs.tsx", "jobs": ["listing-detail:gallery"] },
+      { "name": "textarea", "installed": "components/ui/textarea.tsx", "jobs": [] },
+      { "name": "tooltip", "installed": "components/ui/tooltip.tsx", "jobs": ["listing-detail:facts"] }
+    ]
+  },
+  "classes": {
+    "listing-detail": {
+      "layoutLock": "Listing media is full-bleed above the grid (listing-hero-bleed), not a column frame (listing-hero-column). SITE-45 set heroInMain to dodge a 'looks like Zillow' tell. Matt 2026-09-10: that lost the full-width hero, hid home details, and made the buttons look bad. Restore bleed. Keep PropertySpecs, description, schools, Tour/Call/Text (parity.json requiredComponents). Adapt shadcn carousel / button-group / sheet / dialog into that foundation — do not invent a smaller layout.",
+      "modules": [
+        {
+          "id": "listing-hero-bleed",
+          "catalog": "house-listing",
+          "url": "components/site/listing-detail/ListingHero.tsx",
+          "job": "Full-bleed photograph as the first object."
+        },
+        {
+          "id": "listing-specs",
+          "catalog": "house-listing",
+          "url": "components/site/listing-detail/PropertySpecs.tsx",
+          "job": "Facts a buyer came for: type, lot, year, HOA, $/sqft."
+        },
+        {
+          "id": "listing-ask",
+          "catalog": "house-listing",
+          "url": "components/site/listing-detail/PriceCtaStrip.tsx",
+          "job": "Street as H1. One ask: Tour / Call / Text."
+        },
+        {
+          "id": "shadcn-carousel",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/carousel",
+          "job": "Swipeable media with prev/next. Adapt into the full-bleed hero filmstrip. Do not drop the hero to a column to fit it."
+        },
+        {
+          "id": "shadcn-button-group",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/button-group",
+          "job": "Tour / Call / Text as one grouped control, not three ghost buttons."
+        },
+        {
+          "id": "shadcn-sheet",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/sheet",
+          "job": "Mobile ask and lightbox-adjacent panes. We already installed components/ui/sheet.tsx — fetch it, restyle in v3."
+        },
+        {
+          "id": "shadcn-dialog",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/dialog",
+          "job": "Photo lightbox. We already installed components/ui/dialog.tsx."
+        }
+      ]
+    }
+  }
+}

@@ -264,6 +264,28 @@ The full method is the `dataviz` skill (form → color → validate → marks �
 
 "The AI doesn't invent criteria; it averages them" (X, 2026-09-01 research,
 `docs/research/taste-for-agents-x.md`). "Make it elegant" transfers nothing.
+
+**Lego, not a skill (Machina @EXM7777, 2026-08-25; Matt pointed at
+https://ui.shadcn.com/ as the catalog).** Fetch the list, pick the module,
+integrate into the foundation we already have. Do not generate a layout from
+an adjective. The frozen list and the per-class picks live in
+`design_system/public/taste-catalog.json`. A lane starts with:
+
+```bash
+node scripts/lib/taste-catalog.mjs listing-detail
+```
+
+That prints the layout lock, the house modules, and the shadcn components for
+this class (docs URL + whether we already installed it under `components/ui`).
+Fetch each named docs page — or the local file when `installed` is set. Adapt
+the JOB (carousel → filmstrip, button-group → Tour/Call/Text, sheet → mobile
+ask, dialog → lightbox) into `components/site/v3` / the listing stack. Do not
+`npx shadcn add` onto `app/` or `components/site/`. Record `adaptedFrom` with
+the module id. A tight library of five fetched components beats 500 lines of
+taste adjectives. SITE-45 invented "one frame in the column" instead of
+fetching a carousel into the full-bleed hero, and Matt lost the hero, the
+facts, and the buttons.
+
 Before composing a page class, write down three to five references and *what
 specifically works in each*, and design against those sentences. Two stronger
 forms of the same discipline: point the builder at REAL component code (a

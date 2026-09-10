@@ -1,3 +1,13 @@
+# Current — 2026-09-10 (loop Lego: fetch ui.shadcn.com, adapt into v3)
+
+Owner: Grok (01a0895a). Did not steal SITE-43 shots. Did not claim.
+
+Matt sent https://ui.shadcn.com/ after the EXM7777 post. That catalog is now the
+loop's Lego: `node scripts/lib/taste-catalog.mjs <class>` prints house modules
+plus the shadcn docs to fetch. Public pages still paint from v3. Do not
+`npx shadcn add` onto app/ or components/site/. Listing layout lock: restore
+`listing-hero-bleed`; SITE-45's column hero is the failure.
+
 # Current — 2026-09-10 (one instrument: grok-4.6 judges every page on the subscription; Grok lanes are live; the UI process itself is the next node)
 
 Owner: Claude (Opus 5), session 3db16241, main checkout. Read this whole block before touching

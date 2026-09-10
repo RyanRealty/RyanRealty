@@ -26,6 +26,10 @@ routine reads. Nothing in the queue depends on which model builds.
   SEPARATE evaluator that is a DIFFERENT model from the builder, three scorings in one
   call, the receipt in the route's `parity.json` (`scripts/lib/taste-receipt.mjs`), and
   the score must rise. The finish line is 70 on the table instrument (Matt 2026-09-09).
+  **Before building:** `node scripts/lib/taste-catalog.mjs <class>` — fetch the
+  shadcn docs (https://ui.shadcn.com/docs/components) and house modules, adapt
+  into v3, record `adaptedFrom`. Do not invent a layout. Do not shrink the
+  listing hero off full-bleed.
 
 ## What changes when the builder is Grok
 
