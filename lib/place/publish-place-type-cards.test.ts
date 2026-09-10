@@ -142,4 +142,14 @@ describe('placeTypeCoverPhotos', () => {
     expect(covers.condo).toBe('https://cdn.example/condo.jpg')
     expect(covers.land).toBe('https://cdn.example/lot.jpg')
   })
+
+  it('asks Spark for the card size so a prefetched place page never names a 1600 plate', () => {
+    const spark = 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260501165710852242000000-o.jpg'
+    const covers = placeTypeCoverPhotos([
+      { photoUrl: spark, propertySubType: 'Single Family Residence', propertyType: 'A' },
+    ])
+    expect(covers.sfr).toBe(
+      'https://cdn.resize.sparkplatform.com/ore/320x240/true/20260501165710852242000000-o.jpg',
+    )
+  })
 })

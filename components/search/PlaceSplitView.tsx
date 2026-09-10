@@ -8,6 +8,7 @@ import { publishPlaceSplitSeed } from '@/lib/search/publish-place-split-seed'
 import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
 import { withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
+import { compactListingCardPhotoFields } from '@/lib/listing/row-photo'
 import './search-ledger.css'
 
 function boundsFromListings(rows: ListingTileRow[]): MapBounds | null {
@@ -153,7 +154,8 @@ export async function PlaceSplitView(props: {
     totalCount = props.totalCount ?? listings.length
   }
 
-  const initialBounds = seedBounds ?? boundsFromListings(listings ?? []) ?? BEND_DEFAULT_BOUNDS
+  listings = (listings ?? []).map(compactListingCardPhotoFields)
+  const initialBounds = seedBounds ?? boundsFromListings(listings) ?? BEND_DEFAULT_BOUNDS
 
   // NO PER-VISITOR READS IN THIS SHELL. getSession/saved/liked were awaited
   // here until 2026-09-01, which put cookies() inside every place page's

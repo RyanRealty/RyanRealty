@@ -35,6 +35,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import {
   publishListingShareKind,
   publishListingSharePricePerSqft,
@@ -158,7 +159,7 @@ export function V3ListingRow({
     <>
       {listing.photoUrl ? (
         <Image
-          src={listing.photoUrl}
+          src={listingRowPhotoSrc(listing.photoUrl)}
           alt={listingPhotoAlt(listing)}
           fill
           priority={priority}

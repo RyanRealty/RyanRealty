@@ -5,6 +5,7 @@
 
 import type { V3FieldItem } from '@/components/site/v3'
 import type { PriceDropTile } from '@/lib/data'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref, slugify } from '@/lib/slug'
 import { livePrice } from '@/app/_v3/live-format'
 
@@ -74,7 +75,7 @@ export function ourHomesFieldItems(listings: readonly PriceDropTile[]): V3FieldI
       }),
       priceLabel: price,
       title: street,
-      ...(photo ? { photoSrc: photo } : {}),
+      ...(photo ? { photoSrc: listingRowPhotoSrc(photo) } : {}),
       ...(meta ? { meta } : {}),
       lat: typeof lat === 'number' ? lat : null,
       lng: typeof lng === 'number' ? lng : null,

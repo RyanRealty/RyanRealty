@@ -3,6 +3,7 @@ import { formatPrice } from '@/lib/format/money'
 import { openHouseWhen } from './oh-when'
 import type { OpenHouseListing } from './oh-listings'
 import { listingMlsStreetLine } from '@/lib/listing/publish-street-line'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 
 export type OpenHouseFieldItem = V3FieldItem & { when?: string }
 
@@ -43,7 +44,7 @@ export function openHouseFieldItems(houses: readonly OpenHouseListing[]): OpenHo
       title,
       ...(when ? { when } : {}),
       ...(specs ? { meta: specs } : {}),
-      ...(photoSrc ? { photoSrc } : {}),
+      ...(photoSrc ? { photoSrc: listingRowPhotoSrc(photoSrc) } : {}),
       lat: oh.lat,
       lng: oh.lng,
     })

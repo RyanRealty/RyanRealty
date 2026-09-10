@@ -23,6 +23,7 @@ import { getGeneralLimiter } from '@/lib/rate-limit'
 import { SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { searchListingsAll, searchListingsAllCount, pickSearchFeatureFilters } from '@/lib/data'
 import type { ListingTile, SearchFeatureFilters, SearchListingsAllFilter } from '@/lib/data'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 
 /**
  * Page-level search filters — field names are the URL params. The registry
@@ -153,7 +154,7 @@ function tileToViewportRow(t: ListingTile): ListingTileRow {
     SubdivisionName: t.subdivisionName,
     BoundaryCity: t.boundaryCity,
     BoundaryNeighborhood: t.boundaryNeighborhood,
-    PhotoURL: t.photoUrl,
+    PhotoURL: t.photoUrl ? listingRowPhotoSrc(t.photoUrl) : t.photoUrl,
     Latitude: t.lat,
     Longitude: t.lng,
     StandardStatus: t.status,

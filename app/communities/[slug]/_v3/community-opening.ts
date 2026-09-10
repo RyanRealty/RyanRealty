@@ -22,6 +22,7 @@ import { publishDaysFigure } from '@/lib/market/publish-days-figure'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
 import { measuredPlaceHoaInput } from './place-hoa-measured'
 
@@ -152,7 +153,9 @@ export function communityFieldItems(tiles: readonly ListingTile[], cap?: number)
           href: listingTileHref(tile),
           priceLabel: formatPublishedAsk(tile.listPrice) ?? 'Price not published',
           title: cardAddress || 'Listing',
-          photoSrc: tile.photoUrl?.trim() || undefined,
+          photoSrc: tile.photoUrl?.trim()
+            ? listingRowPhotoSrc(tile.photoUrl)
+            : undefined,
           meta: meta || undefined,
           lat: tile.lat,
           lng: tile.lng,
@@ -288,7 +291,7 @@ export function communitySplitListings(tiles: readonly ListingTile[]): ListingTi
     State: 'OR',
     PostalCode: tile.postalCode,
     SubdivisionName: tile.subdivisionName,
-    PhotoURL: tile.photoUrl,
+    PhotoURL: tile.photoUrl?.trim() ? listingRowPhotoSrc(tile.photoUrl) : tile.photoUrl,
     Latitude: tile.lat,
     Longitude: tile.lng,
     StandardStatus: tile.status ?? null,
