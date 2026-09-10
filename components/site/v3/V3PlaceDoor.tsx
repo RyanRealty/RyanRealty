@@ -33,6 +33,7 @@
  */
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Button, V3SourceDisclosure } from './atoms'
+import { V3Icon } from './V3Icon'
 import './tokens.css'
 import './V3PlaceDoor.css'
 
@@ -60,18 +61,7 @@ export type V3PlaceDoorProps = {
 }
 
 function IconArrow() {
-  return (
-    <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
-      <path
-        d="M3.5 10h12m-4.5-5 5 5-5 5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
+  return <V3Icon name="ArrowRight" size={18} />
 }
 
 export function V3PlaceDoor({

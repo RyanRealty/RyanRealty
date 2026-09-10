@@ -441,6 +441,9 @@ export { V3Carousel } from './V3Carousel.client'
 export type { V3CarouselProps } from './V3Carousel.client'
 export { V3ButtonGroup } from './V3ButtonGroup'
 export type { V3ButtonGroupProps } from './V3ButtonGroup'
+/** Iconoir, house stroke set. Marks a door or a control; not a card grid. */
+export { V3Icon, QUIET_MARK_ICON, V3_ICON_NAMES } from './V3Icon'
+export type { V3IconName, V3IconProps, V3IconSize } from './V3Icon'
 
 export { V3Placeholder } from './V3Placeholder'
 export type { V3PlaceholderProps } from './V3Placeholder'

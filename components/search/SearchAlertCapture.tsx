@@ -6,7 +6,7 @@ import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registr
 import type { FormEvent } from 'react'
 import Link from 'next/link'
 import { useUrlSearchParams } from '@/lib/search/url-search-params.client'
-import { BellAlertIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { V3Icon } from '@/components/site/v3'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getFiltersSummary } from '@/lib/search-filters'
@@ -231,7 +231,7 @@ export function SearchAlertCapture({
           )}
         >
           <div className="flex items-start gap-2 sm:items-center">
-            <BellAlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary sm:mt-0" aria-hidden />
+            <V3Icon name="BellNotification" size={16} className="mt-0.5 shrink-0 text-primary sm:mt-0" />
             <div className="min-w-0">
               <p className="font-medium">You are set. Watch your inbox for new matches.</p>
               <p className="text-xs text-muted-foreground">
@@ -268,9 +268,10 @@ export function SearchAlertCapture({
           )}
         >
           <div className="flex min-w-0 items-start gap-2 sm:items-center">
-            <BellAlertIcon
-              className={cn('mt-0.5 h-4 w-4 shrink-0 text-primary sm:mt-0', isInline && 'mt-0')}
-              aria-hidden
+            <V3Icon
+              name="BellNotification"
+              size={16}
+              className={cn('mt-0.5 shrink-0 text-primary sm:mt-0', isInline && 'mt-0')}
             />
             <div className="min-w-0">
               <p className={cn('text-sm font-medium text-foreground', isInline && 'text-xs sm:text-sm')}>
@@ -296,7 +297,7 @@ export function SearchAlertCapture({
               aria-label="Dismiss watching reminder"
               className="srch-tap shrink-0 text-muted-foreground hover:text-foreground"
             >
-              <XMarkIcon className="h-4 w-4" aria-hidden />
+              <V3Icon name="Xmark" size={16} />
             </Button>
           </div>
         </div>
@@ -373,9 +374,10 @@ export function SearchAlertCapture({
         )}
       >
         <div className="flex min-w-0 items-start gap-2 sm:items-center">
-          <BellAlertIcon
-            className={cn('mt-0.5 h-4 w-4 shrink-0 text-primary sm:mt-0', isInline && 'mt-0')}
-            aria-hidden
+          <V3Icon
+            name="BellNotification"
+            size={16}
+            className={cn('mt-0.5 shrink-0 text-primary sm:mt-0', isInline && 'mt-0')}
           />
           <div className="min-w-0">
             <p className={cn('text-sm font-medium text-foreground', isInline && 'text-xs sm:text-sm')}>
@@ -445,7 +447,7 @@ export function SearchAlertCapture({
             aria-label="Dismiss"
             className="srch-tap shrink-0 text-muted-foreground hover:text-foreground"
           >
-            <XMarkIcon className="h-4 w-4" aria-hidden />
+            <V3Icon name="Xmark" size={16} />
           </Button>
         </form>
       </div>

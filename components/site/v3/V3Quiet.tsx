@@ -83,6 +83,7 @@ import {
   V3SourceLine,
   V3_ROOT_CLASS,
 } from './atoms'
+import { QUIET_MARK_ICON, V3Icon } from './V3Icon'
 import './tokens.css'
 import './V3Quiet.css'
 
@@ -611,45 +612,35 @@ function toBlocks(items: RenderableItem[]): RenderableBlock[] {
 /* -------------------------------------------------------------------------- */
 
 /**
- * The per-channel mark. Drawn here rather than imported: the barrel law keeps
- * this file on ./atoms, ./tokens.css, next/link and cn, and V3Doors and
- * V3Chrome already draw their pictograms the same way — one thin navy stroke,
- * currentColor, no fill, aria-hidden. These are marks, not an icon set: they
- * differentiate four to seven doors that would otherwise be identical rows, and
- * they never appear without the label they mark.
+ * The per-channel mark. Iconoir through V3Icon except MOS (`supply`), which is
+ * the two-bar drawing, not a catalog glyph. One thin navy stroke, currentColor,
+ * no fill, aria-hidden. These are marks, not a card grid of icons: they
+ * differentiate doors that would otherwise be identical rows, and they never
+ * appear without the label they mark.
  */
-const MARK_PATHS: Record<V3QuietMark, readonly string[]> = {
-  call: ['M5.5 3.5h2.4l1.1 2.9-1.6 1.1a9.2 9.2 0 0 0 4.6 4.6l1.1-1.6 2.9 1.1v2.4a1 1 0 0 1-1.1 1A12.4 12.4 0 0 1 4.5 4.6a1 1 0 0 1 1-1.1Z'],
-  text: ['M3.5 5h13v8h-7.2L5.6 16v-3H3.5z'],
-  email: ['M3.5 5.5h13v9h-13z', 'm3.5 6 6.5 4.8L16.5 6'],
-  schedule: ['M3.5 5.5h13v11h-13z', 'M3.5 9.2h13', 'M7 3.5v3.4', 'M13 3.5v3.4'],
-  person: ['M10 10.2a3.1 3.1 0 1 0 0-6.2 3.1 3.1 0 0 0 0 6.2Z', 'M4.4 16.5c.6-2.8 2.9-4.4 5.6-4.4s5 1.6 5.6 4.4'],
-  review: ['m10 3.4 2 4.2 4.6.6-3.3 3.2.8 4.6L10 13.8l-4.1 2.2.8-4.6-3.3-3.2 4.6-.6z'],
-  market: ['M3.5 16h13', 'm4.5 13 3.6-4.2 3 2.6L15.5 5'],
-  /* The MOS drawing, at mark size: homes for sale over a month of sales. */
-  supply: ['M3.5 6.5h13', 'M3.5 13.5h5.5'],
-  history: ['M10 4.2a5.8 5.8 0 1 1-5.6 7.2', 'M10 6.6V10l2.4 1.6', 'm3 9.6 1.4 2.2 2.2-1.4'],
-  map: ['M10 16.8c3.1-3.6 4.7-6.2 4.7-8a4.7 4.7 0 1 0-9.4 0c0 1.8 1.6 4.4 4.7 8Z', 'M10 9.6a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2Z'],
-  page: ['M5.5 3.5h6l3.5 3.5v9.5h-9.5z', 'M11.4 3.6V7h3.5'],
-  external: ['M11 4.5h4.5V9', 'm15.5 4.5-6.2 6.2', 'M13.6 11.8v3.7H4.5V6.4H8'],
-}
-
 function DoorMark({ mark }: { mark: V3QuietMark }) {
-  return (
-    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false">
-      {MARK_PATHS[mark].map((d) => (
+  if (mark === 'supply') {
+    /* The MOS drawing, at mark size: homes for sale over a month of sales. */
+    return (
+      <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false">
         <path
-          key={d}
-          d={d}
+          d="M3.5 6.5h13"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.3"
           strokeLinecap="round"
-          strokeLinejoin="round"
         />
-      ))}
-    </svg>
-  )
+        <path
+          d="M3.5 13.5h5.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+        />
+      </svg>
+    )
+  }
+  return <V3Icon name={QUIET_MARK_ICON[mark]} size={20} />
 }
 
 

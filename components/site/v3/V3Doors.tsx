@@ -21,6 +21,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, type V3Text } from './atoms'
+import { V3Icon } from './V3Icon'
 import './tokens.css'
 import './V3Doors.css'
 
@@ -66,108 +67,17 @@ export type V3DoorsProps = {
 }
 
 function IconArrow() {
-  return (
-    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false">
-      <path
-        d="M3.5 10h12m-4.5-5 5 5-5 5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
+  return <V3Icon name="ArrowRight" size={20} />
 }
 
+const DOOR_PICTOGRAM = {
+  buy: 'Home',
+  sell: 'HomeSale',
+  work: 'Building',
+} as const
+
 function DoorPictogram({ kind }: { kind: V3DoorPictogram }) {
-  const common = {
-    viewBox: '0 0 48 48',
-    width: 40,
-    height: 40,
-    'aria-hidden': true as const,
-    focusable: false as const,
-  }
-  if (kind === 'buy') {
-    return (
-      <svg {...common}>
-        <path
-          d="M8 22.5 24 9l16 13.5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M12 21.5V38h24V21.5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M20 38V27h8v11"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    )
-  }
-  if (kind === 'sell') {
-    return (
-      <svg {...common}>
-        <path
-          d="M14 34V14h14l6 6v14H14Z"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M28 14v6h6"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M19 24h10M19 29h10"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-        />
-      </svg>
-    )
-  }
-  return (
-    <svg {...common}>
-      <path
-        d="M16 36V18.5L24 12l8 6.5V36"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M21 36v-8h6v8"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="24" cy="22" r="1.4" fill="currentColor" />
-    </svg>
-  )
+  return <V3Icon name={DOOR_PICTOGRAM[kind]} size={40} />
 }
 
 export function V3Doors({ id, name, doors, className }: V3DoorsProps) {

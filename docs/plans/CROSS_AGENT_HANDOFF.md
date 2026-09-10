@@ -1,3 +1,9 @@
+# Current — 2026-09-10 (Iconoir is the v3 stroke set)
+
+Owner: grok-4.6 this session. **No SITE claims.** Did not steal SITE-63 / SITE-75 / SITE-77 / SITE-83.
+
+Installed `iconoir-react` 7.12.1. Public paint goes through `V3Icon` (RSC-safe Iconoir paths, currentColor, 24 grid). Wired on chrome, doors, quiet marks, footer social, guest-watch and search-alert bells. MOS `supply` stays the two-bar drawing. Not a card grid of icons.
+
 # Current — 2026-09-10 06:18Z (15m grinder 01a0894e: SITE-75/77 built, taste still due)
 
 Owner: `grok-4.5-2026-09-10-05`. Worktree `/Users/matthewryan/RyanRealty-wt-site-75-77` branch `wt/site-75-77-20260910` @ `b3384f49` (ahead of origin/main, **not pushed**).

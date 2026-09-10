@@ -72,6 +72,7 @@ import { valuationHref } from '@/lib/site/valuation-href'
 import { chromeShowsSellerAsk } from '@/lib/site/chrome-seller-ask'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { V3Button, V3_ROOT_CLASS, v3Text, type V3Text } from './atoms'
+import { V3Icon } from './V3Icon'
 import './tokens.css'
 import './V3Chrome.css'
 
@@ -297,61 +298,19 @@ function Wordmark() {
 /* Icons. Stroke is currentColor, so every one inherits the token beside it. */
 
 function IconChevron() {
-  return (
-    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-      <path
-        d="M4 6l4 4 4-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
+  return <V3Icon name="NavArrowDown" size={16} />
 }
 
-
 function IconPhone() {
-  return (
-    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-      <path
-        d="M3.2 2.2h2.4l1.2 3-1.5 1.2a9.5 9.5 0 0 0 4.3 4.3l1.2-1.5 3 1.2v2.4a1.2 1.2 0 0 1-1.3 1.2A11.8 11.8 0 0 1 2 3.5a1.2 1.2 0 0 1 1.2-1.3z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
+  return <V3Icon name="Phone" size={16} />
 }
 
 function IconMenu() {
-  return (
-    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false">
-      <path
-        d="M3 6h14M3 10h14M3 14h14"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  )
+  return <V3Icon name="Menu" size={20} />
 }
 
 function IconClose() {
-  return (
-    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false">
-      <path
-        d="M5 5l10 10M15 5L5 15"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  )
+  return <V3Icon name="Xmark" size={20} />
 }
 
 /* -------------------------------------------------------------------------- */
