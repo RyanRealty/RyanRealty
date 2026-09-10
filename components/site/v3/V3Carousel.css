@@ -37,6 +37,21 @@
   min-height: var(--v3-carousel-h);
 }
 
+/* Homepage inventory rails: peeking cards, same house chrome as page mode. */
+.v3.v3-carousel--rail .v3-carousel__viewport {
+  min-height: 0;
+}
+
+.v3.v3-carousel--rail .v3-carousel__slide {
+  flex: 0 0 min(17.5rem, 78vw);
+  min-height: 0;
+  padding-right: var(--v3-space-md);
+}
+
+.v3.v3-carousel--rail .v3-carousel__nav {
+  padding-inline: var(--v3-gutter);
+}
+
 .v3 .v3-carousel__nav {
   display: flex;
   gap: var(--v3-space-xs);

@@ -1,0 +1,5 @@
+/* Count figure. Inherits type from the parent; tabular so digits do not jump. */
+.v3 .v3-number {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}

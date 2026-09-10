@@ -1,11 +1,8 @@
-/* Homepage search. Scoped to the v3 root so it paints the same inside the
-   Stage (on-media). Cream face, navy ink, 2px navy edge. Tokens only. 44px targets.
-   Buy | Sell tabs match the Redfin/Zillow hero pattern.
+/* Homepage search. SITE-83: opaque cream tabs with sliding navy indicator
+   (V3Tabs), morphing cream search shell (V3MorphSearch), live count chip.
+   THE SWITCH IS CSS (SITE-12). Two radios sit first; sibling + :has selectors
+   carry state so both panels are in the server HTML. */
 
-   THE SWITCH IS CSS (SITE-12). Two radios sit first inside .home-hero-search and
-   the `~` sibling combinator carries their state to the tab labels and to the two
-   panels, so both panels are in the server HTML and the switch works with
-   scripting off. Nothing here depends on a React state value. */
 .v3 .home-hero-search {
   position: relative;
   width: 100%;
@@ -13,9 +10,17 @@
   color: var(--v3-ink);
 }
 
-/* The radios themselves: hidden to the eye, present to the keyboard and to the
-   accessibility tree. Never display:none — that would take them off the tab
-   order and leave the switch reachable by pointer only. */
+/* Homepage search + inventory band — keep the pulse claim in the first viewport. */
+.v3.v3-stage--inventory:has(.home-hero-search) {
+  min-height: max(60vh, 28rem);
+}
+
+@media (max-width: 40rem) {
+  .v3.v3-stage--inventory:has(.home-hero-search) {
+    min-height: max(72vh, 32rem);
+  }
+}
+
 .v3 .home-hero-search__mode {
   position: absolute;
   width: 1px;
@@ -28,71 +33,61 @@
   border: 0;
 }
 
-.v3 .home-hero-search__tabs {
+.v3 .home-hero-search__live {
   display: flex;
-  gap: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2em;
   margin: 0 0 var(--v3-space-sm);
-  width: fit-content;
-  border: 2px solid var(--v3-surface);
-  border-radius: var(--v3-radius-control);
-  background: color-mix(in srgb, var(--v3-ink) 55%, transparent);
-  box-shadow: var(--v3-media-shadow);
-  overflow: hidden;
-}
-
-.v3 .home-hero-search__tab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  appearance: none;
-  -webkit-appearance: none;
-  min-height: var(--v3-tap);
-  min-width: 5.5rem;
-  margin: 0;
-  padding: 0 var(--v3-space-md);
-  border: 0;
-  background: transparent;
-  /* The unselected word is muted on the navy face, so "selected" is carried by
-     weight and fill together and never by fill alone (the 2026-09-08 evaluator
-     read a filled Sell as the page's own state, not as a chosen mode). */
-  color: var(--v3-ink-on-navy-muted);
+  color: var(--v3-ink-on-navy);
   font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body);
-  font-weight: var(--v3-weight-body);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
   line-height: var(--v3-leading-control);
-  cursor: pointer;
-  transition:
-    background var(--v3-dur-state) var(--v3-ease-out),
-    color var(--v3-dur-state) var(--v3-ease-out);
+  text-shadow: var(--v3-media-shadow);
 }
 
-/* SELECTED. Cream face, navy ink, heavier word: three signals, so the state
-   survives a greyscale render and a colour-blind reader. */
+.v3 .home-hero-search__live-n {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: 1;
+  color: var(--v3-ink-on-navy);
+}
+
+@media (max-width: 40rem) {
+  .v3 .home-hero-search__live {
+    display: none;
+  }
+}
+
+/* Sliding indicator index from the radios (no React state). */
+.v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__tabs {
+  --v3-tabs-index: 0;
+}
+
+.v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__tabs {
+  --v3-tabs-index: 1;
+}
+
+.v3 .home-hero-search__tabs {
+  margin: 0 0 var(--v3-space-sm);
+}
+
 .v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__tabs .home-hero-search__tab--buy,
 .v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__tabs .home-hero-search__tab--sell {
-  background: var(--v3-surface);
-  color: var(--v3-ink);
+  color: var(--v3-ink-on-navy);
   font-weight: var(--v3-weight-strong);
 }
 
-.v3 .home-hero-search__mode:focus-visible ~ .home-hero-search__tabs {
-  outline: var(--v3-focus-ring);
-  outline-offset: var(--v3-focus-offset);
+.v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__tabs .home-hero-search__tab--sell,
+.v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__tabs .home-hero-search__tab--buy {
+  color: var(--v3-ink);
+  font-weight: var(--v3-weight-body);
 }
 
-/* --------------------------------------------------------------------------
-   THE HEADLINE SWITCHES TOO (2026-09-08 evaluator).
-   The tabs used to change the form and leave the copy alone, so a visitor who
-   tapped Sell read "Homes for sale in Central Oregon" directly over their own
-   address field and a Value my home button. The Stage ships both pairs
-   (altEyebrow / altHeadline); this is the rule that picks one.
-
-   `:has()` rather than `~` for one structural reason: the radios live inside
-   the search, which V3Stage renders AFTER the copy, and a sibling combinator
-   only reaches forward. The selector is scoped to the copy block that contains
-   the switch, so it can match nothing else on the site. `:has()` is already the
-   mechanism in V3Sheet, V3Chrome and V3StickyAsk — no new dependency.
-   -------------------------------------------------------------------------- */
+/* Headline switch with the same radios (SITE-12). */
 .v3 .v3-stage-copy:has(.home-hero-search__mode--sell:checked) .v3-stage-eyebrow:not(.v3-stage-eyebrow--alt),
 .v3 .v3-stage-copy:has(.home-hero-search__mode--sell:checked) .v3-stage-line:not(.v3-stage-line--alt) {
   display: none;
@@ -103,9 +98,6 @@
   display: block;
 }
 
-/* --------------------------------------------------------------------------
-   THE PANELS. Both render; the switch decides which one is on screen.
-   -------------------------------------------------------------------------- */
 .v3 .home-hero-search__panel-form {
   position: relative;
   width: 100%;
@@ -128,40 +120,24 @@
   text-shadow: var(--v3-media-shadow);
 }
 
-.v3 .home-hero-search__row {
-  display: flex;
-  align-items: stretch;
-  gap: var(--v3-space-xs);
-  width: 100%;
-}
-
-/* AddressAutocomplete wraps its input in a positioning div (it reserves room
-   for the Places suggestion list). That div is the flex child here. */
 .v3 .home-hero-search__address {
   flex: 1 1 auto;
   min-width: 0;
+  width: 100%;
 }
 
-.v3 .home-hero-search__input,
-.v3 .home-hero-search__go {
+.v3 .home-hero-search__input {
   appearance: none;
   -webkit-appearance: none;
+  width: 100%;
   min-height: var(--v3-tap);
-  border: 2px solid var(--v3-ink);
-  border-radius: var(--v3-radius-control);
-  background: var(--v3-surface);
+  padding: 0 var(--v3-space-sm);
+  border: 0;
+  background: transparent;
   color: var(--v3-ink);
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-body);
   line-height: var(--v3-leading-control);
-  box-shadow: var(--v3-media-shadow);
-}
-
-.v3 .home-hero-search__input {
-  flex: 1 1 auto;
-  width: 100%;
-  min-width: 0;
-  padding: 0 var(--v3-space-sm);
 }
 
 .v3 .home-hero-search__input::placeholder {
@@ -169,56 +145,9 @@
   opacity: 1;
 }
 
-.v3 .home-hero-search__go {
-  flex: 0 0 auto;
-  min-width: var(--v3-tap);
-  padding: 0 var(--v3-space-md);
-  font-weight: var(--v3-weight-medium);
-  background: var(--v3-ink);
-  color: var(--v3-ink-on-navy);
-  border-color: var(--v3-surface);
-  cursor: pointer;
-}
-
-.v3 .home-hero-search__go:hover {
-  background: var(--v3-pressed);
-}
-
-/* Under about 416px the field and the ask cannot share a line without clipping
-   the placeholder — "Enter your home add…" at 375. The ask drops below and
-   takes the width, which is also the biggest tap target on the page. */
-@media (max-width: 26rem) {
-  .v3 .home-hero-search__row {
-    flex-wrap: wrap;
-  }
-
-  .v3 .home-hero-search__address,
-  .v3 .home-hero-search__input {
-    flex: 1 1 100%;
-  }
-
-  .v3 .home-hero-search__go {
-    flex: 1 1 100%;
-    width: 100%;
-  }
-}
-
 .v3 .home-hero-search__panel {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% + var(--v3-space-2xs));
-  z-index: 4;
   max-height: 18rem;
   overflow: auto;
-  border: 1px solid var(--v3-edge);
-  border-radius: var(--v3-radius-control);
   background: var(--v3-surface);
   color: var(--v3-ink);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .v3 .home-hero-search__tab {
-    transition: none;
-  }
 }

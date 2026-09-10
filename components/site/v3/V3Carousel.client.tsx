@@ -24,6 +24,11 @@ export type V3CarouselProps = {
   /** Controlled snap index. Uncontrolled when omitted. */
   index?: number
   onIndexChange?: (index: number) => void
+  /**
+   * `page` = one slide fills the viewport (listing filmstrip).
+   * `rail` = peeking house cards (homepage inventory carousels).
+   */
+  mode?: 'page' | 'rail'
   children: ReactNode
   className?: string
 }
@@ -32,6 +37,7 @@ export function V3Carousel({
   label,
   index,
   onIndexChange,
+  mode = 'page',
   children,
   className,
 }: V3CarouselProps) {
@@ -86,7 +92,12 @@ export function V3Carousel({
 
   return (
     <div
-      className={cn(V3_ROOT_CLASS, 'v3-carousel', className)}
+      className={cn(
+        V3_ROOT_CLASS,
+        'v3-carousel',
+        mode === 'rail' && 'v3-carousel--rail',
+        className,
+      )}
       role="region"
       aria-roledescription="carousel"
       aria-labelledby={labelId}
