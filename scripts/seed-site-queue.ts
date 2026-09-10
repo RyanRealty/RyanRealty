@@ -7,6 +7,9 @@
  * (npx tsx scripts/loop-brief.ts); they do not re-audit.
  *
  *   npx tsx scripts/seed-site-queue.ts
+ *
+ * Draft seeds for a new round come from `node scripts/taste-table.mjs --seed-draft`
+ * (SITE-62). This file never reads taste-table.json. A person pastes after review.
  */
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'

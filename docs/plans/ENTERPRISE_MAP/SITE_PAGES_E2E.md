@@ -64,7 +64,7 @@ After **every** wave: Playwright 1440 + 375, **look**, dedicated evaluator on th
 
 Nodes: 58bd29ba-c0b0-4cbe-bee2-d46b292015df
 
-This table is the only site backlog. Sessions pull the oldest open node (`npx tsx scripts/loop-brief.ts` serves it first whenever `app/**` or `components/site/**` changed in the last 14 days); they do not re-audit. A commit touching the public site names its node in a `Node:` trailer (G72). Decisions behind the queue: Matt 2026-09-07, recorded in the conversion research artifact 525cdcda and memory `project_site_conversion_decisions_2026-09-07`. Seeded by `scripts/seed-site-queue.ts` (idempotent).
+This table is the only site backlog. Sessions pull the oldest open node (`npx tsx scripts/loop-brief.ts` serves it first whenever `app/**` or `components/site/**` changed in the last 14 days); they do not re-audit. A commit touching the public site names its node in a `Node:` trailer (G72). Decisions behind the queue: Matt 2026-09-07, recorded in the conversion research artifact 525cdcda and memory `project_site_conversion_decisions_2026-09-07`. Seeded by `scripts/seed-site-queue.ts` (idempotent). Round reseeding is not automatic: `node scripts/taste-table.mjs --seed-draft` emits draft seeds for every class under 70; a person edits `scripts/seed-site-queue.ts` then runs `npx tsx scripts/seed-site-queue.ts` (SITE-62).
 
 | version_gap | id | title |
 |---|---|---|

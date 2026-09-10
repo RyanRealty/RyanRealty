@@ -421,3 +421,189 @@ export function regenerateMarkdownSection(fullText, block, { start = TASTE_TABLE
   const after = lines.slice(spanEnd + 1).join('\n')
   return `${before}\n${wrapped}\n${after}`
 }
+
+// ---------------------------------------------------------------------------
+// seed drafts — SITE-62: a class under the finish line emits a DRAFT seed
+// ---------------------------------------------------------------------------
+//
+// The table scores; the seeder upserts. Nothing joins them. This helper reads
+// a table + the used version_gap set and returns TypeScript Seed literals a
+// person pastes into scripts/seed-site-queue.ts after review. It never writes
+// Supabase. Numbering is the next free SITE-\d+ after max(used), assigned in
+// a stable order (class name, then median) so two runs on the same inputs
+// emit the same ids.
+
+const SITE_GAP_LITERAL = /versionGap:\s*['"](SITE-[^'"]+)['"]/g
+
+/** Parse `versionGap: 'SITE-…'` literals out of seed-site-queue.ts source. */
+export function collectUsedVersionGaps(sourceText) {
+  const gaps = []
+  const re = new RegExp(SITE_GAP_LITERAL.source, 'g')
+  let m
+  while ((m = re.exec(String(sourceText ?? '')))) {
+    if (!gaps.includes(m[1])) gaps.push(m[1])
+  }
+  return gaps
+}
+
+/**
+ * Next integer after max(SITE-\d+) among used gaps. SITE-M1 and any other
+ * non-numeric suffix are used (they occupy a name) but do not sit in the
+ * integer sequence.
+ */
+export function nextFreeSiteNumber(usedGaps) {
+  let max = -1
+  for (const g of usedGaps ?? []) {
+    const m = String(g).match(/^SITE-(\d+)$/)
+    if (m) max = Math.max(max, Number(m[1]))
+  }
+  return max + 1
+}
+
+/** SITE-00 .. SITE-09 keep the seeder's two-digit pad; SITE-10+ are unpadded. */
+export function formatSiteGap(n) {
+  if (!Number.isInteger(n) || n < 0) throw new Error(`invalid site number ${n}`)
+  return n < 10 ? `SITE-0${n}` : `SITE-${n}`
+}
+
+function firstSentence(text) {
+  const s = String(text ?? '').replace(/\s+/g, ' ').trim()
+  if (!s) return ''
+  const m = s.match(/^(.+?[.!?])(?:\s|$)/)
+  const sentence = m ? m[1] : s
+  return sentence.length > 180 ? `${sentence.slice(0, 179).trimEnd()}…` : sentence
+}
+
+function scoresPhrase(scores) {
+  if (!Array.isArray(scores) || scores.length === 0) return 'unknown'
+  return scores.join(' · ')
+}
+
+function defectLine(d) {
+  const finding = String(d.finding ?? '').replace(/\s+/g, ' ').trim()
+  const short = finding.length > 160 ? `${finding.slice(0, 159).trimEnd()}…` : finding
+  return `${d.section} (${d.primitive}): ${short}`
+}
+
+function sortUnderFinishLine(rows) {
+  return rows.slice().sort((a, b) => {
+    const c = String(a.key ?? '').localeCompare(String(b.key ?? ''))
+    if (c !== 0) return c
+    return a.median - b.median
+  })
+}
+
+const FILE_PATH_IN_PRIMITIVE = '[A-Za-z0-9_./-]+\\.(?:tsx|ts|jsx|js|mjs|css)'
+
+/**
+ * The table's evaluator often annotates `primitive` ("V3Quiet.tsx (shared)").
+ * Seed drafts need a path that exists; they must not invent one. Try the raw
+ * string, then the token before ` (`, then the first path-shaped substring
+ * that is already in the field and on disk.
+ */
+export function resolvePrimitivePath(primitive, root) {
+  if (!isNonEmptyString(primitive) || primitive.includes('..')) return null
+  const raw = primitive.trim()
+  const tryPath = (p) => Boolean(p) && !p.includes('..') && existsSync(join(root, p))
+  if (tryPath(raw)) return raw
+  const beforeParen = raw.split(/\s+\(/)[0].trim()
+  if (beforeParen !== raw && tryPath(beforeParen)) return beforeParen
+  const matches = raw.match(new RegExp(FILE_PATH_IN_PRIMITIVE, 'g')) ?? []
+  for (const c of matches) {
+    if (tryPath(c)) return c
+  }
+  return null
+}
+
+/** Defects whose primitive resolves to a file on disk. Severity is not a filter. */
+export function draftDefects(defects, root) {
+  if (!Array.isArray(defects)) return []
+  const out = []
+  for (const d of defects) {
+    if (!isPlainObject(d)) continue
+    const path = resolvePrimitivePath(d.primitive, root)
+    if (!path) continue
+    out.push({ ...d, primitive: path })
+  }
+  return out
+}
+
+function shotSpecText(shotSpec) {
+  if (shotSpec == null) return 'first viewport, scripts/take-route-shots.mjs default, 1440 and 375'
+  return typeof shotSpec === 'string' ? shotSpec : JSON.stringify(shotSpec)
+}
+
+function buildOneDraft(row, versionGap, defects, shotSpec) {
+  const key = row.key
+  const median = row.median
+  const titleBit = firstSentence(row.verdict) || firstSentence(row.dullest) || 'under the finish line'
+  return {
+    versionGap,
+    domain: 'public-ux',
+    title: `${key}: ${titleBit}`,
+    objective:
+      `Class ${key} scored ${median} (${scoresPhrase(row.scores)}) on the table instrument. ` +
+      `Defects: ${defects.map(defectLine).join('; ')}.`,
+    output:
+      `A reviewed seed in scripts/seed-site-queue.ts for class ${key}; recapture first-viewport shots on the table instrument; taste receipt per TASTE.md.`,
+    accept:
+      `On the table instrument, class ${key} scores above ${median}. Recapture shotSpec ${shotSpecText(shotSpec)}.`,
+  }
+}
+
+/**
+ * Draft Seed objects for every class whose median is under the finish line
+ * and whose defects name at least one primitive that exists at `root`.
+ * A class at or above the line emits nothing. A class under the line with
+ * no surviving defect is skipped (warning) — the tool does not invent a path.
+ */
+export function buildSeedDrafts({ table, usedGaps, root, finishLine = FINISH_LINE } = {}) {
+  const rows = Array.isArray(table?.rows) ? table.rows : Array.isArray(table) ? table : []
+  const shotSpec = isPlainObject(table?.instrument) ? table.instrument.shotSpec ?? null : null
+  const under = rows.filter((r) => isPlainObject(r) && isNonEmptyString(r.key) && Number.isInteger(r.median) && r.median < finishLine)
+  const sorted = sortUnderFinishLine(under)
+  const drafts = []
+  const skipped = []
+  const warnings = []
+  let n = nextFreeSiteNumber(usedGaps)
+  for (const row of sorted) {
+    const kept = draftDefects(row.defects, root)
+    if (kept.length === 0) {
+      skipped.push(row.key)
+      warnings.push(
+        `${row.key}: median ${row.median} is under ${finishLine} but no defect names a primitive that exists on disk — skipped, not invented.`,
+      )
+      continue
+    }
+    drafts.push(buildOneDraft(row, formatSiteGap(n), kept, shotSpec))
+    n += 1
+  }
+  return { drafts, skipped, warnings }
+}
+
+export const SEED_DRAFT_BANNER = [
+  'DRAFT — not seeded. Nothing was written to Supabase by this tool.',
+  'A class under the finish line is not a node until a person edits scripts/seed-site-queue.ts and runs `npx tsx scripts/seed-site-queue.ts`.',
+  'This is review-and-paste, not auto-seed.',
+].join('\n')
+
+function formatOneDraft(d) {
+  return [
+    '  {',
+    `    versionGap: ${JSON.stringify(d.versionGap)},`,
+    `    domain: ${JSON.stringify(d.domain)},`,
+    `    title: ${JSON.stringify(d.title)},`,
+    `    objective:`,
+    `      ${JSON.stringify(d.objective)},`,
+    `    output: ${JSON.stringify(d.output)},`,
+    `    accept:`,
+    `      ${JSON.stringify(d.accept)},`,
+    '  },',
+  ].join('\n')
+}
+
+/** TypeScript Seed literals plus the DRAFT banner. Stdout of `--seed-draft`. */
+export function formatSeedDrafts(drafts) {
+  const body = (drafts ?? []).map(formatOneDraft).join('\n')
+  return `${SEED_DRAFT_BANNER}\n\n${body}\n`
+}

@@ -101,6 +101,8 @@ evidence, and evidence means the environment said so (probe rows, screenshots at
 audited). Deterministic plumbing is code, never an agent. `done` and `killed` are
 terminal.
 
+**Site-queue reseeding (SITE-62, 2026-09-10).** The taste table (`scripts/taste-table.mjs`) and the seeder (`scripts/seed-site-queue.ts`) are two halves with no join: a finished table does not mint a node. Path: `node scripts/taste-table.mjs --seed-draft` → human edits `scripts/seed-site-queue.ts` → `npx tsx scripts/seed-site-queue.ts`. This is a draft for review, not auto-seed. A node written by a machine from a score has no diagnosis; the queue's value is that each row states a cause and an accept test.
+
 **Additive updates (anti context-collapse):** ledgers, evidence logs, and the handoff
 grow by itemized increments. Never rewrite a durable store wholesale; EVIDENCE-LOG is
 append-only, ledger rows close but never vanish, manifest gap rows close with evidence
@@ -230,6 +232,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 
 ## Changelog
 
+- **1.6.0 site-queue reseeding (2026-09-10, SITE-62)** — The taste table and the seeder do not join. Path: `node scripts/taste-table.mjs --seed-draft` → human edits `scripts/seed-site-queue.ts` → `npx tsx scripts/seed-site-queue.ts`. Not auto-seed.
 - **1.6.0 path-aware ci:gates (2026-08-19)** — Local contract: `npm run ci:gates` is always ∪ matching path, not the full chain. Nightly/cert stay off that path; nightly runs in `quality.yml` via `--lane=nightly`. GitHub path discovery uses `GITHUB_EVENT_BEFORE...GITHUB_SHA`. Missing `scripts/ci-lanes.json` → full chain. ≥150 unique-gate clamp dropped. `ci:gates-wired` accepts nightly/cert as wired; chain↔lanes drift fails when the lanes file exists. G46 still t=0 serial tsc overlapping the cheap pool. Local push already skips next generate; GitHub next build/e2e is PR-only.
 - **1.6.0 R-221 no CI wait (2026-08-19)** — Matt: cloud/agent sessions must not sit on GitHub Actions. One `ci:gates` per ship. do not poll GitHub Actions. PR CI runs `test:unit`; live-DB `test:int` is nightly. G44 asserts the ban. Escape: 648 compose PR #134 burn.
 - **1.6.0 punch-list serve (2026-08-17)** — Matt: do not break THE LOOP; when FLEET-PUNCH is the OPEN head, `selectShipClass` serves one surface-family slice of punch *lines* (p0 then major then minor, cap `SHIP_CLASS_MAX`) as a virtual class. Parent stays the inbox. No child nodes. Punch-line URLs are `- [sev] url —` (`extractUrlFromObjective` parses that shape, not only `at url`). Lines carry `expected` (and viewport/bot when present). Brief prints the four-field slice contract the executor follows. Claim the parent so sentinel stands down; intake may still append. `completeWorkNode` refuses `done` while open punch lines remain; mark a slice via append-only `resolvePunchLines` (fixed/rejected) and leave leftovers on the parent. Sibling-node ship-class for non-punch nodes is unchanged. `regress-G*` stays separate. Learn-first still wins when a domain is frozen.
