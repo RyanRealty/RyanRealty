@@ -1259,3 +1259,30 @@ describe('a custom subject keeps the floor and loses the ceiling', () => {
     expect(out.comps.map((c) => c.listingKey)).toContain('DEAR')
   })
 })
+
+describe('the GLA bracket obeys the 24-month wall', () => {
+  it('will not swap in a sale the accuracy contract would hard-fail as stale', () => {
+    // Every kept sale smaller than the subject, so the bracket wants a larger
+    // one. The only larger sale on offer closed 27 months ago.
+    const smaller = Array.from({ length: 3 }, (_, i) =>
+      sale({ listingKey: `S${i}`, address: `${i} Kenwood`, sqft: 1800, closeDate: '2026-06-01' }),
+    )
+    const staleBigger = sale({
+      listingKey: 'STALE',
+      address: '99 Kenwood',
+      sqft: 2300,
+      closeDate: '2024-05-01',
+    })
+    const out = walkPricingLadder(subject({ sqft: 2000 }), [...smaller, staleBigger], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('STALE')
+  })
+
+  it('still swaps in a larger sale inside the window', () => {
+    const smaller = Array.from({ length: 3 }, (_, i) =>
+      sale({ listingKey: `S${i}`, address: `${i} Kenwood`, sqft: 1800, closeDate: '2026-06-01' }),
+    )
+    const fresh = sale({ listingKey: 'FRESH', address: '98 Kenwood', sqft: 2300, closeDate: '2026-05-01' })
+    const out = walkPricingLadder(subject({ sqft: 2000 }), [...smaller, fresh], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toContain('FRESH')
+  })
+})

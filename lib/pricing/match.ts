@@ -582,6 +582,12 @@ function saleMiles(subject: PricingSubject, sale: PricingSale): number {
   )
 }
 
+/**
+ * The oldest sale the GLA bracket may reach for. Matches COMP_MAX_AGE_MONTHS in
+ * lib/cma/contract.ts, which hard-fails a build carrying anything older.
+ */
+const BRACKET_MAX_AGE_MONTHS = 24
+
 function bracketEligible(
   subject: PricingSubject,
   sale: PricingSale,
@@ -595,6 +601,12 @@ function bracketEligible(
   if (subject.listingKey && sale.listingKey === subject.listingKey) return false
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) return false
   if (sale.closeDate >= asOf) return false
+  // THE BRACKET SWAP OBEYS THE SAME 24-MONTH WALL AS EVERY RUNG. It checked
+  // only that the sale was not in the future, so on a custom or new subject —
+  // whose pool reaches back thirty months — it could import a sale the accuracy
+  // contract then hard-fails as older than 24 months, and the whole build died
+  // on a comp the swap itself had chosen (cma-63531-gentry, 2026-09-10).
+  if (monthsBetween(asOf, sale.closeDate) > BRACKET_MAX_AGE_MONTHS) return false
   if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return false
   const asOfYear = Number(asOf.slice(0, 4))
   if (!applesOk(subject, sale, 'product_lot', asOfYear)) return false
