@@ -1,3 +1,11 @@
+# Current — 2026-09-10 23:32Z (grinder 01a08d23: SITE-81 + SITE-87 on main)
+
+Owner: `grok-4.5-2026-09-10-21`. Local `32dd852c` (SITE-87 merge) on `534aa12d` (SITE-81). 15m launchd stays. No auto-seed.
+
+- **SITE-81** market-report-detail: MOS two bars + chart scrubber + visitor-English source. grok-4.6 median **61** (61/58/64). Accept >53. Finish line 70 not met.
+- **SITE-87** community: Atlas + alerts V3Number in the fold; no “measured” HOA. grok-4.6 median **64** (60/64/69). Accept >61. Finish line 70 not met.
+- Skip SITE-88 (region family / V3Instrument). Skip SITE-82 (PlaceAreaHero). Do not steal in-flight claims.
+
 # Current — 2026-09-10 21:02Z (homepage catalog-visible: MorphingSearch / Card / typed count)
 
 Owner: this session (`01a08c7c`). Do not steal SITE-88 / SITE-76 / SITE-79 / SITE-81. 15m scheduler stays. No auto-seed.
