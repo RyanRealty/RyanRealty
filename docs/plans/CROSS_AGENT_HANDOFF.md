@@ -1,11 +1,10 @@
-# Current — 2026-09-10 15:12Z (grinder 01a08b94: SITE-72 + SITE-85 done)
+# Current — 2026-09-10 16:22Z (grinder 01a08b99: SITE-70 + SITE-84 on main, pushing)
 
-Owner: `grok-4.5-2026-09-10-13`. origin/main `3edca4ba` (SITE-74 team also landed). Deploy for SITE-72/85 `dpl_7MbuDccEpyGArRgP4xUBEcJE6spW` READY. **Do not globally restyle `V3Stage`.** Do not steal SITE-88.
+Owner: `grok-4.5-2026-09-10-15`. Local main `42d5f7dd` (SITE-84 merge) on `6ae10274` (SITE-70) on `d49b0dba`. Do not steal SITE-88. Do not globally restyle `V3Stage`. 15m scheduler stays. No auto-seed.
 
-- **SITE-72 done.** Search: V3Range + V3MorphSearch + keyed Price/Beds + sourced claim. grok-4.6 median **59** (55/63/59), HF 8. Live `/homes-for-sale?city=Bend` 200. Finish line 70 not met.
-- **SITE-85 done.** /sell: 2,071 Bend closes + MOS 648 vs 173 beside the ask via page-local `sell-stage.css`. grok-4.6 median **61** (56/62/61), HF 7. Live `/sell` 200. `V3Stage.tsx` untouched. Finish line 70 not met.
-- G70: SSG 138s / 81 rail timeouts — deploy READY, pages 200.
-- 15m scheduler stays. No auto-seed.
+- **SITE-70** `/price-drops`: V3Carousel rail of cut houses (shadcn-carousel), count as caption, drawing under the rail, ItemList JSON-LD. grok-4.6 median **60** (54/67/60), HF 6, rebaselined. Accept >30. Finish line 70 not met.
+- **SITE-84** neighborhood: MOS + alerts figure + V3Number in the fold; listing thumbs price/address/beds/baths/sqft. grok-4.6 median **62** (57/62/66), HF 6, rebaselined. Accept >58. Finish line 70 not met. MOS caption still clips on desktop.
+- Do not steal SITE-87 (`PlaceAreaHero` just changed for neighborhood grain). Skip SITE-81 (SITE-88 region family).
 
 # Current — 2026-09-10 14:45Z (grinder 01a08b6b: SITE-72 + SITE-85 on main)
 
