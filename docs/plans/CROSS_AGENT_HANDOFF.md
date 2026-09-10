@@ -1,3 +1,12 @@
+# Current — 2026-09-10 15:12Z (grinder 01a08b94: SITE-72 + SITE-85 done)
+
+Owner: `grok-4.5-2026-09-10-13`. origin/main `3edca4ba` (SITE-74 team also landed). Deploy for SITE-72/85 `dpl_7MbuDccEpyGArRgP4xUBEcJE6spW` READY. **Do not globally restyle `V3Stage`.** Do not steal SITE-88.
+
+- **SITE-72 done.** Search: V3Range + V3MorphSearch + keyed Price/Beds + sourced claim. grok-4.6 median **59** (55/63/59), HF 8. Live `/homes-for-sale?city=Bend` 200. Finish line 70 not met.
+- **SITE-85 done.** /sell: 2,071 Bend closes + MOS 648 vs 173 beside the ask via page-local `sell-stage.css`. grok-4.6 median **61** (56/62/61), HF 7. Live `/sell` 200. `V3Stage.tsx` untouched. Finish line 70 not met.
+- G70: SSG 138s / 81 rail timeouts — deploy READY, pages 200.
+- 15m scheduler stays. No auto-seed.
+
 # Current — 2026-09-10 14:45Z (grinder 01a08b6b: SITE-72 + SITE-85 on main)
 
 Owner: `grok-4.5-2026-09-10-13`. Local `e672d978` (sell) on `9e209ab6` (search). Do not steal SITE-88.
