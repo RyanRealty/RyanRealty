@@ -250,6 +250,33 @@ export function evaluateAccuracyContract(args: {
         : `Value range within ${pct(RANGE_REVIEW_SHARE)} of the recommended list on both sides (${pct(width.lowShare)} below, ${pct(width.highShare)} above).`,
     })
   }
+  // THE NUMBER HAS TO SIT INSIDE THE SALES THAT SUPPORT IT (Matt 2026-09-10).
+  // A document can print "the sales support $577,000 to $832,000" over a
+  // headline of $535,000 and nothing here caught it. The failed-ask cap
+  // legitimately pulls a recommendation BELOW the band — a home that could not
+  // sell at its last ask may not be re-listed above it, whatever the comps say
+  // — so this forces review rather than failing the build, and the sentence
+  // names the cap when the cap is the reason.
+  {
+    const low = Math.min(pricing.valueLow, pricing.valueHigh)
+    const high = Math.max(pricing.valueLow, pricing.valueHigh)
+    const rec = pricing.recommended
+    const inside = rec >= low && rec <= high
+    const gapPct = inside ? 0 : rec > high ? Math.round(((rec - high) / high) * 100) : Math.round(((low - rec) / low) * 100)
+    const capped = pricing.clamp != null && rec < low
+    checks.push({
+      id: 'recommendation-in-range',
+      severity: 'review',
+      pass: inside,
+      detail: inside
+        ? `Recommended $${rec.toLocaleString()} sits inside the supported range $${low.toLocaleString()} to $${high.toLocaleString()}.`
+        : rec > high
+          ? `Recommended $${rec.toLocaleString()} sits ${gapPct}% ABOVE the top of the range the sales support ($${low.toLocaleString()} to $${high.toLocaleString()}). Nothing in the comp evidence carries a list that high.`
+          : capped
+            ? `Recommended $${rec.toLocaleString()} sits ${gapPct}% below the range the sales support ($${low.toLocaleString()} to $${high.toLocaleString()}), because the price that already failed to sell caps what this home can be listed at. Confirm the two numbers read together on the page.`
+            : `Recommended $${rec.toLocaleString()} sits ${gapPct}% below the range the sales support ($${low.toLocaleString()} to $${high.toLocaleString()}) with no cap explaining the gap.`,
+    })
+  }
   checks.push({
     id: 'disclosed-widening',
     severity: 'review',

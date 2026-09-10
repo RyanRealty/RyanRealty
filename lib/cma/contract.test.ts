@@ -453,3 +453,51 @@ describe('the disclosed widening forces review (Matt 2026-09-09)', () => {
     }
   })
 })
+
+describe('recommendation-in-range — the number sits inside the sales that support it', () => {
+  function checkFor(over: { valueLow: number; valueHigh: number; recommended: number; clamp?: unknown }) {
+    const comps = tightSet()
+    const adjusted = adjustComps(subject(), comps, null)
+    const base = computePricing(subject(), adjusted, null)!
+    const pricing = { ...base, ...over } as typeof base
+    const contract = evaluateAccuracyContract({
+      subjectSubType: 'Single Family Residence',
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+    })
+    return contract.checks.find((c) => c.id === 'recommendation-in-range')!
+  }
+
+  it('passes when the recommendation sits inside the range', () => {
+    const c = checkFor({ valueLow: 600_000, valueHigh: 700_000, recommended: 650_000 })
+    expect(c.pass).toBe(true)
+    expect(c.severity).toBe('review')
+  })
+
+  it('fails and says so when the recommendation is above the top of the range', () => {
+    const c = checkFor({ valueLow: 716_000, valueHigh: 784_000, recommended: 791_000 })
+    expect(c.pass).toBe(false)
+    expect(c.detail).toContain('ABOVE')
+  })
+
+  it('fails and blames the cap when a clamp pulled it below', () => {
+    const c = checkFor({
+      valueLow: 577_000,
+      valueHigh: 832_000,
+      recommended: 535_000,
+      clamp: { tier: 'recommended', from: 600_000, to: 535_000, reason: 'failed ask' },
+    })
+    expect(c.pass).toBe(false)
+    expect(c.detail).toContain('already failed to sell')
+  })
+
+  it('fails with nothing to blame when no clamp explains the gap', () => {
+    const c = checkFor({ valueLow: 577_000, valueHigh: 832_000, recommended: 535_000, clamp: null })
+    expect(c.pass).toBe(false)
+    expect(c.detail).toContain('no cap explaining the gap')
+  })
+})
