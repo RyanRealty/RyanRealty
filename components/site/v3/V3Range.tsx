@@ -145,10 +145,8 @@ export function V3Range({
   const loPct = visualPercent(pair.low, stops)
   const hiPct = visualPercent(pair.high, stops)
   const fillLeft = Math.min(loPct, hiPct)
-  // An unconstrained range is the whole domain. Filling it 100% navy reads as
-  // a decorative rule, not two thumbs on a track (SITE-72 first viewport).
-  const unconstrained = pair.low <= first && pair.high >= last
-  const fillWidth = unconstrained ? 0 : Math.abs(hiPct - loPct)
+  // Soft navy wash between thumbs (beui inset-fill).
+  const fillWidth = Math.abs(hiPct - loPct)
 
   return (
     <div className={cn(V3_ROOT_CLASS, 'v3-range', className)}>

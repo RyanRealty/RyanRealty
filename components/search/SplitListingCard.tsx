@@ -95,27 +95,32 @@ export function SplitListingCard({
   // printed on the mark itself — the figure is already in the meta line above,
   // and a number on every point is the dataviz skill's first anti-pattern.
   const bandMark = ppsfBand ? (
-    <span
-      className="srch-ppsf"
-      role="img"
-      aria-label={bandLabel(ppsfBand, publishedPpsf != null && publishedPpsf > 0 ? publishedPpsf : null)}
-      title={bandLabel(ppsfBand, publishedPpsf != null && publishedPpsf > 0 ? publishedPpsf : null)}
-    >
+    <span className="srch-ppsf-wrap">
+      <span className="srch-ppsf__caption" aria-hidden>
+        $/sqft vs this map
+      </span>
       <span
-        className="srch-ppsf__mid"
-        style={{
-          left: `${bandPosition(ppsfBand, ppsfBand.q1)}%`,
-          right: `${100 - bandPosition(ppsfBand, ppsfBand.q3)}%`,
-        }}
-      />
-      {publishedPpsf != null && publishedPpsf > 0 ? (
+        className="srch-ppsf"
+        role="img"
+        aria-label={bandLabel(ppsfBand, publishedPpsf != null && publishedPpsf > 0 ? publishedPpsf : null)}
+        title={bandLabel(ppsfBand, publishedPpsf != null && publishedPpsf > 0 ? publishedPpsf : null)}
+      >
         <span
-          className="srch-ppsf__tick"
-          style={{ left: `${bandPosition(ppsfBand, publishedPpsf)}%` }}
+          className="srch-ppsf__mid"
+          style={{
+            left: `${bandPosition(ppsfBand, ppsfBand.q1)}%`,
+            right: `${100 - bandPosition(ppsfBand, ppsfBand.q3)}%`,
+          }}
         />
-      ) : (
-        <span className="srch-ppsf__none">no living area reported</span>
-      )}
+        {publishedPpsf != null && publishedPpsf > 0 ? (
+          <span
+            className="srch-ppsf__tick"
+            style={{ left: `${bandPosition(ppsfBand, publishedPpsf)}%` }}
+          />
+        ) : (
+          <span className="srch-ppsf__none">no living area reported</span>
+        )}
+      </span>
     </span>
   ) : null
 

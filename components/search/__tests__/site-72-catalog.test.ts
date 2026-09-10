@@ -31,9 +31,9 @@ describe('SITE-72 catalog wiring', () => {
     const mapOnly = readSrc('components/search/HideAwareSearchMap.tsx')
     expect(split).toMatch(/srch-map-field/)
     expect(mapOnly).toMatch(/srch-map-field/)
+    expect(mapOnly).toMatch(/srch-map-claim/)
   })
 
-  
   it('URL writers read the live query at event time so bbox cannot drop a price commit', () => {
     const filters = readSrc('components/search/SearchFilters.tsx')
     const split = readSrc('components/search/MapSearchView.tsx')
@@ -48,5 +48,12 @@ describe('SITE-72 catalog wiring', () => {
     expect(view).toMatch(/srch-claim/)
     expect(view).toMatch(/homes are drawn on this map/)
     expect(view).toMatch(/publishWholePropertyAmount/)
+    expect(view).toMatch(/srch-map-claim/)
+  })
+
+  it('listing cards label the $/sqft band so the mark is not a mute hairline', () => {
+    const card = readSrc('components/search/SplitListingCard.tsx')
+    expect(card).toMatch(/srch-ppsf__caption/)
+    expect(card).toMatch(/\$\/sqft vs this map/)
   })
 })

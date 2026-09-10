@@ -36,10 +36,11 @@
 
 .v3-range__track {
   position: relative;
-  height: var(--v3-tap);
-  margin: 0 calc(var(--v3-tap) / 2);
+  height: 2.5rem;
+  margin: 0;
   padding: 0;
   border: 0;
+  border-radius: var(--v3-radius-control, 8px);
   background: transparent;
   cursor: grab;
   touch-action: none;
@@ -56,9 +57,11 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: 50%;
-  height: 6px;
-  margin-top: -3px;
+  top: 0;
+  bottom: 0;
+  height: auto;
+  margin-top: 0;
+  border-radius: inherit;
   pointer-events: none;
 }
 
@@ -68,7 +71,7 @@
 }
 
 .v3-range__fill {
-  background: var(--v3-navy);
+  background: color-mix(in srgb, var(--v3-navy) 18%, transparent);
 }
 
 .v3-range__ticks {

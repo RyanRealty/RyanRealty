@@ -10,7 +10,11 @@ import { Button } from '@/components/ui/button'
 import { Eyebrow, H3, Body } from '@/components/site/primitives'
 import { nextSearchUrlWithBbox } from '@/lib/search/publish-map-bbox'
 import { navigateQuery, readUrlSearchParams } from '@/lib/search/url-search-params.client'
+import { formatCount } from '@/lib/format/count'
+import { formatPriceCompact } from '@/lib/format/money'
+import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import { cn } from '@/lib/utils'
+import './search-ledger.css'
 
 /**
  * The /search?view=map (map-only) pin layer, made hidden-aware. The split view
@@ -61,6 +65,26 @@ export default function HideAwareSearchMap({
 
   const visible = useMemo(() => excludeHiddenListings(listings, hiddenKeys), [listings, hiddenKeys])
 
+  const claim = useMemo(() => {
+    const asks = []
+    for (const l of visible) {
+      const ask = publishWholePropertyAmount({
+        price: l.ListPrice ?? null,
+        propertyType: l.PropertyType ?? null,
+        propertySubType: l.PropertySubType ?? null,
+        subdivisionName: l.SubdivisionName ?? null,
+        city: l.City ?? null,
+        listNumber: l.ListNumber != null ? String(l.ListNumber) : null,
+      })
+      if (ask != null) asks.push(ask)
+    }
+    return {
+      count: visible.length,
+      low: asks.length > 0 ? Math.min(...asks) : null,
+      high: asks.length > 0 ? Math.max(...asks) : null,
+    }
+  }, [visible])
+
   const persistBbox = useCallback(
     (bounds: MapBounds) => {
       // Event-time read — same race as MapSearchView (SITE-72).
@@ -100,16 +124,33 @@ export default function HideAwareSearchMap({
   }
 
   return (
-    <SearchMapClustered
-      listings={visible}
-      savedListingKeys={savedListingKeys}
-      likedListingKeys={likedListingKeys}
-      placeQuery={placeQuery}
-      boundaryGeojson={boundaryGeojson}
-      className={cn('srch-map-field', className)}
-      initialBounds={initialBounds}
-      lockBounds={lockBounds}
-      onBoundsChanged={persistBbox}
-    />
+    <div className={cn('relative h-full min-h-0 w-full', className)}>
+      <SearchMapClustered
+        listings={visible}
+        savedListingKeys={savedListingKeys}
+        likedListingKeys={likedListingKeys}
+        placeQuery={placeQuery}
+        boundaryGeojson={boundaryGeojson}
+        className="srch-map-field h-full w-full"
+        initialBounds={initialBounds}
+        lockBounds={lockBounds}
+        onBoundsChanged={persistBbox}
+      />
+      {claim.count > 0 ? (
+        <div className="srch-map-claim pointer-events-none absolute left-3 right-3 top-3 z-[105] lg:hidden">
+          <p className="srch-map-claim__line">
+            <span className="srch-figure">{formatCount(claim.count)}</span>
+            <span className="srch-map-claim__rest">
+              {claim.count === 1 ? ' home on this map' : ' homes on this map'}
+              {claim.low != null && claim.high != null
+                ? claim.low === claim.high
+                  ? ` · ${formatPriceCompact(claim.low)}`
+                  : ` · ${formatPriceCompact(claim.low)}–${formatPriceCompact(claim.high)}`
+                : ''}
+            </span>
+          </p>
+        </div>
+      ) : null}
+    </div>
   )
 }

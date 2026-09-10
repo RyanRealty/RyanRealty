@@ -1235,6 +1235,27 @@ export default function MapSearchView({
         onMarkerClick={onMarkerClick}
         className="srch-map-field h-full w-full"
       />
+      {!resultsDegraded && viewClaim.count > 0 ? (
+        <div
+          className={cn(
+            'srch-map-claim pointer-events-none absolute left-3 right-3 z-[105] lg:hidden',
+            scopeLabel && scopeDropped === false && !lockPlace ? 'top-14' : 'top-3',
+          )}
+        >
+          <p className="srch-map-claim__line">
+            <span className="srch-figure">{formatCount(viewClaim.count)}</span>
+            <span className="srch-map-claim__rest">
+              {viewClaim.count === 1 ? ' home on this map' : ' homes on this map'}
+              {viewClaim.low != null && viewClaim.high != null
+                ? viewClaim.low === viewClaim.high
+                  ? ` · ${formatPriceCompact(viewClaim.low)}`
+                  : ` · ${formatPriceCompact(viewClaim.low)}–${formatPriceCompact(viewClaim.high)}`
+                : ''}
+              {claimPlace ? ` · ${claimPlace}` : ''}
+            </span>
+          </p>
+        </div>
+      ) : null}
       {/* Saved named areas (Flexmls My-Map-Overlays parity). Applying one
           replaces the drawn shape set, so it rides the identical ?shapes=
           contract and is shareable + alert-savable like any drawn area. */}

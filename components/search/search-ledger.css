@@ -930,31 +930,43 @@ button.srch-chip--key {
   text-align: center;
 }
 
-/* SITE-72 — morphing search overlays the dock so the field growing into
-   results (beui-morphing-search) does not shove the map. Command list
-   (shadcn-command job) is grouped rows on the same cream surface. */
+/* SITE-72 — ONE cream shell grows into the command list (beui-morphing-search). */
 .search-filter-dock .srch-morph {
   position: relative;
   z-index: 1;
+  min-height: var(--v3-tap, 44px);
 }
 
 .search-filter-dock .srch-morph.v3-morph-search--open {
   z-index: 40;
 }
 
-.search-filter-dock .srch-morph .v3-morph-search__results {
+.search-filter-dock .srch-morph .v3-morph-search__shell {
+  background: var(--v3-cream);
+}
+
+.search-filter-dock .srch-morph.v3-morph-search--open .v3-morph-search__shell {
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(100% - 2px);
+  top: 0;
   z-index: 41;
-  background: var(--v3-surface, rgba(255, 255, 255, 1));
-  border: 2px solid var(--v3-ink, var(--v3-navy));
-  border-top-width: 1px;
+  box-shadow: 0 12px 28px rgb(16 39 66 / 0.14);
 }
 
-.search-filter-dock .srch-morph .v3-morph-search__shell {
-  background: var(--v3-cream);
+.search-filter-dock .srch-morph .v3-morph-search__results {
+  position: static;
+  border: 0;
+  background: transparent;
+}
+
+.search-filter-dock .srch-morph.v3-morph-search--open .v3-morph-search__results {
+  grid-template-rows: auto;
+}
+
+.search-filter-dock .srch-morph.v3-morph-search--open .v3-morph-search__results-inner {
+  min-height: min-content;
+  overflow: auto;
 }
 
 .search-filter-dock .srch-morph__field {
@@ -1047,4 +1059,51 @@ button.srch-chip--key {
 .srch-claim__rest {
   font-size: var(--v3-size-body, 0.875rem);
   color: var(--v3-ink-muted, color-mix(in srgb, var(--v3-navy) 70%, transparent));
+}
+
+.srch-ppsf-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 0.2rem;
+}
+
+.srch-ppsf__caption {
+  font-size: 0.5625rem;
+  letter-spacing: var(--v3-track-label, 0.12em);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--v3-navy) 55%, transparent);
+  line-height: 1;
+}
+
+.srch-map-claim {
+  max-width: 22rem;
+}
+
+.srch-map-claim__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.45rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--v3-navy) 16%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--v3-cream) 94%, transparent);
+  box-shadow: 0 8px 20px rgb(16 39 66 / 0.12);
+  color: var(--v3-ink);
+}
+
+.srch-map-claim__line .srch-figure {
+  font-size: 1.5rem;
+  font-weight: var(--v3-weight-num, 700);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.srch-map-claim__rest {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+  text-wrap: pretty;
 }

@@ -339,7 +339,8 @@ export default function SearchFilters({
   const locationInputRef = useRef<HTMLInputElement>(null)
   const { suggestions, loading: suggestLoading } = useSearchSuggest(locationQuery)
   const suggestItems = flattenSuggestions(suggestions)
-  const morphOpen = locationOpen && (suggestItems.length > 0 || suggestLoading)
+  // Open on focus so the cream shell morphs into the command list (beui).
+  const morphOpen = locationOpen
 
   const urlPrice = useMemo(
     () => urlToRange(initialFilters.minPrice, initialFilters.maxPrice, V3_PRICE_STOPS),
@@ -598,17 +599,15 @@ export default function SearchFilters({
             className="srch-morph"
             open={morphOpen}
             results={
-              morphOpen ? (
-                <SearchSuggestPanel
-                  items={suggestItems}
-                  loading={suggestLoading}
-                  hasResult={suggestions !== null}
-                  highlight={highlight}
-                  idPrefix="search-filters-suggest"
-                  onPick={handleSuggestPick}
-                  className="srch-command"
-                />
-              ) : null
+              <SearchSuggestPanel
+                items={suggestItems}
+                loading={suggestLoading}
+                hasResult={suggestions !== null}
+                highlight={highlight}
+                idPrefix="search-filters-suggest"
+                onPick={handleSuggestPick}
+                className="srch-command"
+              />
             }
           >
             <div className="v3-morph-search__field srch-morph__field">
@@ -1150,13 +1149,12 @@ export default function SearchFilters({
           </div>
         </FilterDropdown>
 
-        {/* Baths — min + max (URL: baths / maxBaths) */}
+        {/* Baths — min + max. SITE-44/72 key Price and Beds only. */}
         <FilterDropdown
           label={activeBathsLabel ? `Baths: ${activeBathsLabel}` : 'Baths'}
           active={!!activeBathsLabel}
           open={openPanel === 'baths'}
           onOpenChange={panelOpenHandler('baths')}
-          weight="key"
         >
           <div className="space-y-3 p-3">
             <div>
