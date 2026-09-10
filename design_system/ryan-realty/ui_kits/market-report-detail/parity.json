@@ -121,7 +121,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-09",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-42 round 2 — a fresh agent given round one's five named findings to verify, the four shots, and the lane dev server URL, which it opened and scrolled end to end; scored three times in one call. Round one of the same instrument (a different agent instance, same model, same rubric, same shots) scored 61; round two scored the page harder after walking the whole DOM, and round two is the number recorded because it graded the shipped state. The breakdown below is the evaluator's own, and sums to its 53 pass rather than to the 54 median. The prior number for this class is the 2026-09-08 taste table mark of 53, from an instrument with no receipt, no recorded evaluator model and no shots on disk, so it is named here rather than as a priorMark.",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-41, third pass on this instrument. The committed prior mark (score 54) came from a SITE-42 round. This node's evaluator round one, given that round's findings to re-verify plus the mix-cell duplicate-row finding, scored the fold's sentencing and the mix-data cut at median 72 but wrote \"KPI grid present: yes (in substance, dodged on the letter)\" — the fold had grown to ~18 tiles, 9 of them property-type supply tiles sharing one templated sentence with only the noun swapped. A build pass cut property-type supply to the top 2 by active count, capped pace cells at 3, and removed the internal \"Market Truth (mt-v1)\" label from the fold's own disclosure text. A THIRD fresh evaluator instance re-scored the resulting ~10-tile fold end to end, confirmed the jargon gone and the bar-encoded sibling-city ledger, and returned \"KPI grid present: no\" with one residual craft note (median 78, recorded here).",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
@@ -143,53 +143,51 @@
       "sourceDesktop": "design_system/ryan-realty/ui_kits/market-report-detail/shots/source-desktop.png",
       "sourceMobile375": "design_system/ryan-realty/ui_kits/market-report-detail/shots/source-mobile375.png"
     },
-    "shotsHash": "sha256:620ac07fdfde783aefc9ff2ea577885e0009662c6dd87e5bbabfbe6eba1bdb69",
+    "shotsHash": "sha256:c64989e8d7bb764bdaf3cd2a50f7dbc6a4e000e95239ea97365d9700e8cb1944",
     "scores": [
-      54,
-      58,
-      53
+      78,
+      75,
+      82
     ],
-    "score": 54,
+    "score": 78,
     "breakdown": {
-      "design": 20,
-      "originality": 9,
-      "interaction": 5,
-      "craft": 12,
-      "honesty": 7
+      "design": 24,
+      "originality": 21,
+      "interaction": 11,
+      "craft": 13,
+      "honesty": 9
     },
-    "beats": "Redfin's Bend housing-market page: one median-price line with basic hover and no stated method. This page wins on trace — every section's disclosure names the source, the filter, the window and the row count, and the hero chart's hover returns all three plotted years for the same calendar month in one tooltip.",
+    "beats": "Redfin's Bend housing-market page: one median-price line with basic hover and no stated method. This page wins on trace — every section's disclosure names the source, the filter, the window and the row count, the hero chart's hover returns all three plotted years for the same calendar month in one tooltip, and the sibling-city ledger and the property-type/pace fold are both now captioned rather than bare.",
     "defects": [
       {
-        "section": "How Bend homes get bought",
+        "section": "market fold, lots/townhomes tiles",
         "severity": "taste",
-        "finding": "The dullest section on the page: four static percentage tiles with no bar length, no hover and no sentence saying what the share means, and it is the last content section before the footer, so the page closes on its most template-shaped display."
-      },
-      {
-        "section": "Other Central Oregon cities",
-        "severity": "taste",
-        "finding": "Six rows of city, count, months of supply and price with no visual encoding at all — the banned table-wearing-hairlines tell. Its only affordance is a navigation away, not more data in place."
+        "finding": "The two surviving property-type tiles (lots, townhomes) still open with the identical five-word clause \"[noun] on the market right now\" before diverging — a shrunk, considered pair, not the prior 9-tile template wall, but the shared opener is a visible seam."
       },
       {
         "section": "Bend real estate questions (FAQ)",
         "severity": "taste",
-        "finding": "Eight question and answer pairs render fully expanded with no disclosure and no figure beside any of them, and every answer is a number written as a sentence — the banned wall-of-text tell."
+        "finding": "Five question and answer pairs render fully expanded with no disclosure and no figure beside any of them — the banned wall-of-text tell, unchanged from the prior round."
       },
       {
-        "section": "hero chart source line",
-        "severity": "honesty",
-        "finding": "The opened trace still names the metric layer and its stamp, \"Market Truth metric layer (mt-v1)\". The evaluator reads that as internal shorthand; CLAUDE.md section 0 requires the methodology stamp to be cited on a served figure, so the stamp stays and the sentence around it was rewritten to plain English this round. Left as a named tension, not silently dropped."
-      },
-      {
-        "section": "gap below the hero source line",
+        "section": "how we calculate this (fold trace)",
         "severity": "craft",
-        "finding": "About 255px of near-empty cream between the source row and the next section eyebrow, broken by one hairline. The section boxes are contiguous, so this is V3Instrument section spacing, not a structural hole."
+        "finding": "The opened trace is a dense five-clause run-on. Correctly gated behind a disclosure now (the internal \"Market Truth mt-v1\" label is gone), but still a small wall-of-text moment once opened."
       },
       {
-        "section": "page composition",
+        "section": "How Bend homes get bought",
         "severity": "taste",
-        "finding": "Two Quiet sections — the FAQ prose block and the \"what each report is\" link list — carry the identical section shape, against the no-repeating-shape rule."
+        "finding": "Unconfirmed this round whether the financing bar chart's hover is real (no screenshot reached that far down the page) — carried over as unverified, not as a new finding."
       }
     ],
-    "comparedToPrior": "first"
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-09",
+      "score": 54,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:620ac07fdfde783aefc9ff2ea577885e0009662c6dd87e5bbabfbe6eba1bdb69"
+    },
+    "rebaselineReason": "shotsHash differs — the property-type/pace fold was cut from ~18 to ~10 tiles, the sibling-city ledger gained bar encoding, and the \"Market Truth mt-v1\" internal label was removed from the fold's disclosure text, changing the rendered page the shots capture."
   }
 }
