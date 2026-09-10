@@ -86,6 +86,49 @@ Pass `docType: 'expired-audit'` to `buildCma` for expired-listing subjects. `reb
 
 **Rule for agents:** do not bypass `buildCma`, do not hand-compute pricing, and do not weaken a contract check without Matt's explicit sign-off recorded in the commit message. If a new accuracy failure mode is found, the fix is a new contract check (gates not prose).
 
+### 0.1 Comp selection: what may price this house (Matt 2026-09-10)
+
+Four rulings, all enforced in code. They came out of 23 Benaiah, a 2,080 sqft
+Bend home that printed a range of $523,000 to $1,165,000 while the identical
+floorplan next door had sold for $512,000.
+
+**The one room rule — "adjust inside, wall outside."** Beds and baths obey the
+same rule (`lib/pricing/room-counts.ts`). The same whole count travels anywhere.
+ONE room apart is used only on the subject's own ground — its plat, its mapped
+neighborhood, or its own street — and is disclosed on the sale. Two or more
+apart is refused everywhere. It replaced an exact-bath wall that cut 438 nearby
+sales on one home and pushed the search into four other neighborhoods.
+
+**No dollar value is applied to a room, and that is derived, not assumed.**
+`scripts/cma-derive-room-value.mjs` pairs closed sales that are the same product,
+within 3% on size, closed within six months of each other, and exactly one whole
+bath apart. In both pairings the home with the EXTRA bath sold slightly BELOW
+its pair at the median (115,993 same-city pairs at -6.5%, 1,232
+same-subdivision pairs at -1.9%, quartiles straddling zero, fewer than half the
+pairs positive). There is no defensible number, so the difference is disclosed
+instead of priced — the same doctrine the engine already follows for lot,
+condition and story. The comp matrix prints it as "Adjusted for rooms (theirs
+vs yours): $0 (1 bed)". **Re-run the derivation before citing those figures.**
+
+**Every subject has a price tier, and every comp is graded against it**
+(`lib/pricing/price-anchor.ts`). When the subject's plat has no cell — an MLS
+record reading "N/A" — the anchor is the neighborhood median $/sqft, then the
+mile around the home, then 2, 3, 5 and 8 miles on rural ground, always at
+`ANCHOR_MIN_N` sales or no anchor at all. Two exemptions and only two: a sale
+inside the subject's OWN plat, and a same-street sale of the subject's own size.
+An adjacent plat is a different plat and is graded like anything else. The LLM
+judge is held to the same same-street rule — it once excluded the identical
+house next door for sitting "outside the range this analysis prices the subject
+in", which is the band the other comps set.
+
+**Conflicting MLS facts — "flag it, use the history"**
+(`lib/cma/subject-room-conflict.ts`). When the current listing's bed or bath
+count disagrees with this home's own closed sale at the same square footage,
+the closed record wins and the conflict is flagged for review either way. One
+stated bound: a record older than `ROOM_HISTORY_MAX_AGE_YEARS` is reported but
+does not price the house, because bathrooms get added and a sixteen-year-old
+count is not evidence about the house today.
+
 ---
 
 ## 1. Scope
