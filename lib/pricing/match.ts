@@ -176,6 +176,9 @@ export type PricingLadderRung = {
 
 export type PricingMatchResult = {
   comps: SelectedPricingComp[]
+  /** The $/sqft tier every comp was graded against, or null when none could be
+   *  resolved — meaning nothing cut a comp on price on this build. */
+  priceAnchor?: PriceAnchor | null
   tiersUsed: string[]
   trace: string[]
   reachedTarget: boolean
@@ -879,5 +882,14 @@ export function walkPricingLadder(
   } else {
     trace.push(`Final set: ${comps.length} closed sales from ${tiersUsed.join(', ') || 'none'}.`)
   }
-  return { comps, tiersUsed, trace, reachedTarget, starved: !reachedTarget, rungs, ...(ruralSplits ? { ruralSplits } : {}) }
+  return {
+    comps,
+    tiersUsed,
+    trace,
+    reachedTarget,
+    starved: !reachedTarget,
+    rungs,
+    priceAnchor,
+    ...(ruralSplits ? { ruralSplits } : {}),
+  }
 }

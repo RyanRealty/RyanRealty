@@ -501,3 +501,47 @@ describe('recommendation-in-range — the number sits inside the sales that supp
     expect(c.detail).toContain('no cap explaining the gap')
   })
 })
+
+describe('value-has-a-basis — a number under half the ask with nothing grading it', () => {
+  function checkFor(over: {
+    recommended: number
+    failedAsk?: number | null
+    priceAnchorPpsf?: number | null
+  }) {
+    const comps = tightSet()
+    const adjusted = adjustComps(subject(), comps, null)
+    const base = computePricing(subject(), adjusted, null)!
+    const pricing = { ...base, recommended: over.recommended, failedAsk: over.failedAsk ?? null } as typeof base
+    const contract = evaluateAccuracyContract({
+      subjectSubType: 'Single Family Residence',
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+      failedAsk: over.failedAsk ?? null,
+      priceAnchorPpsf: over.priceAnchorPpsf ?? null,
+    })
+    return contract.checks.find((c) => c.id === 'value-has-a-basis')!
+  }
+
+  it('refuses 19717 Mt Bachelor: $14,000 against a $90,000 ask, no tier resolved', () => {
+    const c = checkFor({ recommended: 14_000, failedAsk: 90_000, priceAnchorPpsf: null })
+    expect(c.pass).toBe(false)
+    expect(c.severity).toBe('hard')
+    expect(c.detail).toContain('product mismatch')
+  })
+
+  it('allows an ordinary overpriced expired: 30% under the ask', () => {
+    expect(checkFor({ recommended: 630_000, failedAsk: 900_000, priceAnchorPpsf: null }).pass).toBe(true)
+  })
+
+  it('allows the same wide gap once a price tier graded the comps', () => {
+    expect(checkFor({ recommended: 14_000, failedAsk: 90_000, priceAnchorPpsf: 420 }).pass).toBe(true)
+  })
+
+  it('says nothing is wrong when there is no ask to compare against', () => {
+    expect(checkFor({ recommended: 14_000, failedAsk: null, priceAnchorPpsf: null }).pass).toBe(true)
+  })
+})

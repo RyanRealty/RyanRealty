@@ -30,6 +30,14 @@ const RESTRICTIVE_ZONE_RE = /\b(EFU|EFUTRB|F1|F2|SM)\b/i
 
 export const COMP_MAX_AGE_MONTHS = 24
 
+/**
+ * How far under the owner's own ask a recommendation may sit before an
+ * unanchored build is refused rather than published. Half: an expired listing
+ * 20 or 30 percent over the market is ordinary, and a number under half the
+ * ask with nothing grading the comps on price is a different product.
+ */
+export const VALUE_VS_ASK_FLOOR = 0.5
+
 export interface ContractCheck {
   /** hard = fail the build; review = force needs_review; info = recorded only,
    *  never gates (the signal it carries is already surfaced elsewhere, e.g. the
@@ -80,6 +88,13 @@ export function evaluateAccuracyContract(args: {
    */
   subjectIsCustomOrNew?: boolean
   failedAsk?: number | null
+  /**
+   * The $/sqft tier the comps were graded against, or null when none could be
+   * resolved. Null means NOTHING cut a comp on price on this build — the hole
+   * 23 Benaiah fell through — so the value is read beside the owner's own ask
+   * before it is allowed to print (`value-has-a-basis`).
+   */
+  priceAnchorPpsf?: number | null
 }): AccuracyContract {
   const { comps, pricing, judgment, audit, site, minComps, subjectSubType, subjectBaths, subjectIsCustomOrNew } = args
   const widened = (args.tiersUsed ?? []).some((t) => t.includes(WIDENED_TIER_MARK))
@@ -149,6 +164,36 @@ export function evaluateAccuracyContract(args: {
       severity: 'info',
       pass: true,
       detail: `Subject is on the market at $${pricing.currentAsk.toLocaleString()}; comp support $${low.toLocaleString()}–$${high.toLocaleString()} (gap ${gapPct}%). Shown side by side on the document.`,
+    })
+  }
+  // A NUMBER A LONG WAY UNDER THE OWNER'S OWN ASK, WITH NOTHING GRADING IT.
+  //
+  // 19717 Mt Bachelor Drive is a fractional interest at Mt Bachelor Village
+  // asking about $90,000. The ladder found no price tier for it, reached the
+  // like-community rung, and priced it at $14,000 off Beaver Ridge fractionals
+  // in Sunriver — a different share size in a different community. The
+  // document had been FAILING to build; a rebuild gave it a wrong number,
+  // which is worse.
+  //
+  // Either signal alone is ordinary. An expired listing is often 20 or 30
+  // percent over the market, and a thin market often has no anchor. Together —
+  // no price tier resolved AND a recommendation under half the owner's own ask
+  // — the engine has no basis for the number it is about to print, and section
+  // 0 says a deliverable goes out with fewer numbers rather than one wrong one.
+  {
+    const ask = args.failedAsk ?? pricing.failedAsk ?? pricing.currentAsk ?? null
+    const unanchored = args.priceAnchorPpsf == null
+    const farUnder = ask != null && ask > 0 && pricing.recommended > 0 && pricing.recommended < ask * VALUE_VS_ASK_FLOOR
+    checks.push({
+      id: 'value-has-a-basis',
+      severity: 'hard',
+      pass: !(unanchored && farUnder),
+      detail:
+        unanchored && farUnder
+          ? `No price tier could be resolved for this home, and the recommended $${pricing.recommended.toLocaleString()} is under ${Math.round(VALUE_VS_ASK_FLOOR * 100)}% of the $${(ask as number).toLocaleString()} it is asking. With nothing grading the comps on price, that gap is a product mismatch, not a price opinion.`
+          : unanchored
+            ? 'No price tier was resolved, and the value sits within reach of what this home is asking.'
+            : 'The comps were graded against this home\'s own price tier.',
     })
   }
   const crossType = comps.find((c) => !productTypeCompatible(subjectSubType ?? null, c.propertySubType))

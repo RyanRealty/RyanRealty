@@ -353,6 +353,9 @@ export function matchToCompSelection(
         running_total: r.runningTotal,
         excluded: emptyExclusions(),
       })),
+      price_anchor: match.priceAnchor
+        ? { ppsf: Math.round(match.priceAnchor.ppsf), n: match.priceAnchor.n }
+        : null,
       tiers_used: match.tiersUsed,
       reached_target: match.reachedTarget,
       starved: match.starved,

@@ -850,6 +850,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       subjectBaths: subject.baths,
       subjectIsCustomOrNew,
       failedAsk: pricing.failedAsk ?? null,
+      // Null when nothing graded a comp on price on this build.
+      priceAnchorPpsf: selection.diagnostics?.price_anchor?.ppsf ?? null,
       tiersUsed: selection.tiersUsed,
     })
     if (!contract.pass) {
