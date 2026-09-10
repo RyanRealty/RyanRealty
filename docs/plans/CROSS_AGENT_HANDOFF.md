@@ -1,43 +1,47 @@
-# Current — 2026-09-10 18:45Z (CMA engine: comp selection rebuilt, branch not merged)
+# Current — 2026-09-10 21:00Z (CMA engine: comp selection rebuilt, branch not merged)
 
 Owner: `claude-opus-5` on `wt/cma-ship-20260907` (pushed, not merged). **Site-queue agents: nothing
 here touches `app/`, `components/site/**` or the design system. Do not merge this branch for me.**
 
 Matt on 23 Benaiah: "none of the rules created were followed for this, we should never have a range
-this wide." Nine defects, each its own commit, all with tests and all pushed:
+this wide." Twelve defects, each its own commit with tests, all pushed:
 
-1. **The facts pool reached back six months, not eighteen.** `selectPricingFactsPool` orders by close
-   date and caps at 800; 2,471 Bend sales matched the window and 800 came back, oldest 2026-03-10.
-   Every rung under that line walked an empty pool, so the ladder left the neighborhood while the
-   report said the neighborhood was exhausted. `selectPricingFactsNear` reads a complete 3-mile box.
-2. **Nothing graded a subject on price when its plat had no cell** (`lib/pricing/price-anchor.ts`),
-   and the anchor now steps out 2/3/5/8 miles on rural ground where a one-mile ring holds two sales.
-3. **The exact-bath wall** became one room rule for beds and baths (`lib/pricing/room-counts.ts`),
-   with a derived $0 printed in the comp matrix.
-4. **The LLM judge** could drop the identical house next door for sitting outside the band the other
-   comps set. Held to the same-street rule the deterministic selector already used.
+1. **The facts pool reached back six months, not eighteen** — ordered by close date and capped at
+   800, so every rung under that line walked an empty pool and the ladder left the neighborhood while
+   the report said the neighborhood was exhausted. `selectPricingFactsNear` reads a complete 3-mile box.
+2. **Nothing graded a subject on price when its plat had no cell**, and a one-mile ring holds two
+   sales out in the county — the anchor now steps out 2/3/5/8 miles.
+3. **The exact-bath wall** became one room rule for beds and baths, with a derived $0 in the matrix.
+4. **The judge** could drop the identical house next door for sitting outside the band the other
+   comps set.
 5. **An adjacent plat is a different plat** — the listings ladder exempted it from the price cut.
-6. **The starved widening stacked with the resort crossing**, letting a $595/sqft Caldera Springs
-   sale price a $427/sqft plat.
+6. **The starved widening stacked with the resort crossing.**
 7. **One closed sale could enter a set twice** — a relisting carries a new ListingKey.
-8. **A custom subject skipped the price cut entirely**; it now keeps the floor and loses the ceiling.
+8. **A custom subject skipped the price cut entirely**; it keeps the floor and loses the ceiling.
 9. **Conflicting MLS facts** flag for review and price off the closed record inside ten years.
+10. **The house next door now anchors the number** (Matt's ruling): the recommendation may sit at
+    most 10% above a same-street sale of the subject's own size, and that sale becomes the floor.
+11. **The last-resort rung stops at 25% on size**, down from 45% (Matt's ruling).
+12. **One comp floor across both ladders**, 3 and 3, was 5 and 3 (Matt's ruling). Plus: the GLA
+    bracket swap obeys the same 24-month wall as every rung, and the failed-ask ceiling stopped
+    claiming moves the street anchor made.
 
-Two new contract checks: `recommendation-in-range` (review) and `value-has-a-basis` (hard — refuses a
-number under half the owner's ask when nothing graded the comps on price).
+Two new contract checks: `recommendation-in-range` (review) and `value-has-a-basis` (hard).
 
-**Measured.** Ranges wider than 1.2x: 56 → 38, and the 38 includes 11 documents that previously
-produced nothing at all. Widest was 2.61x, now 2.21x. Of the 38 left: 13 where the last-resort
-widening supplied most of the set, 9 where every sale is in the subject's own plat and the plat spans
-that range, 8 custom/new, 2 with no resolvable price tier. 125/125 gates, G46 clean, 3,578 tests.
+**23 Benaiah**: $653,000 became $565,000, held to the twin next door that sold at $512,000, with
+$515,000 to $665,000 around it and that sale in the priced set.
 
-All four rulings are in `marketing_brain_skills/producers/cma/SKILL.md` §0.1. Nothing sends;
-auto-send is still OFF pending SITE-56.
+**Measured across the queue.** Ranges wider than 1.2x: 56 to 33. Nothing prints 2x or wider any
+more, down from three; the widest was 2.61x and is now 1.75x. 18 documents that had produced nothing
+at all now price. Of the 33 left: 9 where the last-resort widening supplied most of the set, 9
+custom or new, 7 where every sale is inside the subject's own plat and the plat itself spans that
+range, 2 with no resolvable price tier.
 
-**Open for Matt.** 63 queue documents still fail for want of comparable sales. `MIN_COMPS` is 5 on
-the listings path against 3 on the facts path. `SIZE_ADJ_FACTOR` is 0.5, which is most of what is
-left in the wide set. And 23 Benaiah recommends $653,000 while the identical plan next door sold at
-$512,000 fourteen months ago — both numbers are on the document.
+All rulings are in `marketing_brain_skills/producers/cma/SKILL.md` §0.1. 3,596 tests, gates and G46
+clean. Nothing sends; auto-send is still OFF pending SITE-56.
+
+**Open for Matt.** 57 documents still fail, and most are genuinely unpriceable: zero candidate sales
+of that size and product type in the city. `SIZE_ADJ_FACTOR` is still 0.5.
 
 ---
 
