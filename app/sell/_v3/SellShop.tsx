@@ -81,6 +81,7 @@ export function SellShop({
           eyebrow={v3Text('Ryan Realty')}
           heading={v3Text('Our listings')}
           rows={[firstListing, ...restListings]}
+          media="photo"
           source={v3Text(OUR_LISTINGS_TRACE)}
           action={{ label: v3Text('All office listings'), href: '/our-homes' }}
         />
@@ -90,6 +91,7 @@ export function SellShop({
           eyebrow={v3Text('Ryan Realty')}
           heading={v3Text('Our listings')}
           rows={[]}
+          media="photo"
           emptyMessage={v3Text(
             'No Ryan Realty office listing is on the market in this refresh.',
           )}

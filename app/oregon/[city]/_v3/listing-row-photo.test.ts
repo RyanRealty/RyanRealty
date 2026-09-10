@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { listingRowPhotoSrc } from './listing-row-photo'
+import { listingRowPhotoSrc as fromLib } from '@/lib/listing/row-photo'
 
 /**
  * SITE-59. The row asks Spark's resize CDN for the size the row actually
@@ -52,5 +53,10 @@ describe('listingRowPhotoSrc', () => {
   it('trims, and returns empty for empty rather than inventing a URL', () => {
     expect(listingRowPhotoSrc('   ')).toBe('')
     expect(listingRowPhotoSrc('')).toBe('')
+  })
+
+  it('is the same helper the promoted lib/listing path exports', () => {
+    const src = `https://cdn.resize.sparkplatform.com/ore/1600x1200/true/${ASSET}`
+    expect(listingRowPhotoSrc(src)).toBe(fromLib(src))
   })
 })

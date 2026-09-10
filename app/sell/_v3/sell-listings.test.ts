@@ -69,4 +69,19 @@ describe('sellListingRows', () => {
     )
     expect(sellListingRows(listings)).toHaveLength(SHOWN_LISTINGS)
   })
+
+  it('asks Spark for the size the row draws, and never invents a photo', () => {
+    const asset = '20260501165710852242000000-o.jpg'
+    const spark = `https://cdn.resize.sparkplatform.com/ore/1600x1200/true/${asset}`
+    const [withPhoto] = sellListingRows([tile({ ListingKey: 'spark', PhotoURL: spark })])
+    expect(withPhoto?.media?.src).toBe(
+      `https://cdn.resize.sparkplatform.com/ore/320x240/true/${asset}`,
+    )
+    expect(withPhoto?.media?.src?.endsWith(asset)).toBe(true)
+
+    const [blank] = sellListingRows([tile({ ListingKey: 'blank', PhotoURL: '   ' })])
+    expect(blank?.media).toBeUndefined()
+    const [none] = sellListingRows([tile({ ListingKey: 'none', PhotoURL: null })])
+    expect(none?.media).toBeUndefined()
+  })
 })

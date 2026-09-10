@@ -6,6 +6,7 @@
 import type { V3LedgerFigureRow } from '@/components/site/v3'
 import { v3Text } from '@/components/site/v3'
 import type { PriceDropTile } from '@/lib/data'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
 import { livePrice } from '@/app/_v3/live-format'
 
@@ -39,6 +40,7 @@ export function sellListingRows(
       .filter((part): part is string => part !== null && part !== '')
       .join(' · ')
     const photo = listing.PhotoURL?.trim()
+    const photoSrc = photo ? listingRowPhotoSrc(photo) : ''
     const city = listing.City?.trim()
     rows.push({
       id: key,
@@ -56,7 +58,7 @@ export function sellListingRows(
       value: v3Text(price),
       ...(city ? { when: v3Text(city) } : {}),
       ...(detail ? { detail: v3Text(detail) } : {}),
-      ...(photo ? { media: { src: photo } } : {}),
+      ...(photoSrc ? { media: { src: photoSrc } } : {}),
     })
   }
   return rows
