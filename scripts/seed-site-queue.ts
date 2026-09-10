@@ -575,6 +575,19 @@ const SEEDS: readonly Seed[] = [
       "public.boundaries holds subdivision rows whose source names Crook County for at least the plats with live inventory (Brasada Ranch, Ochoco Pointe, Crooked River Ranch resolve by name or by point-in-polygon), each row carrying source and source_url, each polygon valid and plat-shaped (sub-square-mile unless the recorded plat genuinely is not). ci:boundary-provenance passes with the new publisher declared and its floor raised. scripts/_plats-without-polygons.ts, re-run, reports a lower unresolved count than the 626 measured on 2026-09-09, and the report names which counties still publish nothing.",
     dependsOn: ['SITE-56'],
   },
+  {
+    versionGap: 'SITE-59',
+    domain: 'public-ux',
+    title:
+      'Nothing on the public site renders an empty frame: the dead Google pane comes out, and the out-of-area listing rows get their photographs',
+    objective:
+      "Two surfaces paint a box with nothing in it, and both were found by evaluators reading real renders on 2026-09-09. (1) THE DEAD MAP PANE. Matt turned the Google Field and the place Split canvas off on 2026-09-03 in c75222a9 — 'the atlas is the map' — but the pane it drew in stayed, so the section under 'every home for sale in <place>' on place and plat pages is an empty frame beside the list. Measured on /subdivisions/diamond-bar-ranch: zero requests to maps.googleapis.com from the route and no .gm-style node in #homes. SITE-56 fixed the section's copy (it had claimed 'Search the map' and 'counts follow the map view' for something that is neither) and left the frame, correctly, because removing a canvas across the whole place class is not a lane's call. MATT RULED 2026-09-09, asked and answered: remove the empty frame. Google stays off; the section becomes the list of homes with no map pane at all, and nothing renders blank. The Atlas above it is still the map. (2) THE GREY PLACEHOLDER PHOTOGRAPHS. On /oregon/[city] the listing rows render a flat grey square where a photo belongs — 10 of 12 on Medford and most of Salem's five — which an evaluator read as broken rather than as a designed empty state. This is NOT a licensing or opt-out problem and must not be filed as one: sampled 2026-09-09 through the DAL, 40 of 40 active Medford listings carry a non-empty PhotoURL, zero are internet opt-out (permit_internet_yn=false) and zero are non-IDX, and Bend sampled identically at 40 of 40. The photographs exist and the row does not show them, so the fault is in the render path for that template. Find it and fix it; if a row genuinely has no photo, it gets a designed empty state that does not read as a broken image. ODS §3-13 still binds on listing media — display, never copy.",
+    output:
+      'The Google map pane removed from the place and plat split sections with the list intact; the oregon-city listing rows rendering their photographs, with a designed empty state for a row that truly has none; shots and receipts for the affected classes',
+    accept:
+      "In a headless Chromium render at 1440x2600 after 7s: on /subdivisions/diamond-bar-ranch and one /communities page, the section under the 'every home for sale' heading contains no empty map container — no .gm-style node, and no element over 300px tall with no child content — while the list of homes still renders. On /oregon/medford and /oregon/salem, every listing row whose listing carries a PhotoURL renders an img with a non-empty src, verified against the DAL for the same keys; a row without one renders the designed empty state and not a bare grey box. No class score falls below its last mark on the table instrument.",
+    dependsOn: [],
+  },
 
 ]
 
