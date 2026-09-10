@@ -59,7 +59,18 @@ import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces
 
 const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')}/api/og?type=default`
 
-type PageProps = { searchParams: Promise<{ inquiry?: string; listingKey?: string; intent?: string }> }
+/** SITE-63 proof variants — pick via ?taste_variant=; losers deleted after Matt picks. */
+const CONTACT_VARIANTS = ['quiet-doors', 'call-figure', 'faces-first'] as const
+type ContactVariant = (typeof CONTACT_VARIANTS)[number]
+
+type PageProps = {
+  searchParams: Promise<{ inquiry?: string; listingKey?: string; intent?: string; taste_variant?: string }>
+}
+
+function resolveContactVariant(raw: string | undefined): ContactVariant {
+  if (raw && (CONTACT_VARIANTS as readonly string[]).includes(raw)) return raw as ContactVariant
+  return 'quiet-doors'
+}
 
 export const metadata: Metadata = {
   title: 'Contact · Call, text, or write',
@@ -97,6 +108,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
     // /reviews and /about make; a failed read prints no figure, never a fallback.
     getReviews(6).catch(() => null),
   ])
+  const variant = resolveContactVariant(params.taste_variant)
   const defaultInquiry = params.inquiry ?? (params.listingKey ? 'Buying' : undefined)
   const intent =
     params.intent === 'tour' ? ('tour' as const) : params.intent === 'question' ? ('question' as const) : undefined
@@ -281,59 +293,150 @@ export default async function ContactPage({ searchParams }: PageProps) {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Contact' }]} />
 
-        <V3Quiet
-          id="contact"
-          eyebrow="Ryan Realty · Central Oregon"
-          heading={contactTitle}
-          headingLevel={1}
-          items={introItems}
-        />
-        {/* The reach control, above the form: a visitor who wants a human
-            should not have to find a form field first.
+        {/* SITE-63 variants (taste_variant). quiet-doors = current canon;
+            call-figure = phone as hero figure; faces-first = roster opens.
+            Decision sheet: design_system/public/references/contact-decision-sheet.html */}
+        {variant === 'faces-first' && faces.length > 0 ? (
+          <AboutFaces
+            people={faces}
+            heading={contactTitle}
+            headingLevel={1}
+            size="roster"
+            eyebrow="Ryan Realty · Bend"
+            claim="Three licensed Oregon brokers, all of them here. Call the number below — whichever one you reach is the one who works your deal."
+          />
+        ) : null}
 
-            SITE-48: this was four equal bordered cells with an arrow each —
-            the card-grid silhouette, with the same phone number printed twice
-            and nothing live behind any of them. Calling is the fastest reach,
-            so calling is the one door, at display scale, carrying the live
-            state; text, email and the calendar sit beside it as the lighter
-            alternatives they are. */}
-        <V3Doors
-          id="reach"
-          name={v3Text('Reach a broker')}
-          doors={[
-            {
-              kicker: v3Text('Call or text'),
-              label: v3Text(CONTACT.phoneDirect),
-              fact: v3Text('One number for the whole brokerage'),
-              href: `tel:${CONTACT.phoneDirectTel}`,
-              primary: true,
-              live: hoursLive,
-            },
-            {
-              kicker: v3Text('Text'),
-              // The number is printed once, on the door above. The taste table
-              // named "the same phone number restated twice" by name.
-              label: v3Text('Send a text'),
-              fact: v3Text('Same line as the call'),
-              href: `sms:${CONTACT.phoneDirectTel}`,
-            },
-            {
-              kicker: v3Text('Email'),
-              label: v3Text(CONTACT.email.primary),
-              // SITE-09: no duration on this door. The mailbox has no response
-              // clock on it — the form does — so it names where the mail lands
-              // instead of promising a time it cannot keep.
-              fact: v3Text("Straight to Matt's inbox"),
-              href: `mailto:${CONTACT.email.primary}`,
-            },
-            {
-              kicker: v3Text('Schedule'),
-              label: v3Text('Book a time'),
-              fact: v3Text('Open slots on the calendar'),
-              href: '/book',
-            },
-          ]}
-        />
+        {variant === 'call-figure' ? (
+          <V3Quiet
+            id="contact"
+            eyebrow="Ryan Realty · Central Oregon"
+            heading={contactTitle}
+            headingLevel={1}
+            items={[
+              {
+                kind: 'prose' as const,
+                body: 'One number for the whole brokerage. Local experts who take care of you from the first call through closing.',
+              },
+              {
+                label: 'Call or text',
+                detail: hoursLive ? undefined : 'Bend office line',
+                href: `tel:${CONTACT.phoneDirectTel}`,
+                mark: 'person' as const,
+                lead: true,
+                figure: {
+                  value: CONTACT.phoneDirect,
+                  unit: 'call or text · one line',
+                  source:
+                    'Ryan Realty published direct line (lib/brand/contact CONTACT.phoneDirect). Hours state when present is public.crm_company_settings.booking_hours evaluated at render — hours only, no reply-time claim (SITE-09).',
+                  sourceName: 'Ryan Realty',
+                },
+              },
+              {
+                label: 'Email',
+                detail: CONTACT.email.primary,
+                href: `mailto:${CONTACT.email.primary}`,
+                weight: 'secondary' as const,
+              },
+              {
+                label: 'Book a time',
+                detail: 'Open slots on the calendar',
+                href: '/book',
+                weight: 'secondary' as const,
+              },
+              ...(listingHref
+                ? [{ label: listingSummary || 'The listing you asked about', href: listingHref }]
+                : []),
+            ]}
+          />
+        ) : variant !== 'faces-first' ? (
+          <V3Quiet
+            id="contact"
+            eyebrow="Ryan Realty · Central Oregon"
+            heading={contactTitle}
+            headingLevel={1}
+            items={introItems}
+          />
+        ) : (
+          <V3Quiet
+            id="contact"
+            eyebrow="Ryan Realty · Central Oregon"
+            heading="Reach the brokerage"
+            headingLevel={2}
+            items={[
+              {
+                kind: 'prose' as const,
+                body: 'Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the surrounding communities.',
+              },
+              ...(listingHref
+                ? [{ label: listingSummary || 'The listing you asked about', href: listingHref }]
+                : []),
+            ]}
+          />
+        )}
+
+        {variant !== 'call-figure' ? (
+          <V3Doors
+            id="reach"
+            name={v3Text('Reach a broker')}
+            doors={
+              variant === 'faces-first'
+                ? [
+                    {
+                      kicker: v3Text('Call or text'),
+                      label: v3Text(CONTACT.phoneDirect),
+                      fact: v3Text('One number for the whole brokerage'),
+                      href: `tel:${CONTACT.phoneDirectTel}`,
+                      primary: true,
+                      live: hoursLive,
+                    },
+                    {
+                      kicker: v3Text('Email'),
+                      label: v3Text(CONTACT.email.primary),
+                      fact: v3Text("Straight to Matt's inbox"),
+                      href: `mailto:${CONTACT.email.primary}`,
+                    },
+                    {
+                      kicker: v3Text('Schedule'),
+                      label: v3Text('Book a time'),
+                      fact: v3Text('Open slots on the calendar'),
+                      href: '/book',
+                    },
+                  ]
+                : [
+                    {
+                      kicker: v3Text('Call or text'),
+                      label: v3Text(CONTACT.phoneDirect),
+                      fact: v3Text('One number for the whole brokerage'),
+                      href: `tel:${CONTACT.phoneDirectTel}`,
+                      primary: true,
+                      live: hoursLive,
+                    },
+                    {
+                      kicker: v3Text('Text'),
+                      label: v3Text('Send a text'),
+                      fact: v3Text('Same line as the call'),
+                      href: `sms:${CONTACT.phoneDirectTel}`,
+                    },
+                    {
+                      kicker: v3Text('Email'),
+                      label: v3Text(CONTACT.email.primary),
+                      fact: v3Text("Straight to Matt's inbox"),
+                      href: `mailto:${CONTACT.email.primary}`,
+                    },
+                    {
+                      kicker: v3Text('Schedule'),
+                      label: v3Text('Book a time'),
+                      fact: v3Text('Open slots on the calendar'),
+                      href: '/book',
+                    },
+                  ]
+            }
+          />
+        ) : null}
+
+        {/* Live hours under call-figure: OnDuty without a four-door grid. */}
+        {variant === 'call-figure' && hoursLive ? <div id="reach">{hoursLive}</div> : null}
 
         <ContactAsk
           defaultInquiryType={defaultInquiry}
@@ -342,7 +445,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
           listingSummary={listingSummary || undefined}
         />
 
-        {faces.length > 0 ? (
+        {variant !== 'faces-first' && faces.length > 0 ? (
           <AboutFaces
             people={faces}
             heading="Who answers"

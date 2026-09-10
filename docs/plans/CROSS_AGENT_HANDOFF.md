@@ -1,3 +1,11 @@
+# Current — 2026-09-10 (SITE-63 land, pick still waiting)
+
+Owner: `grok-01a08914-2026-09-09`. Worktree `/Users/matthewryan/RyanRealty-wt-site-63-land` branch `wt/site-63-land-20260910`. Replayed `0f759c41` onto current `origin/main`. **Do not mark SITE-63 done.** Matt has not picked a contact fold.
+
+Landed: per-class `design_system/public/references/<class>.md` (25 under-70 classes), `take-route-shots --variants`, rubric `v1-2026-09-10`, `/contact?taste_variant=` quiet-doors / call-figure / faces-first, decision sheet. Losers stay on disk. TASTE.md pointers kept catalog + product hold.
+
+**Question for Matt:** Which contact fold wins — `quiet-doors`, `call-figure`, or `faces-first`? Sheet: `design_system/public/references/contact-decision-sheet.html`.
+
 # Current — 2026-09-10 07:12Z (15m grinder 01a0894e: SITE-75/77 landed)
 
 Owner: `grok-4.5-2026-09-10-05`. Pushed `1658266a..0495d944`. Deploy `dpl_EdKwhxSmioYfq4n1do96ZiZvCqjR` READY in 280s.

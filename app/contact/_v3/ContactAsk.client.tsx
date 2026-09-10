@@ -6,7 +6,10 @@
  * submitContactForm, then the Meta and GA lead events the sheet fired.
  */
 import { useCallback, useMemo, useState } from 'react'
-import { V3Ask, type V3AskField, type V3AskResult } from '@/components/site/v3'
+// Direct import — the v3 barrel also re-exports server-only place modules
+// (V3PlaceDocuments → lib/data → next/headers), which breaks this client module
+// under webpack. V3Ask is itself a client primitive.
+import { V3Ask, type V3AskField, type V3AskResult } from '@/components/site/v3/V3Ask.client'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import './contact-ask.css'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
