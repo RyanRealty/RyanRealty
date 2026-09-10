@@ -130,6 +130,21 @@ export async function autoSendBuiltCma(slug: string, injected?: AutoSendDeps): P
       return { outcome: 'lane-off', reason: `Auto-send is off for the ${row.origin} lane.`, lane: row.origin, state: row.state }
     }
 
+    // The solicitation screen, before the readiness gate: a relisted or sold
+    // prospect never auto-sends, whatever the lane switch says.
+    if (row.origin === 'expired' || row.origin === 'fsbo') {
+      const { screenAddressForSolicitation } = await import('@/lib/cma/solicit-screen')
+      const screen = await screenAddressForSolicitation({ address: row.address, city: row.city ?? null })
+      if (!screen.ok) {
+        return {
+          outcome: 'not-ready',
+          reason: `Not sent: ${screen.detail}`,
+          lane: row.origin,
+          state: row.state,
+        }
+      }
+    }
+
     // THE gate. One function, shared with the queue and the approve action.
     if (!isSendableQueueState(row.state)) {
       return {
