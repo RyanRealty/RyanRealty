@@ -7,12 +7,13 @@ import { V3ButtonGroup } from './V3ButtonGroup'
 describe('V3ButtonGroup', () => {
   it('clusters the ask under one accessible name', () => {
     const html = renderToStaticMarkup(
-      createElement(
-        V3ButtonGroup,
-        { label: 'Contact about this listing' },
-        createElement(V3Button, { href: '/contact?intent=tour' }, 'Tour'),
-        createElement(V3Button, { href: 'tel:+15412136706', variant: 'ghost' }, 'Call'),
-      ),
+      createElement(V3ButtonGroup, {
+        label: 'Contact about this listing',
+        children: [
+          createElement(V3Button, { href: '/contact?intent=tour', children: 'Tour' }),
+          createElement(V3Button, { href: 'tel:+15412136706', variant: 'ghost', children: 'Call' }),
+        ],
+      }),
     )
     expect(html).toContain('role="group"')
     expect(html).toContain('Contact about this listing')
