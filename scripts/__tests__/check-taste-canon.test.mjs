@@ -369,12 +369,13 @@ describe('check-taste-canon — the committed receipt is a prior mark', () => {
     git(['commit', '-qm', 'seed'])
   }
 
-  const committed = () =>
+  const committed = (over = {}) =>
     baseReceipt({
       evaluatedAt: '2026-09-08',
       scores: [74, 76, 75],
       score: 75,
       defects: [{ section: '#hero', severity: 'taste', finding: 'centered hero with no reason to scroll' }],
+      ...over,
     })
 
   it('refuses "first" when the route already carries a scored receipt at HEAD', () => {
@@ -385,6 +386,34 @@ describe('check-taste-canon — the committed receipt is a prior mark', () => {
     expect(r.code).toBe(1)
     expect(r.out).toContain('already scored 75')
     expect(r.out).toContain('not an exit from the rise rule')
+  })
+
+  it('refuses a taste rise that drops honestyFunction vs the prior mark', () => {
+    scaffold()
+    commitReceipt(
+      committed({
+        criteria: { designQuality: 20, originality: 18, interaction: 10, craft: 12, honestyFunction: 8 },
+      }),
+    )
+    writeReceipt(
+      baseReceipt({
+        comparedToPrior: 'rose',
+        scores: [81, 84, 82],
+        score: 82,
+        criteria: { designQuality: 28, originality: 25, interaction: 14, craft: 12, honestyFunction: 3 },
+        priorMark: {
+          evaluatedAt: '2026-09-08',
+          score: 75,
+          evaluatorModel: 'claude-opus-4-1',
+          rubricVersion: 'v1-2026-09-08',
+          shotsHash: hash(),
+          criteria: { designQuality: 20, originality: 18, interaction: 10, craft: 12, honestyFunction: 8 },
+        },
+      }),
+    )
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toMatch(/honestyFunction 3 fell below the prior mark 8/)
   })
 
   it('accepts a rise that names the committed mark', () => {

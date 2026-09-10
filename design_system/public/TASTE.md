@@ -141,6 +141,12 @@ in `scripts/lib/taste-receipt.mjs`):
 - **`comparedToPrior` cannot be `"first"` when the route's committed receipt
   already carries a score.** The gate reads the receipt at HEAD; a fresh mark
   that ignores it is refused. "First" is not an exit from the rise rule.
+- **Product hold (Matt 2026-09-10).** UI/UX (design, originality, interaction)
+  may rise. Honesty (`honestyFunction` / HF/10), sourced figures, required
+  sections, JSON-LD, titles, conversion asks, tap targets, and page payload
+  must hold or improve. A prettier page that drops any of those is not done.
+  When both marks recorded `honestyFunction` or `perCriterion.honesty`, the
+  new number must not be lower (`ci:taste-canon`).
 
 Both PNGs must exist in the repo. `ci:taste-canon` fails a new review without
 them. Receipts written before this shape landed stay valid; ones already dated

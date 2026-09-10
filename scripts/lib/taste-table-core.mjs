@@ -27,6 +27,10 @@ export { isNonEmptyString, isPlainObject, median3 }
 /** Matt, 2026-09-09: "the finish line is 70 on the table instrument." */
 export const FINISH_LINE = 70
 
+/** Matt 2026-09-10: UI/UX rises; every other product metric holds or improves. */
+export const PRODUCT_HOLD =
+  'Product hold: UI/UX may rise; honesty, sourced figures, requiredComponents, JSON-LD, titles, conversion asks, tap targets, and page payload must hold or improve. A prettier page that drops any of those is not done. ci:mockup-parity and ci:runtime-gates stay green. honestyFunction must not fall vs the prior mark.'
+
 /** The rubric this instrument scores against — TASTE.md's five-criterion table. */
 export const RUBRIC_VERSION = 'v1-2026-09-08'
 
@@ -547,6 +551,7 @@ function catalogObjectiveBit(card) {
     parts.push(`ADD if missing: ${card.add.join(', ')}.`)
   }
   parts.push('Record adaptedFrom on the receipt. Empty adaptedFrom is inventing a layout.')
+  parts.push(PRODUCT_HOLD)
   return ` ${parts.join(' ')}`
 }
 
@@ -570,7 +575,8 @@ function buildOneDraft(row, versionGap, defects, shotSpec, card) {
       `A reviewed seed in scripts/seed-site-queue.ts for class ${key}; recapture first-viewport shots on the table instrument; taste receipt per TASTE.md with adaptedFrom and replaceWith.`,
     accept:
       `On the table instrument, class ${key} scores above ${median}. Recapture shotSpec ${shotSpecText(shotSpec)}. ` +
-      `tasteReview.adaptedFrom names a catalog module for this class. Each defect names replaceWith (a house primitive or catalog id, or null if craft/honesty not form).`,
+      `tasteReview.adaptedFrom names a catalog module for this class. Each defect names replaceWith (a house primitive or catalog id, or null if craft/honesty not form). ` +
+      PRODUCT_HOLD,
   }
 }
 
@@ -617,6 +623,7 @@ export const SEED_DRAFT_BANNER = [
   'A class under the finish line is not a node until a person edits scripts/seed-site-queue.ts and runs `npx tsx scripts/seed-site-queue.ts`.',
   'This is review-and-paste, not auto-seed.',
   'Each draft already carries the catalog builder card (`node scripts/lib/taste-catalog.mjs <class> --preflight`) and an accept that requires adaptedFrom + replaceWith.',
+  'Product hold: UI/UX may rise; honesty, required sections, JSON-LD, asks, tap targets, and payload must hold or improve.',
 ].join('\n')
 
 function formatOneDraft(d) {

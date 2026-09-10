@@ -226,7 +226,42 @@ export function receiptV2Problems(tr, { root, rubricText, headReceipt = null }) 
     }
   }
 
+  // 8. UI/UX may rise; honesty cannot fall (Matt 2026-09-10). Other product
+  //    metrics (requiredComponents, JSON-LD, payload, tap targets) are held
+  //    by their own gates. This arm only fires when both marks recorded the
+  //    criterion — old receipts without criteria stay valid.
+  const holdPrior = isPlainObject(tr.priorMark) ? tr.priorMark : headScored
+  p.push(...productHoldProblems(tr, holdPrior))
+  if (headScored && holdPrior !== headScored) p.push(...productHoldProblems(tr, headScored))
+
   return p
+}
+
+function criterionScore(obj, names) {
+  const c = isPlainObject(obj?.criteria) ? obj.criteria : isPlainObject(obj?.perCriterion) ? obj.perCriterion : null
+  if (!c) return null
+  for (const n of names) {
+    if (Number.isInteger(c[n])) return c[n]
+  }
+  return null
+}
+
+/**
+ * A prettier page that scores lower on honesty than the prior mark on the
+ * same instrument is not done. Design/originality/interaction may move;
+ * honestyFunction (HF/10) must hold or rise when both receipts recorded it.
+ */
+export function productHoldProblems(tr, prior) {
+  if (!isPlainObject(tr) || !isPlainObject(prior)) return []
+  const next = criterionScore(tr, ['honestyFunction', 'honesty'])
+  const prev = criterionScore(prior, ['honestyFunction', 'honesty'])
+  if (next == null || prev == null) return []
+  if (next < prev) {
+    return [
+      `honestyFunction ${next} fell below the prior mark ${prev}. UI/UX cannot buy a drop in honesty (CLAUDE.md §0).`,
+    ]
+  }
+  return []
 }
 
 /* CLI: print the shotsHash for a parity.json, or for key=path pairs. */
