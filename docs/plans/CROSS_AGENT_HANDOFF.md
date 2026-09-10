@@ -1,3 +1,15 @@
+# Current — 2026-09-10 06:00Z (15m grinder 01a0894e: claimed SITE-75 + SITE-77)
+
+Owner: `grok-4.5-2026-09-10-05`. Fleet 3/3.
+
+Did **not** work the stale 2026-09-08 pack as-is. Live first-viewport: `/housing-market` still opens on Pick a report / Five products; `/buy` still has a 1,562 / $749,900 / 29 KPI strip. Released SITE-68 (invest — live already has counts) and SITE-69 (cities — live already has MOS bars). Claimed **SITE-75** (market-report) and **SITE-77** (buy).
+
+Do not steal SITE-60 (heartbeat 2m) or SITE-63. Next fire: build those two in worktrees; catalog `--preflight`; adaptedFrom on receipts.
+
+# Current — 2026-09-10 (round four seeded SITE-68…89)
+
+Owner: grok-4.6 this session `grok-01a0895a-2026-09-10`. Seeded 22 catalog-backed class nodes (invest 25 → place-type 69). Skipped listing-detail / about / compare. Did not steal SITE-60 or SITE-63. Next: claim SITE-68 + SITE-69 if fleet has a slot, re-measure live first viewport, then builder card.
+
 # Current — 2026-09-10 (queue ready to take catalog-backed SITE nodes)
 
 Owner: grok-4.6 this session. **No SITE claims.** Did not steal SITE-60 / SITE-63 / SITE-67.
