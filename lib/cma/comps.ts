@@ -68,7 +68,7 @@ import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import { communitySlugForSubdivision, isResortCommunity, resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { ANCHOR_MIN_N, ANCHOR_RADIUS_MILES, sameStreetPeer } from '@/lib/pricing/price-anchor'
 import { roomCountsUsable } from '@/lib/pricing/room-counts'
-import { SAME_NEIGHBORHOOD_TIER_RATIO, SUBDIVISION_TIER_RATIO } from '@/lib/pricing/classes'
+import { SAME_NEIGHBORHOOD_TIER_RATIO, STARVED_TIER_WIDEN, SUBDIVISION_TIER_RATIO } from '@/lib/pricing/classes'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -404,6 +404,8 @@ export async function selectComps(
    * street, which is the best evidence this document has.
    */
   const anchorTierRatio = SUBDIVISION_TIER_RATIO
+  /** Sentences the starved widening added, folded into the disclosures below. */
+  const disclosedWidening: string[] = []
   // Sales set aside for sitting across a river from an unmapped subject.
   let crossedFeature = 0
   // The parent the subject's plat sits inside, from the recorded-plat registry.
@@ -499,6 +501,19 @@ export async function selectComps(
     if (skip) {
       ladder.push(rung)
       continue
+    }
+    // THE PRICE BAND WIDENS WITH THE REST, ON THE LAST RUNG ONLY (Matt
+    // 2026-09-09: widen with a disclosure instead of failing). The starved
+    // widening rung already trades away age, size band and geography to reach
+    // the minimum; holding the price band fixed while it does made 120 Sisemore
+    // fail to build at four comps. Read ONCE per rung, before any comp is
+    // added, so the band cannot change partway through a rung.
+    const starvedRung = Boolean(tier.whenStarved) && byKey.size < MIN_COMPS
+    const rungTierRatio = starvedRung ? anchorTierRatio * STARVED_TIER_WIDEN : anchorTierRatio
+    if (starvedRung && anchorPpsf != null) {
+      const d = `The bounded search came up short, so the last step also widened what counts as this home's price tier: from ${Math.round((anchorTierRatio - 1) * 100)}% either side of $${Math.round(anchorPpsf)} a square foot to ${Math.round((rungTierRatio - 1) * 100)}%. Sales outside even that are still not used.`
+      trace.push(d)
+      disclosedWidening.push(d)
     }
     // Push the tier's geography INTO the query. The row limit is applied
     // before any in-memory filter, so without this a polygon or radius tier
@@ -631,7 +646,15 @@ export async function selectComps(
       // its size says. The subject's plat cell is not required — an MLS record
       // reading "N/A" (23 Benaiah) has no cell at all, which is exactly the
       // case that had no cut before.
-      const tightRung = tier.name.startsWith('subdivision') || tier.name.startsWith('adjacent-subdivision')
+      // ONLY the subject's OWN plat is exempt. A sale inside it IS this home's
+      // price tier by definition, whatever a neighborhood median says. An
+      // ADJACENT plat is a different plat: 120 Sisemore sits in Staats and the
+      // adjacent-subdivision rung handed it a $2,601,883 Park Addition sale at
+      // $1,264/sqft against a $738 anchor, because the exemption covered both.
+      // Containment orders the search; it does not exempt what the search finds
+      // from being graded on price. The facts ladder already drew the line
+      // here (`tier.sameSubdivision` in lib/pricing/match.ts).
+      const tightRung = tier.name.startsWith('subdivision')
       const ownStreetPeer = sameStreetPeer(
         { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft ?? 0 },
         { address: comp.address, city: comp.city, sqft: comp.sqft },
@@ -640,7 +663,7 @@ export async function selectComps(
         const rate = unitRate(comp, false)
         if (anchorPpsf > 0 && rate > 0) {
           const gap = rate / anchorPpsf
-          if (gap < 1 / anchorTierRatio || gap > anchorTierRatio) {
+          if (gap < 1 / rungTierRatio || gap > rungTierRatio) {
             rung.excluded.price_tier++
             continue
           }
@@ -846,6 +869,7 @@ export async function selectComps(
       disclosures.push(t.disclosure)
     }
   }
+  for (const d of disclosedWidening) if (!disclosures.includes(d)) disclosures.push(d)
   const roomNotedCount = [...byKey.values()].filter((c) => (c.roomDifference ?? []).length > 0).length
   if (roomNotedCount > 0) {
     const d = `${roomNotedCount} sale(s) are one bedroom or bathroom different from this home. They are used because they sit on this home's own ground — its plat, its neighborhood or its street — and each is marked on the report. No dollar value is applied to the room: paired sales in this market do not support one.`

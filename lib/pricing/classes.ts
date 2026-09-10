@@ -263,6 +263,15 @@ export const SUBDIVISION_TIER_RATIO = 1.3
 /** Same GIS neighborhood: tract vs custom (Awbrey Woods $382 vs Awbrey Butte $457). */
 export const SAME_NEIGHBORHOOD_TIER_RATIO = 1.15
 export const SUBDIVISION_TIER_MIN_N = 5
+/**
+ * How far the price band opens on the LAST rung, the starved widening, and
+ * nowhere else. That rung already trades away age, size band and geography to
+ * reach the comp minimum; holding the price band fixed while it does made a
+ * document fail to build at four comps rather than print five with a
+ * disclosure (120 Sisemore, 2026-09-10). 1.3 becomes 1.495: still a hard wall
+ * against a sale at nearly double the neighborhood's rate.
+ */
+export const STARVED_TIER_WIDEN = 1.15
 
 export function similarPerformingSubdivision(
   subjectMedianPpsf: number | null,
