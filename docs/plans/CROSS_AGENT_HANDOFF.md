@@ -1,17 +1,17 @@
+# Current — 2026-09-10 07:12Z (15m grinder 01a0894e: SITE-75/77 landed)
+
+Owner: `grok-4.5-2026-09-10-05`. Pushed `1658266a..0495d944`. Deploy `dpl_EdKwhxSmioYfq4n1do96ZiZvCqjR` READY in 280s.
+
+- **SITE-75 done.** Live `/housing-market` opens on Instrument (verdict + MOS bars); chooser is "More reports". grok-4.6 median **63** (honesty 8), rebaselined from claude-sonnet-5 54.
+- **SITE-77 done.** Live `/buy` inventory band is one sourced sentence; Field still breaks the fold. grok-4.6 median **57** (honesty 8), rebaselined from 60.
+
+G70: SSG 144s / 74 rail timeouts (alert > 50) — deploy READY, pages 200. Do not steal SITE-83.
+
 # Current — 2026-09-10 (Iconoir is the v3 stroke set)
 
 Owner: grok-4.6 this session. **No SITE claims.** Did not steal SITE-63 / SITE-75 / SITE-77 / SITE-83.
 
 Installed `iconoir-react` 7.12.1. Public paint goes through `V3Icon` (RSC-safe Iconoir paths, currentColor, 24 grid). Wired on chrome, doors, quiet marks, footer social, guest-watch and search-alert bells. MOS `supply` stays the two-bar drawing. Not a card grid of icons.
-
-# Current — 2026-09-10 06:18Z (15m grinder 01a0894e: SITE-75/77 built, taste still due)
-
-Owner: `grok-4.5-2026-09-10-05`. Worktree `/Users/matthewryan/RyanRealty-wt-site-75-77` branch `wt/site-75-77-20260910` @ `b3384f49` (ahead of origin/main, **not pushed**).
-
-- **SITE-75** `/housing-market`: Instrument `#market` is now first; chooser follows as "More reports"; "Five products" dropped.
-- **SITE-77** `/buy`: Stage inventory band is one sourced sentence, not three KPI tiles; short frame kept so Field still breaks the fold.
-
-Next fire: recapture 1440/375, grok-4.6 evaluate (adaptedFrom + replaceWith), then merge to main, ONE push, ONE deploy:verify. Do not steal SITE-60 / SITE-63 / SITE-83.
 
 # Current — 2026-09-10 (product hold: UI/UX rises, every other metric holds)
 
