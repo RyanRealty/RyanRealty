@@ -2,31 +2,31 @@
   "route": "app/cities/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/cities/index.html",
   "competitiveTarget": "Beat portal city-directory pages with leftover regional inventory and a ledger of Central Oregon cities, not a link farm.",
-  "note": "PAGE_INVENTORY §3 (2026-09-06 Wave H). A–Z directory. Live counts on the rows, doors. Not a mini-Bend KPI Instrument. Caption carries the region count and months-of-supply verdict. Section order: V3Breadcrumb, Ledger (every city A–Z), Quiet (the rest of each city's doors), Sheet (SFR alerts), Quiet (edges), V3Footer outside main. Chrome is layout-owned V3Chrome. Do not remount it. Capture: submitSearchAlertSignup with city empty and propertyType A, via RegionalAlertSheet (trap name company).",
+  "note": "PAGE_INVENTORY \u00a73 (2026-09-06 Wave H). A\u2013Z directory. Live counts on the rows, doors. Not a mini-Bend KPI Instrument. Caption carries the region count and months-of-supply verdict. Section order: V3Breadcrumb, Ledger (every city A\u2013Z), Quiet (the rest of each city's doors), Sheet (SFR alerts), Quiet (edges), V3Footer outside main. Chrome is layout-owned V3Chrome. Do not remount it. Capture: submitSearchAlertSignup with city empty and propertyType A, via RegionalAlertSheet (trap name company).",
   "requiredComponents": [
     {
       "name": "V3SectionTracker",
-      "section": "tracking — section_view telemetry. pageType=index. Wiring, not visual language.",
+      "section": "tracking \u2014 section_view telemetry. pageType=index. Wiring, not visual language.",
       "blocking": true
     },
     {
       "name": "MetadataBlock",
-      "section": "structured data — breadcrumb + Dataset schema; CollectionPage + ItemList rendered inline. JSON-LD is not visual language, so this one flat-register import stays and ci:public-ui counts it.",
+      "section": "structured data \u2014 breadcrumb + Dataset schema; CollectionPage + ItemList rendered inline. JSON-LD is not visual language, so this one flat-register import stays and ci:public-ui counts it.",
       "blocking": true
     },
     {
       "name": "V3Breadcrumb",
-      "section": "breadcrumb — Home / Cities. JSON-LD is in MetadataBlock.",
+      "section": "breadcrumb \u2014 Home / Cities. JSON-LD is in MetadataBlock.",
       "blocking": true
     },
     {
       "name": "V3Ledger",
-      "section": "Ledger — every city A–Z. Every row a door, the live count in the value column. Caption, not a five-number Instrument.",
+      "section": "Ledger \u2014 every city A\u2013Z. Every row a door, the live count in the value column. Caption, not a five-number Instrument.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
-      "section": "Quiet — the second, third and fourth door per city, then the page's outbound edges and the Oregon Data Share citation.",
+      "section": "Quiet \u2014 the second, third and fourth door per city, then the page's outbound edges and the Oregon Data Share citation.",
       "blocking": true
     },
     {
@@ -41,22 +41,22 @@
     },
     {
       "name": "leftoverHudKpis",
-      "section": "Ledger caption — leftover region stats (active count, median list, months of supply). Miss omits.",
+      "section": "Ledger caption \u2014 leftover region stats (active count, median list, months of supply). Miss omits.",
       "blocking": true
     },
     {
       "name": "getDetachedOverlays",
-      "section": "Ledger — leftover per-city active count and median. Miss omits.",
+      "section": "Ledger \u2014 leftover per-city active count and median. Miss omits.",
       "blocking": true
     },
     {
       "name": "cityHero",
-      "section": "Ledger media — verified per-city photography only. Unverified cities get no photo.",
+      "section": "Ledger media \u2014 verified per-city photography only. Unverified cities get no photo.",
       "blocking": true
     },
     {
       "name": "cityFeaturedLinks",
-      "section": "Quiet — guide, inventory and open-house doors per city, plus Bend's luxury page (G7, ci:westside-backlog).",
+      "section": "Quiet \u2014 guide, inventory and open-house doors per city, plus Bend's luxury page (G7, ci:westside-backlog).",
       "blocking": true
     }
   ],
@@ -80,7 +80,7 @@
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "V3Ledger #featured-cities -- EVERY city A–Z in one ledger, live count on the row, each row a door",
+    "V3Ledger #featured-cities -- EVERY city A\u2013Z in one ledger, live count on the row, each row a door",
     "V3Quiet #city-doors -- deep filter doors per featured city; ci:westside-backlog pins the Bend luxury door here",
     "RegionalAlertSheet -- the ask",
     "V3Quiet #edges -- search every listing",
@@ -91,11 +91,11 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-52, session 019RdEm6 — the table instrument (first viewport at 1440x900 and 375x812, scripts/take-route-shots.mjs, scale 1, palette-quantized) on the lane's own dev server (localhost:3198) for /cities, plus two hover/hold records per viewport (the region supply bar's reading, the first row's reveal) read only for the Interaction criterion; three independent scorings of one capture run, the median; no page code read, no live page opened. The prior mark is the taste table of 2026-09-08 (median 30, scores 33·29·30, tell 'Scrolling lists as the design'), which is an instrument, not a route receipt: this file carried no tasteReview before, so the receipt is the route's first. Rounds this lane ran before recording: cold on the first capture (71: 73·67·71), after the navy monogram and the supply hover record (72: 72·66·77), and this one after the reveal cue in the caption. The builder ran on a different model from the evaluator on every round.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluatedAt": "2026-09-10",
+    "rubricVersion": "v1-2026-09-10",
+    "evaluator": "separate grok-4.6 via npx tsx scripts/taste-evaluate.ts cities --url http://127.0.0.1:3121/cities; three scorings of one capture; builder did not score",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/cities"
@@ -109,7 +109,7 @@
         "supply",
         "reveal"
       ],
-      "capture": "scripts/take-route-shots.mjs default first viewport for the instrument pair; `supply=#featured-cities .v3-drawing__barrow:first-child!hover` and `reveal=#featured-cities .v3-ledger__item:first-child .v3-ledger__row!hover` for the records (the !hover state landed with this node)"
+      "capture": "scripts/take-route-shots.mjs; supply barrow!hover; reveal first row!hover; --await .v3-drawing.is-drawn"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/cities/shots/desktop.png",
@@ -119,58 +119,81 @@
       "revealDesktop": "design_system/ryan-realty/ui_kits/cities/shots/reveal-desktop.png",
       "revealMobile375": "design_system/ryan-realty/ui_kits/cities/shots/reveal-mobile375.png"
     },
-    "shotsHash": "sha256:16d70ef7008ac579ad0c83a32a3c12aac1886992386571499bd58279d4c9bcfe",
+    "shotsHash": "sha256:58d39b34bc359dc110a673ed23d73c2b8bd59f2fe3b7fb4c34c6b324cc9f02e9",
     "scores": [
-      75,
-      71,
-      80
+      41,
+      51,
+      46
     ],
-    "score": 75,
+    "score": 46,
     "criteria": {
-      "designQuality": 24,
-      "originality": 21,
-      "interaction": 12,
-      "craft": 10,
+      "designQuality": 13,
+      "originality": 10,
+      "interaction": 7,
+      "craft": 8,
       "honestyFunction": 8
     },
-    "beats": "Redfin and Zillow city and neighborhood directories: this page wins on same-page depth. Resting a pointer or holding a row turns one bar-list line into a market verdict plus a year of close-volume trend without a page load or a modal, something their per-city pages require leaving the page to get.",
-    "tells": [],
-    "dullest": "A no-photo city row at rest, e.g. Camp Sherman: a navy monogram tile, a name, one median-price line, and a short gray bar. Nothing distinguishes it from a generic ranked list until a pointer or finger arrives; the hover payload is doing all the work that the resting state should share some of.",
-    "verdict": "Meaningfully better than a 30/100 page: the bars are visibly present and proportionate, the region stat is backed by two real numbers instead of asserted, an empty market (Crooked River Ranch) says 'No live count' instead of faking a zero, and 'OREGON' no longer sits on every row; three of the five named defects are resolved outright. Two persist in weaker form: photo coverage still stops at Black Butte Ranch, Camp Sherman and Metolius, which fall back to a monogram, and the region's 4.9-months verdict is a sentence with no scale showing where it lands between the thresholds. The hover-to-reveal pattern, a hairline bar turning into a verdict and a year-long close sparkline without leaving the page, is the one genuinely original idea here and it holds up on both desktop and mobile. The bars are pill-rounded against a page whose thumbnails and monograms are square, the small inconsistency that keeps an otherwise disciplined page from reading as fully considered.",
-    "defects": [
+    "beats": "Zillow Bend homes on sourced months-of-supply clarity (two named bars, 4.8 Balanced, dated Market Truth); loses map, listings, and place photography.",
+    "adaptedFrom": [
       {
-        "section": "#featured-cities region pair and every row bar",
-        "severity": "craft",
-        "finding": "Every per-city bar renders with fully rounded, pill-shaped end caps while the thumbnails and monogram tiles on the same rows are square; the register calls for radius 0 on every box, so the page uses two radii in one viewport.",
-        "primitive": "components/site/v3/V3Ledger.css (.v3-ledger__track border-radius 999px)",
-        "fix": "Set the bar track and fill to radius 0 (or one shared radius token used everywhere) so bars match the square thumbnails and monograms.",
-        "viewport": "both"
+        "id": "beui:combobox"
       },
       {
-        "section": "#featured-cities Black Butte Ranch, Camp Sherman, Metolius rows",
-        "severity": "taste",
-        "finding": "These three rows fall back to a navy monogram instead of a photo while seven other rows carry a photographic thumbnail in the same list; the prior mark's 'thumbnails on some rows only' still stands in weaker form.",
-        "primitive": "app/cities/page.tsx (mediaSrc) / lib/geo-images.ts",
-        "fix": "Source or license a verified photo for every listed city, or commit to the monogram as a deliberate flat mark on ALL rows so the inconsistency reads as a system, not a gap.",
-        "viewport": "both"
+        "id": "beautifului:insight-cards"
       },
       {
-        "section": "#featured-cities region figure verdict sentence",
-        "severity": "taste",
-        "finding": "The two inputs (1,563 / 320) have bars, but the derived verdict is still a sentence with no visual scale showing where 4.9 sits relative to the seller's (≤4) / balanced (4-6) / buyer's (≥6) thresholds.",
-        "primitive": "components/site/v3/V3Drawing.client.tsx (pair verdict)",
-        "fix": "Add a labeled threshold scale under the two bars that plots the months of supply within its band, so the verdict is seen, not only read.",
-        "viewport": "both"
-      },
-      {
-        "section": "#featured-cities secondary text under each city name",
-        "severity": "craft",
-        "finding": "The muted meta line (median list price, the sentence) sits at visibly lower contrast against the cream ground than the navy headline and bold count; from stills alone it cannot be certified as failing AA, but it reads close enough to the line to need a check.",
-        "primitive": "components/site/v3/tokens.css (--v3-ink-muted)",
-        "fix": "Verify the muted ink against #faf8f4 at 4.5:1 for its rendered size and darken it if it falls short.",
-        "viewport": "both"
+        "id": "house-mos-bars"
       }
     ],
-    "comparedToPrior": "first"
+    "tells": [],
+    "dullest": "After the MOS pair the page is still an A\u2013Z directory; the fold has no Atlas and no alerts sentence.",
+    "verdict": "SITE-69 lands the 4/6 threshold scale and a searchable city overlay under the region two-bar drawing, plus resting MOS on published rows. Median 46 on grok-4.6 / rubric v1-2026-09-10 is a rebaseline from claude-sonnet-5 / v1-2026-09-08 at 75. Above the 30 accept floor; finish line 70 not reached.",
+    "defects": [
+      {
+        "section": "first viewport / #featured-cities",
+        "severity": "taste",
+        "finding": "The fold is a cream stack with MOS bars and combobox but no Atlas and no alerts sentence beside the figure.",
+        "replaceWith": "house-atlas"
+      },
+      {
+        "section": "first viewport alerts",
+        "severity": "taste",
+        "finding": "house-alerts is not in the first viewport on desktop or 375.",
+        "replaceWith": "house-alerts"
+      },
+      {
+        "section": "Bend row reveal",
+        "severity": "craft",
+        "finding": "The Bend rest state drops a panel on top of Black Butte Ranch, clipping that row's bar and count.",
+        "replaceWith": "V3Ledger"
+      },
+      {
+        "section": "Bend row sparkline",
+        "severity": "taste",
+        "finding": "The year of closes is a static polyline, not a scrubber over a live chart.",
+        "replaceWith": "beautifului-insight"
+      },
+      {
+        "section": "months-of-supply scale at 375",
+        "severity": "craft",
+        "finding": "Seller/balanced/buyer thresholds are printed twice and the verdict is restated under the bars.",
+        "replaceWith": null
+      },
+      {
+        "section": "city directory letter tiles",
+        "severity": "taste",
+        "finding": "Black Butte Ranch, Camp Sherman, and Metolius show navy letter squares instead of photographs or map cells.",
+        "replaceWith": "house-atlas"
+      }
+    ],
+    "comparedToPrior": "rebaselined",
+    "rebaselineReason": "evaluatorModel claude-sonnet-5\u2192grok-4.6; rubricVersion v1-2026-09-08\u2192v1-2026-09-10; shotsHash changed with SITE-69 capture.",
+    "priorMark": {
+      "evaluatedAt": "2026-09-09",
+      "score": 75,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:16d70ef7008ac579ad0c83a32a3c12aac1886992386571499bd58279d4c9bcfe"
+    }
   }
 }

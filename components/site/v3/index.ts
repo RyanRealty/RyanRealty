@@ -142,6 +142,14 @@ export { V3MosBars } from './V3MosBars'
 export type { V3MosBarsProps } from './V3MosBars'
 
 /**
+ * Region months-of-supply threshold scale with a searchable city overlay
+ * (SITE-69). Pair with V3Drawing's two bars — never a KPI tile of the ratio.
+ * Adapted from beui:combobox + beautifului:insight-cards into house paint.
+ */
+export { V3MosCompare, V3_MOS_COMPARE_MAX } from './V3MosCompare.client'
+export type { V3MosCompareProps, V3MosCompareCity } from './V3MosCompare.client'
+
+/**
  * JSON-LD injector. New public pages import this as MetadataBlock so they
  * stay on the barrel (ci:public-ui). Grandfathered routes may still import
  * the flat components/site/MetadataBlock.
