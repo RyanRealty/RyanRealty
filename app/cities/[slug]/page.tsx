@@ -816,7 +816,7 @@ export default async function CityDetailPage({ params }: Props) {
                 onMedia={Boolean(stagePosterSrc)}
               />
             ) : null}
-            {verdictCaption ? <p className="place-opening__caption">{verdictCaption}</p> : null}
+            {!placeMos && verdictCaption ? <p className="place-opening__caption">{verdictCaption}</p> : null}
           </div>
         </div>
 

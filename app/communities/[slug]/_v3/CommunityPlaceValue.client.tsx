@@ -6,7 +6,7 @@
  * this file only names the place and hands over the calls.
  */
 
-import { V3PlaceValue, type V3PlaceValueActivity } from '@/components/site/v3'
+import { V3PlaceValue, type V3PlaceValueActivity } from '@/components/site/v3/V3PlaceValue.client'
 import { answerPlaceValue, requestPlaceValuation } from './place-value-actions'
 
 type Props = {

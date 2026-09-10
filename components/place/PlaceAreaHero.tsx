@@ -1,5 +1,5 @@
 import '@/components/place/place-opening.css'
-import { V3MosBars } from '@/components/site/v3'
+import { V3MosBars } from '@/components/site/v3/V3MosBars'
 import type { PlaceMosView } from '@/lib/site/place-mos'
 
 /** Place still, with an optional MOS two-bar overlay. Null poster still works. Null MOS omits the drawing. */
@@ -32,6 +32,7 @@ export function PlaceAreaHero({
             salesValue={mos.salesValue}
             source={mos.source}
             asOf={mos.asOf}
+            sourceName="Oregon Data Share"
             tooltip={mos.tooltip}
           />
         </div>

@@ -287,8 +287,8 @@ export function placeAlertsSource(input: {
   const unit = input.noun?.many ?? 'houses'
   if (input.table === 'listing_tile_mv') {
     return (
-      `${formatCount(input.count)} ${unit}: listing_tile_mv, ${input.geoType}:${input.geoSlug}, ` +
-      `active listings whose on-market date falls in the last 30 days, Coming Soon excluded. ` +
+      `${formatCount(input.count)} ${unit}: live MLS listings (${input.geoType}:${input.geoSlug}), ` +
+      `active, on-market date in the last 30 days, Coming Soon excluded. ` +
       `Not leftoverHudKpis. The alert follows this page's filter.`
     )
   }

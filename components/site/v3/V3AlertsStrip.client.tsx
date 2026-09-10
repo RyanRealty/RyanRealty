@@ -472,6 +472,9 @@ export function V3AlertsStrip({
                 ))}
               </div>
             ) : null}
+          </div>
+
+          <div className="v3-alerts__figure">
             {shownListings && shownListings.length > 0 ? (
               <ul className="v3-alerts__strip">
                 {shownListings.map((item) => (

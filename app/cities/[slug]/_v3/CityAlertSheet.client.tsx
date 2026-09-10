@@ -49,7 +49,11 @@
  */
 
 import { useCallback } from 'react'
-import { V3AlertsStrip, type V3AlertsSubmit, type V3AlertsTypeOption } from '@/components/site/v3'
+import {
+  V3AlertsStrip,
+  type V3AlertsSubmit,
+  type V3AlertsTypeOption,
+} from '@/components/site/v3/V3AlertsStrip.client'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { readRrSessionId } from '@/lib/tracking'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
