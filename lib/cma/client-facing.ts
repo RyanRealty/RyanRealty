@@ -10,6 +10,7 @@ import { formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatDate } from '@/lib/format/date'
 import { cleanText } from '@/lib/cma/render-blocks'
+import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
 import type {
   CmaAdjustedComp,
   CmaCompKeepTier,
@@ -351,19 +352,26 @@ export function whyWeKeptComp(comp: CmaAdjustedComp): {
 } {
   const tier = comp.keepTier === 'strong' || comp.keepTier === 'weak' ? comp.keepTier : null
   const reason = clientKeepReason(comp.keepReason)
+  // A sale the room rule admitted one bedroom or bathroom away says so HERE,
+  // beside the sale, on every path (Matt 2026-09-10). The judge's own sentence
+  // may or may not mention it; this does not depend on that.
+  const room = roomDifferenceSentence(comp.roomDifference)
+  const withRoom = (s: string) => (room ? `${s} ${room}` : s)
   if (tier && reason) {
     const label = tier === 'strong' ? 'Strong' : 'Weak'
     const body = /[.!?]$/.test(reason) ? reason : `${reason}.`
-    return { tier, sentence: `${label}. ${body}` }
+    return { tier, sentence: withRoom(`${label}. ${body}`) }
   }
   if (comp.competingArea) {
     return {
       tier,
-      sentence: `Kept as a competing-area sale${comp.proximity ? `, ${comp.proximity} from the subject` : ''}.`,
+      sentence: withRoom(
+        `Kept as a competing-area sale${comp.proximity ? `, ${comp.proximity} from the subject` : ''}.`,
+      ),
     }
   }
   if (comp.proximity) {
-    return { tier, sentence: `Kept as a closed sale ${comp.proximity} from the subject.` }
+    return { tier, sentence: withRoom(`Kept as a closed sale ${comp.proximity} from the subject.`) }
   }
-  return { tier, sentence: 'Kept as a closed sale in this comparable set.' }
+  return { tier, sentence: withRoom('Kept as a closed sale in this comparable set.') }
 }

@@ -967,6 +967,10 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
   const requested = Array.from(new Set(keys.map((k) => k.trim()).filter(Boolean)))
   const rows = await selectCmaCompsByKeys(requested)
   const byKey = new Map<string, CmaComp>()
+  // A comp the broker chose and the engine refused was folded into "unresolved
+  // ListingKey" — the same bucket as a key that does not exist. Each refusal
+  // now carries its own reason to the trace.
+  const refused: string[] = []
   for (const row of rows) {
     const comp = rowToComp(row, 'broker-selected')
     if (!comp) continue
@@ -974,9 +978,26 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
     if (
       !productTypeCompatible(subject.propertySubType, comp.propertySubType) ||
       !keepSameProductType(subject.propertySubType, comp.propertySubType)
-    )
+    ) {
+      refused.push(`${comp.address} is ${comp.propertySubType ?? 'an unknown type'}, a different product`)
       continue
-    if (!bathCountCompatible(subject.baths, comp.baths)) continue
+    }
+    // ONE ROOM RULE, with the broker's own pick standing in for the geography
+    // test (Matt 2026-09-10). The broker vetted this sale, so a one-room
+    // difference is used and disclosed rather than silently dropped; two or
+    // more rooms apart is still refused, and now says so.
+    const rooms = roomCountsUsable(
+      { beds: subject.beds, baths: subject.baths },
+      { beds: comp.beds, baths: comp.baths },
+      { local: true },
+    )
+    if (!rooms.ok) {
+      refused.push(
+        `${comp.address} is ${comp.beds ?? '?'} bed / ${comp.baths ?? '?'} bath against this home's ${subject.beds ?? '?'} / ${subject.baths ?? '?'}, two or more rooms apart`,
+      )
+      continue
+    }
+    comp.roomDifference = rooms.notes.length > 0 ? rooms.notes : null
     if (!byKey.has(comp.listingKey)) byKey.set(comp.listingKey, comp)
   }
   // Most-recent-first, matching the exemplar ordering. No cap, no outlier drop.
@@ -985,7 +1006,7 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
   const missing = requested.filter((k) => !found.has(k))
   const note = `Broker-selected comp set: ${comps.length} of ${requested.length} requested ListingKey(s) resolved as valid closed SFR${
     missing.length ? ` (unresolved: ${missing.join(', ')})` : ''
-  }.`
+  }.${refused.length ? ` Refused: ${refused.join('; ')}.` : ''}`
   const diagnostics: CompSelectionDiagnostics = {
     ...emptyDiagnostics(subject, comps.length >= MIN_COMPS ? null : note),
     ladder: [

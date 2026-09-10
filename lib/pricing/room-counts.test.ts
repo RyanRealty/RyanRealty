@@ -79,6 +79,10 @@ describe('roomDifferenceSentence', () => {
   it('names the room and refuses to invent a dollar value', () => {
     const s = roomDifferenceSentence(['baths'])!
     expect(s).toContain('bathroom')
-    expect(s).toContain('no dollar value')
+    expect(s).toContain('No dollar value is applied')
+  })
+
+  it('names both rooms in one sentence', () => {
+    expect(roomDifferenceSentence(['beds', 'baths'])).toContain('bedroom and bathroom')
   })
 })

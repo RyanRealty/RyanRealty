@@ -79,10 +79,14 @@ export function roomCountsUsable(
   return { ok: true, notes }
 }
 
-/** "one bedroom and one bathroom different from yours", for the document. */
+/**
+ * The sentence that must sit beside a sale used one room apart, on the document
+ * itself. Short, because it prints under the comp, and it always states that no
+ * dollar value was applied — that is the part a reader is owed.
+ */
 export function roomDifferenceSentence(notes: Array<'beds' | 'baths'> | null | undefined): string | null {
   if (!notes || notes.length === 0) return null
   const parts = notes.map((n) => (n === 'beds' ? 'bedroom' : 'bathroom'))
   const list = parts.length === 1 ? parts[0]! : `${parts[0]} and ${parts[1]}`
-  return `One ${list} different from yours. It sits on this home's own ground, so it still prices the house; no dollar value is applied to the room, because paired sales in this market do not support one.`
+  return `One ${list} different from yours, on this home's own ground. No dollar value is applied to the room.`
 }
