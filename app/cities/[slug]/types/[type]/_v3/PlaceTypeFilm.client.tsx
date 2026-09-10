@@ -17,6 +17,7 @@ import Image from 'next/image'
 import { V3Carousel } from '@/components/site/v3'
 import type { V3ListingRowData } from '@/components/site/v3/V3ListingRow'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import {
   LISTING_FIELD_LEAD_PHOTO_SIZE,
   listingRowPhotoSrc,
@@ -59,6 +60,12 @@ export function PlaceTypeFilm({
             price: listing.price,
             propertyType: listing.propertyType,
           })
+          const shareKind = publishListingShareKind({
+            propertySubType: listing.propertySubType,
+            subdivisionName: listing.subdivisionName,
+            city: listing.city,
+            listNumber: listing.listNumber,
+          })
           const specs = specsLine(listing)
           const src = listing.photoUrl
             ? listingRowPhotoSrc(listing.photoUrl, LISTING_FIELD_LEAD_PHOTO_SIZE)
@@ -91,6 +98,9 @@ export function PlaceTypeFilm({
                 <span className="place-type-film__scrim" aria-hidden />
                 <span className="place-type-film__on-photo">
                   <span className="place-type-film__price">{ask ?? '—'}</span>
+                  {shareKind ? (
+                    <span className="place-type-film__share">{shareKind}</span>
+                  ) : null}
                   <span className="place-type-film__addr">{listing.addressLine}</span>
                   {specs ? <span className="place-type-film__specs">{specs}</span> : null}
                 </span>

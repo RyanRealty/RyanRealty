@@ -193,6 +193,12 @@
   line-height: var(--v3-leading-control);
 }
 
+.place-type-film__share {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  opacity: 0.92;
+}
+
 .place-type-film__addr,
 .place-type-film__specs {
   min-width: 0;
