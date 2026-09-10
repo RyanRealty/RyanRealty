@@ -689,8 +689,16 @@ export async function selectComps(
       if (!land && !tightRung && !ownStreetPeer && anchorPpsf != null) {
         const rate = unitRate(comp, false)
         if (anchorPpsf > 0 && rate > 0) {
+          // THE WIDENING DOES NOT STACK WITH THE RESORT CROSSING. The starved
+          // rung relaxes the resort wall so a home near Sunriver can find
+          // PRODUCT peers; widening the price band on top of that let a
+          // $595/sqft Caldera Springs sale price a $427/sqft plat (55442
+          // Heierman). A sale in a resort community the subject is not in is
+          // held to the ordinary band, whatever else the last rung relaxes.
+          const crossesResort = !resortCommunityCompatible(subject.subdivision, comp.subdivision)
+          const ratio = crossesResort ? anchorTierRatio : rungTierRatio
           const gap = rate / anchorPpsf
-          if (gap < 1 / rungTierRatio || gap > rungTierRatio) {
+          if (gap < 1 / ratio || gap > ratio) {
             rung.excluded.price_tier++
             continue
           }
