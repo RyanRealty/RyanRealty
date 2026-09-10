@@ -227,6 +227,11 @@ export type { CloseView, CloseReading, CloseSubject, CloseSubjectInput } from '.
  */
 export { V3Ask } from './V3Ask.client'
 /**
+ * House field: beui-input shake + check and shadcn-input structure, restyled
+ * navy on cream. Wired through ContactAsk (SITE-80).
+ */
+export { V3Input } from './V3Input'
+/**
  * The place-page value ask (SITE-01, 2026-09-07): address in, verdict and pace out,
  * then the email that delivers the written valuation. Built on V3Sheet; takes its two
  * calls as props so the barrel stays free of app imports.
@@ -299,6 +304,7 @@ export { V3PlaceDoor } from './V3PlaceDoor'
 export type { V3PlaceDoorProps } from './V3PlaceDoor'
 
 export type { V3AskProps, V3AskField, V3AskOption, V3AskResult } from './V3Ask.client'
+export type { V3InputProps, V3InputKind } from './V3Input'
 
 export { V3ChartSwitch } from './V3ChartSwitch.client'
 

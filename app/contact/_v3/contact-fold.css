@@ -1,0 +1,169 @@
+/* /contact fold: reach + write as one viewport. Tokens only. */
+
+.contact-fold {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+}
+
+.contact-fold .v3.v3-quiet {
+  max-width: none;
+  padding-top: var(--v3-space-lg);
+  padding-bottom: var(--v3-space-sm);
+}
+
+.contact-fold .v3.v3-quiet:has(+ .v3.v3-doors) {
+  padding-bottom: 0;
+}
+
+.contact-fold * + .v3.v3-doors {
+  border-top: 0;
+}
+
+.contact-fold .v3.v3-doors {
+  max-width: none;
+}
+
+.contact-fold .v3.v3-ask {
+  max-width: none;
+  padding-top: var(--v3-space-lg);
+  padding-bottom: var(--v3-space-lg);
+}
+
+.contact-fold .v3-ask__form {
+  max-width: none;
+  margin-top: var(--v3-space-md);
+}
+
+/* Lead door portrait: tap-sized cutout, not the 8/5 art slot. The
+   transparent edge of the headshot is the composition. */
+.contact-fold .v3-doors__item--lead .v3-doors__art {
+  width: 4.5rem;
+  aspect-ratio: 1;
+  margin-bottom: var(--v3-space-xs);
+  background: transparent;
+}
+
+.contact-fold .v3-doors__item--lead .v3-doors__art img {
+  object-fit: contain;
+  object-position: center top;
+}
+
+/* Lead door owns the reach column; the three alternatives sit as one row
+   under it. That keeps the phone number on one line and the write sheet
+   in the first viewport at both 1440 and 375. */
+.contact-fold .v3-doors--lead .v3-doors__list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: auto auto;
+}
+
+.contact-fold .v3-doors--lead .v3-doors__item--lead {
+  grid-column: 1 / -1;
+  grid-row: auto;
+  border-right: 0;
+}
+
+.contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) {
+  grid-column: auto;
+  border-top: var(--v3-rule-hairline);
+  border-left: 0;
+}
+
+.contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) + .v3-doors__item {
+  border-left: var(--v3-rule-hairline);
+}
+
+.contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) .v3-doors__door {
+  padding-inline: var(--v3-space-xs);
+}
+
+@media (max-width: 47.999rem) {
+  /* H1, then the one ask, then the call door — the write sheet must start
+     in the first 812px. display:contents lets Quiet and Doors order apart. */
+  .contact-fold {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .contact-fold__reach {
+    display: contents;
+  }
+
+  .contact-fold .v3.v3-quiet {
+    order: 1;
+    padding-top: var(--v3-space-md);
+    padding-bottom: 0;
+  }
+
+  .contact-fold__write {
+    order: 2;
+  }
+
+  .contact-fold .v3.v3-doors {
+    order: 3;
+  }
+
+  .contact-fold .v3.v3-ask {
+    padding-top: var(--v3-space-sm);
+    padding-bottom: var(--v3-space-sm);
+  }
+
+  .contact-fold .v3-ask__form {
+    margin-top: var(--v3-space-sm);
+  }
+
+  .contact-fold .v3-quiet__body {
+    display: none;
+  }
+
+  .contact-fold .v3-quiet__item--prose {
+    padding: var(--v3-space-xs) 0;
+  }
+
+  .contact-fold .v3-quiet__item--figured {
+    row-gap: var(--v3-space-2xs);
+  }
+
+  .contact-fold .v3-quiet__figure {
+    padding-top: var(--v3-space-2xs);
+    flex-direction: row;
+    align-items: baseline;
+    gap: var(--v3-space-sm);
+    border-top: var(--v3-rule-hairline);
+  }
+
+  .contact-fold .v3-quiet__figure .v3-figure__value {
+    font-size: var(--v3-size-display-2);
+  }
+
+  .contact-fold .v3-doors__door--lead {
+    padding-block: var(--v3-space-sm);
+  }
+
+  .contact-fold .v3-doors__door--lead .v3-doors__label {
+    font-size: var(--v3-size-display-2);
+  }
+
+  .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) .v3-doors__fact,
+  .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) .v3-doors__arrow {
+    display: none;
+  }
+}
+
+/* Wide: intro + call on the left, the one ask on the right. */
+@media (min-width: 64rem) {
+  .contact-fold {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    align-items: start;
+  }
+
+  .contact-fold__write {
+    border-left: var(--v3-rule-section);
+    min-width: 0;
+  }
+
+  .contact-fold__reach {
+    min-width: 0;
+  }
+}

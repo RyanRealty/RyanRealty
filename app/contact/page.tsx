@@ -2,10 +2,10 @@
  * /contact - write a broker, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Order: Quiet (H1 and the one true line), V3Doors #reach as a REACH CONTROL
- * (one call door at display scale carrying the live hours, then text, email
- * and the calendar as lighter links), ContactAsk (the whole form at once),
- * AboutFaces (who answers, with their photographs), V3Answers.
+ * Order: ContactFold (Quiet H1 + sourced reviews figure, V3Doors #reach as a
+ * REACH CONTROL with the principal photograph on the call door and live hours,
+ * ContactAsk as the one ask in the first viewport), AboutFaces (who answers),
+ * V3Answers.
  *
  * SITE-48 (2026-09-09) changed two of those. The taste table scored this page
  * 49 with the verdict "the fold is a text hero on top of a four-times-repeated
@@ -30,10 +30,10 @@ import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { getBrokers, getListingTiles, getReviews } from '@/lib/data'
 import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listing-ask'
-import { listingTileHref, teamPath } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 import { formatDate } from '@/lib/format/date'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
-import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
+import { BROKERS, CONTACT } from '@/lib/brand/contact'
 import { valuationHref } from '@/lib/site/valuation-href'
 import {
   V3_ROOT_CLASS,
@@ -52,6 +52,7 @@ import {
 } from '@/components/site/v3'
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { ContactAsk } from './_v3/ContactAsk.client'
+import { ContactFold } from './_v3/ContactFold'
 import { CONTACT_FAQ_ITEMS } from './_v3/contact-constants'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
@@ -168,66 +169,26 @@ export default async function ContactPage({ searchParams }: PageProps) {
   const principal =
     brokers.find((b) => b.isPrincipal) ?? brokers.find((b) => b.slug === BROKERS.matt.slug) ?? null
   const introItems: V3QuietItem[] = [
-    // The H1 lives on this Quiet; with no rows it would not render at all
-    // (V3Quiet returns null on empty items — evaluator B2). One true line.
-    { kind: 'prose' as const, body: 'Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the surrounding communities. Local experts who take care of you from the first call through closing.' },
-    // SITE-40, second pass: the evaluator found "no photo, map, headshot, or
-    // mark anywhere in either shot" and scored the fold level with its table
-    // mark. The person a visitor is about to call leads the doors, with the
-    // photograph as the mark; the four reaches stay ONCE, in V3Doors below.
-    ...(principal
-      ? [
-          {
-            label: `${principal.fullName}, principal broker`,
-            // No reply-time promise here: a claim with no measured basis is
-            // an invented figure (§0; the third evaluator pass read it as an
-            // unsourced claim beside a sourced one).
-            ...(principal.licenseNumber ? { detail: `Oregon license #${principal.licenseNumber}` } : {}),
-            href: teamPath(principal.slug),
-            mark: 'person' as const,
-            lead: true,
-            media: { src: principal.headshotPng, alt: principal.fullName },
-            ...(reviewSummary && reviewSummary.count > 0
-              ? {
-                  figure: {
-                    value: reviewSummary.averageRating.toFixed(1),
-                    unit: `of 5, from ${reviewSummary.count} Google reviews`,
-                    // NO ratio meter here. A 5.0 out of 5 fills the track
-                    // completely, so the mark carries no information and reads
-                    // as a stray rule beside the number — the separate
-                    // evaluator (2026-09-09, merged page) called it "inert
-                    // rather than data" and could not tell whether it was a
-                    // meter at all. The number carries the fact.
-                    source:
-                      'Google Business Profile reviews of Ryan Realty — every non-hidden review row in public.reviews, ratings averaged to a tenth, read live at render.',
-                    sourceName: 'Google reviews',
-                  },
-                }
-              : {}),
-          },
-        ]
-      : []),
-    // SITE-40: the office was a prose row, which is why the evaluator found "no
-    // image, mark, or visual element anywhere in the captured fold at either
-    // 1440 or 375". It is a door now, carrying the navy locator mark and going
-    // where a person reading an address wants to go — the office on the map.
-    // SECONDARY, so it folds to one inline line rather than a second full door
-    // row. The separate evaluator (2026-09-09, merged page) named the repeat by
-    // shape: the broker row and the office row were "the same component
-    // instanced twice — leading image or icon, bold title, trailing chevron,
-    // muted meta line". They are not the same weight of thing either. Inline
-    // also gives the address the full measure, so the postcode stops orphaning
-    // onto a third line at 375.
+    // H1 lives on this Quiet; with no rows it would not render (empty items
+    // return null). One true line, and the sourced review figure in the column
+    // that used to be void — not a second broker door that repeats AboutFaces
+    // and the chevron row already used by V3Doors.
     {
-      label: 'The office',
-      detail: `${BRAND.address.street}, ${BRAND.address.city}, ${BRAND.address.region} ${BRAND.address.postalCode}`,
-      href: BRAND.social.googleBusinessProfile,
-      mark: 'map' as const,
-      weight: 'secondary' as const,
+      kind: 'prose' as const,
+      body: 'Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the surrounding communities. Local experts who take care of you from the first call through closing.',
+      ...(reviewSummary && reviewSummary.count > 0
+        ? {
+            figure: {
+              value: reviewSummary.averageRating.toFixed(1),
+              label: 'Google reviews',
+              unit: `of 5, from ${reviewSummary.count} Google reviews`,
+              source:
+                'Google Business Profile reviews of Ryan Realty — every non-hidden review row in public.reviews, ratings averaged to a tenth, read live at render.',
+              sourceName: 'Google reviews',
+            },
+          }
+        : {}),
     },
-    // The four reaches (call, text, email, schedule) live ONCE, in V3Doors
-    // below. The separate evaluator (2026-09-08) read them here and again in
-    // the doors as two builders' sections stacked, not a page.
     ...(listingHref
       ? [{ label: listingSummary || 'The listing you asked about', href: listingHref }]
       : []),
@@ -293,9 +254,8 @@ export default async function ContactPage({ searchParams }: PageProps) {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Contact' }]} />
 
-        {/* SITE-63 variants (taste_variant). quiet-doors = current canon;
-            call-figure = phone as hero figure; faces-first = roster opens.
-            Decision sheet: design_system/public/references/contact-decision-sheet.html */}
+        {/* SITE-63 variants stay on ?taste_variant= until Matt picks.
+            Default (quiet-doors) is SITE-80 ContactFold. Losers stay on disk. */}
         {variant === 'faces-first' && faces.length > 0 ? (
           <AboutFaces
             people={faces}
@@ -349,68 +309,105 @@ export default async function ContactPage({ searchParams }: PageProps) {
                 : []),
             ]}
           />
-        ) : variant !== 'faces-first' ? (
-          <V3Quiet
-            id="contact"
-            eyebrow="Ryan Realty · Central Oregon"
-            heading={contactTitle}
-            headingLevel={1}
-            items={introItems}
-          />
-        ) : (
-          <V3Quiet
-            id="contact"
-            eyebrow="Ryan Realty · Central Oregon"
-            heading="Reach the brokerage"
-            headingLevel={2}
-            items={[
-              {
-                kind: 'prose' as const,
-                body: 'Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the surrounding communities.',
-              },
-              ...(listingHref
-                ? [{ label: listingSummary || 'The listing you asked about', href: listingHref }]
-                : []),
-            ]}
-          />
-        )}
+        ) : null}
 
-        {variant !== 'call-figure' ? (
-          <V3Doors
-            id="reach"
-            name={v3Text('Reach a broker')}
-            doors={
-              variant === 'faces-first'
-                ? [
+        {variant === 'faces-first' ? (
+          <>
+            <V3Quiet
+              id="contact"
+              eyebrow="Ryan Realty · Central Oregon"
+              heading="Reach the brokerage"
+              headingLevel={2}
+              items={[
+                {
+                  kind: 'prose' as const,
+                  body: 'Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the surrounding communities.',
+                },
+                ...(listingHref
+                  ? [{ label: listingSummary || 'The listing you asked about', href: listingHref }]
+                  : []),
+              ]}
+            />
+            <V3Doors
+              id="reach"
+              name={v3Text('Reach a broker')}
+              doors={[
+                {
+                  kicker: v3Text('Call or text'),
+                  label: v3Text(CONTACT.phoneDirect),
+                  fact: v3Text('One number for the whole brokerage'),
+                  href: `tel:${CONTACT.phoneDirectTel}`,
+                  primary: true,
+                  live: hoursLive,
+                },
+                {
+                  kicker: v3Text('Email'),
+                  label: v3Text(CONTACT.email.primary),
+                  fact: v3Text("Straight to Matt's inbox"),
+                  href: `mailto:${CONTACT.email.primary}`,
+                },
+                {
+                  kicker: v3Text('Schedule'),
+                  label: v3Text('Book a time'),
+                  fact: v3Text('Open slots on the calendar'),
+                  href: '/book',
+                },
+              ]}
+            />
+            <ContactAsk
+              defaultInquiryType={defaultInquiry}
+              listingKey={params.listingKey}
+              intent={intent}
+              listingSummary={listingSummary || undefined}
+            />
+          </>
+        ) : null}
+
+        {variant === 'call-figure' ? (
+          <>
+            {hoursLive ? <div id="reach">{hoursLive}</div> : null}
+            <ContactAsk
+              defaultInquiryType={defaultInquiry}
+              listingKey={params.listingKey}
+              intent={intent}
+              listingSummary={listingSummary || undefined}
+            />
+          </>
+        ) : null}
+
+        {variant === 'quiet-doors' ? (
+          <ContactFold
+            reach={
+              <>
+                <V3Quiet
+                  id="contact"
+                  eyebrow="Ryan Realty · Central Oregon"
+                  heading={contactTitle}
+                  headingLevel={1}
+                  items={introItems}
+                />
+                {/* Reach control in the first viewport, beside the form.
+                    Calling is the one door, at display scale, with the principal
+                    photograph as the mark and published hours as the live state.
+                    Text, email and the calendar are lighter alternatives — not
+                    four identical cells. */}
+                <V3Doors
+                  id="reach"
+                  name={v3Text('Reach a broker')}
+                  doors={[
                     {
-                      kicker: v3Text('Call or text'),
+                      kicker: v3Text('Call'),
                       label: v3Text(CONTACT.phoneDirect),
                       fact: v3Text('One number for the whole brokerage'),
                       href: `tel:${CONTACT.phoneDirectTel}`,
                       primary: true,
                       live: hoursLive,
-                    },
-                    {
-                      kicker: v3Text('Email'),
-                      label: v3Text(CONTACT.email.primary),
-                      fact: v3Text("Straight to Matt's inbox"),
-                      href: `mailto:${CONTACT.email.primary}`,
-                    },
-                    {
-                      kicker: v3Text('Schedule'),
-                      label: v3Text('Book a time'),
-                      fact: v3Text('Open slots on the calendar'),
-                      href: '/book',
-                    },
-                  ]
-                : [
-                    {
-                      kicker: v3Text('Call or text'),
-                      label: v3Text(CONTACT.phoneDirect),
-                      fact: v3Text('One number for the whole brokerage'),
-                      href: `tel:${CONTACT.phoneDirectTel}`,
-                      primary: true,
-                      live: hoursLive,
+                      ...(principal?.headshotPng
+                        ? {
+                            imageSrc: principal.headshotPng,
+                            imageAlt: principal.fullName,
+                          }
+                        : {}),
                     },
                     {
                       kicker: v3Text('Text'),
@@ -420,7 +417,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
                     },
                     {
                       kicker: v3Text('Email'),
-                      label: v3Text(CONTACT.email.primary),
+                      label: v3Text('Send an email'),
                       fact: v3Text("Straight to Matt's inbox"),
                       href: `mailto:${CONTACT.email.primary}`,
                     },
@@ -430,20 +427,20 @@ export default async function ContactPage({ searchParams }: PageProps) {
                       fact: v3Text('Open slots on the calendar'),
                       href: '/book',
                     },
-                  ]
+                  ]}
+                />
+              </>
+            }
+            write={
+              <ContactAsk
+                defaultInquiryType={defaultInquiry}
+                listingKey={params.listingKey}
+                intent={intent}
+                listingSummary={listingSummary || undefined}
+              />
             }
           />
         ) : null}
-
-        {/* Live hours under call-figure: OnDuty without a four-door grid. */}
-        {variant === 'call-figure' && hoursLive ? <div id="reach">{hoursLive}</div> : null}
-
-        <ContactAsk
-          defaultInquiryType={defaultInquiry}
-          listingKey={params.listingKey}
-          intent={intent}
-          listingSummary={listingSummary || undefined}
-        />
 
         {variant !== 'faces-first' && faces.length > 0 ? (
           <AboutFaces
