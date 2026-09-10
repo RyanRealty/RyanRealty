@@ -42,7 +42,7 @@ describe('every lead figure says what it means', () => {
   })
 
   it('the region opening: four figures, four sentences', () => {
-    const { live } = buildRegionInstruments(HUD, '4.9')
+    const { live } = buildRegionInstruments(HUD, '4.9', HUD.monthsSupply ?? null)
     expect(live.figures.length).toBeGreaterThanOrEqual(MARKET_LEAD_FIGURES)
     for (const figure of live.figures.slice(0, MARKET_LEAD_FIGURES)) {
       expect(figure.sentence, String(figure.label)).toBeTruthy()

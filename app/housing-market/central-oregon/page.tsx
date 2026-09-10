@@ -264,7 +264,7 @@ export default async function CentralOregonRegionPage() {
   // buildMarketFaq applies to the same figure (invariant 2), and each section's trace is
   // assembled from the figures that section actually rendered (invariant 3). Split out
   // under ci:file-size-budget's own instruction, alongside the Ledger builders.
-  const region = buildRegionInstruments(hud, mosText)
+  const region = buildRegionInstruments(hud, mosText, mosRaw)
   const lead = buildRegionLead(closedSeries)
   const [firstLeadFigure, ...restLeadFigures] = lead.figures
   // CURATED, NOT DUMPED (SITE-41 round two): this fold used to merge every
@@ -289,9 +289,10 @@ export default async function CentralOregonRegionPage() {
   const liveTrace =
     region.live.trace +
     (extraLive.length > 0
-      ? ' Extra product-type inventory and the 12-month pace figures are withheld below a ' +
-        'minimum sample, and the pace figures shown are the priority subset behind the fold ' +
-        'below rather than every cell the pace metric layer publishes.'
+      ? ' A few more figures — other property types for sale, and this region\'s pace over ' +
+        'the last 12 months — publish only when enough recent sales back them up, and the ' +
+        'ones behind the fold below are the ones people ask about most, not the full list ' +
+        'this page tracks.'
       : '') +
     // Read but not printed here (SITE-41 round two): financing, feature, and bedroom
     // mix is fetched for this page's own KPI-grid decision (a dozen more uncaptioned
@@ -455,6 +456,7 @@ export default async function CentralOregonRegionPage() {
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
             asOf={refreshedAt ?? undefined}
             chart={regionChart}
+            chartSecondary={region.mosChart}
           />
         ) : (
           <V3Quiet
@@ -486,7 +488,7 @@ export default async function CentralOregonRegionPage() {
             // this Ledger replaces printed only the count and the median, so the
             // inherited source line was never written to cover a pace figure.
             source={v3Text(
-              'Oregon Data Share via MarketPulse, one row per city (city pulse). Count and median list are active single-family houses; months of supply uses the same path',
+              'Oregon Data Share, one row per city. Count and median list are active single-family houses; months of supply uses the same figures',
             )}
             updated={cityLedger.stamp ? v3Text(formatDate(cityLedger.stamp)) : undefined}
             action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
@@ -565,6 +567,7 @@ export default async function CentralOregonRegionPage() {
             headline={v3Text('The pace of the Central Oregon market')}
             figures={[firstPaceFigure, ...restPaceFigures]}
             source={v3Text(region.pace.trace)}
+            sourceName={v3Text('Oregon Data Share MLS')}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
           />
         ) : null}

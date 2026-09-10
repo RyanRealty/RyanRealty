@@ -39,10 +39,11 @@
 
 import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
-import { MOS_METHODOLOGY_CLAUSE, MOS_PLAIN_LABEL, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPriceExact } from '@/lib/format/money'
 import { listingsBrowsePath } from '@/lib/slug'
 import { v3Text, type V3ChartProps, type V3InstrumentFigure } from '@/components/site/v3'
+import { buildMosSupplyChart } from '@/app/months-of-supply/_v3/mos-chart'
 import { buildClosedVolumeChart, buildCompositionChart } from '../../_v3/market-charts'
 import {
   buildAllTypeFigures,
@@ -72,6 +73,13 @@ export type RegionInstruments = {
    * one guard is how a page starts publishing an edge for an answer it did not give.
    */
   activeCount: number | null
+  /**
+   * MONTHS OF SUPPLY IS TWO NAMED BARS, NEVER A KPI TILE (PUBLIC_UI / DATA_GRAPHICS).
+   * The same drawing already shipped on /housing-market and the annual review
+   * (buildMosSupplyChart, fed by the identical active-count-over-months-of-supply
+   * pace). Undefined when the ratio cannot be drawn (a miss omits, it is never a 0).
+   */
+  mosChart: V3ChartProps | undefined
 }
 
 /**
@@ -79,10 +87,15 @@ export type RegionInstruments = {
  * @param mosText months of supply already formatted by the page through
  *   formatMonthsOfSupply, or null. Passed in rather than derived here: the page owns
  *   the single derivation that classifies the RAW value and formats only to display it.
+ * @param mosRaw the SAME raw months-of-supply value that produced mosText, passed
+ *   through rather than re-derived here (one derivation, page.tsx section 0). Used
+ *   only to recover the implied monthly sales pace (active / mosRaw), the other half
+ *   of the ratio the verdict headline already states.
  */
 export function buildRegionInstruments(
   hud: LeftoverHudKpis,
   mosText: string | null,
+  mosRaw: number | null,
 ): RegionInstruments {
   const medianListPrice = hud.medianList != null && hud.medianList > 0 ? hud.medianList : null
   const activeCount = hud.active != null && hud.active > 0 ? hud.active : null
@@ -123,19 +136,35 @@ export function buildRegionInstruments(
       sentence: v3Text('Sellers who have accepted an offer and have not closed yet.'),
     })
   }
-  if (mosText != null) {
+  // MONTHS OF SUPPLY IS TWO NAMED BARS, NEVER A KPI TILE (PUBLIC_UI / DATA_GRAPHICS).
+  // The bare ratio ("4.8 months") never renders as its own value+label tile: it
+  // already lives in the verdict headline above and, from here down, in the two
+  // named bars a reader can hover (buildMosSupplyChart, the same drawing already
+  // shipped on /housing-market and the annual review). The companion FIGURE this
+  // section prints instead is the other half of that ratio in the reader's own
+  // words — how many homes close in a typical month — sourced from the same
+  // active-count-over-months-of-supply pace, never invented.
+  const monthOfSales =
+    activeCount != null && mosRaw != null && mosRaw > 0
+      ? Math.round((activeCount / mosRaw) * 10) / 10
+      : null
+  if (monthOfSales != null) {
     liveFigures.push({
-      value: v3Text(mosText),
-      label: v3Text(MOS_PLAIN_LABEL),
+      value: v3Text(monthOfSales.toFixed(1)),
+      label: v3Text('a month of sales'),
       href: '/months-of-supply',
       sentence: v3Text(
-        'How long the houses listed today would last at the pace of the last six months, with nothing new coming on.',
+        'How many single-family houses close across the region in a typical month, based on recent sales.',
       ),
     })
   }
+  const mosChart =
+    activeCount != null && monthOfSales != null && mosText != null
+      ? buildMosSupplyChart({ homesForSale: activeCount, monthOfSales, mosText })
+      : undefined
 
   const liveClauses = [
-    'Oregon Data Share via MarketPulse, active single-family houses across the Central Oregon region',
+    'Oregon Data Share, active single-family houses across the Central Oregon region',
   ]
   // The two canonical clauses append whole, never edited, and only when the figure they
   // govern is on the screen. lib/market/classify.ts owns that wording and
@@ -174,11 +203,11 @@ export function buildRegionInstruments(
   }
 
   const paceClauses = [
-    'Oregon Data Share via MarketPulse, closed single-family houses across the Central Oregon region',
+    'Oregon Data Share, closed single-family houses across the Central Oregon region',
   ]
   if (daysToPending != null) {
     paceClauses.push(
-      'Median to pending is the 90-day list-to-pending median on that same pulse row',
+      'Median to pending is the 90-day list-to-pending median from the same regional figures',
     )
   }
   if (closedLast30Days != null) {
@@ -190,6 +219,7 @@ export function buildRegionInstruments(
     live: { figures: liveFigures, trace: liveTrace },
     pace: { figures: paceFigures, trace: paceTrace },
     activeCount,
+    mosChart,
   }
 }
 
