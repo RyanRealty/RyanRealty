@@ -120,13 +120,45 @@ describe('walkPricingLadder', () => {
     expect(out.comps).toHaveLength(0)
   })
 
-  it('never prices a one-bath house from a two-bath sale', () => {
+  /**
+   * THE ONE ROOM RULE (Matt 2026-09-10: adjust inside, wall outside). The old
+   * invariant here was "never prices a one-bath house from a two-bath sale"
+   * anywhere. That wall cut 438 nearby sales on 23 Benaiah and pushed the
+   * search into four other neighborhoods. What replaces it: one bath apart is
+   * used on the subject's OWN plat and recorded on the comp, and never from
+   * outside it.
+   */
+  it('uses a one-bath difference from inside the subject’s own plat, and records it', () => {
     const pool = [
       sale({ listingKey: 'TWO', baths: 2, address: '14 Kenwood' }),
       sale({ listingKey: 'ONE', baths: 1, address: '15 Kenwood' }),
     ]
     const out = walkPricingLadder(subject({ baths: 1 }), pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey)).toEqual(['ONE'])
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['ONE', 'TWO'])
+    expect(out.comps.find((c) => c.listingKey === 'TWO')?.roomDifference).toEqual(['baths'])
+    expect(out.comps.find((c) => c.listingKey === 'ONE')?.roomDifference).toBeNull()
+  })
+
+  it('never takes that one-bath difference from outside the subject’s ground', () => {
+    const pool = [
+      sale({
+        listingKey: 'AWAY',
+        baths: 2,
+        address: '9 Stone',
+        subdivision: 'Stone Creek',
+        subdivisionNorm: 'stone creek',
+        latitude: 44.12,
+        longitude: -121.18,
+      }),
+    ]
+    const out = walkPricingLadder(subject({ baths: 1, marketArea: null }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('AWAY')
+  })
+
+  it('refuses two whole baths apart even next door', () => {
+    const pool = [sale({ listingKey: 'FOUR', baths: 4, address: '16 Kenwood' })]
+    const out = walkPricingLadder(subject({ baths: 2 }), pool, { asOf })
+    expect(out.comps).toHaveLength(0)
   })
 
   it('drops a much more expensive subdivision once the similar-sub rungs run', () => {

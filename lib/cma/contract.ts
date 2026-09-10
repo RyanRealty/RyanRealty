@@ -167,7 +167,15 @@ export function evaluateAccuracyContract(args: {
           : `Every priced sale is the same property type as the subject (${subjectSubType}).`,
   })
   const bathRuleOk = subjectIsCustomOrNew ? customBathCompatible : bathCountCompatible
-  const crossBath = comps.find((c) => !bathRuleOk(subjectBaths ?? null, c.baths))
+  // The selector may admit a sale ONE room apart on the subject's own ground
+  // and record that it did (`roomDifference`, lib/pricing/room-counts.ts). The
+  // contract grades what the selector decided; it does not re-apply a wall the
+  // rule deliberately opened. A bath gap with no such record is still a hard
+  // failure — that is a sale nothing signed off on.
+  const crossBath = comps.find(
+    (c) => !bathRuleOk(subjectBaths ?? null, c.baths) && !(c.roomDifference ?? []).includes('baths'),
+  )
+  const bathNoted = comps.filter((c) => (c.roomDifference ?? []).includes('baths')).length
   checks.push({
     id: 'bath-count-match',
     severity: 'hard',
@@ -179,9 +187,11 @@ export function evaluateAccuracyContract(args: {
           ? subjectIsCustomOrNew
             ? `Comp ${crossBath.address} has ${crossBath.baths ?? 'an unknown'} bath, more than one whole bathroom away from this ${subjectBaths}-bath custom or new home.`
             : `Comp ${crossBath.address} has ${crossBath.baths ?? 'an unknown'} bath and cannot price a ${subjectBaths}-bath house.`
-          : subjectIsCustomOrNew
-            ? `Custom or new subject: every priced sale is within one whole bathroom of the subject (${subjectBaths}).`
-            : `Every priced sale has the same whole bathroom count as the subject (${subjectBaths}).`,
+          : bathNoted > 0
+            ? `Every priced sale matches the subject's ${subjectBaths} bathrooms, except ${bathNoted} on this home's own ground that sit one bathroom away and are disclosed as such.`
+            : subjectIsCustomOrNew
+              ? `Custom or new subject: every priced sale is within one whole bathroom of the subject (${subjectBaths}).`
+              : `Every priced sale has the same whole bathroom count as the subject (${subjectBaths}).`,
   })
   checks.push({
     id: 'dispersion-computed',

@@ -7,6 +7,7 @@ import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { communitySlugForSubdivision, isResortCommunity } from '@/lib/cma/resort-guard'
 import { resolvePriceAnchor, sameStreetPeer, type PriceAnchor } from '@/lib/pricing/price-anchor'
 import { bathCountCompatible, distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
+import { roomCountsUsable } from '@/lib/pricing/room-counts'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -140,6 +141,13 @@ export type SelectedPricingComp = PricingSale & {
   selectionTier: string
   proximity: string | null
   monthsBeforeAsOf: number
+  /**
+   * Which room counts differ from the subject on a sale the selector admitted
+   * anyway (Matt 2026-09-10: adjust inside, wall outside). The document
+   * discloses it, and the accuracy contract reads it instead of re-applying
+   * the wall the selector deliberately opened.
+   */
+  roomDifference?: Array<'beds' | 'baths'> | null
 }
 
 /**
@@ -231,6 +239,12 @@ function applesOk(
    * treats both as walls.
    */
   allowFeatureCross = false,
+  /**
+   * True when the sale sits on the subject's OWN GROUND — its plat, its mapped
+   * neighborhood, or its street. A room-count difference is usable only there
+   * (lib/pricing/room-counts.ts).
+   */
+  local = false,
 ): boolean {
   if (!productCompatible(subject.productClass, sale.productClass)) return false
   const customOrNew = isCustomOrNewSubject(
@@ -248,7 +262,15 @@ function applesOk(
     if (!customBathCompatible(subject.baths, sale.baths)) return false
     if (!customLotCompatible(subject.lotAcres, sale.lotAcres)) return false
   } else {
-    if (!bathCountCompatible(subject.baths, sale.baths)) return false
+    // ONE ROOM RULE for beds and baths alike (Matt 2026-09-10). Same whole
+    // count travels anywhere; one room apart is used only on this home's own
+    // ground and is disclosed; wider is refused.
+    if (
+      !roomCountsUsable({ beds: subject.beds, baths: subject.baths }, { beds: sale.beds, baths: sale.baths }, { local })
+        .ok
+    ) {
+      return false
+    }
     if (!lotCompatible(subject.lotAcres, sale.lotAcres)) return false
   }
   if (!resortCommunityCompatible(subject.subdivision, sale.subdivision)) return false
@@ -342,7 +364,7 @@ function passesTier(
    * $579/sqft downtown sale (Matt 2026-09-10).
    */
   anchor: PriceAnchor | null = null,
-): { ok: boolean; miles: number | null } {
+): { ok: boolean; miles: number | null; roomDifference?: Array<'beds' | 'baths'> | null } {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return { ok: false, miles: null }
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
     return { ok: false, miles: null }
@@ -393,11 +415,30 @@ function passesTier(
 
   const asOfYear = Number(asOf.slice(0, 4))
   const allowFeatureCross = Boolean(tier.whenStarved) && subject.marketArea == null
-  if (!applesOk(subject, sale, tier.apples, asOfYear, allowFeatureCross)) return { ok: false, miles: null }
+  // THIS HOME'S OWN GROUND: its plat, its mapped neighborhood, or its street.
+  // The room rule opens by one room here and nowhere else (Matt 2026-09-10).
+  const saleArea = sale.marketArea ?? resolveMarketArea(sale.latitude, sale.longitude) ?? null
+  const localSale =
+    (subject.subdivisionNorm != null && sale.subdivisionNorm === subject.subdivisionNorm) ||
+    (subject.marketArea != null && saleArea === subject.marketArea) ||
+    sameStreetPeer(
+      { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft },
+      { address: sale.address, city: sale.city, sqft: sale.sqft },
+    )
+  if (!applesOk(subject, sale, tier.apples, asOfYear, allowFeatureCross, localSale)) {
+    return { ok: false, miles: null }
+  }
+  const rooms = roomCountsUsable(
+    { beds: subject.beds, baths: subject.baths },
+    { beds: sale.beds, baths: sale.baths },
+    { local: localSale },
+  )
   if (!ageOk(subject.yearBuilt, sale.yearBuilt, asOfYear, tier.ageYears)) return { ok: false, miles: null }
   if (!storyOk(subject.storyClass, sale.storyClass, tier.sameStory)) return { ok: false, miles: null }
-  if (!slopOk(subject.beds, sale.beds, tier.bedSlop)) return { ok: false, miles: null }
-  if (!slopOk(subject.baths, sale.baths, tier.bathSlop)) return { ok: false, miles: null }
+  // Beds and baths are decided by the ONE ROOM RULE inside applesOk above. The
+  // per-tier bedSlop/bathSlop numbers no longer gate anything: a rung cannot be
+  // looser than the room rule, and a rung that was tighter (bedSlop 1 on a
+  // faraway rung) was re-imposing the wall the rule deliberately opened.
 
   const customOrNew = isCustomOrNewSubject(
     {
@@ -503,7 +544,7 @@ function passesTier(
   if (tier.maxMiles != null) {
     if (miles == null || miles > tier.maxMiles) return { ok: false, miles }
   }
-  return { ok: true, miles }
+  return { ok: true, miles, roomDifference: rooms.notes.length > 0 ? rooms.notes : null }
 }
 
 const GLA_BRACKET_BAND = 0.25
@@ -773,9 +814,12 @@ export function walkPricingLadder(
     let added = 0
     for (const sale of pool) {
       if (byKey.has(sale.listingKey)) continue
-      const { ok, miles } = passesTier(subject, sale, tier, asOf, cells, priceAnchor)
+      const { ok, roomDifference } = passesTier(subject, sale, tier, asOf, cells, priceAnchor)
       if (!ok) continue
-      byKey.set(sale.listingKey, toSelected(subject, sale, asOf, tier.name))
+      byKey.set(sale.listingKey, {
+        ...toSelected(subject, sale, asOf, tier.name),
+        roomDifference: roomDifference ?? null,
+      })
       added++
     }
     rungs.push({

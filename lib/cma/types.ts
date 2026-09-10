@@ -117,6 +117,13 @@ export interface CmaComp {
   competingArea?: string | null
   /** MLS photo count on the sold listing — feeds the presentation bench. */
   photosCount?: number | null
+  /**
+   * Room counts that differ from the subject on a sale the selector admitted
+   * on the subject's own ground (lib/pricing/room-counts.ts). Present means
+   * "used and disclosed", not "mismatched" — the accuracy contract reads it so
+   * it does not re-apply the wall the selector deliberately opened.
+   */
+  roomDifference?: Array<'beds' | 'baths'> | null
 }
 
 export type CmaCompKeepTier = 'strong' | 'weak'

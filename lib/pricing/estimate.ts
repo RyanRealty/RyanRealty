@@ -543,6 +543,7 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     domTotal: sale.cdom,
     selectionTier: sale.selectionTier,
     proximity: sale.proximity,
+    roomDifference: sale.roomDifference ?? null,
   }
 }
 
