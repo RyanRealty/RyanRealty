@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { V3Icon } from '@/components/site/v3'
+import { V3Icon } from '@/components/site/v3/V3Icon'
 import {
   dismissGuestWatch, // hydration-safe: event/effect storage only
   readGuestWatch, // hydration-safe: event/effect storage only

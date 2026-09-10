@@ -18,6 +18,7 @@ vi.mock('@/lib/data/market-truth/getMetric', () => ({
 }))
 
 const SRC = readFileSync(resolve('lib/data/market-truth/public-segments.ts'), 'utf8')
+const VIEW = readFileSync(resolve('lib/data/market-truth/public-segment-view.ts'), 'utf8')
 
 function metric(
   partial: Partial<MetricResult> & Pick<MetricResult, 'statId' | 'segment'>,
@@ -100,10 +101,10 @@ describe('getPublicPlaceSegments', () => {
     expect(SRC).toMatch(/getMetrics/)
     expect(SRC).not.toMatch(/from\('market_metric'\)/)
     expect(SRC).toMatch(/isPublishable/)
-    expect(SRC).toMatch(/'condo'/)
-    expect(SRC).toMatch(/'townhome'/)
-    expect(SRC).toMatch(/manufactured_land/)
-    expect(SRC).toMatch(/'land'/)
+    expect(VIEW).toMatch(/'condo'/)
+    expect(VIEW).toMatch(/'townhome'/)
+    expect(VIEW).toMatch(/manufactured_land/)
+    expect(VIEW).toMatch(/'land'/)
     expect([...PUBLIC_PLACE_SEGMENTS]).toEqual([
       'condo',
       'townhome',
@@ -116,7 +117,7 @@ describe('getPublicPlaceSegments', () => {
       'business',
     ])
     expect(SRC).not.toMatch(/market_pulse_live/)
-    expect(SRC).not.toMatch(/'commercial_lease'/)
+    expect(VIEW).not.toMatch(/'commercial_lease'/)
     expect(SRC).toMatch(/'neighborhood'/)
     expect(SRC).toMatch(/geoType === 'neighborhood'/)
     expect(SRC).not.toMatch(/'all_residential'/)
@@ -136,7 +137,7 @@ describe('getPublicPlaceSegments', () => {
   it('omits a miss instead of printing 0', () => {
     expect(SRC).toMatch(/activeCount == null \|\| row.activeCount <= 0/)
     expect(SRC).toMatch(/cell\.value <= 0/)
-    expect(SRC).toMatch(/propertySubTypes/)
+    expect(VIEW).toMatch(/propertySubTypes/)
   })
 
   it('names browse URLs and display bits without fabricating 0', () => {
