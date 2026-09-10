@@ -148,7 +148,8 @@ export interface CompSelectionDiagnostics {
 const EXCLUSION_LABELS: Record<keyof CompExclusionCounts, string> = {
   product_type:
     'they are a different product (a townhome, condo, manufactured home, leased-land or co-op sale does not compete with a detached house)',
-  bath_count: 'they have a different whole bathroom count than the subject',
+  bath_count:
+    "they are two or more rooms away from the subject, or one room away and outside this home's own plat, neighborhood and street",
   lot_character: 'their lot character does not match (acreage against an in-town lot, or far outside the acreage band)',
   resort_premium: 'they sit in a resort community the subject is not in (premium contamination, or the reverse)',
   market_area: "they sit outside the subject's neighborhood boundary",

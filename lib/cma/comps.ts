@@ -67,6 +67,7 @@ import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible } from
 import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import { communitySlugForSubdivision, isResortCommunity, resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { ANCHOR_MIN_N, ANCHOR_RADIUS_MILES, sameStreetPeer } from '@/lib/pricing/price-anchor'
+import { roomCountsUsable } from '@/lib/pricing/room-counts'
 import { SAME_NEIGHBORHOOD_TIER_RATIO, SUBDIVISION_TIER_RATIO } from '@/lib/pricing/classes'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
@@ -725,16 +726,33 @@ export async function selectComps(
         continue
       }
 
-      // Custom/new: ±1 whole bath (Perspective 3 vs Rim View 4). Exact floor
-      // match still holds for ordinary resale.
+      // Custom/new: ±1 whole bath (Perspective 3 vs Rim View 4).
       if (customOrNew) {
         if (!customBathCompatible(subject.baths, comp.baths)) {
           rung.excluded.bath_count++
           continue
         }
-      } else if (!bathCountCompatible(subject.baths, comp.baths)) {
-        rung.excluded.bath_count++
-        continue
+      } else {
+        // ONE ROOM RULE for beds and baths alike (Matt 2026-09-10). Same whole
+        // count travels anywhere; one room apart is used only on this home's
+        // own ground — its plat, its mapped neighborhood or its street — and
+        // is disclosed on the sale; two or more apart is refused everywhere.
+        const localComp =
+          (subdivisionIlike != null &&
+            comp.subdivision != null &&
+            comp.subdivision.trim().toLowerCase() === subdivisionIlike.trim().toLowerCase()) ||
+          (subjectArea != null && resolveMarketArea(comp.latitude, comp.longitude) === subjectArea) ||
+          ownStreetPeer
+        const rooms = roomCountsUsable(
+          { beds: subject.beds, baths: subject.baths },
+          { beds: comp.beds, baths: comp.baths },
+          { local: localComp },
+        )
+        if (!rooms.ok) {
+          rung.excluded.bath_count++
+          continue
+        }
+        comp.roomDifference = rooms.notes.length > 0 ? rooms.notes : null
       }
 
       // HARD EXCLUSION at every tier for custom / new-construction subjects
@@ -797,7 +815,7 @@ export async function selectComps(
   }
   if (x.bath_count > 0) {
     trace.push(
-      `Excluded ${x.bath_count} sale(s) on bathroom count. A one-bath house is not priced from a two-bath sale.`,
+      `Excluded ${x.bath_count} sale(s) on room count. A sale one bedroom or bathroom away from this home is used only inside this home's own plat, neighborhood or street, and is marked where it is; two or more rooms away is not used anywhere.`,
     )
   }
   if (x.lot_character > 0) {
@@ -827,6 +845,12 @@ export async function selectComps(
       trace.push(t.disclosure)
       disclosures.push(t.disclosure)
     }
+  }
+  const roomNotedCount = [...byKey.values()].filter((c) => (c.roomDifference ?? []).length > 0).length
+  if (roomNotedCount > 0) {
+    const d = `${roomNotedCount} sale(s) are one bedroom or bathroom different from this home. They are used because they sit on this home's own ground — its plat, its neighborhood or its street — and each is marked on the report. No dollar value is applied to the room: paired sales in this market do not support one.`
+    trace.push(d)
+    disclosures.push(d)
   }
   const competingCount = [...byKey.values()].filter((c) => c.competingArea).length
   if (competingCount > 0) {
