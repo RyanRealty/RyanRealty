@@ -164,6 +164,7 @@ const EXCLUSION_LABELS: Record<keyof CompExclusionCounts, string> = {
   zoning_class: 'their zoning class differs (farm or forest land against rural residential)',
   outbuildings: 'their outbuildings differ (a shop, barn, or arena on one side and none on the other)',
   terrain: 'their land differs (usable ground on one side, rock, slope, or wetland on the other)',
+  price_tier: 'their price per square foot sits outside the tier this home\'s own area sells in',
 }
 
 function band(d: CompSelectionDiagnostics): string {

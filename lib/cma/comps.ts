@@ -66,7 +66,7 @@ import { compTierLadder, isRuralAcreage, realSubdivision } from '@/lib/cma/comp-
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible } from '@/lib/pricing/rural'
 import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import { communitySlugForSubdivision, isResortCommunity, resortCommunityCompatible } from '@/lib/cma/resort-guard'
-import { ANCHOR_MIN_N, ANCHOR_RADIUS_MILES } from '@/lib/pricing/price-anchor'
+import { ANCHOR_MIN_N, ANCHOR_RADIUS_MILES, sameStreetPeer } from '@/lib/pricing/price-anchor'
 import { SAME_NEIGHBORHOOD_TIER_RATIO, SUBDIVISION_TIER_RATIO } from '@/lib/pricing/classes'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
@@ -416,12 +416,13 @@ export async function selectComps(
   // sets because of it. This asks one question — what does a home of roughly
   // this size sell for per square foot in this home's own neighborhood, or
   // within a mile of it — over twelve months and a wide size band.
-  if (!land && subject.sqft > 0) {
+  const subjectSqft = subject.sqft ?? 0
+  if (!land && subjectSqft > 0) {
     const anchorRows = await selectCmaCompsPool({
       cityIlike: subject.city,
       closeDateGte: isoMonthsAgo(12),
-      sqftMin: Math.round(subject.sqft * 0.6),
-      sqftMax: Math.round(subject.sqft * 1.6),
+      sqftMin: Math.round(subjectSqft * 0.6),
+      sqftMax: Math.round(subjectSqft * 1.6),
       bounds: subjectArea ? marketAreaBounds(subjectArea) : radiusBounds(subjectPoint, ANCHOR_RADIUS_MILES),
       limit: 400,
       // The SAME population the ladder itself reads. A tier median sampled from
@@ -630,7 +631,11 @@ export async function selectComps(
       // reading "N/A" (23 Benaiah) has no cell at all, which is exactly the
       // case that had no cut before.
       const tightRung = tier.name.startsWith('subdivision') || tier.name.startsWith('adjacent-subdivision')
-      if (!land && !tightRung && anchorPpsf != null) {
+      const ownStreetPeer = sameStreetPeer(
+        { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft ?? 0 },
+        { address: comp.address, city: comp.city, sqft: comp.sqft },
+      )
+      if (!land && !tightRung && !ownStreetPeer && anchorPpsf != null) {
         const rate = unitRate(comp, false)
         if (anchorPpsf > 0 && rate > 0) {
           const gap = rate / anchorPpsf

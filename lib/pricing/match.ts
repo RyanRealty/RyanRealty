@@ -5,7 +5,7 @@
 
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { communitySlugForSubdivision, isResortCommunity } from '@/lib/cma/resort-guard'
-import { resolvePriceAnchor, type PriceAnchor } from '@/lib/pricing/price-anchor'
+import { resolvePriceAnchor, sameStreetPeer, type PriceAnchor } from '@/lib/pricing/price-anchor'
 import { bathCountCompatible, distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
@@ -482,7 +482,13 @@ function passesTier(
     // graded on its own $/sqft against it.
     const subjectPpsf = subj?.medianPpsf ?? anchor?.ppsf ?? null
     const subjectN = subj?.n ?? anchor?.n ?? 0
-    const gradeOnOwnPpsf = !comp || !sale.subdivisionNorm || subj == null
+    // The same plan on the same street is this home's tier, whatever a
+    // neighborhood median says (lib/pricing/price-anchor.ts).
+    const ownStreet = sameStreetPeer(
+      { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft },
+      { address: sale.address, city: sale.city, sqft: sale.sqft },
+    )
+    const gradeOnOwnPpsf = !ownStreet && (!comp || !sale.subdivisionNorm || subj == null)
     if (!customPeer && gradeOnOwnPpsf) {
       if (!untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)) {
         return { ok: false, miles: null }

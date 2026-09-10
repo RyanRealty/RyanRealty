@@ -98,3 +98,49 @@ export function resolvePriceAnchor(subject: PricingSubject, pool: readonly Prici
   }
   return null
 }
+
+/**
+ * THE HOUSE NEXT DOOR IS NOT A DIFFERENT PRICE TIER.
+ *
+ * 23 Benaiah asked $665,000 for 2,080 sqft. 31 Benaiah — the same 2,080 sqft
+ * plan on the same street — closed at $512,000 fourteen months earlier, which
+ * is $246/sqft against a Larkspur median of $345. The first cut of the price
+ * anchor threw it out for being "a different tier" and left the document
+ * priced off five larger homes in other neighborhoods.
+ *
+ * A sale on the subject's own street, of the subject's own size, IS the
+ * subject's tier. No median may veto it. Everything else about it — product
+ * type, bath count, date, condition — is still graded exactly as before; this
+ * exempts the PRICE cut alone.
+ */
+export const SAME_STREET_SIZE_BAND = 0.1
+
+function streetKey(address: string | null | undefined): string | null {
+  const s = (address ?? '').trim().toLowerCase()
+  if (!s) return null
+  // "23 Benaiah" / "23 NW Benaiah Ave" → "benaiah". The house number goes, the
+  // directional and the suffix go, what identifies the street stays.
+  const withoutNumber = s.replace(/^\s*\d+[a-z]?\s+/, '')
+  const tokens = withoutNumber
+    .split(/[\s,]+/)
+    .filter(Boolean)
+    .filter((t) => !/^(n|s|e|w|ne|nw|se|sw|north|south|east|west)$/.test(t))
+    .filter((t) => !/^(st|street|ave|avenue|rd|road|dr|drive|ln|lane|ct|court|pl|place|way|blvd|loop|cir|circle|ter|terrace|hwy|highway)\.?$/.test(t))
+  return tokens[0] ?? null
+}
+
+/** True when the sale is the same size on the same street as the subject. */
+export function sameStreetPeer(
+  subject: { streetAddress: string | null | undefined; city?: string | null; sqft: number },
+  sale: { address: string | null | undefined; city?: string | null; sqft: number },
+): boolean {
+  if (!(subject.sqft > 0) || !(sale.sqft > 0)) return false
+  const a = streetKey(subject.streetAddress)
+  const b = streetKey(sale.address)
+  if (!a || !b || a !== b) return false
+  const sc = (subject.city ?? '').trim().toLowerCase()
+  const cc = (sale.city ?? '').trim().toLowerCase()
+  if (sc && cc && sc !== cc) return false
+  const ratio = sale.sqft / subject.sqft
+  return ratio >= 1 - SAME_STREET_SIZE_BAND && ratio <= 1 + SAME_STREET_SIZE_BAND
+}
