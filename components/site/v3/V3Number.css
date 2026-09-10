@@ -1,5 +1,17 @@
 /* Count figure. Inherits type from the parent; tabular so digits do not jump. */
+
+/* A NUMBER PAINTS NO SURFACE. V3Number renders `cn(V3_ROOT_CLASS, 'v3-number')`
+   (V3Number.client.tsx), so every figure carries the bare `.v3` register class —
+   and `.v3` sets `background: var(--v3-surface)` (tokens.css). On a cream page
+   that box is invisible and nobody noticed. Over a photo, a navy stage, or any
+   non-cream ground it draws a cream rectangle behind the digits, and where the
+   figure is also coloured `--v3-ink-on-navy` the result is cream on cream: the
+   homepage hero's live count measured 1:1 contrast and survived only on the
+   text-shadow it inherits. `.v3 .v3-number` is (0,2,0) and beats `.v3` (0,1,0),
+   so the surface stops at the block that owns it. An inline figure has no ground
+   of its own; it sits on whatever it is placed over. */
 .v3 .v3-number {
+  background: transparent;
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
 }
