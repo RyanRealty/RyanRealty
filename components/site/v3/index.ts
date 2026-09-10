@@ -135,6 +135,13 @@ export type {
 } from './V3Drawing.client'
 
 /**
+ * Compact two-bar months-of-supply overlay for a place opening (SITE-43).
+ * Homes for sale vs a month of sales. Wired through PlaceAreaHero.
+ */
+export { V3MosBars } from './V3MosBars'
+export type { V3MosBarsProps } from './V3MosBars'
+
+/**
  * JSON-LD injector. New public pages import this as MetadataBlock so they
  * stay on the barrel (ci:public-ui). Grandfathered routes may still import
  * the flat components/site/MetadataBlock.
@@ -217,7 +224,7 @@ export { V3Ask } from './V3Ask.client'
  * calls as props so the barrel stays free of app imports.
  */
 export { V3PlaceValue } from './V3PlaceValue.client'
-export type { V3PlaceValueProps } from './V3PlaceValue.client'
+export type { V3PlaceValueProps, V3PlaceValueActivity } from './V3PlaceValue.client'
 /**
  * The returning ask (SITE-05, 2026-09-08): a corner plate on a wide window, the
  * one bottom bar on a phone, shown only while the ask it points at is off
@@ -265,6 +272,9 @@ export type {
   V3AlertsResult,
   V3AlertsPlacement,
   V3AlertsTrap,
+  V3AlertsListing,
+  V3AlertsTypeOption,
+  V3AlertsStickyClaim,
 } from './V3AlertsStrip.client'
 
 /**

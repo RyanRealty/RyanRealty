@@ -66,6 +66,8 @@ import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { loadSubdivisionTypeBits } from '@/lib/market/publish-subdivision-type-bits'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { buildPlaceMosView } from '@/lib/site/place-mos'
+import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
 import { isTrendSeriesTooSparse } from '@/lib/kb/place-sections'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -75,6 +77,8 @@ import { skippableRail } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { answersFaqItems, buildPlaceAnswers } from '@/lib/site/place-answers'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
+import { formatCount } from '@/lib/format/count'
+import { buildSparkPlot } from '@/lib/charts/plot'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -98,7 +102,7 @@ import {
 import { getCommunityCourseMap } from '@/lib/golf/community-course'
 import { courseMapKind } from '@/lib/golf/course-map'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
-import { getTaxlotsInBoundary, TAXLOT_DISCLAIMER } from '@/lib/data'
+import { getTaxlotsInBoundary, TAXLOT_DISCLAIMER, getPlaceOpeningListings } from '@/lib/data'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
@@ -304,6 +308,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     commOverlays,
     placeDocuments,
     placeCharacter,
+    openingListings,
   ] = await Promise.all([
     withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
     withTimeoutFallback(getPriceHistory('neighborhood', neighborhoodSlug, 'monthly', 60), [], 4500, 'comm:priceHistory'),
@@ -370,6 +375,15 @@ export default async function CommunityDetailPage({ params }: Props) {
       null,
       4000,
       'comm:character',
+    ),
+    withTimeoutFallback(
+      getPlaceOpeningListings({
+        city: cityName,
+        subdivision: community.subdivision || undefined,
+      }),
+      [],
+      3000,
+      'comm:openingListings',
     ),
   ])
   const commMt = commOverlays.get(`neighborhood:${cityDetachedSlug(neighborhoodSlug)}`)
@@ -512,6 +526,42 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   const leftoverStamp =
     commMt?.headlines?.computedAt ?? commMt?.inventory?.computedAt ?? snapshot?.refreshedAt ?? null
+  const mosAsOf = leftoverStamp ? formatDate(leftoverStamp) : null
+  const placeMos = buildPlaceMosView({
+    active: hud.active,
+    monthsSupply: hud.monthsSupply,
+    grain: 'community',
+    geoSlug: slug,
+    asOf: mosAsOf,
+  })
+  const alertTypes = buildPlaceAlertTypes({
+    placeName: publicName,
+    scopeName: community.subdivision ? publicName : cityName,
+    geoType: 'neighborhood',
+    geoSlug: neighborhoodSlug,
+    leftoverHouses30d: publicPace.newCount30d,
+    matchNames: community.subdivision ? getSubdivisionMatchNames(community.subdivision) : [],
+    buckets: openingListings,
+  })
+  const activitySparkValues = leftoverNeighborhoodMonthly.slice(-12).map((row) => row.closedCount)
+  const activitySpark = buildSparkPlot(activitySparkValues, { w: 72, h: 18, minPoints: 4 })
+  const activityCount = hud.sold12mo ?? publicPace.closedCount
+  const placeActivitySpark =
+    activityCount != null && activityCount > 0
+      ? {
+          count: formatCount(activityCount),
+          label: `sales in ${publicName} over 12 months`,
+          asOf: mosAsOf,
+          spark: activitySpark ? { d: activitySpark.d, last: activitySpark.last } : null,
+        }
+      : publicPace.newCount30d != null && publicPace.newCount30d > 0
+        ? {
+            count: formatCount(publicPace.newCount30d),
+            label: `houses listed in ${publicName} in the last 30 days`,
+            asOf: mosAsOf,
+            spark: null,
+          }
+        : null
 
   const schoolDistrictInfo = getDistrictForCity(slug === 'eagle-crest' ? 'Redmond' : cityName)
 
@@ -866,7 +916,7 @@ export default async function CommunityDetailPage({ params }: Props) {
         <MetadataBlock schemas={communitySchemas} />
 
         <div className={stagePosterSrc ? 'place-opening place-opening--media' : 'place-opening'}>
-          <PlaceAreaHero posterSrc={stagePosterSrc} />
+          <PlaceAreaHero posterSrc={stagePosterSrc} mos={placeMos} />
           {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
           <V3Breadcrumb trail={trail} tone={stagePosterSrc ? 'on-media' : 'surface'} />
           <div className="place-opening__copy">
@@ -884,7 +934,7 @@ export default async function CommunityDetailPage({ params }: Props) {
                 verdict (Brasada Ranch, too few recent sales), the answer says so and still
                 carries the comparable-close count from the CMA engine, which is the figure
                 the written valuation is built on. */}
-            <CommunityPlaceValue slug={slug} placeName={publicName} />
+            <CommunityPlaceValue slug={slug} placeName={publicName} activity={placeActivitySpark} />
           </div>
         </div>
 
@@ -904,6 +954,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           updatedAt={leftoverStamp}
           browseHref={browseHref}
           matchNames={community.subdivision ? getSubdivisionMatchNames(community.subdivision) : []}
+          types={alertTypes}
         />
 
         {(
