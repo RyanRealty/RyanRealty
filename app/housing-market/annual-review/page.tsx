@@ -179,6 +179,7 @@ import {
   buildRegionFigures,
   buildYearLedger,
   buildAnnualCharts,
+  buildAnnualMosChart,
   overlayYearDetailWithLeftover,
   type MissingCity,
 } from './_v3/annual-sections'
@@ -338,6 +339,7 @@ export default async function AnnualReviewPage() {
     })
   }
   extraFigures.push(...buildPaceTailFigures(publicPace))
+  const mosChart = buildAnnualMosChart(hud.active, mosRaw)
   const [firstRegionFigure, ...restRegionFigures] = [
     ...buildRegionFigures(hud, mosRaw, medianListDisplay),
     ...extraFigures,
@@ -371,6 +373,10 @@ export default async function AnnualReviewPage() {
   const year = buildYearLedger(GRID_CITIES, cityDetails)
   const [firstYearRow, ...restYearRows] = year.rows
   const annualCharts = buildAnnualCharts(chartMonths.months, currentMonthKey, chartMonths.leftoverUsed)
+  // SITE-71: MOS two-bar is the opening drawing. The year overlay stays as
+  // the annual insight (scrubber + resting reading) when MOS publishes.
+  const openingChart = mosChart ?? annualCharts.region
+  const openingChartSecondary = mosChart ? annualCharts.region : undefined
 
   // Dataset variableMeasured — region core stats (from buildMarketFaq, so the FAQ
   // and the Dataset never disagree) plus one YoY price-change variable per report
@@ -589,13 +595,11 @@ export default async function AnnualReviewPage() {
                 : `Central Oregon housing market annual review: a ${verdict.label}`,
             )}
             figures={[firstRegionFigure, ...restRegionFigures]}
-            /* THE OPENING IS A CLAIM AND A DRAWING (SITE-41). This page used to open
-               on sixteen number-and-label tiles in a four-column grid, with the year
-               overlay pushed a thousand pixels below the fold and the seventh row cut
-               mid-figure at 375. The four figures that answer "what is the Central
-               Oregon market doing" lead, each saying what it means; the long tail of
-               property-type supply and pace measures keeps every one of its figures,
-               one tap away, behind a summary that names them. */
+            /* SITE-71: layout lock — MOS is two named bars, never a 4.9 tile.
+               Year overlay (beautifului-insight) scrubs beside it when MOS
+               publishes; sourced digits swap on the resting reading (beui-number).
+               Lead figures are the two bars plus list and wait; the long tail
+               still folds behind a named summary. */
             chartFirst
             foldAfter={MARKET_LEAD_FIGURES}
             foldLabel={v3Text('Supply by property type, and how fast homes are selling')}
@@ -604,7 +608,8 @@ export default async function AnnualReviewPage() {
             updated={inventoryAsOf ? v3Text(formatDate(inventoryAsOf)) : undefined}
             asOf={inventoryAsOf ?? undefined}
             action={{ label: v3Text('Live Central Oregon market report'), href: REGION_REPORT_PATH }}
-            chart={annualCharts.region}
+            chart={openingChart}
+            chartSecondary={openingChartSecondary}
           />
         ) : (
           <V3Quiet
