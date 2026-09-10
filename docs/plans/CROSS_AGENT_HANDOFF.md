@@ -1,10 +1,10 @@
-# Current — 2026-09-10 16:22Z (grinder 01a08b99: SITE-70 + SITE-84 on main, pushing)
+# Current — 2026-09-10 16:25Z (grinder 01a08b6b: SITE-70 + SITE-84 live)
 
-Owner: `grok-4.5-2026-09-10-15`. Local main `42d5f7dd` (SITE-84 merge) on `6ae10274` (SITE-70) on `d49b0dba`. Do not steal SITE-88. Do not globally restyle `V3Stage`. 15m scheduler stays. No auto-seed.
+Owner: `grok-4.5-2026-09-10-15`. origin/main `52a1c736`. Deploy `dpl_3yE8cAPu6a2MAXfSqz5DK8JWm94F` READY in 206s (SSG 120s, 28 rail timeouts). Do not steal SITE-88.
 
-- **SITE-70** `/price-drops`: V3Carousel rail of cut houses (shadcn-carousel), count as caption, drawing under the rail, ItemList JSON-LD. grok-4.6 median **60** (54/67/60), HF 6, rebaselined. Accept >30. Finish line 70 not met.
-- **SITE-84** neighborhood: MOS + alerts figure + V3Number in the fold; listing thumbs price/address/beds/baths/sqft. grok-4.6 median **62** (57/62/66), HF 6, rebaselined. Accept >58. Finish line 70 not met. MOS caption still clips on desktop.
-- Do not steal SITE-87 (`PlaceAreaHero` just changed for neighborhood grain). Skip SITE-81 (SITE-88 region family).
+- **SITE-70 done.** Live `/price-drops` 200, `v3-carousel` + ItemList. grok-4.6 median **60** (HF 6). Finish line 70 not met.
+- **SITE-84 done.** Live `/cities/bend/awbrey-butte` 200, `v3-mos` + `v3-alerts`. grok-4.6 median **62** (HF 6). Finish line 70 not met.
+- Skip SITE-81 (SITE-88 family) and SITE-87 (`PlaceAreaHero`). 15m scheduler stays. No auto-seed.
 
 # Current — 2026-09-10 14:45Z (grinder 01a08b6b: SITE-72 + SITE-85 on main)
 
