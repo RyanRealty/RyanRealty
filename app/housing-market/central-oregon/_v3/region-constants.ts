@@ -70,6 +70,31 @@ export const CLOSED_SALES_TO_YEAR = 2025
 export const HISTORY_PATH = '/housing-market/history'
 
 /**
+ * What the hero fold reveals (SITE-88). Route-local: V3Instrument's default
+ * summary is "All {n} figures", which printed as a database row count. Mix
+ * cells are not on this page, so the label names property-type supply and
+ * pace only.
+ */
+export const REGION_FOLD_LABEL =
+  'Supply by property type, and how fast homes are selling'
+
+/**
+ * How many figures lead when the MOS drawing is on screen (SITE-88). Two:
+ * median list and under contract. Homes-for-sale and a-month-of-sales are
+ * the two bars, so reprinting them as tiles is the KPI-grid tell. The
+ * shared MARKET_LEAD_FIGURES cap of four still applies on city/annual
+ * openings that have no two-bar on the same fold.
+ */
+export const REGION_LEAD_FIGURES = 2
+
+/**
+ * Cities Ledger trace. Visitor English — no MarketPulse / leftover membership.
+ * Covers the count, median list, and months of supply the row actually prints.
+ */
+export const REGION_CITIES_SOURCE =
+  'Oregon Data Share, one row per city. Count and median list are active single-family houses; months of supply uses the same listings'
+
+/**
  * What the supply verdict means to someone deciding to buy or sell, one sentence
  * per band, keyed by `marketVerdict().kind` from lib/market/classify.ts.
  *
