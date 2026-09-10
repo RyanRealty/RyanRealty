@@ -6,19 +6,151 @@
   display: none;
 }
 
+/* SITE-85: shorter tall so #proof ("The record") bleeds under the fold
+   instead of clipping to two letters. Scoped to sell-stage-poster only —
+   /buy inventory Stage is untouched. Pair layout needs less photo chrome. */
+.v3.v3-stage.sell-stage-poster.v3-stage--tall {
+  min-height: max(52vh, 24rem);
+}
+
+@media (min-width: 48rem) {
+  .v3.v3-stage.sell-stage-poster.v3-stage--tall {
+    min-height: max(50vh, 26rem);
+  }
+}
+
+/* Form-specific Stage behavior (adapted from beui-input focus + Redfin
+   address-reframe tell). Typing dims and leans the poster; a Places pin
+   locks the deeper scrim. No competitor static hero does this. */
+.v3.v3-stage.sell-stage-poster .v3-stage-poster {
+  transform: scale(1);
+  transform-origin: 50% 45%;
+  transition:
+    transform var(--v3-dur-rise) var(--v3-ease-out),
+    filter var(--v3-dur-rise) var(--v3-ease-out),
+    object-position var(--v3-dur-rise) var(--v3-ease-out);
+  will-change: transform, filter;
+}
+
+.v3.v3-stage.sell-stage-poster[data-sell-focus='typing'] .v3-stage-poster,
+.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .v3-stage-poster {
+  transform: scale(1.07);
+  object-position: center 58%;
+  filter: brightness(0.82) saturate(0.92);
+}
+
+.v3.v3-stage.sell-stage-poster[data-sell-focus='typing'] .v3-stage-scrim,
+.v3.v3-stage.sell-stage-poster[data-sell-focus='pinned'] .v3-stage-scrim {
+  background: linear-gradient(
+    to top,
+    var(--v3-scrim-strong) 0%,
+    var(--v3-scrim-strong) 28%,
+    var(--v3-scrim-mid) 58%,
+    var(--v3-scrim-soft) 100%
+  );
+  transition: background var(--v3-dur-rise) var(--v3-ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3.v3-stage.sell-stage-poster .v3-stage-poster {
+    transition: none;
+  }
+}
+
 /* The ask sits on the photograph as a cream slab, not in a cream void
-   under it. Tokens only. 44px controls. */
+   under it. Tokens only. 44px controls. Pair layout widens so proof can
+   sit BESIDE the address field instead of stacking like a portal card. */
 .v3.v3-stage .sell-stage-ask {
   width: min(100%, var(--v3-measure-text));
   padding: var(--v3-space-md);
   background: var(--v3-surface);
   color: var(--v3-ink);
+  display: grid;
+  gap: var(--v3-space-sm);
+}
+
+.v3.v3-stage .sell-stage-ask[data-layout='pair'] {
+  width: min(100%, var(--v3-measure));
+}
+
+.v3.v3-stage .sell-stage-ask__rail {
+  display: grid;
+  gap: var(--v3-space-sm);
+  align-content: start;
+}
+
+.v3.v3-stage .sell-stage-ask__form {
+  display: grid;
+  gap: var(--v3-space-xs);
+  min-width: 0;
+}
+
+@media (min-width: 48rem) {
+  .v3.v3-stage .sell-stage-ask[data-layout='pair'] {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    column-gap: var(--v3-space-lg);
+    align-items: start;
+  }
+
+  .v3.v3-stage .sell-stage-ask[data-layout='pair'] .sell-stage-next {
+    grid-column: 1 / -1;
+  }
+}
+
+/* SITE-85 mobile craft: breathing room under the card so it is not flush
+   with the photo bottom the way the table shot named. */
+@media (max-width: 47.99rem) {
+  .v3.v3-stage .sell-stage-ask {
+    margin-block-end: var(--v3-space-3xl);
+    padding-block-end: var(--v3-space-md);
+  }
+
+  .v3.v3-stage .sell-stage-mos .v3-mos__barrow {
+    grid-template-columns: minmax(5.5rem, 42%) minmax(0, 1fr) auto;
+  }
 }
 
 .v3.v3-stage .sell-stage-ask__head {
   display: grid;
   gap: var(--v3-space-3xs);
   margin-bottom: var(--v3-space-sm);
+}
+
+/* Quiet sourced sentence near the CTA — plain prose, not a KPI tile. */
+.v3.v3-stage .sell-stage-ask__proof {
+  margin: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+  text-wrap: pretty;
+}
+
+.v3.v3-stage .sell-stage-ask__proof strong {
+  color: var(--v3-ink);
+  font-weight: var(--v3-weight-strong);
+}
+
+/* Compact MOS two-bar inside the Stage rail — same Bend pulse as Instrument.
+   Hide the long §0 source line on the fold; Instrument keeps the full trace. */
+.v3.v3-stage .sell-stage-mos {
+  max-width: none;
+  width: 100%;
+  padding: var(--v3-space-sm);
+  border: var(--v3-rule-hairline);
+  box-shadow: none;
+}
+
+.v3.v3-stage .sell-stage-mos .v3-source {
+  display: none;
+}
+
+.v3.v3-stage .sell-stage-mos .v3-mos__plain {
+  font-size: var(--v3-size-label);
+}
+
+.v3.v3-stage .sell-stage-mos .v3-mos__caption {
+  font-size: var(--v3-size-body-sm);
 }
 
 .v3.v3-stage .sell-stage-ask form {
@@ -34,8 +166,231 @@
   color: var(--v3-ink);
 }
 
+/* beui-input adapt: reserved error row + shake on invalid, success check
+   when Places commits a pin. Navy on cream only. */
+.sell-stage-field {
+  display: grid;
+  gap: var(--v3-space-3xs);
+}
+
+.sell-stage-field__control {
+  position: relative;
+}
+
+.sell-stage-field__control[data-state='error'] input {
+  border-color: var(--v3-ink);
+  animation: sell-field-shake var(--v3-dur-enter) var(--v3-ease-out);
+}
+
+.sell-stage-field__control[data-state='success'] input {
+  padding-inline-end: calc(var(--v3-tap) * 0.85);
+}
+
+.sell-stage-field__check {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: var(--v3-space-sm);
+  width: 1.1rem;
+  height: 1.1rem;
+  translate: 0 -50%;
+  color: var(--v3-ink);
+  pointer-events: none;
+}
+
+.sell-stage-field__check path {
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: sell-check-draw var(--v3-dur-enter) var(--v3-ease-out) forwards;
+}
+
+@keyframes sell-field-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-0.35rem);
+  }
+  40% {
+    transform: translateX(0.35rem);
+  }
+  60% {
+    transform: translateX(-0.2rem);
+  }
+  80% {
+    transform: translateX(0.2rem);
+  }
+}
+
+@keyframes sell-check-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sell-stage-field__control[data-state='error'] input {
+    animation: none;
+  }
+
+  .sell-stage-field__check path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Pin map resolves inside the card once Places returns lat/lng — form-
+   specific reveal before submit (catalog: transitions-panel + sheet field). */
+.sell-stage-pin {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  margin-block: var(--v3-space-xs) 0;
+  overflow: hidden;
+  border: var(--v3-rule-section);
+  background: var(--v3-surface-inverse);
+  animation: sell-pin-rise var(--v3-dur-enter) var(--v3-ease-out);
+}
+
+.sell-stage-pin__map {
+  display: block;
+  width: 100%;
+  height: 7.5rem;
+  object-fit: cover;
+}
+
+.sell-stage-pin--preview .sell-stage-pin__map {
+  height: 5.5rem;
+  opacity: 0.92;
+}
+
+@media (max-width: 47.99rem) {
+  .sell-stage-pin__map {
+    height: 5rem;
+  }
+
+  /* Mobile: hide the at-rest Bend preview so the card is not a tall portal
+     slab flush with the photo. Locked pin still reveals after Places. */
+  .sell-stage-pin--preview {
+    display: none;
+  }
+}
+
+.sell-stage-pin__label {
+  margin: 0;
+  padding: var(--v3-space-3xs) var(--v3-space-xs);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-on-navy);
+}
+
+@keyframes sell-pin-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.4rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sell-stage-pin {
+    animation: none;
+  }
+}
+
 .v3.v3-stage .sell-stage-ask button[type='submit'] {
   min-height: var(--v3-tap);
+}
+
+/* beui:expanding-arrow-button adapt — cream-on-navy trail on hover/focus,
+   not lime. Keeps the filled primary as the one Value my home ask. */
+.v3.v3-stage .sell-stage-ask .sell-stage-submit {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--v3-space-xs);
+  width: 100%;
+}
+
+.v3.v3-stage .sell-stage-ask .sell-stage-submit__arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  opacity: 0.55;
+  transition:
+    opacity var(--v3-dur-state) var(--v3-ease-out),
+    transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3.v3-stage .sell-stage-ask .sell-stage-submit__arrow span {
+  width: 0.28rem;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.35;
+}
+
+.v3.v3-stage .sell-stage-ask .sell-stage-submit__arrow span:last-child {
+  opacity: 1;
+  width: 0;
+  height: 0;
+  border-radius: 0;
+  background: transparent;
+  border-block: 0.28rem solid transparent;
+  border-inline-start: 0.4rem solid currentColor;
+}
+
+.v3.v3-stage .sell-stage-ask .sell-stage-submit:hover .sell-stage-submit__arrow,
+.v3.v3-stage .sell-stage-ask .sell-stage-submit:focus-visible .sell-stage-submit__arrow {
+  opacity: 1;
+  transform: translateX(0.15rem);
+}
+
+.v3.v3-stage .sell-stage-ask .sell-stage-submit:hover .sell-stage-submit__arrow span,
+.v3.v3-stage .sell-stage-ask .sell-stage-submit:focus-visible .sell-stage-submit__arrow span {
+  opacity: 1;
+}
+
+/* Quiet scroll affordance keyed to what's next (#proof / The record). */
+.sell-stage-next {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-3xs);
+  margin-block-start: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+  padding-inline: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--v3-ink-muted);
+  background: transparent;
+  border: 0;
+}
+
+.sell-stage-next:hover,
+.sell-stage-next:focus-visible {
+  color: var(--v3-ink);
+}
+
+.sell-stage-next__mark {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-inline-end: 2px solid currentColor;
+  border-block-end: 2px solid currentColor;
+  transform: rotate(45deg);
+  translate: 0 -0.1rem;
 }
 
 /* The 3% plan is a plan, not a narrow column of hyphens in a cream sea. */

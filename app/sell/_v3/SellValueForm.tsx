@@ -32,6 +32,36 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+
+type SellPin = { lat: number; lng: number; label: string }
+
+function sellStageRoot(): HTMLElement | null {
+  if (typeof document === 'undefined') return null
+  return document.getElementById('sell-hero')
+}
+
+function setSellStageFocus(mode: 'idle' | 'typing' | 'pinned') {
+  const root = sellStageRoot()
+  if (!root) return
+  if (mode === 'idle') root.removeAttribute('data-sell-focus')
+  else root.setAttribute('data-sell-focus', mode)
+}
+
+function sellPinMapUrl(pin: SellPin): string | null {
+  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim()
+  if (!key) return null
+  const params = new URLSearchParams({
+    center: `${pin.lat},${pin.lng}`,
+    zoom: '15',
+    size: '640x240',
+    scale: '2',
+    maptype: 'roadmap',
+    key,
+    // Navy pin — Google Static Maps marker color is API hex, not a CSS token.
+    markers: `color:0x102742|${pin.lat},${pin.lng}`,
+  })
+  return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`
+}
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
 import { readAskSource, withAskSource, type AskSource } from '@/lib/ask-source'
 import {
@@ -117,8 +147,20 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
   const [pending, startTransition] = useTransition()
   const [isHot, setIsHot] = useState(false)
   const [bookLane, setBookLane] = useState(false)
+  const [pin, setPin] = useState<SellPin | null>(null)
 
   const addressFieldId = `${formId}-address`
+
+  useEffect(() => {
+    if (step !== 'address') {
+      setSellStageFocus('idle')
+      return
+    }
+    if (pin) setSellStageFocus('pinned')
+    else if (address.trim().length >= 3) setSellStageFocus('typing')
+    else setSellStageFocus('idle')
+    return () => setSellStageFocus('idle')
+  }, [address, pin, step])
 
   /**
    * The address the visitor already typed somewhere else.
@@ -427,21 +469,68 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
     )
   }
 
+  const fieldState = error ? 'error' : pin ? 'success' : 'idle'
+  // Stage fold only: reveal a street pin AFTER Places commits. The at-rest Bend
+  // preview was cut — the rail already carries closes + MOS, and a second Bend
+  // map plate stacked the form back into a portal card and clipped The record.
+  const stageMap = pagePath === '/sell'
+  const pinSrc = stageMap && pin ? sellPinMapUrl(pin) : null
+  const mapSrc = pinSrc
+  const mapLabel = pin ? pin.label : ''
+
   return (
-    <form id={formId} onSubmit={advanceFromAddress} className="scroll-mt-24" noValidate>
+    <form id={formId} onSubmit={advanceFromAddress} className="scroll-mt-24 sell-stage-field" noValidate>
       <Label htmlFor={addressFieldId}>Home address</Label>
       {/* No autoFocus on first render: this form also mounts at the BOTTOM of
           the homepage, and a focused off-screen input scroll-jacked every
           mobile visitor to the footer on load (2026-08-27 mobile audit,
           reproduced 3/3 fresh loads). The name field in the next step keeps
           its autoFocus — that one fires after a user action. */}
-      <AddressAutocomplete
-        id={addressFieldId}
-        value={address}
-        onChange={setAddress}
-        invalid={error !== null}
-        className="mt-2 min-h-11 text-base"
-      />
+      <div className="sell-stage-field__control" data-state={fieldState}>
+        <AddressAutocomplete
+          id={addressFieldId}
+          value={address}
+          onChange={(next) => {
+            setAddress(next)
+            // Typing after a pin clears the resolved map until Places commits again.
+            if (pin && next.trim() !== pin.label.trim()) setPin(null)
+          }}
+          onPlaceSelected={(place) => {
+            setAddress(place.formattedAddress)
+            if (
+              typeof place.lat === 'number' &&
+              typeof place.lng === 'number' &&
+              Number.isFinite(place.lat) &&
+              Number.isFinite(place.lng)
+            ) {
+              setPin({
+                lat: place.lat,
+                lng: place.lng,
+                label: place.formattedAddress,
+              })
+            } else {
+              setPin(null)
+            }
+          }}
+          invalid={error !== null}
+          className="mt-2 min-h-11 text-base"
+        />
+        {pin ? (
+          <svg className="sell-stage-field__check" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
+          </svg>
+        ) : null}
+      </div>
+
+      {/* Places pin plate (catalog sheet + transitions-panel): only after a
+          street commits, so the at-rest fold stays proof + ask, not a map card. */}
+      {mapSrc ? (
+        <figure className="sell-stage-pin sell-stage-pin--locked" aria-label="Pinned home location">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="sell-stage-pin__map" src={mapSrc} alt="" decoding="async" />
+          <figcaption className="sell-stage-pin__label">{mapLabel}</figcaption>
+        </figure>
+      ) : null}
 
       {error ? (
         <p className="mt-3 text-sm font-medium text-destructive" role="alert">
@@ -449,8 +538,19 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
         </p>
       ) : null}
 
-      <Button type="submit" disabled={pending} className="mt-4 min-h-11 w-full text-base">
-        {pending ? 'Reading the market' : 'Value my home'}
+      <Button
+        type="submit"
+        disabled={pending}
+        className="sell-stage-submit mt-4 min-h-11 w-full text-base"
+      >
+        <span>{pending ? 'Reading the market' : 'Value my home'}</span>
+        {!pending ? (
+          <span className="sell-stage-submit__arrow" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        ) : null}
       </Button>
     </form>
   )
