@@ -92,6 +92,18 @@ export function realSubdivision(value: string | null | undefined): string | null
   return s
 }
 
+/**
+ * HOW FAR THE LAST-RESORT RUNG MAY REACH ON SIZE (Matt 2026-09-10).
+ *
+ * It was 45%. A 1,443 sqft Fairway Village condo was priced partly off a 2,070
+ * sqft River Village home, and a 3,018 sqft home off a 3,910 sqft one, because
+ * a sale half again the subject's size cleared the band and only half the gap
+ * is adjusted back. That single band was behind most of the ranges still
+ * printing wider than 1.2x. Matt: tighten it, and let a document that then
+ * falls short fail rather than print a wide guess.
+ */
+export const WIDENED_SQFT_BAND = 0.25
+
 export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
     return [
     // 1-2. The subject's own subdivision, exhausted across the full 12 months
@@ -147,14 +159,14 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
     {
       name: 'widened-disclosed-24mo',
       monthsBack: 24,
-      sqftBand: 0.45,
+      sqftBand: WIDENED_SQFT_BAND,
       sameArea: false,
       competing: true,
       maxMiles: 10,
       whenStarved: true,
       relaxResort: true,
       disclosure:
-        'The bounded search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 45% of this home in size, up to 10 miles out, sales inside a nearby resort community this home is not part of, and where this home sits outside every mapped neighborhood, sales across a highway or a river from it. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening when it is explained.',
+        'The bounded search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 25% of this home in size, up to 10 miles out, sales inside a nearby resort community this home is not part of, and where this home sits outside every mapped neighborhood, sales across a highway or a river from it. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening when it is explained.',
     },
     // 7-8. RURAL ACREAGE last resort (2026-07-30). Every rung above is bounded
     // by `City ILIKE`, which is correct for a platted in-town subject and wrong
@@ -202,7 +214,7 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
     {
       name: 'rural-widened-disclosed-24mo',
       monthsBack: 24,
-      sqftBand: 0.45,
+      sqftBand: WIDENED_SQFT_BAND,
       sameArea: false,
       competing: true,
       maxMiles: 25,
@@ -211,7 +223,7 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
       whenStarved: true,
       relaxResort: true,
       disclosure:
-        'The rural search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 45% of this home in size, up to 25 miles out, sales inside a nearby resort community this home is not part of, and sales across a highway or a river from it. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening for rural property when it is explained.',
+        'The rural search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 25% of this home in size, up to 25 miles out, sales inside a nearby resort community this home is not part of, and sales across a highway or a river from it. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening for rural property when it is explained.',
     },
   ]
 }

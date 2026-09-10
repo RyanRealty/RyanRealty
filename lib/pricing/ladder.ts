@@ -328,14 +328,14 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       sameSubdivision: false,
       similarSubdivision: false,
       apples: 'product_lot',
-      sqftBand: 0.45,
+      sqftBand: WIDENED_SQFT_BAND,
       ageYears: null,
       sameStory: false,
       bedSlop: null,
       bathSlop: null,
       whenStarved: true,
       disclosure:
-        'The bounded search did not reach the minimum number of sales this price needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 45% of this home in size, up to 10 miles out, sales from outside the community this home sits in, where it sits in one, and where it sits outside every mapped neighborhood, sales across a highway or a river from it. An older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening when it is explained.',
+        'The bounded search did not reach the minimum number of sales this price needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 25% of this home in size, up to 10 miles out, sales from outside the community this home sits in, where it sits in one, and where it sits outside every mapped neighborhood, sales across a highway or a river from it. An older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening when it is explained.',
     },
   ]
 }
@@ -368,3 +368,9 @@ export const PRICING_MAX_COMPS = 10
  * lib/data/pricing/facts.ts for what that cap was costing.
  */
 export const LOCAL_POOL_RADIUS_MILES = 3
+/**
+ * The last-resort rung's size band (Matt 2026-09-10). Was 45%, which let a
+ * sale half again the subject's size price it while only half the gap was
+ * adjusted back. See WIDENED_SQFT_BAND in lib/cma/comp-tiers.ts.
+ */
+export const WIDENED_SQFT_BAND = 0.25

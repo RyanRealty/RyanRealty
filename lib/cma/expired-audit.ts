@@ -1026,11 +1026,27 @@ export function applyFailedAskCap(
     return none
 
   const uncapped = pricing.recommended
+  // What each tier was worth ON ENTRY to this call. A tier the ceiling did not
+  // actually move is not an application of the ceiling, whatever a previous
+  // call recorded — the same-street anchor (lib/cma/pricing.ts) can hold the
+  // recommendation below this ceiling, and the clamp used to claim that move
+  // and print the failed ask as the reason for it (23 Benaiah, 2026-09-10).
+  const entry = {
+    conservative: pricing.conservative,
+    recommended: pricing.recommended,
+    highEnd: pricing.highEnd,
+  } as const
+  const ceilFor: Record<CmaPricingClampTier, number> = {
+    conservative: consCeil,
+    recommended: recCeil,
+    highEnd: highCeil,
+  }
   // What the EVIDENCE supported, not what a previous application of this same
   // ceiling left behind: `lib/pricing/estimate.ts` clips to the bare ask before
   // `lib/cma/build.ts` re-applies with the real off-market date, and a reader
   // must be told the whole distance once rather than half of it twice.
   const baseline = (tier: CmaPricingClampTier, current: number) => priorBefore.get(tier) ?? current
+  const boundHere = (tier: CmaPricingClampTier) => entry[tier] > ceilFor[tier]
   const baselines = {
     conservative: baseline('conservative', pricing.conservative),
     recommended: baseline('recommended', pricing.recommended),
@@ -1042,7 +1058,7 @@ export function applyFailedAskCap(
   const applications: CmaPricingClampApplication[] = (
     ['conservative', 'recommended', 'highEnd'] as const
   )
-    .filter((tier) => pricing[tier] !== baselines[tier])
+    .filter((tier) => boundHere(tier) && pricing[tier] !== baselines[tier])
     .map((tier) => ({
       tier,
       before: baselines[tier],

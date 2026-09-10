@@ -234,6 +234,38 @@ export interface CmaPricingClampApplication {
   ratio: number
 }
 
+/**
+ * THE HOUSE NEXT DOOR IS THE EVIDENCE (Matt 2026-09-10).
+ *
+ * 23 Benaiah recommended $653,000 while 31 Benaiah — the identical 2,080 sqft
+ * plan on the same street, an arm's-length sale that closed above its last ask
+ * — had sold at $512,000, and the six sales carrying the number were 1,776 to
+ * 2,195 sqft homes in other plats at $305 to $349 a square foot against the
+ * twin's $246. Matt: the twin anchors the number, and the other sales bracket
+ * it rather than set it.
+ */
+export interface CmaPricingStreetAnchor {
+  /** The same-street sale or sales the number is held to. */
+  addresses: string[]
+  /** Median adjusted price of those sales — the anchor itself. */
+  anchor: number
+  /** The most the recommendation may sit above the anchor. */
+  ceiling: number
+  /**
+   * The comp-supported FLOOR once the anchor binds: the anchor itself. Without
+   * it the recommendation lands on the old floor and a seller reads the number
+   * as the bottom of its own range, which is the complaint Matt raised on 655
+   * 12th. The twin is the low, the wider set is the high, and the number sits
+   * between them near the twin because the twin is the better evidence.
+   */
+  floor: number
+  /** What the three methods supported before the anchor bound them. */
+  before: number
+  after: number
+  /** One sentence, for the document and the review page. */
+  sentence: string
+}
+
 export interface CmaPricingClamp {
   /** The only clamp there is today. A second kind gets its own name here. */
   kind: 'failed-ask'
@@ -438,6 +470,12 @@ export interface CmaPricing {
    * it is present and never has to decide.
    */
   clamp?: CmaPricingClamp | null
+  /**
+   * Set when a sale on the subject's own street, of the subject's own size,
+   * held the recommendation down (Matt 2026-09-10). Separate from `clamp`
+   * because the failed-ask ceiling is a different thing and both can bind.
+   */
+  streetAnchor?: CmaPricingStreetAnchor | null
   /**
    * Which sale carried the price, and why — the appraisal reconciliation the
    * document owed the reader (research brief 2026-09-07, item 2). Computed in

@@ -545,3 +545,67 @@ describe('value-has-a-basis — a number under half the ask with nothing grading
     expect(checkFor({ recommended: 14_000, failedAsk: null, priceAnchorPpsf: null }).pass).toBe(true)
   })
 })
+
+describe('the house next door anchors the number (Matt 2026-09-10)', () => {
+  function twinSubject() {
+    return subject({ streetAddress: '23 Benaiah', city: 'Bend', sqft: 2080, lastListPrice: null })
+  }
+  /** Six sales in other plats, all far above what the street itself fetches. */
+  function otherPlats() {
+    return Array.from({ length: 6 }, (_, i) =>
+      comp({
+        address: `${100 + i} Tanglewood`,
+        city: 'Bend',
+        sqft: 1900,
+        closePrice: 640_000 + i * 5_000,
+        closeDate: new Date(Date.now() - (60 + i * 20) * 86_400_000).toISOString().slice(0, 10),
+      }),
+    )
+  }
+  const twin = () =>
+    comp({
+      address: '31 Benaiah',
+      city: 'Bend',
+      sqft: 2080,
+      closePrice: 512_000,
+      closeDate: new Date(Date.now() - 420 * 86_400_000).toISOString().slice(0, 10),
+    })
+
+  it('holds the recommendation to the twin plus a tenth, and says so', () => {
+    const adjusted = adjustComps(twinSubject(), [...otherPlats(), twin()], null)
+    const pricing = computePricing(twinSubject(), adjusted, null)!
+    expect(pricing.streetAnchor).not.toBeNull()
+    expect(pricing.recommended).toBe(pricing.streetAnchor!.ceiling)
+    expect(pricing.recommended).toBeLessThan(pricing.streetAnchor!.before)
+    expect(pricing.streetAnchor!.addresses).toEqual(['31 Benaiah'])
+    expect(pricing.streetAnchor!.sentence).toContain('31 Benaiah')
+    expect(pricing.needsReview).toBe(true)
+  })
+
+  it('leaves the number alone when no sale sits on the subject’s street', () => {
+    const adjusted = adjustComps(twinSubject(), otherPlats(), null)
+    const pricing = computePricing(twinSubject(), adjusted, null)!
+    expect(pricing.streetAnchor ?? null).toBeNull()
+  })
+
+  it('leaves the number alone when the street sale agrees with the set', () => {
+    const agreeing = comp({ address: '31 Benaiah', city: 'Bend', sqft: 2080, closePrice: 700_000 })
+    const adjusted = adjustComps(twinSubject(), [...otherPlats(), agreeing], null)
+    const pricing = computePricing(twinSubject(), adjusted, null)!
+    expect(pricing.streetAnchor ?? null).toBeNull()
+  })
+
+  it('ignores a same-street sale of a very different size', () => {
+    const bigger = comp({ address: '31 Benaiah', city: 'Bend', sqft: 3400, closePrice: 512_000 })
+    const adjusted = adjustComps(twinSubject(), [...otherPlats(), bigger], null)
+    const pricing = computePricing(twinSubject(), adjusted, null)!
+    expect(pricing.streetAnchor ?? null).toBeNull()
+  })
+
+  it('keeps the contract’s conservative <= recommended <= highEnd', () => {
+    const adjusted = adjustComps(twinSubject(), [...otherPlats(), twin()], null)
+    const p = computePricing(twinSubject(), adjusted, null)!
+    expect(p.conservative).toBeLessThanOrEqual(p.recommended)
+    expect(p.recommended).toBeLessThanOrEqual(p.highEnd)
+  })
+})

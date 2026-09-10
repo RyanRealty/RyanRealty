@@ -10,7 +10,7 @@
  * Beds/baths/age: match filters, not stacked dollar lines.
  */
 
-import { computePricing } from '@/lib/cma/pricing'
+import { applyStreetAnchor, computePricing } from '@/lib/cma/pricing'
 import type { CmaSiteData } from '@/lib/cma/county'
 import { attachSellerNet, resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
@@ -1018,7 +1018,12 @@ export function priceCmaSet(args: {
     yoyMedianPriceDeltaPct: args.market?.yoyMedianPriceDeltaPct ?? null,
     indexUnavailableReason: args.indexUnavailableReason ?? null,
   })
-  return applyEngineCoverToCmaPricing(pricing, {
+  // THE HOUSE NEXT DOOR IS THE EVIDENCE, AND IT GETS THE LAST WORD BEFORE THE
+  // FAILED-ASK CEILING (Matt 2026-09-10). computePricing already applied it,
+  // and the engine cover below re-derives every tier from the range rule, so
+  // it has to run again after. applyStreetAnchor is idempotent and keeps the
+  // first `before`, so the sentence names the whole distance once.
+  const covered = applyEngineCoverToCmaPricing(pricing, {
     subjectSqft: args.subject.sqft ?? 0,
     lastAsk: currentListAsk(args.subject),
     failedAsk: failedListAsk(args.subject),
@@ -1030,6 +1035,29 @@ export function priceCmaSet(args: {
     priceOverride: args.input.priceOverride,
     marketSaleToList: args.market?.saleToListRatio,
   })
+  if (covered) {
+    const anchored = applyStreetAnchor(
+      {
+        subject: args.subject,
+        adjusted: args.adjusted,
+        priceOverride: args.input.priceOverride ?? null,
+        notes: covered.notes,
+        prior: covered.streetAnchor ?? null,
+      },
+      { conservative: covered.conservative, recommended: covered.recommended, highEnd: covered.highEnd },
+    )
+    covered.streetAnchor = anchored
+    if (anchored && covered.recommended > anchored.after) {
+      covered.recommended = anchored.after
+      // The twin is the floor, not the number.
+      covered.conservative = Math.min(covered.conservative, anchored.floor)
+      if (covered.highEnd < covered.recommended) covered.highEnd = covered.recommended
+      covered.valueLow = covered.conservative
+      covered.valueHigh = covered.highEnd
+      covered.needsReview = true
+    }
+  }
+  return covered
 }
 
 export function estimateClosePrice(opts: {

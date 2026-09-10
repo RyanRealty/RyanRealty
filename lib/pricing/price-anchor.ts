@@ -157,6 +157,17 @@ export function resolvePriceAnchor(subject: PricingSubject, pool: readonly Prici
  */
 export const SAME_STREET_SIZE_BAND = 0.1
 
+/**
+ * How far the recommendation may sit above a same-street sale of the subject's
+ * own size before a person has to say so (Matt 2026-09-10: "the twin anchors
+ * the number, and the other sales bracket rather than set it").
+ *
+ * Ten percent is room for condition and updates between two houses on one
+ * street. It is not room for the $141,000 that separated 23 Benaiah's
+ * recommendation from what the identical plan next door actually fetched.
+ */
+export const SAME_STREET_PREMIUM_MAX = 0.1
+
 function streetKey(address: string | null | undefined): string | null {
   const s = (address ?? '').trim().toLowerCase()
   if (!s) return null

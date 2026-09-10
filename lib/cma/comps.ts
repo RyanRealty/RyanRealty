@@ -81,8 +81,18 @@ import {
 
 export { realSubdivision }
 
-/** Floor for a priced set. Thin sets must widen before the letter paints. */
-export const MIN_COMPS = 5
+/**
+ * Floor for a priced set. Thin sets must widen before the letter paints.
+ *
+ * ONE FLOOR ACROSS BOTH PATHS (Matt 2026-09-10). This was 5 while the facts
+ * ladder's PRICING_MIN_COMPS was 3, and the difference was drift, not a
+ * decision: the same home priced or failed depending on which ladder
+ * pickCompSource sent it down. 63 queue documents were failing for want of
+ * comparable sales, every one of them a person who asked for a value and got
+ * nothing. A three-sale document is thin, and it still carries the dispersion
+ * guard, the accuracy contract and a review flag before anyone sees it.
+ */
+export const MIN_COMPS = 3
 /**
  * Stop climbing the ladder at 5 (Matt 2026-07-30). The target is not "as many
  * comps as possible" — every extra comp is bought by widening geography or
