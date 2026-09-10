@@ -84,7 +84,7 @@ export function MorphingSearch({
 	placeholder = "Search",
 	shortcut = "f",
 	iconOnly = false,
-	emptyMessage = "No results found.",
+	emptyMessage = "No places match that.",
 	open: controlledOpen,
 	defaultOpen = false,
 	onOpenChange,
@@ -132,7 +132,6 @@ export function MorphingSearch({
 
 	const openSearch = useCallback(() => {
 		measureAnchor();
-		setBackgroundScrollLocked(true);
 		previousFocusRef.current =
 			document.activeElement instanceof HTMLElement
 				? document.activeElement
@@ -172,8 +171,10 @@ export function MorphingSearch({
 	useEffect(() => setMounted(true), []);
 
 	useEffect(() => {
-		if (open) setBackgroundScrollLocked(true);
-	}, [open]);
+		if (open && (query.trim().length > 0 || items.length > 0)) {
+			setBackgroundScrollLocked(true);
+		}
+	}, [open, query, items.length]);
 
 	useEffect(() => {
 		measureAnchor();
@@ -346,15 +347,13 @@ export function MorphingSearch({
 
 	const shellLayoutId = `${uid}-shell`;
 	const listboxId = `${uid}-results`;
-	const panelWidth = mounted
-		? Math.max(
-				anchorRect.width,
-				Math.min(448, window.innerWidth - anchorRect.left - 16),
-			)
-		: anchorRect.width;
-	const resultsHeight = mounted
-		? Math.max(96, Math.min(288, window.innerHeight - anchorRect.top - 80))
-		: 288;
+	const panelWidth = anchorRect.width;
+	const showList = query.trim().length > 0 || filteredItems.length > 0;
+	const resultsHeight = !showList
+		? 0
+		: filteredItems.length > 0
+			? Math.max(120, Math.min(288, window.innerHeight - anchorRect.top - 80))
+			: 56;
 	const collapsedContentClip = `inset(0px ${Math.max(
 		0,
 		panelWidth - anchorRect.width,
@@ -371,7 +370,8 @@ export function MorphingSearch({
 				<div
 					aria-hidden={!open}
 					inert={!open}
-					className="pointer-events-none fixed left-0 top-0 z-50 size-0"
+					data-v3-morph-overlay=""
+					className="v3-morph-overlay-root pointer-events-none fixed left-0 top-0 size-0"
 				>
 					<AnimatePresence
 						initial={false}
@@ -393,13 +393,12 @@ export function MorphingSearch({
 								<motion.div
 									layoutId={shellLayoutId}
 									aria-hidden="true"
-									className="fixed z-10 rounded-xl bg-background/90 backdrop-blur-xl"
+									className="v3-morph-overlay-shell fixed z-10"
 									style={{
 										top: anchorRect.top,
 										left: anchorRect.left,
 										width: panelWidth,
 										height: 48 + resultsHeight,
-										boxShadow: "inset 0 0 0 1px var(--color-border)",
 									}}
 									transition={morphTransition}
 								/>
@@ -434,7 +433,7 @@ export function MorphingSearch({
 													opacity: SEARCH_MORPH,
 												}
 									}
-									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl"
+									className="v3-morph-overlay-dialog pointer-events-auto fixed z-20 overflow-hidden"
 									style={{
 										top: anchorRect.top,
 										left: anchorRect.left,
@@ -443,7 +442,8 @@ export function MorphingSearch({
 								>
 									<div
 										className={cn(
-											"flex h-12 items-center gap-2.5 border-b border-border",
+											"flex h-12 items-center gap-2.5",
+											showList && "v3-morph-overlay-split",
 											iconOnly ? "px-4" : "px-3.5",
 										)}
 									>
@@ -457,8 +457,8 @@ export function MorphingSearch({
 												onChange={(event) => updateQuery(event.target.value)}
 												role="combobox"
 												aria-label={placeholder}
-												aria-expanded="true"
-												aria-controls={listboxId}
+												aria-expanded={showList}
+												aria-controls={showList ? listboxId : undefined}
 												aria-autocomplete="list"
 												aria-activedescendant={
 													filteredItems.length > 0
@@ -469,11 +469,9 @@ export function MorphingSearch({
 												className="size-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
 											/>
 										</div>
-										<kbd className="flex h-7 shrink-0 items-center rounded-md border border-border px-2 text-xs text-muted-foreground">
-											Esc
-										</kbd>
 									</div>
 
+									{showList ? (
 									<motion.div
 										ref={listRef}
 										id={listboxId}
@@ -559,12 +557,13 @@ export function MorphingSearch({
 													</button>
 												);
 											})
-										) : (
-											<p className="px-3 py-8 text-center text-sm text-muted-foreground">
+										) : query.trim() ? (
+											<p className="px-3 py-3 text-sm text-muted-foreground">
 												{emptyMessage}
 											</p>
-										)}
+										) : null}
 									</motion.div>
+									) : null}
 								</motion.div>
 							</motion.div>
 						) : null}
@@ -595,11 +594,8 @@ export function MorphingSearch({
 						aria-label={placeholder}
 						onClick={openSearch}
 						transition={morphTransition}
-						style={{
-							boxShadow: "inset 0 0 0 1px var(--search-trigger-stroke)",
-						}}
 						className={cn(
-							"flex size-full items-center rounded-xl bg-background/60 text-left backdrop-blur-md outline-none [--search-trigger-stroke:var(--color-border)] hover:[--search-trigger-stroke:var(--color-border-strong)] focus-visible:ring-2 focus-visible:ring-ring",
+							"flex size-full items-center text-left outline-none",
 							iconOnly ? "cursor-pointer justify-center" : "cursor-text px-3.5",
 						)}
 					></motion.button>
@@ -625,16 +621,9 @@ export function MorphingSearch({
 				>
 					<Search className="size-4 shrink-0 text-muted-foreground" />
 					{iconOnly ? null : (
-						<>
-							<span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-								{placeholder}
-							</span>
-							{shortcut ? (
-								<kbd className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md border border-border px-2 text-xs text-muted-foreground">
-									{shortcut.toUpperCase()}
-								</kbd>
-							) : null}
-						</>
+						<span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+							{placeholder}
+						</span>
 					)}
 				</motion.div>
 			</div>

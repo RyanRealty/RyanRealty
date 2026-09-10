@@ -15,6 +15,7 @@ import {
 } from '@/lib/listing/publish-listing-share'
 import { publishTourEmbedFromUrl } from '@/lib/listing/publish-listing-hero-video'
 import type { VideoEmbed } from '@/lib/data/types/video'
+import { Card, CardContent } from '@/components/ui/card'
 import { V3_ROOT_CLASS, V3Button, V3Carousel, V3Number } from '@/components/site/v3'
 import type { HomeHeroLive } from './home-hero-inventory'
 import {
@@ -88,7 +89,10 @@ function HomeRailCardFace({
   }
 
   return (
-    <article className={cn(V3_ROOT_CLASS, 'v3-lrow', 'v3-lrow--card', 'home-rail__card')}>
+    <Card
+      size="sm"
+      className={cn(V3_ROOT_CLASS, 'v3-lrow', 'v3-lrow--card', 'home-rail__card')}
+    >
       <div className="home-rail__media">
         <SplitCardMedia
           urls={card.photoUrls}
@@ -112,14 +116,16 @@ function HomeRailCardFace({
           <HeartIcon filled={saved} className="home-rail__save-icon" />
         </V3Button>
       </div>
-      <Link href={card.href} className="v3-lrow__copy home-rail__copy">
-        <span className="v3-lrow__price">{ask ?? 'Price on request'}</span>
-        {shareKind ? <span className="v3-lrow__tag">{shareKind}</span> : null}
-        {meta.length > 0 ? <span className="v3-lrow__meta">{meta.join(' · ')}</span> : null}
-        <span className="v3-lrow__addr">{card.addressLine}</span>
-        <span className="v3-lrow__city">{card.cityLine}</span>
-      </Link>
-    </article>
+      <CardContent className="home-rail__copy">
+        <Link href={card.href} className="v3-lrow__copy home-rail__copy-link">
+          <span className="v3-lrow__price">{ask ?? 'Price on request'}</span>
+          {shareKind ? <span className="v3-lrow__tag">{shareKind}</span> : null}
+          {meta.length > 0 ? <span className="v3-lrow__meta">{meta.join(' · ')}</span> : null}
+          <span className="v3-lrow__addr">{card.addressLine}</span>
+          <span className="v3-lrow__city">{card.cityLine}</span>
+        </Link>
+      </CardContent>
+    </Card>
   )
 }
 

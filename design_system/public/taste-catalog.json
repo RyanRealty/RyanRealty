@@ -29,6 +29,13 @@
       "import": "@/components/ui/carousel",
       "house": "components/site/v3/V3Carousel.client.tsx"
     },
+    "shadcn-card": {
+      "add": "card",
+      "file": "components/ui/card.tsx",
+      "import": "@/components/ui/card",
+      "house": "app/_v3/HomeListingRail.client.tsx"
+    },
+    "shadcn:card": { "aliasOf": "shadcn-card" },
     "shadcn:carousel": { "aliasOf": "shadcn-carousel" },
     "carousel": { "aliasOf": "shadcn-carousel" },
     "beui-morphing-search": {
@@ -2174,6 +2181,12 @@
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/carousel",
           "job": "Inventory rails. Adapt into V3Carousel, do not paste a second kit."
+        },
+        {
+          "id": "shadcn-card",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/card",
+          "job": "House cards on the rail: price, address, beds/baths/sqft on the installed Card, not a photo with a heart."
         }
       ]
     },

@@ -269,6 +269,7 @@
       { "id": "beui-tabs" },
       { "id": "beui:shared-layout-bg" },
       { "id": "shadcn-carousel" },
+      { "id": "shadcn-card" },
       { "id": "rareui:animatedcounter" },
       { "id": "beui:number" },
       { "id": "house-home-rails" }

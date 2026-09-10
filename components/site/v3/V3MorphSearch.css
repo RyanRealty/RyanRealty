@@ -174,3 +174,27 @@
     display: none;
   }
 }
+
+/* Above Places mega (chrome z-index 200). */
+.v3-morph-overlay-root {
+  z-index: 300;
+}
+
+/* Portaled overlay sits on document.body. Same cream field, navy edge, no glass. */
+.v3-morph-overlay-shell {
+  background: var(--v3-surface);
+  border-radius: var(--v3-radius-control);
+  box-shadow: inset 0 0 0 2px var(--v3-ink);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.v3-morph-overlay-dialog {
+  background: var(--v3-surface);
+  border-radius: var(--v3-radius-control);
+  color: var(--v3-ink);
+}
+
+.v3-morph-overlay-split {
+  border-bottom: 1px solid var(--v3-edge);
+}

@@ -47,6 +47,15 @@ describe('homepage hero search uses the public search stack', () => {
     expect(doorsAt).toBeGreaterThan(railsAt)
   })
 
+  it('morphing search is a field that grows, not a command palette', () => {
+    const morph = readFileSync(resolve('components/motion/morphing-search.tsx'), 'utf8')
+    expect(morph).not.toMatch(/<kbd/)
+    expect(morph).not.toContain('backdrop-blur')
+    expect(morph).not.toContain('No results found')
+    expect(morph).toContain('v3-morph-overlay-shell')
+    expect(morph).toContain('showList')
+  })
+
   it('adapts catalog modules into house primitives on the hero and rails', () => {
     expect(SEARCH).toContain('V3Tabs')
     expect(SEARCH).toContain('V3MorphSearch')
@@ -65,6 +74,14 @@ describe('homepage hero search uses the public search stack', () => {
     expect(RAIL_CLIENT).toContain('V3Carousel')
     expect(RAIL_CLIENT).toContain('mode="rail"')
     expect(RAIL_CLIENT).toContain('V3Number')
+    expect(RAIL_CLIENT).toContain("from '@/components/ui/card'")
+    expect(RAIL_CLIENT).toContain('CardContent')
+  })
+
+  it('hero suggestions are places and houses, not blog posts', () => {
+    expect(SEARCH).toContain("item.kind === 'address'")
+    expect(SEARCH).toContain("item.kind === 'city'")
+    expect(SEARCH).not.toMatch(/kind === 'page'/)
   })
 
   it('reuses SearchSuggest and searchHrefForQuery', () => {

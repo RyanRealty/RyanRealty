@@ -44,7 +44,18 @@ export function HomeHeroSearch({
   const [open, setOpen] = useState(false)
   const [highlight, setHighlight] = useState(-1)
   const { suggestions, loading } = useSearchSuggest(query)
-  const items = useMemo(() => flattenSuggestions(suggestions), [suggestions])
+  const items = useMemo(
+    () =>
+      flattenSuggestions(suggestions).filter(
+        (item) =>
+          item.kind === 'address' ||
+          item.kind === 'city' ||
+          item.kind === 'subdivision' ||
+          item.kind === 'neighborhood' ||
+          item.kind === 'zip',
+      ),
+    [suggestions],
+  )
   const prefix = 'home-hero-suggest'
   const resultsOpen = open && (items.length > 0 || loading)
 
