@@ -44,6 +44,7 @@ import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 import { listingsBrowsePath } from '@/lib/slug'
 import { v3Text, type V3ChartProps, type V3InstrumentFigure, type V3LedgerFigureRow } from '@/components/site/v3'
+import { buildMosSupplyChart } from '@/app/months-of-supply/_v3/mos-chart'
 import {
   buildMonthlyMedianChart,
   buildRegionMedianChart,
@@ -80,6 +81,44 @@ export type CityLedger = {
 /* -------------------------------------------------------------------------- */
 
 /**
+ * Monthly pace implied by leftover MOS: active / months of supply.
+ * Miss omits. This is the other bar of the two-bar drawing, not a MOS tile.
+ * MOS digits themselves still go through formatMonthsOfSupply on the chart claim.
+ */
+export function monthlyPaceFromMos(
+  active: number | null | undefined,
+  mosRaw: number | null,
+): number | null {
+  if (active == null || !(active > 0) || mosRaw == null || !(mosRaw > 0)) return null
+  return Math.round((active / mosRaw) * 10) / 10
+}
+
+function formatMonthlyPace(n: number): string {
+  return n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+}
+
+/**
+ * MOS as two named bars (DATA_GRAPHICS / catalog house-mos). Omit when either
+ * count is absent — never a 3.9 KPI tile, never a synthesized zero.
+ */
+export function buildAnnualMosChart(
+  active: number | null | undefined,
+  mosRaw: number | null,
+): V3ChartProps | undefined {
+  const monthOfSales = monthlyPaceFromMos(active, mosRaw)
+  const mosText = mosRaw != null && mosRaw > 0 ? formatMonthsOfSupply(mosRaw) : null
+  if (active == null || !(active > 0) || monthOfSales == null || !mosText) return undefined
+  return withChartId(
+    buildMosSupplyChart({
+      homesForSale: active,
+      monthOfSales,
+      mosText,
+    }),
+    'region-mos',
+  )
+}
+
+/**
  * `mosRaw` and `medianListDisplay` are the page's derivations, already guarded.
  * They are passed in rather than re-read off the pulse so this file cannot become
  * a second place the verdict or the published median is computed.
@@ -88,6 +127,11 @@ export type CityLedger = {
  * Instrument, the visible FAQ sentence, and the Dataset variable are one number
  * (see the page's invariant 6). formatPriceExact prints those digits, not a
  * second thousand-round of an already-shared figure.
+ *
+ * SITE-71: months of supply is the two-bar drawing, never a lead tile. When the
+ * rearrangement publishes, the first two figures are the two bars (homes for
+ * sale, a month of sales). MOS digits stay on the chart claim via
+ * formatMonthsOfSupply.
  */
 export function buildRegionFigures(
   hud: { active: number | null; daysToPending: number | null } | null,
@@ -95,23 +139,24 @@ export function buildRegionFigures(
   medianListDisplay: number | null,
 ): V3InstrumentFigure[] {
   const figures: V3InstrumentFigure[] = []
-  if (mosRaw != null) {
-    figures.push({
-      value: v3Text(formatMonthsOfSupply(mosRaw)),
-      label: v3Text('months of supply'),
-      href: '/months-of-supply',
-      sentence: v3Text(
-        'How long the homes listed today would last if they sold at the pace of the last six months, and nothing new came on.',
-      ),
-    })
-  }
+  const monthOfSales = monthlyPaceFromMos(hud?.active, mosRaw)
   if (hud != null && hud.active != null && hud.active > 0) {
     figures.push({
       value: v3Text(hud.active.toLocaleString('en-US')),
-      label: v3Text('active single-family listings'),
+      label: v3Text('homes for sale, single-family'),
       href: listingsBrowsePath(),
       sentence: v3Text(
         'Every single-family house for sale right now across the Central Oregon service area.',
+      ),
+    })
+  }
+  if (monthOfSales != null) {
+    figures.push({
+      value: v3Text(formatMonthlyPace(monthOfSales)),
+      label: v3Text('a month of sales'),
+      href: '/months-of-supply',
+      sentence: v3Text(
+        'Homes that typically close in one month, the pace the listings on the market are measured against.',
       ),
     })
   }

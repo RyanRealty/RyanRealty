@@ -1,8 +1,8 @@
 {
   "route": "app/contact/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md, built from components/site/v3. THIS FILE BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat five-step contact wizards and generic 'get in touch' pages: one-screen V3Ask, a reach control with one dominant call door carrying a live hours state, and the brokers who answer shown as photographs rather than a flat hairline list.",
-  "note": "SITE-48 2026-09-09. Order is Breadcrumb, Quiet (H1 Call, text, or write), V3Doors #reach as a REACH CONTROL (one call door at display scale with the V3OnDuty live hours under it, then text, email and the calendar as lighter links), V3Ask (one screen, every field, one button), AboutFaces (who answers — the same roster primitive /team and /about use, replacing the flat V3Ledger row the 2026-09-08 evaluator called 'a flat hairline row … give it visual weight'), V3Answers, Footer. Consent checkbox is padded to --v3-tap on this route without changing SMS_CONSENT_TEXT. The live state is PUBLISHED HOURS, never a reply time: SITE-09's response clock is still unproven and its answered ratio is a backlog, not a promise.",
+  "competitiveTarget": "Beat five-step contact wizards and generic 'get in touch' pages: one-screen V3Ask in the first viewport, a reach control with one dominant call door carrying a live hours state and the principal photograph, and the brokers who answer shown as photographs rather than a flat hairline list.",
+  "note": "SITE-80 2026-09-10. Order is Breadcrumb, ContactFold (Quiet H1 + sourced Google-reviews figure, V3Doors #reach as a REACH CONTROL \u2014 one call door at display scale with the principal cutout and V3OnDuty live hours, then text, email and the calendar as lighter links \u2014 ContactAsk as the one ask in the same viewport via V3Input), AboutFaces (who answers \u2014 the same roster /team and /about use), V3Answers, Footer. Consent checkbox is padded to --v3-tap on this route without changing SMS_CONSENT_TEXT. The live state is PUBLISHED HOURS, never a reply time: SITE-09's response clock is still unproven and its answered ratio is a backlog, not a promise.",
   "requiredComponents": [
     {
       "name": "V3SectionTracker",
@@ -15,8 +15,13 @@
       "blocking": true
     },
     {
+      "name": "ContactFold",
+      "section": "SITE-80 first viewport: reach column (Quiet + V3Doors) beside the one ask. Do not open on four identical link rows.",
+      "blocking": true
+    },
+    {
       "name": "V3Quiet",
-      "section": "Opens the page. H1 is Call, text, or write (or the CMS title when it is not a bare Contact). One true line. Listing summary door when ?listingKey= is present.",
+      "section": "Opens the page. H1 is Call, text, or write (or the CMS title when it is not a bare Contact). One true line plus the sourced Google-reviews figure. Listing summary door when ?listingKey= is present.",
       "blocking": true
     },
     {
@@ -41,12 +46,12 @@
     },
     {
       "name": "AboutFaces",
-      "section": "Who answers, headingLevel 2 — the same roster primitive /team and /about use, with the canonical broker cutouts and their reach chips. No record figures here: this route is dynamic and the per-broker MLS reads belong on the two cached pages.",
+      "section": "Who answers, headingLevel 2 \u2014 the same roster primitive /team and /about use, with the canonical broker cutouts and their reach chips. No record figures here: this route is dynamic and the per-broker MLS reads belong on the two cached pages.",
       "blocking": true
     },
     {
       "name": "V3OnDuty",
-      "section": "The live state on the reach control: published booking hours against the Pacific clock, from crm_company_settings.booking_hours — the same rows /book offers time from. NEVER a reply-time figure (SITE-09, V3OnDuty.view.ts).",
+      "section": "The live state on the reach control: published booking hours against the Pacific clock, from crm_company_settings.booking_hours \u2014 the same rows /book offers time from. NEVER a reply-time figure (SITE-09, V3OnDuty.view.ts).",
       "blocking": true
     }
   ],
@@ -75,7 +80,7 @@
     },
     {
       "name": "V3Ledger",
-      "reason": "The brokers band was a flat hairline row per broker with no visual encoding — the 2026-09-08 evaluator's own finding. AboutFaces does that job on every other page; a second, flatter way of listing the same three people is how one site becomes two (TASTE.md consistency)."
+      "reason": "The brokers band was a flat hairline row per broker with no visual encoding \u2014 the 2026-09-08 evaluator's own finding. AboutFaces does that job on every other page; a second, flatter way of listing the same three people is how one site becomes two (TASTE.md consistency)."
     }
   ],
   "removedComponents": [
@@ -85,19 +90,20 @@
   "sectionOrder": [
     "V3SectionTracker + ContactPage / BreadcrumbList / FAQPage JSON-LD (not sections)",
     "V3Breadcrumb",
-    "V3Quiet #contact -- H1 and the one true line",
-    "V3Doors #reach -- one call door at display scale with the live hours, then text, email, calendar",
-    "ContactAsk -- one screen",
+    "ContactFold -- Quiet H1 + sourced reviews figure | reach control + ContactAsk in the first viewport",
+    "V3Quiet #contact -- H1 and the one true line (inside the fold)",
+    "V3Doors #reach -- one call door at display scale with the live hours and principal photograph, then text, email, calendar",
+    "ContactAsk -- one screen, V3Input fields (inside the fold)",
     "AboutFaces -- who answers, the brokers with their photographs",
     "V3Answers #faq -- before you write",
     "V3Footer"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
+    "evaluatedAt": "2026-09-10",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate Sonnet evaluator agent on the MERGED page — three rounds. The 2026-09-09 merge of main (SITE-48) into claude/run-loop-w8f3ep (SITE-40) produced a fold neither committed receipt described: main's reach control and brokers band, with SITE-40's principal-broker door and its sourced 5.0 in the opening. Round one on that merged fold scored 58 and named two medium defects — the broker row and the office row were \"the same component instanced twice\", and ~115px of empty cream sat between the office row and the next section rule. Round two (the office folded to one inline secondary line, the inert full-bar ratio meter dropped, the inline label stopped wrapping at 375) scored 62, tied the bar, and named the dead space again as \"an artifact of section padding stacking rather than an intentional editorial pause\". Round three, after the seam fix, is this receipt. Each round: one call, three independent scorings of the same two shots, no code read and no live page opened. The builder ran on Opus 5 and did not grade its own page.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluator": "scripts/taste-evaluate.ts contact via grok CLI, grok-4.6, three scorings of the same two first-viewport shots. Builder did not grade the page. Round one 59 (53/59/66) named the 375 ask below the fold; round two after ContactFold order at 375 is this receipt.",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/contact"
@@ -109,98 +115,113 @@
       "states": [
         "default"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, against next dev on the merged tree before the push"
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, against next dev --webpack on :3220"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/contact/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/contact/shots/mobile375.png"
     },
-    "shotsHash": "sha256:0429de75df3cc47c4b501d42d54fab22f3a71d7ab4200d06d0bc17fa85853030",
+    "shotsHash": "sha256:d8f500829f3e1c303b62b3f2a282c4693c27c55a775b566307239b7e55817cc5",
     "scores": [
-      65,
-      66,
-      68
+      64,
+      60,
+      67
     ],
-    "score": 66,
-    "breakdown": {
-      "design": 18,
-      "originality": 14,
+    "score": 64,
+    "perCriterion": {
+      "design": 21,
+      "originality": 17,
       "interaction": 8,
-      "craft": 11,
-      "honesty": 8
+      "craft": 9,
+      "honesty": 9
     },
-    "beats": "The giant tabular phone number and the sourced Google-reviews disclosure are the two moments a reader would screenshot. The gain over the 62 bar is incremental, not decisive — a contact page carries little data to work with.",
-    "contactListIsFirstContent": false,
-    "contactListAnswer": "The V3Quiet hero: eyebrow, H1 'Call, text, or write', one service-area sentence and an Office address row. Legitimate hero content, not an undifferentiated list; the reach control itself does not start until the second section.",
+    "criteria": {
+      "designQuality": 21,
+      "originality": 17,
+      "interaction": 8,
+      "craft": 9,
+      "honestyFunction": 9
+    },
+    "beats": "Windermere Central Oregon /contact: we win a sourced 5.0 and live Closed-now hours with a trace; we lose the phone number in the first 375 viewport, which their header and body both keep. Better than a 59 four-cell door grid because desktop is a split telephone broadside beside the ask, not four identical link rows.",
+    "adaptedFrom": [
+      {
+        "id": "beui-input"
+      },
+      {
+        "id": "shadcn-input"
+      },
+      {
+        "id": "house-ask"
+      },
+      {
+        "id": "house-doors"
+      },
+      {
+        "id": "house-faces"
+      }
+    ],
     "defects": [
       {
-        "section": "Hero header (below the breadcrumb rule, above the eyebrow)",
-        "severity": "minor",
-        "finding": "Roughly 130-140px of empty cream between the breadcrumb rule and the eyebrow, pushing the phone number further down without adding meaning.",
-        "primitive": "V3Quiet section top padding (--v3-section-pad)",
-        "fix": "Tighten the top padding under the breadcrumb rule, or give the space a supporting element.",
-        "viewport": "desktop",
-        "owner": "the /contact composition node — the seam BELOW this section was fixed in this pass (a Quiet handing to a Doors band closes on --v3-space-xl); the top pad is the shared section token and moving it moves 118 pages."
+        "section": "#reach .v3-doors__item:not(.v3-doors__item--lead)",
+        "severity": "taste",
+        "finding": "Text, Email and Schedule still sit as three equal hairline cells under the display-scale call, the old four-pack with the hero pulled out, and at 1440 they crop to orphaned TEXT / EMAIL / SCHEDULE kickers with no values.",
+        "replaceWith": "house-doors"
       },
       {
-        "section": "Hero intro paragraph",
-        "severity": "moderate",
-        "finding": "The community-list body copy reads noticeably lighter than the surrounding navy; at this size it is borderline for AA against the cream ground.",
-        "primitive": "--v3-ink-muted in components/site/v3/tokens.css",
-        "fix": "Measure the rendered ratio against #faf8f4 and darken the token if it is under 4.5:1.",
-        "viewport": "desktop",
-        "owner": "the design system — this token sets muted body copy on every public page, so it is one change and one re-capture of every class, not a /contact fix."
+        "section": ".contact-fold #reach",
+        "severity": "taste",
+        "finding": "At 375 the first viewport is Quiet H1, a 5.0, then ContactAsk only. The display-scale call door, live hours and principal photograph sit below the fold, so a phone visitor meets a labeled form.",
+        "replaceWith": "house-doors"
       },
       {
-        "section": "Broker row vs the Send-a-text door",
-        "severity": "minor",
-        "finding": "Both use the left-content plus far-right chevron shape, so the shape appears twice in one viewport.",
-        "primitive": "V3Quiet door row and V3Doors door",
-        "fix": "Give the broker row a profile-card treatment without the arrow chrome so the chevron row appears once.",
-        "viewport": "desktop",
-        "owner": "the /contact composition node — the two rows are different primitives in different sections; reconciling them is a primitive change, not a page edit."
+        "section": "#contact .v3-quiet__figure",
+        "severity": "craft",
+        "finding": "GOOGLE REVIEWS wraps onto two lines under 5.0 while SOURCE and how we calculate this sit on the right, an orphaned label at 375.",
+        "replaceWith": null
       },
       {
-        "section": "Office address row",
-        "severity": "minor",
-        "finding": "At 375 the address strands \"OR 97703\" on its own short line.",
-        "primitive": "V3Quiet inline door detail",
-        "fix": "Break after \"Ave #2,\" so the wrap falls in two balanced halves.",
-        "viewport": "mobile375",
-        "owner": "open — round two already cut this from three lines to two by stopping the label from wrapping."
+        "section": ".v3-ask__control--select",
+        "severity": "craft",
+        "finding": "How can we help still reads as a raised white field against cream Name, Email, Phone and Message boxes, so one fold has two field surfaces.",
+        "replaceWith": "shadcn-input"
       },
       {
-        "section": "Whole page",
-        "severity": "moderate",
-        "finding": "A static first-viewport capture cannot confirm the loading, empty and error states the rubric requires.",
-        "primitive": "n/a — a verification gap in the instrument, not a rendered defect",
-        "fix": "Capture the loading/empty/error states for the review figure and the send actions in a states pass.",
-        "viewport": "both",
-        "owner": "the taste instrument — scripts/take-route-shots.mjs takes --states; no class has used it for error states yet."
+        "section": "#reach .v3-doors__art",
+        "severity": "taste",
+        "finding": "The principal cutout is a timid unnamed stamp on the call door; who answers is not in either first viewport, so house-faces is unused in the shots.",
+        "replaceWith": "house-faces"
+      },
+      {
+        "section": "#contact .v3-quiet__item--prose",
+        "severity": "taste",
+        "finding": "The 5.0 sits beside a town-list paragraph that does not explain the rating, and the visible label is GOOGLE REVIEWS with no count, a score without a sentence.",
+        "replaceWith": null
+      },
+      {
+        "section": ".v3-ask__form",
+        "severity": "craft",
+        "finding": "The scored pair is the empty happy path only; field error shake, success check and an hours-empty state are not in the frame.",
+        "replaceWith": "beui-input"
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-09",
-      "score": 62,
+      "score": 66,
       "scores": [
-        62,
-        59,
-        66
+        65,
+        66,
+        68
       ],
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:2beff7986e208bc90659b199ef745d266b73064add89c673f43c1c343a30e42e",
-      "source": "the route receipt committed on claude/run-loop-w8f3ep at 1ea07155 (SITE-40) — the higher of the two marks this merge brought together; SITE-48 scored the same route 59 on main."
+      "shotsHash": "sha256:0429de75df3cc47c4b501d42d54fab22f3a71d7ab4200d06d0bc17fa85853030",
+      "honestyFunction": 6
     },
-    "rebaselineReason": "shotsHash: the prior mark is the SITE-40 route receipt (62) on the SAME evaluatorModel (claude-sonnet-5) and the SAME rubricVersion (v1-2026-09-08), but on shots of a page that no longer exists — the merge replaced its reach section and its brokers band with SITE-48's. The shots here are of the merged page. Both marks this merge brought together are named and both are cleared: 62 (SITE-40) and 59 (SITE-48) -> 66.",
-    "verdict": "A disciplined, quiet, on-brand execution of a low-ceiling page. Dead space above the hero, a borderline-contrast intro paragraph, a repeated chevron-row shape and an unverified set of loading/empty/error states keep it short of exceptional.",
-    "priorRouteMark": {
-      "evaluatedAt": "2026-09-08",
-      "score": 54,
-      "evaluator": "separate Sonnet evaluator, SITE-09 response-clock pass 2, contact page class (pass 1: 43, same model, same day)",
-      "note": "the route's own receipt at HEAD, on a different instrument (a different evaluator model and/or a different shot set). Kept so the history is readable; the mark this pass is measured against is priorMark, the cross-class table SITE-48's accept test names."
-    },
+    "rebaselineReason": "evaluatorModel and shotsHash: HEAD receipt is claude-sonnet-5 on the SITE-48/40 merged fold (66); this mark is grok-4.6 on new ContactFold shots. Same rubricVersion v1-2026-09-08. Table instrument bar to beat was 49.",
+    "verdict": "Desktop is a telephone broadside beside a sheet, which is the right idea; 375 throws that broadside away and opens on labeled boxes, which is the median contact page. Better than a 59 four-cell grid because the call door has scale, live hours and a trace, but the leftover three-cell row, the unnamed stamp and a form that still looks like a CRM keep it from being a page you would send someone.",
+    "contactListIsFirstContent": false,
+    "contactListAnswer": "The first viewport is ContactFold: Quiet H1 plus a sourced 5.0, then the one ask (ContactAsk / V3Input). The reach control is the call door at display scale with live hours, not an undifferentiated list.",
     "supersededShots": {
       "note": "states captured for the SITE-09 pass (the tour variant, the sent state, the admin CRM panel). Still on disk and still true; they are not in `shots` because this score was given for the default-state pair only, and shotsHash must cover exactly what was scored.",
       "files": {
@@ -214,32 +235,15 @@
       }
     },
     "passes": {
-      "note": "Three build-and-score rounds ran in this lane before the mark above, each on its own shots. The score recorded here is the LAST one, on the shots this receipt hashes.",
+      "note": "Two evaluator rounds in this lane. The score recorded here is the last one, on the shots this receipt hashes.",
       "roundOne": {
-        "score": 56,
+        "score": 59,
         "scores": [
-          56,
-          54,
-          59
-        ]
-      },
-      "roundTwo": {
-        "score": 67,
-        "scores": [
-          64,
-          67,
-          71
+          59,
+          53,
+          66
         ]
       }
-    },
-    "criteria": {
-      "designQuality": 22,
-      "originality": 20,
-      "interaction": 8,
-      "craft": 10,
-      "honestyFunction": 6
-    },
-    "tells": [],
-    "dullest": "The office address row — a pin and a bare mailing address is the one moment that reads as a generic directory listing rather than the editorial voice the rest of the page carries."
+    }
   }
 }

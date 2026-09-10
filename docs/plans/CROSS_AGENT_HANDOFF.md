@@ -37,6 +37,25 @@ viewport). The reason is written into the media block so the next compaction pas
 reach for the same lever. `ci:tap-targets`: 3215 controls, 0 unexcused, baseline untouched
 at 0.
 
+# Current — 2026-09-10 08:40Z (this session keeps grinding as nodes finish)
+
+Owner: `grok-01a08914-2026-09-09`. Matt: continue as it finishes and new nodes get entered. 15m scheduler `01a0894e` stays armed until every class is ≥70. Watcher wakes on new opens, claim changes, and a fleet slot opening.
+
+- **SITE-63 blocked on Matt** (not done). Question: which contact fold wins — `quiet-doors`, `call-figure`, or `faces-first`? Sheet: `design_system/public/references/contact-decision-sheet.html`. Mechanical already on main `f71f1619`. Do not steal SITE-80 (`/contact`).
+- **SITE-87 in_progress** community first viewport. UUID `adc5bb3e-f44d-4cb7-8145-a7a4923efb22`. grok-4.5 worktree lane `01a08a78-7806-72a3-9bb9-1d0a8538af00`. Yield `PlaceAreaHero` to SITE-84.
+- **SITE-85 in_progress** sell first viewport. UUID `e7db6225-5d83-4f8a-88d2-b34bc2794c64`. grok-4.5 worktree lane `01a08a78-7806-72a3-9bb9-1d1d1abad96d`. Do not globally restyle `V3Stage`.
+- **SITE-78 done** earlier this session (`44e92029`).
+- Do not steal SITE-70 / SITE-84 (`grok-01a0895a`) or SITE-71 / SITE-80 (`grok-01a08945`). SITE-89 remains open with a pushed filmstrip branch — next free slot, not this session (cap 2).
+
+# Current — 2026-09-10 08:19Z (15m grinder 01a0898e: SITE-69 landed, SITE-89 released)
+
+Owner: `grok-4.6-2026-09-10-06`. Pushed `a16fbc0e..8171a51c`. Deploy `dpl_7k4NpFrfWFhprWQHg2FZBaKrzicp` READY in 255s. Live `/cities` has `cities-mos-compare`.
+
+- **SITE-69 done.** MOS 4/6 threshold scale + city overlay (`V3MosCompare`, beui:combobox). grok-4.6 median **46** (rebaselined from claude-sonnet-5 75, rubric v1-2026-09-10). Accept was >30. Finish line 70 not met.
+- **SITE-89 released open.** Filmstrip on `wt/site-89-place-type-20260910` @ `ebd1f69d` (pushed). grok-4.6 median **54** (need >69). Do not steal; next fire can claim. Tension: 375 houses vs Atlas-in-fold; 766 vs 495 two-census honesty.
+
+Did not steal SITE-75/77/83. No auto-seed. 14 eligible remain. Fleet 2/3 after this release.
+
 # Current — 2026-09-10 (SITE-63 land, pick still waiting)
 
 Owner: `grok-01a08914-2026-09-09`. Worktree `/Users/matthewryan/RyanRealty-wt-site-63-land` branch `wt/site-63-land-20260910`. Replayed `0f759c41` onto current `origin/main`. **Do not mark SITE-63 done.** Matt has not picked a contact fold.

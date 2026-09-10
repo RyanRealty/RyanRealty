@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import type { MarketDetail } from '@/lib/data'
 import { EMPTY_PUBLIC_PACE, type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
-import { buildAnnualCharts, buildYearLedger, overlayYearDetailWithLeftover } from './annual-sections'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import {
+  buildAnnualCharts,
+  buildAnnualMosChart,
+  buildRegionFigures,
+  buildYearLedger,
+  monthlyPaceFromMos,
+  overlayYearDetailWithLeftover,
+} from './annual-sections'
 
 const BEND = { slug: 'bend', label: 'Bend' } as const
 
@@ -120,5 +128,54 @@ describe('overlayYearDetailWithLeftover', () => {
         leftover({ medianClose: null, closedCount: null, yoyMedian: null }),
       ),
     ).toBeNull()
+  })
+})
+
+describe('SITE-71 MOS is two bars, never a KPI tile', () => {
+  it('lead figures are the two bars plus list and wait, with no months-of-supply tile', () => {
+    const figures = buildRegionFigures({ active: 1562, daysToPending: 29 }, 4.9, 750000)
+    expect(figures.map((f) => String(f.label))).toEqual([
+      'homes for sale, single-family',
+      'a month of sales',
+      'median list price',
+      'days to an offer, last 90 days',
+    ])
+    expect(figures.some((f) => String(f.label) === 'months of supply')).toBe(false)
+    expect(figures).toHaveLength(4)
+    for (const figure of figures) {
+      expect(figure.sentence, String(figure.label)).toBeTruthy()
+      expect(String(figure.sentence), String(figure.label)).not.toMatch(/\d/)
+    }
+  })
+
+  it('rearranges monthly pace from raw MOS and omits when either input is absent', () => {
+    expect(monthlyPaceFromMos(1562, 4.9)).toBe(318.8)
+    expect(monthlyPaceFromMos(null, 4.9)).toBeNull()
+    expect(monthlyPaceFromMos(1562, null)).toBeNull()
+    expect(monthlyPaceFromMos(0, 4.9)).toBeNull()
+    expect(monthlyPaceFromMos(1562, 0)).toBeNull()
+  })
+
+  it('draws MOS as two named range bars whose claim uses formatMonthsOfSupply', () => {
+    const chart = buildAnnualMosChart(1562, 4.9)
+    expect(chart?.kind).toBe('range')
+    expect(chart?.rows?.map((row) => String(row.tick))).toEqual(['Homes for sale', 'A month of sales'])
+    expect(String(chart?.rows?.[0]?.label)).toBe('1,562')
+    expect(String(chart?.rows?.[1]?.label)).toBe('318.8')
+    expect(String(chart?.claim)).toContain(formatMonthsOfSupply(4.9))
+    expect(String(chart?.claim)).toContain('1,562')
+    expect(buildAnnualMosChart(null, 4.9)).toBeUndefined()
+    expect(buildAnnualMosChart(1562, null)).toBeUndefined()
+    expect(buildAnnualMosChart(0, 4.9)).toBeUndefined()
+  })
+
+  it('drops the month-of-sales figure when MOS cannot publish, and never prints a zero tile', () => {
+    const noMos = buildRegionFigures({ active: 1562, daysToPending: 29 }, null, 750000)
+    expect(noMos.some((f) => String(f.label) === 'a month of sales')).toBe(false)
+    expect(noMos.some((f) => String(f.label) === 'months of supply')).toBe(false)
+    expect(noMos.some((f) => String(f.value) === '0')).toBe(false)
+    const noActive = buildRegionFigures({ active: null, daysToPending: 29 }, 4.9, 750000)
+    expect(noActive.some((f) => String(f.label) === 'homes for sale, single-family')).toBe(false)
+    expect(noActive.some((f) => String(f.label) === 'a month of sales')).toBe(false)
   })
 })

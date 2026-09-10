@@ -51,13 +51,13 @@
  * Nothing is computed, rounded or inferred in this file.
  */
 import {
+  formatPaceShare,
   publicSegmentBrowseHref,
   publicSegmentNoun,
-} from '@/lib/data/market-truth/public-segments'
+} from '@/lib/data/market-truth/public-segment-view'
 import { formatCount } from '@/lib/format/count'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
-import { formatPaceShare } from '@/lib/data/market-truth/public-pace'
 import { v3Text, type V3Text } from './atoms'
 import { V3Instrument, type V3InstrumentFigure } from './V3Instrument'
 import { V3Quiet, type V3QuietItem } from './V3Quiet'

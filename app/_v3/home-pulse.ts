@@ -198,8 +198,14 @@ export function composeHomePulse(input: HomePulseInput): V3PulseProps | null {
 /** The region scope the chrome already reads, so this is the same cache entry. */
 const REGION_SCOPE = { cities: [] as string[], label: 'Central Oregon' }
 
+export type HomePulseBundle = {
+  pulse: V3PulseProps
+  counts: HomePulseCounts
+  stamp: string
+}
+
 /** The band for `/`, or null when the read gave nothing worth publishing. */
-export async function loadHomePulse(): Promise<V3PulseProps | null> {
+export async function loadHomePulseBundle(): Promise<HomePulseBundle | null> {
   const atlas = await withTimeoutFallback(
     buildPlaceAtlas(REGION_SCOPE).catch(() => null),
     null,
@@ -207,10 +213,23 @@ export async function loadHomePulse(): Promise<V3PulseProps | null> {
     'home pulse atlas',
   )
   if (!atlas || atlas.dots.length === 0) return null
-  return composeHomePulse({
-    counts: { forSale: atlas.counts.forSale, pending: atlas.counts.pending, sold: atlas.counts.sold },
+  const counts = {
+    forSale: atlas.counts.forSale,
+    pending: atlas.counts.pending,
+    sold: atlas.counts.sold,
+  }
+  const pulse = composeHomePulse({
+    counts,
     dots: atlas.dots,
     stamp: atlas.stamp,
     closedInWindow: atlas.dots.filter((d) => d.s === 'sold').length,
   })
+  if (!pulse) return null
+  return { pulse, counts, stamp: atlas.stamp }
+}
+
+/** @deprecated Prefer loadHomePulseBundle when the Stage also needs raw counts. */
+export async function loadHomePulse(): Promise<V3PulseProps | null> {
+  const bundle = await loadHomePulseBundle()
+  return bundle?.pulse ?? null
 }

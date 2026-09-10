@@ -53,7 +53,8 @@
 /* Row partners align their controls even when one carries a hint line: the
    control sits at the foot of the (stretched) cell. */
 .v3-ask__field > .v3-ask__control,
-.v3-ask__field > .v3-ask__select-wrap {
+.v3-ask__field > .v3-ask__select-wrap,
+.v3-ask__field > .v3-input {
   margin-top: auto;
 }
 

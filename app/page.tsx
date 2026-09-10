@@ -18,8 +18,9 @@ import {
   V3Pulse,
 } from '@/components/site/v3'
 import { HomeHomesRails } from './_v3/HomeHomesRails'
-import { loadHomePulse } from './_v3/home-pulse'
+import { loadHomePulseBundle } from './_v3/home-pulse'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
+import { homeHeroInventory, homeHeroLive } from './_v3/home-hero-inventory'
 import { HomeBrowsePlaces } from './_v3/HomeBrowsePlaces'
 import { HomeFeaturedCommunity } from './_v3/HomeFeaturedCommunity.client'
 import { loadHomeFeaturedCommunitySlides } from './_v3/home-featured-communities'
@@ -92,7 +93,7 @@ const RESORT_DOORS = [
 ] as const
 
 export default async function Home() {
-  const [cities, tiles, brokers, openHouseLabels, reviewSummary, featuredCommunitySlides, pulse] =
+  const [cities, tiles, brokers, openHouseLabels, reviewSummary, featuredCommunitySlides, pulseBundle] =
     await Promise.all([
       getCitiesForIndex().catch(() => []),
       getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
@@ -105,11 +106,15 @@ export default async function Home() {
       }),
       // The same cached region population the chrome already read. SITE-12
       // moved "Central Oregon right now" out of the Homes dropdown to here.
-      loadHomePulse().catch((err) => {
+      // SITE-83 also pours the raw counts into the Stage inventory strip.
+      loadHomePulseBundle().catch((err) => {
         console.error('[home] live pulse loader failed', err)
         return null
       }),
     ])
+  const pulse = pulseBundle?.pulse ?? null
+  const heroInventory = homeHeroInventory(pulseBundle?.counts, pulseBundle?.stamp)
+  const heroLive = homeHeroLive(pulseBundle?.counts)
 
   const cityBySlug = new Map(cities.map((c) => [c.slug, c]))
   const faces: AboutFace[] = [...brokers]
@@ -220,7 +225,8 @@ export default async function Home() {
         <V3Stage
           id="hero"
           headingLevel={1}
-          height="tall"
+          // Inventory shortens the frame so the pulse claim breaks the fold.
+          height={heroInventory ? 'standard' : 'tall'}
           eyebrow="Central Oregon"
           headline={v3Text('Homes for sale in Central Oregon')}
           // Sell mode swaps the copy with the panel, so the line over the
@@ -230,13 +236,13 @@ export default async function Home() {
           altHeadline="What is your home worth?"
           posterSrc={heroPosterSrc}
           videoSrc={HERO_VIDEO}
+          inventory={heroInventory}
         >
-          <HomeHeroSearch valuationHref={valuationHref('/')} />
+          <HomeHeroSearch valuationHref={valuationHref('/')} live={heroLive} />
         </V3Stage>
 
-        {/* The live read, under the search. Absent — never zeroed — when the
-            listing read gives nothing: a count of no listings across Central
-            Oregon is a fact about the read, not about the market (section 0). */}
+        {/* The live read under the search. Absent — never zeroed — when the
+            listing read gives nothing (section 0). */}
         {pulse ? <V3Pulse {...pulse} id="right-now" /> : null}
 
         <HomeHomesRails

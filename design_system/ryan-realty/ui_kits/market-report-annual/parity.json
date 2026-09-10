@@ -67,7 +67,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, TWICE, and the two never sit adjacent. Region now (id='market', level 1): the verdict headline plus months of supply, active single-family listings, median list price, and median days to pending, every one a door, under one trace from market_pulse_live geo_type='region' geo_slug='central-oregon' carrying MOS_METHODOLOGY_CLAUSE and MOS_THRESHOLD_CLAUSE, stamped with that row's own refreshedAt. Region trailing 12 months (id='closed-sales', level 2): median sale price, homes sold, median days on market, average sale to list, and median dollars per square foot, from market_stats_cache period_type='rolling_365d', each year-over-year change riding its figure's label, under a trace naming the window read off the cache row itself (formatted in UTC, so the printed window and the Dataset temporalCoverage built from the same two date-only columns are one window) and stamped with that row's updatedAt. THE OPENING ASK IS PRIMARY, AND THE PREMISE THAT ONCE MADE IT GHOST IS STRUCK AS FALSE: the header's filled valuation CTA is not carried at every scroll position, it is display:none until 880px and below that sits inside the closed Menu+ overlay, so a ghost opening ask shipped a first viewport with no visible filled control at 390 (PUBLIC_UI.md section 1: the count is of VISIBLE filled controls, and the chrome's CTA counts only where the chrome shows it). The level-2 ask stays ghost because it is a second filled control in no viewport and the page's conversion ask is the Sheet. DECLARED DEGRADES, BOTH: when the region pulse row does not return the opening section is a level-1 Quiet stating that fact instead of an Instrument asserting a verdict; when the trailing-12-month row publishes no figure the level-2 section is a Quiet (id='closed-sales') stating which of the two things happened, the row not returning or the row returning with nothing published, and keeping the city-reports door. That section never simply disappears: V3Instrument types figures as a non-empty tuple, and a vanished section would leave the two Ledgers adjacent, which the rhythm rule forbids.",
+      "section": "Pattern 1, TWICE, and the two never sit adjacent. Region now (id='market', level 1): the verdict headline plus months of supply as TWO NAMED BARS (homes for sale vs a month of sales via buildMosSupplyChart / formatMonthsOfSupply — never a MOS KPI tile), median list price, and median days to pending, every one a door. The year overlay of completed monthly medians is the secondary drawing (beautifului-insight scrubber; sourced digits swap on the resting reading), under one trace from market_pulse_live geo_type='region' geo_slug='central-oregon' carrying MOS_METHODOLOGY_CLAUSE and MOS_THRESHOLD_CLAUSE, stamped with that row's own refreshedAt. Region trailing 12 months (id='closed-sales', level 2): median sale price, homes sold, median days on market, average sale to list, and median dollars per square foot, from market_stats_cache period_type='rolling_365d', each year-over-year change riding its figure's label, under a trace naming the window read off the cache row itself (formatted in UTC, so the printed window and the Dataset temporalCoverage built from the same two date-only columns are one window) and stamped with that row's updatedAt. THE OPENING ASK IS PRIMARY, AND THE PREMISE THAT ONCE MADE IT GHOST IS STRUCK AS FALSE: the header's filled valuation CTA is not carried at every scroll position, it is display:none until 880px and below that sits inside the closed Menu+ overlay, so a ghost opening ask shipped a first viewport with no visible filled control at 390 (PUBLIC_UI.md section 1: the count is of VISIBLE filled controls, and the chrome's CTA counts only where the chrome shows it). The level-2 ask stays ghost because it is a second filled control in no viewport and the page's conversion ask is the Sheet. DECLARED DEGRADES, BOTH: when the region pulse row does not return the opening section is a level-1 Quiet stating that fact instead of an Instrument asserting a verdict; when the trailing-12-month row publishes no figure the level-2 section is a Quiet (id='closed-sales') stating which of the two things happened, the row not returning or the row returning with nothing published, and keeping the city-reports door. That section never simply disappears: V3Instrument types figures as a non-empty tuple, and a vanished section would leave the two Ledgers adjacent, which the rhythm rule forbids.",
       "blocking": true
     },
     {
@@ -167,15 +167,16 @@
     "V3Footer"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
+    "evaluatedAt": "2026-09-10",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-41 round two. Two passes in this session: round one, given the class's prior twelve-cell KPI-grid finding to verify against the live lane dev server and four shots, scored the fold's fix and the two city ledgers' new bar encoding (median 79); a build pass then cut the fold from 4 to 3 tiles, capped property-type supply tiles, and rewrote the closed-sales ledger's visible source clause to drop the internal 'Market Truth mt-v1' cache label that was leading it. A second fresh instance of the same evaluator re-scored the resulting state end to end, confirming the mt-v1 leak gone and the KPI grid still absent (median 83, recorded here). The table mark for this class before this node was 31, from an instrument with no receipt, no recorded evaluator model and no shots on disk, so it is stated here rather than as priorMark.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts market-report-annual — grok-4.6 via grok CLI, three scorings of the same 1440/375 first-viewport shots plus source-line pair on the lane dev server http://localhost:3221. Builder grok-4.5 did not grade the page.",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": ["/housing-market/annual-review"],
       "viewports": [1440, 375],
-      "states": ["default", "source-line"]
+      "states": ["default", "source-line"],
+      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://localhost:3221/housing-market/annual-review on wt/site-71-20260910"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/market-report-annual/shots/desktop.png",
@@ -183,34 +184,78 @@
       "sourceDesktop": "design_system/ryan-realty/ui_kits/market-report-annual/shots/source-desktop.png",
       "sourceMobile375": "design_system/ryan-realty/ui_kits/market-report-annual/shots/source-mobile375.png"
     },
-    "shotsHash": "sha256:e28ef624d337a839933a0e025ed6c562069ca4aabdc88147a00fd3f08b4a0cb1",
-    "scores": [83, 82, 87],
-    "score": 83,
-    "breakdown": {
-      "design": 25,
-      "originality": 26,
-      "interaction": 10,
-      "craft": 13,
-      "honesty": 9
+    "shotsHash": "sha256:307e3cdd018faf4fb8012fcf9104fd713a631530dd77979b76fb1226d4fe7063",
+    "scores": [64, 70, 58],
+    "score": 64,
+    "criteria": {
+      "designQuality": 20,
+      "originality": 16,
+      "interaction": 9,
+      "craft": 11,
+      "honestyFunction": 8
     },
-    "beats": "Redfin/Zillow year-in-review posts and aggregator market recaps: this page compares the trailing 12 months against the same 12-month window one year earlier for the region and every report city, prints the months-of-supply formula and thresholds beside every verdict, and carries a hover-synced three-year chart plus bar-encoded city ledgers no aggregator recap offers.",
+    "perCriterion": {
+      "design": 20,
+      "originality": 16,
+      "interaction": 9,
+      "craft": 11,
+      "honesty": 8
+    },
+    "beats": "Redfin's Bend / Central Oregon year-in-review recap: we win the sourced months-of-supply two-bar and a same-month 2024/2025/2026 hover; we lose the year as an object you would send, because the captured page is still a cover title plus the shop's default Instrument-then-Ledger stack.",
+    "adaptedFrom": [
+      { "id": "house-instrument" },
+      { "id": "house-mos" },
+      { "id": "house-chart" },
+      { "id": "beautifului-insight" },
+      { "id": "beui-number" }
+    ],
     "defects": [
       {
-        "section": "#faq",
+        "section": "#market",
         "severity": "taste",
-        "finding": "Five question-and-answer pairs render fully expanded as flat prose with zero interaction — TASTE.md's named wall-of-text tell ('FAQ blocks count'). Confirmed unfixed in this round; recorded as a known remaining defect, not attempted here (V3Quiet has a fold/accordion kind used elsewhere on this same page but the FAQ items are not built with it)."
+        "finding": "The opening Instrument is a cover title that restates the eyebrow, then two stacked eyebrow-claim-drawing blocks, so 'a balanced market' is a trailing clause and the annual page reads as the shop's default stack rather than one composed year.",
+        "replaceWith": "house-instrument"
       },
       {
-        "section": "page rhythm",
+        "section": "#cities-now",
         "severity": "taste",
-        "finding": "Chart-instrument / encoded-ledger / chart-instrument / encoded-ledger repeats through the page body — not a hard rhythm-rule violation (no three consecutive identical shapes) but a pattern a critical read notices."
+        "finding": "Bars encode unlabeled median list price, so Bend and Sisters read as nearly the same length while the heading promised inventory; desktop also drops the active count the 375 rows still print.",
+        "replaceWith": "V3Ledger"
       },
       {
-        "section": "#methodology",
+        "section": "#region-median",
         "severity": "taste",
-        "finding": "The methodology and coverage block (Tumalo attribution, leftover-cities note) is accurate and specific but renders as unstyled prose paragraphs with no figure or mark."
+        "finding": "The year overlay rewards hover with a three-year card, but there is no scrubber and no paged insight, so beautifului-insight was not used as specified and the MOS bars beside it do not reveal more on tap.",
+        "replaceWith": "beautifului-insight"
+      },
+      {
+        "section": "#region-median",
+        "severity": "craft",
+        "finding": "The August comparison sits in a shadowed white card, against hairline rules, radius zero, and no elevation on every box.",
+        "replaceWith": "house-chart"
+      },
+      {
+        "section": "#region-mos",
+        "severity": "craft",
+        "finding": "A month of sales prints as 322.0, a trailing tenth that reads as fake precision on a pace figure.",
+        "replaceWith": null
+      },
+      {
+        "section": "#region-median",
+        "severity": "craft",
+        "finding": "At 375 the long-view series is a clipped fragment of dots under the claim, so the annual chart does not complete a first read.",
+        "replaceWith": "house-chart"
       }
     ],
-    "comparedToPrior": "first"
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-09",
+      "score": 83,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:e28ef624d337a839933a0e025ed6c562069ca4aabdc88147a00fd3f08b4a0cb1"
+    },
+    "rebaselineReason": "evaluatorModel and shotsHash differ: SITE-41's 83 was claude-sonnet-5 on the four-tile opening; this mark is grok-4.6 on new first-viewport shots after SITE-71 opened the annual review on Instrument with MOS two bars. Same rubricVersion v1-2026-09-08. Table instrument to beat was 31.",
+    "verdict": "The register is the house's, and the two-bar supply drawing plus the same-month year overlay are the only moves a template would not make; everything around them is a stacked market cover. Until the city list encodes inventory, the fold is one Instrument instead of two captions, and the year can be scrubbed rather than tooltipped, this is a correct page that is still dull."
   }
 }

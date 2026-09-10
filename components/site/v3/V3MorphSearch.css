@@ -1,0 +1,124 @@
+/* Morphing search shell. Adapted from beUI morphing-search: the field and the
+   results share one cream surface that grows, navy edge, no glass/blur. */
+
+.v3 .v3-morph-search {
+  position: relative;
+  width: 100%;
+}
+
+.v3 .v3-morph-search__shell {
+  position: relative;
+  width: 100%;
+  border: 2px solid var(--v3-ink);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  overflow: hidden;
+  transition: border-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-morph-search__row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  min-height: var(--v3-tap);
+}
+
+.v3 .v3-morph-search__field {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.v3 .v3-morph-search__field > * {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.v3 .v3-morph-search__field input,
+.v3 .v3-morph-search__field .home-hero-search__input {
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  min-height: var(--v3-tap);
+}
+
+.v3 .v3-morph-search__go {
+  flex: 0 0 auto;
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+  margin: 0;
+  padding: 0 var(--v3-space-md);
+  border: 0;
+  border-left: 2px solid var(--v3-ink);
+  border-radius: 0;
+  background: var(--v3-ink);
+  color: var(--v3-ink-on-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+  cursor: pointer;
+}
+
+.v3 .v3-morph-search__go:hover {
+  background: var(--v3-pressed);
+}
+
+.v3 .v3-morph-search__results {
+  display: grid;
+  grid-template-rows: 0fr;
+  border-top: 0 solid var(--v3-edge);
+  transition:
+    grid-template-rows var(--v3-dur-enter) var(--v3-ease-out),
+    border-top-width var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-morph-search--open .v3-morph-search__results {
+  grid-template-rows: 1fr;
+  border-top-width: 1px;
+  border-top-color: var(--v3-edge);
+}
+
+.v3 .v3-morph-search__results-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.v3 .v3-morph-search__results-inner > * {
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  max-height: 18rem;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Keep field + ask on one row at 375. Stacking them is the "stacked memo"
+   the homepage layout lock forbids (SITE-83 evaluator). */
+@media (max-width: 26rem) {
+  .v3 .v3-morph-search__row {
+    flex-wrap: nowrap;
+  }
+
+  .v3 .v3-morph-search__go {
+    flex: 0 0 auto;
+    padding: 0 var(--v3-space-sm);
+    font-size: var(--v3-size-body-sm);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3 .v3-morph-search__shell,
+  .v3 .v3-morph-search__results {
+    transition: none;
+  }
+}

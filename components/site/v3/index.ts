@@ -142,6 +142,14 @@ export { V3MosBars } from './V3MosBars'
 export type { V3MosBarsProps } from './V3MosBars'
 
 /**
+ * Region months-of-supply threshold scale with a searchable city overlay
+ * (SITE-69). Pair with V3Drawing's two bars — never a KPI tile of the ratio.
+ * Adapted from beui:combobox + beautifului:insight-cards into house paint.
+ */
+export { V3MosCompare, V3_MOS_COMPARE_MAX } from './V3MosCompare.client'
+export type { V3MosCompareProps, V3MosCompareCity } from './V3MosCompare.client'
+
+/**
  * JSON-LD injector. New public pages import this as MetadataBlock so they
  * stay on the barrel (ci:public-ui). Grandfathered routes may still import
  * the flat components/site/MetadataBlock.
@@ -219,6 +227,11 @@ export type { CloseView, CloseReading, CloseSubject, CloseSubjectInput } from '.
  */
 export { V3Ask } from './V3Ask.client'
 /**
+ * House field: beui-input shake + check and shadcn-input structure, restyled
+ * navy on cream. Wired through ContactAsk (SITE-80).
+ */
+export { V3Input } from './V3Input'
+/**
  * The place-page value ask (SITE-01, 2026-09-07): address in, verdict and pace out,
  * then the email that delivers the written valuation. Built on V3Sheet; takes its two
  * calls as props so the barrel stays free of app imports.
@@ -291,6 +304,7 @@ export { V3PlaceDoor } from './V3PlaceDoor'
 export type { V3PlaceDoorProps } from './V3PlaceDoor'
 
 export type { V3AskProps, V3AskField, V3AskOption, V3AskResult } from './V3Ask.client'
+export type { V3InputProps, V3InputKind } from './V3Input'
 
 export { V3ChartSwitch } from './V3ChartSwitch.client'
 
@@ -444,6 +458,17 @@ export type { V3ButtonGroupProps } from './V3ButtonGroup'
 /** Iconoir, house stroke set. Marks a door or a control; not a card grid. */
 export { V3Icon, QUIET_MARK_ICON, V3_ICON_NAMES } from './V3Icon'
 export type { V3IconName, V3IconProps, V3IconSize } from './V3Icon'
+/**
+ * Catalog adaptations for homepage-v6 (SITE-83): sliding Buy/Sell (beUI tabs +
+ * shared-layout-bg), morphing search shell (beUI morphing-search), animated
+ * count (Rare UI animatedcounter / beUI number). Wired from the homepage.
+ */
+export { V3Tabs } from './V3Tabs'
+export type { V3TabsProps } from './V3Tabs'
+export { V3MorphSearch } from './V3MorphSearch'
+export type { V3MorphSearchProps } from './V3MorphSearch'
+export { V3Number } from './V3Number.client'
+export type { V3NumberProps } from './V3Number.client'
 
 export { V3Placeholder } from './V3Placeholder'
 export type { V3PlaceholderProps } from './V3Placeholder'
