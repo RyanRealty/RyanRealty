@@ -187,10 +187,13 @@ describe('Zillow map-first mobile bottom sheet', () => {
     expect(css).not.toMatch(/map-search-list-fab/)
   })
 
-  it('keeps floating layers, draw, and locate on the map', () => {
+  it('keeps floating zoom, draw, and locate on the map', () => {
     const chrome = readSrc('components/search/MapChrome.tsx')
     const draw = readSrc('components/search/MapDrawTools.tsx')
-    expect(chrome).toMatch(/aria-label="Map layers"/)
+    // SITE-72: Map/Satellite left the fold; zoom + locate remain.
+    expect(chrome).not.toMatch(/aria-label="Map layers"/)
+    expect(chrome).not.toMatch(/aria-label="Satellite"/)
+    expect(chrome).toMatch(/aria-label="Map zoom"/)
     expect(chrome).toMatch(/aria-label="Locate me"/)
     expect(chrome).toMatch(/map-search-locate/)
     expect(draw).toMatch(/aria-label="Draw tools"/)
@@ -1000,9 +1003,11 @@ describe('map craft: selection + zoom storytelling + basemap', () => {
     expect(basemap).toMatch(/keyboardShortcuts: false/)
     expect(clustered).toMatch(/import MapChrome from '@\/components\/search\/MapChrome'/)
     expect(clustered).toMatch(/<MapChrome map=\{mapInstance\} \/>/)
-    expect(chrome).toMatch(/aria-label="Map layers"/)
+    // SITE-72: house zoom/locate only — Google's Map/Satellite language is off.
     expect(chrome).toMatch(/aria-label="Map zoom"/)
-    expect(chrome).toMatch(/aria-label="Satellite"/)
+    expect(chrome).toMatch(/aria-label="Locate me"/)
+    expect(chrome).not.toMatch(/aria-label="Map layers"/)
+    expect(chrome).not.toMatch(/aria-label="Satellite"/)
     expect(css).toMatch(/\.map-search-zoom/)
     expect(css).toMatch(/\.map-search-shell \.gm-style-mtc/)
   })

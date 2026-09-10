@@ -62,6 +62,12 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import {
+  V3Range,
+  V3_PRICE_STOPS,
+  rangeToUrl,
+  urlToRange,
+} from '@/components/site/v3'
+import {
   Sheet,
   SheetContent,
   SheetFooter,
@@ -115,6 +121,47 @@ function RangeFieldRow({
 }) {
   const { min, max } = rangeParamPair(def)
   const unit = def.unit ? UNIT_LABEL[def.unit] : undefined
+
+  if (def.key === 'price' && min && max) {
+    const { low, high } = urlToRange(draft[min], draft[max], V3_PRICE_STOPS)
+    return (
+      <div className="flex flex-col gap-2">
+        <V3Range
+          label={def.label}
+          low={low}
+          high={high}
+          stops={V3_PRICE_STOPS}
+          onChange={(nextLow, nextHigh) => {
+            const next = rangeToUrl(nextLow, nextHigh, V3_PRICE_STOPS)
+            setParam(min, next.min)
+            setParam(max, next.max)
+          }}
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            type="number"
+            inputMode="numeric"
+            placeholder="No min"
+            value={draft[min] ?? ''}
+            disabled={disabled}
+            onChange={(e) => setParam(min, e.target.value || undefined)}
+            className="tabular-nums"
+            aria-label={`${def.label} minimum`}
+          />
+          <Input
+            type="number"
+            inputMode="numeric"
+            placeholder="No max"
+            value={draft[max] ?? ''}
+            disabled={disabled}
+            onChange={(e) => setParam(max, e.target.value || undefined)}
+            className="tabular-nums"
+            aria-label={`${def.label} maximum`}
+          />
+        </div>
+      </div>
+    )
+  }
 
   if (def.presets && def.presets.length > 0) {
     const param = max ?? min
@@ -675,7 +722,7 @@ export default function AllFiltersSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full data-[side=right]:w-full sm:max-w-md sm:data-[side=right]:max-w-md"
+        className="srch-sheet w-full data-[side=right]:w-full sm:max-w-md sm:data-[side=right]:max-w-md"
       >
         <SheetHeader className="px-4 pt-4 pb-0">
           <SheetTitle>All filters</SheetTitle>
@@ -696,7 +743,7 @@ export default function AllFiltersSheet({
             aria-label="Find a filter by name or value"
           />
           {findQuery.trim().length >= 2 && (
-            <div className="mt-2 max-h-56 overflow-y-auto rounded-none border border-border">
+            <div className="srch-command mt-2 max-h-56 overflow-y-auto rounded-none border border-border">
               {findHits.length === 0 ? (
                 <p className="px-3 py-2 text-xs text-muted-foreground">
                   No filter or value matches that.

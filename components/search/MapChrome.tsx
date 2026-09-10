@@ -24,19 +24,19 @@ function isSatellite(id: string | undefined): boolean {
 
 export default function MapChrome({ map }: { map: google.maps.Map }) {
   const [zoom, setZoom] = useState(() => map.getZoom() ?? 10)
-  const [satellite, setSatellite] = useState(() => isSatellite(String(map.getMapTypeId() ?? '')))
   const [locating, setLocating] = useState(false)
 
   useEffect(() => {
+    // Keep roadmap — SITE-72 dropped the Map/Satellite product toggle from the
+    // fold so the field reads as house cartography, not Google chrome.
+    if (isSatellite(String(map.getMapTypeId() ?? ''))) {
+      map.setMapTypeId('roadmap')
+    }
     const onZoom = map.addListener('zoom_changed', () => {
       setZoom(map.getZoom() ?? 10)
     })
-    const onType = map.addListener('maptypeid_changed', () => {
-      setSatellite(isSatellite(String(map.getMapTypeId() ?? '')))
-    })
     return () => {
       onZoom.remove()
-      onType.remove()
     }
   }, [map])
 
@@ -57,26 +57,6 @@ export default function MapChrome({ map }: { map: google.maps.Map }) {
 
   return (
     <div className="map-search-chrome pointer-events-auto">
-      <div className="map-search-views" role="radiogroup" aria-label="Map layers">
-        <button
-          type="button"
-          role="radio"
-          aria-checked={satellite === false}
-          aria-label="Map"
-          onClick={() => map.setMapTypeId('roadmap')}
-        >
-          Map
-        </button>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={satellite}
-          aria-label="Satellite"
-          onClick={() => map.setMapTypeId('satellite')}
-        >
-          Satellite
-        </button>
-      </div>
       <div className="map-search-zoom" role="group" aria-label="Map zoom">
         <button
           type="button"
