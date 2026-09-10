@@ -15,7 +15,8 @@ import {
 } from '@/lib/listing/publish-listing-share'
 import { publishTourEmbedFromUrl } from '@/lib/listing/publish-listing-hero-video'
 import type { VideoEmbed } from '@/lib/data/types/video'
-import { V3_ROOT_CLASS, V3Button } from '@/components/site/v3'
+import { V3_ROOT_CLASS, V3Button, V3Carousel, V3Number } from '@/components/site/v3'
+import type { HomeHeroLive } from './home-hero-inventory'
 import {
   SplitCardMedia,
   SPLIT_CARD_MEDIA_SIZES_RAIL,
@@ -122,7 +123,14 @@ function HomeRailCardFace({
   )
 }
 
-export function HomeListingRail({ row }: { row: HomeRailRow }) {
+export function HomeListingRail({
+  row,
+  live,
+}: {
+  row: HomeRailRow
+  /** Optional animated regional count on the lead rail (Rare UI / beUI number). */
+  live?: HomeHeroLive
+}) {
   const [signedIn, setSignedIn] = useState(false)
   const [saved, setSaved] = useState(() => new Set<string>())
   const [tour, setTour] = useState<VideoEmbed | null>(null)
@@ -146,45 +154,52 @@ export function HomeListingRail({ row }: { row: HomeRailRow }) {
       aria-labelledby={`${row.id}-heading`}
     >
       <div className="home-rail__head">
-        <h2 id={`${row.id}-heading`} className="home-rail__title">
-          {row.heading}
-        </h2>
+        <div className="home-rail__head-copy">
+          <h2 id={`${row.id}-heading`} className="home-rail__title">
+            {row.heading}
+          </h2>
+          {live ? (
+            <p className="home-rail__live">
+              <V3Number value={live.forSale} formatted={live.forSaleLabel} />
+              <span> homes for sale across Central Oregon</span>
+            </p>
+          ) : null}
+        </div>
         <V3Button href={row.seeAll.href} variant="ghost">
           {row.seeAll.label}
         </V3Button>
       </div>
-      <div className="home-rail__track" role="list">
+      <V3Carousel label={row.heading} mode="rail" className="home-rail__carousel">
         {row.cards.map((card, index) => (
-          <div key={card.listingKey} className="home-rail__item" role="listitem">
-            <HomeRailCardFace
-              card={card}
-              saved={saved.has(card.listingKey)}
-              signedIn={signedIn}
-              priority={index < 2}
-              onOpenTour={
-                card.tourUrl || card.hasTour
-                  ? () => {
-                      const embed = publishTourEmbedFromUrl(
-                        card.tourUrl,
-                        card.photoUrls[0] ?? null,
-                      )
-                      if (embed) setTour(embed)
-                      else if (card.href) window.location.assign(`${card.href}#tour`)
-                    }
-                  : undefined
-              }
-              onSavedChange={(key, next) => {
-                setSaved((prev) => {
-                  const copy = new Set(prev)
-                  if (next) copy.add(key)
-                  else copy.delete(key)
-                  return copy
-                })
-              }}
-            />
-          </div>
+          <HomeRailCardFace
+            key={card.listingKey}
+            card={card}
+            saved={saved.has(card.listingKey)}
+            signedIn={signedIn}
+            priority={index < 2}
+            onOpenTour={
+              card.tourUrl || card.hasTour
+                ? () => {
+                    const embed = publishTourEmbedFromUrl(
+                      card.tourUrl,
+                      card.photoUrls[0] ?? null,
+                    )
+                    if (embed) setTour(embed)
+                    else if (card.href) window.location.assign(`${card.href}#tour`)
+                  }
+                : undefined
+            }
+            onSavedChange={(key, next) => {
+              setSaved((prev) => {
+                const copy = new Set(prev)
+                if (next) copy.add(key)
+                else copy.delete(key)
+                return copy
+              })
+            }}
+          />
         ))}
-      </div>
+      </V3Carousel>
       <ListingTourOverlay
         open={tour != null}
         video={tour}

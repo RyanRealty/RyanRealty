@@ -24,7 +24,9 @@ describe('homepage hero search uses the public search stack', () => {
 
   it('mounts HomeHeroSearch on the Stage; house rails before doors (expanded Home lock)', () => {
     expect(PAGE).toMatch(/<V3Stage/)
-    expect(PAGE).toMatch(/height="tall"/)
+    // SITE-83: inventory Stage so the pulse claim breaks the fold.
+    expect(PAGE).toMatch(/height=\{heroInventory \? 'standard' : 'tall'\}/)
+    expect(PAGE).toMatch(/inventory=\{heroInventory\}/)
     expect(PAGE).toMatch(/videoSrc=\{HERO_VIDEO\}/)
     expect(PAGE).toMatch(/preferPlaceHero\(cityBySlug\.get\('bend'\)\?\.heroImageUrl, HERO_POSTER\)/)
     expect(PAGE).toMatch(/posterSrc=\{heroPosterSrc\}/)
@@ -35,12 +37,22 @@ describe('homepage hero search uses the public search stack', () => {
     expect(PAGE).not.toMatch(/>See homes</)
     const stageAt = PAGE.indexOf('<V3Stage')
     const searchAt = PAGE.indexOf('<HomeHeroSearch')
+    const pulseAt = PAGE.indexOf('<V3Pulse')
     const railsAt = PAGE.indexOf('<HomeHomesRails')
     const doorsAt = PAGE.indexOf('<V3Doors')
     expect(stageAt).toBeGreaterThan(-1)
     expect(searchAt).toBeGreaterThan(stageAt)
-    expect(railsAt).toBeGreaterThan(searchAt)
+    expect(pulseAt).toBeGreaterThan(searchAt)
+    expect(railsAt).toBeGreaterThan(pulseAt)
     expect(doorsAt).toBeGreaterThan(railsAt)
+  })
+
+  it('adapts catalog modules into house primitives on the hero and rails', () => {
+    expect(SEARCH).toContain('V3Tabs')
+    expect(SEARCH).toContain('V3MorphSearch')
+    expect(RAIL_CLIENT).toContain('V3Carousel')
+    expect(RAIL_CLIENT).toContain('mode="rail"')
+    expect(RAIL_CLIENT).toContain('V3Number')
   })
 
   it('reuses SearchSuggest and searchHrefForQuery', () => {
@@ -48,7 +60,7 @@ describe('homepage hero search uses the public search stack', () => {
     expect(SEARCH).toContain('<SearchSuggestPanel')
     expect(SEARCH).toContain("from '@/lib/parse-search-query'")
     expect(SEARCH).toContain('searchHrefForQuery')
-    expect(SEARCH).toContain('City, community, or address')
+    expect(SEARCH).toContain('Find a home')
     expect(SEARCH).toContain('home-hero-search__label')
     expect(SEARCH).toContain('htmlFor={buyFieldId}')
   })
@@ -58,7 +70,7 @@ describe('homepage hero search uses the public search stack', () => {
     expect(SEARCH).toMatch(/>\s*Sell\s*</)
     expect(SEARCH).toContain('Value my home')
     expect(SEARCH).toContain('valuationHref')
-    expect(SEARCH).toContain('Home address')
+    expect(SEARCH).toContain('Value your home')
     expect(SEARCH).not.toContain('see what your home is worth')
     const css = readFileSync(resolve('app/_v3/home-hero-search.css'), 'utf8')
     expect(css).toContain('.v3 .home-hero-search__tabs')
@@ -148,19 +160,21 @@ describe('homepage hero search uses the public search stack', () => {
   it('does not print leftover Search homes on the Stage; label is visible (H2)', () => {
     expect(SEARCH).not.toContain('>Search homes<')
     expect(SEARCH).toContain('home-hero-search__label')
-    expect(SEARCH).toContain('City, community, or address')
+    expect(SEARCH).toContain('Find a home')
     expect(SEARCH).not.toContain('aria-label="Search city, community, or address"')
   })
 
   it('paints the search as cream field and navy Search wherever the v3 root hosts it', () => {
     const css = readFileSync(resolve('app/_v3/home-hero-search.css'), 'utf8')
+    const morph = readFileSync(resolve('components/site/v3/V3MorphSearch.css'), 'utf8')
     expect(css).toContain('.v3 .home-hero-search__input')
-    expect(css).toContain('background: var(--v3-surface)')
     expect(css).toContain('color: var(--v3-ink)')
     expect(css).toContain('-webkit-appearance: none')
-    expect(css).toContain('.v3 .home-hero-search__go')
-    expect(css).toContain('background: var(--v3-ink)')
-    expect(css).toContain('color: var(--v3-ink-on-navy)')
+    expect(morph).toContain('.v3 .v3-morph-search__shell')
+    expect(morph).toContain('background: var(--v3-surface)')
+    expect(morph).toContain('.v3 .v3-morph-search__go')
+    expect(morph).toContain('background: var(--v3-ink)')
+    expect(morph).toContain('color: var(--v3-ink-on-navy)')
   })
 })
 

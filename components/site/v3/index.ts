@@ -444,6 +444,17 @@ export type { V3ButtonGroupProps } from './V3ButtonGroup'
 /** Iconoir, house stroke set. Marks a door or a control; not a card grid. */
 export { V3Icon, QUIET_MARK_ICON, V3_ICON_NAMES } from './V3Icon'
 export type { V3IconName, V3IconProps, V3IconSize } from './V3Icon'
+/**
+ * Catalog adaptations for homepage-v6 (SITE-83): sliding Buy/Sell (beUI tabs +
+ * shared-layout-bg), morphing search shell (beUI morphing-search), animated
+ * count (Rare UI animatedcounter / beUI number). Wired from the homepage.
+ */
+export { V3Tabs } from './V3Tabs'
+export type { V3TabsProps } from './V3Tabs'
+export { V3MorphSearch } from './V3MorphSearch'
+export type { V3MorphSearchProps } from './V3MorphSearch'
+export { V3Number } from './V3Number.client'
+export type { V3NumberProps } from './V3Number.client'
 
 export { V3Placeholder } from './V3Placeholder'
 export type { V3PlaceholderProps } from './V3Placeholder'
