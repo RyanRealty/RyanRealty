@@ -352,9 +352,10 @@ export function whyWeKeptComp(comp: CmaAdjustedComp): {
 } {
   const tier = comp.keepTier === 'strong' || comp.keepTier === 'weak' ? comp.keepTier : null
   const reason = clientKeepReason(comp.keepReason)
-  // A sale the room rule admitted one bedroom or bathroom away says so HERE,
-  // beside the sale, on every path (Matt 2026-09-10). The judge's own sentence
-  // may or may not mention it; this does not depend on that.
+  // A sale the room rule admitted one bedroom or bathroom away carries that
+  // sentence here too (Matt 2026-09-10). The row a reader actually sees is
+  // "Adjusted for rooms (theirs vs yours)" in lib/cma/comp-matrix.ts — this
+  // function has no caller in the render today.
   const room = roomDifferenceSentence(comp.roomDifference)
   const withRoom = (s: string) => (room ? `${s} ${room}` : s)
   if (tier && reason) {
