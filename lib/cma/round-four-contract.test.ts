@@ -139,7 +139,7 @@ const ASK_EXPOSURE = {
   ],
   dominant: 475_000,
   final: 460_000,
-  sentence: 'It asked $475,000 for 152 days, then $460,000 for 35.',
+  sentence: 'You asked $475,000 for 152 days, then $460,000 for 35.',
 }
 
 const EXPIRED_AUDIT = {
@@ -226,7 +226,7 @@ describe('B — the story is told about the ask that ran the clock', () => {
 
   it('names both asks and their days in the chapter title', () => {
     expect(whatHappenedHeading(withExposure(ASK_EXPOSURE))).toBe(
-      'It asked $475,000 for 152 days, then $460,000 for 35.',
+      'You asked $475,000 for 152 days, then $460,000 for 35.',
     )
   })
 
@@ -244,8 +244,8 @@ describe('B — the story is told about the ask that ran the clock', () => {
         askExposure: ASK_EXPOSURE,
       },
     } as unknown as Partial<RenderCmaArgs>
-    expect(letter(over)).toContain('It asked $475,000 for 152 days, then $460,000 for 35.')
-    expect(immersive(over)).toContain('It asked $475,000 for 152 days, then $460,000 for 35.')
+    expect(letter(over)).toContain('You asked $475,000 for 152 days, then $460,000 for 35.')
+    expect(immersive(over)).toContain('You asked $475,000 for 152 days, then $460,000 for 35.')
   })
 
   it('claims nothing causal when the row does not say which ask held the market', () => {

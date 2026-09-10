@@ -142,7 +142,7 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
       ignoreCity: true,
       likeCommunity: true,
       disclosure:
-        'This home sits in a golf or resort community, and that community did not have enough of its own sales even across two years. The sales below come from comparable golf and resort communities in Central Oregon rather than from ordinary neighborhoods nearby, because that is the market a buyer of this home shops against.',
+        'Your home sits in a golf or resort community, and that community did not have enough of its own sales even across two years. The sales below come from comparable golf and resort communities in Central Oregon rather than from ordinary neighborhoods nearby, because that is the market a buyer of your home shops against.',
     },
     // 5. Competing market area — permitted, but disclosed and distance-bounded.
     { name: 'competing-area-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 2 },
@@ -166,7 +166,7 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
       whenStarved: true,
       relaxResort: true,
       disclosure:
-        'The bounded search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 25% of this home in size, up to 10 miles out, sales inside a nearby resort community this home is not part of, and where this home sits outside every mapped neighborhood, sales across a highway or a river from it. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening when it is explained.',
+        'The bounded search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 25% of your home in size, up to 10 miles out, sales inside a nearby resort community your home is not part of, and where your home sits outside every mapped neighborhood, sales across a highway or a river from it. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening when it is explained.',
     },
     // 7-8. RURAL ACREAGE last resort (2026-07-30). Every rung above is bounded
     // by `City ILIKE`, which is correct for a platted in-town subject and wrong
@@ -223,7 +223,7 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
       whenStarved: true,
       relaxResort: true,
       disclosure:
-        'The rural search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 25% of this home in size, up to 25 miles out, sales inside a nearby resort community this home is not part of, and sales across a highway or a river from it. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening for rural property when it is explained.',
+        'The rural search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 25% of your home in size, up to 25 miles out, sales inside a nearby resort community your home is not part of, and sales across a highway or a river from it. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening for rural property when it is explained.',
     },
   ]
 }

@@ -88,5 +88,5 @@ export function roomDifferenceSentence(notes: Array<'beds' | 'baths'> | null | u
   if (!notes || notes.length === 0) return null
   const parts = notes.map((n) => (n === 'beds' ? 'bedroom' : 'bathroom'))
   const list = parts.length === 1 ? parts[0]! : `${parts[0]} and ${parts[1]}`
-  return `One ${list} different from yours, on this home's own ground. No dollar value is applied to the room.`
+  return `One ${list} different from yours, on your home's own ground. No dollar value is applied to the room.`
 }

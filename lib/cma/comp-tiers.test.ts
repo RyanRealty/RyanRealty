@@ -16,7 +16,7 @@ describe('the disclosed widening (Matt 2026-09-09)', () => {
         // was behind most of the ranges still printing wider than 1.2x.
         expect(t.sqftBand).toBe(WIDENED_SQFT_BAND)
         expect(t.disclosure).toMatch(/widened one more step/)
-        expect(t.disclosure).toMatch(/resort community this home is not part of/)
+        expect(t.disclosure).toMatch(/resort community your home is not part of/)
         expect(t.disclosure).toMatch(/Fannie Mae B4-1\.3-08/)
       }
       // Nothing bounded may follow it: it is the end of the ladder for its class.

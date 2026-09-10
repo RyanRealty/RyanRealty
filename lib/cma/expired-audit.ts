@@ -528,14 +528,15 @@ export function buildAskExposure(args: {
   for (const seg of segments) if (seg.days > dominant.days) dominant = seg
   const final = segments[segments.length - 1]!
 
+  // Second person: this is the reader's own listing (VOICE.md, Matt 2026-09-10).
   const sentence =
     segments.length === 1
-      ? `The listing asked ${usd(dominant.ask)} for all ${total.toLocaleString('en-US')} days it was on the market.`
-      : `The listing asked ${usd(dominant.ask)} for ${dominant.days.toLocaleString(
+      ? `You asked ${usd(dominant.ask)} for all ${total.toLocaleString('en-US')} days you were on the market.`
+      : `You asked ${usd(dominant.ask)} for ${dominant.days.toLocaleString(
           'en-US',
-        )} of its ${total.toLocaleString('en-US')} days, ${pct1(
+        )} of your ${total.toLocaleString('en-US')} days, ${pct1(
           dominant.sharePct,
-        )} percent of the time it was on the market. It came off at ${usd(final.ask)}, which it held for ${final.days.toLocaleString(
+        )} percent of the time you were on the market. You came off at ${usd(final.ask)}, which you held for ${final.days.toLocaleString(
           'en-US',
         )}.`
 

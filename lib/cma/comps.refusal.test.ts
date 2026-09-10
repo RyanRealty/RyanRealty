@@ -84,7 +84,7 @@ describe('brokerCompRefusal', () => {
       subjectBaths: 3,
       subjectCity: 'Sunriver',
     })
-    expect(line).toContain('20 were cut for a resort community this home is not in')
+    expect(line).toContain('20 were cut for a resort community your home is not in')
     expect(line).not.toContain('ILIKE')
   })
 
