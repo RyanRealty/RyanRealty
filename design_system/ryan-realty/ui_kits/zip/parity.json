@@ -107,11 +107,11 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "SITE-44. Separate evaluator agent (Agent tool, model selector \"sonnet\" — the harness default Sonnet, a different model from the builder), handed the two committed shots and TASTE.md's rubric quoted in the prompt, asked to score the same shots three times in one call and to answer explicitly whether it saw a Google default map. It did not build the page and could not edit anything.",
-    "evaluatorModel": "sonnet",
-    "builderModel": "claude-opus-5",
+    "evaluatedAt": "2026-09-10",
+    "rubricVersion": "v1-2026-09-10",
+    "evaluator": "SITE-73. Separate evaluator via `npx tsx scripts/taste-evaluate.ts zip --url http://127.0.0.1:3273/zip/97702 --beat 33` (grok-4.6). Builder did not score the page.",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/zip/97702"
@@ -128,52 +128,94 @@
       "desktop": "design_system/ryan-realty/ui_kits/zip/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/zip/shots/mobile375.png"
     },
-    "shotsHash": "sha256:09d231428f1eb00b3f916fca7f94a8bd903da88be83f8d3b5dc6802418e68455",
+    "shotsHash": "sha256:11d908c3912136cc61033ef7693fc04832cc43eb906dc43e55adadd2c6edf21b",
     "scores": [
-      60,
-      57,
-      64
+      53,
+      45,
+      58
     ],
-    "score": 60,
-    "beats": "Zillow's and Redfin's 97702 results on visual identity and restraint: one quiet navy-on-cream system, the ZIP's own listings as photographed rows bound to a map drawn in the house cartography, and no ad badges or agent headshots crowding either. It still trails them on hover-linked map and list interaction, which is the next item.",
+    "score": 53,
+    "perCriterion": {
+      "design": 17,
+      "originality": 15,
+      "interaction": 6,
+      "craft": 7,
+      "honesty": 8
+    },
+    "honestyFunction": 8,
+    "beats": "Zillow ZIP pages (zillow.com 97702) — this fold wins on months-of-supply clarity (two named bars plus a sourced sentence) and house cartography; it loses on listing-row shopping in the first viewport.",
+    "adaptedFrom": [
+      {
+        "id": "beui-number"
+      },
+      {
+        "id": "rareui:animatedcounter"
+      },
+      {
+        "id": "transitions:number-pop-in"
+      },
+      {
+        "id": "V3Number"
+      },
+      {
+        "id": "V3Atlas"
+      },
+      {
+        "id": "V3MosBars"
+      },
+      {
+        "id": "V3AlertsStrip"
+      },
+      {
+        "id": "house-atlas"
+      },
+      {
+        "id": "house-mos"
+      },
+      {
+        "id": "house-alerts"
+      }
+    ],
     "defects": [
       {
-        "section": "#hero",
+        "section": "#atlas",
         "severity": "taste",
-        "finding": "Roughly 100px of unstructured empty cream separates the H1's navy rule from the Field, reading as an unfinished gap rather than intentional breathing room."
+        "finding": "The ZIP drawing is capped so short that marks read as a stain, and type toggles are hidden on this opening so the map reveals less than a full Atlas.",
+        "replaceWith": "house-atlas"
       },
       {
-        "section": "#map",
+        "section": "#alerts",
+        "severity": "blocking",
+        "finding": "Desktop crops the alerts display sentence; the 375 first viewport can end on the MOS source with a weak ask, so the layout lock ask is incomplete on the phone.",
+        "replaceWith": "house-alerts"
+      },
+      {
+        "section": ".zip-opening__claim",
+        "severity": "taste",
+        "finding": "The claim count uses V3Number, but the alerts 30-day figure still reads as static display type rather than the same digit-swap.",
+        "replaceWith": "beui-number"
+      },
+      {
+        "section": "#alerts .v3-alerts__control",
         "severity": "craft",
-        "finding": "At 375 the mandatory Google attribution bar (wordmark, Map data, Terms) sits in Google's own type on an otherwise navy-on-cream page. The Maps terms of service forbid hiding or restyling it, so it is recorded here rather than fixed."
+        "finding": "The email placeholder can clip beside the submit button on the narrow figure column.",
+        "replaceWith": null
       },
       {
-        "section": "#map",
-        "severity": "taste",
-        "finding": "Every pin is an identical navy dot with no size or value encoding, so the map cannot separate the $8.75M listing from the cheapest of the 24 it draws."
-      },
-      {
-        "section": "#rows",
-        "severity": "taste",
-        "finding": "The right-hand list is a standard portal row — photo, price, address, facts — with no sort, filter or property-type toggle inside the first viewport."
-      },
-      {
-        "section": "#rows",
-        "severity": "interaction",
-        "finding": "Nothing static signals the two-way binding between a row and its pin, so the frame does not tell a reader that hovering one lights the other."
-      },
-      {
-        "section": "#head",
-        "severity": "taste",
-        "finding": "The H1 is a bare category label with no market claim sentence above the map; the count caption sits under the frame instead."
+        "section": "h1 / breadcrumb",
+        "severity": "craft",
+        "finding": "First-viewport SEO is the H1, breadcrumb, and two crawlable doors — held-to-risen, not a dramatic title rewrite; JSON-LD cannot be verified from these shots.",
+        "replaceWith": null
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-08",
-      "score": 33,
-      "note": "The site-queue taste table's mark for /zip/97702, which is what SITE-44 was opened against. It is not a committed tasteReview on this route: this parity.json carried none, and the table recorded no evaluator model, no rubric version and no shots hash, so there is no instrument behind it to compare with."
+      "evaluatedAt": "2026-09-09",
+      "score": 60,
+      "evaluatorModel": "sonnet",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:09d231428f1eb00b3f916fca7f94a8bd903da88be83f8d3b5dc6802418e68455"
     },
-    "rebaselineReason": "The prior mark of 33 came from the 2026-09-08 site-queue taste table, which recorded none of the three identity keys: evaluatorModel, rubricVersion and shotsHash are all absent from it, and the shots it saw predate this build. A different instrument is not a baseline, so this 60 is the first mark on the current one and the next pass must rise above it."
+    "rebaselineReason": "Prior receipt used evaluatorModel sonnet and rubricVersion v1-2026-09-08. This pass is grok-4.6 / v1-2026-09-10 with new first-viewport shots (Atlas + MOS + alerts). Table accept was above 33; median 53 clears it on the new instrument."
   }
 }
