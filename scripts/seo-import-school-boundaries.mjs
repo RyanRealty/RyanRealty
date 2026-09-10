@@ -44,24 +44,104 @@ function esriRingsToMultiPolygon(rings) {
   }
   return { type: 'MultiPolygon', coordinates: polys }
 }
-// Level is the TRAILING token of the registry name ("High Desert Middle" is
-// middle, not high — don't let a "High" inside the name win).
-const levelOf = (name) => {
-  const last = name.trim().split(/[\s/]+/).pop().toLowerCase()
-  if (last === 'high') return 'high'
-  if (last === 'middle' || last === 'jr') return 'middle'
-  return 'elementary'
-}
 // County SCHOOL name -> extra slug base aliases (naming diffs vs the registry).
-const ALIASES = { 'la-pine': ['lapine'] }
+// SITE-66: JACK ENSWORTH / W.E. MILLER / LYNCH are the county's own names for
+// Ensworth Elem, William E Miller Elem, M A Lynch Elem. Without these the
+// prefix matcher cannot join them (verified 2026-09-10 against BoundaryFD/19).
+const ALIASES = {
+  'la-pine': ['lapine'],
+  'jack-ensworth': ['ensworth'],
+  'w-e-miller': ['william-e-miller'],
+  lynch: ['m-a-lynch'],
+}
 const levelFromType = (t) => (t === 4 ? 'high' : t === 3 ? 'middle' : 'elementary') // 1 elem, 2 elem/middle→elem
 
-// Parse the registry: [{ slug, name, level }] for every school (Deschutes districts matter,
-// but we match on name+level across the whole registry).
+/**
+ * Parse the registry's own `level` field. Deriving level from the trailing
+ * token of `name` misclassified "Three Rivers" (a middle school whose name
+ * has no level token) as elementary, so county THREE RIVERS type 1 and type 3
+ * both failed to match (SITE-66). The seed already has the level.
+ */
 function loadRegistry() {
   const src = fs.readFileSync(new URL('../data/co-schools.ts', import.meta.url), 'utf8')
-  const names = [...src.matchAll(/name:\s*'([^']+)'/g)].map((m) => m[1])
-  return names.map((name) => ({ slug: slugify(name), name, level: levelOf(name) }))
+  const out = []
+  const re = /name:\s*'([^']+)',\s*\n\s*level:\s*'(elementary|middle|high)'/g
+  for (const m of src.matchAll(re)) {
+    out.push({ slug: slugify(m[1]), name: m[1], level: m[2] })
+  }
+  if (out.length < 50) throw new Error(`co-schools registry parse too small (${out.length})`)
+  return out
+}
+
+/**
+ * SITE-66 two-shape publisher checks for registry schools Deschutes BoundaryFD/19
+ * does not cover. Printed, never written. A 2015 ODHS grade-1 layer exists and
+ * is NOT ingested: vintage 2015, grade-1 early-learning catchments, name
+ * collisions (Barnes Elementary ≠ Barnes Butte Elem). Wrong attendance is
+ * worse than none.
+ */
+async function reportMissingPublishers(registry, matched) {
+  const missing = registry.filter((r) => !matched[r.slug])
+  if (!missing.length) return
+  console.log(`\n${missing.length} registry school(s) still without an attendance polygon:`)
+  for (const r of missing) console.log(`  NO-POLYGON ${r.slug} (${r.level})`)
+
+  const checks = []
+  const get = async (url) => {
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': UA } })
+      const text = await res.text()
+      let json = null
+      try {
+        json = JSON.parse(text)
+      } catch {
+        json = { _head: text.slice(0, 160) }
+      }
+      return { status: res.status, json }
+    } catch (e) {
+      return { error: e.message }
+    }
+  }
+
+  const crookBound = await get(
+    'https://gis.crookcountyor.gov/server/rest/services/OpenData/Boundary_Group/MapServer?f=json',
+  )
+  const crookLayers = (crookBound.json?.layers || []).map((l) => `${l.id}:${l.name}`).join(', ')
+  checks.push(
+    `Crook GIS OpenData/Boundary_Group ${crookBound.error || crookBound.status}: layers=[${crookLayers}]. School Districts + School Board Zones, no school ATTENDANCE layer.`,
+  )
+
+  const crookDist = await get(
+    'https://gis.crookcountyor.gov/server/rest/services/Public/Districts_Group/MapServer?f=json',
+  )
+  const distLayers = (crookDist.json?.layers || []).map((l) => l.name).join(', ')
+  checks.push(
+    `Crook GIS Public/Districts_Group ${crookDist.error || crookDist.status}: layers=[${distLayers}]. Fire/water/parks districts, no school attendance.`,
+  )
+
+  const ode = await get(
+    'https://services.arcgis.com/uUvqNMGPm7axC2dD/arcgis/rest/services/EDUCATIONAL_BOUNDARIES/FeatureServer?f=json',
+  )
+  const odeLayers = (ode.json?.layers || []).map((l) => `${l.id}:${l.name}`).join(', ')
+  checks.push(
+    `ODE EDUCATIONAL_BOUNDARIES ${ode.error || ode.status}: layers=[${odeLayers}]. Districts only; no school-level attendance.`,
+  )
+
+  const jeffHttps = await get('https://maps.co.jefferson.or.us/arcgis/rest/services?f=json')
+  const jeffHttp = await get('http://maps.co.jefferson.or.us/arcgis/rest/services?f=json')
+  checks.push(
+    `Jefferson GIS HTTPS ${jeffHttps.error || jeffHttps.status}; HTTP ${jeffHttp.error || jeffHttp.status}. No public REST catalog (SITE-58 sold/down; re-verified SITE-66).`,
+  )
+
+  const odhs = await get(
+    'https://services.arcgis.com/uUvqNMGPm7axC2dD/ArcGIS/rest/services/Elementary_School_Attendance_Boundaries/FeatureServer/0?f=json',
+  )
+  checks.push(
+    `ODHS/OHA Elementary_School_Attendance_Boundaries ${odhs.error || odhs.status} name=${odhs.json?.name || '?'} — vintage 2015 grade-1 catchments. NOT ingested (wrong year, wrong grain).`,
+  )
+
+  console.log('\nPublisher checks (two shapes; no geometry invented):')
+  for (const c of checks) console.log(`  CHECK  ${c}`)
 }
 
 async function main() {
@@ -98,6 +178,8 @@ async function main() {
   }
   console.log(`\n${Object.keys(matched).length} matched, ${unmatched.length} unmatched:`)
   for (const u of unmatched) console.log('  UNMATCHED ' + u)
+
+  await reportMissingPublishers(registry, matched)
 
   if (!WRITE) {
     console.log('\n(dry run — pass --write to upsert matched polygons)')

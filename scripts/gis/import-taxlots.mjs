@@ -134,6 +134,26 @@ const COUNTIES = {
     paging: 'offset',
     coverage: 'the City of Medford only, not all of Jackson County',
   },
+
+  /*
+   * SITE-66 re-verification, 2026-09-10, two query shapes:
+   *   1. gis.crookcountyor.gov/server/rest/services CC_Taxlots_Helion
+   *      FeatureServer/0 "Taxlots" esriGeometryPolygon, count=17555.
+   *   2. Public/Crook_County_Taxlots MapServer/0, same count 17555, same
+   *      MAPTAXLOT / ACCOUNT / MAP_NUMBER fields.
+   * Distinct MAPTAXLOT=17552 (3 duplicate map+lot rows; upsert merges).
+   * Jefferson County GIS REST: HTTPS fetch failed, HTTP 404 on
+   * maps.co.jefferson.or.us/arcgis/rest/services — still no public layer.
+   */
+  crook: {
+    label: 'Crook',
+    url: 'https://gis.crookcountyor.gov/server/rest/services/CC_Taxlots_Helion/FeatureServer/0',
+    source: 'Crook County GIS, taxlot layer',
+    fields: { id: 'MAPTAXLOT', map: 'MAP_NUMBER', dial: 'PSO_Link' },
+    pageSize: 1000,
+    paging: 'offset',
+    coverage: 'the whole county',
+  },
 }
 
 const args = process.argv.slice(2)

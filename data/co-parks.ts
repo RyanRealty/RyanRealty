@@ -20,9 +20,13 @@
  * Boundary polygons (all SRID 4326, stored as MultiPolygon):
  *   - State parks: Oregon State Parks FeatureServer (Oregon GEO / OPRD),
  *     https://maps.prd.state.or.us/arcgis/rest/services/Land_ownership/Oregon_State_Parks/FeatureServer/0
- *   - City parks: OpenStreetMap contributors (sourced via the Overpass API).
- *   - Inserted by migration 20260603130000_park_boundaries.sql. The map fetches
- *     them via getParkBoundaryGeoJSON (boundary_geojson RPC, geo_type='park').
+ *   - City parks: Deschutes County GIS Parks FeatureServer (OPERATOR = BPRD /
+ *     City of Redmond / City of Sisters) and Crook County GIS OpenData/Places
+ *     Parks (Ochoco Creek). American Legion Community Park remains OSM until
+ *     City of Redmond publishes a named polygon (SITE-66).
+ *   - Inserted by scripts/gis/import-official-parks.mjs (city) and the Oregon
+ *     State Parks import (state). The map fetches them via
+ *     getParkBoundaryGeoJSON (boundary_geojson RPC, geo_type='park').
  *
  * Every park in this registry hasPolygon=true. If a future park cannot get an
  * accurate polygon, set hasPolygon=false and omit its `boundaries` row — the
