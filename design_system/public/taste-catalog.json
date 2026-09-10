@@ -1,18 +1,58 @@
 {
   "source": "https://x.com/EXM7777/status/2092250905655812121",
+  "catalogUrls": [
+    "https://beautifului.dev",
+    "https://beui.dev",
+    "https://rareui.com",
+    "https://transitions.dev",
+    "https://ui.shadcn.com"
+  ],
   "catalogUrl": "https://ui.shadcn.com/docs/components",
-  "note": "Machina (@EXM7777): send the agent a catalog URL, fetch the FULL list, integrate into the existing foundation. Matt pointed at ui.shadcn.com as that catalog. This file is the frozen list (docs page 2026-09-10) plus our installed paths. Public pages still render from components/site/v3. A lane FETCHES the shadcn docs (or the local components/ui file) and ADAPTS the job into v3. It does not npx shadcn add onto app/ or components/site/. Admin/product already lives on @/components/ui. SITE-45 is why this exists: an evaluator said 'looks like Zillow', the lane invented a column filmstrip, and Matt lost the full-width hero, the facts, and decent buttons.",
+  "note": "Machina (@EXM7777): send the agent the catalog URLs, fetch the FULL list, integrate into the existing foundation. All five sources are first-class. Public pages still render from components/site/v3 — navy, cream, Geist, Amboqia. A lane FETCHES a named module's page and ADAPTS the job (layout, interaction, motion recipe) into v3. It does not npm-install any of these as a second look. SITE-45 is why this exists.",
   "refuse": [
     "npx shadcn add onto app/ or components/site/",
-    "Install beUI / Rare UI / Magic UI / Aceternity as a second public design system",
+    "npm install or shadcn-add beUI / Rare UI / Beautiful UI / Transitions as a second public design system",
+    "Copy their palette, Inter, purple, glass, orbs, or magnetic buttons",
     "Shrink a working full-bleed layout to dodge a 'looks like Zillow' tell",
     "Drop PropertySpecs, description, schools, or Tour/Call/Text to make the fold quieter"
   ],
   "catalogs": [
     {
+      "id": "beautifului",
+      "name": "Beautiful UI",
+      "url": "https://beautifului.dev",
+      "kind": "external",
+      "take": "Loading, empty, skeleton-to-content, filter chips that reorganize a table, insight cards with a scrubber. Choreography of states, not the agent-chat shell.",
+      "refuse": "Prompt bar, tool chips, approval cards, agent screen, chat panel on a listing or place page."
+    },
+    {
+      "id": "beui",
+      "name": "beUI",
+      "url": "https://beui.dev",
+      "kind": "external",
+      "take": "Tabs with a sliding indicator; expandable control for a grouped ask; action-swap for Tour/Call/Text; bottom sheet; drawer; accordion height; tooltip. Restyle to navy-on-cream, our motion bands, reduced-motion safe.",
+      "refuse": "Tilt cards, docks, magnetic/metallic buttons, shader backgrounds, cylinder carousel, marquee, gooey popover, bounce sidebar."
+    },
+    {
+      "id": "rareui",
+      "name": "Rare UI",
+      "url": "https://rareui.com",
+      "kind": "external",
+      "take": "Scroll-progress on a long listing. Nothing else unless the job matches and the motion is in-band.",
+      "refuse": "Fluid orb, matrix orb, gravity letters, gooey nav, emoji reaction, bounce sidebar, GitHub activity, OTP."
+    },
+    {
+      "id": "transitions",
+      "name": "Transitions.dev",
+      "url": "https://transitions.dev",
+      "kind": "external",
+      "take": "Named recipes at our motion bands: panel reveal, modal open/close, tabs sliding, accordion height, skeleton-to-content, tooltip, image-open (camera only, no 3D glare).",
+      "refuse": "Confetti, gooey plus-menu, 3D tilt, like-button particles, spinning counters as decoration."
+    },
+    {
       "id": "shadcn",
       "name": "shadcn/ui",
-      "url": "https://ui.shadcn.com/docs/components",
+      "url": "https://ui.shadcn.com",
       "kind": "admin",
       "take": "The full component list. Fetch the docs page for a named component, then the local file if we already installed it. Adapt composition (carousel, sheet, button group, dialog, tabs, accordion, empty, skeleton) into v3 on public pages. Install into components/ui only for admin/product.",
       "refuse": "Copying shadcn's default look onto a listing page. Public paint is v3 tokens."
@@ -82,6 +122,57 @@
       { "name": "tooltip", "installed": "components/ui/tooltip.tsx", "jobs": ["listing-detail:facts"] }
     ]
   },
+  "lists": {
+    "beautifului": {
+      "url": "https://beautifului.dev",
+      "components": [
+        { "name": "loading-state", "url": "https://beautifului.dev", "take": true, "jobs": ["listing-detail:gallery"] },
+        { "name": "filter-table", "url": "https://beautifului.dev", "take": true, "jobs": ["listing-detail:facts"] },
+        { "name": "insight-cards", "url": "https://beautifului.dev", "take": true, "jobs": ["city:opening"] },
+        { "name": "search", "url": "https://beautifului.dev", "take": true, "jobs": ["search:field"] },
+        { "name": "prompt-bar", "url": "https://beautifului.dev", "take": false, "jobs": [] },
+        { "name": "chat", "url": "https://beautifului.dev", "take": false, "jobs": [] },
+        { "name": "agent-screen", "url": "https://beautifului.dev", "take": false, "jobs": [] }
+      ]
+    },
+    "beui": {
+      "url": "https://beui.dev",
+      "components": [
+        { "name": "tabs", "url": "https://beui.dev/components/motion/tabs", "take": true, "jobs": ["listing-detail:gallery"] },
+        { "name": "expandable-control", "url": "https://beui.dev/components/motion/expandable-control", "take": true, "jobs": ["listing-detail:ask"] },
+        { "name": "action-swap", "url": "https://beui.dev/components/motion/action-swap", "take": true, "jobs": ["listing-detail:ask"] },
+        { "name": "bottom-sheet", "url": "https://beui.dev/components/motion/bottom-sheet", "take": true, "jobs": ["listing-detail:ask"] },
+        { "name": "drawer", "url": "https://beui.dev/components/motion/drawer", "take": true, "jobs": ["listing-detail:ask"] },
+        { "name": "bouncy-accordion", "url": "https://beui.dev/components/motion/bouncy-accordion", "take": true, "jobs": ["listing-detail:facts"] },
+        { "name": "tooltip", "url": "https://beui.dev/components/motion/tooltip", "take": true, "jobs": ["listing-detail:facts"] },
+        { "name": "tilt-card", "url": "https://beui.dev/components/motion/tilt-card", "take": false, "jobs": [] },
+        { "name": "dock", "url": "https://beui.dev/components/motion/dock", "take": false, "jobs": [] },
+        { "name": "shader-background", "url": "https://beui.dev/components/motion/shader-background", "take": false, "jobs": [] }
+      ]
+    },
+    "rareui": {
+      "url": "https://rareui.com",
+      "components": [
+        { "name": "scroll-progress", "url": "https://rareui.com/components/scrollprogressindicator", "take": true, "jobs": ["listing-detail:gallery"] },
+        { "name": "fluid-orb", "url": "https://rareui.com/components/fluidorb", "take": false, "jobs": [] },
+        { "name": "gravity-letters", "url": "https://rareui.com/components/gravityletters", "take": false, "jobs": [] },
+        { "name": "gooey-nav", "url": "https://rareui.com/components/gooeynav", "take": false, "jobs": [] },
+        { "name": "matrix-orb", "url": "https://rareui.com/components/matrixorb", "take": false, "jobs": [] }
+      ]
+    },
+    "transitions": {
+      "url": "https://transitions.dev",
+      "components": [
+        { "name": "tabs-sliding", "url": "https://transitions.dev", "take": true, "jobs": ["listing-detail:gallery"] },
+        { "name": "modal-open", "url": "https://transitions.dev", "take": true, "jobs": ["listing-detail:lightbox"] },
+        { "name": "panel-reveal", "url": "https://transitions.dev", "take": true, "jobs": ["listing-detail:facts"] },
+        { "name": "skeleton-reveal", "url": "https://transitions.dev", "take": true, "jobs": ["listing-detail:gallery"] },
+        { "name": "image-open", "url": "https://transitions.dev", "take": true, "jobs": ["listing-detail:lightbox"] },
+        { "name": "confetti", "url": "https://transitions.dev", "take": false, "jobs": [] },
+        { "name": "gooey-plus", "url": "https://transitions.dev", "take": false, "jobs": [] }
+      ]
+    }
+  },
   "classes": {
     "listing-detail": {
       "layoutLock": "Listing media is full-bleed above the grid (listing-hero-bleed), not a column frame (listing-hero-column). SITE-45 set heroInMain to dodge a 'looks like Zillow' tell. Matt 2026-09-10: that lost the full-width hero, hid home details, and made the buttons look bad. Restore bleed. Keep PropertySpecs, description, schools, Tour/Call/Text (parity.json requiredComponents). Adapt shadcn carousel / button-group / sheet / dialog into that foundation — do not invent a smaller layout.",
@@ -127,6 +218,36 @@
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/dialog",
           "job": "Photo lightbox. We already installed components/ui/dialog.tsx."
+        },
+        {
+          "id": "beui-tabs",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/tabs",
+          "job": "Photos / 3D / floor / map as tabs with a sliding indicator. Navy on cream, no bounce."
+        },
+        {
+          "id": "beui-action-swap",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/action-swap",
+          "job": "Tour / Call / Text as one control that swaps the active act. Not three ghost buttons."
+        },
+        {
+          "id": "transitions-modal",
+          "catalog": "transitions",
+          "url": "https://transitions.dev",
+          "job": "Lightbox open/close: scale and fade at our motion band. No 3D glare."
+        },
+        {
+          "id": "beautifului-loading",
+          "catalog": "beautifului",
+          "url": "https://beautifului.dev",
+          "job": "Photo skeleton until the mosaic paints. Elapsed load, not a spinner for decoration."
+        },
+        {
+          "id": "rareui-scroll-progress",
+          "catalog": "rareui",
+          "url": "https://rareui.com/components/scrollprogressindicator",
+          "job": "A reading mark on a long listing. Hairline navy. Not a gooey orb."
         }
       ]
     }

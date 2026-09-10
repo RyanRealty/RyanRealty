@@ -1,8 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
+  EXM7777_IDS,
+  EXM7777_URLS,
   adaptedFromProblems,
   layoutLockForClass,
+  listPicksForClass,
   loadTasteCatalog,
   modulesForClass,
   publicInstallForbidden,
@@ -13,11 +16,12 @@ const raw = JSON.parse(readFileSync('design_system/public/taste-catalog.json', '
 const loaded = loadTasteCatalog(raw)
 
 describe('loadTasteCatalog', () => {
-  it('loads the committed catalog from the X post with house + shadcn as the fetched list', () => {
+  it('loads the committed catalog from the X post with all five EXM7777 sources', () => {
     expect(loaded.problems).toEqual([])
     expect(loaded.source).toBe('https://x.com/EXM7777/status/2092250905655812121')
+    expect(loaded.catalogUrls).toEqual([...EXM7777_URLS])
+    expect(EXM7777_IDS.every((id) => loaded.catalogs.some((c) => c.id === id))).toBe(true)
     expect(loaded.catalogs.some((c) => c.id === 'house-v3' && c.kind === 'house')).toBe(true)
-    expect(loaded.catalogs.some((c) => c.id === 'shadcn')).toBe(true)
     expect(loaded.refuse.some((r) => /shadcn add/i.test(r))).toBe(true)
   })
 })
@@ -29,7 +33,15 @@ describe('listing-detail is the proof class', () => {
     expect(lock).toMatch(/SITE-45/)
     const ids = modulesForClass(loaded, 'listing-detail').map((m) => m.id)
     expect(ids).toEqual(
-      expect.arrayContaining(['listing-hero-bleed', 'listing-specs', 'listing-ask', 'shadcn-carousel', 'shadcn-button-group']),
+      expect.arrayContaining([
+        'listing-hero-bleed',
+        'listing-specs',
+        'listing-ask',
+        'shadcn-carousel',
+        'beui-tabs',
+        'transitions-modal',
+        'beautifului-loading',
+      ]),
     )
   })
 })
@@ -68,6 +80,19 @@ describe('shadcn is the fetched list', () => {
   it('accepts a shadcn component name as adaptedFrom', () => {
     expect(adaptedFromProblems(loaded, 'listing-detail', [{ id: 'shadcn:carousel' }])).toEqual([])
     expect(adaptedFromProblems(loaded, 'listing-detail', [{ id: 'carousel' }])).toEqual([])
+  })
+})
+
+describe('the other four EXM7777 catalogs', () => {
+  it('picks takeable beui / transitions / beautifului modules for listing-detail', () => {
+    const ids = listPicksForClass(loaded, 'listing-detail').map((c) => c.id)
+    expect(ids).toEqual(expect.arrayContaining(['beui:tabs', 'transitions:modal-open', 'beautifului:loading-state']))
+    expect(ids.some((id) => id.includes('fluid-orb'))).toBe(false)
+  })
+
+  it('accepts a beui module as adaptedFrom', () => {
+    expect(adaptedFromProblems(loaded, 'listing-detail', [{ id: 'beui:tabs' }])).toEqual([])
+    expect(adaptedFromProblems(loaded, 'listing-detail', [{ id: 'beui-tabs' }])).toEqual([])
   })
 })
 
