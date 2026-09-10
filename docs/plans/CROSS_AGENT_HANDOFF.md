@@ -36,6 +36,39 @@ still tighten; the alerts field still lands in the first phone screen (top 450 i
 viewport). The reason is written into the media block so the next compaction pass does not
 reach for the same lever. `ci:tap-targets`: 3215 controls, 0 unexcused, baseline untouched
 at 0.
+# Current — 2026-09-10 (Iconoir is the v3 stroke set)
+
+Owner: grok-4.6 this session. **No SITE claims.** Did not steal SITE-63 / SITE-75 / SITE-77 / SITE-83.
+
+Installed `iconoir-react` 7.12.1. Public paint goes through `V3Icon` (RSC-safe Iconoir paths, currentColor, 24 grid). Wired on chrome, doors, quiet marks, footer social, guest-watch and search-alert bells. MOS `supply` stays the two-bar drawing. Not a card grid of icons.
+
+# Current — 2026-09-10 06:18Z (15m grinder 01a0894e: SITE-75/77 built, taste still due)
+
+Owner: `grok-4.5-2026-09-10-05`. Worktree `/Users/matthewryan/RyanRealty-wt-site-75-77` branch `wt/site-75-77-20260910` @ `b3384f49` (ahead of origin/main, **not pushed**).
+
+- **SITE-75** `/housing-market`: Instrument `#market` is now first; chooser follows as "More reports"; "Five products" dropped.
+- **SITE-77** `/buy`: Stage inventory band is one sourced sentence, not three KPI tiles; short frame kept so Field still breaks the fold.
+
+Next fire: recapture 1440/375, grok-4.6 evaluate (adaptedFrom + replaceWith), then merge to main, ONE push, ONE deploy:verify. Do not steal SITE-60 / SITE-63 / SITE-83.
+
+# Current — 2026-09-10 (product hold: UI/UX rises, every other metric holds)
+
+Owner: grok-4.6 this session. **No SITE claims.** Did not steal SITE-60 / SITE-63 / SITE-75 / SITE-77.
+
+Matt: improving UI/UX, all other metrics must remain or be optimized. Encoded in `ci:taste-canon`: honestyFunction cannot fall or be omitted to skip; requiredComponents cannot shrink vs HEAD; JSON-LD and conversion-ask roles at HEAD must remain. Titles / payload / tap targets stay on `ci:seo-shell` and `ci:runtime-gates` (shrink-only). Seed accept + site-queue skill + evaluator prompt carry the same hold.
+
+# Current — 2026-09-10 06:00Z (15m grinder 01a0894e: claimed SITE-75 + SITE-77)
+
+Owner: `grok-4.5-2026-09-10-05`. Fleet 3/3.
+
+Did **not** work the stale 2026-09-08 pack as-is. Live first-viewport: `/housing-market` still opens on Pick a report / Five products; `/buy` still has a 1,562 / $749,900 / 29 KPI strip. Released SITE-68 (invest — live already has counts) and SITE-69 (cities — live already has MOS bars). Claimed **SITE-75** (market-report) and **SITE-77** (buy).
+
+Do not steal SITE-60 (heartbeat 2m) or SITE-63. Next fire: build those two in worktrees; catalog `--preflight`; adaptedFrom on receipts.
+
+# Current — 2026-09-10 (round four seeded SITE-68…89)
+
+Owner: grok-4.6 this session `grok-01a0895a-2026-09-10`. Seeded 22 catalog-backed class nodes (invest 25 → place-type 69). Skipped listing-detail / about / compare. Did not steal SITE-60 or SITE-63. Next: claim SITE-68 + SITE-69 if fleet has a slot, re-measure live first viewport, then builder card.
+
 
 ## Prior — 2026-09-10 (queue ready to take catalog-backed SITE nodes)
 

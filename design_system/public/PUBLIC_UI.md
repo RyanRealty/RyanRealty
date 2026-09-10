@@ -54,6 +54,7 @@ spectacle.** Three commitments:
 | Type scale | Fluid `clamp()` ramp, body ≥16px, tabular numerals for all data | Butterick / FT data-viz practice |
 | Data honesty | Every figure renders with its source trace available; empty states state the reason | Our World in Data / FT chart discipline |
 | Density | Large quiet margins, hairline rules over heavy cards | Stripe / Linear |
+| Icons | Iconoir (https://iconoir.com/), stroke, currentColor, 24 grid. Public paint goes through `V3Icon`. Marks differentiate a control; they are not a card grid of icons. | Iconoir MIT |
 
 ## 3. The pattern set — SIX TODAY, OPEN (Matt 2026-08-27)
 

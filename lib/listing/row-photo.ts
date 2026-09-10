@@ -32,12 +32,26 @@ const SPARK_RESIZE_HOST = 'cdn.resize.sparkplatform.com'
  * upward and asking smaller buys nothing), and it is still ~3.6x the 88x66 CSS
  * box, which keeps it sharp on a 2x screen.
  */
-const ROW_RENDER = '320x240'
+export const LISTING_ROW_PHOTO_SIZE = '320x240' as const
+
+/**
+ * Next verified Spark bucket above the row thumb. A V3Field lead tile is full
+ * `--v3-measure` (72rem) at 16/9 — 320 is the ledger thumb, not that plate.
+ * 256x192 is byte-identical to 320 and is not a size.
+ */
+export const LISTING_FIELD_LEAD_PHOTO_SIZE = '800x600' as const
+
+export type ListingPhotoSize =
+  | typeof LISTING_ROW_PHOTO_SIZE
+  | typeof LISTING_FIELD_LEAD_PHOTO_SIZE
 
 /** `/ore/1600x1200/true/<asset>.jpg` — feed, size, crop flag, asset. */
 const SPARK_RESIZE_PATH = /^\/([^/]+)\/\d+x\d+\/([^/]+)\/(.+)$/
 
-export function listingRowPhotoSrc(raw: string): string {
+export function listingRowPhotoSrc(
+  raw: string,
+  size: ListingPhotoSize = LISTING_ROW_PHOTO_SIZE,
+): string {
   const src = raw.trim()
   if (!src) return src
   let url: URL
@@ -51,6 +65,22 @@ export function listingRowPhotoSrc(raw: string): string {
   const parts = SPARK_RESIZE_PATH.exec(url.pathname)
   if (!parts) return src
   const [, feed, crop, asset] = parts
-  url.pathname = `/${feed}/${ROW_RENDER}/${crop}/${asset}`
+  const render = size === LISTING_FIELD_LEAD_PHOTO_SIZE ? LISTING_FIELD_LEAD_PHOTO_SIZE : LISTING_ROW_PHOTO_SIZE
+  url.pathname = `/${feed}/${render}/${crop}/${asset}`
   return url.toString()
+}
+
+/** Compact Spark listing photos on a search/split row before it enters Flight. */
+export function compactListingCardPhotoFields<
+  T extends { PhotoURL?: string | null; photoUrls?: string[] | null },
+>(row: T): T {
+  return {
+    ...row,
+    ...(typeof row.PhotoURL === 'string' && row.PhotoURL
+      ? { PhotoURL: listingRowPhotoSrc(row.PhotoURL) }
+      : {}),
+    ...(row.photoUrls
+      ? { photoUrls: row.photoUrls.map((url) => listingRowPhotoSrc(url)) }
+      : {}),
+  }
 }

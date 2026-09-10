@@ -49,6 +49,14 @@ describe('cityFieldItems', () => {
     expect(items[0]?.photoSrc).toBe('https://img.example/house.jpg')
     expect(items[0]?.meta).toBe('3 bd · 2 ba · 1,800 sqft')
   })
+
+  it('asks Spark for the row size so Flight never names a 1600 plate', () => {
+    const spark = 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260501165710852242000000-o.jpg'
+    const items = cityFieldItems([tile({ listingKey: 'a', photoUrl: spark })])
+    expect(items[0]?.photoSrc).toBe(
+      'https://cdn.resize.sparkplatform.com/ore/320x240/true/20260501165710852242000000-o.jpg',
+    )
+  })
 })
 
 describe('cityFieldCaption', () => {

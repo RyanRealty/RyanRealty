@@ -43,6 +43,10 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+import {
+  LISTING_FIELD_LEAD_PHOTO_SIZE,
+  listingRowPhotoSrc,
+} from '@/lib/listing/row-photo'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Button, V3SourceLine } from './atoms'
 import './tokens.css'
@@ -417,12 +421,15 @@ export function V3Field({
                       onBlur={() => setActive(null)}
                     >
                       <img
-                        src={item.photoSrc}
+                        src={listingRowPhotoSrc(
+                          item.photoSrc,
+                          index === 0 ? LISTING_FIELD_LEAD_PHOTO_SIZE : undefined,
+                        )}
                         alt={item.title}
                         width={index === 0 ? 1280 : 640}
                         height={index === 0 ? 720 : 400}
                         loading={index < 3 ? 'eager' : 'lazy'}
-                        fetchPriority={index < 3 ? 'high' : 'auto'}
+                        fetchPriority={index === 0 ? 'high' : 'auto'}
                       />
                       <span
                         className={cn(
@@ -496,7 +503,7 @@ export function V3Field({
                       {hasListingPhoto(item) ? (
                         <img
                           className="v3-field__thumb"
-                          src={item.photoSrc}
+                          src={listingRowPhotoSrc(item.photoSrc)}
                           alt={item.title}
                           width={120}
                           height={120}

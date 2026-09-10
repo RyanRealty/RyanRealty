@@ -63,11 +63,11 @@
   ],
   "openDefects": {},
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
+    "evaluatedAt": "2026-09-10",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "SITE-50 lane, round three. A separate Agent given only TASTE.md, the two shots below and the mark to beat, with no access to the builder's reasoning; it scored the same shots three times in one call. Rounds one and two, against earlier shots of the same rebuild, returned medians 66 and 59; this receipt records round three because these are the shots on disk.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts invest — grok-4.6 via grok CLI, three scorings of SITE-68 production first-viewport shots, separate from the grok-4.5 builder",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/invest"
@@ -78,72 +78,114 @@
       ],
       "states": [
         "default"
-      ]
+      ],
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, https://ryan-realty.com/invest after SITE-50 Pulse opening (SITE-68 re-measure)"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/invest/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/invest/shots/mobile375.png"
     },
-    "shotsHash": "sha256:042578c7951d396797f04544da36398bf94d2dd43aeb791cadf372482e50bb60",
+    "shotsHash": "sha256:8dad3a8eff7f418bbb1507909f34237d397421c065cf5e029a4d8ff31e3dcdfe",
     "scores": [
-      61,
-      66,
-      56
+      57,
+      63,
+      51
     ],
-    "score": 61,
+    "score": 57,
     "criteria": {
-      "designQuality": 20,
-      "originality": 16,
-      "interaction": 5,
-      "craft": 12,
+      "designQuality": 18,
+      "originality": 14,
+      "interaction": 6,
+      "craft": 11,
       "honestyFunction": 8
     },
-    "beats": "Portal land-search category pages (a Zillow or LandWatch 'land for sale in Deschutes County' grid) show raw listing counts and never synthesise a market-composition claim. This page's win is data depth stated as a finding: 605 lots against 61 commercial, 46 two-to-four unit and 41 farms, every one a live count, under one named source and a methodology disclosure, in the first screen.",
+    "beats": "Zillow's Land for sale in Deschutes County grid (and LandWatch's county land search): they put photos, asking prices and a map in the first viewport. This page wins the composition claim — 604 lots against 61 commercial, 46 two-to-four-unit buildings and 41 farms, each a live count under a named MLS source — and loses every metric that lets an investor act on it: no map, no ask, no listing.",
+    "adaptedFrom": [
+      {
+        "id": "house-pulse"
+      },
+      {
+        "id": "beautifului-insight"
+      },
+      {
+        "id": "shadcn-table"
+      },
+      {
+        "id": "house-ledger"
+      }
+    ],
     "defects": [
       {
-        "section": "#place",
-        "severity": "interaction",
-        "finding": "the four ranked rows are a real radio group, but a static render shows no hover or focus state, so a reader cannot tell from the page alone that a row is a control",
-        "fix": "the mark was enlarged twice in this lane and still reads as a marker rather than a button; the next pass should try a labelled chip or a per-row chevron",
-        "viewport": "both"
+        "section": "#place .v3-pulse__readings",
+        "severity": "taste",
+        "finding": "The four rules are a ranked list of independent hairlines, not a part-to-whole: land's fill reads as a section divider, the 2-4 unit and farm fills collapse to nubs, and neither the 752-door whole nor land's share is on the graphic.",
+        "replaceWith": "house-pulse"
       },
       {
         "section": "#place",
+        "severity": "taste",
+        "finding": "V3Pulse is mounted without a plot, so the band that is supposed to be marks on a field is a caption column beside a list; 604 lots in Central Oregon have no geography on the fold.",
+        "replaceWith": "house-pulse"
+      },
+      {
+        "section": "#place .v3-pulse__pick",
+        "severity": "taste",
+        "finding": "The native radio is invisible as a control at rest: twelve-pixel squares look like list bullets, the capture shows no hover or focus, and a tap only swaps a definition the four counts already implied.",
+        "replaceWith": "house-pulse"
+      },
+      {
+        "section": "#place",
+        "severity": "taste",
+        "finding": "The captured view has no paged insight and no scrubber; the catalog job beautifului-insight was ignored, so the only data section on screen does not reward a scrub with more data.",
+        "replaceWith": "beautifului-insight"
+      },
+      {
+        "section": "#place .v3-pulse__foot",
         "severity": "craft",
-        "finding": "the words column ends well short of the rules column, leaving an unbalanced band of cream above the section rule at 1440",
-        "fix": "carry a second element in the words column, or bottom-align the two",
-        "viewport": "desktop"
+        "finding": "At 1440 the words column is two sentences restating the H1 and it ends far above the last rule, leaving a cream void that the next section's eyebrow then leaks into.",
+        "replaceWith": null
       },
       {
-        "section": "#place",
+        "section": "#place .v3-pulse__go",
         "severity": "craft",
-        "finding": "the inline doors in the words column carry no padded hit area, so their tap target may sit under 44px at 375",
-        "fix": "give an inline door in this band a 44px block without changing its type size",
-        "viewport": "mobile"
+        "finding": "See all 604 lots is an inline text link inside the definition, so the tap target at 375 sits under the 44px floor.",
+        "replaceWith": null
       },
       {
-        "section": "#place",
-        "severity": "honesty",
-        "finding": "the four figures share one source line rather than a per-figure trace naming each segment's own filter",
-        "fix": "the full per-segment arithmetic is already inside the disclosure; consider surfacing the segment filter on each row",
-        "viewport": "both"
+        "section": "#place .v3-pulse__rule",
+        "severity": "craft",
+        "finding": "At 375 the 604-lot fill spans the row and reads as a hairline divider, so the mobile composition loses the part-to-whole encoding the desktop bars barely hold.",
+        "replaceWith": null
+      },
+      {
+        "section": "#searches",
+        "severity": "taste",
+        "finding": "The first viewport already shows the stacked-section tell: a small-caps eyebrow CENTRAL OREGON · BY PROPERTY TYPE under a rule, promising another list of the same types the Pulse just ranked.",
+        "replaceWith": "house-ledger"
+      },
+      {
+        "section": "#place .v3-pulse__source",
+        "severity": "craft",
+        "finding": "Four live counts share one visible source line; the per-segment filter and the 604-over-whole arithmetic sit behind the disclosure instead of on the figures.",
+        "replaceWith": null
       }
     ],
     "comparedToPrior": "rebaselined",
-    "notes": "The route had no committed tasteReview before this one, so this is its first receipt and comparedToPrior is 'first'. The class's mark on the STANDING TABLE instrument (design_system/public/taste-table.json, 2026-09-08) was median 25 from scorings 25/19/29, with the verdict 'a cover memo, not a landing page'. That table's shots are not in the repo, so its shotsHash differs and it is not a valid priorMark here — the table's own note says so. On the same rubric, the same evaluator model and the same capture spec, the class now medians 61.",
     "priorMark": {
       "evaluatedAt": "2026-09-09",
-      "score": 60,
+      "score": 61,
       "scores": [
-        63,
-        54,
-        60
+        61,
+        66,
+        56
       ],
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:9ca2c915599514d0e9c4284be3a1bfa4480d9e8f517ad5722ea76a5190884ff3",
-      "source": "the route receipt committed on claude/run-loop-w8f3ep at 1ea07155 (SITE-40), merged into this branch alongside SITE-50"
+      "shotsHash": "sha256:042578c7951d396797f04544da36398bf94d2dd43aeb791cadf372482e50bb60",
+      "source": "SITE-50 route receipt on this parity.json (median 61, claude-sonnet-5)"
     },
-    "rebaselineReason": "shotsHash: the prior mark is the route receipt this branch committed at 1ea07155 (SITE-40, score 60) on the SAME evaluatorModel (claude-sonnet-5) and the SAME rubricVersion (v1-2026-09-08), but on shots of the pre-SITE-50 opening — two prose blocks headed \"What this page is\" and \"How to underwrite here\". SITE-50 replaced that opening with the Pulse, so the shots are of a different page. The score rose 60 -> 61 on a comparable model and rubric. The 2026-09-09 merge kept two SITE-40/SITE-52 changes on this route that SITE-50 did not have (the tool doors gain a lead, and the Ledger rows stop repeating \"Central Oregon\" under an eyebrow that already says it); the page was re-captured on the merged tree to check whether they move the graded evidence, and at both 1440x900 and 375x812 the first viewport is the Pulse alone — both sections sit below it. The shots here are therefore SITE-50's own capture, unchanged, and they still describe what the evaluator scored."
+    "rebaselineReason": "evaluatorModel and shotsHash differ: SITE-50 scored 61 with claude-sonnet-5 on shotsHash sha256:042578c7951d396797f04544da36398bf94d2dd43aeb791cadf372482e50bb60; this SITE-68 mark is grok-4.6 on new production first-viewport shots after re-measure. Same rubricVersion v1-2026-09-08. The standing table instrument still shows median 25 for the pre-Pulse memo; live fold is a finding plus live counts, and this receipt scores 57 on the table rubric.",
+    "verdict": "This is better than a 25 because the first viewport is a finding and four live counts, not two memo blocks headed What this page is. It is still dull: a ranked hairline list and a caption, with no map, no share of the whole, and no scrubber, so land-not-buildings is a headline sitting on the house's default Pulse instead of a drawing anyone would send.",
+    "notes": "SITE-68 builder lane re-measured live https://ryan-realty.com/invest. The memo defects from the 2026-09-08 table are already gone (SITE-50 Pulse). No page rebuild this lane — recapture + separate grok-4.6 evaluate + catalog-shaped receipt. honestyFunction holds at 8 vs the prior route mark."
   }
 }

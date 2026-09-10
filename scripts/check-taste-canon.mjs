@@ -27,6 +27,10 @@
  *    taste-receipt-catalog-baseline.json (shrink-only). Every public
  *    taste-classes.json key must map to a catalog class with modules so a
  *    newly seeded SITE node has a builder card. Layout locks fail immediately.
+ * 7. Product hold (Matt 2026-09-10): UI/UX may rise; honestyFunction cannot
+ *    fall or be omitted to skip the hold; requiredComponents cannot shrink
+ *    vs HEAD; a JSON-LD or conversion-ask role present at HEAD must remain.
+ *    Payload / tap targets / titles stay on their own gates.
  *
  * Seed unreviewed with `--write-baseline`, the v2 backlog with
  * `--write-v2-baseline`, catalog receipts with `--write-catalog-baseline`.
@@ -35,7 +39,12 @@
 import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
-import { RECEIPT_V2_FROM, isV2Receipt, receiptV2Problems } from './lib/taste-receipt.mjs'
+import {
+  RECEIPT_V2_FROM,
+  isV2Receipt,
+  receiptV2Problems,
+  requiredComponentsHoldProblems,
+} from './lib/taste-receipt.mjs'
 import {
   CATALOG_PATH,
   catalogCoverageProblems,
@@ -141,19 +150,21 @@ if (catalog && catalog.problems.length === 0 && existsSync(join(ROOT, TASTE_CLAS
 }
 
 /**
- * The receipt this route carries at HEAD. A working-tree receipt that says
- * "first" while a scored one is already committed is dodging the rise rule.
- * No git (a fresh fixture, a shallow export) simply means no prior to compare.
+ * The parity.json this route carries at HEAD. A working-tree receipt that
+ * says "first" while a scored one is already committed is dodging the rise
+ * rule; a working-tree contract that dropped requiredComponents is dodging
+ * the product hold. No git (a fresh fixture, a shallow export) simply means
+ * no prior to compare.
  */
-function committedReceipt(rel) {
+function committedParity(rel) {
   try {
     const out = execFileSync('git', ['show', `HEAD:${rel}`], {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     })
-    const tr = JSON.parse(out)?.tasteReview
-    return tr && typeof tr === 'object' ? tr : null
+    const d = JSON.parse(out)
+    return d && typeof d === 'object' ? d : null
   } catch {
     return null
   }
@@ -193,11 +204,15 @@ for (const rel of kitDirs) {
       if (cp.length) catalogBroken.set(rel, cp)
     }
   }
+  const head = committedParity(rel)
+  for (const p of requiredComponentsHoldProblems(d.requiredComponents, head?.requiredComponents)) {
+    failures.push(`${rel}: ${p}`)
+  }
   if (!isV2Receipt(d.tasteReview)) continue
   const problems = receiptV2Problems(d.tasteReview, {
     root: ROOT,
     rubricText,
-    headReceipt: committedReceipt(rel),
+    headReceipt: head?.tasteReview ?? null,
   })
   if (problems.length > 0) v2Broken.set(rel, problems)
   else v2Complete += 1

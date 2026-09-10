@@ -29,6 +29,7 @@ import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-str
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import type { PlaceFaceStat } from '@/lib/market/publish-place-face'
 import type { ListingTile } from '@/lib/data/types/listing'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
 
 /** H1. The counted set is this neighborhood, never the city. */
@@ -52,7 +53,7 @@ export function neighborhoodSplitListings(tiles: readonly ListingTile[]): Listin
     PostalCode: tile.postalCode,
     SubdivisionName: tile.subdivisionName,
     TotalLivingAreaSqFt: tile.sqft,
-    PhotoURL: tile.photoUrl,
+    PhotoURL: tile.photoUrl?.trim() ? listingRowPhotoSrc(tile.photoUrl) : tile.photoUrl,
     Latitude: tile.lat,
     Longitude: tile.lng,
     ModificationTimestamp: tile.modifiedAt,
@@ -147,7 +148,7 @@ export function nbhFieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
           streetSuffix: t.streetSuffix,
           city: t.city,
         }) || street,
-      ...(photo ? { photoSrc: photo } : {}),
+      ...(photo ? { photoSrc: listingRowPhotoSrc(photo) } : {}),
       ...(meta ? { meta } : {}),
       lat: t.lat,
       lng: t.lng,

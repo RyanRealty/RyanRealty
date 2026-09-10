@@ -170,6 +170,7 @@ async function main() {
     bar,
     '',
     'Score the SAME shots THREE separate times, independently, as three different reviewers would. One pass is noise.',
+    'Honesty is not a trade. A prettier fold that hides a sourced figure, drops JSON-LD, removes an ask, or makes a number unverifiable is a blocking defect. UI/UX may rise; honestyFunction must hold or improve. Omitting honesty to skip the hold is a blocking defect. requiredComponents, JSON-LD, titles, conversion asks, tap targets, and page payload must hold or improve.',
     'Then list the named defects behind the number: each one names the section (a css class or an id you can see), the severity (blocking | taste | craft), a finding of at least ten characters that says what is wrong, not what you would like, and replaceWith — a house primitive or catalog module id, or null if the finding is craft/honesty not form.',
     'Empty defects is only allowed above 95.',
     'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"...","replaceWith":"<id or null>"}],"verdict":"<two sentences>"}',

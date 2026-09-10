@@ -37,12 +37,20 @@ system, TASTE.md), and `docs/DEVELOPMENT_PROCESS.md`.
   named there.
 - Every node's `accept` ends with the done rule: the separate evaluator's score for
   the page class, recorded in the route's `parity.json` `tasteReview`, must rise
-  above its previous mark. A page that still looks bad is a failed item. The mark
-  it must rise above is the previous mark **from the same instrument** — same
-  `evaluatorModel`, same `rubricVersion`, same `shotsHash`. If any of the three
-  differs, the item re-baselines itself (`comparedToPrior: "rebaselined"`) and the
-  next pass rises above the new mark. Nobody is asked to accept a lower number
-  than an incomparable one; `ci:taste-canon` computes the drift.
+  above its previous mark. A page that still looks bad is a failed item.
+- **Product hold (Matt 2026-09-10).** UI/UX may rise. Honesty, sourced figures
+  (§0), `requiredComponents`, JSON-LD, titles, conversion asks, tap targets, and
+  page payload must hold or improve. A prettier page that drops any of those is
+  not done. `ci:mockup-parity` and `ci:runtime-gates` stay green.
+  `honestyFunction` must not fall vs the prior mark, and omitting it to skip
+  the hold fails. `requiredComponents` cannot shrink vs HEAD; a JSON-LD or
+  conversion-ask role present at HEAD must remain (`ci:taste-canon`).
+- The mark a taste score must rise above is the previous mark **from the same
+  instrument** — same `evaluatorModel`, same `rubricVersion`, same `shotsHash`.
+  If any of the three differs, the item re-baselines itself (`comparedToPrior:
+  "rebaselined"`) and the next pass rises above the new mark. Nobody is asked to
+  accept a lower number than an incomparable one; `ci:taste-canon` computes the
+  drift.
 - A commit touching `app/**` or `components/site/**` carries `Node: <id>` (G72). A
   new audit document is refused; findings append to a node.
 
@@ -314,6 +322,8 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
 
 A lane whose score has not risen is not eligible to land. It redoes the work
 inside the lane; it does not push and ask the orchestrator to sort it out.
+A lane whose taste score rose by dropping honesty, a required section, JSON-LD,
+an ask, tap targets, or payload is also not eligible to land.
 
 ### 4. Land the round — verify what the lane reported, do not re-score it
 The orchestrator verifies every lane's claims itself (agents overstate). The
@@ -379,6 +389,8 @@ line, and keep building the other lanes.
   Skipping a catalog job because the barrel has no primitive is a miss — add the primitive.
 - Shrink a working full-bleed layout to dodge a "looks like Zillow" tell
   (SITE-45 listing hero).
+- Trade honesty, SEO, LCP/payload, a required section, JSON-LD, or an ask for
+  a prettier fold. UI/UX rises; every other product metric holds or improves.
 - Write a new audit, punch list, or plan for the site. Append to a node.
 - Rebuild a page for taste outside a node. A page with no node is not touched.
 - Land a site primitive that only a dev page imports. On 2026-09-08 two items merged

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { listingRowPhotoSrc } from './listing-row-photo'
-import { listingRowPhotoSrc as fromLib } from '@/lib/listing/row-photo'
+import { compactListingCardPhotoFields, listingRowPhotoSrc as fromLib } from '@/lib/listing/row-photo'
 
 /**
  * SITE-59. The row asks Spark's resize CDN for the size the row actually
@@ -58,5 +58,28 @@ describe('listingRowPhotoSrc', () => {
   it('is the same helper the promoted lib/listing path exports', () => {
     const src = `https://cdn.resize.sparkplatform.com/ore/1600x1200/true/${ASSET}`
     expect(listingRowPhotoSrc(src)).toBe(fromLib(src))
+  })
+
+  it('can ask the field-lead bucket without changing the asset', () => {
+    const src = `https://cdn.resize.sparkplatform.com/ore/1600x1200/true/${ASSET}`
+    expect(listingRowPhotoSrc(src, '800x600')).toBe(
+      `https://cdn.resize.sparkplatform.com/ore/800x600/true/${ASSET}`,
+    )
+    expect(fromLib(src, '800x600')).toBe(`https://cdn.resize.sparkplatform.com/ore/800x600/true/${ASSET}`)
+  })
+
+  it('compacts PhotoURL and photoUrls on a split/search row', () => {
+    const src = `https://cdn.resize.sparkplatform.com/ore/1600x1200/true/${ASSET}`
+    const compact = `https://cdn.resize.sparkplatform.com/ore/320x240/true/${ASSET}`
+    expect(compactListingCardPhotoFields({ PhotoURL: src, photoUrls: [src] })).toEqual({
+      PhotoURL: compact,
+      photoUrls: [compact],
+    })
+  })
+
+  it('never asks 256x192 — Spark snaps that bucket to 320', () => {
+    const out = listingRowPhotoSrc(`https://cdn.resize.sparkplatform.com/ore/1600x1200/true/${ASSET}`)
+    expect(out).toContain('/320x240/')
+    expect(out).not.toContain('/256x192/')
   })
 })

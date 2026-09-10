@@ -60,6 +60,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading, V3SourceDisclosure } from './atoms'
+import { V3Icon } from './V3Icon'
 import {
   anchorPassed,
   isPlausibleEmail,
@@ -158,11 +159,7 @@ export type V3AlertsStripProps = {
   className?: string
 }
 
-const DISMISS_ICON = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-    <path d="M6 6l12 12M18 6L6 18" />
-  </svg>
-)
+const DISMISS_ICON = <V3Icon name="Xmark" size={24} />
 
 export function V3AlertsStrip({
   id = 'alerts',

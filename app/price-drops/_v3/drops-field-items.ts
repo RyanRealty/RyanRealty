@@ -3,6 +3,7 @@ import type { PriceDrop } from '@/lib/data'
 import { formatPrice, formatPriceCompact } from '@/lib/format/money'
 import { listingTileHref, displaySubdivision } from '@/lib/slug'
 import { listingMlsStreetLine, publishCardAddress } from '@/lib/listing/publish-street-line'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 
 export type PriceDropFieldItem = V3FieldItem & {
   overlay?: string
@@ -81,7 +82,7 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
         ? { cutShare: Math.min(1, drop.lastDropPct / deepest) }
         : {}),
       ...(specs ? { meta: specs } : {}),
-      ...(photoSrc ? { photoSrc } : {}),
+      ...(photoSrc ? { photoSrc: listingRowPhotoSrc(photoSrc) } : {}),
       lat: drop.lat,
       lng: drop.lng,
     })

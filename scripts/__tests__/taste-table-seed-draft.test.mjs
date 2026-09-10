@@ -128,6 +128,8 @@ describe('buildSeedDrafts', () => {
     expect(d.accept).toMatch(/class cities scores above 52/)
     expect(d.accept).toMatch(/shotSpec/)
     expect(d.accept).toMatch(/1440/)
+    expect(d.accept).toMatch(/Product hold/)
+    expect(d.accept).toMatch(/honesty/)
   })
 
   it('two consecutive calls on the same table and used-gaps return the same versionGaps', () => {
