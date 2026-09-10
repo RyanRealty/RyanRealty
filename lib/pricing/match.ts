@@ -27,6 +27,7 @@ import {
   productCompatible,
   resolveIrrigationClass,
   sewerCompatible,
+  customSalePriceFloorOk,
   SAME_NEIGHBORHOOD_TIER_RATIO,
   similarPerformingSubdivision,
   untieredSalePriceTierOk,
@@ -530,10 +531,14 @@ function passesTier(
       { address: sale.address, city: sale.city, sqft: sale.sqft },
     )
     const gradeOnOwnPpsf = !ownStreet && (!comp || !sale.subdivisionNorm || subj == null)
-    if (!customPeer && gradeOnOwnPpsf) {
-      if (!untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)) {
-        return { ok: false, miles: null }
-      }
+    if (gradeOnOwnPpsf) {
+      // Custom and new subjects keep the FLOOR and lose the ceiling. A custom
+      // home selling far above its neighborhood's median is what custom means;
+      // being priced from a sale far below it is not. See customSalePriceFloorOk.
+      const ok = customPeer
+        ? customSalePriceFloorOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)
+        : untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)
+      if (!ok) return { ok: false, miles: null }
     }
   }
 
@@ -625,12 +630,18 @@ function bracketEligible(
   if (!glaWithinBand(subject.sqft, sale.sqft, GLA_BRACKET_BAND)) return false
   // The bracket may not import a different price tier. A swap is a size fix,
   // not a licence to reach across town.
-  if (!customOrNew) {
+  {
     const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
     const subjectPpsf = subj?.medianPpsf ?? anchor?.ppsf ?? null
     const subjectN = subj?.n ?? anchor?.n ?? 0
     const ratio = subject.marketArea != null ? SAME_NEIGHBORHOOD_TIER_RATIO : undefined
-    if (!untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, ratio)) return false
+    // Custom and new keep the FLOOR here too. Skipping the cut outright let the
+    // bracket swap reach past the ladder and import the cheap sale the ladder
+    // itself had just refused.
+    const ok = customOrNew
+      ? customSalePriceFloorOk(subjectPpsf, subjectN, sale.closePpsf, ratio)
+      : untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, ratio)
+    if (!ok) return false
   }
   if (wantLarger) return sale.sqft > subject.sqft
   return sale.sqft < subject.sqft

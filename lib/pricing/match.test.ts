@@ -1187,3 +1187,75 @@ describe('one sale, one row', () => {
     expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B'])
   })
 })
+
+describe('a custom subject keeps the floor and loses the ceiling', () => {
+  function customSubject() {
+    return subject({
+      sqft: 2685,
+      yearBuilt: 2024,
+      newConstruction: true,
+      publicRemarks: 'Custom built modern home.',
+      subdivision: null,
+      subdivisionNorm: null,
+      marketArea: 'bend-century-west',
+    })
+  }
+  // A neighborhood median the anchor can actually read: 19479 Campbell's own
+  // is $489/sqft over 132 Century West sales.
+  function neighbors(n: number, ppsf: number) {
+    return Array.from({ length: n }, (_, i) =>
+      sale({
+        listingKey: `N${i}`,
+        address: `${100 + i} Century`,
+        sqft: 2600,
+        closePrice: Math.round(2600 * ppsf) + i,
+        closePpsf: ppsf,
+        yearBuilt: 2022,
+        newConstruction: true,
+        publicRemarks: 'Custom built.',
+        subdivision: null,
+        subdivisionNorm: null,
+        marketArea: 'bend-century-west',
+        closeDate: '2026-06-01',
+      }),
+    )
+  }
+
+  it('refuses a sale at 0.45 of the neighborhood rate', () => {
+    const cheap = sale({
+      listingKey: 'CHEAP',
+      address: '61289 Bronze Meadow',
+      sqft: 3000,
+      closePrice: 665_000,
+      closePpsf: 222,
+      yearBuilt: 2021,
+      newConstruction: true,
+      publicRemarks: 'Custom built.',
+      subdivision: null,
+      subdivisionNorm: null,
+      marketArea: 'bend-century-west',
+      closeDate: '2026-07-04',
+    })
+    const out = walkPricingLadder(customSubject(), [...neighbors(8, 489), cheap], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('CHEAP')
+  })
+
+  it('keeps a same-generation custom peer far ABOVE that rate', () => {
+    const dear = sale({
+      listingKey: 'DEAR',
+      address: '2060 NW Perspective Dr',
+      sqft: 2800,
+      closePrice: 2_332_400,
+      closePpsf: 833,
+      yearBuilt: 2023,
+      newConstruction: true,
+      publicRemarks: 'Custom built modern home.',
+      subdivision: null,
+      subdivisionNorm: null,
+      marketArea: 'bend-century-west',
+      closeDate: '2026-07-04',
+    })
+    const out = walkPricingLadder(customSubject(), [...neighbors(8, 489), dear], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toContain('DEAR')
+  })
+})

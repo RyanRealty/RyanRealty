@@ -322,6 +322,35 @@ export function untieredSalePriceTierOk(
   return gap >= 1 / ratio && gap <= ratio
 }
 
+/**
+ * THE CUSTOM CARVE-OUT, AS A FLOOR RATHER THAN AN ABSENCE.
+ *
+ * A custom or new-construction subject skipped the $/sqft cut entirely, so a
+ * North Rim custom peer would not be tossed as "too luxury". That reasoning
+ * only ever justified opening the HIGH side: a custom home selling far above
+ * its neighborhood's median is what custom means. It does not justify pricing
+ * one from a sale far BELOW that median, and 19479 Campbell — a custom home
+ * whose own street closed at $473 and $579 a square foot against a $489
+ * Century West median over 132 sales — was priced partly off a $222/sqft
+ * Copper Canyon sale at 0.45 of the median, and printed $720,000 to
+ * $1,350,000.
+ *
+ * So the floor holds and the ceiling comes off. Nothing a custom subject can
+ * legitimately be worth is excluded; a tract sale at under two thirds of the
+ * neighborhood's rate no longer prices it.
+ */
+export function customSalePriceFloorOk(
+  subjectMedianPpsf: number | null,
+  subjectN: number,
+  saleClosePpsf: number | null | undefined,
+  ratio: number = SUBDIVISION_TIER_RATIO,
+): boolean {
+  if (subjectMedianPpsf == null || subjectMedianPpsf <= 0) return true
+  if (subjectN < SUBDIVISION_TIER_MIN_N) return true
+  if (saleClosePpsf == null || !Number.isFinite(saleClosePpsf) || saleClosePpsf <= 0) return true
+  return saleClosePpsf / subjectMedianPpsf >= 1 / ratio
+}
+
 export type RemarkFlags = {
   newRoof: boolean
   newRoofPhrase: string | null
