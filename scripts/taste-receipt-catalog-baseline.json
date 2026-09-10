@@ -1,6 +1,6 @@
 {
   "note": "ci:taste-canon — SHRINK-ONLY. Catalog-class receipts that predate adaptedFrom + replaceWith. A route leaves by its next evaluator pass naming the modules it fetched; no route may be added.",
-  "generatedAt": "2026-09-10T05:49:25.377Z",
+  "generatedAt": "2026-09-10T06:50:13.877Z",
   "routes": [
     "design_system/ryan-realty/ui_kits/about/parity.json",
     "design_system/ryan-realty/ui_kits/blog/parity.json",
@@ -11,7 +11,6 @@
     "design_system/ryan-realty/ui_kits/compare/parity.json",
     "design_system/ryan-realty/ui_kits/contact/parity.json",
     "design_system/ryan-realty/ui_kits/homepage-v6/parity.json",
-    "design_system/ryan-realty/ui_kits/invest/parity.json",
     "design_system/ryan-realty/ui_kits/listing-detail/parity.json",
     "design_system/ryan-realty/ui_kits/market-report-annual/parity.json",
     "design_system/ryan-realty/ui_kits/market-report-detail/parity.json",
