@@ -21,12 +21,12 @@
  *    Contract + computations: scripts/lib/taste-receipt.mjs. Receipts already
  *    dated on/after the cutoff when the rule landed sit in
  *    taste-receipt-v2-baseline.json (shrink-only).
- * 6. A catalog-class receipt (listing, homepage, search, sell, city family)
- *    names adaptedFrom and each defect names replaceWith. Empty adaptedFrom
- *    is inventing a layout (SITE-45). Receipts that predate this rule sit in
- *    taste-receipt-catalog-baseline.json (shrink-only). The next score of
- *    that class must name the modules. Layout locks (listing hero bleed)
- *    fail immediately — they are not a baseline.
+ * 6. A catalog-class receipt names adaptedFrom and each defect names
+ *    replaceWith. Empty adaptedFrom is inventing a layout (SITE-45).
+ *    Receipts that predate this rule sit in
+ *    taste-receipt-catalog-baseline.json (shrink-only). Every public
+ *    taste-classes.json key must map to a catalog class with modules so a
+ *    newly seeded SITE node has a builder card. Layout locks fail immediately.
  *
  * Seed unreviewed with `--write-baseline`, the v2 backlog with
  * `--write-v2-baseline`, catalog receipts with `--write-catalog-baseline`.
@@ -38,6 +38,7 @@ import { join } from 'node:path'
 import { RECEIPT_V2_FROM, isV2Receipt, receiptV2Problems } from './lib/taste-receipt.mjs'
 import {
   CATALOG_PATH,
+  catalogCoverageProblems,
   catalogReceiptProblems,
   classForRoute,
   layoutLockProblems,
@@ -126,6 +127,17 @@ function loadCatalog() {
 const catalog = loadCatalog()
 if (catalog?.problems?.length) {
   for (const p of catalog.problems) failures.push(`${CATALOG_PATH}: ${p}`)
+}
+
+const TASTE_CLASSES = 'design_system/public/taste-classes.json'
+if (catalog && catalog.problems.length === 0 && existsSync(join(ROOT, TASTE_CLASSES))) {
+  try {
+    const raw = JSON.parse(readFileSync(join(ROOT, TASTE_CLASSES), 'utf8'))
+    const keys = Array.isArray(raw?.classes) ? raw.classes.map((c) => c.key) : []
+    for (const p of catalogCoverageProblems(catalog, keys)) failures.push(`${CATALOG_PATH}: ${p}`)
+  } catch (err) {
+    failures.push(`${TASTE_CLASSES} is malformed: ${err instanceof Error ? err.message : String(err)}`)
+  }
 }
 
 /**

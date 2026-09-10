@@ -231,6 +231,29 @@ export function classForRoute(catalog, routeKey) {
   return null
 }
 
+/**
+ * Every public page class the table can seed must map to a catalog class
+ * with modules. A new SITE node for a class with no catalog invents a layout.
+ */
+export function catalogCoverageProblems(catalog, classKeys) {
+  const keys = Array.isArray(classKeys) ? classKeys.filter((k) => isNonEmptyString(k)) : []
+  const problems = []
+  for (const key of keys) {
+    const mapped = classForRoute(catalog, key)
+    if (!mapped) {
+      problems.push(
+        `taste class "${key}" has no catalog class — a new SITE node would invent a layout. Add classes.${key} or routeClasses["${key}"].`,
+      )
+      continue
+    }
+    const modules = catalog.classes?.[mapped]?.modules
+    if (!Array.isArray(modules) || modules.length < 2) {
+      problems.push(`catalog class "${mapped}" (for ${key}) needs at least two modules (house + something to beat)`)
+    }
+  }
+  return problems
+}
+
 export function primitivesToAddForClass(catalog, classKey) {
   if (!isPlainObject(catalog) || !isNonEmptyString(classKey)) return []
   const list = catalog.classes?.[classKey]?.primitivesToAdd
@@ -253,7 +276,7 @@ export function missingPrimitivesForClass(catalog, classKey) {
  * fetch (capped). Not the whole inventory.
  */
 export function builderCard(catalog, classKey) {
-  const key = isNonEmptyString(classKey) ? classKey : ''
+  const key = classForRoute(catalog, classKey) || (isNonEmptyString(classKey) ? classKey : '')
   const modules = modulesForClass(catalog, key)
   const add = missingPrimitivesForClass(catalog, key)
   const open = []
@@ -470,14 +493,15 @@ function main() {
     )
     return
   }
-  const modules = modulesForClass(loaded, classKey)
+  const resolved = classForRoute(loaded, classKey) ?? classKey
+  const modules = modulesForClass(loaded, resolved)
   if (modules.length === 0) {
     console.error(`taste-catalog: no modules for "${classKey}"`)
     process.exit(2)
   }
-  const card = builderCard(loaded, classKey)
+  const card = builderCard(loaded, resolved)
   if (preflight) {
-    const issues = preflightProblems(loaded, classKey)
+    const issues = preflightProblems(loaded, resolved)
     if (issues.length) {
       console.error(issues.join('\n'))
       process.exit(2)
@@ -489,9 +513,9 @@ function main() {
         {
           ...card,
           modules,
-          shadcn: shadcnPicksForClass(loaded, classKey),
-          lists: listPicksForClass(loaded, classKey),
-          evaluatorBrief: evaluatorBrief(loaded, classKey),
+          shadcn: shadcnPicksForClass(loaded, resolved),
+          lists: listPicksForClass(loaded, resolved),
+          evaluatorBrief: evaluatorBrief(loaded, resolved),
           preflight: preflight ? 'ok' : undefined,
         },
         null,

@@ -465,7 +465,18 @@ async function runSeedDraft(opts) {
   const usedFromDb = await loadUsedGapsFromLoopWorkNodes()
   const usedGaps = [...new Set([...usedFromFile, ...usedFromDb])]
 
-  const { drafts, warnings } = buildSeedDrafts({ table, usedGaps, root: REPO_ROOT })
+  let catalog = null
+  try {
+    const loaded = loadTasteCatalog(
+      JSON.parse(readFileSync(join(REPO_ROOT, 'design_system/public/taste-catalog.json'), 'utf8')),
+    )
+    if (loaded.problems.length === 0) catalog = loaded
+    else for (const p of loaded.problems) console.error(`taste-table --seed-draft: catalog: ${p}`)
+  } catch (err) {
+    console.error(`taste-table --seed-draft: catalog unreadable (${err.message}) — drafts will skip classes with no on-disk primitive`)
+  }
+
+  const { drafts, warnings } = buildSeedDrafts({ table, usedGaps, root: REPO_ROOT, catalog })
   for (const w of warnings) console.error(`taste-table --seed-draft: ${w}`)
 
   const text = formatSeedDrafts(drafts)

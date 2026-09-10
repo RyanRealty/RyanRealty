@@ -1,3 +1,19 @@
+# Current — 2026-09-10 (queue ready to take catalog-backed SITE nodes)
+
+Owner: grok-4.6 this session. **No SITE claims.** Did not steal SITE-60 / SITE-63 / SITE-67.
+
+Every public taste-classes key now maps to a catalog class. `--preflight` passes for all 27. `node scripts/taste-table.mjs --seed-draft` emits SITE-68…92 with builder card + adaptedFrom accept. Not auto-seed — paste after review. Installed `components/ui/carousel.tsx` and `button-group.tsx` as local fetch targets (public paint stays v3).
+
+# Current — 2026-09-10 05:44Z (15m grinder 01a0894e: fleet full, no steal)
+
+Owner: Grok scheduler `01a0894e`. **Fleet 3/3, zero open.** origin/main `d222d7fa`.
+
+- `grok-01a08914-2026-09-09` — SITE-60 heartbeat 1m (`wt/site-60-listing-prefetch-20260910` @ `1fdeb0e57` on origin, worktree clean, **lane still live — do not land**).
+- `grok-4.6-2026-09-10-03` — SITE-63 heartbeat 2h (not stale).
+- `grok-01a08945-2026-09-09` — SITE-67 heartbeat 1m.
+
+SITE-64/65 already done. Next 15m fire retries.
+
 # Current — 2026-09-10 (taste process: builder card + adaptedFrom ratchet)
 
 Owner: grok-4.6 this session. **No SITE claims.** Did not steal SITE-60 / SITE-63 / SITE-64 / SITE-65.

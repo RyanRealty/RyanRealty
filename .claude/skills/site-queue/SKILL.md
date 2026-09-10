@@ -17,7 +17,9 @@ in a session that has this skill loaded means `/loop /site-queue`.
 Matt 2026-09-10: "i want this to just continue to run as it finishes and new nodes get entered."
 Empty of eligible is not a stop. Keep the scheduled wake. The next fire claims whatever
 became `open` (a seed, a released claim, a window that reopened). Do not auto-seed
-(SITE-62: draft, then a person pastes). Stop the schedule only when every class is at
+(SITE-62: `node scripts/taste-table.mjs --seed-draft`, then a person pastes). Those
+drafts already carry the catalog builder card and an accept that requires
+`adaptedFrom` + `replaceWith`. Stop the schedule only when every class is at
 or above 70 on the table instrument.
 
 Repo canon outranks this file wherever they touch: CLAUDE.md §0 (every figure traces

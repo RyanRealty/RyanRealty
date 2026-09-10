@@ -9,7 +9,9 @@
  *   npx tsx scripts/seed-site-queue.ts
  *
  * Draft seeds for a new round come from `node scripts/taste-table.mjs --seed-draft`
- * (SITE-62). This file never reads taste-table.json. A person pastes after review.
+ * (SITE-62). Drafts carry the catalog builder card and an accept that requires
+ * adaptedFrom + replaceWith. This file never reads taste-table.json. A person
+ * pastes after review. Not auto-seed.
  */
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'

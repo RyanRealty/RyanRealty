@@ -152,7 +152,7 @@
       },
       {
         "name": "button-group",
-        "installed": null,
+        "installed": "components/ui/button-group.tsx",
         "jobs": [
           "listing-detail:ask"
         ]
@@ -171,7 +171,7 @@
       },
       {
         "name": "carousel",
-        "installed": null,
+        "installed": "components/ui/carousel.tsx",
         "jobs": [
           "listing-detail:gallery",
           "homepage-v6:rails"
@@ -2213,6 +2213,354 @@
           "job": "Live counts that swap digits. Only sourced figures. Reduced-motion shows the finished number."
         }
       ]
+    },
+    "about": {
+      "layoutLock": "Faces open the page at display scale. Do not lead with a three-tile KPI grid of rating / reviews / broker count. The 5.0-from-25 lives on a face card, not a figure row.",
+      "modules": [
+        {
+          "id": "house-faces",
+          "catalog": "house-v3",
+          "url": "app/about/_v3/AboutFaces.tsx",
+          "job": "Broker photographs and the firm's record open the page."
+        },
+        {
+          "id": "house-proof",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Proof.client.tsx",
+          "job": "Proof as words and a sourced record, not a score tile."
+        },
+        {
+          "id": "house-doors",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Doors.tsx",
+          "job": "Call at display scale with live hours; Text Email Schedule lighter."
+        },
+        {
+          "id": "house-atlas",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Atlas.client.tsx",
+          "job": "Service-area Atlas, not a default Google embed."
+        },
+        {
+          "id": "shadcn-avatar",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/avatar",
+          "job": "Portrait treatment. Adapt into AboutFaces, do not paste a second face kit."
+        }
+      ]
+    },
+    "compare": {
+      "layoutLock": "The four slots open filled with the live sample. Do not lead with four dashed empty Add-a-home boxes above the comparison.",
+      "modules": [
+        {
+          "id": "house-slots",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Slots.client.tsx",
+          "job": "Four homes side by side as the first object."
+        },
+        {
+          "id": "house-compare-empty",
+          "catalog": "house-v3",
+          "url": "app/compare/_v3/CompareEmpty.client.tsx",
+          "job": "Empty tray is the filled sample, labelled as a sample."
+        },
+        {
+          "id": "shadcn-table",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/table",
+          "job": "Feature table. Adapt into the house compare sheet, navy on cream."
+        },
+        {
+          "id": "shadcn-carousel",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/carousel",
+          "job": "Photo strip per slot. Adapt into V3Carousel, do not install a second kit."
+        }
+      ]
+    },
+    "contact": {
+      "layoutLock": "One ask. Doors have hierarchy and live hours. Brokers are AboutFaces, not a second flatter roster. Do not open on four identical link rows.",
+      "modules": [
+        {
+          "id": "house-ask",
+          "catalog": "house-v3",
+          "url": "app/contact/_v3/ContactAsk.client.tsx",
+          "job": "The whole form at once, one question path."
+        },
+        {
+          "id": "house-doors",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Doors.tsx",
+          "job": "Call at display scale with live hours as the reach control."
+        },
+        {
+          "id": "house-faces",
+          "catalog": "house-v3",
+          "url": "app/about/_v3/AboutFaces.tsx",
+          "job": "Who answers, with photographs, same roster as /about and /team."
+        },
+        {
+          "id": "beui-input",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/input",
+          "job": "Field error shake and success check, restyled navy on cream."
+        },
+        {
+          "id": "shadcn-input",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/input",
+          "job": "Form fields. We already installed components/ui/input.tsx — restyle in v3."
+        }
+      ]
+    },
+    "invest": {
+      "layoutLock": "The first viewport carries a drawn finding and a live count, not two memo paragraphs headed What this page is. No cash-flow or rent figure without a live source.",
+      "modules": [
+        {
+          "id": "house-pulse",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Pulse.tsx",
+          "job": "The finding drawn: composition of the income market, part-to-whole."
+        },
+        {
+          "id": "house-ledger",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Ledger.tsx",
+          "job": "Per-type doors with how each one trades, sourced."
+        },
+        {
+          "id": "house-quiet",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Quiet.tsx",
+          "job": "Cost of money and the math doors, not a README about the page."
+        },
+        {
+          "id": "beautifului-insight",
+          "catalog": "beautifului",
+          "url": "https://beautifului.dev",
+          "job": "Paged insights with a scrubber. Adapt into V3Chart, do not paste an AI card."
+        },
+        {
+          "id": "shadcn-table",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/table",
+          "job": "Segment table. Adapt into V3Ledger, do not paste radix chrome on public."
+        }
+      ]
+    },
+    "buy": {
+      "layoutLock": "Buy opens on Stage with live inventory in the hero, then Field. Do not open on a stacked buyer-guide memo with no homes on screen.",
+      "modules": [
+        {
+          "id": "house-stage",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Stage.tsx",
+          "job": "Owned photo carrying the live market in its inventory variant."
+        },
+        {
+          "id": "house-field",
+          "catalog": "house-v3",
+          "url": "app/_v3/HomeHomesField.tsx",
+          "job": "A field of live homes, not a wall of identical cards."
+        },
+        {
+          "id": "house-ledger",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Ledger.tsx",
+          "job": "Buyer-guide rows as a ledger, not a second stacked section."
+        },
+        {
+          "id": "shadcn-carousel",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/carousel",
+          "job": "Inventory rails. Adapt into V3Carousel, do not paste a second kit."
+        }
+      ]
+    },
+    "reviews": {
+      "layoutLock": "The page opens on the rating as V3Proof: stars, count, one client's words in full. Do not lead with a Quiet list of reach rows above the proof.",
+      "modules": [
+        {
+          "id": "house-proof",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Proof.client.tsx",
+          "job": "Google score as stars and the count, then one quote in full."
+        },
+        {
+          "id": "house-doors",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Doors.tsx",
+          "job": "Reach closes the page, it does not open it."
+        },
+        {
+          "id": "shadcn-avatar",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/avatar",
+          "job": "Reviewer portraits if we have them. Adapt, do not paste a card grid."
+        }
+      ]
+    },
+    "price-drops": {
+      "layoutLock": "Opening is the Field of cut houses. Count is a caption. Do not open on a KPI of reductions this week with no photographs.",
+      "modules": [
+        {
+          "id": "house-field",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Field.tsx",
+          "job": "The cut houses as a field, photographs first."
+        },
+        {
+          "id": "house-drawing",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Drawing.client.tsx",
+          "job": "A drawing of the week's cuts, not a tile that says a percent."
+        },
+        {
+          "id": "shadcn-carousel",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/carousel",
+          "job": "Photo rails of the week's cuts. Adapt into V3Carousel."
+        }
+      ]
+    },
+    "blog": {
+      "layoutLock": "The article is an island with a measure. Related homes are a ledger when the post names a buyable place. Do not flatten CMS markup into a Quiet string.",
+      "modules": [
+        {
+          "id": "house-quiet",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Quiet.tsx",
+          "job": "The article answer as a Quiet claim, then the island."
+        },
+        {
+          "id": "house-article-island",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3ArticleIsland.css",
+          "job": "CMS body stays markup on the v3 measure, not a flattened string."
+        },
+        {
+          "id": "house-ledger",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Ledger.tsx",
+          "job": "Related homes and related posts as ledgers, not a card grid."
+        },
+        {
+          "id": "beautifului-insight",
+          "catalog": "beautifului",
+          "url": "https://beautifului.dev",
+          "job": "Charts inside a post. Adapt into V3Chart, sourced figures only."
+        }
+      ]
+    },
+    "market-report": {
+      "layoutLock": "Market destinations open on Instrument. Months of supply is two bars, never a KPI tile. One ask on the page. Absent is not zero.",
+      "modules": [
+        {
+          "id": "house-instrument",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Instrument.tsx",
+          "job": "The market answer as Instrument, verdict with a trace."
+        },
+        {
+          "id": "house-mos",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3MosBars.tsx",
+          "job": "Months of supply as two named bars, not a tile."
+        },
+        {
+          "id": "house-chart",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Chart.tsx",
+          "job": "Long-view series as house charts, navy on cream, hover required."
+        },
+        {
+          "id": "beautifului-insight",
+          "catalog": "beautifului",
+          "url": "https://beautifului.dev",
+          "job": "Paged insights with a scrubber. Adapt into V3Chart, do not paste an AI card."
+        },
+        {
+          "id": "beui-number",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/number",
+          "job": "Live counts that swap digits. Only sourced figures."
+        }
+      ]
+    },
+    "oregon-city": {
+      "layoutLock": "Honesty first: this is not our market. Live inventory the feed reports, then a referral. Do not paint a Central Oregon place page onto Medford. A city stand-in for a school or a tour CTA that contradicts we-don't-work-here is a fail.",
+      "modules": [
+        {
+          "id": "house-instrument",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Instrument.tsx",
+          "job": "The place answer with the honest out-of-area claim."
+        },
+        {
+          "id": "house-quiet",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Quiet.tsx",
+          "job": "The honest block: we do not work here, here is who does."
+        },
+        {
+          "id": "house-ledger",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Ledger.tsx",
+          "job": "Live listings the feed reports, photo treatment if they carry photographs."
+        },
+        {
+          "id": "shadcn-alert",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/alert",
+          "job": "Honesty banner. Adapt into Quiet, do not paste a yellow callout."
+        }
+      ]
+    },
+    "place-type": {
+      "layoutLock": "H1 is the type in the place, then one plain sentence with the count and the price band, then Atlas. Do not say the type twice as two display lines with no fact. Count and band from the same listing-tile read as the map marks.",
+      "modules": [
+        {
+          "id": "house-atlas",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Atlas.client.tsx",
+          "job": "The map is Atlas, guaranteed in a Suspense boundary of its own footprint."
+        },
+        {
+          "id": "house-quiet",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Quiet.tsx",
+          "job": "One claim sentence with the count and the price band."
+        },
+        {
+          "id": "shadcn-carousel",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/carousel",
+          "job": "Photographed listings as a rail. Adapt into V3Carousel."
+        }
+      ]
+    },
+    "subdivisions": {
+      "layoutLock": "A-Z directory of recorded subdivisions with live counts on the rows. Not a mini-Bend KPI Instrument. Visitor copy says subdivision, never plat.",
+      "modules": [
+        {
+          "id": "house-place-index",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3PlaceIndex.tsx",
+          "job": "The index of subdivisions as a house place index."
+        },
+        {
+          "id": "house-ledger",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Ledger.tsx",
+          "job": "Rows with live counts, photo treatment if a row carries a photograph."
+        },
+        {
+          "id": "shadcn-command",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/command",
+          "job": "A-Z jump. Adapt into v3, do not paste radix chrome on the public index."
+        }
+      ]
     }
   },
   "approach": {
@@ -2231,6 +2579,24 @@
     "cities": "city",
     "community": "city",
     "neighborhood": "city",
-    "subdivision": "city"
+    "subdivision": "city",
+    "zip": "city",
+    "about": "about",
+    "team": "about",
+    "compare": "compare",
+    "contact": "contact",
+    "invest": "invest",
+    "buy": "buy",
+    "reviews": "reviews",
+    "price-drops": "price-drops",
+    "blog": "blog",
+    "market-report": "market-report",
+    "market-report-annual": "market-report",
+    "market-report-detail": "market-report",
+    "market-report-region": "market-report",
+    "oregon-city": "oregon-city",
+    "place-type": "place-type",
+    "place-type-community": "place-type",
+    "subdivisions": "subdivisions"
   }
 }

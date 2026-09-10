@@ -7,6 +7,7 @@ import {
   EXM7777_URLS,
   adaptedFromProblems,
   builderCard,
+  catalogCoverageProblems,
   catalogReceiptProblems,
   evaluatorBrief,
   formatBuilderCard,
@@ -75,7 +76,8 @@ describe('shadcn is the fetched list', () => {
     expect(loaded.shadcn.components.length).toBeGreaterThanOrEqual(20)
     const byName = Object.fromEntries(loaded.shadcn.components.map((c) => [c.name, c]))
     expect(byName.button.installed).toBe('components/ui/button.tsx')
-    expect(byName.carousel.installed).toBeNull()
+    expect(byName.carousel.installed).toBe('components/ui/carousel.tsx')
+    expect(byName['button-group'].installed).toBe('components/ui/button-group.tsx')
     expect(byName.carousel.docs).toBe('https://ui.shadcn.com/docs/components/carousel')
   })
 
@@ -173,6 +175,15 @@ describe('builderCard', () => {
     expect(r.stdout).toMatch(/^# listing-detail/)
     expect(r.stdout).not.toMatch(/"shadcn":/)
   })
+
+  it('CLI --preflight resolves routeClasses aliases (zip → city, team → about)', () => {
+    const zip = spawnSync('node', ['scripts/lib/taste-catalog.mjs', 'zip', '--preflight'], { encoding: 'utf8' })
+    expect(zip.status, zip.stderr).toBe(0)
+    expect(zip.stdout).toMatch(/preflight OK/)
+    const team = spawnSync('node', ['scripts/lib/taste-catalog.mjs', 'team', '--preflight'], { encoding: 'utf8' })
+    expect(team.status, team.stderr).toBe(0)
+    expect(team.stdout).toMatch(/preflight OK/)
+  })
 })
 
 describe('catalogReceiptProblems', () => {
@@ -215,5 +226,17 @@ describe('layoutLockProblems', () => {
 
   it('passes the committed listing files', () => {
     expect(layoutLockProblems(loaded)).toEqual([])
+  })
+})
+
+describe('catalogCoverageProblems', () => {
+  it('covers every public taste-classes key so a new SITE node has a builder card', () => {
+    const keys = JSON.parse(readFileSync('design_system/public/taste-classes.json', 'utf8')).classes.map((c) => c.key)
+    expect(catalogCoverageProblems(loaded, keys)).toEqual([])
+  })
+
+  it('names a taste class that has no catalog mapping', () => {
+    const problems = catalogCoverageProblems(loaded, ['not-a-real-class'])
+    expect(problems.some((p) => /not-a-real-class/.test(p))).toBe(true)
   })
 })
