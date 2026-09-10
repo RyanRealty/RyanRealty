@@ -683,6 +683,32 @@ const SEEDS: readonly Seed[] = [
       'Live, two query shapes: OpenStreetMap contributors park rows = 0; every CO_SCHOOLS slug has a school polygon, or evidence names the agency queried twice and /schools/[slug] does not draw a city polygon as the school; jefferson taxlots > 0 if a publisher layer exists, else 0 after that check. Headless /parks/american-legion-park and one of the 13 schools draw THAT place, not a city. Do not invent geometry.',
     dependsOn: [],
   },
+  {
+    versionGap: 'SITE-68',
+    domain: 'public-ux',
+    title:
+      '/housing-market first viewport: open on the live market Instrument, not a "Pick a report / Five products" chooser',
+    objective:
+      "Re-measured live on production 2026-09-10 at 1440 (ryan-realty.com/housing-market). The fold is H1 'Pick a report', subhead 'Five products', then five equal door rows. Catalog lock: market destinations open on Instrument; months of supply is two bars, never a KPI tile. Start with `node scripts/lib/taste-catalog.mjs market-report --preflight`. Fetch beautifului-insight and beui-number; adapt into V3Instrument / V3MosBars / V3Chart. Do not touch app/listing (SITE-60) or app/contact (SITE-63). Record adaptedFrom.",
+    output:
+      'The /housing-market first viewport is the live market drawing, not a five-product chooser; first-viewport shots; grok-4.6 taste receipt with adaptedFrom and replaceWith',
+    accept:
+      "Headless Chromium at 1440x900 of /housing-market: the first viewport contains a sourced live-market figure or MOS bars or a house chart, and does not lead with the words 'Five products' as the opening claim. tasteReview.adaptedFrom names a catalog module for market-report. Each defect names replaceWith. grok-4.6 receipt rebaselines or rises.",
+    dependsOn: [],
+  },
+  {
+    versionGap: 'SITE-69',
+    domain: 'public-ux',
+    title:
+      '/buy first viewport: live inventory in the Stage, not a three-tile KPI strip of 1,562 / $749,900 / 29',
+    objective:
+      "Re-measured live on production 2026-09-10 at 1440 (ryan-realty.com/buy). SITE-46 put a listing photo under the hero, but the fold still prints three equal tiles (1,562 houses for sale / $749,900 half the houses ask more / 29 days to an offer). TASTE.md bans KPI grids. Catalog lock: Buy opens on Stage with live inventory in the hero, then Field. Start with `node scripts/lib/taste-catalog.mjs buy --preflight`. Fetch shadcn-carousel; adapt into V3Carousel / the Stage inventory variant. Do not touch app/listing (SITE-60). Record adaptedFrom.",
+    output:
+      'The /buy first viewport has live homes in or immediately under Stage and does not contain a three-cell figure row of count / median / DOM; first-viewport shots; grok-4.6 taste receipt with adaptedFrom and replaceWith',
+    accept:
+      'Headless Chromium at 1440x900 of /buy: the first viewport contains at least one listing photograph, and does not contain a three-cell KPI row whose labels are houses for sale / half the houses ask more / days to an offer. tasteReview.adaptedFrom names a catalog module for buy. Each defect names replaceWith. grok-4.6 receipt rebaselines or rises.',
+    dependsOn: [],
+  },
 ]
 
 async function main() {
