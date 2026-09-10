@@ -386,8 +386,15 @@ function passesTier(
   if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return { ok: false, miles: null }
   if (monthsBetween(asOf, sale.closeDate) > tier.monthsBack) return { ok: false, miles: null }
   if (!tier.ignoreCity && sale.citySlug !== subject.citySlug) return { ok: false, miles: null }
-  const ownPlat = tier.sameSubdivision === true
-  if (ownPlat && !samePlat(subject, sale)) return { ok: false, miles: null }
+  const onOwnStreet = sameStreetPeer(
+    { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft },
+    { address: sale.address, city: sale.city, sqft: sale.sqft },
+  )
+  if (tier.sameStreetOnly && !onOwnStreet) return { ok: false, miles: null }
+  // The subject's own street is its own ground for every rule below, exactly as
+  // its own plat is.
+  const ownPlat = tier.sameSubdivision === true || tier.sameStreetOnly === true
+  if (tier.sameSubdivision && !samePlat(subject, sale)) return { ok: false, miles: null }
   // THE PARENT LEVEL IS A WALL (Matt 2026-09-09): a plat inside a planned or
   // golf community is priced from that community until the community itself is
   // exhausted. Only the like-community rung and a boundary-exit rung may look

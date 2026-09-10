@@ -40,6 +40,8 @@ export type PricingTier = {
    * step above the subject's plat and below the designated neighborhood.
    */
   sameCommunity?: boolean
+  /** Only sales on the subject's own street, at close to its size. Runs first. */
+  sameStreetOnly?: boolean
   /**
    * When the community itself is exhausted at two years, another community of
    * the same kind (Matt 2026-09-09: "a Tetherow home's substitute is a Broken
@@ -71,6 +73,28 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     sameStory: true,
     bedSlop: 1,
     bathSlop: 1,
+  })
+  /**
+   * The subject's own street, at the plat's size band, across the full window.
+   * `sameStreetOnly` is matched in passesTier by lib/pricing/price-anchor.ts's
+   * sameStreetPeer, which already decides what "same street, same size" means
+   * for the price anchor and the recommendation ceiling. One definition.
+   */
+  const street = (months: number): PricingTier => ({
+    name: `own-street-${months}mo`,
+    monthsBack: months,
+    maxMiles: null,
+    sameSubdivision: false,
+    similarSubdivision: false,
+    sameStreetOnly: true,
+    apples: 'utilities',
+    sqftBand: PLAT_SQFT_BAND,
+    ageYears: null,
+    sameStory: false,
+    bedSlop: null,
+    bathSlop: null,
+    disclosure:
+      'These sales are on your own street, at close to your size. They are the nearest thing to a sale of your home and they are used before anything else.',
   })
   const near = (miles: number, months: number, apples: AppleStrictness): PricingTier => ({
     name: `nearby-${miles}mi-${months}mo`,
@@ -195,6 +219,15 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       'This home sits in a golf or resort community, and that community did not have enough of its own sales even across two years. The sales below come from comparable golf and resort communities in Central Oregon rather than from ordinary neighborhoods nearby, because that is the market a buyer of this home shops against.',
   })
   return [
+    // YOUR OWN STREET, FIRST, WHATEVER THE MLS CALLS THE TRACT (Matt
+    // 2026-09-10: "We want to look specifically at that address or in that
+    // subdivision"). 23 Benaiah carries "N/A" for a subdivision, so every plat
+    // rung below skips, and 31 Benaiah — the identical 2,080 sqft plan next
+    // door — was only reachable on the five-mile eighteen-month rung, eight
+    // sales deep. Whether it made the set at all then depended on how fast the
+    // rings above filled, and it moved between builds. A street is a place;
+    // this rung finds it before any of that.
+    street(24),
     sub(3),
     sub(6),
     sub(9),

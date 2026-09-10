@@ -1319,3 +1319,41 @@ describe('the GLA bracket obeys the 24-month wall', () => {
     expect(out.comps.map((c) => c.listingKey)).toContain('FRESH')
   })
 })
+
+describe('your own street comes first', () => {
+  it('finds the twin next door on the first rung, whatever the MLS calls the tract', () => {
+    const twin = sale({
+      listingKey: 'TWIN',
+      address: '31 Benaiah',
+      sqft: 2080,
+      beds: 4,
+      baths: 4,
+      closeDate: '2025-07-08',
+      closePrice: 512_000,
+      lastAsk: 499_000,
+      subdivision: null,
+      subdivisionNorm: null,
+    })
+    const elsewhere = Array.from({ length: 8 }, (_, i) =>
+      sale({
+        listingKey: `OTHER${i}`,
+        address: `${i} Tanglewood`,
+        subdivision: 'Tanglewood',
+        subdivisionNorm: 'tanglewood',
+        sqft: 1900,
+        closeDate: '2026-07-01',
+      }),
+    )
+    const subj = subject({ streetAddress: '23 Benaiah', sqft: 2080, subdivision: null, subdivisionNorm: null })
+    const out = walkPricingLadder(subj, [...elsewhere, twin], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toContain('TWIN')
+    expect(out.tiersUsed[0]).toBe('own-street-24mo')
+  })
+
+  it('does not take a same-street sale of a very different size', () => {
+    const big = sale({ listingKey: 'BIG', address: '31 Benaiah', sqft: 3400, subdivisionNorm: null })
+    const subj = subject({ streetAddress: '23 Benaiah', sqft: 2080, subdivision: null, subdivisionNorm: null })
+    const out = walkPricingLadder(subj, [big], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('BIG')
+  })
+})
