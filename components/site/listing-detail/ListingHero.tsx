@@ -25,6 +25,7 @@ import {
   LISTING_MOSAIC_STRIP_SIZES,
   preferListingMosaicPhotoUrl,
 } from '@/lib/listing/publish-listing-mosaic'
+import { listingRowPhotoSrc } from '@/lib/listing/listing-row-photo'
 import { isOffsiteTourHost } from '@/lib/listing/publish-listing-on-site-tour'
 import dynamic from 'next/dynamic'
 
@@ -67,6 +68,13 @@ type Props = {
   lng?: number | null
   openHouseLabel?: string | null
   className?: string
+  /**
+   * Lead stills emit `<link rel="preload">` when true (next/image `priority`).
+   * Speculative App Router prefetches must pass false (SITE-60): a 1600×1200
+   * Spark plate in a payload the visitor never opened is the list-page tax.
+   * Real document / click navigations keep the default so LCP stays sharp.
+   */
+  lcpPriority?: boolean
 }
 
 function getAutoplayEmbedUrl(video: VideoEmbed): string {
@@ -111,6 +119,7 @@ export function ListingHero({
   lng,
   openHouseLabel,
   className,
+  lcpPriority = true,
 }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [galleryPane, setGalleryPane] = useState<'photos' | 'floor'>('photos')
@@ -347,7 +356,7 @@ export function ListingHero({
                     src={photo.url}
                     alt={photo.caption ?? `${altBase} ${i + 1} of ${total}`}
                     sizes={LISTING_MOSAIC_CAROUSEL_SIZES}
-                    priority={i === 0}
+                    priority={lcpPriority && i === 0}
                   />
                 </button>
               ))}
@@ -398,7 +407,7 @@ export function ListingHero({
                   src={framePhoto.url}
                   alt={framePhoto.caption ?? `${altBase} ${frame + 1} of ${total}`}
                   sizes={LISTING_MOSAIC_LEAD_SIZES}
-                  priority={frame === 0}
+                  priority={lcpPriority && frame === 0}
                 />
               </button>
             ) : (
@@ -479,7 +488,7 @@ export function ListingHero({
                   aria-current={i === frame ? 'true' : undefined}
                 >
                   <Image
-                    src={preferListingMosaicPhotoUrl(photo.url)}
+                    src={listingRowPhotoSrc(photo.url)}
                     alt=""
                     fill
                     sizes={LISTING_MOSAIC_STRIP_SIZES}
@@ -604,9 +613,27 @@ function MosaicStill({
   priority?: boolean
   contain?: boolean
 }) {
+  const compact = listingRowPhotoSrc(src)
+  // Do not even compute the 1600 URL during a Flight render: React preloads
+  // image-shaped strings in the client tree. Upgrade only when the hero is
+  // on screen.
+  const [live, setLive] = useState(priority ? preferListingMosaicPhotoUrl(src) : compact)
+  useEffect(() => {
+    if (priority) return
+    const el = document.getElementById('listing-hero-visual')
+    if (!el) return
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio > 0)) {
+        setLive(preferListingMosaicPhotoUrl(src))
+        io.disconnect()
+      }
+    })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [src, priority])
   return (
     <Image
-      src={preferListingMosaicPhotoUrl(src)}
+      src={live}
       alt={alt}
       fill
       sizes={sizes}
@@ -713,7 +740,7 @@ function IframeHeroLayer({
     <>
       {posterUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={preferListingMosaicPhotoUrl(posterUrl)} alt={altBase} />
+        <img src={listingRowPhotoSrc(posterUrl)} alt={altBase} />
       ) : null}
       {failed || !embedSrc ? null : (
         <iframe
