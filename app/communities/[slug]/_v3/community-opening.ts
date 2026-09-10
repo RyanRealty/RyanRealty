@@ -80,8 +80,14 @@ export function belongingFigures(
   if (hoa) {
     figures.push({
       value: v3Text(`$${hoa.annual.toLocaleString('en-US')}`),
+      // SITE-87: "measured" is an internal methodology word — visitors get
+      // plain English about where the HOA figure comes from.
       label: v3Text(
-        hoa.kind === 'measured' ? 'measured HOA a year' : hoa.kind === 'master' ? 'master HOA a year' : 'HOA estimate a year',
+        hoa.kind === 'measured'
+          ? 'HOA a year from homes here'
+          : hoa.kind === 'master'
+            ? 'master HOA a year'
+            : 'HOA estimate a year',
       ),
     })
   }

@@ -99,6 +99,7 @@ import {
   V3SectionTracker,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
+import './_v3/community-fold.css'
 import { getCommunityCourseMap } from '@/lib/golf/community-course'
 import { courseMapKind } from '@/lib/golf/course-map'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
@@ -915,7 +916,15 @@ export default async function CommunityDetailPage({ params }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={communitySchemas} />
 
-        <div className={stagePosterSrc ? 'place-opening place-opening--media' : 'place-opening'}>
+        <div
+          className={
+            stagePosterSrc
+              ? 'place-opening place-opening--media place-opening--community'
+              : 'place-opening place-opening--community'
+          }
+        >
+          {/* SITE-87: photograph + MOS overlay when leftover HUD publishes;
+              Atlas is the interactive drawing in the fold stage below. */}
           <PlaceAreaHero posterSrc={stagePosterSrc} mos={placeMos} />
           {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
           <V3Breadcrumb trail={trail} tone={stagePosterSrc ? 'on-media' : 'surface'} />
@@ -923,56 +932,73 @@ export default async function CommunityDetailPage({ params }: Props) {
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
             </V3Heading>
+            {/* SITE-87 SEO: crawlable city + inventory doors in the opening. */}
+            <p className="place-opening__caption place-opening__caption--doors">
+              {citySlug ? (
+                <>
+                  <a href={`/cities/${citySlug}`}>{cityName} real estate</a>
+                  {' · '}
+                </>
+              ) : null}
+              <a href={browseHref}>{publicName} homes for sale</a>
+            </p>
             {belongingLine ? (
-              <p className="place-opening__caption" title={belongingTrace(publicName)}>
+              <p
+                className="place-opening__caption place-opening__caption--belonging"
+                title={belongingTrace(publicName)}
+              >
                 {belongingLine}
               </p>
             ) : null}
-            {/* SITE-01 (Matt 2026-09-07): the first-screen ask. Address in, verdict and
-                pace out with no contact asked, then the email that delivers the written
-                valuation. On every community page: where the metric layer publishes no
-                verdict (Brasada Ranch, too few recent sales), the answer says so and still
-                carries the comparable-close count from the CMA engine, which is the figure
-                the written valuation is built on. */}
-            <CommunityPlaceValue slug={slug} placeName={publicName} activity={placeActivitySpark} />
           </div>
         </div>
 
-        {/* SITE-04: the listing-alert ask as the first callout after the
-            opening, with this community's real 30-day count as its claim, and
-            the sticky repeat past #atlas from the same component. Ghost button:
-            the opening's valuation ask above is the page's one filled primary.
-            Same server action, same payload, same honeypot as the sheet it
-            replaces. */}
-        <CommunityAlertsStrip
-          id="alerts"
-          communityName={publicName}
-          city={cityName}
-          subdivision={community.subdivision}
-          geoSlug={neighborhoodSlug}
-          newCount30d={publicPace.newCount30d}
-          updatedAt={leftoverStamp}
-          browseHref={browseHref}
-          matchNames={community.subdivision ? getSubdivisionMatchNames(community.subdivision) : []}
-          types={alertTypes}
-        />
-
-        {(
-          <V3Atlas
-            id="atlas"
-            headingLevel={2}
-            headline={v3Text(`${publicName} right now`)}
-            dots={atlasView.dots}
-            regions={atlasRegions}
-            basemap={basemapForRegions(atlasRegions)}
-            parcels={platLots.map((lot) => ({ id: lot.taxlot, subject: false, geometry: lot.geometry }))}
-            types={atlasView.types}
-            events={atlasView.events}
-            source={platLots.length > 0 ? `${atlasView.source} ${TAXLOT_DISCLAIMER}` : atlasView.source}
-            stamp={atlasView.stamp}
-            incomplete={!atlasView.complete}
-          />
-        )}
+        {/* SITE-87: drawing + figure in the first viewport. Atlas is the drawing;
+            the 30-day count via V3AlertsStrip/V3Number is the figure. MOS bars
+            publish only when leftover HUD clears the community sample floor.
+            CommunityPlaceValue stays the page's filled ask, after the drawing so
+            the portal card is not the only object in the fold. */}
+        <div className="community-fold">
+          <div className="community-fold__stage">
+            <div className="community-fold__drawing">
+              <V3Atlas
+                id="atlas"
+                headingLevel={2}
+                headline={v3Text(`${publicName} right now`)}
+                headlineTone="eyebrow"
+                claimText={`${publicName}'s recorded boundary — every active and pending mark is a live MLS listing.`}
+                keyPlacement="head"
+                sourceName="Oregon Data Share"
+                dots={atlasView.dots}
+                regions={atlasRegions}
+                basemap={basemapForRegions(atlasRegions)}
+                parcels={platLots.map((lot) => ({ id: lot.taxlot, subject: false, geometry: lot.geometry }))}
+                types={atlasView.types}
+                events={atlasView.events}
+                source={platLots.length > 0 ? `${atlasView.source} ${TAXLOT_DISCLAIMER}` : atlasView.source}
+                stamp={atlasView.stamp}
+                incomplete={!atlasView.complete}
+              />
+            </div>
+            <aside className="community-fold__figure">
+              <CommunityAlertsStrip
+                id="alerts"
+                communityName={publicName}
+                city={cityName}
+                subdivision={community.subdivision}
+                geoSlug={neighborhoodSlug}
+                newCount30d={publicPace.newCount30d}
+                updatedAt={leftoverStamp}
+                browseHref={browseHref}
+                matchNames={community.subdivision ? getSubdivisionMatchNames(community.subdivision) : []}
+                types={alertTypes}
+              />
+            </aside>
+          </div>
+          <div className="community-fold__ask">
+            <CommunityPlaceValue slug={slug} placeName={publicName} activity={placeActivitySpark} />
+          </div>
+        </div>
 
         {/* SITE-30: the map's legend, in the served HTML. The same plat cells
             the Atlas above draws, each one a real anchor with the homes for

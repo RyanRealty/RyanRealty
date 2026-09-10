@@ -41,6 +41,7 @@
 import { useCallback } from 'react'
 import {
   V3AlertsStrip,
+  type V3AlertsStickyClaim,
   type V3AlertsSubmit,
   type V3AlertsTypeOption,
 } from '@/components/site/v3/V3AlertsStrip.client'
@@ -52,9 +53,44 @@ import {
   buildGuestWatchFromPlace,
   rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
-import { newestFirstHref, placeAlertsCopy, placeAlertsStickyNote } from '@/lib/site/place-alerts'
+import { formatCount } from '@/lib/format/count'
+import {
+  newestFirstHref,
+  placeAlertsCopy,
+  placeAlertsStickyNote,
+  publishableNewCount,
+} from '@/lib/site/place-alerts'
 
 const TRAP = { name: 'company', label: 'Company' } as const
+
+/**
+ * SITE-87: community grain often publishes a 30-day count under the city
+ * display threshold (10). Still put that sourced figure through V3Number and
+ * keep the digit out of the sentence so the numeral is not printed twice.
+ */
+function promoteAlertFigure(
+  claim: string,
+  stickyClaim: V3AlertsStickyClaim,
+  count: string | null,
+  placeName: string,
+): { count: string | null; claim: string; stickyClaim: V3AlertsStickyClaim } {
+  if (count) return { count, claim, stickyClaim }
+  const match = claim.match(
+    /^(\d[\d,]*)\s+(\S+)\s+came on the market in\s+(.+)\s+in the last 30 days\.$/,
+  )
+  if (!match) return { count, claim, stickyClaim }
+  const [, digits, unit, place] = match
+  const nextSticky: V3AlertsStickyClaim = {
+    before: `${unit} came on the market in`,
+    place: place || placeName,
+    after: 'in the last 30 days.',
+  }
+  return {
+    count: digits,
+    claim: `${nextSticky.before} ${nextSticky.place} ${nextSticky.after}`,
+    stickyClaim: nextSticky,
+  }
+}
 
 type Props = {
   /** The section id. The page passes it so the contract's `#alerts` resolves in the page source (ci:page-purpose). */
@@ -131,9 +167,32 @@ export function CommunityAlertsStrip({
     matchNames: subdivision ? matchNames : [],
   })
 
+  const n = publishableNewCount(newCount30d)
+  const houseNoun = n === 1 ? 'house' : 'houses'
+  const figure =
+    n != null && !copy.count
+      ? {
+          count: formatCount(n),
+          claim: `${houseNoun} came on the market in ${communityName} in the last 30 days.`,
+          stickyClaim: {
+            before: `${houseNoun} came on the market in`,
+            place: communityName,
+            after: 'in the last 30 days.',
+          } satisfies V3AlertsStickyClaim,
+        }
+      : promoteAlertFigure(copy.claim, copy.stickyClaim, copy.count, communityName)
+
+  // SITE-87: promote small counts to V3Number. Two proof cards on a wide
+  // fold; one on a phone so the email ask stays in the first viewport.
+  const figuredTypes = types?.map((option) => {
+    const next = promoteAlertFigure(option.claim, option.stickyClaim, option.count, communityName)
+    return { ...option, ...next }
+  })
+
   return (
     <V3AlertsStrip
       {...copy}
+      {...figure}
       id={id}
       href={newestFirstHref(browseHref)}
       promise={`Every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''}, by email. Price changes on those homes come in the same email. Unsubscribe any time.`}
@@ -141,7 +200,7 @@ export function CommunityAlertsStrip({
       updatedAt={updatedAt}
       trap={TRAP}
       emphasis="ghost"
-      types={types}
+      types={figuredTypes}
       onSubmit={submit}
     />
   )

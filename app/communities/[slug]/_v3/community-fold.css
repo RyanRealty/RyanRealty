@@ -1,0 +1,279 @@
+/* SITE-87 community first viewport: Atlas drawing + alerts figure.
+   Page-local only — does not restyle city/neighborhood openings. */
+
+@layer base {
+  .community-fold a {
+    color: inherit;
+  }
+}
+
+/* Shorten the photograph so Atlas + alerts can own the fold at 1440. */
+.place-opening.place-opening--community.place-opening--media {
+  min-height: 9rem;
+  max-height: 12rem;
+}
+
+@media (min-width: 64rem) {
+  .place-opening.place-opening--community.place-opening--media {
+    min-height: 8.5rem;
+    max-height: 11rem;
+  }
+
+  .place-opening--community.place-opening--media .place-opening__copy {
+    align-self: end;
+    padding-top: calc(var(--v3-space-lg) + 2rem);
+    padding-bottom: var(--v3-space-sm);
+    max-width: none;
+  }
+}
+
+@media (max-width: 39.99rem) {
+  .place-opening.place-opening--community.place-opening--media {
+    min-height: 6.5rem;
+    max-height: 8rem;
+  }
+
+  /* Clear the absolute breadcrumb so the H1 is not clipped. */
+  .place-opening--community.place-opening--media .place-opening__copy {
+    padding-top: calc(var(--v3-space-xl) + 2.75rem);
+    padding-bottom: var(--v3-space-2xs);
+  }
+
+  .place-opening--community .place-opening__caption--belonging {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+  }
+}
+
+.place-opening--community .place-opening__caption {
+  font-size: var(--v3-size-body-sm);
+  margin-top: var(--v3-space-2xs);
+}
+
+.place-opening--community .place-opening__caption--belonging {
+  max-width: 40rem;
+  text-wrap: pretty;
+}
+
+.place-opening--community .place-opening__caption a {
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.place-opening--community .place-opening__caption a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.community-fold {
+  width: 100%;
+  max-width: var(--v3-measure);
+  margin-inline: auto;
+  padding-inline: var(--v3-gutter);
+  padding-top: var(--v3-space-md);
+  padding-bottom: var(--v3-space-lg);
+}
+
+.community-fold__stage {
+  display: grid;
+  gap: var(--v3-space-lg);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  /* Atlas owns more of the fold; alerts figure stays wide enough to read. */
+  .community-fold__stage {
+    grid-template-columns: minmax(0, 1.45fr) minmax(20rem, 0.95fr);
+    column-gap: var(--v3-space-lg);
+  }
+}
+
+.community-fold__drawing {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.community-fold__drawing .v3-atlas {
+  max-width: 100%;
+}
+
+/* Cap the map plate so drawing + figure fit the first viewport.
+   Tall enough to read marks; not so tall the alerts figure leaves the fold. */
+.community-fold__drawing .v3-atlas__frame {
+  max-height: min(52vh, 28rem);
+}
+
+/* Inventory + type toggles stay on the head; dock/events/key counts stay off
+   this opening so the map cannot own the whole scroll. */
+.community-fold__drawing .v3-atlas__dock,
+.community-fold__drawing .v3-atlas__aside,
+.community-fold__drawing .v3-atlas__events {
+  display: none;
+}
+
+@media (max-width: 63.99rem) {
+  /* Phone: short Atlas, then claim + cards + ask — all in the first viewport. */
+  .community-fold__drawing .v3-atlas__frame {
+    max-height: min(12vh, 5.5rem);
+  }
+
+  .community-fold__drawing .v3-atlas__head {
+    padding-bottom: var(--v3-space-2xs);
+  }
+
+  .community-fold__figure .v3-alerts__strip {
+    max-height: none;
+  }
+
+  /* One proof card on a phone — price + beds/baths/sqft stay with the claim. */
+  .community-fold__figure .v3-alerts__strip > li:nth-child(n + 2) {
+    display: none;
+  }
+
+  .community-fold__figure .v3-alerts__thumb {
+    grid-template-columns: 4.25rem minmax(0, 1fr);
+  }
+
+  .community-fold__figure .v3-alerts__thumb img {
+    width: 4.25rem;
+  }
+
+  .community-fold__figure .v3-alerts__thumb-facts {
+    display: block !important;
+    font-size: var(--v3-size-body-sm);
+  }
+
+  /* Drop source line on a phone so more of the ask lands in the first viewport. */
+  .community-fold__figure .v3-source,
+  .community-fold__figure .v3-alerts__source {
+    display: none;
+  }
+
+  /* Claim → email → one proof card. */
+  .community-fold__figure .v3.v3-alerts .v3-alerts__grid {
+    grid-template-areas: 'lead' 'ask' 'figure' !important;
+  }
+}
+
+/* Fold figure: one ghost ask (email). Scope methodology + browse stay off. */
+.community-fold__figure .v3-alerts__scope,
+.community-fold__figure .v3-alerts__browse {
+  display: none;
+}
+
+.community-fold__figure {
+  display: grid;
+  gap: var(--v3-space-md);
+  min-width: 0;
+}
+
+.community-fold__figure .v3-mos,
+.community-fold__figure .v3-alerts {
+  margin: 0;
+}
+
+/* Alerts live inside the fold figure — drop the default section gutters that
+   assume a full-bleed strip below the opening. */
+.community-fold__figure .v3.v3-alerts {
+  padding-inline: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  max-width: none;
+}
+
+/* Stack claim → thumbs → form so the 30-day figure stays readable.
+   Must override both columns AND areas — areas alone keep an implicit
+   second column and collapse the claim to ~0px (SITE-87 fold defect). */
+.community-fold__figure .v3.v3-alerts .v3-alerts__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-areas: 'lead' 'figure' 'ask' !important;
+  column-gap: 0;
+  row-gap: var(--v3-space-sm);
+  gap: var(--v3-space-sm);
+}
+
+.community-fold__figure .v3.v3-alerts .v3-alerts__ask {
+  padding-left: 0 !important;
+  border-left: 0 !important;
+}
+
+.community-fold__figure .v3-alerts__eyebrow {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.community-fold__figure .v3-alerts__claim {
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-snug, 1.25);
+}
+
+.community-fold__figure .v3-alerts__claim-text {
+  display: inline;
+}
+
+.community-fold__figure .v3-alerts__num {
+  font-size: clamp(2.5rem, 6vw, 3.5rem);
+  line-height: 0.95;
+  margin-right: 0.2em;
+}
+
+/* Compact proof rows — price + address + beds/baths/sqft stay beside the still
+   so the email ask remains in the first viewport. */
+.community-fold__figure .v3-alerts__strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-xs);
+  max-height: 10rem;
+  overflow: auto;
+}
+
+.community-fold__figure .v3-alerts__thumb {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--v3-space-xs);
+  min-width: 0;
+  max-width: none;
+}
+
+.community-fold__figure .v3-alerts__thumb img {
+  width: 5.5rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.community-fold__figure .v3-alerts__thumb-name,
+.community-fold__figure .v3-alerts__thumb-facts,
+.community-fold__figure .v3-alerts__thumb-price {
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: manual;
+}
+
+/* Keep the valuation ask on the page, but out of the first viewport so Atlas
+   + alerts own the fold (SITE-87). */
+.community-fold__ask {
+  margin-top: clamp(3rem, 12vh, 6rem);
+  max-width: 32rem;
+}
+
+.community-fold__ask .place-opening__ask {
+  margin-top: 0;
+}
+
+@media (max-width: 39.99rem) {
+  .community-fold {
+    padding-top: var(--v3-space-sm);
+    padding-bottom: var(--v3-space-md);
+  }
+
+  .community-fold__figure .v3-alerts__claim {
+    font-size: var(--v3-size-body-lg);
+  }
+
+  .community-fold__ask {
+    margin-top: var(--v3-space-md);
+  }
+}

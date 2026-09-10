@@ -78,7 +78,7 @@ describe('master-plan belonging Quiet', () => {
       },
     })
     const first = items[0]
-    expect(first && first.kind === 'fact' ? first.term : null).toBe('HOA (measured)')
+    expect(first && first.kind === 'fact' ? first.term : null).toBe('HOA from homes here')
     expect(first && first.kind === 'fact' ? first.value : null).toBe('$2,052 a year')
     expect(first && first.kind === 'fact' ? first.detail : null).toMatch(
       /median of the 6 current listings that report dues/,

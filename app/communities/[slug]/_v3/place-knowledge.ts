@@ -70,7 +70,7 @@ export function placeKnowledgeSource(input: {
         : `${publishers.slice(0, -1).join(', ')}, and ${publishers[publishers.length - 1]}`
   const authored = `The facts above come from ${input.name}'s recorded sources: ${list}.`
   return input.hasMeasuredHoa
-    ? `${authored} The HOA figure is not authored — it is measured from current listings and carries its own basis on the row.`
+    ? `${authored} The HOA figure is not authored — it comes from current listings here and carries its own basis on the row.`
     : authored
 }
 
@@ -154,7 +154,8 @@ export function buildPlaceKnowledge(input: {
   if (hoa) {
     items.push({
       kind: 'fact',
-      term: hoa.kind === 'measured' ? 'HOA (measured)' : hoa.kind === 'master' ? 'Master HOA' : 'HOA estimate',
+      // SITE-87: never print the internal word "measured" in visitor copy.
+      term: hoa.kind === 'measured' ? 'HOA from homes here' : hoa.kind === 'master' ? 'Master HOA' : 'HOA estimate',
       value: `$${hoa.annual.toLocaleString('en-US')} a year`,
       detail:
         hoa.kind === 'measured'
