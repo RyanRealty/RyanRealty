@@ -1,10 +1,17 @@
+# Current — 2026-09-10 17:47Z (grinder 01a08b99: SITE-89 + SITE-73 on main)
+
+Owner: `grok-4.5-2026-09-10-16`. Local `ea9f3cc5` (SITE-73 merge) on `48a3d62b` (SITE-89). Do not steal SITE-88. Do not steal SITE-76 / SITE-79 (`grok-4.5-2026-09-10-17`). Skip SITE-81. 15m scheduler stays. No auto-seed.
+
+- **SITE-89** place-type: H1 → claim → Atlas → V3Carousel rail. grok-4.6 median **71** (73/65/71). Accept >69. Finish line 70 met.
+- **SITE-73** zip: V3Atlas + MOS + alerts (no Google embed). grok-4.6 median **53** (53/45/58), HF 8. Accept >33. Desktop alerts still collide with the 43-count figure.
+
 # Current — 2026-09-10 17:12Z (grinder 01a08c47: claimed SITE-76 + SITE-79)
 
 Owner: `grok-4.5-2026-09-10-17`. origin/main `f8a42866`. Main checkout has **other-lane dirty catalog/motion files — do not stage them**. 15m launchd stays. No auto-seed.
 
 - **SITE-76 in_progress** oregon-city honesty-first fold. UUID `de87b75a-feeb-4cf8-9266-e506f575d0b0`. Catalog: shadcn-alert into Quiet. Port 3196. Do not globally restyle `V3Instrument`.
 - **SITE-79 in_progress** reviews V3Proof + shadcn-avatar (initials only — `reviews` has no photo column). UUID `7fda19f1-0e6b-4791-a31e-6a3b0fe341ed`. Port 3197. Do not restyle `V3Doors` globally.
-- Do not steal SITE-89 / SITE-73 (`grok-4.5-2026-09-10-16`). Do not steal SITE-88. Skip SITE-81 (region family). Skip SITE-87 / SITE-82 (`PlaceAreaHero`). Skip SITE-86 while SITE-89 holds Atlas.
+- Do not steal SITE-88. Skip SITE-81 (region family). Skip SITE-87 / SITE-82 (`PlaceAreaHero`).
 
 # Current — 2026-09-10 17:05Z (catalog install is a gate)
 
