@@ -641,7 +641,10 @@ export function walkPricingLadder(
 
   for (const tier of tiers) {
     const skip =
-      tier.sameSubdivision && !subject.subdivisionNorm
+      // THE WIDENING RUNS ONLY WHEN THE BOUNDED LADDER CAME UP SHORT.
+      tier.whenStarved && byKey.size >= PRICING_MIN_COMPS
+        ? 'the bounded search already reached the minimum, so no widening was needed'
+        : tier.sameSubdivision && !subject.subdivisionNorm
         ? 'the subject has no subdivision on its MLS row'
         : tier.adjacentSubdivision && !(subject.adjacentSubdivisionSlugs?.length)
           ? 'no plat next to the subject\'s is known'

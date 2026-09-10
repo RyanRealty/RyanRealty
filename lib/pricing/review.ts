@@ -44,6 +44,8 @@ export const REVIEW_REASONS = {
     'The independent review pass did not run on this build, so a broker reads it before this goes out.',
   rangeWidth:
     'The range the sales support is wider than usual for this home, so a broker confirms the number before this goes out.',
+  widenedSearch:
+    'The sales inside this home\'s own area did not reach the number this report needs, so the search was widened and says so, and a broker confirms the set before this goes out.',
   other: 'A broker reviews this document before it is sent.',
 } as const
 
@@ -164,6 +166,9 @@ export function buildPricingReview(args: {
   }
   if (/range .*wider|wider than/.test(raw)) {
     add(REVIEW_REASONS.rangeWidth)
+  }
+  if (/widened one more step|disclosed widening/.test(raw)) {
+    add(REVIEW_REASONS.widenedSearch)
   }
   if (verdict === 'fail' || verdict === 'review' || /audit/.test(raw)) {
     add(REVIEW_REASONS.auditFindings)

@@ -33,6 +33,20 @@ export type CompTier = {
   adjacentSubdivisions?: boolean
   /** Disclosure appended to the trace when the rung yields a comp. */
   disclosure?: string
+  /**
+   * LAST RESORT, AND ONLY WHEN THE LADDER CAME UP SHORT (Matt 2026-09-09:
+   * "widen with a disclosure instead of failing"). The rung is skipped
+   * outright while the bounded ladder is still reaching the minimum, so a
+   * document that can be built inside its own boundary never sees it.
+   */
+  whenStarved?: boolean
+  /**
+   * Inside the starved widening only: admit a sale from a resort community the
+   * subject is not part of. Matt 2026-09-09, on a Bend home that lost 627 of
+   * 899 candidates to the membership rule: "cross only when starved, and say
+   * so." The guard is untouched everywhere else.
+   */
+  relaxResort?: boolean
 }
 
 // TRADE TIME BEFORE YOU TRADE LOCATION (Matt 2026-07-30). The ladder used to
@@ -92,6 +106,25 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
     // 6. Last resort for a subject inside a mapped city. Still bounded — the
     // old ladder ended at "anywhere in the city".
     { name: 'citywide-12mo', monthsBack: 12, sqftBand: 0.35, sameArea: false, competing: true, maxMiles: 5 },
+    // 6b. THE DISCLOSED WIDENING (Matt 2026-09-09). Reached only when every
+    // rung above left the set below MIN_COMPS — a fifth of expired owners were
+    // getting no document at all, and a wider search that says what it did
+    // beats no answer. It trades exactly three things, each named in the
+    // disclosure the report prints: age (24 months), size (45% either way),
+    // and the resort-membership rule. Bed, bath, product type, lot character
+    // and the acreage splits are NOT relaxed here.
+    {
+      name: 'widened-disclosed-24mo',
+      monthsBack: 24,
+      sqftBand: 0.45,
+      sameArea: false,
+      competing: true,
+      maxMiles: 10,
+      whenStarved: true,
+      relaxResort: true,
+      disclosure:
+        'The bounded search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 45% of this home in size, up to 10 miles out, and sales inside a nearby resort community this home is not part of. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening when it is explained.',
+    },
     // 7-8. RURAL ACREAGE last resort (2026-07-30). Every rung above is bounded
     // by `City ILIKE`, which is correct for a platted in-town subject and wrong
     // for a rural one: the MLS City on an acreage parcel is a MAILING address.
@@ -132,6 +165,22 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
       ruralOnly: true,
       disclosure:
         'Rural comparable sales within 10 miles and 12 months were still below the minimum, so the search was extended to 15 miles and 24 months. Market-conditions adjustments are applied to every comp for the time between its sale and today. A sale over 12 months old carries proportionally more of that adjustment, and correspondingly less weight, than a recent one.',
+    },
+    // The same disclosed widening, at rural distance. Runs only if the two
+    // rungs above still left the set short.
+    {
+      name: 'rural-widened-disclosed-24mo',
+      monthsBack: 24,
+      sqftBand: 0.45,
+      sameArea: false,
+      competing: true,
+      maxMiles: 25,
+      ignoreCity: true,
+      ruralOnly: true,
+      whenStarved: true,
+      relaxResort: true,
+      disclosure:
+        'The rural search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 45% of this home in size, up to 25 miles out, and sales inside a nearby resort community this home is not part of. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening for rural property when it is explained.',
     },
   ]
 }

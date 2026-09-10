@@ -48,6 +48,9 @@ export interface AccuracyContract {
   checks: ContractCheck[]
 }
 
+/** The rungs whose presence means the search had to widen (lib/cma/comp-tiers.ts). */
+export const WIDENED_TIER_MARK = 'widened-disclosed'
+
 export function evaluateAccuracyContract(args: {
   comps: CmaAdjustedComp[]
   pricing: CmaPricing
@@ -58,6 +61,14 @@ export function evaluateAccuracyContract(args: {
   marketContextPresent: boolean
   subjectSubType?: string | null
   subjectBaths?: number | null
+  /**
+   * The rungs the selection actually used. The disclosed widening
+   * (`widened-disclosed-24mo`) only runs when the bounded ladder came up
+   * short, so a document that carries it is by construction the marginal one:
+   * it forces broker review (Matt 2026-09-09, choosing the widening AND
+   * "rebuild, hold for review" for the backlog).
+   */
+  tiersUsed?: readonly string[] | null
   /**
    * True when the SELECTOR classified the subject custom/new. The bath cut is
    * graded with the rule selection actually applied: lib/pricing/match.ts and
@@ -71,6 +82,7 @@ export function evaluateAccuracyContract(args: {
   failedAsk?: number | null
 }): AccuracyContract {
   const { comps, pricing, judgment, audit, site, minComps, subjectSubType, subjectBaths, subjectIsCustomOrNew } = args
+  const widened = (args.tiersUsed ?? []).some((t) => t.includes(WIDENED_TIER_MARK))
   const checks: ContractCheck[] = []
   const now = Date.now()
   const maxAgeMs = COMP_MAX_AGE_MONTHS * 30.44 * 86_400_000
@@ -228,6 +240,14 @@ export function evaluateAccuracyContract(args: {
         : `Value range within ${pct(RANGE_REVIEW_SHARE)} of the recommended list on both sides (${pct(width.lowShare)} below, ${pct(width.highShare)} above).`,
     })
   }
+  checks.push({
+    id: 'disclosed-widening',
+    severity: 'review',
+    pass: !widened,
+    detail: widened
+      ? 'The bounded search came up short, so the ladder widened one more step (older sales, a wider size band, and sales from a resort community this home is not in). The document says so, and a broker confirms the set before it goes out.'
+      : 'Every sale came from the bounded ladder; no widening was needed.',
+  })
   checks.push({
     id: 'adversarial-audit-ran',
     severity: 'review',

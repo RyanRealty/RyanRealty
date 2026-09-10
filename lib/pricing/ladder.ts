@@ -37,6 +37,12 @@ export type PricingTier = {
   /** May cross the neighborhood/community polygon. Runs only once the boundary is exhausted. */
   crossBoundary?: boolean
   disclosure?: string
+  /**
+   * Runs ONLY when every rung above left the set below PRICING_MIN_COMPS
+   * (Matt 2026-09-09: widen with a disclosure instead of failing). Skipped
+   * outright while the bounded ladder is still reaching the minimum.
+   */
+  whenStarved?: boolean
 }
 
 export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): PricingTier[] {
@@ -216,6 +222,27 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       ruralOnly: true,
       disclosure:
         'Rural sales inside 10 miles and 9 months were still short of eight, so the search extended to 15 miles and 18 months. Older sales carry a larger time adjustment and less weight.',
+    },
+    // THE DISCLOSED WIDENING (Matt 2026-09-09), the last rung on the facts
+    // path. Reached only when everything above left the set under the
+    // minimum, which is the case that used to produce no document at all. It
+    // trades age and size, in that order, and nothing else: the apples rule,
+    // the bed and bath slop and the product class stay exactly as they are.
+    {
+      name: 'widened-disclosed-24mo',
+      monthsBack: 24,
+      maxMiles: 10,
+      sameSubdivision: false,
+      similarSubdivision: false,
+      apples: 'product_lot',
+      sqftBand: 0.45,
+      ageYears: null,
+      sameStory: false,
+      bedSlop: null,
+      bathSlop: null,
+      whenStarved: true,
+      disclosure:
+        'The bounded search did not reach the minimum number of sales this price needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 45% of this home in size, up to 10 miles out. An older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening when it is explained.',
     },
   ]
 }

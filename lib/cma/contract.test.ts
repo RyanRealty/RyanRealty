@@ -420,3 +420,36 @@ describe('evaluateAccuracyContract', () => {
     expect(contract.checks.find((c) => c.id === 'expired-list-cap')!.pass).toBe(false)
   })
 })
+
+describe('the disclosed widening forces review (Matt 2026-09-09)', () => {
+  it('passes when every sale came from the bounded ladder and flags when it did not', () => {
+    const comps = tightSet()
+    const adjusted = adjustComps(subject(), comps, null)
+    const pricing = computePricing(subject(), adjusted, null)!
+    const base = {
+      subjectSubType: 'Single Family Residence',
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+    }
+    const clean = evaluateAccuracyContract({ ...base, tiersUsed: ['subdivision-6mo', 'neighborhood-12mo'] })
+    const widenedCheck = (c: ReturnType<typeof evaluateAccuracyContract>) =>
+      c.checks.find((x) => x.id === 'disclosed-widening')
+    expect(widenedCheck(clean)?.pass).toBe(true)
+    expect(clean.forceReview).toBe(false)
+
+    for (const tier of ['widened-disclosed-24mo', 'rural-widened-disclosed-24mo']) {
+      const widened = evaluateAccuracyContract({ ...base, tiersUsed: ['subdivision-6mo', tier] })
+      const check = widenedCheck(widened)
+      expect(check?.pass).toBe(false)
+      expect(check?.severity).toBe('review')
+      expect(check?.detail).toMatch(/widened one more step/)
+      expect(widened.forceReview).toBe(true)
+      // A review-severity check never fails the build; it raises the banner.
+      expect(widened.checks.filter((c) => c.severity === 'hard' && !c.pass)).toHaveLength(0)
+    }
+  })
+})
