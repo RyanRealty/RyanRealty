@@ -111,6 +111,21 @@ export const TAXLOT_COUNTIES: Record<string, TaxlotCounty> = {
     coverage: 'the City of Medford only, not all of Jackson County',
     sweep: { everyDays: 60 },
   },
+
+  /*
+   * SITE-66: Crook County publishes CC_Taxlots_Helion (17,555 polygons,
+   * verified twice 2026-09-10). No per-row edit date, so this is a sweep.
+   * Jefferson still publishes no public taxlot layer.
+   */
+  crook: {
+    county: 'crook',
+    label: 'Crook',
+    url: 'https://gis.crookcountyor.gov/server/rest/services/CC_Taxlots_Helion/FeatureServer/0',
+    source: 'Crook County GIS, taxlot layer',
+    fields: { id: 'MAPTAXLOT', map: 'MAP_NUMBER', dial: 'PSO_Link' },
+    coverage: 'the whole county',
+    sweep: { everyDays: 60 },
+  },
 }
 
 export type TaxlotRefreshResult = {

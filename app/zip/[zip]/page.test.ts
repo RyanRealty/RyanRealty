@@ -83,6 +83,13 @@ describe('ZIP page Market Truth overlay', () => {
     expect(PAGE).toMatch(/postalCode=\{zip\}/)
     expect(PAGE).toMatch(/geoType: 'zip'/)
   })
+
+  it('draws this ZIP TIGER ZCTA on the Field map, not a city stand-in', () => {
+    expect(PAGE).toMatch(/getBoundaryGeoJSON/)
+    expect(PAGE).toMatch(/geoType: 'zip', geoSlug: zip/)
+    expect(PAGE).toMatch(/boundary=\{zipBoundary\}/)
+    expect(PAGE).not.toMatch(/geoType: 'city', geoSlug: citySlug \}\)/)
+  })
 })
 
 describe('ZIP page is on the v3 barrel', () => {

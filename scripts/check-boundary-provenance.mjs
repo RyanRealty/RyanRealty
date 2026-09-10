@@ -66,11 +66,15 @@ const DECLARED_GEO_TYPES = {
     minRows: 3427,
     why: 'Deschutes County GIS subdivision plats + Crook County GIS Subdivisions (LandGroup/7) — subdivision pages',
   },
-  park: { minRows: 18, why: 'Oregon State Parks (OPRD via Oregon GEO) + tracked OSM debt — park pages' },
-  school: { minRows: 37, why: 'Deschutes County GIS school ATTENDANCE areas (BoundaryFD/19) — school pages' },
+  park: { minRows: 18, why: 'Oregon State Parks (OPRD via Oregon GEO) + Deschutes County GIS Parks + Crook County GIS Parks — park pages' },
+  school: { minRows: 42, why: 'Deschutes County GIS school ATTENDANCE areas (BoundaryFD/19) — school pages' },
   school_district: {
     minRows: 6,
     why: 'Oregon Dept of Education "School District Boundaries All" (EDUCATIONAL_BOUNDARIES layer 2) — district polygons, W2.7',
+  },
+  zip: {
+    minRows: 10,
+    why: 'Census TIGER/Line 2024 ZIP Code Tabulation Areas (ZCTA5) — the ten CANONICAL_ZIPS /zip pages',
   },
 }
 
@@ -93,6 +97,8 @@ const AUTHORITATIVE_PUBLISHERS = new Set([
   // the rest of the Prineville side are Crook County, and their plat geometry
   // comes from Crook County's GIS, not from Deschutes'.
   'Crook County GIS Subdivisions',
+  // SITE-66: Crook County OpenData/Places layer 4 "Parks" (Ochoco Creek Park).
+  'Crook County GIS',
   'Oregon Department of Education',
   'Oregon State Parks',
   'TIGER/Line 2024 Census Designated Places',
@@ -105,6 +111,8 @@ const AUTHORITATIVE_PUBLISHERS = new Set([
   // so a CCD row cannot fight a city row; the classifier takes the smallest
   // containing polygon per geo_type in any case.
   'TIGER/Line 2024 County Subdivisions',
+  // SITE-66: ZCTA5 polygons for the ten canonical ZIP pages.
+  'TIGER/Line 2024 ZIP Code Tabulation Areas',
   // A dissolve of Deschutes County GIS plat polygons — county geometry, aggregated, not redrawn.
   'county_plat_union',
 ])
@@ -121,8 +129,8 @@ const NON_OFFICIAL_MAX = {
     debt: 'Self-derived hulls over Spark MLS subdivision aliases (Sunriver, Black Butte Ranch, Broken Top, ...). Not agency geometry. Re-source to Deschutes County GIS plat unions and lower this cap.',
   },
   'OpenStreetMap contributors': {
-    max: 12,
-    debt: 'Crowd-sourced park shapes. Bend Metro Park & Recreation District, City of Redmond and City of Prineville publish authoritative park layers. Re-source and lower this cap.',
+    max: 1,
+    debt: 'Crowd-sourced park shapes. SITE-66 re-sourced 11 of 12 city parks to Deschutes County GIS Parks (BPRD / City of Redmond / City of Sisters operators) and Crook County GIS Parks (Ochoco Creek). American Legion Community Park (Redmond) is not in those layers under that name — keep until City of Redmond publishes a named polygon, then lower this cap to 0.',
   },
 }
 

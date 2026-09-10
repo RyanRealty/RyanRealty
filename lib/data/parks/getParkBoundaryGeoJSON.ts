@@ -6,9 +6,9 @@
  * RPC calls ST_AsGeoJSON server-side and returns a GeoJSON geometry string,
  * which we parse to a typed Polygon | MultiPolygon for NeighborhoodMap.client.
  *
- * GIS rule (CLAUDE.md §0): park polygons come from the Oregon State Parks
- * FeatureServer (state parks) or OpenStreetMap (city parks), inserted by
- * migration 20260603130000_park_boundaries.sql. This function NEVER approximates.
+ * GIS rule (CLAUDE.md §0): park polygons come from Oregon State Parks (state),
+ * Deschutes County GIS Parks / Crook County GIS Parks (city), with one tracked
+ * OSM remainder (American Legion Community Park). This function NEVER approximates.
  *
  * Returns null when the park has no boundary row, Supabase is unavailable, or
  * the geometry fails to parse — never throws on a genuine no-boundary so a

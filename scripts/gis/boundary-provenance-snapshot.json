@@ -1,8 +1,8 @@
 {
   "note": "Provenance snapshot of public.boundaries — the input to ci:boundary-provenance (scripts/check-boundary-provenance.mjs). OBSERVATIONS ONLY: the POLICY (which geo_types may exist, which publishers count as authoritative, the non-official ratchet caps) lives in the gate script, so refreshing this file can never loosen the policy. Refresh with: node scripts/gis/import-ode-school-districts.mjs --snapshot",
   "query": "select geo_type, source, count(*) from public.boundaries group by 1,2 -- read here via PostgREST select=geo_type,source (paged 1000); publisher = source split on ' — ' / ' (' / ';'",
-  "generatedAt": "2026-09-09T22:52:31.187Z",
-  "totalRows": 3527,
+  "generatedAt": "2026-09-10T05:07:10.041Z",
+  "totalRows": 3542,
   "geoTypes": {
     "city": {
       "rows": 11,
@@ -25,14 +25,16 @@
     "park": {
       "rows": 18,
       "publishers": {
-        "OpenStreetMap contributors": 12,
+        "Crook County GIS": 1,
+        "Deschutes County GIS": 10,
+        "OpenStreetMap contributors": 1,
         "Oregon State Parks": 6
       }
     },
     "school": {
-      "rows": 37,
+      "rows": 42,
       "publishers": {
-        "Deschutes County GIS": 37
+        "Deschutes County GIS": 42
       }
     },
     "school_district": {
@@ -47,20 +49,28 @@
         "Crook County GIS Subdivisions": 204,
         "Deschutes County GIS Subdivisions": 3223
       }
+    },
+    "zip": {
+      "rows": 10,
+      "publishers": {
+        "TIGER/Line 2024 ZIP Code Tabulation Areas": 10
+      }
     }
   },
   "publishers": {
     "City of Bend GIS": 14,
+    "Crook County GIS": 1,
     "Crook County GIS Subdivisions": 205,
-    "Deschutes County GIS": 37,
+    "Deschutes County GIS": 52,
     "Deschutes County GIS Subdivisions": 3233,
     "Deschutes County GIS Unincorporated Communities": 2,
-    "OpenStreetMap contributors": 12,
+    "OpenStreetMap contributors": 1,
     "Oregon Department of Education": 6,
     "Oregon State Parks": 6,
     "TIGER/Line 2024 Census Designated Places": 3,
     "TIGER/Line 2024 County Subdivisions": 1,
     "TIGER/Line 2024 Incorporated Places": 7,
+    "TIGER/Line 2024 ZIP Code Tabulation Areas": 10,
     "county_plat_union": 1
   }
 }
