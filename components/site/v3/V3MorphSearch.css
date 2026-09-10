@@ -148,7 +148,13 @@
   border-radius: var(--v3-radius-control);
   box-shadow: none !important;
   border: 2px solid var(--v3-ink);
-  color: var(--v3-ink);
+}
+
+/* `color` on a bare `button` lives in @layer base so Tailwind utilities keep winning. */
+@layer base {
+  .v3 .v3-morph-search--live .v3-morph-search__catalog button {
+    color: var(--v3-ink);
+  }
 }
 
 .v3 .v3-morph-search--live .v3-morph-search__native {
