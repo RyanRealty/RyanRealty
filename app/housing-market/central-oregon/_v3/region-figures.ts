@@ -39,11 +39,16 @@
 
 import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
-import { MOS_METHODOLOGY_CLAUSE, MOS_PLAIN_LABEL, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPriceExact } from '@/lib/format/money'
 import { listingsBrowsePath } from '@/lib/slug'
 import { v3Text, type V3ChartProps, type V3InstrumentFigure } from '@/components/site/v3'
-import { buildClosedVolumeChart, buildCompositionChart } from '../../_v3/market-charts'
+import { buildMosSupplyChart } from '@/app/months-of-supply/_v3/mos-chart'
+import {
+  buildClosedVolumeChart,
+  buildCompositionChart,
+  withChartId,
+} from '../../_v3/market-charts'
 import {
   buildAllTypeFigures,
   closedMartMissingBody,
@@ -52,6 +57,59 @@ import {
   pickLatestMartYear,
 } from '../../_v3/closed-kpis'
 import { CLOSED_SALES_TO_YEAR, HISTORY_PATH } from './region-constants'
+
+/** Pipeline words a visitor must never see on this route (SITE-88). */
+export const REGION_JARGON_RE =
+  /leftover membership|sample-gated|MarketPulse|metric layer|city pulse|mix cells/i
+
+/**
+ * Monthly closing pace implied by leftover MOS: active / months of supply.
+ * Same rearrangement the hub and annual review print. Miss omits — never a zero.
+ */
+export function monthlyPaceFromMos(
+  active: number | null | undefined,
+  mosRaw: number | null | undefined,
+): number | null {
+  if (active == null || !(active > 0) || mosRaw == null || !(mosRaw > 0)) return null
+  return Math.round((active / mosRaw) * 10) / 10
+}
+
+function formatMonthlyPace(n: number): string {
+  return n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+}
+
+/**
+ * MOS as two named bars (catalog house-mos). Digits stay on the chart claim
+ * through formatMonthsOfSupply — never a 4.9 KPI tile.
+ */
+export function buildRegionMosChart(
+  hud: LeftoverHudKpis,
+  mosText: string | null,
+): V3ChartProps | undefined {
+  const active = hud.active != null && hud.active > 0 ? hud.active : null
+  const monthOfSales = monthlyPaceFromMos(active, hud.monthsSupply)
+  if (active == null || monthOfSales == null || !mosText) return undefined
+  return withChartId(
+    buildMosSupplyChart({
+      homesForSale: active,
+      monthOfSales,
+      mosText,
+    }),
+    'central-oregon-mos',
+  )
+}
+
+const REGION_LIVE_EXTRA =
+  'Condo, townhome, and other property types appear when enough listings exist to publish them. Pace figures behind the fold are the ones buyers and sellers ask about.'
+
+/**
+ * Append the extra-figures clause in visitor English. No sample-gated /
+ * leftover / metric-layer vocabulary (SITE-88).
+ */
+export function composeRegionLiveTrace(liveTrace: string, hasExtraFigures: boolean): string {
+  if (!hasExtraFigures) return liveTrace
+  return `${liveTrace} ${REGION_LIVE_EXTRA}`
+}
 
 /** One Instrument's worth of props: its figures and the trace that covers them. */
 export type RegionSection = {
@@ -108,7 +166,13 @@ export function buildRegionInstruments(
       ),
     })
   }
-  if (activeCount != null) {
+  // SITE-88 / catalog house-mos: when the two-bar drawing publishes, do not
+  // reprint homes-for-sale and a-month-of-sales as jumbo tiles. The drawing
+  // is those two numbers. Miss keeps the inventory door so a chart-less
+  // refresh is not a blank fold.
+  const monthOfSales = monthlyPaceFromMos(activeCount, hud.monthsSupply)
+  const mosChartPublishes = monthOfSales != null && mosText != null
+  if (activeCount != null && !mosChartPublishes) {
     liveFigures.push({
       value: v3Text(activeCount.toLocaleString('en-US')),
       label: v3Text('homes for sale, single-family'),
@@ -123,19 +187,19 @@ export function buildRegionInstruments(
       sentence: v3Text('Sellers who have accepted an offer and have not closed yet.'),
     })
   }
-  if (mosText != null) {
+  if (monthOfSales != null && !mosChartPublishes) {
     liveFigures.push({
-      value: v3Text(mosText),
-      label: v3Text(MOS_PLAIN_LABEL),
+      value: v3Text(formatMonthlyPace(monthOfSales)),
+      label: v3Text('a month of sales'),
       href: '/months-of-supply',
       sentence: v3Text(
-        'How long the houses listed today would last at the pace of the last six months, with nothing new coming on.',
+        'Homes that typically close in one month, the pace the listings on the market are measured against.',
       ),
     })
   }
 
   const liveClauses = [
-    'Oregon Data Share via MarketPulse, active single-family houses across the Central Oregon region',
+    'Oregon Data Share, active single-family houses currently listed across Central Oregon',
   ]
   // The two canonical clauses append whole, never edited, and only when the figure they
   // govern is on the screen. lib/market/classify.ts owns that wording and
@@ -174,15 +238,15 @@ export function buildRegionInstruments(
   }
 
   const paceClauses = [
-    'Oregon Data Share via MarketPulse, closed single-family houses across the Central Oregon region',
+    'Oregon Data Share, single-family houses that closed across Central Oregon',
   ]
   if (daysToPending != null) {
     paceClauses.push(
-      'Median to pending is the 90-day list-to-pending median on that same pulse row',
+      'Days to an offer is the middle wait from listing to an accepted offer over the last 90 days',
     )
   }
   if (closedLast30Days != null) {
-    paceClauses.push('Closed in the last 30 days counts closings inside that window')
+    paceClauses.push('Closed in the last 30 days counts sales that finished in that window')
   }
   const paceTrace = `${paceClauses.join('. ')}.`
 

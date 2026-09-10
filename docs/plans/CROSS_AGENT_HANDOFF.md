@@ -1,10 +1,11 @@
-# Current — 2026-09-10 14:25Z (grinder 01a08b6b: SITE-85 + SITE-72 on main, pushing)
+# Current — 2026-09-10 14:35Z (SITE-88 region fold merged onto SITE-85/72)
 
-Owner: `grok-4.5-2026-09-10-13`. Local `992ca49a` (sell) on `f7ee6cf0` (search) on `6d1b35c3`. Do not steal SITE-88.
+Owner: `claude-opus-5-019RdEm6-2026-09-10`. Merged `wt/site-88-20260910` onto local main (SITE-72 `f7ee6cf0`, SITE-85 `992ca49a`).
 
-- **SITE-72** search fold: V3Range + V3MorphSearch. grok-4.6 median **59** (55/63/59), HF 8, rebaselined from sonnet 75. `f7ee6cf0`. Finish line 70 not met.
-- **SITE-85** /sell fold: sourced 2,071 Bend closes + MOS two-bar beside the ask. grok-4.6 median **61** (56/62/61), HF 7, rebaselined from grok-4.5 70. `992ca49a`. Landed the hash-verified commit, not the amended mismatch.
-- Catalog baseline dropped search + sell. v2 baseline empty. 15m scheduler stays. No auto-seed. Do not steal SITE-87/84 (`PlaceAreaHero`).
+- **SITE-88 in_progress, not done.** `/housing-market/central-oregon` fold: MOS is two named bars (house-mos), source is visitor English, cities ledger figure matches bar length. grok-4.6 receipt median **61** (62 · 54 · 61), rubric v1-2026-09-10, rebaselined from claude-sonnet-5 77. Honesty 9 held. **Rebaseline is not done.** Remaining: beui-number on the two-up, beautifului-insight scrubber, 375 overlay clip, 322.0 tenth.
+- **SITE-72** search fold on this main: V3Range + V3MorphSearch. grok-4.6 median **59**. `f7ee6cf0`.
+- **SITE-85** /sell fold on this main: sourced Bend figure + MOS two-bar. grok-4.6 median **61**. `992ca49a`.
+- 15m scheduler stays. No auto-seed. Do not steal SITE-87/84.
 
 # Current — 2026-09-10 (loop process: catalogs are the UX bar)
 

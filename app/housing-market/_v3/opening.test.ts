@@ -5,6 +5,7 @@ import { buildRegionFigures } from '../annual-review/_v3/annual-sections'
 import { buildRegionInstruments } from '../central-oregon/_v3/region-figures'
 import { YEAR_OVERLAY_READING, buildRegionMedianChart } from './market-charts'
 import { CLOSED_LEAD_FIGURES, MARKET_FOLD_LABEL, MARKET_LEAD_FIGURES } from './opening'
+import { REGION_LEAD_FIGURES } from '../central-oregon/_v3/region-constants'
 
 /**
  * SITE-41. The opening of a market report is a claim and a drawing, not a KPI grid.
@@ -41,10 +42,10 @@ describe('every lead figure says what it means', () => {
     }
   })
 
-  it('the region opening: four figures, four sentences', () => {
+  it('the region opening: lead figures each carry a sentence', () => {
     const { live } = buildRegionInstruments(HUD, '4.9')
-    expect(live.figures.length).toBeGreaterThanOrEqual(MARKET_LEAD_FIGURES)
-    for (const figure of live.figures.slice(0, MARKET_LEAD_FIGURES)) {
+    expect(live.figures.length).toBeGreaterThanOrEqual(REGION_LEAD_FIGURES)
+    for (const figure of live.figures.slice(0, REGION_LEAD_FIGURES)) {
       expect(figure.sentence, String(figure.label)).toBeTruthy()
     }
   })

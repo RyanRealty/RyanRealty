@@ -117,10 +117,10 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-41 round two, third pass on this instrument. The committed prior mark (score 64) came from a SITE-42 round evaluating the pre-fix page. This node's build pass then found and cut a SECOND, undiscovered KPI grid on this page — an eight-tile property-type-closed-count fold under \"the same year broken out by property type\", duplicating the composition chart drawn above it — and captioned the four-tile pace instrument. A fresh evaluator instance confirmed both fixes (median 74) and named the one remaining hairline list on the page, the 28-row \"Size of the market\" ledger, as the cheapest high-value fix; a second build pass added the same bar encoding the sibling \"Cities and towns\" ledger already carried. A THIRD fresh evaluator instance, given only the live dev server and the current shots (no prior scores), re-scored the resulting state end to end and confirmed the bar widths are real and correctly varied against each year's own closed-dollar volume (median 77, recorded here).",
-    "evaluatorModel": "claude-sonnet-5",
+    "evaluatedAt": "2026-09-10",
+    "rubricVersion": "v1-2026-09-10",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts market-report-region — grok-4.6 via grok CLI, three scorings of the SITE-88 worktree first-viewport shots plus source-line pair on http://127.0.0.1:3194/housing-market/central-oregon. Builder claude-opus-5 did not grade the page.",
+    "evaluatorModel": "grok-4.6",
     "builderModel": "claude-opus-5",
     "shotSpec": {
       "routes": [
@@ -133,7 +133,8 @@
       "states": [
         "default",
         "source-line"
-      ]
+      ],
+      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3194/housing-market/central-oregon on /Users/matthewryan/RyanRealty-wt-site-88-20260910"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/desktop.png",
@@ -141,46 +142,79 @@
       "sourceDesktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/source-desktop.png",
       "sourceMobile375": "design_system/ryan-realty/ui_kits/market-report-region/shots/source-mobile375.png"
     },
-    "shotsHash": "sha256:f214d1f06e79f2276a5c9f02e5449adaa66da5239c57d493b09437d56e05c181",
+    "shotsHash": "sha256:a46152de1e46188a149a4fd4779feb457d3961e8511a1c40a6eba430617f05cf",
     "scores": [
-      76,
-      78,
-      77
+      62,
+      54,
+      61
     ],
-    "score": 77,
-    "breakdown": {
-      "design": 23,
-      "originality": 22,
-      "interaction": 11,
-      "craft": 12,
+    "score": 61,
+    "criteria": {
+      "designQuality": 18,
+      "originality": 16,
+      "interaction": 7,
+      "craft": 11,
+      "honestyFunction": 9
+    },
+    "perCriterion": {
+      "design": 18,
+      "originality": 16,
+      "interaction": 7,
+      "craft": 11,
       "honesty": 9
     },
-    "beats": "Zillow's regional market page: one aggregate market-temperature figure, no visible source trace, no per-city breakout without navigating away. This page wins on named-source specificity and breadth in one scroll — a disclosed source, method and as-of date beside city-by-city months of supply and median price for seven towns, both city ledgers and the 28-year closed-sales ledger now bar-encoded.",
+    "beats": "Redfin Data Center (https://www.redfin.com/news/data-center/) — we win on months of supply as two named bars and on the claim-first sentence over the chart; we lose on a scrubber that isolates a year.",
+    "adaptedFrom": [
+      { "id": "house-instrument" },
+      { "id": "house-mos" },
+      { "id": "house-chart" }
+    ],
     "defects": [
       {
-        "section": "#summary, #faq, #explore",
+        "section": "$749,900 / 572 two-up under the chart",
         "severity": "taste",
-        "finding": "Three sections down the back half of the page share one primitive (a plain eyebrow/heading/definition-list shape) with nothing that would make a reader screenshot them — the same-shape-repeated tell, TASTE.md's named stacked-section pattern, even though no three of them sit literally consecutive."
+        "finding": "After MOS was correctly taken off tiles, the fold still closes on two static posters ($749,900 median list, 572 under contract). Sentences keep them off a KPI-grid tell, but nothing ticks or sparklines. Job is live sourced counts.",
+        "replaceWith": "beui-number"
       },
       {
-        "section": "#faq",
+        "section": "MEDIAN SALE PRICE BY MONTH",
         "severity": "taste",
-        "finding": "Five question and answer pairs render fully expanded with no disclosure or reveal mechanic — the banned wall-of-text tell, unchanged from the prior round."
+        "finding": "Three year overlays share one navy field; the August tooltip is the only interrogation. You cannot isolate a year or scrub the series. Job is paged insight with a scrubber, adapted into V3Chart, not a hairball overlay.",
+        "replaceWith": "beautifului-insight"
       },
       {
-        "section": "#pace",
+        "section": "Cities and towns",
         "severity": "taste",
-        "finding": "The two-figure live pace instrument (days to an offer, closed in the last 30 days) now carries a sentence per figure but still has no chart, sparkline or hover — the floor form TASTE.md calls out as never the ceiling."
+        "finding": "Each city encodes months of supply as one meter bar plus 3.7 mo (La Pine 9.0, Bend 3.7). That is the banned MOS tile drawn sideways. House MOS is two named bars (homes for sale vs a month of sales), which the region fold already got right. Desktop also drops the for-sale counts mobile shows.",
+        "replaceWith": "house-mos"
+      },
+      {
+        "section": "how we calculate this",
+        "severity": "taste",
+        "finding": "Opened source is a methodology essay (formula, 4/6 thresholds, Pace figures behind the fold) — the dull citation the class reference named, now behind a disclosure but still not a one-line buyer citation.",
+        "replaceWith": null
+      },
+      {
+        "section": "mobile375 first viewport / chart",
+        "severity": "craft",
+        "finding": "At 375px the Y-axis labels collide with the series, and the fold clips $749,900 so the first screen ends on a cut numeral.",
+        "replaceWith": null
+      },
+      {
+        "section": "HOMES FOR SALE VS A MONTH OF SALES claim",
+        "severity": "craft",
+        "finding": "322.0 sales a month prints a tenth of a closing against 1,550 homes — spreadsheet precision, not a counted month of sales.",
+        "replaceWith": null
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-09",
-      "score": 64,
+      "score": 77,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:1f747107a0e9ec714d88e156c4376dad77a550fb14e164b6a1a551a02b2c00b3"
+      "shotsHash": "sha256:f214d1f06e79f2276a5c9f02e5449adaa66da5239c57d493b09437d56e05c181"
     },
-    "rebaselineReason": "shotsHash differs — the second KPI-grid fold (property-type closed counts under the closed-year composition chart) was cut and the closed-sales-by-year ledger gained bar encoding, changing the rendered page the shots capture."
+    "rebaselineReason": "evaluatorModel, rubricVersion, and shotsHash differ — grok-4.6 on rubric v1-2026-09-10 against SITE-88 fold shots, vs claude-sonnet-5 on v1-2026-09-08."
   }
 }

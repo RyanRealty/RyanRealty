@@ -83,24 +83,25 @@ export function buildCityLedger(
       href: `/housing-market/${slug}`,
       when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} for sale`),
       what: v3Text(label),
-      detail:
-        snapshot.months_of_supply != null
-          ? v3Text(`${formatMonthsOfSupply(snapshot.months_of_supply)} months of supply`)
-          : undefined,
-      value: v3Text(formatPriceExact(snapshot.median_list_price)),
+      // SITE-88: bar length AND the figure are months of supply. Median list
+      // stays on the row as the detail so the eye does not read a long bar as
+      // a high price (La Pine 9.0 next to $499,000).
+      detail: v3Text(`median list ${formatPriceExact(snapshot.median_list_price)}`),
+      value:
+        snapshot.months_of_supply != null && snapshot.months_of_supply > 0
+          ? v3Text(`${formatMonthsOfSupply(snapshot.months_of_supply)} mo`)
+          : v3Text(formatPriceExact(snapshot.median_list_price)),
       id: slug,
-      weight: snapshot.median_list_price,
+      weight:
+        snapshot.months_of_supply != null && snapshot.months_of_supply > 0
+          ? snapshot.months_of_supply
+          : undefined,
     })
   }
   rows.sort((a, b) => String(a.what).localeCompare(String(b.what)))
-  // THE LIST IS THE COMPARISON (SITE-41): weight is stashed as the raw median through
-  // the loop above (sort would scramble a parallel array by index), then converted to
-  // a 0-1 share of this list's own maximum here, after every row and the sort are
-  // both settled — the same "table wearing hairlines" fix as the sibling city ledger
-  // in [...slug]/_v3/geo-figures.ts.
-  const maxMedian = rows.reduce((max, r) => Math.max(max, r.weight ?? 0), 0)
-  if (maxMedian > 0) {
-    for (const row of rows) row.weight = (row.weight ?? 0) / maxMedian
+  const maxSupply = rows.reduce((max, r) => Math.max(max, r.weight ?? 0), 0)
+  if (maxSupply > 0) {
+    for (const row of rows) row.weight = (row.weight ?? 0) / maxSupply
   } else {
     for (const row of rows) row.weight = undefined
   }
