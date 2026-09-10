@@ -56,13 +56,21 @@ describe('homeFieldItems', () => {
       9,
     )
     expect(items).toHaveLength(1)
-    expect(items[0]?.photoSrc).toContain('sparkplatform.com')
+    expect(items[0]?.photoSrc).toBe('https://cdn.resize.sparkplatform.com/example.jpg')
     expect(items[0]?.href).toContain('220111111')
     expect(items[0]?.href).toMatch(/^\//)
     // Card titles carry the city; city left the meta line (Matt 2026-08-27).
     expect(items[0]?.meta).toBe('3 bd · 2 ba · 1,800 sqft')
     expect(items[0]?.city).toBe('Bend')
     expect(items[0]?.typeKey).toBe('house')
+  })
+
+  it('asks Spark for the row size so the homepage Flight never names a 1600 plate', () => {
+    const spark = 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260501165710852242000000-o.jpg'
+    const items = homeFieldItems([tile({ photoUrl: spark })], 9)
+    expect(items[0]?.photoSrc).toBe(
+      'https://cdn.resize.sparkplatform.com/ore/320x240/true/20260501165710852242000000-o.jpg',
+    )
   })
 
   it('filters the listed set by MLS city', () => {

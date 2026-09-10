@@ -16,6 +16,7 @@ import type { ListingTile } from '@/lib/data'
 import { v3Text, type V3FieldItem, type V3LedgerFigureRow } from '@/components/site/v3'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
 
 /** Pins at or above this count are a map. Below it, the plat is a list. */
@@ -66,7 +67,9 @@ export function toFieldEntry(tile: ListingTile, hasVideo: boolean): FieldEntry |
       street ||
       'Listing',
     meta: metaLine(tile.beds, tile.baths, hasVideo),
-    photoSrc: tile.photoUrl?.trim() || undefined,
+    photoSrc: tile.photoUrl?.trim()
+      ? listingRowPhotoSrc(tile.photoUrl)
+      : undefined,
     lat: tile.lat,
     lng: tile.lng,
   }

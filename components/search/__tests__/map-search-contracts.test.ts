@@ -1057,12 +1057,13 @@ describe('SEARCH_UX_WAVE3 P6/P7 polish (2026-08-11)', () => {
     expect(sheet).toMatch(/min-w-0/)
   })
 
-  it('P7: first four search cards request image priority for LCP', () => {
+  it('P7: one search card requests image priority for LCP (SITE-60)', () => {
     const card = readSrc('components/site/ListingCard.tsx')
     expect(card).toMatch(/priority\?: boolean/)
     expect(card).toMatch(/priority=\{priority\}/)
     for (const rel of ['components/search/MapSearchView.tsx', 'components/search/SearchResults.tsx']) {
-      expect(readSrc(rel)).toMatch(/priority=\{cardIndex < 4\}/)
+      expect(readSrc(rel)).toMatch(/priority=\{cardIndex === 0\}/)
+      expect(readSrc(rel)).not.toMatch(/priority=\{cardIndex < 4\}/)
     }
   })
 })

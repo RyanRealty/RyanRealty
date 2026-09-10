@@ -16,6 +16,7 @@ import {
   type GetListingTilesFilter,
 } from '@/lib/data/listings/getListingTiles'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
 
 export type PlaceOpeningTypeKey = 'houses' | 'condo' | 'land'
@@ -109,7 +110,7 @@ async function fetchPlaceOpeningListings(
             streetName: tile.streetName,
             streetSuffix: tile.streetSuffix,
           }) ?? tile.city ?? type.label
-        listings.push({ href: listingTileHref(tile), photoSrc: photo, title })
+        listings.push({ href: listingTileHref(tile), photoSrc: listingRowPhotoSrc(photo), title })
         if (listings.length >= 4) break
       }
       const newCount30d = count > 0 ? count : null

@@ -7,6 +7,7 @@ import { getSearchListings, type SearchFilters } from '@/app/actions/search'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
 import { listingTileHref, displaySubdivision } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { V3ListingRow } from '@/components/site/v3'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
@@ -277,11 +278,11 @@ export default function SearchResults({
               />
               <V3ListingRow
                 showPricePerSqft
-                priority={cardIndex < 4}
+                priority={cardIndex === 0}
                 listing={{
                   listingKey: key,
                   href,
-                  photoUrl: listing.PhotoURL,
+                  photoUrl: listing.PhotoURL ? listingRowPhotoSrc(listing.PhotoURL) : listing.PhotoURL,
                   price: listing.ListPrice,
                   addressLine,
                   cityLine,

@@ -16,6 +16,7 @@ import type { ListingTile } from '@/lib/data/types/listing'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
 
 /**
@@ -82,7 +83,7 @@ export function cityFieldItems(tiles: readonly ListingTile[], limit?: number): V
           streetSuffix: tile.streetSuffix,
           city: tile.city,
         }) || street,
-      ...(photo ? { photoSrc: photo } : {}),
+      ...(photo ? { photoSrc: listingRowPhotoSrc(photo) } : {}),
       ...(meta ? { meta } : {}),
       lat: tile.lat,
       lng: tile.lng,

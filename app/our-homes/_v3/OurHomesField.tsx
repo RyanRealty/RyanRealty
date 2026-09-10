@@ -12,6 +12,10 @@ import {
   V3_ROOT_CLASS,
   type V3FieldItem,
 } from '@/components/site/v3'
+import {
+  LISTING_FIELD_LEAD_PHOTO_SIZE,
+  listingRowPhotoSrc,
+} from '@/lib/listing/row-photo'
 import './our-homes-field.css'
 
 function OurHomePhotos({ items }: { items: readonly V3FieldItem[] }) {
@@ -24,13 +28,13 @@ function OurHomePhotos({ items }: { items: readonly V3FieldItem[] }) {
               <span className="relative block">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={item.photoSrc}
+                  src={listingRowPhotoSrc(item.photoSrc, LISTING_FIELD_LEAD_PHOTO_SIZE)}
                   alt=""
                   width={720}
                   height={192}
                   className="h-48 w-full object-cover"
                   loading={index < 2 ? 'eager' : 'lazy'}
-                  fetchPriority={index < 2 ? 'high' : 'auto'}
+                  fetchPriority={index === 0 ? 'high' : 'auto'}
                 />
               </span>
             ) : null}

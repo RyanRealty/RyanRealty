@@ -24,6 +24,7 @@ import { GEO_SCOPE_KEYS, geoScopeLabel, stripGeoScope } from '@/components/searc
 import { nextSearchUrlWithBbox } from '@/lib/search/publish-map-bbox'
 import { listingTileHref, displaySubdivision } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
 import { useViewerListingState } from '@/components/search/use-viewer-listing-state'
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
@@ -180,7 +181,7 @@ function toMapListing(l: ListingTileRow): ListingForMap {
     PostalCode: l.PostalCode,
     BedroomsTotal: l.BedroomsTotal,
     BathroomsTotal: l.BathroomsTotal,
-    PhotoURL: l.PhotoURL,
+    PhotoURL: l.PhotoURL ? listingRowPhotoSrc(l.PhotoURL) : l.PhotoURL,
     TotalLivingAreaSqFt: rowSqft(l),
     PropertyType: l.PropertyType,
     PropertySubType: l.PropertySubType,
@@ -1140,9 +1141,9 @@ export default function MapSearchView({
                   href={href}
                   photoUrls={
                     l.photoUrls && l.photoUrls.length > 0
-                      ? l.photoUrls
+                      ? l.photoUrls.map((url) => listingRowPhotoSrc(url))
                       : l.PhotoURL
-                        ? [l.PhotoURL]
+                        ? [listingRowPhotoSrc(l.PhotoURL)]
                         : []
                   }
                   price={l.ListPrice}
@@ -1166,7 +1167,7 @@ export default function MapSearchView({
                       : '3D Walkthrough'
                   }
                   ppsfBand={viewClaim.band}
-                  priority={cardIndex < 4}
+                  priority={cardIndex === 0}
                   className={cn(isSelected && 'is-active', !isSelected && isHovered && 'is-hot')}
                   onOpenTour={
                     l.tourUrl || l.has_virtual_tour

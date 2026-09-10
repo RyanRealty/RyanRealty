@@ -50,6 +50,7 @@
  */
 
 import { formatCount } from '@/lib/format/count'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 
 export type PlaceAlertsGeoType = 'city' | 'neighborhood'
 
@@ -412,7 +413,10 @@ export function buildPlaceAlertTypes(input: {
               noun: bucket.noun,
               table,
             }),
-      listings: bucket.listings,
+      listings: bucket.listings.map((listing) => ({
+        ...listing,
+        photoSrc: listingRowPhotoSrc(listing.photoSrc),
+      })),
     })
   }
   return options

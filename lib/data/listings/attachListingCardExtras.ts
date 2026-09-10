@@ -4,6 +4,7 @@
  * office name, and extra photo URIs for the card carousel.
  */
 import { supabaseAnon } from '@/lib/data/client'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 
 const PHOTO_CAP = 8
 const ROW_CAP = 60
@@ -18,9 +19,9 @@ type DetailsPhotoJson = {
   Uri300?: string
 }
 
-/** Prefer large publish URLs so rail/split cards stay crisp at 1440. */
+/** Same listing photograph; Spark size is rewritten to the card render. */
 function bestUri(p: DetailsPhotoJson): string | null {
-  return (
+  const raw =
     p.Uri1600 ??
     p.UriLarge ??
     p.Uri1280 ??
@@ -29,7 +30,7 @@ function bestUri(p: DetailsPhotoJson): string | null {
     p.Uri640 ??
     p.Uri300 ??
     null
-  )
+  return raw ? listingRowPhotoSrc(raw) : null
 }
 
 export type ListingCardExtras = {
@@ -74,7 +75,7 @@ export async function attachListingCardExtras(
       if (photos.length >= PHOTO_CAP) break
       push(bestUri(photo))
     }
-    if (photos.length === 0) push(raw.PhotoURL)
+    if (photos.length === 0) push(raw.PhotoURL ? listingRowPhotoSrc(raw.PhotoURL) : raw.PhotoURL)
     const original =
       raw.original_list_price != null && Number.isFinite(Number(raw.original_list_price))
         ? Number(raw.original_list_price)
