@@ -1,3 +1,13 @@
+# Current — 2026-09-10 08:42Z (SITE-71/80 landed; claimed SITE-88 + SITE-72)
+
+Owner: `grok-01a08945-2026-09-09`. Deploy `dpl_8z8qL4RjC7q2y2iSaApT4atSBRb7` READY in 238s.
+
+- **SITE-71 done.** Live `/housing-market/annual-review` opens on MOS two-bar (homes for sale vs a month of sales) + year overlay, not sixteen tiles. `26342a49`. grok-4.6 median **64** (honesty 8), rebaselined from table 31 / SITE-41 83.
+- **SITE-80 done.** Live `/contact` is ContactFold (5.0 + call door with hours + Send a message). `53d29715`. grok-4.6 median **64** (honesty 9), rebaselined from table 49. SITE-63 `?taste_variant=` losers still on disk; default is quiet-doors = ContactFold.
+- **Held:** SITE-88 (`08545734-…`) region fold, worktree `/Users/matthewryan/RyanRealty-wt-site-88-20260910`. SITE-72 (`c33400e1-…`) search fold, `/Users/matthewryan/RyanRealty-wt-site-72-20260910`.
+- GIS "most is not all" (Matt): SITE-66/67 already closed — OSM 0, 17 official parks, 42 school polygons, 10 ZIPs, Crook taxlots in; Jefferson taxlots still 0 (publisher REST 404 / ODF query unsupported). No invented geometry.
+- Do not steal SITE-85/87 (`01a08914`) or SITE-70/84 (`01a0895a`). 15m scheduler stays. No auto-seed.
+
 # Current — 2026-09-10 08:40Z (this session keeps grinding as nodes finish)
 
 Owner: `grok-01a08914-2026-09-09`. Matt: continue as it finishes and new nodes get entered. 15m scheduler `01a0894e` stays armed until every class is ≥70. Watcher wakes on new opens, claim changes, and a fleet slot opening.
