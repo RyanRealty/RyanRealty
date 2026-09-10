@@ -740,6 +740,8 @@ export function walkPricingLadder(
   )
   const tiers = opts.tiers ?? pricingTierLadder({ customOrNew: customLadder })
   const byKey = new Map<string, SelectedPricingComp>()
+  /** Sales already held, so one closed sale cannot enter a set twice. */
+  const bySale = new Set<string>()
   const rungs: PricingLadderRung[] = []
   const tiersUsed: string[] = []
   const trace: string[] = [
@@ -814,12 +816,21 @@ export function walkPricingLadder(
     let added = 0
     for (const sale of pool) {
       if (byKey.has(sale.listingKey)) continue
+      // ONE SALE, ONE ROW. A relisting of the same closed transaction carries a
+      // new listing key, so keying on that alone lets one sale into a set twice
+      // — once in the median and again at an end of the printed range. Address
+      // plus city plus close price: two different homes do not close at the
+      // exact same price at the same street address, and a duplicate always
+      // agrees with itself on price even when it disagrees on square footage.
+      const saleKey = `${sale.address.trim().toLowerCase()}|${(sale.city ?? '').trim().toLowerCase()}|${Math.round(sale.closePrice)}`
+      if (bySale.has(saleKey)) continue
       const { ok, roomDifference } = passesTier(subject, sale, tier, asOf, cells, priceAnchor)
       if (!ok) continue
       byKey.set(sale.listingKey, {
         ...toSelected(subject, sale, asOf, tier.name),
         roomDifference: roomDifference ?? null,
       })
+      bySale.add(saleKey)
       added++
     }
     rungs.push({

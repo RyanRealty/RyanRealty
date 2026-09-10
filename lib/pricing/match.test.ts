@@ -30,11 +30,17 @@ function subject(over: Partial<PricingSubject> = {}): PricingSubject {
   }
 }
 
+let saleSeq = 0
 function sale(over: Partial<PricingSale> = {}): PricingSale {
+  // A DISTINCT ADDRESS PER SALE unless the test names one. The ladder now
+  // refuses a second row for the same address at the same close price — one
+  // closed sale may not enter a set twice — and every fixture built on the old
+  // shared '9 Comp St' default was two sales of one house.
+  saleSeq += 1
   return {
     listingKey: over.listingKey ?? `K${Math.random().toString(16).slice(2)}`,
     listNumber: null,
-    address: over.address ?? '9 Comp St',
+    address: over.address ?? `${saleSeq} Comp St`,
     city: 'Bend',
     citySlug: 'bend',
     subdivision: 'Kenwood',
@@ -1158,5 +1164,26 @@ describe('Delta 4 — rural homes are read as property (Matt 2026-09-09)', () =>
     const subj = subject({ publicRemarks: 'Detached shop in the back yard.', zoning: 'RS' })
     const pool = [sale({ publicRemarks: 'Nice yard.', zoning: 'RS', listingKey: 'TOWN' })]
     expect(walkPricingLadder(subj, pool, { asOf }).comps.map((c) => c.listingKey)).toContain('TOWN')
+  })
+})
+
+describe('one sale, one row', () => {
+  it('refuses a relisting of the same closed sale, whatever its listing key says', () => {
+    const pool = [
+      sale({ listingKey: 'FIRST', address: '2745 Ordway', closePrice: 799_000, sqft: 1926, closeDate: '2026-06-22' }),
+      sale({ listingKey: 'RELIST', address: '2745 Ordway', closePrice: 799_000, sqft: 1925, closeDate: '2026-03-14' }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(out.comps).toHaveLength(1)
+    expect(out.comps[0]!.listingKey).toBe('FIRST')
+  })
+
+  it('keeps two real sales of the same house at different prices', () => {
+    const pool = [
+      sale({ listingKey: 'A', address: '2745 Ordway', closePrice: 799_000, closeDate: '2026-06-22' }),
+      sale({ listingKey: 'B', address: '2745 Ordway', closePrice: 640_000, closeDate: '2025-09-14' }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B'])
   })
 })

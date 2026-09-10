@@ -274,6 +274,24 @@ function emptyDiagnostics(
  * recorded in `trace` (prose, for the rendered citations) and in `diagnostics`
  * (structured, for build_summary).
  */
+/**
+ * ONE SALE, ONE ROW. A relisting of the same closed transaction carries a NEW
+ * ListingKey, so a comp set keyed only on that can hold the same sale twice:
+ * 2745 Ordway entered a six-comp set twice at $799,000 (2339 Labiche, recorded
+ * 926 and 925 sqft five months apart), counting once in the median and again
+ * at the end of the printed range.
+ *
+ * The key is address + city + CLOSE PRICE, deliberately not address alone.
+ * Two condos in one building often carry no unit number in the MLS, and
+ * collapsing them would silently throw away a real comp; two different homes
+ * closing at the exact same price at the same street address is not a thing.
+ * Square footage is out of the key because the duplicate above disagreed with
+ * itself by one foot.
+ */
+function saleKey(comp: { address: string; city?: string | null; closePrice: number }): string {
+  return `${comp.address.trim().toLowerCase()}|${(comp.city ?? '').trim().toLowerCase()}|${Math.round(comp.closePrice)}`
+}
+
 export async function selectComps(
   subject: CmaSubject,
   opts: { subjectIrrigation?: IrrigationClass | null; subjectZoning?: string | null } = {},
@@ -300,6 +318,8 @@ export async function selectComps(
   const ladder: CompTierTrace[] = []
   const excludedTotals = emptyExclusions()
   const byKey = new Map<string, CmaComp>()
+  /** Sales already held, so one closed sale cannot enter a comp set twice. */
+  const bySale = new Set<string>()
 
   // Lot-character band for the QUERY. The in-memory lotCharacterCompatible check
   // is the authoritative exclusion (it also rejects an in-town lot for an acreage
@@ -621,6 +641,15 @@ export async function selectComps(
         rung.excluded.duplicate++
         continue
       }
+      // ONE SALE PER HOUSE. A relisting of the same closed transaction carries
+      // a NEW ListingKey, so keying on that alone let 2745 Ordway into a
+      // six-comp set twice at $799,000 (2339 Labiche) — the same house counted
+      // twice in the median AND at both ends of the printed range. The ladder
+      // walks newest rungs first, so the sale already held is the one to keep.
+      if (bySale.has(saleKey(comp))) {
+        rung.excluded.duplicate++
+        continue
+      }
 
       // HARD EXCLUSION at every tier (Matt 2026-07-28): acreage and in-town lots
       // are different products with different buyer pools, at any distance.
@@ -850,6 +879,7 @@ export async function selectComps(
         tier.competing && compArea && compArea !== subjectArea ? marketAreaName(compArea) : null
 
       byKey.set(comp.listingKey, comp)
+      bySale.add(saleKey(comp))
       added++
     }
     rung.comps_added = added
