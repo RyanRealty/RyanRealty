@@ -14,6 +14,24 @@ Owner: Claude (Opus 5), session claude-opus5-9d4aa6fc-2026-09-09, main checkout.
 3. **Re-measure and continue.** After SITE-41 lands, run the instrument across all 25 classes and
    seed the next round from the bottom.
 
+**Ruling 3 has a hole in it, and it is now a node.** There is no reseeding. Both halves exist and
+nothing joins them: `scripts/taste-table.mjs` scores every class and `--diff` prints everything under
+the finish line of 70, while `scripts/seed-site-queue.ts` holds the backlog as a hardcoded array and
+**never reads the table** (verified by grep — the only mention of `taste-table.json` inside the
+seeder is prose in SITE-51's own description). Neither is on a cron. So the path from "this class
+scored 52" to "a node a session can claim" runs through a person hand-writing a TypeScript object.
+Run the instrument today and the measuring half finishes and produces nothing claimable.
+
+**Seeded as SITE-60, open and eligible now.** It emits a DRAFT seed per under-the-line class for
+review, never an auto-seeded node: a row written by a machine from a score carries no diagnosis, and
+the queue's whole value is that each row states a cause and an accept test. Review-and-paste instead
+of compose-from-scratch, with the next free `version_gap` read off the existing seeds rather than
+guessed, because that is the other half of the hop and where two rounds collide on one id.
+
+**Whoever takes ruling 3, take SITE-60 first or accept the manual hop knowingly.** It is small, it is
+not on the critical path of any page, and it is the difference between a round that continues on its
+own and a round that stalls silently after the scores land.
+
 **A finding I answered rather than asked about.** The grey placeholder squares on /oregon/[city]
 listing rows (10 of 12 on Medford) are NOT a licensing or opt-out problem: sampled through the DAL,
 40 of 40 active Medford listings carry a non-empty PhotoURL, zero are internet opt-out, zero are
