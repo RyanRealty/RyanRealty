@@ -121,6 +121,26 @@ judge is held to the same same-street rule — it once excluded the identical
 house next door for sitting "outside the range this analysis prices the subject
 in", which is the band the other comps set.
 
+**The house next door anchors the number** (`applyStreetAnchor` in
+`lib/cma/pricing.ts`). A sale on the subject's own street at the subject's own
+size is not one comp among several; it is the closest thing to a sale of this
+house that exists. The recommendation may sit at most `SAME_STREET_PREMIUM_MAX`
+above it and no further without a person saying so, and that sale becomes the
+comp-supported floor so the number never prints at the bottom of its own range.
+Applied in `computePricing` AND again in `priceCmaSet`, because the engine cover
+re-derives every tier in between; it is idempotent and keeps the first baseline.
+23 Benaiah went from $653,000 to $565,000 against a twin that sold at $512,000.
+
+**The last-resort rung stops at 25% on size** (`WIDENED_SQFT_BAND`), down from
+45%. A sale half again the subject's size cleared the old band while only half
+the gap is ever adjusted back, and that one number was behind most of the ranges
+printing wider than 1.2x. A document that now falls short fails rather than
+prints a wide guess.
+
+**One comp floor across both ladders.** `MIN_COMPS` and `PRICING_MIN_COMPS` are
+both 3. They were 5 and 3, and the difference was drift: the same home priced or
+failed depending on which ladder `pickCompSource` sent it down.
+
 **Conflicting MLS facts — "flag it, use the history"**
 (`lib/cma/subject-room-conflict.ts`). When the current listing's bed or bath
 count disagrees with this home's own closed sale at the same square footage,
