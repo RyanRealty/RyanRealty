@@ -84,7 +84,7 @@ JSON file. As of 2026-09-08 it records the INSTRUMENT, not just the number:
 ```json
 {
   "evaluatedAt": "YYYY-MM-DD",
-  "rubricVersion": "v1-2026-09-08",
+  "rubricVersion": "v1-2026-09-10",
   "evaluator": "separate agent id and how it was run — never the builder, never 'pending'",
   "evaluatorModel": "claude-opus-4-1",
   "builderModel": "claude-sonnet-4-5",
@@ -116,10 +116,13 @@ JSON file. As of 2026-09-08 it records the INSTRUMENT, not just the number:
 }
 ```
 
-**Rubric version: `v1-2026-09-08`** — the five-criterion table below. Change a
-weight, a criterion, or a passing bar and the version changes with it, so a
-receipt says which rubric produced its number. Versions: `v1-2026-09-08`
-(first versioned rubric; the table is the one in use since 2026-09-01).
+**Rubric version: `v1-2026-09-10`** — the five-criterion table below, plus the
+SITE-63 rule that every data-display defect names a house replacement form.
+Change a weight, a criterion, a passing bar, or the form-prescription rule and
+the version changes with it, so a receipt says which rubric produced its
+number. Versions: `v1-2026-09-08` (first versioned rubric); `v1-2026-09-10`
+(evaluator must set `replaceWith` from the house form list — see
+`design_system/public/taste-evaluator.v1-2026-09-10.md`).
 
 Each field is checked, not decorative (`scripts/check-taste-canon.mjs`, contract
 in `scripts/lib/taste-receipt.mjs`):
@@ -166,6 +169,13 @@ The builder never grades its own page. After the ritual, spawn an evaluator
 screenshots and the rendered page's URL) with this rubric. It returns named
 defects with the section id and three scorings; the builder fixes and
 re-submits. Ship only when the evaluator passes every row.
+
+**Evaluator prompt file:** `design_system/public/taste-evaluator.v1-2026-09-10.md`
+(loaded by `scripts/taste-evaluate.ts`). On every data-display defect the
+evaluator names which house form replaces it (`replaceWith`: hero figure ·
+stat tile with sparkline · emphasis line with a scrubber · horizontal bar ·
+dot strip · slope · small multiples · beeswarm · map with data-encoded cells ·
+table). Diagnosis alone is incomplete.
 
 **The pass runs against the lane's own dev server, BEFORE the branch is
 pushed** (2026-09-08). A defect found before the push costs a fix. The same
@@ -272,8 +282,14 @@ description, and feed a machine-readable token sheet from a shipped site you
 admire as pre-build context. An installed generic "anti-slop" skill file is a
 starting constraint, never the answer: used alone it swaps one default
 aesthetic for another, shared by everyone who installed it. Our references are
-our own — the brand tokens, the Old Mill hero, Central Oregon itself. The
-standing set for this site:
+our own — the brand tokens, the Old Mill hero, Central Oregon itself.
+
+**Per-class reference files (SITE-63):** every class under 70 on the taste
+table has `design_system/public/references/<class>.md` — two or three named
+external pages with one sentence each on what works, plus at least one shipped
+component path to adapt. Cite that file from the SITE node brief and hand it
+to the evaluator so `beats` is judged against something named. The standing
+set for this site:
 
 - **Editorial data journalism** (the claim-first headline over a chart; the
   scrubber that lets the reader find their own year; annotation on the mark).
@@ -299,6 +315,18 @@ one prop, rendered side by side on a decision sheet (screenshots, desktop +
 mobile) for Matt to pick per surface. The picked variant becomes the one canon
 for that section; the losing variants are DELETED in the commit that records
 the pick. One surface, one look, forever (anti-Frankenstein).
+
+**Capture (SITE-63):** pages switch on `?taste_variant=<name>`. Run:
+
+```bash
+node scripts/take-route-shots.mjs --variants a,b,c <class> <url>
+```
+
+That writes every variant at 1440 and 375 into
+`design_system/public/references/<class>/variants/` and one HTML decision
+sheet at `design_system/public/references/<class>-decision-sheet.html`. Record
+the sheet path and the one-line pick question on the SITE node; do not delete
+losers until Matt answers.
 
 ## Design the CLASS, not the instance (Matt 2026-09-01: "one-off approach")
 

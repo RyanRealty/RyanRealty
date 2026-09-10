@@ -53,46 +53,20 @@ import { parseJsonLoose } from '../lib/grok/text'
  */
 const EVALUATOR_MODEL = 'grok-4.6'
 const GROK_CLI = process.env.GROK_CLI ?? `${process.env.HOME}/.grok/bin/grok`
+/** SITE-63 bumped rubric — form prescription (`replaceWith`) is required. */
+const RUBRIC_PATH = 'design_system/public/taste-evaluator.v1-2026-09-10.md'
+const RUBRIC_VERSION = 'v1-2026-09-10'
 
 config({ path: '.env.local' })
 
 const UI_KITS = 'design_system/ryan-realty/ui_kits'
 
-/**
- * TASTE.md's rubric, quoted rather than paraphrased. The evaluator's prompt
- * wording is itself a design lever (Anthropic found "museum quality" pushed
- * outputs into an unintended register), so this uses that file's own words —
- * quiet, editorial, expensive, data-first, Central Oregon — and never "modern
- * SaaS".
- */
-const RUBRIC = `
-You are judging one page of a Bend, Oregon real-estate brokerage's public website.
-The house register is QUIET, EDITORIAL, EXPENSIVE and DATA-FIRST: navy #102742 on
-cream #faf8f4, two colors only, hairline rules, no elevation shadows, radius 0 on
-every box, a display serif on headings and figures, tabular numerals, Central
-Oregon subject matter. Judge it against the best version of the idea you have
-seen, not against a generic web page. Never reach for "modern SaaS" as a
-compliment or a criticism; it is not the register in question.
-
-Score five criteria, weighted, out of 100 total:
-
-| Criterion | Weight | Passing looks like |
-|---|---|---|
-| Design quality | 30 | One coherent identity across the page; rhythm, not a stack. A reader could name the brand from a cropped section. |
-| Originality | 30 | Deliberate choices a template would not make. The reader would screenshot a section to show someone. No section shape repeats down the page. |
-| Interaction | 15 | Every data section rewards a hover, tap, scrub, or toggle with more data. Nothing moves for decoration. |
-| Craft | 15 | Hierarchy by size AND weight, spacing on the scale, AA contrast, tabular numerals, no orphaned labels at 375, and one radius and one spacing rhythm across everything visible in a viewport. |
-| Honesty and function | 10 | Every figure has its source trace; loading, empty, and error states render; the page's job completes in one path. |
-
-BANNED TELLS, each of which costs points wherever you see one:
-- Walls of text: a section whose main content is more than two paragraphs of prose with no figure, image, map or interactive element.
-- Scrolling lists as the design: a list past six rows with no visual encoding.
-- KPI grids: a number, a percentage and jargon, with no plain sentence saying what it means for the reader.
-- The stacked-section page: three or more consecutive sections built as eyebrow, heading, rows, source.
-- Raw slugs, internal labels or methodology jargon in anything a visitor reads.
-- Purple gradients, Inter/Roboto, icon card grids, frosted glass, shadow soup, centered-everything heroes, emoji headers, hover bounce.
-- Missing states: a display that only renders the happy path.
-`.trim()
+function loadRubric(): string {
+  if (!existsSync(RUBRIC_PATH)) {
+    throw new Error(`taste-evaluate: missing rubric at ${RUBRIC_PATH}`)
+  }
+  return readFileSync(RUBRIC_PATH, 'utf8').trim()
+}
 
 function parseArgs(argv: string[]) {
   const out: { routeKey?: string; shots?: string[]; url?: string; beat?: string; focus?: string } = {}
@@ -126,7 +100,7 @@ async function main() {
 
   const images = files.map((f) => ({
     name: f.split('/').pop()!,
-    dataUrl: `data:image/png;base64,${readFileSync(f).toString('base64')}`,
+    path: resolve(f),
   }))
 
   const bar =
@@ -134,19 +108,26 @@ async function main() {
       ? 'There is NO previous recorded mark for this page class. This is its first mark, so score it on its merits with no anchor.'
       : `The previous recorded mark for this page class is ${args.beat}. Do not anchor on it: score what you see. State plainly whether this is better or worse than a ${args.beat}/100 page and why.`
 
+  const refPath = join('design_system/public/references', `${args.routeKey}.md`)
+  const refNote = existsSync(refPath)
+    ? `A class reference file exists at ${refPath}. Prefer naming \`beats\` against one of the pages listed there.`
+    : ''
+
   const question = [
-    RUBRIC,
+    loadRubric(),
     '',
+    `Rubric version for the receipt: ${RUBRIC_VERSION}.`,
     `The shots, in order: ${images.map((i) => i.name).join(', ')}.`,
     'Names ending -desktop are 1440px wide; names ending -mobile375 are 375px wide.',
     args.url ? `The page is rendered at ${args.url}.` : '',
     args.focus ? `What changed in this pass: ${args.focus}` : '',
+    refNote,
     bar,
     '',
     'Score the SAME shots THREE separate times, independently, as three different reviewers would. One pass is noise.',
-    'Then list the named defects behind the number: each one names the section (a css class or an id you can see), the severity (blocking | taste | craft), and a finding of at least ten characters that says what is wrong, not what you would like.',
+    'Then list the named defects behind the number: each one names the section (a css class or an id you can see), the severity (blocking | taste | craft), a finding of at least ten characters, and replaceWith (a house form string or null).',
     'Empty defects is only allowed above 95.',
-    'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"..."}],"verdict":"<two sentences>"}',
+    'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"...","replaceWith":"hero figure"|null}],"verdict":"<two sentences>"}',
   ]
     .filter(Boolean)
     .join('\n')
@@ -158,10 +139,10 @@ async function main() {
   // The CLI is an agent: it is told to open the files rather than handed base64,
   // which is also why the shots must be absolute paths.
   const prompt = [
-    'You are a design critic reviewing a page you did not build. You are hard to impress and you say why. You never praise a page for being clean; clean is the floor. You name what is dull.',
+    'You are a design critic reviewing a page you did not build. You are hard to impress and you say why. You never praise a page for being clean; clean is the floor. You name what is dull. When the display is a banned data form, you name the house form that replaces it.',
     '',
     `Read these screenshot files with your file tool and judge what is IN them:`,
-    ...images.map((i) => `  ${resolve(i.path)}`),
+    ...images.map((i) => `  ${i.path}`),
     '',
     question,
     '',
