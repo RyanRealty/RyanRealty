@@ -1,6 +1,6 @@
 ---
 name: site-queue
-description: Run the site queue until it is empty. Pull every eligible SITE node from the work graph, build them in parallel lanes across their page classes using the catalog as the UX bar (install real shadcn/beUI/etc. source, restyle navy/cream, keep the interaction), a separate evaluator whose score must rise AND whose live control must match the chosen demo, SEO and information holding first, the gates, one push and one deploy verify per round, a live check, evidence on each node, then the next round without stopping. Use when Matt says "run loop", "run the loop", "/site-queue", "go", "run the site queue", "keep going until the site is done", "continue as new nodes get entered", or when a /loop firing carries this protocol. "run loop" always means this skill (Matt 2026-09-09); when the queue runs dry it runs the measurer (/growth-loop's ingest half) and seeds the next round from the bottom of the table, and stops only when every public page class clears the finish line. Empty of eligible is not a stop (Matt 2026-09-10).
+description: Run the site queue until it is empty. Pull every eligible SITE node from the work graph, build them in parallel lanes across their page classes. Each lane is comprehensive: SEO must improve, listing/page information must improve, and UX must install real catalog source (shadcn/beUI/etc.) restyled navy/cream with the demo interaction. A separate evaluator whose score must rise AND whose live control must match the chosen demo. Gates, one push and one deploy verify per round, a live check, evidence on each node, then the next round without stopping. Use when Matt says "run loop", "run the loop", "/site-queue", "go", "run the site queue", "keep going until the site is done", "continue as new nodes get entered", or when a /loop firing carries this protocol. "run loop" always means this skill (Matt 2026-09-09); when the queue runs dry it runs the measurer (/growth-loop's ingest half) and seeds the next round from the bottom of the table, and stops only when every public page class clears the finish line. Empty of eligible is not a stop (Matt 2026-09-10).
 ---
 
 # /site-queue — the site is done when this queue is empty
@@ -35,23 +35,30 @@ system, TASTE.md), and `docs/DEVELOPMENT_PROCESS.md`.
   `scripts/seed-site-queue.ts` (idempotent). Matt's rulings behind the items are in
   memory `project_site_conversion_decisions_2026-09-07` and the research artifact
   named there.
-- Every node's `accept` ends with the done rule: the separate evaluator's score for
-  the page class, recorded in the route's `parity.json` `tasteReview`, must rise
-  above its previous mark **and** the live control must match the chosen catalog
-  demo (same interaction, our colors). A page that still looks bad, or a cream
-  box that kept the catalog name, is a failed item. Rebaseline is not done.
-- **Product hold (Matt 2026-09-10).** Priority: SEO first (titles, index, JSON-LD,
-  crawlable links, payload/LCP), then information (sourced figures, full listing
-  facts, remarks as written), then look / sense / ease of use. UI/UX may rise.
-  Honesty, sourced figures (§0), `requiredComponents`, JSON-LD, titles, conversion
-  asks, tap targets, and page payload must hold or improve. A prettier page that
-  drops any of those is not done. `ci:mockup-parity` and `ci:runtime-gates` stay
-  green. `honestyFunction` must not fall vs the prior mark, and omitting it to
-  skip the hold fails. `requiredComponents` cannot shrink vs HEAD; a JSON-LD or
-  conversion-ask role present at HEAD must remain (`ci:taste-canon`). Listing
-  pages also keep the 13-row house contract (bleed hero, PropertySpecs, MLS
-  remarks, schools, payment, Tour/Call/Text). Summarizing those away is SITE-45
-  and is not a taste pass.
+- Every node's `accept` ends with the done rule: the lane is comprehensive.
+  It must land **three named increments** plus the taste mark: (1) **SEO
+  improved** — title, JSON-LD, crawlable internal links, and/or payload/LCP
+  better than HEAD, never worse; (2) **information / listing inventory
+  improved** — more of the house on the page (listing cards carry price +
+  address + beds/baths/sqft; listing detail keeps and fills the 13-row
+  contract; place pages keep sourced figures). Summary-only is a fail;
+  (3) **UX improved** — catalog source installed, demo match, navy/cream.
+  The separate evaluator's score must rise above its previous mark **and**
+  the live control must match the chosen catalog demo. A prettier page with
+  no SEO increment and no inventory increment is not done. Rebaseline is not
+  done.
+- **Product hold (Matt 2026-09-10, tightened: improve, do not merely hold).**
+  Priority: SEO, then information / listing inventory, then look / sense /
+  ease of use. All three rise on the same pass. Honesty, sourced figures
+  (§0), `requiredComponents`, JSON-LD, titles, conversion asks, tap targets,
+  and page payload must not fall. `ci:mockup-parity` and `ci:runtime-gates`
+  stay green. `honestyFunction` must not fall vs the prior mark, and omitting
+  it to skip the hold fails. `requiredComponents` cannot shrink vs HEAD; a
+  JSON-LD or conversion-ask role present at HEAD must remain
+  (`ci:taste-canon`). Listing pages keep and enrich the 13-row house contract
+  (bleed hero, PropertySpecs, MLS remarks, schools, payment, Tour/Call/Text).
+  Summarizing those away is SITE-45 and is not a taste pass. Cards and rails
+  that show a house photo without the house facts are an inventory miss.
 - The mark a taste score must rise above is the previous mark **from the same
   instrument** — same `evaluatorModel`, same `rubricVersion`, same `shotsHash`.
   If any of the three differs, the item re-baselines itself (`comparedToPrior:
@@ -338,11 +345,13 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
    its own branch, and report. The evaluator's remaining findings append to the
    node.
 
-A lane whose score has not risen, or whose live control does not match the
-chosen demo, is not eligible to land. It redoes the work inside the lane; it
-does not push and ask the orchestrator to sort it out. A lane whose taste
-score rose by dropping honesty, a required section, JSON-LD, an ask, tap
-targets, or payload is also not eligible to land.
+A lane whose score has not risen, whose live control does not match the
+chosen demo, or that cannot name an SEO increment and an information /
+listing-inventory increment, is not eligible to land. It redoes the work
+inside the lane; it does not push and ask the orchestrator to sort it out.
+A lane whose taste score rose by dropping honesty, a required section,
+JSON-LD, an ask, tap targets, payload, or listing facts is also not
+eligible to land.
 
 ### 4. Land the round — verify what the lane reported, do not re-score it
 The orchestrator verifies every lane's claims itself (agents overstate). The
@@ -412,8 +421,9 @@ line, and keep building the other lanes.
 - Shrink a working full-bleed layout to dodge a "looks like Zillow" tell
   (SITE-45 listing hero), or summarize PropertySpecs / remarks / schools /
   payment / Tour/Call/Text into "summary info."
-- Trade honesty, SEO, LCP/payload, a required section, JSON-LD, or an ask for
-  a prettier fold. UI/UX rises; every other product metric holds or improves.
+- Trade honesty, SEO, LCP/payload, a required section, JSON-LD, listing
+  facts, or an ask for a prettier fold. SEO, information, and UX all rise
+  on the same pass. A UX-only restyle is not comprehensive and is not done.
 - Serve a 320×240 Spark thumb on a card, rail, or listing hero.
 - Write a new audit, punch list, or plan for the site. Append to a node.
 - Rebuild a page for taste outside a node. A page with no node is not touched.

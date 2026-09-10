@@ -332,6 +332,10 @@ export function formatBuilderCard(card) {
     lines.push('', '## Refuse')
     for (const r of card.refuse) lines.push(`- ${r}`)
   }
+  lines.push('', '## Comprehensive pass (all three, or not done)')
+  lines.push('- SEO increment: title, JSON-LD, crawlable internal links, and/or payload/LCP better than HEAD.')
+  lines.push('- Information increment: listing cards show price + address + beds/baths/sqft; listing detail keeps the 13-row house contract; sourced figures stay.')
+  lines.push('- UX increment: install the catalog jobs above; demo match; navy/cream.')
   lines.push('', 'Record adaptedFrom with the ids you used. Empty adaptedFrom is inventing a layout.')
   return lines.join('\n')
 }
@@ -343,7 +347,7 @@ export function evaluatorBrief(catalog, classKey) {
   const card = builderCard(catalog, classKey)
   const lock = card.layoutLock ? String(card.layoutLock).slice(0, 280) : ''
   const lines = [
-    'PRIORITY: SEO and information hold first; then look, sense, and ease of use. A prettier page that drops a title, JSON-LD, ask, sourced figure, or required section is not done.',
+    'COMPREHENSIVE LOOP: SEO, listing/page information, and UX all rise on the same pass. A prettier page with no SEO increment and no inventory increment is not done. Blocking if a title, JSON-LD, crawlable link, ask, sourced figure, required section, or listing fact is worse than HEAD.',
     'CATALOG is the UX bar. Diagnose the JOB from our shots, then pick replaceWith from the option list below (id + demo URL). Do not invent a house primitive that already lost. A cream box with the catalog name is a defect — open the demo and our control; a person must recognize the same interaction. Growing v3 with a new primitive that still matches the demo is the OPEN set; a second kit (their Inter/purple/demo app) is Frankenstein.',
   ]
   if (lock) lines.push(`Layout lock: ${lock}`)

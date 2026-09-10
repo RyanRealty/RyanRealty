@@ -29,7 +29,7 @@ export const FINISH_LINE = 70
 
 /** Matt 2026-09-10: UI/UX rises; every other product metric holds or improves. */
 export const PRODUCT_HOLD =
-  'Priority: SEO and information hold first; then look, sense, and ease of use. Product hold: UI/UX may rise; honesty, sourced figures, requiredComponents, JSON-LD, titles, conversion asks, tap targets, and page payload must hold or improve. A prettier page that drops any of those is not done. ci:mockup-parity and ci:runtime-gates stay green. honestyFunction must not fall vs the prior mark (omitting it to skip the hold fails). requiredComponents cannot shrink vs HEAD; a JSON-LD or conversion-ask role present at HEAD must remain. Listing pages keep the 13-row house contract (bleed hero, PropertySpecs, MLS remarks, schools, payment, Tour/Call/Text).'
+  'The loop is comprehensive: SEO, listing/page information, and UX all rise on the same pass. Name an SEO increment (title, JSON-LD, crawlable links, and/or payload/LCP better than HEAD). Name an information increment (listing cards carry price+address+beds/baths/sqft; listing detail keeps and fills the 13-row house contract; sourced figures stay). UX: catalog source installed, demo match. Product hold: honesty, sourced figures, requiredComponents, JSON-LD, titles, conversion asks, tap targets, and page payload must not fall. A prettier page that drops any of those, or that only restyles UX, is not done. ci:mockup-parity and ci:runtime-gates stay green. honestyFunction must not fall vs the prior mark (omitting it to skip the hold fails). requiredComponents cannot shrink vs HEAD; a JSON-LD or conversion-ask role present at HEAD must remain. Listing pages keep the 13-row house contract (bleed hero, PropertySpecs, MLS remarks, schools, payment, Tour/Call/Text).'
 
 /** The rubric this instrument scores against — TASTE.md's five-criterion table. */
 export const RUBRIC_VERSION = 'v1-2026-09-08'
@@ -575,7 +575,7 @@ function buildOneDraft(row, versionGap, defects, shotSpec, card) {
       `A reviewed seed in scripts/seed-site-queue.ts for class ${key}; recapture first-viewport shots on the table instrument; taste receipt per TASTE.md with adaptedFrom and replaceWith.`,
     accept:
       `On the table instrument, class ${key} scores above ${median}. Recapture shotSpec ${shotSpecText(shotSpec)}. ` +
-      `tasteReview.adaptedFrom names a catalog module for this class. Each defect names replaceWith from the builder-card option list (id + demo URL), or null if craft/honesty/SEO not form. Live control must match the chosen demo (same interaction, our colors). Score rise without a demo match is not done. ` +
+      `tasteReview.adaptedFrom names a catalog module for this class. Each defect names replaceWith from the builder-card option list (id + demo URL), or null if craft/honesty/SEO not form. Live control must match the chosen demo (same interaction, our colors). Score rise without a demo match is not done. Evidence names an SEO increment and an information/listing-inventory increment; a UX-only restyle is not done. ` +
       PRODUCT_HOLD,
   }
 }

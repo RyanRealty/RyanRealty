@@ -14,13 +14,21 @@ no page for that place that we won't beat in every single metric." Every rule
 below serves that verdict. A section that is correct, gated, on-token, and dull
 has failed.
 
-**Priority (Matt 2026-09-10).** SEO first (titles, index, JSON-LD, crawlable
-links, payload/LCP) so the page can be found. Then information (sourced
-figures, full listing facts, remarks as written) so the page is true. Then
-look, sense, and ease of use so a person stays. UI/UX may rise; it may not
-steal from SEO or information. A catalog control that drops MLS remarks or
-the bleed hero is not done. A cream box named after a catalog demo is not
-done.
+**Priority (Matt 2026-09-10).** The loop is comprehensive: all three rise on
+the same pass, they do not merely hold.
+
+1. **SEO improves** — titles, index, JSON-LD, crawlable internal links,
+   payload/LCP. The page is easier to find than HEAD.
+2. **Information / listing inventory improves** — sourced figures, full
+   listing facts, remarks as written. Listing cards show price, address,
+   beds/baths/sqft, not a photo with a heart. Listing detail keeps and
+   fills the 13-row house contract. Summary-only is a fail.
+3. **Look, sense, and ease of use improve** — catalog source installed,
+   demo match, navy/cream.
+
+A catalog control that drops MLS remarks or the bleed hero is not done. A
+cream box named after a catalog demo is not done. A prettier fold with no
+SEO increment and no inventory increment is not done.
 
 ## Why our pages come out generic when the model can clearly do better
 

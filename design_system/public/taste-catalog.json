@@ -8,7 +8,7 @@
     "https://ui.shadcn.com"
   ],
   "catalogUrl": "https://ui.shadcn.com/docs/components",
-  "note": "Matt 2026-09-10: these catalogs ARE the UX bar, not a parts list. catalogUrls is a FLOOR of five and is append-only — paste a new URL and inventory it; the evaluator option list grows. Fetch the source (shadcn add / registry URL), restyle to navy #102742 / cream #faf8f4 / Geist / Amboqia / Iconoir, and wire the REAL interaction. A cream box with the catalog name is not adapted. Priority: SEO and information hold, then look / sense / ease of use. A missing job is a NEW barrel primitive that still matches the demo.",
+  "note": "Matt 2026-09-10: these catalogs ARE the UX bar, not a parts list. catalogUrls is a FLOOR of five and is append-only — paste a new URL and inventory it; the evaluator option list grows. Fetch the source (shadcn add / registry URL), restyle to navy #102742 / cream #faf8f4 / Geist / Amboqia / Iconoir, and wire the REAL interaction. A cream box with the catalog name is not adapted. The loop is comprehensive: SEO, listing/page information, and UX all rise on the same pass. A missing job is a NEW barrel primitive that still matches the demo.",
   "refuse": [
     "npx shadcn add onto app/ or components/site/ — install into components/ui or components/site/v3, then paint with house tokens",
     "npm install beUI / Rare UI / Beautiful UI / Transitions as a second public design system (submodule their demo app, Inter, purple)",

@@ -143,6 +143,7 @@ describe('evaluatorBrief', () => {
     expect(brief).toMatch(/same interaction/)
     expect(brief).toMatch(/replaceWith/)
     expect(brief).toMatch(/SEO/)
+    expect(brief).toMatch(/COMPREHENSIVE/)
     expect(brief.length).toBeLessThan(4500)
     expect(brief).toMatch(/https:\/\//)
   })
@@ -170,6 +171,7 @@ describe('builderCard', () => {
     expect(md).toMatch(/Open these house files/)
     expect(md).toMatch(/Fetch these catalog jobs/)
     expect(md).toMatch(/adaptedFrom/)
+    expect(md).toMatch(/Comprehensive pass/)
   })
 
   it('CLI prints the builder card, not a JSON dump', () => {
