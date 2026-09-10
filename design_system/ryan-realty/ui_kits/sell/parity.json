@@ -156,7 +156,7 @@
       "desktop": "design_system/ryan-realty/ui_kits/sell/shots/sell-1440.png",
       "mobile375": "design_system/ryan-realty/ui_kits/sell/shots/sell-375.png"
     },
-    "shotsHash": "sha256:3b247c175b26de78fa53fb2dab540682f6a4432bd6cb00169306a491b45199fa",
+    "shotsHash": "sha256:aeba140e7550cd63c224ec8f9974e303f2b1c9acf0dc3e8397ec119f4729fb43",
     "scores": [
       56,
       62,
@@ -249,6 +249,6 @@
       "rubricVersion": "v1-2026-09-08",
       "shotsHash": "sha256:5fd77ec5df2a71681749f0247452dfa2333f21111c7d1f301aeeb18dda0e6abb"
     },
-    "rebaselineReason": "evaluatorModel (grok-4.6, not grok-4.5), builderModel (grok-4.5, not grok-4.6), rubricVersion (v1-2026-09-10, not v1-2026-09-08), and shotsHash all differ: SITE-85 rebuilt the first viewport as proof + MOS beside the ask and re-captured the default pair under the table instrument (beat 59). Not a fall from the HEAD 70 — a first mark on a different instrument."
+    "rebaselineReason": "evaluatorModel (grok-4.6, not grok-4.5), builderModel (grok-4.5, not grok-4.6), rubricVersion (v1-2026-09-10, not v1-2026-09-08), and shotsHash all differ: SITE-85 rebuilt the first viewport as proof + MOS beside the ask and re-captured the default pair under the table instrument (beat 59). Not a fall from the HEAD 70 \u2014 a first mark on a different instrument."
   }
 }
