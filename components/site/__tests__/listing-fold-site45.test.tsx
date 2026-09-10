@@ -7,7 +7,7 @@ import { ListingDetailShell } from '@/components/site/listing-detail/ListingDeta
 
 /**
  * SITE-45: the listing fold's two drawn facts and the hero's seat.
- *  - the price cut is two points with a reading, and it never draws off market;
+ *  - the price cut is two prices at rest, and it never draws off market;
  *  - the pills carry one plain sentence with its trace;
  *  - the shell can seat the hero inside the main column, beside the sidebar.
  */
@@ -66,20 +66,18 @@ function strip(over: Record<string, unknown> = {}) {
   )
 }
 
-describe('the price cut as two points', () => {
+describe('the price cut as two prices at rest', () => {
   const mark = { from: 1_075_000, to: 999_000, drop: 76_000, pct: 7.1, date: '2026-08-15' }
 
-  it('draws the mark with the label the strip always printed and a reading for hover', () => {
+  it('prints from, cut, percent and date without a hover', () => {
     const html = strip({ dropMark: mark })
     expect(html).toContain('class="listing-drop"')
-    expect(html).toMatch(/Price drop \$76K/)
-    expect(html).toContain('<line')
+    expect(html).not.toContain('<line')
+    expect(html).not.toContain('<circle')
     expect(html).toContain('$1,075,000')
-    expect(html).toContain('$999,000')
+    expect(html).toContain('Cut $76,000')
     expect(html).toContain('−7.1%')
     expect(html).toContain('Aug 15, 2026')
-    // The whole reading is the button's accessible name, so a screen reader
-    // gets it without the hover.
     expect(html).toMatch(/aria-label="Price drop \$76K: \$1,075,000 to \$999,000, 7\.1% on Aug 15, 2026"/)
   })
 
@@ -95,11 +93,12 @@ describe('the price cut as two points', () => {
     expect(sold).not.toContain('listing-drop')
   })
 
-  it('PriceDropMark alone: hollow from-point, filled to-point, one line', () => {
+  it('PriceDropMark alone: strikethrough from, exception cut, no slope', () => {
     const html = renderToStaticMarkup(createElement(PriceDropMark, { mark, label: 'Price drop $76K' }))
-    expect(html.match(/<circle/g)).toHaveLength(2)
     expect(html).toContain('listing-drop__from')
-    expect(html.match(/<line/g)).toHaveLength(1)
+    expect(html).toContain('listing-drop__cut')
+    expect(html).not.toContain('<svg')
+    expect(html).not.toContain('<line')
   })
 })
 

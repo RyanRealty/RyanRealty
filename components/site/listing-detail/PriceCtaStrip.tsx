@@ -367,9 +367,7 @@ export function PriceCtaStrip({
         ) : null}
       </div>
       {dropMark && !offMarket ? (
-        /* The cut drawn, not said: two points on one slope, the reading on
-           hover, focus or tap (SITE-45). The label is the one the strip has
-           always printed, so the a11y contract and the rail agree with it. */
+        /* The cut as two prices at rest, not a 22px slope (Matt 2026-09-10). */
         <div className="mt-1.5">
           <PriceDropMark
             mark={dropMark}
