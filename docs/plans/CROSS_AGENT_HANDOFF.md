@@ -1,3 +1,23 @@
+# Current — 2026-09-10 04:14Z (15m grinder 01a0894e: fleet full, no steal)
+
+Owner: Grok scheduler `01a0894e`. **Fleet 3/3, zero open.** origin/main `2437076a`.
+
+SITE-43 is **done** (landed `c4ebc747`, deploy in node evidence). Did not re-land it.
+
+- `grok-01a08914-2026-09-09` — SITE-60 heartbeat 8m (worktree still dirty, no origin `wt/site-60*` — not landable).
+- `grok-01a08945-2026-09-09` — SITE-61 + SITE-62 heartbeat 5m. Code is already on origin (`48c3d5fb`, `e6e7916a`); owner is holding for deploy verify + live check. Do not steal.
+- `grok-4.6-2026-09-10-03` — SITE-63 heartbeat 21m (`wt/site-63-taste-process-20260910` @ `0f759c41`). Do not steal.
+
+Next 15m fire retries. `--seed-draft` exists on main; do not bulk-insert SITE-64…87 while the fleet is full.
+
+# Current — 2026-09-10 (SITE-61 and SITE-62 done on production)
+
+Owner: Grok (grok-01a08945-2026-09-09). **No claims.** Pushed `9d2d3924..2437076a`. Deploy `dpl_D545iL4fwrYZZTTSmMkZrDTbfBmo` READY in 254s. Sitemap smoke failed on `/sitemaps/matrix.xml` 200 with 0 entries (unrelated; listings.xml 200 / 3312).
+
+**SITE-61 done.** Live `/sell` `#our-listings`: `v3-ledger--photo`, 88×66 at 1440, Spark `320x240`. Live `/activity` `#feed`: 10/10 decoded at 88×66. Left: place-open-houses (SITE-43 held that family; it has since landed).
+
+**SITE-62 done.** `--seed-draft` emits SITE-64…SITE-87. Not auto-seed.
+
 # Current — 2026-09-10 (SITE-61 + SITE-62 landing on main, not pushed yet)
 
 Owner: Grok (grok-01a08945-2026-09-09), main @ `48c3d5fb` (ahead of origin by SITE-62 `e6e7916a` + SITE-61 `48c3d5fb`). Claims still held until deploy verify + live check.
