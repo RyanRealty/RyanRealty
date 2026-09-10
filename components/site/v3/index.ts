@@ -469,6 +469,19 @@ export { V3MorphSearch } from './V3MorphSearch'
 export type { V3MorphSearchProps } from './V3MorphSearch'
 export { V3Number } from './V3Number.client'
 export type { V3NumberProps } from './V3Number.client'
+/**
+ * Dual-thumb tick range (SITE-72). Catalog job beui-range-slider: tick stops,
+ * navy fill, bounce reduced to the house 120ms ease-out. Wired from search.
+ */
+export { V3Range } from './V3Range'
+export {
+  V3_PRICE_STOPS,
+  formatPriceRange,
+  formatPriceStop,
+  rangeToUrl,
+  urlToRange,
+} from './V3Range.logic'
+export type { V3RangeProps } from './V3Range'
 
 export { V3Placeholder } from './V3Placeholder'
 export type { V3PlaceholderProps } from './V3Placeholder'
