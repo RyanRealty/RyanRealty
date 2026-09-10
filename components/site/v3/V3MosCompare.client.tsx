@@ -70,7 +70,7 @@ function scaleFor(at: number, context?: { at: number; label: string }): V3Answer
     ],
     ...(context ? { context } : {}),
     subjectLabel: 'Region',
-    format: (n) => `${n.toFixed(1)} mo`,
+    format: { unit: ' mo', decimals: 1 },
   }
 }
 
