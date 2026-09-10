@@ -109,7 +109,7 @@ import { publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { listingIsFractionalInterest } from '@/lib/listing/publish-listing-figure'
-import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { canonicalCityCacheSlug, cityUrlSlug } from '@/lib/market/city-cache-slug'
 import { homesForSalePath } from '@/lib/slug'
 import {
   V3_ROOT_CLASS,
@@ -122,11 +122,15 @@ import {
   V3PlacePropertyTypes,
   V3Quiet,
   V3SectionTracker,
+  type AtlasRegion,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
   type V3LedgerPlainRow,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
+import { basemapForRegions } from '@/lib/geo/basemap-source'
+import { buildPlaceMosView } from '@/lib/site/place-mos'
 // The one copy of the mix turn the migrated Market family already uses.
 // Importing it beats a second implementation that would drift the day one of
 // the two was fixed — the same reason lib/kb/place-sections is shared across
@@ -183,8 +187,8 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   }
   const area = ZIP_AREA[zip] ?? 'Central Oregon'
   return pageMetadata({
-    title: `Homes for sale in ${zip} · ${area}, Oregon`,
-    description: `Active single-family homes in ZIP ${zip} (${area}), Central Oregon. Live market snapshot, neighborhood breakdown, and every listing on the map.`,
+    title: `Homes for sale in ${zip} · ${area}, Oregon | Ryan Realty`,
+    description: `Live single-family inventory in ZIP ${zip} (${area}), Bend and Central Oregon — every active home on the Atlas, months of supply when publishable, and neighborhood doors.`,
     path: `/zip/${zip}`,
   })
 }
@@ -209,6 +213,12 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     )
 
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
+  const zipBoundary = await withTimeoutFallback(
+    getBoundaryGeoJSON({ geoType: 'zip', geoSlug: zip }),
+    null,
+    3000,
+    'zip:boundary',
+  )
   const [
     tilesRead,
     cityPriceHist,
@@ -221,7 +231,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     leftoverCityMonthly,
     leftoverZipMonthly,
     publicMix,
-    zipBoundary,
+    atlas,
   ] = await Promise.all([
     // ONE tile fetch feeds the Field, its map, the neighborhood Ledger, and the
     // miss-path figures. limit=5000 captures the complete ZIP; no ZIP in this
@@ -263,7 +273,16 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       3000,
       'zip:publicMix',
     ),
-    withTimeoutFallback(getBoundaryGeoJSON({ geoType: 'zip', geoSlug: zip }), null, 3000, 'zip:boundary'),
+    withTimeoutFallback(
+      buildPlaceAtlas({
+        cities: [cityName],
+        boundary: zipBoundary,
+        label: `ZIP ${zip}`,
+      }).catch(() => null),
+      null,
+      6000,
+      'zip:atlas',
+    ),
   ])
   const chartMonths = leftoverNeighborhoodOrCityMonthly({
     leftoverNeighborhood: leftoverZipMonthly,
@@ -341,6 +360,14 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   const mosPublished = hud.monthsSupply
   const verdict = monthsOfSupplyVerdict(mosPublished)
   const mosText = mosPublished != null ? formatMonthsOfSupply(mosPublished) : null
+  const mosAsOf = hudAsOf ? formatDate(hudAsOf) : null
+  const placeMos = buildPlaceMosView({
+    active: hud.active,
+    monthsSupply: hud.monthsSupply,
+    grain: 'zip',
+    geoSlug: zip,
+    asOf: mosAsOf,
+  })
 
   const listingNoun = mtHit ? 'detached single-family' : 'single-family'
   const marketFigures: V3InstrumentFigure[] = []
@@ -592,6 +619,21 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     verdictSentence ??
     `Active ${listingNoun} listings in ${zip}.`
 
+  const atlasView = atlas ?? EMPTY_PLACE_ATLAS
+  const atlasRegions: AtlasRegion[] = zipBoundary
+    ? [
+        {
+          id: `zip:${zip}`,
+          kind: 'town',
+          kindLabel: 'ZIP',
+          name: zip,
+          href: zipPageUrl,
+          geometry: zipBoundary,
+        },
+      ]
+    : []
+  const atlasBasemap = basemapForRegions(atlasRegions)
+
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
@@ -640,16 +682,46 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           ]}
         />
 
-        {/* Pattern 2, Field. Houses fill the fold; the count is a caption and
-            the H1 is the money head term. */}
+        {/* Pattern 2, Field. Claim-first sentence, Atlas drawing + MOS/alerts
+            figure, then photographed rows. boundary={zipBoundary} keeps the
+            ZCTA on the opening (ci:place-hero-grain / page test). */}
         <ZipHomesField
           zip={zip}
+          area={area}
+          city={cityName}
           headline={v3Text(`Homes for sale in ${zip}`)}
+          claimCount={activeCount != null && activeCount > 0 ? activeCount : null}
+          claimNoun={mtHit ? 'detached single-family homes' : 'single-family homes'}
+          claimHref={zipSearchHref(zip)}
+          cityHref={`/cities/${cityUrlSlug(cityName)}`}
+          browseHref={zipSearchHref(zip)}
           fieldItems={fieldItems}
           caption={fieldCaption}
           source={fieldTrace}
           populationNote={populationNote}
           boundary={zipBoundary}
+          atlas={{
+            dots: atlasView.dots,
+            regions: atlasRegions,
+            basemap: atlasBasemap,
+            types: atlasView.types,
+            events: atlasView.events,
+            source: atlasView.source,
+            stamp: atlasView.stamp,
+            incomplete: !atlasView.complete,
+          }}
+          mos={placeMos}
+          alerts={
+            <ZipAlertsSheet
+              zip={zip}
+              area={area}
+              city={cityName}
+              newCount30d={publicPace.newCount30d}
+              updatedAt={hudAsOf ?? null}
+              browseHref={zipSearchHref(zip)}
+              demote={placeMos != null || (activeCount != null && activeCount > 0)}
+            />
+          }
           emptyMessage={
             tilesRead.ok
               ? `No active single-family listing in ${zip} reports a list price right now.`
@@ -736,9 +808,6 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           postalCode={zip}
           rows={publicSegments}
         />
-
-        {/* Pattern 5, Sheet. Same server action, same payload, same honeypot. */}
-        <ZipAlertsSheet zip={zip} area={area} city={cityName} />
 
         {/* Pattern 3, Ledger. */}
         {firstNearby ? (

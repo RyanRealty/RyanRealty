@@ -55,7 +55,7 @@ import {
   listingRowPhotoSrc,
 } from '@/lib/listing/row-photo'
 
-export type PlaceAlertsGeoType = 'city' | 'neighborhood'
+export type PlaceAlertsGeoType = 'city' | 'neighborhood' | 'zip'
 
 /**
  * The smallest count that renders as a display numeral. Below it the digit is

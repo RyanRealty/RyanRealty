@@ -1,0 +1,118 @@
+/* ZIP first viewport: Atlas drawing beside MOS figure + alerts sentence. */
+
+@layer base {
+  .zip-opening__claim a,
+  .zip-opening__doors a {
+    color: inherit;
+  }
+}
+
+.zip-opening {
+  width: 100%;
+  max-width: var(--v3-measure);
+  margin-inline: auto;
+  padding-inline: var(--v3-gutter);
+}
+
+.zip-opening__claim {
+  margin: var(--v3-space-sm) 0;
+  font-family: var(--v3-font-sans);
+  font-size: var(--v3-text-lg);
+  line-height: 1.4;
+  color: var(--v3-navy);
+  max-width: 42rem;
+}
+
+.zip-opening__claim a {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.zip-opening__claim a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.zip-opening__claim-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.zip-opening__doors {
+  margin: 0 0 var(--v3-space-md);
+  font-family: var(--v3-font-sans);
+  font-size: var(--v3-text-sm);
+  color: color-mix(in oklab, var(--v3-navy) 72%, transparent);
+}
+
+.zip-opening__doors a {
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.zip-opening__stage {
+  display: grid;
+  gap: var(--v3-space-lg);
+  margin-bottom: var(--v3-space-xl);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .zip-opening__stage {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.95fr);
+    column-gap: var(--v3-space-xl);
+  }
+}
+
+.zip-opening__drawing {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.zip-opening__drawing .v3-atlas {
+  max-width: 100%;
+}
+
+/* Cap the map plate so drawing + figure fit the first viewport. */
+.zip-opening__drawing .v3-atlas__frame {
+  max-height: min(38vh, 20rem);
+}
+
+/* Dock/events/key counts stay off this opening — the H1 claim + MOS own the
+   inventory number so the map cannot print a second disagreeing total. */
+.zip-opening__drawing .v3-atlas__dock,
+.zip-opening__drawing .v3-atlas__aside,
+.zip-opening__drawing .v3-atlas__key {
+  display: none;
+}
+
+@media (max-width: 63.99rem) {
+  /* Phone: short drawing, then MOS + alerts — all three in the first viewport. */
+  .zip-opening__drawing .v3-atlas__frame {
+    max-height: min(18vh, 8.5rem);
+  }
+
+  .zip-opening__drawing .v3-atlas__head {
+    padding-bottom: var(--v3-space-xs);
+  }
+
+  .zip-opening__figure .v3-alerts {
+    font-size: 0.95em;
+  }
+}
+
+.zip-opening__figure {
+  display: grid;
+  gap: var(--v3-space-md);
+  min-width: 0;
+}
+
+.zip-opening__figure .v3-mos,
+.zip-opening__figure .v3-alerts {
+  margin: 0;
+}
+
+/* Compact the alerts eyebrow so "Bend SE" does not orphan. */
+.zip-opening__figure .v3-alerts__eyebrow {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
