@@ -43,9 +43,9 @@ import {
   V3_FOOTER_COLUMNS,
   V3Ledger,
   V3Quiet,
-  V3Stage,
   V3SectionTracker,
 } from '@/components/site/v3'
+import { V3Stage } from '@/components/site/v3/V3Stage'
 import { BuyAlertsSheet } from './_v3/BuyAlertsSheet.client'
 import { buyHeroInventory } from './_v3/buy-hero-inventory'
 import {

@@ -452,12 +452,12 @@ export function V3Stage<H extends string, L extends string>({
                   {figure.href ? (
                     <Link href={figure.href} className="v3-stage-strip__door">
                       <strong className="v3-stage-strip__value">{figure.value}</strong>
-                      {` ${figure.label}`}
+                      <span>{figure.label}</span>
                     </Link>
                   ) : (
                     <>
                       <strong className="v3-stage-strip__value">{figure.value}</strong>
-                      {` ${figure.label}`}
+                      <span>{figure.label}</span>
                     </>
                   )}
                 </span>

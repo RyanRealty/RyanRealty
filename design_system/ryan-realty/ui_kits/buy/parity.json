@@ -6,7 +6,7 @@
   "requiredComponents": [
     {
       "name": "MetadataBlock",
-      "section": "JSON-LD — BreadcrumbList + WebPage + FAQPage (canonical). V3Breadcrumb and V3Quiet carry no structured data of their own.",
+      "section": "JSON-LD \u2014 BreadcrumbList + WebPage + FAQPage (canonical). V3Breadcrumb and V3Quiet carry no structured data of their own.",
       "blocking": true
     },
     {
@@ -68,11 +68,11 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
+    "evaluatedAt": "2026-09-10",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate Agent (Task tool), spawned by the SITE-46 build lane on a different model from the builder, given only the two shots below, the rubric in design_system/public/TASTE.md, and a regression list from the previous round; asked to score the same shots three times in one call, to name a fold-visible win against Zillow's or Redfin's Bend search page, and to sample the CTA's pixels before describing it. Four rounds were run on this node: 42 (the table capture), 62, 61, and this one.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts buy \u2014 grok-4.6 via grok CLI, three scorings of the SITE-77 worktree first-viewport shots, separate from the grok-4.5 builder",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/buy"
@@ -84,50 +84,82 @@
       "states": [
         "default"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized",
-      "baseUrl": "http://localhost:4317 (next dev, lane worktree, branch worktree-agent-a1dfba16d5addebe4)"
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, http://localhost:4375/buy on wt/site-75-77-20260910"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/buy/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/buy/shots/mobile375.png"
     },
-    "shotsHash": "sha256:2a7293b047f0ab300749bcc4a2e97595e2160739472cd514da2c1240f2a29960",
+    "shotsHash": "sha256:86ea5a644c3d5ef63ca53c72e4d0f3395d49fe40935624612a9473f12a75a26d",
     "scores": [
-      60,
-      62,
-      60
+      55,
+      61,
+      57
     ],
-    "score": 60,
-    "beats": "Against Zillow's Bend search page (zillow.com/bend-or/) and Redfin's Bend page, on data provenance in the fold: this fold carries a sourced, dated market band -- 1,563 houses for sale, $749,900 median ask, 29 days to an offer -- over the line 'Source: live MLS through Oregon Data Share - single-family houses across Central Oregon - updated Sep 9, 2026', before the visitor has searched anything. The evaluator verified the Ryan Realty side from the shot and flagged the competitor side as asserted from product knowledge, not from a capture it took, so the claim is stated at that grain.",
+    "score": 57,
+    "criteria": {
+      "designQuality": 18,
+      "originality": 15,
+      "interaction": 5,
+      "craft": 11,
+      "honestyFunction": 8
+    },
+    "beats": "Against Zillow's Bend search (zillow.com/bend-or/) this fold wins provenance: 1,550 single-family houses, $749,900, 29 days to an offer, live MLS through Oregon Data Share, as of Sep 9, 2026, before anyone has searched. It loses the job: Zillow puts a priced house in the first screen; this page puts a roof.",
+    "adaptedFrom": [
+      {
+        "id": "house-stage"
+      },
+      {
+        "id": "house-field"
+      }
+    ],
     "defects": [
       {
-        "section": "#top",
+        "section": "#homes",
         "severity": "taste",
-        "finding": "The fold's composition is still the generic real-estate-landing shape: photo, eyebrow, serif headline, CTA, one figure row. The band is well executed and sourced, but the shape is the floor form, not a display a template would not produce. Going past it means a data GRAPHIC in the hero (a supply meter, a price distribution), which TASTE.md's variants rule says is built as two or three named variants for Matt to pick -- not a build-lane decision."
+        "finding": "The Field that breaks the fold is a crop of roof and sky with no price, address, or type chip in the first viewport, so live inventory is a caption in the Stage and not a house you can buy.",
+        "replaceWith": "house-field"
       },
       {
         "section": "#top",
+        "severity": "taste",
+        "finding": "The fold is still the generic brokerage cover: owned Cascade photo, tracked eyebrow, serif H1, one button, then three facts. SITE-77 joined the facts with middots; it did not give the live market a form a reader would screenshot.",
+        "replaceWith": "house-stage"
+      },
+      {
+        "section": ".v3-stage-strip__claim",
         "severity": "craft",
-        "finding": "Each figure carries a chevron implying more, and what it delivers is outbound navigation, not an on-screen reveal. The doors are honest (each lands on the surface that publishes that same figure) but nothing in the fold rewards interrogation on the same screen."
+        "finding": "At 375 the claimed one sentence restacks as three number rows with trailing middots stranded at the line ends, which is the KPI-grid silhouette the pass said it retired.",
+        "replaceWith": null
       },
       {
-        "section": "#top",
+        "section": ".v3-stage-strip__door",
         "severity": "taste",
-        "finding": "The middle figure's caption, 'half the houses ask more', still leans on its proximity to $749,900 to complete its meaning. Two earlier wordings failed the other way: 'median asking price' was called KPI jargon, and 'half ask more than this' a fragment."
+        "finding": "The three figures are off-page links with no rest-state caret, underline, or hover evidence in the still, so the only data section in the fold does not reward a tap or hover with more data on this screen.",
+        "replaceWith": "house-instrument"
       },
       {
-        "section": "HomeHomesField",
-        "severity": "honesty",
-        "finding": "The listing photograph that breaks the fold under the band shows no price and no address inside the first viewport, so the page's strongest competitive claim -- real inventory, not just a search box -- is not provable from the fold alone. The card treatment belongs to V3Field / app/_v3/HomeHomesField.tsx, which is outside this node's file set; recorded here for the lane that owns them."
+        "section": ".v3-stage-strip__source",
+        "severity": "craft",
+        "finding": "The closed source still prints the whole population sentence because the trace is middot-joined, so at 375 four lines of methodology sit between the figures and the house.",
+        "replaceWith": null
+      },
+      {
+        "section": ".v3-stage-strip__claim",
+        "severity": "taste",
+        "finding": "$749,900 half the houses ask more is still a fragment that leans on the numeral to finish its meaning, the KPI tell in sentence clothing.",
+        "replaceWith": null
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-08",
-      "score": 42,
+      "evaluatedAt": "2026-09-09",
+      "score": 60,
       "evaluatorModel": "claude-sonnet-5",
-      "rubricVersion": "v1-2026-09-08"
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:2a7293b047f0ab300749bcc4a2e97595e2160739472cd514da2c1240f2a29960"
     },
-    "rebaselineReason": "The prior mark is the taste table's row for this route (design_system/public/taste-table.json, median 42, 'competent, on-brand and inert'). It came from the same evaluatorModel and the same rubricVersion, so those two identity keys match, but it carries no shotsHash: its shots were captured on main at a different commit and are not the ones this receipt binds. shotsHash is therefore the differing key, and this mark rebaselines rather than claiming a rise the gate could verify. The number did rise on the comparable keys -- 42 to 60 on the same model and rubric, and the evaluator, given the 42 verdict as calibration, named a fold-visible win it could not name before."
+    "rebaselineReason": "evaluatorModel and shotsHash differ: SITE-46's 60 was claude-sonnet-5 on the three-tile inventory band; this mark is grok-4.6 on new first-viewport shots after SITE-77 made the band one sourced sentence. Same rubricVersion v1-2026-09-08.",
+    "verdict": "This is not better than a 60. Killing the three-tile grid left the same cover with a sourced ticker, and at 375 that ticker is three KPI rows again. The Field still arrives as an unlabeled roof, so a buyer gets provenance without a house."
   }
 }
