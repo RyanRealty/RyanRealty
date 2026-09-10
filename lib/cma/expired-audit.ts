@@ -690,7 +690,7 @@ export function buildFailureFindings(args: {
   if (history.failedAttemptsCount >= 2) {
     findings.push({
       lens: 'attempts',
-      fact: `This property has been listed ${history.attemptsCount} times, with ${history.failedAttemptsCount} attempts ending without a sale${history.peakAskingPrice ? `, peaking at ${usd(history.peakAskingPrice)}` : ''}.`,
+      fact: `You have listed ${history.attemptsCount} times, with ${history.failedAttemptsCount} attempts ending without a sale${history.peakAskingPrice ? `, peaking at ${usd(history.peakAskingPrice)}` : ''}.`,
       meaning: '',
     })
   }
