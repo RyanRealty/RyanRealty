@@ -161,9 +161,29 @@ describe('walkPricingLadder', () => {
     expect(out.comps.map((c) => c.listingKey)).not.toContain('AWAY')
   })
 
-  it('refuses two whole baths apart even next door', () => {
+  // Matt 2026-09-10 opened the subject's OWN plat: "location is the primary
+  // thing... we might even comp it out against a 4-bedroom." The room rule
+  // still holds everywhere else.
+  it('takes two whole baths apart inside the subject’s own plat, and records it', () => {
     const pool = [sale({ listingKey: 'FOUR', baths: 4, address: '16 Kenwood' })]
     const out = walkPricingLadder(subject({ baths: 2 }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['FOUR'])
+    expect(out.comps[0]!.roomDifference).toEqual(['baths'])
+  })
+
+  it('still refuses two whole baths apart outside the plat', () => {
+    const pool = [
+      sale({
+        listingKey: 'FOUR_AWAY',
+        baths: 4,
+        address: '16 Stone',
+        subdivision: 'Stone Creek',
+        subdivisionNorm: 'stone creek',
+        latitude: 44.062,
+        longitude: -121.302,
+      }),
+    ]
+    const out = walkPricingLadder(subject({ baths: 2, marketArea: null }), pool, { asOf })
     expect(out.comps).toHaveLength(0)
   })
 
@@ -319,7 +339,11 @@ describe('walkPricingLadder', () => {
     ]
     const out = walkPricingLadder(subject({ sqft: 2500, streetAddress: '21451 Hayloft' }), pool, { asOf })
     expect(out.comps.map((c) => c.listingKey)).toEqual(['SAME_STREET'])
-    expect(out.tiersUsed[0]).toBe('subdivision-3mo-wide')
+    // Hayloft 1927 against 2500 is 22.9%, inside the plat band Matt widened to
+    // 25% on 2026-09-10, so the plain rung takes it and the -wide rung is not
+    // needed. What the test locks either way: the plat comes before the ring.
+    expect(out.tiersUsed[0]!.startsWith('subdivision-')).toBe(true)
+    expect(out.tiersUsed.some((t) => t.startsWith('nearby-'))).toBe(false)
   })
 
   it('does not stop a rural subject on the city-5mi rung', () => {
@@ -467,9 +491,15 @@ describe('walkPricingLadder', () => {
         sqft: 2200,
       }),
     )
+    // Outside the plat on purpose: the plat band and the bracket band are both
+    // 25% since 2026-09-10, so a same-plat sale the rung refuses is a sale the
+    // bracket refuses too. The nearby rungs sit at 15%, which is the gap the
+    // bracket exists to close.
     const smaller = sale({
       listingKey: 'SMALL',
-      address: '40 Kenwood',
+      address: '40 Aubrey',
+      subdivision: 'Aubrey',
+      subdivisionNorm: 'aubrey',
       closeDate: '2026-06-15',
       sqft: 1600,
     })
@@ -510,7 +540,10 @@ describe('walkPricingLadder', () => {
     ]
     const out = walkPricingLadder(subject({ sqft: 2500, marketArea: 'bend-old-bend' }), pool, { asOf })
     expect(out.comps.map((c) => c.listingKey)).toContain('NEAR')
-    expect(out.tiersUsed.some((t) => t.endsWith('-wide'))).toBe(true)
+    // 1927 against 2500 is inside the 25% plat band now, so these arrive on the
+    // plain rung rather than the -wide one. The point stands: three plat sales
+    // at the edge of the band are not a reason to stop before the ring.
+    expect(out.tiersUsed.some((t) => t.startsWith('subdivision-'))).toBe(true)
     expect(out.tiersUsed.some((t) => t.startsWith('nearby-'))).toBe(true)
   })
 

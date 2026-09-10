@@ -59,7 +59,7 @@ export type PricingTier = {
 
 export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): PricingTier[] {
   const customOrNew = opts.customOrNew === true
-  const sub = (months: number, sqftBand = 0.15, suffix = ''): PricingTier => ({
+  const sub = (months: number, sqftBand = PLAT_SQFT_BAND, suffix = ''): PricingTier => ({
     name: `subdivision-${months}mo${suffix}`,
     monthsBack: months,
     maxMiles: null,
@@ -200,11 +200,11 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     sub(9),
     // Same street, different floorplan, before the next tract. Hayloft 2500 vs
     // 1927 is 23% — inside 30%, outside the tight 15% band.
-    sub(3, 0.3, '-wide'),
-    sub(6, 0.3, '-wide'),
-    sub(9, 0.3, '-wide'),
+    sub(3, PLAT_WIDE_SQFT_BAND, '-wide'),
+    sub(6, PLAT_WIDE_SQFT_BAND, '-wide'),
+    sub(9, PLAT_WIDE_SQFT_BAND, '-wide'),
     sub(12),
-    sub(12, 0.3, '-wide'),
+    sub(12, PLAT_WIDE_SQFT_BAND, '-wide'),
     // TIME BEFORE LOCATION, ALL THE WAY TO TWO YEARS INSIDE THE PLAT (Matt
     // 2026-09-09: exhaust the boundary out to 24 months before leaving it).
     sub(18),
@@ -374,3 +374,18 @@ export const LOCAL_POOL_RADIUS_MILES = 3
  * adjusted back. See WIDENED_SQFT_BAND in lib/cma/comp-tiers.ts.
  */
 export const WIDENED_SQFT_BAND = 0.25
+/**
+ * THE SIZE BAND INSIDE THE SUBJECT'S OWN PLAT (Matt 2026-09-10).
+ *
+ * "Location is primary, and within the subdivision, that's the truest sense of
+ * comp. When we can get close comps, even if they're a bedroom off one way or
+ * another, a bathroom off one way or another, 500 sq ft more or less, we want
+ * to try and use stuff in that subdivision first."
+ *
+ * Five hundred feet on an ordinary Central Oregon home is about a quarter of
+ * it, so the plat rungs carry 25% and the wider same-street rungs 35%. Inside
+ * the plat this band is the ONLY dimensional test: beds, baths, vintage and
+ * story count are all disclosed rather than refused (lib/pricing/match.ts).
+ */
+export const PLAT_SQFT_BAND = 0.25
+export const PLAT_WIDE_SQFT_BAND = 0.35

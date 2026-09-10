@@ -249,6 +249,12 @@ function applesOk(
    * (lib/pricing/room-counts.ts).
    */
   local = false,
+  /**
+   * True on the subject's OWN recorded plat. Location is the comp there
+   * (Matt 2026-09-10), so the room rule does not run — the size band and the
+   * hard product, water, sewer, lot and resort walls are the whole test.
+   */
+  ownPlat = false,
 ): boolean {
   if (!productCompatible(subject.productClass, sale.productClass)) return false
   const customOrNew = isCustomOrNewSubject(
@@ -268,8 +274,11 @@ function applesOk(
   } else {
     // ONE ROOM RULE for beds and baths alike (Matt 2026-09-10). Same whole
     // count travels anywhere; one room apart is used only on this home's own
-    // ground and is disclosed; wider is refused.
+    // ground and is disclosed; wider is refused. It does not run on the
+    // subject's own plat, where location is the comp and the size band is the
+    // whole test.
     if (
+      !ownPlat &&
       !roomCountsUsable({ beds: subject.beds, baths: subject.baths }, { beds: sale.beds, baths: sale.baths }, { local })
         .ok
     ) {
@@ -377,11 +386,8 @@ function passesTier(
   if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return { ok: false, miles: null }
   if (monthsBetween(asOf, sale.closeDate) > tier.monthsBack) return { ok: false, miles: null }
   if (!tier.ignoreCity && sale.citySlug !== subject.citySlug) return { ok: false, miles: null }
-  if (tier.sameSubdivision) {
-    if (!subject.subdivisionNorm || sale.subdivisionNorm !== subject.subdivisionNorm) {
-      return { ok: false, miles: null }
-    }
-  }
+  const ownPlat = tier.sameSubdivision === true
+  if (ownPlat && !samePlat(subject, sale)) return { ok: false, miles: null }
   // THE PARENT LEVEL IS A WALL (Matt 2026-09-09): a plat inside a planned or
   // golf community is priced from that community until the community itself is
   // exhausted. Only the like-community rung and a boundary-exit rung may look
@@ -429,16 +435,29 @@ function passesTier(
       { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft },
       { address: sale.address, city: sale.city, sqft: sale.sqft },
     )
-  if (!applesOk(subject, sale, tier.apples, asOfYear, allowFeatureCross, localSale)) {
+  if (!applesOk(subject, sale, tier.apples, asOfYear, allowFeatureCross, localSale, ownPlat)) {
     return { ok: false, miles: null }
   }
-  const rooms = roomCountsUsable(
-    { beds: subject.beds, baths: subject.baths },
-    { beds: sale.beds, baths: sale.baths },
-    { local: localSale },
-  )
-  if (!ageOk(subject.yearBuilt, sale.yearBuilt, asOfYear, tier.ageYears)) return { ok: false, miles: null }
-  if (!storyOk(subject.storyClass, sale.storyClass, tier.sameStory)) return { ok: false, miles: null }
+  // LOCATION IS THE COMP, INSIDE THE PLAT (Matt 2026-09-10). "Within the
+  // subdivision, that's the truest sense of comp... we might even comp it out
+  // against a 4-bedroom." A sale in the subject's own recorded plat, inside the
+  // size band, is used whatever its bed count, bath count, vintage or story
+  // count, and the adjustments and the comparability notes carry the rest.
+  // Product type, water, sewer, lot character and the resort wall are hard
+  // everywhere and stay hard here.
+  const rooms = ownPlat
+    ? { ok: true, notes: roomDifferenceNotes(subject, sale) }
+    : roomCountsUsable(
+        { beds: subject.beds, baths: subject.baths },
+        { beds: sale.beds, baths: sale.baths },
+        { local: localSale },
+      )
+  if (!ownPlat && !ageOk(subject.yearBuilt, sale.yearBuilt, asOfYear, tier.ageYears)) {
+    return { ok: false, miles: null }
+  }
+  if (!ownPlat && !storyOk(subject.storyClass, sale.storyClass, tier.sameStory)) {
+    return { ok: false, miles: null }
+  }
   // Beds and baths are decided by the ONE ROOM RULE inside applesOk above. The
   // per-tier bedSlop/bathSlop numbers no longer gate anything: a rung cannot be
   // looser than the room rule, and a rung that was tighter (bedSlop 1 on a
@@ -587,6 +606,44 @@ function saleMiles(subject: PricingSubject, sale: PricingSale): number {
  * lib/cma/contract.ts, which hard-fails a build carrying anything older.
  */
 const BRACKET_MAX_AGE_MONTHS = 24
+
+/**
+ * IS THIS SALE IN THE SUBJECT'S OWN PLAT? (Matt 2026-09-10: "location is the
+ * primary thing... within the subdivision, that's the truest sense of comp.")
+ *
+ * The RECORDED plat polygon first, from the county boundary both the subject
+ * and the sale were resolved against, and the MLS SubdivisionName only as a
+ * fallback. The MLS field is typed by a listing agent and 31 of 330 priced
+ * subjects carry a placeholder or a blank in it.
+ *
+ * MEASURED, because the first version of this comment guessed and was wrong.
+ * Recorded-plat coverage over the queue's own subjects on 2026-09-10: 120 of
+ * the 299 that name a subdivision also sit inside a recorded plat, and 5 of
+ * the 31 that name none do. So the polygon rescues five documents, not the
+ * hundred the ladder's skip counter suggested. It is still the better key
+ * where both are known — a polygon does not depend on how someone typed a
+ * tract name — and it costs nothing, because select.ts already resolves these
+ * slugs for the adjacent-plat rung.
+ */
+function samePlat(subject: PricingSubject, sale: PricingSale): boolean {
+  if (subject.subdivisionSlug && sale.subdivisionSlug) return sale.subdivisionSlug === subject.subdivisionSlug
+  if (subject.subdivisionNorm) return sale.subdivisionNorm === subject.subdivisionNorm
+  return false
+}
+
+/** Which room counts differ, on a sale the plat rung took regardless. */
+function roomDifferenceNotes(subject: PricingSubject, sale: PricingSale): Array<'beds' | 'baths'> {
+  const notes: Array<'beds' | 'baths'> = []
+  const w = (n: number | null | undefined) =>
+    n == null || !Number.isFinite(n) || n <= 0 ? null : Math.floor(n)
+  const sb = w(subject.beds)
+  const cb = w(sale.beds)
+  if (sb != null && cb != null && sb !== cb) notes.push('beds')
+  const sa = w(subject.baths)
+  const ca = w(sale.baths)
+  if (sa != null && ca != null && sa !== ca) notes.push('baths')
+  return notes
+}
 
 function bracketEligible(
   subject: PricingSubject,
@@ -814,8 +871,8 @@ export function walkPricingLadder(
         ? 'the subject is not inside a golf or resort community'
         : tier.likeCommunity && byKey.size >= PRICING_MIN_COMPS
         ? 'the community supplied the minimum, so no peer community was needed'
-        : tier.sameSubdivision && !subject.subdivisionNorm
-        ? 'the subject has no subdivision on its MLS row'
+        : tier.sameSubdivision && !subject.subdivisionSlug && !subject.subdivisionNorm
+        ? 'no recorded plat holds the subject, and its MLS row names none either'
         : tier.adjacentSubdivision && !(subject.adjacentSubdivisionSlugs?.length)
           ? 'no plat next to the subject\'s is known'
           : tier.crossBoundary && !subject.marketArea
