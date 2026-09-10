@@ -1,3 +1,37 @@
+# Current — 2026-09-10 16:2xZ (CMA engine: comp selection rebuilt, branch not merged)
+
+Owner: `claude-opus-5` on `wt/cma-ship-20260907` (pushed). **Site-queue agents: nothing here touches
+`app/`, `components/site/**` or the design system. Do not merge this branch to `main` for me.**
+
+Matt on 23 Benaiah: "none of the rules created were followed for this, we should never have a range
+this wide." One root cause per layer, all fixed and committed:
+
+- **The facts pool reached back six months, not eighteen.** `selectPricingFactsPool` orders by close
+  date and caps at 800; 2,471 Bend sales matched the window and 800 came back. Every rung below that
+  line walked an empty pool, so the ladder left the neighborhood while the report said the
+  neighborhood was exhausted. `selectPricingFactsNear` now reads a complete three-mile box.
+- **Nothing graded a subject on price when its plat had no cell.** `lib/pricing/price-anchor.ts`, now
+  reaching 2/3/5/8 miles on rural ground where a one-mile ring holds two sales.
+- **The exact-bath wall** is replaced by one room rule for beds and baths (`lib/pricing/room-counts.ts`),
+  with a derived $0 adjustment printed in the comp matrix.
+- **The LLM judge** could drop the identical house next door for sitting outside the band the other
+  comps set. Held to the same-street rule the deterministic selector already used.
+- **An adjacent plat is a different plat** — the listings ladder exempted it from the price cut.
+- **Conflicting MLS facts** flag for review and price off the closed record inside ten years
+  (`lib/cma/subject-room-conflict.ts`).
+- **New contract check** `recommendation-in-range`: the headline number must sit inside the printed range.
+
+All four rulings are written into `marketing_brain_skills/producers/cma/SKILL.md` §0.1. 125/125 gates
+pass, G46 clean, 3,570 tests green. The wide-range backlog is being rebuilt with
+`scripts/cma-rebuild-wide-ranges.ts` and every result is held in the queue. Nothing sends; auto-send
+is still OFF pending SITE-56.
+
+**Open for Matt:** 73 queue documents fail to build for want of comparable sales, the dominant
+recorded causes being the bath wall and the missing price tier — both fixed today, so most should now
+build. And `MIN_COMPS` is 5 on the listings path against 3 on the facts path.
+
+---
+
 # Current — 2026-09-10 (loop process: catalogs are the UX bar)
 
 Owner: this session. Do not steal SITE-85 / SITE-72 / SITE-88. Process change on `main`, not a page claim.
