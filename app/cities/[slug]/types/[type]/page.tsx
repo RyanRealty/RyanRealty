@@ -1,12 +1,13 @@
 /**
  * /cities/[slug]/types/[type] — one property type in one city.
  *
- * THE OPENING IS A TITLE, A CLAIM, AND A MAP, IN THAT ORDER (2026-09-09).
+ * THE OPENING IS A TITLE, A CLAIM, HOUSES, AND A MAP (2026-09-10, SITE-89).
  * H1 `{Type} in {Place}`, then one plain sentence with the count and the price
- * band, then the Atlas wearing an eyebrow rather than a second display line —
- * the top of the page used to say "Single-family in Bend" and then
- * "Single-family on the map" in the same face at the same size and never state
- * a fact (taste table 2026-09-08).
+ * band, then a thin V3Carousel filmstrip of photographed listings (shadcn
+ * carousel adapted into the house barrel), then the Atlas wearing an eyebrow
+ * rather than a second display line. The filmstrip is the fold fix: at 375 the
+ * houses used to sit in #homes below the atlas and never appear in the first
+ * viewport. Do not shrink the atlas field; do not move the atlas rail.
  *
  * THE ATLAS IS GUARANTEED. It renders inside a Suspense boundary with a
  * standin of its own footprint, so the shell never waits on the boundary read
@@ -59,6 +60,7 @@ import {
   PlaceTypeRows,
   PlaceTypeSortBar,
 } from './_v3/PlaceTypeField.client'
+import { PlaceTypeFilm } from './_v3/PlaceTypeFilm.client'
 import { PlaceTypeAtlasSection } from './_v3/PlaceTypeAtlasSection'
 import { PlaceTypeAtlasStandin } from './_v3/PlaceTypeAtlasStandin'
 import '@/components/search/search-ledger.css'
@@ -166,12 +168,12 @@ export default async function CityPlaceTypePage({ params }: Props) {
   const listOk = listRead.ok
   const rows = listOk ? placeTypeListingRows(listRead.value) : []
   /* The map clips to the recorded city boundary; the claim above it counts
-     every listing with this city's MLS address. Bend: 768 and 493. The label
-     says which one the map is drawing so the two figures are two facts and not
-     a contradiction. */
+     every listing with this city's MLS address. Bend: 768 and 493. Name the
+     boundary scope only — H1 already said the type, so dotsAreTyped:false
+     avoids a second "Single-family…" display line (SITE-89 / grok-4.6). */
   const eyebrow = placeTypeAtlasEyebrow(
     spec,
-    spec.atlasDotType != null,
+    false,
     `inside the ${cityName} city limits`,
   )
 
@@ -202,6 +204,12 @@ export default async function CityPlaceTypePage({ params }: Props) {
               </>
             ) : null}
           </div>
+          {rows.length > 0 ? (
+            <PlaceTypeFilm
+              rows={rows}
+              label={`Photographed ${spec.nounMany} in ${cityName}`}
+            />
+          ) : null}
         </div>
 
         <PlaceTypeField>

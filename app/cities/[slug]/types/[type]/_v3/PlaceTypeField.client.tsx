@@ -30,14 +30,9 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import {
-  V3Atlas,
-  V3ListingRow,
-  V3_LEDGER_CLASS,
-  V3_ROOT_CLASS,
-  type V3AtlasProps,
-  type V3ListingRowData,
-} from '@/components/site/v3'
+import { V3Atlas, type V3AtlasProps } from '@/components/site/v3/V3Atlas.client'
+import { V3ListingRow, type V3ListingRowData } from '@/components/site/v3/V3ListingRow'
+import { V3_LEDGER_CLASS, V3_ROOT_CLASS } from '@/components/site/v3/atoms'
 import { cn } from '@/lib/utils'
 import {
   PLACE_TYPE_SORTS,

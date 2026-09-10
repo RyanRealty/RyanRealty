@@ -49,6 +49,19 @@ describe('place-type pages', () => {
     }
   })
 
+  /** SITE-89: photographed houses must sit in the first viewport, not only in #homes. */
+  it('puts a V3Carousel filmstrip of photographed listings under the claim', () => {
+    expect(CITY).toMatch(/<PlaceTypeFilm/)
+    expect(CITY).toMatch(/from '\.\/_v3\/PlaceTypeFilm\.client'/)
+    const film = readFileSync(
+      resolve('app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx'),
+      'utf8',
+    )
+    expect(film).toMatch(/V3Carousel/)
+    expect(film).toMatch(/place-type-film__card/)
+    expect(film).toMatch(/listingRowPhotoSrc/)
+  })
+
   /**
    * THE BUG THE NODE EXISTS FOR. The Atlas used to be
    * `atlasRegions.length > 0 ? <V3Atlas/> : null`, so a guarded boundary read
