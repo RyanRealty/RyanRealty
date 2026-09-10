@@ -2,7 +2,7 @@
   "route": "app/cities/[slug]/types/[type]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. Built from components/site/v3. No mockup in this directory: the place-type class is the city/community type-card landing, not a Tetherow one-off.",
   "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker type-filtered city results. Those surfaces dump the visitor into a search grid. This page is a place-type node: leftover count and median that already back the type card, a living atlas of the parent city with the type stated in the claim, and a photographed list of that type. Unique title, canonical, ItemList when listings exist. Breadcrumb is City then type, no Home.",
-  "note": "H1 is `{Type} in {Place}` (Condos in Redmond) and it is the page's only display-scale line: the Atlas opens directly under it wearing an eyebrow (V3Atlas headlineTone='eyebrow'), not a second Amboqia title. One section-0 sourced claim sentence sits under the H1 with its source line \u2014 the count, the lowest ask and the highest all come from ONE listing_tile_mv read, because leftover market truth and the MV disagree by 14% on Bend single-family (658 vs 768 measured 2026-09-09) and a count from one pipeline beside a band from the other describes two sets. The Atlas section is UNCONDITIONAL: PlaceTypeAtlasSection streams behind a Suspense boundary whose fallback and whose miss branch are both PlaceTypeAtlasStandin, so the differentiator is never simply absent. Rows and marks share one hovered key in both directions. Unknown type notFound(). Do not collide with app/cities/[slug]/[neighborhoodSlug].",
+  "note": "H1 is `{Type} in {Place}` and it is the page's only display-scale line. SITE-89: a thin V3Carousel filmstrip of photographed listings (shadcn-carousel adapted) sits under the claim in the first viewport, then the Atlas wearing an eyebrow (V3Atlas headlineTone='eyebrow'), not a second Amboqia title. One section-0 sourced claim sentence sits under the H1 with its source line \u2014 the count, the lowest ask and the highest all come from ONE listing_tile_mv read; the claim names that the map counts city-limits homes separately because leftover address count and boundary marks disagree (Bend ~766 vs ~495). The Atlas section is UNCONDITIONAL: PlaceTypeAtlasSection streams behind a Suspense boundary whose fallback and whose miss branch are both PlaceTypeAtlasStandin. Rows and marks share one hovered key. Unknown type notFound(). Do not collide with app/cities/[slug]/[neighborhoodSlug].",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -56,11 +56,11 @@
     }
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "Separate Agent subagent, one per class, spawned by the builder with the rubric table, the two shot paths and TASTE.md, told not to read page source; three independent scorings in the one call, median recorded. Four scoring rounds ran on this node (medians place-type 71/69/67/77, place-type-community 73/70/68/70); the recorded round is the last one, whose prompt carries no round history, matching the conditions of the 2026-09-08 table instrument.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluatedAt": "2026-09-10",
+    "rubricVersion": "v1-2026-09-10",
+    "evaluator": "scripts/taste-evaluate.ts, judge grok-4.6, builder grok-4.5; three independent scorings, median recorded. First grok-4.6 mark on this class.",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/cities/bend/types/single-family"
@@ -72,60 +72,78 @@
       "states": [
         "default"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, next dev on the lane's own branch"
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, next dev --webpack -p 3122 on wt/site-89-place-type-20260910"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/place-type/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/place-type/shots/mobile375.png"
     },
-    "shotsHash": "sha256:a652062f068ed5c17549fc95cec8961eac0182b1ce192b3d910dddcb6a50d2d1",
+    "shotsHash": "sha256:164a0f2ca35bc3e0c33d9f39ee85da5cea45c15dad507266d48a67e602d4c989",
     "scores": [
-      77,
-      75,
-      81
+      51,
+      54,
+      61
     ],
-    "score": 77,
-    "beats": "Zillow's Bend map-search page: pin clutter, ad units and mixed typography over a generic basemap, against one quiet navy-on-cream instrument whose map encodes 90-day sale density instead of stacking pins, with the count and the price band stated in a sentence and traced to the MLS read that produced them.",
+    "score": 54,
+    "beats": "Zillow Bend single-family search \u2014 we win on Atlas 90-day sales-density cells versus Zillow's pin map; we lose the fold, which is still a restated type title plus a photo strip before the map.",
+    "adaptedFrom": [
+      {
+        "id": "shadcn-carousel"
+      }
+    ],
     "defects": [
+      {
+        "section": "opening H1",
+        "severity": "taste",
+        "finding": "H1 'Single-family in Bend' restates the breadcrumb 'Bend / Single-family' as a second display line with no figure in the title; the 766 and the price range are demoted to body copy under a filing-cabinet tab.",
+        "replaceWith": "hero figure"
+      },
+      {
+        "section": "opening claim",
+        "severity": "taste",
+        "finding": "The one sentence treats $397,000 to $11,900,000 as the price band; that is the cheapest and dearest ask, a 30x dump that does not say where Bend single-family actually sits.",
+        "replaceWith": "hero figure"
+      },
+      {
+        "section": "ON THE MARKET",
+        "severity": "taste",
+        "finding": "The fold's inventory is stills with prices on photos; the only hint the rail moves is a clipped next card with no arrow or dots. SITE-89 required this strip in the 375 fold \u2014 layout lock wants Atlas immediately under the claim, so the strip and the lock fight.",
+        "replaceWith": "V3Carousel"
+      },
+      {
+        "section": "LISTINGS INSIDE THE BEND CITY LIMITS",
+        "severity": "blocking",
+        "finding": "The claim says ~766 single-family homes for sale (Bend address); the Atlas legend on the same desktop fold reads ~495 for sale and ~264 pending (city limits). Named as two censuses in the claim; still reads as one broken inventory to the judge.",
+        "replaceWith": null
+      },
+      {
+        "section": "LISTINGS INSIDE THE BEND CITY LIMITS",
+        "severity": "taste",
+        "finding": "At 375 the first viewport crops the density map with no fewer/more-sales legend, no for-sale count, no House toggle, and no price scrubber \u2014 V3Atlas every-caller (SITE-53), not fixed here.",
+        "replaceWith": "house-atlas"
+      },
       {
         "section": "Atlas rail activity lines",
         "severity": "taste",
-        "finding": "Just listed / Went pending / Sold render as three plain sentences with identical dots and no encoding of stage, price or recency, two inches from a heatmap that solves the same problem with a real visual encoding."
-      },
-      {
-        "section": "Atlas rail",
-        "severity": "taste",
-        "finding": "The rail groups a gradient legend, a dot legend, a checkbox and a price scrubber with whitespace alone, and the type control is a bare checkbox rather than a control from the system's own set. Both belong to V3Atlas and change every caller, so they are named here rather than fixed in this node."
-      },
-      {
-        "section": "mobile375 fold",
-        "severity": "major",
-        "finding": "At 375 the rail and both next-actions sit below the map, so the phone's first screen is the title, the claim, the source line and the map with nothing to filter or tap. Moving the rail above the map was tried and scored WORSE on both classes (place-type 71 to 69, place-type-community 73 to 70) because it buried the map; the real answer is a compact control bar inside V3Atlas, for every caller."
-      },
-      {
-        "section": "page composition",
-        "severity": "taste",
-        "finding": "Rail beside map is the most-copied shape in real estate; the brand reads from the palette and the type, not yet from the composition itself."
-      },
-      {
-        "section": "Atlas zoom control",
-        "severity": "minor",
-        "finding": "The evaluator read the zoom pair as possibly under the 44px floor from the still. Measured in the browser at 375 it is 44.0 by 44.0 on both buttons, from --v3-tap; no change made."
+        "finding": "Just listed / Went pending / Sold render as plain sentences with identical dots \u2014 V3Atlas every-caller.",
+        "replaceWith": "house-atlas"
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-04",
-      "score": 62,
-      "note": "structure pass, no rendered shots; the 2026-09-08 taste table scored this class 69 (64/69/73) on the same rubric and shot spec."
+      "evaluatedAt": "2026-09-09",
+      "score": 77,
+      "evaluatorModel": "claude-sonnet-5",
+      "note": "Prior receipt was claude-sonnet-5 on rubric v1-2026-09-08 (median 77). First grok-4.6 mark on the live instrument; comparedToPrior is rebaselined."
     },
-    "rebaselineReason": "The committed mark carries no evaluatorModel, no rubricVersion and no shotsHash \u2014 it was a structure pass with no rendered shots \u2014 so it is not the same instrument and cannot be risen above. Recorded here as the first mark on the versioned instrument. For reference, the 2026-09-08 taste table scored this class on the same rubric and the same shot spec."
+    "rebaselineReason": "First grok-4.6 mark on this class. Prior mark differs on evaluatorModel (claude-sonnet-5 \u2192 grok-4.6), rubricVersion (v1-2026-09-08 \u2192 v1-2026-09-10), and shotsHash (new fold filmstrip shots)."
   },
   "sectionOrder": [
     "V3SectionTracker",
     "MetadataBlock",
     "V3Breadcrumb",
     "V3Heading + claim sentence + source line",
+    "PlaceTypeFilm (V3Carousel / shadcn-carousel, fold)",
     "PlaceTypeAtlasSection (#atlas, streamed, standin fallback)",
     "PlaceTypeSortBar + PlaceTypeRows (#homes)",
     "V3Quiet",

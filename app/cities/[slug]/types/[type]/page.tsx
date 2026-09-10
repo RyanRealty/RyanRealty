@@ -151,7 +151,7 @@ export default async function CityPlaceTypePage({ params }: Props) {
      a measurement. */
   const measuredEmpty =
     countRead.ok && countRead.value === 0 && listRead.ok && listRead.value.length === 0
-  const claim = placeTypeClaim({
+  const claimBase = placeTypeClaim({
     spec,
     placeName: cityName,
     inventory: {
@@ -162,6 +162,15 @@ export default async function CityPlaceTypePage({ params }: Props) {
       scopeNote: `with a ${cityName} address`,
     },
   })
+  /* Name the second census in the claim itself so 766 (address) and the Atlas
+     legend (city limits) read as two facts, not one broken inventory
+     (SITE-89 / grok-4.6 honesty). */
+  const claim = claimBase
+    ? {
+        sentence: `${claimBase.sentence.replace(/\.$/, '')} — the map below counts homes inside the city limits.`,
+        source: claimBase.source,
+      }
+    : null
 
   const headline = placeTypeHeadline(spec, cityName)
   const copy = placeTypeMetadataCopy({ spec, placeName: cityName, count: activeCount })
@@ -238,7 +247,7 @@ export default async function CityPlaceTypePage({ params }: Props) {
                 name: cityName,
                 href: placeHref,
               }}
-              listingsCount={activeCount}
+              listingsCount={null}
               source={{ kind: 'city', geoSlug: slug, cityName }}
             />
           </Suspense>
