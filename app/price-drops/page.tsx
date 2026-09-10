@@ -54,10 +54,10 @@ import { PriceDropPhotos, PriceDropsOpening } from './_v3/PriceDropsField'
 export const revalidate = 1800
 
 export const metadata: Metadata = pageMetadata({
-  title: 'Price Drops in Central Oregon | Last 7 Days',
+  title: 'Price Drops in Central Oregon | Last 7 Days | Homes Cut This Week',
   description:
-    'Active single-family homes in Central Oregon where the seller cut the asking price in the last 7 days. ' +
-    'Current price, original list price, and drop percentage from the regional MLS. Bend, Redmond, Sisters, Sunriver, and nearby cities.',
+    'Photographed asking-price cuts on active Central Oregon single-family homes from the last 7 days. ' +
+    'See current list price, prior ask, drop percent, beds, baths, and sqft for each reduced home in Bend, Redmond, Sisters, Sunriver, and nearby cities.',
   path: '/price-drops',
   keywords: [
     'price reduced homes Central Oregon',
@@ -65,6 +65,7 @@ export const metadata: Metadata = pageMetadata({
     'homes with price reductions Central Oregon',
     'reduced asking price Oregon homes',
     'price cut homes for sale Bend',
+    'recently reduced homes Central Oregon',
   ],
 })
 
@@ -126,6 +127,18 @@ export default async function PriceDropsRegionPage() {
       medianDropPctLabel,
       fetchedAt: drops.length > 0 ? fetchedAt : null,
     }),
+    ...(fieldItems.length > 0
+      ? [
+          {
+            type: 'itemList' as const,
+            name: 'Central Oregon homes with a price cut in the last 7 days',
+            items: fieldItems.slice(0, 24).map((item) => ({
+              name: `${item.priceLabel} · ${item.title}`,
+              url: item.href.startsWith('http') ? item.href : `${siteUrl}${item.href}`,
+            })),
+          },
+        ]
+      : []),
   ]
 
   const cityItems: V3QuietItem[] = DROPS_CITY_SLUGS.map((slug) => ({
@@ -171,26 +184,34 @@ export default async function PriceDropsRegionPage() {
                     ? `price cuts this week · ${captionCount} shown below`
                     : 'price cuts this week'
               }
+              captionDrillHref={distribution ? '#spread' : '#cuts'}
+              captionDrillLabel={
+                distribution ? 'see how far each ask came down' : 'browse the cuts'
+              }
             />
-            {distribution ? (
-              <V3Drawing
-                id="spread"
-                className="pd-spread"
-                figures={[distribution]}
-                label="This week's price cuts by how far the ask came down"
+            {/* Photographs open the fold; drawing is the differentiator under the rail. */}
+            <div className="pd-fold">
+              <V3Field
+                id="cuts"
+                className="pd-homes-field"
+                ariaLabel="Homes with a price cut in the last 7 days"
+                items={fieldItems}
+                mapSlot={<PriceDropPhotos items={fieldItems} />}
+                emptyMessage="No price cut on this pull has both a street and a list price, so this list has nothing to name."
               />
-            ) : null}
-            <V3Field
-              id="cuts"
-              className="pd-homes-field"
-              ariaLabel="Homes with a price cut in the last 7 days"
-              items={fieldItems}
-              mapSlot={<PriceDropPhotos items={fieldItems} />}
-              emptyMessage="No price cut on this pull has both a street and a list price, so this list has nothing to name."
-            />
+              {distribution ? (
+                <V3Drawing
+                  id="spread"
+                  className="pd-spread"
+                  figures={[distribution]}
+                  label="This week's price cuts by how far the ask came down"
+                />
+              ) : null}
+            </div>
             {/* The "by how much" in text, not only in ld+json, and the stamp the
                 Dataset already carried but the page never printed (same audit). */}
             <V3SourceLine
+              className="pd-source"
               source={`${dropsTrace('Central Oregon')}${
                 medianDropPctLabel ? `. Median drop ${medianDropPctLabel}` : ''
               }${totalReducedLabel ? `, ${totalReducedLabel} in asking prices cut this week` : ''}${
