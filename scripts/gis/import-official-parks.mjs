@@ -17,8 +17,9 @@
  * with the same exact NAME are unioned — the layer is parcel outlines.
  *
  * American Legion Community Park (Redmond) is NOT in the Deschutes Parks
- * layer under that name (queried NAME / LOCATION=REDMOND, 2026-09-10). It
- * stays OSM until City of Redmond publishes a named polygon.
+ * layer under that name (queried NAME / LOCATION=REDMOND, 2026-09-10; Crook
+ * Parks have no American Legion name). SITE-67 removed the OSM row;
+ * hasPolygon=false until City of Redmond publishes a named polygon.
  *
  * Usage:
  *   node scripts/gis/import-official-parks.mjs           # dry run

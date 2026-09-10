@@ -66,7 +66,7 @@ const DECLARED_GEO_TYPES = {
     minRows: 3427,
     why: 'Deschutes County GIS subdivision plats + Crook County GIS Subdivisions (LandGroup/7) — subdivision pages',
   },
-  park: { minRows: 18, why: 'Oregon State Parks (OPRD via Oregon GEO) + Deschutes County GIS Parks + Crook County GIS Parks — park pages' },
+  park: { minRows: 17, why: 'Oregon State Parks (OPRD via Oregon GEO) + Deschutes County GIS Parks + Crook County GIS Parks — park pages. American Legion Community Park has no named official polygon (SITE-67).' },
   school: { minRows: 42, why: 'Deschutes County GIS school ATTENDANCE areas (BoundaryFD/19) — school pages' },
   school_district: {
     minRows: 6,
@@ -129,8 +129,8 @@ const NON_OFFICIAL_MAX = {
     debt: 'Self-derived hulls over Spark MLS subdivision aliases (Sunriver, Black Butte Ranch, Broken Top, ...). Not agency geometry. Re-source to Deschutes County GIS plat unions and lower this cap.',
   },
   'OpenStreetMap contributors': {
-    max: 1,
-    debt: 'Crowd-sourced park shapes. SITE-66 re-sourced 11 of 12 city parks to Deschutes County GIS Parks (BPRD / City of Redmond / City of Sisters operators) and Crook County GIS Parks (Ochoco Creek). American Legion Community Park (Redmond) is not in those layers under that name — keep until City of Redmond publishes a named polygon, then lower this cap to 0.',
+    max: 0,
+    debt: 'Crowd-sourced park shapes. SITE-66 re-sourced 11 city parks to county GIS. SITE-67 removed the last OSM row (american-legion-park): Deschutes Parks LOCATION=REDMOND and Crook Parks have no American Legion name; ODF Jefferson taxlots MapServer cannot query. Cap is 0.',
   },
 }
 

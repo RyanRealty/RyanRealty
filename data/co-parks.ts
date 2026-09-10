@@ -443,7 +443,10 @@ const CITY: CoPark[] = [
       'Restrooms',
     ],
     sourceUrl: 'https://www.redmondoregon.gov/Home/Components/FacilityDirectory/FacilityDirectory/12/2751',
-    hasPolygon: true,
+    // SITE-67: Deschutes Parks (LOCATION=REDMOND) and Crook Parks have no
+    // NAME=American Legion*. City of Redmond publishes no named polygon. OSM
+    // removed; the page frames nearby homes, not a crowd-sourced shape.
+    hasPolygon: false,
   },
   {
     slug: 'village-green-city-park',
