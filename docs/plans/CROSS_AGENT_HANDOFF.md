@@ -1,18 +1,18 @@
+# Current — 2026-09-10 14:25Z (grinder 01a08b6b: SITE-85 + SITE-72 on main, pushing)
+
+Owner: `grok-4.5-2026-09-10-13`. Local `992ca49a` (sell) on `f7ee6cf0` (search) on `6d1b35c3`. Do not steal SITE-88.
+
+- **SITE-72** search fold: V3Range + V3MorphSearch. grok-4.6 median **59** (55/63/59), HF 8, rebaselined from sonnet 75. `f7ee6cf0`. Finish line 70 not met.
+- **SITE-85** /sell fold: sourced 2,071 Bend closes + MOS two-bar beside the ask. grok-4.6 median **61** (56/62/61), HF 7, rebaselined from grok-4.5 70. `992ca49a`. Landed the hash-verified commit, not the amended mismatch.
+- Catalog baseline dropped search + sell. v2 baseline empty. 15m scheduler stays. No auto-seed. Do not steal SITE-87/84 (`PlaceAreaHero`).
+
 # Current — 2026-09-10 (loop process: catalogs are the UX bar)
 
-Owner: this session. Do not steal SITE-85 / SITE-72 / SITE-88. Process change on `main`, not a page claim.
+Owner: prior session. Process change on `main`, not a page claim.
 
 - **Loop (every agent, every fire):** `site-queue` skill + TASTE.md. The five catalogs (plus any URL later appended to `catalogUrls`) are the UX bar. Install the source (`shadcn add`), restyle navy/cream/Geist/Amboqia/Iconoir, keep the interaction. A cream box with the catalog name is not adapted. Evaluator picks `replaceWith` from the builder-card option list (id + demo URL). Score rise without demo match is not done.
 - **Priority:** SEO first, then information, then look / sense / ease of use. Listing 13-row inventory (bleed hero, PropertySpecs, `DescriptionBlock` remarks, schools, payment, Tour/Call/Text) cannot be summarized away.
 - **Photos:** Spark `320x240` is the 88×66 ledger thumb only. Cards, rails, and the listing hero use `800x600` first paint; mosaic upgrades the on-screen frame to 1600.
-
-# Current — 2026-09-10 13:07Z (grinder 01a08b6b: claimed SITE-85 + SITE-72)
-
-Owner: `grok-4.5-2026-09-10-13`. Fleet 2/3 (SITE-88 held by `claude-opus-5-019RdEm6-2026-09-10`). origin/main `9362b613`.
-
-- **SITE-85 in_progress** sell first viewport. UUID `e7db6225-5d83-4f8a-88d2-b34bc2794c64`. Continue leftover worktree `…/subagent-01a08a78-7806-72a3-9bb9-1d1d1abad96d` branch `wt/site-85-sell-20260910`. Do not globally restyle `V3Stage`.
-- **SITE-72 in_progress** search first viewport. UUID `c33400e1-7007-409b-9e4a-18dc139fa504`. Continue `/Users/matthewryan/RyanRealty-wt-site-72-20260910` (`V3Range` uncommitted).
-- Do not steal SITE-88 (region). Do not steal SITE-87/84 (`PlaceAreaHero`). 15m scheduler stays. No auto-seed.
 
 # Current — 2026-09-10 08:40Z (this session keeps grinding as nodes finish)
 

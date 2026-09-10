@@ -1,7 +1,5 @@
 {
   "note": "ci:taste-canon — SHRINK-ONLY. Receipts already dated on or after 2026-09-08 when the instrument fields landed, so they predate the rule. A route leaves by its next evaluator pass writing a full receipt (scripts/lib/taste-receipt.mjs); no route may be added.",
   "generatedAt": "2026-09-09T19:40:35.688Z",
-  "routes": [
-    "design_system/ryan-realty/ui_kits/sell/parity.json"
-  ]
+  "routes": []
 }

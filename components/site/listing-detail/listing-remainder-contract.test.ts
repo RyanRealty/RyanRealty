@@ -7,7 +7,8 @@ const HERO = readFileSync(resolve('components/site/listing-detail/ListingHero.ts
 
 describe('listing remainder composition', () => {
   it('does not start the listing hero on a 320 Spark thumb', () => {
-    expect(HERO).toContain('LISTING_FIELD_LEAD_PHOTO_SIZE')
+    expect(HERO).toContain('preferListingMosaicPhotoUrl')
+    expect(HERO).toMatch(/const live = preferListingMosaicPhotoUrl\(src\)/)
     expect(PAGE).toContain('LISTING_FIELD_LEAD_PHOTO_SIZE')
   })
 
