@@ -611,7 +611,7 @@ export default function SearchFilters({
               ) : null
             }
           >
-            <div className="v3-morph-search__field srch-morph__field">
+            <div className="v3-morph-search__field srch-morph__field min-h-11">
               <HugeiconsIcon icon={Search01Icon} className="srch-morph__mark" aria-hidden />
               <Input
                 ref={locationInputRef}
@@ -1334,7 +1334,7 @@ export default function SearchFilters({
           stay as real pickers in the top row; this strip shows removable
           applied filters + Clear all. */}
       {hasAnyFilter && (
-        <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto border-t border-border px-3 py-2 no-scrollbar sm:hidden">
+        <div className="flex min-h-11 flex-nowrap items-center gap-1.5 overflow-x-auto border-t border-border px-3 py-2 no-scrollbar sm:hidden">
           {activeStatusLabel && (
             <span className="shrink-0">
               <RegistryFilterChip label={activeStatusLabel} onRemove={() => setFilter('status', undefined)} />
