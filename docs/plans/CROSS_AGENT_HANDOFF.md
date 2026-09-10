@@ -1,8 +1,17 @@
+# Current — 2026-09-10 06:18Z (15m grinder 01a0894e: SITE-75/77 built, taste still due)
+
+Owner: `grok-4.5-2026-09-10-05`. Worktree `/Users/matthewryan/RyanRealty-wt-site-75-77` branch `wt/site-75-77-20260910` @ `b3384f49` (ahead of origin/main, **not pushed**).
+
+- **SITE-75** `/housing-market`: Instrument `#market` is now first; chooser follows as "More reports"; "Five products" dropped.
+- **SITE-77** `/buy`: Stage inventory band is one sourced sentence, not three KPI tiles; short frame kept so Field still breaks the fold.
+
+Next fire: recapture 1440/375, grok-4.6 evaluate (adaptedFrom + replaceWith), then merge to main, ONE push, ONE deploy:verify. Do not steal SITE-60 / SITE-63 / SITE-83.
+
 # Current — 2026-09-10 (product hold: UI/UX rises, every other metric holds)
 
 Owner: grok-4.6 this session. **No SITE claims.** Did not steal SITE-60 / SITE-63 / SITE-75 / SITE-77.
 
-Matt: improving UI/UX, all other metrics must remain or be optimized. Encoded: `productHoldProblems` in `ci:taste-canon` (honestyFunction cannot fall), seed accept + site-queue skill + evaluator prompt. `ci:mockup-parity` and `ci:runtime-gates` stay the hold for required sections, payload, tap targets.
+Matt: improving UI/UX, all other metrics must remain or be optimized. Encoded in `ci:taste-canon`: honestyFunction cannot fall or be omitted to skip; requiredComponents cannot shrink vs HEAD; JSON-LD and conversion-ask roles at HEAD must remain. Titles / payload / tap targets stay on `ci:seo-shell` and `ci:runtime-gates` (shrink-only). Seed accept + site-queue skill + evaluator prompt carry the same hold.
 
 # Current — 2026-09-10 06:00Z (15m grinder 01a0894e: claimed SITE-75 + SITE-77)
 

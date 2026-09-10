@@ -145,8 +145,12 @@ in `scripts/lib/taste-receipt.mjs`):
   may rise. Honesty (`honestyFunction` / HF/10), sourced figures, required
   sections, JSON-LD, titles, conversion asks, tap targets, and page payload
   must hold or improve. A prettier page that drops any of those is not done.
-  When both marks recorded `honestyFunction` or `perCriterion.honesty`, the
-  new number must not be lower (`ci:taste-canon`).
+  When the prior mark recorded `honestyFunction` or `perCriterion.honesty`,
+  the new receipt must record it and must not be lower — omitting the
+  criterion to skip the hold fails (`ci:taste-canon`). `requiredComponents`
+  cannot shrink vs HEAD; a JSON-LD or conversion-ask role present at HEAD
+  must remain (rename allowed). Titles, payload, and tap targets stay on
+  `ci:seo-shell` / `ci:runtime-gates` (shrink-only).
 
 Both PNGs must exist in the repo. `ci:taste-canon` fails a new review without
 them. Receipts written before this shape landed stay valid; ones already dated

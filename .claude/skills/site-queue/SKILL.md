@@ -42,7 +42,9 @@ system, TASTE.md), and `docs/DEVELOPMENT_PROCESS.md`.
   (§0), `requiredComponents`, JSON-LD, titles, conversion asks, tap targets, and
   page payload must hold or improve. A prettier page that drops any of those is
   not done. `ci:mockup-parity` and `ci:runtime-gates` stay green.
-  `honestyFunction` must not fall vs the prior mark (`ci:taste-canon`).
+  `honestyFunction` must not fall vs the prior mark, and omitting it to skip
+  the hold fails. `requiredComponents` cannot shrink vs HEAD; a JSON-LD or
+  conversion-ask role present at HEAD must remain (`ci:taste-canon`).
 - The mark a taste score must rise above is the previous mark **from the same
   instrument** — same `evaluatorModel`, same `rubricVersion`, same `shotsHash`.
   If any of the three differs, the item re-baselines itself (`comparedToPrior:

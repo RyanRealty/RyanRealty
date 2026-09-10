@@ -82,8 +82,8 @@ function baseReceipt(over = {}) {
   }
 }
 
-function writeReceipt(tasteReview) {
-  writeJson(`${KIT}/parity.json`, { route: 'app/testroute/page.tsx', requiredComponents: [], tasteReview })
+function writeReceipt(tasteReview, requiredComponents = []) {
+  writeJson(`${KIT}/parity.json`, { route: 'app/testroute/page.tsx', requiredComponents, tasteReview })
 }
 
 function run() {
@@ -356,7 +356,7 @@ describe('check-taste-canon — instrument receipt (2026-09-08)', () => {
 
 describe('check-taste-canon — the committed receipt is a prior mark', () => {
   /** Commit a receipt at HEAD so the working tree has something to compare to. */
-  function commitReceipt(tasteReview) {
+  function commitReceipt(tasteReview, requiredComponents = []) {
     const git = (args) => {
       const r = spawnSync('git', args, { cwd: SANDBOX, encoding: 'utf8', env: cleanEnv })
       if (r.status !== 0) throw new Error(`git ${args.join(' ')} failed:\n${r.stdout}${r.stderr}`)
@@ -364,7 +364,7 @@ describe('check-taste-canon — the committed receipt is a prior mark', () => {
     git(['init', '-q'])
     git(['config', 'user.email', 'test@test.invalid'])
     git(['config', 'user.name', 'test'])
-    writeReceipt(tasteReview)
+    writeReceipt(tasteReview, requiredComponents)
     git(['add', '-A'])
     git(['commit', '-qm', 'seed'])
   }
@@ -414,6 +414,97 @@ describe('check-taste-canon — the committed receipt is a prior mark', () => {
     const r = run()
     expect(r.code).toBe(1)
     expect(r.out).toMatch(/honestyFunction 3 fell below the prior mark 8/)
+  })
+
+  it('refuses a taste rise that omits honestyFunction after the prior mark recorded it', () => {
+    scaffold()
+    commitReceipt(
+      committed({
+        criteria: { designQuality: 20, originality: 18, interaction: 10, craft: 12, honestyFunction: 8 },
+      }),
+    )
+    writeReceipt(
+      baseReceipt({
+        comparedToPrior: 'rose',
+        scores: [81, 84, 82],
+        score: 82,
+        priorMark: {
+          evaluatedAt: '2026-09-08',
+          score: 75,
+          evaluatorModel: 'claude-opus-4-1',
+          rubricVersion: 'v1-2026-09-08',
+          shotsHash: hash(),
+          criteria: { designQuality: 20, originality: 18, interaction: 10, craft: 12, honestyFunction: 8 },
+        },
+      }),
+    )
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toMatch(/honestyFunction omitted while the prior mark recorded 8/)
+  })
+
+  it('refuses a taste rise that shrinks requiredComponents vs HEAD', () => {
+    scaffold()
+    const comps = [{ name: 'MetadataBlock' }, { name: 'V3Ask' }, { name: 'V3Stage' }]
+    commitReceipt(committed(), comps)
+    writeReceipt(
+      baseReceipt({
+        comparedToPrior: 'rose',
+        priorMark: {
+          evaluatedAt: '2026-09-08',
+          score: 75,
+          evaluatorModel: 'claude-opus-4-1',
+          rubricVersion: 'v1-2026-09-08',
+          shotsHash: hash(),
+        },
+      }),
+      [{ name: 'V3Ask' }, { name: 'V3Stage' }],
+    )
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toMatch(/requiredComponents shrank 3 → 2/)
+  })
+
+  it('refuses swapping JSON-LD out of requiredComponents even when the count holds', () => {
+    scaffold()
+    commitReceipt(committed(), [{ name: 'MetadataBlock' }, { name: 'V3Ask' }, { name: 'V3Stage' }])
+    writeReceipt(
+      baseReceipt({
+        comparedToPrior: 'rose',
+        priorMark: {
+          evaluatedAt: '2026-09-08',
+          score: 75,
+          evaluatorModel: 'claude-opus-4-1',
+          rubricVersion: 'v1-2026-09-08',
+          shotsHash: hash(),
+        },
+      }),
+      [{ name: 'V3Quiet' }, { name: 'V3Ask' }, { name: 'V3Stage' }],
+    )
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toMatch(/JSON-LD dropped from requiredComponents/)
+  })
+
+  it('accepts renaming ContactAsk to V3Ask and growing the contract', () => {
+    scaffold()
+    commitReceipt(committed(), [{ name: 'ContactAsk' }, { name: 'MetadataBlock' }])
+    writeReceipt(
+      baseReceipt({
+        comparedToPrior: 'rose',
+        priorMark: {
+          evaluatedAt: '2026-09-08',
+          score: 75,
+          evaluatorModel: 'claude-opus-4-1',
+          rubricVersion: 'v1-2026-09-08',
+          shotsHash: hash(),
+        },
+      }),
+      [{ name: 'V3Ask' }, { name: 'MetadataBlock' }, { name: 'V3Stage' }],
+    )
+    const r = run()
+    expect(r.out).toContain('taste-canon OK')
+    expect(r.code).toBe(0)
   })
 
   it('accepts a rise that names the committed mark', () => {

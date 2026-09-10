@@ -29,7 +29,7 @@ export const FINISH_LINE = 70
 
 /** Matt 2026-09-10: UI/UX rises; every other product metric holds or improves. */
 export const PRODUCT_HOLD =
-  'Product hold: UI/UX may rise; honesty, sourced figures, requiredComponents, JSON-LD, titles, conversion asks, tap targets, and page payload must hold or improve. A prettier page that drops any of those is not done. ci:mockup-parity and ci:runtime-gates stay green. honestyFunction must not fall vs the prior mark.'
+  'Product hold: UI/UX may rise; honesty, sourced figures, requiredComponents, JSON-LD, titles, conversion asks, tap targets, and page payload must hold or improve. A prettier page that drops any of those is not done. ci:mockup-parity and ci:runtime-gates stay green. honestyFunction must not fall vs the prior mark (omitting it to skip the hold fails). requiredComponents cannot shrink vs HEAD; a JSON-LD or conversion-ask role present at HEAD must remain.'
 
 /** The rubric this instrument scores against — TASTE.md's five-criterion table. */
 export const RUBRIC_VERSION = 'v1-2026-09-08'

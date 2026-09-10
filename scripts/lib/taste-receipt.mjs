@@ -226,10 +226,11 @@ export function receiptV2Problems(tr, { root, rubricText, headReceipt = null }) 
     }
   }
 
-  // 8. UI/UX may rise; honesty cannot fall (Matt 2026-09-10). Other product
-  //    metrics (requiredComponents, JSON-LD, payload, tap targets) are held
-  //    by their own gates. This arm only fires when both marks recorded the
-  //    criterion — old receipts without criteria stay valid.
+  // 8. UI/UX may rise; honesty cannot fall or be omitted to skip the hold
+  //    (Matt 2026-09-10). requiredComponents / JSON-LD / ask roles are held
+  //    against HEAD in check-taste-canon.mjs. Payload and tap targets stay
+  //    on ci:runtime-gates (shrink-only). Titles/JSON-LD source presence stay
+  //    on ci:seo-shell / ci:ai-structured-data.
   const holdPrior = isPlainObject(tr.priorMark) ? tr.priorMark : headScored
   p.push(...productHoldProblems(tr, holdPrior))
   if (headScored && holdPrior !== headScored) p.push(...productHoldProblems(tr, headScored))
@@ -249,12 +250,18 @@ function criterionScore(obj, names) {
 /**
  * A prettier page that scores lower on honesty than the prior mark on the
  * same instrument is not done. Design/originality/interaction may move;
- * honestyFunction (HF/10) must hold or rise when both receipts recorded it.
+ * honestyFunction (HF/10) must hold or rise when the prior recorded it.
+ * Omitting the criterion to skip the hold is the same as dropping it.
  */
 export function productHoldProblems(tr, prior) {
   if (!isPlainObject(tr) || !isPlainObject(prior)) return []
   const next = criterionScore(tr, ['honestyFunction', 'honesty'])
   const prev = criterionScore(prior, ['honestyFunction', 'honesty'])
+  if (prev != null && next == null) {
+    return [
+      `honestyFunction omitted while the prior mark recorded ${prev}. Record it; UI/UX cannot hide a drop in honesty (CLAUDE.md §0).`,
+    ]
+  }
   if (next == null || prev == null) return []
   if (next < prev) {
     return [
@@ -262,6 +269,56 @@ export function productHoldProblems(tr, prior) {
     ]
   }
   return []
+}
+
+/** Names from a parity.json requiredComponents list (strings or {name}). */
+export function componentNames(list) {
+  if (!Array.isArray(list)) return []
+  return list
+    .map((c) => (typeof c === 'string' ? c : isPlainObject(c) ? String(c.name ?? '') : ''))
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+/**
+ * Product roles a taste pass may rename but must not delete. JSON-LD and the
+ * conversion ask are the ones a prettier fold most often drops; titles, tap
+ * targets, and payload stay on their own gates.
+ */
+export const PRODUCT_HOLD_ROLES = Object.freeze([
+  { id: 'json-ld', label: 'JSON-LD', re: /MetadataBlock|JsonLd|jsonld|JSON-LD/i },
+  {
+    id: 'ask',
+    label: 'conversion ask',
+    re: /Ask|AlertsSheet|StickyAsk|LeadCapture|ContactForm|CtaStrip|PriceCta|SearchAlert/i,
+  },
+])
+
+/**
+ * requiredComponents may grow or rename. It may not shrink, and a JSON-LD or
+ * conversion-ask role present at HEAD must still be present (ContactAsk →
+ * V3Ask is a rename, not a drop).
+ */
+export function requiredComponentsHoldProblems(currentList, headList) {
+  const p = []
+  const current = componentNames(currentList)
+  const head = componentNames(headList)
+  if (head.length === 0) return p
+  if (current.length < head.length) {
+    p.push(
+      `requiredComponents shrank ${head.length} → ${current.length}. UI/UX cannot drop a required section.`,
+    )
+  }
+  for (const role of PRODUCT_HOLD_ROLES) {
+    const had = head.filter((n) => role.re.test(n))
+    const has = current.some((n) => role.re.test(n))
+    if (had.length > 0 && !has) {
+      p.push(
+        `${role.label} dropped from requiredComponents (had ${had.join(', ')}). UI/UX cannot drop it.`,
+      )
+    }
+  }
+  return p
 }
 
 /* CLI: print the shotsHash for a parity.json, or for key=path pairs. */
