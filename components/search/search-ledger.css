@@ -143,16 +143,28 @@
 /* Place opener layout lives in components/place/place-opening.css so the
    still can bleed. Do not re-gutter .place-opening here. */
 
-/* Place-page Split is a section, not the search app frame. */
+/* Place-page Split is a section, not the search app frame.
+
+   THE SECTION IS AS TALL AS ITS LIST (SITE-59). These two rules used to set a
+   FIXED height — the map canvas's height — because until 2026-09-03 this
+   section held a map. Matt turned the Google Field and the place Split canvas
+   off that day ("the atlas is the map", c75222a9) and PlaceSplitView has
+   passed `listOnly` unconditionally ever since, so nothing has drawn in that
+   height for six days. What it drew instead was nothing: measured on the lane
+   server 2026-09-09, /subdivisions/diamond-bar-ranch put 996px of section
+   under "Every home for sale in Diamond Bar Ranch" for one home — about 530px
+   of empty cream below the last card, held open by `min-height` alone. Matt
+   ruled on 2026-09-09: remove the empty frame. So the height is now a CAP, not
+   a floor. A place with one home is one home tall; a place with seventy-three
+   fills the cap and the list scrolls inside it, which is what it already did. */
 .place-split {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: var(--v3-place-split-h);
-  min-height: var(--v3-map-min);
+  height: auto;
 }
 .place-split .map-search-shell {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-height: 0;
 }
 .place-split__filters {
@@ -262,12 +274,18 @@
   min-width: var(--v3-tap, 44px);
   min-height: var(--v3-tap, 44px);
 }
+/* SITE-59: the same rule, restated. This later block used to re-assert the
+   floor (`min-height: 600px + 4.5rem`) and pin the shell to the map canvas's
+   600px. Both are caps now. `min-height: 0` is written out because the earlier
+   block's floor is gone and a bare omission here would leave the cascade
+   depending on source order. */
 .place-split {
   height: auto;
-  min-height: calc(var(--v3-place-split-h, 37.5rem) + 4.5rem);
+  min-height: 0;
 }
 .place-split .map-search-shell {
-  height: var(--v3-place-split-h, 37.5rem);
+  height: auto;
+  max-height: var(--v3-place-split-h, 37.5rem);
 }
 
 .place-hero {
