@@ -90,9 +90,30 @@
 }
 
 .v3.v3-instrument .v3-instrument__headline + .v3-instrument__chart,
-.v3.v3-instrument .v3-instrument__note + .v3-instrument__chart {
+.v3.v3-instrument .v3-instrument__note + .v3-instrument__chart,
+.v3.v3-instrument .v3-instrument__headline + .v3-instrument__stage,
+.v3.v3-instrument .v3-instrument__note + .v3-instrument__stage {
   margin-top: var(--v3-space-lg);
   padding-top: 0;
+}
+
+/* SITE-81: chart + MOS bars share the fold so it is not only stacked type. */
+.v3.v3-instrument .v3-instrument__stage {
+  display: grid;
+  gap: var(--v3-space-lg);
+  min-width: 0;
+}
+
+.v3.v3-instrument .v3-instrument__drawing {
+  min-width: 0;
+}
+
+@media (min-width: 64rem) {
+  .v3.v3-instrument .v3-instrument__stage--split {
+    grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.9fr);
+    align-items: start;
+    gap: var(--v3-space-xl);
+  }
 }
 
 /* A lone figure is the headline figure, at lead size, so it takes the row. */

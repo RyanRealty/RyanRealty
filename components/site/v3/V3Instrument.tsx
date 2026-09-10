@@ -50,7 +50,7 @@
  * prop that fires on arrival. The retired implementation is V3InstrumentCount.client.tsx,
  * which this file no longer imports.
  */
-import { Fragment } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import {
@@ -267,6 +267,12 @@ export type V3InstrumentProps = {
    */
   cards?: readonly V3ChartCardProps[]
   /**
+   * A second object in the fold beside the chart (SITE-81). Months of supply as
+   * V3MosBars, or any other drawing that keeps the opening from being only a
+   * stacked type column. Omitted, the Instrument renders exactly as before.
+   */
+  drawing?: ReactNode
+  /**
    * 1 when the Instrument opens the page and carries its answer. 2 for a market band
    * inside a page another pattern opened. Required, because a page can carry two
    * Instruments and only one of them is the page's answer.
@@ -309,6 +315,7 @@ export function V3Instrument({
   chart,
   chartSecondary,
   cards,
+  drawing,
   level,
   id,
   className,
@@ -374,9 +381,19 @@ export function V3Instrument({
       {(() => {
         const charts = (
           <>
-            {chart ? (
-              <div className="v3-instrument__chart">
-                <V3Chart {...chart} id={chart.id ?? (id ? `${id}-chart` : undefined)} />
+            {chart || drawing ? (
+              <div
+                className={cn(
+                  'v3-instrument__stage',
+                  chart && drawing && 'v3-instrument__stage--split',
+                )}
+              >
+                {chart ? (
+                  <div className="v3-instrument__chart">
+                    <V3Chart {...chart} id={chart.id ?? (id ? `${id}-chart` : undefined)} />
+                  </div>
+                ) : null}
+                {drawing ? <div className="v3-instrument__drawing">{drawing}</div> : null}
               </div>
             ) : null}
             {chartSecondary ? (
@@ -449,7 +466,11 @@ export function V3Instrument({
         // So a full fold now requires a visual carrying the answer above it, and
         // a lone figure is never folded. `foldAfter > 0` is untouched: it always
         // leaves lead figures on screen by construction.
-        const hasVisual = Boolean(chart) || Boolean(chartSecondary) || (cards?.length ?? 0) > 0
+        const hasVisual =
+          Boolean(chart) ||
+          Boolean(chartSecondary) ||
+          Boolean(drawing) ||
+          (cards?.length ?? 0) > 0
         const foldAt =
           foldAfter === 0 && figures.length > 1 && hasVisual
             ? 0
