@@ -176,10 +176,12 @@
   text-shadow: var(--v3-media-shadow);
 }
 
-.place-opening__caption a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: var(--v3-underline-offset);
+@layer base {
+  .place-opening__caption a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: var(--v3-underline-offset);
+  }
 }
 
 .place-opening__caption a:hover {
