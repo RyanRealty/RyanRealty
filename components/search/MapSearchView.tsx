@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { navigateQuery, useUrlSearchParams } from '@/lib/search/url-search-params.client'
+import {
+  navigateQuery,
+  readUrlSearchParams,
+  useUrlSearchParams,
+} from '@/lib/search/url-search-params.client'
 import { mergeUrlSearchFilters } from '@/components/search/merge-url-search-filters'
 import dynamic from 'next/dynamic'
 import type { ListingTileRow, MapBounds } from '@/app/actions/listings'
@@ -49,7 +53,7 @@ import './search-ledger.css'
 const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered'), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground" style={{ minHeight: 320 }}>
+    <div className="srch-map-field flex h-full w-full items-center justify-center text-muted-foreground" style={{ minHeight: 320 }}>
       Loading map…
     </div>
   ),
@@ -465,11 +469,13 @@ export default function MapSearchView({
     (next: 'list' | 'map' | 'split') => {
       setLayoutView(next)
       setMobileView(next === 'list' ? 'list' : 'map')
-      const params = new URLSearchParams(urlSearchParams?.toString() ?? '')
+      // Event-time read — a closed-over searchParams can lag a filter pushState
+      // and drop minPrice / beds when the view toggle writes (SITE-72).
+      const params = new URLSearchParams(readUrlSearchParams())
       params.set('view', next)
       navigateQuery(router, `${pathname ?? '/homes-for-sale'}?${params.toString()}`, { staticShell })
     },
-    [pathname, router, urlSearchParams, staticShell],
+    [pathname, router, staticShell],
   )
   useEffect(() => {
     if (filters.view === 'list' || filters.view === 'map' || filters.view === 'split') {
@@ -665,7 +671,7 @@ export default function MapSearchView({
     (value: string) => {
       const next = value || 'newest'
       setSortValue(next)
-      const params = new URLSearchParams(urlSearchParams?.toString() ?? '')
+      const params = new URLSearchParams(readUrlSearchParams())
       if (next === 'newest') params.delete('sort')
       else params.set('sort', next)
       params.delete('page')
@@ -676,7 +682,7 @@ export default function MapSearchView({
       searchFiltersRef.current = { ...searchFiltersRef.current, sort: next }
       void runViewportSearch(lastBoundsRef.current, drawnShapes)
     },
-    [router, pathname, urlSearchParams, drawnShapes, runViewportSearch, staticShell]
+    [router, pathname, drawnShapes, runViewportSearch, staticShell]
   )
 
   const retryViewportSearch = useCallback(() => {
@@ -721,9 +727,11 @@ export default function MapSearchView({
         // during render, so SSR/client HTML cannot diverge.
         firstBoundsReportRef.current || Date.now() < initialSettleUntilRef.current // hydration-safe
       firstBoundsReportRef.current = false
+      // Event-time URL — closed-over urlSearchParams races the filter dock's
+      // pushState and was wiping minPrice after a V3Range commit (SITE-72).
       const cameraUrl = nextSearchUrlWithBbox(
         pathname ?? '/homes-for-sale',
-        urlSearchParams?.toString() ?? '',
+        readUrlSearchParams(),
         bounds,
       )
       if (cameraUrl) navigateQuery(router, cameraUrl, { replace: true, staticShell })
@@ -732,7 +740,7 @@ export default function MapSearchView({
       // Camera only. List + pins stay until Search this area.
       setAreaDirty(true)
     },
-    [dropGeoScope, pathname, router, urlSearchParams, lockPlace, staticShell]
+    [dropGeoScope, pathname, router, lockPlace, staticShell]
   )
 
   /** Reflect the drawn shape set into the URL so reload/share reproduce it.
@@ -742,7 +750,7 @@ export default function MapSearchView({
    *  removes both params. */
   const syncShapesToUrl = useCallback(
     (shapes: DrawnShape[]) => {
-      const params = new URLSearchParams(urlSearchParams?.toString() ?? '')
+      const params = new URLSearchParams(readUrlSearchParams())
       const encoded = encodeMapShapes(shapes)
       if (encoded) params.set('shapes', encoded)
       else params.delete('shapes')
@@ -756,7 +764,7 @@ export default function MapSearchView({
       const base = pathname ?? '/homes-for-sale'
       navigateQuery(router, query ? `${base}?${query}` : base, { replace: true, staticShell })
     },
-    [router, pathname, urlSearchParams, staticShell]
+    [router, pathname, staticShell]
   )
 
   // Instrumentation guard: fire search_map_draw only when a shape was ADDED
@@ -988,29 +996,26 @@ export default function MapSearchView({
               {viewClaim.count > 0 ? (
                 <>
                   <span className="srch-figure">{formatCount(viewClaim.count)}</span>
-                  {viewClaim.count === 1 ? ' home is drawn on this map' : ' homes are drawn on this map'}
-                  {viewClaim.low != null && viewClaim.high != null ? (
-                    viewClaim.low === viewClaim.high ? (
-                      <>
-                        {', asking '}
-                        <span className="srch-figure">{formatPriceCompact(viewClaim.low)}</span>
-                      </>
-                    ) : (
-                      <>
-                        {', from '}
-                        <span className="srch-figure">{formatPriceCompact(viewClaim.low)}</span>
-                        {' to '}
-                        <span className="srch-figure">{formatPriceCompact(viewClaim.high)}</span>
-                      </>
-                    )
-                  ) : null}
-                  {claimPlace ? ` in ${claimPlace}` : ''}.
-                  {capped
-                    ? ' This frame holds more than the map draws — zoom in to see the rest.'
-                    : ''}
-                  {viewClaim.band
-                    ? ' The bar under each ask places that home per square foot against the rest of them.'
-                    : ''}
+                  <span className="srch-claim__rest">
+                    {viewClaim.count === 1 ? ' home on this map' : ' homes on this map'}
+                    {viewClaim.low != null && viewClaim.high != null ? (
+                      viewClaim.low === viewClaim.high ? (
+                        <>
+                          {', asking '}
+                          <span className="srch-figure srch-figure--inline">{formatPriceCompact(viewClaim.low)}</span>
+                        </>
+                      ) : (
+                        <>
+                          {', '}
+                          <span className="srch-figure srch-figure--inline">{formatPriceCompact(viewClaim.low)}</span>
+                          {'–'}
+                          <span className="srch-figure srch-figure--inline">{formatPriceCompact(viewClaim.high)}</span>
+                        </>
+                      )
+                    ) : null}
+                    {claimPlace ? ` · ${claimPlace}` : ''}
+                    {capped ? ' · nearest matches' : ''}
+                  </span>
                 </>
               ) : (
                 <>{listCountPhrase === 'Updating…' ? 'Reading this view…' : 'No homes are drawn on this map yet.'}</>
@@ -1228,7 +1233,7 @@ export default function MapSearchView({
         hoveredKey={hoveredKey ?? selectedKey}
         onMarkerHover={onMarkerHover}
         onMarkerClick={onMarkerClick}
-        className="h-full w-full"
+        className="srch-map-field h-full w-full"
       />
       {/* Saved named areas (Flexmls My-Map-Overlays parity). Applying one
           replaces the drawn shape set, so it rides the identical ?shapes=
@@ -1441,26 +1446,21 @@ export default function MapSearchView({
               }}
             >
               <span className="map-search-sheet__handle" aria-hidden />
-              {/* SITE-44: the peek is the only line a phone reader gets before
-                  they open the sheet, and it used to be a bare inventory count.
-                  It now also carries the claim the desktop header makes about
-                  the frame in front of them.
-                  §0 — the two halves are DIFFERENT POPULATIONS and each says so.
-                  The first is the filter match across the whole search
-                  ("1,236+ homes for sale"); the second is what this frame draws
-                  and what those cost ("500 on this map, $57K to $5.0M"). A
-                  round-two evaluator read an earlier version of this line, where
-                  only the second half was labelled, as the page contradicting
-                  itself between desktop and phone. Both halves are labelled now.
-                  The full trace is one tap away, inside the sheet. */}
+              {/* SITE-44 / SITE-72: peek names two populations — filter match
+                  vs pins on this frame. Ask range stays inside the sheet body
+                  (same claim as desktop) so a 375 camera that frames a
+                  different pin set cannot print a second top-of-range on the
+                  fold and look like the page disagrees with itself. */}
               <span className="srch-count map-search-sheet__title" aria-live="polite">
                 <span className="srch-figure font-semibold">{sheetHomesLabel}</span>
-                {viewClaim.count > 0 && viewClaim.low != null && viewClaim.high != null && !resultsDegraded ? (
+                {viewClaim.count > 0 && !resultsDegraded ? (
                   <span className="map-search-sheet__range">
-                    {`· ${formatCount(viewClaim.count)} on this map, `}
-                    {viewClaim.low === viewClaim.high
-                      ? formatPriceCompact(viewClaim.low)
-                      : `${formatPriceCompact(viewClaim.low)} to ${formatPriceCompact(viewClaim.high)}`}
+                    {`· ${formatCount(viewClaim.count)} on this map`}
+                    {viewClaim.low != null && viewClaim.high != null
+                      ? viewClaim.low === viewClaim.high
+                        ? ` · ${formatPriceCompact(viewClaim.low)}`
+                        : ` · ${formatPriceCompact(viewClaim.low)}–${formatPriceCompact(viewClaim.high)}`
+                      : ''}
                   </span>
                 ) : null}
                 {loading ? <span className="ml-1.5 text-xs text-muted-foreground">Updating…</span> : null}

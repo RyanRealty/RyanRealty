@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import SearchMapClustered from '@/components/LazySearchMapClustered'
 import type { ListingForMap, MapBounds } from '@/components/SearchMapClustered'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
@@ -9,6 +9,8 @@ import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hi
 import { Button } from '@/components/ui/button'
 import { Eyebrow, H3, Body } from '@/components/site/primitives'
 import { nextSearchUrlWithBbox } from '@/lib/search/publish-map-bbox'
+import { navigateQuery, readUrlSearchParams } from '@/lib/search/url-search-params.client'
+import { cn } from '@/lib/utils'
 
 /**
  * The /search?view=map (map-only) pin layer, made hidden-aware. The split view
@@ -48,7 +50,6 @@ export default function HideAwareSearchMap({
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set())
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
 
   useEffect(() => {
     let cancelled = false
@@ -62,15 +63,16 @@ export default function HideAwareSearchMap({
 
   const persistBbox = useCallback(
     (bounds: MapBounds) => {
+      // Event-time read — same race as MapSearchView (SITE-72).
       const next = nextSearchUrlWithBbox(
         pathname ?? '/homes-for-sale',
-        searchParams?.toString() ?? '',
+        readUrlSearchParams(),
         bounds,
       )
       if (!next) return
-      router.replace(next, { scroll: false })
+      navigateQuery(router, next, { replace: true, staticShell: true })
     },
-    [pathname, router, searchParams],
+    [pathname, router],
   )
 
   if (degraded) {
@@ -104,7 +106,7 @@ export default function HideAwareSearchMap({
       likedListingKeys={likedListingKeys}
       placeQuery={placeQuery}
       boundaryGeojson={boundaryGeojson}
-      className={className}
+      className={cn('srch-map-field', className)}
       initialBounds={initialBounds}
       lockBounds={lockBounds}
       onBoundsChanged={persistBbox}

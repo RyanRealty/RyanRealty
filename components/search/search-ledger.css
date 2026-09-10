@@ -865,12 +865,17 @@ button.srch-chip--key {
   margin-left: 0.125rem;
 }
 
-/* The map's corner panel gives back some width on a phone, where it is sitting
-   on top of the data rather than beside it. */
+/* SITE-72: on a phone the corner stops teaching Google's layer language.
+   Roadmap is the product field; Satellite and Locate fold away so DRAW /
+   Saved areas / Map|Sort are not five stickers on the data. Zoom stays. */
 @media (max-width: 640px) {
+  .map-search-chrome .map-search-views,
   .map-search-chrome .map-search-locate {
-    padding: 0 0.4rem;
-    font-size: 0.5625rem;
+    display: none;
+  }
+
+  .map-search-chrome .map-search-zoom {
+    border-top: 0;
   }
 }
 
@@ -923,4 +928,123 @@ button.srch-chip--key {
 
 .map-search-sheet__title {
   text-align: center;
+}
+
+/* SITE-72 — morphing search overlays the dock so the field growing into
+   results (beui-morphing-search) does not shove the map. Command list
+   (shadcn-command job) is grouped rows on the same cream surface. */
+.search-filter-dock .srch-morph {
+  position: relative;
+  z-index: 1;
+}
+
+.search-filter-dock .srch-morph.v3-morph-search--open {
+  z-index: 40;
+}
+
+.search-filter-dock .srch-morph .v3-morph-search__results {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% - 2px);
+  z-index: 41;
+  background: var(--v3-surface, rgba(255, 255, 255, 1));
+  border: 2px solid var(--v3-ink, var(--v3-navy));
+  border-top-width: 1px;
+}
+
+.search-filter-dock .srch-morph .v3-morph-search__shell {
+  background: var(--v3-cream);
+}
+
+.search-filter-dock .srch-morph__field {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  padding: 0 0.5rem 0 0.75rem;
+}
+
+.search-filter-dock .srch-morph__mark {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  color: var(--v3-ink-muted, color-mix(in srgb, var(--v3-navy) 70%, transparent));
+}
+
+.srch-command {
+  max-height: 18rem;
+  overflow: auto;
+  background: var(--v3-surface, rgba(255, 255, 255, 1));
+}
+
+.srch-command [role='option'] {
+  min-height: var(--v3-tap, 44px);
+  display: flex;
+  align-items: center;
+}
+
+.srch-command p {
+  font-size: var(--v3-size-label, 0.65625rem);
+  font-weight: var(--v3-weight-medium, 500);
+  letter-spacing: var(--v3-track-label, 0.12em);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted, color-mix(in srgb, var(--v3-navy) 70%, transparent));
+}
+
+/* Price ticks in the first viewport. Ends hide here — the readout already
+   names the band — so the rail stays one tap tall. */
+.srch-price-rail {
+  border-top: var(--v3-rule-hairline, 1px solid color-mix(in srgb, var(--v3-navy) 8%, transparent));
+  padding-top: 0.15rem;
+}
+
+.srch-price-rail .v3-range__ends {
+  display: none;
+}
+
+.srch-price-rail .v3-range {
+  gap: 0;
+}
+
+/* House-sheet language on the All-filters overlay (catalog: house-sheet). */
+.srch-sheet {
+  background: var(--v3-surface, rgba(255, 255, 255, 1));
+  border-left: 2px solid var(--v3-navy);
+}
+
+/* Cream field under the map so a late Google tile never flashes terrain. */
+.srch-map-field {
+  background: var(--v3-cream);
+}
+
+/* SITE-72: the claim opens as a hero figure, then the sentence. A wrapped
+   method paragraph buried the 500; the count is the mark now. */
+.srch-claim__line {
+  font-size: var(--v3-size-body, 0.875rem);
+}
+
+.srch-claim__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.55rem;
+}
+
+.srch-claim__line .srch-figure {
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+  font-weight: var(--v3-weight-num, 700);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.srch-claim__line .srch-figure--inline {
+  font-size: 1em;
+  letter-spacing: 0;
+}
+
+.srch-claim__rest {
+  font-size: var(--v3-size-body, 0.875rem);
+  color: var(--v3-ink-muted, color-mix(in srgb, var(--v3-navy) 70%, transparent));
 }
