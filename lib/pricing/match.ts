@@ -4,6 +4,7 @@
  */
 
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
+import { communitySlugForSubdivision, isResortCommunity } from '@/lib/cma/resort-guard'
 import { bathCountCompatible, distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
@@ -318,6 +319,28 @@ function passesTier(
     if (!subject.subdivisionNorm || sale.subdivisionNorm !== subject.subdivisionNorm) {
       return { ok: false, miles: null }
     }
+  }
+  // THE PARENT LEVEL IS A WALL (Matt 2026-09-09): a plat inside a planned or
+  // golf community is priced from that community until the community itself is
+  // exhausted. Only the like-community rung and a boundary-exit rung may look
+  // outside it, and both disclose. A subject with no community is unaffected.
+  const subjectCommunity = communitySlugForSubdivision(subject.subdivision)
+  const saleCommunity = communitySlugForSubdivision(sale.subdivision)
+  if (tier.sameCommunity) {
+    if (!subjectCommunity || saleCommunity !== subjectCommunity) return { ok: false, miles: null }
+  } else if (tier.likeCommunity) {
+    // Another community of the same kind, never the subject's own and never a
+    // plain neighborhood.
+    if (!subjectCommunity || !isResortCommunity(subjectCommunity)) return { ok: false, miles: null }
+    if (!saleCommunity || saleCommunity === subjectCommunity || !isResortCommunity(saleCommunity)) {
+      return { ok: false, miles: null }
+    }
+  } else if (subjectCommunity && saleCommunity !== subjectCommunity && !tier.crossBoundary) {
+    return { ok: false, miles: null }
+  } else if (!subjectCommunity && saleCommunity && !tier.crossBoundary) {
+    // Symmetric: a community sale carries that community's premium, so it does
+    // not price an ordinary plat next door either.
+    return { ok: false, miles: null }
   }
   // The plats next to the subject's, inside its boundary (containment rung).
   if (tier.adjacentSubdivision) {
@@ -644,6 +667,12 @@ export function walkPricingLadder(
       // THE WIDENING RUNS ONLY WHEN THE BOUNDED LADDER CAME UP SHORT.
       tier.whenStarved && byKey.size >= PRICING_MIN_COMPS
         ? 'the bounded search already reached the minimum, so no widening was needed'
+        : tier.sameCommunity && !communitySlugForSubdivision(subject.subdivision)
+        ? 'the subject is not inside a planned or golf community'
+        : tier.likeCommunity && !isResortCommunity(communitySlugForSubdivision(subject.subdivision))
+        ? 'the subject is not inside a golf or resort community'
+        : tier.likeCommunity && byKey.size >= PRICING_MIN_COMPS
+        ? 'the community supplied the minimum, so no peer community was needed'
         : tier.sameSubdivision && !subject.subdivisionNorm
         ? 'the subject has no subdivision on its MLS row'
         : tier.adjacentSubdivision && !(subject.adjacentSubdivisionSlugs?.length)

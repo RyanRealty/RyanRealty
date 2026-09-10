@@ -31,6 +31,44 @@ function buildAliasMap(): Map<string, string> {
   return m
 }
 
+let anyCommunityMap: Map<string, string> | null = null
+
+function buildAnyCommunityMap(): Map<string, string> {
+  const m = new Map<string, string>()
+  for (const c of (registry as { communities: Community[] }).communities) {
+    for (const alias of c.subdivision_aliases ?? []) {
+      m.set(alias.trim().toLowerCase(), c.slug)
+    }
+    m.set(c.slug.replace(/-/g, ' '), c.slug)
+  }
+  return m
+}
+
+/**
+ * THE PARENT A PLAT SITS INSIDE (Matt 2026-09-09): "if that subdivision lies
+ * within a planned community, a golf community, or a district neighborhood,
+ * then we'll constrain the search within that. Basically, go up a parent
+ * level." Every registry community counts here, not only the resorts — the
+ * question this answers is containment, not premium. Membership is the same
+ * recorded-plat alias set the resort guard and the community pages use.
+ */
+export function communitySlugForSubdivision(subdivision: string | null | undefined): string | null {
+  if (!subdivision?.trim()) return null
+  anyCommunityMap ??= buildAnyCommunityMap()
+  const key = subdivision.trim().toLowerCase()
+  const exact = anyCommunityMap.get(key)
+  if (exact) return exact
+  const stripped = key.replace(/\s+phase\s+\w+$/i, '').trim()
+  if (stripped && stripped !== key) return anyCommunityMap.get(stripped) ?? null
+  return null
+}
+
+/** True when the community is a resort or golf community, not a plain platted one. */
+export function isResortCommunity(slug: string | null | undefined): boolean {
+  if (!slug) return false
+  return (registry as { communities: Community[] }).communities.some((c) => c.slug === slug && c.is_resort === true)
+}
+
 /** The resort community a subdivision name belongs to, or null. */
 export function resortSlugForSubdivision(subdivision: string | null | undefined): string | null {
   if (!subdivision?.trim()) return null
