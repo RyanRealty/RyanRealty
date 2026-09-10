@@ -176,6 +176,21 @@
   text-shadow: var(--v3-media-shadow);
 }
 
+.place-opening__caption a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.place-opening__caption a:hover {
+  opacity: 0.88;
+}
+
+.place-opening--neighborhood .place-opening__caption {
+  font-size: var(--v3-size-body-sm);
+  margin-top: var(--v3-space-2xs);
+}
+
 /* THE PLACE DOOR IN THE OPENING ROW (site queue SITE-03, 2026-09-08).
    V3PlaceDoor owns how the door LOOKS; this owns where it SITS, because the
    opening is one composition across four grains and its spacing cannot be
@@ -259,12 +274,149 @@
   }
 }
 
+/* SITE-84 neighborhood grain only: leave room for MOS + alerts figure + email
+   in the first viewport. City / community keep the taller photograph. */
+.place-opening.place-opening--neighborhood.place-opening--media {
+  min-height: 18rem;
+  max-height: 22rem;
+}
+
+@media (min-width: 64rem) {
+  .place-opening.place-opening--neighborhood.place-opening--media {
+    min-height: 18rem;
+    max-height: 20rem;
+  }
+
+  /* H1 under the breadcrumb; MOS stays end-aligned — no shared baseline clash. */
+  .place-opening--neighborhood.place-opening--media .place-opening__copy {
+    align-self: start;
+    padding-top: calc(var(--v3-space-xl) + 2.5rem);
+    padding-bottom: var(--v3-space-sm);
+    max-width: none;
+  }
+
+  /* Compact the MOS cream plate so it does not own half the fold. */
+  .place-opening--neighborhood .place-opening__mos {
+    /* Keep the cream plate inside the opening — tip must not shove numerals off. */
+    overflow: visible;
+    max-width: min(22rem, 100%);
+  }
+
+  .place-opening--neighborhood .place-opening__mos .v3.v3-mos {
+    padding: var(--v3-space-xs) var(--v3-space-sm);
+    gap: var(--v3-space-2xs);
+    max-width: 100%;
+  }
+
+  .place-opening--neighborhood .place-opening__mos .v3-mos__caption {
+    font-size: var(--v3-size-body-sm);
+    line-height: var(--v3-leading-note);
+    /* Full claim — do not mid-sentence clamp under the chrome. */
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+
+  .place-opening--neighborhood .place-opening__mos .v3-mos__tip {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .place-opening--neighborhood .place-opening__mos .v3-mos__plain {
+    display: none;
+  }
+}
+
+.place-opening--neighborhood + .v3.v3-alerts {
+  padding-top: var(--v3-space-md);
+  padding-bottom: var(--v3-space-lg);
+}
+
+/* Denser alerts figure after a neighborhood opening — horizontal inventory rows. */
+.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb {
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--v3-space-xs);
+  min-width: 14rem;
+  max-width: 18rem;
+}
+
+.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb img {
+  width: 4.5rem;
+  aspect-ratio: 4 / 3;
+}
+
+.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__strip {
+  gap: var(--v3-space-sm);
+}
+
 /* SITE-43: shrink the photo band on a phone so the MOS plate and the alerts
    email land in the first 812px. Overlay stays; the giant stacked still goes. */
 @media (max-width: 39.99rem) {
   .place-opening--media {
     min-height: 24rem;
     align-items: start;
+  }
+
+  .place-opening.place-opening--neighborhood.place-opening--media {
+    min-height: 14rem;
+    max-height: 16rem;
+  }
+
+  /* Keep H1 clear of the MOS plate: shorter drawing, caption off on the phone. */
+  .place-opening--neighborhood .place-opening__mos .v3.v3-mos {
+    padding: var(--v3-space-2xs) var(--v3-space-xs);
+    gap: var(--v3-space-2xs);
+  }
+
+  .place-opening--neighborhood .place-opening__mos .v3-mos__caption,
+  .place-opening--neighborhood .place-opening__mos .v3-source {
+    display: none;
+  }
+
+  .place-opening--neighborhood .place-opening__copy {
+    padding-bottom: 6.5rem; /* room for the absolute MOS under the H1 */
+  }
+
+  .place-opening--neighborhood + .v3.v3-alerts {
+    padding-top: var(--v3-space-sm);
+    padding-bottom: var(--v3-space-md);
+  }
+
+  .place-opening--neighborhood + .v3.v3-alerts .v3-alerts__claim {
+    font-size: var(--v3-size-body-lg);
+  }
+
+  .place-opening--neighborhood + .v3.v3-alerts .v3-alerts__num {
+    font-size: clamp(1.75rem, 8vw, 2.5rem);
+  }
+
+  .place-opening--neighborhood + .v3.v3-alerts .v3-alerts__strip {
+    margin-bottom: var(--v3-space-xs);
+    /* One full card at a time on a phone — horizontal 14rem rows were clipping
+       price/address to orphan glyphs ($9 / 31:). */
+    scroll-snap-type: x mandatory;
+    padding-bottom: var(--v3-space-2xs);
+  }
+
+  .place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb {
+    grid-template-columns: 5rem minmax(0, 1fr);
+    min-width: min(18rem, calc(100vw - 2 * var(--v3-gutter)));
+    max-width: min(20rem, calc(100vw - 2 * var(--v3-gutter)));
+    scroll-snap-align: start;
+  }
+
+  .place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb img {
+    width: 5rem;
+  }
+
+  .place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb-name,
+  .place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb-price,
+  .place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb-facts {
+    overflow-wrap: anywhere;
+    white-space: normal;
   }
 
   .place-opening--media .place-opening__copy {

@@ -114,9 +114,10 @@ export function buildPlaceMosView(input: {
     mosText,
     asOf: input.asOf,
   })
+  // Visitor tip: no internal dataset names or slug keys (SITE-84 / city MOS hover).
   const tipSource = input.asOf
-    ? `Oregon Data Share via leftoverHudKpis, ${input.grain}:${input.geoSlug}, segment=detached. as of ${input.asOf}`
-    : `Oregon Data Share via leftoverHudKpis, ${input.grain}:${input.geoSlug}, segment=detached.`
+    ? `Oregon Data Share · detached single-family · as of ${input.asOf}`
+    : `Oregon Data Share · detached single-family`
   return {
     homesForSale: published.homesForSale,
     monthOfSales: published.monthOfSales,
