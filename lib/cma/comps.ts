@@ -66,7 +66,7 @@ import { compTierLadder, isRuralAcreage, realSubdivision } from '@/lib/cma/comp-
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible } from '@/lib/pricing/rural'
 import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import { communitySlugForSubdivision, isResortCommunity, resortCommunityCompatible } from '@/lib/cma/resort-guard'
-import { ANCHOR_MIN_N, ANCHOR_RADIUS_MILES, sameStreetPeer } from '@/lib/pricing/price-anchor'
+import { ANCHOR_MIN_N, ANCHOR_RADIUS_MILES, ANCHOR_RURAL_RADII_MILES, sameStreetPeer } from '@/lib/pricing/price-anchor'
 import { roomCountsUsable } from '@/lib/pricing/room-counts'
 import { SAME_NEIGHBORHOOD_TIER_RATIO, STARVED_TIER_WIDEN, SUBDIVISION_TIER_RATIO } from '@/lib/pricing/classes'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
@@ -421,34 +421,61 @@ export async function selectComps(
   // within a mile of it — over twelve months and a wide size band.
   const subjectSqft = subject.sqft ?? 0
   if (!land && subjectSqft > 0) {
+    // ONE READ, wide enough to hold every ring the anchor may fall back to. A
+    // mile around a Bend tract home holds dozens of sales; a mile around 19496
+    // Tumalo Reservoir holds two, the anchor came back null, and NOTHING graded
+    // that document on price — the same hole 23 Benaiah fell through, out in
+    // the county. Houses are further apart there, so the tier is measured over
+    // more ground, never over fewer sales: ANCHOR_MIN_N binds at every ring.
+    const widestRadius = ANCHOR_RURAL_RADII_MILES[ANCHOR_RURAL_RADII_MILES.length - 1]!
     const anchorRows = await selectCmaCompsPool({
       cityIlike: subject.city,
       closeDateGte: isoMonthsAgo(12),
       sqftMin: Math.round(subjectSqft * 0.6),
       sqftMax: Math.round(subjectSqft * 1.6),
-      bounds: subjectArea ? marketAreaBounds(subjectArea) : radiusBounds(subjectPoint, ANCHOR_RADIUS_MILES),
-      limit: 400,
+      bounds: radiusBounds(subjectPoint, widestRadius),
+      limit: 800,
       // The SAME population the ladder itself reads. A tier median sampled from
       // a different property segment is a different market's number.
       propertySubType: sqlSubType,
       propertyType: segment,
     })
-    const rates: number[] = []
+    type AnchorRow = { rate: number; inArea: boolean; miles: number | null }
+    const graded: AnchorRow[] = []
     for (const row of anchorRows) {
       const comp = rowToComp(row, 'price-anchor', false)
       if (!comp) continue
-      const inArea = subjectArea != null && resolveMarketArea(comp.latitude, comp.longitude) === subjectArea
-      const miles = distanceMiles(subjectPoint, { lat: comp.latitude, lng: comp.longitude })
-      if (!inArea && !(miles != null && miles <= ANCHOR_RADIUS_MILES)) continue
       const rate = unitRate(comp, false)
-      if (rate > 0) rates.push(rate)
+      if (!(rate > 0)) continue
+      graded.push({
+        rate,
+        inArea: subjectArea != null && resolveMarketArea(comp.latitude, comp.longitude) === subjectArea,
+        miles: distanceMiles(subjectPoint, { lat: comp.latitude, lng: comp.longitude }),
+      })
     }
-    if (rates.length >= ANCHOR_MIN_N) {
-      anchorPpsf = medianOf(rates)
-      anchorN = rates.length
+    // The subject's own neighborhood first, then the mile around it, then out
+    // by rings — the same order as resolvePriceAnchor on the facts path.
+    const rings: Array<{ where: string; rates: number[] }> = []
+    if (subjectArea != null) {
+      rings.push({
+        where: `inside ${subjectAreaName ?? 'the neighborhood'}`,
+        rates: graded.filter((g) => g.inArea).map((g) => g.rate),
+      })
+    }
+    for (const radius of [ANCHOR_RADIUS_MILES, ...ANCHOR_RURAL_RADII_MILES]) {
+      rings.push({
+        where: `within ${radius} ${radius === 1 ? 'mile' : 'miles'}`,
+        rates: graded.filter((g) => g.miles != null && g.miles <= radius).map((g) => g.rate),
+      })
+    }
+    for (const ring of rings) {
+      if (ring.rates.length < ANCHOR_MIN_N) continue
+      anchorPpsf = medianOf(ring.rates)
+      anchorN = ring.rates.length
       trace.push(
-        `Price tier: homes in this area sell for about $${Math.round(anchorPpsf)} a square foot (median of ${anchorN} sales within a mile or inside ${subjectAreaName ?? 'the neighborhood'}, last 12 months). Sales more than ${Math.round((anchorTierRatio - 1) * 100)}% either side of that are a different market and are not used.`,
+        `Price tier: homes of this size sell for about $${Math.round(anchorPpsf)} a square foot ${ring.where} (median of ${anchorN} sales, last 12 months). Sales more than ${Math.round((anchorTierRatio - 1) * 100)}% either side of that are a different market and are not used.`,
       )
+      break
     }
   }
 

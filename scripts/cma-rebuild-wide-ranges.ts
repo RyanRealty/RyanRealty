@@ -66,7 +66,6 @@ async function main() {
   let narrowed = 0
   let widened = 0
   let failed = 0
-  const lines: string[] = []
   const queue = [...targets]
 
   async function worker(): Promise<void> {
@@ -75,8 +74,9 @@ async function main() {
       if (!t) return
       const before = (await getCmaAdminRowBySlug(t.slug)) as Record<string, unknown> | null
       if (!before) {
-        lines.push(`  MISSING  ${t.slug}`)
+        console.log(`  MISSING  ${t.slug} — no document row`)
         failed++
+        done++
         continue
       }
       const res = await buildCma({
@@ -98,7 +98,7 @@ async function main() {
       done++
       if (!res.ok) {
         failed++
-        lines.push(`  FAILED   ${t.spread.toFixed(2)}x -> build failed  ${t.slug}: ${String(res.error).slice(0, 120)}`)
+        console.log(`  FAILED   ${t.spread.toFixed(2)}x  ${String(t.slug).padEnd(36)} ${String(res.error).slice(0, 160)}`)
         continue
       }
       const after = (await getCmaAdminRowBySlug(t.slug)) as Record<string, unknown> | null
@@ -109,10 +109,9 @@ async function main() {
         if (spreadAfter < t.spread) narrowed++
         else if (spreadAfter > t.spread) widened++
       }
-      lines.push(
+      console.log(
         `  ${t.spread.toFixed(2)}x -> ${Number.isFinite(spreadAfter) ? `${spreadAfter.toFixed(2)}x` : '  n/a'}  ${String(t.slug).padEnd(36)} $${lo.toLocaleString()}-$${hi.toLocaleString()} around $${Number(after?.recommended_list ?? 0).toLocaleString()}`,
       )
-      console.log(lines[lines.length - 1])
       console.error(`[${done}/${targets.length}]`)
     }
   }
