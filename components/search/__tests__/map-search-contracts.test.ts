@@ -1123,3 +1123,55 @@ describe('no mojibake in the search surface', () => {
     })
   }
 })
+
+describe('the place Split section is as tall as its list (SITE-59)', () => {
+  const css = readSrc('components/search/search-ledger.css')
+  const map = readSrc('components/search/MapSearchView.tsx')
+
+  /**
+   * Matt turned the Google Field and the place Split canvas off on 2026-09-03
+   * ("the atlas is the map", c75222a9) and PlaceSplitView has passed `listOnly`
+   * unconditionally since. The height the canvas used to fill did not leave
+   * with it: /subdivisions/diamond-bar-ranch measured 996px of section under
+   * "Every home for sale in Diamond Bar Ranch" for one home, about 530px of it
+   * empty cream. Matt ruled on 2026-09-09: remove the empty frame. These pin
+   * the height as a CAP so it cannot become a floor again.
+   */
+  it('sets no fixed height and no minimum on the place Split', () => {
+    const blocks = [...css.matchAll(/\.place-split \{([^}]+)\}/g)].map((m) => m[1]!)
+    expect(blocks.length).toBeGreaterThan(0)
+    for (const b of blocks) {
+      expect(b).toMatch(/height:\s*auto/)
+      expect(b).not.toMatch(/min-height:\s*var\(--v3-map-min\)/)
+      expect(b).not.toMatch(/min-height:\s*calc/)
+      expect(b).not.toMatch(/height:\s*var\(--v3-place-split-h/)
+    }
+  })
+
+  it('caps the shell rather than pinning it to the dead map canvas height', () => {
+    const shell = [...css.matchAll(/\.place-split \.map-search-shell \{([^}]+)\}/g)].map((m) => m[1]!)
+    expect(shell.length).toBeGreaterThan(0)
+    const joined = shell.join('\n')
+    expect(joined).toMatch(/max-height:\s*var\(--v3-place-split-h/)
+    expect(joined).not.toMatch(/(^|\n)\s*height:\s*var\(--v3-place-split-h/)
+  })
+
+  it('keeps the list-only rail in the flow, so it contributes its own height', () => {
+    // `absolute inset-0` was the map's doing: a rail floating over a canvas
+    // adds no height, so the section could only be held open by the fixed map
+    // height. There is no canvas under it on any place page any more.
+    const start = map.indexOf('listOnly\n              ? cn(')
+    expect(start).toBeGreaterThan(-1)
+    // Comments out: the branch carries a note naming the class it removed.
+    const branch = map
+      .slice(start, map.indexOf('map-search-list map-search-sheet'))
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(branch).toMatch(/'relative flex w-full'/)
+    expect(branch).not.toMatch(/absolute inset-0/)
+  })
+
+  it('still draws no map pane at all when listOnly', () => {
+    expect(map).toMatch(/const mapPanel = listOnly \? null :/)
+    expect(readSrc('components/search/PlaceSplitView.tsx')).toMatch(/\n\s+listOnly\n/)
+  })
+})

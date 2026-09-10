@@ -66,6 +66,15 @@ function segmentsCross(p1: LatLng, p2: LatLng, q1: LatLng, q2: LatLng): boolean 
   return (o1 > 0) !== (o2 > 0) && (o3 > 0) !== (o4 > 0)
 }
 
+/**
+ * The segment-intersection primitive, shared with the river test
+ * (lib/pricing/river-cross.ts) so a road crossing and a river crossing are
+ * decided by the same geometry.
+ */
+export function segmentsCrossForTest(p1: LatLng, p2: LatLng, q1: LatLng, q2: LatLng): boolean {
+  return segmentsCross(p1, p2, q1, q2)
+}
+
 function finitePoint(p: LatLng | null | undefined): p is LatLng {
   return (
     p != null &&

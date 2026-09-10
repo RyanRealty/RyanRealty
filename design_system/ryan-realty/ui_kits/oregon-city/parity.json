@@ -134,28 +134,43 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-09",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-41. This ~360-instance class opened on the byte-for-byte same layout across cities with no mark tied to the specific town — Medford and Salem answered the class's own test question with no. A build pass added a per-city dot-strip chart of that city's own newest live listings (a real place mark, different data every city), a genuine keyboard+mouse hover layer on it, dropped street-suffix ticks to fix a 375px ellipsis truncation, bar-encoded the other-markets ledger, and fixed a price under $500 rendering as a false \"$0\" on both the chart and the separate listings ledger. A fresh evaluator instance scored Medford as primary and Salem as the differentiation check end to end against the live dev server (median 80, recorded here). The table mark for this class before this node was 41, from an instrument with no receipt, no recorded evaluator model and no shots on disk, so it is stated here rather than as priorMark.",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-59. The class was re-scored after the listing rows stopped drawing each home's photograph in the pattern's 44px mark. The picture is now 4:3 at 88x66 (72x54 under 480px), on the glyph's navy tile rather than the pale wash, with the row's three cells centred instead of sitting on a baseline the picture's bottom edge was setting, and the src asks cdn.resize.sparkplatform.com for a 320x240 render of the SAME asset id instead of a 1600x1200 one (330,871 bytes to 30,147, measured against the live CDN). The evaluator rendered /oregon/medford and /oregon/salem at 1440x2600 and 375 wide, captured per-section frames, and scored three times: 82, 81, 80.",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
-      "routes": ["/oregon/medford"],
-      "viewports": [1440, 375],
-      "states": ["default", "source-line"]
+      "routes": [
+        "/oregon/medford"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default",
+        "source-line",
+        "listings"
+      ]
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/oregon-city/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/oregon-city/shots/mobile375.png",
       "sourceDesktop": "design_system/ryan-realty/ui_kits/oregon-city/shots/source-desktop.png",
-      "sourceMobile375": "design_system/ryan-realty/ui_kits/oregon-city/shots/source-mobile375.png"
+      "sourceMobile375": "design_system/ryan-realty/ui_kits/oregon-city/shots/source-mobile375.png",
+      "listingsDesktop": "design_system/ryan-realty/ui_kits/oregon-city/shots/listings-desktop.png",
+      "listingsMobile375": "design_system/ryan-realty/ui_kits/oregon-city/shots/listings-mobile375.png"
     },
-    "shotsHash": "sha256:f42fd4862f3bb4c5f5d2b06407d1dddc80bbfa5d68844c1f23d4957aec0134c6",
-    "scores": [83, 78, 80],
-    "score": 80,
+    "shotsHash": "sha256:8673b567f6ea325da5d9234140b5a6f053f8e89b4e8f949ba610d6b75d51600b",
+    "scores": [
+      82,
+      81,
+      80
+    ],
+    "score": 81,
     "breakdown": {
       "design": 24,
       "originality": 23,
       "interaction": 11,
-      "craft": 12,
+      "craft": 13,
       "honesty": 10
     },
     "beats": "Realtor.com / Zillow out-of-area referral pages, which show either nothing or a bare listing grid for a city outside an agent's MLS coverage: this page states plainly it does not work the city, still surfaces live statewide MLS inventory with sourced figures, and draws that city's own newest-listings asking-price spread as a real, hoverable chart no referral competitor offers.",
@@ -163,19 +178,27 @@
       {
         "section": "#about",
         "severity": "taste",
-        "finding": "The \"We don't work in <city>\" honesty block is three paragraphs of prose beside a plain text link list — no figure, map or interactive element. Not a hard wall-of-text violation (it carries a CTA and the links are real doors) but close to the named tell."
+        "finding": "Carried, unchanged by this node: the \"We don't work in <city>\" honesty block is three paragraphs of prose beside a five-item link grid, with no figure, map or interactive element."
       },
       {
         "section": "#listings",
         "severity": "taste",
-        "finding": "The photo-card listings ledger rewards no hover or focus with more data — every row already shows everything statically, unlike the dot-strip chart above it."
+        "finding": "Carried, unchanged by this node: the ledger rewards no hover or focus with more data \u2014 price, beds, baths, sqft and address all render statically, and the row wash only signals that the row is a door."
       },
       {
-        "section": "#listings thumbnails",
+        "section": "#top dot-strip (/oregon/salem)",
         "severity": "craft",
-        "finding": "Lazy-loaded listing photos render as a flat gray placeholder momentarily before the real image swaps in."
+        "finding": "The lot listing whose street number is \"0\" prints as \"0 55th\" on the dot-strip mark while the ledger below it prints \"55th Avenue, Salem\" \u2014 two spellings of one address on one page. Pre-existing, outside this node's files."
       }
     ],
-    "comparedToPrior": "first"
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-09",
+      "score": 80,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:f42fd4862f3bb4c5f5d2b06407d1dddc80bbfa5d68844c1f23d4957aec0134c6"
+    },
+    "rebaselineReason": "shotsHash differs: the base pair was re-captured on this branch through scripts/take-route-shots.mjs, and two frames of #listings \u2014 the section this node changed, and the one the prior mark's craft defect was written against \u2014 joined the shot set, so the committed 80 was taken on a different instrument. The prior mark's third defect, \"lazy-loaded listing photos render as a flat gray placeholder momentarily before the real image swaps in\", is closed: the photo box now paints the navy tile at all times and a pseudo-element covers the browser's broken-image glyph, so there is no unstyled grey state to catch. Craft 12 to 13; no category fell."
   }
 }

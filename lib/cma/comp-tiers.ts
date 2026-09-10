@@ -31,6 +31,14 @@ export type CompTier = {
   ruralOnly?: boolean
   /** Membership is the ring of plats next to the subject's (lib/data/geo/subdivision-ring.ts). */
   adjacentSubdivisions?: boolean
+  /**
+   * THE PARENT LEVEL (Matt 2026-09-09): every plat inside the subject's own
+   * planned, golf or resort community, from the recorded-plat registry. Held
+   * to before any ring, polygon or city rung.
+   */
+  sameCommunity?: boolean
+  /** Another community of the same kind, once the subject's own is spent. Disclosed. */
+  likeCommunity?: boolean
   /** Disclosure appended to the trace when the rung yields a comp. */
   disclosure?: string
   /**
@@ -101,6 +109,29 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
     // the City of Bend GIS mesh draws it. Same widen-time-first order.
     { name: 'neighborhood-6mo', monthsBack: 6, sqftBand: 0.25, sameArea: true, competing: false, maxMiles: null },
     { name: 'neighborhood-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: true, competing: false, maxMiles: null },
+    // 2c. TIME INSIDE THE PLAT AND ITS RING, ALL THE WAY TO TWO YEARS (Matt
+    // 2026-09-09: exhaust the boundary before leaving it).
+    { name: 'subdivision-24mo', subdivisionIlike, monthsBack: 24, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
+    { name: 'adjacent-subdivision-24mo', monthsBack: 24, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
+    // 2d. THE COMMUNITY THE PLAT SITS INSIDE, before any ring or polygon rung.
+    { name: 'community-6mo', monthsBack: 6, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
+    { name: 'community-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
+    { name: 'community-24mo', monthsBack: 24, sqftBand: 0.3, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
+    // 4b. The neighborhood polygon, to two years, before the search leaves it.
+    { name: 'neighborhood-24mo', monthsBack: 24, sqftBand: 0.3, sameArea: true, competing: false, maxMiles: null },
+    // 4c. The community is spent: its peers are other communities of its kind.
+    {
+      name: 'like-community-24mo',
+      monthsBack: 24,
+      sqftBand: 0.3,
+      sameArea: false,
+      competing: true,
+      maxMiles: 40,
+      ignoreCity: true,
+      likeCommunity: true,
+      disclosure:
+        'This home sits in a golf or resort community, and that community did not have enough of its own sales even across two years. The sales below come from comparable golf and resort communities in Central Oregon rather than from ordinary neighborhoods nearby, because that is the market a buyer of this home shops against.',
+    },
     // 5. Competing market area — permitted, but disclosed and distance-bounded.
     { name: 'competing-area-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 2 },
     // 6. Last resort for a subject inside a mapped city. Still bounded — the
@@ -123,7 +154,7 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
       whenStarved: true,
       relaxResort: true,
       disclosure:
-        'The bounded search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 45% of this home in size, up to 10 miles out, and sales inside a nearby resort community this home is not part of. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening when it is explained.',
+        'The bounded search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 45% of this home in size, up to 10 miles out, sales inside a nearby resort community this home is not part of, and where this home sits outside every mapped neighborhood, sales across a highway or a river from it. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening when it is explained.',
     },
     // 7-8. RURAL ACREAGE last resort (2026-07-30). Every rung above is bounded
     // by `City ILIKE`, which is correct for a platted in-town subject and wrong
@@ -180,7 +211,7 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
       whenStarved: true,
       relaxResort: true,
       disclosure:
-        'The rural search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 45% of this home in size, up to 25 miles out, and sales inside a nearby resort community this home is not part of. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening for rural property when it is explained.',
+        'The rural search did not reach the minimum number of sales this report needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 45% of this home in size, up to 25 miles out, sales inside a nearby resort community this home is not part of, and sales across a highway or a river from it. Every sale from that step is labeled on the report, an older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening for rural property when it is explained.',
     },
   ]
 }

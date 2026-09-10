@@ -263,14 +263,15 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-09",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-opus-5 evaluator, SITE-30, run by the lane's own session against its own dev server (localhost:3900) on /communities/tetherow (registry community), /communities/redmond-odin-crest-estate (compound plat) and /communities/prineville-oll (refusal) at 1440 and 375, and cross-checked /communities/brasada-ranch live to confirm #plats correctly omits itself where the county recorded no plats. Three rounds on tetherow's new #plats and #reading sections: round 1 scored the two new sections cold (median 65); round 2 after the shared V3PlaceIndex bar-share moved from linear to sqrt and a row-gap was added between the bar and the next hairline (median 68); round 3, recorded here, after capping the max bar at 96% share and flooring a counted zero at 2px -- both verified live on tetherow's four zero-count plats (median 70). The builder ran on claude-sonnet-5, a different model from the evaluator on every round.",
-    "evaluatorModel": "claude-opus-5",
-    "builderModel": "claude-sonnet-5",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-59. The class was re-scored after #homes stopped holding the dead Google canvas's fixed height (see the subdivision receipt for the same change). The evaluator rendered /communities/tetherow, /communities/eagle-crest and /communities/prineville-oll at 1440x2600 and 375 wide and scored three times: 69, 70, 70. It could not reach a low-inventory community \u2014 the host disk filled mid-run \u2014 and said so rather than reporting a result it had not seen; the builder rendered that case afterwards and the frames in this receipt are it: /communities/vandevert-ranch, zero actives, a 368px section that ends on its stated no-matches panel where the old fixed frame would have held about 300px of empty cream open under it.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
     "shotSpec": {
       "routes": [
         "/communities/tetherow",
         "/communities/redmond-odin-crest-estate",
-        "/communities/prineville-oll"
+        "/communities/prineville-oll",
+        "/communities/vandevert-ranch"
       ],
       "viewports": [
         1440,
@@ -282,7 +283,8 @@
         "reading",
         "answers-first-row-open",
         "doors-fold-open",
-        "belonging-source-open"
+        "belonging-source-open",
+        "homes"
       ]
     },
     "shots": {
@@ -301,12 +303,14 @@
       "platDesktop": "design_system/ryan-realty/ui_kits/community/shots/plat-desktop.png",
       "platMobile375": "design_system/ryan-realty/ui_kits/community/shots/plat-mobile375.png",
       "refusalDesktop": "design_system/ryan-realty/ui_kits/community/shots/refusal-desktop.png",
-      "refusalMobile375": "design_system/ryan-realty/ui_kits/community/shots/refusal-mobile375.png"
+      "refusalMobile375": "design_system/ryan-realty/ui_kits/community/shots/refusal-mobile375.png",
+      "homesDesktop": "design_system/ryan-realty/ui_kits/community/shots/homes-desktop.png",
+      "homesMobile375": "design_system/ryan-realty/ui_kits/community/shots/homes-mobile375.png"
     },
-    "shotsHash": "sha256:2c6222db2b1e5803b8384e18e42421084a8434641fefb2b72f9487ba6404505b",
+    "shotsHash": "sha256:a7643c9f997e3a6a67fd601f92691ca43f214a6324c9a1ac2c7f8c29118c9d0a",
     "scores": [
       69,
-      71,
+      70,
       70
     ],
     "score": 70,
@@ -320,50 +324,39 @@
     "beats": "Beats tetherow.com's own community page on depth and honesty: they publish a lifestyle narrative and a membership tier list, this page publishes all 22 recorded plats with per-plat active-listing counts, a counted zero visibly marked as measured rather than absent, and the county recording instrument for the CC&Rs.",
     "defects": [
       {
-        "route": "/communities/tetherow",
-        "section": "#plats",
-        "severity": "taste",
-        "finding": "The 96% cap resolves the full-span read only partially -- at 1440 the top bar ends roughly 20px short of the row's own hairline, which still reads as near-a-rule at a glance; a wider gap (roughly 88% share) would separate it more clearly."
+        "section": "#atlas vs #faq (tetherow)",
+        "severity": "honesty",
+        "finding": "Carried, unchanged by this node: three different for-sale counts on one page (Atlas 26, FAQ inventory row 16, FAQ alias-name text 25) remain unreconciled."
       },
       {
-        "route": "/communities/tetherow",
-        "section": "#plats",
-        "severity": "taste",
-        "finding": "Bars carry no hover readout and no scale reference, so the length encodes a ratio the reader cannot name beyond the printed count beside it."
+        "section": "#belonging (tetherow)",
+        "severity": "honesty",
+        "finding": "Carried: the authored facts (Founded, Course architect, and the rest) carry one block-level source disclosure rather than a trace per fact."
       },
       {
-        "route": "/communities/tetherow",
-        "section": "#belonging",
+        "section": "#subdivisions vs #plats (tetherow)",
+        "severity": "taste",
+        "finding": "Carried: 2 rows against 22 rows on the same page reads as a broken index rather than two deliberately different questions."
+      },
+      {
+        "section": "opening (compound plat page)",
         "severity": "craft",
-        "finding": "\"The luxury production roster\" sits as a builder-category chip among five real firm names in the same list -- a category label mixed into an entity list."
+        "finding": "Carried: no hero photo and no data section, so the thinnest member of the class has nothing to look at."
       },
       {
-        "route": "/communities/tetherow",
-        "section": "#subdivisions",
-        "severity": "taste",
-        "finding": "Prints 2 rows on the same page #plats prints 22 on, which reads as a broken index rather than two different, deliberately distinct questions (the registry's own named subdivisions vs. the county's recorded plats)."
-      },
-      {
-        "route": "/communities/redmond-odin-crest-estate",
-        "section": "page",
-        "severity": "taste",
-        "finding": "The compound-plat page renders 8 sections and no encoded data section at all -- the class's thinnest member has no figure to look at, only prose and doors."
-      },
-      {
-        "route": "/communities/prineville-oll",
-        "section": "#missing",
+        "section": "#missing (prineville-oll)",
         "severity": "craft",
-        "finding": "\"Homes for sale in Prineville\" and \"Homes for sale\" render as two near-identical rows four rows apart on the refusal page."
+        "finding": "Reconfirmed this pass: \"Homes for sale in Prineville\" and \"Homes for sale\" render as two near-identical rows in the six-item refusal grid."
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-08",
-      "score": 69,
-      "evaluatorModel": "claude-sonnet-5",
+      "evaluatedAt": "2026-09-09",
+      "score": 70,
+      "evaluatorModel": "claude-opus-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:a364c1e66a0eeb7fb85b3ca325a0ba01f508a0f3c2b34eb56b06846b432e6d51"
+      "shotsHash": "sha256:2c6222db2b1e5803b8384e18e42421084a8434641fefb2b72f9487ba6404505b"
     },
-    "rebaselineReason": "The committed 69 was scored by evaluatorModel claude-sonnet-5 against a shotsHash from before #plats or #reading existed on this route; this mark's evaluatorModel is claude-opus-5 (the different-model rule requires it to differ from this session's own claude-sonnet-5 builder) and its shotsHash is necessarily different because the shot set now includes the two new sections. Both evaluatorModel and shotsHash drift, so 69 is not a baseline this mark can be measured against. Within this session's own three rounds on this new instrument the score rose every round: 65, then 68, then 70 recorded here -- a smaller class-wide number than the incomparable 69 because this instrument, like SITE-28's before it, scores the class by its weakest member and the two new sections carry their own not-yet-closed defects, listed above."
+    "rebaselineReason": "shotsHash differs, and so does evaluatorModel: the committed 70 was scored by claude-opus-5 and this mark by claude-sonnet-5 (the different-model rule, since this session's builder is claude-opus-5), and two frames of #homes on a zero-inventory community joined the shot set. The class HELD at 70 \u2014 no category rose and none fell. The busy lists this class is mostly made of fill the cap exactly as the old fixed frame did, so the change is invisible on them; it is visible only on the short-list case, which is what the new frames record."
   }
 }

@@ -8,6 +8,11 @@
       "url": "/about"
     },
     {
+      "key": "blog",
+      "route": "app/blog/[slug]/page.tsx",
+      "url": "/blog/awbrey-glen-median-price-hoa-dues-2026"
+    },
+    {
       "key": "buy",
       "route": "app/buy/page.tsx",
       "url": "/buy"

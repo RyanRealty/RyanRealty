@@ -65,9 +65,10 @@ import {
 import { compTierLadder, isRuralAcreage, realSubdivision } from '@/lib/cma/comp-tiers'
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible } from '@/lib/pricing/rural'
 import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
-import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
+import { communitySlugForSubdivision, isResortCommunity, resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
+import { crossesNamedRiver } from '@/lib/pricing/river-cross'
 import {
   customBathCompatible,
   customLotCompatible,
@@ -375,12 +376,22 @@ export async function selectComps(
   // How many sales the widening rung crossed the resort-membership rule for.
   // Counted so the disclosure can name it rather than imply it.
   let resortCrossed = 0
+  // Sales set aside for sitting across a river from an unmapped subject.
+  let crossedFeature = 0
+  // The parent the subject's plat sits inside, from the recorded-plat registry.
+  const subjectCommunity = communitySlugForSubdivision(subject.subdivision)
 
   for (const tier of tiers) {
     const skip =
       // THE WIDENING RUNS ONLY WHEN THE BOUNDED LADDER CAME UP SHORT.
       tier.whenStarved && byKey.size >= MIN_COMPS
         ? 'the bounded search already reached the minimum, so no widening was needed'
+        : tier.sameCommunity && !subjectCommunity
+        ? 'the subject is not inside a planned or golf community'
+        : tier.likeCommunity && !isResortCommunity(subjectCommunity)
+        ? 'the subject is not inside a golf or resort community'
+        : tier.likeCommunity && byKey.size >= MIN_COMPS
+        ? 'the community supplied the minimum, so no peer community was needed'
         : tier.name.startsWith('subdivision') && !tier.subdivisionIlike
         ? 'the subject has no usable SubdivisionName on its MLS record'
         : tier.sameArea && !subjectArea
@@ -546,6 +557,21 @@ export async function selectComps(
         }
       }
 
+      // THE PARENT LEVEL (Matt 2026-09-09). The community rung takes the
+      // subject's own community and nothing else; the peer rung takes another
+      // community of the same kind and never a plain neighborhood.
+      const compCommunity = communitySlugForSubdivision(comp.subdivision)
+      if (tier.sameCommunity && compCommunity !== subjectCommunity) {
+        rung.excluded.resort_premium++
+        continue
+      }
+      if (
+        tier.likeCommunity &&
+        (!compCommunity || compCommunity === subjectCommunity || !isResortCommunity(compCommunity))
+      ) {
+        rung.excluded.resort_premium++
+        continue
+      }
       // HARD EXCLUSION at every tier (Matt 2026-08-05, the no-brainer): a
       // resort-community sale (Crosswater, Caldera Springs, ...) only prices
       // a home in the SAME resort community — and a plain-town sale never
@@ -553,7 +579,7 @@ export async function selectComps(
       if (!resortCommunityCompatible(subject.subdivision, comp.subdivision)) {
         // Matt 2026-09-09: cross only when starved, and say so. Outside the
         // widening rung the guard is absolute, exactly as it was.
-        if (!tier.relaxResort) {
+        if (!tier.relaxResort && !tier.likeCommunity) {
           rung.excluded.resort_premium++
           continue
         }
@@ -564,6 +590,21 @@ export async function selectComps(
       // Deschutes — CMA_SUNSTONE_CONTRACT). Neighborhood banks cover the Bend
       // GIS mesh. The TIGER centerline covers unmapped ground (Redmond,
       // Tumalo) so both-unmapped no longer fails open across 97.
+      // A RIVER IS A WALL WHERE NOTHING ELSE IS (Matt 2026-09-09). Outside the
+      // Bend GIS mesh a search was held only by city and radius; the named
+      // rivers hold it in. The starved widening rung may cross, disclosed.
+      if (
+        subjectArea == null &&
+        !tier.whenStarved &&
+        crossesNamedRiver(
+          { lat: subject.latitude ?? NaN, lng: subject.longitude ?? NaN },
+          { lat: comp.latitude ?? NaN, lng: comp.longitude ?? NaN },
+        )
+      ) {
+        rung.excluded.crossed_divide++
+        crossedFeature++
+        continue
+      }
       if (
         crossesMajorDivide(
           subjectArea,

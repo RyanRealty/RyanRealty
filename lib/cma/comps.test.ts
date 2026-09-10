@@ -69,6 +69,16 @@ describe('compTierLadder', () => {
       'adjacent-subdivision-12mo',
       'neighborhood-6mo',
       'neighborhood-12mo',
+      // Two years inside the plat and its ring, then the community the plat
+      // sits inside, then the polygon to two years, then its peer communities
+      // (Matt 2026-09-09: go up a parent level, and never leave it early).
+      'subdivision-24mo',
+      'adjacent-subdivision-24mo',
+      'community-6mo',
+      'community-12mo',
+      'community-24mo',
+      'neighborhood-24mo',
+      'like-community-24mo',
       'competing-area-12mo',
       'citywide-12mo',
       // The disclosed widening (Matt 2026-09-09): last in town, and its rural
@@ -83,7 +93,8 @@ describe('compTierLadder', () => {
 
   it('keeps the city bound on every rung except the rural ones', () => {
     for (const t of compTierLadder(null)) {
-      expect(!!t.ignoreCity).toBe(t.name.startsWith('rural-'))
+      // A peer golf or resort community is genuinely in another mailing city.
+      expect(!!t.ignoreCity).toBe(t.name.startsWith('rural-') || t.name.startsWith('like-community-'))
     }
   })
 
@@ -92,7 +103,9 @@ describe('compTierLadder', () => {
       expect(!!t.ruralOnly).toBe(t.name.startsWith('rural-'))
       // A disclosure marks a rung that traded something the reader must be
       // told about: the rural widening, and the starved widening in town.
-      expect(!!t.disclosure).toBe(t.name.startsWith('rural-') || t.name.includes('widened-disclosed'))
+      expect(!!t.disclosure).toBe(
+        t.name.startsWith('rural-') || t.name.includes('widened-disclosed') || t.name.startsWith('like-community-'),
+      )
     }
   })
 
@@ -250,5 +263,23 @@ describe('diagnoseStarvation — name the constraint, not the count', () => {
     )!
     expect(msg).toMatch(/listings path: no comp search could run/i)
     expect(msg).toMatch(/outside every mapped neighborhood polygon/)
+  })
+})
+
+describe('the parent level on the listings ladder (Matt 2026-09-09)', () => {
+  it('holds the plat to its community before any polygon, ring or city rung', () => {
+    const names = compTierLadder('Tetherow').map((t) => t.name)
+    expect(names.indexOf('adjacent-subdivision-24mo')).toBeLessThan(names.indexOf('community-6mo'))
+    expect(names.indexOf('community-24mo')).toBeLessThan(names.indexOf('neighborhood-24mo'))
+    expect(names.indexOf('neighborhood-24mo')).toBeLessThan(names.indexOf('like-community-24mo'))
+    expect(names.indexOf('like-community-24mo')).toBeLessThan(names.indexOf('competing-area-12mo'))
+    expect(names.indexOf('competing-area-12mo')).toBeLessThan(names.indexOf('citywide-12mo'))
+  })
+
+  it('marks membership on the community rungs and nowhere else', () => {
+    for (const t of compTierLadder('Tetherow')) {
+      expect(!!t.sameCommunity).toBe(t.name.startsWith('community-'))
+      expect(!!t.likeCommunity).toBe(t.name.startsWith('like-community-'))
+    }
   })
 })

@@ -1,3 +1,81 @@
+# Current — 2026-09-10 (stopping point: the queue is empty of eligible work, and the scoreboard we have been reading is wrong)
+
+Owner: Claude (Opus 5), session claude-opus5-9d4aa6fc-2026-09-09, main checkout. Stopped for context,
+not for a blocker. **I hold no claims.** Last push `90e41d5e`.
+
+## READ THIS FIRST: the lane scores and the table scores are not the same number
+
+Every lane today reported a taste score from its own evaluator, and those are the numbers in the
+older handoff blocks below — annual-review 83, oregon-city 80, reviews 81, search 75. **The standing
+table instrument, run against production tonight, scores the same pages far lower:** about 46, city
+40 (yes, forty), community 53, contact 50, compare 48, cities 55, blog 61, buy 63,
+market-report 47, market-report-annual 62, neighborhood 45, oregon-city 56, place-type 66,
+listing-detail 53, homepage-v6 57, invest 65.
+
+The difference is not noise and it is not a broken tool. **The table captures the FIRST VIEWPORT
+only, at 1440 and 375, and scores what a visitor sees on load.** A lane's evaluator scores the shots
+the lane chose — often several states, sometimes the whole page — and drives the live page. Both are
+honest; they answer different questions. Matt's finish line (2026-09-09) is **70 on the table
+instrument**, so the table is the scoreboard and the lane numbers are a lane's own instrument.
+**Do not quote a lane score as the site's score.** By the table, no class clears 70 yet.
+
+**The run is unfinished and resumable without re-capturing.** All 54 first-viewport shots for 27
+classes are at `.taste-table/2026-09-10T01-09-13-961Z/` (scratch, not committed — if it is gone,
+re-capture). Resume with:
+`node scripts/taste-table.mjs https://ryan-realty.com --evaluate-only .taste-table/<runDir>`
+Two classes failed validation on the first pass and need a re-run: market-report-detail ("no defect
+names a primitive that exists on disk") and market-report-region ("criteria.honestyFunction must be
+an integer 0-10"). I reverted the working copy of `taste-table.json` and the table markdown so a
+half-finished run of nulls could not be committed — **the committed table is still the 2026-09-08
+baseline. Do not trust it either.**
+
+## Landed since the last block
+- **SITE-41** market pages: 31→83, 53→78, 63→77, 41→80 on the lane instrument, no KPI grid. Matt's
+  cut ruling applied (28-row table gone, twelve cells down to three-to-five with sentences); a second
+  uncaptioned grid nobody had found was cut too. §0 bug fixed: two listings displayed \$0 because
+  `formatPrice` rounds anything under \$500 to zero.
+- **SITE-59** the dead map pane is gone from all four place templates (none of them wanted a map;
+  `listOnly` was hardcoded) and the out-of-area rows show their photographs. **The photo cause:** the
+  picture was drawn inside the 44px tap mark on `--v3-wash`, so a decoded photo, a loading photo and
+  no photo were one grey square. Not a licence, not an opt-out, not a missing field — all three ruled
+  out by measurement. **Deploy verify was NOT run for SITE-59; do that first.**
+- **SITE-31** eleven community guides, live. **SITE-40/49/51/55** landed off a stranded branch.
+
+## Seeded and eligible right now
+- **SITE-60** — a page that links to listings prefetches ~25 MB of MLS photographs nobody sees
+  (78 requests / 25,386,060 bytes with prefetch on, 11 / 333,689 with it off). Belongs to
+  `app/listing/**`; invisible in dev because prefetch is off there. Probably every route that links
+  to a listing.
+- **SITE-61** — the other listing-shaped ledgers (`app/sell`, `app/activity`,
+  `subdivision-rows.ts`, `place-open-houses.ts`) still draw a photo in the 44px mark.
+- **SITE-58** — Crook and Jefferson plat polygons (a grok session claimed it earlier; check the
+  heartbeat before taking it).
+- **SITE-43** waits on SITE-03, which is on a measurement window to 2026-10-06.
+
+## The order for whoever picks this up
+1. `npm run deploy:verify` and live-check SITE-59's two surfaces.
+2. Finish the table run (`--evaluate-only`), fix the two invalid classes, commit the real table.
+3. Seed the next round from the bottom of THAT table, by primitive, not from the lane numbers.
+4. `city` at 40 and `neighborhood` at 45 are the worst two and neither has an open node.
+
+## Two environment notes from the SITE-59 lane
+The host disk hit 0 bytes mid-session (~24 GB reclaimed from Chrome and npm caches), and something
+pruned a live worktree's `node_modules` and `ms-playwright` **during** its build, which failed with
+a bogus type error in a file the lane never touched. A concurrent disk pass can take a running lane's
+dependencies out from under it.
+
+# Current — 2026-09-10 (SITE-43 claimed; place-opening lane in flight)
+
+Owner: Grok (grok-01a08914-2026-09-09), main checkout @ `6c4ad446`. Lane isolation: worktree agent `01a0891e`.
+
+**Run loop.** Brief served SITE-43 (depends_on SITE-03 cleared). Claimed `SITE-43` for this session. SITE-59 remains in_progress on `claude-opus5-9d4aa6fc-2026-09-09` (empty frames + oregon photos) — this lane does not touch PlaceSplitView, maps, or `/oregon` listing rows.
+
+**SITE-43 lane.** PlaceAreaHero MOS two-bar (homes for sale vs a month of sales) in the hero; V3AlertsStrip paired figure + property-type toggle + at-rest numeral + mobile primary CTA. Routes: `/cities/bend`, `/cities/bend/awbrey-butte`, `/communities/tetherow`. MOS source = leftoverHudKpis (same as the city door; do not mix listing_tile_mv). Neighborhood receipt must beat SITE-07's ruled 67.
+
+**Queue.** Open eligible: none besides this claim. SITE-59 held. Measurement windows stay blocked. After this round: land one push + deploy:verify, then boot again.
+
+**Skills read:** site-queue, loop-status, TASTE.md, frontend-design, dataviz, database-canonical-reference, DATA_GRAPHICS.md, ryan-realty SKILL.md.
+
 # Current — 2026-09-09 (Matt's three rulings: remove the empty frame, cut the redundant number blocks, re-measure and continue)
 
 Owner: Claude (Opus 5), session claude-opus5-9d4aa6fc-2026-09-09, main checkout.
@@ -14,23 +92,30 @@ Owner: Claude (Opus 5), session claude-opus5-9d4aa6fc-2026-09-09, main checkout.
 3. **Re-measure and continue.** After SITE-41 lands, run the instrument across all 25 classes and
    seed the next round from the bottom.
 
-**Ruling 3 has a hole in it, and it is now a node.** There is no reseeding. Both halves exist and
+**Ruling 3 has a hole in it, and it is now SITE-62.** There is no reseeding. Both halves exist and
 nothing joins them: `scripts/taste-table.mjs` scores every class and `--diff` prints everything under
-the finish line of 70, while `scripts/seed-site-queue.ts` holds the backlog as a hardcoded array and
-**never reads the table** (verified by grep — the only mention of `taste-table.json` inside the
-seeder is prose in SITE-51's own description). Neither is on a cron. So the path from "this class
-scored 52" to "a node a session can claim" runs through a person hand-writing a TypeScript object.
-Run the instrument today and the measuring half finishes and produces nothing claimable.
+70, while `scripts/seed-site-queue.ts` holds the backlog as a hardcoded array and **never reads the
+table**. Neither is on a cron. So the path from "this class scored 52" to "a node a session can
+claim" runs through a person hand-writing a TypeScript object, and the measuring half can finish and
+produce nothing claimable.
 
-**Seeded as SITE-60, open and eligible now.** It emits a DRAFT seed per under-the-line class for
-review, never an auto-seeded node: a row written by a machine from a score carries no diagnosis, and
-the queue's whole value is that each row states a cause and an accept test. Review-and-paste instead
-of compose-from-scratch, with the next free `version_gap` read off the existing seeds rather than
-guessed, because that is the other half of the hop and where two rounds collide on one id.
+**I seeded it as SITE-60 at 02:23 and that was wrong — main's seed file already claimed SITE-60 for
+the prefetch finding. Read this before you seed anything.** `seed-site-queue.ts` upserts with
+`ignoreDuplicates: true`, so **the first writer of a `version_gap` wins and every later seed for that
+id is silently dropped — no error, no warning, no row.** My run took SITE-60 at 02:23. The SITE-59
+session ran the seeder at 02:41 with SITE-60 = the prefetch finding, and its row was ignored. The
+result was a measured finding (78 requests, 25,386,060 bytes) that existed in **no node under any
+id**, and nothing anywhere would have said so.
 
-**Whoever takes ruling 3, take SITE-60 first or accept the manual hop knowingly.** It is small, it is
-not on the critical path of any page, and it is the difference between a round that continues on its
-own and a round that stalls silently after the scores land.
+**Repaired.** Main is the trunk, so main's SITE-60 keeps the id: the row now carries the prefetch
+node, read from the committed seed text, and the repair refused to run unless the row was still
+`open` and unclaimed. My node moved to **SITE-62**, seeded and eligible. SITE-60, SITE-61 and SITE-62
+all exist and all three are open. Verified by a second, differently-shaped query: a search for
+"prefetch" across every node returns SITE-60, where it returned nothing before.
+
+**The deeper fix belongs to SITE-62 and is now in its brief:** a duplicate `version_gap` whose
+content differs should FAIL the seeder loudly instead of being dropped. Until it does, check the
+highest live id before you write a seed, and do not assume the number in your working copy is free.
 
 **A finding I answered rather than asked about.** The grey placeholder squares on /oregon/[city]
 listing rows (10 of 12 on Medford) are NOT a licensing or opt-out problem: sampled through the DAL,

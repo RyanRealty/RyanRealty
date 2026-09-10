@@ -167,6 +167,64 @@
   user-select: none;
 }
 
+/* THE PHOTO SCALE (SITE-59). `media="photo"`: a ledger of homes, where the
+   picture is content and not a stamp. 44px square becomes a 4:3 landscape
+   thumbnail — the shape every listing photograph is already taken in, so the
+   crop stops throwing away the house — and the fill behind it becomes the
+   glyph's navy tile rather than the pale wash. That last part is the whole
+   point of the node: at 44px on wash, a decoded photograph, a photograph still
+   being fetched, and a row with no photograph at all were three states drawn
+   as one grey square, and an evaluator read ten Medford rows as broken when
+   every one of them had its picture. Every state is now deliberate: a
+   photograph, or the navy tile the glyph draws, never an empty rectangle.
+   The glyph takes the same box so the column keeps one edge. */
+.v3-ledger--photo .v3-ledger__media {
+  width: 5.5rem;
+  height: 4.125rem;
+  background: var(--v3-navy);
+}
+
+/* A PHOTOGRAPH THAT DOES NOT ARRIVE IS STILL NOT A BROKEN ROW. An `<img>`
+   whose source fails stops being replaced content, and the browser draws its
+   own torn-page icon in the corner — measured here on 2026-09-09 by aborting
+   one row's request: a navy tile with a broken-image glyph on it, which is
+   precisely the "reads as broken" this node exists to end. A pseudo-element
+   only renders on an `<img>` that is NOT displaying an image, so this paints
+   the tile over the icon at exactly the moment there is an icon to cover, and
+   never over a photograph. Safari renders no pseudo-element here and also
+   draws no icon on an `alt=""` image with fixed dimensions, so the tile
+   underneath is what shows. Either way the row is the deliberate mark. */
+.v3-ledger--photo .v3-ledger__thumb {
+  position: relative;
+}
+.v3-ledger--photo .v3-ledger__thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--v3-navy);
+}
+
+/* The row's three cells centre on each other instead of sitting on one text
+   baseline. A flex box that leads with an `img` takes its baseline from the
+   picture's BOTTOM edge, so at 66px the price dropped to the floor of the row
+   while the address stayed at the top of it — the taller the photograph, the
+   further the two drifted. Nothing else in the pattern changes: `list` rows
+   with a 44px mark keep the baseline they have always had. */
+.v3-ledger--photo .v3-ledger__row {
+  align-items: center;
+}
+
+/* Phones give the row less width than the address needs beside an 88px
+   picture, so the picture steps down rather than the address wrapping to
+   three lines. Still 4:3, still not a 44px square. */
+@media (max-width: 30rem) {
+  .v3-ledger--photo .v3-ledger__media {
+    width: 4.5rem;
+    height: 3.375rem;
+  }
+}
+
 /* A row's LABEL wraps to a second line rather than clipping: a subdivisions
    ledger printed a long plat name six times as one ellipsized string. The
    figure column below stays nowrap so a column of values still aligns. */

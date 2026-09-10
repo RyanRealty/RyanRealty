@@ -3,7 +3,12 @@
  * plain-town sales never price each other. Registry-driven, symmetric.
  */
 import { describe, expect, it } from 'vitest'
-import { resortCommunityCompatible, resortSlugForSubdivision } from './resort-guard'
+import {
+  communitySlugForSubdivision,
+  isResortCommunity,
+  resortCommunityCompatible,
+  resortSlugForSubdivision,
+} from './resort-guard'
 
 describe('resortSlugForSubdivision', () => {
   it('maps registry aliases case-insensitively', () => {
@@ -48,5 +53,25 @@ describe('resortCommunityCompatible', () => {
   it('plain against plain is fine', () => {
     expect(resortCommunityCompatible('Kenwood', 'Starlight Estate')).toBe(true)
     expect(resortCommunityCompatible(null, null)).toBe(true)
+  })
+})
+
+describe('communitySlugForSubdivision — the parent a plat sits inside', () => {
+  it('maps a plat to its community, phase suffix and all', () => {
+    expect(communitySlugForSubdivision('Tetherow')).toBe('tetherow')
+    expect(communitySlugForSubdivision('Caldera Springs Phase One')).toBe('caldera-springs')
+    expect(communitySlugForSubdivision('northwest crossing')).toBe('northwest-crossing')
+  })
+
+  it('answers null for an ordinary plat, so the rule binds nothing', () => {
+    expect(communitySlugForSubdivision('Diamond Bar Ranch')).toBeNull()
+    expect(communitySlugForSubdivision('N/A')).toBeNull()
+    expect(communitySlugForSubdivision(null)).toBeNull()
+  })
+
+  it('separates a golf or resort community from a plain platted one', () => {
+    expect(isResortCommunity('tetherow')).toBe(true)
+    expect(isResortCommunity('diamond-bar-ranch')).toBe(false)
+    expect(isResortCommunity(null)).toBe(false)
   })
 })
