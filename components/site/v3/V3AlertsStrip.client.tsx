@@ -63,6 +63,7 @@ import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading, V3SourceDisclosure } fro
 import {
   anchorPassed,
   isPlausibleEmail,
+  selectAlertType,
   stickyAskClosed,
   stickyDismissKey,
   stickyEligible,
@@ -89,6 +90,22 @@ export type V3AlertsSubmit = (input: {
 
 /** The strip's one line in parts, so the place name never breaks across lines. */
 export type V3AlertsStickyClaim = { before: string; place: string; after: string }
+
+export type V3AlertsListing = {
+  href: string
+  photoSrc: string
+  title: string
+}
+
+export type V3AlertsTypeOption = {
+  key: string
+  label: string
+  count: string | null
+  claim: string
+  stickyClaim: V3AlertsStickyClaim
+  source?: string
+  listings?: readonly V3AlertsListing[]
+}
 
 export type V3AlertsStripProps = {
   /** The section id. Defaults to `alerts`; the sticky's dismissal is scoped to it. */
@@ -122,6 +139,14 @@ export type V3AlertsStripProps = {
   /** primary when this is the fold's one ask; ghost when the opening already carries one. */
   emphasis?: 'primary' | 'ghost'
   trap?: V3AlertsTrap
+  /**
+   * Property-type options this place actually has. Selecting one updates the
+   * 30-day count, the claim, and the recent-listings strip. Omit when the
+   * place only publishes one type.
+   */
+  types?: readonly V3AlertsTypeOption[]
+  /** Compact recent-listings strip beside the sentence, when types are omitted. */
+  listings?: readonly V3AlertsListing[]
   /** The id of the section the strip appears after. Defaults to `atlas`. */
   stickyAfter?: string
   /** Accessible name for the strip region. */
@@ -158,6 +183,8 @@ export function V3AlertsStrip({
   updatedAt,
   emphasis = 'primary',
   trap,
+  types,
+  listings,
   stickyAfter = 'atlas',
   stickyLabel,
   dismissLabel = 'Close',
@@ -175,6 +202,13 @@ export function V3AlertsStrip({
   const [sticky, setSticky] = useState<V3AlertsStickyState>(V3_ALERTS_STICKY_INITIAL)
   /** The visitor opened the strip's ask. Only the narrow layout rests closed. */
   const [armed, setArmed] = useState(false)
+  const [typeKey, setTypeKey] = useState<string | null>(types?.[0]?.key ?? null)
+  const selected = selectAlertType(types, typeKey)
+  const shownCount = selected ? selected.count : count
+  const shownClaim = selected ? selected.claim : claim
+  const shownSticky = selected ? selected.stickyClaim : stickyClaim
+  const shownSource = selected?.source ?? source
+  const shownListings = selected?.listings ?? listings
   const sectionRef = useRef<HTMLElement | null>(null)
   const stickyRef = useRef<HTMLElement | null>(null)
   const calloutInputRef = useRef<HTMLInputElement | null>(null)
@@ -397,14 +431,21 @@ export function V3AlertsStrip({
     ) : null
 
   // A figure, not a control: the one door is the labelled button under the claim.
-  const numeral = count ? <span className="v3-alerts__num">{count}</span> : null
+  // SITE-43: a sibling mark at rest so the numeral reads as a door without
+  // becoming a second control.
+  const numeral = shownCount ? (
+    <>
+      <span className="v3-alerts__num">{shownCount}</span>
+      <span className="v3-alerts__num-mark" aria-hidden="true" />
+    </>
+  ) : null
 
   return (
     <>
       <section
         id={id}
         ref={sectionRef}
-        className={cn(V3_ROOT_CLASS, 'v3-alerts', count && 'v3-alerts--figure', className)}
+        className={cn(V3_ROOT_CLASS, 'v3-alerts', shownCount && 'v3-alerts--figure', className)}
         aria-labelledby={headingId}
       >
         <div className="v3-alerts__grid">
@@ -412,9 +453,38 @@ export function V3AlertsStrip({
             <V3Eyebrow>{eyebrow}</V3Eyebrow>
             <V3Heading level={2} size="field" id={headingId} className="v3-alerts__claim">
               {numeral}
-              {count ? ' ' : null}
-              <span className="v3-alerts__claim-text">{claim}</span>
+              {shownCount ? ' ' : null}
+              <span className="v3-alerts__claim-text">{shownClaim}</span>
             </V3Heading>
+            {types && types.length > 1 ? (
+              <div className="v3-alerts__types" role="group" aria-label="Property type">
+                {types.map((option) => (
+                  <button
+                    key={option.key}
+                    type="button"
+                    data-type={option.key}
+                    className="v3-alerts__type"
+                    aria-pressed={option.key === selected?.key}
+                    onClick={() => setTypeKey(option.key)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {shownListings && shownListings.length > 0 ? (
+              <ul className="v3-alerts__strip">
+                {shownListings.map((item) => (
+                  <li key={item.href}>
+                    <a className="v3-alerts__thumb" href={item.href}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.photoSrc} alt="" />
+                      <span className="v3-alerts__thumb-name">{item.title}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             {scopeLine ? <p className="v3-alerts__scope">{scopeLine}</p> : null}
             {door && browseLabel ? (
               <p className="v3-alerts__browse">
@@ -423,7 +493,7 @@ export function V3AlertsStrip({
                 </V3Button>
               </p>
             ) : null}
-            {source ? <V3SourceDisclosure source={source} updatedAt={updatedAt} /> : null}
+            {shownSource ? <V3SourceDisclosure source={shownSource} updatedAt={updatedAt} /> : null}
           </div>
 
           <div className={cn('v3-alerts__ask', isSent && 'v3-alerts__ask--sent')}>
@@ -488,10 +558,10 @@ export function V3AlertsStrip({
         <form className="v3-alerts-sticky__inner" onSubmit={onStickySubmit} noValidate aria-busy={sending}>
           <div className="v3-alerts-sticky__text">
             <p className="v3-alerts-sticky__line">
-              {count ? <span className="v3-alerts-sticky__num">{count}</span> : null}
-              {count ? ' ' : null}
-              {stickyClaim.before} <span className="v3-alerts-sticky__place">{stickyClaim.place}</span>{' '}
-              {stickyClaim.after}
+              {shownCount ? <span className="v3-alerts-sticky__num">{shownCount}</span> : null}
+              {shownCount ? ' ' : null}
+              {shownSticky.before} <span className="v3-alerts-sticky__place">{shownSticky.place}</span>{' '}
+              {shownSticky.after}
             </p>
             {stickyNote ? (
               <p className="v3-alerts-sticky__note" id={noteId}>

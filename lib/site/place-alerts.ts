@@ -79,6 +79,8 @@ export type PlaceAlertsInput = {
    * case-insensitively on subdivision_lower). Empty or one name adds no line.
    */
   matchNames?: readonly string[]
+  /** Defaults to house / houses. Condo and land pass their own noun. */
+  noun?: PlaceAlertsNoun
 }
 
 /** The strip's one line, in parts so the place name can stay whole at 375. */
@@ -119,8 +121,12 @@ export function earnsDisplayFigure(n: number | null): n is number {
   return n != null && n >= PLACE_ALERTS_FIGURE_MIN
 }
 
-function houses(n: number): string {
-  return n === 1 ? 'house' : 'houses'
+export type PlaceAlertsNoun = { one: string; many: string }
+
+const HOUSES: PlaceAlertsNoun = { one: 'house', many: 'houses' }
+
+function units(n: number, noun: PlaceAlertsNoun): string {
+  return n === 1 ? noun.one : noun.many
 }
 
 /**
@@ -136,13 +142,14 @@ export function placeAlertsClaimParts(
   placeName: string,
   scopeName: string,
   n: number | null,
+  noun: PlaceAlertsNoun = HOUSES,
 ): PlaceAlertsStickyClaim {
   if (n == null) {
     return { before: 'New', place: scopeName, after: 'listings, by email, as they come on the market.' }
   }
   const after = 'in the last 30 days.'
-  if (earnsDisplayFigure(n)) return { before: `${houses(n)} came on the market in`, place: placeName, after }
-  return { before: `${formatCount(n)} ${houses(n)} came on the market in`, place: placeName, after }
+  if (earnsDisplayFigure(n)) return { before: `${units(n, noun)} came on the market in`, place: placeName, after }
+  return { before: `${formatCount(n)} ${units(n, noun)} came on the market in`, place: placeName, after }
 }
 
 /** The same sentence as one string, for the mount that has room to wrap it. */
@@ -150,12 +157,22 @@ export function joinClaimParts(parts: PlaceAlertsStickyClaim): string {
   return `${parts.before} ${parts.place} ${parts.after}`
 }
 
-export function placeAlertsClaim(placeName: string, scopeName: string, n: number | null): string {
-  return joinClaimParts(placeAlertsClaimParts(placeName, scopeName, n))
+export function placeAlertsClaim(
+  placeName: string,
+  scopeName: string,
+  n: number | null,
+  noun: PlaceAlertsNoun = HOUSES,
+): string {
+  return joinClaimParts(placeAlertsClaimParts(placeName, scopeName, n, noun))
 }
 
-export function placeAlertsStickyClaim(placeName: string, scopeName: string, n: number | null): PlaceAlertsStickyClaim {
-  return placeAlertsClaimParts(placeName, scopeName, n)
+export function placeAlertsStickyClaim(
+  placeName: string,
+  scopeName: string,
+  n: number | null,
+  noun: PlaceAlertsNoun = HOUSES,
+): PlaceAlertsStickyClaim {
+  return placeAlertsClaimParts(placeName, scopeName, n, noun)
 }
 
 /** What the promise names: the scope the filter really sends, with the place folded in when it is narrower. */
@@ -264,9 +281,19 @@ export function placeAlertsSource(input: {
   count: number
   geoType: PlaceAlertsGeoType
   geoSlug: string
+  noun?: PlaceAlertsNoun
+  table?: 'market_metric' | 'listing_tile_mv'
 }): string {
+  const unit = input.noun?.many ?? 'houses'
+  if (input.table === 'listing_tile_mv') {
+    return (
+      `${formatCount(input.count)} ${unit}: listing_tile_mv, ${input.geoType}:${input.geoSlug}, ` +
+      `active listings whose on-market date falls in the last 30 days, Coming Soon excluded. ` +
+      `Not leftoverHudKpis. The alert follows this page's filter.`
+    )
+  }
   return (
-    `${formatCount(input.count)} houses: regional MLS through Oregon Data Share, read through the Market Truth ` +
+    `${formatCount(input.count)} ${unit}: regional MLS through Oregon Data Share, read through the Market Truth ` +
     `metric layer (stat new_listings_30d, ${input.geoType}:${input.geoSlug}, detached single-family houses whose ` +
     `on-market date falls in the last 30 days, Coming Soon excluded). The alert follows this page's filter, ` +
     `which is wider than houses alone.`
@@ -275,6 +302,7 @@ export function placeAlertsSource(input: {
 
 export function placeAlertsCopy(input: PlaceAlertsInput): PlaceAlertsCopy {
   const n = publishableNewCount(input.newCount30d)
+  const noun = input.noun ?? HOUSES
   const scopeLine = placeAlertsScopeLine({
     placeName: input.placeName,
     scopeName: input.scopeName,
@@ -284,8 +312,8 @@ export function placeAlertsCopy(input: PlaceAlertsInput): PlaceAlertsCopy {
   return {
     eyebrow: `New listings · ${input.placeName}`,
     count: earnsDisplayFigure(n) ? formatCount(n) : null,
-    claim: placeAlertsClaim(input.placeName, input.scopeName, n),
-    stickyClaim: placeAlertsStickyClaim(input.placeName, input.scopeName, n),
+    claim: placeAlertsClaim(input.placeName, input.scopeName, n, noun),
+    stickyClaim: placeAlertsStickyClaim(input.placeName, input.scopeName, n, noun),
     scopeLine,
     scopePhrase,
     promiseScope: scopeLine ? null : scopePhrase,
@@ -295,7 +323,97 @@ export function placeAlertsCopy(input: PlaceAlertsInput): PlaceAlertsCopy {
       heading: `Set. New ${input.scopeName} listings land by email when they hit the market.`,
       body: 'Price changes on those homes come in the same email. Pause or unsubscribe from any alert email.',
     },
-    source: n == null ? undefined : placeAlertsSource({ count: n, geoType: input.geoType, geoSlug: input.geoSlug }),
+    source:
+      n == null
+        ? undefined
+        : placeAlertsSource({
+            count: n,
+            geoType: input.geoType,
+            geoSlug: input.geoSlug,
+            noun,
+          }),
     stickyLabel: `${input.scopeName} listing alerts`,
   }
+}
+
+export type PlaceAlertTypeBucket = {
+  key: string
+  label: string
+  noun: PlaceAlertsNoun
+  newCount30d: number | null
+  source: 'listing_tile_mv' | 'market-truth'
+  listings: readonly { href: string; photoSrc: string; title: string }[]
+}
+
+export type PlaceAlertTypeOption = {
+  key: string
+  label: string
+  count: string | null
+  claim: string
+  stickyClaim: PlaceAlertsStickyClaim
+  source?: string
+  listings: readonly { href: string; photoSrc: string; title: string }[]
+}
+
+/**
+ * One option per type the place actually has. Houses keep leftoverHudKpis
+ * new_listings_30d; condo and land keep the listing_tile_mv 30-day count, named.
+ */
+export function buildPlaceAlertTypes(input: {
+  placeName: string
+  scopeName: string
+  geoType: PlaceAlertsGeoType
+  geoSlug: string
+  leftoverHouses30d: number | null
+  matchNames?: readonly string[]
+  buckets: readonly PlaceAlertTypeBucket[]
+}): PlaceAlertTypeOption[] {
+  const options: PlaceAlertTypeOption[] = []
+  const seen = new Set<string>()
+  const houses: PlaceAlertTypeBucket = {
+    key: 'houses',
+    label: 'Houses',
+    noun: HOUSES,
+    newCount30d: input.leftoverHouses30d,
+    source: 'market-truth',
+    listings: input.buckets.find((b) => b.key === 'houses')?.listings ?? [],
+  }
+  const rest = input.buckets.filter((b) => b.key !== 'houses')
+  for (const bucket of [houses, ...rest]) {
+    if (seen.has(bucket.key)) continue
+    seen.add(bucket.key)
+    const count30 =
+      bucket.key === 'houses' ? input.leftoverHouses30d : bucket.newCount30d
+    const n = publishableNewCount(count30)
+    if (n == null && bucket.listings.length === 0) continue
+    const copy = placeAlertsCopy({
+      placeName: input.placeName,
+      scopeName: input.scopeName,
+      newCount30d: n,
+      geoType: input.geoType,
+      geoSlug: input.geoSlug,
+      matchNames: input.matchNames,
+      noun: bucket.noun,
+    })
+    const table = bucket.key === 'houses' ? 'market_metric' : 'listing_tile_mv'
+    options.push({
+      key: bucket.key,
+      label: bucket.label,
+      count: copy.count,
+      claim: copy.claim,
+      stickyClaim: copy.stickyClaim,
+      source:
+        n == null
+          ? undefined
+          : placeAlertsSource({
+              count: n,
+              geoType: input.geoType,
+              geoSlug: input.geoSlug,
+              noun: bucket.noun,
+              table,
+            }),
+      listings: bucket.listings,
+    })
+  }
+  return options
 }

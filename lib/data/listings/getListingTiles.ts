@@ -97,6 +97,8 @@ const FilterSchema = z.object({
       north: z.number(),
     })
     .optional(),
+  /** on_market_date >= X — 30-day new listings for a place opening strip. */
+  onMarketAfter: z.string().min(8).max(40).optional(),
   /** modified_at > X — used for "next" adjacency queries. */
   modifiedAfter: z.string().min(1).max(40).optional(),
   /** modified_at < X — used for "prev" adjacency queries. */
@@ -336,6 +338,7 @@ function applyTileFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>):
       .gte('lng', west)
       .lte('lng', east)
   }
+  if (parsed.onMarketAfter) query = query.gte('on_market_date', parsed.onMarketAfter)
   if (parsed.modifiedAfter) query = query.gt('modified_at', parsed.modifiedAfter)
   if (parsed.modifiedBefore) query = query.lt('modified_at', parsed.modifiedBefore)
   if (parsed.closedFromDate) query = query.gte('close_date', parsed.closedFromDate)

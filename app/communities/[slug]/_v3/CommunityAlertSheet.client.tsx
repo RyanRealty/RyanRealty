@@ -39,7 +39,7 @@
  */
 
 import { useCallback } from 'react'
-import { V3AlertsStrip, type V3AlertsSubmit } from '@/components/site/v3'
+import { V3AlertsStrip, type V3AlertsSubmit, type V3AlertsTypeOption } from '@/components/site/v3'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { readRrSessionId } from '@/lib/tracking'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
@@ -75,6 +75,7 @@ type Props = {
    * Tetherow: Tetherow, Triple, Tetherow Resort. Computed on the server page.
    */
   matchNames: readonly string[]
+  types?: readonly V3AlertsTypeOption[]
 }
 
 export function CommunityAlertsStrip({
@@ -87,6 +88,7 @@ export function CommunityAlertsStrip({
   updatedAt,
   browseHref,
   matchNames,
+  types,
 }: Props) {
   const submit = useCallback<V3AlertsSubmit>(
     async (input) => {
@@ -135,6 +137,7 @@ export function CommunityAlertsStrip({
       updatedAt={updatedAt}
       trap={TRAP}
       emphasis="ghost"
+      types={types}
       onSubmit={submit}
     />
   )

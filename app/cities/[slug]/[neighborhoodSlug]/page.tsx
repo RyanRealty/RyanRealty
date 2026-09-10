@@ -40,6 +40,7 @@ import {
   getDetachedOverlays,
   cityDetachedSlug,
   getCityHeroUrlsBySlug,
+  getPlaceOpeningListings,
 } from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getNeighborhoodPublicInventory } from '@/lib/data/geo/neighborhood-public-inventory'
@@ -55,6 +56,8 @@ import {
   buildOtherCityItems,
 } from '@/lib/kb/place-sections'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { buildPlaceMosView } from '@/lib/site/place-mos'
+import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { loadSubdivisionTypeBits } from '@/lib/market/publish-subdivision-type-bits'
@@ -216,6 +219,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     placeCharacter,
     indexCities,
     cityPace,
+    openingListings,
   ] = await Promise.all([
     // Result variant: a timed-out boundary yields `{ pins: [] }`, which is
     // indistinguishable from a genuinely empty neighborhood. `.ok` keeps them
@@ -292,6 +296,12 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       EMPTY_PUBLIC_PACE,
       3000,
       'nbh:cityPace',
+    ),
+    withTimeoutFallback(
+      getPlaceOpeningListings({ city: cityName, neighborhood: neighborhood.name }),
+      [],
+      3000,
+      'nbh:openingListings',
     ),
   ])
   const nbhMt = nbhOverlays.get(`neighborhood:${cityDetachedSlug(metricNeighborhoodSlug)}`)
@@ -384,6 +394,22 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   /* ── The market, off the ONE leftover pile ─────────────────────────────── */
 
   const leftoverStamp = nbhMt?.headlines?.computedAt ?? nbhMt?.inventory?.computedAt ?? null
+  const mosAsOf = leftoverStamp ? formatDate(leftoverStamp) : null
+  const placeMos = buildPlaceMosView({
+    active: hud.active,
+    monthsSupply: hud.monthsSupply,
+    grain: 'neighborhood',
+    geoSlug: metricNeighborhoodSlug,
+    asOf: mosAsOf,
+  })
+  const alertTypes = buildPlaceAlertTypes({
+    placeName: neighborhood.name,
+    scopeName: cityName,
+    geoType: 'neighborhood',
+    geoSlug: metricNeighborhoodSlug,
+    leftoverHouses30d: publicPace.newCount30d,
+    buckets: openingListings,
+  })
   const marketFaqInput: MarketFaqInput = {
     grain: 'neighborhood',
     source: 'market-truth',
@@ -653,7 +679,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         <MetadataBlock schemas={neighborhoodSchemas} />
 
         <div className={stagePosterSrc ? 'place-opening place-opening--media' : 'place-opening'}>
-          <PlaceAreaHero posterSrc={stagePosterSrc} />
+          <PlaceAreaHero posterSrc={stagePosterSrc} mos={placeMos} />
           {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
           <V3Breadcrumb trail={trail} tone={stagePosterSrc ? 'on-media' : 'surface'} />
           <div className="place-opening__copy">
@@ -676,6 +702,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           newCount30d={publicPace.newCount30d}
           updatedAt={leftoverStamp}
           browseHref={browseHref}
+          types={alertTypes}
         />
 
         {(

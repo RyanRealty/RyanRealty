@@ -101,12 +101,28 @@
 .place-opening--media {
   position: relative;
   display: grid;
+  grid-template-areas:
+    'copy'
+    'mos';
   align-items: end;
   min-height: max(62vh, 26rem);
   overflow: hidden;
   isolation: isolate;
   background: var(--v3-surface-inverse);
   color: var(--v3-ink-on-media);
+}
+
+.place-opening--media .place-opening__copy {
+  grid-area: copy;
+}
+
+.place-opening--media .place-opening__mos {
+  grid-area: mos;
+  position: relative;
+  z-index: 3;
+  justify-self: end;
+  width: min(100%, var(--v3-measure-sheet));
+  padding: 0 var(--v3-gutter) var(--v3-space-lg);
 }
 
 .place-opening--media .place-opening__media,
@@ -199,6 +215,19 @@
   }
 }
 
+@media (min-width: 64rem) {
+  .place-opening--media {
+    grid-template-areas: 'copy mos';
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+    align-items: end;
+  }
+
+  .place-opening--media .place-opening__mos {
+    padding: 0 var(--v3-gutter) var(--v3-space-2xl) 0;
+    justify-self: stretch;
+  }
+}
+
 .place-opening--media .place-face {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -227,6 +256,36 @@
   }
   .place-opening--media .place-opening__ask {
     margin-top: max(var(--v3-space-lg), 6vh);
+  }
+}
+
+/* SITE-43: shrink the photo band on a phone so the MOS plate and the alerts
+   email land in the first 812px. Overlay stays; the giant stacked still goes. */
+@media (max-width: 39.99rem) {
+  .place-opening--media {
+    min-height: 18rem;
+  }
+
+  .place-opening--media .place-opening__copy {
+    padding: calc(var(--v3-space-lg) + 2.25rem) var(--v3-gutter) var(--v3-space-sm);
+  }
+
+  .place-opening--media .place-opening__mos {
+    padding: 0 var(--v3-gutter) var(--v3-space-sm);
+    justify-self: stretch;
+    width: auto;
+  }
+
+  .place-opening--media .place-opening__ask {
+    margin-top: var(--v3-space-sm);
+  }
+
+  /* ONE filled control in the first 812px: the alerts submit takes primary
+     weight on a phone, so the door steps down to the outline. */
+  .place-opening--media .place-opening__copy .v3.v3-place-door .v3-btn--primary {
+    background: transparent;
+    color: var(--v3-ink-on-media);
+    border-color: var(--v3-ink-on-media);
   }
 }
 
@@ -268,4 +327,29 @@
 .v3-place-value__after {
   margin: 0;
   padding: 0 var(--v3-space-lg) var(--v3-space-lg);
+}
+
+.v3-place-value__activity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--v3-space-2xs) var(--v3-space-sm);
+  margin: 0;
+  padding: var(--v3-space-sm) var(--v3-space-lg) 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3-place-value__activity-count {
+  font-family: var(--v3-font-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--v3-ink);
+}
+
+.v3-place-value__spark {
+  display: inline-block;
+  vertical-align: middle;
+  color: var(--v3-navy);
 }
