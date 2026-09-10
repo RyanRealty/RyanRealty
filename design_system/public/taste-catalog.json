@@ -2155,7 +2155,7 @@
         "V3Carousel"
       ],
       "demoStates": [
-        "search-open=.v3-morph-search--live .v3-morph-search__catalog input!click"
+        "search-open=.v3-morph-search--live [aria-haspopup=dialog]!click"
       ],
       "modules": [
         {

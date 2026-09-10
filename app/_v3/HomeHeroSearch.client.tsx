@@ -10,13 +10,9 @@
 
 import { useCallback, useId, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  flattenSuggestions,
-  useSearchSuggest,
-  type SuggestItem,
-} from '@/components/search/SearchSuggest'
+import { flattenSuggestions, useSearchSuggest } from '@/components/search/SearchSuggest'
 import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
-import { V3MorphSearch, V3Tabs } from '@/components/site/v3'
+import { V3MorphSearch, V3Tabs, type V3MorphSearchItem } from '@/components/site/v3'
 import { searchHrefForQuery } from '@/lib/parse-search-query'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { markAskSource } from '@/lib/ask-source'
@@ -29,6 +25,18 @@ const BUY_ACTION = '/homes-for-sale'
 /** Where a no-JS Sell submit lands: the valuation form, at its anchor. */
 const SELL_ACTION = '/sell#get-value'
 
+/** MorphingSearch shows these when the query is empty — the demo opens onto a list, not a blank overlay. */
+const PLACE_SEEDS: V3MorphSearchItem[] = [
+  { id: '/homes-for-sale/bend', title: 'Bend', description: 'City' },
+  { id: '/homes-for-sale/redmond', title: 'Redmond', description: 'City' },
+  { id: '/homes-for-sale/sisters', title: 'Sisters', description: 'City' },
+  { id: '/homes-for-sale/sunriver', title: 'Sunriver', description: 'Community' },
+  { id: '/communities/tetherow', title: 'Tetherow', description: 'Bend' },
+  { id: '/homes-for-sale/prineville', title: 'Prineville', description: 'City' },
+  { id: '/homes-for-sale/la-pine', title: 'La Pine', description: 'City' },
+  { id: '/homes-for-sale/madras', title: 'Madras', description: 'City' },
+]
+
 export function HomeHeroSearch({
   valuationHref,
   live,
@@ -40,9 +48,7 @@ export function HomeHeroSearch({
   const uid = useId()
   const [query, setQuery] = useState('')
   const [sellAddress, setSellAddress] = useState('')
-  const [open, setOpen] = useState(false)
-  const [highlight, setHighlight] = useState(-1)
-  const { suggestions, loading } = useSearchSuggest(query)
+  const { suggestions } = useSearchSuggest(query)
   const items = useMemo(
     () =>
       flattenSuggestions(suggestions).filter(
@@ -55,22 +61,20 @@ export function HomeHeroSearch({
       ),
     [suggestions],
   )
-  const prefix = 'home-hero-suggest'
-  const resultsOpen = open && (items.length > 0 || loading)
+  const morphItems = useMemo<V3MorphSearchItem[]>(() => {
+    const live = items.map((item) => ({
+      id: item.href,
+      title: item.label,
+      description: item.sublabel,
+    }))
+    return live.length > 0 ? live : PLACE_SEEDS
+  }, [items])
 
   const go = useCallback(
     (href: string) => {
-      setOpen(false)
       router.push(href)
     },
     [router],
-  )
-
-  const onPick = useCallback(
-    (item: SuggestItem) => {
-      go(item.href)
-    },
-    [go],
   )
 
   const onBuySubmit = useCallback(() => {
@@ -84,13 +88,8 @@ export function HomeHeroSearch({
       go(publishRegionalSearchHref())
       return
     }
-    const picked = highlight >= 0 ? items[highlight] : undefined
-    if (picked) {
-      go(picked.href)
-      return
-    }
     go(searchHrefForQuery(text))
-  }, [query, highlight, items, go])
+  }, [query, go])
 
   const onSellSubmit = useCallback(() => {
     const address = sellAddress.trim()
@@ -166,19 +165,9 @@ export function HomeHeroSearch({
           Find a home
         </label>
         <V3MorphSearch
-          open={open}
-          onOpenChange={setOpen}
           placeholder="Bend, Tetherow, or an address"
-          items={items.map((item) => ({
-            id: item.href,
-            title: item.label,
-            description: item.sublabel,
-            onSelect: () => onPick(item),
-          }))}
-          onQueryChange={(next) => {
-            setQuery(next)
-            setHighlight(-1)
-          }}
+          items={morphItems}
+          onQueryChange={setQuery}
           onSelect={(item) => go(item.id)}
         >
           <div className="v3-morph-search__field">
@@ -189,38 +178,7 @@ export function HomeHeroSearch({
               name="q"
               autoComplete="off"
               placeholder="Bend, Tetherow, or an address"
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value)
-                setHighlight(-1)
-                setOpen(true)
-              }}
-              onFocus={() => setOpen(true)}
-              onBlur={() => {
-                window.setTimeout(() => setOpen(false), 150)
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Escape') {
-                  setOpen(false)
-                  return
-                }
-                if (event.key === 'ArrowDown' && open && items.length > 0) {
-                  event.preventDefault()
-                  setHighlight((h) => (h < items.length - 1 ? h + 1 : 0))
-                  return
-                }
-                if (event.key === 'ArrowUp' && open && items.length > 0) {
-                  event.preventDefault()
-                  setHighlight((h) => (h > 0 ? h - 1 : items.length - 1))
-                }
-              }}
-              role="combobox"
-              aria-autocomplete="list"
-              aria-expanded={resultsOpen}
-              aria-controls={`${prefix}-listbox`}
-              aria-activedescendant={
-                open && highlight >= 0 ? `${prefix}-item-${highlight}` : undefined
-              }
+              defaultValue=""
             />
           </div>
           <button type="submit" className="v3-morph-search__go home-hero-search__go">

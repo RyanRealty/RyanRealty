@@ -47,15 +47,15 @@ describe('homepage hero search uses the public search stack', () => {
     expect(doorsAt).toBeGreaterThan(railsAt)
   })
 
-  it('morphing search is a field that grows, not a command palette', () => {
+  it('homepage MorphingSearch is the catalog morph, not an inline house field', () => {
     const morph = readFileSync(resolve('components/motion/morphing-search.tsx'), 'utf8')
-    expect(morph).not.toMatch(/<kbd/)
-    expect(morph).not.toContain('backdrop-blur')
-    expect(morph).not.toContain('No results found')
-    expect(morph).toContain('v3-morph-overlay-shell')
-    expect(morph).toContain('showList')
-    expect(morph).toContain('inline')
-    expect(readFileSync(resolve('components/site/v3/V3MorphSearch.tsx'), 'utf8')).toMatch(/\binline\b/)
+    const wrap = readFileSync(resolve('components/site/v3/V3MorphSearch.tsx'), 'utf8')
+    expect(morph).toContain('aria-haspopup="dialog"')
+    expect(morph).toContain('layoutId')
+    expect(morph).toContain('<kbd')
+    expect(wrap).not.toMatch(/\binline\b/)
+    expect(SEARCH).not.toMatch(/open=\{open\}/)
+    expect(SEARCH).toContain('PLACE_SEEDS')
   })
 
   it('adapts catalog modules into house primitives on the hero and rails', () => {
@@ -77,6 +77,7 @@ describe('homepage hero search uses the public search stack', () => {
     expect(RAIL_CLIENT).toContain('mode="rail"')
     expect(RAIL_CLIENT).toContain('V3Number')
     expect(RAIL_CLIENT).toContain("from '@/components/ui/card'")
+    expect(RAIL_CLIENT).toContain('CardHeader')
     expect(RAIL_CLIENT).toContain('CardContent')
     expect(RAIL_CLIENT).toContain('CardTitle')
     expect(RAIL_CLIENT).toContain('CardDescription')
@@ -88,15 +89,15 @@ describe('homepage hero search uses the public search stack', () => {
     expect(css).toMatch(/v3-morph-search--live \.v3-morph-search__native/)
     expect(css).toMatch(/clip:\s*rect\(0,\s*0,\s*0,\s*0\)/)
     expect(css).toContain('@media (scripting: none)')
-    expect(readFileSync(resolve('components/motion/morphing-search.tsx'), 'utf8')).toMatch(
-      /if \(inline\) return/,
-    )
   })
 
-  it('prints the ask on the Card body, not on the photograph', () => {
+  it('prints the ask on the Card header, not on the photograph and not via v3-lrow', () => {
+    expect(RAIL_CLIENT).toContain('CardHeader')
     expect(RAIL_CLIENT).toContain('CardTitle')
     expect(RAIL_CLIENT).toContain('CardDescription')
     expect(RAIL_CLIENT).not.toContain('home-rail__on-photo')
+    expect(RAIL_CLIENT).not.toContain('v3-lrow--card')
+    expect(RAIL_CLIENT).not.toContain('v3-lrow__price')
   })
 
   it('prints the live count as type, not a digit wheel on navy', () => {

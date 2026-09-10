@@ -140,8 +140,25 @@
 .v3 .v3-morph-search--live .v3-morph-search__catalog {
   width: 100%;
   max-width: none;
-  height: auto;
+  height: var(--v3-tap);
   min-height: var(--v3-tap);
+}
+
+.v3 .v3-morph-search--live .v3-morph-search__catalog button[aria-haspopup='dialog'] {
+  width: 100%;
+  height: var(--v3-tap);
+  background: var(--v3-surface);
+  border: 2px solid var(--v3-ink);
+  border-radius: var(--v3-radius-control);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+@layer base {
+  .v3 .v3-morph-search--live .v3-morph-search__catalog button[aria-haspopup='dialog'] {
+    color: var(--v3-ink);
+  }
 }
 
 /* Native is clipped after hydrate so the catalog input is the one you see.

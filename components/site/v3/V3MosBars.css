@@ -134,7 +134,7 @@
   }
 
   .v3.v3-mos .v3-source .v3-source__summary {
-    min-block-size: 0;
+    min-block-size: var(--v3-tap);
   }
 }
 
