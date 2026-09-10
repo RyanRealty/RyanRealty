@@ -265,27 +265,13 @@
     },
     "beats": "Zillow's homepage puts photographed listings in the first scroll; this fold still loses that metric, with no house on screen. We win a source-traced 1-in-5 under-contract claim Zillow will not print, then hide it under a KPI band that repeats the same inventory count.",
     "adaptedFrom": [
-      {
-        "id": "beui-morphing-search"
-      },
-      {
-        "id": "beui-tabs"
-      },
-      {
-        "id": "beui:shared-layout-bg"
-      },
-      {
-        "id": "shadcn-carousel"
-      },
-      {
-        "id": "rareui:animatedcounter"
-      },
-      {
-        "id": "beui:number"
-      },
-      {
-        "id": "house-home-rails"
-      }
+      { "id": "beui-morphing-search" },
+      { "id": "beui-tabs" },
+      { "id": "beui:shared-layout-bg" },
+      { "id": "shadcn-carousel" },
+      { "id": "rareui:animatedcounter" },
+      { "id": "beui:number" },
+      { "id": "house-home-rails" }
     ],
     "defects": [
       {

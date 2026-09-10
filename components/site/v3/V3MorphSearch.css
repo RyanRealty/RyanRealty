@@ -122,3 +122,32 @@
     transition: none;
   }
 }
+
+/* Installed MorphingSearch is the JS control. Native field stays for no-JS. */
+.v3 .v3-morph-search__beui {
+  display: none;
+}
+
+@media (scripting: enabled) {
+  .v3 .v3-morph-search--catalog .v3-morph-search__beui {
+    display: block;
+  }
+
+  .v3 .v3-morph-search--catalog .v3-morph-search__native .v3-morph-search__field {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+@media (scripting: none) {
+  .v3 .v3-morph-search__beui {
+    display: none;
+  }
+}

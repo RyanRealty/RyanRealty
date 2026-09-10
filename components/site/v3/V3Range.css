@@ -139,6 +139,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+.v3 .v3-range__beui {
+  background: var(--v3-edge);
+  border-radius: var(--v3-radius-control);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .v3-range__thumb::after {
     transition: none;

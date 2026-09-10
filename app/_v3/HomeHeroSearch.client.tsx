@@ -133,14 +133,15 @@ export function HomeHeroSearch({
         </p>
       ) : null}
 
-      <V3Tabs label="Buy or sell" count={2} className="home-hero-search__tabs">
-        <label className="v3-tabs__tab home-hero-search__tab home-hero-search__tab--buy" htmlFor={buyModeId}>
-          Buy
-        </label>
-        <label className="v3-tabs__tab home-hero-search__tab home-hero-search__tab--sell" htmlFor={sellModeId}>
-          Sell
-        </label>
-      </V3Tabs>
+      <V3Tabs
+        label="Buy or sell"
+        count={2}
+        className="home-hero-search__tabs"
+        items={[
+          { value: 'buy', label: 'Buy', htmlFor: buyModeId },
+          { value: 'sell', label: 'Sell', htmlFor: sellModeId },
+        ]}
+      />
 
       <form
         action={BUY_ACTION}
@@ -156,6 +157,19 @@ export function HomeHeroSearch({
         </label>
         <V3MorphSearch
           open={resultsOpen}
+          onOpenChange={setOpen}
+          placeholder="Bend, Tetherow, or an address"
+          items={items.map((item) => ({
+            id: item.href,
+            title: item.label,
+            description: item.sublabel,
+            onSelect: () => onPick(item),
+          }))}
+          onQueryChange={(next) => {
+            setQuery(next)
+            setHighlight(-1)
+          }}
+          onSelect={(item) => go(item.id)}
           results={
             resultsOpen ? (
               <SearchSuggestPanel

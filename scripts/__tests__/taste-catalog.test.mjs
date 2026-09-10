@@ -8,9 +8,12 @@ import {
   adaptedFromProblems,
   builderCard,
   catalogCoverageProblems,
+  catalogInstallProblems,
   catalogReceiptProblems,
   evaluatorBrief,
   formatBuilderCard,
+  isHouseAdaptedId,
+  resolveInstallSpec,
   layoutLockForClass,
   layoutLockProblems,
   listPicksForClass,
@@ -231,6 +234,44 @@ describe('layoutLockProblems', () => {
 
   it('passes the committed listing files', () => {
     expect(layoutLockProblems(loaded)).toEqual([])
+  })
+})
+
+describe('catalogInstallProblems', () => {
+  it('resolves shadcn-carousel to the installed ui file', () => {
+    const spec = resolveInstallSpec(loaded.installById, 'shadcn-carousel')
+    expect(spec?.file).toBe('components/ui/carousel.tsx')
+    expect(spec?.import).toBe('@/components/ui/carousel')
+    expect(resolveInstallSpec(loaded.installById, 'shadcn:carousel')?.file).toBe(spec?.file)
+    expect(isHouseAdaptedId('house-atlas')).toBe(true)
+    expect(isHouseAdaptedId('beui-morphing-search')).toBe(false)
+  })
+
+  it('fails a catalog id whose house primitive does not import the installed file', () => {
+    const problems = catalogInstallProblems(loaded, [{ id: 'shadcn-carousel' }], {
+      existsSync: (p) => p === 'components/ui/carousel.tsx' || p === 'components/site/v3/V3Carousel.client.tsx',
+      readFileSync: (p) =>
+        p.endsWith('V3Carousel.client.tsx')
+          ? 'export function V3Carousel() { return null }'
+          : 'export function Carousel() { return null }',
+    })
+    expect(problems.some((p) => /must import/.test(p))).toBe(true)
+  })
+
+  it('passes when the house primitive imports the installed specifier', () => {
+    const problems = catalogInstallProblems(loaded, [{ id: 'shadcn-carousel' }], {
+      existsSync: (p) => p === 'components/ui/carousel.tsx' || p === 'components/site/v3/V3Carousel.client.tsx',
+      readFileSync: (p) =>
+        p.endsWith('V3Carousel.client.tsx')
+          ? "import { Carousel } from '@/components/ui/carousel'\nexport function V3Carousel() { return <Carousel /> }"
+          : 'export function Carousel() { return null }',
+    })
+    expect(problems).toEqual([])
+  })
+
+  it('refuses a catalog name with no install spec', () => {
+    const problems = catalogInstallProblems(loaded, [{ id: 'beautifului-insight' }])
+    expect(problems.some((p) => /no install spec/.test(p))).toBe(true)
   })
 })
 

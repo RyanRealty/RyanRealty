@@ -29,7 +29,7 @@
   inset-block: 0;
   left: 0;
   width: calc(100% / var(--v3-tabs-count, 2));
-  background: var(--v3-ink);
+  background: var(--v3-ink) !important;
   border-radius: var(--v3-radius-control);
   pointer-events: none;
   transition: transform var(--v3-dur-state) var(--v3-ease-out);

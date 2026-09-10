@@ -135,15 +135,7 @@
     },
     "beats": "Zillow Bend homes on sourced months-of-supply clarity (two named bars, 4.8 Balanced, dated Market Truth); loses map, listings, and place photography.",
     "adaptedFrom": [
-      {
-        "id": "beui:combobox"
-      },
-      {
-        "id": "beautifului:insight-cards"
-      },
-      {
-        "id": "house-mos-bars"
-      }
+      { "id": "house-mos-bars" }
     ],
     "tells": [],
     "dullest": "After the MOS pair the page is still an A\u2013Z directory; the fold has no Atlas and no alerts sentence.",

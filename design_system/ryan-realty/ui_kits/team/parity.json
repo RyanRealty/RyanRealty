@@ -202,15 +202,8 @@
     },
     "beats": "Compass agent roster (compass.com) — this page wins on sourced MLS 12-month closing counts, Oregon licenses, and an honest split between those trailing-window face figures and the map full-record closings; it loses on a specialty line and on marks you can actually read.",
     "adaptedFrom": [
-      {
-        "id": "shadcn-avatar"
-      },
-      {
-        "id": "house-faces"
-      },
-      {
-        "id": "house-atlas"
-      }
+      { "id": "house-faces" },
+      { "id": "house-atlas" }
     ],
     "defects": [
       {

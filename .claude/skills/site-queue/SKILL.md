@@ -304,11 +304,15 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
    refuse list. Do not dump `taste-catalog.json`. Fetch those URLs
    (beautifului / beui / rareui / transitions / ui.shadcn.com, plus any URL
    later appended to `catalogUrls`). **Install the source** (`npx shadcn add`
-   / the registry JSON) into `components/ui` or a new `components/site/v3`
-   primitive, restyle to navy/cream/Geist/Amboqia/Iconoir, and **keep the
-   interaction**. If you open the demo and our control, a person must
-   recognize the same object. A cream box with the catalog name is not
-   adapted. **If the job has no house primitive, ADD one to
+   / the registry JSON) into `components/ui` or `components/motion`, then wrap
+   it from a v3 primitive that **imports that file**. Restyle to
+   navy/cream/Geist/Amboqia/Iconoir, and **keep the interaction**. If you
+   open the demo and our control, a person must recognize the same object. A
+   cream box with the catalog name is not adapted. `motion/react` on a house
+   wrapper is a beUI dependency, not the component. `ci:catalog-install`
+   fails a named id whose file is missing or whose house primitive does not
+   import it. A comment is not an import. Rebaseline is not done. A taste
+   score below 70 is not done. **If the job has no house primitive, ADD one to
    `components/site/v3`** that still matches the demo. Growing the barrel is
    the one design system. Submoduling a catalog repo or copying Inter/purple
    onto public pages is Frankenstein. Admin jobs go in `components/admin/v2`.
@@ -414,10 +418,11 @@ line, and keep building the other lanes.
   printed jobs. Empty `adaptedFrom` fails `ci:taste-canon` on the next score.
 - Keep the catalog name and throw away the interaction. Public paint is v3
   tokens on the **real** control. Admin interiors are `components/admin/v2`.
-  `npx shadcn add` into `components/ui` or a new v3 primitive is the path;
-  `npx shadcn add` onto `app/` is not. Skipping a catalog job because the
-  barrel has no primitive is a miss — add the primitive that still matches
-  the demo.
+  `npx shadcn add` into `components/ui` or `components/motion`, then import
+  that file from a v3 primitive, is the path; `npx shadcn add` onto `app/`
+  is not. Skipping a catalog job because the barrel has no primitive is a
+  miss — add the primitive that still matches the demo. Naming a catalog id
+  without installing and importing it fails `ci:catalog-install`.
 - Shrink a working full-bleed layout to dodge a "looks like Zillow" tell
   (SITE-45 listing hero), or summarize PropertySpecs / remarks / schools /
   payment / Tour/Call/Text into "summary info."

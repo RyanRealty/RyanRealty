@@ -3,15 +3,18 @@
 /**
  * v3 CAROUSEL — swipeable slides with prev/next.
  *
- * Adapted from the shadcn carousel job (ui.shadcn.com/docs/components/carousel)
- * and beUI shared-layout motion: one track, snap, navy controls, no 3D
- * cylinder, no glare. Public paint stays tokens.css. Embla is the engine
- * (already in package.json); this file is the v3 primitive, not a second kit.
- *
- * Controlled `index` so a listing filmstrip thumb can drive the same frame.
+ * Wraps the installed shadcn carousel (`components/ui/carousel.tsx`): one
+ * track, snap, navy controls, no 3D cylinder. Public paint stays tokens.css.
  */
-import useEmblaCarousel from 'embla-carousel-react'
-import { Children, useCallback, useEffect, useId, useState } from 'react'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from '@/components/ui/carousel'
+import { Children, useEffect, useId, useState } from 'react'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS } from './atoms'
@@ -44,12 +47,7 @@ export function V3Carousel({
   const labelId = useId()
   const count = Children.count(children)
   const [prefersReduce, setPrefersReduce] = useState(false)
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    align: 'start',
-    containScroll: 'trimSnaps',
-    duration: prefersReduce ? 0 : 20,
-    watchDrag: count > 1,
-  })
+  const [api, setApi] = useState<CarouselApi>()
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -60,75 +58,59 @@ export function V3Carousel({
     return () => mq.removeEventListener('change', apply)
   }, [])
 
-  const emit = useCallback(() => {
-    if (!emblaApi) return
-    onIndexChange?.(emblaApi.selectedScrollSnap())
-  }, [emblaApi, onIndexChange])
-
   useEffect(() => {
-    if (!emblaApi) return
-    emblaApi.on('select', emit)
-    emblaApi.on('reInit', emit)
+    if (!api) return
+    const emit = () => onIndexChange?.(api.selectedScrollSnap())
+    api.on('select', emit)
+    api.on('reInit', emit)
     return () => {
-      emblaApi.off('select', emit)
-      emblaApi.off('reInit', emit)
+      api.off('select', emit)
+      api.off('reInit', emit)
     }
-  }, [emblaApi, emit])
+  }, [api, onIndexChange])
 
   useEffect(() => {
-    if (!emblaApi || index == null) return
-    if (emblaApi.selectedScrollSnap() === index) return
-    emblaApi.scrollTo(index, prefersReduce)
-  }, [emblaApi, index, prefersReduce])
-
-  const go = useCallback(
-    (dir: -1 | 1) => {
-      if (!emblaApi) return
-      if (dir < 0) emblaApi.scrollPrev(prefersReduce)
-      else emblaApi.scrollNext(prefersReduce)
-    },
-    [emblaApi, prefersReduce],
-  )
+    if (!api || index == null) return
+    if (api.selectedScrollSnap() === index) return
+    api.scrollTo(index, prefersReduce)
+  }, [api, index, prefersReduce])
 
   return (
-    <div
+    <Carousel
+      setApi={setApi}
+      opts={{
+        align: 'start',
+        containScroll: 'trimSnaps',
+        duration: prefersReduce ? 0 : 20,
+        watchDrag: count > 1,
+      }}
       className={cn(
         V3_ROOT_CLASS,
         'v3-carousel',
         mode === 'rail' && 'v3-carousel--rail',
         className,
       )}
-      role="region"
-      aria-roledescription="carousel"
       aria-labelledby={labelId}
     >
       <p id={labelId} className="v3-carousel__label">
         {label}
       </p>
-      <div className="v3-carousel__viewport" ref={emblaRef}>
-        <div className="v3-carousel__track">
-          {Children.map(children, (child, i) => (
-            <div
-              className="v3-carousel__slide"
-              role="group"
-              aria-roledescription="slide"
-              aria-label={`Slide ${i + 1} of ${count}`}
-            >
-              {child}
-            </div>
-          ))}
-        </div>
-      </div>
+      <CarouselContent className="v3-carousel__track ml-0">
+        {Children.map(children, (child, i) => (
+          <CarouselItem
+            className={cn('v3-carousel__slide pl-0', mode === 'rail' && 'v3-carousel__slide--rail')}
+            aria-label={`Slide ${i + 1} of ${count}`}
+          >
+            {child}
+          </CarouselItem>
+        ))}
+      </CarouselContent>
       {count > 1 ? (
         <div className="v3-carousel__nav">
-          <button type="button" className="v3-carousel__step" aria-label="Previous slide" onClick={() => go(-1)}>
-            Previous
-          </button>
-          <button type="button" className="v3-carousel__step" aria-label="Next slide" onClick={() => go(1)}>
-            Next
-          </button>
+          <CarouselPrevious className="v3-carousel__step static size-auto translate-x-0 translate-y-0" />
+          <CarouselNext className="v3-carousel__step static size-auto translate-x-0 translate-y-0" />
         </div>
       ) : null}
-    </div>
+    </Carousel>
   )
 }

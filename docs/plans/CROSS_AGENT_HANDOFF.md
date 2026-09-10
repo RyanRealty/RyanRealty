@@ -1,3 +1,19 @@
+# Current — 2026-09-10 17:12Z (grinder 01a08c47: claimed SITE-76 + SITE-79)
+
+Owner: `grok-4.5-2026-09-10-17`. origin/main `f8a42866`. Main checkout has **other-lane dirty catalog/motion files — do not stage them**. 15m launchd stays. No auto-seed.
+
+- **SITE-76 in_progress** oregon-city honesty-first fold. UUID `de87b75a-feeb-4cf8-9266-e506f575d0b0`. Catalog: shadcn-alert into Quiet. Port 3196. Do not globally restyle `V3Instrument`.
+- **SITE-79 in_progress** reviews V3Proof + shadcn-avatar (initials only — `reviews` has no photo column). UUID `7fda19f1-0e6b-4791-a31e-6a3b0fe341ed`. Port 3197. Do not restyle `V3Doors` globally.
+- Do not steal SITE-89 / SITE-73 (`grok-4.5-2026-09-10-16`). Do not steal SITE-88. Skip SITE-81 (region family). Skip SITE-87 / SITE-82 (`PlaceAreaHero`). Skip SITE-86 while SITE-89 holds Atlas.
+
+# Current — 2026-09-10 17:05Z (catalog install is a gate)
+
+Owner: this session. Process on main. Do not steal SITE-88 / SITE-89 / SITE-73.
+
+- **ci:catalog-install (G75):** a receipt `adaptedFrom` catalog id must have the installed file and the house primitive must import it. Cream boxes fail. `npx shadcn add` into `components/ui` or `components/motion`; v3 wraps that file. `check-public-v3` no longer forbids `@/components/ui` on v3 (that ban caused the cream boxes).
+- Wired: V3Carousel → ui/carousel; V3MorphSearch → motion/morphing-search; V3Tabs → motion/tabs; V3Number → motion/number; V3Range → motion/range-slider; V3Input → motion/input + ui/input.
+- Rebaseline is not done. Score below 70 is not done. 15m scheduler stays. No auto-seed.
+
 # Current — 2026-09-10 16:42Z (grinder 01a08b99: claimed SITE-89 + SITE-73)
 
 Owner: `grok-4.5-2026-09-10-16`. SITE-70/84 live on `52a1c736`. Do not steal SITE-88. Skip SITE-81 (region family). Skip SITE-87 (`PlaceAreaHero`). Do not globally restyle `V3Stage`. 15m scheduler stays. No auto-seed.

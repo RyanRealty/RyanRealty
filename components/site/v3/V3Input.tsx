@@ -10,9 +10,13 @@
  * the accessible one. Motion reads --v3-travel and --v3-dur-*, so reduced
  * motion collapses the shake to nothing.
  */
+import { Input } from '@/components/ui/input'
+import { Input as BeuiInput } from '@/components/motion/input'
 import { cn } from '@/lib/utils'
 import './tokens.css'
 import './V3Input.css'
+
+const Field = BeuiInput || Input
 
 export type V3InputKind = 'text' | 'email' | 'tel' | 'textarea'
 
@@ -88,7 +92,7 @@ export function V3Input({
             maxLength={maxLength}
           />
         ) : (
-          <input
+          <Field
             id={id}
             name={name}
             type={kind}

@@ -180,6 +180,37 @@ export function loadTasteCatalog(raw) {
     if (isNonEmptyString(routeKey) && isNonEmptyString(mapped)) routeClasses[routeKey] = mapped
   }
 
+  const installById = {}
+  const installRaw = isPlainObject(raw.installById) ? raw.installById : {}
+  for (const [id, spec] of Object.entries(installRaw)) {
+    if (!isNonEmptyString(id) || !isPlainObject(spec)) {
+      problems.push(`installById.${id}: not an object`)
+      continue
+    }
+    if (isNonEmptyString(spec.aliasOf)) {
+      installById[id] = { aliasOf: spec.aliasOf }
+      continue
+    }
+    if (!isNonEmptyString(spec.add) || !isNonEmptyString(spec.file) || !isNonEmptyString(spec.import)) {
+      problems.push(`installById.${id}: need add, file, and import`)
+      continue
+    }
+    installById[id] = {
+      add: spec.add,
+      file: spec.file,
+      import: spec.import,
+      house: isNonEmptyString(spec.house) ? spec.house : null,
+    }
+  }
+  if (Object.keys(installById).length > 0) {
+    if (!resolveInstallSpec(installById, 'shadcn-carousel')) {
+      problems.push('installById must include shadcn-carousel (the smoking-gun wrap)')
+    }
+    if (!resolveInstallSpec(installById, 'beui-morphing-search')) {
+      problems.push('installById must include beui-morphing-search')
+    }
+  }
+
   return {
     source: raw.source,
     catalogUrls,
@@ -190,8 +221,85 @@ export function loadTasteCatalog(raw) {
     lists,
     routeClasses,
     shadcn: { docs: shadcnRaw.docs ?? 'https://ui.shadcn.com/docs/components', components: shadcnComponents },
+    installById,
     problems,
   }
+}
+
+/** House ids are files we already own. Catalog ids must resolve through installById. */
+export function isHouseAdaptedId(id) {
+  const s = String(id ?? '')
+  return /^(house-|listing-|V3)/.test(s) || s.startsWith('components/')
+}
+
+export function resolveInstallSpec(installById, id, seen = new Set()) {
+  if (!isNonEmptyString(id) || !isPlainObject(installById)) return null
+  if (seen.has(id)) return null
+  const spec = installById[id]
+  if (!isPlainObject(spec)) return null
+  if (isNonEmptyString(spec.aliasOf)) {
+    seen.add(id)
+    return resolveInstallSpec(installById, spec.aliasOf, seen)
+  }
+  if (!isNonEmptyString(spec.file) || !isNonEmptyString(spec.import)) return null
+  return spec
+}
+
+function fileImportsSpecifier(src, specifier) {
+  const needle = String(specifier ?? '')
+  if (!needle || !src) return false
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(?:^|\\n)\\s*import(?:[\\s\\S]{0,400}?)from\\s+['"]${escaped}['"]`).test(src)
+}
+
+/**
+ * A catalog adaptedFrom id is only real when the installed file exists and
+ * the house primitive (or the scanned route files) imports it. A comment is
+ * not an import. motion/react on a wrapper is not the catalog component.
+ */
+export function catalogInstallProblems(catalog, adaptedFrom, io = {}) {
+  const exists = io.existsSync ?? existsSync
+  const read = io.readFileSync ?? readFileSync
+  const extraFiles = Array.isArray(io.scanFiles) ? io.scanFiles : []
+  const problems = []
+  if (!Array.isArray(adaptedFrom)) return ['adaptedFrom is missing']
+  for (const [i, hit] of adaptedFrom.entries()) {
+    const id = isPlainObject(hit) ? hit.id : hit
+    if (!isNonEmptyString(id) || isHouseAdaptedId(id)) continue
+    const spec = resolveInstallSpec(catalog?.installById, id)
+    if (!spec) {
+      problems.push(
+        `adaptedFrom[${i}] "${id}" has no install spec — npx shadcn add the registry item, record it in installById, and import the file. Do not keep the catalog name on a cream box.`,
+      )
+      continue
+    }
+    if (!exists(spec.file)) {
+      problems.push(`adaptedFrom[${i}] "${id}": ${spec.file} is missing. Run: npx shadcn add ${spec.add}`)
+      continue
+    }
+    const files = spec.house ? [spec.house, ...extraFiles] : extraFiles
+    let found = false
+    for (const rel of files) {
+      if (!exists(rel)) continue
+      let src = ''
+      try {
+        src = String(read(rel, 'utf8') ?? '')
+      } catch {
+        continue
+      }
+      if (fileImportsSpecifier(src, spec.import)) {
+        found = true
+        break
+      }
+    }
+    if (!found) {
+      const where = spec.house || 'the route'
+      problems.push(
+        `adaptedFrom[${i}] "${id}": ${where} must import ${spec.import} from the installed source. A comment is not an import. motion/react on a house wrapper is not the component.`,
+      )
+    }
+  }
+  return problems
 }
 
 export function modulesForClass(catalog, classKey) {
@@ -335,8 +443,10 @@ export function formatBuilderCard(card) {
   lines.push('', '## Comprehensive pass (all three, or not done)')
   lines.push('- SEO increment: title, JSON-LD, crawlable internal links, and/or payload/LCP better than HEAD.')
   lines.push('- Information increment: listing cards show price + address + beds/baths/sqft; listing detail keeps the 13-row house contract; sourced figures stay.')
-  lines.push('- UX increment: install the catalog jobs above; demo match; navy/cream.')
+  lines.push('- UX increment: install the catalog jobs above (`npx shadcn add`); demo match; navy/cream.')
   lines.push('', 'Record adaptedFrom with the ids you used. Empty adaptedFrom is inventing a layout.')
+  lines.push('ci:catalog-install fails a named catalog id whose file is missing or whose house primitive does not import it.')
+  lines.push('Rebaseline is not done. A taste score below 70 is not done.')
   return lines.join('\n')
 }
 

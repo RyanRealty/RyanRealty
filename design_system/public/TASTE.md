@@ -314,13 +314,17 @@ into `catalogUrls` (append-only):
 - https://ui.shadcn.com
 
 Fetch the list, **install the source** (`npx shadcn add` / registry URL into
-`components/ui` or a new `components/site/v3` primitive), restyle to navy
-`#102742`, cream `#faf8f4`, Geist, Amboqia, Iconoir, and **keep the
-interaction**. If you open the demo and our control, a person must recognize
-the same object. Do not generate a layout from an adjective. Do not submodule
-their GitHub tree. Do not copy Inter, purple, orbs, or agent-chat chrome.
-Do not keep the catalog name and throw away the motion (homepage
-`V3MorphSearch` as a labeled cream field is that miss). The lists live in
+`components/ui` or `components/motion`), then wrap it from a v3 primitive
+that **imports that file**. Restyle to navy `#102742`, cream `#faf8f4`,
+Geist, Amboqia, Iconoir, and **keep the interaction**. If you open the demo
+and our control, a person must recognize the same object. Do not generate a
+layout from an adjective. Do not submodule their GitHub tree. Do not copy
+Inter, purple, orbs, or agent-chat chrome. Do not keep the catalog name and
+throw away the interaction (homepage `V3MorphSearch` as a labeled cream
+field was that miss). `motion/react` on a house wrapper is not the install.
+`ci:catalog-install` fails a named `adaptedFrom` id whose file is missing
+or whose house primitive does not import it. Rebaseline is not done. A
+score below 70 is not done. The lists live in
 `design_system/public/taste-catalog.json`. A lane starts with:
 
 ```bash

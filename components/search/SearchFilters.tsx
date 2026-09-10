@@ -597,6 +597,23 @@ export default function SearchFilters({
           <V3MorphSearch
             className="srch-morph"
             open={morphOpen}
+            onOpenChange={(next) => setLocationOpen(next)}
+            placeholder={locationPlaceholder}
+            items={suggestItems.map((item) => ({
+              id: item.href,
+              title: item.label,
+              description: item.sublabel,
+              onSelect: () => handleSuggestPick(item),
+            }))}
+            onQueryChange={(next) => {
+              setLocationQuery(next)
+              setHighlight(-1)
+            }}
+            onSelect={(item) => {
+              const picked = suggestItems.find((row) => row.href === item.id)
+              if (picked) handleSuggestPick(picked)
+              else applyNaturalQuery(item.title)
+            }}
             results={
               morphOpen ? (
                 <SearchSuggestPanel

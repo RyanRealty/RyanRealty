@@ -115,36 +115,10 @@
     },
     "beats": "Redfin Bend map search (https://www.redfin.com/city/16163/OR/Bend): this fold wins on reaching a broker (541.703.3095 and Save this search) and on citing Oregon Data Share; it loses the metric the class was told to beat \u2014 map-as-product \u2014 because Redfin encodes price on pins while this encodes headcount on cream-styled Google tiles. Also loses brand cartography vs V3Atlas on /cities/bend, which does not still wear a Google wordmark.",
     "adaptedFrom": [
-      {
-        "id": "beui-range-slider"
-      },
-      {
-        "id": "beui-morphing-search"
-      },
-      {
-        "id": "shadcn-command"
-      },
-      {
-        "id": "shadcn:checkbox"
-      },
-      {
-        "id": "shadcn:drawer"
-      },
-      {
-        "id": "shadcn:empty"
-      },
-      {
-        "id": "shadcn:input"
-      },
-      {
-        "id": "shadcn:pagination"
-      },
-      {
-        "id": "house-sheet"
-      },
-      {
-        "id": "house-atlas"
-      }
+      { "id": "beui-range-slider" },
+      { "id": "beui-morphing-search" },
+      { "id": "house-sheet" },
+      { "id": "house-atlas" }
     ],
     "defects": [
       {

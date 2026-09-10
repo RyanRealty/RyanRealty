@@ -172,30 +172,8 @@
     },
     "beats": "Zillow seller hub (zillow.com/seller-advertise/): this /sell fold wins on Bend-specific MOS two-bar plus a sourced 2,071-close / $760,000 median sentence beside the address ask; it loses on composed product preview and on Redfin type-to-reframe depth.",
     "adaptedFrom": [
-      {
-        "id": "beui-input"
-      },
-      {
-        "id": "transitions-panel"
-      },
-      {
-        "id": "shadcn:field"
-      },
-      {
-        "id": "shadcn:input"
-      },
-      {
-        "id": "shadcn:input-group"
-      },
-      {
-        "id": "shadcn:sheet"
-      },
-      {
-        "id": "beui:button"
-      },
-      {
-        "id": "beui:expanding-arrow-button"
-      }
+      { "id": "beui-input" },
+      { "id": "shadcn:input" }
     ],
     "defects": [
       {

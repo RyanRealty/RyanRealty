@@ -13,6 +13,12 @@ describe('SITE-72 catalog wiring', () => {
     expect(filters).toMatch(/srch-morph/)
     expect(filters).toMatch(/srch-command/)
     expect(filters).toMatch(/V3Range/)
+    expect(readSrc('components/site/v3/V3MorphSearch.tsx')).toMatch(
+      /from '@\/components\/motion\/morphing-search'/,
+    )
+    expect(readSrc('components/site/v3/V3Range.tsx')).toMatch(
+      /from '@\/components\/motion\/range-slider'/,
+    )
     expect(filters).toMatch(/srch-price-rail/)
     expect(filters).toMatch(/V3_PRICE_STOPS/)
     expect(filters).toMatch(/commitPrice/)

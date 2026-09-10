@@ -201,6 +201,14 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-require-imports": "off",
     },
   },
+  {
+    // Vendored beUI / shadcn-registry source. We restyle from v3; do not
+    // rewrite their effects to satisfy our hook lint.
+    files: ["components/motion/**"],
+    rules: {
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

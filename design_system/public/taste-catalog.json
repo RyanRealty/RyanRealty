@@ -18,8 +18,73 @@
     "Drop or summarize away PropertySpecs, MLS remarks, schools, payment line items, or Tour/Call/Text",
     "Rewrite Spark listing photos to 320x240 on a card, rail, or hero — 320 is the 88x66 ledger thumb only",
     "Skip a catalog job because the barrel has no primitive yet — ADD the primitive that still matches the demo",
-    "Treat a score rise or rebaseline as done when the live control and the demo are not the same interaction"
+    "Treat a score rise or rebaseline as done when the live control and the demo are not the same interaction",
+    "Claim adaptedFrom without the installed file imported by the house primitive (ci:catalog-install). A comment is not an import. motion/react on a house wrapper is a dependency of beUI, not the component.",
+    "Mark a SITE node done on comparedToPrior rebaselined or a taste score below 70"
   ],
+  "installById": {
+    "shadcn-carousel": {
+      "add": "carousel",
+      "file": "components/ui/carousel.tsx",
+      "import": "@/components/ui/carousel",
+      "house": "components/site/v3/V3Carousel.client.tsx"
+    },
+    "shadcn:carousel": { "aliasOf": "shadcn-carousel" },
+    "carousel": { "aliasOf": "shadcn-carousel" },
+    "beui-morphing-search": {
+      "add": "@beui/morphing-search",
+      "file": "components/motion/morphing-search.tsx",
+      "import": "@/components/motion/morphing-search",
+      "house": "components/site/v3/V3MorphSearch.tsx"
+    },
+    "beui:morphing-search": { "aliasOf": "beui-morphing-search" },
+    "morphing-search": { "aliasOf": "beui-morphing-search" },
+    "beui-tabs": {
+      "add": "@beui/tabs",
+      "file": "components/motion/tabs.tsx",
+      "import": "@/components/motion/tabs",
+      "house": "components/site/v3/V3Tabs.tsx"
+    },
+    "beui:tabs": { "aliasOf": "beui-tabs" },
+    "beui:shared-layout-bg": { "aliasOf": "beui-tabs" },
+    "beui-range-slider": {
+      "add": "@beui/range-slider",
+      "file": "components/motion/range-slider.tsx",
+      "import": "@/components/motion/range-slider",
+      "house": "components/site/v3/V3Range.tsx"
+    },
+    "beui:range-slider": { "aliasOf": "beui-range-slider" },
+    "beui-number": {
+      "add": "@beui/number",
+      "file": "components/motion/number.tsx",
+      "import": "@/components/motion/number",
+      "house": "components/site/v3/V3Number.client.tsx"
+    },
+    "beui:number": { "aliasOf": "beui-number" },
+    "rareui:animatedcounter": { "aliasOf": "beui-number" },
+    "transitions:number-pop-in": { "aliasOf": "beui-number" },
+    "shadcn-input": {
+      "add": "input",
+      "file": "components/ui/input.tsx",
+      "import": "@/components/ui/input",
+      "house": "components/site/v3/V3Input.tsx"
+    },
+    "shadcn:input": { "aliasOf": "shadcn-input" },
+    "beui-input": {
+      "add": "@beui/input",
+      "file": "components/motion/input.tsx",
+      "import": "@/components/motion/input",
+      "house": "components/site/v3/V3Input.tsx"
+    },
+    "beui:input": { "aliasOf": "beui-input" },
+    "shadcn-button-group": {
+      "add": "button-group",
+      "file": "components/ui/button-group.tsx",
+      "import": "@/components/ui/button-group",
+      "house": "components/site/v3/V3ButtonGroup.tsx"
+    },
+    "shadcn:button-group": { "aliasOf": "shadcn-button-group" }
+  },
   "catalogs": [
     {
       "id": "beautifului",
