@@ -43,6 +43,10 @@ describe('priceDropFieldItems photographs', () => {
     expect(items).toHaveLength(1)
     expect(items[0].photoSrc).toBe('/p.jpg')
     expect(items[0].overlay).toBe('-8.3%')
+    expect(items[0].dropLine).toBe('was $599,000, -8.3%')
+    expect(items[0].specs).toBe('3 bd · 2 ba · 1,600 sqft · Old Bend')
+    expect(items[0].meta).toContain('3 bd')
+    expect(items[0].meta).toContain('was $599,000')
   })
 
   it('asks Spark for the row size so a prefetched drops Flight never names a 1600 plate', () => {

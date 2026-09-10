@@ -66,6 +66,8 @@ import { compTierLadder, isRuralAcreage, realSubdivision } from '@/lib/cma/comp-
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible } from '@/lib/pricing/rural'
 import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import { communitySlugForSubdivision, isResortCommunity, resortCommunityCompatible } from '@/lib/cma/resort-guard'
+import { ANCHOR_MIN_N, ANCHOR_RADIUS_MILES, sameStreetPeer } from '@/lib/pricing/price-anchor'
+import { SAME_NEIGHBORHOOD_TIER_RATIO, SUBDIVISION_TIER_RATIO } from '@/lib/pricing/classes'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -200,6 +202,13 @@ function isoMonthsAgo(months: number): string {
 function unitRate(comp: CmaComp, land: boolean): number {
   const size = land ? (comp.lotAcres ?? 0) : comp.sqft
   return size > 0 ? comp.closePrice / size : 0
+}
+
+function medianOf(values: readonly number[]): number {
+  if (values.length === 0) return 0
+  const sorted = [...values].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 0 ? (sorted[mid - 1]! + sorted[mid]!) / 2 : sorted[mid]!
 }
 
 function similarityScore(subjectSize: number, comp: CmaComp, land = false): number {
@@ -376,10 +385,69 @@ export async function selectComps(
   // How many sales the widening rung crossed the resort-membership rule for.
   // Counted so the disclosure can name it rather than imply it.
   let resortCrossed = 0
+  /**
+   * THE SUBJECT'S PRICE TIER (Matt 2026-09-10, on 23 Benaiah): the listings
+   * path had NO price cut of any kind, so a $579/sqft downtown sale and a
+   * $234/sqft sale out on China Hat both priced a $320/sqft tract home and the
+   * range printed the spread. Every row the ladder reads that sits in the
+   * subject's own neighborhood, or within a mile of it, feeds this sample; once
+   * it holds enough sales its median grades every later comp.
+   */
+  let anchorPpsf: number | null = null
+  let anchorN = 0
+  /**
+   * ONE SALE against a MEDIAN, so the wider ratio. The 1.15 neighborhood ratio
+   * grades a subdivision median against another median — stable figures. A
+   * single sale swings much further than that on condition alone: at 1.15 the
+   * cut threw out 31 Benaiah, the same 2,080 sqft plan on the subject's own
+   * street, which is the best evidence this document has.
+   */
+  const anchorTierRatio = SUBDIVISION_TIER_RATIO
   // Sales set aside for sitting across a river from an unmapped subject.
   let crossedFeature = 0
   // The parent the subject's plat sits inside, from the recorded-plat registry.
   const subjectCommunity = communitySlugForSubdivision(subject.subdivision)
+
+  // THE PRICE TIER, READ ONCE, BEFORE THE LADDER WALKS.
+  //
+  // It has to be one deterministic read, not a sample accumulated as the rungs
+  // fetch: an anchor that grows mid-walk depends on which rung happened to run
+  // first, and two builds of the same home minutes apart chose different comp
+  // sets because of it. This asks one question — what does a home of roughly
+  // this size sell for per square foot in this home's own neighborhood, or
+  // within a mile of it — over twelve months and a wide size band.
+  const subjectSqft = subject.sqft ?? 0
+  if (!land && subjectSqft > 0) {
+    const anchorRows = await selectCmaCompsPool({
+      cityIlike: subject.city,
+      closeDateGte: isoMonthsAgo(12),
+      sqftMin: Math.round(subjectSqft * 0.6),
+      sqftMax: Math.round(subjectSqft * 1.6),
+      bounds: subjectArea ? marketAreaBounds(subjectArea) : radiusBounds(subjectPoint, ANCHOR_RADIUS_MILES),
+      limit: 400,
+      // The SAME population the ladder itself reads. A tier median sampled from
+      // a different property segment is a different market's number.
+      propertySubType: sqlSubType,
+      propertyType: segment,
+    })
+    const rates: number[] = []
+    for (const row of anchorRows) {
+      const comp = rowToComp(row, 'price-anchor', false)
+      if (!comp) continue
+      const inArea = subjectArea != null && resolveMarketArea(comp.latitude, comp.longitude) === subjectArea
+      const miles = distanceMiles(subjectPoint, { lat: comp.latitude, lng: comp.longitude })
+      if (!inArea && !(miles != null && miles <= ANCHOR_RADIUS_MILES)) continue
+      const rate = unitRate(comp, false)
+      if (rate > 0) rates.push(rate)
+    }
+    if (rates.length >= ANCHOR_MIN_N) {
+      anchorPpsf = medianOf(rates)
+      anchorN = rates.length
+      trace.push(
+        `Price tier: homes in this area sell for about $${Math.round(anchorPpsf)} a square foot (median of ${anchorN} sales within a mile or inside ${subjectAreaName ?? 'the neighborhood'}, last 12 months). Sales more than ${Math.round((anchorTierRatio - 1) * 100)}% either side of that are a different market and are not used.`,
+      )
+    }
+  }
 
   for (const tier of tiers) {
     const skip =
@@ -557,6 +625,27 @@ export async function selectComps(
         }
       }
 
+      // THE PRICE TIER. A sale more than a tier away from what this home's own
+      // neighborhood sells for is not a comparable at any distance, whatever
+      // its size says. The subject's plat cell is not required — an MLS record
+      // reading "N/A" (23 Benaiah) has no cell at all, which is exactly the
+      // case that had no cut before.
+      const tightRung = tier.name.startsWith('subdivision') || tier.name.startsWith('adjacent-subdivision')
+      const ownStreetPeer = sameStreetPeer(
+        { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft ?? 0 },
+        { address: comp.address, city: comp.city, sqft: comp.sqft },
+      )
+      if (!land && !tightRung && !ownStreetPeer && anchorPpsf != null) {
+        const rate = unitRate(comp, false)
+        if (anchorPpsf > 0 && rate > 0) {
+          const gap = rate / anchorPpsf
+          if (gap < 1 / anchorTierRatio || gap > anchorTierRatio) {
+            rung.excluded.price_tier++
+            continue
+          }
+        }
+      }
+
       // THE PARENT LEVEL (Matt 2026-09-09). The community rung takes the
       // subject's own community and nothing else; the peer rung takes another
       // community of the same kind and never a plain neighborhood.
@@ -714,6 +803,12 @@ export async function selectComps(
   if (x.lot_character > 0) {
     trace.push(`Excluded ${x.lot_character} comp(s) on lot character (acreage vs in-town lot is not comparable at any distance).`)
   }
+  if (x.price_tier > 0) {
+    const at = anchorPpsf != null && anchorPpsf > 0 ? ` The neighborhood's own sales run about $${Math.round(anchorPpsf)} a square foot.` : ''
+    trace.push(
+      `Excluded ${x.price_tier} sale(s) on price tier: more than ${Math.round((anchorTierRatio - 1) * 100)}% away from what this home's own area sells for per square foot.${at}`,
+    )
+  }
   if (x.market_area > 0) trace.push(`Excluded ${x.market_area} comp(s) outside the subject's market area.`)
   if (x.distance > 0) trace.push(`Excluded ${x.distance} comp(s) beyond the tier's distance bound.`)
   if (subject.subdivision && !subdivisionIlike) {
@@ -805,6 +900,7 @@ export async function selectComps(
   const diagnostics: CompSelectionDiagnostics = {
     market_area: subjectAreaName,
     market_area_resolved: subjectArea != null,
+    price_anchor: anchorPpsf != null ? { ppsf: Math.round(anchorPpsf), n: anchorN } : null,
     rural_acreage: ruralAcreage,
     pricing_source: 'listings',
     custom_or_new: false,
@@ -922,6 +1018,7 @@ const REFUSAL_CUT_LABELS: Partial<Record<keyof CompExclusionCounts, string>> = {
   year_quality: 'a different construction generation',
   acreage_infrastructure: 'different acreage infrastructure',
   zoning_class: 'a different zoning class',
+  price_tier: 'a different price tier than this home\'s own area',
   outbuildings: 'different outbuildings',
   terrain: 'different land',
 }

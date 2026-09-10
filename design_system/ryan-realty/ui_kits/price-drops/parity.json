@@ -1,7 +1,7 @@
 {
   "route": "app/price-drops/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). There is no index.html in this directory. The visual target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
-  "note": "Homes grain fix 2026-08-14. Rhythm: THREE of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb, Field of the cut houses (count is a caption, never an Instrument hero), Sheet, Quiet, Footer. The empty window substitutes a Quiet for the Field and is still three patterns. Every figure comes from ONE getPriceDrops({ limit: 48, days: 7 }) call. Absent is not zero: an empty resilient-cache fallback is opted out of ISR with noStore(), and Dataset / updated / count figures are omitted rather than published as 0. Drop math is previous list price to current list price. Field rows sort by lastDropPct descending. HideAwareListingGrid is a declared deletion: hidden-home subtraction stays on /search.",
+  "note": "Homes grain fix 2026-08-14. Rhythm: THREE of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb, Field of the cut houses as a V3Carousel photo rail (count is a caption, never an Instrument hero), Drawing of the week's cuts, Sheet, Quiet, Footer. The empty window substitutes a Quiet for the Field and is still three patterns. Every figure comes from ONE getPriceDrops({ limit: 48, days: 7 }) call. Absent is not zero: an empty resilient-cache fallback is opted out of ISR with noStore(), and Dataset / updated / count figures are omitted rather than published as 0. Drop math is previous list price to current list price. Field rows sort by lastDropPct descending. HideAwareListingGrid is a declared deletion: hidden-home subtraction stays on /search. SITE-70: photographs open via shadcn-carousel -> V3Carousel; ItemList JSON-LD lists the cut homes.",
   "deletions": [
     "KbHero: the dark photo hero and its live-glance counts. The counts survive as Instrument figures when the pull is non-empty.",
     "KbFeatured: the poster grid of the biggest percent reductions. Those homes are Field rows now, sorted by lastDropPct descending.",
@@ -63,6 +63,10 @@
       {
         "type": "webPage",
         "emittedBy": "MetadataBlock schemas array, only when total > 0, description carries the live count."
+      },
+      {
+        "type": "ItemList",
+        "emittedBy": "MetadataBlock schemas array (itemList entry) when the window is non-empty: up to 24 cut homes with name + absolute URL."
       }
     ]
   },
@@ -75,20 +79,20 @@
     "V3SectionTracker + TrackSearchView + MetadataBlock (not sections)",
     "V3Breadcrumb",
     "PriceDropsOpening -- the H1 and the count of homes that cut price",
-    "V3Field #cuts -- the reduced homes, each a door",
+    "V3Field #cuts -- V3Carousel rail of photographed cut houses (price, address, beds/baths/sqft)",
+    "V3Drawing #spread -- distribution of this week's cuts (after photographs)",
     "V3SourceLine -- the trace and the stamp under the set",
-    "V3Quiet #answer -- what a price cut means here, in text, for the query",
     "PriceDropAlertsSheet -- the ask: tell me when a home cuts price",
     "V3Quiet #edges -- keep looking",
     "V3Footer"
   ],
   "competitiveTarget": "Beat Zillow's and Redfin's price-cut filters on a page a search engine can actually rank. Their reductions live behind a filter state with no indexable URL; this is a standing page for 'price reductions bend oregon' and 'price drops central oregon' that publishes the cut homes themselves, each one a door, with the source trace and the refresh stamp under the set. The answer -- how many homes cut price and by how much -- is in text, not only in the list.",
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-49 price-drops pass, session 019RdEm6 — the table instrument (first viewport at 1440x900 and 375x812, scripts/take-route-shots.mjs, scale 1, palette-quantized) on the lane's own dev server (localhost:3198) for /price-drops, plus one hover record per viewport (the pointer on a mark of the distribution) read only for the Interaction criterion; three independent scorings of one capture run, the median; no page code read, no live page opened. The builder ran on Opus and did not grade its own page. The prior mark is the route's committed receipt (43, scores 43·46·39, 2026-09-09, SITE-42's source-line round on the pre-drawing build); the taste table of 2026-09-08 scored the class 30 on a different instrument. Two rounds: the builder's own look pass tightened the strip's lane step so the first house stays in the 1440 fold before any evaluator saw it; round one scored 76 (76·67·83) and named three finishing defects, two of which were fixed for this capture — the primitive's idle hint promised a month these marks do not carry (V3Drawing gains `askHint`, so a figure says what its own marks give up) and the count line floated alone at the top right on desktop while the phone layout already sat it under the heading (one placement now). The third, that the marks cluster in the left half at 1440, is the distribution's true shape: most cuts this week are small, and stretching the axis to fill the frame would draw a spread the data does not have (§0). Round two scored 80 (73·80·83) and named two more: the visible source clause ended mid-parenthetical, because V3SourceLine cut the clause at the first comma and that comma sat inside a bracket (fixed in the primitive — the cut is bracket-aware now, with its own cases, so every caller's clause reads whole); and at 375 a dense column of marks merged into one stroke, shrinking the hit target for a thumb (the phone gets its lane step back). Round three scored 77 (77·76·79) and named one honesty defect worth the extra round: the page prints 60 and 48 three times and never says why they differ. The pull is capped at 48 rows, and the drawing's trace now says so and how many cuts that leaves off the page; the phone's lane also went over the mark's own hit box so two stacked targets never overlap. This receipt is round four.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluatedAt": "2026-09-10",
+    "rubricVersion": "v1-2026-09-10",
+    "evaluator": "separate grok-4.6 via npx tsx scripts/taste-evaluate.ts price-drops --url http://127.0.0.1:3270/price-drops --beat 30. Builder is grok-4.5 and did not grade its own page. First-viewport instrument at 1440×900 and 375×812; three scorings of one capture; median.",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/price-drops"
@@ -98,73 +102,104 @@
         375
       ],
       "states": [
-        "default",
-        "strip"
+        "default"
       ],
-      "capture": "scripts/take-route-shots.mjs default first viewport for the instrument pair; `strip=#spread .v3-drawing__mark:nth-child(20)@#spread!hover` for the hover record"
+      "capture": "scripts/take-route-shots.mjs first viewport from lane dev server :3270"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/price-drops/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/mobile375.png",
-      "stripDesktop": "design_system/ryan-realty/ui_kits/price-drops/shots/strip-desktop.png",
-      "stripMobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/strip-mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/mobile375.png"
     },
-    "shotsHash": "sha256:86c4c9eed3a84a4709c5479e293e05fbf2e5e2865bdedfa99b453d812158f6f6",
+    "shotsHash": "sha256:ae1235143ed194491efce0021125d77b85f3b604abb06d1dca045d7e26bc37af",
     "scores": [
-      71,
-      75,
-      71
+      54,
+      67,
+      60
     ],
-    "score": 71,
+    "score": 60,
     "criteria": {
-      "designQuality": 23,
-      "originality": 20,
-      "interaction": 11,
-      "craft": 11,
+      "designQuality": 18,
+      "originality": 17,
+      "interaction": 9,
+      "craft": 10,
       "honestyFunction": 6
     },
-    "beats": "Redfin's/Zillow's price-drop ('recently reduced') filter: those render only a reverse-chronological card list with no sense of how many cuts happened or how deep they went. This page wins on shape — the dot distribution shows the size and count of this week's cuts before a reader opens a single card.",
+    "perCriterion": {
+      "design": 18,
+      "originality": 17,
+      "interaction": 9,
+      "craft": 10,
+      "honesty": 6
+    },
+    "honestyFunction": 6,
+    "beats": "Redfin price-reduced search — this page wins on a standing URL and a beeswarm of the week's cut sizes; it loses the card, where Redfin's drop amount is a first-class mark and this rail is still photo-plus-badge. Better than a 30/100 page because photographs open, the count is a caption, listing facts sit on the card, and the drawing exists.",
+    "adaptedFrom": [
+      {
+        "id": "shadcn-carousel",
+        "url": "https://ui.shadcn.com/docs/components/carousel"
+      },
+      {
+        "id": "V3Carousel"
+      },
+      {
+        "id": "house-field",
+        "url": "components/site/v3/V3Field.tsx"
+      },
+      {
+        "id": "house-drawing",
+        "url": "components/site/v3/V3Drawing.client.tsx"
+      }
+    ],
     "tells": [],
-    "dullest": "The listing card beginning at the bottom of the first viewport (stone-and-lantern exterior photo) — it's the same photo-price-badge-address shape flagged as the page's weak point in the prior mark, and nothing above the fold suggests the cards below it break that pattern.",
-    "verdict": "This is a real step up from the last mark: there's finally a picture of the 60 cuts instead of a stack of cards, and hover/tap genuinely surfaces one home's number instead of decorating. But the median-cut sentence contradicts itself between phone and desktop, which is exactly the kind of figure this shop can't publish inconsistently, and the desktop hover has no visual anchor telling you which dot you're reading. Fix those two and the source-visibility gap on mobile and this clears into the 80s; right now it's a good chart wearing an unproofed caption.",
+    "dullest": "Previous/Next outline buttons under the rail — not the shadcn carousel chevron chrome a visitor would recognize from the demo.",
+    "verdict": "Better than a 30: the fold opens on photographed cuts with the count as a caption, cards carry price/was/beds/baths/sqft, and the beeswarm is a real drawing of the week. SEO rose via title and ItemList JSON-LD. Remaining: portal-card look, text Previous/Next vs shadcn chevrons, clipped drawing in the first viewport, new-listings ask.",
     "defects": [
       {
-        "section": "hero explanatory sentence",
-        "severity": "honesty",
-        "finding": "The sentence above the chart gives a different median cut on desktop ('the middle one came down 5.9%') than on mobile ('the middle one came down 5.8%') for what is presented as the identical 48-cut dataset ('48 of this week's Central Oregon price cuts, smallest to deepest'). The two renders disagree on the page's own headline figure.",
-        "fix": "Serve the median-cut sentence from one computed snapshot to both breakpoints (or timestamp the pull) so the stat can't drift between renders.",
-        "viewport": "both"
+        "section": ".pd-card",
+        "severity": "taste",
+        "finding": "The opening is a portal listing carousel, not a field of cut houses: each cell is photo, percent badge, price, was-line, address, specs. The 3px stroke under the ask reads as a price underline — drop percents do not compare across houses as a first-class mark.",
+        "replaceWith": "horizontal bar"
       },
       {
-        "section": "distribution strip chart",
-        "severity": "interaction",
-        "finding": "On desktop the hover swaps the instruction text for a specific record ('745 Upas Avenue, Redmond · 5.5% off, $23K cut'), but no dot in the strip visibly changes size, color, or gets a ring to mark which of the 48 points is active. On mobile the tapped dot is clearly enlarged relative to its neighbors; desktop has no equivalent visual anchor tying the caption to a mark.",
-        "fix": "Give the active point a distinct fill/size/outline on desktop hover, matching the enlarged-dot treatment already used for the mobile tap state.",
-        "viewport": "desktop"
+        "section": ".pd-cuts-rail .v3-carousel__nav",
+        "severity": "taste",
+        "finding": "Previous and Next are outlined text buttons parked under the track. The shadcn carousel demo is chevron icon buttons on the rail you drag; a visitor would not recognize the same control.",
+        "replaceWith": "shadcn-carousel"
       },
       {
-        "section": "listing photo badge (\"-13.0%\")",
+        "section": ".pd-homes-field / #cuts",
+        "severity": "taste",
+        "finding": "Photographs exist, but they do not read as a field. Five vertical listing cards with full bodies dominate the first viewport; the houses are inventory tiles, not a field of cuts.",
+        "replaceWith": "house-field"
+      },
+      {
+        "section": "#alerts",
+        "severity": "blocking",
+        "finding": "On /price-drops the visible ask is Get new Central Oregon listings by email. The conversion path is for new listings, not cuts, so the page job and the form job disagree. Product contract held.",
+        "replaceWith": null
+      },
+      {
+        "section": ".pd-spread first viewport",
         "severity": "craft",
-        "finding": "The price-cut badge on the listing photo renders with visibly rounded corners, while the chart baseline, nav, and card edges elsewhere in the same viewport use hard, radius-0 edges — a second corner radius shows up on screen.",
-        "fix": "Square the badge corners to radius 0 to match the rest of the register.",
-        "viewport": "desktop"
-      },
-      {
-        "section": "mobile first viewport",
-        "severity": "honesty",
-        "finding": "At 375x812 the instrument capture ends right after the '48 cuts' caption — the source line and 'how we calculate this' link sit below the fold, so a mobile reader sees the chart and its headline stat with no visible indication of what backs it, unlike desktop where the source sits in the same screen as the chart.",
-        "fix": "Tighten vertical rhythm above the fold on mobile, or place a short citation directly under the chart, so the source is visible without scrolling.",
-        "viewport": "mobile"
+        "finding": "At 1440 the first viewport clips the drawing to a few unlabeled dots with no axis and no reading, so the differentiator arrives as leftover marks under the rail.",
+        "replaceWith": "house-drawing"
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-09",
-      "score": 43,
+      "score": 71,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:ad260cf1e502c4bc700aa1531b96e472603181165eeda7dd76880c904e120c5b"
+      "shotsHash": "sha256:86c4c9eed3a84a4709c5479e293e05fbf2e5e2865bdedfa99b453d812158f6f6",
+      "criteria": {
+        "designQuality": 23,
+        "originality": 20,
+        "interaction": 11,
+        "craft": 11,
+        "honestyFunction": 6
+      }
     },
-    "rebaselineReason": "shotsHash: new first-viewport captures of the page with the distribution above the grid and the per-row cut marks, plus two hover records the prior set did not have; same evaluator model and rubric."
+    "rebaselineReason": "evaluatorModel (claude-sonnet-5 → grok-4.6), rubricVersion (v1-2026-09-08 → v1-2026-09-10), and shotsHash all differ from the prior SITE-49 receipt; first grok-4.6 mark on rubric v1-2026-09-10 for this route."
   }
 }

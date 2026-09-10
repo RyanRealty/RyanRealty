@@ -101,18 +101,8 @@
     },
     "beats": "Zillow's Land for sale in Deschutes County grid (and LandWatch's county land search): they put photos, asking prices and a map in the first viewport. This page wins the composition claim — 604 lots against 61 commercial, 46 two-to-four-unit buildings and 41 farms, each a live count under a named MLS source — and loses every metric that lets an investor act on it: no map, no ask, no listing.",
     "adaptedFrom": [
-      {
-        "id": "house-pulse"
-      },
-      {
-        "id": "beautifului-insight"
-      },
-      {
-        "id": "shadcn-table"
-      },
-      {
-        "id": "house-ledger"
-      }
+      { "id": "house-pulse" },
+      { "id": "house-ledger" }
     ],
     "defects": [
       {

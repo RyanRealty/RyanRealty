@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
-import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import type { V3ListingRowBadge } from './V3ListingRow'
 import { listingPhotoAlt } from './listing-photo-alt'
 
@@ -44,7 +44,9 @@ export function SplitCardMedia({
 }) {
   const [index, setIndex] = useState(0)
   const touchX = useRef<number | null>(null)
-  const photos = urls.map((url) => listingRowPhotoSrc(url)).filter(Boolean)
+  const photos = urls
+    .map((url) => listingRowPhotoSrc(url, LISTING_FIELD_LEAD_PHOTO_SIZE))
+    .filter(Boolean)
   const src = photos[index] ?? photos[0] ?? null
   const photoTags = tags.filter((tag) => tag.kind !== 'video')
 

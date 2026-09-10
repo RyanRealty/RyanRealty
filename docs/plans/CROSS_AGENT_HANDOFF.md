@@ -1,12 +1,62 @@
-# Current — 2026-09-10 08:42Z (SITE-71/80 landed; claimed SITE-88 + SITE-72)
+# Current — 2026-09-10 17:47Z (grinder 01a08b99: SITE-89 + SITE-73 on main)
 
-Owner: `grok-01a08945-2026-09-09`. Deploy `dpl_8z8qL4RjC7q2y2iSaApT4atSBRb7` READY in 238s.
+Owner: `grok-4.5-2026-09-10-16`. Local `ea9f3cc5` (SITE-73 merge) on `48a3d62b` (SITE-89). Do not steal SITE-88. Do not steal SITE-76 / SITE-79 (`grok-4.5-2026-09-10-17`). Skip SITE-81. 15m scheduler stays. No auto-seed.
 
-- **SITE-71 done.** Live `/housing-market/annual-review` opens on MOS two-bar (homes for sale vs a month of sales) + year overlay, not sixteen tiles. `26342a49`. grok-4.6 median **64** (honesty 8), rebaselined from table 31 / SITE-41 83.
-- **SITE-80 done.** Live `/contact` is ContactFold (5.0 + call door with hours + Send a message). `53d29715`. grok-4.6 median **64** (honesty 9), rebaselined from table 49. SITE-63 `?taste_variant=` losers still on disk; default is quiet-doors = ContactFold.
-- **Held:** SITE-88 (`08545734-…`) region fold, worktree `/Users/matthewryan/RyanRealty-wt-site-88-20260910`. SITE-72 (`c33400e1-…`) search fold, `/Users/matthewryan/RyanRealty-wt-site-72-20260910`.
-- GIS "most is not all" (Matt): SITE-66/67 already closed — OSM 0, 17 official parks, 42 school polygons, 10 ZIPs, Crook taxlots in; Jefferson taxlots still 0 (publisher REST 404 / ODF query unsupported). No invented geometry.
-- Do not steal SITE-85/87 (`01a08914`) or SITE-70/84 (`01a0895a`). 15m scheduler stays. No auto-seed.
+- **SITE-89** place-type: H1 → claim → Atlas → V3Carousel rail. grok-4.6 median **71** (73/65/71). Accept >69. Finish line 70 met.
+- **SITE-73** zip: V3Atlas + MOS + alerts (no Google embed). grok-4.6 median **53** (53/45/58), HF 8. Accept >33. Desktop alerts still collide with the 43-count figure.
+
+# Current — 2026-09-10 17:12Z (grinder 01a08c47: claimed SITE-76 + SITE-79)
+
+Owner: `grok-4.5-2026-09-10-17`. origin/main `f8a42866`. Main checkout has **other-lane dirty catalog/motion files — do not stage them**. 15m launchd stays. No auto-seed.
+
+- **SITE-76 in_progress** oregon-city honesty-first fold. UUID `de87b75a-feeb-4cf8-9266-e506f575d0b0`. Catalog: shadcn-alert into Quiet. Port 3196. Do not globally restyle `V3Instrument`.
+- **SITE-79 in_progress** reviews V3Proof + shadcn-avatar (initials only — `reviews` has no photo column). UUID `7fda19f1-0e6b-4791-a31e-6a3b0fe341ed`. Port 3197. Do not restyle `V3Doors` globally.
+- Do not steal SITE-88. Skip SITE-81 (region family). Skip SITE-87 / SITE-82 (`PlaceAreaHero`).
+
+# Current — 2026-09-10 17:05Z (catalog install is a gate)
+
+Owner: this session. Process on main. Do not steal SITE-88 / SITE-89 / SITE-73.
+
+- **ci:catalog-install (G75):** a receipt `adaptedFrom` catalog id must have the installed file and the house primitive must import it. Cream boxes fail. `npx shadcn add` into `components/ui` or `components/motion`; v3 wraps that file. `check-public-v3` no longer forbids `@/components/ui` on v3 (that ban caused the cream boxes).
+- Wired: V3Carousel → ui/carousel; V3MorphSearch → motion/morphing-search; V3Tabs → motion/tabs; V3Number → motion/number; V3Range → motion/range-slider; V3Input → motion/input + ui/input.
+- Rebaseline is not done. Score below 70 is not done. 15m scheduler stays. No auto-seed.
+
+# Current — 2026-09-10 16:42Z (grinder 01a08b99: claimed SITE-89 + SITE-73)
+
+Owner: `grok-4.5-2026-09-10-16`. SITE-70/84 live on `52a1c736`. Do not steal SITE-88. Skip SITE-81 (region family). Skip SITE-87 (`PlaceAreaHero`). Do not globally restyle `V3Stage`. 15m scheduler stays. No auto-seed.
+
+- **SITE-89 in_progress** place-type fold. UUID from seed SITE-89. Leftover filmstrip `ebd1f69d` on `wt/site-89-place-type-20260910` (median 54, need >69). Rebase onto origin/main.
+- **SITE-73 in_progress** zip first viewport: replace default Google embed with Atlas-grade drawing; count as a claim. Do not globally restyle `PlaceFieldMap`.
+
+# Current — 2026-09-10 14:45Z (grinder 01a08b6b: SITE-72 + SITE-85 on main)
+
+Owner: `grok-4.5-2026-09-10-13`. Local `e672d978` (sell) on `9e209ab6` (search). Do not steal SITE-88.
+
+- **SITE-72** search: V3Range + V3MorphSearch. grok-4.6 median **59** (55/63/59), HF 8, rebaselined from sonnet 75. Finish line 70 not met.
+- **SITE-85** /sell: 2,071 Bend closes + MOS two-bar beside the ask. grok-4.6 median **61** (56/62/61), HF 7, rebaselined. Landed hash-verified `2e0732eb` tree, not the amended mismatch.
+- Catalog baseline dropped search+sell. v2 baseline empty. 15m scheduler stays. No auto-seed.
+
+# Current — 2026-09-10 14:35Z (SITE-88 region fold, grok CLI receipt)
+
+Owner: `claude-opus-5-019RdEm6-2026-09-10`. Worktree `/Users/matthewryan/RyanRealty-wt-site-88-20260910` on `wt/site-88-20260910`.
+
+- **SITE-88 in_progress, not done.** `/housing-market/central-oregon` fold: MOS two named bars, visitor English source. grok-4.6 median **61**, rebaselined. **Rebaseline is not done.** Do not steal.
+
+# Current — 2026-09-10 (loop process: catalogs are the UX bar)
+
+Owner: this session. Do not steal SITE-85 / SITE-72 / SITE-88. Process change on `main`, not a page claim.
+
+- **Loop (every agent, every fire):** `site-queue` skill + TASTE.md. The five catalogs (plus any URL later appended to `catalogUrls`) are the UX bar. Install the source (`shadcn add`), restyle navy/cream/Geist/Amboqia/Iconoir, keep the interaction. A cream box with the catalog name is not adapted. Evaluator picks `replaceWith` from the builder-card option list (id + demo URL). Score rise without demo match is not done.
+- **Priority:** SEO first, then information, then look / sense / ease of use. Listing 13-row inventory (bleed hero, PropertySpecs, `DescriptionBlock` remarks, schools, payment, Tour/Call/Text) cannot be summarized away.
+- **Photos:** Spark `320x240` is the 88×66 ledger thumb only. Cards, rails, and the listing hero use `800x600` first paint; mosaic upgrades the on-screen frame to 1600.
+
+# Current — 2026-09-10 13:07Z (grinder 01a08b6b: claimed SITE-85 + SITE-72)
+
+Owner: `grok-4.5-2026-09-10-13`. Fleet 2/3 (SITE-88 held by `claude-opus-5-019RdEm6-2026-09-10`). origin/main `9362b613`.
+
+- **SITE-85 in_progress** sell first viewport. UUID `e7db6225-5d83-4f8a-88d2-b34bc2794c64`. Continue leftover worktree `…/subagent-01a08a78-7806-72a3-9bb9-1d1d1abad96d` branch `wt/site-85-sell-20260910`. Do not globally restyle `V3Stage`.
+- **SITE-72 in_progress** search first viewport. UUID `c33400e1-7007-409b-9e4a-18dc139fa504`. Continue `/Users/matthewryan/RyanRealty-wt-site-72-20260910` (`V3Range` uncommitted).
+- Do not steal SITE-88 (region). Do not steal SITE-87/84 (`PlaceAreaHero`). 15m scheduler stays. No auto-seed.
 
 # Current — 2026-09-10 08:40Z (this session keeps grinding as nodes finish)
 

@@ -117,6 +117,18 @@ export default async function PriceDropsCityPage({ params }: Props) {
       medianDropPctLabel,
       fetchedAt: drops.length > 0 ? fetchedAt : null,
     }),
+    ...(fieldItems.length > 0
+      ? [
+          {
+            type: 'itemList' as const,
+            name: `${cityName} homes with a price cut in the last 7 days`,
+            items: fieldItems.slice(0, 24).map((item) => ({
+              name: `${item.priceLabel} · ${item.title}`,
+              url: item.href.startsWith('http') ? item.href : `${siteUrl}${item.href}`,
+            })),
+          },
+        ]
+      : []),
   ]
 
   const siblingItems: V3QuietItem[] = DROPS_CITY_SLUGS.filter((slug) => slug !== citySlug).map(

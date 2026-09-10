@@ -1,5 +1,10 @@
 # Existing violations tracked for incremental cleanup.
 # New files should not be added without a cleanup plan.
+#
+# Vendored beUI catalog source (Matt 2026-09-10). Public paint is v3 wrapping
+# these files with tokens.css. Do not rewrite their raw controls or arbitrary
+# Tailwind to pass this gate.
+components/motion/
 # Rental calculator tool + its SVG equity chart: chart height, axis label sizes,
 # tooltip width, and SVG stroke/fill navy have no locked-ladder equivalent (same
 # class of exception as the admin report/chart pages below).

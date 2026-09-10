@@ -725,77 +725,36 @@
   }
 }
 
-/* THE PRICE CUT AS TWO POINTS (SITE-45). A button so a tap focuses it; the
-   reading opens on :hover and :focus-within, absolutely placed so nothing
-   under it moves. Navy on cream, the "from" point hollow. */
+/* THE PRICE CUT AS TWO PRICES (Matt 2026-09-10). SITE-45's 22px slope hid
+   the reading behind hover. Two values are not a chart: strikethrough the
+   ask before the cut, exception ink on the dollars cut, date at rest. */
 .listing-drop {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--v3-space-xs);
-  min-height: var(--v3-tap);
-  padding: 0;
-  border: 0;
-  background: transparent;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.7rem;
+  margin: 0;
   color: var(--v3-navy);
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-body-sm);
-  font-weight: var(--v3-weight-strong);
-  cursor: default;
-  text-align: left;
-}
-
-.listing-drop__mark {
-  flex: 0 0 auto;
-  overflow: visible;
-}
-
-.listing-drop__mark line {
-  stroke: var(--v3-navy);
-  stroke-width: 1.5;
-}
-
-.listing-drop__mark circle {
-  fill: var(--v3-navy);
-}
-
-.listing-drop__mark .listing-drop__from {
-  fill: var(--v3-cream);
-  stroke: var(--v3-navy);
-  stroke-width: 1.5;
-}
-
-.listing-drop__reading {
-  position: absolute;
-  left: 0;
-  top: 100%;
-  z-index: 6;
-  display: none;
-  gap: var(--v3-space-sm);
-  align-items: baseline;
-  padding: var(--v3-space-2xs) var(--v3-space-sm);
-  background: var(--v3-navy);
-  color: var(--v3-cream);
-  font-weight: var(--v3-weight-medium);
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
-.listing-drop:hover .listing-drop__reading,
-.listing-drop:focus-within .listing-drop__reading {
-  display: inline-flex;
+.listing-drop__from {
+  font-weight: var(--v3-weight-medium);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  color: color-mix(in srgb, var(--v3-navy) 55%, transparent);
 }
 
-.listing-drop__prices s {
-  opacity: 0.7;
+.listing-drop__cut {
+  font-weight: var(--v3-weight-strong);
+  color: var(--v3-exception);
 }
 
-.listing-drop__pct {
-  font-weight: var(--v3-weight-num);
-}
-
-.listing-drop__date {
-  opacity: 0.85;
+.listing-drop__meta {
+  font-weight: var(--v3-weight-medium);
+  color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
 }
 
 /* THE PILLS' PLAIN READ (SITE-45). One sentence under the row, its trace

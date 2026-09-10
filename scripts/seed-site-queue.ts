@@ -10,8 +10,10 @@
  *
  * Draft seeds for a new round come from `node scripts/taste-table.mjs --seed-draft`
  * (SITE-62). Drafts carry the catalog builder card and an accept that requires
- * adaptedFrom + replaceWith. This file never reads taste-table.json. A person
- * pastes after review. Not auto-seed.
+ * adaptedFrom, replaceWith from the option list, and a live-control demo match.
+ * This file never reads taste-table.json. A person pastes after review. Not auto-seed.
+ * Runtime process for every lane is `.claude/skills/site-queue/SKILL.md` (install
+ * the catalog source, restyle navy/cream, keep the interaction).
  */
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'

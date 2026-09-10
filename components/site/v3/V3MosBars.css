@@ -74,6 +74,17 @@
   inset-inline-start: 0;
   inline-size: var(--v3-mos-pct, 0%);
   background: var(--v3-navy);
+  transform-origin: left center;
+  animation: v3-mos-grow 700ms var(--v3-ease-out) both;
+}
+
+@keyframes v3-mos-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .v3-mos__barvalue {
@@ -133,5 +144,6 @@
 @media (prefers-reduced-motion: reduce) {
   .v3-mos__barfill {
     transition: none;
+    animation: none;
   }
 }

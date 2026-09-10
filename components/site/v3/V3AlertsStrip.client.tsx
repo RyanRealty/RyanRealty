@@ -61,6 +61,7 @@ import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading, V3SourceDisclosure } from './atoms'
 import { V3Icon } from './V3Icon'
+import { V3Number } from './V3Number.client'
 import {
   anchorPassed,
   isPlausibleEmail,
@@ -95,7 +96,25 @@ export type V3AlertsStickyClaim = { before: string; place: string; after: string
 export type V3AlertsListing = {
   href: string
   photoSrc: string
+  /** Street address. */
   title: string
+  /** Compact list price when publishable. */
+  price?: string | null
+  beds?: number | null
+  baths?: number | null
+  sqft?: number | null
+  /** @deprecated Prefer price + beds/baths/sqft. Kept for older callers. */
+  detail?: string
+}
+
+/** beds · baths · sqft — only the values the listing actually has. */
+function listingFacts(item: V3AlertsListing): string | null {
+  const parts: string[] = []
+  if (item.beds != null) parts.push(`${Math.round(item.beds).toLocaleString('en-US')} bd`)
+  if (item.baths != null) parts.push(`${Math.round(item.baths).toLocaleString('en-US')} ba`)
+  if (item.sqft != null) parts.push(`${Math.round(item.sqft).toLocaleString('en-US')} sqft`)
+  if (parts.length > 0) return parts.join(' · ')
+  return item.detail?.trim() || null
 }
 
 export type V3AlertsTypeOption = {
@@ -428,13 +447,19 @@ export function V3AlertsStrip({
     ) : null
 
   // A figure, not a control: the one door is the labelled button under the claim.
-  // SITE-43: a sibling mark at rest so the numeral reads as a door without
-  // becoming a second control.
+  // SITE-84: count-up via V3Number (beui-number / rareui:animatedcounter /
+  // transitions:number-pop-in). key remounts on type toggle so the wheel runs
+  // again when Houses ↔ Land swaps the figure. No hyphen mark — the numeral
+  // is the spectacle; the labelled browse button is the door.
+  const countValue = shownCount ? Number(String(shownCount).replace(/,/g, '')) : Number.NaN
   const numeral = shownCount ? (
-    <>
-      <span className="v3-alerts__num">{shownCount}</span>
-      <span className="v3-alerts__num-mark" aria-hidden="true" />
-    </>
+    <span className="v3-alerts__num">
+      {Number.isFinite(countValue) ? (
+        <V3Number key={shownCount} value={countValue} formatted={shownCount} className="v3-alerts__num-pop" />
+      ) : (
+        shownCount
+      )}
+    </span>
   ) : null
 
   return (
@@ -473,16 +498,24 @@ export function V3AlertsStrip({
 
           <div className="v3-alerts__figure">
             {shownListings && shownListings.length > 0 ? (
-              <ul className="v3-alerts__strip">
-                {shownListings.map((item) => (
-                  <li key={item.href}>
-                    <a className="v3-alerts__thumb" href={item.href}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={item.photoSrc} alt="" />
-                      <span className="v3-alerts__thumb-name">{item.title}</span>
-                    </a>
-                  </li>
-                ))}
+              <ul className="v3-alerts__strip" aria-label="Recent listings in this place">
+                {shownListings.map((item) => {
+                  const facts = listingFacts(item)
+                  const price = item.price?.trim() || null
+                  return (
+                    <li key={item.href}>
+                      <a className="v3-alerts__thumb" href={item.href}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={item.photoSrc} alt="" width={800} height={600} />
+                        <span className="v3-alerts__thumb-body">
+                          {price ? <span className="v3-alerts__thumb-price">{price}</span> : null}
+                          <span className="v3-alerts__thumb-name">{item.title}</span>
+                          {facts ? <span className="v3-alerts__thumb-facts">{facts}</span> : null}
+                        </span>
+                      </a>
+                    </li>
+                  )
+                })}
               </ul>
             ) : null}
             {scopeLine ? <p className="v3-alerts__scope">{scopeLine}</p> : null}
@@ -558,7 +591,15 @@ export function V3AlertsStrip({
         <form className="v3-alerts-sticky__inner" onSubmit={onStickySubmit} noValidate aria-busy={sending}>
           <div className="v3-alerts-sticky__text">
             <p className="v3-alerts-sticky__line">
-              {shownCount ? <span className="v3-alerts-sticky__num">{shownCount}</span> : null}
+              {shownCount ? (
+                <span className="v3-alerts-sticky__num">
+                  {Number.isFinite(countValue) ? (
+                    <V3Number key={`sticky-${shownCount}`} value={countValue} formatted={shownCount} />
+                  ) : (
+                    shownCount
+                  )}
+                </span>
+              ) : null}
               {shownCount ? ' ' : null}
               {shownSticky.before} <span className="v3-alerts-sticky__place">{shownSticky.place}</span>{' '}
               {shownSticky.after}

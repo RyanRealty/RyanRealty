@@ -163,15 +163,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Brand voice (CLAUDE.md): a curated DB seo_description carrying a banned
   // cliche (the live "charming" on /cities/bend/old-bend) must never reach the
   // SERP, so a tripped guard falls back to the clean data-driven description.
+  // SITE-84: when inventory is publishable, the SERP carries the live count and
+  // median first — a fluff paragraph without a figure loses the information race.
   const bannedDescRe =
     /\b(charming|stunning|nestled|boasts|pristine|breathtaking|must-see|hidden gem|luxurious|meticulously|gorgeous|immaculate)\b/i
-  const description =
+  const curated =
     neighborhood.seoDescription && !bannedDescRe.test(neighborhood.seoDescription)
       ? neighborhood.seoDescription
-      : generatedDescription
+      : null
+  const description =
+    inventory != null && inventory.activeCount > 0
+      ? generatedDescription
+      : curated ?? generatedDescription
 
   return pageMetadata({
-    title,
+    title:
+      inventory != null && inventory.activeCount > 0
+        ? `${neighborhood.name} homes for sale · ${neighborhood.cityName}, Oregon`
+        : title,
     description,
     path: `/cities/${citySlug}/${neighborhoodSlug}`,
   })
@@ -395,13 +404,27 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
   const leftoverStamp = nbhMt?.headlines?.computedAt ?? nbhMt?.inventory?.computedAt ?? null
   const mosAsOf = leftoverStamp ? formatDate(leftoverStamp) : null
-  const placeMos = buildPlaceMosView({
+  const placeMosBase = buildPlaceMosView({
     active: hud.active,
     monthsSupply: hud.monthsSupply,
     grain: 'neighborhood',
     geoSlug: metricNeighborhoodSlug,
     asOf: mosAsOf,
   })
+  // SITE-84 layout lock: do not say bare "Homes for sale" next to a different
+  // Atlas / Field count — name the MOS population (detached supply ratio).
+  const placeMos = placeMosBase
+    ? {
+        ...placeMosBase,
+        homesName: 'Detached for sale',
+        caption: placeMosBase.caption.replace(
+          'months of homes on the market',
+          'months of detached supply',
+        ),
+      }
+    : null
+  // SITE-84: opening listings already carry price + beds/baths/sqft + 800×600
+  // photos; buildPlaceAlertTypes forwards those facts into the alerts figure.
   const alertTypes = buildPlaceAlertTypes({
     placeName: neighborhood.name,
     scopeName: cityName,
@@ -678,7 +701,13 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={neighborhoodSchemas} />
 
-        <div className={stagePosterSrc ? 'place-opening place-opening--media' : 'place-opening'}>
+        <div
+          className={
+            stagePosterSrc
+              ? 'place-opening place-opening--media place-opening--neighborhood'
+              : 'place-opening place-opening--neighborhood'
+          }
+        >
           <PlaceAreaHero posterSrc={stagePosterSrc} mos={placeMos} />
           {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
           <V3Breadcrumb trail={trail} tone={stagePosterSrc ? 'on-media' : 'surface'} />
@@ -686,6 +715,12 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
             </V3Heading>
+            {/* SITE-84 SEO: crawlable city + inventory doors in the opening. */}
+            <p className="place-opening__caption">
+              <a href={`/cities/${citySlug}`}>{cityName} real estate</a>
+              {' · '}
+              <a href={browseHref}>{neighborhood.name} homes for sale</a>
+            </p>
           </div>
         </div>
 
@@ -810,8 +845,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             publishable). */}
         <V3PlaceCharacter placeName={neighborhood.name} character={placeCharacter} />
 
-        {/* D93: the live feed, every row carrying its listing's own photo. */}
-        {firstAct ? (
+        {/* D93: only when rows are inside this neighborhood's boundary. A city
+            feed on an Awbrey Butte URL is city inventory on the wrong page
+            (SITE-84 evaluator). */}
+        {firstAct && useActScoped ? (
           <V3Ledger
             id="activity"
             layout="pulse"
@@ -819,18 +856,20 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             heading={v3Text('Latest market activity')}
             rows={[firstAct, ...restAct]}
             source={v3Text(
-              `live MLS through Oregon Data Share, new listings, price changes, pendings, and closings on ${useActScoped ? neighborhood.name : cityName} homes`,
+              `live MLS through Oregon Data Share, new listings, price changes, pendings, and closings on ${neighborhood.name} homes`,
             )}
             action={{ label: v3Text('Full market pulse'), href: '/housing-market' }}
           />
         ) : null}
 
+        {/* Open houses are city-scoped in the MLS — name that, never imply this
+            neighborhood. Prefer the city door over a misleading local list. */}
         {firstOh ? (
           <V3Ledger
             id="open-houses"
             layout="walk"
             eyebrow={v3Text(`This week · ${cityName}`)}
-            heading={v3Text('Open houses you can walk through')}
+            heading={v3Text(`Open houses elsewhere in ${cityName}`)}
             rows={[firstOh, ...restOh]}
             source={v3Text(OPEN_HOUSE_TRACE)}
             action={{ label: v3Text(`Every open house in ${cityName}`), href: `/open-houses/${citySlug}` }}

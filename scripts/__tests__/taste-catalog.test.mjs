@@ -8,9 +8,15 @@ import {
   adaptedFromProblems,
   builderCard,
   catalogCoverageProblems,
+  catalogInstallProblems,
   catalogReceiptProblems,
+  demoStateSpecs,
   evaluatorBrief,
   formatBuilderCard,
+  isHouseAdaptedId,
+  optionListIds,
+  replaceWithOptionProblems,
+  resolveInstallSpec,
   layoutLockForClass,
   layoutLockProblems,
   listPicksForClass,
@@ -27,10 +33,11 @@ describe('loadTasteCatalog', () => {
   it('loads the committed catalog from the X post with all five EXM7777 sources', () => {
     expect(loaded.problems).toEqual([])
     expect(loaded.source).toBe('https://x.com/EXM7777/status/2092250905655812121')
-    expect(loaded.catalogUrls).toEqual([...EXM7777_URLS])
+    expect(loaded.catalogUrls).toEqual(expect.arrayContaining([...EXM7777_URLS]))
     expect(EXM7777_IDS.every((id) => loaded.catalogs.some((c) => c.id === id))).toBe(true)
     expect(loaded.catalogs.some((c) => c.id === 'house-v3' && c.kind === 'house')).toBe(true)
     expect(loaded.refuse.some((r) => /shadcn add/i.test(r))).toBe(true)
+    expect(loaded.refuse.some((r) => /cream box/i.test(r) || /same interaction/i.test(r))).toBe(true)
   })
 })
 
@@ -106,7 +113,8 @@ describe('the other four EXM7777 catalogs', () => {
 })
 
 describe('publicInstallForbidden', () => {
-  it('flags installing a third-party kit onto the public site', () => {
+  it('allows installing a catalog item, forbids dumping it onto app/ or a novelty kit', () => {
+    expect(publicInstallForbidden('npx shadcn add @beui/morphing-search')).toBe(false)
     expect(publicInstallForbidden('npx shadcn add @beui/tilt-card')).toBe(true)
     expect(publicInstallForbidden('npx shadcn add carousel onto app/listing')).toBe(true)
     expect(publicInstallForbidden('adapt the tab indicator into V3Quiet')).toBe(false)
@@ -134,14 +142,16 @@ describe('the full EXM7777 inventories', () => {
 })
 
 describe('evaluatorBrief', () => {
-  it('tells the judge to use the catalog jobs, not the inventory dump', () => {
+  it('tells the judge to pick from named catalog jobs with demo URLs', () => {
     const brief = evaluatorBrief(loaded, 'listing-detail')
     expect(brief).toMatch(/listing-hero-bleed/)
     expect(brief).toMatch(/Frankenstein/)
-    expect(brief).toMatch(/stacked-section/)
+    expect(brief).toMatch(/same interaction/)
     expect(brief).toMatch(/replaceWith/)
-    expect(brief.length).toBeLessThan(3500)
-    expect(brief).not.toMatch(/https:\/\/beui\.dev\/components\/motion\/tabs/)
+    expect(brief).toMatch(/SEO/)
+    expect(brief).toMatch(/COMPREHENSIVE/)
+    expect(brief.length).toBeLessThan(4500)
+    expect(brief).toMatch(/https:\/\//)
   })
 
   it('accepts a new house primitive as adaptedFrom', () => {
@@ -167,6 +177,7 @@ describe('builderCard', () => {
     expect(md).toMatch(/Open these house files/)
     expect(md).toMatch(/Fetch these catalog jobs/)
     expect(md).toMatch(/adaptedFrom/)
+    expect(md).toMatch(/Comprehensive pass/)
   })
 
   it('CLI prints the builder card, not a JSON dump', () => {
@@ -198,7 +209,7 @@ describe('catalogReceiptProblems', () => {
     expect(
       catalogReceiptProblems(loaded, 'listing-detail', {
         adaptedFrom: [{ id: 'listing-hero-bleed' }],
-        defects: [{ section: '#hero', finding: 'column frame instead of bleed', replaceWith: 'v3-carousel' }],
+        defects: [{ section: '#hero', finding: 'column frame instead of bleed', replaceWith: 'shadcn-carousel' }],
       }),
     ).toEqual([])
     expect(
@@ -207,6 +218,48 @@ describe('catalogReceiptProblems', () => {
         defects: [{ section: '#copy', finding: 'unsourced figure in the fold', replaceWith: null }],
       }),
     ).toEqual([])
+  })
+})
+
+describe('option list is the only legal replaceWith', () => {
+  it('names house modules and catalog jobs the evaluator may pick', () => {
+    const ids = optionListIds(loaded, 'homepage-v6')
+    expect(ids.has('beui-morphing-search')).toBe(true)
+    expect(ids.has('beui-tabs')).toBe(true)
+    expect(ids.has('shadcn-carousel')).toBe(true)
+    expect(ids.has('house-home-rails')).toBe(true)
+    expect(ids.has('V3Pulse')).toBe(false)
+  })
+
+  it('refuses a house primitive that already lost (V3Pulse on home)', () => {
+    const problems = replaceWithOptionProblems(loaded, 'homepage-v6', {
+      defects: [
+        {
+          section: '#hero .v3-stage-band',
+          finding: 'three-cell KPI strip',
+          replaceWith: 'V3Pulse',
+        },
+      ],
+    })
+    expect(problems.some((p) => /V3Pulse/.test(p) && /option list/.test(p))).toBe(true)
+  })
+
+  it('accepts a catalog id from the card, or null for craft', () => {
+    expect(
+      replaceWithOptionProblems(loaded, 'homepage-v6', {
+        defects: [
+          { section: '#hero .v3-morph-search', finding: 'field never morphs', replaceWith: 'beui-morphing-search' },
+          { section: '#hero .source', finding: 'muted cream on navy', replaceWith: null },
+        ],
+      }),
+    ).toEqual([])
+  })
+})
+
+describe('demoStates are the capture the evaluator can actually see', () => {
+  it('prints a search-open spec for homepage so rest shots are not the only record', () => {
+    const specs = demoStateSpecs(loaded, 'homepage-v6')
+    expect(specs.some((s) => /search-open/.test(s) && /click/.test(s))).toBe(true)
   })
 })
 
@@ -226,6 +279,44 @@ describe('layoutLockProblems', () => {
 
   it('passes the committed listing files', () => {
     expect(layoutLockProblems(loaded)).toEqual([])
+  })
+})
+
+describe('catalogInstallProblems', () => {
+  it('resolves shadcn-carousel to the installed ui file', () => {
+    const spec = resolveInstallSpec(loaded.installById, 'shadcn-carousel')
+    expect(spec?.file).toBe('components/ui/carousel.tsx')
+    expect(spec?.import).toBe('@/components/ui/carousel')
+    expect(resolveInstallSpec(loaded.installById, 'shadcn:carousel')?.file).toBe(spec?.file)
+    expect(isHouseAdaptedId('house-atlas')).toBe(true)
+    expect(isHouseAdaptedId('beui-morphing-search')).toBe(false)
+  })
+
+  it('fails a catalog id whose house primitive does not import the installed file', () => {
+    const problems = catalogInstallProblems(loaded, [{ id: 'shadcn-carousel' }], {
+      existsSync: (p) => p === 'components/ui/carousel.tsx' || p === 'components/site/v3/V3Carousel.client.tsx',
+      readFileSync: (p) =>
+        p.endsWith('V3Carousel.client.tsx')
+          ? 'export function V3Carousel() { return null }'
+          : 'export function Carousel() { return null }',
+    })
+    expect(problems.some((p) => /must import/.test(p))).toBe(true)
+  })
+
+  it('passes when the house primitive imports the installed specifier', () => {
+    const problems = catalogInstallProblems(loaded, [{ id: 'shadcn-carousel' }], {
+      existsSync: (p) => p === 'components/ui/carousel.tsx' || p === 'components/site/v3/V3Carousel.client.tsx',
+      readFileSync: (p) =>
+        p.endsWith('V3Carousel.client.tsx')
+          ? "import { Carousel } from '@/components/ui/carousel'\nexport function V3Carousel() { return <Carousel /> }"
+          : 'export function Carousel() { return null }',
+    })
+    expect(problems).toEqual([])
+  })
+
+  it('refuses a catalog name with no install spec', () => {
+    const problems = catalogInstallProblems(loaded, [{ id: 'beautifului-insight' }])
+    expect(problems.some((p) => /no install spec/.test(p))).toBe(true)
   })
 })
 

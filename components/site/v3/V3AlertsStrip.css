@@ -118,6 +118,29 @@
   text-underline-offset: var(--v3-underline-offset);
 }
 
+/* transitions.dev number-pop-in: the settled face lands with a short rise. */
+.v3-alerts__num-pop {
+  display: inline-block;
+  animation: v3-alerts-num-pop var(--v3-dur-enter, 300ms) var(--v3-ease-out) both;
+}
+
+@keyframes v3-alerts-num-pop {
+  from {
+    opacity: 0;
+    transform: translateY(0.35em) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-alerts__num-pop {
+    animation: none;
+  }
+}
+
 .v3-alerts__num-mark {
   display: inline-block;
   width: var(--v3-space-sm);
@@ -194,28 +217,62 @@
 
 .v3-alerts__thumb {
   display: grid;
-  gap: var(--v3-space-3xs);
-  min-width: var(--v3-tap);
+  gap: var(--v3-space-2xs);
+  min-width: 9.5rem;
+  max-width: 11rem;
   color: inherit;
   text-decoration: none;
 }
 
 .v3-alerts__thumb img {
   display: block;
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  height: auto;
   object-fit: cover;
   background: var(--v3-wash);
 }
 
+.v3-alerts__thumb-body {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+/* Price first (inventory), street, then beds/baths/sqft — no mid-word ellipsis. */
+.v3-alerts__thumb-price {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
+}
+
 .v3-alerts__thumb-name {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
+  overflow-wrap: anywhere;
+}
+
+.v3-alerts__thumb-facts {
   font-size: var(--v3-size-source);
   line-height: var(--v3-leading-note);
   color: var(--v3-ink-muted);
-  max-width: 4.5rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Legacy single-line detail (older callers). */
+.v3-alerts__thumb-detail {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
 }
 
 @media (max-width: 39.99rem) {

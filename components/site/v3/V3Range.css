@@ -1,0 +1,151 @@
+/* Dual-thumb range. Tick stops, navy fill, cream track. No bounce.
+   Job from beui-range-slider; paint from tokens.css. */
+
+.v3.v3-range {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  min-width: 0;
+  width: 100%;
+}
+
+.v3-range__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  min-height: 1.1em;
+}
+
+.v3-range__label {
+  margin: 0;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3-range__value {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--v3-ink);
+}
+
+.v3-range__track {
+  position: relative;
+  height: var(--v3-tap);
+  margin: 0 calc(var(--v3-tap) / 2);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.v3-range__track:active {
+  cursor: grabbing;
+}
+
+.v3-range__rail,
+.v3-range__fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 6px;
+  margin-top: -3px;
+  pointer-events: none;
+}
+
+.v3-range__rail {
+  background: var(--v3-wash);
+  box-shadow: inset 0 0 0 1px var(--v3-edge);
+}
+
+.v3-range__fill {
+  background: var(--v3-navy);
+}
+
+.v3-range__ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.v3-range__tick {
+  position: absolute;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: var(--v3-navy);
+  opacity: 0.35;
+}
+
+.v3-range__thumb {
+  position: absolute;
+  top: 50%;
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  margin: calc(var(--v3-tap) / -2) 0 0 calc(var(--v3-tap) / -2);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+}
+
+.v3-range__thumb:active {
+  cursor: grabbing;
+}
+
+.v3-range__thumb::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 18px;
+  margin: -9px 0 0 -1.5px;
+  background: var(--v3-navy);
+  transition: height var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-range__thumb:focus-visible {
+  outline: none;
+}
+
+.v3-range__thumb:focus-visible::after,
+.v3-range__thumb[data-dragging='true']::after {
+  height: 22px;
+  margin-top: -11px;
+  box-shadow: 0 0 0 3px var(--v3-ring, color-mix(in srgb, var(--v3-navy) 22%, transparent));
+}
+
+.v3-range__ends {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3 .v3-range__beui {
+  background: var(--v3-edge);
+  border-radius: var(--v3-radius-control);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-range__thumb::after {
+    transition: none;
+  }
+}

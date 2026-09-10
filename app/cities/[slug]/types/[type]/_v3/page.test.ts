@@ -49,6 +49,23 @@ describe('place-type pages', () => {
     }
   })
 
+  it('puts a V3Carousel rail of photographed listings in the fold (SITE-89)', () => {
+    expect(CITY).toMatch(/<PlaceTypeFilm/)
+    expect(CITY).toMatch(/from '\.\/_v3\/PlaceTypeFilm\.client'/)
+    const film = readFileSync(
+      resolve('app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx'),
+      'utf8',
+    )
+    expect(film).toMatch(/V3Carousel/)
+    expect(film).toMatch(/mode="rail"/)
+    expect(film).toMatch(/LISTING_FIELD_LEAD_PHOTO_SIZE/)
+    expect(film).toMatch(/place-type-film__specs/)
+    expect(film).toMatch(/place-type-film__addr/)
+    expect(film).toMatch(/place-type-film__on-photo/)
+    // Atlas eyebrow softens so H1 is the only type display line
+    expect(CITY).toMatch(/placeTypeAtlasEyebrow\(\s*spec,\s*false,/)
+  })
+
   /**
    * THE BUG THE NODE EXISTS FOR. The Atlas used to be
    * `atlasRegions.length > 0 ? <V3Atlas/> : null`, so a guarded boundary read

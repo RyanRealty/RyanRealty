@@ -605,24 +605,9 @@ function MosaicStill({
   priority?: boolean
   contain?: boolean
 }) {
-  const compact = listingRowPhotoSrc(src)
-  // Do not even compute the 1600 URL during a Flight render: React preloads
-  // image-shaped strings in the client tree. Upgrade only when the hero is
-  // on screen.
-  const [live, setLive] = useState(priority ? preferListingMosaicPhotoUrl(src) : compact)
-  useEffect(() => {
-    if (priority) return
-    const el = document.getElementById('listing-hero-visual')
-    if (!el) return
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio > 0)) {
-        setLive(preferListingMosaicPhotoUrl(src))
-        io.disconnect()
-      }
-    })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [src, priority])
+  // The hero is a full-bleed frame. 320 and 800 Spark plates look pixelated
+  // here (Matt 2026-09-10). Always paint the 1600 mosaic derivative.
+  const live = preferListingMosaicPhotoUrl(src)
   return (
     <Image
       src={live}

@@ -3,8 +3,15 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const PAGE = readFileSync(resolve('app/listing/[listingKey]/page.tsx'), 'utf8')
+const HERO = readFileSync(resolve('components/site/listing-detail/ListingHero.tsx'), 'utf8')
 
 describe('listing remainder composition', () => {
+  it('does not start the listing hero on a 320 Spark thumb', () => {
+    expect(HERO).toContain('preferListingMosaicPhotoUrl')
+    expect(HERO).toMatch(/const live = preferListingMosaicPhotoUrl\(src\)/)
+    expect(PAGE).toContain('LISTING_FIELD_LEAD_PHOTO_SIZE')
+  })
+
   it('states the 13-section house page on the route', () => {
     // 12 became 13 on 2026-09-09 when the MLS public remarks came back as row 5
     // (Matt: "mls descriptions must come back"; CLAUDE.md §2). The count and the

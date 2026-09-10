@@ -50,9 +50,12 @@
  */
 
 import { formatCount } from '@/lib/format/count'
-import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import {
+  LISTING_FIELD_LEAD_PHOTO_SIZE,
+  listingRowPhotoSrc,
+} from '@/lib/listing/row-photo'
 
-export type PlaceAlertsGeoType = 'city' | 'neighborhood'
+export type PlaceAlertsGeoType = 'city' | 'neighborhood' | 'zip'
 
 /**
  * The smallest count that renders as a display numeral. Below it the digit is
@@ -282,22 +285,25 @@ export function placeAlertsSource(input: {
   count: number
   geoType: PlaceAlertsGeoType
   geoSlug: string
+  /** Visitor-facing place name for the disclosure (never the raw metric slug). */
+  placeName?: string
   noun?: PlaceAlertsNoun
   table?: 'market_metric' | 'listing_tile_mv'
 }): string {
-  const unit = input.noun?.many ?? 'houses'
+  const noun = input.noun ?? HOUSES
+  const unit = units(input.count, noun)
+  const where = input.placeName?.trim() || input.geoSlug.replace(/^bend-/, '').replace(/-/g, ' ')
   if (input.table === 'listing_tile_mv') {
     return (
-      `${formatCount(input.count)} ${unit}: live MLS listings (${input.geoType}:${input.geoSlug}), ` +
+      `${formatCount(input.count)} ${unit}: live MLS listings in ${where}, ` +
       `active, on-market date in the last 30 days, Coming Soon excluded. ` +
-      `Not leftoverHudKpis. The alert follows this page's filter.`
+      `The alert follows this page's filter.`
     )
   }
   return (
-    `${formatCount(input.count)} ${unit}: regional MLS through Oregon Data Share, read through the Market Truth ` +
-    `metric layer (stat new_listings_30d, ${input.geoType}:${input.geoSlug}, detached single-family houses whose ` +
-    `on-market date falls in the last 30 days, Coming Soon excluded). The alert follows this page's filter, ` +
-    `which is wider than houses alone.`
+    `${formatCount(input.count)} ${unit}: regional MLS through Oregon Data Share, Market Truth ` +
+    `new listings in the last 30 days for ${where} (detached single-family; Coming Soon excluded). ` +
+    `The alert follows this page's filter, which is wider than houses alone.`
   )
 }
 
@@ -331,10 +337,21 @@ export function placeAlertsCopy(input: PlaceAlertsInput): PlaceAlertsCopy {
             count: n,
             geoType: input.geoType,
             geoSlug: input.geoSlug,
+            placeName: input.placeName,
             noun,
           }),
     stickyLabel: `${input.scopeName} listing alerts`,
   }
+}
+
+export type PlaceAlertListing = {
+  href: string
+  photoSrc: string
+  title: string
+  price?: string | null
+  beds?: number | null
+  baths?: number | null
+  sqft?: number | null
 }
 
 export type PlaceAlertTypeBucket = {
@@ -343,7 +360,7 @@ export type PlaceAlertTypeBucket = {
   noun: PlaceAlertsNoun
   newCount30d: number | null
   source: 'listing_tile_mv' | 'market-truth'
-  listings: readonly { href: string; photoSrc: string; title: string }[]
+  listings: readonly PlaceAlertListing[]
 }
 
 export type PlaceAlertTypeOption = {
@@ -353,7 +370,7 @@ export type PlaceAlertTypeOption = {
   claim: string
   stickyClaim: PlaceAlertsStickyClaim
   source?: string
-  listings: readonly { href: string; photoSrc: string; title: string }[]
+  listings: readonly PlaceAlertListing[]
 }
 
 /**
@@ -410,13 +427,24 @@ export function buildPlaceAlertTypes(input: {
               count: n,
               geoType: input.geoType,
               geoSlug: input.geoSlug,
+              placeName: input.placeName,
               noun: bucket.noun,
               table,
             }),
-      listings: bucket.listings.map((listing) => ({
-        ...listing,
-        photoSrc: listingRowPhotoSrc(listing.photoSrc),
-      })),
+      // When the 30-day count is known, do not show more cards than that count —
+      // three land thumbs under "1 lot came on the market" reads as two answers.
+      listings: bucket.listings
+        .slice(0, n == null ? bucket.listings.length : Math.max(1, Math.min(n, 4)))
+        .map((listing) => ({
+          ...listing,
+          // Caller may already have asked for 800×600; re-assert card size so a
+          // 320 ledger thumb never lands in the alerts figure.
+          photoSrc: listingRowPhotoSrc(listing.photoSrc, LISTING_FIELD_LEAD_PHOTO_SIZE),
+          price: listing.price ?? null,
+          beds: listing.beds ?? null,
+          baths: listing.baths ?? null,
+          sqft: listing.sqft ?? null,
+        })),
     })
   }
   return options

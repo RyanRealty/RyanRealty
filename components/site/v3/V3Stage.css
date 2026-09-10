@@ -447,9 +447,11 @@
     color var(--v3-dur-state) var(--v3-ease-out);
 }
 
-.v3 .v3-stage-strip__door:hover,
-.v3 .v3-stage-strip__door:focus-visible {
-  background: color-mix(in srgb, var(--v3-cream) 8%, transparent);
+.v3 .v3-stage-strip__claim .v3-stage-strip__door:hover,
+.v3 .v3-stage-strip__claim .v3-stage-strip__door:focus-visible {
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .v3 .v3-stage-strip__door:hover .v3-figure__label,

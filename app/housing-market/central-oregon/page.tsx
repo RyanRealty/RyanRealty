@@ -134,8 +134,16 @@ import {
   CLOSED_SALES_TO_YEAR,
   HISTORY_PATH,
   MARKET_CONSEQUENCE,
+  REGION_CITIES_SOURCE,
+  REGION_FOLD_LABEL,
+  REGION_LEAD_FIGURES,
 } from './_v3/region-constants'
-import { buildRegionInstruments, buildRegionLead } from './_v3/region-figures'
+import {
+  buildRegionInstruments,
+  buildRegionLead,
+  buildRegionMosChart,
+  composeRegionLiveTrace,
+} from './_v3/region-figures'
 import {
   buildCityLedger,
   buildClosedLedger,
@@ -143,11 +151,7 @@ import {
   buildGuideRows,
 } from './_v3/region-sections'
 import { buildRegionMedianChart, dropInProgressMonth } from '../_v3/market-charts'
-import {
-  CLOSED_YEAR_LEAD_FIGURES,
-  MARKET_FOLD_LABEL,
-  MARKET_LEAD_FIGURES,
-} from '../_v3/opening'
+import { CLOSED_YEAR_LEAD_FIGURES } from '../_v3/opening'
 import { buildPaceTailFigures, buildSegmentTailFigures } from '../_v3/tail-figures'
 import {
   marketReportDoorLinks,
@@ -228,6 +232,9 @@ export default async function CentralOregonRegionPage() {
     dropInProgressMonth(priceHistory, currentMonthKey),
   )
   const regionChart = buildRegionMedianChart(chartMonths.months, chartMonths.leftoverUsed)
+  const mosChart = buildRegionMosChart(hud, mosText)
+  const openingChart = mosChart ?? regionChart
+  const openingChartSecondary = mosChart ? regionChart : undefined
   // Two market-truth rows feed this section's figures. One stamp only when
   // both rows carry one clock; a mismatch withholds the stamp rather than
   // aging the fresher row (publishInstrumentStamp contract).
@@ -264,43 +271,28 @@ export default async function CentralOregonRegionPage() {
   // buildMarketFaq applies to the same figure (invariant 2), and each section's trace is
   // assembled from the figures that section actually rendered (invariant 3). Split out
   // under ci:file-size-budget's own instruction, alongside the Ledger builders.
-  const region = buildRegionInstruments(hud, mosText, mosRaw)
+  const region = buildRegionInstruments(hud, mosText)
   const lead = buildRegionLead(closedSeries)
   const [firstLeadFigure, ...restLeadFigures] = lead.figures
   // CURATED, NOT DUMPED (SITE-41 round two): this fold used to merge every
   // property-type row, every 12-month pace cell, and every financing/feature/
   // bedroom mix cell into one tail with no sentence — the same KPI-grid tell the
   // 2026-09-09 evaluator named on the annual and city-detail classes. Segment and
-  // pace now come captioned from ../_v3/tail-figures, pace capped at the five cells
-  // a buyer or seller actually asks about. Mix is dropped outright rather than
-  // sentenced — nothing on this page draws it as a chart, and a dozen more
-  // uncaptioned financing/feature/bedroom cells is the wall this fix removes, not
-  // a wall this page should keep with sentences bolted on. publicMixItems still
-  // reaches that data for a future dedicated section.
+  // pace now come captioned from ../_v3/tail-figures, pace capped at the cells
+  // a buyer or seller actually asks about. Mix is fetched and not drawn: the
+  // trace says so when a row came back.
   const extraLive: V3InstrumentFigure[] = [
     ...buildSegmentTailFigures(publicSegments, null),
     ...buildPaceTailFigures(publicPace),
   ]
-  // 2026-08-27 hero-reorder fix (parity.json market-report-region openDefects
-  // item 1): region.live.figures now KEEPS months of supply. This is the
-  // level-1 hero, not the old level-2 "sfr-pulse" section that had to strip it
-  // to avoid a duplicate with the (then-separate) closed-year hero above it.
+  // SITE-88: months of supply is the two-bar drawing (catalog house-mos), not
+  // a 4.9 tile. Lead figures are median list and under contract. The year
+  // overlay rides as chartSecondary when MOS publishes.
   const [firstLiveFigure, ...restLiveFigures] = [...region.live.figures, ...extraLive]
   const liveTrace =
-    region.live.trace +
-    (extraLive.length > 0
-      ? ' A few more figures — other property types for sale, and this region\'s pace over ' +
-        'the last 12 months — publish only when enough recent sales back them up, and the ' +
-        'ones behind the fold below are the ones people ask about most, not the full list ' +
-        'this page tracks.'
-      : '') +
-    // Read but not printed here (SITE-41 round two): financing, feature, and bedroom
-    // mix is fetched for this page's own KPI-grid decision (a dozen more uncaptioned
-    // cells was the wall this round removed, not a wall to keep with sentences bolted
-    // on), so the trace states that honestly rather than staying silent about a read
-    // that returned real data the page chose not to show.
+    composeRegionLiveTrace(region.live.trace, extraLive.length > 0) +
     (publicMixHasRow(publicMix)
-      ? ' Financing, feature, and bedroom mix cells are read for this refresh but not shown on this page.'
+      ? ' Financing, feature, and bedroom mix for this refresh is not shown on this page.'
       : '')
   const [firstPaceFigure, ...restPaceFigures] = region.pace.figures
   const cityLedger = buildCityLedger(citySnapshots, {
@@ -438,9 +430,11 @@ export default async function CentralOregonRegionPage() {
             id="market"
             level={1}
             className="hm-tremor"
-            eyebrow={v3Text('Central Oregon, Oregon')}
+            eyebrow={v3Text('Central Oregon')}
             headline={v3Text(
-              `Region deep dive · Central Oregon${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
+              verdict.kind === 'unknown'
+                ? 'Central Oregon housing market'
+                : `A ${verdict.label}`,
             )}
             figures={[firstLiveFigure, ...restLiveFigures]}
             /* THE OPENING IS A CLAIM AND A DRAWING (SITE-41). foldAfter={0} hid every
@@ -449,14 +443,14 @@ export default async function CentralOregonRegionPage() {
                lead, each with a sentence; the tail keeps every figure behind a summary
                that names what is in it. */
             chartFirst
-            foldAfter={MARKET_LEAD_FIGURES}
-            foldLabel={v3Text(MARKET_FOLD_LABEL)}
+            foldAfter={REGION_LEAD_FIGURES}
+            foldLabel={v3Text(REGION_FOLD_LABEL)}
             source={v3Text(liveTrace)}
-            sourceName={v3Text('Oregon Data Share MLS')}
+            sourceName={v3Text('Oregon Data Share')}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
             asOf={refreshedAt ?? undefined}
-            chart={regionChart}
-            chartSecondary={region.mosChart}
+            chart={openingChart}
+            chartSecondary={openingChartSecondary}
           />
         ) : (
           <V3Quiet
@@ -480,16 +474,9 @@ export default async function CentralOregonRegionPage() {
             eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Cities and towns')}
             rows={[firstCityRow, ...restCityRows]}
-            // The trace covers BOTH populations the row prints (invariant 3). The
-            // count and the median are active single-family inventory; days to
-            // pending is not an attribute of an active listing at all, it is the
-            // median list-to-pending time of single-family homes that CLOSED in the
-            // last 90 days, computed per city by refresh_market_pulse(). The KB tiles
-            // this Ledger replaces printed only the count and the median, so the
-            // inherited source line was never written to cover a pace figure.
-            source={v3Text(
-              'Oregon Data Share, one row per city. Count and median list are active single-family houses; months of supply uses the same figures',
-            )}
+            // The row prints count, months of supply (figure + bar), and median
+            // list as the detail — all from the same live single-family inventory.
+            source={v3Text(REGION_CITIES_SOURCE)}
             updated={cityLedger.stamp ? v3Text(formatDate(cityLedger.stamp)) : undefined}
             action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
             encode="bar"
@@ -567,7 +554,6 @@ export default async function CentralOregonRegionPage() {
             headline={v3Text('The pace of the Central Oregon market')}
             figures={[firstPaceFigure, ...restPaceFigures]}
             source={v3Text(region.pace.trace)}
-            sourceName={v3Text('Oregon Data Share MLS')}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
           />
         ) : null}

@@ -698,21 +698,21 @@
    and the portrait stands on the cream.
    =========================================================================== */
 
-.about-faces:not(.about-faces--compact) .about-faces__item {
+.about-faces:not(.about-faces--compact):not(.about-faces--editorial) .about-faces__item {
   padding: var(--v3-space-sm) 0;
   border: 0;
   background: transparent;
 }
 
 /* 375: the three stack, so the rule runs between them. */
-.about-faces:not(.about-faces--compact) .about-faces__item + .about-faces__item {
+.about-faces:not(.about-faces--compact):not(.about-faces--editorial) .about-faces__item + .about-faces__item {
   border-top: var(--v3-rule-hairline);
 }
 
 @media (min-width: 48rem) {
   /* Columns, not boxes: the grid gap becomes the gutter and the divider is a
      single hairline on the inner edges. */
-  .about-faces:not(.about-faces--compact) .about-faces__item + .about-faces__item {
+  .about-faces:not(.about-faces--compact):not(.about-faces--editorial) .about-faces__item + .about-faces__item {
     padding-left: var(--v3-space-lg);
     border-top: 0;
     border-left: var(--v3-rule-hairline);
@@ -779,7 +779,7 @@
    hand a photo box back to the browser to size — which is the CLS regression
    the roster's own unit test watches for, and which it greps this file for. */
 @media (min-width: 48rem) {
-  .about-faces:not(.about-faces--compact):not(.about-faces--solo):not(.about-faces--portrait)
+  .about-faces:not(.about-faces--compact):not(.about-faces--solo):not(.about-faces--portrait):not(.about-faces--editorial)
     .about-faces__photo-link {
     width: 100%;
     /* A column-wide shelf: the box is as wide as the column and as tall as a
@@ -791,7 +791,235 @@
     border-bottom: var(--v3-rule-hairline);
   }
 
-  .about-faces:not(.about-faces--compact) .about-faces__photo {
+  .about-faces:not(.about-faces--compact):not(.about-faces--editorial) .about-faces__photo {
     object-position: left bottom;
+  }
+}
+
+/* ===========================================================================
+   SITE-74 (2026-09-10). Editorial roster for /team.
+
+   Three identical directory columns were the remaining taste finding after
+   SITE-48: same template, four reach chips, Atlas below the fold. This mount
+   is one conversation-scale principal and two companion rows. Call is the
+   one primary reach; Text / Email / Schedule are text links. shadcn Avatar
+   supplies the fallback; the cutout stays unboxed.
+   =========================================================================== */
+
+.about-faces--editorial {
+  padding-bottom: var(--v3-space-md);
+}
+
+.about-faces--editorial .about-faces__claim {
+  max-width: var(--v3-measure-text);
+}
+
+.about-faces__editorial {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-md);
+}
+
+.about-faces__lead {
+  display: grid;
+  grid-template-columns: var(--v3-card-photo-w) minmax(0, 1fr);
+  gap: var(--v3-space-sm);
+  align-items: end;
+  padding-bottom: var(--v3-space-md);
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.about-faces--editorial .about-faces__lead .about-faces__photo-link {
+  width: var(--v3-card-photo-w);
+  aspect-ratio: 2 / 3;
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.about-faces--editorial .about-faces__lead .about-faces__name {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-heading);
+  white-space: nowrap;
+}
+
+.about-faces--editorial .about-faces__title {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink);
+}
+
+.about-faces__license--credential {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--v3-space-2xs);
+  margin-top: var(--v3-space-3xs);
+  padding-top: var(--v3-space-2xs);
+  border-top: var(--v3-rule-hairline);
+  color: var(--v3-ink);
+  letter-spacing: 0;
+}
+
+.about-faces__license-term {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+}
+
+.about-faces__license-num {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--v3-size-body-sm);
+}
+
+.about-faces--editorial .about-faces__where-summary {
+  display: inline-flex;
+  padding-inline: var(--v3-space-xs);
+  border: var(--v3-rule-hairline);
+  color: var(--v3-ink);
+  text-decoration: none;
+}
+
+.about-faces--editorial .about-faces__where-summary:hover,
+.about-faces--editorial .about-faces__where[open] > .about-faces__where-summary {
+  background: var(--v3-wash);
+}
+
+.about-faces__reach-text {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  padding-inline: var(--v3-space-2xs);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.about-faces__reach-text:hover,
+.about-faces__reach-text:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+.about-faces__reach-text:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.about-faces__companions {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.about-faces__companion {
+  display: grid;
+  grid-template-columns: var(--v3-card-photo-h) minmax(0, 1fr);
+  gap: var(--v3-space-sm);
+  align-items: start;
+  padding-block: var(--v3-space-sm);
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.about-faces__companion:last-child {
+  border-bottom: 0;
+}
+
+.about-faces--editorial .about-faces__companion .about-faces__photo-link {
+  width: var(--v3-card-photo-h);
+  aspect-ratio: 2 / 3;
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.about-faces--editorial .about-faces__companion .about-faces__name {
+  font-size: var(--v3-size-body);
+  white-space: normal;
+}
+
+.about-faces--editorial .about-faces__companion .about-faces__record-value {
+  font-size: var(--v3-size-body);
+  margin-right: var(--v3-space-2xs);
+}
+
+.about-faces__specialty {
+  margin: 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+
+.about-faces--editorial .about-faces__lead .about-faces__reach--call {
+  min-height: calc(var(--v3-tap) + var(--v3-space-2xs));
+  padding-inline: var(--v3-space-sm);
+  font-size: var(--v3-size-body-sm);
+}
+
+.about-faces--editorial .about-faces__reach-row {
+  align-items: center;
+}
+
+.about-faces .about-faces__avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: var(--v3-card-photo-h);
+  overflow: hidden;
+  border-radius: 0;
+  background: transparent;
+}
+
+.about-faces .about-faces__avatar::after {
+  display: none;
+}
+
+.about-faces .about-faces__avatar .about-faces__photo,
+.about-faces .about-faces__avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.about-faces .about-faces__avatar-fallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  background: transparent;
+  color: var(--v3-ink-muted);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+}
+
+@media (min-width: 48rem) {
+  .about-faces__lead {
+    grid-template-columns: calc(var(--v3-card-photo-w) * 1.45) minmax(0, 1fr);
+    align-items: end;
+  }
+
+  .about-faces--editorial .about-faces__lead .about-faces__photo-link {
+    width: 100%;
+  }
+
+  .about-faces__companion {
+    grid-template-columns: var(--v3-card-photo-w) minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .about-faces--editorial .about-faces__companion .about-faces__photo-link {
+    width: var(--v3-card-photo-w);
   }
 }

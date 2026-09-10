@@ -18,7 +18,7 @@
  *
  * Placement: bottom-left of the map canvas. Top-left is the draw toolbar,
  * top-center is Search this area plus the geo-scope chip, and
- * top-right is MapChrome (Map/Satellite + zoom).
+ * top-right is MapChrome (zoom + locate).
  *
  * Style note: JSX conditions read `x === false` rather than `!x` because the
  * brand-voice punctuation gate treats a bare `!` inside a JSX expression as an

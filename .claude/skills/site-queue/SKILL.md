@@ -1,6 +1,6 @@
 ---
 name: site-queue
-description: Run the site queue until it is empty. Pull every eligible SITE node from the work graph, build them in parallel lanes across their page classes, a separate evaluator whose score must rise, the gates, one push and one deploy verify per round, a live check, evidence on each node, then the next round without stopping. Use when Matt says "run loop", "run the loop", "/site-queue", "go", "run the site queue", "keep going until the site is done", "continue as new nodes get entered", or when a /loop firing carries this protocol. "run loop" always means this skill (Matt 2026-09-09); when the queue runs dry it runs the measurer (/growth-loop's ingest half) and seeds the next round from the bottom of the table, and stops only when every public page class clears the finish line. Empty of eligible is not a stop (Matt 2026-09-10).
+description: Run the site queue until it is empty. Pull every eligible SITE node from the work graph, build them in parallel lanes across their page classes. Each lane is comprehensive: SEO must improve, listing/page information must improve, and UX must install real catalog source (shadcn/beUI/etc.) restyled navy/cream with the demo interaction. A separate evaluator whose score must rise AND whose live control must match the chosen demo. Gates, one push and one deploy verify per round, a live check, evidence on each node, then the next round without stopping. Use when Matt says "run loop", "run the loop", "/site-queue", "go", "run the site queue", "keep going until the site is done", "continue as new nodes get entered", or when a /loop firing carries this protocol. "run loop" always means this skill (Matt 2026-09-09); when the queue runs dry it runs the measurer (/growth-loop's ingest half) and seeds the next round from the bottom of the table, and stops only when every public page class clears the finish line. Empty of eligible is not a stop (Matt 2026-09-10).
 ---
 
 # /site-queue — the site is done when this queue is empty
@@ -35,16 +35,30 @@ system, TASTE.md), and `docs/DEVELOPMENT_PROCESS.md`.
   `scripts/seed-site-queue.ts` (idempotent). Matt's rulings behind the items are in
   memory `project_site_conversion_decisions_2026-09-07` and the research artifact
   named there.
-- Every node's `accept` ends with the done rule: the separate evaluator's score for
-  the page class, recorded in the route's `parity.json` `tasteReview`, must rise
-  above its previous mark. A page that still looks bad is a failed item.
-- **Product hold (Matt 2026-09-10).** UI/UX may rise. Honesty, sourced figures
-  (§0), `requiredComponents`, JSON-LD, titles, conversion asks, tap targets, and
-  page payload must hold or improve. A prettier page that drops any of those is
-  not done. `ci:mockup-parity` and `ci:runtime-gates` stay green.
-  `honestyFunction` must not fall vs the prior mark, and omitting it to skip
-  the hold fails. `requiredComponents` cannot shrink vs HEAD; a JSON-LD or
-  conversion-ask role present at HEAD must remain (`ci:taste-canon`).
+- Every node's `accept` ends with the done rule: the lane is comprehensive.
+  It must land **three named increments** plus the taste mark: (1) **SEO
+  improved** — title, JSON-LD, crawlable internal links, and/or payload/LCP
+  better than HEAD, never worse; (2) **information / listing inventory
+  improved** — more of the house on the page (listing cards carry price +
+  address + beds/baths/sqft; listing detail keeps and fills the 13-row
+  contract; place pages keep sourced figures). Summary-only is a fail;
+  (3) **UX improved** — catalog source installed, demo match, navy/cream.
+  The separate evaluator's score must rise above its previous mark **and**
+  the live control must match the chosen catalog demo. A prettier page with
+  no SEO increment and no inventory increment is not done. Rebaseline is not
+  done.
+- **Product hold (Matt 2026-09-10, tightened: improve, do not merely hold).**
+  Priority: SEO, then information / listing inventory, then look / sense /
+  ease of use. All three rise on the same pass. Honesty, sourced figures
+  (§0), `requiredComponents`, JSON-LD, titles, conversion asks, tap targets,
+  and page payload must not fall. `ci:mockup-parity` and `ci:runtime-gates`
+  stay green. `honestyFunction` must not fall vs the prior mark, and omitting
+  it to skip the hold fails. `requiredComponents` cannot shrink vs HEAD; a
+  JSON-LD or conversion-ask role present at HEAD must remain
+  (`ci:taste-canon`). Listing pages keep and enrich the 13-row house contract
+  (bleed hero, PropertySpecs, MLS remarks, schools, payment, Tour/Call/Text).
+  Summarizing those away is SITE-45 and is not a taste pass. Cards and rails
+  that show a house photo without the house facts are an inventory miss.
 - The mark a taste score must rise above is the previous mark **from the same
   instrument** — same `evaluatorModel`, same `rubricVersion`, same `shotsHash`.
   If any of the three differs, the item re-baselines itself (`comparedToPrior:
@@ -277,37 +291,54 @@ counted 17 of 37 item commits (45.9%) as evaluator rework — SITE-09 was 4 of i
 costs a fix. The same defect found after the merge costs a public commit, a
 re-capture of the whole page, and the 869-file unit suite. So the lane, in order:
 
-0. **Lego (EXM7777 — the builder card).** Before composing or replacing a
-   public section, paste this command's output into the lane brief:
+0. **Lego (EXM7777 — the builder card; Matt 2026-09-10: the catalogs are the
+   UX bar).** Before composing or replacing a public section, paste this
+   command's output into the lane brief:
 
    ```bash
    node scripts/lib/taste-catalog.mjs <class> --preflight
    ```
 
-   That is the card: house files to OPEN, ≤8 catalog URLs to FETCH, primitives
-   still missing from the barrel, the layout lock, the refuse list. Do not
-   dump `taste-catalog.json`. Fetch those URLs (beautifului / beui / rareui /
-   transitions / ui.shadcn.com, or the local `components/ui` file when shadcn
-   is already installed). Adapt the JOB into the v3 / listing foundation.
-   **If the job has no house primitive, ADD one to `components/site/v3`**
-   (OPEN pattern set) and export it from the barrel. Growing the barrel is
-   the one design system. Installing beUI/Rare/Beautiful as a second look is
-   Frankenstein. Admin jobs go in `components/admin/v2`. `npx shadcn add` is
-   allowed into `components/ui` for console/account only. Navy, cream, Geist,
-   Amboqia stay. Do not shrink a working full-bleed layout (listing hero:
+   That is the card: house files to OPEN, ≤8 catalog URLs to FETCH **and
+   install**, primitives still missing from the barrel, the layout lock, the
+   refuse list. Do not dump `taste-catalog.json`. Fetch those URLs
+   (beautifului / beui / rareui / transitions / ui.shadcn.com, plus any URL
+   later appended to `catalogUrls`). **Install the source** (`npx shadcn add`
+   / the registry JSON) into `components/ui` or `components/motion`, then wrap
+   it from a v3 primitive that **imports that file**. Restyle to
+   navy/cream/Geist/Amboqia/Iconoir, and **keep the interaction**. If you
+   open the demo and our control, a person must recognize the same object. A
+   cream box with the catalog name is not adapted. `motion/react` on a house
+   wrapper is a beUI dependency, not the component. `ci:catalog-install`
+   fails a named id whose file is missing or whose house primitive does not
+   import it. A comment is not an import. `taste-evaluate` fails a
+   `replaceWith` off the builder-card option list. `take-route-shots`
+   captures class `demoStates` (control open) without `--states`. Rebaseline is not done. A taste
+   score below 70 is not done. **If the job has no house primitive, ADD one to
+   `components/site/v3`** that still matches the demo. Growing the barrel is
+   the one design system. Submoduling a catalog repo or copying Inter/purple
+   onto public pages is Frankenstein. Admin jobs go in `components/admin/v2`.
+   Do not shrink a working full-bleed layout (listing hero:
    `listing-hero-bleed`; `heroInMain` is the SITE-45 shrink and the layout
-   lock fails CI). Record `adaptedFrom` on the receipt. Empty adaptedFrom is
-   inventing a layout — `ci:taste-canon` refuses a new catalog-class score
-   without it. Each evaluator defect names `replaceWith`.
+   lock fails CI). Do not rewrite Spark photos to 320×240 on a card, rail, or
+   hero — that size is the 88×66 ledger thumb. Record `adaptedFrom` on the
+   receipt. Empty adaptedFrom is inventing a layout — `ci:taste-canon`
+   refuses a new catalog-class score without it. Each evaluator defect names
+   `replaceWith` from the card's option list (id + demo URL), not a house
+   primitive that already lost.
 1. Builds, and runs the builder ritual in `design_system/public/TASTE.md` with
    its own eyes on the screenshots.
 2. Captures the shots from its own `next dev` into `ui_kits/<route>/shots/`,
    at 375 and a desktop width, in every state the section has.
 3. Spawns the evaluator: a SEPARATE `Agent` on a DIFFERENT model from the
-   builder, given the shots and the local URL, scoring the same shots THREE
-   times in the one call per the rubric in TASTE.md.
-4. Acts on the named defects, re-captures, and re-scores. Repeat until the
-   median rises above the previous mark from the same instrument.
+   builder, given the shots, the local URL, **and the builder card option
+   list (id + demo URL)**. It diagnoses the job from our shots, picks
+   `replaceWith` from that list, and scores the same shots THREE times in
+   the one call per the rubric in TASTE.md. It does not browse 200
+   components from memory.
+4. Acts on the named defects by installing the picked item, re-captures,
+   and re-scores. Repeat until the median rises above the previous mark
+   from the same instrument **and** the live control matches the demo.
 5. Writes the full receipt into the route's `parity.json` `tasteReview`
    (shape in TASTE.md, "The receipt"): `evaluatorModel`, `builderModel`,
    `rubricVersion`, `shotSpec`, `shotsHash`
@@ -320,10 +351,13 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
    its own branch, and report. The evaluator's remaining findings append to the
    node.
 
-A lane whose score has not risen is not eligible to land. It redoes the work
+A lane whose score has not risen, whose live control does not match the
+chosen demo, or that cannot name an SEO increment and an information /
+listing-inventory increment, is not eligible to land. It redoes the work
 inside the lane; it does not push and ask the orchestrator to sort it out.
-A lane whose taste score rose by dropping honesty, a required section, JSON-LD,
-an ask, tap targets, or payload is also not eligible to land.
+A lane whose taste score rose by dropping honesty, a required section,
+JSON-LD, an ask, tap targets, payload, or listing facts is also not
+eligible to land.
 
 ### 4. Land the round — verify what the lane reported, do not re-score it
 The orchestrator verifies every lane's claims itself (agents overstate). The
@@ -382,15 +416,22 @@ line, and keep building the other lanes.
 ## Do not
 
 - Invent a layout from a taste adjective. Run
-  `node scripts/lib/taste-catalog.mjs <class> --preflight` and adapt the
+  `node scripts/lib/taste-catalog.mjs <class> --preflight` and install the
   printed jobs. Empty `adaptedFrom` fails `ci:taste-canon` on the next score.
-- `npx shadcn add` onto `app/` or `components/site/`. Public paint is v3. Admin
-  interiors are `components/admin/v2`. Product/console may add into `components/ui`.
-  Skipping a catalog job because the barrel has no primitive is a miss — add the primitive.
+- Keep the catalog name and throw away the interaction. Public paint is v3
+  tokens on the **real** control. Admin interiors are `components/admin/v2`.
+  `npx shadcn add` into `components/ui` or `components/motion`, then import
+  that file from a v3 primitive, is the path; `npx shadcn add` onto `app/`
+  is not. Skipping a catalog job because the barrel has no primitive is a
+  miss — add the primitive that still matches the demo. Naming a catalog id
+  without installing and importing it fails `ci:catalog-install`.
 - Shrink a working full-bleed layout to dodge a "looks like Zillow" tell
-  (SITE-45 listing hero).
-- Trade honesty, SEO, LCP/payload, a required section, JSON-LD, or an ask for
-  a prettier fold. UI/UX rises; every other product metric holds or improves.
+  (SITE-45 listing hero), or summarize PropertySpecs / remarks / schools /
+  payment / Tour/Call/Text into "summary info."
+- Trade honesty, SEO, LCP/payload, a required section, JSON-LD, listing
+  facts, or an ask for a prettier fold. SEO, information, and UX all rise
+  on the same pass. A UX-only restyle is not comprehensive and is not done.
+- Serve a 320×240 Spark thumb on a card, rail, or listing hero.
 - Write a new audit, punch list, or plan for the site. Append to a node.
 - Rebuild a page for taste outside a node. A page with no node is not touched.
 - Land a site primitive that only a dev page imports. On 2026-09-08 two items merged

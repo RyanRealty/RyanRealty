@@ -1,6 +1,6 @@
 import type { V3FieldItem } from '@/components/site/v3'
 import type { PriceDrop } from '@/lib/data'
-import { formatPrice, formatPriceCompact } from '@/lib/format/money'
+import { formatPrice } from '@/lib/format/money'
 import { listingTileHref, displaySubdivision } from '@/lib/slug'
 import { listingMlsStreetLine, publishCardAddress } from '@/lib/listing/publish-street-line'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
@@ -14,17 +14,15 @@ export type PriceDropFieldItem = V3FieldItem & {
    * Absent when the row carries no percent — unknown is not zero (§0).
    */
   cutShare?: number
+  /** "was $599K, -8.3%" — kept off the beds/baths line so inventory stays clear. */
+  dropLine?: string
+  /** "3 bd · 2 ba · 1,600 sqft · Old Bend" without the drop clause. */
+  specs?: string
 }
 
 function namedPrice(n: number | null | undefined): string | null {
   if (n == null || !Number.isFinite(n) || n <= 0) return null
   const label = formatPrice(n)
-  return /\$/.test(label) ? label : null
-}
-
-function namedCompact(n: number | null | undefined): string | null {
-  if (n == null || !Number.isFinite(n) || n <= 0) return null
-  const label = formatPriceCompact(n)
   return /\$/.test(label) ? label : null
 }
 
@@ -51,7 +49,8 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
     const priceLabel = namedPrice(drop.listPrice)
     if (!priceLabel) continue
 
-    const was = namedCompact(drop.originalListPrice)
+    // Full ask for "was", not compact — $1.25M → "$1.3M" next to -12.0% fails §0.
+    const was = namedPrice(drop.originalListPrice)
     const pct =
       drop.lastDropPct != null && Number.isFinite(drop.lastDropPct)
         ? `-${drop.lastDropPct.toFixed(1)}%`
@@ -60,13 +59,16 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
       was && pct ? `was ${was}, ${pct}` : pct ? pct : was ? `was ${was}` : null
 
     const subdivision = displaySubdivision(drop.subdivisionName)
-    const specs = [
-      dropLine,
+    const inventory = [
       drop.beds != null ? `${drop.beds} bd` : null,
       drop.baths != null ? `${drop.baths} ba` : null,
       drop.sqft != null ? `${drop.sqft.toLocaleString('en-US')} sqft` : null,
       subdivision,
     ]
+      .filter((part): part is string => part !== null && part !== '')
+      .join(' · ')
+    // Field list / a11y still get one meta line; the rail card splits drop vs specs.
+    const meta = [dropLine, inventory]
       .filter((part): part is string => part !== null && part !== '')
       .join(' · ')
 
@@ -81,7 +83,9 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
       ...(deepest > 0 && drop.lastDropPct != null && Number.isFinite(drop.lastDropPct) && drop.lastDropPct > 0
         ? { cutShare: Math.min(1, drop.lastDropPct / deepest) }
         : {}),
-      ...(specs ? { meta: specs } : {}),
+      ...(dropLine ? { dropLine } : {}),
+      ...(inventory ? { specs: inventory } : {}),
+      ...(meta ? { meta } : {}),
       ...(photoSrc ? { photoSrc: listingRowPhotoSrc(photoSrc) } : {}),
       lat: drop.lat,
       lng: drop.lng,

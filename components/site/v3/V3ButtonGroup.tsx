@@ -8,6 +8,7 @@
  * Server-safe. Callers that need onClick already sit in a client island.
  */
 import type { ReactNode } from 'react'
+import { ButtonGroup } from '@/components/ui/button-group'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS } from './atoms'
 import './tokens.css'
@@ -22,8 +23,11 @@ export type V3ButtonGroupProps = {
 
 export function V3ButtonGroup({ label, children, className }: V3ButtonGroupProps) {
   return (
-    <div className={cn(V3_ROOT_CLASS, 'v3-btn-group', className)} role="group" aria-label={label}>
+    <ButtonGroup
+      className={cn(V3_ROOT_CLASS, 'v3-btn-group', className)}
+      aria-label={label}
+    >
       {children}
-    </div>
+    </ButtonGroup>
   )
 }

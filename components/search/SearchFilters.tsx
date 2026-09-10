@@ -1,9 +1,13 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
-import { navigateQuery, useUrlSearchParams } from '@/lib/search/url-search-params.client'
+import {
+  navigateQuery,
+  readUrlSearchParams,
+  useUrlSearchParams,
+} from '@/lib/search/url-search-params.client'
 import { mergeUrlSearchFilters } from '@/components/search/merge-url-search-filters'
-import { useCallback, useMemo, useState, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { trackEvent } from '@/lib/tracking'
 import { fireFirstPartyEvent } from '@/components/VisitTracker'
 import { buildFilterApplyPayload } from '@/lib/search/search-events'
@@ -44,6 +48,13 @@ import {
   Search01Icon,
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
+import {
+  V3MorphSearch,
+  V3Range,
+  V3_PRICE_STOPS,
+  rangeToUrl,
+  urlToRange,
+} from '@/components/site/v3'
 import { REPORT_CITY_LABELS } from '@/lib/data/geo/report-cities'
 import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/bend-neighborhood-districts'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
@@ -328,6 +339,16 @@ export default function SearchFilters({
   const locationInputRef = useRef<HTMLInputElement>(null)
   const { suggestions, loading: suggestLoading } = useSearchSuggest(locationQuery)
   const suggestItems = flattenSuggestions(suggestions)
+  const morphOpen = locationOpen && (suggestItems.length > 0 || suggestLoading)
+
+  const urlPrice = useMemo(
+    () => urlToRange(initialFilters.minPrice, initialFilters.maxPrice, V3_PRICE_STOPS),
+    [initialFilters.minPrice, initialFilters.maxPrice],
+  )
+  const [draftPrice, setDraftPrice] = useState(urlPrice)
+  useEffect(() => {
+    setDraftPrice(urlPrice)
+  }, [urlPrice])
 
   // Parsed-search confirmation chips (voice + typed natural-language queries)
   const { chips: parsedChips, show: showParsedChips } = useParsedSearchConfirm()
@@ -341,7 +362,10 @@ export default function SearchFilters({
 
   const updateUrl = useCallback(
     (updates: Record<string, string | undefined>) => {
-      const params = new URLSearchParams(searchParams?.toString() ?? '')
+      // Event-time read so a map bbox replace that just published cannot be
+      // overwritten by a closed-over empty query (and the reverse race where
+      // bbox persistence drops a V3Range minPrice — SITE-72).
+      const params = new URLSearchParams(readUrlSearchParams())
       for (const [k, v] of Object.entries(updates)) {
         if (v === undefined || v === '') params.delete(k)
         else params.set(k, v)
@@ -366,7 +390,15 @@ export default function SearchFilters({
       const payload = buildFilterApplyPayload(updates, params)
       if (payload) fireSearchEvent('search_filter_apply', payload)
     },
-    [router, pathname, searchParams, staticShell]
+    [router, pathname, staticShell]
+  )
+
+  const commitPrice = useCallback(
+    (low: number, high: number) => {
+      const next = rangeToUrl(low, high, V3_PRICE_STOPS)
+      updateUrl({ minPrice: next.min, maxPrice: next.max })
+    },
+    [updateUrl],
   )
 
   const setFilter = useCallback(
@@ -558,68 +590,95 @@ export default function SearchFilters({
       <div className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:px-4">
         {/* Row 1 @375: full-width search so mic stays inside the bar. */}
         {hideLocation ? null : (
-        <div className="relative w-full min-w-0 sm:w-64 sm:shrink-0">
-          <div className="srch-panel srch-tap relative min-h-11 flex min-w-0 items-center gap-1.5 px-2 transition focus-within:ring-2 focus-within:ring-primary/30 sm:px-3">
-            <HugeiconsIcon icon={Search01Icon} className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <Input
-              ref={locationInputRef}
-              type="search"
-              placeholder={locationPlaceholder}
-              value={locationQuery}
-              onChange={(e) => {
-                setLocationQuery(e.target.value)
-                setHighlight(-1)
-              }}
-              onFocus={() => setLocationOpen(true)}
-              onBlur={() => setTimeout(() => setLocationOpen(false), 150)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  setLocationOpen(false)
-                  return
-                }
-                if (e.key === 'ArrowDown' && locationOpen && suggestItems.length > 0) {
+        <div className={cn('relative w-full min-w-0 sm:w-64 sm:shrink-0', morphOpen && 'z-40')}>
+          {/* SITE-72: beui-morphing-search + shadcn-command. The field grows
+              into the grouped suggest list on one cream surface. Overlay so
+              the dock does not shove the map. */}
+          <V3MorphSearch
+            className="srch-morph"
+            open={morphOpen}
+            onOpenChange={(next) => setLocationOpen(next)}
+            placeholder={locationPlaceholder}
+            items={suggestItems.map((item) => ({
+              id: item.href,
+              title: item.label,
+              description: item.sublabel,
+              onSelect: () => handleSuggestPick(item),
+            }))}
+            onQueryChange={(next) => {
+              setLocationQuery(next)
+              setHighlight(-1)
+            }}
+            onSelect={(item) => {
+              const picked = suggestItems.find((row) => row.href === item.id)
+              if (picked) handleSuggestPick(picked)
+              else applyNaturalQuery(item.title)
+            }}
+            results={
+              morphOpen ? (
+                <SearchSuggestPanel
+                  items={suggestItems}
+                  loading={suggestLoading}
+                  hasResult={suggestions !== null}
+                  highlight={highlight}
+                  idPrefix="search-filters-suggest"
+                  onPick={handleSuggestPick}
+                  className="srch-command"
+                />
+              ) : null
+            }
+          >
+            <div className="v3-morph-search__field srch-morph__field min-h-11">
+              <HugeiconsIcon icon={Search01Icon} className="srch-morph__mark" aria-hidden />
+              <Input
+                ref={locationInputRef}
+                type="search"
+                placeholder={locationPlaceholder}
+                value={locationQuery}
+                onChange={(e) => {
+                  setLocationQuery(e.target.value)
+                  setHighlight(-1)
+                }}
+                onFocus={() => setLocationOpen(true)}
+                onBlur={() => setTimeout(() => setLocationOpen(false), 150)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setLocationOpen(false)
+                    return
+                  }
+                  if (e.key === 'ArrowDown' && locationOpen && suggestItems.length > 0) {
+                    e.preventDefault()
+                    setHighlight((h) => (h < suggestItems.length - 1 ? h + 1 : 0))
+                    return
+                  }
+                  if (e.key === 'ArrowUp' && locationOpen && suggestItems.length > 0) {
+                    e.preventDefault()
+                    setHighlight((h) => (h > 0 ? h - 1 : suggestItems.length - 1))
+                    return
+                  }
+                  if (e.key !== 'Enter') return
                   e.preventDefault()
-                  setHighlight((h) => (h < suggestItems.length - 1 ? h + 1 : 0))
-                  return
+                  const picked = highlight >= 0 ? suggestItems[highlight] : undefined
+                  if (picked) handleSuggestPick(picked)
+                  else applyNaturalQuery(locationQuery)
+                }}
+                className="srch-suggest h-auto min-w-0 flex-1 border-0 bg-transparent px-0 py-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                aria-label="Search by address, city, community, zip, or broker"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={morphOpen}
+                aria-controls="search-filters-suggest-listbox"
+                aria-activedescendant={
+                  locationOpen && highlight >= 0 ? `search-filters-suggest-item-${highlight}` : undefined
                 }
-                if (e.key === 'ArrowUp' && locationOpen && suggestItems.length > 0) {
-                  e.preventDefault()
-                  setHighlight((h) => (h > 0 ? h - 1 : suggestItems.length - 1))
-                  return
-                }
-                if (e.key !== 'Enter') return
-                e.preventDefault()
-                const picked = highlight >= 0 ? suggestItems[highlight] : undefined
-                if (picked) handleSuggestPick(picked)
-                else applyNaturalQuery(locationQuery)
-              }}
-              className="srch-suggest h-auto min-w-0 flex-1 border-0 bg-transparent px-0 py-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-              aria-label="Search by address, city, community, zip, or broker"
-              role="combobox"
-              aria-expanded={locationOpen && suggestItems.length > 0}
-              aria-controls="search-filters-suggest-listbox"
-              aria-activedescendant={
-                locationOpen && highlight >= 0 ? `search-filters-suggest-item-${highlight}` : undefined
-              }
-            />
-            {/* Speech-to-text lives inside the search bar (Matt 2026-09-07) — not a standalone filter-row mic. */}
-            <VoiceSearchButton
-              onTranscript={applyNaturalQuery}
-              className="srch-mic-inbar size-9 shrink-0 border-0 bg-transparent shadow-none hover:bg-muted/60"
-            />
-          </div>
+              />
+              <VoiceSearchButton
+                onTranscript={applyNaturalQuery}
+                className="srch-mic-inbar size-9 shrink-0 border-0 bg-transparent shadow-none hover:bg-muted/60"
+              />
+            </div>
+          </V3MorphSearch>
           <ParsedSearchNotice chips={parsedChips} className="absolute left-0 right-0 top-full z-50 mt-1" />
-          {locationOpen && (
-            <SearchSuggestPanel
-              items={suggestItems}
-              loading={suggestLoading}
-              hasResult={suggestions !== null}
-              highlight={highlight}
-              idPrefix="search-filters-suggest"
-              onPick={handleSuggestPick}
-              className="srch-pop absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-auto pb-1"
-            />
-          )}
         </div>
         )}
         {/* Row 2 @375: Places chip + Filters + Save. Desktop: same row as search. */}
@@ -982,6 +1041,15 @@ export default function SearchFilters({
         >
           <div className="p-3">
             <p className="srch-label mb-2.5">Price range</p>
+            <V3Range
+              label="Ask"
+              low={draftPrice.low}
+              high={draftPrice.high}
+              stops={V3_PRICE_STOPS}
+              onChange={(low, high) => setDraftPrice({ low, high })}
+              onCommit={commitPrice}
+              className="mb-3"
+            />
             <div className="mb-3 grid grid-cols-2 gap-2">
               <Label className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground">Min price</span>
@@ -1234,6 +1302,19 @@ export default function SearchFilters({
         </div>
       </div>
 
+      {/* SITE-72: price ticks live in the first viewport — the catalog job is
+          a range with stops, not a Price pill that hides the instrument. */}
+      <div className="srch-price-rail px-3 pb-2 sm:px-4">
+        <V3Range
+          label="Price"
+          low={draftPrice.low}
+          high={draftPrice.high}
+          stops={V3_PRICE_STOPS}
+          onChange={(low, high) => setDraftPrice({ low, high })}
+          onCommit={commitPrice}
+        />
+      </div>
+
       {/* Row 3: active filter chips. Row 2's trigger buttons already show the
           same value ("Price: $90M+") in their own label, so on mobile this
           row said the same fact twice before any results even rendered,
@@ -1270,7 +1351,7 @@ export default function SearchFilters({
           stay as real pickers in the top row; this strip shows removable
           applied filters + Clear all. */}
       {hasAnyFilter && (
-        <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto border-t border-border px-3 py-2 no-scrollbar sm:hidden">
+        <div className="flex min-h-11 flex-nowrap items-center gap-1.5 overflow-x-auto border-t border-border px-3 py-2 no-scrollbar sm:hidden">
           {activeStatusLabel && (
             <span className="shrink-0">
               <RegistryFilterChip label={activeStatusLabel} onRemove={() => setFilter('status', undefined)} />

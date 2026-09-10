@@ -209,10 +209,10 @@
   },
   "tasteReview": {
     "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate grok-4.5 evaluator, SITE-43, three scorings of first-viewport plus alerts/MOS-hover captures. Did not read page code.",
-    "evaluatorModel": "grok-4.5",
-    "builderModel": "grok-4.6",
+    "rubricVersion": "v1-2026-09-10",
+    "evaluator": "separate grok-4.6 via npx tsx scripts/taste-evaluate.ts neighborhood --url http://127.0.0.1:3284/cities/bend/awbrey-butte --beat 58 --shots desktop,mobile375,alerts,alerts-toggle,mos-hover only (stale section PNGs excluded). Did not read page code.",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "comparedToPrior": "rebaselined",
     "shotSpec": {
       "routes": [
@@ -224,49 +224,111 @@
       ],
       "states": [
         "default",
-        "alerts"
+        "alerts",
+        "alerts-toggle",
+        "mos-hover"
       ]
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/mobile375.png",
       "alertsDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/alerts-desktop.png",
-      "alertsMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/alerts-mobile375.png"
+      "alertsMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/alerts-mobile375.png",
+      "alertsToggleDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/alerts-toggle-desktop.png",
+      "alertsToggleMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/alerts-toggle-mobile375.png",
+      "mosHoverDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/mos-hover-desktop.png",
+      "mosHoverMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/mos-hover-mobile375.png"
     },
     "scores": [
-      68,
-      66,
-      70
+      57,
+      62,
+      66
     ],
-    "score": 68,
-    "breakdown": {
-      "design": 22,
-      "originality": 19,
-      "interaction": 10,
-      "craft": 12,
-      "honesty": 5
+    "score": 62,
+    "perCriterion": {
+      "design": 21,
+      "originality": 17,
+      "interaction": 9,
+      "craft": 9,
+      "honesty": 6
     },
-    "beats": "Zillow / Compass Awbrey Butte neighborhood pages — wins on live MoS as a two-bar homes-for-sale vs typical-month sales figure with place photo, versus listing grids as the design",
-    "defects": [
+    "criteria": {
+      "designQuality": 21,
+      "originality": 17,
+      "interaction": 9,
+      "craft": 9,
+      "honestyFunction": 6
+    },
+    "honestyFunction": 6,
+    "beats": "Zillow's Awbrey Butte neighborhood page — we win on months of supply drawn as two named bars (48 homes vs 10.3 a month of sales) with an Oregon Data Share date in the opening; we lose on listing-photo scale and on a map you can use before scrolling. Better than a 58/100 sentence-and-form fold, short of 70.",
+    "adaptedFrom": [
       {
-        "section": "place opening",
-        "severity": "taste",
-        "finding": "Composition mirrors the city opening with swapped numerals and a photo — coherent system, little page-specific invention beyond the place name."
+        "id": "beui-number"
       },
       {
-        "section": "#alerts",
-        "severity": "craft",
-        "finding": "The 15 numeral is a door with an underline, but the recent-listing thumbnails sit under a truncated address line that reads as a broken row at 1440."
+        "id": "rareui:animatedcounter"
+      },
+      {
+        "id": "transitions:number-pop-in"
+      },
+      {
+        "id": "V3Number"
+      },
+      {
+        "id": "house-mos"
+      },
+      {
+        "id": "house-alerts"
       }
     ],
-    "rebaselineReason": "evaluatorModel changed from claude-sonnet-5 to grok-4.5 and shotsHash changed because the first viewport now carries the MOS overlay and a recaptured alerts strip. Matt ruled 67 as the mark to beat; this 68 is on a different instrument so comparedToPrior is rebaselined, and 68 is still above that ruled floor.",
+    "defects": [
+      {
+        "section": "#place-mos .v3-mos__caption",
+        "severity": "craft",
+        "finding": "The MOS claim sentence is clipped off the top of the cream overlay on desktop, so the bars have numbers and no readable verdict; hover then shoves the same 48 / 10.3 off the right edge.",
+        "replaceWith": null
+      },
+      {
+        "section": "#place-mos .v3-mos__tip",
+        "severity": "taste",
+        "finding": "MOS hover restates Homes for sale: 48 and A month of sales: 10.3 — the bars already said that — and on 375 the two-bar drawing is replaced by a paragraph. The job is more data (how supply moved), not a second label.",
+        "replaceWith": "beautifului-insight"
+      },
+      {
+        "section": ".place-opening--neighborhood .place-opening__mos",
+        "severity": "craft",
+        "finding": "At 375 the white MOS card covers the hillside and the Bend real estate / homes-for-sale caption, so the page does not open as a drawing with a figure beside alerts; it opens as a form card on a sliver of photo.",
+        "replaceWith": null
+      },
+      {
+        "section": "#alerts .v3-alerts__strip",
+        "severity": "taste",
+        "finding": "New inventory is three ~80px Spark thumbs with streets that wrap or truncate (577 Greyh, 1945 Sun, 3130 Colonial Drive) — postage stamps, not a figure. The live strip is not a catalog demo.",
+        "replaceWith": "hero figure"
+      },
+      {
+        "section": "#alerts land source",
+        "severity": "blocking",
+        "finding": "Land toggle prints 1 lot came on the market and SOURCE 1 lots: live MLS listings (neighborhood:bend-awbrey-butte) while three land cards sit under it. Raw slug in visitor copy; 1 vs 3 inventory counts disagree; 1 lots is broken English.",
+        "replaceWith": null
+      },
+      {
+        "section": "#alerts email vs sticky nav",
+        "severity": "craft",
+        "finding": "On the scrolled desktop land state the navy header clips the email field and Email me each one, so the conversion ask collides with chrome.",
+        "replaceWith": null
+      }
+    ],
+    "rebaselineReason": "evaluatorModel changed from grok-4.5 to grok-4.6, rubricVersion from v1-2026-09-08 to v1-2026-09-10, and shotsHash changed after the SITE-84 fold recapture (compact neighborhood opening, V3Number on alerts/MOS, listing facts + 800x600 thumbs, crawlable opening links). Median 62 is above the table instrument mark 58 on the new instrument; honestyFunction recorded at 6 (prior breakdown honesty was 5).",
     "priorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 65,
-      "evaluatorModel": "claude-sonnet-5",
+      "evaluatedAt": "2026-09-10",
+      "score": 68,
+      "evaluatorModel": "grok-4.5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:3c221f3493224a5591b75120f29089405bb5570f3c6ffb6093ac235dddd95340"
+      "shotsHash": "sha256:e78735440c0f4b1114f8b7d77d044ef572702a3b3b2eedc0f7b8f9e27068290a",
+      "honesty": 5
     },
-    "shotsHash": "sha256:e78735440c0f4b1114f8b7d77d044ef572702a3b3b2eedc0f7b8f9e27068290a"
+    "shotsHash": "sha256:87bddff3cda2588deeb161199e103d94d8fde270d02655993fe6e2486114b052",
+    "notes": "SITE-84 comprehensive pass: SEO title prefers live inventory count ('Awbrey Butte homes for sale · Bend, Oregon') plus crawlable city/homes doors in the opening caption; information adds price + address + beds/baths/sqft on 800×600 alert thumbs; UX installs V3Number (beui-number / rareui / transitions) on the 30-day count and MOS bar values, keeps V3MosBars drawing, and packs MOS + alerts figure + email into the first viewport at 1440 and 375 via place-opening--neighborhood. Do not mark the node done — remaining defects (Land source slug, MOS hover form, thumb scale) stay on the node."
   }
 }

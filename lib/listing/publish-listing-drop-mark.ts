@@ -1,12 +1,9 @@
 /**
- * The price cut as TWO POINTS, not a sentence (site queue SITE-45).
+ * The price cut as two prices the reader can see at rest (Matt 2026-09-10).
  *
- * The taste evaluator's finding on the listing fold (2026-09-08): a 3.4% price
- * cut, a real data point, "rendered as one sentence of plain text with nothing
- * to hover". DATA_GRAPHICS.md's house order for a change between two values is
- * a two-point mark the reader can hover for the date and the percent. This
- * publisher hands the mark its two prices, its date and its percent, and
- * nothing else: no rounding that could disagree with the history rail under it.
+ * SITE-45 drew a 22px slope and hid the reading behind hover. Two values are
+ * not a chart. This publisher still hands from / to / drop / pct / date so the
+ * mark and the history rail cannot name different cuts.
  *
  * Which cut: the NEWEST dated price drop on the published timeline since the
  * home was last listed, the same row publishListingLastDrop reads, so the mark

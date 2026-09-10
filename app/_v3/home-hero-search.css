@@ -34,17 +34,19 @@
 }
 
 .v3 .home-hero-search__live {
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.2em;
   margin: 0 0 var(--v3-space-sm);
+  padding: 0.2em 0.55em;
+  background: var(--v3-ink);
   color: var(--v3-ink-on-navy);
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-body-sm);
   font-weight: var(--v3-weight-medium);
   line-height: var(--v3-leading-control);
-  text-shadow: var(--v3-media-shadow);
+  text-shadow: none;
 }
 
 .v3 .home-hero-search__live-n {

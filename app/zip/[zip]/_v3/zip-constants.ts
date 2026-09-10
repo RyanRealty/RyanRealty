@@ -46,7 +46,7 @@ import {
 import { formatPrice, formatPriceCompact } from '@/lib/format/money'
 import { moneyTicks, monthTicks, yoyClaim } from '@/lib/charts/ticks'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
-import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
 import { publishCardAddress } from '@/lib/listing/publish-street-line'
 
@@ -319,7 +319,9 @@ export function zipFieldItems(tiles: readonly ListingTile[], zip: string): V3Fie
         meta: tileMeta(tile),
         lat: tile.lat,
         lng: tile.lng,
-        ...(photo ? { photoSrc: listingRowPhotoSrc(photo) } : {}),
+        ...(photo
+          ? { photoSrc: listingRowPhotoSrc(photo, LISTING_FIELD_LEAD_PHOTO_SIZE) }
+          : {}),
       }
     })
 }

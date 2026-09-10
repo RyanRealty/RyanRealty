@@ -122,3 +122,82 @@
     transition: none;
   }
 }
+
+/* Installed MorphingSearch is the JS control. Native field stays for no-JS.
+   `--live` is set after hydrate — do not use `@media (scripting: enabled)`;
+   rest shots were capturing the native cream field + Search button while
+   the catalog control stayed `display: none`. */
+.v3 .v3-morph-search__beui {
+  display: none;
+}
+
+/* Native field is the visible control. A second catalog overlay on top of
+   it is how the field vanished ("Find a home" with no box). */
+.v3 .v3-morph-search--live .v3-morph-search__beui {
+  display: none;
+}
+
+.v3 .v3-morph-search--live .v3-morph-search__catalog {
+  width: 100%;
+  max-width: none;
+  height: auto;
+  min-height: var(--v3-tap);
+}
+
+.v3 .v3-morph-search--live .v3-morph-search__catalog button {
+  background: var(--v3-surface) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: var(--v3-radius-control);
+  box-shadow: none !important;
+  border: 2px solid var(--v3-ink);
+}
+
+/* `color` on a bare `button` lives in @layer base so Tailwind utilities keep winning. */
+@layer base {
+  .v3 .v3-morph-search--live .v3-morph-search__catalog button {
+    color: var(--v3-ink);
+  }
+}
+
+.v3 .v3-morph-search--live .v3-morph-search__native {
+  position: relative;
+  width: auto;
+  height: auto;
+  clip: auto;
+  clip-path: none;
+  overflow: visible;
+  margin: 0;
+  padding: 0;
+  white-space: normal;
+}
+
+@media (scripting: none) {
+  .v3 .v3-morph-search__beui {
+    display: none;
+  }
+}
+
+/* Above Places mega (chrome z-index 200). */
+.v3-morph-overlay-root {
+  z-index: 300;
+}
+
+/* Portaled overlay sits on document.body. Same cream field, navy edge, no glass. */
+.v3-morph-overlay-shell {
+  background: var(--v3-surface);
+  border-radius: var(--v3-radius-control);
+  box-shadow: inset 0 0 0 2px var(--v3-ink);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.v3-morph-overlay-dialog {
+  background: var(--v3-surface);
+  border-radius: var(--v3-radius-control);
+  color: var(--v3-ink);
+}
+
+.v3-morph-overlay-split {
+  border-bottom: 1px solid var(--v3-edge);
+}

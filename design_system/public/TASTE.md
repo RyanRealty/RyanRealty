@@ -14,6 +14,22 @@ no page for that place that we won't beat in every single metric." Every rule
 below serves that verdict. A section that is correct, gated, on-token, and dull
 has failed.
 
+**Priority (Matt 2026-09-10).** The loop is comprehensive: all three rise on
+the same pass, they do not merely hold.
+
+1. **SEO improves** — titles, index, JSON-LD, crawlable internal links,
+   payload/LCP. The page is easier to find than HEAD.
+2. **Information / listing inventory improves** — sourced figures, full
+   listing facts, remarks as written. Listing cards show price, address,
+   beds/baths/sqft, not a photo with a heart. Listing detail keeps and
+   fills the 13-row house contract. Summary-only is a fail.
+3. **Look, sense, and ease of use improve** — catalog source installed,
+   demo match, navy/cream.
+
+A catalog control that drops MLS remarks or the bleed hero is not done. A
+cream box named after a catalog demo is not done. A prettier fold with no
+SEO increment and no inventory increment is not done.
+
 ## Why our pages come out generic when the model can clearly do better
 
 Research (2026-09-01, `docs/research/taste-for-agents.md`) and our own history
@@ -287,7 +303,9 @@ The full method is the `dataviz` skill (form → color → validate → marks �
 "The AI doesn't invent criteria; it averages them" (X, 2026-09-01 research,
 `docs/research/taste-for-agents-x.md`). "Make it elegant" transfers nothing.
 
-**Lego, not a skill (Machina @EXM7777, 2026-08-25).** The five catalogs:
+**Lego, not a skill (Machina @EXM7777, 2026-08-25; Matt 2026-09-10: the
+catalogs are the UX bar).** The floor of five, then any URL Matt pastes
+into `catalogUrls` (append-only):
 
 - https://beautifului.dev
 - https://beui.dev
@@ -295,9 +313,18 @@ The full method is the `dataviz` skill (form → color → validate → marks �
 - https://transitions.dev
 - https://ui.shadcn.com
 
-Fetch the list, pick the module, integrate into the foundation we already
-have. Do not generate a layout from an adjective. Do not install any of them
-as a second look — navy, cream, Geist, Amboqia stay. The frozen lists live in
+Fetch the list, **install the source** (`npx shadcn add` / registry URL into
+`components/ui` or `components/motion`), then wrap it from a v3 primitive
+that **imports that file**. Restyle to navy `#102742`, cream `#faf8f4`,
+Geist, Amboqia, Iconoir, and **keep the interaction**. If you open the demo
+and our control, a person must recognize the same object. Do not generate a
+layout from an adjective. Do not submodule their GitHub tree. Do not copy
+Inter, purple, orbs, or agent-chat chrome. Do not keep the catalog name and
+throw away the interaction (homepage `V3MorphSearch` as a labeled cream
+field was that miss). `motion/react` on a house wrapper is not the install.
+`ci:catalog-install` fails a named `adaptedFrom` id whose file is missing
+or whose house primitive does not import it. Rebaseline is not done. A
+score below 70 is not done. The lists live in
 `design_system/public/taste-catalog.json`. A lane starts with:
 
 ```bash
@@ -305,26 +332,39 @@ node scripts/lib/taste-catalog.mjs listing-detail --preflight
 ```
 
 That prints the **builder card**: the layout lock, house files to OPEN, up to
-eight catalog URLs to FETCH, and primitives still missing from the barrel.
-`--preflight` fails if a house file or the layout lock is gone. Fetch those
-URLs. Adapt the JOB into `components/site/v3` / the listing stack. **If the
-job has no house primitive, add one to the v3 barrel** (the pattern set is
-OPEN). That is not Frankenstein — a second kit, a second stylesheet, or a
-catalog palette on a public page is. Admin jobs land in `components/admin/v2`.
-Product/console may `npx shadcn add` into `components/ui` only. Record
+eight catalog URLs to FETCH and install, and primitives still missing from
+the barrel. `--preflight` fails if a house file or the layout lock is gone.
+**If the job has no house primitive, add one to the v3 barrel** that still
+matches the demo (OPEN set). A second kit or catalog palette on a public page
+is Frankenstein. Admin jobs land in `components/admin/v2`. Record
 `adaptedFrom`. Empty `adaptedFrom` is inventing a layout — SITE-45 invented
 "one frame in the column" instead of fetching a carousel into the full-bleed
 hero, and Matt lost the hero, the facts, and the buttons. `ci:taste-canon`
 refuses a new catalog-class receipt without `adaptedFrom`; existing receipts
 sit on a shrink-only baseline until their next score.
 
+**Listing inventory is a hold, same as honesty.** UX may restyle the house
+page. It may not drop or summarize away the 13-row contract: full-bleed
+media, Tour/Call/Text, PropertySpecs, MLS remarks as written
+(`DescriptionBlock`), payment line items, map/Atlas, schools, parks, tax,
+CC&Rs, similar homes, broker. `heroInMain` is the SITE-45 shrink and fails
+the layout lock.
+
+**Photographs.** A Spark `320x240` derivative is the 88×66 ledger thumb.
+Cards, rails, and the listing hero ask the size they draw (`800x600` or the
+1600 mosaic plate). Stretching a thumb across a card is a defect.
+
 The evaluator (`scripts/taste-evaluate.ts` and `scripts/taste-table.mjs`)
 injects `evaluatorBrief(class)` so a node is judged against this catalog, not
-against "clean." A stacked-section page that ignored the catalog is a named
-defect. Each defect names `replaceWith`: a house primitive (`V3Carousel`,
-`V3ButtonGroup`, `V3Sheet`, …) or a catalog module id, or `null` if the
-finding is craft/honesty not form. A catalog load error fails the evaluator
-out loud — it does not swallow and score "clean."
+against "clean." Diagnose the job from our shots, then pick `replaceWith`
+from the short option list (id + demo URL) — not from 200 components, not a
+house primitive that already lost. A stacked-section page that ignored the
+catalog is a named defect. A live control that does not match the chosen demo
+is a named defect even if the score rose. `replaceWith` is `null` only when
+the finding is craft, honesty, or SEO, not form. A catalog load error fails
+the evaluator out loud — it does not swallow and score "clean." Score still
+exists; it cannot override a failed demo match, a dropped required section,
+or a fallen `honestyFunction`.
 
 Before composing a page class, write down three to five references and *what
 specifically works in each*, and design against those sentences. Two stronger

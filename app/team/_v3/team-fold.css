@@ -1,0 +1,106 @@
+/* SITE-74. /team first viewport: faces on the left, coverage Atlas on the
+   right, so the map of where they close is in the fold at 1440. Does not
+   restyle V3Atlas globally — only this route's wrapper. Dock stays below the
+   map so the stage stays tall enough to show the closings. */
+
+.team-fold {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.team-fold .about-faces--editorial {
+  max-width: none;
+}
+
+@media (min-width: 64rem) {
+  .team-fold {
+    grid-template-columns: minmax(0, 38%) minmax(0, 1fr);
+    align-items: stretch;
+    min-height: calc(100svh - var(--v3-chrome-h));
+  }
+
+  /* Head spans the pair so the H1 is not squeezed into the face column. */
+  .team-fold .about-faces--editorial {
+    display: contents;
+  }
+
+  .team-fold .about-faces__head {
+    grid-column: 1 / -1;
+    max-width: none;
+    margin: 0;
+    padding: var(--v3-space-lg) var(--v3-gutter) var(--v3-space-sm);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--v3-space-lg);
+    align-items: end;
+  }
+
+  .team-fold .about-faces__head .about-faces__claim {
+    margin: 0;
+    max-width: var(--v3-measure-text);
+  }
+
+  .team-fold .about-faces__editorial {
+    grid-column: 1;
+    padding: 0 var(--v3-gutter) var(--v3-space-lg);
+  }
+
+  .team-fold .team-fold__atlas {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0;
+    background: transparent;
+    border-left: var(--v3-rule-hairline);
+  }
+
+  .team-fold .team-fold__atlas .v3-atlas__grid {
+    flex: 1;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'head'
+      'body'
+      'dock'
+      'aside';
+    padding: 0 var(--v3-gutter) 0 var(--v3-space-lg);
+  }
+
+  .team-fold .team-fold__atlas .v3-atlas__head {
+    padding-top: var(--v3-space-lg);
+    max-width: none;
+  }
+
+  .team-fold .team-fold__atlas .v3-atlas__body {
+    position: static;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .team-fold .team-fold__atlas .v3-atlas__frame {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    border: 0;
+    border-top: var(--v3-rule-hairline);
+  }
+
+  .team-fold .team-fold__atlas .v3-atlas__stage {
+    flex: 1;
+    min-height: 22rem;
+    max-height: none;
+    height: 100%;
+  }
+
+  .team-fold .team-fold__atlas .v3-atlas__dock,
+  .team-fold .team-fold__atlas .v3-atlas__aside {
+    padding-right: 0;
+    background: transparent;
+  }
+}

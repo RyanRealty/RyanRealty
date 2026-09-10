@@ -84,8 +84,10 @@ describe('the display numeral threshold', () => {
     expect(copy.scopeLine).toBeNull()
     expect(copy.promiseScope).toBe('Bend')
     expect(copy.source).toContain('148 houses')
-    expect(copy.source).toContain('new_listings_30d')
-    expect(copy.source).toContain('city:bend')
+    expect(copy.source).toContain('Bend')
+    expect(copy.source).toContain('Market Truth')
+    expect(copy.source).not.toContain('city:bend')
+    expect(copy.source).not.toContain('new_listings_30d')
     expect(copy.browseLabel).toBe('See the newest Bend listings')
   })
 
@@ -203,11 +205,32 @@ describe('placeAlertsCopy', () => {
     expect(STICKY_NOTE_LITERAL).toMatch(/unsubscribe/i)
   })
 
-  it('the trace names the metric, the row, and the population', () => {
-    const source = placeAlertsSource({ count: 2, geoType: 'neighborhood', geoSlug: 'tetherow' })
+  it('the trace names the count, the place, and the population — never a raw slug', () => {
+    const source = placeAlertsSource({
+      count: 2,
+      geoType: 'neighborhood',
+      geoSlug: 'tetherow',
+      placeName: 'Tetherow',
+    })
     expect(source).toMatch(/^2 houses: /)
-    expect(source).toContain('neighborhood:tetherow')
+    expect(source).toContain('Tetherow')
+    expect(source).not.toContain('neighborhood:tetherow')
     expect(source).toContain('Coming Soon excluded')
+  })
+
+  it('singularizes the unit when the count is one', () => {
+    const source = placeAlertsSource({
+      count: 1,
+      geoType: 'neighborhood',
+      geoSlug: 'bend-awbrey-butte',
+      placeName: 'Awbrey Butte',
+      noun: { one: 'lot', many: 'lots' },
+      table: 'listing_tile_mv',
+    })
+    expect(source).toMatch(/^1 lot: /)
+    expect(source).not.toMatch(/1 lots/)
+    expect(source).toContain('Awbrey Butte')
+    expect(source).not.toContain('neighborhood:bend-awbrey-butte')
   })
 })
 

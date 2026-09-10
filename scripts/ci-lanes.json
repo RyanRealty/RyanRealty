@@ -49,6 +49,7 @@
     "ci:one-design-system",
     "ci:page-purpose",
     "ci:taste-canon",
+    "ci:catalog-install",
     "ci:public-v3",
     "ci:publish-blog-index-list",
     "ci:publish-blog-mos-verdicts",
@@ -1205,6 +1206,16 @@
     "ci:sync-cursor": [
       "lib/sync/**",
       "app/api/cron/**"
+    ],
+    "ci:catalog-install": [
+      "design_system/public/taste-catalog.json",
+      "design_system/ryan-realty/ui_kits/**/parity.json",
+      "components/site/v3/**",
+      "components/ui/**",
+      "components/motion/**",
+      "components.json",
+      "scripts/check-catalog-install.mjs",
+      "scripts/lib/taste-catalog.mjs"
     ],
     "ci:taste-canon": [
       "design_system/public/TASTE.md",

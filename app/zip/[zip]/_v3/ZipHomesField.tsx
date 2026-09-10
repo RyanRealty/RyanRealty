@@ -1,82 +1,160 @@
 /**
- * ZIP inventory Field. PUBLIC_UI.md §3: zip uses the city opening. Field of
- * this ZIP's houses. Count is a caption, never a number hero. Map and list
- * are the same set.
+ * ZIP inventory Field (SITE-73). City grain opening: claim-first sentence,
+ * Atlas drawing beside the MOS figure + alerts sentence, then photographed
+ * listing rows. Count agrees with the market Instrument.
  */
-import { V3Field, V3Heading, V3SourceLine, type V3FieldItem, type V3Text } from '@/components/site/v3'
-import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
-import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
+import type { ReactNode } from 'react'
+import {
+  V3Atlas,
+  V3Field,
+  V3Heading,
+  V3MosBars,
+  V3SourceLine,
+  v3Text,
+  type AtlasDot,
+  type AtlasEvent,
+  type AtlasRegion,
+  type AtlasType,
+  type V3FieldItem,
+  type V3Text,
+} from '@/components/site/v3'
+import type { Basemap } from '@/lib/geo/basemap'
+import type { PlaceMosView } from '@/lib/site/place-mos'
+import { ZipClaim } from './ZipClaim.client'
+import './zip-opening.css'
 
 export function ZipHomesField({
   zip,
+  area,
+  city,
   headline,
+  claimCount,
+  claimNoun,
+  claimHref,
+  cityHref,
+  browseHref,
   fieldItems,
   caption,
   source,
   emptyMessage,
   populationNote,
   boundary,
+  atlas,
+  mos,
+  alerts,
 }: {
   zip: string
-  /**
-   * THE PAGE H1, passed from the route file so it carries the money head
-   * term ("Homes for sale in 97702") instead of the bare ZIP digits. The
-   * market Instrument below is level 2 and carries the market question.
-   */
+  area: string
+  city: string
   headline: V3Text
+  /** Sourced active count shared with the market Instrument. Null omits the claim. */
+  claimCount: number | null
+  claimNoun: string
+  claimHref: string
+  cityHref: string
+  browseHref: string
   fieldItems: V3FieldItem[]
   caption: string | null
   source: string
   emptyMessage: string
-  /**
-   * §0: this list and the market Instrument's "detached homes for sale"
-   * figure are two different populations of the same MLS PropertyType='A'
-   * bucket — this list counts every sub type in it, the Instrument figure is
-   * the single-family-only subset. One sentence connects both counts so a
-   * reader (or a crawler comparing this list's length to the Dataset's
-   * activeCount) never reads the gap as a disagreement.
-   */
   populationNote?: string
   /** Census TIGER ZCTA for this ZIP. Null when the boundary row is missing. */
   boundary?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null
+  atlas: {
+    dots: readonly AtlasDot[]
+    regions: readonly AtlasRegion[]
+    basemap: Basemap | null
+    types: readonly AtlasType[]
+    events: readonly AtlasEvent[]
+    source: string
+    stamp: string
+    incomplete: boolean
+  }
+  mos: PlaceMosView | null
+  /** ZipAlertsSheet mount — figure column beside the Atlas. */
+  alerts: ReactNode
 }) {
-  const pins = fieldMapPins(fieldItems)
-  const missing = fieldItems.length - pins.length
-  const posterSrc = fieldItems.find((item) => item.photoSrc)?.photoSrc
-  const showMap = fieldItems.length > 0 || boundary != null
+  const showAtlas = atlas.dots.length > 0 || (boundary != null && atlas.regions.length > 0)
+
   return (
-    <>
+    <div className="zip-opening">
       <V3Heading level={1} size="field" className="v3-field-place-name">
         {headline}
       </V3Heading>
+
+      {claimCount != null && claimCount > 0 ? (
+        <ZipClaim
+          count={claimCount}
+          zip={zip}
+          area={area}
+          noun={claimNoun}
+          href={claimHref}
+        />
+      ) : null}
+
+      <p className="zip-opening__doors">
+        <a href={cityHref}>{city} real estate</a>
+        {' · '}
+        <a href={browseHref}>{zip} homes for sale</a>
+      </p>
+
+      <div className="zip-opening__stage">
+        {showAtlas ? (
+          <div className="zip-opening__drawing">
+            <V3Atlas
+              id="atlas"
+              headingLevel={2}
+              headline={v3Text(`${zip} on the map`)}
+              headlineTone="eyebrow"
+              /* Inventory count lives in the H1 claim + MOS (same activeCount).
+                 Atlas claimTone inventory would print every property type inside
+                 the ZCTA and disagree with that detached figure. */
+              claimTone="none"
+              claimText="Every listing inside this ZIP's recorded boundary — hover a mark for the home."
+              keyPlacement="head"
+              sourceName="Oregon Data Share"
+              dots={atlas.dots}
+              regions={atlas.regions}
+              basemap={atlas.basemap}
+              types={atlas.types}
+              events={atlas.events}
+              source={atlas.source}
+              stamp={atlas.stamp}
+              incomplete={atlas.incomplete}
+            />
+          </div>
+        ) : null}
+
+        <aside className="zip-opening__figure">
+          {mos ? (
+            <V3MosBars
+              caption={mos.caption}
+              plainLabel={mos.plainLabel}
+              homesName={mos.homesName}
+              homesLabel={mos.homesLabel}
+              homesValue={mos.homesValue}
+              salesName={mos.salesName}
+              salesLabel={mos.salesLabel}
+              salesValue={mos.salesValue}
+              source={mos.source}
+              asOf={mos.asOf}
+              sourceName="Oregon Data Share"
+              tooltip={mos.tooltip}
+            />
+          ) : null}
+          {alerts}
+        </aside>
+      </div>
+
       <V3Field
         id="homes"
         ariaLabel={`Active single-family listings in ${zip}`}
         items={fieldItems}
-        mapSlot={
-          showMap ? (
-            <PlaceFieldMap
-              pins={pins}
-              boundary={boundary ?? undefined}
-              placeName={`ZIP ${zip}`}
-              posterSrc={posterSrc}
-            />
-          ) : undefined
-        }
         mapNote={caption ?? undefined}
-        footNote={
-          missing > 0 && pins.length > 0
-            ? missing === 1
-              ? '1 of these carries no coordinates, so it is listed but not plotted.'
-              : `${missing.toLocaleString('en-US')} of these carry no coordinates, so they are listed but not plotted.`
-            : fieldItems.length > 0 && pins.length === 0
-              ? `No active listing in ${zip} reports coordinates, so this map plots nothing.`
-              : undefined
-        }
         emptyMessage={emptyMessage}
       />
       {fieldItems.length > 0 ? <V3SourceLine source={source} /> : null}
       {populationNote ? <p className="v3-field__note">{populationNote}</p> : null}
-    </>
+    </div>
   )
 }

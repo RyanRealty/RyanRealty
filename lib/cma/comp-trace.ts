@@ -60,10 +60,12 @@ export interface CompExclusionCounts {
   outbuildings: number
   /** Rural: usable ground on one side, rock, slope, or wetland on the other. */
   terrain: number
+  /** A sale whose $/sqft sits outside the subject's own price tier. */
+  price_tier: number
 }
 
 export function emptyExclusions(): CompExclusionCounts {
-  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, crossed_divide: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0, year_quality: 0, acreage_infrastructure: 0, zoning_class: 0, outbuildings: 0, terrain: 0 }
+  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, crossed_divide: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0, year_quality: 0, acreage_infrastructure: 0, zoning_class: 0, outbuildings: 0, terrain: 0, price_tier: 0 }
 }
 
 export function addExclusions(into: CompExclusionCounts, from: CompExclusionCounts): void {
@@ -71,7 +73,7 @@ export function addExclusions(into: CompExclusionCounts, from: CompExclusionCoun
 }
 
 export function totalExclusions(x: CompExclusionCounts): number {
-  return x.product_type + x.bath_count + x.lot_character + x.resort_premium + x.market_area + x.crossed_divide + x.distance + x.duplicate + x.self + x.unusable_row + x.year_quality + x.acreage_infrastructure + x.zoning_class + x.outbuildings + x.terrain
+  return x.product_type + x.bath_count + x.lot_character + x.resort_premium + x.market_area + x.crossed_divide + x.distance + x.duplicate + x.self + x.unusable_row + x.year_quality + x.acreage_infrastructure + x.zoning_class + x.outbuildings + x.terrain + x.price_tier
 }
 
 /** One rung of the ladder, whether it ran or was skipped. */
@@ -97,6 +99,13 @@ export interface CompTierTrace {
 export interface CompSelectionDiagnostics {
   /** Display name of the subject's GIS market area, null when it sits outside every polygon. */
   market_area: string | null
+  /**
+   * The price tier this build graded comps against: the median $/sqft of sales
+   * in the subject's own neighborhood (or within a mile), and how many sales
+   * that median came from. Null when the area could not supply enough sales to
+   * state one, in which case no price cut ran.
+   */
+  price_anchor?: { ppsf: number; n: number } | null
   market_area_resolved: boolean
   /** Acreage subject outside every mapped polygon — the class the rural tiers exist for. */
   rural_acreage: boolean
@@ -155,6 +164,7 @@ const EXCLUSION_LABELS: Record<keyof CompExclusionCounts, string> = {
   zoning_class: 'their zoning class differs (farm or forest land against rural residential)',
   outbuildings: 'their outbuildings differ (a shop, barn, or arena on one side and none on the other)',
   terrain: 'their land differs (usable ground on one side, rock, slope, or wetland on the other)',
+  price_tier: 'their price per square foot sits outside the tier this home\'s own area sells in',
 }
 
 function band(d: CompSelectionDiagnostics): string {

@@ -1,73 +1,208 @@
-/* One photographed Field. V3Field's mosaic + echo list is the defect. */
+/* Opening: H1 + count caption. Photographs open next. */
+.pd-opening.v3 {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-space-md) var(--v3-gutter) var(--v3-space-2xs);
+}
+
+.pd-opening__copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-2xs);
+}
+
+.pd-opening__caption {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+}
+
+.pd-opening__count {
+  color: var(--v3-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.pd-opening__drill {
+  color: var(--v3-ink);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.pd-opening__drill:hover,
+.pd-opening__drill:focus-visible {
+  color: var(--v3-navy);
+}
+
+/* First-viewport fold: photographed rail first, drawing under it. */
+.pd-fold {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-xs);
+  padding-bottom: var(--v3-space-sm);
+}
+
+/* One photographed Field. V3Field's mosaic + echo list is the defect.
+   The Field must keep a real width — a 0px grid column centers orphan cards
+   in empty cream and the fold reads as a blank KPI. */
 .pd-homes-field.v3.v3-field {
-  padding: 0 var(--v3-gutter) var(--v3-space-2xl);
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  padding: 0 0 var(--v3-space-sm);
+  position: relative;
+  z-index: 0;
+  align-self: stretch;
 }
 
 .pd-homes-field.v3.v3-field .v3-field__list {
   display: none;
 }
 
-.pd-homes-field.v3.v3-field .v3-field__frame {
-  grid-template-columns: 1fr;
+.pd-homes-field.v3.v3-field .v3-field__frame,
+.pd-homes-field.v3.v3-field .v3-field__frame--photos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
 }
 
+.pd-homes-field.v3.v3-field .v3-field__col,
 .pd-homes-field.v3.v3-field .v3-field__map,
 .pd-homes-field.v3.v3-field .v3-field__map--photos {
+  width: 100%;
+  min-width: 0;
   aspect-ratio: auto;
   height: auto;
   overflow: visible;
   border: none;
   background: transparent;
+  position: relative;
+  inset: auto;
+  top: auto;
+  /* inline-size contain sizes the map from a 0-width track and orphans the rail. */
+  contain: none;
 }
 
-/* THE PHOTOS ARE IN FLOW. V3Field absolutely fills the only-child of a map slot
-   that is not the --photos variant, because a Maps canvas needs the box. This
-   Field released the box's height above but not that fill, so the list painted
-   out of flow over the sections below it while the section itself took 66px
-   (measured /price-drops at 1440, 2026-09-09). Static is what makes
-   "height: auto" mean anything. */
+/* Photos stay in flow so the Field height matches the rail. */
 .pd-homes-field.v3.v3-field .v3-field__map > :only-child {
   position: static;
   inset: auto;
+  width: 100%;
   height: auto;
 }
 
-/* The drawing above the grid opens the page, so it carries the page's gutter
-   and the space the Field takes below it (SITE-49). */
-.pd-spread.v3 {
-  padding: 0 var(--v3-gutter) var(--v3-space-xl);
+/* V3Carousel rail of this week's cuts (shadcn carousel → house primitive). */
+.pd-cuts-rail.v3.v3-carousel,
+.pd-cuts-rail.v3-carousel--rail {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
-/* FORTY-EIGHT CUTS STACK INTO A TALL PILE. The strip's default lane step is
-   sized for a dozen marks; at this n the track took the whole 900px fold and
-   the first house fell below it — the page would have traded one defect (only
-   a portal card in the fold) for its mirror (only a chart). A tighter lane
-   keeps the distribution's shape and leaves the first card's photograph in
-   view at 1440. The dots keep their own hit box; only the row spacing moves. */
-.pd-spread .v3-drawing__strip {
-  --v3-drawing-lane-step: 0.85rem;
+.pd-cuts-rail.v3-carousel--rail .v3-carousel__viewport {
+  width: 100%;
+  padding-inline: var(--v3-gutter);
 }
 
-/* A THUMB NEEDS ROOM INSIDE A DENSE CLUSTER. At 375 the tight lane packs a
-   column of dots into what reads as one stroke, and the 1.5rem hit boxes then
-   overlap: the nicest thing on the page becomes fiddly to use with a thumb
-   (evaluator, 2026-09-09). The phone gets its lane back — the distribution's
-   shape survives a taller stack, a merged column does not survive a finger. */
-@media (max-width: 47.999rem) {
-  .pd-spread .v3-drawing__strip {
-    /* Over the mark's own 1.5rem box, so two stacked hit areas never overlap. */
-    --v3-drawing-lane-step: 1.65rem;
-  }
+.pd-cuts-rail.v3-carousel--rail .v3-carousel__slide {
+  /* Wide enough that $1,295,000 + 3 bd · 3 ba · sqft stay readable. */
+  flex-basis: min(22rem, 86vw);
+  padding-right: var(--v3-space-md);
 }
 
-/* THE CUT AS A MARK ON THE CARD. A short ink track under the ask, filled to
-   this home's cut as a share of the deepest cut on the page. No colour: a
-   price cut is not an exception, it is the page's subject. */
+.pd-cuts-rail.v3-carousel--rail .v3-carousel__nav {
+  padding-inline: var(--v3-gutter);
+  margin-bottom: var(--v3-space-2xs);
+}
+
+.pd-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  color: var(--v3-ink);
+  text-decoration: none;
+  background: var(--v3-surface);
+  border: var(--v3-rule-hairline);
+}
+
+.pd-card:hover,
+.pd-card:focus-visible {
+  outline: none;
+}
+
+.pd-card:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.pd-card__media {
+  position: relative;
+  display: block;
+  /* Short enough that price + beds/baths/sqft + drawing claim share the 1440 fold. */
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--v3-ink) 8%, transparent);
+}
+
+.pd-card__photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Square badge — matches the register's radius-0 edges (SITE-49 craft). */
+.pd-card__badge {
+  position: absolute;
+  bottom: var(--v3-space-2xs);
+  left: var(--v3-space-2xs);
+  padding: 0.15rem 0.45rem;
+  background: color-mix(in srgb, var(--v3-ink) 78%, transparent);
+  color: var(--v3-ink-on-navy);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  border-radius: 0;
+}
+
+.pd-card__badge--solo {
+  position: static;
+  display: inline-block;
+  margin: var(--v3-space-sm) var(--v3-space-sm) 0;
+}
+
+.pd-card__body {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  padding: var(--v3-space-sm);
+  min-width: 0;
+}
+
 .pd-card__ask {
   display: grid;
   gap: var(--v3-space-3xs);
 }
 
+.pd-card__price {
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-control);
+}
+
+.pd-card__body,
+.pd-card__addr,
+.pd-card__specs,
+.pd-card__drop,
+.pd-card__price {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+/* Cut bar is first-class under the ask. */
 .pd-card__cut {
   display: block;
   height: 3px;
@@ -79,4 +214,92 @@
   display: block;
   height: 100%;
   background: var(--v3-ink);
+}
+
+.pd-card__drop {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-control);
+}
+
+.pd-card__addr {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+  overflow-wrap: anywhere;
+}
+
+.pd-card__specs {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-control);
+}
+
+/* Drawing is the differentiator under the photographed Field. */
+.pd-spread.v3 {
+  padding: 0 var(--v3-gutter) var(--v3-space-sm);
+  position: relative;
+  z-index: 0;
+}
+
+/* Compact the figure so the strip shares the 1440 fold with card facts. */
+.pd-spread .v3-drawing__figure,
+.pd-spread .v3-drawing__figure:first-child {
+  padding-top: 0;
+  padding-bottom: var(--v3-space-2xs);
+}
+
+.pd-spread .v3-drawing__claim {
+  margin-bottom: var(--v3-space-2xs);
+  font-size: var(--v3-size-body-sm);
+}
+
+.pd-spread .v3-drawing__foot {
+  margin-top: var(--v3-space-2xs);
+}
+
+/* Page already prints V3SourceLine — drop the drawing's duplicate foot source. */
+.pd-spread .v3-drawing__source {
+  display: none;
+}
+
+/* Compact strip so the first card + distribution share the 1440 fold. */
+.pd-spread .v3-drawing__strip {
+  --v3-drawing-lane-step: 0.7rem;
+}
+
+.pd-spread .v3-drawing__quiet,
+.pd-spread .v3-drawing__reading.is-idle {
+  display: none;
+}
+
+@media (max-width: 47.999rem) {
+  .pd-spread .v3-drawing__strip {
+    --v3-drawing-lane-step: 1.65rem;
+  }
+
+  .pd-spread .v3-drawing__quiet,
+  .pd-spread .v3-drawing__reading.is-idle {
+    display: block;
+  }
+}
+
+/* Source stays fully inside the measure + gutter at 1440 and 375. */
+main.v3 > details.v3-source.pd-source,
+.pd-source.v3-source {
+  max-inline-size: var(--v3-measure);
+  margin-inline: auto;
+  padding-inline: var(--v3-gutter);
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+
+/* Alerts stay in normal document flow under the fold — never over the rail. */
+main.v3 > .v3.v3-sheet#alerts,
+#alerts.v3.v3-sheet {
+  position: relative;
+  z-index: 0;
+  clear: both;
+  margin-top: var(--v3-space-lg);
 }

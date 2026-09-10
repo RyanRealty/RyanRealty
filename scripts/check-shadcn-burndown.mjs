@@ -1,10 +1,11 @@
 /**
  * G47 — shadcn burn-down ratchet.
  *
- * The kinetic-brutalist (KB) design system replaces shadcn surface-by-surface.
- * This gate counts files on the MIGRATION-TARGET surfaces that import
- * `@/components/ui` and ratchets that count DOWN: a migration removes shadcn
- * imports, never adds. New site work uses KB, not shadcn.
+ * Legacy KB burn-down: counts files on MIGRATION-TARGET surfaces that import
+ * `@/components/ui` and ratchets that count DOWN. Public v3 is no longer in
+ * that set — Matt 2026-09-10: catalogs ARE the UX bar, so a v3 primitive
+ * that wraps installed `components/ui` / `components/motion` source is the
+ * intended path, not a regression.
  *
  * Scope EXCLUDES surfaces that legitimately keep shadcn forever:
  *   - components/ui/**        (shadcn itself)
@@ -50,6 +51,9 @@ const EXCLUDE = [
   // Auth + Google comms door — form primitives (checkbox, input, button)
   // KB does not provide. Same class as account/ and search/.
   'components/auth/',
+  // Catalog install path (Matt 2026-09-10): v3 wraps shadcn/beUI source.
+  'components/site/v3/',
+  'components/motion/',
 ]
 
 function walk(dir, out = []) {

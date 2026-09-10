@@ -135,23 +135,10 @@
   },
   "tasteReview": {
     "evaluatedAt": "2026-09-10",
-    "evaluatorModel": "grok-4.5",
-    "builderModel": "grok-4.6",
-    "rubricVersion": "v1-2026-09-08",
-    "scores": [
-      70,
-      73,
-      68
-    ],
-    "comparedToPrior": "rebaselined",
-    "priorMark": {
-      "evaluatedAt": "2026-09-08",
-      "score": 71,
-      "evaluatorModel": "claude-sonnet-5",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:6b0a53d86235e4679506af6957d7940d18885747928e130ae6d22261d4cbd57a"
-    },
-    "shotsHash": "sha256:5fd77ec5df2a71681749f0247452dfa2333f21111c7d1f301aeeb18dda0e6abb",
+    "evaluator": "separate grok-4.6 evaluator via npx tsx scripts/taste-evaluate.ts sell --url http://127.0.0.1:3185/sell --beat 59; three scorings of one shot set (56 / 62 / 61)",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
+    "rubricVersion": "v1-2026-09-10",
     "shotSpec": {
       "routes": [
         "/sell"
@@ -161,49 +148,85 @@
         375
       ],
       "states": [
-        "top",
-        "our-listings",
-        "answer"
-      ]
+        "default"
+      ],
+      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3185/sell on wt/site-85-sell-20260910"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/sell/shots/sell-1440.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/sell/shots/sell-375.png",
-      "ourListingsDesktop": "design_system/ryan-realty/ui_kits/sell/shots/our-listings-1440.png",
-      "ourListingsMobile375": "design_system/ryan-realty/ui_kits/sell/shots/our-listings-375.png",
-      "answerDesktop": "design_system/ryan-realty/ui_kits/sell/shots/answer-1440.png",
-      "answerMobile375": "design_system/ryan-realty/ui_kits/sell/shots/answer-375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/sell/shots/sell-375.png"
     },
-    "beats": "Redfin Bend home-value / seller funnel: we win on sourced months-of-supply, days-to-contract, and named comps with section-0 traces; we lose on desktop answer composition, where a cream island sits in a dead navy field.",
+    "shotsHash": "sha256:48b4ca0f6b045b04e3ccbfb707e2068817fab565b17e59297dc382c717371936",
+    "scores": [
+      56,
+      62,
+      61
+    ],
+    "score": 61,
+    "criteria": {
+      "designQuality": 19,
+      "originality": 17,
+      "interaction": 8,
+      "craft": 10,
+      "honestyFunction": 7
+    },
+    "beats": "Zillow seller hub (zillow.com/seller-advertise/): this /sell fold wins on Bend-specific MOS two-bar plus a sourced 2,071-close / $760,000 median sentence beside the address ask; it loses on composed product preview and on Redfin type-to-reframe depth.",
+    "adaptedFrom": [
+      { "id": "beui-input" },
+      { "id": "shadcn:input" }
+    ],
     "defects": [
       {
-        "section": ".sell-answer (answer-1440)",
-        "severity": "craft",
-        "finding": "At 1440 the answer body is a ~704px cream island with flat empty navy from roughly x=880 to the right edge, so nearly forty percent of the viewport is unused stage chrome rather than a composed layout."
-      },
-      {
-        "section": "#our-listings source",
-        "severity": "blocking",
-        "finding": "The visible source line reads like a filter clause: active and pending single-family listings where ListOfficeName is Ryan Realty LLC — raw MLS field jargon a visitor should never see."
+        "section": "#bend-market figure row",
+        "severity": "taste",
+        "finding": "After the Stage two-bar already said supply, the Instrument replays median / homes for sale / months of supply as jumbo KPI tiles with jargon labels.",
+        "replaceWith": "horizontal bar"
       },
       {
         "section": "#our-listings",
         "severity": "taste",
-        "finding": "Only two office listings appear in the frame; as brokerage proof the ledger is thin and does not stop the scroll the way a denser, encoded book of homes would."
+        "finding": "Two thumbnail-plus-price rows in a field of cream read as a thin list, not a display of what the office has listed.",
+        "replaceWith": "small multiples"
       },
       {
-        "section": "#our-listings media=photo",
+        "section": "contact / timeframe / success",
         "severity": "taste",
-        "finding": "SITE-61 photos replace the tap-target marks, but the rows still do not reward hover or tap with more data — the photographs are mute decoration on a static ledger."
+        "finding": "After address, Stage is thrown away for a flat navy field and a cream card with no dim or reframe toward the typed street.",
+        "replaceWith": "house-stage"
       },
       {
-        "section": "V3Drawing comps strip",
+        "section": "success sheet",
         "severity": "taste",
-        "finding": "The comparable-closes month strip still withholds the individual sale reading until a mark is engaged, so the first glance is a dotted rule rather than an instant claim."
+        "finding": "Got it. Your home value is on its way is two paragraphs and a phone number with no house, range, or CMA preview after the ask.",
+        "replaceWith": "hero figure"
+      },
+      {
+        "section": "sell:address",
+        "severity": "taste",
+        "finding": "Default shots do not catch the address field error-shake or success check; beui-input was adapted in CSS but the at-rest input still reads as a plain box.",
+        "replaceWith": "beui-input"
+      },
+      {
+        "section": "sticky Value my home bar",
+        "severity": "craft",
+        "finding": "The sticky ask covers listings, the FAQ, and the market section at both widths, so the ask fights the page instead of retiring cleanly.",
+        "replaceWith": null
+      },
+      {
+        "section": "market source line",
+        "severity": "taste",
+        "finding": "The Instrument source line still talks like an engineer about MLS City versus the city-limits polygon instead of a seller.",
+        "replaceWith": null
       }
     ],
-    "score": 70,
-    "evaluator": "separate grok-4.5 evaluator via grok CLI, SITE-61 photo-scale pass, three independent scorings of one shot set (70 / 73 / 68)",
-    "rebaselineReason": "evaluatorModel differs (grok-4.5, not claude-sonnet-5) and shotsHash differs because this pass added our-listings-1440.png and our-listings-375.png to the hashed shot set. Rubric version is unchanged. Not a fall from 71 — a first mark on a different instrument."
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-10",
+      "score": 70,
+      "evaluatorModel": "grok-4.5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:5fd77ec5df2a71681749f0247452dfa2333f21111c7d1f301aeeb18dda0e6abb"
+    },
+    "rebaselineReason": "evaluatorModel (grok-4.6, not grok-4.5), builderModel (grok-4.5, not grok-4.6), rubricVersion (v1-2026-09-10, not v1-2026-09-08), and shotsHash all differ: SITE-85 rebuilt the first viewport as proof + MOS beside the ask and re-captured the default pair under the table instrument (beat 59). Not a fall from the HEAD 70 — a first mark on a different instrument."
   }
 }

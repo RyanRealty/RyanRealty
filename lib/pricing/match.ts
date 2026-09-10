@@ -5,6 +5,7 @@
 
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { communitySlugForSubdivision, isResortCommunity } from '@/lib/cma/resort-guard'
+import { resolvePriceAnchor, sameStreetPeer, type PriceAnchor } from '@/lib/pricing/price-anchor'
 import { bathCountCompatible, distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
@@ -334,6 +335,13 @@ function passesTier(
   tier: PricingTier,
   asOf: string,
   cells: Map<string, SubdivisionCell>,
+  /**
+   * The subject's price tier when its own plat has no cell
+   * (lib/pricing/price-anchor.ts). Without it the $/sqft cut below fails open
+   * on every comp, which is how 23 Benaiah priced a $320/sqft home off a
+   * $579/sqft downtown sale (Matt 2026-09-10).
+   */
+  anchor: PriceAnchor | null = null,
 ): { ok: boolean; miles: number | null } {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return { ok: false, miles: null }
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
@@ -354,6 +362,10 @@ function passesTier(
   // outside it, and both disclose. A subject with no community is unaffected.
   const subjectCommunity = communitySlugForSubdivision(subject.subdivision)
   const saleCommunity = communitySlugForSubdivision(sale.subdivision)
+  // The two rungs allowed outside the community: the boundary exit, and the
+  // starved widening — the last resort that exists so a home gets an answer
+  // instead of nothing, and which says on the document what it reached for.
+  const crossesCommunity = Boolean(tier.crossBoundary) || Boolean(tier.whenStarved)
   if (tier.sameCommunity) {
     if (!subjectCommunity || saleCommunity !== subjectCommunity) return { ok: false, miles: null }
   } else if (tier.likeCommunity) {
@@ -363,9 +375,9 @@ function passesTier(
     if (!saleCommunity || saleCommunity === subjectCommunity || !isResortCommunity(saleCommunity)) {
       return { ok: false, miles: null }
     }
-  } else if (subjectCommunity && saleCommunity !== subjectCommunity && !tier.crossBoundary) {
+  } else if (subjectCommunity && saleCommunity !== subjectCommunity && !crossesCommunity) {
     return { ok: false, miles: null }
-  } else if (!subjectCommunity && saleCommunity && !tier.crossBoundary) {
+  } else if (!subjectCommunity && saleCommunity && !crossesCommunity) {
     // Symmetric: a community sale carries that community's premium, so it does
     // not price an ordinary plat next door either.
     return { ok: false, miles: null }
@@ -463,12 +475,22 @@ function passesTier(
     ) {
       return { ok: false, miles: null }
     }
-    // D12: a sale with no SubdivisionName has no cell, so the check above fails
-    // open and the tier cut cannot see it. Grade it on its own $/sqft instead.
-    // Only when the name is genuinely absent — a NAMED subdivision whose cell is
-    // thin keeps its deliberate fail-open (a four-sale sample is not a market).
-    if (!customPeer && !sale.subdivisionNorm && !comp) {
-      if (!untieredSalePriceTierOk(subj?.medianPpsf ?? null, subj?.n ?? 0, sale.closePpsf, tierRatio)) {
+    // THE SUBJECT ALWAYS HAS A PRICE TIER. When its own plat has no cell — an
+    // MLS record carrying "N/A", or a plat with too few sales — the cut above
+    // compares null to null and passes everything. The anchor is the
+    // neighborhood around the home, or the mile around it, and every comp is
+    // graded on its own $/sqft against it.
+    const subjectPpsf = subj?.medianPpsf ?? anchor?.ppsf ?? null
+    const subjectN = subj?.n ?? anchor?.n ?? 0
+    // The same plan on the same street is this home's tier, whatever a
+    // neighborhood median says (lib/pricing/price-anchor.ts).
+    const ownStreet = sameStreetPeer(
+      { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft },
+      { address: sale.address, city: sale.city, sqft: sale.sqft },
+    )
+    const gradeOnOwnPpsf = !ownStreet && (!comp || !sale.subdivisionNorm || subj == null)
+    if (!customPeer && gradeOnOwnPpsf) {
+      if (!untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)) {
         return { ok: false, miles: null }
       }
     }
@@ -516,6 +538,10 @@ function bracketEligible(
   sale: PricingSale,
   asOf: string,
   wantLarger: boolean,
+  /** Same price tier as the ladder itself applies — the bracket swap used to
+   *  reach into the whole city pool on size alone. */
+  anchor: PriceAnchor | null = null,
+  cells: Map<string, SubdivisionCell> = new Map(),
 ): boolean {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return false
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) return false
@@ -556,6 +582,15 @@ function bracketEligible(
     return false
   }
   if (!glaWithinBand(subject.sqft, sale.sqft, GLA_BRACKET_BAND)) return false
+  // The bracket may not import a different price tier. A swap is a size fix,
+  // not a licence to reach across town.
+  if (!customOrNew) {
+    const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
+    const subjectPpsf = subj?.medianPpsf ?? anchor?.ppsf ?? null
+    const subjectN = subj?.n ?? anchor?.n ?? 0
+    const ratio = subject.marketArea != null ? SAME_NEIGHBORHOOD_TIER_RATIO : undefined
+    if (!untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, ratio)) return false
+  }
   if (wantLarger) return sale.sqft > subject.sqft
   return sale.sqft < subject.sqft
 }
@@ -570,6 +605,8 @@ function bracketGla(
   comps: SelectedPricingComp[],
   pool: PricingSale[],
   asOf: string,
+  anchor: PriceAnchor | null = null,
+  cells: Map<string, SubdivisionCell> = new Map(),
 ): { comps: SelectedPricingComp[]; note: string | null } {
   if (comps.length === 0) return { comps, note: null }
   const allLarger = comps.every((c) => c.sqft > subject.sqft)
@@ -578,7 +615,9 @@ function bracketGla(
 
   const kept = new Set(comps.map((c) => c.listingKey))
   const wantLarger = allSmaller
-  const candidates = pool.filter((sale) => !kept.has(sale.listingKey) && bracketEligible(subject, sale, asOf, wantLarger))
+  const candidates = pool.filter(
+    (sale) => !kept.has(sale.listingKey) && bracketEligible(subject, sale, asOf, wantLarger, anchor, cells),
+  )
   if (candidates.length === 0) return { comps, note: null }
 
   candidates.sort((a, b) => {
@@ -644,6 +683,10 @@ export function walkPricingLadder(
 ): PricingMatchResult {
   const asOf = opts.asOf.slice(0, 10)
   const cells = opts.cells ?? new Map()
+  // The subject's price tier, resolved once. Only consulted where its own plat
+  // cell is missing or thin — a subject WITH a real cell is graded exactly as
+  // before (lib/pricing/price-anchor.ts).
+  const priceAnchor = resolvePriceAnchor(subject, pool)
   const asOfYearForLadder = Number(asOf.slice(0, 4))
   const customLadder = isCustomOrNewSubject(
     {
@@ -730,7 +773,7 @@ export function walkPricingLadder(
     let added = 0
     for (const sale of pool) {
       if (byKey.has(sale.listingKey)) continue
-      const { ok, miles } = passesTier(subject, sale, tier, asOf, cells)
+      const { ok, miles } = passesTier(subject, sale, tier, asOf, cells, priceAnchor)
       if (!ok) continue
       byKey.set(sale.listingKey, toSelected(subject, sale, asOf, tier.name))
       added++
@@ -758,7 +801,7 @@ export function walkPricingLadder(
 
   const ranked = [...byKey.values()].sort((a, b) => similarity(subject, b, asOf) - similarity(subject, a, asOf))
   const sliced = ranked.slice(0, PRICING_MAX_COMPS)
-  const bracketed = bracketGla(subject, sliced, pool, asOf)
+  const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells)
   if (bracketed.note) {
     if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')
     trace.push(bracketed.note)

@@ -1,10 +1,10 @@
 /**
  * /team - broker roster, on the components/site/v3 barrel.
  *
- * PAGE OUTLINE (SITE-48, 2026-09-09): Breadcrumb, AboutFaces (H1 The brokers,
- * one differentiating figure per broker with the places behind a disclosure,
- * Call/Text/Email/Schedule, door to each /team/[slug]), V3Atlas of every
- * closing the three of them have on the MLS, Footer.
+ * PAGE OUTLINE (SITE-74, 2026-09-10): Breadcrumb, then a first-viewport
+ * pair — AboutFaces editorial (H1 The brokers, principal at conversation
+ * scale, companions as rows, one Call each) beside V3Atlas of every closing
+ * the three of them have on the MLS. Footer.
  *
  * WHAT CHANGED AND WHY. The taste table of 2026-09-08 scored this page 39 and
  * named the whole route as its own dullest section: "three identical directory
@@ -59,6 +59,7 @@ import { ATLAS_TYPES } from '@/lib/atlas/build-place-atlas'
 import { formatDate } from '@/lib/format/date'
 import { TEAM_RANK } from './_v3/team-constants'
 import { brokerRosterRecord } from './_v3/broker-roster-record'
+import './_v3/team-fold.css'
 
 export const metadata: Metadata = pageMetadata({
   title: 'Our team · Ryan Realty, Bend Oregon',
@@ -176,28 +177,35 @@ export default async function TeamPage() {
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Team' }]} />
 
-        <AboutFaces
-          people={faces}
-          heading="The brokers"
-          claim="Three licensed Oregon brokers, all of them here. The one you call is the one who works your deal, start to close — and each of them shows what they have actually closed."
-        />
-
-        {dots.length > 0 ? (
-          <V3Atlas
-            id="closings"
-            headingLevel={2}
-            headline={v3Text('Where the brokers have closed')}
-            dots={dots}
-            regions={regionAtlas?.regions ?? []}
-            basemap={basemapForRegions(regionAtlas?.regions ?? [], { dots, fit: 'dots' })}
-            types={atlasTypes}
-            events={[]}
-            source={atlasSource}
-            stamp={atlasStamp}
-            noun={{ one: 'closing', many: 'closings' }}
-            fit="dots"
+        <div className="team-fold">
+          <AboutFaces
+            people={faces}
+            heading="The brokers"
+            size="editorial"
+            claim="Three licensed Oregon brokers, all of them here. The one you call is the one who works your deal, start to close, and each of them shows what they have actually closed."
           />
-        ) : null}
+
+          {dots.length > 0 ? (
+            <V3Atlas
+              id="closings"
+              className="team-fold__atlas"
+              headingLevel={2}
+              headlineTone="eyebrow"
+              keyPlacement="head"
+              headline={v3Text('Where the brokers have closed')}
+              claimText="Every closing a Ryan Realty broker recorded on the MLS that carries a coordinate. The 12-month counts on the faces are a trailing window of that same feed; this map is the full record."
+              dots={dots}
+              regions={regionAtlas?.regions ?? []}
+              basemap={basemapForRegions(regionAtlas?.regions ?? [], { dots, fit: 'dots' })}
+              types={atlasTypes}
+              events={[]}
+              source={atlasSource}
+              stamp={atlasStamp}
+              noun={{ one: 'closing', many: 'closings' }}
+              fit="dots"
+            />
+          ) : null}
+        </div>
       </main>
 
       {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only

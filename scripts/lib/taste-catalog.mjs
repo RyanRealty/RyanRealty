@@ -8,10 +8,13 @@
  *
  * This module is that contract for Ryan Realty: the catalog lives at
  * design_system/public/taste-catalog.json. A lane names the class, gets the
- * BUILDER CARD (house files to open, ≤8 catalog URLs to fetch, primitives
- * still missing from the barrel), and records which one it adapted.
- * Installing the catalog as a second design system is refused. A missing
- * house primitive is a NEW file in the v3 barrel (OPEN set), not a skip.
+ * BUILDER CARD (house files to open, ≤8 catalog URLs to fetch AND install,
+ * primitives still missing from the barrel), and records which one it adapted.
+ * The five sites are the UX bar (Matt 2026-09-10): install the real source,
+ * restyle navy/cream/Geist/Amboqia/Iconoir, keep the interaction. A cream box
+ * with the catalog name is not adapted. catalogUrls is a floor of five, then
+ * any URL Matt pastes. A missing house primitive is a NEW v3 file that still
+ * matches the demo. Submoduling a catalog's demo app is refused.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { isNonEmptyString, isPlainObject } from './taste-receipt.mjs'
@@ -22,7 +25,7 @@ export const BUILDER_FETCH_CAP = 8
 export const CATALOG_PATH = 'design_system/public/taste-catalog.json'
 export const CATALOG_KINDS = Object.freeze(['house', 'admin', 'external'])
 
-/** The five URLs from EXM7777. All must be in catalogUrls. */
+/** Floor of five (EXM7777). catalogUrls may grow; it must never drop these. */
 export const EXM7777_URLS = Object.freeze([
   'https://beautifului.dev',
   'https://beui.dev',
@@ -109,7 +112,10 @@ export function loadTasteCatalog(raw) {
         forbid: isNonEmptyString(c.forbid) ? c.forbid : null,
       })
     }
-    classes[key] = { layoutLock: entry.layoutLock ?? '', modules, primitivesToAdd, layoutLockChecks }
+    const demoStates = Array.isArray(entry.demoStates)
+      ? entry.demoStates.filter((s) => isNonEmptyString(s))
+      : []
+    classes[key] = { layoutLock: entry.layoutLock ?? '', modules, primitivesToAdd, layoutLockChecks, demoStates }
   }
   for (const required of ['listing-detail', 'homepage-v6', 'search', 'sell', 'city']) {
     if (!classes[required]) problems.push(`classes must include "${required}" so a lane has a catalog, not adjectives`)
@@ -177,6 +183,37 @@ export function loadTasteCatalog(raw) {
     if (isNonEmptyString(routeKey) && isNonEmptyString(mapped)) routeClasses[routeKey] = mapped
   }
 
+  const installById = {}
+  const installRaw = isPlainObject(raw.installById) ? raw.installById : {}
+  for (const [id, spec] of Object.entries(installRaw)) {
+    if (!isNonEmptyString(id) || !isPlainObject(spec)) {
+      problems.push(`installById.${id}: not an object`)
+      continue
+    }
+    if (isNonEmptyString(spec.aliasOf)) {
+      installById[id] = { aliasOf: spec.aliasOf }
+      continue
+    }
+    if (!isNonEmptyString(spec.add) || !isNonEmptyString(spec.file) || !isNonEmptyString(spec.import)) {
+      problems.push(`installById.${id}: need add, file, and import`)
+      continue
+    }
+    installById[id] = {
+      add: spec.add,
+      file: spec.file,
+      import: spec.import,
+      house: isNonEmptyString(spec.house) ? spec.house : null,
+    }
+  }
+  if (Object.keys(installById).length > 0) {
+    if (!resolveInstallSpec(installById, 'shadcn-carousel')) {
+      problems.push('installById must include shadcn-carousel (the smoking-gun wrap)')
+    }
+    if (!resolveInstallSpec(installById, 'beui-morphing-search')) {
+      problems.push('installById must include beui-morphing-search')
+    }
+  }
+
   return {
     source: raw.source,
     catalogUrls,
@@ -187,8 +224,85 @@ export function loadTasteCatalog(raw) {
     lists,
     routeClasses,
     shadcn: { docs: shadcnRaw.docs ?? 'https://ui.shadcn.com/docs/components', components: shadcnComponents },
+    installById,
     problems,
   }
+}
+
+/** House ids are files we already own. Catalog ids must resolve through installById. */
+export function isHouseAdaptedId(id) {
+  const s = String(id ?? '')
+  return /^(house-|listing-|V3)/.test(s) || s.startsWith('components/')
+}
+
+export function resolveInstallSpec(installById, id, seen = new Set()) {
+  if (!isNonEmptyString(id) || !isPlainObject(installById)) return null
+  if (seen.has(id)) return null
+  const spec = installById[id]
+  if (!isPlainObject(spec)) return null
+  if (isNonEmptyString(spec.aliasOf)) {
+    seen.add(id)
+    return resolveInstallSpec(installById, spec.aliasOf, seen)
+  }
+  if (!isNonEmptyString(spec.file) || !isNonEmptyString(spec.import)) return null
+  return spec
+}
+
+function fileImportsSpecifier(src, specifier) {
+  const needle = String(specifier ?? '')
+  if (!needle || !src) return false
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(?:^|\\n)\\s*import(?:[\\s\\S]{0,400}?)from\\s+['"]${escaped}['"]`).test(src)
+}
+
+/**
+ * A catalog adaptedFrom id is only real when the installed file exists and
+ * the house primitive (or the scanned route files) imports it. A comment is
+ * not an import. motion/react on a wrapper is not the catalog component.
+ */
+export function catalogInstallProblems(catalog, adaptedFrom, io = {}) {
+  const exists = io.existsSync ?? existsSync
+  const read = io.readFileSync ?? readFileSync
+  const extraFiles = Array.isArray(io.scanFiles) ? io.scanFiles : []
+  const problems = []
+  if (!Array.isArray(adaptedFrom)) return ['adaptedFrom is missing']
+  for (const [i, hit] of adaptedFrom.entries()) {
+    const id = isPlainObject(hit) ? hit.id : hit
+    if (!isNonEmptyString(id) || isHouseAdaptedId(id)) continue
+    const spec = resolveInstallSpec(catalog?.installById, id)
+    if (!spec) {
+      problems.push(
+        `adaptedFrom[${i}] "${id}" has no install spec — npx shadcn add the registry item, record it in installById, and import the file. Do not keep the catalog name on a cream box.`,
+      )
+      continue
+    }
+    if (!exists(spec.file)) {
+      problems.push(`adaptedFrom[${i}] "${id}": ${spec.file} is missing. Run: npx shadcn add ${spec.add}`)
+      continue
+    }
+    const files = spec.house ? [spec.house, ...extraFiles] : extraFiles
+    let found = false
+    for (const rel of files) {
+      if (!exists(rel)) continue
+      let src = ''
+      try {
+        src = String(read(rel, 'utf8') ?? '')
+      } catch {
+        continue
+      }
+      if (fileImportsSpecifier(src, spec.import)) {
+        found = true
+        break
+      }
+    }
+    if (!found) {
+      const where = spec.house || 'the route'
+      problems.push(
+        `adaptedFrom[${i}] "${id}": ${where} must import ${spec.import} from the installed source. A comment is not an import. motion/react on a house wrapper is not the component.`,
+      )
+    }
+  }
+  return problems
 }
 
 export function modulesForClass(catalog, classKey) {
@@ -308,6 +422,7 @@ export function builderCard(catalog, classKey) {
     open,
     fetch,
     add,
+    demoStates: demoStateSpecs(catalog, key),
     refuse: Array.isArray(catalog?.refuse) ? catalog.refuse : [],
   }
 }
@@ -318,7 +433,7 @@ export function formatBuilderCard(card) {
   lines.push('## Open these house files')
   if (card.open.length === 0) lines.push('- (none named)')
   else for (const o of card.open) lines.push(`- ${o.path} — ${o.job}`)
-  lines.push('', '## Fetch these catalog jobs (adapt into the barrel; do not install)')
+  lines.push('', '## Fetch these catalog jobs (install the source; restyle tokens; keep the interaction)')
   if (card.fetch.length === 0) lines.push('- (none named)')
   else for (const f of card.fetch) lines.push(`- ${f.id}: ${f.job}  ${f.url}`)
   if (card.add.length) {
@@ -329,7 +444,16 @@ export function formatBuilderCard(card) {
     lines.push('', '## Refuse')
     for (const r of card.refuse) lines.push(`- ${r}`)
   }
+  lines.push('', '## Comprehensive pass (all three, or not done)')
+  lines.push('- SEO increment: title, JSON-LD, crawlable internal links, and/or payload/LCP better than HEAD.')
+  lines.push('- Information increment: listing cards show price + address + beds/baths/sqft; listing detail keeps the 13-row house contract; sourced figures stay.')
+  lines.push('- UX increment: install the catalog jobs above (`npx shadcn add`); demo match; navy/cream.')
   lines.push('', 'Record adaptedFrom with the ids you used. Empty adaptedFrom is inventing a layout.')
+  lines.push('ci:catalog-install fails a named catalog id whose file is missing or whose house primitive does not import it.')
+  lines.push('Rebaseline is not done. A taste score below 70 is not done.')
+  if (Array.isArray(card.demoStates) && card.demoStates.length) {
+    lines.push(`Demo-match shots (take-route-shots captures these without --states): ${card.demoStates.join('; ')}`)
+  }
   return lines.join('\n')
 }
 
@@ -340,16 +464,68 @@ export function evaluatorBrief(catalog, classKey) {
   const card = builderCard(catalog, classKey)
   const lock = card.layoutLock ? String(card.layoutLock).slice(0, 280) : ''
   const lines = [
-    'CATALOG. Judge whether the page used these jobs. A stacked-section page that ignored them is a defect. Growing v3 with a new primitive is the OPEN set; a second kit is Frankenstein.',
+    'COMPREHENSIVE LOOP: SEO, listing/page information, and UX all rise on the same pass. A prettier page with no SEO increment and no inventory increment is not done. Blocking if a title, JSON-LD, crawlable link, ask, sourced figure, required section, or listing fact is worse than HEAD.',
+    'CATALOG is the UX bar. Diagnose the JOB from our shots, then pick replaceWith from the option list below (id + demo URL). Do not invent a house primitive that already lost. A cream box with the catalog name is a defect — open the demo and our control; a person must recognize the same interaction. Growing v3 with a new primitive that still matches the demo is the OPEN set; a second kit (their Inter/purple/demo app) is Frankenstein.',
   ]
   if (lock) lines.push(`Layout lock: ${lock}`)
   if (card.add.length) lines.push(`House primitives this class owes: ${card.add.join(', ')}.`)
   for (const o of card.open.slice(0, 5)) lines.push(`- ${o.id}: ${o.job}`)
-  for (const f of card.fetch.slice(0, 6)) lines.push(`- ${f.id}: ${f.job}`)
+  for (const f of card.fetch.slice(0, 6)) {
+    lines.push(`- ${f.id}: ${f.job}  ${f.url}`)
+  }
   lines.push(
-    'Each defect names replaceWith: a house primitive or catalog id, or null if the finding is craft/honesty not form. Refuse purple, orbs, gooey, magnetic buttons, agent-chat chrome on public. Navy #102742, cream #faf8f4, Geist, Amboqia stay.',
+    'Each defect names replaceWith from that list, or null if the finding is craft/honesty/SEO not form. Refuse purple, orbs, gooey, magnetic buttons, agent-chat chrome on public, and 320x240 Spark thumbs on a card/hero. Navy #102742, cream #faf8f4, Geist, Amboqia stay.',
   )
   return lines.join('\n')
+}
+
+/** Ids the evaluator may put on replaceWith for this class (card open + fetch + add). */
+export function optionListIds(catalog, classKey) {
+  const ids = new Set()
+  const key = classForRoute(catalog, classKey) || (isNonEmptyString(classKey) ? classKey : '')
+  if (!key) return ids
+  const card = builderCard(catalog, key)
+  for (const o of card.open ?? []) if (o?.id) ids.add(o.id)
+  for (const f of card.fetch ?? []) if (f?.id) ids.add(f.id)
+  for (const a of card.add ?? []) if (a) ids.add(a)
+  for (const m of modulesForClass(catalog, key)) if (m?.id) ids.add(m.id)
+  for (const [id, spec] of Object.entries(catalog?.installById ?? {})) {
+    if (ids.has(id) && spec && isNonEmptyString(spec.aliasOf)) ids.add(spec.aliasOf)
+    if (spec && isNonEmptyString(spec.aliasOf) && ids.has(spec.aliasOf)) ids.add(id)
+  }
+  return ids
+}
+
+/** Capture specs (`name=SEL!click`) the shot tool runs so the evaluator can see the demo. */
+export function demoStateSpecs(catalog, routeKey) {
+  const key = classForRoute(catalog, routeKey) || (isNonEmptyString(routeKey) ? routeKey : '')
+  const list = catalog?.classes?.[key]?.demoStates
+  return Array.isArray(list) ? list.filter((s) => isNonEmptyString(s)) : []
+}
+
+/**
+ * replaceWith must be on the builder-card option list, or null for craft/honesty/SEO.
+ * A house primitive that already lost (V3Pulse on home) is how cream boxes close.
+ */
+export function replaceWithOptionProblems(catalog, classKey, tr) {
+  if (!isPlainObject(tr) || !Array.isArray(tr.defects)) return []
+  const allowed = optionListIds(catalog, classKey)
+  if (allowed.size === 0) return []
+  const p = []
+  for (const [i, d] of tr.defects.entries()) {
+    if (!isPlainObject(d) || !('replaceWith' in d)) continue
+    if (d.replaceWith == null) continue
+    if (!isNonEmptyString(d.replaceWith)) {
+      p.push(`defects[${i}] replaceWith must be a module id or null`)
+      continue
+    }
+    if (!allowed.has(d.replaceWith)) {
+      p.push(
+        `defects[${i}] (${d.section ?? '?'}) replaceWith "${d.replaceWith}" is not on the option list for ${classKey}. Pick an id from the builder card (catalog job or house module), or null if craft/honesty/SEO not form.`,
+      )
+    }
+  }
+  return p
 }
 
 /** A receipt on a catalog class must name the modules it adapted, and each defect names replaceWith. */
@@ -462,11 +638,13 @@ export function adaptedFromProblems(catalog, classKey, adaptedFrom) {
 
 export function publicInstallForbidden(text) {
   const blob = String(text ?? '')
-  // Third-party registries and named novelty kits onto the public tree = Frankenstein.
-  // `npx shadcn add carousel` into components/ui (console/account) is the product path.
-  if (/npx shadcn add\s+@/i.test(blob)) return true
-  if (/npx shadcn add.+(?:app\/|components\/site\/)/i.test(blob)) return true
-  return /(?:^|[^\w])(@beui\/|@rare-ui|magicui|aceternity|fluid-orb|gravity.?letter)/i.test(blob)
+  // Installing source into components/ui or v3, then restyling, is the path.
+  // Writing a catalog onto app/ or as a second public kit is Frankenstein.
+  if (/npx shadcn add.+(?:app\/|components\/site\/(?!v3))/i.test(blob)) return true
+  if (/git submodule.+(beui|rare-ui|beautiful-ui|transitions)/i.test(blob)) return true
+  return /(?:fluid-orb|gravity.?letter|tilt-card|shader-background|cylinder-carousel|magnetic button)/i.test(
+    blob,
+  )
 }
 
 function main() {

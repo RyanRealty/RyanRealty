@@ -8,15 +8,90 @@
     "https://ui.shadcn.com"
   ],
   "catalogUrl": "https://ui.shadcn.com/docs/components",
-  "note": "Machina (@EXM7777): fetch the FULL list, integrate into the existing foundation. Public paint is components/site/v3. A missing job is a NEW barrel primitive (OPEN set), not a skip and not a second kit. Admin jobs land in components/admin/v2. Product/console/account may npx shadcn add into components/ui. Evaluator injects evaluatorBrief so loop nodes are judged against this catalog.",
+  "note": "Matt 2026-09-10: these catalogs ARE the UX bar, not a parts list. catalogUrls is a FLOOR of five and is append-only — paste a new URL and inventory it; the evaluator option list grows. Fetch the source (shadcn add / registry URL), restyle to navy #102742 / cream #faf8f4 / Geist / Amboqia / Iconoir, and wire the REAL interaction. A cream box with the catalog name is not adapted. The loop is comprehensive: SEO, listing/page information, and UX all rise on the same pass. A missing job is a NEW barrel primitive that still matches the demo.",
   "refuse": [
-    "npx shadcn add onto app/ or components/site/",
-    "npm install or shadcn-add beUI / Rare UI / Beautiful UI / Transitions as a second public design system",
-    "Copy their palette, Inter, purple, glass, orbs, or magnetic buttons",
+    "npx shadcn add onto app/ or components/site/ — install into components/ui or components/site/v3, then paint with house tokens",
+    "npm install beUI / Rare UI / Beautiful UI / Transitions as a second public design system (submodule their demo app, Inter, purple)",
+    "Copy their palette, Inter, purple, orbs, magnetic/tilt buttons, or agent-chat chrome onto a listing or place page",
+    "Keep the catalog name and throw away the interaction (V3MorphSearch as a labeled cream field is this miss)",
     "Shrink a working full-bleed layout to dodge a 'looks like Zillow' tell",
-    "Drop PropertySpecs, description, schools, or Tour/Call/Text to make the fold quieter",
-    "Skip a catalog job because the barrel has no primitive yet — ADD the primitive"
+    "Drop or summarize away PropertySpecs, MLS remarks, schools, payment line items, or Tour/Call/Text",
+    "Rewrite Spark listing photos to 320x240 on a card, rail, or hero — 320 is the 88x66 ledger thumb only",
+    "Skip a catalog job because the barrel has no primitive yet — ADD the primitive that still matches the demo",
+    "Treat a score rise or rebaseline as done when the live control and the demo are not the same interaction",
+    "Claim adaptedFrom without the installed file imported by the house primitive (ci:catalog-install). A comment is not an import. motion/react on a house wrapper is a dependency of beUI, not the component.",
+    "Mark a SITE node done on comparedToPrior rebaselined or a taste score below 70"
   ],
+  "installById": {
+    "shadcn-carousel": {
+      "add": "carousel",
+      "file": "components/ui/carousel.tsx",
+      "import": "@/components/ui/carousel",
+      "house": "components/site/v3/V3Carousel.client.tsx"
+    },
+    "shadcn-card": {
+      "add": "card",
+      "file": "components/ui/card.tsx",
+      "import": "@/components/ui/card",
+      "house": "app/_v3/HomeListingRail.client.tsx"
+    },
+    "shadcn:card": { "aliasOf": "shadcn-card" },
+    "shadcn:carousel": { "aliasOf": "shadcn-carousel" },
+    "carousel": { "aliasOf": "shadcn-carousel" },
+    "beui-morphing-search": {
+      "add": "@beui/morphing-search",
+      "file": "components/motion/morphing-search.tsx",
+      "import": "@/components/motion/morphing-search",
+      "house": "components/site/v3/V3MorphSearch.tsx"
+    },
+    "beui:morphing-search": { "aliasOf": "beui-morphing-search" },
+    "morphing-search": { "aliasOf": "beui-morphing-search" },
+    "beui-tabs": {
+      "add": "@beui/tabs",
+      "file": "components/motion/tabs.tsx",
+      "import": "@/components/motion/tabs",
+      "house": "components/site/v3/V3Tabs.tsx"
+    },
+    "beui:tabs": { "aliasOf": "beui-tabs" },
+    "beui:shared-layout-bg": { "aliasOf": "beui-tabs" },
+    "beui-range-slider": {
+      "add": "@beui/range-slider",
+      "file": "components/motion/range-slider.tsx",
+      "import": "@/components/motion/range-slider",
+      "house": "components/site/v3/V3Range.tsx"
+    },
+    "beui:range-slider": { "aliasOf": "beui-range-slider" },
+    "beui-number": {
+      "add": "@beui/number",
+      "file": "components/motion/number.tsx",
+      "import": "@/components/motion/number",
+      "house": "components/site/v3/V3Number.client.tsx"
+    },
+    "beui:number": { "aliasOf": "beui-number" },
+    "rareui:animatedcounter": { "aliasOf": "beui-number" },
+    "transitions:number-pop-in": { "aliasOf": "beui-number" },
+    "shadcn-input": {
+      "add": "input",
+      "file": "components/ui/input.tsx",
+      "import": "@/components/ui/input",
+      "house": "components/site/v3/V3Input.tsx"
+    },
+    "shadcn:input": { "aliasOf": "shadcn-input" },
+    "beui-input": {
+      "add": "@beui/input",
+      "file": "components/motion/input.tsx",
+      "import": "@/components/motion/input",
+      "house": "components/site/v3/V3Input.tsx"
+    },
+    "beui:input": { "aliasOf": "beui-input" },
+    "shadcn-button-group": {
+      "add": "button-group",
+      "file": "components/ui/button-group.tsx",
+      "import": "@/components/ui/button-group",
+      "house": "components/site/v3/V3ButtonGroup.tsx"
+    },
+    "shadcn:button-group": { "aliasOf": "shadcn-button-group" }
+  },
   "catalogs": [
     {
       "id": "beautifului",
@@ -2079,6 +2154,9 @@
       "primitivesToAdd": [
         "V3Carousel"
       ],
+      "demoStates": [
+        "search-open=.v3-morph-search--live [aria-haspopup=dialog]!click"
+      ],
       "modules": [
         {
           "id": "house-home-rails",
@@ -2103,6 +2181,12 @@
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/carousel",
           "job": "Inventory rails. Adapt into V3Carousel, do not paste a second kit."
+        },
+        {
+          "id": "shadcn-card",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/card",
+          "job": "House cards on the rail: price, address, beds/baths/sqft on the installed Card, not a photo with a heart."
         }
       ]
     },

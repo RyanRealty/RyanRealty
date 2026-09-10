@@ -47,12 +47,55 @@ describe('homepage hero search uses the public search stack', () => {
     expect(doorsAt).toBeGreaterThan(railsAt)
   })
 
+  it('morphing search is a field that grows, not a command palette', () => {
+    const morph = readFileSync(resolve('components/motion/morphing-search.tsx'), 'utf8')
+    expect(morph).not.toMatch(/<kbd/)
+    expect(morph).not.toContain('backdrop-blur')
+    expect(morph).not.toContain('No results found')
+    expect(morph).toContain('v3-morph-overlay-shell')
+    expect(morph).toContain('showList')
+    expect(morph).toContain('inline')
+    expect(readFileSync(resolve('components/site/v3/V3MorphSearch.tsx'), 'utf8')).toMatch(/\binline\b/)
+  })
+
   it('adapts catalog modules into house primitives on the hero and rails', () => {
     expect(SEARCH).toContain('V3Tabs')
     expect(SEARCH).toContain('V3MorphSearch')
+    expect(readFileSync(resolve('components/site/v3/V3MorphSearch.tsx'), 'utf8')).toContain(
+      "from '@/components/motion/morphing-search'",
+    )
+    expect(readFileSync(resolve('components/site/v3/V3Tabs.tsx'), 'utf8')).toContain(
+      "from '@/components/motion/tabs'",
+    )
+    expect(readFileSync(resolve('components/site/v3/V3Carousel.client.tsx'), 'utf8')).toContain(
+      "from '@/components/ui/carousel'",
+    )
+    expect(readFileSync(resolve('components/site/v3/V3Number.client.tsx'), 'utf8')).toContain(
+      "from '@/components/motion/number'",
+    )
     expect(RAIL_CLIENT).toContain('V3Carousel')
     expect(RAIL_CLIENT).toContain('mode="rail"')
     expect(RAIL_CLIENT).toContain('V3Number')
+    expect(RAIL_CLIENT).toContain("from '@/components/ui/card'")
+    expect(RAIL_CLIENT).toContain('CardContent')
+  })
+
+  it('keeps the native search field visible when JS is on', () => {
+    const css = readFileSync(resolve('components/site/v3/V3MorphSearch.css'), 'utf8')
+    expect(css).toMatch(/v3-morph-search--live \.v3-morph-search__native/)
+    expect(css).toMatch(/clip:\s*auto/)
+    expect(css).toMatch(/v3-morph-search--live \.v3-morph-search__beui[\s\S]{0,80}display:\s*none/)
+  })
+
+  it('paints the ask on the rail photograph', () => {
+    expect(RAIL_CLIENT).toContain('home-rail__on-photo')
+    expect(RAIL_CLIENT).toContain('home-rail__on-photo-price')
+  })
+
+  it('hero suggestions are places and houses, not blog posts', () => {
+    expect(SEARCH).toContain("item.kind === 'address'")
+    expect(SEARCH).toContain("item.kind === 'city'")
+    expect(SEARCH).not.toMatch(/kind === 'page'/)
   })
 
   it('reuses SearchSuggest and searchHrefForQuery', () => {
@@ -66,8 +109,8 @@ describe('homepage hero search uses the public search stack', () => {
   })
 
   it('wires Buy | Sell tabs on the hero (Buy = search, Sell = Value my home)', () => {
-    expect(SEARCH).toMatch(/>\s*Buy\s*</)
-    expect(SEARCH).toMatch(/>\s*Sell\s*</)
+    expect(SEARCH).toMatch(/label:\s*'Buy'/)
+    expect(SEARCH).toMatch(/label:\s*'Sell'/)
     expect(SEARCH).toContain('Value my home')
     expect(SEARCH).toContain('valuationHref')
     expect(SEARCH).toContain('Value your home')
@@ -275,6 +318,7 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PAGE).toContain('enrichHomeRailRows')
     expect(RAIL_CLIENT).toContain('ListingTourOverlay')
     expect(RAIL_CLIENT).toContain('SPLIT_CARD_MEDIA_SIZES_RAIL')
+    expect(RAIL_ITEMS).toContain('LISTING_FIELD_LEAD_PHOTO_SIZE')
     expect(PLACES).not.toMatch(/v3-quiet__/)
     expect(PAGE).toMatch(/Talk to a broker/)
     expect(PAGE).toMatch(/Buy a home/)

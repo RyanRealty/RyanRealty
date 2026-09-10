@@ -1,14 +1,12 @@
 'use client'
 
 /**
- * Animated whole-number figure. Adapted from Rare UI animatedcounter + beUI
- * number: count-up on first paint, then the formatted string. Tokens inherit;
- * no second palette. Respects prefers-reduced-motion (prints final value).
- *
- * The caller still owns §0: pass the live count and its already-formatted
- * display string so the number on screen matches the source trace.
+ * Animated whole-number figure. Wraps the installed beUI number
+ * (`components/motion/number.tsx`). The caller still owns §0: pass the live
+ * count and its already-formatted display string so the settled face matches
+ * the source trace.
  */
-import { useEffect, useRef, useState } from 'react'
+import { AnimatedNumber } from '@/components/motion/number'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS } from './atoms'
 import './tokens.css'
@@ -24,43 +22,18 @@ export type V3NumberProps = {
   className?: string
 }
 
-function easeOut(t: number): number {
-  return 1 - Math.pow(1 - t, 3)
-}
-
 export function V3Number({ value, formatted, durationMs = 900, className }: V3NumberProps) {
-  const safe = Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0
-  const [face, setFace] = useState(formatted)
-  const started = useRef(false)
-
-  useEffect(() => {
-    if (started.current) {
-      setFace(formatted)
-      return
-    }
-    started.current = true
-    if (typeof window === 'undefined') return
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reduce || safe <= 0 || durationMs <= 0) {
-      setFace(formatted)
-      return
-    }
-    const start = performance.now()
-    let frame = 0
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / durationMs)
-      const current = Math.round(easeOut(t) * safe)
-      setFace(current.toLocaleString('en-US'))
-      if (t < 1) frame = requestAnimationFrame(tick)
-      else setFace(formatted)
-    }
-    frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
-  }, [safe, formatted, durationMs])
-
+  const safe = Number.isFinite(value) ? Math.max(0, value) : 0
   return (
-    <span className={cn(V3_ROOT_CLASS, 'v3-number', className)} data-slot="v3-number">
-      {face}
-    </span>
+    <AnimatedNumber
+      value={safe}
+      duration={Math.max(0, durationMs) / 1000}
+      format={(n) => {
+        if (Math.round(n) === Math.round(safe)) return formatted
+        return Math.round(n).toLocaleString('en-US')
+      }}
+      className={cn(V3_ROOT_CLASS, 'v3-number', className)}
+      startOnView
+    />
   )
 }

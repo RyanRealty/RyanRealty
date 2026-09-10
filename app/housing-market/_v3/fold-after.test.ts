@@ -34,7 +34,9 @@ describe('market instruments open on a claim and a drawing', () => {
       ['annual review', annual],
     ] as const) {
       expect(src, name).toMatch(/chartFirst/)
-      expect(src, name).toMatch(/foldAfter=\{(MARKET_LEAD_FIGURES|CLOSED_LEAD_FIGURES)\}/)
+      expect(src, name).toMatch(
+        /foldAfter=\{(MARKET_LEAD_FIGURES|CLOSED_LEAD_FIGURES|REGION_LEAD_FIGURES)\}/,
+      )
       expect(src, name).not.toMatch(/foldAfter=\{0\}/)
     }
   })
