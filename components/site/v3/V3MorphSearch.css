@@ -138,7 +138,8 @@
 .v3 .v3-morph-search--live .v3-morph-search__catalog {
   width: 100%;
   max-width: none;
-  height: var(--v3-tap);
+  height: auto;
+  min-height: var(--v3-tap);
 }
 
 .v3 .v3-morph-search--live .v3-morph-search__catalog button {

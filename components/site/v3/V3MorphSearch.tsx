@@ -73,6 +73,7 @@ export function V3MorphSearch({
             onQueryChange={onQueryChange}
             onSelect={onSelect}
             shortcut=""
+            inline
             emptyMessage="No places match that."
             className="v3-morph-search__catalog"
           />

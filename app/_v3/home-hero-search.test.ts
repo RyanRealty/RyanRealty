@@ -54,6 +54,8 @@ describe('homepage hero search uses the public search stack', () => {
     expect(morph).not.toContain('No results found')
     expect(morph).toContain('v3-morph-overlay-shell')
     expect(morph).toContain('showList')
+    expect(morph).toContain('inline')
+    expect(readFileSync(resolve('components/site/v3/V3MorphSearch.tsx'), 'utf8')).toMatch(/\binline\b/)
   })
 
   it('adapts catalog modules into house primitives on the hero and rails', () => {

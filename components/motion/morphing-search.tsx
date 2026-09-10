@@ -60,6 +60,8 @@ export interface MorphingSearchProps {
 	onOpenChange?: (open: boolean) => void;
 	onQueryChange?: (query: string) => void;
 	onSelect?: (item: MorphingSearchItem) => void;
+	/** In-flow field that grows. Homepage search cannot use a fixed portal. */
+	inline?: boolean;
 	className?: string;
 }
 
@@ -90,6 +92,7 @@ export function MorphingSearch({
 	onOpenChange,
 	onQueryChange,
 	onSelect,
+	inline = false,
 	className,
 }: MorphingSearchProps) {
 	const [internalOpen, setInternalOpen] = useState(defaultOpen);
@@ -349,6 +352,81 @@ export function MorphingSearch({
 	const listboxId = `${uid}-results`;
 	const panelWidth = anchorRect.width;
 	const showList = query.trim().length > 0 || filteredItems.length > 0;
+	if (inline) {
+		return (
+			<div ref={anchorRef} className={cn("relative w-full", className)}>
+				<div className="v3-morph-overlay-shell v3-morph-overlay-dialog relative w-full overflow-hidden">
+					<div
+						className={cn(
+							"flex min-h-12 items-center gap-2.5 px-3.5",
+							showList && "v3-morph-overlay-split",
+						)}
+					>
+						<Search className="size-4 shrink-0 text-muted-foreground" />
+						<input
+							ref={inputRef}
+							value={query}
+							onChange={(event) => updateQuery(event.target.value)}
+							onFocus={() => setOpen(true)}
+							role="combobox"
+							aria-label={placeholder}
+							aria-expanded={showList}
+							aria-controls={showList ? listboxId : undefined}
+							aria-autocomplete="list"
+							placeholder={placeholder}
+							className="h-12 min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+						/>
+					</div>
+					{showList ? (
+						<div
+							ref={listRef}
+							id={listboxId}
+							role="listbox"
+							aria-label="Search results"
+							className="max-h-72 overflow-y-auto p-2"
+						>
+							{filteredItems.length > 0 ? (
+								filteredItems.map((item, index) => {
+									const Icon = item.icon;
+									const active = index === activeIndex;
+									return (
+										<button
+											key={item.id}
+											id={`${uid}-option-${index}`}
+											type="button"
+											role="option"
+											aria-selected={active}
+											onMouseMove={() => moveTo(item.id)}
+											onClick={() => selectItem(item)}
+											className="relative flex w-full items-center gap-2.5 rounded-none px-3 py-2.5 text-left outline-none"
+										>
+											{Icon ? (
+												<Icon className="relative size-4 shrink-0 text-muted-foreground" />
+											) : null}
+											<span className="relative min-w-0">
+												<span className="block truncate text-sm font-medium text-foreground">
+													{item.title}
+												</span>
+												{item.description ? (
+													<span className="block truncate text-xs text-muted-foreground">
+														{item.description}
+													</span>
+												) : null}
+											</span>
+										</button>
+									);
+								})
+							) : query.trim() ? (
+								<p className="px-3 py-3 text-sm text-muted-foreground">
+									{emptyMessage}
+								</p>
+							) : null}
+						</div>
+					) : null}
+				</div>
+			</div>
+		);
+	}
 	const resultsHeight = !showList
 		? 0
 		: filteredItems.length > 0
