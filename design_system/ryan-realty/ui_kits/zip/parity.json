@@ -81,10 +81,10 @@
     "V3SectionTracker",
     "V3Breadcrumb",
     "ZipHomesField (Field)",
+    "ZipAlertsSheet (Sheet, figure beside Atlas in the opening)",
     "V3Instrument (market, level 1) or V3Quiet when no figure is live",
     "V3Ledger (neighborhoods in this ZIP)",
     "V3PlacePropertyTypes (Instrument, one per property type)",
-    "ZipAlertsSheet (Sheet)",
     "V3Ledger (other ZIP codes)",
     "ZipSellSheet (Sheet)",
     "V3Footer, outside <main>"
