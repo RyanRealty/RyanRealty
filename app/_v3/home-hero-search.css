@@ -75,16 +75,43 @@
   margin: 0 0 var(--v3-space-sm);
 }
 
+/* THE SELECTED TAB CARRIES ITS OWN GROUND. The navy under this label is drawn
+   by .v3-tabs__indicator, an absolutely-positioned sibling at z-index 0 that
+   slides on transform. A human reads cream on navy and it is legible — but no
+   contrast checker can resolve a z-stacked background, so ci:a11y measured this
+   label against .v3-tabs__list's cream and reported 1:1.
+
+   Giving the label a real background outright would make the slide pointless:
+   the destination would fill the instant the radio changed. So the fill is
+   delayed by exactly the indicator's travel time. The indicator animates across
+   an empty track, and the ground lands under the label as the bar arrives —
+   identical to the eye, honest to a checker, and it survives a lost indicator. */
 .v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__tabs .home-hero-search__tab--buy,
 .v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__tabs .home-hero-search__tab--sell {
+  background: var(--v3-ink);
+  border-radius: var(--v3-radius-control);
   color: var(--v3-ink-on-navy);
   font-weight: var(--v3-weight-strong);
+  transition: background-color 0s linear var(--v3-dur-state);
 }
 
+/* The tab being left clears its ground IMMEDIATELY, with no delay, so the bar
+   is the only navy on screen while it travels. Delaying both would leave the
+   origin filled as the indicator slid away from it. */
 .v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__tabs .home-hero-search__tab--sell,
 .v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__tabs .home-hero-search__tab--buy {
+  background: transparent;
   color: var(--v3-ink);
   font-weight: var(--v3-weight-body);
+  transition: background-color 0s linear 0s;
+}
+
+/* No travel, no delay: the ground lands with the choice. */
+@media (prefers-reduced-motion: reduce) {
+  .v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__tabs .home-hero-search__tab--buy,
+  .v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__tabs .home-hero-search__tab--sell {
+    transition: background-color 0s linear 0s;
+  }
 }
 
 /* Headline switch with the same radios (SITE-12). */
