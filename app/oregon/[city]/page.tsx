@@ -102,6 +102,7 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { OutOfAreaReferralSheet } from './_v3/OutOfAreaReferralSheet.client'
+import { listingRowPhotoSrc } from './_v3/listing-row-photo'
 
 type Params = { city: string }
 
@@ -288,7 +289,11 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
       detail: meta ? v3Text(meta) : undefined,
       value: v3Text(formatPrice(price)),
       id: tile.listingKey,
-      ...(tile.photoUrl?.trim() ? { media: { src: tile.photoUrl.trim() } } : {}),
+      // The listing's own photograph, at the size this row draws it. See
+      // ./_v3/listing-row-photo.ts: same asset, one path token, 30 KB instead
+      // of 331 KB. A row whose listing has no photo passes no media at all and
+      // takes the glyph tile, which is the designed empty state, not a blank.
+      ...(tile.photoUrl?.trim() ? { media: { src: listingRowPhotoSrc(tile.photoUrl) } } : {}),
     })
   }
   const [firstListingRow, ...restListingRows] = listingRows
@@ -516,6 +521,11 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
             eyebrow={v3Text(`${city.name} · For sale`)}
             heading={v3Text(`The newest ${city.name} listings`)}
             rows={[firstListingRow, ...restListingRows]}
+            /* SITE-59: the picture on a listing row is content, not a stamp.
+               At the pattern's default 44px it was a grey smudge that an
+               evaluator read as a broken image on ten of twelve Medford rows,
+               and it was pixel-for-pixel the box a photo-less row draws. */
+            media="photo"
             note={listingsNote ? v3Text(listingsNote) : undefined}
             source={v3Text(listingTrace)}
             action={{

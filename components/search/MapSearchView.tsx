@@ -1389,7 +1389,15 @@ export default function MapSearchView({
             'z-10 min-h-0 flex-col bg-card',
             listOnly
               ? cn(
-                  'absolute inset-0 flex',
+                  /* SITE-59: `absolute inset-0` here was the map's doing — the
+                     rail floated over a full-bleed canvas on phones. `listOnly`
+                     has had no canvas under it since 2026-09-03, and an
+                     absolutely positioned rail contributes no height, so the
+                     section it sits in could only be held open by the fixed
+                     map height that this node removed. In flow it is as tall
+                     as the list, and `w-full` because there is no map beside
+                     it to share the row with at any width. */
+                  'relative flex w-full',
                   'map-search-list lg:static lg:order-1 lg:z-auto lg:h-auto lg:max-h-none lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-border lg:shadow-none lg:transition-none lg:inset-auto',
                   layoutView === 'list' ? 'lg:w-full lg:flex-1' : null,
                 )
