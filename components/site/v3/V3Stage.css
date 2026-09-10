@@ -342,6 +342,19 @@
   padding: var(--v3-space-md) var(--v3-gutter) var(--v3-space-md);
 }
 
+/* SITE-77: one sourced sentence, not three equal tiles. */
+.v3 .v3-stage-strip__claim {
+  margin: 0;
+  color: var(--v3-cream);
+  font-size: var(--v3-size-sm);
+  line-height: 1.4;
+}
+
+.v3 .v3-stage-strip__value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
 .v3 .v3-stage-strip__row {
   display: grid;
   gap: 0;
