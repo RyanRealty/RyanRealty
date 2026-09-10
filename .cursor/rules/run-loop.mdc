@@ -38,9 +38,10 @@ Every SITE node's accept test ends the same way: a **separate evaluator** — a 
 model from the builder — scores the page class from shots at 1440 and 375
 (`scripts/take-route-shots.mjs`), three scorings in one call, median, and the score must
 rise. Receipt in the route's `parity.json` per `design_system/public/TASTE.md`, shape
-checked by `scripts/lib/taste-receipt.mjs`. The instrument is `claude-sonnet-5` on rubric
-`v1-2026-09-08`; call the Claude API with `ANTHROPIC_API_KEY` from `.env.local` so marks
-stay comparable to `design_system/public/taste-table.json`. **Finish line: every public
+checked by `scripts/lib/taste-receipt.mjs`. The instrument is **grok-4.6** through the `grok`
+CLI (Matt's Grok subscription, not API credit) — the same judge for every builder, so marks
+stay comparable. Run it with `npx tsx scripts/taste-evaluate.ts <route-key>`. A Grok lane
+builds with **grok-4.5**, because the gate refuses a model grading its own page. **Finish line: every public
 page class at 70 or above on that table** (Matt 2026-09-09).
 
 Then the gates (`npm run ci:gates`), the `Node: <id>` trailer on every commit touching

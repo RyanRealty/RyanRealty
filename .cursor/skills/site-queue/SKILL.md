@@ -31,14 +31,15 @@ routine reads. Nothing in the queue depends on which model builds.
 
 - **Owner name:** `grok-<model>-<YYYY-MM-DD>` (for example `grok-4.6-2026-09-09`) so `loop
   status` says who holds what and the cap counts you.
-- **The evaluator.** The receipt gate refuses `evaluatorModel == builderModel`. A Grok
-  builder is `grok-4.6`. Score with `npx tsx scripts/taste-evaluate.ts <route-key>` (shots
-  already in `ui_kits/<route>/shots/`, optional `--url` of the lane's own dev server). That
-  command is the evaluator: it sends the shots through `lib/grok` as `GROK_MODELS.taste`
-  (`grok-4.5`), three scorings in one call, TASTE.md rubric, JSON on stdout. Write
-  `evaluatorModel: "grok-4.5"` and `builderModel: "grok-4.6"`. A class whose prior mark is
-  Claude rebaselines on this instrument (`comparedToPrior: "rebaselined"`, the differing
-  key named); the next pass must rise above the new mark.
+- **The evaluator — one instrument, always (Matt 2026-09-09).** The judge is **grok-4.6**
+  through the `grok` CLI, which spends Matt's Grok subscription rather than API credit, and
+  it is the judge whatever built the page. Run `npx tsx scripts/taste-evaluate.ts <route-key>`
+  (shots already in `ui_kits/<route>/shots/`, optional `--url` of your dev server): three
+  scorings in one call, TASTE.md rubric, JSON on stdout. Write `evaluatorModel: "grok-4.6"`.
+  Because `ci:taste-canon` refuses evaluatorModel == builderModel, **build with grok-4.5**
+  and record `builderModel: "grok-4.5"`. Never point the evaluator at your own model to make
+  it convenient — one ruler is the whole point, and a class whose prior mark came from
+  claude-sonnet-5 rebaselines once on this instrument (`comparedToPrior: "rebaselined"`).
 - **The machine.** On Matt's Mac `.env.local` is present; run `npm ci` and
   `npm run setup:browsers` once; the git hooks are installed. The canonical skill's
   "If you are a cloud session" section (no browser pane, the sandbox, the
