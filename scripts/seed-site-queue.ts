@@ -629,6 +629,32 @@ const SEEDS: readonly Seed[] = [
     accept:
       "Mechanical: a reference file exists for every class under 70 on the current table, each naming at least two real pages with a specific sentence each and citing at least one shipped component path that exists in the tree; `scripts/take-route-shots.mjs --variants a,b,c <class> <url>` writes one sheet with every variant at 1440 and 375; the evaluator prompt file contains the house form list and its rubricVersion differs from v1-2026-09-08. Then the proof: run ONE class under 70 through the changed process end to end (reference file in the brief, two or three variants, Matt's pick recorded on the node, the losers deleted in that commit) and its rise on the table instrument exceeds the median rise of the rounds that came before it. If it does not, say so on the node and name what the process still does not give a builder — a negative result recorded is the point, not a number talked up.",
   },
+  {
+    versionGap: 'SITE-64',
+    domain: 'public-ux',
+    title:
+      '/about first viewport: faces open the page, not a three-tile KPI grid of 5.0 / 25 / 3',
+    objective:
+      "Re-measured live on production 2026-09-10 at 1440 and 375 (first viewport, ryan-realty.com/about). SITE-48 already put AboutFaces in the opening, but AboutFaces is passed figures=[{5.0 Google rating},{25 client reviews},{3 licensed Oregon brokers}] and that KPI grid is the first data object a visitor sees — TASTE.md bans KPI grids (a number, a percentage, and jargon with no sentence). Compass About and The Agency About open on faces at display scale; the 5.0-from-25 already lives on the face cards. Cut the figure-row from the fold. Do not touch app/contact (SITE-63 proof class) or AboutFaces callers on other routes unless they paint the same grid on /about. Reference: design_system/public/references/about.md on the SITE-63 branch (faces open; doors as secondary reach).",
+    output:
+      'app/about/page.tsx no longer feeds a three-tile figure row into AboutFaces; first-viewport shots at 1440 and 375; taste receipt for about on grok-4.6',
+    accept:
+      'Headless Chromium at 1440x900 and 375x812 of /about: the first viewport contains the three broker photographs and does not contain a three-cell figure row whose labels are Google rating / client reviews / licensed Oregon brokers. The 5.0 from 25 may appear on a face card. Then the about class tasteReview on grok-4.6, rubric current, rises above its prior mark from the same instrument or rebaselines on the grok-4.6 switch.',
+    dependsOn: [],
+  },
+  {
+    versionGap: 'SITE-65',
+    domain: 'public-ux',
+    title:
+      '/compare first viewport: the four slots open filled with the live sample, not four dashed empty boxes above it',
+    objective:
+      "Re-measured live on production 2026-09-10 at 1440 (ryan-realty.com/compare). SITE-50 shipped V3Slots plus a SAMPLE comparison of four live homes, but the first screen is still four dashed 'Add a home' boxes; the actual comparison sits below the fold-ish hairline. The empty state should BE the comparison. Pre-fill the four slots with the same live sample columns the page already reads (labelled as a sample, every figure sourced) so a visitor sees four homes side by side without scrolling past empty boxes. Adding from a listing still uses the same tray. Do not touch app/listing (SITE-60) or app/contact (SITE-63).",
+    output:
+      'CompareEmpty / V3Slots opening on a filled sample; first-viewport shots at 1440 and 375; taste receipt for compare on grok-4.6',
+    accept:
+      "Headless Chromium at 1440x900 of /compare with an empty personal tray: the first viewport contains four listing photographs and their prices, and does not lead with four dashed empty 'Add a home' slots. Every displayed price traces to the live sample read. Then the compare class tasteReview on grok-4.6 rises above its prior mark from the same instrument or rebaselines on the grok-4.6 switch.",
+    dependsOn: [],
+  },
 ]
 
 async function main() {

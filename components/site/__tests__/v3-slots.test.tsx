@@ -50,12 +50,16 @@ function count(markup: string, needle: RegExp): number {
   return markup.match(needle)?.length ?? 0
 }
 
+const NO_SAMPLE = {
+  sample: { label: '   ', caption: 'c', rows: ROWS, columns: COLUMNS, addLabel: 'Add this home' },
+} as const
+
 describe('V3Slots — the tray', () => {
-  it('draws one slot per place the tool holds', () => {
+  it('withholds the empty tray when the sample is the opening', () => {
     const m = html()
-    expect(count(m, /class="[^"]*v3-slots__slot /g)).toBe(4)
-    expect(count(m, /data-state="empty"/g)).toBe(4)
-    expect(count(m, /data-slot="[1-4]"/g)).toBe(4)
+    expect(count(m, /class="[^"]*v3-slots__slot /g)).toBe(0)
+    expect(m).toContain('v3-slots__table')
+    expect(m).toContain('$435,000')
   })
 
   it('carries the headline at the level the caller asked for', () => {
@@ -63,7 +67,7 @@ describe('V3Slots — the tray', () => {
     expect(html({ headingLevel: 2 })).toMatch(/<h2[^>]*>Compare homes<\/h2>/)
   })
 
-  it('shows what is in a filled slot and leaves the rest open', () => {
+  it('shows the tray once the visitor has a home in it', () => {
     const m = html({
       filled: [{ key: 'k1', label: '787 Union Loop', href: COLUMNS[0]!.href }],
     })
@@ -73,12 +77,12 @@ describe('V3Slots — the tray', () => {
   })
 
   it('clamps the slot count to something a tray can be', () => {
-    expect(count(html({ slots: 1 }), /data-state="empty"/g)).toBe(2)
-    expect(count(html({ slots: 40 }), /data-state="empty"/g)).toBe(6)
+    expect(count(html({ slots: 1, ...NO_SAMPLE }), /data-state="empty"/g)).toBe(2)
+    expect(count(html({ slots: 40, ...NO_SAMPLE }), /data-state="empty"/g)).toBe(6)
   })
 
   it('sends an empty slot to the place a visitor finds subjects', () => {
-    expect(html()).toContain('href="/homes-for-sale?view=list"')
+    expect(html(NO_SAMPLE)).toContain('href="/homes-for-sale?view=list"')
   })
 })
 
@@ -92,7 +96,7 @@ describe('V3Slots — the worked example', () => {
       sample: { label: '   ', caption: 'c', rows: ROWS, columns: COLUMNS, addLabel: 'Add this home' },
     })
     expect(m).not.toContain('v3-slots__table')
-    // The tray and the trace still render — only the example is withheld.
+    // No labelled sample → the tray stands in, and the trace still renders.
     expect(count(m, /data-state="empty"/g)).toBe(4)
     expect(m).toContain('v3-slots__source')
   })

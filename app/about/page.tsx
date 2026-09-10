@@ -117,24 +117,11 @@ export default async function AboutPage() {
     .map((b) => aboutFaceFromBroker(b))
     .filter((face): face is AboutFace => face !== null)
 
-  /* THE OPENING'S FIGURES. Three, each one read in this render:
-       - the Google average, `getReviews().averageRating` over the non-hidden
-         Google rows in `reviews`;
-       - the count from the same read;
-       - the roster size, which is `getBrokers()` filtered to is_active.
-     No firm sales figure sits here: `getBrokerageListingTiles` is capped at 60
-     rows, so a "closings in the last N months" count off it could be a
-     ceiling rather than a total. The closings appear below as the rows
-     themselves, where a cap cannot become a wrong number. */
-  const openingFigures =
-    reviewSummary && reviewSummary.count > 0
-      ? [
-          { value: reviewAverage.toFixed(1), label: 'Google rating, of 5' },
-          { value: String(reviewCount), label: reviewCount === 1 ? 'client review' : 'client reviews' },
-          { value: String(faces.length), label: 'licensed Oregon brokers' },
-        ]
-      : [{ value: String(faces.length), label: 'licensed Oregon brokers' }]
-
+  /* SITE-64: the fold used to print these as a three-tile KPI grid
+     (5.0 / 25 / 3) above the faces. TASTE.md bans that shape. The same
+     numbers now sit in the claim sentence; the source line still traces
+     them. Closings stay below as rows — getBrokerageListingTiles is capped
+     at 60, so a count off it could be a ceiling. */
   const openingTrace =
     reviewSummary && reviewSummary.count > 0
       ? `Google reviews through the public.reviews table, source = 'google' and is_hidden = false: ${reviewCount} rows, mean rating ${reviewAverage.toFixed(1)} of 5, read in this render (getReviews). Brokers are public.brokers where is_active is true, ${faces.length} rows, each with an Oregon licence number on file with the Oregon Real Estate Agency (getBrokers).`
@@ -233,8 +220,11 @@ export default async function AboutPage() {
           heading="About Ryan Realty · Bend"
           headingLevel={1}
           eyebrow="Ryan Realty · Central Oregon"
-          claim={`A boutique brokerage in Bend since ${BRAND.llcSince}. Three licensed Oregon brokers, and the one you call is the one who works your deal.`}
-          figures={openingFigures}
+          claim={
+            reviewSummary && reviewSummary.count > 0
+              ? `A boutique brokerage in Bend since ${BRAND.llcSince}. Three licensed Oregon brokers, ${reviewAverage.toFixed(1)} from ${reviewCount} Google reviews, and the one you call is the one who works your deal.`
+              : `A boutique brokerage in Bend since ${BRAND.llcSince}. Three licensed Oregon brokers, and the one you call is the one who works your deal.`
+          }
           source={<V3SourceLine sourceName={v3Text('Ryan Realty record')} source={v3Text(openingTrace)} />}
         />
 
