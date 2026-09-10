@@ -2,8 +2,13 @@
   "route": "app/cities/[slug]/types/[type]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. Built from components/site/v3. No mockup in this directory: the place-type class is the city/community type-card landing, not a Tetherow one-off.",
   "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker type-filtered city results. Those surfaces dump the visitor into a search grid. This page is a place-type node: leftover count and median that already back the type card, a living atlas of the parent city with the type stated in the claim, and a photographed list of that type. Unique title, canonical, ItemList when listings exist. Breadcrumb is City then type, no Home.",
-  "note": "H1 is `{Type} in {Place}` (Condos in Redmond) and it is the page's only display-scale line: the Atlas opens directly under it wearing an eyebrow (V3Atlas headlineTone='eyebrow'), not a second Amboqia title. One section-0 sourced claim sentence sits under the H1 with its source line \u2014 the count, the lowest ask and the highest all come from ONE listing_tile_mv read, because leftover market truth and the MV disagree by 14% on Bend single-family (658 vs 768 measured 2026-09-09) and a count from one pipeline beside a band from the other describes two sets. The Atlas section is UNCONDITIONAL: PlaceTypeAtlasSection streams behind a Suspense boundary whose fallback and whose miss branch are both PlaceTypeAtlasStandin, so the differentiator is never simply absent. Rows and marks share one hovered key in both directions. Unknown type notFound(). Do not collide with app/cities/[slug]/[neighborhoodSlug].",
+  "note": "H1 is `{Type} in {Place}` and it is the page's only display-scale line: the Atlas opens under the claim wearing an eyebrow (V3Atlas headlineTone='eyebrow', subject softened to Listings so the type is not said twice). One section-0 sourced claim sentence sits under the H1 — count and price band from ONE listing_tile_mv read, worded as the address census with the map marking city limits. A V3Carousel mode=rail of photographed listings (PlaceTypeFilm; shadcn-carousel adapted) follows Atlas in the fold with price+address+beds/baths/sqft on 800x600 plates. The Atlas section is UNCONDITIONAL via PlaceTypeAtlasSection + PlaceTypeAtlasStandin. Rows and marks share one hovered key. Unknown type notFound(). Do not collide with app/cities/[slug]/[neighborhoodSlug].",
   "requiredComponents": [
+    {
+      "name": "PlaceTypeFilm",
+      "section": "Fold V3Carousel rail of photographed listings (mode=rail, prev/next, 800x600 plates, price+address+beds/baths/sqft).",
+      "blocking": true
+    },
     {
       "name": "MetadataBlock",
       "section": "BreadcrumbList + WebPage + ItemList when photographed listings exist.",
@@ -21,7 +26,7 @@
     },
     {
       "name": "V3Heading",
-      "section": "H1 `{Type} in {Place}` \u2014 the page's ONE display line.",
+      "section": "H1 `{Type} in {Place}` — the page's ONE display line.",
       "blocking": true
     },
     {
@@ -36,7 +41,7 @@
     },
     {
       "name": "PlaceTypeAtlasStandin",
-      "section": "The Suspense fallback and the miss branch. The map section is never absent \u2014 that absence was the 2026-09-08 taste defect.",
+      "section": "The Suspense fallback and the miss branch. The map section is never absent — that absence was the 2026-09-08 taste defect.",
       "blocking": true
     },
     {
@@ -56,11 +61,11 @@
     }
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "Separate Agent subagent, one per class, spawned by the builder with the rubric table, the two shot paths and TASTE.md, told not to read page source; three independent scorings in the one call, median recorded. Four scoring rounds ran on this node (medians place-type 71/69/67/77, place-type-community 73/70/68/70); the recorded round is the last one, whose prompt carries no round history, matching the conditions of the 2026-09-08 table instrument.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluatedAt": "2026-09-10",
+    "rubricVersion": "v1-2026-09-10",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type --url http://127.0.0.1:3289/cities/bend/types/single-family --beat 69; separate grok-4.6 judge, builder did not score",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/cities/bend/types/single-family"
@@ -72,54 +77,65 @@
       "states": [
         "default"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, next dev on the lane's own branch"
+      "capture": "first viewport, palette-quantized, next dev :3289; wait for .place-type-film__card + loaded 800x600 plates before shoot"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/place-type/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/place-type/shots/mobile375.png"
     },
-    "shotsHash": "sha256:a652062f068ed5c17549fc95cec8961eac0182b1ce192b3d910dddcb6a50d2d1",
+    "shotsHash": "sha256:91303425b43eb9ba9f2d9ae6a9779187362313276682b60e05114ca024f6968d",
     "scores": [
-      77,
-      75,
-      81
+      73,
+      65,
+      71
     ],
-    "score": 77,
-    "beats": "Zillow's Bend map-search page: pin clutter, ad units and mixed typography over a generic basemap, against one quiet navy-on-cream instrument whose map encodes 90-day sale density instead of stacking pins, with the count and the price band stated in a sentence and traced to the MLS read that produced them.",
+    "score": 71,
+    "beats": "Redfin Bend single-family map (redfin.com/city/16163/OR/Bend): Atlas wins on data depth (90-day sale-density cells, city-limits caveat, MLS timestamp); it loses on map scale, on a useful price claim, and on the photographed rail matching the stated band. Better than a 69 page on the opening (one H1, one sourced sentence, listings in the first viewport).",
     "defects": [
       {
-        "section": "Atlas rail activity lines",
+        "section": "LISTINGS INSIDE THE BEND CITY LIMITS (Atlas)",
         "severity": "taste",
-        "finding": "Just listed / Went pending / Sold render as three plain sentences with identical dots and no encoding of stage, price or recency, two inches from a heatmap that solves the same problem with a real visual encoding."
+        "finding": "On desktop the Bend polygon is a small gray island in a padded cream rectangle beside a leftover instrument stack (House checkbox, Up to any price, two ticker lines). The density map is the only original object and it is framed as a dashboard widget, not a field a visitor would stop for."
       },
       {
-        "section": "Atlas rail",
+        "section": "opening claim under Single-family in Bend",
         "severity": "taste",
-        "finding": "The rail groups a gradient legend, a dot legend, a checkbox and a price scrubber with whitespace alone, and the type control is a bare checkbox rather than a control from the system's own set. Both belong to V3Atlas and change every caller, so they are named here rather than fixed in this node."
+        "finding": "The lead states 768 homes ask $397,000 to $11,900,000 — a band so wide it is a non-fact — then restates single-family after the H1 already named the type. Count and band belong on a scrubbable emphasis line, not a static sentence."
       },
       {
-        "section": "mobile375 fold",
-        "severity": "major",
-        "finding": "At 375 the rail and both next-actions sit below the map, so the phone's first screen is the title, the claim, the source line and the map with nothing to filter or tap. Moving the rail above the map was tried and scored WORSE on both classes (place-type 71 to 69, place-type-community 73 to 70) because it buried the map; the real answer is a compact control bar inside V3Atlas, for every caller."
+        "section": "ON THE MARKET",
+        "severity": "blocking",
+        "finding": "Five photographed houses run $469,000–$524,900 while the claim’s upper bound is $11,900,000 and Atlas just-listed Discovery West at $1,775,000. The rail does not read as the same market as the sentence or the map marks. At 375 the previous control is a North compass beside a next chevron — not the shadcn-carousel prev/next interaction."
       },
       {
-        "section": "page composition",
-        "severity": "taste",
-        "finding": "Rail beside map is the most-copied shape in real estate; the brand reads from the palette and the type, not yet from the composition itself."
+        "section": "Atlas House checkbox",
+        "severity": "craft",
+        "finding": "A page already titled Single-family in Bend still shows a checked House checkbox, an internal type leftover a buyer does not need on a type URL."
       },
       {
-        "section": "Atlas zoom control",
-        "severity": "minor",
-        "finding": "The evaluator read the zoom pair as possibly under the 44px floor from the still. Measured in the browser at 375 it is 44.0 by 44.0 on both buttons, from --v3-tap; no change made."
+        "section": "768 vs 496 for sale + 265 pending",
+        "severity": "blocking",
+        "finding": "The lead says 768 homes; the map legend says 496 for sale and 265 pending (761). The city-limits caveat does not explain a seven-home gap between two sourced-looking figures on the same fold."
+      },
+      {
+        "section": "document head / SEO",
+        "severity": "blocking",
+        "finding": "SEO increment is not visible in these first-viewport shots, so title, JSON-LD, and crawlable asks are held at best. Inventory on the fold did improve: photographed cards now show price, address, beds, baths, and sqft inside the first screen."
       }
+    ],
+    "adaptedFrom": [
+      { "id": "shadcn-carousel" },
+      { "id": "V3Carousel" }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-04",
-      "score": 62,
-      "note": "structure pass, no rendered shots; the 2026-09-08 taste table scored this class 69 (64/69/73) on the same rubric and shot spec."
+      "evaluatedAt": "2026-09-09",
+      "score": 77,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "note": "Prior receipt used claude-sonnet-5 on rubric v1-2026-09-08; table instrument scored this class 69 (64/69/73). This pass is grok-4.6 on v1-2026-09-10."
     },
-    "rebaselineReason": "The committed mark carries no evaluatorModel, no rubricVersion and no shotsHash \u2014 it was a structure pass with no rendered shots \u2014 so it is not the same instrument and cannot be risen above. Recorded here as the first mark on the versioned instrument. For reference, the 2026-09-08 taste table scored this class on the same rubric and the same shot spec."
+    "rebaselineReason": "Evaluator model and rubricVersion differ from the committed mark (claude-sonnet-5 / v1-2026-09-08 → grok-4.6 / v1-2026-09-10), so the instruments are not the same and the score cannot be risen above the prior receipt. Table bar to beat remains 69."
   },
   "sectionOrder": [
     "V3SectionTracker",
@@ -127,6 +143,7 @@
     "V3Breadcrumb",
     "V3Heading + claim sentence + source line",
     "PlaceTypeAtlasSection (#atlas, streamed, standin fallback)",
+    "PlaceTypeFilm (V3Carousel mode=rail)",
     "PlaceTypeSortBar + PlaceTypeRows (#homes)",
     "V3Quiet",
     "V3Footer"

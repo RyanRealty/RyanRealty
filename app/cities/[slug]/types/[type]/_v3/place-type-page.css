@@ -34,6 +34,251 @@
   line-height: var(--v3-leading-note);
 }
 
+/* ── Fold stack + film rail (SITE-89) ────────────────────────────────────────
+   Layout lock: H1 → claim → Atlas → V3Carousel rail. Page-local atlas caps
+   leave room for full listing cards (price + address + beds/baths/sqft) in
+   the first viewport at 1440 and 375. */
+.place-type-fold {
+  width: 100%;
+}
+
+.place-type-opening {
+  width: 100%;
+  max-width: var(--v3-measure);
+  margin-inline: auto;
+  padding-inline: var(--v3-gutter);
+  padding-block-end: var(--v3-space-sm);
+}
+
+.place-type-opening .place-opening__copy {
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+.place-type-film {
+  width: 100%;
+  max-width: var(--v3-measure);
+  min-width: 0;
+  margin: var(--v3-space-sm) auto 0;
+  padding-inline: var(--v3-gutter);
+}
+
+.place-type-film__eyebrow {
+  margin: 0 0 var(--v3-space-2xs);
+  color: var(--v3-ink-muted);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  line-height: var(--v3-leading-control);
+  text-transform: uppercase;
+}
+
+.place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__viewport {
+  min-height: 0;
+  padding-inline: 0;
+}
+
+.place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__slide {
+  flex-basis: min(16.5rem, 78vw);
+  min-height: 0;
+  padding-right: var(--v3-space-sm);
+}
+
+.place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__nav {
+  display: flex;
+  gap: var(--v3-space-2xs);
+  padding-inline: 0;
+  margin-top: var(--v3-space-2xs);
+}
+
+/* Chevron-step chrome (shadcn carousel demo), not form-submit labels. */
+.place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__step {
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  padding: 0;
+  border: var(--v3-rule-hairline);
+  border-color: var(--v3-navy);
+  background: var(--v3-cream);
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  position: relative;
+}
+
+.place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__step::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-inline-start: 2px solid var(--v3-navy);
+  border-block-end: 2px solid var(--v3-navy);
+  transform: rotate(45deg);
+  translate: 0.12rem 0;
+}
+
+.place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__step:last-child::before {
+  transform: rotate(-135deg);
+  translate: -0.12rem 0;
+}
+
+.place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__step:hover {
+  background: var(--v3-navy);
+}
+
+.place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__step:hover::before {
+  border-color: var(--v3-cream);
+}
+
+.place-type-film__card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  color: var(--v3-ink);
+  text-decoration: none;
+  background: var(--v3-surface);
+  border: var(--v3-rule-hairline);
+}
+
+.place-type-film__card:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.place-type-film__media {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--v3-ink) 8%, transparent);
+}
+
+.place-type-film__photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.place-type-film__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--v3-navy) 78%, transparent) 0%,
+    color-mix(in srgb, var(--v3-navy) 18%, transparent) 55%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.place-type-film__on-photo {
+  position: absolute;
+  inset-inline: var(--v3-space-xs);
+  inset-block-end: var(--v3-space-xs);
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  color: var(--v3-cream);
+}
+
+.place-type-film__price {
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-control);
+}
+
+.place-type-film__addr,
+.place-type-film__specs {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+
+.place-type-film__specs {
+  opacity: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Desktop: leave room for a full card plate + chevrons under Atlas. */
+@media (min-width: 64rem) {
+  .place-type-fold .v3.v3-atlas.place-type-atlas {
+    max-height: 24rem;
+    overflow: hidden;
+  }
+
+  .place-type-fold .place-atlas-standin {
+    max-height: 22rem;
+    overflow: hidden;
+  }
+
+  .place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__slide {
+    flex-basis: min(15rem, 22vw);
+  }
+
+  .place-type-film__media {
+    max-height: 8.5rem;
+  }
+}
+
+/* Phone: same order; tighter Atlas so full cards (not price-only peeks) fit. */
+@media (max-width: 39.99rem) {
+  .place-type-opening .place-type-claim {
+    font-size: var(--v3-size-body);
+  }
+
+  .place-type-fold .v3.v3-atlas.place-type-atlas {
+    max-height: 20rem;
+    overflow: hidden;
+  }
+
+  .place-type-fold .v3.v3-atlas.place-type-atlas .v3-atlas__stage {
+    max-height: 12rem;
+  }
+
+  .place-type-fold .place-atlas-standin {
+    max-height: 14rem;
+    overflow: hidden;
+  }
+
+  .place-type-fold .place-atlas-standin__field {
+    min-height: 9rem;
+    max-height: 11rem;
+    aspect-ratio: auto;
+  }
+
+  .place-type-film {
+    margin-top: var(--v3-space-xs);
+  }
+
+  .place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__slide {
+    flex-basis: min(12.5rem, 72vw);
+    padding-right: var(--v3-space-2xs);
+  }
+
+  .place-type-film__media {
+    aspect-ratio: 16 / 9;
+    max-height: 5rem;
+  }
+
+  .place-type-film__price {
+    font-size: var(--v3-size-body-sm);
+  }
+
+  .place-type-film__addr,
+  .place-type-film__specs {
+    font-size: var(--v3-size-source);
+  }
+}
+
 /* ── The Atlas on this page ──────────────────────────────────────────────────
    The map band is the site's shared object; these two rules only place it.
 

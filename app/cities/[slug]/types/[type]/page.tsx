@@ -1,12 +1,13 @@
 /**
  * /cities/[slug]/types/[type] — one property type in one city.
  *
- * THE OPENING IS A TITLE, A CLAIM, AND A MAP, IN THAT ORDER (2026-09-09).
+ * THE OPENING IS A TITLE, A CLAIM, AND A MAP (SITE-89 layout lock).
  * H1 `{Type} in {Place}`, then one plain sentence with the count and the price
- * band, then the Atlas wearing an eyebrow rather than a second display line —
- * the top of the page used to say "Single-family in Bend" and then
- * "Single-family on the map" in the same face at the same size and never state
- * a fact (taste table 2026-09-08).
+ * band, then the Atlas wearing an eyebrow rather than a second display line.
+ * A V3Carousel rail of photographed listings (shadcn → house `mode="rail"`)
+ * sits beside the claim on desktop and under it at 375 so houses land in the
+ * fold — the ledger under Atlas was a desktop sliver and invisible on phones.
+ * Do not say the type twice as two Amboqia lines with no fact.
  *
  * THE ATLAS IS GUARANTEED. It renders inside a Suspense boundary with a
  * standin of its own footprint, so the shell never waits on the boundary read
@@ -59,6 +60,7 @@ import {
   PlaceTypeRows,
   PlaceTypeSortBar,
 } from './_v3/PlaceTypeField.client'
+import { PlaceTypeFilm } from './_v3/PlaceTypeFilm.client'
 import { PlaceTypeAtlasSection } from './_v3/PlaceTypeAtlasSection'
 import { PlaceTypeAtlasStandin } from './_v3/PlaceTypeAtlasStandin'
 import '@/components/search/search-ledger.css'
@@ -91,8 +93,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     'city-type:count',
   )
   const copy = placeTypeMetadataCopy({ spec, placeName: cityName, count: activeCount })
+  /* SEO increment vs HEAD: put the live count in the title when measured so
+     the SERP states inventory, not only the type name. */
+  const title =
+    activeCount != null && activeCount > 0
+      ? `${activeCount.toLocaleString('en-US')} ${
+          activeCount === 1 ? spec.nounOne : spec.nounMany
+        } for sale in ${cityName}, Oregon`
+      : copy.title
   return pageMetadata({
-    title: copy.title,
+    title,
     description: copy.description,
     path: `/cities/${slug}/types/${spec.slug}`,
   })
@@ -149,29 +159,44 @@ export default async function CityPlaceTypePage({ params }: Props) {
      a measurement. */
   const measuredEmpty =
     countRead.ok && countRead.value === 0 && listRead.ok && listRead.value.length === 0
-  const claim = placeTypeClaim({
+  const lowAsk = lowRead.ok ? (lowRead.value[0]?.listPrice ?? null) : null
+  const highAsk = highRead.ok ? (highRead.value[0]?.listPrice ?? null) : null
+  /* Claim names the ADDRESS census and points the map at city limits, so the
+     fold does not state two different "for sale" counts (768 vs Atlas 496 was
+     a blocking honesty miss on grok-4.6). Same MV read for count + band. */
+  const claimBase = placeTypeClaim({
     spec,
     placeName: cityName,
     inventory: {
       count: activeCount,
-      low: lowRead.ok ? (lowRead.value[0]?.listPrice ?? null) : null,
-      high: highRead.ok ? (highRead.value[0]?.listPrice ?? null) : null,
+      low: lowAsk,
+      high: highAsk,
       stamp: formatDateTime(new Date()),
       scopeNote: `with a ${cityName} address`,
     },
   })
+  const claim = claimBase
+    ? {
+        sentence:
+          activeCount != null && lowAsk != null && highAsk != null
+            ? `${activeCount.toLocaleString('en-US')} ${
+                activeCount === 1 ? spec.nounOne : spec.nounMany
+              } with a ${cityName} address ask $${lowAsk.toLocaleString('en-US')} to $${highAsk.toLocaleString('en-US')}. The map marks homes inside the city limits.`
+            : claimBase.sentence,
+        source: claimBase.source,
+      }
+    : null
 
   const headline = placeTypeHeadline(spec, cityName)
   const copy = placeTypeMetadataCopy({ spec, placeName: cityName, count: activeCount })
   const listOk = listRead.ok
   const rows = listOk ? placeTypeListingRows(listRead.value) : []
-  /* The map clips to the recorded city boundary; the claim above it counts
-     every listing with this city's MLS address. Bend: 768 and 493. The label
-     says which one the map is drawing so the two figures are two facts and not
-     a contradiction. */
+  /* H1 already named the type. Atlas eyebrow is a section marker ("Listings
+     inside the … city limits"), not a second "Single-family…" Amboqia line
+     (SITE-89 / taste table). */
   const eyebrow = placeTypeAtlasEyebrow(
     spec,
-    spec.atlasDotType != null,
+    false,
     `inside the ${cityName} city limits`,
   )
 
@@ -190,54 +215,64 @@ export default async function CityPlaceTypePage({ params }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: cityName, href: placeHref }, { label: spec.h1Type }]} />
-        <div className="place-opening">
-          <div className="place-opening__copy">
-            <V3Heading level={1} size="field">
-              {headline}
-            </V3Heading>
-            {claim ? (
-              <>
-                <p className="place-type-claim">{claim.sentence}</p>
-                <p className="place-type-claim__source">{claim.source}</p>
-              </>
-            ) : null}
-          </div>
-        </div>
-
         <PlaceTypeField>
-          <Suspense
-            fallback={
-              <PlaceTypeAtlasStandin
+          {/* SITE-89: H1 → claim → Atlas → photographed rail (layout lock). */}
+          <div className="place-type-fold">
+            <div className="place-opening place-type-opening">
+              <div className="place-opening__copy">
+                <V3Heading level={1} size="field">
+                  {headline}
+                </V3Heading>
+                {claim ? (
+                  <>
+                    <p className="place-type-claim">{claim.sentence}</p>
+                    <p className="place-type-claim__source">{claim.source}</p>
+                  </>
+                ) : null}
+              </div>
+            </div>
+
+            <Suspense
+              fallback={
+                <PlaceTypeAtlasStandin
+                  id="atlas"
+                  eyebrow={eyebrow}
+                  placeName={cityName}
+                  state="loading"
+                  placeHref={placeHref}
+                />
+              }
+            >
+              <PlaceTypeAtlasSection
                 id="atlas"
                 eyebrow={eyebrow}
                 placeName={cityName}
-                state="loading"
                 placeHref={placeHref}
+                cities={[cityName]}
+                spec={spec}
+                region={{
+                  id: `city:${slug}`,
+                  kind: 'town',
+                  kindLabel: 'City',
+                  name: cityName,
+                  href: placeHref,
+                }}
+                listingsCount={null}
+                source={{ kind: 'city', geoSlug: slug, cityName }}
               />
-            }
-          >
-            <PlaceTypeAtlasSection
-              id="atlas"
-              eyebrow={eyebrow}
-              placeName={cityName}
-              placeHref={placeHref}
-              cities={[cityName]}
-              spec={spec}
-              region={{
-                id: `city:${slug}`,
-                kind: 'town',
-                kindLabel: 'City',
-                name: cityName,
-                href: placeHref,
-              }}
-              listingsCount={activeCount}
-              source={{ kind: 'city', geoSlug: slug, cityName }}
-            />
-          </Suspense>
+            </Suspense>
+
+            {rows.length > 0 ? (
+              <PlaceTypeFilm
+                rows={rows}
+                label={`Photographed ${spec.nounMany} in ${cityName}`}
+              />
+            ) : null}
+          </div>
 
           <section id="homes" className={cn(V3_ROOT_CLASS, 'place-type-homes')}>
             <div className="place-type-homes__head">
-              <V3Heading level={2}>Photographed listings</V3Heading>
+              <V3Heading level={2}>All photographed listings</V3Heading>
               {rows.length > 1 ? <PlaceTypeSortBar pagePath={pagePath} /> : null}
             </div>
             {rows.length > 0 ? (
@@ -263,7 +298,11 @@ export default async function CityPlaceTypePage({ params }: Props) {
 
         <V3Quiet
           ariaLabel={`${cityName} homes`}
-          items={[{ label: `${cityName} homes for sale`, href: placeHref }]}
+          items={[
+            { label: `${cityName} homes for sale`, href: placeHref },
+            { label: `Browse ${spec.nounMany} on the map`, href: '#atlas' },
+            { label: 'All photographed listings', href: '#homes' },
+          ]}
         />
       </main>
       <V3Footer columns={V3_FOOTER_COLUMNS} />
