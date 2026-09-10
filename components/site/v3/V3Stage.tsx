@@ -65,7 +65,6 @@ import {
   V3_ROOT_CLASS,
   V3Button,
   V3Eyebrow,
-  V3Figure,
   V3Heading,
   V3SourceLine,
   type V3NonEmpty,
@@ -439,27 +438,31 @@ export function V3Stage<H extends string, L extends string>({
           A band ends the hero on its own material and gives small type a
           ground instead of a gradient.
 
-          A list, because it is a set of peer facts and a screen reader should
-          be told how many there are before it reads the first one. Each cell
-          with an href is the door into the surface that shows that same figure
-          at depth, and the link's accessible name is the figure and its
-          sentence together — "1,563 houses for sale right now". */}
+          SITE-77: three equal figure cells were a KPI grid (TASTE.md). The
+          same sourced facts now read as one sentence, still doors, still
+          one trace. The short inventory frame stays so the Field breaks
+          the fold. */}
       {strip ? (
         <div className="v3-stage-band">
           <div className="v3-stage-band__inner">
-            <ul className="v3-stage-strip__row">
-              {strip.figures.map((figure) => (
-                <li key={`${figure.label}·${figure.value}`} className="v3-stage-strip__cell">
+            <p className="v3-stage-strip__claim">
+              {strip.figures.map((figure, i) => (
+                <span key={`${figure.label}·${figure.value}`}>
+                  {i > 0 ? <span aria-hidden="true"> · </span> : null}
                   {figure.href ? (
                     <Link href={figure.href} className="v3-stage-strip__door">
-                      <V3Figure onMedia value={figure.value} label={figure.label} />
+                      <strong className="v3-stage-strip__value">{figure.value}</strong>
+                      <span>{figure.label}</span>
                     </Link>
                   ) : (
-                    <V3Figure onMedia value={figure.value} label={figure.label} />
+                    <>
+                      <strong className="v3-stage-strip__value">{figure.value}</strong>
+                      <span>{figure.label}</span>
+                    </>
                   )}
-                </li>
+                </span>
               ))}
-            </ul>
+            </p>
             {/* One trace for the whole band: one row read at one moment, so a
                 per-figure line would be the same sentence three times. */}
             <V3SourceLine

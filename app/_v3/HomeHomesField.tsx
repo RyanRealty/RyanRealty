@@ -6,7 +6,8 @@
  * photographed list, not a second Atlas UI.
  */
 import { useMemo, useState } from 'react'
-import { V3Button, V3Field } from '@/components/site/v3'
+import { V3Button } from '@/components/site/v3/atoms'
+import { V3Field } from '@/components/site/v3/V3Field'
 import { inAtlasView, type AtlasViewBounds } from '@/lib/geo/atlas-camera'
 import type { HomeFieldItem } from './home-field-items'
 import { HOME_FIELD_LIMIT } from './home-constants'

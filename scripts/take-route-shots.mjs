@@ -37,12 +37,22 @@
  *   node scripts/take-route-shots.mjs sell http://localhost:3199 \
  *       --states proof=#track-record,answer-open=#faq!click
  *
+ *   node scripts/take-route-shots.mjs --variants quiet-doors,call-figure,faces-first \
+ *       contact http://localhost:3199/contact
+ *
  *   <route-key>  the `design_system/ryan-realty/ui_kits/<route-key>/` directory.
  *   <baseUrl>    an origin, or a full URL. Given a bare origin the path is read
  *                off that route's parity.json `route` field; a route with a
  *                dynamic segment (`app/cities/[slug]/page.tsx`) has no single
  *                URL, so pass the full one.
  *
+ *   --variants a,b,c   SITE-63 decision sheet. For each named variant, append
+ *                `?taste_variant=<name>` (or `&` if the URL already has a query),
+ *                capture the first viewport at 1440 and 375, and write ONE HTML
+ *                sheet under `design_system/public/references/<route-key>-decision-sheet.html`
+ *                with every variant at both widths. PNGs land in
+ *                `design_system/public/references/<route-key>/variants/` unless
+ *                `--out` overrides. Mutually exclusive with `--states`.
  *   --states a,b=SEL,c=SEL!click   extra shots beyond the top-of-page pair.
  *                `a`          scroll to `#a` when it exists, else shoot the top
  *                `b=SEL`      scroll SEL into view, then shoot the viewport
@@ -238,13 +248,95 @@ export function parseStates(raw) {
   return states
 }
 
+/** Comma-separated variant names for `--variants a,b,c` (SITE-63). */
+export function parseVariants(raw) {
+  return String(raw ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+/**
+ * Append `taste_variant=<name>` so a page can switch compositions behind one
+ * prop without a second route. Preserves an existing query string.
+ */
+export function withTasteVariant(url, variant) {
+  const u = new URL(url)
+  u.searchParams.set('taste_variant', variant)
+  return u.toString()
+}
+
+/**
+ * One HTML decision sheet: every variant at 1440 and 375, side by side for
+ * Matt to pick. Losers are deleted in the commit that records the pick
+ * (TASTE.md variants rule) — this file is the pick surface, not the canon.
+ */
+export function buildDecisionSheetHtml({ routeKey, variants, files, question }) {
+  const cells = variants
+    .map((name) => {
+      const desk = files[name]?.desktop ?? `${name}-desktop.png`
+      const mob = files[name]?.mobile375 ?? `${name}-mobile375.png`
+      return `<section class="variant">
+  <h2>${escapeHtml(name)}</h2>
+  <div class="pair">
+    <figure>
+      <img src="${escapeHtml(desk)}" alt="${escapeHtml(name)} at 1440" width="1440" height="900" />
+      <figcaption>1440</figcaption>
+    </figure>
+    <figure>
+      <img src="${escapeHtml(mob)}" alt="${escapeHtml(name)} at 375" width="375" height="812" />
+      <figcaption>375</figcaption>
+    </figure>
+  </div>
+</section>`
+    })
+    .join('\n')
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Decision sheet — ${escapeHtml(routeKey)}</title>
+  <style>
+    :root { color-scheme: light; --navy: #102742; --cream: #faf8f4; }
+    body { margin: 0; padding: 2rem; background: var(--cream); color: var(--navy);
+      font: 15px/1.45 Geist, ui-sans-serif, system-ui, sans-serif; }
+    h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 0.5rem; }
+    .q { max-width: 44rem; margin: 0 0 2rem; }
+    .variant { margin: 0 0 2.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(16,39,66,0.15); }
+    .variant h2 { font-size: 1.1rem; margin: 0 0 1rem; letter-spacing: 0.02em; }
+    .pair { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
+    figure { margin: 0; }
+    figure img { display: block; max-width: 100%; height: auto; border: 1px solid rgba(16,39,66,0.12); background: #fff; }
+    figcaption { font-size: 0.75rem; margin-top: 0.35rem; opacity: 0.7; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <h1>Decision sheet — <code>${escapeHtml(routeKey)}</code></h1>
+  <p class="q">${escapeHtml(question || 'Which variant wins? Reply with the variant name; losers are deleted in the pick commit.')}</p>
+  ${cells}
+</body>
+</html>
+`
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
 function parseArgv(argv) {
   const positional = []
-  const opts = { states: [], out: null, full: false, keepRaw: false, awaitSelector: null }
+  const opts = { states: [], variants: [], out: null, full: false, keepRaw: false, awaitSelector: null }
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i]
     if (a === '--states') opts.states = parseStates(argv[++i])
     else if (a.startsWith('--states=')) opts.states = parseStates(a.slice('--states='.length))
+    else if (a === '--variants') opts.variants = parseVariants(argv[++i])
+    else if (a.startsWith('--variants=')) opts.variants = parseVariants(a.slice('--variants='.length))
     else if (a === '--await') opts.awaitSelector = argv[++i]
     else if (a.startsWith('--await=')) opts.awaitSelector = a.slice('--await='.length)
     else if (a === '--out') opts.out = argv[++i]
@@ -256,6 +348,9 @@ function parseArgv(argv) {
   }
   opts.routeKey = positional[0]
   opts.baseUrl = positional[1]
+  if (opts.variants.length && opts.states.length) {
+    throw new Error('--variants and --states are mutually exclusive')
+  }
   return opts
 }
 
@@ -720,13 +815,20 @@ async function main() {
   }
 
   if (!opts.routeKey || !opts.baseUrl) {
-    console.error('Usage: node scripts/take-route-shots.mjs <route-key> <baseUrl> [--states a,b=SEL,c=SEL!click] [--out <dir>] [--full] [--keep-raw]')
+    console.error(
+      'Usage: node scripts/take-route-shots.mjs <route-key> <baseUrl> [--states a,b=SEL] [--variants a,b,c] [--out <dir>] [--full] [--keep-raw]',
+    )
     process.exit(2)
   }
 
-  const outDir = opts.out ?? join(UI_KITS, opts.routeKey, 'shots')
+  const variantsMode = opts.variants.length > 0
+  const outDir =
+    opts.out ??
+    (variantsMode
+      ? join('design_system/public/references', opts.routeKey, 'variants')
+      : join(UI_KITS, opts.routeKey, 'shots'))
   mkdirSync(outDir, { recursive: true })
-  const existing = readdirSync(outDir).filter((f) => f.endsWith('.png'))
+  const existing = existsSync(outDir) ? readdirSync(outDir).filter((f) => f.endsWith('.png')) : []
   const naming = detectNaming(existing, opts.routeKey)
 
   let url
@@ -740,8 +842,17 @@ async function main() {
   console.log(`take-route-shots — ${opts.routeKey}`)
   console.log(`  url        ${url}`)
   console.log(`  out        ${outDir}`)
-  console.log(`  naming     ${naming.style === '1440' ? '<state>-1440 / <state>-375' : '<state>-desktop / <state>-mobile375'} (from ${existing.length} existing shot${existing.length === 1 ? '' : 's'})`)
-  console.log(`  capture    ${opts.full ? `full page (height-capped at ${MAX_FULL_PAGE_HEIGHT}px)` : 'first viewport'} · scale 1 · palette-quantized`)
+  if (variantsMode) {
+    console.log(`  variants   ${opts.variants.join(', ')} (query taste_variant=…)`)
+    console.log(`  sheet      design_system/public/references/${opts.routeKey}-decision-sheet.html`)
+  } else {
+    console.log(
+      `  naming     ${naming.style === '1440' ? '<state>-1440 / <state>-375' : '<state>-desktop / <state>-mobile375'} (from ${existing.length} existing shot${existing.length === 1 ? '' : 's'})`,
+    )
+  }
+  console.log(
+    `  capture    ${opts.full ? `full page (height-capped at ${MAX_FULL_PAGE_HEIGHT}px)` : 'first viewport'} · scale 1 · palette-quantized`,
+  )
   console.log('')
 
   // An explicit CHROMIUM_EXECUTABLE wins; otherwise fall back to the newest
@@ -752,9 +863,85 @@ async function main() {
   })
   const written = []
   let failed = false
+  /** @type {Record<string, { desktop: string, mobile375: string }>} */
+  const variantFiles = {}
 
   try {
-    for (const viewport of VIEWPORTS) {
+    if (variantsMode) {
+      // SITE-63: each named variant at both viewports, then one decision sheet.
+      for (const variant of opts.variants) {
+        const variantUrl = withTasteVariant(url, variant)
+        variantFiles[variant] = { desktop: '', mobile375: '' }
+        for (const viewport of VIEWPORTS) {
+          const context = await browser.newContext({
+            viewport: { width: viewport.width, height: viewport.height },
+            userAgent: BROWSER_USER_AGENT,
+            deviceScaleFactor: 1,
+            reducedMotion: 'no-preference',
+          })
+          await context.addInitScript(SUPPRESS_OVERLAYS)
+          const mediaStats = { served: 0 }
+          await installRemoteMediaProxy(context, new URL(variantUrl).origin, mediaStats)
+          const page = await context.newPage()
+          await relayBlockedAssets(page)
+
+          const { status, height } = await loadPage(page, variantUrl)
+          if (status >= 400 || status === 0) {
+            console.error(`  ${variant}/${viewport.key}: HTTP ${status} — refusing to write a shot of an error page`)
+            failed = true
+            await context.close()
+            continue
+          }
+          if (opts.full && height > MAX_FULL_PAGE_HEIGHT) {
+            console.error(
+              `  ${variant}/${viewport.key}: page is ${height}px tall, over the ${MAX_FULL_PAGE_HEIGHT}px --full cap.`,
+            )
+            failed = true
+            await context.close()
+            continue
+          }
+
+          // Always desktop.png-style names on a decision sheet so the HTML is stable.
+          const file =
+            viewport.key === 'desktop' ? `${variant}-desktop.png` : `${variant}-mobile375.png`
+          const result = await writeShot(page, join(outDir, file), opts)
+          written.push({ file, ...result })
+          variantFiles[variant][viewport.key === 'desktop' ? 'desktop' : 'mobile375'] = file
+          console.log(`  wrote      ${file}  (${variant} · ${viewport.width}×${viewport.height})`)
+          if (mediaStats.served > 0) {
+            console.log(`  ${variant}/${viewport.key}: ${mediaStats.served} cross-origin asset(s) fetched by node (trap 10)`)
+          }
+          await context.close()
+        }
+      }
+
+      // Sheet lives beside the class refs; PNGs are under <class>/variants/.
+      const sheetRelDir = `${opts.routeKey}/variants`
+      const sheetFiles = {}
+      for (const [name, pair] of Object.entries(variantFiles)) {
+        sheetFiles[name] = {
+          desktop: `${sheetRelDir}/${pair.desktop}`,
+          mobile375: `${sheetRelDir}/${pair.mobile375}`,
+        }
+      }
+      const sheetPath = join('design_system/public/references', `${opts.routeKey}-decision-sheet.html`)
+      const questionPath = join('design_system/public/references', `${opts.routeKey}.md`)
+      let question =
+        'Which variant wins for this class? Reply with the variant name; losers are deleted in the pick commit.'
+      if (existsSync(questionPath)) {
+        question = `Pick one for \`${opts.routeKey}\` (see ${questionPath}). Which variant wins? Reply with the exact name; losers are deleted in the pick commit.`
+      }
+      writeFileSync(
+        sheetPath,
+        buildDecisionSheetHtml({
+          routeKey: opts.routeKey,
+          variants: opts.variants,
+          files: sheetFiles,
+          question,
+        }),
+      )
+      console.log(`  sheet      ${sheetPath}`)
+    } else for (const viewport of VIEWPORTS) {
       const context = await browser.newContext({
         viewport: { width: viewport.width, height: viewport.height },
         userAgent: BROWSER_USER_AGENT,
