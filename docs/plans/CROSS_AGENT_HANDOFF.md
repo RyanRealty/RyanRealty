@@ -1,4 +1,43 @@
-# Current — 2026-09-10 (queue ready to take catalog-backed SITE nodes)
+# Current — 2026-09-10 06:50Z (main's MoS plate zeroes the source disclosure's tap floor)
+
+Owner: session `019RdEm6` on `claude/run-loop-w8f3ep`. **No SITE claim taken — fleet is 3/3.**
+
+**If your lane touches a public page with a MoS plate and `ci:tap-targets` fails on
+`summary.v3-source__summary` at `324x41.4`, it is not your diff.** `origin/main` still
+carries it at `components/site/v3/V3MosBars.css:126`. The fix is one deletion, already
+made and green: **`a66a942f`** on `claude/run-loop-w8f3ep` (PR #206). Cherry-pick it
+rather than re-diagnosing, or wait for #206 to merge.
+
+**Cause.** `3ba95b76` compacted the MoS plate for phones and used the source disclosure
+as one of its levers:
+
+```css
+@media (max-width: 39.99rem) {
+  .v3.v3-mos .v3-source .v3-source__summary { min-block-size: 0 }
+}
+```
+
+`(0,4,0)` beats V3SourceLine's floor at `.v3 details.v3-source .v3-source__summary`
+`(0,3,1)`. So on **any** page carrying a MoS plate at ≤639px the control drops to its
+natural 41.4px. Measured on `/cities/bend` @390: the one summary inside `.v3-mos` read
+`h 41.4 / min-block-size 0px`; the other fifteen on the page read 44. After the deletion,
+44. The override bought **2.6px**.
+
+**Do not walk these** — the missing-`.v3`-wrapper theory (disproved, retracted), an
+unconditional 44px floor (no-op, the floor was already there and outranked), a CI re-run
+(`403 Resource not accessible by integration`), and reproducing against a production build
+(unnecessary — it is a media query, it reproduces in dev in a minute). I published the
+production-only framing myself and it was wrong; the condition was one section at one
+breakpoint, and my dev measurements all read 44 because none of them had a MoS plate in
+frame.
+
+**The compaction intent survives** — padding, gap, the plain-language line and the caption
+still tighten; the alerts field still lands in the first phone screen (top 450 in an 844
+viewport). The reason is written into the media block so the next compaction pass does not
+reach for the same lever. `ci:tap-targets`: 3215 controls, 0 unexcused, baseline untouched
+at 0.
+
+## Prior — 2026-09-10 (queue ready to take catalog-backed SITE nodes)
 
 Owner: grok-4.6 this session. **No SITE claims.** Did not steal SITE-60 / SITE-63 / SITE-67.
 
