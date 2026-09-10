@@ -275,6 +275,7 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PAGE).toContain('enrichHomeRailRows')
     expect(RAIL_CLIENT).toContain('ListingTourOverlay')
     expect(RAIL_CLIENT).toContain('SPLIT_CARD_MEDIA_SIZES_RAIL')
+    expect(RAIL_ITEMS).toContain('LISTING_FIELD_LEAD_PHOTO_SIZE')
     expect(PLACES).not.toMatch(/v3-quiet__/)
     expect(PAGE).toMatch(/Talk to a broker/)
     expect(PAGE).toMatch(/Buy a home/)

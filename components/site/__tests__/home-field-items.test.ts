@@ -65,11 +65,11 @@ describe('homeFieldItems', () => {
     expect(items[0]?.typeKey).toBe('house')
   })
 
-  it('asks Spark for the row size so the homepage Flight never names a 1600 plate', () => {
+  it('asks Spark for the field-lead size so homepage cards are not 320 thumbs', () => {
     const spark = 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260501165710852242000000-o.jpg'
     const items = homeFieldItems([tile({ photoUrl: spark })], 9)
     expect(items[0]?.photoSrc).toBe(
-      'https://cdn.resize.sparkplatform.com/ore/320x240/true/20260501165710852242000000-o.jpg',
+      'https://cdn.resize.sparkplatform.com/ore/800x600/true/20260501165710852242000000-o.jpg',
     )
   })
 

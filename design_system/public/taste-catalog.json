@@ -8,14 +8,17 @@
     "https://ui.shadcn.com"
   ],
   "catalogUrl": "https://ui.shadcn.com/docs/components",
-  "note": "Machina (@EXM7777): fetch the FULL list, integrate into the existing foundation. Public paint is components/site/v3. A missing job is a NEW barrel primitive (OPEN set), not a skip and not a second kit. Admin jobs land in components/admin/v2. Product/console/account may npx shadcn add into components/ui. Evaluator injects evaluatorBrief so loop nodes are judged against this catalog.",
+  "note": "Matt 2026-09-10: these catalogs ARE the UX bar, not a parts list. catalogUrls is a FLOOR of five and is append-only — paste a new URL and inventory it; the evaluator option list grows. Fetch the source (shadcn add / registry URL), restyle to navy #102742 / cream #faf8f4 / Geist / Amboqia / Iconoir, and wire the REAL interaction. A cream box with the catalog name is not adapted. Priority: SEO and information hold, then look / sense / ease of use. A missing job is a NEW barrel primitive that still matches the demo.",
   "refuse": [
-    "npx shadcn add onto app/ or components/site/",
-    "npm install or shadcn-add beUI / Rare UI / Beautiful UI / Transitions as a second public design system",
-    "Copy their palette, Inter, purple, glass, orbs, or magnetic buttons",
+    "npx shadcn add onto app/ or components/site/ — install into components/ui or components/site/v3, then paint with house tokens",
+    "npm install beUI / Rare UI / Beautiful UI / Transitions as a second public design system (submodule their demo app, Inter, purple)",
+    "Copy their palette, Inter, purple, orbs, magnetic/tilt buttons, or agent-chat chrome onto a listing or place page",
+    "Keep the catalog name and throw away the interaction (V3MorphSearch as a labeled cream field is this miss)",
     "Shrink a working full-bleed layout to dodge a 'looks like Zillow' tell",
-    "Drop PropertySpecs, description, schools, or Tour/Call/Text to make the fold quieter",
-    "Skip a catalog job because the barrel has no primitive yet — ADD the primitive"
+    "Drop or summarize away PropertySpecs, MLS remarks, schools, payment line items, or Tour/Call/Text",
+    "Rewrite Spark listing photos to 320x240 on a card, rail, or hero — 320 is the 88x66 ledger thumb only",
+    "Skip a catalog job because the barrel has no primitive yet — ADD the primitive that still matches the demo",
+    "Treat a score rise or rebaseline as done when the live control and the demo are not the same interaction"
   ],
   "catalogs": [
     {

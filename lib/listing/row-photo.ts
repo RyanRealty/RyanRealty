@@ -27,10 +27,12 @@
 const SPARK_RESIZE_HOST = 'cdn.resize.sparkplatform.com'
 
 /**
- * The render the row asks for. 320x240 is the smallest bucket Spark answered
- * distinctly (256x192 came back byte-identical to 320x240, so the CDN snaps
- * upward and asking smaller buys nothing), and it is still ~3.6x the 88x66 CSS
- * box, which keeps it sharp on a 2x screen.
+ * The render the 88x66 ledger thumb asks for. 320x240 is the smallest bucket
+ * Spark answered distinctly (256x192 came back byte-identical to 320x240, so
+ * the CDN snaps upward and asking smaller buys nothing), and it is still ~3.6x
+ * that CSS box, which keeps a THUMB sharp on a 2x screen. Do not use this
+ * size on a card, rail, or listing hero — those draw hundreds of CSS pixels
+ * and a 320 plate looks pixelated (Matt 2026-09-10).
  */
 export const LISTING_ROW_PHOTO_SIZE = '320x240' as const
 

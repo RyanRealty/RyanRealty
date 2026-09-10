@@ -27,10 +27,11 @@ describe('loadTasteCatalog', () => {
   it('loads the committed catalog from the X post with all five EXM7777 sources', () => {
     expect(loaded.problems).toEqual([])
     expect(loaded.source).toBe('https://x.com/EXM7777/status/2092250905655812121')
-    expect(loaded.catalogUrls).toEqual([...EXM7777_URLS])
+    expect(loaded.catalogUrls).toEqual(expect.arrayContaining([...EXM7777_URLS]))
     expect(EXM7777_IDS.every((id) => loaded.catalogs.some((c) => c.id === id))).toBe(true)
     expect(loaded.catalogs.some((c) => c.id === 'house-v3' && c.kind === 'house')).toBe(true)
     expect(loaded.refuse.some((r) => /shadcn add/i.test(r))).toBe(true)
+    expect(loaded.refuse.some((r) => /cream box/i.test(r) || /same interaction/i.test(r))).toBe(true)
   })
 })
 
@@ -106,7 +107,8 @@ describe('the other four EXM7777 catalogs', () => {
 })
 
 describe('publicInstallForbidden', () => {
-  it('flags installing a third-party kit onto the public site', () => {
+  it('allows installing a catalog item, forbids dumping it onto app/ or a novelty kit', () => {
+    expect(publicInstallForbidden('npx shadcn add @beui/morphing-search')).toBe(false)
     expect(publicInstallForbidden('npx shadcn add @beui/tilt-card')).toBe(true)
     expect(publicInstallForbidden('npx shadcn add carousel onto app/listing')).toBe(true)
     expect(publicInstallForbidden('adapt the tab indicator into V3Quiet')).toBe(false)
@@ -134,14 +136,15 @@ describe('the full EXM7777 inventories', () => {
 })
 
 describe('evaluatorBrief', () => {
-  it('tells the judge to use the catalog jobs, not the inventory dump', () => {
+  it('tells the judge to pick from named catalog jobs with demo URLs', () => {
     const brief = evaluatorBrief(loaded, 'listing-detail')
     expect(brief).toMatch(/listing-hero-bleed/)
     expect(brief).toMatch(/Frankenstein/)
-    expect(brief).toMatch(/stacked-section/)
+    expect(brief).toMatch(/same interaction/)
     expect(brief).toMatch(/replaceWith/)
-    expect(brief.length).toBeLessThan(3500)
-    expect(brief).not.toMatch(/https:\/\/beui\.dev\/components\/motion\/tabs/)
+    expect(brief).toMatch(/SEO/)
+    expect(brief.length).toBeLessThan(4500)
+    expect(brief).toMatch(/https:\/\//)
   })
 
   it('accepts a new house primitive as adaptedFrom', () => {

@@ -18,7 +18,7 @@ import type { ListingTile } from '@/lib/data/types/listing'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
-import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
 
 const TYPE_ORDER = [
@@ -154,7 +154,7 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): Ho
         streetSuffix: tile.streetSuffix,
         city: tile.city,
       }),
-      photoSrc: listingRowPhotoSrc(tile.photoUrl),
+      photoSrc: listingRowPhotoSrc(tile.photoUrl, LISTING_FIELD_LEAD_PHOTO_SIZE),
       ...(meta ? { meta } : {}),
       lat: tile.lat,
       lng: tile.lng,

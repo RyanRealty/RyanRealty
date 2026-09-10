@@ -8,10 +8,13 @@
  *
  * This module is that contract for Ryan Realty: the catalog lives at
  * design_system/public/taste-catalog.json. A lane names the class, gets the
- * BUILDER CARD (house files to open, ≤8 catalog URLs to fetch, primitives
- * still missing from the barrel), and records which one it adapted.
- * Installing the catalog as a second design system is refused. A missing
- * house primitive is a NEW file in the v3 barrel (OPEN set), not a skip.
+ * BUILDER CARD (house files to open, ≤8 catalog URLs to fetch AND install,
+ * primitives still missing from the barrel), and records which one it adapted.
+ * The five sites are the UX bar (Matt 2026-09-10): install the real source,
+ * restyle navy/cream/Geist/Amboqia/Iconoir, keep the interaction. A cream box
+ * with the catalog name is not adapted. catalogUrls is a floor of five, then
+ * any URL Matt pastes. A missing house primitive is a NEW v3 file that still
+ * matches the demo. Submoduling a catalog's demo app is refused.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { isNonEmptyString, isPlainObject } from './taste-receipt.mjs'
@@ -22,7 +25,7 @@ export const BUILDER_FETCH_CAP = 8
 export const CATALOG_PATH = 'design_system/public/taste-catalog.json'
 export const CATALOG_KINDS = Object.freeze(['house', 'admin', 'external'])
 
-/** The five URLs from EXM7777. All must be in catalogUrls. */
+/** Floor of five (EXM7777). catalogUrls may grow; it must never drop these. */
 export const EXM7777_URLS = Object.freeze([
   'https://beautifului.dev',
   'https://beui.dev',
@@ -318,7 +321,7 @@ export function formatBuilderCard(card) {
   lines.push('## Open these house files')
   if (card.open.length === 0) lines.push('- (none named)')
   else for (const o of card.open) lines.push(`- ${o.path} — ${o.job}`)
-  lines.push('', '## Fetch these catalog jobs (adapt into the barrel; do not install)')
+  lines.push('', '## Fetch these catalog jobs (install the source; restyle tokens; keep the interaction)')
   if (card.fetch.length === 0) lines.push('- (none named)')
   else for (const f of card.fetch) lines.push(`- ${f.id}: ${f.job}  ${f.url}`)
   if (card.add.length) {
@@ -340,14 +343,17 @@ export function evaluatorBrief(catalog, classKey) {
   const card = builderCard(catalog, classKey)
   const lock = card.layoutLock ? String(card.layoutLock).slice(0, 280) : ''
   const lines = [
-    'CATALOG. Judge whether the page used these jobs. A stacked-section page that ignored them is a defect. Growing v3 with a new primitive is the OPEN set; a second kit is Frankenstein.',
+    'PRIORITY: SEO and information hold first; then look, sense, and ease of use. A prettier page that drops a title, JSON-LD, ask, sourced figure, or required section is not done.',
+    'CATALOG is the UX bar. Diagnose the JOB from our shots, then pick replaceWith from the option list below (id + demo URL). Do not invent a house primitive that already lost. A cream box with the catalog name is a defect — open the demo and our control; a person must recognize the same interaction. Growing v3 with a new primitive that still matches the demo is the OPEN set; a second kit (their Inter/purple/demo app) is Frankenstein.',
   ]
   if (lock) lines.push(`Layout lock: ${lock}`)
   if (card.add.length) lines.push(`House primitives this class owes: ${card.add.join(', ')}.`)
   for (const o of card.open.slice(0, 5)) lines.push(`- ${o.id}: ${o.job}`)
-  for (const f of card.fetch.slice(0, 6)) lines.push(`- ${f.id}: ${f.job}`)
+  for (const f of card.fetch.slice(0, 6)) {
+    lines.push(`- ${f.id}: ${f.job}  ${f.url}`)
+  }
   lines.push(
-    'Each defect names replaceWith: a house primitive or catalog id, or null if the finding is craft/honesty not form. Refuse purple, orbs, gooey, magnetic buttons, agent-chat chrome on public. Navy #102742, cream #faf8f4, Geist, Amboqia stay.',
+    'Each defect names replaceWith from that list, or null if the finding is craft/honesty/SEO not form. Refuse purple, orbs, gooey, magnetic buttons, agent-chat chrome on public, and 320x240 Spark thumbs on a card/hero. Navy #102742, cream #faf8f4, Geist, Amboqia stay.',
   )
   return lines.join('\n')
 }
@@ -462,11 +468,13 @@ export function adaptedFromProblems(catalog, classKey, adaptedFrom) {
 
 export function publicInstallForbidden(text) {
   const blob = String(text ?? '')
-  // Third-party registries and named novelty kits onto the public tree = Frankenstein.
-  // `npx shadcn add carousel` into components/ui (console/account) is the product path.
-  if (/npx shadcn add\s+@/i.test(blob)) return true
-  if (/npx shadcn add.+(?:app\/|components\/site\/)/i.test(blob)) return true
-  return /(?:^|[^\w])(@beui\/|@rare-ui|magicui|aceternity|fluid-orb|gravity.?letter)/i.test(blob)
+  // Installing source into components/ui or v3, then restyling, is the path.
+  // Writing a catalog onto app/ or as a second public kit is Frankenstein.
+  if (/npx shadcn add.+(?:app\/|components\/site\/(?!v3))/i.test(blob)) return true
+  if (/git submodule.+(beui|rare-ui|beautiful-ui|transitions)/i.test(blob)) return true
+  return /(?:fluid-orb|gravity.?letter|tilt-card|shader-background|cylinder-carousel|magnetic button)/i.test(
+    blob,
+  )
 }
 
 function main() {

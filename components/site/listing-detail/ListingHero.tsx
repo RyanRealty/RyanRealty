@@ -26,7 +26,7 @@ import {
   LISTING_MOSAIC_STRIP_SIZES,
   preferListingMosaicPhotoUrl,
 } from '@/lib/listing/publish-listing-mosaic'
-import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { isOffsiteTourHost } from '@/lib/listing/publish-listing-on-site-tour'
 import dynamic from 'next/dynamic'
 
@@ -605,11 +605,11 @@ function MosaicStill({
   priority?: boolean
   contain?: boolean
 }) {
-  const compact = listingRowPhotoSrc(src)
-  // Do not even compute the 1600 URL during a Flight render: React preloads
-  // image-shaped strings in the client tree. Upgrade only when the hero is
-  // on screen.
-  const [live, setLive] = useState(priority ? preferListingMosaicPhotoUrl(src) : compact)
+  const plate = listingRowPhotoSrc(src, LISTING_FIELD_LEAD_PHOTO_SIZE)
+  // Flight may not name the 1600 plate (preload). 800x600 is the first paint
+  // for a full-bleed frame; 320x240 is a ledger thumb and looks pixelated here.
+  // Upgrade to 1600 when the hero is on screen (or immediately when priority).
+  const [live, setLive] = useState(priority ? preferListingMosaicPhotoUrl(src) : plate)
   useEffect(() => {
     if (priority) return
     const el = document.getElementById('listing-hero-visual')

@@ -1,12 +1,18 @@
-# Current — 2026-09-10 08:42Z (SITE-71/80 landed; claimed SITE-88 + SITE-72)
+# Current — 2026-09-10 (loop process: catalogs are the UX bar)
 
-Owner: `grok-01a08945-2026-09-09`. Deploy `dpl_8z8qL4RjC7q2y2iSaApT4atSBRb7` READY in 238s.
+Owner: this session. Do not steal SITE-85 / SITE-72 / SITE-88. Process change on `main`, not a page claim.
 
-- **SITE-71 done.** Live `/housing-market/annual-review` opens on MOS two-bar (homes for sale vs a month of sales) + year overlay, not sixteen tiles. `26342a49`. grok-4.6 median **64** (honesty 8), rebaselined from table 31 / SITE-41 83.
-- **SITE-80 done.** Live `/contact` is ContactFold (5.0 + call door with hours + Send a message). `53d29715`. grok-4.6 median **64** (honesty 9), rebaselined from table 49. SITE-63 `?taste_variant=` losers still on disk; default is quiet-doors = ContactFold.
-- **Held:** SITE-88 (`08545734-…`) region fold, worktree `/Users/matthewryan/RyanRealty-wt-site-88-20260910`. SITE-72 (`c33400e1-…`) search fold, `/Users/matthewryan/RyanRealty-wt-site-72-20260910`.
-- GIS "most is not all" (Matt): SITE-66/67 already closed — OSM 0, 17 official parks, 42 school polygons, 10 ZIPs, Crook taxlots in; Jefferson taxlots still 0 (publisher REST 404 / ODF query unsupported). No invented geometry.
-- Do not steal SITE-85/87 (`01a08914`) or SITE-70/84 (`01a0895a`). 15m scheduler stays. No auto-seed.
+- **Loop (every agent, every fire):** `site-queue` skill + TASTE.md. The five catalogs (plus any URL later appended to `catalogUrls`) are the UX bar. Install the source (`shadcn add`), restyle navy/cream/Geist/Amboqia/Iconoir, keep the interaction. A cream box with the catalog name is not adapted. Evaluator picks `replaceWith` from the builder-card option list (id + demo URL). Score rise without demo match is not done.
+- **Priority:** SEO first, then information, then look / sense / ease of use. Listing 13-row inventory (bleed hero, PropertySpecs, `DescriptionBlock` remarks, schools, payment, Tour/Call/Text) cannot be summarized away.
+- **Photos:** Spark `320x240` is the 88×66 ledger thumb only. Cards, rails, and the listing hero use `800x600` first paint; mosaic upgrades the on-screen frame to 1600.
+
+# Current — 2026-09-10 13:07Z (grinder 01a08b6b: claimed SITE-85 + SITE-72)
+
+Owner: `grok-4.5-2026-09-10-13`. Fleet 2/3 (SITE-88 held by `claude-opus-5-019RdEm6-2026-09-10`). origin/main `9362b613`.
+
+- **SITE-85 in_progress** sell first viewport. UUID `e7db6225-5d83-4f8a-88d2-b34bc2794c64`. Continue leftover worktree `…/subagent-01a08a78-7806-72a3-9bb9-1d1d1abad96d` branch `wt/site-85-sell-20260910`. Do not globally restyle `V3Stage`.
+- **SITE-72 in_progress** search first viewport. UUID `c33400e1-7007-409b-9e4a-18dc139fa504`. Continue `/Users/matthewryan/RyanRealty-wt-site-72-20260910` (`V3Range` uncommitted).
+- Do not steal SITE-88 (region). Do not steal SITE-87/84 (`PlaceAreaHero`). 15m scheduler stays. No auto-seed.
 
 # Current — 2026-09-10 08:40Z (this session keeps grinding as nodes finish)
 

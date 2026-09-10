@@ -42,7 +42,7 @@ import {
 } from '@/components/site/listing-detail/ListingUnavailable'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
 import { isNextRouterPrefetch } from '@/lib/listing/is-next-router-prefetch'
-import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { publishListingDropMark } from '@/lib/listing/publish-listing-drop-mark'
 import { publishListingPillRead } from '@/lib/listing/publish-listing-pill-read'
 import { daysLiveOnMarket } from '@/lib/listing/days-live'
@@ -427,15 +427,21 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
         ? [{ url: listing.photoUrl, caption: null, order: 0 }]
         : []
   // SITE-60: a Flight payload that names 1600×1200 Spark URLs still gets
-  // those plates fetched, even with next/image priority off — JSON-LD, the
-  // listing.photos array, and the filmstrip all carry the URL. Speculative
-  // renders rewrite to the 320 plate; a document visit keeps the original.
+  // those plates fetched. Speculative renders used to rewrite to 320×240,
+  // which painted the hero pixelated (Matt 2026-09-10). 800×600 is the
+  // field-lead bucket; MosaicStill upgrades the on-screen frame to 1600.
   const flightPhotos = lcpPriority
     ? galleryPhotos
-    : galleryPhotos.map((p) => ({ ...p, url: listingRowPhotoSrc(p.url) }))
+    : galleryPhotos.map((p) => ({
+        ...p,
+        url: listingRowPhotoSrc(p.url, LISTING_FIELD_LEAD_PHOTO_SIZE),
+      }))
   const flightFloorPlans = lcpPriority
     ? floorPlans
-    : floorPlans.map((p) => ({ ...p, url: listingRowPhotoSrc(p.url) }))
+    : floorPlans.map((p) => ({
+        ...p,
+        url: listingRowPhotoSrc(p.url, LISTING_FIELD_LEAD_PHOTO_SIZE),
+      }))
   const listingWithPhotos = {
     ...listing,
     photos: flightPhotos,
