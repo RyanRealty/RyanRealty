@@ -205,7 +205,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-10",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "Separate grok-4.6 evaluator via npx tsx scripts/taste-evaluate.ts homepage-v6 (CLI subscription path). Builder was grok-4.5 SITE-83 lane; never self-scored.",
+    "evaluator": "Separate grok-4.6 evaluator via npx tsx scripts/taste-evaluate.ts homepage-v6 (CLI subscription path). Builder was grok-4.5 SITE-83 lane and did not assign the number.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
     "shotSpec": {

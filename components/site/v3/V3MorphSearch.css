@@ -13,15 +13,8 @@
   border-radius: var(--v3-radius-control);
   background: var(--v3-surface);
   color: var(--v3-ink);
-  box-shadow: var(--v3-media-shadow);
   overflow: hidden;
-  transition:
-    box-shadow var(--v3-dur-state) var(--v3-ease-out),
-    border-color var(--v3-dur-state) var(--v3-ease-out);
-}
-
-.v3 .v3-morph-search--open .v3-morph-search__shell {
-  box-shadow: var(--v3-media-shadow), 0 12px 28px color-mix(in srgb, var(--v3-ink) 18%, transparent);
+  transition: border-color var(--v3-dur-state) var(--v3-ease-out);
 }
 
 .v3 .v3-morph-search__row {
