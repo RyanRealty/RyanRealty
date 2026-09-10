@@ -115,6 +115,12 @@ function HomeRailCardFace({
         >
           <HeartIcon filled={saved} className="home-rail__save-icon" />
         </V3Button>
+        <div className="home-rail__on-photo">
+          <span className="home-rail__on-photo-price">{ask ?? 'Price on request'}</span>
+          {meta.length > 0 ? (
+            <span className="home-rail__on-photo-meta">{meta.join(' · ')}</span>
+          ) : null}
+        </div>
       </div>
       <CardContent className="home-rail__copy">
         <Link href={card.href} className="v3-lrow__copy home-rail__copy-link">

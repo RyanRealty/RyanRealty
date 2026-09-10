@@ -108,6 +108,36 @@
   width: 100%;
 }
 
+.home-rail__on-photo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+  padding: var(--v3-space-sm) var(--v3-space-sm) var(--v3-space-xs);
+  background: linear-gradient(transparent, var(--v3-scrim-strong));
+  color: var(--v3-ink-on-navy);
+  pointer-events: none;
+}
+
+.home-rail__on-photo-price {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  line-height: 1.1;
+  letter-spacing: var(--v3-track-display);
+}
+
+.home-rail__on-photo-meta {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+  opacity: 0.92;
+}
+
 .v3-lrow--card .v3-lrow__media,
 .home-rail__card .v3-lrow__media {
   position: relative;

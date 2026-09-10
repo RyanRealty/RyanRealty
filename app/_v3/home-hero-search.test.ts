@@ -80,6 +80,18 @@ describe('homepage hero search uses the public search stack', () => {
     expect(RAIL_CLIENT).toContain('CardContent')
   })
 
+  it('keeps the native search field visible when JS is on', () => {
+    const css = readFileSync(resolve('components/site/v3/V3MorphSearch.css'), 'utf8')
+    expect(css).toMatch(/v3-morph-search--live \.v3-morph-search__native/)
+    expect(css).toMatch(/clip:\s*auto/)
+    expect(css).toMatch(/v3-morph-search--live \.v3-morph-search__beui[\s\S]{0,80}display:\s*none/)
+  })
+
+  it('paints the ask on the rail photograph', () => {
+    expect(RAIL_CLIENT).toContain('home-rail__on-photo')
+    expect(RAIL_CLIENT).toContain('home-rail__on-photo-price')
+  })
+
   it('hero suggestions are places and houses, not blog posts', () => {
     expect(SEARCH).toContain("item.kind === 'address'")
     expect(SEARCH).toContain("item.kind === 'city'")

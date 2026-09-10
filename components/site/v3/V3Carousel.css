@@ -57,6 +57,12 @@
   width: 100%;
 }
 
+.v3.v3-carousel--rail,
+.v3.v3-carousel--rail .v3-carousel__viewport,
+.v3.v3-carousel--rail [data-slot='carousel-content'] {
+  overflow: visible;
+}
+
 .v3.v3-carousel--rail .v3-carousel__nav {
   padding-inline: var(--v3-gutter);
 }
