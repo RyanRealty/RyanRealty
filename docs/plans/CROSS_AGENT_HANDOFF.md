@@ -1,10 +1,9 @@
-# Current — 2026-09-10 16:25Z (grinder 01a08b6b: SITE-70 + SITE-84 live)
+# Current — 2026-09-10 16:42Z (grinder 01a08b99: claimed SITE-89 + SITE-73)
 
-Owner: `grok-4.5-2026-09-10-15`. origin/main `52a1c736`. Deploy `dpl_3yE8cAPu6a2MAXfSqz5DK8JWm94F` READY in 206s (SSG 120s, 28 rail timeouts). Do not steal SITE-88.
+Owner: `grok-4.5-2026-09-10-16`. SITE-70/84 live on `52a1c736`. Do not steal SITE-88. Skip SITE-81 (region family). Skip SITE-87 (`PlaceAreaHero`). Do not globally restyle `V3Stage`. 15m scheduler stays. No auto-seed.
 
-- **SITE-70 done.** Live `/price-drops` 200, `v3-carousel` + ItemList. grok-4.6 median **60** (HF 6). Finish line 70 not met.
-- **SITE-84 done.** Live `/cities/bend/awbrey-butte` 200, `v3-mos` + `v3-alerts`. grok-4.6 median **62** (HF 6). Finish line 70 not met.
-- Skip SITE-81 (SITE-88 family) and SITE-87 (`PlaceAreaHero`). 15m scheduler stays. No auto-seed.
+- **SITE-89 in_progress** place-type fold. UUID from seed SITE-89. Leftover filmstrip `ebd1f69d` on `wt/site-89-place-type-20260910` (median 54, need >69). Rebase onto origin/main.
+- **SITE-73 in_progress** zip first viewport: replace default Google embed with Atlas-grade drawing; count as a claim. Do not globally restyle `PlaceFieldMap`.
 
 # Current — 2026-09-10 14:45Z (grinder 01a08b6b: SITE-72 + SITE-85 on main)
 
