@@ -359,3 +359,12 @@ export const BOUNDARY_EXIT_BELOW = 5
 export const FACTS_STANDALONE_MIN = BOUNDARY_EXIT_BELOW
 /** Cap the priced set. Extra comps past ten dilute the median. */
 export const PRICING_MAX_COMPS = 10
+/**
+ * How far the subject's own ground reaches for the POOL read (not for any
+ * rung). Every containment rung — the plat, the plats beside it, the
+ * community, and the 1- and 2-mile rings — sits inside three miles, so this is
+ * the box those rungs need in order to see the whole window instead of
+ * whatever fit under the citywide row cap. See selectPricingFactsNear in
+ * lib/data/pricing/facts.ts for what that cap was costing.
+ */
+export const LOCAL_POOL_RADIUS_MILES = 3
