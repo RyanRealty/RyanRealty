@@ -24,6 +24,7 @@
  *   node scripts/gis/import-tiger-zcta.mjs --write
  */
 import fs from 'node:fs'
+import { loadEnv, requireEnv } from '../../lib/platform/env.mjs'
 
 const UA = 'RyanRealtyGIS/1.0 (matt@ryan-realty.com)'
 const WRITE = process.argv.includes('--write')
@@ -41,12 +42,12 @@ function loadCanonicalZips() {
   return zips
 }
 
-function env() {
-  const src = fs.readFileSync(new URL('../../.env.local', import.meta.url), 'utf8')
-  const url = (src.match(/NEXT_PUBLIC_SUPABASE_URL=(.+)/) || [])[1]?.trim()
-  const key = (src.match(/SUPABASE_SERVICE_ROLE_KEY=(.+)/) || [])[1]?.trim()
-  if (!url || !key) throw new Error('.env.local missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY')
-  return { url, key }
+async function env() {
+  await loadEnv()
+  return {
+    url: requireEnv('NEXT_PUBLIC_SUPABASE_URL'),
+    key: requireEnv('SUPABASE_SERVICE_ROLE_KEY'),
+  }
 }
 
 function esriRingsToPolygons(rings) {
@@ -66,7 +67,7 @@ function esriRingsToPolygons(rings) {
 }
 
 async function rpc(name, body) {
-  const { url, key } = env()
+  const { url, key } = await env()
   const res = await fetch(`${url}/rest/v1/rpc/${name}`, {
     method: 'POST',
     headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },

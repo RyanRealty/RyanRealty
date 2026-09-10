@@ -18,6 +18,7 @@
  *         node scripts/seo-import-school-boundaries.mjs --write   # upsert matched polygons
  */
 import fs from 'node:fs'
+import { loadEnv, requireEnv } from '../lib/platform/env.mjs'
 
 const UA = 'RyanRealtyGIS/1.0 (matt@ryan-realty.com)'
 const URL_Q =
@@ -185,9 +186,9 @@ async function main() {
     console.log('\n(dry run — pass --write to upsert matched polygons)')
     return
   }
-  const env = fs.readFileSync(new URL('../.env.local', import.meta.url), 'utf8')
-  const url = (env.match(/NEXT_PUBLIC_SUPABASE_URL=(.+)/) || [])[1]?.trim()
-  const key = (env.match(/SUPABASE_SERVICE_ROLE_KEY=(.+)/) || [])[1]?.trim()
+  await loadEnv()
+  const url = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
+  const key = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
   for (const [slug, m] of Object.entries(matched)) {
     const res = await fetch(`${url}/rest/v1/rpc/upsert_boundary`, {
       method: 'POST',
