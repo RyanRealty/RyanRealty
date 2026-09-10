@@ -72,13 +72,15 @@
    compact Stage (evaluator cropped through the photograph otherwise). */
 .home-rail__carousel.v3-carousel--rail .v3-carousel__slide,
 .home-rail__carousel.v3-carousel--rail [data-slot='carousel-item'] {
-  flex-basis: min(14rem, 72vw);
+  flex-basis: min(17.5rem, 78vw);
   overflow: visible;
   height: auto;
+  min-height: auto;
 }
 
 .home-rail__card[data-slot='card'] {
-  overflow: visible;
+  overflow: hidden;
+  height: auto;
   border-radius: var(--v3-radius-control);
   background: var(--v3-surface);
   color: var(--v3-ink);
@@ -108,43 +110,13 @@
   width: 100%;
 }
 
-.home-rail__on-photo {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15em;
-  padding: var(--v3-space-sm) var(--v3-space-sm) var(--v3-space-xs);
-  background: linear-gradient(transparent, var(--v3-scrim-strong));
-  color: var(--v3-ink-on-navy);
-  pointer-events: none;
-}
-
-.home-rail__on-photo-price {
-  font-family: var(--v3-font-display);
-  font-size: var(--v3-size-display-2);
-  font-weight: var(--v3-weight-display);
-  line-height: 1.1;
-  letter-spacing: var(--v3-track-display);
-}
-
-.home-rail__on-photo-meta {
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body-sm);
-  line-height: var(--v3-leading-control);
-  opacity: 0.92;
-}
-
 .v3-lrow--card .v3-lrow__media,
 .home-rail__card .v3-lrow__media {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
   height: auto;
-  min-height: var(--v3-carousel-h);
+  min-height: 0;
 }
 
 .home-rail__copy {
@@ -168,10 +140,16 @@
   color: inherit;
 }
 
-.home-rail__copy .v3-lrow__price {
+.home-rail__copy .v3-lrow__price,
+.home-rail__copy [data-slot='card-title'] {
   font-family: var(--v3-font-display);
   font-size: var(--v3-size-display-2);
   font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink);
+}
+
+.home-rail__copy [data-slot='card-description'] {
+  color: var(--v3-ink-muted);
 }
 
 .v3 .home-rail__save {

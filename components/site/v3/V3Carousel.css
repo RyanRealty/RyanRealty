@@ -45,7 +45,7 @@
 .v3.v3-carousel--rail .v3-carousel__slide,
 .v3.v3-carousel--rail [data-slot='carousel-item'] {
   flex: 0 0 min(17.5rem, 78vw);
-  min-height: 0;
+  min-height: auto;
   height: auto;
   overflow: visible;
   padding-right: var(--v3-space-md);
@@ -57,10 +57,11 @@
   width: 100%;
 }
 
-.v3.v3-carousel--rail,
 .v3.v3-carousel--rail .v3-carousel__viewport,
 .v3.v3-carousel--rail [data-slot='carousel-content'] {
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: visible;
+  height: auto;
 }
 
 .v3.v3-carousel--rail .v3-carousel__nav {

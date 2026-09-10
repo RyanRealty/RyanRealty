@@ -1,3 +1,9 @@
+# Current — 2026-09-10 21:02Z (homepage catalog-visible: MorphingSearch / Card / typed count)
+
+Owner: this session (`01a08c7c`). Do not steal SITE-88 / SITE-76 / SITE-79 / SITE-81. 15m scheduler stays. No auto-seed.
+
+- **SITE-83 homepage:** live CSS had been hiding MorphingSearch (`display:none`) and stamping prices on photos. Catalog field is the JS control (native clipped after hydrate). Rails are Card photo + CardTitle/CardDescription. Navy live count is `forSaleLabel` type, not V3Number. Places mega still house chrome.
+
 # Current — 2026-09-10 17:47Z (grinder 01a08b99: SITE-89 + SITE-73 on main)
 
 Owner: `grok-4.5-2026-09-10-16`. Local `ea9f3cc5` (SITE-73 merge) on `48a3d62b` (SITE-89). Do not steal SITE-88. Do not steal SITE-76 / SITE-79 (`grok-4.5-2026-09-10-17`). Skip SITE-81. 15m scheduler stays. No auto-seed.

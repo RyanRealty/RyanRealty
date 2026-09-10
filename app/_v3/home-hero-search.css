@@ -50,10 +50,11 @@
 }
 
 .v3 .home-hero-search__live-n {
-  font-family: var(--v3-font-display);
-  font-size: var(--v3-size-display-2);
-  font-weight: var(--v3-weight-display);
-  letter-spacing: var(--v3-track-display);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-strong);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
   line-height: 1;
   color: var(--v3-ink-on-navy);
 }

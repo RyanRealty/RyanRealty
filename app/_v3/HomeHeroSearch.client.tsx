@@ -4,20 +4,19 @@
  * Homepage hero search. Buy | Sell, built so BOTH sides exist in the server
  * HTML and both work with scripting off (SITE-12). SITE-83 adapts catalog
  * modules into house primitives: V3Tabs (sliding indicator), V3MorphSearch
- * (field morphs into results). Live counts live on the Stage inventory band
- * and the lead rail (V3Number) — not a third chip over the photo.
+ * (field morphs into results). The live count on the navy chip is type, not
+ * a digit wheel — AnimatedNumber paints cream tiles that read as a white hole.
  */
 
 import { useCallback, useId, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  SearchSuggestPanel,
   flattenSuggestions,
   useSearchSuggest,
   type SuggestItem,
 } from '@/components/search/SearchSuggest'
 import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
-import { V3MorphSearch, V3Number, V3Tabs } from '@/components/site/v3'
+import { V3MorphSearch, V3Tabs } from '@/components/site/v3'
 import { searchHrefForQuery } from '@/lib/parse-search-query'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { markAskSource } from '@/lib/ask-source'
@@ -139,7 +138,7 @@ export function HomeHeroSearch({
 
       {live ? (
         <p className="home-hero-search__live">
-          <V3Number value={live.forSale} formatted={live.forSaleLabel} className="home-hero-search__live-n" />
+          <span className="home-hero-search__live-n">{live.forSaleLabel}</span>
           <span className="home-hero-search__live-label"> homes for sale</span>
         </p>
       ) : null}
@@ -181,19 +180,6 @@ export function HomeHeroSearch({
             setHighlight(-1)
           }}
           onSelect={(item) => go(item.id)}
-          results={
-            resultsOpen ? (
-              <SearchSuggestPanel
-                items={items}
-                loading={loading}
-                hasResult={suggestions !== null}
-                highlight={highlight}
-                idPrefix={prefix}
-                onPick={onPick}
-                className="home-hero-search__panel"
-              />
-            ) : null
-          }
         >
           <div className="v3-morph-search__field">
             <input

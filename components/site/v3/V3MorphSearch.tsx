@@ -79,7 +79,7 @@ export function V3MorphSearch({
           />
         </div>
       ) : null}
-      <div className="v3-morph-search__native">
+      <div className="v3-morph-search__native" aria-hidden={live || undefined} inert={live || undefined}>
         <div className="v3-morph-search__shell">
           <div className="v3-morph-search__row">{children}</div>
           {results != null ? (

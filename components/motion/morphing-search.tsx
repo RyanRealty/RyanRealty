@@ -174,10 +174,11 @@ export function MorphingSearch({
 	useEffect(() => setMounted(true), []);
 
 	useEffect(() => {
+		if (inline) return;
 		if (open && (query.trim().length > 0 || items.length > 0)) {
 			setBackgroundScrollLocked(true);
 		}
-	}, [open, query, items.length]);
+	}, [inline, open, query, items.length]);
 
 	useEffect(() => {
 		measureAnchor();
@@ -227,6 +228,7 @@ export function MorphingSearch({
 	}, [backgroundScrollLocked]);
 
 	useEffect(() => {
+		if (inline) return;
 		const handleShortcut = (event: KeyboardEvent) => {
 			if (event.key === "Escape" && open) {
 				event.preventDefault();
@@ -252,11 +254,12 @@ export function MorphingSearch({
 
 		window.addEventListener("keydown", handleShortcut);
 		return () => window.removeEventListener("keydown", handleShortcut);
-	}, [closeSearch, open, openSearch, shortcut]);
+	}, [closeSearch, inline, open, openSearch, shortcut]);
 
 	// Only this component's own state. Telling the consumer the query changed is
 	// a side effect, so it waits for the effect below.
 	useOnOpen(open, () => {
+		if (inline) return;
 		setQuery("");
 		moveTo(null);
 	});
@@ -271,6 +274,7 @@ export function MorphingSearch({
 	});
 
 	useEffect(() => {
+		if (inline) return;
 		if (open) {
 			notifyQuery.current?.("");
 			const frame = requestAnimationFrame(() => inputRef.current?.focus());
@@ -287,7 +291,7 @@ export function MorphingSearch({
 			});
 			return () => cancelAnimationFrame(frame);
 		}
-	}, [open]);
+	}, [inline, open]);
 
 	useEffect(() => {
 		wasOpenRef.current = open;
@@ -351,7 +355,9 @@ export function MorphingSearch({
 	const shellLayoutId = `${uid}-shell`;
 	const listboxId = `${uid}-results`;
 	const panelWidth = anchorRect.width;
-	const showList = query.trim().length > 0 || filteredItems.length > 0;
+	const showList = inline
+		? query.trim().length > 0
+		: query.trim().length > 0 || filteredItems.length > 0;
 	if (inline) {
 		return (
 			<div ref={anchorRef} className={cn("relative w-full", className)}>
@@ -365,9 +371,35 @@ export function MorphingSearch({
 						<Search className="size-4 shrink-0 text-muted-foreground" />
 						<input
 							ref={inputRef}
+							type="search"
 							value={query}
 							onChange={(event) => updateQuery(event.target.value)}
 							onFocus={() => setOpen(true)}
+							onKeyDown={(event) => {
+								if (event.key === "ArrowDown") {
+									event.preventDefault();
+									moveActive(1);
+									return;
+								}
+								if (event.key === "ArrowUp") {
+									event.preventDefault();
+									moveActive(-1);
+									return;
+								}
+								if (event.key === "Enter") {
+									const item = filteredItems[activeIndex];
+									if (item) {
+										event.preventDefault();
+										selectItem(item);
+									}
+									return;
+								}
+								if (event.key === "Escape") {
+									event.preventDefault();
+									if (query) updateQuery("");
+									else setOpen(false);
+								}
+							}}
 							role="combobox"
 							aria-label={placeholder}
 							aria-expanded={showList}
