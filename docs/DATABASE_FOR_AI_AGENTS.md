@@ -110,7 +110,7 @@
 
 GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
 
-  public.boundaries           — PostGIS polygons (geo_type ∈ {city, neighborhood, subdivision})
+  public.boundaries           — PostGIS polygons (geo_type ∈ {city, neighborhood, subdivision, park, school, school_district, zip})
   public.neighborhood_subdivisions  — parent→child SubdivisionName aliases for resort/neighborhood reports
   public.subdivision_flags    — is_resort flag (entity_key = 'city:slug')
 
@@ -133,7 +133,7 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
 
 | Table | Rows | Purpose |
 |---|---|---|
-| `public.boundaries` | 3,527 | Polygons. `geo_type ∈ {city, neighborhood, subdivision, school_district, park, …}`. **11 cities** (TIGER/Line, including Powell Butte CCD), **28 neighborhoods** (14 Bend districts + 14 resort communities), **3,427 subdivisions** (3,223 Deschutes County GIS plats + 204 Crook County GIS Subdivisions, LandGroup/7, SITE-58), **6 school districts** (Oregon Dept. of Education, W2.7). PostGIS geometry in `polygon` (MULTIPOLYGON, SRID 4326). **Trails are NOT a `boundaries` geo_type** — see `public.trail_lines`. Jefferson County publishes no recorded-plat layer. |
+| `public.boundaries` | 3,541 | Polygons. `geo_type ∈ {city, neighborhood, subdivision, school_district, park, school, zip}`. **11 cities** (TIGER/Line, including Powell Butte CCD), **28 neighborhoods** (14 Bend districts + 14 resort communities), **3,427 subdivisions** (3,223 Deschutes County GIS plats + 204 Crook County GIS Subdivisions, LandGroup/7, SITE-58), **6 school districts** (Oregon Dept. of Education, W2.7), **42 schools** (Deschutes County GIS attendance, BoundaryFD/19; Crook/Jefferson/Culver/Gilchrist attendance unpublished — two-shape SITE-66/67, pages draw homes only not a city stand-in), **17 parks** (6 Oregon State Parks + 11 county GIS; American Legion Community Park has no named official polygon — OSM removed SITE-67), **10 ZIPs** (Census TIGER/Line 2024 ZCTA5, the CANONICAL_ZIPS set). PostGIS geometry in `polygon` (MULTIPOLYGON, SRID 4326). **Trails are NOT a `boundaries` geo_type** — see `public.trail_lines`. Jefferson County publishes no recorded-plat layer. |
 | `public.trail_lines` | 18 | **Authoritative trail LINEWORK** (MultiLineString 4326) from USFS / BPRD / BLM. W2.7 decision (2026-07-24): do **not** invent a `geo_type='trail'` polygon corridor — that would be buffered geometry we made up. Keep trails here; `ci:boundary-provenance` bans `trail` as a boundaries geo_type. |
 | **`public.listing_boundary_xref_mv`** ⭐ | ~9.3K | **Precomputed listing→boundary spatial join** (mig `20260529020000`). ONE row per (boundary, on-market listing inside it): `(geo_type, geo_slug, listing_key, lat, lng, list_price, standard_status, property_type)`. Overlapping polygons (e.g. a Bend district AND the Tetherow resort, both `geo_type='neighborhood'`) each get their own row, so resort listings are correctly attributed even though their MLS `SubdivisionName` aliases collapse the `listing_tile_mv.boundary_neighborhood` column to the Bend district. **This is what the `listings_in_boundary` RPC reads** — a trivial indexed lookup, NOT a request-time `ST_Within`. Refreshed CONCURRENTLY by `/api/cron/refresh-mvs` (≤15 min). The boundary-map pins + "homes for sale" cards on every city/neighborhood/community page come from here via the `getGeoBoundaryMapData` DAL. |
 | `public.neighborhood_subdivisions` | 1,686 | Parent → child SubdivisionName aliases. For each `neighborhood_slug`, lists the `subdivision_label` values that aggregate under it. Resort communities (e.g. `tetherow`) have multiple aliases (Tetherow, Sunrise Village, Braeburn, …). Bend neighborhoods (e.g. `bend-awbrey-butte`) have many subdivision-plat names that fall inside the City of Bend district polygon. |
@@ -142,22 +142,23 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
 | `public.cities` | 0 | City master list. Currently unused; `slugify(city_field)` is the canonical city slug. |
 | `public.neighborhoods` | 13 | City of Bend neighborhood districts with `boundary_geojson` jsonb. Separate from `boundaries` rows (older spatial system, still consumed by AgentFire neighborhood pages). |
 | `public.communities` | 1,848 | Auto-populated from MLS SubdivisionName syncs. Flat list, no parent-child structure. The 14 resort communities are flagged via `subdivision_flags`. |
-| **`public.taxlots`** ⭐ | ~247K | **Lot lines** — one recorded parcel polygon per row (MultiPolygon 4326, GIST), unique on `(county, taxlot)`, with `acres` measured off the polygon on the spheroid at ingest. **RLS on with no anon policy: never read this table directly.** Reads go through `taxlots_near_point()` and `taxlots_in_boundary()`, SECURITY DEFINER RPCs that clip and simplify server-side to the resolution the caller's frame can draw — a listing frame gets ~20 lots at ~186 bytes each instead of the raw fabric. DAL: `lib/data/geo/getTaxlots.ts`. **It is an assessor's map, not a survey**; `TAXLOT_DISCLAIMER` prints beside every drawn line, and `taxlotSourceFor(county)` gives the credit. |
+| **`public.taxlots`** ⭐ | 264,424 | **Lot lines** — one recorded parcel polygon per row (MultiPolygon 4326, GIST), unique on `(county, taxlot)`, with `acres` measured off the polygon on the spheroid at ingest. **RLS on with no anon policy: never read this table directly.** Reads go through `taxlots_near_point()` and `taxlots_in_boundary()`, SECURITY DEFINER RPCs that clip and simplify server-side to the resolution the caller's frame can draw — a listing frame gets ~20 lots at ~186 bytes each instead of the raw fabric. DAL: `lib/data/geo/getTaxlots.ts`. **It is an assessor's map, not a survey**; `TAXLOT_DISCLAIMER` prints beside every drawn line, and `taxlotSourceFor(county)` gives the credit. |
 | `public.taxlot_refreshes` | — | One row per ingest. `mode='delta'` (Deschutes only) or `'full'` (a sweep). `ok=false` means part of the window would not read, so the next run re-covers it. `lib/taxlots/refresh.ts` reads the newest clean `full` row to decide whether a sweep county has gone stale. |
 
-**Taxlot coverage — four counties, and only one of them can be updated incrementally.**
+**Taxlot coverage — five counties loaded, and only one of them can be updated incrementally. Jefferson still has no public layer.**
 
 | County key | Source | Rows | Coverage | Staying current |
 |---|---|---|---|---|
-| `deschutes` | Deschutes County Assessor's Office | 109,505 | whole county | **Delta.** The DIAL layer stamps `AUTODATE`, so `/api/cron/taxlot-refresh` pulls only edited lots nightly. Churn: ~3 a week. |
+| `deschutes` | Deschutes County Assessor's Office | 109,469 | whole county | **Delta.** The DIAL layer stamps `AUTODATE`, so `/api/cron/taxlot-refresh` pulls only edited lots nightly. Churn: ~3 a week. |
 | `klamath` | Klamath County GIS | 61,227 | whole county | **Sweep.** No edit date. Sync is on but change tracking is not, and `DDate`/`Heliondate` are one publish date repeated on every row. |
 | `josephine` | Josephine County GIS | 41,751 | whole county | **Sweep.** No edit date. |
 | `jackson` | **City of Medford GIS** | ~34,400 | **the City of Medford only** | **Sweep.** Jackson County publishes no county-wide layer we can attribute; the only county-wide copy on ArcGIS Online is an unattributed third-party snapshot. A listing in Ashland or Eagle Point draws no lot, which is correct. |
+| `crook` | Crook County GIS (`CC_Taxlots_Helion`) | 17,551 | whole county | **Sweep.** SITE-66 found the layer (two shapes: Helion FeatureServer/0 count=17555 and Public/Crook_County_Taxlots MapServer/0 count=17555). Distinct MAPTAXLOT 17,552; 3 multi-piece lots merged; 17,551 rows written. No per-row edit date. |
 
 Sweeps are run from the CLI (`node scripts/gis/import-taxlots.mjs --county <key> --write`); the
 nightly cron reports a sweep county whose last clean run is over 60 days old rather than letting
-it rot silently. **Crook and Jefferson publish no taxlot layer at all** — checked twice, two query
-shapes. Their listings draw no lot lines.
+it rot silently. **Jefferson publishes no public taxlot layer** — re-verified SITE-66 (county REST HTTPS fail / HTTP 404) and SITE-67 (ODF `TaxlotsDisplay` MapServer layer 15 "Jefferson County" answers 200 as a map-only service; Query capability is not supported).
+Jefferson listings draw no lot lines.
 
 **The id field on each county was measured, never assumed.** Medford's obvious `MAPLOT` holds only
 32,487 distinct values across 34,447 rows; using it would have silently dropped 1,960 lots through

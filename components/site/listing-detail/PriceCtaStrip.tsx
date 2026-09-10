@@ -29,6 +29,7 @@ import { publishListingListedBy } from '@/lib/listing/publish-listing-listed-by'
 import { formatPriceCompact } from '@/lib/format/money'
 import type { PublishedListingDropMark } from '@/lib/listing/publish-listing-drop-mark'
 import type { PublishedListingPillRead } from '@/lib/listing/publish-listing-pill-read'
+import { V3Button, V3ButtonGroup } from '@/components/site/v3'
 import { PriceDropMark } from './PriceDropMark'
 
 /**
@@ -452,78 +453,51 @@ export function PriceCtaStrip({
       <div className="listing-face__actions">
       {/* CTA hierarchy: primary full-width on mobile, secondaries even 3-col.
           Desktop keeps the inline wrap. */}
-      <div className="listing-ask-row mt-5">
+      <V3ButtonGroup label={offMarket ? 'Homes like this' : 'Contact about this listing'} className="listing-ask-row mt-5">
         {/* SITE-21: THE ASK A BROKER CAN FULFIL.
             Off market, Tour / Call / Text are three requests nobody can act
-            on: there is no showing to book on a home that closed, and the
-            phone call it starts ends with "that one sold." So the ask becomes
-            the two things this reader can actually get — the homes in this
-            city that ARE for sale, and an email when the next one lists. Save
-            and Share stay: a sold comparable is worth keeping. */}
+            on. Save and Share stay. Adapted from shadcn button-group + beUI
+            action-swap into V3ButtonGroup. */}
         {offMarket ? (
           <>
-            {/* Two words each. This row is a three-column grid, and at 375
-                "Homes for sale in Bend" / "Email me new listings" wrapped to
-                three lines and clipped the middle button (looked at 2026-09-09).
-                The city is in the H1 and the breadcrumb above; the labels match
-                the phone's sticky bar so a reader sees one vocabulary. */}
-            <a
-              href={similarHref}
-              className="btn alt"
-              style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              Homes for sale
-            </a>
-            <a href={alertsHref} className="btn" style={OUTLINE_BTN_STYLE}>
+            <V3Button href={similarHref}>Homes for sale</V3Button>
+            <V3Button href={alertsHref} variant="ghost">
               Get alerts
-            </a>
+            </V3Button>
           </>
         ) : (
           <>
-            <a
-              href={tourHref}
-              className="btn alt"
-              style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              Tour
-            </a>
+            <V3Button href={tourHref}>Tour</V3Button>
             {callHref ? (
-              <a href={callHref} className="btn" style={OUTLINE_BTN_STYLE}>
+              <V3Button href={callHref} variant="ghost">
                 Call
-              </a>
+              </V3Button>
             ) : (
-              <a href={askHrefResolved} className="btn" style={OUTLINE_BTN_STYLE}>
+              <V3Button href={askHrefResolved} variant="ghost">
                 Ask a question
-              </a>
+              </V3Button>
             )}
             {textHref ? (
-              <a href={textHref} className="btn" style={OUTLINE_BTN_STYLE}>
+              <V3Button href={textHref} variant="ghost">
                 Text
-              </a>
+              </V3Button>
             ) : null}
           </>
         )}
-        <button
+        <V3Button
           type="button"
-          className="btn"
-          style={OUTLINE_BTN_STYLE}
+          variant="ghost"
           onClick={handleSave}
           disabled={saveState === 'saving'}
-          aria-pressed={saveState === 'saved'}
-          aria-label={saveAriaLabel}
+          ariaPressed={saveState === 'saved'}
+          ariaLabel={saveAriaLabel}
         >
           {saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving...' : 'Save'}
-        </button>
-        <button
-          type="button"
-          className="btn"
-          style={OUTLINE_BTN_STYLE}
-          onClick={handleShare}
-          aria-label={`Share ${propertyName}`}
-        >
+        </V3Button>
+        <V3Button type="button" variant="ghost" onClick={handleShare} ariaLabel={`Share ${propertyName}`}>
           Share
-        </button>
-      </div>
+        </V3Button>
+      </V3ButtonGroup>
 
       {showAlerts ? (
         <>

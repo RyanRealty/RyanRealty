@@ -17,7 +17,9 @@ in a session that has this skill loaded means `/loop /site-queue`.
 Matt 2026-09-10: "i want this to just continue to run as it finishes and new nodes get entered."
 Empty of eligible is not a stop. Keep the scheduled wake. The next fire claims whatever
 became `open` (a seed, a released claim, a window that reopened). Do not auto-seed
-(SITE-62: draft, then a person pastes). Stop the schedule only when every class is at
+(SITE-62: `node scripts/taste-table.mjs --seed-draft`, then a person pastes). Those
+drafts already carry the catalog builder card and an accept that requires
+`adaptedFrom` + `replaceWith`. Stop the schedule only when every class is at
 or above 70 on the table instrument.
 
 Repo canon outranks this file wherever they touch: CLAUDE.md §0 (every figure traces
@@ -267,16 +269,28 @@ counted 17 of 37 item commits (45.9%) as evaluator rework — SITE-09 was 4 of i
 costs a fix. The same defect found after the merge costs a public commit, a
 re-capture of the whole page, and the 869-file unit suite. So the lane, in order:
 
-0. **Lego (EXM7777 — all five).** Before composing or replacing a public
-   section, `node scripts/lib/taste-catalog.mjs <class>`. Fetch the printed
-   modules from https://beautifului.dev, https://beui.dev, https://rareui.com,
-   https://transitions.dev, and https://ui.shadcn.com (or the local
-   `components/ui` file when shadcn is already installed). Adapt the JOB into
-   the v3 / listing foundation. Navy, cream, Geist, Amboqia stay. Do not
-   npm-install any of those catalogs onto `app/` or `components/site/`. Do not
-   shrink a working full-bleed layout (listing hero: `listing-hero-bleed`).
-   Record `adaptedFrom`. Empty adaptedFrom is inventing a layout — that is how
-   SITE-45 lost the full-width hero.
+0. **Lego (EXM7777 — the builder card).** Before composing or replacing a
+   public section, paste this command's output into the lane brief:
+
+   ```bash
+   node scripts/lib/taste-catalog.mjs <class> --preflight
+   ```
+
+   That is the card: house files to OPEN, ≤8 catalog URLs to FETCH, primitives
+   still missing from the barrel, the layout lock, the refuse list. Do not
+   dump `taste-catalog.json`. Fetch those URLs (beautifului / beui / rareui /
+   transitions / ui.shadcn.com, or the local `components/ui` file when shadcn
+   is already installed). Adapt the JOB into the v3 / listing foundation.
+   **If the job has no house primitive, ADD one to `components/site/v3`**
+   (OPEN pattern set) and export it from the barrel. Growing the barrel is
+   the one design system. Installing beUI/Rare/Beautiful as a second look is
+   Frankenstein. Admin jobs go in `components/admin/v2`. `npx shadcn add` is
+   allowed into `components/ui` for console/account only. Navy, cream, Geist,
+   Amboqia stay. Do not shrink a working full-bleed layout (listing hero:
+   `listing-hero-bleed`; `heroInMain` is the SITE-45 shrink and the layout
+   lock fails CI). Record `adaptedFrom` on the receipt. Empty adaptedFrom is
+   inventing a layout — `ci:taste-canon` refuses a new catalog-class score
+   without it. Each evaluator defect names `replaceWith`.
 1. Builds, and runs the builder ritual in `design_system/public/TASTE.md` with
    its own eyes on the screenshots.
 2. Captures the shots from its own `next dev` into `ui_kits/<route>/shots/`,
@@ -290,9 +304,10 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
    (shape in TASTE.md, "The receipt"): `evaluatorModel`, `builderModel`,
    `rubricVersion`, `shotSpec`, `shotsHash`
    (`node scripts/lib/taste-receipt.mjs <parity.json>`), the three `scores` and
-   their median, the named `defects`, and `comparedToPrior` with `priorMark`.
-   `ci:taste-canon` recomputes the hash and the median and refuses a receipt
-   that claims a rise it did not make.
+   their median, the named `defects` (each with `replaceWith`), `adaptedFrom`,
+   and `comparedToPrior` with `priorMark`. `ci:taste-canon` recomputes the
+   hash and the median and refuses a receipt that claims a rise it did not
+   make, or a catalog-class receipt that invented a layout.
 6. Only then: `npm run gates:stamp`, commit with the `Node: <id>` trailer, push
    its own branch, and report. The evaluator's remaining findings append to the
    node.
@@ -356,10 +371,12 @@ line, and keep building the other lanes.
 
 ## Do not
 
-- Invent a layout from a taste adjective. Fetch `node scripts/lib/taste-catalog.mjs <class>`
-  (shadcn docs + house modules) and adapt. Empty `adaptedFrom` is a miss.
+- Invent a layout from a taste adjective. Run
+  `node scripts/lib/taste-catalog.mjs <class> --preflight` and adapt the
+  printed jobs. Empty `adaptedFrom` fails `ci:taste-canon` on the next score.
 - `npx shadcn add` onto `app/` or `components/site/`. Public paint is v3. Admin
-  already lives in `components/ui`.
+  interiors are `components/admin/v2`. Product/console may add into `components/ui`.
+  Skipping a catalog job because the barrel has no primitive is a miss — add the primitive.
 - Shrink a working full-bleed layout to dodge a "looks like Zillow" tell
   (SITE-45 listing hero).
 - Write a new audit, punch list, or plan for the site. Append to a node.

@@ -12,6 +12,7 @@ import {
   formatSiteGap,
   nextFreeSiteNumber,
 } from '../lib/taste-table-core.mjs'
+import { loadTasteCatalog } from '../lib/taste-catalog.mjs'
 import { parseArgv } from '../taste-table.mjs'
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -198,6 +199,37 @@ describe('buildSeedDrafts', () => {
     expect(text).toMatch(/Nothing was written to Supabase/)
     expect(text).toMatch(/npx tsx scripts\/seed-site-queue\.ts/)
     expect(text).toMatch(/SITE-63/)
+    expect(text).toMatch(/adaptedFrom/)
+  })
+
+  it('emits a class with no on-disk primitive when the catalog has modules, and requires adaptedFrom', () => {
+    const catalog = loadTasteCatalog(
+      JSON.parse(readFileSync(join(REPO, 'design_system/public/taste-catalog.json'), 'utf8')),
+    )
+    expect(catalog.problems).toEqual([])
+    const dangling = {
+      ...goodDefect,
+      primitive: 'components/site/v3/DoesNotExist.tsx',
+    }
+    const { drafts, warnings } = buildSeedDrafts({
+      table: tableWith([
+        row('invest', 25, [24, 25, 26], {
+          defects: [dangling],
+          verdict: 'a cover memo, not a landing page.',
+        }),
+      ]),
+      usedGaps: USED_THROUGH_62,
+      root: SANDBOX,
+      catalog,
+    })
+    expect(warnings).toEqual([])
+    expect(drafts).toHaveLength(1)
+    expect(drafts[0].versionGap).toBe('SITE-63')
+    expect(drafts[0].objective).toMatch(/taste-catalog\.mjs invest --preflight/)
+    expect(drafts[0].objective).toMatch(/adaptedFrom/)
+    expect(drafts[0].accept).toMatch(/adaptedFrom/)
+    expect(drafts[0].accept).toMatch(/replaceWith/)
+    expect(JSON.stringify(drafts)).not.toContain('DoesNotExist')
   })
 })
 

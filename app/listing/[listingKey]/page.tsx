@@ -41,6 +41,8 @@ import {
   LISTING_UNAVAILABLE_METADATA,
 } from '@/components/site/listing-detail/ListingUnavailable'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
+import { isNextRouterPrefetch } from '@/lib/listing/is-next-router-prefetch'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { publishListingDropMark } from '@/lib/listing/publish-listing-drop-mark'
 import { publishListingPillRead } from '@/lib/listing/publish-listing-pill-read'
 import { daysLiveOnMarket } from '@/lib/listing/days-live'
@@ -130,7 +132,10 @@ void V3ListingRow
  *  13 who listed  live broker; firm proof if no personal record
  */
 
-type PageProps = { params: Promise<{ listingKey: string }> }
+type PageProps = {
+  params: Promise<{ listingKey: string }>
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
+}
 
 /**
  * MASTER_SPEC §4.9: an off-market page shows "3-4 active listings". Below three
@@ -242,8 +247,12 @@ function brokerTelDigits(phone: string | null | undefined): string | null {
   return digits.length >= 10 ? digits : null
 }
 
-export default async function ListingDetailPage({ params }: PageProps) {
-  const { listingKey } = await params
+export default async function ListingDetailPage({ params, searchParams }: PageProps) {
+  const [{ listingKey }, sp] = await Promise.all([params, searchParams ?? Promise.resolve({})])
+  // SITE-60: Flight renders (prefetch and client navigations) must not emit a
+  // 1600×1200 hero preload. Next strips the rsc / next-router-prefetch headers
+  // before headers() sees them, so this also reads Accept and `_rsc`.
+  const lcpPriority = !(await isNextRouterPrefetch(sp))
   const listing = await getListingDetail(listingKey)
   if (!listing) return <ListingUnavailable />
 
@@ -417,7 +426,21 @@ export default async function ListingDetailPage({ params }: PageProps) {
       : listing.photoUrl
         ? [{ url: listing.photoUrl, caption: null, order: 0 }]
         : []
-  const listingWithPhotos = { ...listing, photos: galleryPhotos }
+  // SITE-60: a Flight payload that names 1600×1200 Spark URLs still gets
+  // those plates fetched, even with next/image priority off — JSON-LD, the
+  // listing.photos array, and the filmstrip all carry the URL. Speculative
+  // renders rewrite to the 320 plate; a document visit keeps the original.
+  const flightPhotos = lcpPriority
+    ? galleryPhotos
+    : galleryPhotos.map((p) => ({ ...p, url: listingRowPhotoSrc(p.url) }))
+  const flightFloorPlans = lcpPriority
+    ? floorPlans
+    : floorPlans.map((p) => ({ ...p, url: listingRowPhotoSrc(p.url) }))
+  const listingWithPhotos = {
+    ...listing,
+    photos: flightPhotos,
+    photoUrl: flightPhotos[0]?.url ?? listing.photoUrl,
+  }
 
   // SITE-21. relatedHomes.nearby is the only ACTIVE-only pool: fetchNearbyTiles
   // queries status 'active', while relatedHomes.similar hydrates the similar MV
@@ -442,7 +465,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
     offMarket && similarInPlace.length < OFF_MARKET_SIMILAR_MIN
       ? listingSimilarDedupe(similarBase)
       : similarInPlace
-  const similarRows = listingSimilarRail(similarPool)
+  const similarRows = listingSimilarRail(similarPool).map((row) =>
+    row.photoUrl
+      ? { ...row, photoUrl: listingRowPhotoSrc(row.photoUrl) }
+      : row,
+  )
   const inventoryDoor = listingInventoryDoor(placeContext)
   const placeBoundary = await (async () => {
     for (const attempt of listingBoundaryAttempts(listing, placeContext)) {
@@ -594,8 +621,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const hero = (
     <ListingHero
-      photos={galleryPhotos}
-      floorPlans={floorPlans}
+      photos={flightPhotos}
+      floorPlans={flightFloorPlans}
       videos={videos}
       addressLine={street}
       lat={listing.lat}
@@ -605,6 +632,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           ? publishOpenHouseBadgeLabel(openHouses[0].event_date, openHouses[0].start_time)
           : null
       }
+      lcpPriority={lcpPriority}
     />
   )
 
@@ -650,7 +678,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       lng={listing.lng}
       boundary={placeBoundary}
       addressLine={street}
-      photoUrl={galleryPhotos[0]?.url ?? listing.photoUrl}
+      photoUrl={galleryPhotos[0] ? listingRowPhotoSrc(galleryPhotos[0].url) : listing.photoUrl}
       price={publishedSaleAsk}
       beds={listing.beds}
       baths={listing.baths}
@@ -736,7 +764,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           city={listing.city}
           listPrice={wholePropertyPrice}
           beds={listing.beds}
-          photoUrl={galleryPhotos[0]?.url ?? listing.photoUrl}
+          photoUrl={flightPhotos[0]?.url ?? listing.photoUrl}
           showCoach={false}
         />
       ) : null}
@@ -871,7 +899,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
     wholePropertyPrice,
     trail: breadcrumbs,
     listing,
-    photoUrls: galleryPhotos.map((p) => p.url),
+    photoUrls: (lcpPriority ? galleryPhotos : flightPhotos).map((p) => p.url),
     agent: listingAgent
       ? { fullName: listingAgent.fullName, email: listingAgent.email, phoneDirect: listingAgent.phoneDirect }
       : listing.listAgentName
@@ -896,7 +924,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
         <V3Breadcrumb trail={breadcrumbs} />
         <ListingDetailShell
           hero={hero}
-          heroInMain
           main={main}
           sidebar={sidebar}
           floating={floating}

@@ -101,8 +101,9 @@ JSON file. As of 2026-09-08 it records the INSTRUMENT, not just the number:
   "scores": [81, 84, 82],
   "score": 82,
   "beats": "named competing page and the metric we win",
+  "adaptedFrom": [{ "id": "house-module-or-catalog-id" }],
   "defects": [
-    { "section": "#rails", "severity": "taste", "finding": "named finding, 10+ characters" }
+    { "section": "#rails", "severity": "taste", "finding": "named finding, 10+ characters", "replaceWith": "V3Carousel" }
   ],
   "comparedToPrior": "first | rose | rebaselined",
   "priorMark": {
@@ -279,14 +280,30 @@ as a second look — navy, cream, Geist, Amboqia stay. The frozen lists live in
 `design_system/public/taste-catalog.json`. A lane starts with:
 
 ```bash
-node scripts/lib/taste-catalog.mjs listing-detail
+node scripts/lib/taste-catalog.mjs listing-detail --preflight
 ```
 
-That prints the layout lock, house modules, shadcn picks, and takeable
-modules from the other four. Fetch each named URL. Adapt the JOB into
-`components/site/v3` / the listing stack. Record `adaptedFrom`. SITE-45
-invented "one frame in the column" instead of fetching a carousel into the
-full-bleed hero, and Matt lost the hero, the facts, and the buttons.
+That prints the **builder card**: the layout lock, house files to OPEN, up to
+eight catalog URLs to FETCH, and primitives still missing from the barrel.
+`--preflight` fails if a house file or the layout lock is gone. Fetch those
+URLs. Adapt the JOB into `components/site/v3` / the listing stack. **If the
+job has no house primitive, add one to the v3 barrel** (the pattern set is
+OPEN). That is not Frankenstein — a second kit, a second stylesheet, or a
+catalog palette on a public page is. Admin jobs land in `components/admin/v2`.
+Product/console may `npx shadcn add` into `components/ui` only. Record
+`adaptedFrom`. Empty `adaptedFrom` is inventing a layout — SITE-45 invented
+"one frame in the column" instead of fetching a carousel into the full-bleed
+hero, and Matt lost the hero, the facts, and the buttons. `ci:taste-canon`
+refuses a new catalog-class receipt without `adaptedFrom`; existing receipts
+sit on a shrink-only baseline until their next score.
+
+The evaluator (`scripts/taste-evaluate.ts` and `scripts/taste-table.mjs`)
+injects `evaluatorBrief(class)` so a node is judged against this catalog, not
+against "clean." A stacked-section page that ignored the catalog is a named
+defect. Each defect names `replaceWith`: a house primitive (`V3Carousel`,
+`V3ButtonGroup`, `V3Sheet`, …) or a catalog module id, or `null` if the
+finding is craft/honesty not form. A catalog load error fails the evaluator
+out loud — it does not swallow and score "clean."
 
 Before composing a page class, write down three to five references and *what
 specifically works in each*, and design against those sentences. Two stronger

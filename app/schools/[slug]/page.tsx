@@ -21,7 +21,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getSchoolDetail, getBoundaryGeoJSON } from '@/lib/data'
-import { CO_SCHOOLS, getSchoolBySlug, slugifySchoolName, type SchoolLevel } from '@/data/co-schools'
+import { CO_SCHOOLS, getSchoolBySlug, type SchoolLevel } from '@/data/co-schools'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { publishNearbyListingsSource } from '@/lib/site/publish-nearby-listings-source'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -104,14 +104,13 @@ export default async function SchoolDetailPage({ params }: Props) {
       (s) => s.slug !== school.slug && s.districtSlug === school.districtSlug && s.level === school.level,
     )
 
-  const citySlug = slugifySchoolName(school.city)
   const schoolBoundary = await getBoundaryGeoJSON({ geoType: 'school', geoSlug: school.slug }).catch(
     () => null,
   )
   const usingAttendanceArea = schoolBoundary != null
-  const polygon =
-    schoolBoundary ??
-    (await getBoundaryGeoJSON({ geoType: 'city', geoSlug: citySlug }).catch(() => null))
+  // SITE-67: a city polygon is not this school's attendance area. Draw none
+  // rather than a stand-in (Matt: most is not all; do not invent geometry).
+  const polygon = schoolBoundary
 
   const fieldItems = nearbyFieldItems(homes)
   const pins = fieldMapPins(fieldItems)
@@ -273,7 +272,7 @@ export default async function SchoolDetailPage({ params }: Props) {
           mapNote={
             usingAttendanceArea
               ? 'School attendance area plus active single-family homes that feed this school.'
-              : `${school.city} city frame plus active single-family homes that feed this school.`
+              : `Active single-family homes that feed this school. No official attendance polygon is published for this school, so the map is homes only — not a city stand-in.`
           }
           footNote={
             stats.count > fieldItems.length

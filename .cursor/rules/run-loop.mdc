@@ -47,8 +47,10 @@ builds with **grok-4.5**, because the gate refuses a model grading its own page.
 page class at 70 or above on that table** (Matt 2026-09-09). Before composing a
 section, `node scripts/lib/taste-catalog.mjs <class>` and fetch the modules it
 prints from beautifului.dev, beui.dev, rareui.com, transitions.dev, and
-ui.shadcn.com. Adapt into v3. Navy, cream, Geist, Amboqia stay. Do not invent
-a layout from adjectives.
+ui.shadcn.com. Adapt into v3. If the job has no house primitive, add one to
+`components/site/v3` (OPEN set — not a second kit). Navy, cream, Geist,
+Amboqia stay. Do not invent a layout from adjectives. The evaluator prompt
+includes that catalog.
 
 Then the gates (`npm run ci:gates`), the `Node: <id>` trailer on every commit touching
 `app/**` or `components/site/**` (G72), ONE `npm run push` per round from the main

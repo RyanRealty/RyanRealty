@@ -1,3 +1,35 @@
+# Current — 2026-09-10 (queue ready to take catalog-backed SITE nodes)
+
+Owner: grok-4.6 this session. **No SITE claims.** Did not steal SITE-60 / SITE-63 / SITE-67.
+
+Every public taste-classes key now maps to a catalog class. `--preflight` passes for all 27. `node scripts/taste-table.mjs --seed-draft` emits SITE-68…92 with builder card + adaptedFrom accept. Not auto-seed — paste after review. Installed `components/ui/carousel.tsx` and `button-group.tsx` as local fetch targets (public paint stays v3).
+
+# Current — 2026-09-10 05:44Z (15m grinder 01a0894e: fleet full, no steal)
+
+Owner: Grok scheduler `01a0894e`. **Fleet 3/3, zero open.** origin/main `d222d7fa`.
+
+- `grok-01a08914-2026-09-09` — SITE-60 heartbeat 1m (`wt/site-60-listing-prefetch-20260910` @ `1fdeb0e57` on origin, worktree clean, **lane still live — do not land**).
+- `grok-4.6-2026-09-10-03` — SITE-63 heartbeat 2h (not stale).
+- `grok-01a08945-2026-09-09` — SITE-67 heartbeat 1m.
+
+SITE-64/65 already done. Next 15m fire retries.
+
+# Current — 2026-09-10 (taste process: builder card + adaptedFrom ratchet)
+
+Owner: grok-4.6 this session. **No SITE claims.** Did not steal SITE-60 / SITE-63 / SITE-64 / SITE-65.
+
+Matt: can this process be done better. Yes. The catalog CLI now prints a builder card (house files, ≤8 fetches, missing primitives). `ci:taste-canon` refuses a new catalog-class receipt without `adaptedFrom` and `replaceWith` (9 existing receipts on shrink-only `taste-receipt-catalog-baseline.json`). Listing pages cannot pass `heroInMain` (SITE-45 lock). Evaluator fails loud on a broken catalog. Lane start: `node scripts/lib/taste-catalog.mjs <class> --preflight`.
+
+# Current — 2026-09-10 04:45Z (15m grinder 01a0894e: claimed SITE-64 + SITE-65)
+
+Owner: Grok scheduler `01a0894e` / `grok-4.5-2026-09-10-04`. Fleet 3/3.
+
+Did **not** bulk-insert SITE-64…87 from the 2026-09-08 table (stale). Live first-viewport shots on production: about still opens on a 5.0/25/3 KPI grid; compare still leads with four dashed empty slots. Seeded those two only.
+
+**Held:** SITE-64 (`13814dc4-…`) about KPI cut; SITE-65 (`ee7852f3-…`) compare sample-first. Local commit `036a4276` on main, **not pushed** — taste receipts + `deploy:verify` still due. Do not mix listing/catalog dirty files (SITE-60 / shadcn Lego) into that commit.
+
+Do not steal SITE-60 or SITE-63.
+
 # Current — 2026-09-10 (Matt: keep running as nodes get entered)
 
 Owner: Grok (grok-01a08945-2026-09-09). **No claims.** Durable 15m site-queue task `01a0898e` is armed; a watcher wakes this session when an eligible SITE-* appears and the fleet has a slot. Empty of eligible is a quiet fire, not a stop. Do not auto-seed SITE-64…87.

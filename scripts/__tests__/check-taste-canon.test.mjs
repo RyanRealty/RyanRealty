@@ -452,3 +452,109 @@ describe('check-taste-canon — the rules that were already there', () => {
     expect(r.out).toContain('no longer cites design_system/public/TASTE.md')
   })
 })
+
+describe('check-taste-canon — catalog receipts (adaptedFrom + replaceWith)', () => {
+  const EXM = [
+    ['beautifului', 'https://beautifului.dev'],
+    ['beui', 'https://beui.dev'],
+    ['rareui', 'https://rareui.com'],
+    ['transitions', 'https://transitions.dev'],
+    ['shadcn', 'https://ui.shadcn.com'],
+  ]
+  function n(count, prefix) {
+    return Array.from({ length: count }, (_, i) => ({
+      name: `${prefix}-${i}`,
+      url: `https://example.test/${prefix}-${i}`,
+      take: true,
+      surfaces: ['public'],
+      jobs: ['listing-detail'],
+    }))
+  }
+  function stubCatalog() {
+    const two = (id, url) => ({ id, url, job: 'A twenty-character job for the module.' })
+    const klass = (lock) => ({
+      layoutLock: lock,
+      modules: [two('house-mod', 'components/site/v3/V3Stage.tsx'), two('shadcn-carousel', 'https://ui.shadcn.com/docs/components/carousel')],
+    })
+    return {
+      source: 'https://x.com/EXM7777/status/2092250905655812121',
+      catalogUrls: EXM.map(([, u]) => u),
+      refuse: ['purple', 'orbs', 'npx shadcn add onto app/'],
+      catalogs: [
+        ...EXM.map(([id, url]) => ({
+          id,
+          name: id,
+          url,
+          kind: 'external',
+          take: 'Adapt the named job into the house barrel only.',
+          refuse: 'Do not install this kit on the public site.',
+        })),
+        {
+          id: 'house-v3',
+          name: 'house',
+          url: 'components/site/v3',
+          kind: 'house',
+          take: 'Open the house primitive and keep its layout.',
+          refuse: 'Do not replace it with a catalog kit.',
+        },
+      ],
+      shadcn: { components: Array.from({ length: 50 }, (_, i) => ({ name: `comp-${i}` })) },
+      lists: {
+        beautifului: { url: EXM[0][1], components: n(20, 'bu') },
+        beui: { url: EXM[1][1], components: n(40, 'be') },
+        rareui: { url: EXM[2][1], components: n(15, 'ra') },
+        transitions: { url: EXM[3][1], components: n(25, 'tr') },
+      },
+      classes: {
+        'listing-detail': klass('Listing media is full-bleed above the grid, never a column frame.'),
+        'homepage-v6': klass('The homepage opens with live inventory in the first viewport.'),
+        search: klass('Search is Atlas-grade cartography plus a list, not a default embed.'),
+        sell: klass('Sell opens Stage then the address sheet, then the sourced answer.'),
+        city: klass('A place page opens with a drawing and a figure beside alerts.'),
+      },
+      routeClasses: { testroute: 'listing-detail' },
+    }
+  }
+
+  it('fails a catalog-class receipt with empty adaptedFrom unless it sits on the baseline', () => {
+    scaffold()
+    writeJson('design_system/public/taste-catalog.json', stubCatalog())
+    writeReceipt(baseReceipt())
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toMatch(/adaptedFrom is empty|write-catalog-baseline/)
+  })
+
+  it('lets a predating catalog receipt sit on the shrink-only baseline', () => {
+    scaffold()
+    writeJson('design_system/public/taste-catalog.json', stubCatalog())
+    writeReceipt(baseReceipt())
+    writeJson('scripts/taste-receipt-catalog-baseline.json', { routes: [`${KIT}/parity.json`] })
+    const r = run()
+    expect(r.out).toContain('taste-canon OK')
+    expect(r.out).toContain('1 catalog receipt(s) (baseline)')
+    expect(r.code).toBe(0)
+  })
+
+  it('passes a catalog-class receipt that names adaptedFrom and replaceWith', () => {
+    scaffold()
+    writeJson('design_system/public/taste-catalog.json', stubCatalog())
+    writeReceipt(
+      baseReceipt({
+        adaptedFrom: [{ id: 'house-mod' }],
+        defects: [{ section: '#rails', severity: 'taste', finding: 'three consecutive sections share one form', replaceWith: 'shadcn-carousel' }],
+      }),
+    )
+    const r = run()
+    expect(r.out).toContain('taste-canon OK')
+    expect(r.code).toBe(0)
+  })
+
+  it('does not require a catalog baseline file when the kit is not a catalog class', () => {
+    scaffold()
+    writeReceipt(baseReceipt())
+    const r = run()
+    expect(r.out).toContain('taste-canon OK')
+    expect(r.code).toBe(0)
+  })
+})

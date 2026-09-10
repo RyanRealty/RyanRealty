@@ -32,11 +32,12 @@ export type BoundaryGeoJSONInput = {
    *
    * `school` = Deschutes County GIS ATTENDANCE areas (one per school).
    * `school_district` = Oregon Dept of Education DISTRICT polygons (W2.7).
+   * `zip` = Census TIGER/Line 2024 ZCTA5 (SITE-66).
    * There is deliberately no `trail`: trail geometry is authoritative linework
    * in public.trail_lines, and a trail polygon could only be a corridor we
    * buffered ourselves.
    */
-  geoType: 'city' | 'neighborhood' | 'subdivision' | 'park' | 'school' | 'school_district'
+  geoType: 'city' | 'neighborhood' | 'subdivision' | 'park' | 'school' | 'school_district' | 'zip'
   geoSlug: string
 }
 
@@ -58,7 +59,7 @@ function cacheTags(
   // school / school_district slugs overlap city slugs ('redmond', 'sisters',
   // 'culver'), so scope their tag by geoType — a city revalidation must not
   // silently drop a district polygon and vice versa.
-  if (geoType === 'school' || geoType === 'school_district') {
+  if (geoType === 'school' || geoType === 'school_district' || geoType === 'zip' || geoType === 'park') {
     return [`${geoType}:${geoSlug}`, 'boundaries']
   }
   return [cacheTag.community(geoSlug), 'boundaries']

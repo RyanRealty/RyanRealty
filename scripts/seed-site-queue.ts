@@ -9,7 +9,9 @@
  *   npx tsx scripts/seed-site-queue.ts
  *
  * Draft seeds for a new round come from `node scripts/taste-table.mjs --seed-draft`
- * (SITE-62). This file never reads taste-table.json. A person pastes after review.
+ * (SITE-62). Drafts carry the catalog builder card and an accept that requires
+ * adaptedFrom + replaceWith. This file never reads taste-table.json. A person
+ * pastes after review. Not auto-seed.
  */
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'
@@ -672,13 +674,26 @@ const SEEDS: readonly Seed[] = [
     versionGap: 'SITE-66',
     domain: 'public-ux',
     title:
-      'Every public park, ZIP, school, and taxlot surface has an authoritative polygon — or a recorded publisher reason it cannot',
+      'Every public park, ZIP, school, and taxlot surface has an authoritative polygon — most is not done',
     objective:
-      "Matt 2026-09-10: geo boundaries or plats for all parks, zip codes, schools, taxlots, and the other public geo pages. Re-measured live 2026-09-10 against hosted Supabase (docs/DATABASE_FOR_AI_AGENTS.md §2a), two query shapes (exact geo_type count, then per-slug match to the public registry). public.boundaries 3527 rows: city 11, neighborhood 28, subdivision 3427 (Deschutes 3223 + Crook 204, SITE-58), school_district 6 (ODE), school 37 (Deschutes County GIS attendance only), park 18, zip 0, county 0. Parks: data/co-parks.ts 18/18 have a boundaries row, but 12 of 18 are OpenStreetMap contributors — tracked NON_OFFICIAL debt in ci:boundary-provenance, which already names BPRD / City of Redmond / City of Prineville as the official layers to re-source. ZIPs: app/zip/[zip] publishes ten CANONICAL_ZIPS (97701, 97702, 97703, 97707, 97739, 97741, 97754, 97756, 97759, 97760) and getMetric already uses geoType 'zip'; boundaries has zero geo_type='zip' rows, and the CHECK (migration 20260724223000) does not allow zip. Schools: data/co-schools.ts 55 slugs vs 37 school polygons; 18 registry schools have no attendance polygon (Crook County 5, Jefferson 509J 4, Culver 3, Gilchrist 1, Redmond 1, Bend-La Pine 4 including three-rivers / three-rivers-elem / william-e-miller-elem / ensworth-elem). Those pages fall back to a city polygon (app/schools/[slug]/page.tsx). Taxlots: deschutes 109469, klamath 61227, josephine 41751, jackson 34426 (City of Medford only); crook 0, jefferson 0 — the doc already records two query shapes that those counties publish no taxlot layer; do not invent lot lines. Trails stay in trail_lines (W2.7); do not add geo_type='trail'. Official GIS only (ci:boundary-provenance). A new geo_type needs the CHECK migration AND a DECLARED_GEO_TYPES row with a named publisher.",
+      "Matt 2026-09-10: 'we have most but need all.' The 18 park rows, 37 school attendance polygons, six ODE districts, and four-county taxlot fabric are most, not all. Same live census as seeded (docs/DATABASE_FOR_AI_AGENTS.md §2a, two query shapes): zip 0 of 10 public CANONICAL_ZIPS; 18 of 55 CO_SCHOOLS slugs have no school polygon and those pages draw a city stand-in; 12 of 18 parks are OpenStreetMap (NON_OFFICIAL debt — BPRD / Redmond / Prineville publish official layers); Crook and Jefferson taxlots 0 after two publisher checks. Partial re-source is a miss. Official GIS only. Do not invent geometry. Trails stay in trail_lines (W2.7). A new geo_type needs the CHECK migration AND a DECLARED_GEO_TYPES row.",
     output:
-      'Authoritative polygons (or a recorded publisher-absence exception) for every public /parks/[slug], /zip/[zip], and /schools/[slug] in the registries; OSM park debt shrinks; geo_type zip declared and loaded for the ten canonical ZIPs from TIGER ZCTA; school attendance sourced for the 18 misses or a two-shape publisher check written on this node; taxlot Crook/Jefferson absence re-verified and left as no-layer; ci:boundary-provenance floors and publishers updated; DATABASE_FOR_AI_AGENTS.md §2a counts refreshed',
+      'Authoritative polygons for every CO_PARKS slug, every CANONICAL_ZIPS member, and every CO_SCHOOLS slug (or a two-shape publisher absence AND the page no longer draws a city as if it were that school); OSM park rows 0; geo_type zip declared; taxlot counties that publish a layer ingested in full; Crook/Jefferson taxlots stay 0 only if the publisher check still finds no layer; ci:boundary-provenance floors updated; DATABASE_FOR_AI_AGENTS.md §2a refreshed',
     accept:
-      "Live counts, two query shapes each: (1) every CO_PARKS slug has a boundaries park row whose source is an AUTHORITATIVE_PUBLISHERS member, and OpenStreetMap contributors park rows are fewer than 12; (2) every CANONICAL_ZIPS member has a boundaries zip row with a non-null polygon from TIGER ZCTA (or a named Census layer), and ci:boundary-provenance declares zip; (3) every CO_SCHOOLS slug either has a school polygon or this node's evidence names the publisher queried twice and why none exists; (4) taxlots crook=0 and jefferson=0 still, unless a county layer is found and ingested, in which case the count is the layer's row count. No trail rows in boundaries. A headless render of /zip/97701, one OSM-replaced park, and one previously city-fallback school draws THAT place's polygon, not a city stand-in. Park/zip/school class scores do not fall on the table instrument (rebaseline if the judge differs). Do not invent geometry.",
+      "Matt: most is not done. Live, two query shapes: (1) CO_PARKS 18/18 park rows, OpenStreetMap contributors park count = 0, every source in AUTHORITATIVE_PUBLISHERS; (2) every CANONICAL_ZIPS slug has a zip polygon (TIGER ZCTA or named Census layer) and zip is declared in ci:boundary-provenance; (3) every CO_SCHOOLS slug has a school polygon — a city fallback on /schools/[slug] is a fail — unless evidence names the agency layer queried twice and the page draws no stand-in; (4) taxlots: every county that publishes a lot layer is ingested; crook and jefferson remain 0 only after a fresh two-shape publisher miss, never invented lots. No trail rows in boundaries. Headless /zip/97701, one re-sourced city park, and one previously city-fallback school each draw THAT place's polygon. Park/zip/school class scores do not fall. Do not invent geometry.",
+    dependsOn: [],
+  },
+  {
+    versionGap: 'SITE-67',
+    domain: 'public-ux',
+    title:
+      'SITE-66 left most: the last OSM park, 13 out-of-Deschutes schools, and Jefferson taxlots',
+    objective:
+      "Matt 2026-09-10: 'we have most but need all.' SITE-66 marked done at aa906aec with OSM parks 12→1, school polygons 37→42, Crook taxlots 0→17551, all 10 ZIPs from TIGER ZCTA. That is still most. Live 2026-09-10 (two query shapes): american-legion-park is the only remaining OpenStreetMap park; 13 CO_SCHOOLS slugs have no school polygon (crook-county-high, crook-county-middle, barnes-butte-elem, crooked-river-elem, powell-butte-elementary, madras-high, jefferson-county-middle, madras-elementary, metolius-elem, culver-high, culver-middle, culver-elem, gilchrist-jr-sr-high) — those /schools/[slug] pages still fall back to a city polygon; jefferson taxlots 0. ZIPs are complete. Do not invent geometry. Official GIS only. A city stand-in for a school is a fail.",
+    output:
+      'american-legion-park sourced from an AUTHORITATIVE_PUBLISHERS layer (OSM park count 0); a school polygon for each of the 13 remaining slugs or a two-shape publisher miss AND the page draws no city stand-in; Jefferson taxlots ingested if a county layer exists, else 0 with the two-shape check on this node; ci:boundary-provenance OSM park cap 0; DATABASE_FOR_AI_AGENTS.md §2a refreshed',
+    accept:
+      'Live, two query shapes: OpenStreetMap contributors park rows = 0; every CO_SCHOOLS slug has a school polygon, or evidence names the agency queried twice and /schools/[slug] does not draw a city polygon as the school; jefferson taxlots > 0 if a publisher layer exists, else 0 after that check. Headless /parks/american-legion-park and one of the 13 schools draw THAT place, not a city. Do not invent geometry.',
     dependsOn: [],
   },
 ]

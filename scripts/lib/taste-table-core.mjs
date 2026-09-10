@@ -20,6 +20,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { isNonEmptyString, isPlainObject, median3 } from './taste-receipt.mjs'
+import { builderCard, classForRoute } from './taste-catalog.mjs'
 
 export { isNonEmptyString, isPlainObject, median3 }
 
@@ -533,31 +534,56 @@ function shotSpecText(shotSpec) {
   return typeof shotSpec === 'string' ? shotSpec : JSON.stringify(shotSpec)
 }
 
-function buildOneDraft(row, versionGap, defects, shotSpec) {
+function catalogObjectiveBit(card) {
+  if (!card?.classKey) return ''
+  const parts = [
+    `Start with \`node scripts/lib/taste-catalog.mjs ${card.classKey} --preflight\`. Fetch the printed catalog jobs and adapt them into the house barrel; if a job has no house primitive, ADD one to components/site/v3.`,
+  ]
+  if (card.layoutLock) parts.push(`Layout lock: ${card.layoutLock}`)
+  if (Array.isArray(card.fetch) && card.fetch.length) {
+    parts.push(`Fetch: ${card.fetch.map((f) => f.id).join(', ')}.`)
+  }
+  if (Array.isArray(card.add) && card.add.length) {
+    parts.push(`ADD if missing: ${card.add.join(', ')}.`)
+  }
+  parts.push('Record adaptedFrom on the receipt. Empty adaptedFrom is inventing a layout.')
+  return ` ${parts.join(' ')}`
+}
+
+function buildOneDraft(row, versionGap, defects, shotSpec, card) {
   const key = row.key
   const median = row.median
   const titleBit = firstSentence(row.verdict) || firstSentence(row.dullest) || 'under the finish line'
+  const defectBit =
+    defects.length > 0
+      ? `Defects: ${defects.map(defectLine).join('; ')}.`
+      : 'No on-disk primitive was named on the defects — fetch the catalog jobs and ADD a house primitive rather than inventing a layout.'
   return {
     versionGap,
     domain: 'public-ux',
     title: `${key}: ${titleBit}`,
     objective:
       `Class ${key} scored ${median} (${scoresPhrase(row.scores)}) on the table instrument. ` +
-      `Defects: ${defects.map(defectLine).join('; ')}.`,
+      `${defectBit}` +
+      catalogObjectiveBit(card),
     output:
-      `A reviewed seed in scripts/seed-site-queue.ts for class ${key}; recapture first-viewport shots on the table instrument; taste receipt per TASTE.md.`,
+      `A reviewed seed in scripts/seed-site-queue.ts for class ${key}; recapture first-viewport shots on the table instrument; taste receipt per TASTE.md with adaptedFrom and replaceWith.`,
     accept:
-      `On the table instrument, class ${key} scores above ${median}. Recapture shotSpec ${shotSpecText(shotSpec)}.`,
+      `On the table instrument, class ${key} scores above ${median}. Recapture shotSpec ${shotSpecText(shotSpec)}. ` +
+      `tasteReview.adaptedFrom names a catalog module for this class. Each defect names replaceWith (a house primitive or catalog id, or null if craft/honesty not form).`,
   }
 }
 
 /**
- * Draft Seed objects for every class whose median is under the finish line
- * and whose defects name at least one primitive that exists at `root`.
- * A class at or above the line emits nothing. A class under the line with
- * no surviving defect is skipped (warning) — the tool does not invent a path.
+ * Draft Seed objects for every class whose median is under the finish line.
+ * A class at or above the line emits nothing.
+ *
+ * A class under the line emits when (a) a defect names a primitive that
+ * exists at `root`, OR (b) the taste catalog has modules for that class —
+ * missing house primitive is ADD to the barrel, not a skip. Only a class
+ * with neither a disk primitive nor a catalog is skipped (warning).
  */
-export function buildSeedDrafts({ table, usedGaps, root, finishLine = FINISH_LINE } = {}) {
+export function buildSeedDrafts({ table, usedGaps, root, finishLine = FINISH_LINE, catalog = null } = {}) {
   const rows = Array.isArray(table?.rows) ? table.rows : Array.isArray(table) ? table : []
   const shotSpec = isPlainObject(table?.instrument) ? table.instrument.shotSpec ?? null : null
   const under = rows.filter((r) => isPlainObject(r) && isNonEmptyString(r.key) && Number.isInteger(r.median) && r.median < finishLine)
@@ -568,14 +594,19 @@ export function buildSeedDrafts({ table, usedGaps, root, finishLine = FINISH_LIN
   let n = nextFreeSiteNumber(usedGaps)
   for (const row of sorted) {
     const kept = draftDefects(row.defects, root)
-    if (kept.length === 0) {
+    const classKey = catalog ? classForRoute(catalog, row.key) ?? row.key : null
+    const card =
+      classKey && Array.isArray(catalog?.classes?.[classKey]?.modules) && catalog.classes[classKey].modules.length >= 2
+        ? builderCard(catalog, classKey)
+        : null
+    if (kept.length === 0 && !card) {
       skipped.push(row.key)
       warnings.push(
-        `${row.key}: median ${row.median} is under ${finishLine} but no defect names a primitive that exists on disk — skipped, not invented.`,
+        `${row.key}: median ${row.median} is under ${finishLine} but no defect names a primitive that exists on disk and the catalog has no modules — skipped, not invented.`,
       )
       continue
     }
-    drafts.push(buildOneDraft(row, formatSiteGap(n), kept, shotSpec))
+    drafts.push(buildOneDraft(row, formatSiteGap(n), kept, shotSpec, card))
     n += 1
   }
   return { drafts, skipped, warnings }
@@ -585,6 +616,7 @@ export const SEED_DRAFT_BANNER = [
   'DRAFT — not seeded. Nothing was written to Supabase by this tool.',
   'A class under the finish line is not a node until a person edits scripts/seed-site-queue.ts and runs `npx tsx scripts/seed-site-queue.ts`.',
   'This is review-and-paste, not auto-seed.',
+  'Each draft already carries the catalog builder card (`node scripts/lib/taste-catalog.mjs <class> --preflight`) and an accept that requires adaptedFrom + replaceWith.',
 ].join('\n')
 
 function formatOneDraft(d) {

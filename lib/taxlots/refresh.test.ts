@@ -127,7 +127,8 @@ describe('the county register', () => {
 
   it('names no authority at all for a county we do not load, rather than guessing one', async () => {
     const { taxlotSourceFor } = await import('@/lib/data/geo/getTaxlots')
-    expect(taxlotSourceFor('crook')).toBe('the county assessor')
+    expect(taxlotSourceFor('crook')).toBe('Crook County GIS')
+    expect(taxlotSourceFor('jefferson')).toBe('the county assessor')
     expect(taxlotSourceFor(null)).toBe('the county assessor')
     expect(taxlotSourceFor('  ')).toBe('the county assessor')
   })

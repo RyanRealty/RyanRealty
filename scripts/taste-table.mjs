@@ -50,6 +50,11 @@ import { join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import Anthropic from '@anthropic-ai/sdk'
 import {
+  classForRoute,
+  evaluatorBrief,
+  loadTasteCatalog,
+} from './lib/taste-catalog.mjs'
+import {
   FINISH_LINE,
   RUBRIC_VERSION,
   buildRow,
@@ -253,12 +258,25 @@ function normalizeScoring(parsed) {
   }
 }
 
+function catalogNoteFor(key) {
+  const raw = JSON.parse(readFileSync(join(REPO_ROOT, 'design_system/public/taste-catalog.json'), 'utf8'))
+  const loaded = loadTasteCatalog(raw)
+  if (loaded.problems.length) {
+    throw new Error(`taste-catalog: ${loaded.problems.join('; ')}`)
+  }
+  const classKey = classForRoute(loaded, key) ?? key
+  return evaluatorBrief(loaded, classKey)
+}
+
 function buildPrompt({ key, route, url }, instrumentText) {
+  const catalog = catalogNoteFor(key)
   return (
     `${instrumentText}\n\n---\n\n` +
     `Class: ${key}\nRoute file: ${route}\nURL captured: ${url}\n\n` +
+    (catalog ? `${catalog}\n\n` : '') +
     'The model that built this page is NOT you. You are a separate evaluator ' +
-    'judging only the two screenshots — no code, no live browsing, no DOM.'
+    'judging only the two screenshots — no code, no live browsing, no DOM. ' +
+    'A stacked-section page that ignored the catalog is a defect.'
   )
 }
 
@@ -447,7 +465,18 @@ async function runSeedDraft(opts) {
   const usedFromDb = await loadUsedGapsFromLoopWorkNodes()
   const usedGaps = [...new Set([...usedFromFile, ...usedFromDb])]
 
-  const { drafts, warnings } = buildSeedDrafts({ table, usedGaps, root: REPO_ROOT })
+  let catalog = null
+  try {
+    const loaded = loadTasteCatalog(
+      JSON.parse(readFileSync(join(REPO_ROOT, 'design_system/public/taste-catalog.json'), 'utf8')),
+    )
+    if (loaded.problems.length === 0) catalog = loaded
+    else for (const p of loaded.problems) console.error(`taste-table --seed-draft: catalog: ${p}`)
+  } catch (err) {
+    console.error(`taste-table --seed-draft: catalog unreadable (${err.message}) — drafts will skip classes with no on-disk primitive`)
+  }
+
+  const { drafts, warnings } = buildSeedDrafts({ table, usedGaps, root: REPO_ROOT, catalog })
   for (const w of warnings) console.error(`taste-table --seed-draft: ${w}`)
 
   const text = formatSeedDrafts(drafts)

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { ListingPhoto } from '@/lib/data/types/listing'
 import type { VideoEmbed } from '@/lib/data/types/video'
+import { V3Carousel } from '@/components/site/v3'
 import { PhotoGalleryLightbox } from './PhotoGalleryLightbox'
 import { ListingTourOverlay } from './ListingTourOverlay'
 import { ListingStreetViewOverlay } from './ListingStreetViewOverlay'
@@ -25,6 +26,7 @@ import {
   LISTING_MOSAIC_STRIP_SIZES,
   preferListingMosaicPhotoUrl,
 } from '@/lib/listing/publish-listing-mosaic'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { isOffsiteTourHost } from '@/lib/listing/publish-listing-on-site-tour'
 import dynamic from 'next/dynamic'
 
@@ -67,6 +69,13 @@ type Props = {
   lng?: number | null
   openHouseLabel?: string | null
   className?: string
+  /**
+   * Lead stills emit `<link rel="preload">` when true (next/image `priority`).
+   * Speculative App Router prefetches must pass false (SITE-60): a 1600×1200
+   * Spark plate in a payload the visitor never opened is the list-page tax.
+   * Real document / click navigations keep the default so LCP stays sharp.
+   */
+  lcpPriority?: boolean
 }
 
 function getAutoplayEmbedUrl(video: VideoEmbed): string {
@@ -111,6 +120,7 @@ export function ListingHero({
   lng,
   openHouseLabel,
   className,
+  lcpPriority = true,
 }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [galleryPane, setGalleryPane] = useState<'photos' | 'floor'>('photos')
@@ -132,7 +142,6 @@ export function ListingHero({
     return 'photos'
   })
   const videoRef = useRef<HTMLVideoElement>(null)
-  const carouselRef = useRef<HTMLDivElement>(null)
   const reelRef = useRef<HTMLDivElement>(null)
   const total = photos.length
   const reel = publishListingHeroVideo(videos)
@@ -192,23 +201,11 @@ export function ListingHero({
     reelEl.scrollTo({ left: Math.max(0, left), behavior: 'smooth' })
   }, [frame])
 
-  /* The phone: a swipe moves the frame index; a thumb scrolls the carousel. */
-  const onCarouselScroll = useCallback(() => {
-    const el = carouselRef.current
-    if (!el || el.clientWidth === 0) return
-    const i = Math.round(el.scrollLeft / el.clientWidth)
-    setFrame((prev) => (prev === i ? prev : i))
-  }, [])
-
   const goTo = useCallback(
     (i: number) => {
       const next = Math.max(0, Math.min(i, Math.max(0, total - 1)))
       setFrame(next)
       setMediaTab('photos')
-      const el = carouselRef.current
-      if (el && el.clientWidth > 0 && el.offsetParent !== null) {
-        el.scrollTo({ left: next * el.clientWidth, behavior: 'smooth' })
-      }
     },
     [total],
   )
@@ -307,11 +304,15 @@ export function ListingHero({
         ) : null}
         {showMap || showTour ? null : (
           <>
-            {/* The phone: every photo as a snap slide, swiped. */}
-            <div
+            {/* The phone: swipeable track. Adapted from shadcn carousel into V3Carousel. */}
+            <V3Carousel
+              label={addressLine ? `Photos of ${addressLine}` : 'Listing photos'}
+              index={frame}
+              onIndexChange={(i) => {
+                setFrame(i)
+                setMediaTab('photos')
+              }}
               className="listing-mosaic__carousel"
-              ref={carouselRef}
-              onScroll={onCarouselScroll}
             >
               {heroVideo ? (
                 <div className="listing-mosaic__slide">
@@ -347,11 +348,11 @@ export function ListingHero({
                     src={photo.url}
                     alt={photo.caption ?? `${altBase} ${i + 1} of ${total}`}
                     sizes={LISTING_MOSAIC_CAROUSEL_SIZES}
-                    priority={i === 0}
+                    priority={lcpPriority && i === 0}
                   />
                 </button>
               ))}
-            </div>
+            </V3Carousel>
 
             {/* Desktop: ONE frame, the photo the strip points at. */}
             {frameIsVideo && heroVideo ? (
@@ -398,7 +399,7 @@ export function ListingHero({
                   src={framePhoto.url}
                   alt={framePhoto.caption ?? `${altBase} ${frame + 1} of ${total}`}
                   sizes={LISTING_MOSAIC_LEAD_SIZES}
-                  priority={frame === 0}
+                  priority={lcpPriority && frame === 0}
                 />
               </button>
             ) : (
@@ -479,7 +480,7 @@ export function ListingHero({
                   aria-current={i === frame ? 'true' : undefined}
                 >
                   <Image
-                    src={preferListingMosaicPhotoUrl(photo.url)}
+                    src={listingRowPhotoSrc(photo.url)}
                     alt=""
                     fill
                     sizes={LISTING_MOSAIC_STRIP_SIZES}
@@ -604,9 +605,27 @@ function MosaicStill({
   priority?: boolean
   contain?: boolean
 }) {
+  const compact = listingRowPhotoSrc(src)
+  // Do not even compute the 1600 URL during a Flight render: React preloads
+  // image-shaped strings in the client tree. Upgrade only when the hero is
+  // on screen.
+  const [live, setLive] = useState(priority ? preferListingMosaicPhotoUrl(src) : compact)
+  useEffect(() => {
+    if (priority) return
+    const el = document.getElementById('listing-hero-visual')
+    if (!el) return
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio > 0)) {
+        setLive(preferListingMosaicPhotoUrl(src))
+        io.disconnect()
+      }
+    })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [src, priority])
   return (
     <Image
-      src={preferListingMosaicPhotoUrl(src)}
+      src={live}
       alt={alt}
       fill
       sizes={sizes}
@@ -713,7 +732,7 @@ function IframeHeroLayer({
     <>
       {posterUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={preferListingMosaicPhotoUrl(posterUrl)} alt={altBase} />
+        <img src={listingRowPhotoSrc(posterUrl)} alt={altBase} />
       ) : null}
       {failed || !embedSrc ? null : (
         <iframe
