@@ -18,7 +18,31 @@ import { sendModeForOrigin } from '@/lib/cma/origin'
  *     status and re-runs the compliance chain before it sends), asked lanes go
  *     now through the same send the broker's own button calls;
  *   - a BPO never auto-sends from here at all.
+ *
+ * THE SOLICITATION SCREEN IS STUBBED, AND IT HAS TO BE. `autoSendBuiltCma`
+ * reaches `screenAddressForSolicitation` through a dynamic import inside the
+ * function, so it is not injectable through `deps` and every case below was
+ * making a REAL screen call — live I/O in a unit test that only ever asserts
+ * the row was left alone. It also put the suite on a knife edge: the first
+ * case in the blocked-state loop pays the import plus the connection and
+ * measured 2,914ms in one project and 5,006ms in the other, against vitest's
+ * 5,000ms default, so `leaves a audit-failed row untouched` failed on main at
+ * 7237aa88 and passed at 9ad40982 with no code change between them.
+ *
+ * The stub says OK, which is the screen's own answer for an address that is
+ * not relisted or sold. Every assertion below still runs. The two rules the
+ * screen itself enforces are covered where they belong, in
+ * lib/cma/solicit-screen.test.ts.
+ *
+ * The deeper fix is the CMA lane's call, not this file's: the screen runs
+ * BEFORE the readiness gate, so a row that can never send still pays a
+ * network round trip to be rejected for a reason that has nothing to do with
+ * solicitation. Moving it below that gate, or injecting it through `deps`,
+ * would remove the need for this stub.
  */
+vi.mock('@/lib/cma/solicit-screen', () => ({
+  screenAddressForSolicitation: vi.fn(async () => ({ ok: true, detail: 'stubbed: not relisted, not sold' })),
+}))
 
 function laneSettings(over: Partial<Record<string, boolean>> = {}): LaneSettings {
   const out = {} as LaneSettings
