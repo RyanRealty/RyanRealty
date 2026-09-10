@@ -668,6 +668,19 @@ const SEEDS: readonly Seed[] = [
       "Matt: most is not done. Live, two query shapes: (1) CO_PARKS 18/18 park rows, OpenStreetMap contributors park count = 0, every source in AUTHORITATIVE_PUBLISHERS; (2) every CANONICAL_ZIPS slug has a zip polygon (TIGER ZCTA or named Census layer) and zip is declared in ci:boundary-provenance; (3) every CO_SCHOOLS slug has a school polygon — a city fallback on /schools/[slug] is a fail — unless evidence names the agency layer queried twice and the page draws no stand-in; (4) taxlots: every county that publishes a lot layer is ingested; crook and jefferson remain 0 only after a fresh two-shape publisher miss, never invented lots. No trail rows in boundaries. Headless /zip/97701, one re-sourced city park, and one previously city-fallback school each draw THAT place's polygon. Park/zip/school class scores do not fall. Do not invent geometry.",
     dependsOn: [],
   },
+  {
+    versionGap: 'SITE-67',
+    domain: 'public-ux',
+    title:
+      'SITE-66 left most: the last OSM park, 13 out-of-Deschutes schools, and Jefferson taxlots',
+    objective:
+      "Matt 2026-09-10: 'we have most but need all.' SITE-66 marked done at aa906aec with OSM parks 12→1, school polygons 37→42, Crook taxlots 0→17551, all 10 ZIPs from TIGER ZCTA. That is still most. Live 2026-09-10 (two query shapes): american-legion-park is the only remaining OpenStreetMap park; 13 CO_SCHOOLS slugs have no school polygon (crook-county-high, crook-county-middle, barnes-butte-elem, crooked-river-elem, powell-butte-elementary, madras-high, jefferson-county-middle, madras-elementary, metolius-elem, culver-high, culver-middle, culver-elem, gilchrist-jr-sr-high) — those /schools/[slug] pages still fall back to a city polygon; jefferson taxlots 0. ZIPs are complete. Do not invent geometry. Official GIS only. A city stand-in for a school is a fail.",
+    output:
+      'american-legion-park sourced from an AUTHORITATIVE_PUBLISHERS layer (OSM park count 0); a school polygon for each of the 13 remaining slugs or a two-shape publisher miss AND the page draws no city stand-in; Jefferson taxlots ingested if a county layer exists, else 0 with the two-shape check on this node; ci:boundary-provenance OSM park cap 0; DATABASE_FOR_AI_AGENTS.md §2a refreshed',
+    accept:
+      'Live, two query shapes: OpenStreetMap contributors park rows = 0; every CO_SCHOOLS slug has a school polygon, or evidence names the agency queried twice and /schools/[slug] does not draw a city polygon as the school; jefferson taxlots > 0 if a publisher layer exists, else 0 after that check. Headless /parks/american-legion-park and one of the 13 schools draw THAT place, not a city. Do not invent geometry.',
+    dependsOn: [],
+  },
 ]
 
 async function main() {
