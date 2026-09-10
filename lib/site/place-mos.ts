@@ -114,6 +114,9 @@ export function buildPlaceMosView(input: {
     mosText,
     asOf: input.asOf,
   })
+  const tipSource = input.asOf
+    ? `Oregon Data Share via leftoverHudKpis, ${input.grain}:${input.geoSlug}, segment=detached. as of ${input.asOf}`
+    : `Oregon Data Share via leftoverHudKpis, ${input.grain}:${input.geoSlug}, segment=detached.`
   return {
     homesForSale: published.homesForSale,
     monthOfSales: published.monthOfSales,
@@ -128,6 +131,6 @@ export function buildPlaceMosView(input: {
     plainLabel: MOS_PLAIN_LABEL,
     asOf: input.asOf,
     source,
-    tooltip: { homes: homesLabel, sales: salesLabel, source },
+    tooltip: { homes: homesLabel, sales: salesLabel, source: tipSource },
   }
 }

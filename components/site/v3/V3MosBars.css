@@ -84,13 +84,6 @@
   color: var(--v3-ink);
 }
 
-.v3-mos__asof {
-  margin: 0;
-  font-size: var(--v3-size-source);
-  line-height: var(--v3-leading-note);
-  color: var(--v3-ink-muted);
-}
-
 .v3-mos__tip {
   display: grid;
   gap: var(--v3-space-3xs);
@@ -112,6 +105,26 @@
 .v3.v3-mos .v3-source {
   max-inline-size: none;
   margin-inline: 0;
+}
+
+@media (max-width: 39.99rem) {
+  .v3.v3-mos {
+    padding: var(--v3-space-xs) var(--v3-space-sm);
+    gap: var(--v3-space-2xs);
+    max-width: none;
+  }
+
+  .v3-mos__plain {
+    display: none;
+  }
+
+  .v3-mos__caption {
+    font-size: var(--v3-size-body-sm);
+  }
+
+  .v3.v3-mos .v3-source .v3-source__summary {
+    min-block-size: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

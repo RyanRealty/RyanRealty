@@ -32,11 +32,33 @@
 .v3-alerts__grid {
   display: grid;
   gap: var(--v3-space-xl);
+  grid-template-areas:
+    'lead'
+    'ask'
+    'figure';
+}
+
+.v3-alerts__lead {
+  grid-area: lead;
+}
+
+.v3-alerts__ask {
+  grid-area: ask;
+}
+
+.v3-alerts__figure {
+  grid-area: figure;
+  display: grid;
+  gap: var(--v3-space-sm);
+  min-width: 0;
 }
 
 @media (min-width: 64rem) {
   .v3-alerts__grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 27rem);
+    grid-template-areas:
+      'lead ask'
+      'figure ask';
     column-gap: var(--v3-space-3xl);
     /* THE TWO COLUMNS END TOGETHER (evaluator, 2026-09-08). `align-items:
        start` sized each column to its own content, so the hairline below ran

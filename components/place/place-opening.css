@@ -263,17 +263,23 @@
    email land in the first 812px. Overlay stays; the giant stacked still goes. */
 @media (max-width: 39.99rem) {
   .place-opening--media {
-    min-height: 18rem;
+    min-height: 24rem;
+    align-items: start;
   }
 
   .place-opening--media .place-opening__copy {
     padding: calc(var(--v3-space-lg) + 2.25rem) var(--v3-gutter) var(--v3-space-sm);
   }
 
+  /* MOS sits ON the photograph so it does not push the alerts email below 812. */
   .place-opening--media .place-opening__mos {
-    padding: 0 var(--v3-gutter) var(--v3-space-sm);
-    justify-self: stretch;
+    position: absolute;
+    left: var(--v3-gutter);
+    right: var(--v3-gutter);
+    bottom: var(--v3-space-sm);
+    padding: 0;
     width: auto;
+    justify-self: stretch;
   }
 
   .place-opening--media .place-opening__ask {

@@ -28,6 +28,7 @@ export type V3MosBarsProps = {
   salesValue: number
   source: string
   asOf?: string | null
+  sourceName?: string
   tooltip: { homes: string; sales: string; source: string }
   id?: string
   className?: string
@@ -44,6 +45,7 @@ export function V3MosBars({
   salesValue,
   source,
   asOf,
+  sourceName = 'Oregon Data Share',
   tooltip,
   id = 'place-mos',
   className,
@@ -113,8 +115,7 @@ export function V3MosBars({
           <p className="v3-mos__tip-source">{tooltip.source}</p>
         </div>
       ) : null}
-      {asOf ? <p className="v3-mos__asof">as of {asOf}</p> : null}
-      <V3SourceLine source={source} asOf={asOf} sourceName="leftoverHudKpis" />
+      <V3SourceLine source={source} asOf={asOf} sourceName={sourceName} />
     </figure>
   )
 }
