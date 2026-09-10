@@ -1,3 +1,15 @@
+# Current — 2026-09-10 (SITE-61 + SITE-62 landing on main, not pushed yet)
+
+Owner: Grok (grok-01a08945-2026-09-09), main @ `48c3d5fb` (ahead of origin by SITE-62 `e6e7916a` + SITE-61 `48c3d5fb`). Claims still held until deploy verify + live check.
+
+**SITE-61.** `/sell` `#our-listings` and `/activity` `#feed` opted into V3Ledger `media="photo"` (88×66 / 72×54) with Spark rewrite at `lib/listing/row-photo.ts`. Left: `#bend-also` (no listing photos), subdivision index (plat photos on a bar), `toLedgerRows` (no public caller), `place-open-houses` (SITE-43 held the place family; SITE-43 has since landed — a later pass can pick that up). Sell receipt rebaselined 70 on grok-4.5 vs prior 71/claude-sonnet-5 (shotsHash includes our-listings frames). Not the grok-4.6 table instrument.
+
+**SITE-62.** `node scripts/taste-table.mjs --seed-draft` emits DRAFT Seed literals for classes under 70. With env, ids SITE-64…SITE-87 (SITE-62/63 already in the graph). Does not write Supabase. Path in DEVELOPMENT_PROCESS.md. `market-report-annual` skipped (no primitive path on disk).
+
+**SITE-59 leftover (orchestrator).** Diamond Bar Ranch: no `.gm-style`, list still renders; copy still says "the map above". Medford: 11 thumbs at 88×66, `v3-ledger--photo`. Deploy `90e41d5e` was READY; listings.xml 500 during smoke was a cold miss (200 on retry).
+
+**Do not steal.** Other Grok lanes may still hold SITE-60 / SITE-63.
+
 # Current — 2026-09-10 (loop Lego: fetch ui.shadcn.com, adapt into v3)
 
 Owner: Grok (01a0895a). Did not steal SITE-43 shots. Did not claim.
