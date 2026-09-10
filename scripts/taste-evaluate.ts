@@ -135,14 +135,24 @@ async function main() {
   }))
 
   let catalogNote = ''
-  try {
-    const raw = JSON.parse(readFileSync('design_system/public/taste-catalog.json', 'utf8'))
-    const loaded = loadTasteCatalog(raw)
-    const classKey = classForRoute(loaded, args.routeKey) ?? args.routeKey
-    catalogNote = evaluatorBrief(loaded, classKey)
-  } catch {
-    catalogNote = ''
+  const catalogPath = 'design_system/public/taste-catalog.json'
+  if (!existsSync(catalogPath)) {
+    console.error('taste-evaluate: design_system/public/taste-catalog.json is missing — the lane has no Lego.')
+    process.exit(2)
   }
+  let loaded
+  try {
+    loaded = loadTasteCatalog(JSON.parse(readFileSync(catalogPath, 'utf8')))
+  } catch (err) {
+    console.error(`taste-evaluate: catalog unreadable: ${err instanceof Error ? err.message : String(err)}`)
+    process.exit(2)
+  }
+  if (loaded.problems.length) {
+    console.error(`taste-evaluate: catalog problems:\n${loaded.problems.join('\n')}`)
+    process.exit(2)
+  }
+  const classKey = classForRoute(loaded, args.routeKey) ?? args.routeKey
+  catalogNote = evaluatorBrief(loaded, classKey)
 
   const bar =
     args.beat == null
@@ -160,9 +170,9 @@ async function main() {
     bar,
     '',
     'Score the SAME shots THREE separate times, independently, as three different reviewers would. One pass is noise.',
-    'Then list the named defects behind the number: each one names the section (a css class or an id you can see), the severity (blocking | taste | craft), and a finding of at least ten characters that says what is wrong, not what you would like.',
+    'Then list the named defects behind the number: each one names the section (a css class or an id you can see), the severity (blocking | taste | craft), a finding of at least ten characters that says what is wrong, not what you would like, and replaceWith — a house primitive or catalog module id, or null if the finding is craft/honesty not form.',
     'Empty defects is only allowed above 95.',
-    'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"..."}],"verdict":"<two sentences>"}',
+    'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"...","replaceWith":"<id or null>"}],"verdict":"<two sentences>"}',
   ]
     .filter(Boolean)
     .join('\n')
@@ -195,6 +205,16 @@ async function main() {
   }
   const content = res.stdout ?? ''
   const parsed = parseJsonLoose(content)
+  const defects =
+    parsed && typeof parsed === 'object' && Array.isArray((parsed as { defects?: unknown }).defects)
+      ? (parsed as { defects: Array<{ replaceWith?: unknown }> }).defects
+      : []
+  const missingReplace = defects.filter((d) => d && typeof d === 'object' && !('replaceWith' in d)).length
+  if (missingReplace > 0) {
+    console.error(
+      `taste-evaluate: ${missingReplace} defect(s) missing replaceWith. The next catalog-class receipt will fail ci:taste-canon.`,
+    )
+  }
   console.log(
     JSON.stringify(
       {

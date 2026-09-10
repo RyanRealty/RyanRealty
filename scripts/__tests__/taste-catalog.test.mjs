@@ -1,11 +1,17 @@
 import { readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 import {
+  BUILDER_FETCH_CAP,
   EXM7777_IDS,
   EXM7777_URLS,
   adaptedFromProblems,
+  builderCard,
+  catalogReceiptProblems,
   evaluatorBrief,
+  formatBuilderCard,
   layoutLockForClass,
+  layoutLockProblems,
   listPicksForClass,
   loadTasteCatalog,
   modulesForClass,
@@ -126,16 +132,88 @@ describe('the full EXM7777 inventories', () => {
 })
 
 describe('evaluatorBrief', () => {
-  it('tells the judge to use the catalog and to add a primitive when the barrel is missing one', () => {
+  it('tells the judge to use the catalog jobs, not the inventory dump', () => {
     const brief = evaluatorBrief(loaded, 'listing-detail')
-    expect(brief).toMatch(/V3Carousel/)
     expect(brief).toMatch(/listing-hero-bleed/)
     expect(brief).toMatch(/Frankenstein/)
     expect(brief).toMatch(/stacked-section/)
+    expect(brief).toMatch(/replaceWith/)
+    expect(brief.length).toBeLessThan(3500)
+    expect(brief).not.toMatch(/https:\/\/beui\.dev\/components\/motion\/tabs/)
   })
 
   it('accepts a new house primitive as adaptedFrom', () => {
     expect(adaptedFromProblems(loaded, 'listing-detail', [{ id: 'V3Carousel' }])).toEqual([])
     expect(adaptedFromProblems(loaded, 'listing-detail', [{ id: 'V3ButtonGroup' }])).toEqual([])
+  })
+})
+
+describe('builderCard', () => {
+  it('caps remote fetches and opens house files, not the whole inventory', () => {
+    const card = builderCard(loaded, 'listing-detail')
+    expect(card.fetch.length).toBeLessThanOrEqual(BUILDER_FETCH_CAP)
+    expect(card.open.map((o) => o.path)).toEqual(
+      expect.arrayContaining([
+        'components/site/listing-detail/ListingHero.tsx',
+        'components/site/v3/V3Carousel.client.tsx',
+        'components/site/v3/V3ButtonGroup.tsx',
+      ]),
+    )
+    expect(card.add).toEqual([])
+    const md = formatBuilderCard(card)
+    expect(md).toMatch(/^# listing-detail/)
+    expect(md).toMatch(/Open these house files/)
+    expect(md).toMatch(/Fetch these catalog jobs/)
+    expect(md).toMatch(/adaptedFrom/)
+  })
+
+  it('CLI prints the builder card, not a JSON dump', () => {
+    const r = spawnSync('node', ['scripts/lib/taste-catalog.mjs', 'listing-detail'], { encoding: 'utf8' })
+    expect(r.status).toBe(0)
+    expect(r.stdout).toMatch(/^# listing-detail/)
+    expect(r.stdout).not.toMatch(/"shadcn":/)
+  })
+})
+
+describe('catalogReceiptProblems', () => {
+  it('refuses empty adaptedFrom and defects without replaceWith', () => {
+    const empty = catalogReceiptProblems(loaded, 'listing-detail', { defects: [] })
+    expect(empty.some((p) => /empty/i.test(p))).toBe(true)
+    const named = catalogReceiptProblems(loaded, 'listing-detail', {
+      adaptedFrom: [{ id: 'listing-hero-bleed' }],
+      defects: [{ section: '#hero', finding: 'column frame instead of bleed' }],
+    })
+    expect(named.some((p) => /replaceWith/.test(p))).toBe(true)
+    expect(
+      catalogReceiptProblems(loaded, 'listing-detail', {
+        adaptedFrom: [{ id: 'listing-hero-bleed' }],
+        defects: [{ section: '#hero', finding: 'column frame instead of bleed', replaceWith: 'v3-carousel' }],
+      }),
+    ).toEqual([])
+    expect(
+      catalogReceiptProblems(loaded, 'listing-detail', {
+        adaptedFrom: [{ id: 'listing-hero-bleed' }],
+        defects: [{ section: '#copy', finding: 'unsourced figure in the fold', replaceWith: null }],
+      }),
+    ).toEqual([])
+  })
+})
+
+describe('layoutLockProblems', () => {
+  it('flags a listing page that reintroduces heroInMain', () => {
+    const files = {
+      'app/listing/[listingKey]/page.tsx': 'export default function Page() { return <Shell heroInMain={true} /> }',
+      'app/listing/by-address/[...slug]/page.tsx': 'export default function Page() { return <Shell /> }',
+      'components/site/listing-detail/ListingDetailShell.tsx': '<section className="listing-hero-bleed">',
+    }
+    const problems = layoutLockProblems(loaded, {
+      existsSync: (p) => p in files,
+      readFileSync: (p) => files[p],
+    })
+    expect(problems.some((p) => /heroInMain/.test(p))).toBe(true)
+  })
+
+  it('passes the committed listing files', () => {
+    expect(layoutLockProblems(loaded)).toEqual([])
   })
 })

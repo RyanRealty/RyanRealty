@@ -259,14 +259,13 @@ function normalizeScoring(parsed) {
 }
 
 function catalogNoteFor(key) {
-  try {
-    const raw = JSON.parse(readFileSync(join(REPO_ROOT, 'design_system/public/taste-catalog.json'), 'utf8'))
-    const loaded = loadTasteCatalog(raw)
-    const classKey = classForRoute(loaded, key) ?? key
-    return evaluatorBrief(loaded, classKey)
-  } catch {
-    return ''
+  const raw = JSON.parse(readFileSync(join(REPO_ROOT, 'design_system/public/taste-catalog.json'), 'utf8'))
+  const loaded = loadTasteCatalog(raw)
+  if (loaded.problems.length) {
+    throw new Error(`taste-catalog: ${loaded.problems.join('; ')}`)
   }
+  const classKey = classForRoute(loaded, key) ?? key
+  return evaluatorBrief(loaded, classKey)
 }
 
 function buildPrompt({ key, route, url }, instrumentText) {

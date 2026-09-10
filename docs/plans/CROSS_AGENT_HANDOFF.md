@@ -1,13 +1,8 @@
-# Current — 2026-09-10 (catalog primitives + evaluator; no SITE claim)
+# Current — 2026-09-10 (taste process: builder card + adaptedFrom ratchet)
 
 Owner: grok-4.6 this session. **No SITE claims.** Did not steal SITE-60 / SITE-63 / SITE-64 / SITE-65.
 
-Matt: whole-site UX/UI from the five EXM7777 catalogs, no Frankenstein, new primitives allowed, evaluator must use them. Landed locally (not pushed — local `main` still has unpushed SITE-64/65 `036a4276` whose owner asked not to mix, plus SITE-66 `fcc683dc`):
-
-- Full inventories in `design_system/public/taste-catalog.json` (beUI 65, Beautiful UI 27, Rare UI 19, transitions 34, shadcn 64) with public/admin/product surfaces and classes for listing, homepage, search, sell, city.
-- New v3 primitives **V3Carousel** and **V3ButtonGroup**, wired onto listing (G73). Listing hero restored to `listing-hero-bleed`. Tour/Call/Text is one grouped control.
-- `scripts/taste-evaluate.ts` and `scripts/taste-table.mjs` inject `evaluatorBrief(class)` so a stacked-section page that ignored the catalog is a defect.
-- Navy/cream/Geist/Amboqia stay. Admin interiors stay `components/admin/v2`. `npx shadcn add` into `components/ui` only.
+Matt: can this process be done better. Yes. The catalog CLI now prints a builder card (house files, ≤8 fetches, missing primitives). `ci:taste-canon` refuses a new catalog-class receipt without `adaptedFrom` and `replaceWith` (9 existing receipts on shrink-only `taste-receipt-catalog-baseline.json`). Listing pages cannot pass `heroInMain` (SITE-45 lock). Evaluator fails loud on a broken catalog. Lane start: `node scripts/lib/taste-catalog.mjs <class> --preflight`.
 
 # Current — 2026-09-10 04:45Z (15m grinder 01a0894e: claimed SITE-64 + SITE-65)
 

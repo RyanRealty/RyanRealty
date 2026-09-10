@@ -1,0 +1,15 @@
+{
+  "note": "ci:taste-canon — SHRINK-ONLY. Catalog-class receipts that predate adaptedFrom + replaceWith. A route leaves by its next evaluator pass naming the modules it fetched; no route may be added.",
+  "generatedAt": "2026-09-10T05:32:49.116Z",
+  "routes": [
+    "design_system/ryan-realty/ui_kits/cities/parity.json",
+    "design_system/ryan-realty/ui_kits/city/parity.json",
+    "design_system/ryan-realty/ui_kits/community/parity.json",
+    "design_system/ryan-realty/ui_kits/homepage-v6/parity.json",
+    "design_system/ryan-realty/ui_kits/listing-detail/parity.json",
+    "design_system/ryan-realty/ui_kits/neighborhood/parity.json",
+    "design_system/ryan-realty/ui_kits/search/parity.json",
+    "design_system/ryan-realty/ui_kits/sell/parity.json",
+    "design_system/ryan-realty/ui_kits/subdivision/parity.json"
+  ]
+}

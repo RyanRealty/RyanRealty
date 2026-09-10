@@ -8,12 +8,16 @@
  *
  * This module is that contract for Ryan Realty: the catalog lives at
  * design_system/public/taste-catalog.json. A lane names the class, gets the
- * modules it must fetch, and records which one it adapted. Installing the
- * catalog as a second design system is refused. A missing house primitive is
- * a NEW file in the v3 barrel (OPEN set), not a skip.
+ * BUILDER CARD (house files to open, ≤8 catalog URLs to fetch, primitives
+ * still missing from the barrel), and records which one it adapted.
+ * Installing the catalog as a second design system is refused. A missing
+ * house primitive is a NEW file in the v3 barrel (OPEN set), not a skip.
  */
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { isNonEmptyString, isPlainObject } from './taste-receipt.mjs'
+
+/** Remote catalog URLs a lane fetches for one class. The rest of the inventory stays in the JSON. */
+export const BUILDER_FETCH_CAP = 8
 
 export const CATALOG_PATH = 'design_system/public/taste-catalog.json'
 export const CATALOG_KINDS = Object.freeze(['house', 'admin', 'external'])
@@ -89,16 +93,26 @@ export function loadTasteCatalog(raw) {
     const primitivesToAdd = Array.isArray(entry.primitivesToAdd)
       ? entry.primitivesToAdd.filter((n) => isNonEmptyString(n))
       : []
-    classes[key] = { layoutLock: entry.layoutLock ?? '', modules, primitivesToAdd }
+    const layoutLockChecks = []
+    for (const [k, c] of (Array.isArray(entry.layoutLockChecks) ? entry.layoutLockChecks : []).entries()) {
+      if (!isPlainObject(c) || !isNonEmptyString(c.path)) {
+        problems.push(`classes.${key}.layoutLockChecks[${k}]: need path`)
+        continue
+      }
+      if (!isNonEmptyString(c.mustMatch) && !isNonEmptyString(c.forbid)) {
+        problems.push(`classes.${key}.layoutLockChecks[${k}]: need mustMatch or forbid`)
+        continue
+      }
+      layoutLockChecks.push({
+        path: c.path,
+        mustMatch: isNonEmptyString(c.mustMatch) ? c.mustMatch : null,
+        forbid: isNonEmptyString(c.forbid) ? c.forbid : null,
+      })
+    }
+    classes[key] = { layoutLock: entry.layoutLock ?? '', modules, primitivesToAdd, layoutLockChecks }
   }
   for (const required of ['listing-detail', 'homepage-v6', 'search', 'sell', 'city']) {
     if (!classes[required]) problems.push(`classes must include "${required}" so a lane has a catalog, not adjectives`)
-  }
-  if (!classes['listing-detail']?.primitivesToAdd?.includes('V3Carousel')) {
-    problems.push('classes.listing-detail.primitivesToAdd must include V3Carousel — missing house primitive is a new barrel file, not a skip')
-  }
-  if (!classes['listing-detail']?.primitivesToAdd?.includes('V3ButtonGroup')) {
-    problems.push('classes.listing-detail.primitivesToAdd must include V3ButtonGroup')
   }
 
   const shadcnRaw = isPlainObject(raw.shadcn) ? raw.shadcn : {}
@@ -223,31 +237,174 @@ export function primitivesToAddForClass(catalog, classKey) {
   return Array.isArray(list) ? list : []
 }
 
+/** True when the named v3 primitive already exists as a barrel file. */
+export function housePrimitiveExists(name) {
+  if (!isNonEmptyString(name)) return false
+  return existsSync(`components/site/v3/${name}.tsx`) || existsSync(`components/site/v3/${name}.client.tsx`)
+}
+
+/** primitivesToAdd minus files already in the barrel — the gap the lane still owes. */
+export function missingPrimitivesForClass(catalog, classKey) {
+  return primitivesToAddForClass(catalog, classKey).filter((n) => !housePrimitiveExists(n))
+}
+
 /**
- * Short prompt the evaluator and the table inject so a node is judged against
- * the catalog, not against "clean". Keep it short — the grok CLI prompt budget
- * is the shots plus this, not the whole inventory.
+ * The card a lane actually works from. House files to open, catalog jobs to
+ * fetch (capped). Not the whole inventory.
+ */
+export function builderCard(catalog, classKey) {
+  const key = isNonEmptyString(classKey) ? classKey : ''
+  const modules = modulesForClass(catalog, key)
+  const add = missingPrimitivesForClass(catalog, key)
+  const open = []
+  const remote = []
+  for (const m of modules) {
+    const http = String(m.url ?? '').startsWith('http')
+    const row = { id: m.id, url: m.url, job: m.job }
+    if (http) remote.push(row)
+    else open.push({ id: m.id, path: m.url, job: m.job })
+  }
+  for (const c of shadcnPicksForClass(catalog, key)) {
+    remote.push({ id: `shadcn:${c.name}`, url: c.docs, job: (c.jobs && c.jobs[0]) || c.name })
+  }
+  for (const c of listPicksForClass(catalog, key)) {
+    remote.push({ id: c.id, url: c.url, job: c.name })
+  }
+  const seen = new Set()
+  const fetch = []
+  for (const row of remote) {
+    if (!row?.id || seen.has(row.id) || seen.has(row.url)) continue
+    seen.add(row.id)
+    seen.add(row.url)
+    fetch.push(row)
+    if (fetch.length >= BUILDER_FETCH_CAP) break
+  }
+  return {
+    classKey: key,
+    layoutLock: layoutLockForClass(catalog, key),
+    open,
+    fetch,
+    add,
+    refuse: Array.isArray(catalog?.refuse) ? catalog.refuse : [],
+  }
+}
+
+export function formatBuilderCard(card) {
+  const lines = [`# ${card.classKey || '(no class)'}`, '']
+  if (card.layoutLock) lines.push(`Layout lock: ${card.layoutLock}`, '')
+  lines.push('## Open these house files')
+  if (card.open.length === 0) lines.push('- (none named)')
+  else for (const o of card.open) lines.push(`- ${o.path} — ${o.job}`)
+  lines.push('', '## Fetch these catalog jobs (adapt into the barrel; do not install)')
+  if (card.fetch.length === 0) lines.push('- (none named)')
+  else for (const f of card.fetch) lines.push(`- ${f.id}: ${f.job}  ${f.url}`)
+  if (card.add.length) {
+    lines.push('', '## If missing, ADD to components/site/v3')
+    for (const a of card.add) lines.push(`- ${a}`)
+  }
+  if (card.refuse.length) {
+    lines.push('', '## Refuse')
+    for (const r of card.refuse) lines.push(`- ${r}`)
+  }
+  lines.push('', 'Record adaptedFrom with the ids you used. Empty adaptedFrom is inventing a layout.')
+  return lines.join('\n')
+}
+
+/**
+ * Short prompt the evaluator injects. Jobs, not the inventory dump.
  */
 export function evaluatorBrief(catalog, classKey) {
-  const key = isNonEmptyString(classKey) ? classKey : ''
-  const lock = layoutLockForClass(catalog, key)
-  const modules = modulesForClass(catalog, key)
-  const shadcn = shadcnPicksForClass(catalog, key)
-  const lists = listPicksForClass(catalog, key)
-  const add = primitivesToAddForClass(catalog, key)
+  const card = builderCard(catalog, classKey)
+  const lock = card.layoutLock ? String(card.layoutLock).slice(0, 280) : ''
   const lines = [
-    'CATALOG (Machina / EXM7777). Fetch the named module, adapt the JOB into the house barrel. Do not install a second look. Growing components/site/v3 with a new primitive IS the OPEN pattern set. A second kit, a second stylesheet, or a catalog palette on a public page is Frankenstein.',
-    'Registers: public = components/site/v3 (tokens.css). Admin = components/admin/v2. Product/console/account = components/ui (npx shadcn add allowed there only).',
+    'CATALOG. Judge whether the page used these jobs. A stacked-section page that ignored them is a defect. Growing v3 with a new primitive is the OPEN set; a second kit is Frankenstein.',
   ]
   if (lock) lines.push(`Layout lock: ${lock}`)
-  if (add.length) lines.push(`If missing, ADD these house primitives: ${add.join(', ')}.`)
-  for (const m of modules) lines.push(`- ${m.id}: ${m.job} (${m.url})`)
-  for (const c of shadcn.slice(0, 8)) lines.push(`- shadcn:${c.name} ${c.docs}`)
-  for (const c of lists.slice(0, 12)) lines.push(`- ${c.id} ${c.url}`)
+  if (card.add.length) lines.push(`House primitives this class owes: ${card.add.join(', ')}.`)
+  for (const o of card.open.slice(0, 5)) lines.push(`- ${o.id}: ${o.job}`)
+  for (const f of card.fetch.slice(0, 6)) lines.push(`- ${f.id}: ${f.job}`)
   lines.push(
-    'A stacked-section page that ignored this catalog is a defect. Name replaceWith as a house primitive (V3Carousel, V3ButtonGroup, V3Sheet, V3Segmented, …) or a catalog module id. Refuse purple, orbs, gooey, magnetic/metallic buttons, and agent-chat chrome on a public page. Navy #102742, cream #faf8f4, Geist, Amboqia stay.',
+    'Each defect names replaceWith: a house primitive or catalog id, or null if the finding is craft/honesty not form. Refuse purple, orbs, gooey, magnetic buttons, agent-chat chrome on public. Navy #102742, cream #faf8f4, Geist, Amboqia stay.',
   )
   return lines.join('\n')
+}
+
+/** A receipt on a catalog class must name the modules it adapted, and each defect names replaceWith. */
+export function catalogReceiptProblems(catalog, classKey, tr) {
+  if (!isPlainObject(catalog) || !isNonEmptyString(classKey) || !catalog.classes?.[classKey]) return []
+  const p = adaptedFromProblems(catalog, classKey, isPlainObject(tr) ? tr.adaptedFrom : null)
+  if (!isPlainObject(tr) || !Array.isArray(tr.defects)) return p
+  for (const [i, d] of tr.defects.entries()) {
+    if (!isPlainObject(d)) continue
+    if (!('replaceWith' in d)) {
+      p.push(
+        `defects[${i}] (${d.section ?? '?'}) needs replaceWith: a house primitive or catalog id, or null if the finding is craft/honesty not form`,
+      )
+    } else if (d.replaceWith != null && !isNonEmptyString(d.replaceWith)) {
+      p.push(`defects[${i}] replaceWith must be a module id or null`)
+    }
+  }
+  return p
+}
+
+/**
+ * Mechanical layout lock: the files that must still contain (or must not
+ * reintroduce) the locked form. SITE-45 was `heroInMain` on the listing pages.
+ */
+export function layoutLockProblems(catalog, io = {}) {
+  const exists = io.existsSync ?? existsSync
+  const read = io.readFileSync ?? readFileSync
+  const problems = []
+  for (const [key, entry] of Object.entries(catalog?.classes ?? {})) {
+    for (const c of entry.layoutLockChecks ?? []) {
+      if (!exists(c.path)) {
+        problems.push(`${key} layout lock: ${c.path} is missing`)
+        continue
+      }
+      let src = ''
+      try {
+        src = String(read(c.path, 'utf8') ?? '')
+      } catch {
+        problems.push(`${key} layout lock: ${c.path} could not be read`)
+        continue
+      }
+      if (c.mustMatch) {
+        try {
+          if (!new RegExp(c.mustMatch).test(src)) {
+            problems.push(`${key} layout lock: ${c.path} must still match /${c.mustMatch}/`)
+          }
+        } catch {
+          problems.push(`${key} layout lock: mustMatch /${c.mustMatch}/ is not a valid regex`)
+        }
+      }
+      if (c.forbid) {
+        try {
+          if (new RegExp(c.forbid).test(src)) {
+            problems.push(
+              `${key} layout lock: ${c.path} reintroduced /${c.forbid}/ — that is the SITE-45 shrink. Restore the locked layout.`,
+            )
+          }
+        } catch {
+          problems.push(`${key} layout lock: forbid /${c.forbid}/ is not a valid regex`)
+        }
+      }
+    }
+  }
+  return problems
+}
+
+/** House files exist and the class layout lock still holds. Run before composing. */
+export function preflightProblems(catalog, classKey) {
+  const card = builderCard(catalog, classKey)
+  const p = []
+  for (const o of card.open) {
+    if (o.path && !existsSync(o.path)) p.push(`house file missing: ${o.path}`)
+  }
+  const prefix = `${classKey} layout lock:`
+  for (const row of layoutLockProblems(catalog, { existsSync, readFileSync })) {
+    if (row.startsWith(prefix)) p.push(row)
+  }
+  return p
 }
 
 /**
@@ -292,18 +449,24 @@ export function publicInstallForbidden(text) {
 function main() {
   const raw = JSON.parse(readFileSync(CATALOG_PATH, 'utf8'))
   const loaded = loadTasteCatalog(raw)
-  const classKey = process.argv[2]
+  const argv = process.argv.slice(2)
+  const asJson = argv.includes('--json')
+  const preflight = argv.includes('--preflight')
+  const classKey = argv.find((a) => a && !a.startsWith('--'))
   if (loaded.problems.length) {
     console.error(loaded.problems.join('\n'))
     process.exit(2)
   }
   if (!classKey) {
+    const payload = {
+      catalogUrls: loaded.catalogUrls,
+      catalogs: loaded.catalogs.map((c) => ({ id: c.id, url: c.url })),
+      classes: Object.keys(loaded.classes),
+    }
     console.log(
-      JSON.stringify(
-        { catalogUrls: loaded.catalogUrls, catalogs: loaded.catalogs.map((c) => ({ id: c.id, url: c.url })), classes: Object.keys(loaded.classes) },
-        null,
-        2,
-      ),
+      asJson
+        ? JSON.stringify(payload, null, 2)
+        : `classes: ${payload.classes.join(', ')}\npass a class for the builder card, e.g. node scripts/lib/taste-catalog.mjs listing-detail --preflight`,
     )
     return
   }
@@ -312,26 +475,33 @@ function main() {
     console.error(`taste-catalog: no modules for "${classKey}"`)
     process.exit(2)
   }
-  console.log(
-    JSON.stringify(
-      {
-        classKey,
-        catalogUrls: loaded.catalogUrls,
-        catalogUrl: loaded.catalogUrl,
-        layoutLock: layoutLockForClass(loaded, classKey),
-        modules,
-        shadcn: shadcnPicksForClass(loaded, classKey),
-        lists: listPicksForClass(loaded, classKey),
-        primitivesToAdd: primitivesToAddForClass(loaded, classKey),
-        evaluatorBrief: evaluatorBrief(loaded, classKey),
-        refuse: loaded.refuse,
-        fetch:
-          'Fetch the five EXM7777 catalogs. Open each named module URL. Adapt the JOB into the house barrel. If the job has no house primitive, ADD one to components/site/v3 (public) or components/admin/v2 (admin). Do not npm-install a catalog onto app/ or components/site/. Navy, cream, Geist, Amboqia stay.',
-      },
-      null,
-      2,
-    ),
-  )
+  const card = builderCard(loaded, classKey)
+  if (preflight) {
+    const issues = preflightProblems(loaded, classKey)
+    if (issues.length) {
+      console.error(issues.join('\n'))
+      process.exit(2)
+    }
+  }
+  if (asJson) {
+    console.log(
+      JSON.stringify(
+        {
+          ...card,
+          modules,
+          shadcn: shadcnPicksForClass(loaded, classKey),
+          lists: listPicksForClass(loaded, classKey),
+          evaluatorBrief: evaluatorBrief(loaded, classKey),
+          preflight: preflight ? 'ok' : undefined,
+        },
+        null,
+        2,
+      ),
+    )
+    return
+  }
+  console.log(formatBuilderCard(card))
+  if (preflight) console.log('\npreflight OK')
 }
 
 if (process.argv[1] && process.argv[1].endsWith('taste-catalog.mjs')) main()

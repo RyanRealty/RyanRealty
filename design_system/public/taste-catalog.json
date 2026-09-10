@@ -1969,6 +1969,20 @@
   "classes": {
     "listing-detail": {
       "layoutLock": "Listing media is full-bleed above the grid (listing-hero-bleed), not a column frame (listing-hero-column). SITE-45 set heroInMain to dodge a 'looks like Zillow' tell. Matt 2026-09-10: that lost the full-width hero, hid home details, and made the buttons look bad. Restore bleed. Keep PropertySpecs, description, schools, Tour/Call/Text (parity.json requiredComponents). Adapt shadcn carousel / button-group / sheet / dialog into that foundation — do not invent a smaller layout.",
+      "layoutLockChecks": [
+        {
+          "path": "app/listing/[listingKey]/page.tsx",
+          "forbid": "heroInMain"
+        },
+        {
+          "path": "app/listing/by-address/[...slug]/page.tsx",
+          "forbid": "heroInMain"
+        },
+        {
+          "path": "components/site/listing-detail/ListingDetailShell.tsx",
+          "mustMatch": "listing-hero-bleed"
+        }
+      ],
       "modules": [
         {
           "id": "listing-hero-bleed",
@@ -2203,7 +2217,7 @@
   },
   "approach": {
     "ux": "Fetch the module, adapt the interaction into the house barrel, keep required listing sections and SEO.",
-    "dx": "One command prints the class catalog. New primitives are files in v3 / admin v2, exported from the barrel, wired to a public route (G73).",
+    "dx": "One command prints the builder card (house files, ≤8 fetches, missing primitives). --preflight fails if a house file or the layout lock is gone. New primitives are files in v3 / admin v2, exported from the barrel, wired to a public route (G73). Next catalog-class receipt must name adaptedFrom and replaceWith.",
     "ax": "The evaluator prompt includes evaluatorBrief(class). A stacked-section page that ignored the catalog is a named defect.",
     "frankenstein": "A second component family, a second stylesheet, or a catalog palette on a public page. Growing v3 with V3Carousel is the opposite."
   },
