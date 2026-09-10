@@ -91,3 +91,20 @@ export function isPlausibleEmail(value: string): boolean {
 export function stickyDismissKey(id: string): string {
   return `v3-alerts-strip:${id}:dismissed`
 }
+
+export type V3AlertsTypeKey = string
+
+export type V3AlertsTypeOption<T extends { key: string } = { key: string }> = T
+
+/** The selected type, or the first option, or null when the place has none. */
+export function selectAlertType<T extends { key: string }>(
+  types: readonly T[] | null | undefined,
+  key: string | null | undefined,
+): T | null {
+  if (!types || types.length === 0) return null
+  if (key) {
+    const match = types.find((type) => type.key === key)
+    if (match) return match
+  }
+  return types[0] ?? null
+}

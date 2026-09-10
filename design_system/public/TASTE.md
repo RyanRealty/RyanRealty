@@ -264,6 +264,30 @@ The full method is the `dataviz` skill (form → color → validate → marks �
 
 "The AI doesn't invent criteria; it averages them" (X, 2026-09-01 research,
 `docs/research/taste-for-agents-x.md`). "Make it elegant" transfers nothing.
+
+**Lego, not a skill (Machina @EXM7777, 2026-08-25).** The five catalogs:
+
+- https://beautifului.dev
+- https://beui.dev
+- https://rareui.com
+- https://transitions.dev
+- https://ui.shadcn.com
+
+Fetch the list, pick the module, integrate into the foundation we already
+have. Do not generate a layout from an adjective. Do not install any of them
+as a second look — navy, cream, Geist, Amboqia stay. The frozen lists live in
+`design_system/public/taste-catalog.json`. A lane starts with:
+
+```bash
+node scripts/lib/taste-catalog.mjs listing-detail
+```
+
+That prints the layout lock, house modules, shadcn picks, and takeable
+modules from the other four. Fetch each named URL. Adapt the JOB into
+`components/site/v3` / the listing stack. Record `adaptedFrom`. SITE-45
+invented "one frame in the column" instead of fetching a carousel into the
+full-bleed hero, and Matt lost the hero, the facts, and the buttons.
+
 Before composing a page class, write down three to five references and *what
 specifically works in each*, and design against those sentences. Two stronger
 forms of the same discipline: point the builder at REAL component code (a

@@ -136,6 +136,12 @@ export function V3Slots({
   const showSample = columns.length > 0 && rows.length > 0 && sampleLabel.length > 0
 
   const headingId = `${id}-heading`
+  /* SITE-65: an all-empty tray above the sample is four dashed boxes the
+     visitor has to look past to see the comparison. When the sample is
+     present and the personal tray is empty, the sample IS the opening.
+     The tray comes back the moment the visitor has a home in it, or when
+     there is no labelled sample to stand in. */
+  const showTray = taken.length > 0 || !showSample
 
   return (
     <section
@@ -149,39 +155,6 @@ export function V3Slots({
           {headline}
         </V3Heading>
         <p className="v3-slots__claim">{claim}</p>
-
-        {/* THE TRAY. One element per place the tool holds, so the limit is a
-            shape on the page and not a number in a sentence. */}
-        <ol className="v3-slots__tray" style={{ ['--v3-slots-n' as string]: String(count) }}>
-          {Array.from({ length: count }, (_, i) => {
-            const fill = taken[i]
-            return (
-              <li
-                key={`slot-${i}`}
-                className={cn('v3-slots__slot', fill ? 'v3-slots__slot--full' : 'v3-slots__slot--empty')}
-                data-slot={i + 1}
-                data-state={fill ? 'full' : 'empty'}
-              >
-                <span className="v3-slots__ordinal" aria-hidden="true">
-                  {i + 1}
-                </span>
-                {fill ? (
-                  fill.href ? (
-                    <a className="v3-slots__slot-link" href={fill.href}>
-                      {fill.label}
-                    </a>
-                  ) : (
-                    <span className="v3-slots__slot-label">{fill.label}</span>
-                  )
-                ) : (
-                  <a className="v3-slots__slot-link v3-slots__slot-add" href={emptyHref}>
-                    {emptyLabel}
-                  </a>
-                )}
-              </li>
-            )
-          })}
-        </ol>
 
         {showSample ? (
           <figure className="v3-slots__sample">
@@ -275,6 +248,39 @@ export function V3Slots({
               </table>
             </div>
           </figure>
+        ) : null}
+
+        {showTray ? (
+          <ol className="v3-slots__tray" style={{ ['--v3-slots-n' as string]: String(count) }}>
+            {Array.from({ length: count }, (_, i) => {
+              const fill = taken[i]
+              return (
+                <li
+                  key={`slot-${i}`}
+                  className={cn('v3-slots__slot', fill ? 'v3-slots__slot--full' : 'v3-slots__slot--empty')}
+                  data-slot={i + 1}
+                  data-state={fill ? 'full' : 'empty'}
+                >
+                  <span className="v3-slots__ordinal" aria-hidden="true">
+                    {i + 1}
+                  </span>
+                  {fill ? (
+                    fill.href ? (
+                      <a className="v3-slots__slot-link" href={fill.href}>
+                        {fill.label}
+                      </a>
+                    ) : (
+                      <span className="v3-slots__slot-label">{fill.label}</span>
+                    )
+                  ) : (
+                    <a className="v3-slots__slot-link v3-slots__slot-add" href={emptyHref}>
+                      {emptyLabel}
+                    </a>
+                  )}
+                </li>
+              )
+            })}
+          </ol>
         ) : null}
 
         <V3SourceDisclosure source={source} className="v3-slots__source" />

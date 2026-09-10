@@ -464,6 +464,17 @@ describe('parseArgv', () => {
   it('rejects an unknown flag', () => {
     expect(() => parseArgv(['--nope'])).toThrow(/unknown option/)
   })
+
+  it('accepts --seed-draft without throwing unknown option', () => {
+    expect(parseArgv(['--seed-draft'])).toMatchObject({ seedDraft: true, seedDraftPath: null })
+  })
+
+  it('accepts --seed-draft=path.json', () => {
+    expect(parseArgv(['--seed-draft=tmp/table.json'])).toMatchObject({
+      seedDraft: true,
+      seedDraftPath: 'tmp/table.json',
+    })
+  })
 })
 
 describe('parseEvaluatorJson', () => {

@@ -7,6 +7,7 @@ import type { V3LedgerFigureRow } from '@/components/site/v3'
 import { v3Text } from '@/components/site/v3'
 import type { ActivityFeedItem } from '@/app/actions/activity-feed-shared'
 import { activityEventLabel } from '@/lib/activity/event-label'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
 import { livePrice, liveStamp } from '@/app/_v3/live-format'
 
@@ -31,6 +32,8 @@ export function activityRows(items: readonly ActivityFeedItem[]): V3LedgerFigure
       .join(' · ')
     const cityLine = placeName
     const detail = [kind, cityLine].filter((part) => part && part.trim().length > 0).join(' · ')
+    const photo = a.PhotoURL?.trim()
+    const photoSrc = photo ? listingRowPhotoSrc(photo) : ''
     rows.push({
       href: listingTileHref({
         listingKey: key,
@@ -45,7 +48,7 @@ export function activityRows(items: readonly ActivityFeedItem[]): V3LedgerFigure
       detail: detail ? v3Text(detail) : undefined,
       value: v3Text(price),
       id: a.id,
-      ...(a.PhotoURL ? { media: { src: a.PhotoURL } } : {}),
+      ...(photoSrc ? { media: { src: photoSrc } } : {}),
     })
   }
   return rows

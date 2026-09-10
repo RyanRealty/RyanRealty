@@ -7,6 +7,9 @@
  * (npx tsx scripts/loop-brief.ts); they do not re-audit.
  *
  *   npx tsx scripts/seed-site-queue.ts
+ *
+ * Draft seeds for a new round come from `node scripts/taste-table.mjs --seed-draft`
+ * (SITE-62). This file never reads taste-table.json. A person pastes after review.
  */
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'
@@ -638,6 +641,45 @@ const SEEDS: readonly Seed[] = [
       'design_system/public/references/<class>.md for every class under 70; the variants mode and a published decision sheet; the evaluator prompt naming the replacement form, at a new rubric version; TASTE.md pointing at all three',
     accept:
       "Mechanical: a reference file exists for every class under 70 on the current table, each naming at least two real pages with a specific sentence each and citing at least one shipped component path that exists in the tree; `scripts/take-route-shots.mjs --variants a,b,c <class> <url>` writes one sheet with every variant at 1440 and 375; the evaluator prompt file contains the house form list and its rubricVersion differs from v1-2026-09-08. Then the proof: run ONE class under 70 through the changed process end to end (reference file in the brief, two or three variants, Matt's pick recorded on the node, the losers deleted in that commit) and its rise on the table instrument exceeds the median rise of the rounds that came before it. If it does not, say so on the node and name what the process still does not give a builder — a negative result recorded is the point, not a number talked up.",
+  },
+  {
+    versionGap: 'SITE-64',
+    domain: 'public-ux',
+    title:
+      '/about first viewport: faces open the page, not a three-tile KPI grid of 5.0 / 25 / 3',
+    objective:
+      "Re-measured live on production 2026-09-10 at 1440 and 375 (first viewport, ryan-realty.com/about). SITE-48 already put AboutFaces in the opening, but AboutFaces is passed figures=[{5.0 Google rating},{25 client reviews},{3 licensed Oregon brokers}] and that KPI grid is the first data object a visitor sees — TASTE.md bans KPI grids (a number, a percentage, and jargon with no sentence). Compass About and The Agency About open on faces at display scale; the 5.0-from-25 already lives on the face cards. Cut the figure-row from the fold. Do not touch app/contact (SITE-63 proof class) or AboutFaces callers on other routes unless they paint the same grid on /about. Reference: design_system/public/references/about.md on the SITE-63 branch (faces open; doors as secondary reach).",
+    output:
+      'app/about/page.tsx no longer feeds a three-tile figure row into AboutFaces; first-viewport shots at 1440 and 375; taste receipt for about on grok-4.6',
+    accept:
+      'Headless Chromium at 1440x900 and 375x812 of /about: the first viewport contains the three broker photographs and does not contain a three-cell figure row whose labels are Google rating / client reviews / licensed Oregon brokers. The 5.0 from 25 may appear on a face card. Then the about class tasteReview on grok-4.6, rubric current, rises above its prior mark from the same instrument or rebaselines on the grok-4.6 switch.',
+    dependsOn: [],
+  },
+  {
+    versionGap: 'SITE-65',
+    domain: 'public-ux',
+    title:
+      '/compare first viewport: the four slots open filled with the live sample, not four dashed empty boxes above it',
+    objective:
+      "Re-measured live on production 2026-09-10 at 1440 (ryan-realty.com/compare). SITE-50 shipped V3Slots plus a SAMPLE comparison of four live homes, but the first screen is still four dashed 'Add a home' boxes; the actual comparison sits below the fold-ish hairline. The empty state should BE the comparison. Pre-fill the four slots with the same live sample columns the page already reads (labelled as a sample, every figure sourced) so a visitor sees four homes side by side without scrolling past empty boxes. Adding from a listing still uses the same tray. Do not touch app/listing (SITE-60) or app/contact (SITE-63).",
+    output:
+      'CompareEmpty / V3Slots opening on a filled sample; first-viewport shots at 1440 and 375; taste receipt for compare on grok-4.6',
+    accept:
+      "Headless Chromium at 1440x900 of /compare with an empty personal tray: the first viewport contains four listing photographs and their prices, and does not lead with four dashed empty 'Add a home' slots. Every displayed price traces to the live sample read. Then the compare class tasteReview on grok-4.6 rises above its prior mark from the same instrument or rebaselines on the grok-4.6 switch.",
+    dependsOn: [],
+  },
+  {
+    versionGap: 'SITE-66',
+    domain: 'public-ux',
+    title:
+      'Every public park, ZIP, school, and taxlot surface has an authoritative polygon — or a recorded publisher reason it cannot',
+    objective:
+      "Matt 2026-09-10: geo boundaries or plats for all parks, zip codes, schools, taxlots, and the other public geo pages. Re-measured live 2026-09-10 against hosted Supabase (docs/DATABASE_FOR_AI_AGENTS.md §2a), two query shapes (exact geo_type count, then per-slug match to the public registry). public.boundaries 3527 rows: city 11, neighborhood 28, subdivision 3427 (Deschutes 3223 + Crook 204, SITE-58), school_district 6 (ODE), school 37 (Deschutes County GIS attendance only), park 18, zip 0, county 0. Parks: data/co-parks.ts 18/18 have a boundaries row, but 12 of 18 are OpenStreetMap contributors — tracked NON_OFFICIAL debt in ci:boundary-provenance, which already names BPRD / City of Redmond / City of Prineville as the official layers to re-source. ZIPs: app/zip/[zip] publishes ten CANONICAL_ZIPS (97701, 97702, 97703, 97707, 97739, 97741, 97754, 97756, 97759, 97760) and getMetric already uses geoType 'zip'; boundaries has zero geo_type='zip' rows, and the CHECK (migration 20260724223000) does not allow zip. Schools: data/co-schools.ts 55 slugs vs 37 school polygons; 18 registry schools have no attendance polygon (Crook County 5, Jefferson 509J 4, Culver 3, Gilchrist 1, Redmond 1, Bend-La Pine 4 including three-rivers / three-rivers-elem / william-e-miller-elem / ensworth-elem). Those pages fall back to a city polygon (app/schools/[slug]/page.tsx). Taxlots: deschutes 109469, klamath 61227, josephine 41751, jackson 34426 (City of Medford only); crook 0, jefferson 0 — the doc already records two query shapes that those counties publish no taxlot layer; do not invent lot lines. Trails stay in trail_lines (W2.7); do not add geo_type='trail'. Official GIS only (ci:boundary-provenance). A new geo_type needs the CHECK migration AND a DECLARED_GEO_TYPES row with a named publisher.",
+    output:
+      'Authoritative polygons (or a recorded publisher-absence exception) for every public /parks/[slug], /zip/[zip], and /schools/[slug] in the registries; OSM park debt shrinks; geo_type zip declared and loaded for the ten canonical ZIPs from TIGER ZCTA; school attendance sourced for the 18 misses or a two-shape publisher check written on this node; taxlot Crook/Jefferson absence re-verified and left as no-layer; ci:boundary-provenance floors and publishers updated; DATABASE_FOR_AI_AGENTS.md §2a counts refreshed',
+    accept:
+      "Live counts, two query shapes each: (1) every CO_PARKS slug has a boundaries park row whose source is an AUTHORITATIVE_PUBLISHERS member, and OpenStreetMap contributors park rows are fewer than 12; (2) every CANONICAL_ZIPS member has a boundaries zip row with a non-null polygon from TIGER ZCTA (or a named Census layer), and ci:boundary-provenance declares zip; (3) every CO_SCHOOLS slug either has a school polygon or this node's evidence names the publisher queried twice and why none exists; (4) taxlots crook=0 and jefferson=0 still, unless a county layer is found and ingested, in which case the count is the layer's row count. No trail rows in boundaries. A headless render of /zip/97701, one OSM-replaced park, and one previously city-fallback school draws THAT place's polygon, not a city stand-in. Park/zip/school class scores do not fall on the table instrument (rebaseline if the judge differs). Do not invent geometry.",
+    dependsOn: [],
   },
 ]
 

@@ -49,8 +49,10 @@ describe('/about section order', () => {
     expect(BODY).not.toContain('headline={`${reviewCount} Google reviews`}')
   })
 
-  it('gives every opening figure a source line', () => {
-    expect(PAGE).toContain('openingFigures')
+  it('does not open on a KPI grid; 5.0 from 25 is a sentence, sourced', () => {
+    expect(PAGE).not.toContain('openingFigures')
+    expect(PAGE).not.toContain('figures={openingFigures}')
+    expect(PAGE).toContain('Google reviews')
     expect(PAGE).toContain('openingTrace')
     expect(PAGE).toContain('<V3SourceLine')
     expect(PAGE).toContain('public.reviews')

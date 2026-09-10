@@ -38,7 +38,11 @@
  */
 
 import { useCallback } from 'react'
-import { V3AlertsStrip, type V3AlertsSubmit } from '@/components/site/v3'
+import {
+  V3AlertsStrip,
+  type V3AlertsSubmit,
+  type V3AlertsTypeOption,
+} from '@/components/site/v3/V3AlertsStrip.client'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { readRrSessionId } from '@/lib/tracking'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
@@ -66,6 +70,7 @@ type Props = {
   updatedAt: string | null
   /** The browse path this page already links for the neighborhood; the strip adds the newest sort. */
   browseHref: string
+  types?: readonly V3AlertsTypeOption[]
 }
 
 export function NeighborhoodAlertsStrip({
@@ -76,6 +81,7 @@ export function NeighborhoodAlertsStrip({
   newCount30d,
   updatedAt,
   browseHref,
+  types,
 }: Props) {
   const submit = useCallback<V3AlertsSubmit>(
     async (input) => {
@@ -118,6 +124,7 @@ export function NeighborhoodAlertsStrip({
       updatedAt={updatedAt}
       trap={TRAP}
       emphasis="primary"
+      types={types}
       onSubmit={submit}
     />
   )

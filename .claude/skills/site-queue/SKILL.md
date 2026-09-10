@@ -1,6 +1,6 @@
 ---
 name: site-queue
-description: Run the site queue until it is empty. Pull every eligible SITE node from the work graph, build them in parallel lanes across their page classes, a separate evaluator whose score must rise, the gates, one push and one deploy verify per round, a live check, evidence on each node, then the next round without stopping. Use when Matt says "run loop", "run the loop", "/site-queue", "go", "run the site queue", "keep going until the site is done", or when a /loop firing carries this protocol. "run loop" always means this skill (Matt 2026-09-09); when the queue runs dry it runs the measurer (/growth-loop's ingest half) and seeds the next round from the bottom of the table, and stops only when every public page class clears the finish line.
+description: Run the site queue until it is empty. Pull every eligible SITE node from the work graph, build them in parallel lanes across their page classes, a separate evaluator whose score must rise, the gates, one push and one deploy verify per round, a live check, evidence on each node, then the next round without stopping. Use when Matt says "run loop", "run the loop", "/site-queue", "go", "run the site queue", "keep going until the site is done", "continue as new nodes get entered", or when a /loop firing carries this protocol. "run loop" always means this skill (Matt 2026-09-09); when the queue runs dry it runs the measurer (/growth-loop's ingest half) and seeds the next round from the bottom of the table, and stops only when every public page class clears the finish line. Empty of eligible is not a stop (Matt 2026-09-10).
 ---
 
 # /site-queue — the site is done when this queue is empty
@@ -14,6 +14,11 @@ waking itself (dynamic pacing, `ScheduleWakeup`) until the queue is empty, at wh
 point the loop stops itself. `/site-queue` alone runs one grind until the context is
 nearly spent, then writes the handoff and spawns a fresh session to continue. "go"
 in a session that has this skill loaded means `/loop /site-queue`.
+Matt 2026-09-10: "i want this to just continue to run as it finishes and new nodes get entered."
+Empty of eligible is not a stop. Keep the scheduled wake. The next fire claims whatever
+became `open` (a seed, a released claim, a window that reopened). Do not auto-seed
+(SITE-62: draft, then a person pastes). Stop the schedule only when every class is at
+or above 70 on the table instrument.
 
 Repo canon outranks this file wherever they touch: CLAUDE.md §0 (every figure traces
 to a source), §1 (the 2026-07-21 approval model: full autonomy with post-hoc review
@@ -262,6 +267,16 @@ counted 17 of 37 item commits (45.9%) as evaluator rework — SITE-09 was 4 of i
 costs a fix. The same defect found after the merge costs a public commit, a
 re-capture of the whole page, and the 869-file unit suite. So the lane, in order:
 
+0. **Lego (EXM7777 — all five).** Before composing or replacing a public
+   section, `node scripts/lib/taste-catalog.mjs <class>`. Fetch the printed
+   modules from https://beautifului.dev, https://beui.dev, https://rareui.com,
+   https://transitions.dev, and https://ui.shadcn.com (or the local
+   `components/ui` file when shadcn is already installed). Adapt the JOB into
+   the v3 / listing foundation. Navy, cream, Geist, Amboqia stay. Do not
+   npm-install any of those catalogs onto `app/` or `components/site/`. Do not
+   shrink a working full-bleed layout (listing hero: `listing-hero-bleed`).
+   Record `adaptedFrom`. Empty adaptedFrom is inventing a layout — that is how
+   SITE-45 lost the full-width hero.
 1. Builds, and runs the builder ritual in `design_system/public/TASTE.md` with
    its own eyes on the screenshots.
 2. Captures the shots from its own `next dev` into `ui_kits/<route>/shots/`,
@@ -329,8 +344,9 @@ skill has.
    was 69, so the line means every page beats that day's best page. Write the handoff, then stop the loop
    (`ScheduleWakeup` with `stop: true`) and say so in one line.
 2. **Context nearly spent.** Finish the in-flight round or commit the lanes locally,
-   write the handoff, and continue: in dynamic `/loop` mode schedule the next wake;
-   otherwise spawn a fresh session with this skill.
+   write the handoff, and continue: schedule the next wake (Grok: durable 15m site-queue
+   task; Claude: `ScheduleWakeup`); otherwise spawn a fresh session with this skill.
+   An empty eligible set is a quiet fire, not a cancelled schedule (Matt 2026-09-10).
 3. **A rate limit.** Schedule the wake for the reset time and continue; do not end.
 4. **A measurement window comes due** (a `blocked_reason` with a date): read the
    numbers, mark done or reopen, keep going.
@@ -340,6 +356,12 @@ line, and keep building the other lanes.
 
 ## Do not
 
+- Invent a layout from a taste adjective. Fetch `node scripts/lib/taste-catalog.mjs <class>`
+  (shadcn docs + house modules) and adapt. Empty `adaptedFrom` is a miss.
+- `npx shadcn add` onto `app/` or `components/site/`. Public paint is v3. Admin
+  already lives in `components/ui`.
+- Shrink a working full-bleed layout to dodge a "looks like Zillow" tell
+  (SITE-45 listing hero).
 - Write a new audit, punch list, or plan for the site. Append to a node.
 - Rebuild a page for taste outside a node. A page with no node is not touched.
 - Land a site primitive that only a dev page imports. On 2026-09-08 two items merged

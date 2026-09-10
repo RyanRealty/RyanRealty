@@ -62,4 +62,14 @@ describe('sell leaves sit on the /sell spine', () => {
     expect(sell).toContain('placement="stage"')
     expect(sell).toContain('sellListingRows')
   })
+
+  it('our-listings draws photographs at the photo scale; bend-also does not', () => {
+    const shop = read('app/sell/_v3/SellShop.tsx')
+    const ourBlock = sell.slice(sell.indexOf('id="our-listings"'))
+    const alsoBlock = sell.slice(sell.indexOf('id="bend-also"'), sell.indexOf('id="listing-plan"'))
+    expect(ourBlock).toMatch(/id="our-listings"[\s\S]{0,400}?media="photo"/)
+    expect(alsoBlock).toContain('id="bend-also"')
+    expect(alsoBlock).not.toMatch(/media="photo"/)
+    expect(shop).toMatch(/id="our-listings"[\s\S]{0,400}?media="photo"/)
+  })
 })

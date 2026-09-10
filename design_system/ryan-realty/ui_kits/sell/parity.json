@@ -134,23 +134,24 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-08",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluatedAt": "2026-09-10",
+    "evaluatorModel": "grok-4.5",
+    "builderModel": "grok-4.6",
     "rubricVersion": "v1-2026-09-08",
     "scores": [
-      71,
       70,
-      74
+      73,
+      68
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-08",
-      "score": 83,
-      "evaluatorModel": "claude-sonnet-4-5",
-      "rubricVersion": "v0-pre-receipt-contract"
+      "score": 71,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:6b0a53d86235e4679506af6957d7940d18885747928e130ae6d22261d4cbd57a"
     },
-    "shotsHash": "sha256:6b0a53d86235e4679506af6957d7940d18885747928e130ae6d22261d4cbd57a",
+    "shotsHash": "sha256:5fd77ec5df2a71681749f0247452dfa2333f21111c7d1f301aeeb18dda0e6abb",
     "shotSpec": {
       "routes": [
         "/sell"
@@ -161,36 +162,48 @@
       ],
       "states": [
         "top",
+        "our-listings",
         "answer"
       ]
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/sell/shots/sell-1440.png",
       "mobile375": "design_system/ryan-realty/ui_kits/sell/shots/sell-375.png",
+      "ourListingsDesktop": "design_system/ryan-realty/ui_kits/sell/shots/our-listings-1440.png",
+      "ourListingsMobile375": "design_system/ryan-realty/ui_kits/sell/shots/our-listings-375.png",
       "answerDesktop": "design_system/ryan-realty/ui_kits/sell/shots/answer-1440.png",
       "answerMobile375": "design_system/ryan-realty/ui_kits/sell/shots/answer-375.png"
     },
-    "beats": "Redfin and Zillow's home-value pages: we show the comparable sold address, size and month behind the supply and pace figures, where a Zestimate is one number with no sourced comps.",
+    "beats": "Redfin Bend home-value / seller funnel: we win on sourced months-of-supply, days-to-contract, and named comps with section-0 traces; we lose on desktop answer composition, where a cream island sits in a dead navy field.",
     "defects": [
       {
-        "section": "receipt identity",
-        "finding": "REBASELINE, not a fall from 83. That mark was scored against a different rendering under the same shot filenames; this round's drawing swap overwrote them, so the shotsHash differs and 83 is not the same instrument."
+        "section": ".sell-answer (answer-1440)",
+        "severity": "craft",
+        "finding": "At 1440 the answer body is a ~704px cream island with flat empty navy from roughly x=880 to the right edge, so nearly forty percent of the viewport is unused stage chrome rather than a composed layout."
       },
       {
-        "section": "hero Stage background",
-        "finding": "Same broken-image glyph as the community class — the sandbox proxy, not the live site. Add the onError fallback."
+        "section": "#our-listings source",
+        "severity": "blocking",
+        "finding": "The visible source line reads like a filter clause: active and pending single-family listings where ListOfficeName is Ryan Realty LLC — raw MLS field jargon a visitor should never see."
       },
       {
-        "section": "answer sheet at 1440",
-        "finding": "The right ~40% of the viewport stays flat navy for the full scrollable length of the answer, an empty gutter rather than a composed layout."
+        "section": "#our-listings",
+        "severity": "taste",
+        "finding": "Only two office listings appear in the frame; as brokerage proof the ledger is thin and does not stop the scroll the way a denser, encoded book of homes would."
       },
       {
-        "section": "comps dot strip",
-        "finding": "Dots vary in vertical position with no axis, scale or legend in the default state, so the encoded value is not readable without a hover. The first read is not instant."
+        "section": "#our-listings media=photo",
+        "severity": "taste",
+        "finding": "SITE-61 photos replace the tap-target marks, but the rows still do not reward hover or tap with more data — the photographs are mute decoration on a static ledger."
+      },
+      {
+        "section": "V3Drawing comps strip",
+        "severity": "taste",
+        "finding": "The comparable-closes month strip still withholds the individual sale reading until a mark is engaged, so the first glance is a dotted rule rather than an instant claim."
       }
     ],
-    "score": 71,
-    "evaluator": "separate Sonnet evaluator, SITE-02b drawing pass, three independent scorings of one shot set (71 / 70 / 74)",
-    "rebaselineReason": "The 83 differs on evaluatorModel (claude-sonnet-4-5, not claude-sonnet-5), rubricVersion (v0-pre-receipt-contract) and shotsHash (none recorded, and this round's drawing swap overwrote answer-1440.png and answer-375.png under the same filenames). Not a fall from 83 — a first mark on a different instrument."
+    "score": 70,
+    "evaluator": "separate grok-4.5 evaluator via grok CLI, SITE-61 photo-scale pass, three independent scorings of one shot set (70 / 73 / 68)",
+    "rebaselineReason": "evaluatorModel differs (grok-4.5, not claude-sonnet-5) and shotsHash differs because this pass added our-listings-1440.png and our-listings-375.png to the hashed shot set. Rubric version is unchanged. Not a fall from 71 — a first mark on a different instrument."
   }
 }

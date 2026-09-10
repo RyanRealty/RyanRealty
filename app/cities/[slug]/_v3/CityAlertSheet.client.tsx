@@ -49,7 +49,11 @@
  */
 
 import { useCallback } from 'react'
-import { V3AlertsStrip, type V3AlertsSubmit } from '@/components/site/v3'
+import {
+  V3AlertsStrip,
+  type V3AlertsSubmit,
+  type V3AlertsTypeOption,
+} from '@/components/site/v3/V3AlertsStrip.client'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { readRrSessionId } from '@/lib/tracking'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
@@ -84,6 +88,7 @@ type Props = {
    * the other failure, so the submit stays primary there.
    */
   demote: boolean
+  types?: readonly V3AlertsTypeOption[]
 }
 
 export function CityAlertsStrip({
@@ -94,6 +99,7 @@ export function CityAlertsStrip({
   updatedAt,
   browseHref,
   demote,
+  types,
 }: Props) {
   const submit = useCallback<V3AlertsSubmit>(
     async (input) => {
@@ -139,6 +145,7 @@ export function CityAlertsStrip({
       // `demote` on Props: the outline under a rendered door, primary when the
       // opening published no door.
       emphasis={demote ? 'ghost' : 'primary'}
+      types={types}
       onSubmit={submit}
     />
   )

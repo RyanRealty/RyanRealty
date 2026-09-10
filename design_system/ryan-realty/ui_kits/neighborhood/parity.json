@@ -208,17 +208,12 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
-    "score": 65,
-    "scores": [
-      65,
-      59,
-      68
-    ],
-    "evaluator": "separate Sonnet evaluator agent, SITE-07 quality pass, session 019RdEm6 — three independent scorings of one capture run covering the opening, the Atlas chips, the subdivisions ledger and the activity / open-houses / guides run; no page code read, no live page opened",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluatedAt": "2026-09-10",
     "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate grok-4.5 evaluator, SITE-43, three scorings of first-viewport plus alerts/MOS-hover captures. Did not read page code.",
+    "evaluatorModel": "grok-4.5",
+    "builderModel": "grok-4.6",
+    "comparedToPrior": "rebaselined",
     "shotSpec": {
       "routes": [
         "/cities/bend/awbrey-butte"
@@ -229,97 +224,49 @@
       ],
       "states": [
         "default",
-        "atlas",
-        "chips",
-        "chips-open",
-        "activity",
-        "open-houses",
-        "guides"
-      ],
-      "capture": "scripts/take-route-shots.mjs, device scale 1, palette-quantized, consent banner and dev badge suppressed, image hosts relayed, degraded-read sentinels retried. This state set deliberately SHOWS the two sections the ruling names (the chip row and the stacked run); the prior receipt on this file covered the opening and one answers row only."
+        "alerts"
+      ]
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/mobile375.png",
-      "atlasDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/atlas-desktop.png",
-      "atlasMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/atlas-mobile375.png",
-      "chipsDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/chips-desktop.png",
-      "chipsMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/chips-mobile375.png",
-      "chipsOpenDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/chips-open-desktop.png",
-      "chipsOpenMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/chips-open-mobile375.png",
-      "activityDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/activity-desktop.png",
-      "activityMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/activity-mobile375.png",
-      "openHousesDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/open-houses-desktop.png",
-      "openHousesMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/open-houses-mobile375.png",
-      "guidesDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/guides-desktop.png",
-      "guidesMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/guides-mobile375.png"
+      "alertsDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/alerts-desktop.png",
+      "alertsMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/alerts-mobile375.png"
     },
-    "shotsHash": "sha256:3c221f3493224a5591b75120f29089405bb5570f3c6ffb6093ac235dddd95340",
-    "beats": "I did not open any competing page this session (no resort site, no competitor brokerage neighborhood page, no portal place page) — cannot honestly name a beat. Based only on the shots: the Atlas (parcel-level polygons shaded by sold density, with type checkboxes and a price slider at 375) is the one element I'd expect to genuinely outperform a portal neighborhood page, which typically shows a pin cluster with no density read and no in-place filtering.",
-    "subScores": {
-      "design": 19,
-      "originality": 18,
-      "interaction": 11,
-      "craft": 11,
-      "honesty": 6
+    "scores": [
+      68,
+      66,
+      70
+    ],
+    "score": 68,
+    "breakdown": {
+      "design": 22,
+      "originality": 19,
+      "interaction": 10,
+      "craft": 12,
+      "honesty": 5
     },
-    "scoringNotes": "Pass 1 (holistic): weighed the Atlas, typography, and photography as strong, land on ~65-66. Pass 2 (adversarial, hunting): looked harder at what repeats — Activity, Open Houses, and Guides all render as small-caps eyebrow + serif H2 + list-of-rows, and the plat-chip 'which part is moving' section is an unweighted tag cloud (24 folded / ~80 expanded) that is a table wearing hairlines by the rubric's own definition; also noticed the neighborhood opens with a full-bleed photo hero structurally identical to how PUBLIC_UI's own table says a CITY page opens (Stage-first), not the Instrument-first opening the same table specifies for Neighborhood — that's a place-rhythm lock break, not just a taste nit. That pass came in lower, ~59. Pass 3 (recalibration): gave back credit for what is genuinely fixed since the last mark per the brief — no chip clipping/ellipsis at 375, desktop folds at 24 not 80, guides detail line is body type at both widths, open-house rows now use the calendar tile as the mark instead of a stock photo — landed ~68. Spread is 9 points, driven almost entirely by how much weight I give the Bend-wide Activity/Open-Houses defect (severity move, not new information across passes) versus the real craft gains. Median 65.",
-    "evidenceLimits": "Static PNGs can't show real hover/scrub/tooltip behavior beyond the one 'chips-open' expanded state provided — I can't confirm the plat chips or property-type cards actually reveal a row of detail on hover as the rubric requires, only that they exist and are tappable-looking. Can't confirm the mobile property-type card row (57 / 1 / 13) is an intentional swipeable rail versus an overflow bug — no swipe affordance (fade, dots, arrow) is visible in a still, but scroll containers often only show themselves in motion. Can't confirm the dismiss-X's actual tap-target size, only its rendered glyph (~20px), so I can't independently confirm or clear the 44px touch-target rule. Can't see the page below the 'guides' shot, so I can't confirm whether a 'how fast to sell' or 'typical price' chart (the DATA_GRAPHICS Neighborhood 'one more' slot) exists elsewhere on the page or was legitimately omitted for thin n — it's simply absent from these 14 records. Can't verify loading, empty, or error states, or whether the Awbrey-Butte scoping problem is a data-availability fallback (disclosed) versus a wiring bug (undisclosed) — the copy never says 'showing Bend because Awbrey Butte alone was too thin.'",
-    "instrumentNotes": "THE COMPARISON THE OWNER RULED, stated plainly: SITE-07's pass scored this class 67 (63/67/72) on a wide state set and refused to write it over the 83 on this file, which covers two states (the opening and one answers row) from SITE-08. The owner ruled 2026-09-09 that 67 is the honest mark to beat. This mark is 65 on a state set that shows the chips and the run — it DID NOT RISE against 67 (-2). Against the 83 on this file (same model, same rubric, narrower states) it did not rise; that number and this one measure different parts of the page and are not a trend. Within-call spread here: 9 points (65, 59, 68); this instrument spread 5-13 within one call across the place classes yesterday, so a few points either way is noise. The receipt contract counts shotsHash as instrument identity, so comparedToPrior is \"rebaselined\" by construction; the honest comparison is this note.",
-    "topThree": "1) Scope 'Latest market activity' and 'Open houses' to Awbrey Butte's own subdivisions (with an honest, visible fallback line if data is thin) instead of silently substituting Bend-wide listings under a neighborhood eyebrow — this is the single biggest credibility problem on the page and has now persisted across two prior review rounds. 2) Rebuild the plat/subdivision breakdown as a sorted horizontal bar list (bar length = sold count) instead of an unencoded chip cloud that grows to ~80 identical tags on expand — same data, one glance instead of forty. 3) Break the eyebrow→heading→list rhythm repeating across Activity, Open Houses, and Guides so the page reads as one composed object rather than the same section machine run three times with different row furniture.",
-    "comparedToPrior": "rebaselined",
-    "rebaselineReason": "The prior mark differs on shotsHash. shotsHash: the records were re-captured after the V3Atlas and V3Ledger changes and the state set widened to show the chips and the stacked run, so the prior score is bound to files that no longer exist and to a narrower view of the page. Evaluator model and rubric are unchanged; see instrumentNotes for the ruled comparison against 67 and the same-instrument comparison against the file.",
-    "sameInstrumentPrior": {
-      "score": 83,
-      "evaluatedAt": "2026-09-08",
-      "rose": false
-    },
-    "ruledBaseline": {
-      "score": 67,
-      "ruledBy": "Matt 2026-09-09",
-      "rose": false
-    },
-    "priorMark": {
-      "evaluatedAt": "2026-09-08",
-      "score": 83,
-      "evaluator": "separate claude-sonnet-5 evaluator, SITE-08 round 2 — scored the MERGED build after the round-1 defects were fixed and the pages recaptured; three scorings of one shot set, median reported",
-      "evaluatorModel": "claude-sonnet-5",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:36e5120fa2e58adca3803aba49d7ee245fd88480064552af874138171aeef40e"
-    },
+    "beats": "Zillow / Compass Awbrey Butte neighborhood pages — wins on live MoS as a two-bar homes-for-sale vs typical-month sales figure with place photo, versus listing grids as the design",
     "defects": [
       {
-        "section": "Latest market activity + Open houses you can walk through",
-        "finding": "Both sections carry a 'BEND'-scoped eyebrow (LIVE · BEND / THIS WEEK · BEND) and show listings from other neighborhoods entirely — Bend Riverside, Broken Top, Stone Creek, Parks At Broken Top, Wyndemere — with none of the visible rows actually in Awbrey Butte, on a page whose whole premise is Awbrey Butte. Nothing in the copy discloses the substitution. Smallest fix: filter both feeds to the neighborhood's subdivision set first, and only fall back to city-wide with an explicit disclosure line ('Too few recent sales in Awbrey Butte — showing nearby Bend activity') when n is thin, per DATA_GRAPHICS's own thin-n rule."
+        "section": "place opening",
+        "severity": "taste",
+        "finding": "Composition mirrors the city opening with swapped numerals and a photo — coherent system, little page-specific invention beyond the place name."
       },
       {
-        "section": "Sticky alerts bar",
-        "finding": "Repeats the fold's exact sentence ('15 houses came on the market in Awbrey Butte in the last 30 days') verbatim under every section, and its own copy admits the subscription is 'all of Bend, Awbrey Butte included' — so the one persistent CTA on a neighborhood page cannot actually deliver an Awbrey-Butte-only alert. Smallest fix: either wire a real neighborhood-scoped alert, or rewrite the sticky bar to reference the section it's sitting under instead of parroting the hero line."
-      },
-      {
-        "section": "Awbrey Butte guides / plat chip row (\"which part is moving\")",
-        "finding": "24 chips fold to ~80 on expand, every chip the same visual weight (hairline box, cream fill) regardless of sold count — the count is a small trailing digit, not a bar length or shading. This is DATA_GRAPHICS's own recommended case for a horizontal bar chart ('names are long') and instead ships as an unencoded tag cloud, which the rubric names directly: 'a Ledger past six rows with no visual encoding is a table wearing hairlines.' Smallest fix: same data, rendered as a sorted horizontal bar list (bar length = sold count), top ~10 with a 'show all' toggle instead of a chip explosion."
-      },
-      {
-        "section": "Activity / Open Houses / Guides (macro rhythm)",
-        "finding": "All three (four, counting the chips block before them) compose as small-caps eyebrow → serif H2 → hairline-separated list of rows → next section. Individual row shapes now differ (photo card, calendar tile, single feature card), which is real progress, but the section-level rhythm is identical three times running — the 'stacked-section page' tell the rubric names by name. Smallest fix: give one of the three a genuinely different macro-shape (e.g., fold Guides into a Stage-style full-bleed video moment with no eyebrow/heading stack at all, since it's carrying only one item anyway)."
-      },
-      {
-        "section": "Opening (hero)",
-        "finding": "The neighborhood page opens with a full-bleed photographic hero (mountain + place-name caption) structurally identical to how PUBLIC_UI's per-destination table says a CITY page should open (Stage then Field); the same table specifies Neighborhood should open Instrument-first (the pace number), with no photographic Stage moment, precisely so City and Neighborhood don't share a first screen. Smallest fix: lead with the '15 houses' Instrument directly under the mast, move the photo down or drop it, matching the documented opening."
-      },
-      {
-        "section": "Property-type cards at 375 (57 single-family / 1 townhome / 13 lots)",
-        "finding": "At mobile width the second card ('Townhome in Awbrey Butte…', '11 SOLD IN THE LA[ST 12] MONTHS', '44 DAYS TO AN OF[FER]') is hard-clipped at the viewport edge mid-word with no visible scroll affordance (no fade, no dots, no partial arrow) — reads as a layout overflow rather than an intentional swipeable rail. Smallest fix: add an edge fade or partial-card reveal cue, or drop to a single-column stack at 375."
-      },
-      {
-        "section": "Awbrey Butte guides",
-        "finding": "A section headed 'Awbrey Butte guides' (plural) ships exactly one card (a YouTube video pointer) — thin content dressed as a category, with an 'Every guide' escape hatch doing the work the heading implies should already be here."
+        "section": "#alerts",
+        "severity": "craft",
+        "finding": "The 15 numeral is a door with an underline, but the recent-listing thumbnails sit under a truncated address line that reads as a broken row at 1440."
       }
     ],
-    "bannedTells": [
-      "Scrolling list as design: the plat/subdivision chip row (24 folded, ~80 expanded) is a list of same-weight hairline boxes with a plain digit, no bar/shading/size encoding of the sold count it's reporting — the rubric's own 'table wearing hairlines' example.",
-      "The stacked-section page: Activity, Open Houses, and Guides each run eyebrow → serif heading → row list → next section back to back, varying only the row's internal shape."
-    ]
+    "rebaselineReason": "evaluatorModel changed from claude-sonnet-5 to grok-4.5 and shotsHash changed because the first viewport now carries the MOS overlay and a recaptured alerts strip. Matt ruled 67 as the mark to beat; this 68 is on a different instrument so comparedToPrior is rebaselined, and 68 is still above that ruled floor.",
+    "priorMark": {
+      "evaluatedAt": "2026-09-09",
+      "score": 65,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:3c221f3493224a5591b75120f29089405bb5570f3c6ffb6093ac235dddd95340"
+    },
+    "shotsHash": "sha256:e78735440c0f4b1114f8b7d77d044ef572702a3b3b2eedc0f7b8f9e27068290a"
   }
 }

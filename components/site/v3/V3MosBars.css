@@ -1,0 +1,134 @@
+/* Compact MOS two-bar overlay. Tokens from ./tokens.css only. */
+
+.v3.v3-mos {
+  position: relative;
+  display: grid;
+  gap: var(--v3-space-xs);
+  max-width: min(var(--v3-measure-sheet), calc(100% - 2 * var(--v3-gutter)));
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  border: var(--v3-rule-hairline);
+  box-shadow: none;
+}
+
+.v3-mos__plain {
+  margin: 0;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3-mos__caption {
+  margin: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+  text-wrap: pretty;
+}
+
+.v3-mos__pair {
+  display: grid;
+  gap: var(--v3-space-2xs);
+}
+
+.v3-mos__barrow {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 38%) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--v3-space-xs);
+  min-height: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.v3-mos__barrow:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-mos__barname {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3-mos__bartrack {
+  position: relative;
+  display: block;
+  height: var(--v3-space-sm);
+  background: var(--v3-wash);
+}
+
+.v3-mos__barfill {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: var(--v3-mos-pct, 0%);
+  background: var(--v3-navy);
+}
+
+.v3-mos__barvalue {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-body);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--v3-ink);
+}
+
+.v3-mos__tip {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  padding: var(--v3-space-sm) 0 0;
+  border-top: var(--v3-rule-hairline);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+
+.v3-mos__tip p {
+  margin: 0;
+}
+
+.v3-mos__tip-source {
+  color: var(--v3-ink-muted);
+  overflow-wrap: anywhere;
+}
+
+.v3.v3-mos .v3-source {
+  max-inline-size: none;
+  margin-inline: 0;
+}
+
+@media (max-width: 39.99rem) {
+  .v3.v3-mos {
+    padding: var(--v3-space-xs) var(--v3-space-sm);
+    gap: var(--v3-space-2xs);
+    max-width: none;
+  }
+
+  .v3-mos__plain {
+    display: none;
+  }
+
+  .v3-mos__caption {
+    font-size: var(--v3-size-body-sm);
+  }
+
+  .v3.v3-mos .v3-source .v3-source__summary {
+    min-block-size: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-mos__barfill {
+    transition: none;
+  }
+}

@@ -29,6 +29,10 @@
  *       [--evaluate-only <runDir>] [--repeat] [--dry-run]
  *       [--diff[=previous.json]]
  *   node scripts/taste-table.mjs --diff                # standalone: working file vs HEAD's
+ *   node scripts/taste-table.mjs --seed-draft[=table.json]
+ *       # SITE-62: DRAFT seeds for every class under 70. Not a write to
+ *       # Supabase. A person edits scripts/seed-site-queue.ts then runs
+ *       # `npx tsx scripts/seed-site-queue.ts`.
  *
  * Transport: the Anthropic SDK directly (`@anthropic-ai/sdk` — the repo's own
  * `createAnthropic()` in lib/ai/anthropic.ts is TypeScript and cannot be
@@ -49,10 +53,13 @@ import {
   FINISH_LINE,
   RUBRIC_VERSION,
   buildRow,
+  buildSeedDrafts,
   builderModelFromCommitBody,
+  collectUsedVersionGaps,
   computeDiff,
   droppedClasses,
   filterClasses,
+  formatSeedDrafts,
   isNonEmptyString,
   isPlainObject,
   loadClassRegistry,
@@ -94,6 +101,8 @@ export function parseArgv(argv) {
     diffPath: null,
     api: false,
     claude: false,
+    seedDraft: false,
+    seedDraftPath: null,
   }
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i]
@@ -119,6 +128,16 @@ export function parseArgv(argv) {
     } else if (a.startsWith('--diff=')) {
       opts.diff = true
       opts.diffPath = a.slice('--diff='.length) || null
+    } else if (a === '--seed-draft') {
+      opts.seedDraft = true
+      const next = argv[i + 1]
+      if (isNonEmptyString(next) && next.endsWith('.json')) {
+        opts.seedDraftPath = next
+        i += 1
+      }
+    } else if (a.startsWith('--seed-draft=')) {
+      opts.seedDraft = true
+      opts.seedDraftPath = a.slice('--seed-draft='.length) || null
     } else if (a.startsWith('--')) {
       throw new Error(`unknown option ${a}`)
     } else if (opts.baseUrl === null) {
@@ -370,6 +389,88 @@ function printCandidates(rows) {
 }
 
 // ---------------------------------------------------------------------------
+// --seed-draft — SITE-62: table → DRAFT seeds. Never a Supabase write.
+// ---------------------------------------------------------------------------
+
+const SEED_FILE = 'scripts/seed-site-queue.ts'
+
+/**
+ * Optional read of loop_work_nodes.version_gap so a node that exists in the
+ * graph but not yet in SEEDS (this round's SITE-62) is not reissued. Native
+ * fetch only — this file must not import supabase-js. Missing env → [].
+ * Failures are warnings; the seed-file gaps still number the drafts.
+ */
+async function loadUsedGapsFromLoopWorkNodes() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!isNonEmptyString(url) || !isNonEmptyString(key)) return []
+  const endpoint = `${String(url).replace(/\/$/, '')}/rest/v1/loop_work_nodes?select=version_gap`
+  try {
+    const res = await fetch(endpoint, {
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        Accept: 'application/json',
+      },
+    })
+    if (!res.ok) {
+      console.error(`taste-table --seed-draft: loop_work_nodes read failed (${res.status}) — using seed-file gaps only`)
+      return []
+    }
+    const rows = await res.json()
+    return (Array.isArray(rows) ? rows : [])
+      .map((r) => (isPlainObject(r) ? r.version_gap : null))
+      .filter((g) => isNonEmptyString(g))
+  } catch {
+    console.error('taste-table --seed-draft: loop_work_nodes read failed — using seed-file gaps only')
+    return []
+  }
+}
+
+async function runSeedDraft(opts) {
+  const tableRel = isNonEmptyString(opts.seedDraftPath) ? opts.seedDraftPath : TABLE_PATH
+  const tableAbs = resolve(REPO_ROOT, tableRel)
+  if (!existsSync(tableAbs)) {
+    console.error(`taste-table --seed-draft: table not found at ${tableRel}`)
+    process.exit(1)
+  }
+  let table
+  try {
+    table = JSON.parse(readFileSync(tableAbs, 'utf8'))
+  } catch (err) {
+    console.error(`taste-table --seed-draft: could not parse ${tableRel}: ${err.message}`)
+    process.exit(1)
+  }
+
+  const seedAbs = join(REPO_ROOT, SEED_FILE)
+  const usedFromFile = existsSync(seedAbs) ? collectUsedVersionGaps(readFileSync(seedAbs, 'utf8')) : []
+  const usedFromDb = await loadUsedGapsFromLoopWorkNodes()
+  const usedGaps = [...new Set([...usedFromFile, ...usedFromDb])]
+
+  const { drafts, warnings } = buildSeedDrafts({ table, usedGaps, root: REPO_ROOT })
+  for (const w of warnings) console.error(`taste-table --seed-draft: ${w}`)
+
+  const text = formatSeedDrafts(drafts)
+  process.stdout.write(text)
+
+  // Scratchpad is optional and gitignored. Only the default table run writes
+  // it, so a test pointing --seed-draft at a temp file does not touch it.
+  if (!isNonEmptyString(opts.seedDraftPath)) {
+    try {
+      mkdirSync(join(REPO_ROOT, 'scratchpad'), { recursive: true })
+      writeFileSync(join(REPO_ROOT, 'scratchpad/taste-table-seed-draft.ts'), text)
+      console.error('wrote scratchpad/taste-table-seed-draft.ts (gitignored; DRAFT — not seeded)')
+    } catch (err) {
+      console.error(`taste-table --seed-draft: could not write scratchpad (${err.message})`)
+    }
+  }
+
+  if (drafts.length === 0) {
+    console.error(`taste-table --seed-draft: no class under ${FINISH_LINE} with a surviving defect.`)
+  }
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 
@@ -380,6 +481,12 @@ async function main() {
   } catch (err) {
     console.error(`taste-table: ${err.message}`)
     process.exit(1)
+  }
+
+  // ---- standalone --seed-draft: no capture, no evaluation, no Supabase write ----
+  if (opts.seedDraft) {
+    await runSeedDraft(opts)
+    process.exit(0)
   }
 
   // ---- standalone --diff: no capture, no evaluation, just a report ----

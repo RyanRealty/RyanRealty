@@ -124,6 +124,19 @@ describe('the callout and the strip render one sentence', () => {
 })
 
 describe('placeAlertsCopy', () => {
+  it('names condos as condos when that type is selected', () => {
+    const copy = placeAlertsCopy({
+      placeName: 'Bend',
+      scopeName: 'Bend',
+      newCount30d: 12,
+      geoType: 'city',
+      geoSlug: 'bend',
+      noun: { one: 'condo', many: 'condos' },
+    })
+    expect(copy.count).toBe('12')
+    expect(copy.claim).toBe('condos came on the market in Bend in the last 30 days.')
+  })
+
   it('groups a large count the way every other figure is grouped', () => {
     const copy = placeAlertsCopy({ placeName: 'Bend', scopeName: 'Bend', newCount30d: 3655, geoType: 'city', geoSlug: 'bend' })
     expect(copy.count).toBe('3,655')
