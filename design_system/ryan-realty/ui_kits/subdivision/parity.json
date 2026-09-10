@@ -147,7 +147,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-09",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate evaluator Agent spawned from the SITE-56 build lane on the `sonnet` model (never the builder, which is Opus 5), given design_system/public/TASTE.md and TWO sets of the same eight frames — the committed state at d5b982e8 and this branch's — every one captured by scripts/take-route-shots.mjs at the first viewport, 1440x900 and 375x812, scale 1, on the lane's own dev server. It scored each set three times in one call, was told to judge interaction only from what a still shows and to say so, and was asked to name which shots dragged the class. It scored the committed state at a median of 54 (54, 53, 56) and this state at 72 (72, 72, 73), and reported that the four market-report and FAQ frames are unchanged between the sets: the whole rise is the two openings and the map that now paints.",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-59. The class was re-scored after #homes stopped holding the dead Google canvas's fixed 600px height. Matt turned that canvas off on 2026-09-03 and the height stayed, so /subdivisions/diamond-bar-ranch painted 996px of section for one home, about 530px of it empty cream. The height is a cap now, and on phones the list rail moved out of `position: absolute` into normal flow. The evaluator rendered /subdivisions/diamond-bar-ranch and /subdivisions/golf-homes-at-tetherow at 1440x2600 and 375 wide, measured the section box at both, and scored three times: 74, 73, 73.",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
@@ -162,7 +162,8 @@
       "states": [
         "default",
         "market-report",
-        "faq"
+        "faq",
+        "homes"
       ]
     },
     "shots": {
@@ -173,63 +174,50 @@
       "answersDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-desktop.png",
       "answersMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-mobile375.png",
       "unrecordedDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/unrecorded-desktop.png",
-      "unrecordedMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/unrecorded-mobile375.png"
+      "unrecordedMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/unrecorded-mobile375.png",
+      "homesDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/homes-desktop.png",
+      "homesMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/homes-mobile375.png"
     },
-    "shotsHash": "sha256:0ab853ce2c90e751248dd6d121e80d816ea3d515b9c03cc7baf01f36da003767",
+    "shotsHash": "sha256:80c82ffede0029461ec3edd01807ca988ad91b4a70db5a26f15bfce139fb750a",
     "scores": [
-      72,
-      72,
+      74,
+      73,
       73
     ],
-    "score": 72,
+    "score": 73,
     "breakdown": {
       "design": 21,
       "originality": 18,
       "interaction": 11,
-      "craft": 13,
+      "craft": 14,
       "honesty": 9
     },
-    "beats": "Beats Zillow's and Redfin's neighborhood pages on identity — a photograph of a live, named listing on arrival, which a portal's generic map view never shows, over the county's own recorded plat and its lot lines. It does not beat a resort developer's own site on photography: the frame is one MLS listing photo, not a commissioned shoot.",
+    "beats": "Beats Zillow's and Redfin's neighborhood pages on identity \u2014 a photograph of a live, named listing on arrival, which a portal's generic map view never shows, over the county's own recorded plat and its lot lines. It does not beat a resort developer's own site on photography: the frame is one MLS listing photo, not a commissioned shoot.",
     "defects": [
       {
-        "section": "#market-report",
+        "section": "#homes filter rail",
         "severity": "taste",
-        "finding": "Repeats the eyebrow-heading-rule-sentence-chart-stat-source shape of the sections above and below it; past the first screen the page still reads as a stacked list. Unchanged by this lane."
+        "finding": "Carried, unchanged by this node: the PLACES / FOR SALE / PRICE / BEDS / BATHS / HOME TYPE bar still reads as a portal search widget bolted under the editorial opening rather than in the register the Atlas above it uses."
       },
       {
-        "section": "#faq",
+        "section": "#faq 2025-vs-2024 dot row",
         "severity": "taste",
-        "finding": "The 2025-against-2024 dot comparison shows no hover or tap cue in the still, so it reads as a picture of data rather than something a reader can interrogate."
-      },
-      {
-        "section": "hero (#overview) at 375, both routes",
-        "severity": "craft",
-        "finding": "The H1 sits close against the source chip row at 375; nothing clips, but it is tighter than the vertical rhythm the rest of the page keeps."
-      },
-      {
-        "section": "#homes",
-        "severity": "taste",
-        "finding": "The filter rail and legend under the opening still look like a portal search widget bolted beneath an editorial hero rather than the navy-on-cream register the Atlas above it uses."
+        "finding": "Carried: the dot comparison shows no hover or tap affordance in the static render, so it reads as a picture of data rather than something a visitor can interrogate."
       },
       {
         "section": "#faq valuation row",
         "severity": "taste",
-        "finding": "The what-is-my-home-worth row is the page’s lead-generation moment and renders at the same weight as every other disclosure row."
-      },
-      {
-        "section": "#atlas, unrecorded plats",
-        "severity": "taste",
-        "finding": "On a plat with no recorded polygon the map is roads and marks over open ground: the counties that dominate that class (Jefferson, Crook) publish neither plats nor parcels, so there is no lot fabric to draw and the frame reads thin."
+        "finding": "Carried: \"What is my <plat> home worth?\", the page's lead-gen moment, renders at the same plain-accordion weight as every other disclosure row."
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-09",
-      "score": 65,
+      "score": 72,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:01a48bf3c24df75a3540f85cd7520ca4ba84f80c33bfcba31646d41ae277c3ba"
+      "shotsHash": "sha256:0ab853ce2c90e751248dd6d121e80d816ea3d515b9c03cc7baf01f36da003767"
     },
-    "rebaselineReason": "shotsHash differs: every frame was re-captured through scripts/take-route-shots.mjs on this branch, and two frames of an unrecorded plat (/subdivisions/diamond-bar-ranch at 1440 and 375) joined the set, so the prior mark of 65 was taken on a different instrument. The same evaluator, same rubric, scored the committed state of this branch's base at a median of 54 on THIS set and this state at 72: the class rose 18 against the instrument that measured both, and sits above the prior 65 as well."
+    "rebaselineReason": "shotsHash differs: two frames of #homes on the one-home plat \u2014 the section and the case this node changed \u2014 joined the shot set, so the committed 72 was taken on a different instrument. Measured on this branch, the diamond-bar-ranch #homes box went 996px to 786px with zero trailing blank, and the golf-homes-at-tetherow list is unchanged; at 375 the rail renders in flow with no clipping on either route. Craft 13 to 14; no category fell."
   }
 }

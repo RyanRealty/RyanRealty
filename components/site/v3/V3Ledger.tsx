@@ -298,6 +298,31 @@ type V3LedgerBase = {
    */
   layout?: 'list' | 'pulse' | 'walk' | 'magazine' | 'places'
   /**
+   * How big the media column is, and therefore what the media is FOR.
+   *
+   * `mark` (default) is the 44px square every ledger has drawn since the
+   * pattern shipped: a headshot, a place's photo, a guide's cover — an
+   * identifying stamp beside a name the visitor is already reading.
+   *
+   * `photo` is for a ledger of HOMES, where the photograph is not a stamp
+   * beside the row, it is a large part of what the row is worth reading. At
+   * 44px a house is four hundred pixels of roof, lawn and sky averaged into a
+   * grey smudge — and it is exactly the same box, at exactly the same fill, as
+   * the glyph a row draws when it has NO photo. That is what an evaluator read
+   * on /oregon/medford on 2026-09-09 as ten broken rows out of twelve. It was
+   * not broken: measured on the lane server and on ryan-realty.com the same
+   * day, 11 of 11 Medford rows and 5 of 5 Salem rows requested their photo,
+   * got a 200 from cdn.resize.sparkplatform.com, and decoded (naturalWidth
+   * 768-1982). The photographs were there and 44 pixels was not enough of them
+   * to see. `photo` draws the same picture 4:3 and large enough to be one.
+   *
+   * On `photo` the box behind the picture is the NAVY TILE the glyph uses, not
+   * the pale wash: a photograph that has not decoded yet, or one whose host
+   * fails, then reads as the same deliberate mark as a row with no photograph,
+   * and never as an empty grey rectangle.
+   */
+  media?: 'mark' | 'photo'
+  /**
    * Draw each row's figure as a length as well as a number, using the row's own
    * `weight`. Off by default: a ledger of prices with no common scale, or of
    * rows the reader is meant to read rather than compare, is not a comparison
@@ -392,6 +417,7 @@ export function V3Ledger(props: V3LedgerProps) {
     id,
     className,
     layout = 'list',
+    media = 'mark',
     encode,
   } = props
 
@@ -448,6 +474,7 @@ export function V3Ledger(props: V3LedgerProps) {
         V3_ROOT_CLASS,
         'v3-ledger',
         layout !== 'list' && `v3-ledger--${layout}`,
+        media === 'photo' && 'v3-ledger--photo',
         encode === 'bar' && 'v3-ledger--encoded',
         anyReveal && 'v3-ledger--reveal',
         className,
