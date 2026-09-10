@@ -955,3 +955,54 @@
   stroke-width: 3px;
   stroke-linejoin: round;
 }
+
+/* ===========================================================================
+   THE LIVE LEGEND (SITE-41). Rendered by ./V3ChartKeys.client.tsx, and only
+   for a chart that asked for `keysToggle`. A key is a real button: press it
+   and its series leaves the drawing and the reading together.
+
+   The pressed state is `aria-pressed`, not a class, so the control says the
+   same thing to a screen reader that the ink says to an eye. Unpressed is the
+   one carrying the visual weight of absence: the swatch empties, the name goes
+   quiet, and a strike is NOT used — a line through a year reads as a deletion
+   of the year rather than of the series.
+   =========================================================================== */
+.v3 .v3-chart__key--btn {
+  min-height: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: opacity var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-chart__legend--live {
+  align-items: center;
+}
+
+.v3 .v3-chart__legend--live li {
+  display: inline-flex;
+}
+
+.v3 .v3-chart__key--btn[aria-pressed='false'] {
+  opacity: 0.42;
+}
+
+.v3 .v3-chart__key--btn[aria-pressed='false'] .v3-chart__swatch {
+  border-top-style: dotted;
+}
+
+/* The series a pressed-off key hides. One rule per categorical slot, matched
+   against the space-separated index list the island writes on the frame. The
+   class only exists on a chart with a live legend, so nothing else can match. */
+.v3 .v3-chart__frame[data-off~='0'] .v3-chart__s0,
+.v3 .v3-chart__frame[data-off~='1'] .v3-chart__s1,
+.v3 .v3-chart__frame[data-off~='2'] .v3-chart__s2,
+.v3 .v3-chart__frame[data-off~='3'] .v3-chart__s3,
+.v3 .v3-chart__frame[data-off~='4'] .v3-chart__s4 {
+  display: none;
+}

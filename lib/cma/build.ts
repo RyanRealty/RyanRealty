@@ -825,6 +825,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       subjectBaths: subject.baths,
       subjectIsCustomOrNew,
       failedAsk: pricing.failedAsk ?? null,
+      tiersUsed: selection.tiersUsed,
     })
     if (!contract.pass) {
       const failed = contract.checks

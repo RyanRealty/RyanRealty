@@ -183,6 +183,23 @@ export type V3ChartProps = {
   /** The crosshair-and-reading layer. On for lines unless turned off. */
   hover?: boolean
   /**
+   * A LEGEND THAT DOES SOMETHING (SITE-41). Lines only, and only with more than one
+   * series: each key becomes a pressed/unpressed control that drops its series from the
+   * drawing AND from the reading, so the tooltip never reports a line that is not there.
+   * The last visible series cannot be turned off.
+   *
+   * Opt-in, because it mounts a client island: a chart that does not ask for it renders
+   * the same static list of names it always did, from the server, with no JS.
+   */
+  keysToggle?: boolean
+  /**
+   * THE RESTING READING (SITE-41). `'last'` opens the newest stop's crosshair and
+   * tooltip before the reader touches anything, and returns there when the pointer
+   * leaves. It is how the chart says it is interactive without a sentence teaching a
+   * gesture. Lines only; ignored when `hover` is off.
+   */
+  restingRead?: 'last'
+  /**
    * Range rows only. Names what every row's `sample` counted, drawn ONCE
    * above the rows ("detached closes in the quarter"). A bare n is not a
    * reading until the chart says what it counted, so the atom refuses a
@@ -380,6 +397,8 @@ export function V3Chart({
   emphasize,
   emphasisTone,
   hover,
+  keysToggle,
+  restingRead,
   sampleKey,
   rangeKeyLabel,
   rangeBaseKeyLabel,
@@ -556,6 +575,32 @@ export function V3Chart({
           ? []
           : plot.bars.map((b) => b.tick)
 
+  /* The live legend, and the per-series hook the stylesheet needs to drop a line.
+     Both only exist when a caller asked for them: the class is what `data-off` on
+     the plot matches against, and adding it unasked would change the markup of every
+     chart on the site for a behaviour they do not have. */
+  const liveKeys = keysToggle === true && plot.kind === 'line' && keys.length > 1
+  const seriesClass = (i: number) =>
+    liveKeys ? `v3-chart__s${Math.min(i, V3_CHART_CATEGORY_SLOTS - 1)}` : undefined
+  /* THE RESTING STOP IS THE NEWEST READING, NOT THE LAST COLUMN. On a year overlay
+     the axis runs Jan to Dec while the current year stops at the month the data
+     stops, so the last column is a December that only the older years reach. Resting
+     there opened a tooltip whose newest line was a year old and whose subject series
+     was absent from it entirely. Take the last column the emphasized series actually
+     reads at; with no emphasis, the last column stands. */
+  const restingIndex = (() => {
+    if (restingRead !== 'last' || plot.kind !== 'line' || hoverColumns.length === 0) {
+      return undefined
+    }
+    const subject = emphasisIndex != null ? plot.lines[emphasisIndex]?.name : undefined
+    if (subject) {
+      for (let i = hoverColumns.length - 1; i >= 0; i -= 1) {
+        if (hoverColumns[i]?.readings.some((r) => r.name === subject)) return i
+      }
+    }
+    return hoverColumns.length - 1
+  })()
+
   const rangeHasBase = plot.kind === 'range' && plot.rows.some((r) => r.baseXPct != null)
   // Drawn rows, not input rows: buildRangePlot drops a row with no finite
   // value, so a chart whose only sampled row was dropped must not keep the
@@ -582,7 +627,7 @@ export function V3Chart({
       </figcaption>
       {claim ? <p className="v3-chart__claim">{claim}</p> : null}
 
-      {keys.length > 1 ? (
+      {keys.length > 1 && !liveKeys ? (
         <ul className="v3-chart__legend">
           {keys.map((name, i) => (
             <li
@@ -619,9 +664,12 @@ export function V3Chart({
         <p className="v3-chart__samplekey">n = {sampleKey}</p>
       ) : null}
 
-      {plot.kind === 'line' ? (
-        <div className="v3-chart__frame">
-          {ticks.y.length >= 2 ? (
+      {plot.kind === 'line' ? (() => {
+        /* The frame's three pieces, named once. The static branch nests them exactly
+           as it always did; the live-keys branch hands the same three nodes to the
+           client island, which composes the same frame around its pressed state. */
+        const yAxis =
+          ticks.y.length >= 2 ? (
             <div className="v3-chart__y v3-chart__y--ticks" aria-hidden="true">
               {ticks.y.map((tk) => (
                 <span key={tk.label} className="v3-chart__ytick" style={{ top: `${bandTopPct(tk.frac)}%` }}>
@@ -634,9 +682,9 @@ export function V3Chart({
               <span style={{ top: `${bandTopPct(0)}%` }}>{plot.yMaxLabel}</span>
               <span style={{ top: `${bandTopPct(1)}%` }}>{plot.yMinLabel}</span>
             </div>
-          )}
-          <div className="v3-chart__plot">
-            <svg
+          )
+        const svg = (
+          <svg
               className="v3-chart__svg"
               viewBox={`0 0 ${plot.vbW} ${plot.vbH}`}
               preserveAspectRatio="none"
@@ -661,7 +709,7 @@ export function V3Chart({
               {plot.lines.map((line, i) => (
                 <path
                   key={`${i}-${line.name}`}
-                  className={cn('v3-chart__line', lineClass(i))}
+                  className={cn('v3-chart__line', lineClass(i), seriesClass(i))}
                   d={line.d}
                 />
               ))}
@@ -699,7 +747,7 @@ export function V3Chart({
                         // here would draw as an ellipse.
                         <path
                           key={`m-${i}-${j}`}
-                          className={cn('v3-chart__mark', markClass(i))}
+                          className={cn('v3-chart__mark', markClass(i), seriesClass(i))}
                           d={`M${p.x.toFixed(2)},${p.y.toFixed(2)} l0.01,0`}
                         >
                           <title>{`${line.name} — ${p.tick}: ${p.label}`}</title>
@@ -708,9 +756,9 @@ export function V3Chart({
                   )
                 : null}
             </svg>
-            {hoverColumns.length > 0 ? <V3ChartHover columns={hoverColumns} label={caption} /> : null}
-          </div>
-          {ticks.x.length >= 2 ? (
+        )
+        const xAxis =
+          ticks.x.length >= 2 ? (
             <div
               className={cn(
                 'v3-chart__x v3-chart__x--ticks',
@@ -733,9 +781,35 @@ export function V3Chart({
               <span>{plot.xStart}</span>
               <span>{plot.xEnd}</span>
             </div>
-          )}
-        </div>
-      ) : null}
+          )
+        if (liveKeys) {
+          // The reading layer composes the frame when the legend is live, because the
+          // pressed state that hides a line is the same state that has to filter the
+          // reading. One island, one truth (SITE-41).
+          return (
+            <V3ChartHover
+              columns={hoverColumns}
+              label={caption}
+              initial={restingIndex}
+              keys={keys}
+              keyClasses={keys.map((_, i) => cn(keyClass(i)))}
+              frame={{ axis: yAxis, plot: svg, xTicks: xAxis }}
+            />
+          )
+        }
+        return (
+          <div className="v3-chart__frame">
+            {yAxis}
+            <div className="v3-chart__plot">
+              {svg}
+              {hoverColumns.length > 0 ? (
+                <V3ChartHover columns={hoverColumns} label={caption} initial={restingIndex} />
+              ) : null}
+            </div>
+            {xAxis}
+          </div>
+        )
+      })() : null}
 
       {plot.kind === 'bars' ? (
         <div className="v3-chart__frame">

@@ -32,3 +32,22 @@
 .v3.v3-instrument.hm-tremor .v3-instrument__action {
   margin-top: var(--v3-space-lg);
 }
+
+/* THE SAID FIGURE IS NOT A TILE (SITE-41). A figure carrying its plain sentence is a
+   short paragraph with a number for a first word, and the wash box drew around the
+   number and the label while the sentence hung underneath it on the cream: an
+   amputated card. It also made one page in the family look different from the other
+   three, which TASTE.md calls the way one site becomes two — /housing-market/bend and
+   /housing-market/annual-review open on the same object with no wash at all.
+
+   So a said opening drops the box and keeps the density. The tail figures behind the
+   fold, and the closed-sales band, carry no sentences and keep their tiles. */
+.v3.v3-instrument.hm-tremor.v3-instrument--said .v3-figure {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.v3.v3-instrument.hm-tremor.v3-instrument--said .v3-instrument__figures {
+  gap: var(--v3-space-lg) var(--v3-space-md);
+}

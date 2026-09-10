@@ -372,9 +372,16 @@ export async function selectComps(
   const sqlSubType = compPoolPropertySubType(subject.propertySubType)
   const subTypeSql = sqlSubType ? ` AND property_sub_type='${sqlSubType}'` : ''
 
+  // How many sales the widening rung crossed the resort-membership rule for.
+  // Counted so the disclosure can name it rather than imply it.
+  let resortCrossed = 0
+
   for (const tier of tiers) {
     const skip =
-      tier.name.startsWith('subdivision') && !tier.subdivisionIlike
+      // THE WIDENING RUNS ONLY WHEN THE BOUNDED LADDER CAME UP SHORT.
+      tier.whenStarved && byKey.size >= MIN_COMPS
+        ? 'the bounded search already reached the minimum, so no widening was needed'
+        : tier.name.startsWith('subdivision') && !tier.subdivisionIlike
         ? 'the subject has no usable SubdivisionName on its MLS record'
         : tier.sameArea && !subjectArea
           ? 'the subject sits outside every mapped neighborhood polygon'
@@ -544,8 +551,13 @@ export async function selectComps(
       // a home in the SAME resort community — and a plain-town sale never
       // prices a resort subject. Registry-driven, symmetric.
       if (!resortCommunityCompatible(subject.subdivision, comp.subdivision)) {
-        rung.excluded.resort_premium++
-        continue
+        // Matt 2026-09-09: cross only when starved, and say so. Outside the
+        // widening rung the guard is absolute, exactly as it was.
+        if (!tier.relaxResort) {
+          rung.excluded.resort_premium++
+          continue
+        }
+        resortCrossed++
       }
 
       // HARD EXCLUSION at every tier (Never cross US-97 / Bend Parkway /
@@ -729,6 +741,23 @@ export async function selectComps(
   comps.sort((a, b) => b.closeDate.localeCompare(a.closeDate))
 
   trace.push(`Final comp set: ${comps.length} closed sales (tiers: ${tiersUsed.join(', ') || 'none'}).`)
+
+  // THE DISCLOSURE COUNTS THE SALES THE READER SEES, not the candidates the
+  // widening admitted. The first cut counted every row that passed the relaxed
+  // guard during the scan — 446 on a five-sale document — which is a false
+  // sentence in a seller-facing report (§0 applies to a count in prose exactly
+  // as to a price). Only the printed set is countable here.
+  if (resortCrossed > 0) {
+    const crossedKept = comps.filter((c) => !resortCommunityCompatible(subject.subdivision, c.subdivision)).length
+    if (crossedKept > 0) {
+      const d =
+        crossedKept === 1
+          ? 'One of the sales in this report sits inside a resort community this home is not part of. It was used only because the search inside this home\'s own ground did not reach the minimum, and a resort address usually carries a premium of its own, so read that sale with this in mind.'
+          : `${crossedKept} of the ${comps.length} sales in this report sit inside a resort community this home is not part of. They were used only because the search inside this home's own ground did not reach the minimum, and a resort address usually carries a premium of its own, so read those sales with this in mind.`
+      trace.push(d)
+      disclosures.push(d)
+    }
+  }
 
   const ran = ladder.filter((t) => t.ran)
   const reachedTarget = candidateCount >= TARGET_COMPS

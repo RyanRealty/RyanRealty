@@ -218,3 +218,19 @@ describe('the value range and the broker (Matt 2026-09-09: cap it and force revi
     expect(r.severity).toBe('review')
   })
 })
+
+describe('the widened search reads as a sentence a seller can read', () => {
+  it('names the widening without engine words', () => {
+    const review = buildPricingReview({
+      needsReview: true,
+      reviewReason:
+        'disclosed-widening: The bounded search came up short, so the ladder widened one more step (older sales, a wider size band, and sales from a resort community this home is not in).',
+      auditVerdict: 'pass',
+    })
+    expect(review.needsReview).toBe(true)
+    expect(review.reasons).toContain(REVIEW_REASONS.widenedSearch)
+    for (const r of review.reasons) {
+      expect(r).not.toMatch(/comp\b|ladder|rung|tier|\$\/sqft/i)
+    }
+  })
+})

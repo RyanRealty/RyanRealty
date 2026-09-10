@@ -45,6 +45,16 @@ ONLY outlet for a §0 trace was a figure cell, so a section had to print a displ
 *allowed* to cite its own number. `V3Quiet` now takes `source` on a prose passage, so a section can
 retire its numeral and keep its trace. `#outcomes` did exactly that and is the worked example.
 
+**SITE-41 has since landed, and its fix is OPT-IN per caller — read before ruling 3 runs.**
+`be15461f` gives `V3Instrument` three new optional props (`sentence`, `foldLabel`, `sourceName`) and
+scopes the new one-column layout to a `--said` modifier the component adds *only* when a figure was
+given a sentence. Its own comment says it plainly: "a caller that passes none keeps the two-up tile
+grid exactly." It wired four callers — city, community, central-oregon and annual-review — and
+touched no file under `app/subdivisions/`. **So the numeral the subdivision receipt names is still
+there**, unchanged, and that receipt's ten shots still describe what renders. Ruling 3's re-measure
+across all 25 classes is the vehicle that will find the rest of the un-opted-in callers; expect the
+instrument to keep naming this shape on every page that has not passed a sentence yet.
+
 ## Prior — 2026-09-09 (the subdivision class re-scored on the COMBINED page, and the number went down)
 
 Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, merge `d3713768`,

@@ -112,6 +112,25 @@ export function buildMonthlyMedianChart(
 }
 
 /**
+ * THE MARKER RULE FOR THE YEAR OVERLAY, stated once (SITE-41).
+ *
+ * `emphasize` alone gives marks to the emphasized series and nothing to the rest, so
+ * /housing-market/bend, /central-oregon and the annual review all drew beads on the
+ * current year and bare strokes on the two behind it. Three evaluators read the same
+ * thing off it: the other years look unfinished. Emphasis belongs in the INK — full
+ * navy against tints — not in whether a series is allowed a marker at all.
+ *
+ * So: every series wears the same marker, every series is a control on the legend, and
+ * the newest month rests open so the chart shows what it does without a caption telling
+ * anybody to hover. One rule, spread by every builder that draws this overlay.
+ */
+export const YEAR_OVERLAY_READING = {
+  marks: true,
+  keysToggle: true,
+  restingRead: 'last',
+} as const satisfies Partial<V3ChartProps>
+
+/**
  * Newest three calendar years that each have two or more finite months, sharing
  * a Jan-Dec axis. Falls back to one chronological monthly line.
  */
@@ -144,6 +163,7 @@ export function buildYearOverlayChart(
       ...(claim ? { claim: v3Text(claim) } : {}),
       series: overlay,
       emphasize: 'last',
+      ...YEAR_OVERLAY_READING,
       ...(yTicks.length ? { yTicks } : {}),
       xTicks: monthTicks(MONTH_TICK),
     }

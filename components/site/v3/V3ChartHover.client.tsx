@@ -1,5 +1,7 @@
 'use client'
 /**
+ * THE READING LAYER, AND THE LEGEND THAT FILTERS IT.
+ *
  * The hover layer for a V3Chart line: a crosshair at the nearest x, a dot on
  * every series at that x, and a reading of each series' formatted value.
  * Pointer, touch, and keyboard (arrow keys) all drive it; the reading is
@@ -12,6 +14,7 @@
  * of a chart); this is the interrogation.
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 export type V3ChartHoverReading = { name: string; label: string; frac: number; emphasis: boolean }
@@ -39,11 +42,90 @@ export type V3ChartHoverProps = {
    * ninety degrees.
    */
   axis?: 'x' | 'y'
+  /**
+   * THE RESTING READING (SITE-41). The stop that is open before anybody touches the
+   * chart, and the stop the chart returns to when the pointer leaves.
+   *
+   * The 2026-09-09 evaluator passes on /housing-market/bend and /central-oregon both
+   * reported no sign the chart was interactive: the crosshair, the tooltip and the
+   * keyboard walk were all there and all invisible until a pointer happened to enter the
+   * plot. Opening the newest stop shows the reader what the chart does by doing it, and
+   * it costs no teaching sentence — the interaction demonstrates itself.
+   *
+   * Omitted, the layer rests closed exactly as it always has.
+   */
+  initial?: number
+  /**
+   * THE LEGEND THAT DOES SOMETHING (SITE-41). Pass the series names and this layer
+   * also renders the chart's legend, as pressed/unpressed controls: pressing a key
+   * drops that series from the drawing AND from the reading.
+   *
+   * It lives here, and not in a component of its own, for one reason: THE READING HAS
+   * TO AGREE WITH THE DRAWING. A hidden line whose value keeps arriving in the tooltip
+   * is a chart telling a reader two things at once. One piece of state hides the path,
+   * filters the tooltip, filters the live region and filters the keyboard walk, so the
+   * three can never disagree.
+   *
+   * The last visible series cannot be turned off: an empty plot under three unpressed
+   * keys is nobody's idea of a state, and every reading would go with it.
+   *
+   * Requires `frame`. Without both, this component is the hover layer it always was.
+   */
+  keys?: readonly string[]
+  /** The per-key class the server computed, so each key keeps its series' own ink. */
+  keyClasses?: readonly string[]
+  /**
+   * The server-rendered frame, in three pieces, so this component can compose the same
+   * frame the static branch composes and own nothing but the pressed state. The
+   * geometry is still the server's: nothing here recomputes a plot.
+   */
+  frame?: V3ChartHoverFrame
 }
 
-export function V3ChartHover({ columns, label, axis = 'x' }: V3ChartHoverProps) {
+export type V3ChartHoverFrame = {
+  /** The y scale. */
+  axis: ReactNode
+  /** The SVG. */
+  plot: ReactNode
+  /** The x ticks. */
+  xTicks: ReactNode
+}
+
+export function V3ChartHover({
+  columns: allColumns,
+  label,
+  axis = 'x',
+  initial,
+  keys,
+  keyClasses,
+  frame,
+}: V3ChartHoverProps) {
   const vertical = axis === 'y'
-  const [active, setActive] = useState<number | null>(null)
+  const live = keys != null && keys.length > 1 && frame != null
+  const [off, setOff] = useState<readonly number[]>([])
+  const toggleKey = (i: number) =>
+    setOff((prev) => {
+      if (prev.includes(i)) return prev.filter((n) => n !== i)
+      if (prev.length >= (keys?.length ?? 0) - 1) return prev
+      return [...prev, i]
+    })
+  // The reading follows the drawing: a series that is not on the plot is not in the
+  // tooltip, and a stop with nothing left to say leaves the walk entirely.
+  const hidden = useMemo(
+    () => new Set(off.map((i) => keys?.[i]).filter((n): n is string => Boolean(n))),
+    [keys, off],
+  )
+  const columns = useMemo(
+    () =>
+      hidden.size === 0
+        ? allColumns
+        : allColumns
+            .map((c) => ({ ...c, readings: c.readings.filter((r) => !hidden.has(r.name)) }))
+            .filter((c) => c.readings.length > 0),
+    [allColumns, hidden],
+  )
+  const rest = initial != null && initial >= 0 && initial < columns.length ? initial : null
+  const [active, setActive] = useState<number | null>(rest)
   // A touch reading stays after the finger lifts (a phone has no hover to
   // hold it); the next tap outside the plot clears it.
   const [held, setHeld] = useState(false)
@@ -88,12 +170,12 @@ export function V3ChartHover({ columns, label, axis = 'x' }: V3ChartHoverProps) 
     const onDown = (e: PointerEvent) => {
       if (el && !el.contains(e.target as Node)) {
         setHeld(false)
-        setActive(null)
+        setActive(rest)
       }
     }
     document.addEventListener('pointerdown', onDown)
     return () => document.removeEventListener('pointerdown', onDown)
-  }, [held])
+  }, [held, rest])
 
   const onKey = (e: React.KeyboardEvent) => {
     if (columns.length === 0) return
@@ -109,7 +191,7 @@ export function V3ChartHover({ columns, label, axis = 'x' }: V3ChartHoverProps) 
         return Math.max(0, Math.min(columns.length - 1, next))
       })
     } else if (e.key === 'Escape') {
-      setActive(null)
+      setActive(rest)
     } else if (e.key === 'Home') {
       setActive(0)
     } else if (e.key === 'End') {
@@ -130,7 +212,7 @@ export function V3ChartHover({ columns, label, axis = 'x' }: V3ChartHoverProps) 
       : `${col.tick}: ${col.readings.map((r) => `${r.name} ${r.label}`).join(', ')}`
     : ''
 
-  return (
+  const layer = (
     <div
       ref={ref}
       className="v3-chart__hover"
@@ -144,10 +226,10 @@ export function V3ChartHover({ columns, label, axis = 'x' }: V3ChartHoverProps) 
       onPointerMove={onMove}
       onPointerDown={onMove}
       onPointerLeave={(e) => {
-        if (e.pointerType !== 'touch' && !held) setActive(null)
+        if (e.pointerType !== 'touch' && !held) setActive(rest)
       }}
       onBlur={() => {
-        if (!held) setActive(null)
+        if (!held) setActive(rest)
       }}
       onKeyDown={onKey}
     >
@@ -205,5 +287,41 @@ export function V3ChartHover({ columns, label, axis = 'x' }: V3ChartHoverProps) 
         {reading}
       </p>
     </div>
+  )
+
+  if (!live || !keys || !frame) return layer
+
+  return (
+    <>
+      <ul className="v3-chart__legend v3-chart__legend--live">
+        {keys.map((name, i) => (
+          <li key={`${i}-${name}`}>
+            <button
+              type="button"
+              className={cn('v3-chart__key', 'v3-chart__key--btn', keyClasses?.[i])}
+              aria-pressed={!off.includes(i)}
+              onClick={() => toggleKey(i)}
+            >
+              <span className="v3-chart__swatch" aria-hidden="true" />
+              {name}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {/* The same frame the static branch composes, with one extra attribute: the
+          list of series indexes the stylesheet drops from the drawing. Nothing about
+          the geometry is recomputed on the client. */}
+      <div
+        className="v3-chart__frame"
+        data-off={off.length > 0 ? off.map((i) => String(i)).join(' ') : undefined}
+      >
+        {frame.axis}
+        <div className="v3-chart__plot">
+          {frame.plot}
+          {columns.length > 0 ? layer : null}
+        </div>
+        {frame.xTicks}
+      </div>
+    </>
   )
 }

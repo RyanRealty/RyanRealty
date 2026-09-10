@@ -71,8 +71,12 @@ describe('compTierLadder', () => {
       'neighborhood-12mo',
       'competing-area-12mo',
       'citywide-12mo',
+      // The disclosed widening (Matt 2026-09-09): last in town, and its rural
+      // twin last of all. Both run ONLY when the bounded ladder came up short.
+      'widened-disclosed-24mo',
       'rural-county-12mo',
       'rural-county-24mo',
+      'rural-widened-disclosed-24mo',
     ])
     expect(names.indexOf('subdivision-12mo')).toBeLessThan(names.indexOf('neighborhood-6mo'))
   })
@@ -86,7 +90,9 @@ describe('compTierLadder', () => {
   it('marks only the rural rungs ruralOnly, and only they carry a disclosure', () => {
     for (const t of compTierLadder(null)) {
       expect(!!t.ruralOnly).toBe(t.name.startsWith('rural-'))
-      expect(!!t.disclosure).toBe(t.name.startsWith('rural-'))
+      // A disclosure marks a rung that traded something the reader must be
+      // told about: the rural widening, and the starved widening in town.
+      expect(!!t.disclosure).toBe(t.name.startsWith('rural-') || t.name.includes('widened-disclosed'))
     }
   })
 
