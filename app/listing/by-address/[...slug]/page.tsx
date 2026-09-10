@@ -10,6 +10,7 @@ import { listingKeyFromSlug } from '@/lib/slug'
 
 type PageProps = {
   params: Promise<{ slug: string[] }>
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
 async function resolveListingKeyFromPathSegments(slug: string[]): Promise<string | null> {
@@ -56,14 +57,19 @@ async function resolveListingKeyFromPathSegments(slug: string[]): Promise<string
   }
 }
 
-export default async function ListingByAddressPage({ params }: PageProps) {
+export default async function ListingByAddressPage({ params, searchParams }: PageProps) {
   const { slug = [] } = await params
   const listingKey = await resolveListingKeyFromPathSegments(slug)
   // Rendered refusal, not notFound() — this is the CANONICAL public listing URL
   // (the one in listings.xml), and a thrown 404 here served a blank 200 body.
   // See components/site/listing-detail/ListingUnavailable.tsx.
   if (!listingKey) return <ListingUnavailable />
-  return <ListingDetailPage params={Promise.resolve({ listingKey })} />
+  return (
+    <ListingDetailPage
+      params={Promise.resolve({ listingKey })}
+      searchParams={searchParams}
+    />
+  )
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
