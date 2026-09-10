@@ -68,6 +68,7 @@ import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import { communitySlugForSubdivision, isResortCommunity, resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
+import { crossesNamedRiver } from '@/lib/pricing/river-cross'
 import {
   customBathCompatible,
   customLotCompatible,
@@ -375,6 +376,8 @@ export async function selectComps(
   // How many sales the widening rung crossed the resort-membership rule for.
   // Counted so the disclosure can name it rather than imply it.
   let resortCrossed = 0
+  // Sales set aside for sitting across a river from an unmapped subject.
+  let crossedFeature = 0
   // The parent the subject's plat sits inside, from the recorded-plat registry.
   const subjectCommunity = communitySlugForSubdivision(subject.subdivision)
 
@@ -587,6 +590,21 @@ export async function selectComps(
       // Deschutes — CMA_SUNSTONE_CONTRACT). Neighborhood banks cover the Bend
       // GIS mesh. The TIGER centerline covers unmapped ground (Redmond,
       // Tumalo) so both-unmapped no longer fails open across 97.
+      // A RIVER IS A WALL WHERE NOTHING ELSE IS (Matt 2026-09-09). Outside the
+      // Bend GIS mesh a search was held only by city and radius; the named
+      // rivers hold it in. The starved widening rung may cross, disclosed.
+      if (
+        subjectArea == null &&
+        !tier.whenStarved &&
+        crossesNamedRiver(
+          { lat: subject.latitude ?? NaN, lng: subject.longitude ?? NaN },
+          { lat: comp.latitude ?? NaN, lng: comp.longitude ?? NaN },
+        )
+      ) {
+        rung.excluded.crossed_divide++
+        crossedFeature++
+        continue
+      }
       if (
         crossesMajorDivide(
           subjectArea,

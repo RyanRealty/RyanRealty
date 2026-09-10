@@ -8,6 +8,7 @@ import { communitySlugForSubdivision, isResortCommunity } from '@/lib/cma/resort
 import { bathCountCompatible, distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
+import { crossesNamedRiver } from '@/lib/pricing/river-cross'
 import {
   classifyAgeBand,
   customBathCompatible,
@@ -222,6 +223,13 @@ function applesOk(
   sale: PricingSale,
   level: AppleStrictness,
   asOfYear?: number,
+  /**
+   * The one rung that may cross a highway or a river: the starved widening, on
+   * a subject with no mapped boundary (Matt 2026-09-09, "when a crossing is the
+   * only way to reach three sales, take it and say so"). Every other rung
+   * treats both as walls.
+   */
+  allowFeatureCross = false,
 ): boolean {
   if (!productCompatible(subject.productClass, sale.productClass)) return false
   const customOrNew = isCustomOrNewSubject(
@@ -249,12 +257,32 @@ function applesOk(
   if (!waterCompatible(subject.waterClass, sale.waterClass)) return false
   if (!sewerCompatible(subject.sewerClass, sale.sewerClass)) return false
   if (crossesMajorDivide(subject.marketArea, sale.marketArea)) return false
-  if (
+  // The highway cut, and the one exception Matt named: on a subject with no
+  // mapped boundary, the starved widening rung may cross when a crossing is
+  // the only way to reach three sales, and the report says so.
+  const crossesHighway =
     crossesUs97(
       { lat: subject.latitude ?? NaN, lng: subject.longitude ?? NaN },
       { lat: sale.latitude ?? NaN, lng: sale.longitude ?? NaN },
     ) ||
     differentUs97Bank(
+      { lat: subject.latitude ?? NaN, lng: subject.longitude ?? NaN },
+      { lat: sale.latitude ?? NaN, lng: sale.longitude ?? NaN },
+    )
+  if (crossesHighway && !allowFeatureCross) {
+    return false
+  }
+  // A RIVER IS A WALL WHERE NOTHING ELSE IS (Matt 2026-09-09: "if we're in a
+  // city that doesn't really have that, then we use other major things to
+  // constrain us, like major roadways, rivers"). Redmond, La Pine, Sisters and
+  // Prineville sit outside the Bend GIS mesh, so until now a search there was
+  // held only by city and radius. The named rivers hold it in. Bend is already
+  // held by its polygon, so this adds nothing there. The starved widening rung
+  // is the one place a crossing is allowed, and it discloses it.
+  if (
+    subject.marketArea == null &&
+    !allowFeatureCross &&
+    crossesNamedRiver(
       { lat: subject.latitude ?? NaN, lng: subject.longitude ?? NaN },
       { lat: sale.latitude ?? NaN, lng: sale.longitude ?? NaN },
     )
@@ -352,7 +380,8 @@ function passesTier(
   if (sale.sqft < sqftLo || sale.sqft > sqftHi) return { ok: false, miles: null }
 
   const asOfYear = Number(asOf.slice(0, 4))
-  if (!applesOk(subject, sale, tier.apples, asOfYear)) return { ok: false, miles: null }
+  const allowFeatureCross = Boolean(tier.whenStarved) && subject.marketArea == null
+  if (!applesOk(subject, sale, tier.apples, asOfYear, allowFeatureCross)) return { ok: false, miles: null }
   if (!ageOk(subject.yearBuilt, sale.yearBuilt, asOfYear, tier.ageYears)) return { ok: false, miles: null }
   if (!storyOk(subject.storyClass, sale.storyClass, tier.sameStory)) return { ok: false, miles: null }
   if (!slopOk(subject.beds, sale.beds, tier.bedSlop)) return { ok: false, miles: null }

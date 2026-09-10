@@ -9,8 +9,10 @@ function subject(over: Partial<PricingSubject> = {}): PricingSubject {
     citySlug: 'bend',
     subdivision: 'Kenwood',
     subdivisionNorm: 'kenwood',
+    // East of the Deschutes, off the water: the synthetic pair used to sit on
+    // the river itself, which the river wall (correctly) refused to comp across.
     latitude: 44.06,
-    longitude: -121.32,
+    longitude: -121.3,
     beds: 3,
     baths: 2,
     sqft: 2000,
@@ -38,7 +40,7 @@ function sale(over: Partial<PricingSale> = {}): PricingSale {
     subdivision: 'Kenwood',
     subdivisionNorm: 'kenwood',
     latitude: 44.061,
-    longitude: -121.321,
+    longitude: -121.301,
     beds: 3,
     baths: 2,
     sqft: 1980,
@@ -167,7 +169,7 @@ describe('walkPricingLadder', () => {
         // Same neighborhood polygon as the subject, so the mapped-area cut
         // above is not what removes it. The tier cut is.
         latitude: 44.06,
-        longitude: -121.32,
+        longitude: -121.3,
       }),
     ]
     const out = walkPricingLadder(subject(), pool, { asOf, cells })
@@ -186,7 +188,7 @@ describe('walkPricingLadder', () => {
         closePrice: 811_800,
         address: '12 Riverfront',
         latitude: 44.06,
-        longitude: -121.32,
+        longitude: -121.3,
       }),
     ]
     const out = walkPricingLadder(subject(), pool, { asOf, cells })
@@ -289,7 +291,7 @@ describe('walkPricingLadder', () => {
         subdivision: 'Other',
         subdivisionNorm: 'other',
         latitude: 44.06,
-        longitude: -121.32,
+        longitude: -121.3,
         address: '1 City',
         closeDate: '2026-07-01',
         lotAcres: 5,
@@ -463,7 +465,7 @@ describe('walkPricingLadder', () => {
         subdivisionNorm: 'aubrey',
         address: '2 Aubrey',
         latitude: 44.0604,
-        longitude: -121.3204,
+        longitude: -121.3004,
         marketArea: 'bend-old-bend',
         closeDate: '2026-07-15',
       }),
@@ -964,7 +966,7 @@ describe('walkPricingLadder', () => {
       sqft: 4900,
       lotAcres: 2,
       latitude: 44.0602,
-      longitude: -121.3202,
+      longitude: -121.3002,
       marketArea: 'bend-north-rim',
       closeDate: '2026-07-01',
     })
@@ -978,7 +980,7 @@ describe('walkPricingLadder', () => {
       lotAcres: 2,
       publicRemarks: 'Custom built home.',
       latitude: 44.09,
-      longitude: -121.33,
+      longitude: -121.29,
       marketArea: 'bend-north-rim',
       closeDate: '2026-06-01',
     })
