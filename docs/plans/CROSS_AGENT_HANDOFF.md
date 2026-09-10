@@ -1,3 +1,12 @@
+# Current — 2026-09-10 08:19Z (15m grinder 01a0898e: SITE-69 landed, SITE-89 released)
+
+Owner: `grok-4.6-2026-09-10-06`. Pushed `a16fbc0e..8171a51c`. Deploy `dpl_7k4NpFrfWFhprWQHg2FZBaKrzicp` READY in 255s. Live `/cities` has `cities-mos-compare`.
+
+- **SITE-69 done.** MOS 4/6 threshold scale + city overlay (`V3MosCompare`, beui:combobox). grok-4.6 median **46** (rebaselined from claude-sonnet-5 75, rubric v1-2026-09-10). Accept was >30. Finish line 70 not met.
+- **SITE-89 released open.** Filmstrip on `wt/site-89-place-type-20260910` @ `ebd1f69d` (pushed). grok-4.6 median **54** (need >69). Do not steal; next fire can claim. Tension: 375 houses vs Atlas-in-fold; 766 vs 495 two-census honesty.
+
+Did not steal SITE-75/77/83. No auto-seed. 14 eligible remain. Fleet 2/3 after this release.
+
 # Current — 2026-09-10 (SITE-63 land, pick still waiting)
 
 Owner: `grok-01a08914-2026-09-09`. Worktree `/Users/matthewryan/RyanRealty-wt-site-63-land` branch `wt/site-63-land-20260910`. Replayed `0f759c41` onto current `origin/main`. **Do not mark SITE-63 done.** Matt has not picked a contact fold.
