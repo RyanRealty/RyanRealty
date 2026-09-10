@@ -240,6 +240,8 @@ describe('gallery, tour, and street view occupy history so Back stays on the lis
     expect(gallery).toMatch(/'gallery'/)
     expect(tour).toMatch(/useMediaOverlayHistory\(isOpen, onClose, 'tour'\)/)
     expect(street).toMatch(/useMediaOverlayHistory\(isOpen, onClose, 'street'\)/)
+    expect(street).toMatch(/getPanorama/)
+    expect(street).toMatch(/radius:\s*120/)
   })
 
   it('labels the control Back at 44px', () => {

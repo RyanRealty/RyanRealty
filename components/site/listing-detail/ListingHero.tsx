@@ -26,7 +26,7 @@ import {
   LISTING_MOSAIC_STRIP_SIZES,
   preferListingMosaicPhotoUrl,
 } from '@/lib/listing/publish-listing-mosaic'
-import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { isOffsiteTourHost } from '@/lib/listing/publish-listing-on-site-tour'
 import dynamic from 'next/dynamic'
 
@@ -605,24 +605,9 @@ function MosaicStill({
   priority?: boolean
   contain?: boolean
 }) {
-  const plate = listingRowPhotoSrc(src, LISTING_FIELD_LEAD_PHOTO_SIZE)
-  // Flight may not name the 1600 plate (preload). 800x600 is the first paint
-  // for a full-bleed frame; 320x240 is a ledger thumb and looks pixelated here.
-  // Upgrade to 1600 when the hero is on screen (or immediately when priority).
-  const [live, setLive] = useState(priority ? preferListingMosaicPhotoUrl(src) : plate)
-  useEffect(() => {
-    if (priority) return
-    const el = document.getElementById('listing-hero-visual')
-    if (!el) return
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio > 0)) {
-        setLive(preferListingMosaicPhotoUrl(src))
-        io.disconnect()
-      }
-    })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [src, priority])
+  // The hero is a full-bleed frame. 320 and 800 Spark plates look pixelated
+  // here (Matt 2026-09-10). Always paint the 1600 mosaic derivative.
+  const live = preferListingMosaicPhotoUrl(src)
   return (
     <Image
       src={live}

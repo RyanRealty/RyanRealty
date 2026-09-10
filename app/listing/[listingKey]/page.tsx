@@ -348,7 +348,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
       readListingDetailHistory(listing.listingKey, listingHistorySeedFrom(listing)),
       withTimeoutFallback(getListingPhotos(listingKey), [], 8000, 'listing:photos'),
       withTimeoutFallback(getListingFloorPlans(listingKey), [], 4000, 'listing:floor-plans'),
-      withTimeoutFallback(getListingVideos(listingKey), [], 3000, 'listing:videos'),
+      withTimeoutFallback(getListingVideos(listingKey), [], 8000, 'listing:videos'),
       withTimeoutFallback(getBrokers(), [], 3000, 'listing:brokers'),
       withTimeoutFallback(
         resolveListingAgent({
