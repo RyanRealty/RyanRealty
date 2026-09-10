@@ -1,3 +1,7 @@
+# Current — 2026-09-10 (Matt: keep running as nodes get entered)
+
+Owner: Grok (grok-01a08945-2026-09-09). **No claims.** Durable 15m site-queue task `01a0898e` is armed; a watcher wakes this session when an eligible SITE-* appears and the fleet has a slot. Empty of eligible is a quiet fire, not a stop. Do not auto-seed SITE-64…87.
+
 # Current — 2026-09-10 04:14Z (15m grinder 01a0894e: fleet full, no steal)
 
 Owner: Grok scheduler `01a0894e`. **Fleet 3/3, zero open.** origin/main `2437076a`.

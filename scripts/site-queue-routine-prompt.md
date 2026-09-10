@@ -6,7 +6,9 @@ STEP 1 — CHEAPEST CHECK FIRST, BEFORE READING ANYTHING. A fire that cannot wor
 
 Read the JSON. STOP IMMEDIATELY, printing one line and nothing else, if any of these is true:
   (a) it errors or the Supabase env vars are missing — print the first error line;
-  (b) no item has state 'open' — print 'queue empty or fully blocked';
+  (b) no item has state 'open' — print 'queue empty or fully blocked' and END THIS FIRE.
+      The 15-minute / launchd schedule keeps running (Matt 2026-09-10: continue as new
+      nodes get entered). Do not cancel the schedule. Do not auto-seed.
   (c) `liveWorkers` is at or above `maxWorkers` (3) — print 'site fleet full: <the owners of live in_progress items>'. A claim whose heartbeat is older than three hours is stale, is listed under `staleClaims`, does not count, and the claim tool releases it. Three LIVE workers is the cap (Matt 2026-09-08): four concurrent lanes exhausted the account allowance and killed every worker in the same minute.
 
 Only if none of those is true do you read the mission documents in STEP 2. Most fires stop here and the reading is wasted.
