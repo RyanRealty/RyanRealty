@@ -588,6 +588,32 @@ const SEEDS: readonly Seed[] = [
       "In a headless Chromium render at 1440x2600 after 7s: on /subdivisions/diamond-bar-ranch and one /communities page, the section under the 'every home for sale' heading contains no empty map container — no .gm-style node, and no element over 300px tall with no child content — while the list of homes still renders. On /oregon/medford and /oregon/salem, every listing row whose listing carries a PhotoURL renders an img with a non-empty src, verified against the DAL for the same keys; a row without one renders the designed empty state and not a bare grey box. No class score falls below its last mark on the table instrument.",
     dependsOn: [],
   },
+  {
+    versionGap: 'SITE-60',
+    domain: 'public-ux',
+    title:
+      'A page that links to listings prefetches about 25 MB of MLS photographs nobody sees',
+    objective:
+      "Measured by the SITE-59 lane on 2026-09-09 against a production build of /oregon/[city]: with link prefetch allowed the route makes 78 requests to sparkplatform and pulls 25,386,060 bytes; with prefetch blocked it makes 11 requests and pulls 333,689 bytes, which is exactly the row thumbnails it actually shows. The extra ~25 MB is 1600x1200 hero preloads carried inside the prefetched RSC payloads of the LINKED listing pages, so it is not a defect of the city page at all — it belongs to app/listing/** and it very likely applies to every route on the site that links to a listing, which is most of them. It does not show in dev because Next disables prefetch there, which is why nobody has seen it. Nothing on the visible page changes if this is fixed; what changes is the bytes a phone on a Bend cell signal pays to look at a list. The fix is in the listing route's own preload declaration (the hero image should not be preloaded at 1600x1200 in a payload fetched speculatively for a page the visitor has not opened), or in how those links are prefetched. Measure before and after with the same method the finding used: a headless run with prefetch allowed and one with it blocked, request count and byte total for both. Do not fix it by turning link prefetch off site-wide — that trades a real navigation speed win for a bandwidth one without measuring either.",
+    output:
+      'The listing route stops shipping a full-size hero preload in a speculatively prefetched payload; before and after request counts and byte totals recorded on this node for at least two route families that link to listings',
+    accept:
+      "In a headless Chromium render of /oregon/medford and one /cities page against a production build, with link prefetch allowed: total bytes from the listing-photo CDN fall by at least 80 percent against the 25,386,060 measured on 2026-09-09, and the visible page still renders every row thumbnail it renders today (11 of 11 on Medford, verified against the DAL for the same keys). ci:page-payload does not regress on any route.",
+    dependsOn: [],
+  },
+  {
+    versionGap: 'SITE-61',
+    domain: 'public-ux',
+    title:
+      'The listing-shaped ledgers that still draw a photograph in a 44px tap mark pick up the photo treatment',
+    objective:
+      "SITE-59 gave V3Ledger an opt-in media=\"photo\" treatment — 4:3 at 88x66, 72x54 under 480px, a navy tile behind it, row cells centred, and an ::after that covers the browser's broken-image icon — because drawing a photograph into the 44px tap-target mark on --v3-wash made a decoded photo, a photo still fetching, and a row with no photo into three states with one appearance: a grey square that reads as broken. Only the oregon-city route opted in, because that is where the defect was found and the lane's files ended there. The same listing-shaped ledgers are still on the old treatment and were named by the lane: app/sell, app/activity, app/subdivisions/_v3/subdivision-rows.ts and lib/kb/place-open-houses.ts. Check each against a live render before changing it — a ledger that carries no photograph at all is correct as it is and must not be given one — then opt the ones that do carry photographs into the same treatment, so the site has one answer for a picture in a row instead of two. The Spark URL size rewrite the lane added lives at app/oregon/[city]/_v3/listing-row-photo.ts and was left local on purpose; if more than one route needs it, promote it to lib/listing/ rather than copying it.",
+    output:
+      'Every listing-shaped ledger that renders a photograph on the same V3Ledger photo treatment; the Spark size helper promoted to lib/listing/ if more than one route uses it; shots and receipts for each class touched',
+    accept:
+      "In a headless Chromium render at 1440 and 375 of each route that opted in, every row that carries a photo renders it at the photo treatment's box, not the 44px mark, and a row without one renders the designed glyph tile rather than a bare grey box. No class score falls below its last mark on the table instrument. If a named ledger is left on the old treatment, this node records which and why in one line.",
+    dependsOn: [],
+  },
 
 ]
 
