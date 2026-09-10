@@ -1,41 +1,12 @@
-# Current — 2026-09-10 06:50Z (main's MoS plate zeroes the source disclosure's tap floor)
+# Current — 2026-09-10 08:42Z (SITE-71/80 landed; claimed SITE-88 + SITE-72)
 
-Owner: session `019RdEm6` on `claude/run-loop-w8f3ep`. **No SITE claim taken — fleet is 3/3.**
+Owner: `grok-01a08945-2026-09-09`. Deploy `dpl_8z8qL4RjC7q2y2iSaApT4atSBRb7` READY in 238s.
 
-**If your lane touches a public page with a MoS plate and `ci:tap-targets` fails on
-`summary.v3-source__summary` at `324x41.4`, it is not your diff.** `origin/main` still
-carries it at `components/site/v3/V3MosBars.css:126`. The fix is one deletion, already
-made and green: **`a66a942f`** on `claude/run-loop-w8f3ep` (PR #206). Cherry-pick it
-rather than re-diagnosing, or wait for #206 to merge.
-
-**Cause.** `3ba95b76` compacted the MoS plate for phones and used the source disclosure
-as one of its levers:
-
-```css
-@media (max-width: 39.99rem) {
-  .v3.v3-mos .v3-source .v3-source__summary { min-block-size: 0 }
-}
-```
-
-`(0,4,0)` beats V3SourceLine's floor at `.v3 details.v3-source .v3-source__summary`
-`(0,3,1)`. So on **any** page carrying a MoS plate at ≤639px the control drops to its
-natural 41.4px. Measured on `/cities/bend` @390: the one summary inside `.v3-mos` read
-`h 41.4 / min-block-size 0px`; the other fifteen on the page read 44. After the deletion,
-44. The override bought **2.6px**.
-
-**Do not walk these** — the missing-`.v3`-wrapper theory (disproved, retracted), an
-unconditional 44px floor (no-op, the floor was already there and outranked), a CI re-run
-(`403 Resource not accessible by integration`), and reproducing against a production build
-(unnecessary — it is a media query, it reproduces in dev in a minute). I published the
-production-only framing myself and it was wrong; the condition was one section at one
-breakpoint, and my dev measurements all read 44 because none of them had a MoS plate in
-frame.
-
-**The compaction intent survives** — padding, gap, the plain-language line and the caption
-still tighten; the alerts field still lands in the first phone screen (top 450 in an 844
-viewport). The reason is written into the media block so the next compaction pass does not
-reach for the same lever. `ci:tap-targets`: 3215 controls, 0 unexcused, baseline untouched
-at 0.
+- **SITE-71 done.** Live `/housing-market/annual-review` opens on MOS two-bar (homes for sale vs a month of sales) + year overlay, not sixteen tiles. `26342a49`. grok-4.6 median **64** (honesty 8), rebaselined from table 31 / SITE-41 83.
+- **SITE-80 done.** Live `/contact` is ContactFold (5.0 + call door with hours + Send a message). `53d29715`. grok-4.6 median **64** (honesty 9), rebaselined from table 49. SITE-63 `?taste_variant=` losers still on disk; default is quiet-doors = ContactFold.
+- **Held:** SITE-88 (`08545734-…`) region fold, worktree `/Users/matthewryan/RyanRealty-wt-site-88-20260910`. SITE-72 (`c33400e1-…`) search fold, `/Users/matthewryan/RyanRealty-wt-site-72-20260910`.
+- GIS "most is not all" (Matt): SITE-66/67 already closed — OSM 0, 17 official parks, 42 school polygons, 10 ZIPs, Crook taxlots in; Jefferson taxlots still 0 (publisher REST 404 / ODF query unsupported). No invented geometry.
+- Do not steal SITE-85/87 (`01a08914`) or SITE-70/84 (`01a0895a`). 15m scheduler stays. No auto-seed.
 
 # Current — 2026-09-10 08:40Z (this session keeps grinding as nodes finish)
 
@@ -97,8 +68,7 @@ Do not steal SITE-60 (heartbeat 2m) or SITE-63. Next fire: build those two in wo
 
 Owner: grok-4.6 this session `grok-01a0895a-2026-09-10`. Seeded 22 catalog-backed class nodes (invest 25 → place-type 69). Skipped listing-detail / about / compare. Did not steal SITE-60 or SITE-63. Next: claim SITE-68 + SITE-69 if fleet has a slot, re-measure live first viewport, then builder card.
 
-
-## Prior — 2026-09-10 (queue ready to take catalog-backed SITE nodes)
+# Current — 2026-09-10 (queue ready to take catalog-backed SITE nodes)
 
 Owner: grok-4.6 this session. **No SITE claims.** Did not steal SITE-60 / SITE-63 / SITE-67.
 
@@ -357,31 +327,6 @@ Owner: Claude (Opus 5), session claude-opus5-9d4aa6fc-2026-09-09, main checkout.
 3. **Re-measure and continue.** After SITE-41 lands, run the instrument across all 25 classes and
    seed the next round from the bottom.
 
-**Ruling 3 has a hole in it, and it is now SITE-62.** There is no reseeding. Both halves exist and
-nothing joins them: `scripts/taste-table.mjs` scores every class and `--diff` prints everything under
-70, while `scripts/seed-site-queue.ts` holds the backlog as a hardcoded array and **never reads the
-table**. Neither is on a cron. So the path from "this class scored 52" to "a node a session can
-claim" runs through a person hand-writing a TypeScript object, and the measuring half can finish and
-produce nothing claimable.
-
-**I seeded it as SITE-60 at 02:23 and that was wrong — main's seed file already claimed SITE-60 for
-the prefetch finding. Read this before you seed anything.** `seed-site-queue.ts` upserts with
-`ignoreDuplicates: true`, so **the first writer of a `version_gap` wins and every later seed for that
-id is silently dropped — no error, no warning, no row.** My run took SITE-60 at 02:23. The SITE-59
-session ran the seeder at 02:41 with SITE-60 = the prefetch finding, and its row was ignored. The
-result was a measured finding (78 requests, 25,386,060 bytes) that existed in **no node under any
-id**, and nothing anywhere would have said so.
-
-**Repaired.** Main is the trunk, so main's SITE-60 keeps the id: the row now carries the prefetch
-node, read from the committed seed text, and the repair refused to run unless the row was still
-`open` and unclaimed. My node moved to **SITE-62**, seeded and eligible. SITE-60, SITE-61 and SITE-62
-all exist and all three are open. Verified by a second, differently-shaped query: a search for
-"prefetch" across every node returns SITE-60, where it returned nothing before.
-
-**The deeper fix belongs to SITE-62 and is now in its brief:** a duplicate `version_gap` whose
-content differs should FAIL the seeder loudly instead of being dropped. Until it does, check the
-highest live id before you write a seed, and do not assume the number in your working copy is free.
-
 **A finding I answered rather than asked about.** The grey placeholder squares on /oregon/[city]
 listing rows (10 of 12 on Medford) are NOT a licensing or opt-out problem: sampled through the DAL,
 40 of 40 active Medford listings carry a non-empty PhotoURL, zero are internet opt-out, zero are
@@ -399,103 +344,7 @@ was sent back rather than landed.
 **Also for a chrome-owning node:** the footer accordion summaries read "Markets26", "Buy · Sell ·
 Join9", "Company6", "Contact2" — a bare row count glued to the label, on every page.
 
-**Ruling 2 is confirmed independently, and the evidence is already on SITE-41.** Scoring the COMBINED
-/subdivisions page (SITE-55's did-not-sell section plus SITE-56's resolver and opening — ten shots,
-four rounds, a separate Sonnet evaluator) put the same redundant number blocks at the centre of what
-holds that page down, without knowing Matt had ruled. Three of the four rounds named `V3Instrument`'s
-headline figure by itself: *"three sections in a row read as one component reused"*, *"a lone
-oversized numeral floating above a caption line"*, and as the page's dullest moment *"the exact
-big-serif-numeral-over-caption shape the rest of the page has already moved away from."* Those quotes,
-and the alternative already built and measured, are recorded on SITE-41.
-
-**The blocker to cutting a number block anywhere is gone.** It was structural: until 2026-09-09 the
-ONLY outlet for a §0 trace was a figure cell, so a section had to print a display numeral to be
-*allowed* to cite its own number. `V3Quiet` now takes `source` on a prose passage, so a section can
-retire its numeral and keep its trace. `#outcomes` did exactly that and is the worked example.
-
-**SITE-41 has since landed, and its fix is OPT-IN per caller — read before ruling 3 runs.**
-`be15461f` gives `V3Instrument` three new optional props (`sentence`, `foldLabel`, `sourceName`) and
-scopes the new one-column layout to a `--said` modifier the component adds *only* when a figure was
-given a sentence. Its own comment says it plainly: "a caller that passes none keeps the two-up tile
-grid exactly." It wired four callers — city, community, central-oregon and annual-review — and
-touched no file under `app/subdivisions/`. **So the numeral the subdivision receipt names is still
-there**, unchanged, and that receipt's ten shots still describe what renders. Ruling 3's re-measure
-across all 25 classes is the vehicle that will find the rest of the un-opted-in callers; expect the
-instrument to keep naming this shape on every page that has not passed a sentence yet.
-
-## Prior — 2026-09-09 (the subdivision class re-scored on the COMBINED page, and the number went down)
-
-Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, merge `d3713768`,
-then main merged through `506a7d0c`.
-
-**This answers the note the landing session left.** When `6c648787` landed this branch's four stranded
-nodes it recorded: *"neither receipt scored the combined page. SITE-55's unsold work and SITE-56's
-resolver and opening are both live now and no evaluator has seen them together; re-score before
-building."* That re-score is done, and the result is worth more than the number.
-
-**Four rounds on the union of both shot sets** — ten shots, two routes, four anchors — by a separate
-Sonnet evaluator: **69, 72, 70, 71**. SITE-55 had scored 74 on four shots of a page with `#outcomes`
-and the old opening. SITE-56 had scored 72 on eight shots of a page with the new opening and no
-`#outcomes`. Both rebaselined from the same 65, so they are siblings, not a sequence. **71 is below
-the higher prior, and the receipt says so rather than rebaselining the drop out of sight.**
-
-**Why it fell is the finding.** Round one named it exactly: *"the two halves each reached for the same
-eyebrow-heading-bignumber-source primitive, and stacked together the repetition is visible in a way it
-wasn't when each half was judged alone."* Two lanes, two sections, **two passing receipts, one page
-that repeats itself.** A per-section receipt structurally cannot see this. Only a whole-page capture
-can. Read the instrument as having caught a real defect that two green receipts hid — not as a
-regression the merge introduced.
-
-**Fixed, all of it inside `#outcomes` or the primitive it needed:**
-
-- The standalone number cell is gone. The count was printed twice — in the sentence and as a display
-  numeral — and the numeral was the third such cell in a row down the page.
-- **`V3Quiet` gained `source` on a prose passage.** Until now the ONLY outlet for a §0 trace was a
-  figure cell, so a section had to print a display numeral to be allowed to cite its own number. That
-  is the structural cause of the repeat, and every caller gets the fix.
-- The trace sits under the sentence it documents, flush with its left edge. At the section foot it
-  landed directly beneath the wider-market door's citation and the two read as one duplicated
-  component. `V3SourceLine`'s base rule centres itself in any box wider than the measure, which had
-  put the trace 100px right of its own paragraph.
-- The trace opens with its source's NAME. It opened `public.subdivision_plat_unsold_mv, …`, and
-  `V3SourceLine` derives its one visible clause structurally, so the page published the words
-  **SOURCE public**.
-- **One home reads as one home.** A render published *"One home came off the market … and every one
-  cut the ask first, a median of 7.1%"* — plural grammar over a single row, and a "median" that is one
-  value, which is a §0 claim the publisher never computed. The trace said "median over the 1 that cut"
-  beside it.
-- The sentence is two sentences; joining the clauses on commas ran the run through a date that already
-  carries one. The eyebrow stopped repeating its own heading, which orphaned the word SELL at 375.
-
-**Not fixed, named with its owner.** Every remaining blocking defect is in a section this merge did not
-build: the standalone numerals in `#market-report` and `#faq` (shared primitives, and **the repetition
-exists only ACROSS three sections, so no lane owning one of them can fix it**), the FAQ third row
-breaking the contract its own subhead states, and the Diamond Bar Ranch hero dek orphaning a word at
-375. They go to the **/subdivisions composition node**. One low defect is this branch's and is recorded
-open rather than silently rolled in: the wider-market row's arrow does not name its destination, found
-on the fourth round after the hashed shots were taken.
-
-**One evaluator finding was checked and rejected.** Round three called the display serif on a numeral a
-break of the dataviz rule "Amboqia never sits on a number". `--v3-font-num` in
-`components/site/v3/tokens.css` is a deliberate register decision — "Amboqia in Broadside, Geist Mono
-in Ledger" — on every `V3Figure` across 118 pages, and that dataviz rule governs type ON A GRAPHIC:
-axis ticks and data labels. An evaluator is not the authority on the design system. The token stands;
-the next round was told so explicitly and still scored 71.
-
-**A guard worth taking.** The landing session found `subdivision_plat_unsold_mv` carries a row with
-`geo_slug 'na'`, `geo_label 'N/A'`, 2,885 unsold — the MLS null bucket at place grain. `/subdivisions/na`
-correctly refuses, so nothing publishes it, but the row should be excluded at the view rather than
-relied on to be unreachable.
-
-**Verification.** `ci:gates` 177/177, tsc clean, the full unit suite 10,509 passing, the subdivision
-accept 20/20 across both routes (including that the passage trace shares its paragraph's left edge and
-that no address is published beside the failures), and the expired-seller letter still reads "two came
-off the market without selling" for Diamond Bar Ranch with every link 200.
-
-**Next.** SITE-58's Crook plats are on main. The queue's remaining open node is SITE-43, which waits on
-SITE-03 (blocked until 2026-10-06). PR #200 stays watched.
-
-## Prior — 2026-09-09 (SITE-58: Crook plats ingested; Jefferson publishes none)
+# Current — 2026-09-09 (SITE-58: Crook plats ingested; Jefferson publishes none)
 
 Owner: Grok (grok-01a0884a-2026-09-09), main checkout. Push `ea8be553`; deploy
 `dpl_DbJGeqPE7ce5WzUBn8EY1kWtcqqb` READY in 280s.
@@ -527,7 +376,7 @@ Class list, statewide: 626 none → 592 none. Provenance floor 3200 → 3427
 **Skills read:** site-queue, loop-status, database-canonical-reference,
 TASTE.md, frontend-design, DATABASE_FOR_AI_AGENTS.md §2a.
 
-## Prior — 2026-09-09 (four nodes said done and were not on main; landed, plus SITE-31's eleven guides)
+# Current — 2026-09-09 (four nodes said done and were not on main; landed, plus SITE-31's eleven guides)
 
 Owner: Claude (Opus 5), session claude-opus5-9d4aa6fc-2026-09-09, main checkout. Pushes
 `38e2f6c3` (SITE-31) and `6c648787` (the stranded branch); both deploys READY.
@@ -569,7 +418,7 @@ instrument, every one is under 70 — best was 69. Many have been rebuilt since 
 is stale; now that the measurer is on main, the next round should re-run it and seed from the
 bottom rather than from last week's numbers.
 
-## Prior — 2026-09-09 (SITE-55: the plat says what did not sell, and names the market it sits in)
+# Current — 2026-09-09 (SITE-55: the plat says what did not sell, and names the market it sits in)
 
 Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200, lane commit
 `9eb4c1fb`, then main merged through `d5b982e8` (round eight: SITE-48 and SITE-50). Node
@@ -671,61 +520,11 @@ mount into the main checkout and deleted 164 packages; an `npm install` to repai
 pinned ranges in `package.json`. The repair is `git checkout HEAD -- package.json package-lock.json
 && npm ci`. Run lanes in the main tree.
 
-**Next.** SITE-56 and SITE-31 have since landed on main and are merged in here. That leaves SITE-58
-(the Crook and Jefferson plat polygons) as the queue's one newly-eligible node, and SITE-43 still
-waiting on SITE-03, which is blocked until 2026-10-06. PR #200 stays watched.
-
-**The SITE-56 merge, and a receipt that went DOWN.** Main landed SITE-56 (a plat resolves to its
-recorded phases; 169 → 414 subdivision names now reach a polygon) and SITE-31 (Matt ruled GO;
-the eleven guides are live) on the same route and the same `parity.json` this branch's SITE-55
-had just touched. `app/subdivisions/[slug]/page.tsx` merged clean — main's opening and this
-branch's `#outcomes` do not overlap — and the parity contract took main's structure plus the
-`#outcomes` entry and its `V3Quiet` requirement.
-
-**The receipt is the finding.** SITE-55 scored 74 on four shots of a page with `#outcomes` and the
-old opening. SITE-56 scored 72 on eight shots of a page with the new opening and no `#outcomes`.
-The merged page was captured on the union — ten shots — and scored **69, then 72, then 70, then 71**, every round by a separate Sonnet evaluator. 71 is below the higher of the two prior marks, and the receipt says so rather than rebaselining the drop out of sight.
-
-**Why it fell is worth keeping.** The first round named it exactly: "the two halves each reached
-for the same eyebrow-heading-bignumber-source primitive, and stacked together the repetition is
-visible in a way it wasn't when each half was judged alone." Two lanes building two sections of
-one page, each scored alone, each passing, produced a page that repeats itself. **A per-section
-receipt cannot see this. Only a whole-page capture can.**
-
-**What this branch fixed, all of it inside `#outcomes`:**
-
-- The standalone number cell is gone. The count was printed twice — in the sentence and as a
-  display numeral — and the numeral was the third such cell in a row.
-- `V3Quiet` gained `source` on a prose passage. Until now the ONLY outlet for a §0 trace was a
-  figure cell, so a section had to print a display numeral to be allowed to cite its own number.
-  That is a primitive-level fix and every caller gets it.
-- The trace sits under the sentence it documents, flush with its left edge. At the section foot it
-  landed directly beneath the wider-market door's citation and the two read as one duplicated
-  component. `V3SourceLine`'s base rule centres itself in any box wider than the measure, which put
-  the trace 100px right of its own paragraph; the compound selector now beats it.
-- The trace opens with its source's NAME. It opened `public.subdivision_plat_unsold_mv, …`, and
-  `V3SourceLine` derives its one visible clause structurally, so the page published the words
-  **SOURCE public**. Same lesson `/invest` already recorded and the same fix.
-- One home is now singular. A render read *"One home came off the market … and every one cut the
-  ask first, a median of 7.1%"* — plural grammar over one row, and a "median" that is a single
-  value, which is a §0 claim the publisher never computed. The trace said "median over the 1 that
-  cut" too.
-- The sentence is two sentences. Joining on commas ran the clause straight through a date that
-  already carries one: "…to Sep 9, 2026, it ran 223 days, and cut…".
-- The eyebrow no longer repeats its own heading, which orphaned the word SELL at 375.
-
-**What is left, and whose it is.** Every remaining blocking defect belongs to a section this merge
-did not build: `#market-report`'s standalone numeral and `#faq`'s (both `V3Instrument`/`V3Answers`
-against the site-wide `--v3-font-num` token), the map crop, and the citation-row shape recurring
-down the page. They are on the receipt and on the node for the **/subdivisions composition node**,
-because no lane that owns one section can fix a repetition that only exists across three.
-
-**One evaluator finding was checked and rejected.** It called the display serif on a numeral a
-break of the dataviz rule "Amboqia never sits on a number". `--v3-font-num` in
-`components/site/v3/tokens.css` is a deliberate register decision — "Amboqia in Broadside, Geist
-Mono in Ledger" — applied to every V3Figure on 118 pages. The dataviz rule governs type ON A
-GRAPHIC (axis ticks, data labels). An evaluator is not the authority on the design system, so the
-token stands and the finding is recorded as rejected rather than acted on.
+**Next.** The queue serves nothing: two open nodes both wait on held ones (SITE-43 on SITE-03, which
+is blocked until 2026-10-06; SITE-58 on SITE-56), and the three in-flight nodes belong to other
+sessions. **SITE-56 was deliberately held behind SITE-55 on this same route and the same
+`parity.json`; that block is now landed**, and the other session's own finding (Prior, below)
+reorders it around a plat resolver rather than the no-polygon fallback. PR #200 stays watched.
 
 **One thing SITE-56's resolver should know before it starts.** The `#outcomes` read this node added
 attributes a plat the two ways its closed sibling does — point-in-polygon AND slugified MLS
