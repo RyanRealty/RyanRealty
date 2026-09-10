@@ -12,7 +12,7 @@
  * own harness work: agents "confidently praise their own work even when quality
  * is mediocre"). This routes the shots through lib/grok — the one surface any
  * model call in this repo is allowed to use (CLAUDE.md §4) — as
- * GROK_MODELS.taste (`grok-4.5`), which differs from a Grok builder
+ * grok-4.6 through the grok CLI (see THE ONE INSTRUMENT below), which differs from a grok-4.5 builder
  * (`grok-4.6`). It prints the three scorings, their median, and the named
  * defects, in the shape the route's parity.json tasteReview wants.
  *
@@ -27,11 +27,32 @@
  * Reads every PNG in design_system/ryan-realty/ui_kits/<route-key>/shots unless
  * --shots names files. Prints JSON on stdout.
  */
-import { readFileSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { spawnSync } from 'node:child_process'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { config } from 'dotenv'
-import { GROK_MODELS, xaiFetch } from '../lib/grok/client'
 import { parseJsonLoose } from '../lib/grok/text'
+
+/**
+ * THE ONE INSTRUMENT (Matt 2026-09-09: "default to always having Grok 4.6 do the
+ * evaluation preferably always using the subscription tokens").
+ *
+ * The judge is a property of the REPO, not of whoever is building: every page
+ * class is scored by grok-4.6 whether a Claude lane, a Grok lane or the table
+ * tool asks, so two marks are always comparable and `ci:taste-canon`'s rise rule
+ * means one thing. Before this, a Claude lane scored with claude-sonnet-5 and a
+ * Grok lane with grok-4.5, so every page a Grok lane touched rebaselined and its
+ * old mark stopped counting.
+ *
+ * Transport is the `grok` CLI, not `xaiFetch`: the CLI spends Matt's Grok
+ * subscription, the API path bills XAI_API_KEY per token. Verified 2026-09-09
+ * that the CLI reads PNGs off disk and reports what is in them.
+ *
+ * The builder must differ (ci:taste-canon refuses evaluatorModel ==
+ * builderModel), so a Grok lane BUILDS with grok-4.5 and is judged by 4.6.
+ */
+const EVALUATOR_MODEL = 'grok-4.6'
+const GROK_CLI = process.env.GROK_CLI ?? `${process.env.HOME}/.grok/bin/grok`
 
 config({ path: '.env.local' })
 
@@ -130,42 +151,38 @@ async function main() {
     .filter(Boolean)
     .join('\n')
 
-  const res = await xaiFetch('/chat/completions', {
-    method: 'POST',
-    body: JSON.stringify({
-      model: GROK_MODELS.taste,
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a design critic reviewing a page you did not build. You are hard to impress and you say why. You never praise a page for being clean; clean is the floor. You name what is dull.',
-        },
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: question },
-            ...images.map((i) => ({ type: 'image_url', image_url: { url: i.dataUrl, detail: 'high' } })),
-          ],
-        },
-      ],
-      temperature: 0.4,
-    }),
-  },
-  // Eight full-page PNGs plus three scorings is not a 120-second request.
-  { timeoutMs: 600_000, retry: false },
-  )
-
-  const json = (await res.json()) as {
-    choices?: { message?: { content?: string } }[]
-    usage?: Record<string, unknown>
-    model?: string
+  if (!existsSync(GROK_CLI)) {
+    console.error(`taste-evaluate: no grok CLI at ${GROK_CLI}. Set GROK_CLI to its path.`)
+    process.exit(2)
   }
-  const content = json.choices?.[0]?.message?.content ?? ''
+  // The CLI is an agent: it is told to open the files rather than handed base64,
+  // which is also why the shots must be absolute paths.
+  const prompt = [
+    'You are a design critic reviewing a page you did not build. You are hard to impress and you say why. You never praise a page for being clean; clean is the floor. You name what is dull.',
+    '',
+    `Read these screenshot files with your file tool and judge what is IN them:`,
+    ...images.map((i) => `  ${resolve(i.path)}`),
+    '',
+    question,
+    '',
+    'Reply with the JSON object and nothing else — no preamble, no code fence.',
+  ].join('\n')
+
+  const res = spawnSync(
+    GROK_CLI,
+    ['-p', prompt, '-m', EVALUATOR_MODEL, '--permission-mode', 'bypassPermissions', '--output-format', 'plain'],
+    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 900_000 },
+  )
+  if (res.status !== 0) {
+    console.error(`taste-evaluate: grok CLI exited ${res.status}: ${(res.stderr || '').trim().slice(0, 400)}`)
+    process.exit(2)
+  }
+  const content = res.stdout ?? ''
   const parsed = parseJsonLoose(content)
   console.log(
     JSON.stringify(
       {
-        evaluatorModel: GROK_MODELS.taste,
+        evaluatorModel: EVALUATOR_MODEL,
         shots: images.map((i) => i.name),
         result: parsed ?? content,
       },

@@ -149,6 +149,16 @@ and the Atlas "pinch to zoom" sentence are mechanical tells: a score of 86
 cannot outvote them (`scripts/taste-tells-baseline.json`, shrink-only). X
 research: `docs/research/taste-on-x-2026-09-05.md`.
 
+**THE ONE INSTRUMENT (Matt 2026-09-09).** The judge is **grok-4.6**, run through the
+`grok` CLI so it spends the Grok subscription rather than API credit, and it is the judge
+whatever built the page — `scripts/taste-evaluate.ts` for a route's receipt,
+`scripts/taste-table.mjs` for the site table. Before this the judge followed the builder
+(Claude lanes scored with claude-sonnet-5, Grok lanes with grok-4.5), so every page a Grok
+lane touched rebaselined and its previous mark stopped counting; a rise rule needs one
+ruler. Because the gate below refuses `evaluatorModel == builderModel`, a **Grok lane
+builds with grok-4.5**. Every class rebaselines ONCE on the switch: the first mark on this
+instrument is the new baseline, and the 70 finish line applies to those numbers.
+
 The critique pass is a SEPARATE agent (mandatory since 2026-09-01)
 
 The builder never grades its own page. After the ritual, spawn an evaluator

@@ -6,6 +6,10 @@
       "schedule": "30 14 * * *"
     },
     {
+      "path": "/api/cron/blog-monthly-city-report",
+      "schedule": "0 15 3 * *"
+    },
+    {
       "path": "/api/cron/broker-agent-digest",
       "schedule": "0 14 * * *"
     },
@@ -16,6 +20,18 @@
     {
       "path": "/api/cron/cma-build-worker",
       "schedule": "14,44 * * * *"
+    },
+    {
+      "path": "/api/cron/cma-solicit-screen",
+      "schedule": "25 * * * *"
+    },
+    {
+      "path": "/api/cron/compute-neighborhood-metrics",
+      "schedule": "40 */6 * * *"
+    },
+    {
+      "path": "/api/cron/compute-subdivision-metrics",
+      "schedule": "50 */6 * * *"
     },
     {
       "path": "/api/cron/crm-alert-drain",
@@ -78,6 +94,10 @@
       "schedule": "35 9 * * *"
     },
     {
+      "path": "/api/cron/dnc-scrub",
+      "schedule": "0 17 * * 1"
+    },
+    {
       "path": "/api/cron/fred-ingest",
       "schedule": "47 22 * * *"
     },
@@ -108,10 +128,6 @@
     {
       "path": "/api/cron/market-report",
       "schedule": "0 14 * * 0"
-    },
-    {
-      "path": "/api/cron/blog-monthly-city-report",
-      "schedule": "0 15 3 * *"
     },
     {
       "path": "/api/cron/market-stat-consistency",
@@ -152,6 +168,10 @@
     {
       "path": "/api/cron/newsletter-send",
       "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/cron/offline-conversions",
+      "schedule": "0 15 * * *"
     },
     {
       "path": "/api/cron/performance-pull-30d",
@@ -206,14 +226,6 @@
       "schedule": "20 */6 * * *"
     },
     {
-      "path": "/api/cron/compute-neighborhood-metrics",
-      "schedule": "40 */6 * * *"
-    },
-    {
-      "path": "/api/cron/compute-subdivision-metrics",
-      "schedule": "50 */6 * * *"
-    },
-    {
       "path": "/api/cron/refresh-similar-listings",
       "schedule": "30 4 * * *"
     },
@@ -258,12 +270,16 @@
       "schedule": "12 * * * *"
     },
     {
-      "path": "/api/cron/tc-envelope-reminders",
-      "schedule": "0 * * * *"
+      "path": "/api/cron/taxlot-refresh",
+      "schedule": "20 9 * * *"
     },
     {
       "path": "/api/cron/tc-deal-calendar",
       "schedule": "20 16 * * *"
+    },
+    {
+      "path": "/api/cron/tc-envelope-reminders",
+      "schedule": "0 * * * *"
     },
     {
       "path": "/api/cron/token-heartbeat",
@@ -288,18 +304,6 @@
     {
       "path": "/api/cron/westside-cohort-digest",
       "schedule": "0 15 * * 1"
-    },
-    {
-      "path": "/api/cron/dnc-scrub",
-      "schedule": "0 17 * * 1"
-    },
-    {
-      "path": "/api/cron/offline-conversions",
-      "schedule": "0 15 * * *"
-    },
-    {
-      "path": "/api/cron/taxlot-refresh",
-      "schedule": "20 9 * * *"
     }
   ]
 }

@@ -1,3 +1,90 @@
+# Current — 2026-09-10 (one instrument: grok-4.6 judges every page on the subscription; Grok lanes are live; the UI process itself is the next node)
+
+Owner: Claude (Opus 5), session 3db16241, main checkout. Read this whole block before touching
+the site queue — several things changed tonight and one of them changes what every mark means.
+
+**THE ONE INSTRUMENT (Matt, asked and answered).** The judge is **grok-4.6**, run through the
+`grok` CLI so it spends Matt's Grok subscription rather than API credit, and it is the judge
+whatever built the page: `scripts/taste-evaluate.ts` for a route receipt, `scripts/taste-table.mjs`
+for the site table. Before this the judge followed the builder (Claude lanes scored with
+claude-sonnet-5, Grok lanes with grok-4.5 through `xaiFetch`, which billed XAI_API_KEY), so every
+page a Grok lane touched rebaselined and its previous mark stopped counting. `ci:taste-canon`
+refuses `evaluatorModel == builderModel`, so **a Grok lane builds with grok-4.5**. Every class
+rebaselines ONCE on this switch: the first table on grok-4.6 is the new baseline and the 70 finish
+line applies to those numbers. Landed at `1af6d885`; TASTE.md, the Cursor skill and rule, and the
+routine prompt all say it. Verified the grok CLI reads a PNG off disk and reports its contents.
+
+**The table run that is still in flight is the OLD instrument, deliberately.** It scores the
+2026-09-08 shots on claude-sonnet-5 so round three's thirteen primitive fixes can be measured
+against yesterday on the same ruler — the last reading of the old instrument. Shots for all 27
+classes are merged in `.taste-table/2026-09-10T02-40-10-726Z/`; if the run dies, re-score with
+`node scripts/taste-table.mjs --evaluate-only .taste-table/2026-09-10T02-40-10-726Z --claude --diff`
+(`--claude` because the default is now grok). After that reading lands, every future table is grok.
+
+**Grok lanes are live and holding nodes.** `grok-01a08914` and `grok-01a08945` own SITE-60, 61 and
+62 — they picked the queue up from `.cursor/rules/run-loop.mdc` and `.cursor/skills/site-queue/`
+with no prompting, which is the handoff working. A launchd routine
+(`com.ryanrealty.site-queue-grok`, 02/06/10/14/18/22 local) fires `grok -p` against
+`scripts/site-queue-routine-prompt.md`; the Claude cloud routine still fires every four hours at
+:05 UTC but is on Fable, which is at 99% until Tue noon, so its fires are refused until then.
+
+**SITE-63 is the next served and it is the answer to Matt's real question** ("i need to improve the
+ui and that whole process in the loop"). Rounds one to three fixed defects and the site still tops
+out at 69, because the loop is built to REMOVE tells, not to produce a good page: a builder gets
+adjectives and reaches for the safest layout, which is the stacked-section page. The node does
+three things TASTE.md already prescribes and nobody has ever done — reference files per class
+naming real pages and shipped component code to adapt; the variants rule made real so Matt's taste
+picks the winner instead of a model's; and an evaluator that names the replacement FORM from the
+dataviz order instead of only naming the flaw. Its accept demands a negative result be recorded if
+the process still does not help.
+
+**Two hazards, both bit tonight.** (1) The Data volume hit 100%, which corrupted Turbopack's cache
+(the dev server FATALed on boot until `.next` was cleared) and broke the Bash tool itself — every
+command failed writing its own output file. The escape hatch is
+`mcp__plugin_desktop-commander_desktop-commander__start_process`; the reclaim recipe is memory
+`reference_disk_pressure_reclaim`. Four clean CMA worktrees were removed; all four branches
+survive and two are AHEAD of the SHAs this handoff previously recorded. (2) Uncommitted work in
+this shared checkout gets wiped by other sessions — a full set of edits to taste-table.mjs and two
+docs vanished mid-session. Commit immediately, do not leave a working tree dirty.
+
+**Do not.** Point the evaluator at your own model to make it convenient. Compare a grok-4.6 mark to
+a claude-sonnet-5 mark. Let a failed table run write nulls (the tool now refuses, keep it that way).
+Build a page against adjectives when SITE-63 lands a reference file for its class.
+
+---
+
+# Current — 2026-09-10 (site queue stays armed)
+
+Owner: Grok (grok-01a08914-2026-09-09), main @ `7237aa88`. Matt: keep running as lanes finish and new nodes appear.
+
+**Armed.** Durable Grok scheduler `01a0894e` every 15m (`scripts/site-queue-routine-prompt.md`). Mac launchd `com.ryanrealty.site-queue-grok` still at 02/06/10/14/18/22 local (never fired yet). This session watches the graph and lands held claims.
+
+**Held here:** SITE-43 (place opening, `wt/site-43-place-opening-20260909`) and SITE-60 (listing prefetch). Do not steal. Next open: SITE-61, SITE-62 — the 15m fire claims them when fleet has room.
+
+# Current — 2026-09-10 (run loop: SITE-43 + SITE-60 claimed)
+
+Owner: Grok (grok-01a08914-2026-09-09), main checkout @ `7237aa88`. Two claims (session cap). SITE-61 and SITE-62 stay open.
+
+**SITE-43** (in flight, worktree `wt/site-43-place-opening-20260909`, agent `01a0891e`). MOS two-bar is committed (`6cb1bd4f`); shots recaptured including mos-hover and alerts-toggle. Do not touch PlaceAreaHero / V3AlertsStrip / V3MosBars from another lane.
+
+**SITE-60** (claimed this boot, agent `01a08948`). Listing route 1600x1200 hero preload inside speculatively prefetched RSC payloads (~25 MB on /oregon/medford). Do not disable link prefetch site-wide. Do not touch V3Ledger photo callers (SITE-61).
+
+**Scoreboard (from the block below):** the table instrument is first-viewport only and is the finish line (70). Lane scores are a different instrument. City 40 / neighborhood 45 / community 53 on tonight's table — SITE-43 is the first-viewport opening of those three classes.
+
+# Current — 2026-09-10 (run loop: SITE-61 + SITE-62 claimed; SITE-43 and SITE-60 held by the other grok)
+
+Owner: Grok (grok-01a08945-2026-09-09), main checkout @ `7237aa88`. Two worktree lanes in flight.
+
+**Run loop.** Fleet 2/3. Other session `grok-01a08914-2026-09-09` holds SITE-43 (place opening) and SITE-60 (listing prefetch, taken in the claim race). This session holds SITE-61 and SITE-62. Do not touch PlaceAreaHero, V3AlertsStrip, city/neighborhood/community page.tsx, `lib/kb/place-open-houses.ts`, or `app/listing/**`.
+
+**SITE-61 lane.** Listing-shaped V3Ledgers that still draw a photo in the 44px mark pick up `media="photo"` (88x66, navy tile, Spark size rewrite promoted to `lib/listing/`). Live-check each named ledger before opting in. Leave place-open-houses on the old treatment in one recorded line: SITE-43 holds that route family. Routes: `/sell` `#our-listings`, `/activity` `#feed`, subdivision listing rows if they actually render.
+
+**SITE-62 lane.** `scripts/taste-table.mjs` (or sibling) emits DRAFT seed entries for every class under finish line 70. Never writes Supabase. Numbering is the next unused `SITE-*` from seeds + `loop_work_nodes`, stable across two runs. Path documented in `docs/DEVELOPMENT_PROCESS.md`.
+
+**Leftover.** SITE-59 shipped `90e41d5e` without deploy:verify — run that and live-check `/subdivisions/diamond-bar-ranch` plus `/oregon/medford` before calling it verified.
+
+**Skills read:** site-queue, loop-status, TASTE.md, frontend-design, ryan-realty SKILL.md, database-canonical-reference, long-running-background-tasks.
+
 # Current — 2026-09-10 (stopping point: the queue is empty of eligible work, and the scoreboard we have been reading is wrong)
 
 Owner: Claude (Opus 5), session claude-opus5-9d4aa6fc-2026-09-09, main checkout. Stopped for context,

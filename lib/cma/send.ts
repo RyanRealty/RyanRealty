@@ -37,6 +37,7 @@ import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
 import { composeCmaFirstContact, cmaFirstContactFactsFromRow, streetOnly, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
 import { resolveFirstContactPlace } from '@/lib/cma/first-contact-place'
+import { screenAddressForSolicitation } from '@/lib/cma/solicit-screen'
 import { buildSignature } from '@/lib/crm/email-signature'
 import { getBrokers } from '@/lib/data'
 import { cmaReportButtonHtml, previewTextFromCustomBody } from '@/lib/cma/report-button'
@@ -383,6 +384,23 @@ export async function prepareCmaSendPreview(slug: string): Promise<
 export async function sendCmaToLead(slug: string, override?: CmaSendOverride): Promise<SendCmaToLeadResult> {
   const { ctx, error } = await resolveSendContext(slug)
   if (!ctx) return { ok: false, error: error ?? 'CMA not sendable' }
+
+  // SOLICITATION CHOKEPOINT, ahead of everything else (Matt 2026-09-09). A
+  // for-sale-by-owner who has since listed with a broker, an expired owner who
+  // relisted, and one whose home sold after it came off the market are all
+  // off limits — the first two because the listing is someone else's, the
+  // third because writing to them says we do not know the market. Fails
+  // closed: an unreadable MLS blocks the send.
+  if (ctx.origin === 'expired' || ctx.origin === 'fsbo') {
+    const screen = await screenAddressForSolicitation({
+      address: ctx.subjectAddress,
+      city: ctx.facts.city ?? null,
+      sinceIso: null,
+    })
+    if (!screen.ok) {
+      return { ok: false, error: `Not sent. ${screen.detail}` }
+    }
+  }
 
   // Suppression chokepoint (fails closed).
   const personId = await findCrmPersonIdByEmail(ctx.clientEmail)
