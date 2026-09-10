@@ -61,11 +61,11 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
+    "evaluatedAt": "2026-09-10",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "SITE-50 lane, round three. A separate Agent given only TASTE.md, the two shots below and the mark to beat, with no access to the builder's reasoning; it scored the same shots three times in one call. Rounds one and two, against earlier shots of the same rebuild, returned medians 59 and 50; this receipt records round three because these are the shots on disk.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts compare — grok-4.6 via grok CLI, three scorings of the SITE-65 production first-viewport shots, separate from the grok-4.5 builder",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/compare"
@@ -76,73 +76,82 @@
       ],
       "states": [
         "empty-queue"
-      ]
+      ],
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, https://ryan-realty.com/compare after 036a4276"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/compare/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/compare/shots/mobile375.png"
     },
-    "shotsHash": "sha256:f541dd6d4bea0aa03bb14eba85e7fe3c6517076eef541aa71fd164a0f7844da0",
+    "shotsHash": "sha256:9f34615ffb7971e5aaa9d37f34cdc7ae62bf6f00e004e328d560e4b3c93091c7",
     "scores": [
-      53,
-      52,
-      56
+      50,
+      56,
+      60
     ],
-    "score": 53,
-    "criteria": {
-      "designQuality": 18,
-      "originality": 12,
-      "interaction": 6,
-      "craft": 9,
-      "honestyFunction": 8
-    },
-    "beats": "Redfin's and Zillow's compare and saved-homes screens render nothing until the visitor has already saved homes, and once populated they show a flat table with no encoding of the spread and no named source. This page shows a real four-home comparison on first load, with a length under each figure for the rows where the spread is the point and 'Regional MLS through Oregon Data Share' named in the same screen.",
+    "score": 56,
+    "beats": "Redfin's and Zillow's compare screens open on the visitor's own saved homes with large listing cards and a highlight-differences control. This page wins a live four-home MLS sample and a named Oregon Data Share timestamp on first load. It loses photo scale, a winner or delta reading, and any 375 layout that can actually hold four homes.",
     "defects": [
       {
-        "section": "#compare-empty",
+        "section": "#compare-empty .v3-slots__photo",
         "severity": "taste",
-        "finding": "the four queue slots are dashed placeholder boxes carrying a numeral and 'Add a home' — the form of a generic dropzone rather than something built for houses",
-        "fix": "give a slot a photo-aspect seat so an empty one reads as a house-shaped hole, not a form field",
-        "viewport": "both"
+        "finding": "The houses are the subject and they render as 64px stamps; an editorial compare would make the four exteriors the spectacle, not table chrome. replaceWith: V3Carousel of the four street views as the opening object, or column heads at photo-card scale."
       },
       {
-        "section": "#compare-empty",
+        "section": "#compare-empty .v3-slots__scroller",
+        "severity": "blocking",
+        "finding": "At 375 the second column is sliced through 40 McKinley, Add thi, and $529,99, so four homes cannot be compared in one view. replaceWith: V3Segmented (two homes at a time) or V3Sheet compare, not a cropped spreadsheet scroller."
+      },
+      {
+        "section": "#compare-empty .v3-slots__add",
+        "severity": "taste",
+        "finding": "Four identical outline Add this home buttons turn the comparison into a repeated form kit instead of a reading of which house to keep."
+      },
+      {
+        "section": "#compare-empty .v3-slots__bar",
+        "severity": "taste",
+        "finding": "The lengths under Price, Price / sq ft, Sq ft and Lot are hairline underlines, not a glanceable comparison; they do not survive a still as data."
+      },
+      {
+        "section": "#compare-empty .v3-slots__value",
         "severity": "craft",
-        "finding": "the second example column is sliced at the 375 viewport edge; the scroll shadow marks it as a scroller but the cut still reads as a crop before the reader pushes it",
-        "fix": "size the columns so two sit whole inside 335px, or leave a deliberate half-column peek",
-        "viewport": "mobile"
+        "finding": "Year built prints as 2,005, 2,006, 2,021 and 2,003; years do not take thousands separators."
       },
       {
-        "section": "#compare-empty",
-        "severity": "interaction",
-        "finding": "the lengths under the figures are static in a still; the row hover that lifts a field across all four homes cannot be seen in a shot, and nothing else in the example rewards a hover",
-        "fix": "give the example a reveal that survives a screenshot — a per-row reading, or a control that changes which field is drawn",
-        "viewport": "both"
+        "section": "#compare-empty .v3-slots__photo",
+        "severity": "craft",
+        "finding": "40 McKinley Avenue opens on a kitchen while the other three columns open on street exteriors, so the four homes do not read as the same kind of object."
       },
       {
-        "section": "#compare-empty",
+        "section": "#compare-empty .v3-slots__table",
         "severity": "taste",
-        "finding": "the empty tray and the worked example are two four-across blocks stacked, rather than one object where the example fills the tray it is teaching",
-        "fix": "consider making the example columns BE the four slots, pre-filled and swappable, instead of an empty set above a demo set",
-        "viewport": "both"
+        "finding": "Nothing names a winner or a spread; $849,000 sits next to $529,999 with no sentence that one is $319,001 more, so the job of compare is left to the reader's arithmetic. replaceWith: V3Sheet compare with a per-row mark, or a claim that states the spread."
+      },
+      {
+        "section": "#compare-empty .v3-slots__claim",
+        "severity": "taste",
+        "finding": "The fold spends itself on muted explanation (claim plus SAMPLE caption) before any house is large enough to look at; the page still opens as eyebrow, display heading, paragraph, then a ledger."
+      },
+      {
+        "section": "#compare-empty .v3-slots__col-title",
+        "severity": "craft",
+        "finding": "Addresses wrap to uneven depths (Porcupine Drive on three lines at 375, others cropped mid-word), so the column heads do not share one rhythm."
+      },
+      {
+        "section": "#compare-empty .v3-slots__table",
+        "severity": "taste",
+        "finding": "No hover, tap, scrub or toggle in the still rewards more data; Add this home leaves the sample instead of revealing a difference, a sort, or a two-up. replaceWith: beUI tabs / V3Segmented to pick which pair, plus a row hover that states the delta."
       }
     ],
     "comparedToPrior": "rebaselined",
-    "notes": "The route had no committed tasteReview before this one, so this is its first receipt and comparedToPrior is 'first'. The class's mark on the STANDING TABLE instrument (design_system/public/taste-table.json, 2026-09-08) was median 29 from scorings 29/34/25, with the verdict 'an empty form label, not a product demo'. That table's shots are not in the repo, so its shotsHash differs and it is not a valid priorMark here — the table's own note says so. On the same rubric, the same evaluator model and the same capture spec, the class now medians 53.",
     "priorMark": {
       "evaluatedAt": "2026-09-09",
-      "score": 42,
-      "scores": [
-        42,
-        37,
-        45
-      ],
+      "score": 53,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:099fb0fe2259cac6d9717ee2d4acf34f5007781e045c45d6328a66f248232808",
-      "source": "the route receipt committed on claude/run-loop-w8f3ep at 1ea07155 (SITE-40), merged into this branch alongside SITE-50"
+      "shotsHash": "sha256:f541dd6d4bea0aa03bb14eba85e7fe3c6517076eef541aa71fd164a0f7844da0"
     },
-    "rebaselineReason": "shotsHash: the prior mark is the route receipt this branch committed at 1ea07155 (SITE-40, score 42) on the SAME evaluatorModel (claude-sonnet-5) and the SAME rubricVersion (v1-2026-09-08), but on shots of the pre-SITE-50 empty state. SITE-50 replaced that empty state with the worked example, so the shots are of a different page and the instrument is not identical. The two marks are still directly comparable on model and rubric, and the score rose 42 -> 53.",
-    "priorMarkNote": "SITE-50 was built and scored on main, where this route carried no committed receipt, so the receipt was written \"first\" against the cross-class taste table (29 on 2026-09-08). The SITE-40 lane on claude/run-loop-w8f3ep had meanwhile committed a 42 for the same route on the SAME instrument — same evaluator model, same rubric version, same capture script. The merge of 2026-09-09 puts both in one history, so the higher committed mark is the prior one and this is a rise on a comparable instrument: 42 -> 53. The shotsHash differs because the page differs; that is what a rise is."
+    "rebaselineReason": "evaluatorModel and shotsHash differ: SITE-50's 53 was claude-sonnet-5 on shots that still led with four dashed empty slots (shotsHash sha256:f541dd6d); this mark is grok-4.6 on new first-viewport shots after SITE-65 made the live sample the opening. Same rubricVersion v1-2026-09-08. Mechanical accept holds: four listing photographs and prices in the 1440 fold, no dashed empty Add-a-home tray.",
+    "verdict": "Better than a 53: the dashed empty tray is gone and the first screen is the comparison itself, which is the job. It is still a spreadsheet under a display heading — stamp photos, hairline bars you have to hunt, a 375 crop that hides two of the four homes, and four identical outline buttons, so it is not yet a page anyone would screenshot."
   }
 }
