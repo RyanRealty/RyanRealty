@@ -22,6 +22,7 @@ import { resolveLegacyPropertySubType } from '@/lib/data/listings/searchPredicat
 import { resolveViewContainsValues, viewContainsAsViewTypes } from '@/lib/search-presets'
 import type { ListingTile, SearchFeatureFilters, SearchListingsAllFilter } from '@/lib/data'
 import { PUBLIC_ACTIVE_OR_PREDICATE, PUBLIC_ACTIVE_OR_PREDICATE_EXACT, PUBLIC_ON_MARKET_OR_PREDICATE_WIDE, PUBLIC_SEARCH_STATUS_FILTERS, isPubliclyDisplayableStatus } from '@/lib/listing-status-public'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 
 function getAnonSupabase(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -667,7 +668,7 @@ export async function getListings(options: {
       SubdivisionName: t.subdivisionName,
       BoundaryCity: t.boundaryCity,
       BoundaryNeighborhood: t.boundaryNeighborhood,
-      PhotoURL: t.photoUrl,
+      PhotoURL: t.photoUrl ? listingRowPhotoSrc(t.photoUrl) : t.photoUrl,
       Latitude: t.lat,
       Longitude: t.lng,
       StandardStatus: t.status,
@@ -1025,7 +1026,7 @@ function tileToSearchRow(t: ListingTile): ListingTileRow {
     SubdivisionName: t.subdivisionName,
     BoundaryCity: t.boundaryCity,
     BoundaryNeighborhood: t.boundaryNeighborhood,
-    PhotoURL: t.photoUrl,
+    PhotoURL: t.photoUrl ? listingRowPhotoSrc(t.photoUrl) : t.photoUrl,
     Latitude: t.lat,
     Longitude: t.lng,
     StandardStatus: t.status,
@@ -1267,7 +1268,7 @@ function tileToHomeTileRow(tile: ListingTile): HomeTileRow {
     SubdivisionName: tile.subdivisionName,
     BoundaryCity: tile.boundaryCity,
     BoundaryNeighborhood: tile.boundaryNeighborhood,
-    PhotoURL: tile.photoUrl,
+    PhotoURL: tile.photoUrl ? listingRowPhotoSrc(tile.photoUrl) : tile.photoUrl,
     Latitude: tile.lat,
     Longitude: tile.lng,
     StandardStatus: tile.status,
@@ -1436,7 +1437,7 @@ export async function getListingsForMap(options: GetListingsForMapOptions = {}):
     PostalCode: t.postalCode,
     BedroomsTotal: t.beds,
     BathroomsTotal: t.baths,
-    PhotoURL: t.photoUrl,
+    PhotoURL: t.photoUrl ? listingRowPhotoSrc(t.photoUrl) : t.photoUrl,
   }))
 }
 
@@ -1575,7 +1576,14 @@ export async function getViewportListings(
   } catch {
     // Card extras miss omits — hero photo + leftover tile fields still print.
   }
-  return { listings: sliced, totalCount, capped }
+  return {
+    listings: sliced.map((row) => ({
+      ...row,
+      PhotoURL: row.PhotoURL ? listingRowPhotoSrc(row.PhotoURL) : row.PhotoURL,
+    })),
+    totalCount,
+    capped,
+  }
 }
 
 /**
@@ -2353,7 +2361,7 @@ function tileToListingTileRow(t: ListingTile): ListingTileRow {
     SubdivisionName: t.subdivisionName,
     BoundaryCity: t.boundaryCity,
     BoundaryNeighborhood: t.boundaryNeighborhood,
-    PhotoURL: t.photoUrl,
+    PhotoURL: t.photoUrl ? listingRowPhotoSrc(t.photoUrl) : t.photoUrl,
     Latitude: t.lat,
     Longitude: t.lng,
     ModificationTimestamp: t.modifiedAt,

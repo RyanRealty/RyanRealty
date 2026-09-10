@@ -88,7 +88,7 @@
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getZipListings, getPriceHistory } from '@/lib/data'
+import { getZipListings, getPriceHistory, getBoundaryGeoJSON } from '@/lib/data'
 import { getMetric } from '@/lib/data/market-truth/getMetric'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
@@ -221,6 +221,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     leftoverCityMonthly,
     leftoverZipMonthly,
     publicMix,
+    zipBoundary,
   ] = await Promise.all([
     // ONE tile fetch feeds the Field, its map, the neighborhood Ledger, and the
     // miss-path figures. limit=5000 captures the complete ZIP; no ZIP in this
@@ -262,6 +263,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       3000,
       'zip:publicMix',
     ),
+    withTimeoutFallback(getBoundaryGeoJSON({ geoType: 'zip', geoSlug: zip }), null, 3000, 'zip:boundary'),
   ])
   const chartMonths = leftoverNeighborhoodOrCityMonthly({
     leftoverNeighborhood: leftoverZipMonthly,
@@ -647,6 +649,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           caption={fieldCaption}
           source={fieldTrace}
           populationNote={populationNote}
+          boundary={zipBoundary}
           emptyMessage={
             tilesRead.ok
               ? `No active single-family listing in ${zip} reports a list price right now.`

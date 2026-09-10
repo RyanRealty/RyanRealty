@@ -1,19 +1,19 @@
 {
   "route": "app/communities/[slug]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker community pages. Three things no aggregator publishes: an alias-true active count (a resort's homes are MLS-tagged under many subdivision names, so every literal-name count undercounts it), the trace under every figure naming the query that produced it, and the authored knowledge of what belonging to the place costs and involves \u2014 HOA, membership, drive times, course, builders, schools, and the second-home reality \u2014 beside the live inventory instead of on a separate marketing page.",
+  "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker community pages. Three things no aggregator publishes: an alias-true active count (a resort's homes are MLS-tagged under many subdivision names, so every literal-name count undercounts it), the trace under every figure naming the query that produced it, and the authored knowledge of what belonging to the place costs and involves — HOA, membership, drive times, course, builders, schools, and the second-home reality — beside the live inventory instead of on a separate marketing page.",
   "note": "First screen, amended 2026-09-03: the place-page class opener. Order is V3Breadcrumb, place-opening (V3Heading `{Community} homes for sale` + PlaceFaceStrip leftover count/median + full-bleed PlaceAreaHero photo, never Quiet H1 and never an H1 photo cage), V3Atlas (child plats as regions), PlaceTypeSlider, PlaceSplitView (overlayBoundaries from overlaysFromChildCells / getCommunitySubdivisions), Instrument #market, Quiet #belonging (facts and chips as the display, extra prose and the authored story under disclosure), V3CourseMap when mapped, V3PlaceCharacter, Ledger subdivisions, Sheet, Ledger open houses, Ledger activity, V3Answers #faq, Footer. leftoverHudKpis grain stays neighborhood keyed by the bare slug; publishPlaceFace({ grain: 'community', hud }) prints leftover active + leftover median list. Tetherow leftover is the 16 SFR pile, not alias Field length ~25. MOS / sold / verdict / DTP stay off the face. seedRing keys on a TRUSTED polygon: county plat-union first, reliable stored boundary second. Child plat cells draw as Atlas regions AND Split overlayBoundaries, each a door to its page. Type strips, not H2s. Eagle Crest schools are Redmond 2J / getDistrictForCity('Redmond') only. Amenity blogs via getBlogPostsBySlugs. Never plat/nest/parent/child/sibling/CDP/Feeders on visitor copy. THE PUBLIC NAME IS THE REGISTRY LABEL. NO IN-PAGE REDIRECT. buildMarketFaq runs unconditionally with source 'market-truth'.",
   "dataChanges": {
     "figureCorrected": "The reliable-boundary branch published listings_in_boundary's pin count under the label 'Active single-family'. That RPC filters on status only and caps at 200 rows, so the number counted condos, land, and townhomes, and the median printed beside it came from a DIFFERENT set (the same listings narrowed to propertyType 'A'). The count is now the single-family actives inside the same boundary: the set the label claims and the set its median is computed from. On a community with no condos or land it is the same number.",
     "monthsOfSupplyPublicationRule": "REPAIR 2026-08-12. Months of supply, and the verdict clause it puts in the H1, publish ONLY when the market pulse row's own active_count equals the count this page publishes. Months of supply is actives over average monthly closings and this page prints that formula, so the reader can check it against the count beside it. The pulse row computed the ratio from ITS numerator (the literal-subdivision-name count for the slug) while the page publishes the alias-aware one, and on 2026-08-12 they differed on every community carrying a row: tetherow 20 against 36, vandevert-ranch 12 against 0, broken-top 205 against 21. The arithmetic refuted the page in both directions: vandevert-ranch printed 'a buyer's market' and '72.0 months of supply' over '0 homes for sale' (0 actives yields 0 months, and zero inventory is definitionally not a buyer's market), and tetherow printed 'a balanced market' where its own 36 actives against the same denominator give 9.0, a buyer's. The figure now publishes on exactly the communities whose count came FROM that row (three-rivers: 91 actives, 16.1 months, 'a buyer's market', self-consistent) and is cut everywhere else, in the Instrument, in the visible FAQ, and in the Dataset's variableMeasured, from the one buildMarketFaq call. Median days to pending survives the same disagreement: it is a timing median over homes that went pending, prints no formula, and drives no verdict, and its trace names the pulse row.",
     "monthsOfSupplyDisplay": "REPAIR 2026-08-12. The figure prints through lib/format/months-of-supply (formatMonthsOfSupply), the single boundary-safe rule: 4.02 prints 4.1, 5.97 prints 5.9. The migration had used Math.round(x*10)/10 with toFixed(1), which is the expression lib/site/market-faq.ts replaced in the same changeset for the reason written in its own comment, and it put three values of one statistic on one page: 4.0 in the Instrument, 4.1 in the visible FAQ answer, 4.1 in the Dataset variable.",
     "unchanged": "Every other figure, filter, window, and unit. The alias-aware resort count, the oversized-hull fallback, the county-plat-union polygon rule, the median-list/median-sold split, the rolling-365d window on closed sales, the registry HOA fallback chain, and the school-district registry as the only permitted schools source all behave exactly as before.",
-    "nameOrRefusal": "SITE-28, 2026-09-08. THIS ROUTE CAN NOW RENDER A REFUSAL, and every component below is conditional on it not doing so. A compound slug /communities/<city>-<token> derived its display name from the URL and from MLS SubdivisionName, and MLS SubdivisionName is an ingest key: /communities/prineville-oll shipped the title 'Oll Homes for Sale | Prineville, OR' over the H1 'Oll homes for sale', madras-parkpl shipped 'ParkPL', prineville-pleasvh 'PleasVH', bend-aspenb 'Aspenb', sisters-clas 'Clas'. app/communities/[slug]/_v3/community-display-name.ts now resolves the name against four RECORDED sources and nothing else \u2014 publishPlatDisplayName (the one abbreviation test in the repo, shared with /subdivisions), its recorded expansions, the reviewed alias map data/subdivision-alias-plats.json, and an EXACT geo_slug hit in public.boundaries via lib/data/subdivisions/getRecordedPlatLabel.ts. Nothing resolves and the page renders _v3/CommunityUnavailable.tsx: a real body with a real h1, not a notFound(), because a throw under app/loading.tsx's Suspense boundary ships a hollow 200 with no h1 (the mechanism SubdivisionUnavailable exists for). The abbreviation test reads the MLS SPELLING from geo_snapshot_mv.geo_label, because slugToTitle flattens the interior capital that is the evidence. Robots is untouched \u2014 a refusing slug keeps the 'noindex, follow' every compound non-community slug has carried since 95672822. 32 of 1,014 Central Oregon SubdivisionNames are withheld; every one is an MLS token, and a geometry majority vote over them was measured and refused (aspenb falls in 3 plats, clab in 28)."
+    "nameOrRefusal": "SITE-28, 2026-09-08. THIS ROUTE CAN NOW RENDER A REFUSAL, and every component below is conditional on it not doing so. A compound slug /communities/<city>-<token> derived its display name from the URL and from MLS SubdivisionName, and MLS SubdivisionName is an ingest key: /communities/prineville-oll shipped the title 'Oll Homes for Sale | Prineville, OR' over the H1 'Oll homes for sale', madras-parkpl shipped 'ParkPL', prineville-pleasvh 'PleasVH', bend-aspenb 'Aspenb', sisters-clas 'Clas'. app/communities/[slug]/_v3/community-display-name.ts now resolves the name against four RECORDED sources and nothing else — publishPlatDisplayName (the one abbreviation test in the repo, shared with /subdivisions), its recorded expansions, the reviewed alias map data/subdivision-alias-plats.json, and an EXACT geo_slug hit in public.boundaries via lib/data/subdivisions/getRecordedPlatLabel.ts. Nothing resolves and the page renders _v3/CommunityUnavailable.tsx: a real body with a real h1, not a notFound(), because a throw under app/loading.tsx's Suspense boundary ships a hollow 200 with no h1 (the mechanism SubdivisionUnavailable exists for). The abbreviation test reads the MLS SPELLING from geo_snapshot_mv.geo_label, because slugToTitle flattens the interior capital that is the evidence. Robots is untouched — a refusing slug keeps the 'noindex, follow' every compound non-community slug has carried since 95672822. 32 of 1,014 Central Oregon SubdivisionNames are withheld; every one is an MLS token, and a geometry majority vote over them was measured and refused (aspenb falls in 3 plats, clab in 28)."
   },
   "requiredComponents": [
     {
       "name": "MetadataBlock",
-      "section": "BreadcrumbList + Place + Dataset + FAQPage JSON-LD. All four are emitted here. FAQPage moved into this array because its old emitter left: the KB page emitted it from inside FAQBlock's includeJsonLd, and the v3 Quiet block that renders the questions carries no structured data of its own, so a swap that did not move the payload would have dropped the strongest AI-citation lever silently. 2026-09-08: the FAQPage items are now answersFaqItems(placeAnswers) \u2014 derived FROM the rendered rows, not built beside them.",
+      "section": "BreadcrumbList + Place + Dataset + FAQPage JSON-LD. All four are emitted here. FAQPage moved into this array because its old emitter left: the KB page emitted it from inside FAQBlock's includeJsonLd, and the v3 Quiet block that renders the questions carries no structured data of its own, so a swap that did not move the payload would have dropped the strongest AI-citation lever silently. 2026-09-08: the FAQPage items are now answersFaqItems(placeAnswers) — derived FROM the rendered rows, not built beside them.",
       "blocking": true
     },
     {
@@ -48,7 +48,7 @@
     },
     {
       "name": "publishPlaceFace",
-      "section": "Face publisher. Community grain withholds MOS. Call is publishPlaceFace({ grain: 'community', hud }) \u2014 leftover 16 for Tetherow, never alias Field length.",
+      "section": "Face publisher. Community grain withholds MOS. Call is publishPlaceFace({ grain: 'community', hud }) — leftover 16 for Tetherow, never alias Field length.",
       "blocking": true
     },
     {
@@ -78,7 +78,7 @@
     },
     {
       "name": "V3Answers",
-      "section": "Pattern 8, #faq (site queue SITE-08, 2026-09-08). Rows come from buildPlaceAnswers and EACH CARRIES ONE SOURCED DATED FIGURE: the value on the closed row (so a shut section already reads as an answer sheet), and inside the disclosure the figure DRAWN plus its own \u00a70 trace. Two drawings cover the class \u2014 a banded rule (months of supply lands inside seller's / balanced / buyer's, so the verdict is a position and not a word) and a tally of one mark per home, grouped in fives. The parent city sits on the same rule as a named context mark where one exists, never as a figure under this place's name. The SAME array feeds the FAQPage JSON-LD through answersFaqItems, which is the whole point of the node: a schema built beside the rows instead of from them can drift from the visible text. The questions with no figure (HOA, school district, which subdivisions a community holds) still come from buildMarketFaq and are merged in after the figured rows, deduped by question text. The last row is the closing ask and links to the address field. ON THIS GRAIN the verdict is WITHHELD and said so: publishMonthsOfSupply refuses a community's supply ratio (lib/market/geo-grain-trust.ts), so the question is answered with the closed count and the same sentence SITE-01 put on the address answer. The inventory row carries listedVsDetachedNote, one wording shared with reconcileListedVsDetachedFaq, so the every-property-type Field count and the single-family figure are reconciled rather than left to be spotted. Its closing action is #value \u2014 CommunityPlaceValue, the SITE-01 address ask at the top of this page.",
+      "section": "Pattern 8, #faq (site queue SITE-08, 2026-09-08). Rows come from buildPlaceAnswers and EACH CARRIES ONE SOURCED DATED FIGURE: the value on the closed row (so a shut section already reads as an answer sheet), and inside the disclosure the figure DRAWN plus its own §0 trace. Two drawings cover the class — a banded rule (months of supply lands inside seller's / balanced / buyer's, so the verdict is a position and not a word) and a tally of one mark per home, grouped in fives. The parent city sits on the same rule as a named context mark where one exists, never as a figure under this place's name. The SAME array feeds the FAQPage JSON-LD through answersFaqItems, which is the whole point of the node: a schema built beside the rows instead of from them can drift from the visible text. The questions with no figure (HOA, school district, which subdivisions a community holds) still come from buildMarketFaq and are merged in after the figured rows, deduped by question text. The last row is the closing ask and links to the address field. ON THIS GRAIN the verdict is WITHHELD and said so: publishMonthsOfSupply refuses a community's supply ratio (lib/market/geo-grain-trust.ts), so the question is answered with the closed count and the same sentence SITE-01 put on the address answer. The inventory row carries listedVsDetachedNote, one wording shared with reconcileListedVsDetachedFaq, so the every-property-type Field count and the single-family figure are reconciled rather than left to be spotted. Its closing action is #value — CommunityPlaceValue, the SITE-01 address ask at the top of this page.",
       "blocking": true
     },
     {
@@ -98,7 +98,7 @@
     },
     {
       "name": "V3CourseMap",
-      "section": "#course -- the community's own golf course, drawn from its geometry: OSM greens, bunkers, tees and hole routings clipped to the course's named boundary, fairway turf traced out of Oregon's 2018 aerial, and a card per hole measured off the same shapes the map draws. ONE course per page even where the resort owns three (Sunriver, Eagle Crest): a map runs the height of the property, and the other courses are already exits in the closing Quiet block. Renders only for a community whose registry row names a course with a committed map file -- Tetherow, Crosswater, Sunriver, Eagle Crest today; Woodlands, Widgi Creek and Glaze Meadow map 17 of 18 holes in OSM and are refused at build. Per-hole par and yardage print only when they reconcile with the club's published card (CLAUDE.md \u00a70).",
+      "section": "#course -- the community's own golf course, drawn from its geometry: OSM greens, bunkers, tees and hole routings clipped to the course's named boundary, fairway turf traced out of Oregon's 2018 aerial, and a card per hole measured off the same shapes the map draws. ONE course per page even where the resort owns three (Sunriver, Eagle Crest): a map runs the height of the property, and the other courses are already exits in the closing Quiet block. Renders only for a community whose registry row names a course with a committed map file -- Tetherow, Crosswater, Sunriver, Eagle Crest today; Woodlands, Widgi Creek and Glaze Meadow map 17 of 18 holes in OSM and are refused at build. Per-hole par and yardage print only when they reconcile with the club's published card (CLAUDE.md §0).",
       "blocking": false
     },
     {
@@ -108,12 +108,12 @@
     },
     {
       "name": "V3PlaceIndex",
-      "section": "Pattern 9, #plats, between #atlas and the type slider (site queue SITE-30, 2026-09-09). The Atlas's own child plat cells, rendered as real anchors in the served HTML: before this section /communities/tetherow held 47 occurrences of \"/subdivisions/\" of which 46 were escaped JSON in the RSC payload and exactly ONE was a real anchor, and /communities/broken-top held none at all. Built from the SAME platRegions array the Atlas regions are built from, one expression above it, so an outline on the map always has its anchor below and the two cannot be two reads that merely agree today. The figure is each plat's own active count out of listing_boundary_xref_mv, which the community_subdivisions RPC already returned for the map \u2014 one number from one read. Ten rows, then a native <details> for the tail. A COMMUNITY WITH NO RECORDED PLATS RENDERS NOTHING HERE, and that is a fact about the county rather than a failure: `boundaries` holds Deschutes County's plat set, Brasada Ranch is in CROOK county, and the absence was confirmed four ways on 2026-09-09 (\u00a70 \u2014 the containment RPC returns 0, boundaries by label returns only the community's own polygon, the city-level RPC for powell-butte returns 0, and every MLS SubdivisionName ever carried by a Powell Butte listing names \"Brasada Ranch\" and no phase of it). Nothing is invented to fill the section. This is NOT the #subdivisions Ledger: that one names the registry's own child subdivisions with photographs and prices, this one names the county's recorded plats.",
+      "section": "Pattern 9, #plats, between #atlas and the type slider (site queue SITE-30, 2026-09-09). The Atlas's own child plat cells, rendered as real anchors in the served HTML: before this section /communities/tetherow held 47 occurrences of \"/subdivisions/\" of which 46 were escaped JSON in the RSC payload and exactly ONE was a real anchor, and /communities/broken-top held none at all. Built from the SAME platRegions array the Atlas regions are built from, one expression above it, so an outline on the map always has its anchor below and the two cannot be two reads that merely agree today. The figure is each plat's own active count out of listing_boundary_xref_mv, which the community_subdivisions RPC already returned for the map — one number from one read. Ten rows, then a native <details> for the tail. A COMMUNITY WITH NO RECORDED PLATS RENDERS NOTHING HERE, and that is a fact about the county rather than a failure: `boundaries` holds Deschutes County's plat set, Brasada Ranch is in CROOK county, and the absence was confirmed four ways on 2026-09-09 (§0 — the containment RPC returns 0, boundaries by label returns only the community's own polygon, the city-level RPC for powell-butte returns 0, and every MLS SubdivisionName ever carried by a Powell Butte listing names \"Brasada Ranch\" and no phase of it). Nothing is invented to fill the section. This is NOT the #subdivisions Ledger: that one names the registry's own child subdivisions with photographs and prices, this one names the county's recorded plats.",
       "blocking": true
     },
     {
       "name": "communityGuides",
-      "section": "Pattern 3, #reading \u2014 the guides this community is the subject of (site queue SITE-30, 2026-09-09). THE SECTION ID IS #reading AND NOT #guides: #guides on this template is already the area-guide VIDEO ledger further down (live on broken-top and brasada-ranch), and two sections cannot share an id. The blog has linked INTO /communities/<slug> since 2026-07-28 through lib/blog-geo-links.ts; nothing linked back, verified live on sunriver, broken-top, brasada-ranch, northwest-crossing, tetherow and caldera-springs, all six carrying zero <a href=\"/blog/\u2026\"> while eleven community guides published the day before sat with no inbound link from the page each one is about. communityGuides (app/communities/[slug]/_v3/place-knowledge.ts) is that same matcher read BACKWARDS \u2014 a post belongs to a community exactly when matchGeoLinksForPost would have linked the post to it \u2014 so one rule decides both directions and they cannot drift. It reads getAllPublishedBlogRefs (every published post), never getRecentBlogPosts, whose 24-post recency window cannot answer \"which post is about THIS place\" once a community's guide falls out of it. Newest first, capped at four, rendered through the shared articleRows into V3Ledger layout=\"magazine\" \u2014 the same form the city page gives its guides. A community the matcher does not name renders NO section rather than the newest post about somewhere else; eight of the registry's communities matched at least one published post on 2026-09-09.",
+      "section": "Pattern 3, #reading — the guides this community is the subject of (site queue SITE-30, 2026-09-09). THE SECTION ID IS #reading AND NOT #guides: #guides on this template is already the area-guide VIDEO ledger further down (live on broken-top and brasada-ranch), and two sections cannot share an id. The blog has linked INTO /communities/<slug> since 2026-07-28 through lib/blog-geo-links.ts; nothing linked back, verified live on sunriver, broken-top, brasada-ranch, northwest-crossing, tetherow and caldera-springs, all six carrying zero <a href=\"/blog/…\"> while eleven community guides published the day before sat with no inbound link from the page each one is about. communityGuides (app/communities/[slug]/_v3/place-knowledge.ts) is that same matcher read BACKWARDS — a post belongs to a community exactly when matchGeoLinksForPost would have linked the post to it — so one rule decides both directions and they cannot drift. It reads getAllPublishedBlogRefs (every published post), never getRecentBlogPosts, whose 24-post recency window cannot answer \"which post is about THIS place\" once a community's guide falls out of it. Newest first, capped at four, rendered through the shared articleRows into V3Ledger layout=\"magazine\" — the same form the city page gives its guides. A community the matcher does not name renders NO section rather than the newest post about somewhere else; eight of the registry's communities matched at least one published post on 2026-09-09.",
       "blocking": true
     }
   ],
@@ -131,29 +131,29 @@
     }
   ],
   "removedComponents": [
-    "V3Stage + CommunityStage + V3Field + PlaceFieldMap + V3PlacePropertyTypes \u2014 first screen is PlaceSplitView + leftover PlaceFaceStrip (count + median list). Type strips, not property-type H2s. MOS stays off the face.",
-    "KbHero \u2014 the community hero photo and its stat row. Places open on Instrument (PUBLIC_UI.md section 3); the photo survives as the OG image.",
-    "KbResortOverview + KbAbout \u2014 the authored depth, rebuilt as the first V3Quiet block through _v3/place-knowledge.ts. Every fact it rendered is still rendered.",
-    "KbFeatured + KbTicker \u2014 the poster rail and the price tape. The Field's rows are the same listings, each a door, with the price beside the address.",
-    "PlaceInventoryMap (and through it PlaceMapListSplit + KbListingMap) \u2014 replaced by V3Field with PlaceFieldMap in its slot, which is the same map-plus-list job with the binding the Field pattern requires.",
-    "KbMarketHud + MarketCoreCharts + KbMarketChart \u2014 the market HUD and both chart modules. The barrel has no chart primitive and the pattern set is closed, so the charts are DELETED here rather than reproduced. For most communities the trend series was the parent CITY's anyway (the community's own close history is too thin for a multi-year line), and the city market report that owns those charts is a door from every closed-sale figure and from the closing block. The gap is reported to the P9 orchestrator: a chart primitive is the barrel's largest missing piece.",
-    "KbCommunities \u2014 the other-resorts rail. A door to /communities carries it.",
-    "KbOpenHouses \u2014 the open-house list. City-scoped; a door to /open-houses/<city> carries it.",
-    "KbActivity \u2014 the live activity feed. City-scoped and previously mislabelled with the community's name; a door to /housing-market carries it.",
-    "KbArticles \u2014 the blog rail. Amenity posts the config points at are doors in the knowledge block; the rest are reachable from /blog through the footer.",
-    "KbExploreTowns \u2014 the other-cities ledger. The footer's sitemap projection and the city doors carry it.",
-    "KbSchools \u2014 the district block, rebuilt as a knowledge row plus a door to the district page.",
-    "CommunityGolfLinks \u2014 the reverse golf edge, rebuilt as doors in the closing block, read from the same data/golf/courses registry.",
-    "KbTestimonials + KbTeam \u2014 brokerage proof. It belongs to the About cluster, and the footer carries the doors.",
-    "KbBuyCta + KbSell \u2014 two more asks on a page that now makes one ask per viewport: the opening Instrument's search button, then the alert sheet's submit four sections down (PUBLIC_UI.md section 1). The sell door is an edge in the closing block, and it goes through lib/site/valuation-href so the lead it produces still names this page.",
-    "KbAreaGuideVideo \u2014 the per-location guide video. It needs Stage, which is the deferred fifth pattern.",
-    "KbCommunityAlerts \u2014 replaced by CommunityAlertSheet. The action, the filters, the field name, the 'company' honeypot, the frequency and unsubscribe disclosure, and both post-success effects are all carried across. NOTHING OF THE CAPTURE CONTRACT IS DELETED HERE any more: the first cut of the migration dropped the honeypot and the standing disclosure, declared only the honeypot, and left an email-capture form on a licensed broker's site collecting an address with no frequency statement, no unsubscribe statement, and no route to manage the subscription. The 2026-08-12 repair restored all three (see the CommunityAlertSheet entry above). The one thing that did NOT come back as-is is the shape of the manage link: it was an <a> inside the block, and it is a door in the closing Quiet block now, because V3Sheet renders prose rather than nodes. That is the section's one remaining barrel gap.",
-    "FAQBlock \u2014 the questions moved into the closing V3Quiet and its FAQPage JSON-LD moved into the MetadataBlock array.",
-    "MarketSources \u2014 the Oregon Data Share citation now rides in the source lines under the figures and in the closing block's note.",
-    "SmoothScrollProvider \u2014 the Lenis wrapper. The v3 register does not depend on it, and PUBLIC_UI.md section 5 allows a scroll-bound sequence on exactly two moments, neither of which is on this page.",
-    "The freestanding phone line and the second-home note \u2014 the phone is in the footer and the chrome; the second-home paragraph is a knowledge row with its own contact door.",
+    "V3Stage + CommunityStage + V3Field + PlaceFieldMap + V3PlacePropertyTypes — first screen is PlaceSplitView + leftover PlaceFaceStrip (count + median list). Type strips, not property-type H2s. MOS stays off the face.",
+    "KbHero — the community hero photo and its stat row. Places open on Instrument (PUBLIC_UI.md section 3); the photo survives as the OG image.",
+    "KbResortOverview + KbAbout — the authored depth, rebuilt as the first V3Quiet block through _v3/place-knowledge.ts. Every fact it rendered is still rendered.",
+    "KbFeatured + KbTicker — the poster rail and the price tape. The Field's rows are the same listings, each a door, with the price beside the address.",
+    "PlaceInventoryMap (and through it PlaceMapListSplit + KbListingMap) — replaced by V3Field with PlaceFieldMap in its slot, which is the same map-plus-list job with the binding the Field pattern requires.",
+    "KbMarketHud + MarketCoreCharts + KbMarketChart — the market HUD and both chart modules. The barrel has no chart primitive and the pattern set is closed, so the charts are DELETED here rather than reproduced. For most communities the trend series was the parent CITY's anyway (the community's own close history is too thin for a multi-year line), and the city market report that owns those charts is a door from every closed-sale figure and from the closing block. The gap is reported to the P9 orchestrator: a chart primitive is the barrel's largest missing piece.",
+    "KbCommunities — the other-resorts rail. A door to /communities carries it.",
+    "KbOpenHouses — the open-house list. City-scoped; a door to /open-houses/<city> carries it.",
+    "KbActivity — the live activity feed. City-scoped and previously mislabelled with the community's name; a door to /housing-market carries it.",
+    "KbArticles — the blog rail. Amenity posts the config points at are doors in the knowledge block; the rest are reachable from /blog through the footer.",
+    "KbExploreTowns — the other-cities ledger. The footer's sitemap projection and the city doors carry it.",
+    "KbSchools — the district block, rebuilt as a knowledge row plus a door to the district page.",
+    "CommunityGolfLinks — the reverse golf edge, rebuilt as doors in the closing block, read from the same data/golf/courses registry.",
+    "KbTestimonials + KbTeam — brokerage proof. It belongs to the About cluster, and the footer carries the doors.",
+    "KbBuyCta + KbSell — two more asks on a page that now makes one ask per viewport: the opening Instrument's search button, then the alert sheet's submit four sections down (PUBLIC_UI.md section 1). The sell door is an edge in the closing block, and it goes through lib/site/valuation-href so the lead it produces still names this page.",
+    "KbAreaGuideVideo — the per-location guide video. It needs Stage, which is the deferred fifth pattern.",
+    "KbCommunityAlerts — replaced by CommunityAlertSheet. The action, the filters, the field name, the 'company' honeypot, the frequency and unsubscribe disclosure, and both post-success effects are all carried across. NOTHING OF THE CAPTURE CONTRACT IS DELETED HERE any more: the first cut of the migration dropped the honeypot and the standing disclosure, declared only the honeypot, and left an email-capture form on a licensed broker's site collecting an address with no frequency statement, no unsubscribe statement, and no route to manage the subscription. The 2026-08-12 repair restored all three (see the CommunityAlertSheet entry above). The one thing that did NOT come back as-is is the shape of the manage link: it was an <a> inside the block, and it is a door in the closing Quiet block now, because V3Sheet renders prose rather than nodes. That is the section's one remaining barrel gap.",
+    "FAQBlock — the questions moved into the closing V3Quiet and its FAQPage JSON-LD moved into the MetadataBlock array.",
+    "MarketSources — the Oregon Data Share citation now rides in the source lines under the figures and in the closing block's note.",
+    "SmoothScrollProvider — the Lenis wrapper. The v3 register does not depend on it, and PUBLIC_UI.md section 5 allows a scroll-bound sequence on exactly two moments, neither of which is on this page.",
+    "The freestanding phone line and the second-home note — the phone is in the footer and the chrome; the second-home paragraph is a knowledge row with its own contact door.",
     "NOT removed, and it was undeclared while it was: the freestanding freshness signal (<p class=\"community-freshness-signal\">Market data updated {asOfLabel}</p>, old page.tsx:794). It is a sentence in the closing Quiet block's note now, off the same clock the Dataset's dateModified publishes.",
-    "boundary-derived hero facts strip \u2014 folded into the Instrument's figures.",
+    "boundary-derived hero facts strip — folded into the Instrument's figures.",
     "KbMarketHud + PublicProductTypes + PublicPaceStats + PublicMixStats + MarketCoreCharts - re-expressed, not dropped: the KPI row, pace items, and mix figures are the market Instrument's figures off the same leftoverHudKpis pile; the property-type panel is the V3PlacePropertyTypes enumeration; the core trend tabs are one V3ChartCard switcher (coreChartsCard through toPublicCoreChartSeries, city-relabeled on the sparse fallback). One market section per page (Matt 2026-07-29) holds because every chart rides inside the Instrument.",
     "V3PlaceDocuments (the Ledger form) - re-expressed as Quiet legal doors (communityDocumentItems): Ledger would be this route's sixth pattern, which stays a lock break even under the 2026-08-26 exception. Every document keeps its recording reference and county in the label and the R7 amendment caveat closes the list.",
     "KbResortOverview - the same config renders through buildPlaceKnowledge into the belonging Quiet (D100 on the barrel). The component and its publishFactValue helper left with their last mount; the surviving surface takes typed config values, so the em-dash-string class the helper guarded cannot reach it.",
@@ -164,15 +164,15 @@
     "KbFeatured, KbListingMap, KbTicker, KbExploreTowns, KbCommunities, KbArticles, KbTestimonials, KbTeam, KbBuyCta, KbCommunityAlerts, FAQBlock, MarketSources, KbFooter, SmoothScrollProvider, CommunityGolfLinks, PlaceInventoryMap - the KB register on this route: inventory is the Field, capture is the Sheet, the FAQ and every edge (golf courses included) live in the closing Quiet, the ODS citation is the freshness sentence, and chrome is V3Chrome/V3Footer."
   ],
   "deletedDataReads": [
-    "getRegionPulse \u2014 fed KbSell's fallback figures and the HUD's county median. Both sections are gone.",
-    "getPriceHistory (community and city) + getCoreChartSeries (community and city) \u2014 fed the two chart modules. Gone with the charts.",
-    "getMarketStatsCacheRowForGeo \u2014 fed one figure, the sale-to-list ratio, in the HUD. Its period basis differs from the rolling_365d window the other closed-sale figures use, so it would have put two windows in one figure set.",
-    "getAllCitySnapshots \u2014 fed KbExploreTowns.",
-    "getCommunitiesForIndex + allCommunities \u2014 fed KbCommunities.",
-    "getRecentBlogPosts \u2014 fed KbArticles.",
-    "getOpenHousesWithListings \u2014 fed KbOpenHouses.",
-    "getActivityFeedWithFallbackMulti \u2014 fed KbActivity.",
-    "getAreaGuideVideo \u2014 fed KbAreaGuideVideo.",
+    "getRegionPulse — fed KbSell's fallback figures and the HUD's county median. Both sections are gone.",
+    "getPriceHistory (community and city) + getCoreChartSeries (community and city) — fed the two chart modules. Gone with the charts.",
+    "getMarketStatsCacheRowForGeo — fed one figure, the sale-to-list ratio, in the HUD. Its period basis differs from the rolling_365d window the other closed-sale figures use, so it would have put two windows in one figure set.",
+    "getAllCitySnapshots — fed KbExploreTowns.",
+    "getCommunitiesForIndex + allCommunities — fed KbCommunities.",
+    "getRecentBlogPosts — fed KbArticles.",
+    "getOpenHousesWithListings — fed KbOpenHouses.",
+    "getActivityFeedWithFallbackMulti — fed KbActivity.",
+    "getAreaGuideVideo — fed KbAreaGuideVideo.",
     "Every read the page still performs is rendered. Nothing is fetched into a positional hole in the Promise.all."
   ],
   "jsonLd": {
@@ -200,7 +200,7 @@
     "getCommunityBySlug": "app/actions/communities. Identity, city, subdivision, description. notFound() when absent, in both generateMetadata and the page.",
     "getGeoSnapshot": "geo_type='community', geoKey='<city>:<subdivision>' lowercase. The always-present fallback pair (count and median computed from one active set by the same view) and the JSON-LD's fallback stamp.",
     "getMarketPulse": "geo_type='neighborhood', geo_slug = the bare community slug. market_pulse_live carries no neighborhood rows today, so this is normally null and the page is built for that: it supplies months of supply and days to pending only when a row exists.",
-    "getMarketStats": "geo_type='neighborhood', periodType='rolling_365d'. market_stats_cache. Median sale price, sold count, and median days on market \u2014 the level-2 Instrument's whole figure set and the DOM and sold-count FAQ answers.",
+    "getMarketStats": "geo_type='neighborhood', periodType='rolling_365d'. market_stats_cache. Median sale price, sold count, and median days on market — the level-2 Instrument's whole figure set and the DOM and sold-count FAQ answers.",
     "getGeoBoundaryMapData": "listings_in_boundary + boundary_geojson. Supplies the in-boundary listing keys and the stored polygon. The keys are re-fetched as tiles with propertyType 'A' so the published count matches the label.",
     "getResortBoundaryGeoJSON": "the county plat union. ALWAYS draws when present, even for a slug in the oversized-hull baseline, because the baseline gates only the STORED hull.",
     "getListingTiles": "listing_tile_mv. Three shapes: by in-boundary listing keys, by city (then narrowed by MLS subdivision name), or replaced entirely by the alias-matched resort set. status 'active', propertyType 'A' in every shape.",
@@ -238,40 +238,38 @@
   ],
   "superseded": [],
   "openDefects": {
-    "_": "Reopened 2026-09-08 by the SITE-28 evaluator rounds. These are measured, not suspected, and none is caused by SITE-28 \u2014 they are what the widened three-route instrument could see that the single-route one could not.",
+    "_": "Reopened 2026-09-08 by the SITE-28 evaluator rounds. These are measured, not suspected, and none is caused by SITE-28 — they are what the widened three-route instrument could see that the single-route one could not.",
     "items": [
       {
         "route": "/communities/tetherow",
         "section": "#atlas vs #faq",
         "severity": "honesty",
-        "finding": "Three different for-sale counts on one page, measured live 2026-09-08 at 1440: #atlas says \"26 for sale\", #faq says \"25 homes listed across its named subdivisions when every property type is counted\", and the #faq inventory row says 16 homes for sale. The 16 vs 25 IS reconciled on the page (listedVsDetachedNote: detached single-family vs every property type). The 26 vs 25 is NOT: the Atlas counts inside the recorded polygon and the answer counts the alias-name set, and neither says so. Not fixed here on purpose \u2014 deciding which population a community page publishes is a product decision with a documented history of being got wrong in both directions (neighborhood sold attribution), and guessing it would be the defect one field over. It belongs to the unit that owns the Atlas caption."
+        "finding": "Three different for-sale counts on one page, measured live 2026-09-08 at 1440: #atlas says \"26 for sale\", #faq says \"25 homes listed across its named subdivisions when every property type is counted\", and the #faq inventory row says 16 homes for sale. The 16 vs 25 IS reconciled on the page (listedVsDetachedNote: detached single-family vs every property type). The 26 vs 25 is NOT: the Atlas counts inside the recorded polygon and the answer counts the alias-name set, and neither says so. Not fixed here on purpose — deciding which population a community page publishes is a product decision with a documented history of being got wrong in both directions (neighborhood sold attribution), and guessing it would be the defect one field over. It belongs to the unit that owns the Atlas caption."
       },
       {
         "route": "/communities/tetherow",
         "section": "#belonging",
         "severity": "honesty",
-        "finding": "The authored facts (Founded, Acres, Course architect, Ranked) now carry a \u00a70 trace, but it is ONE block-level disclosure naming the ten publishers the community config records, not a source per fact. A per-fact trace is not derivable from what is recorded: data/resort-community-tetherow.json holds sources[] as {url, publisher, supports}, and no supports string maps onto \"Founded\" or \"Course architect\" for Tetherow specifically. Assigning one would be inventing provenance. Closing it properly means recording per-fact sources in the config, which is authoring work, not rendering work."
+        "finding": "The authored facts (Founded, Acres, Course architect, Ranked) now carry a §0 trace, but it is ONE block-level disclosure naming the ten publishers the community config records, not a source per fact. A per-fact trace is not derivable from what is recorded: data/resort-community-tetherow.json holds sources[] as {url, publisher, supports}, and no supports string maps onto \"Founded\" or \"Course architect\" for Tetherow specifically. Assigning one would be inventing provenance. Closing it properly means recording per-fact sources in the config, which is authoring work, not rendering work."
       },
       {
         "route": "/communities/<city>-<plat>",
         "section": "opening",
         "severity": "craft",
-        "finding": "A compound plat page has no hero photograph and no authored knowledge, so its first screen is now a two-column pairing of the H1 and the address ask rather than a column and a 350px hole \u2014 but the left column still ends well above the right one. The class has no counterweight element for a place with no owned photograph (a plat outline, one sourced fact, a map thumbnail). Named by two evaluator rounds; a real design decision for the place-hero owner."
+        "finding": "A compound plat page has no hero photograph and no authored knowledge, so its first screen is now a two-column pairing of the H1 and the address ask rather than a column and a 350px hole — but the left column still ends well above the right one. The class has no counterweight element for a place with no owned photograph (a plat outline, one sourced fact, a map thumbnail). Named by two evaluator rounds; a real design decision for the place-hero owner."
       }
     ]
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
+    "evaluatedAt": "2026-09-10",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-59. The class was re-scored after #homes stopped holding the dead Google canvas's fixed height (see the subdivision receipt for the same change). The evaluator rendered /communities/tetherow, /communities/eagle-crest and /communities/prineville-oll at 1440x2600 and 375 wide and scored three times: 69, 70, 70. It could not reach a low-inventory community \u2014 the host disk filled mid-run \u2014 and said so rather than reporting a result it had not seen; the builder rendered that case afterwards and the frames in this receipt are it: /communities/vandevert-ranch, zero actives, a 368px section that ends on its stated no-matches panel where the old fixed frame would have held about 300px of empty cream open under it.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluator": "separate grok-4.5 evaluator, SITE-43, three scorings of first-viewport plus alerts/MOS-hover captures. Did not read page code.",
+    "evaluatorModel": "grok-4.5",
+    "builderModel": "grok-4.6",
+    "comparedToPrior": "rebaselined",
     "shotSpec": {
       "routes": [
-        "/communities/tetherow",
-        "/communities/redmond-odin-crest-estate",
-        "/communities/prineville-oll",
-        "/communities/vandevert-ranch"
+        "/communities/tetherow"
       ],
       "viewports": [
         1440,
@@ -279,77 +277,45 @@
       ],
       "states": [
         "default",
-        "platsindex",
-        "reading",
-        "answers-first-row-open",
-        "doors-fold-open",
-        "belonging-source-open",
-        "homes"
+        "alerts",
+        "value"
       ]
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/community/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/community/shots/mobile375.png",
-      "platsIndexDesktop": "design_system/ryan-realty/ui_kits/community/shots/platsindex-desktop.png",
-      "platsIndexMobile375": "design_system/ryan-realty/ui_kits/community/shots/platsindex-mobile375.png",
-      "readingDesktop": "design_system/ryan-realty/ui_kits/community/shots/reading-desktop.png",
-      "readingMobile375": "design_system/ryan-realty/ui_kits/community/shots/reading-mobile375.png",
-      "answersDesktop": "design_system/ryan-realty/ui_kits/community/shots/answers-desktop.png",
-      "answersMobile375": "design_system/ryan-realty/ui_kits/community/shots/answers-mobile375.png",
-      "doorsDesktop": "design_system/ryan-realty/ui_kits/community/shots/doors-desktop.png",
-      "doorsMobile375": "design_system/ryan-realty/ui_kits/community/shots/doors-mobile375.png",
-      "belongingDesktop": "design_system/ryan-realty/ui_kits/community/shots/belonging-desktop.png",
-      "belongingMobile375": "design_system/ryan-realty/ui_kits/community/shots/belonging-mobile375.png",
-      "platDesktop": "design_system/ryan-realty/ui_kits/community/shots/plat-desktop.png",
-      "platMobile375": "design_system/ryan-realty/ui_kits/community/shots/plat-mobile375.png",
-      "refusalDesktop": "design_system/ryan-realty/ui_kits/community/shots/refusal-desktop.png",
-      "refusalMobile375": "design_system/ryan-realty/ui_kits/community/shots/refusal-mobile375.png",
-      "homesDesktop": "design_system/ryan-realty/ui_kits/community/shots/homes-desktop.png",
-      "homesMobile375": "design_system/ryan-realty/ui_kits/community/shots/homes-mobile375.png"
+      "alertsDesktop": "design_system/ryan-realty/ui_kits/community/shots/alerts-desktop.png",
+      "alertsMobile375": "design_system/ryan-realty/ui_kits/community/shots/alerts-mobile375.png",
+      "valueDesktop": "design_system/ryan-realty/ui_kits/community/shots/value-desktop.png",
+      "valueMobile375": "design_system/ryan-realty/ui_kits/community/shots/value-mobile375.png"
     },
-    "shotsHash": "sha256:a7643c9f997e3a6a67fd601f92691ca43f214a6324c9a1ac2c7f8c29118c9d0a",
     "scores": [
-      69,
-      70,
-      70
+      74,
+      73,
+      75
     ],
-    "score": 70,
+    "score": 74,
     "breakdown": {
-      "design": 22,
-      "originality": 20,
+      "design": 23,
+      "originality": 18,
       "interaction": 11,
-      "craft": 10,
-      "honesty": 7
+      "craft": 13,
+      "honesty": 9
     },
-    "beats": "Beats tetherow.com's own community page on depth and honesty: they publish a lifestyle narrative and a membership tier list, this page publishes all 22 recorded plats with per-plat active-listing counts, a counted zero visibly marked as measured rather than absent, and the county recording instrument for the CC&Rs.",
+    "beats": "Tetherow.com marketing home — wins on live MLS alerts with a type toggle and a sourced refresh line, versus brochure-only resort pages",
     "defects": [
       {
-        "section": "#atlas vs #faq (tetherow)",
-        "severity": "honesty",
-        "finding": "Carried, unchanged by this node: three different for-sale counts on one page (Atlas 26, FAQ inventory row 16, FAQ alias-name text 25) remain unreconciled."
-      },
-      {
-        "section": "#belonging (tetherow)",
-        "severity": "honesty",
-        "finding": "Carried: the authored facts (Founded, Course architect, and the rest) carry one block-level source disclosure rather than a trace per fact."
-      },
-      {
-        "section": "#subdivisions vs #plats (tetherow)",
+        "section": "hero opening",
         "severity": "taste",
-        "finding": "Carried: 2 rows against 22 rows on the same page reads as a broken index rather than two deliberately different questions."
+        "finding": "MOS is omitted because leftover HUD cannot publish it (sample_n below the floor). Honest, but the first viewport is still the address-in estimate-out card the node named as the Zillow template."
       },
       {
-        "section": "opening (compound plat page)",
-        "severity": "craft",
-        "finding": "Carried: no hero photo and no data section, so the thinnest member of the class has nothing to look at."
-      },
-      {
-        "section": "#missing (prineville-oll)",
-        "severity": "craft",
-        "finding": "Reconfirmed this pass: \"Homes for sale in Prineville\" and \"Homes for sale\" render as two near-identical rows in the six-item refusal grid."
+        "section": "#value spark",
+        "severity": "taste",
+        "finding": "The 24-sales spark behind the valuation eyebrow is a thin inline count, not a drawing a visitor can interrogate."
       }
     ],
-    "comparedToPrior": "rebaselined",
+    "rebaselineReason": "evaluatorModel changed from claude-opus-5 to grok-4.5 and shotsHash changed because the opening, alerts strip, and valuation spark were recaptured.",
     "priorMark": {
       "evaluatedAt": "2026-09-09",
       "score": 70,
@@ -357,6 +323,6 @@
       "rubricVersion": "v1-2026-09-08",
       "shotsHash": "sha256:2c6222db2b1e5803b8384e18e42421084a8434641fefb2b72f9487ba6404505b"
     },
-    "rebaselineReason": "shotsHash differs, and so does evaluatorModel: the committed 70 was scored by claude-opus-5 and this mark by claude-sonnet-5 (the different-model rule, since this session's builder is claude-opus-5), and two frames of #homes on a zero-inventory community joined the shot set. The class HELD at 70 \u2014 no category rose and none fell. The busy lists this class is mostly made of fill the cap exactly as the old fixed frame did, so the change is invisible on them; it is visible only on the short-list case, which is what the new frames record."
+    "shotsHash": "sha256:b7a9527928a5379813f4d1c4928a32cc751ef8ad40ec361fc038c686bd8ecd41"
   }
 }

@@ -1,6 +1,6 @@
 ---
 name: site-queue
-description: Run the site queue from Cursor or a Grok agent. Same queue, same claim tool, same protocol as Claude Code; this file is the pointer plus the rules that differ when the builder is not Claude. Use when Matt says "run loop", "run the site queue", or "go" in Cursor or in a Grok session.
+description: Run the site queue from Cursor or a Grok agent. Same queue, same claim tool, same protocol as Claude Code; this file is the pointer plus the rules that differ when the builder is not Claude. Use when Matt says "run loop", "run the site queue", "go", or "continue as new nodes get entered" in Cursor or in a Grok session.
 ---
 
 # /site-queue for Cursor and Grok — the same loop, a different builder
@@ -26,19 +26,26 @@ routine reads. Nothing in the queue depends on which model builds.
   SEPARATE evaluator that is a DIFFERENT model from the builder, three scorings in one
   call, the receipt in the route's `parity.json` (`scripts/lib/taste-receipt.mjs`), and
   the score must rise. The finish line is 70 on the table instrument (Matt 2026-09-09).
+  **Before building:** `node scripts/lib/taste-catalog.mjs <class>` — fetch
+  modules from beautifului.dev, beui.dev, rareui.com, transitions.dev, and
+  ui.shadcn.com. Adapt into v3. If the job has no house primitive, ADD one to
+  `components/site/v3`. Do not invent a layout. Do not shrink the listing hero
+  off full-bleed. Navy/cream/Geist/Amboqia stay. The evaluator injects this
+  catalog so a stacked-section page that ignored it is a defect.
 
 ## What changes when the builder is Grok
 
 - **Owner name:** `grok-<model>-<YYYY-MM-DD>` (for example `grok-4.6-2026-09-09`) so `loop
   status` says who holds what and the cap counts you.
-- **The evaluator.** The receipt gate refuses `evaluatorModel == builderModel`. A Grok
-  builder is `grok-4.6`. Score with `npx tsx scripts/taste-evaluate.ts <route-key>` (shots
-  already in `ui_kits/<route>/shots/`, optional `--url` of the lane's own dev server). That
-  command is the evaluator: it sends the shots through `lib/grok` as `GROK_MODELS.taste`
-  (`grok-4.5`), three scorings in one call, TASTE.md rubric, JSON on stdout. Write
-  `evaluatorModel: "grok-4.5"` and `builderModel: "grok-4.6"`. A class whose prior mark is
-  Claude rebaselines on this instrument (`comparedToPrior: "rebaselined"`, the differing
-  key named); the next pass must rise above the new mark.
+- **The evaluator — one instrument, always (Matt 2026-09-09).** The judge is **grok-4.6**
+  through the `grok` CLI, which spends Matt's Grok subscription rather than API credit, and
+  it is the judge whatever built the page. Run `npx tsx scripts/taste-evaluate.ts <route-key>`
+  (shots already in `ui_kits/<route>/shots/`, optional `--url` of your dev server): three
+  scorings in one call, TASTE.md rubric, JSON on stdout. Write `evaluatorModel: "grok-4.6"`.
+  Because `ci:taste-canon` refuses evaluatorModel == builderModel, **build with grok-4.5**
+  and record `builderModel: "grok-4.5"`. Never point the evaluator at your own model to make
+  it convenient — one ruler is the whole point, and a class whose prior mark came from
+  claude-sonnet-5 rebaselines once on this instrument (`comparedToPrior: "rebaselined"`).
 - **The machine.** On Matt's Mac `.env.local` is present; run `npm ci` and
   `npm run setup:browsers` once; the git hooks are installed. The canonical skill's
   "If you are a cloud session" section (no browser pane, the sandbox, the
@@ -58,6 +65,7 @@ routine reads. Nothing in the queue depends on which model builds.
 > `--touch`, build per the canonical skill in a worktree, score with
 > `npx tsx scripts/taste-evaluate.ts <route-key>` (`grok-4.5`) before the push, get the
 > gates green, `npm run push` from the main checkout, verify the deploy and the live page,
-> write the evidence on the node, then take the next two until nothing is eligible. Never
-> wait on me: if a question would block you, take the safe path the skill allows and write
-> what you chose on the node.
+> write the evidence on the node, then take the next two until nothing is eligible.
+> Empty of eligible is not a stop: keep the scheduled wake so a newly entered node
+> is claimed (Matt 2026-09-10). Never wait on me: if a question would block you, take
+> the safe path the skill allows and write what you chose on the node.

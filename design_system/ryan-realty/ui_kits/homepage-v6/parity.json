@@ -50,7 +50,7 @@
     },
     {
       "name": "KbFooter",
-      "where": "V3Footer outside <main> — denser Markets / Company / Contact"
+      "where": "V3Footer outside <main> \u2014 denser Markets / Company / Contact"
     },
     {
       "name": "SmoothScrollProvider",
@@ -182,7 +182,7 @@
       "RESOLVED 2026-09-08 (SITE-12 round 2): the #right-now rules were scaled against the largest reading, so 'listings for sale' was full width by construction. Every rule is now that count over the whole read (3,281 + 912 + 465), so the three fills tile one track and none is pinned; the arithmetic is in the trace.",
       "RESOLVED 2026-09-08 (SITE-12 round 2): one house led two rails (3027 Polarstar Avenue on nearby and on price cuts). homeRailRows builds the narrow shelves first and the lead shelf from what is left, so a listing leads exactly one rail on the live 3,000-tile pool.",
       "RESOLVED 2026-09-08 (SITE-12 round 2): #doors 'Work with us' had no supporting line. It carries the live broker-roster count ('3 brokers who live and work here'), omitted rather than guessed when the roster read gives nothing.",
-      "RESOLVED 2026-09-08 (SITE-12 round 2): #places was twelve identical empty boxes with towns and resorts undifferentiated. Two labelled runs now — TOWNS - HOUSES FOR SALE with the live active_sfr_count per town (the same figure /cities publishes) and RESORTS AND COMMUNITIES with names only, because this page holds no per-resort read — each with its own index door.",
+      "RESOLVED 2026-09-08 (SITE-12 round 2): #places was twelve identical empty boxes with towns and resorts undifferentiated. Two labelled runs now \u2014 TOWNS - HOUSES FOR SALE with the live active_sfr_count per town (the same figure /cities publishes) and RESORTS AND COMMUNITIES with names only, because this page holds no per-resort read \u2014 each with its own index door.",
       "OPEN: #doors are line pictograms, not the illustrations the 2026-09-06 lock names.",
       "OPEN: V3Footer's skyline band (object-fit cover in a fixed 10rem band) over-scales at 1440, and the Markets column runs long beside empty width. Shared footer on 118 pages; not touched from a homepage lane.",
       "OPEN: #featured-community shows eleven unnamed dots as its pager.",
@@ -192,9 +192,9 @@
   "competitiveTarget": "Beat Zillow and Redfin on a clean local brokerage door: brand H1, working search, stacked photographed house carousels with real card face, illustrated Buy/Sell/Invest, brokers, place chips, proof.",
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
-    "V3Stage #hero -- full-bleed owned flyover, H1 Homes for sale in Central Oregon, HomeHeroSearch",
-    "V3Pulse #right-now -- Central Oregon right now: live counts, the listing constellation, the read stamp",
-    "HomeHomesRails -- stacked house carousels (local actives + honest price-cut / new rows when data exists)",
+    "V3Stage #hero -- inventory Stage: flyover, H1, V3Tabs Buy/Sell, V3MorphSearch, live count chip, inventory band",
+    "V3Pulse #right-now -- Central Oregon right now: live counts, constellation, read stamp",
+    "HomeHomesRails -- V3Carousel house rails (local actives + honest price-cut / new rows)",
     "HomeFeaturedCommunity #featured-community -- featured resort / community slides with live figures",
     "V3Doors #doors -- illustrated Buy / Sell / Work with us, Sell = Sell a home",
     "AboutFaces -- Talk to a broker (compact table on every width, one 390 screen)",
@@ -203,11 +203,11 @@
     "V3Footer -- Markets / Company / Contact"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-08",
+    "evaluatedAt": "2026-09-10",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "Separate evaluator agent spawned by the SITE-12 homepage lane on 2026-09-08 (Agent tool, model claude-sonnet-5, a different model from the builder), handed the 24 captured PNGs below plus the lane dev server at http://localhost:3199/, and asked to score the same shots three times in one call against the TASTE.md v1-2026-09-08 five-criterion rubric. The builder never graded this page.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluator": "Separate grok-4.6 evaluator via npx tsx scripts/taste-evaluate.ts homepage-v6 (CLI subscription path). Builder was grok-4.5 SITE-83 lane and did not assign the number.",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/"
@@ -218,19 +218,10 @@
       ],
       "states": [
         "default",
-        "right-now",
-        "sold",
-        "sell-tab",
-        "rails",
-        "featured",
-        "doors",
-        "brokers",
-        "places",
-        "proof",
-        "footer",
-        "brokers-390",
-        "brokers-390-before"
-      ]
+        "sell-tab"
+      ],
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized",
+      "baseUrl": "http://localhost:3183/"
     },
     "shots": {
       "brokers390Before": "design_system/ryan-realty/ui_kits/homepage-v6/shots/brokers-390-before.png",
@@ -258,57 +249,96 @@
       "soldDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-desktop.png",
       "soldMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-mobile375.png"
     },
-    "shotsHash": "sha256:3ee91b734665ccf0780c18e31dbb5779a2b48423bf1abc1cdd6c60120ffbb89b",
+    "shotsHash": "sha256:94dd08d0c75b849e66cfb1dd7ab063e2cd43991f876e4bd8075c5ba622dbc4b1",
     "scores": [
-      78,
-      82,
-      80
+      50,
+      59,
+      65
     ],
-    "score": 80,
+    "score": 59,
     "breakdown": {
-      "design": 24,
-      "originality": 23,
-      "interaction": 12,
-      "craft": 12,
-      "honesty": 9
+      "design": 18,
+      "originality": 15,
+      "interaction": 10,
+      "craft": 9,
+      "honesty": 7
     },
-    "beats": "Zillow's and Redfin's homepages show a flat, static inventory count with no interaction. This page's #right-now band lets a visitor flip between active/under-contract/sold populations with one tap and zero JavaScript (verified in raw server HTML: three real radio inputs, no client script required), sees each population's own listings replotted on a live constellation map, a read timestamp, and a per-population source trace that changes text with the toggle -- a live, interrogable regional pulse neither portal's homepage offers. The Sell tab is now a genuinely working alternate path (real <form method=get action=/sell#get-value> with a named address field, confirmed server-rendered), which portals also gate behind a separate page. We still lose on #doors: Redfin's Buy/Sell/Rent tiles carry real illustration and photography where ours are plain line icons, a locked-spec gap that has now stood two rounds.",
-    "defects": [
+    "beats": "Zillow's homepage puts photographed listings in the first scroll; this fold still loses that metric, with no house on screen. We win a source-traced 1-in-5 under-contract claim Zillow will not print, then hide it under a KPI band that repeats the same inventory count.",
+    "adaptedFrom": [
       {
-        "section": "#doors",
-        "severity": "taste",
-        "finding": "Still line pictograms (house/document/house outlines), not the illustrated Buy/Sell/Invest artwork the 2026-09-06 lock specifies. Unchanged from the prior pass -- this round's diff never touched V3Doors."
+        "id": "beui-morphing-search"
       },
       {
-        "section": "rails (Homes in Bend and nearby / Price cuts)",
-        "severity": "taste",
-        "finding": "Both rails render the identical form -- eyebrow-less heading, 4-card row, see-all button on the right -- so two (with a third sold/new rail, three) consecutive sections repeat one shape, the 'stacked-section' pattern the rubric names as a banned tell."
+        "id": "beui-tabs"
       },
       {
-        "section": "#featured-community",
-        "severity": "taste",
-        "finding": "Pager is still eleven unlabeled dots with no community names visible; a visitor cannot tell what community sits on slide 6 without clicking through blind."
+        "id": "beui:shared-layout-bg"
       },
       {
-        "section": "footer (Markets column)",
-        "severity": "taste",
-        "finding": "Markets remains one long flat link list running well past the shorter Buy/Sell/Join and Company columns, with dead unused width to the right at 1440px. Correctly out of scope for this lane (shared across 118 pages) but still costs the page's craft score as shipped."
+        "id": "shadcn-carousel"
+      },
+      {
+        "id": "rareui:animatedcounter"
+      },
+      {
+        "id": "beui:number"
+      },
+      {
+        "id": "house-home-rails"
       }
     ],
-    "openRaise": [
-      "#doors: replace the line icons with the illustrated Buy/Sell/Invest artwork the lock specifies -- would raise both originality and craft.",
-      "rails: vary the form of at least one carousel (e.g. a denser price-cut treatment or a map-anchored strip) so three consecutive sections don't repeat one shape.",
-      "#featured-community: label the pager with community names or a horizontal name strip instead of unlabeled dots.",
-      "footer: rebalance Markets into 2-3 sub-columns at 1200px+ so it doesn't run far longer than its neighbors beside empty width.",
-      "#right-now: the claim sentence stays the same buyer-framed inventory read regardless of hero Buy/Sell mode; consider whether it should echo the new Sell-mode framing for full consistency with the headline switch this round added."
+    "defects": [
+      {
+        "section": "#hero .home-hero-search__live",
+        "criterion": "craft",
+        "finding": "The homes-for-sale chip is ghosted on the river, fails contrast, repeats the band figure, and stays up in Sell mode under What is your home worth.",
+        "replaceWith": null
+      },
+      {
+        "section": "#hero .v3-stage-band",
+        "criterion": "taste",
+        "finding": "The live read is a three-cell KPI strip with all-caps labels and no claim sentence, then #right-now restates the for-sale count as a bar.",
+        "replaceWith": "V3Pulse"
+      },
+      {
+        "section": "#hero",
+        "criterion": "blocking",
+        "finding": "The first viewport is the Old Mill still plus counts; no live house photograph is visible, so inventory does not open the page as photographed cards.",
+        "replaceWith": "house-home-rails"
+      },
+      {
+        "section": "#hero.v3-stage--inventory",
+        "criterion": "taste",
+        "finding": "The flyover still spends the fold, so the pulse claim and constellation \u2014 the actual live read \u2014 are cropped to a headline and one bar.",
+        "replaceWith": "V3Pulse"
+      },
+      {
+        "section": "sell-tab #hero .v3-stage-band",
+        "criterion": "taste",
+        "finding": "Sell mode asks what the home is worth, then keeps the buyer strip (you can tour today / already spoken for / closed this month).",
+        "replaceWith": null
+      },
+      {
+        "section": "#hero .v3-morph-search",
+        "criterion": "taste",
+        "finding": "The judged frames show an ordinary cream field and navy Search button; the field never morphs into results on screen.",
+        "replaceWith": "beui-morphing-search"
+      },
+      {
+        "section": "#hero .v3-stage-strip__source",
+        "criterion": "craft",
+        "finding": "The how-we-calculate-this control is muted cream on navy and nearly drops out of the 1440 band.",
+        "replaceWith": null
+      }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-08",
-      "score": 77,
-      "evaluator": "separate Opus evaluator, SITE-M1 homepage pass, session 019RdEm6",
-      "note": "The SITE-M1 mark predates the instrument fields, so it carries no evaluatorModel, no rubricVersion and no shotsHash -- only what is recorded above exists. Its own priorMark was an 88 from \"Public Look\" against shots that no longer exist. Chain on the SITE-M1 evaluator scale: 60 -> 74 -> 77."
+      "score": 80,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:3ee91b734665ccf0780c18e31dbb5779a2b48423bf1abc1cdd6c60120ffbb89b"
     },
-    "rebaselineReason": "All three identity keys differ from the prior mark, because that mark predates them: evaluatorModel (the 77 came from an Opus evaluator in the SITE-M1 pass and recorded no model string; this mark is claude-sonnet-5), rubricVersion (the 77 recorded none; this mark is v1-2026-09-08), and shotsHash (the 77 recorded none, and it was given for a 4-file shot set -- desktop, mobile375, brokers-390, brokers-390-before -- where this mark is given for 24 files covering every section at both widths plus the sold and sell-tab states). The new 80 is numerically above the old 77, but a different evaluator on a different model against a six-times-larger shot set is a different instrument, so this is the first mark on the new instrument and the next pass must rise above 80."
+    "rebaselineReason": "evaluatorModel and shotsHash differ from the SITE-12 sonnet-5 / 24-file instrument (claude-sonnet-5 \u2192 grok-4.6; new first-viewport shot set after SITE-83 catalog adaptation). Numerically 59 is below the old 80 on a different instrument; the table instrument to beat was 56."
   }
 }

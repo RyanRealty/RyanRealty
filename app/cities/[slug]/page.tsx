@@ -47,6 +47,7 @@ import {
   getCommunitySubdivisions,
   getAllNeighborhoodsWithCity,
   getIndexableSubdivisions,
+  getPlaceOpeningListings,
 } from '@/lib/data'
 import { SUBDIVISION_INDEX_MIN_LIFETIME_SALES } from '@/lib/data/subdivisions/subdivision-index'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
@@ -62,6 +63,8 @@ import { DEFAULT_DISPLAY_RATE } from '@/lib/mortgage'
 import { publishPlaceAffordability } from '@/lib/place/publish-place-affordability'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { buildPlaceMosView } from '@/lib/site/place-mos'
+import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlaceDoor } from '@/lib/market/publish-place-door'
 import { CITY_TILE_FETCH_LIMIT } from '@/lib/market/publish-city-inventory'
@@ -256,6 +259,7 @@ export default async function CityDetailPage({ params }: Props) {
     neighborhoodDirectory,
     cityBoundary,
     cityBoundaryFallback,
+    openingListings,
   ] = await Promise.all([
     withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city:detached'),
     withTimeoutFallback(getCityDetachedInventory(slug), null, 3000, 'city:detachedInv'),
@@ -312,6 +316,7 @@ export default async function CityDetailPage({ params }: Props) {
     withTimeoutFallback(getNeighborhoodDirectory(), [], 3000, 'city:nbhDir'),
     withTimeoutFallback(getBoundaryGeoJSON({ geoType: 'city', geoSlug: slug }), null, 2000, 'city:boundary'),
     withTimeoutFallback(getCityBoundaryGeoJSON(cityName), null, 2000, 'city:boundaryFallback'),
+    withTimeoutFallback(getPlaceOpeningListings({ city: cityName }), [], 3000, 'city:openingListings'),
   ])
 
   const cityGeojson = asPlaceBoundary(cityBoundary) ?? asPlaceBoundary(cityBoundaryFallback)
@@ -483,6 +488,22 @@ export default async function CityDetailPage({ params }: Props) {
   // The as-of stamp is leftover membership's own computed_at, so it names the
   // population the figures came from (§0).
   const leftoverStamp = detached?.computedAt ?? detachedInv?.computedAt ?? null
+  const mosAsOf = leftoverStamp ? formatDate(leftoverStamp) : null
+  const placeMos = buildPlaceMosView({
+    active: hud.active,
+    monthsSupply: hud.monthsSupply,
+    grain: 'city',
+    geoSlug: slug,
+    asOf: mosAsOf,
+  })
+  const alertTypes = buildPlaceAlertTypes({
+    placeName: cityName,
+    scopeName: cityName,
+    geoType: 'city',
+    geoSlug: slug,
+    leftoverHouses30d: publicPace.newCount30d,
+    buckets: openingListings,
+  })
 
   // buildMarketFaq - the single source for the visible FAQ, the FAQPage
   // JSON-LD, and the Dataset variableMeasured. Called unconditionally with an
@@ -778,7 +799,7 @@ export default async function CityDetailPage({ params }: Props) {
         <MetadataBlock schemas={citySchemas} />
 
         <div className={stagePosterSrc ? 'place-opening place-opening--media' : 'place-opening'}>
-          <PlaceAreaHero posterSrc={stagePosterSrc} />
+          <PlaceAreaHero posterSrc={stagePosterSrc} mos={placeMos} />
           {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
           <V3Breadcrumb trail={trail} tone={stagePosterSrc ? 'on-media' : 'surface'} />
           <div className="place-opening__copy">
@@ -795,7 +816,7 @@ export default async function CityDetailPage({ params }: Props) {
                 onMedia={Boolean(stagePosterSrc)}
               />
             ) : null}
-            {verdictCaption ? <p className="place-opening__caption">{verdictCaption}</p> : null}
+            {!placeMos && verdictCaption ? <p className="place-opening__caption">{verdictCaption}</p> : null}
           </div>
         </div>
 
@@ -815,6 +836,7 @@ export default async function CityDetailPage({ params }: Props) {
           // rendered. A city whose Market Truth read published no active count
           // has no door, and then the strip's submit is the fold's primary.
           demote={placeDoor != null}
+          types={alertTypes}
         />
 
         {(

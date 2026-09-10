@@ -52,6 +52,15 @@ function tile(partial: Partial<ListingTile> & Pick<ListingTile, 'listingKey'>): 
 describe('city opening', () => {
   const page = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
 
+  it('draws leftover MOS in the city hero, not a listing_tile_mv count', () => {
+    expect(page).toMatch(/buildPlaceMosView\(\{/)
+    expect(page).toMatch(/grain: 'city'/)
+    expect(page).toMatch(/<PlaceAreaHero posterSrc=\{stagePosterSrc\} mos=\{placeMos\} \/>/)
+    expect(page).toMatch(/types=\{alertTypes\}/)
+    expect(page).toMatch(/getPlaceOpeningListings\(\{ city: cityName \}\)/)
+    expect(page).not.toMatch(/listing_tile_mv[\s\S]{0,80}monthsSupply/)
+  })
+
   it('opens on leftover city face + PlaceSplitView, not Stage or CityHomesField', () => {
     expect(page).toMatch(/place-opening--media/)
     expect(page).toMatch(/leftoverHudKpis\(\{/)
@@ -82,6 +91,18 @@ describe('city opening', () => {
     expect(page).toMatch(/foldAfter=\{0\}/)
     expect(page).toMatch(/cityVerdictCaption/)
     expect(page).not.toMatch(/in plain words/)
+  })
+})
+
+describe('neighborhood opening MOS', () => {
+  const page = readFileSync(resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'), 'utf8')
+
+  it('adds the MOS overlay from leftover HUD, not a second valuation card', () => {
+    expect(page).toMatch(/buildPlaceMosView\(\{/)
+    expect(page).toMatch(/grain: 'neighborhood'/)
+    expect(page).toMatch(/<PlaceAreaHero posterSrc=\{stagePosterSrc\} mos=\{placeMos\} \/>/)
+    expect(page).not.toMatch(/<V3PlaceValue/)
+    expect(page).not.toMatch(/<V3PlaceDoor/)
   })
 })
 
@@ -256,6 +277,15 @@ describe('master-plan opening', () => {
     expect(belongingCaption(belongingFigures(content))).toBe(
       '$2,400 master HOA a year. 2 membership tiers. 700 acres',
     )
+  })
+
+  it('wires MOS and the activity spark on the valuation card', () => {
+    const page = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
+    expect(page).toMatch(/buildPlaceMosView\(\{/)
+    expect(page).toMatch(/grain: 'community'/)
+    expect(page).toMatch(/mos=\{placeMos\}/)
+    expect(page).toMatch(/activity=\{placeActivitySpark\}/)
+    expect(page).toMatch(/buildSparkPlot/)
   })
 
   it('puts belonging on the still as a caption, then Atlas, then one sold chart', () => {

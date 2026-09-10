@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   anchorPassed,
   isPlausibleEmail,
+  selectAlertType,
   stickyAskClosed,
   stickyDismissKey,
   stickyEligible,
@@ -71,6 +72,22 @@ describe('stickyEligible', () => {
         if (stickyVisible(state, status)) expect(stickyEligible(state, status)).toBe(true)
       }
     }
+  })
+})
+
+describe('selectAlertType', () => {
+  const types = [
+    { key: 'houses', count: '148' },
+    { key: 'condo', count: '12' },
+    { key: 'land', count: '4' },
+  ]
+
+  it('returns the matching type and falls back to the first', () => {
+    expect(selectAlertType(types, 'condo')?.count).toBe('12')
+    expect(selectAlertType(types, 'nope')?.key).toBe('houses')
+    expect(selectAlertType(types, null)?.key).toBe('houses')
+    expect(selectAlertType([], 'houses')).toBeNull()
+    expect(selectAlertType(undefined, 'houses')).toBeNull()
   })
 })
 

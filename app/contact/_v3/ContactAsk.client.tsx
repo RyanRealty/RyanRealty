@@ -6,7 +6,11 @@
  * submitContactForm, then the Meta and GA lead events the sheet fired.
  */
 import { useCallback, useMemo, useState } from 'react'
-import { V3Ask, type V3AskField, type V3AskResult } from '@/components/site/v3'
+// Direct import — the v3 barrel also re-exports server-only place modules
+// (V3PlaceDocuments → lib/data → next/headers), which breaks this client module
+// under webpack. V3Ask is itself a client primitive.
+import { V3Ask, type V3AskField, type V3AskResult } from '@/components/site/v3/V3Ask.client'
+import { V3Input } from '@/components/site/v3/V3Input'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import './contact-ask.css'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
@@ -62,6 +66,7 @@ export function ContactAsk({
         required: true,
         options: inquiryOptions,
         defaultValue: defaultInquiryType ?? 'General Inquiry',
+        span: 'full',
       },
       ...(isTour
         ? [
@@ -70,13 +75,22 @@ export function ContactAsk({
               label: 'When works',
               kind: 'select' as const,
               required: true,
+              span: 'full' as const,
               options: TOUR_TIME_OPTIONS.map((t) => ({ value: t, label: t })),
             },
           ]
         : []),
       { id: CONTACT_FIELD_IDS.name, name: 'name', label: 'Name', required: true, autoComplete: 'name' },
       { id: CONTACT_FIELD_IDS.email, name: 'email', label: 'Email', kind: 'email', required: true, autoComplete: 'email' },
-      { id: CONTACT_FIELD_IDS.phone, name: 'phone', label: 'Phone', kind: 'tel', autoComplete: 'tel', hint: 'for a text back' },
+      {
+        id: CONTACT_FIELD_IDS.phone,
+        name: 'phone',
+        label: 'Phone',
+        kind: 'tel',
+        autoComplete: 'tel',
+        hint: 'for a text back',
+        span: 'full',
+      },
       {
         id: CONTACT_FIELD_IDS.message,
         name: 'message',
@@ -146,6 +160,7 @@ export function ContactAsk({
       headingLevel={2}
       lede={isTour && listingSummary ? listingSummary : undefined}
       fields={fields}
+      Field={V3Input}
       consent={<SmsConsentDisclosure checked={smsConsent} onCheckedChange={setSmsConsent} />}
       submitLabel={isTour ? 'Request a tour' : 'Send message'}
       onSubmit={send}

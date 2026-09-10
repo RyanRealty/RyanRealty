@@ -6,6 +6,7 @@
 import type { V3FieldItem } from '@/components/site/v3'
 import type { ListingTile } from '@/lib/data'
 import { formatPrice } from '@/lib/format/money'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
 
 export const LUX_MIN = 1_500_000
@@ -56,7 +57,7 @@ export function luxuryFieldItems(tiles: readonly ListingTile[]): V3FieldItem[] {
       }),
       priceLabel,
       title: street,
-      photoSrc: photo,
+      photoSrc: listingRowPhotoSrc(photo),
       ...(meta ? { meta } : {}),
       lat: tile.lat,
       lng: tile.lng,

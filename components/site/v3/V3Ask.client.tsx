@@ -14,9 +14,10 @@
  * Validation is the browser's (required, email, tel), which is also the
  * accessible one. A failed send keeps every answer on screen.
  */
-import { useCallback, useId, useState, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useId, useState, type ComponentType, type FormEvent, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading } from './atoms'
+import { V3Input, type V3InputProps } from './V3Input'
 import './tokens.css'
 import './V3Ask.css'
 
@@ -73,6 +74,12 @@ export type V3AskProps = {
   submitLabel: string
   onSubmit: (answers: Readonly<Record<string, string>>) => Promise<V3AskResult>
   className?: string
+  /**
+   * The labelled control for text / email / tel / textarea. Defaults to
+   * V3Input (beui-input shake + check, shadcn-input structure). Select stays
+   * the native control below — a dropdown is not that job.
+   */
+  Field?: ComponentType<V3InputProps>
 }
 
 type Status = 'asking' | 'sending' | 'sent' | 'failed'
@@ -88,6 +95,7 @@ export function V3Ask({
   submitLabel,
   onSubmit,
   className,
+  Field = V3Input,
 }: V3AskProps) {
   const uid = useId()
   const [status, setStatus] = useState<Status>('asking')
@@ -155,50 +163,50 @@ export function V3Ask({
               const span = f.span ?? (kind === 'textarea' ? 'full' : 'half')
               return (
                 <div key={f.name} className={cn('v3-ask__field', `v3-ask__field--${span}`)}>
-                  <label htmlFor={fid} className="v3-ask__label">
-                    {f.label}
-                    {f.required ? null : <span className="v3-ask__optional"> optional</span>}
-                  </label>
-                  {f.hint ? <span className="v3-ask__hint">{f.hint}</span> : null}
-                  {kind === 'textarea' ? (
-                    <textarea
-                      id={fid}
-                      name={f.name}
-                      className="v3-ask__control v3-ask__control--area"
-                      required={f.required}
-                      placeholder={f.placeholder}
-                      defaultValue={f.defaultValue}
-                      rows={f.rows ?? 5}
-                      maxLength={f.maxLength}
-                    />
-                  ) : kind === 'select' ? (
-                    <span className="v3-ask__select-wrap">
-                      <select
-                        id={fid}
-                        name={f.name}
-                        className="v3-ask__control v3-ask__control--select"
-                        required={f.required}
-                        defaultValue={f.defaultValue}
-                      >
-                        {(f.options ?? []).map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
-                    </span>
+                  {kind === 'select' ? (
+                    <>
+                      <label htmlFor={fid} className="v3-ask__label">
+                        {f.label}
+                        {f.required ? null : <span className="v3-ask__optional"> optional</span>}
+                      </label>
+                      {f.hint ? <span className="v3-ask__hint">{f.hint}</span> : null}
+                      <span className="v3-ask__select-wrap">
+                        <select
+                          id={fid}
+                          name={f.name}
+                          className="v3-ask__control v3-ask__control--select"
+                          required={f.required}
+                          defaultValue={f.defaultValue}
+                        >
+                          {(f.options ?? []).map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      </span>
+                    </>
                   ) : (
-                    <input
+                    <Field
                       id={fid}
                       name={f.name}
-                      type={kind}
-                      className="v3-ask__control"
+                      label={f.label}
+                      kind={
+                        kind === 'textarea'
+                          ? 'textarea'
+                          : kind === 'email'
+                            ? 'email'
+                            : kind === 'tel'
+                              ? 'tel'
+                              : 'text'
+                      }
                       required={f.required}
                       autoComplete={f.autoComplete}
                       placeholder={f.placeholder}
                       defaultValue={f.defaultValue}
                       maxLength={f.maxLength}
-                      inputMode={kind === 'tel' ? 'tel' : kind === 'email' ? 'email' : undefined}
+                      hint={f.hint}
+                      rows={f.rows}
                     />
                   )}
                 </div>

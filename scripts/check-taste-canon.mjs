@@ -21,14 +21,38 @@
  *    Contract + computations: scripts/lib/taste-receipt.mjs. Receipts already
  *    dated on/after the cutoff when the rule landed sit in
  *    taste-receipt-v2-baseline.json (shrink-only).
+ * 6. A catalog-class receipt names adaptedFrom and each defect names
+ *    replaceWith. Empty adaptedFrom is inventing a layout (SITE-45).
+ *    Receipts that predate this rule sit in
+ *    taste-receipt-catalog-baseline.json (shrink-only). Every public
+ *    taste-classes.json key must map to a catalog class with modules so a
+ *    newly seeded SITE node has a builder card. Layout locks fail immediately.
+ * 7. Product hold (Matt 2026-09-10): UI/UX may rise; honestyFunction cannot
+ *    fall or be omitted to skip the hold; requiredComponents cannot shrink
+ *    vs HEAD; a JSON-LD or conversion-ask role present at HEAD must remain.
+ *    Payload / tap targets / titles stay on their own gates.
  *
  * Seed unreviewed with `--write-baseline`, the v2 backlog with
- * `--write-v2-baseline`. Wired as ci:taste-canon.
+ * `--write-v2-baseline`, catalog receipts with `--write-catalog-baseline`.
+ * Wired as ci:taste-canon.
  */
 import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
-import { RECEIPT_V2_FROM, isV2Receipt, receiptV2Problems } from './lib/taste-receipt.mjs'
+import {
+  RECEIPT_V2_FROM,
+  isV2Receipt,
+  receiptV2Problems,
+  requiredComponentsHoldProblems,
+} from './lib/taste-receipt.mjs'
+import {
+  CATALOG_PATH,
+  catalogCoverageProblems,
+  catalogReceiptProblems,
+  classForRoute,
+  layoutLockProblems,
+  loadTasteCatalog,
+} from './lib/taste-catalog.mjs'
 
 const ROOT = process.cwd()
 const KITS = 'design_system/ryan-realty/ui_kits'
@@ -36,10 +60,12 @@ const BASELINE = 'scripts/taste-review-baseline.json'
 const SHOTS_BASELINE = 'scripts/taste-review-shots-baseline.json'
 const TELLS_BASELINE = 'scripts/taste-tells-baseline.json'
 const V2_BASELINE = 'scripts/taste-receipt-v2-baseline.json'
+const CATALOG_BASELINE = 'scripts/taste-receipt-catalog-baseline.json'
 const CANON = 'design_system/public/TASTE.md'
 const POINTERS = ['CLAUDE.md', 'AGENTS.md', '.claude/skills/frontend-design/SKILL.md']
 const WRITE_BASELINE = process.argv.includes('--write-baseline')
 const WRITE_V2_BASELINE = process.argv.includes('--write-v2-baseline')
+const WRITE_CATALOG_BASELINE = process.argv.includes('--write-catalog-baseline')
 
 const failures = []
 
@@ -97,20 +123,48 @@ const kitDirs = readdirSync(join(ROOT, KITS), { withFileTypes: true })
 
 const rubricText = existsSync(join(ROOT, CANON)) ? readFileSync(join(ROOT, CANON), 'utf8') : ''
 
+function loadCatalog() {
+  const abs = join(ROOT, CATALOG_PATH)
+  if (!existsSync(abs)) return null
+  try {
+    return loadTasteCatalog(JSON.parse(readFileSync(abs, 'utf8')))
+  } catch (err) {
+    failures.push(`${CATALOG_PATH} is malformed: ${err instanceof Error ? err.message : String(err)}`)
+    return null
+  }
+}
+const catalog = loadCatalog()
+if (catalog?.problems?.length) {
+  for (const p of catalog.problems) failures.push(`${CATALOG_PATH}: ${p}`)
+}
+
+const TASTE_CLASSES = 'design_system/public/taste-classes.json'
+if (catalog && catalog.problems.length === 0 && existsSync(join(ROOT, TASTE_CLASSES))) {
+  try {
+    const raw = JSON.parse(readFileSync(join(ROOT, TASTE_CLASSES), 'utf8'))
+    const keys = Array.isArray(raw?.classes) ? raw.classes.map((c) => c.key) : []
+    for (const p of catalogCoverageProblems(catalog, keys)) failures.push(`${CATALOG_PATH}: ${p}`)
+  } catch (err) {
+    failures.push(`${TASTE_CLASSES} is malformed: ${err instanceof Error ? err.message : String(err)}`)
+  }
+}
+
 /**
- * The receipt this route carries at HEAD. A working-tree receipt that says
- * "first" while a scored one is already committed is dodging the rise rule.
- * No git (a fresh fixture, a shallow export) simply means no prior to compare.
+ * The parity.json this route carries at HEAD. A working-tree receipt that
+ * says "first" while a scored one is already committed is dodging the rise
+ * rule; a working-tree contract that dropped requiredComponents is dodging
+ * the product hold. No git (a fresh fixture, a shallow export) simply means
+ * no prior to compare.
  */
-function committedReceipt(rel) {
+function committedParity(rel) {
   try {
     const out = execFileSync('git', ['show', `HEAD:${rel}`], {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     })
-    const tr = JSON.parse(out)?.tasteReview
-    return tr && typeof tr === 'object' ? tr : null
+    const d = JSON.parse(out)
+    return d && typeof d === 'object' ? d : null
   } catch {
     return null
   }
@@ -119,6 +173,7 @@ function committedReceipt(rel) {
 const unreviewed = []
 const shotless = []
 const v2Broken = new Map()
+const catalogBroken = new Map()
 let complete = 0
 let v2Complete = 0
 for (const rel of kitDirs) {
@@ -141,11 +196,23 @@ for (const rel of kitDirs) {
     continue
   }
   complete += 1
+  if (catalog && catalog.problems.length === 0) {
+    const kit = rel.split('/').at(-2)
+    const classKey = classForRoute(catalog, kit)
+    if (classKey) {
+      const cp = catalogReceiptProblems(catalog, classKey, d.tasteReview)
+      if (cp.length) catalogBroken.set(rel, cp)
+    }
+  }
+  const head = committedParity(rel)
+  for (const p of requiredComponentsHoldProblems(d.requiredComponents, head?.requiredComponents)) {
+    failures.push(`${rel}: ${p}`)
+  }
   if (!isV2Receipt(d.tasteReview)) continue
   const problems = receiptV2Problems(d.tasteReview, {
     root: ROOT,
     rubricText,
-    headReceipt: committedReceipt(rel),
+    headReceipt: head?.tasteReview ?? null,
   })
   if (problems.length > 0) v2Broken.set(rel, problems)
   else v2Complete += 1
@@ -187,6 +254,24 @@ if (WRITE_V2_BASELINE) {
   process.exit(0)
 }
 
+if (WRITE_CATALOG_BASELINE) {
+  writeFileSync(
+    join(ROOT, CATALOG_BASELINE),
+    JSON.stringify(
+      {
+        note:
+          'ci:taste-canon — SHRINK-ONLY. Catalog-class receipts that predate adaptedFrom + replaceWith. A route leaves by its next evaluator pass naming the modules it fetched; no route may be added.',
+        generatedAt: new Date().toISOString(),
+        routes: [...catalogBroken.keys()].sort(),
+      },
+      null,
+      2,
+    ) + '\n',
+  )
+  console.log(`taste-canon: catalog baseline written with ${catalogBroken.size} receipt(s).`)
+  process.exit(0)
+}
+
 const b = readJson(BASELINE, 'seed with --write-baseline')
 const baseline = Array.isArray(b?.routes) ? b.routes : []
 const baselineSet = new Set(baseline)
@@ -219,6 +304,37 @@ for (const [rel, problems] of v2Broken) {
   )
 }
 const v2Stale = v2Base.filter((rel) => !v2Broken.has(rel))
+
+let catalogStale = []
+if (catalog && catalog.problems.length === 0) {
+  const lock = layoutLockProblems(catalog, {
+    existsSync: (p) => existsSync(join(ROOT, p)),
+    readFileSync: (p, enc) => readFileSync(join(ROOT, p), enc),
+  })
+  for (const row of lock) failures.push(row)
+
+  const catalogAbs = join(ROOT, CATALOG_BASELINE)
+  if (!existsSync(catalogAbs)) {
+    if (catalogBroken.size > 0) {
+      failures.push(
+        `${CATALOG_BASELINE} is missing — seed with --write-catalog-baseline (${catalogBroken.size} catalog receipt(s) without adaptedFrom/replaceWith).`,
+      )
+    }
+  } else {
+    const cb = readJson(CATALOG_BASELINE, 'catalog receipts baseline — seed with --write-catalog-baseline')
+    const catalogBase = Array.isArray(cb?.routes) ? cb.routes : []
+    const catalogSet = new Set(catalogBase)
+    for (const [rel, problems] of catalogBroken) {
+      if (catalogSet.has(rel)) continue
+      failures.push(
+        `${rel} is a catalog class and its tasteReview does not name adaptedFrom (or defects omit replaceWith):\n` +
+          problems.map((p) => `      - ${p}`).join('\n') +
+          `\n      Fetch node scripts/lib/taste-catalog.mjs <class> --preflight before building.`,
+      )
+    }
+    catalogStale = catalogBase.filter((rel) => !catalogBroken.has(rel))
+  }
+}
 
 const TELL_FILES = [
   { rel: 'components/site/v3/V3Atlas.client.tsx', re: /Pinch or scroll to zoom/ },
@@ -255,8 +371,9 @@ console.log(
   `taste-canon OK — pointers intact · ${complete} complete review(s) with PNGs · ` +
     `${v2Complete} with a full instrument receipt (>= ${RECEIPT_V2_FROM}) · ` +
     `${unreviewed.length} unreviewed (baseline) · ${shotless.length} shotless (baseline) · ` +
-    `${v2Broken.size} legacy receipt(s) (baseline) · ${dirty.length} known tell(s)` +
+    `${v2Broken.size} legacy receipt(s) (baseline) · ${catalogBroken.size} catalog receipt(s) (baseline) · ${dirty.length} known tell(s)` +
     (shotStale.length ? ` · remove from shots baseline: ${shotStale.join(', ')}` : '') +
     (v2Stale.length ? ` · remove from v2 baseline: ${v2Stale.join(', ')}` : '') +
+    (catalogStale.length ? ` · remove from catalog baseline: ${catalogStale.join(', ')}` : '') +
     (tellStale.length ? ` · remove from tells baseline: ${tellStale.join(', ')}` : ''),
 )

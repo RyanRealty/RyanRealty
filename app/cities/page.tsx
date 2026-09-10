@@ -14,6 +14,11 @@
  * carries a photo or the glyph; no row repeats "Oregon"; and a city whose
  * count no source published says so instead of "None listed now".
  *
+ * SITE-69: the region pair sits on a labeled 4 / 6 threshold scale
+ * (V3MosCompare); a searchable city overlay compares one city's reading to
+ * the region (beui:combobox); no-photo rows carry a resting supply reading
+ * when Market Truth publishes one.
+ *
  * Parity contract: design_system/ryan-realty/ui_kits/cities/parity.json
  */
 
@@ -42,6 +47,7 @@ import {
   V3Drawing,
   V3Footer,
   V3Ledger,
+  V3MosCompare,
   V3Quiet,
   V3SectionTracker,
   V3_FOOTER_COLUMNS,
@@ -50,6 +56,7 @@ import {
   v3Text,
   type V3LedgerFigureRow,
   type V3LedgerReveal,
+  type V3MosCompareCity,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
@@ -62,6 +69,7 @@ import {
   indexBarWeight,
   liveForSaleLabel,
 } from '@/app/cities/_v3/cities-index-constants'
+import { restingCityDetail } from '@/app/cities/_v3/cities-index-resting'
 import type { SchemaInput } from '@/lib/site/json-ld'
 
 export const revalidate = 1800
@@ -320,16 +328,26 @@ export default async function CitiesPage() {
 
   const figureRows: V3LedgerFigureRow[] = directory.map((city) => {
     const median = fmtMedian(city.medianListPrice)
-    const bits = [median ? `Median list ${median}` : null, city.sentence].filter(Boolean)
+    const layers = overlays.get(`city:${city.slug}`)
+    const headlines = layers?.headlines ?? null
+    const restingSupply = headlines
+      ? `${headlines.verdictLabel.charAt(0).toUpperCase()}${headlines.verdictLabel.slice(1)} · ${headlines.mosLabel} months`
+      : null
+    const detail = restingCityDetail({
+      medianLine: median ? `Median list ${median}` : null,
+      sentence: city.sentence,
+      hasPhoto: Boolean(city.mediaSrc),
+      restingSupply,
+    })
     return {
       id: city.slug,
       href: `/cities/${city.slug}`,
       what: v3Text(city.name),
-      detail: bits.length > 0 ? v3Text(bits.join(' · ')) : undefined,
+      detail: detail ? v3Text(detail) : undefined,
       value: v3Text(city.activeCount != null ? liveForSaleLabel(city.activeCount) : NO_LIVE_COUNT_LABEL),
       weight: indexBarWeight(city.activeCount, maxCount),
       media: city.mediaSrc ? { src: city.mediaSrc } : undefined,
-      reveal: cityReveal(overlays.get(`city:${city.slug}`), monthlyBySlug.get(city.slug) ?? []),
+      reveal: cityReveal(layers, monthlyBySlug.get(city.slug) ?? []),
       ariaLabel: v3Text(`Homes for sale in ${city.name}, Oregon`),
     }
   })
@@ -362,13 +380,42 @@ export default async function CitiesPage() {
     sources: { supply: REGION_SUPPLY_TRACE },
     unmatchedSentence: '',
   })
+  const compareCities: V3MosCompareCity[] = directory.map((city) => {
+    const headlines = overlays.get(`city:${city.slug}`)?.headlines ?? null
+    return {
+      slug: city.slug,
+      name: city.name,
+      mos: headlines?.monthsOfSupply ?? null,
+      mosLabel: headlines?.mosLabel ?? null,
+      verdictLabel: headlines?.verdictLabel
+        ? `${headlines.verdictLabel.charAt(0).toUpperCase()}${headlines.verdictLabel.slice(1)}`
+        : null,
+      activeLabel: city.activeCount != null ? liveForSaleLabel(city.activeCount) : null,
+    }
+  })
+
+  const regionScale =
+    hud.monthsSupply != null && mosText && regionVerdict ? (
+      <V3MosCompare
+        regionLabel="Central Oregon"
+        regionMos={hud.monthsSupply}
+        regionMosLabel={mosText}
+        regionVerdict={regionVerdict.label}
+        cities={compareCities}
+        source={REGION_SUPPLY_TRACE}
+      />
+    ) : null
+
   const regionDrawing =
     regionFigures.length > 0 ? (
-      <V3Drawing figures={regionFigures} label="Central Oregon homes for sale against a month of sales" />
+      <>
+        <V3Drawing figures={regionFigures} label="Central Oregon homes for sale against a month of sales" />
+        {regionScale}
+      </>
     ) : null
   // When the drawing cannot be drawn, the note carries the figure as before.
   const directoryNote = regionDrawing
-    ? `${formatCount(directory.length)} cities, A to Z. Each bar is the city's share of the largest live count on the list; rest on a city, or hold it on a phone, for its supply verdict and a year of closes.`
+    ? `${formatCount(directory.length)} cities, A to Z. Region supply is the pair below; overlay a city or rest on a row for its year of closes.`
     : [
         totalActive != null && totalActive > 0
           ? `${formatCount(totalActive)} homes for sale across these cities.`

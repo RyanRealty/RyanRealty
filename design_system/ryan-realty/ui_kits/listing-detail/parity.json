@@ -60,6 +60,11 @@
       "blocking": true
     },
     {
+      "name": "DescriptionBlock",
+      "section": "MLS public remarks as written. Do not summarize away.",
+      "blocking": true
+    },
+    {
       "name": "SchoolsBlock",
       "section": "Schools nearby. Do not claim assigned.",
       "blocking": true

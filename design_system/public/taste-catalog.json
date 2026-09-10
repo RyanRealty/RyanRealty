@@ -1,0 +1,2605 @@
+{
+  "source": "https://x.com/EXM7777/status/2092250905655812121",
+  "catalogUrls": [
+    "https://beautifului.dev",
+    "https://beui.dev",
+    "https://rareui.com",
+    "https://transitions.dev",
+    "https://ui.shadcn.com"
+  ],
+  "catalogUrl": "https://ui.shadcn.com/docs/components",
+  "note": "Matt 2026-09-10: these catalogs ARE the UX bar, not a parts list. catalogUrls is a FLOOR of five and is append-only — paste a new URL and inventory it; the evaluator option list grows. Fetch the source (shadcn add / registry URL), restyle to navy #102742 / cream #faf8f4 / Geist / Amboqia / Iconoir, and wire the REAL interaction. A cream box with the catalog name is not adapted. Priority: SEO and information hold, then look / sense / ease of use. A missing job is a NEW barrel primitive that still matches the demo.",
+  "refuse": [
+    "npx shadcn add onto app/ or components/site/ — install into components/ui or components/site/v3, then paint with house tokens",
+    "npm install beUI / Rare UI / Beautiful UI / Transitions as a second public design system (submodule their demo app, Inter, purple)",
+    "Copy their palette, Inter, purple, orbs, magnetic/tilt buttons, or agent-chat chrome onto a listing or place page",
+    "Keep the catalog name and throw away the interaction (V3MorphSearch as a labeled cream field is this miss)",
+    "Shrink a working full-bleed layout to dodge a 'looks like Zillow' tell",
+    "Drop or summarize away PropertySpecs, MLS remarks, schools, payment line items, or Tour/Call/Text",
+    "Rewrite Spark listing photos to 320x240 on a card, rail, or hero — 320 is the 88x66 ledger thumb only",
+    "Skip a catalog job because the barrel has no primitive yet — ADD the primitive that still matches the demo",
+    "Treat a score rise or rebaseline as done when the live control and the demo are not the same interaction"
+  ],
+  "catalogs": [
+    {
+      "id": "beautifului",
+      "name": "Beautiful UI",
+      "url": "https://beautifului.dev",
+      "kind": "external",
+      "take": "Loading, empty, skeleton-to-content, filter chips that reorganize a table, insight cards with a scrubber. Choreography of states, not the agent-chat shell.",
+      "refuse": "Prompt bar, tool chips, approval cards, agent screen, chat panel on a listing or place page."
+    },
+    {
+      "id": "beui",
+      "name": "beUI",
+      "url": "https://beui.dev",
+      "kind": "external",
+      "take": "Tabs with a sliding indicator; expandable control for a grouped ask; action-swap for Tour/Call/Text; bottom sheet; drawer; accordion height; tooltip. Restyle to navy-on-cream, our motion bands, reduced-motion safe.",
+      "refuse": "Tilt cards, docks, magnetic/metallic buttons, shader backgrounds, cylinder carousel, marquee, gooey popover, bounce sidebar."
+    },
+    {
+      "id": "rareui",
+      "name": "Rare UI",
+      "url": "https://rareui.com",
+      "kind": "external",
+      "take": "Scroll-progress on a long listing. Nothing else unless the job matches and the motion is in-band.",
+      "refuse": "Fluid orb, matrix orb, gravity letters, gooey nav, emoji reaction, bounce sidebar, GitHub activity, OTP."
+    },
+    {
+      "id": "transitions",
+      "name": "Transitions.dev",
+      "url": "https://transitions.dev",
+      "kind": "external",
+      "take": "Named recipes at our motion bands: panel reveal, modal open/close, tabs sliding, accordion height, skeleton-to-content, tooltip, image-open (camera only, no 3D glare).",
+      "refuse": "Confetti, gooey plus-menu, 3D tilt, like-button particles, spinning counters as decoration."
+    },
+    {
+      "id": "shadcn",
+      "name": "shadcn/ui",
+      "url": "https://ui.shadcn.com",
+      "kind": "admin",
+      "take": "The full component list. Fetch the docs page for a named component, then the local file if we already installed it. Adapt composition (carousel, sheet, button group, dialog, tabs, accordion, empty, skeleton) into v3 on public pages. Install into components/ui only for admin/product.",
+      "refuse": "Copying shadcn's default look onto a listing page. Public paint is v3 tokens."
+    },
+    {
+      "id": "house-v3",
+      "name": "Ryan Realty v3 barrel",
+      "url": "components/site/v3/",
+      "kind": "house",
+      "take": "The public foundation. Fetch the actual TSX/CSS of the primitive that already does the job.",
+      "refuse": "A second primitive for a job one already does."
+    },
+    {
+      "id": "house-listing",
+      "name": "Listing-detail stack",
+      "url": "components/site/listing-detail/",
+      "kind": "house",
+      "take": "ListingHero, PropertySpecs, PriceCtaStrip, DescriptionBlock, SchoolsBlock — the sections a listing page must keep.",
+      "refuse": "Dropping a requiredComponent to make the fold quieter."
+    },
+    {
+      "id": "house-admin",
+      "name": "Admin v2 barrel",
+      "url": "components/admin/v2/",
+      "kind": "house",
+      "take": "Admin interiors. Adapt catalog jobs into ReportGrid, Sheet, TabBar, Combobox, Button. Do not npx shadcn add onto app/admin pages that already import v2.",
+      "refuse": "Replacing ReportGrid with shadcn Table. Mixing @/components/ui onto a v2 page."
+    }
+  ],
+  "shadcn": {
+    "docs": "https://ui.shadcn.com/docs/components",
+    "docsItem": "https://ui.shadcn.com/docs/components/{name}",
+    "installedDir": "components/ui",
+    "components": [
+      {
+        "name": "accordion",
+        "installed": "components/ui/accordion.tsx",
+        "jobs": [
+          "listing-detail:facts"
+        ]
+      },
+      {
+        "name": "alert",
+        "installed": "components/ui/alert.tsx",
+        "jobs": []
+      },
+      {
+        "name": "alert-dialog",
+        "installed": "components/ui/alert-dialog.tsx",
+        "jobs": []
+      },
+      {
+        "name": "aspect-ratio",
+        "installed": null,
+        "jobs": [
+          "listing-detail:hero"
+        ]
+      },
+      {
+        "name": "attachment",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "avatar",
+        "installed": "components/ui/avatar.tsx",
+        "jobs": [
+          "team:faces"
+        ]
+      },
+      {
+        "name": "badge",
+        "installed": "components/ui/badge.tsx",
+        "jobs": [
+          "listing-detail:status"
+        ]
+      },
+      {
+        "name": "breadcrumb",
+        "installed": null,
+        "jobs": [
+          "listing-detail:trail"
+        ]
+      },
+      {
+        "name": "bubble",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "button",
+        "installed": "components/ui/button.tsx",
+        "jobs": [
+          "listing-detail:ask"
+        ]
+      },
+      {
+        "name": "button-group",
+        "installed": "components/ui/button-group.tsx",
+        "jobs": [
+          "listing-detail:ask"
+        ]
+      },
+      {
+        "name": "calendar",
+        "installed": null,
+        "jobs": [
+          "listing-detail:tour"
+        ]
+      },
+      {
+        "name": "card",
+        "installed": "components/ui/card.tsx",
+        "jobs": []
+      },
+      {
+        "name": "carousel",
+        "installed": "components/ui/carousel.tsx",
+        "jobs": [
+          "listing-detail:gallery",
+          "homepage-v6:rails"
+        ]
+      },
+      {
+        "name": "chart",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "checkbox",
+        "installed": "components/ui/checkbox.tsx",
+        "jobs": [
+          "search:filters"
+        ]
+      },
+      {
+        "name": "collapsible",
+        "installed": null,
+        "jobs": [
+          "listing-detail:facts"
+        ]
+      },
+      {
+        "name": "combobox",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "command",
+        "installed": "components/ui/command.tsx",
+        "jobs": [
+          "search:field"
+        ]
+      },
+      {
+        "name": "context-menu",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "data-table",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "date-picker",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "dialog",
+        "installed": "components/ui/dialog.tsx",
+        "jobs": [
+          "listing-detail:lightbox"
+        ]
+      },
+      {
+        "name": "direction",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "drawer",
+        "installed": null,
+        "jobs": [
+          "listing-detail:ask",
+          "search:filters"
+        ]
+      },
+      {
+        "name": "dropdown-menu",
+        "installed": "components/ui/dropdown-menu.tsx",
+        "jobs": []
+      },
+      {
+        "name": "empty",
+        "installed": null,
+        "jobs": [
+          "listing-detail:gallery",
+          "search:results"
+        ]
+      },
+      {
+        "name": "field",
+        "installed": null,
+        "jobs": [
+          "sell:address"
+        ]
+      },
+      {
+        "name": "hover-card",
+        "installed": null,
+        "jobs": [
+          "listing-detail:facts"
+        ]
+      },
+      {
+        "name": "input",
+        "installed": "components/ui/input.tsx",
+        "jobs": [
+          "sell:address",
+          "search:field"
+        ]
+      },
+      {
+        "name": "input-group",
+        "installed": "components/ui/input-group.tsx",
+        "jobs": [
+          "sell:address"
+        ]
+      },
+      {
+        "name": "input-otp",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "item",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "kbd",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "label",
+        "installed": "components/ui/label.tsx",
+        "jobs": []
+      },
+      {
+        "name": "marker",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "menubar",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "message",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "message-scroller",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "native-select",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "navigation-menu",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "pagination",
+        "installed": null,
+        "jobs": [
+          "search:results"
+        ]
+      },
+      {
+        "name": "popover",
+        "installed": "components/ui/popover.tsx",
+        "jobs": []
+      },
+      {
+        "name": "progress",
+        "installed": "components/ui/progress.tsx",
+        "jobs": []
+      },
+      {
+        "name": "questionnaire",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "radio-group",
+        "installed": "components/ui/radio-group.tsx",
+        "jobs": []
+      },
+      {
+        "name": "resizable",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "scroll-area",
+        "installed": "components/ui/scroll-area.tsx",
+        "jobs": [
+          "listing-detail:gallery"
+        ]
+      },
+      {
+        "name": "select",
+        "installed": "components/ui/select.tsx",
+        "jobs": []
+      },
+      {
+        "name": "separator",
+        "installed": "components/ui/separator.tsx",
+        "jobs": []
+      },
+      {
+        "name": "sheet",
+        "installed": "components/ui/sheet.tsx",
+        "jobs": [
+          "listing-detail:ask",
+          "search:filters",
+          "sell:ask"
+        ]
+      },
+      {
+        "name": "sidebar",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "skeleton",
+        "installed": "components/ui/skeleton.tsx",
+        "jobs": [
+          "listing-detail:gallery"
+        ]
+      },
+      {
+        "name": "slider",
+        "installed": "components/ui/slider.tsx",
+        "jobs": [
+          "search:price"
+        ]
+      },
+      {
+        "name": "spinner",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "switch",
+        "installed": "components/ui/switch.tsx",
+        "jobs": []
+      },
+      {
+        "name": "table",
+        "installed": "components/ui/table.tsx",
+        "jobs": [
+          "listing-detail:tax"
+        ]
+      },
+      {
+        "name": "tabs",
+        "installed": "components/ui/tabs.tsx",
+        "jobs": [
+          "listing-detail:gallery",
+          "homepage-v6:buy-sell"
+        ]
+      },
+      {
+        "name": "textarea",
+        "installed": "components/ui/textarea.tsx",
+        "jobs": []
+      },
+      {
+        "name": "toast",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "toggle",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "toggle-group",
+        "installed": null,
+        "jobs": []
+      },
+      {
+        "name": "tooltip",
+        "installed": "components/ui/tooltip.tsx",
+        "jobs": [
+          "listing-detail:facts"
+        ]
+      },
+      {
+        "name": "typography",
+        "installed": null,
+        "jobs": []
+      }
+    ]
+  },
+  "lists": {
+    "beautifului": {
+      "url": "https://beautifului.dev",
+      "components": [
+        {
+          "name": "loading-state",
+          "url": "https://www.beautifului.dev/",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:gallery"
+          ]
+        },
+        {
+          "name": "thinking",
+          "url": "https://www.beautifului.dev/",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "streaming-text",
+          "url": "https://www.beautifului.dev/",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "approval-card",
+          "url": "https://www.beautifului.dev/",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:queue"
+          ]
+        },
+        {
+          "name": "tool-chips",
+          "url": "https://www.beautifului.dev/",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "task-rows",
+          "url": "https://www.beautifului.dev/",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:sync"
+          ]
+        },
+        {
+          "name": "chat",
+          "url": "https://www.beautifului.dev/",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "prompt-bar",
+          "url": "https://www.beautifului.dev/",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "recommendation-card",
+          "url": "https://www.beautifului.dev/",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:crm"
+          ]
+        },
+        {
+          "name": "context-cards",
+          "url": "https://www.beautifului.dev/",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "diff-table",
+          "url": "https://www.beautifului.dev/",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:crm"
+          ]
+        },
+        {
+          "name": "records-table",
+          "url": "https://www.beautifului.dev/",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:crm"
+          ]
+        },
+        {
+          "name": "filter-table",
+          "url": "https://www.beautifului.dev/",
+          "take": true,
+          "surfaces": [
+            "admin",
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:facts",
+            "search:filters"
+          ]
+        },
+        {
+          "name": "sidebar-nav",
+          "url": "https://www.beautifului.dev/",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "search",
+          "url": "https://www.beautifului.dev/",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin",
+            "product"
+          ],
+          "jobs": [
+            "search:field"
+          ]
+        },
+        {
+          "name": "flowchart",
+          "url": "https://www.beautifului.dev/",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:sequences"
+          ]
+        },
+        {
+          "name": "insight-cards",
+          "url": "https://www.beautifului.dev/",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "city:opening"
+          ]
+        },
+        {
+          "name": "code-block",
+          "url": "https://www.beautifului.dev/",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "fine-tune-card",
+          "url": "https://www.beautifului.dev/",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "selection-actions",
+          "url": "https://www.beautifului.dev/",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "agent-screen",
+          "url": "https://www.beautifului.dev/",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "button",
+          "url": "https://www.beautifului.dev/",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "glide-menu",
+          "url": "https://www.beautifului.dev/",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "entity-chip",
+          "url": "https://www.beautifului.dev/",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:crm"
+          ]
+        },
+        {
+          "name": "value-pill",
+          "url": "https://www.beautifului.dev/",
+          "take": true,
+          "surfaces": [
+            "admin",
+            "public"
+          ],
+          "jobs": [
+            "search:filters"
+          ]
+        },
+        {
+          "name": "shimmer",
+          "url": "https://www.beautifului.dev/",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "listing-detail:gallery"
+          ]
+        },
+        {
+          "name": "stream-text",
+          "url": "https://www.beautifului.dev/",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        }
+      ]
+    },
+    "beui": {
+      "url": "https://beui.dev",
+      "components": [
+        {
+          "name": "tilt-card",
+          "url": "https://beui.dev/components/motion/tilt-card",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "button",
+          "url": "https://beui.dev/components/motion/button",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "listing-detail:ask",
+            "sell:ask"
+          ]
+        },
+        {
+          "name": "expanding-arrow-button",
+          "url": "https://beui.dev/components/motion/expanding-arrow-button",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:ask",
+            "sell:ask"
+          ]
+        },
+        {
+          "name": "expandable-control",
+          "url": "https://beui.dev/components/motion/expandable-control",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "listing-detail:ask",
+            "search:filters"
+          ]
+        },
+        {
+          "name": "adaptive-stepper",
+          "url": "https://beui.dev/components/motion/adaptive-stepper",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "search:beds"
+          ]
+        },
+        {
+          "name": "marquee",
+          "url": "https://beui.dev/components/motion/marquee",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "tabs",
+          "url": "https://beui.dev/components/motion/tabs",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "listing-detail:gallery",
+            "homepage-v6:buy-sell"
+          ]
+        },
+        {
+          "name": "switch",
+          "url": "https://beui.dev/components/motion/switch",
+          "take": true,
+          "surfaces": [
+            "admin",
+            "product"
+          ],
+          "jobs": [
+            "search:filters"
+          ]
+        },
+        {
+          "name": "input",
+          "url": "https://beui.dev/components/motion/input",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "sell:address",
+            "search:field"
+          ]
+        },
+        {
+          "name": "select",
+          "url": "https://beui.dev/components/motion/select",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "search:filters"
+          ]
+        },
+        {
+          "name": "combobox",
+          "url": "https://beui.dev/components/motion/combobox",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "search:field",
+            "city:opening"
+          ]
+        },
+        {
+          "name": "multi-select",
+          "url": "https://beui.dev/components/motion/multi-select",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "search:filters"
+          ]
+        },
+        {
+          "name": "checkbox",
+          "url": "https://beui.dev/components/motion/checkbox",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "search:filters"
+          ]
+        },
+        {
+          "name": "radio",
+          "url": "https://beui.dev/components/motion/radio",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "search:filters"
+          ]
+        },
+        {
+          "name": "bottom-sheet",
+          "url": "https://beui.dev/components/motion/bottom-sheet",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "listing-detail:ask",
+            "search:filters",
+            "sell:ask"
+          ]
+        },
+        {
+          "name": "pull-to-refresh",
+          "url": "https://beui.dev/components/motion/pull-to-refresh",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "shared-layout-bg",
+          "url": "https://beui.dev/components/motion/shared-layout-bg",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "homepage-v6:buy-sell",
+            "listing-detail:gallery"
+          ]
+        },
+        {
+          "name": "bounce-sidebar",
+          "url": "https://beui.dev/components/motion/bounce-sidebar",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "animated-sidebar",
+          "url": "https://beui.dev/components/motion/animated-sidebar",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:nav"
+          ]
+        },
+        {
+          "name": "file-tree",
+          "url": "https://beui.dev/components/motion/file-tree",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:library"
+          ]
+        },
+        {
+          "name": "preview-rail",
+          "url": "https://beui.dev/components/motion/preview-rail",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "dock",
+          "url": "https://beui.dev/components/motion/dock",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "tooltip",
+          "url": "https://beui.dev/components/motion/tooltip",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "listing-detail:facts"
+          ]
+        },
+        {
+          "name": "context-menu",
+          "url": "https://beui.dev/components/motion/context-menu",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:table"
+          ]
+        },
+        {
+          "name": "popover",
+          "url": "https://beui.dev/components/motion/popover",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "morphing-modal",
+          "url": "https://beui.dev/components/motion/morphing-modal",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "listing-detail:lightbox",
+            "sell:ask"
+          ]
+        },
+        {
+          "name": "center-morph-modal",
+          "url": "https://beui.dev/components/motion/center-morph-modal",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "text-animation",
+          "url": "https://beui.dev/components/motion/text-animation",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "number",
+          "url": "https://beui.dev/components/motion/number",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "city:opening",
+            "homepage-v6:counts",
+            "listing-detail:price"
+          ]
+        },
+        {
+          "name": "animated-badge",
+          "url": "https://beui.dev/components/motion/animated-badge",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "listing-detail:status"
+          ]
+        },
+        {
+          "name": "action-swap",
+          "url": "https://beui.dev/components/motion/action-swap",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:ask",
+            "sell:ask"
+          ]
+        },
+        {
+          "name": "animated-toast-stack",
+          "url": "https://beui.dev/components/motion/animated-toast-stack",
+          "take": true,
+          "surfaces": [
+            "admin",
+            "product"
+          ],
+          "jobs": [
+            "sell:ask"
+          ]
+        },
+        {
+          "name": "theme-toggle",
+          "url": "https://beui.dev/components/motion/theme-toggle",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "bouncy-accordion",
+          "url": "https://beui.dev/components/motion/bouncy-accordion",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "listing-detail:facts"
+          ]
+        },
+        {
+          "name": "drawer",
+          "url": "https://beui.dev/components/motion/drawer",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "search:filters",
+            "listing-detail:ask"
+          ]
+        },
+        {
+          "name": "scroll-animation",
+          "url": "https://beui.dev/components/motion/scroll-animation",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:gallery",
+            "city:opening"
+          ]
+        },
+        {
+          "name": "range-slider",
+          "url": "https://beui.dev/components/motion/range-slider",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "search:price"
+          ]
+        },
+        {
+          "name": "wheel-picker",
+          "url": "https://beui.dev/components/motion/wheel-picker",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "sell:ask",
+            "listing-detail:tour"
+          ]
+        },
+        {
+          "name": "table",
+          "url": "https://beui.dev/components/motion/table",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:table"
+          ]
+        },
+        {
+          "name": "shader-background",
+          "url": "https://beui.dev/components/motion/shader-background",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "cylinder-carousel",
+          "url": "https://beui.dev/components/motion/cylinder-carousel",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "loader",
+          "url": "https://beui.dev/components/motion/loader",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:sync"
+          ]
+        },
+        {
+          "name": "infinite-masonry",
+          "url": "https://beui.dev/components/blocks/infinite-masonry",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "search:results",
+            "city:opening"
+          ]
+        },
+        {
+          "name": "notification-stack",
+          "url": "https://beui.dev/components/blocks/notification-stack",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:queue"
+          ]
+        },
+        {
+          "name": "project-folder",
+          "url": "https://beui.dev/components/blocks/project-folder",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "card-folder",
+          "url": "https://beui.dev/components/blocks/card-folder",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "knockout-bracket",
+          "url": "https://beui.dev/components/blocks/knockout-bracket",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "availability-scheduler",
+          "url": "https://beui.dev/components/blocks/availability-scheduler",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "sell:ask"
+          ]
+        },
+        {
+          "name": "swap",
+          "url": "https://beui.dev/components/blocks/swap",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "dynamic-island",
+          "url": "https://beui.dev/components/blocks/dynamic-island",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "command-palette",
+          "url": "https://beui.dev/components/blocks/command-palette",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin",
+            "product"
+          ],
+          "jobs": [
+            "search:field"
+          ]
+        },
+        {
+          "name": "morphing-search",
+          "url": "https://beui.dev/components/blocks/morphing-search",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "search:field",
+            "homepage-v6:search"
+          ]
+        },
+        {
+          "name": "expandable-action-bar",
+          "url": "https://beui.dev/components/blocks/expandable-action-bar",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:ask"
+          ]
+        },
+        {
+          "name": "overflow-actions",
+          "url": "https://beui.dev/components/blocks/overflow-actions",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:ask"
+          ]
+        },
+        {
+          "name": "expandable-tabs",
+          "url": "https://beui.dev/components/blocks/expandable-tabs",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:gallery"
+          ]
+        },
+        {
+          "name": "morphing-tabs",
+          "url": "https://beui.dev/components/blocks/morphing-tabs",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "homepage-v6:buy-sell"
+          ]
+        },
+        {
+          "name": "swipeable-list",
+          "url": "https://beui.dev/components/blocks/swipeable-list",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "search:results"
+          ]
+        },
+        {
+          "name": "file-upload",
+          "url": "https://beui.dev/components/blocks/file-upload",
+          "take": true,
+          "surfaces": [
+            "admin",
+            "public"
+          ],
+          "jobs": [
+            "sell:ask"
+          ]
+        },
+        {
+          "name": "prediction-market",
+          "url": "https://beui.dev/components/blocks/prediction-market",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "wallet-card",
+          "url": "https://beui.dev/components/blocks/wallet-card",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "otp-input",
+          "url": "https://beui.dev/components/blocks/otp-input",
+          "take": true,
+          "surfaces": [
+            "admin",
+            "product"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "signup-form",
+          "url": "https://beui.dev/components/blocks/signup-form",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "sell:ask",
+            "listing-detail:ask"
+          ]
+        },
+        {
+          "name": "bloom-menu",
+          "url": "https://beui.dev/components/blocks/bloom-menu",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "feedback-widget",
+          "url": "https://beui.dev/components/blocks/feedback-widget",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:queue"
+          ]
+        },
+        {
+          "name": "not-found",
+          "url": "https://beui.dev/components/blocks/not-found",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        }
+      ]
+    },
+    "rareui": {
+      "url": "https://rareui.com",
+      "components": [
+        {
+          "name": "foldercomponent",
+          "url": "https://www.rareui.com/components/foldercomponent",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "durationpicker",
+          "url": "https://www.rareui.com/components/durationpicker",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "listing-detail:tour"
+          ]
+        },
+        {
+          "name": "fluidorb",
+          "url": "https://www.rareui.com/components/fluidorb",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "gravityletters",
+          "url": "https://www.rareui.com/components/gravityletters",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "otpinput",
+          "url": "https://www.rareui.com/components/otpinput",
+          "take": true,
+          "surfaces": [
+            "admin",
+            "product"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "matrixorb",
+          "url": "https://www.rareui.com/components/matrixorb",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "animatedcounter",
+          "url": "https://www.rareui.com/components/animatedcounter",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "city:opening",
+            "homepage-v6:counts"
+          ]
+        },
+        {
+          "name": "hooksidebar",
+          "url": "https://www.rareui.com/components/hooksidebar",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "codeblock",
+          "url": "https://www.rareui.com/components/codeblock",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "githubactivity",
+          "url": "https://www.rareui.com/components/githubactivity",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "stepplayer",
+          "url": "https://www.rareui.com/components/stepplayer",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "sell:ask"
+          ]
+        },
+        {
+          "name": "gridreveal",
+          "url": "https://www.rareui.com/components/gridreveal",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "bouncesidebar",
+          "url": "https://www.rareui.com/components/bouncesidebar",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "proximitysidebar",
+          "url": "https://www.rareui.com/components/proximitysidebar",
+          "take": false,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": []
+        },
+        {
+          "name": "scrollprogressindicator",
+          "url": "https://www.rareui.com/components/scrollprogressindicator",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:gallery"
+          ]
+        },
+        {
+          "name": "gooeynav",
+          "url": "https://www.rareui.com/components/gooeynav",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "deletebutton",
+          "url": "https://www.rareui.com/components/deletebutton",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:queue"
+          ]
+        },
+        {
+          "name": "emojireaction",
+          "url": "https://www.rareui.com/components/emojireaction",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "notificationbell",
+          "url": "https://www.rareui.com/components/notificationbell",
+          "take": true,
+          "surfaces": [
+            "admin",
+            "product"
+          ],
+          "jobs": [
+            "admin:queue"
+          ]
+        }
+      ]
+    },
+    "transitions": {
+      "url": "https://transitions.dev",
+      "components": [
+        {
+          "name": "card-resize",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:gallery",
+            "search:results"
+          ]
+        },
+        {
+          "name": "number-pop-in",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "city:opening",
+            "homepage-v6:counts"
+          ]
+        },
+        {
+          "name": "notification-badge",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "admin",
+            "product"
+          ],
+          "jobs": [
+            "admin:queue"
+          ]
+        },
+        {
+          "name": "text-states-swap",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:ask"
+          ]
+        },
+        {
+          "name": "menu-dropdown",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "search:filters"
+          ]
+        },
+        {
+          "name": "confetti",
+          "url": "https://transitions.dev",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "modal-open",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:lightbox"
+          ]
+        },
+        {
+          "name": "panel-reveal",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:facts"
+          ]
+        },
+        {
+          "name": "gooey-plus",
+          "url": "https://transitions.dev",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "page-side-by-side",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "search:results"
+          ]
+        },
+        {
+          "name": "icon-swap",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:ask"
+          ]
+        },
+        {
+          "name": "success-check",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "sell:ask"
+          ]
+        },
+        {
+          "name": "avatar-group-hover",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "team:faces"
+          ]
+        },
+        {
+          "name": "card-stack-hover",
+          "url": "https://transitions.dev",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "error-shake",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "sell:address",
+            "search:field"
+          ]
+        },
+        {
+          "name": "input-clear",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "search:field"
+          ]
+        },
+        {
+          "name": "skeleton-reveal",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:gallery"
+          ]
+        },
+        {
+          "name": "texts-reveal",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "city:opening"
+          ]
+        },
+        {
+          "name": "tabs-sliding",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:gallery",
+            "homepage-v6:buy-sell"
+          ]
+        },
+        {
+          "name": "drag-and-drop",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "admin"
+          ],
+          "jobs": [
+            "admin:library"
+          ]
+        },
+        {
+          "name": "shimmer-text",
+          "url": "https://transitions.dev",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "organic-shimmer",
+          "url": "https://transitions.dev",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "tooltip",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:facts"
+          ]
+        },
+        {
+          "name": "3d-tilt",
+          "url": "https://transitions.dev",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "dropdown-morph",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "search:filters"
+          ]
+        },
+        {
+          "name": "accordion",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:facts"
+          ]
+        },
+        {
+          "name": "toast",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "admin",
+            "product"
+          ],
+          "jobs": [
+            "sell:ask"
+          ]
+        },
+        {
+          "name": "like-button",
+          "url": "https://transitions.dev",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "image-open",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:lightbox"
+          ]
+        },
+        {
+          "name": "learn-more-hover",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public"
+          ],
+          "jobs": [
+            "listing-detail:ask"
+          ]
+        },
+        {
+          "name": "checkbox-check",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "search:filters"
+          ]
+        },
+        {
+          "name": "spinner-to-check",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "sell:ask"
+          ]
+        },
+        {
+          "name": "spinning-counter",
+          "url": "https://transitions.dev",
+          "take": false,
+          "surfaces": [],
+          "jobs": []
+        },
+        {
+          "name": "toggle",
+          "url": "https://transitions.dev",
+          "take": true,
+          "surfaces": [
+            "public",
+            "admin"
+          ],
+          "jobs": [
+            "search:filters"
+          ]
+        }
+      ]
+    }
+  },
+  "classes": {
+    "listing-detail": {
+      "layoutLock": "Listing media is full-bleed above the grid (listing-hero-bleed), not a column frame (listing-hero-column). SITE-45 set heroInMain to dodge a 'looks like Zillow' tell. Matt 2026-09-10: that lost the full-width hero, hid home details, and made the buttons look bad. Restore bleed. Keep PropertySpecs, description, schools, Tour/Call/Text (parity.json requiredComponents). Adapt shadcn carousel / button-group / sheet / dialog into that foundation — do not invent a smaller layout.",
+      "layoutLockChecks": [
+        {
+          "path": "app/listing/[listingKey]/page.tsx",
+          "forbid": "heroInMain"
+        },
+        {
+          "path": "app/listing/by-address/[...slug]/page.tsx",
+          "forbid": "heroInMain"
+        },
+        {
+          "path": "components/site/listing-detail/ListingDetailShell.tsx",
+          "mustMatch": "listing-hero-bleed"
+        }
+      ],
+      "modules": [
+        {
+          "id": "listing-hero-bleed",
+          "catalog": "house-listing",
+          "url": "components/site/listing-detail/ListingHero.tsx",
+          "job": "Full-bleed photograph as the first object."
+        },
+        {
+          "id": "listing-specs",
+          "catalog": "house-listing",
+          "url": "components/site/listing-detail/PropertySpecs.tsx",
+          "job": "Facts a buyer came for: type, lot, year, HOA, $/sqft."
+        },
+        {
+          "id": "listing-ask",
+          "catalog": "house-listing",
+          "url": "components/site/listing-detail/PriceCtaStrip.tsx",
+          "job": "Street as H1. One ask: Tour / Call / Text."
+        },
+        {
+          "id": "v3-carousel",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Carousel.client.tsx",
+          "job": "Swipeable media with prev/next, adapted from shadcn carousel into the full-bleed hero filmstrip."
+        },
+        {
+          "id": "v3-button-group",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3ButtonGroup.tsx",
+          "job": "Tour / Call / Text as one grouped control, not three leftover ghost buttons."
+        },
+        {
+          "id": "shadcn-carousel",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/carousel",
+          "job": "Swipeable media with prev/next. Adapt into the full-bleed hero filmstrip. Do not drop the hero to a column to fit it."
+        },
+        {
+          "id": "shadcn-button-group",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/button-group",
+          "job": "Tour / Call / Text as one grouped control, not three ghost buttons."
+        },
+        {
+          "id": "shadcn-sheet",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/sheet",
+          "job": "Mobile ask and lightbox-adjacent panes. We already installed components/ui/sheet.tsx — fetch it, restyle in v3."
+        },
+        {
+          "id": "shadcn-dialog",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/dialog",
+          "job": "Photo lightbox. We already installed components/ui/dialog.tsx."
+        },
+        {
+          "id": "beui-tabs",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/tabs",
+          "job": "Photos / 3D / floor / map as tabs with a sliding indicator. Navy on cream, no bounce."
+        },
+        {
+          "id": "beui-action-swap",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/action-swap",
+          "job": "Tour / Call / Text as one control that swaps the active act. Not three ghost buttons."
+        },
+        {
+          "id": "transitions-modal",
+          "catalog": "transitions",
+          "url": "https://transitions.dev",
+          "job": "Lightbox open/close: scale and fade at our motion band. No 3D glare."
+        },
+        {
+          "id": "beautifului-loading",
+          "catalog": "beautifului",
+          "url": "https://beautifului.dev",
+          "job": "Photo skeleton until the mosaic paints. Elapsed load, not a spinner for decoration."
+        },
+        {
+          "id": "rareui-scroll-progress",
+          "catalog": "rareui",
+          "url": "https://rareui.com/components/scrollprogressindicator",
+          "job": "A reading mark on a long listing. Hairline navy. Not a gooey orb."
+        }
+      ],
+      "primitivesToAdd": [
+        "V3Carousel",
+        "V3ButtonGroup"
+      ]
+    },
+    "homepage-v6": {
+      "layoutLock": "The homepage opens with live inventory in the first viewport and a real Sell address field without waiting on JS. Do not replace the hero search with a stacked memo. Rails stay house carousels — adapt V3Carousel into them rather than inventing a second rail look.",
+      "primitivesToAdd": [
+        "V3Carousel"
+      ],
+      "modules": [
+        {
+          "id": "house-home-rails",
+          "catalog": "house-v3",
+          "url": "app/_v3/HomeListingRail.client.tsx",
+          "job": "Stacked house carousels of live inventory, not a wall of cards."
+        },
+        {
+          "id": "beui-morphing-search",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/blocks/morphing-search",
+          "job": "Search field that morphs into results. Navy on cream, no glass."
+        },
+        {
+          "id": "beui-tabs",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/tabs",
+          "job": "Buy / Sell as tabs with a sliding indicator on the house control."
+        },
+        {
+          "id": "shadcn-carousel",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/carousel",
+          "job": "Inventory rails. Adapt into V3Carousel, do not paste a second kit."
+        }
+      ]
+    },
+    "search": {
+      "layoutLock": "Search is Atlas-grade cartography plus a list. Do not shrink the map to a default Google embed. Filters live in the house sheet, not a second overlay language.",
+      "primitivesToAdd": [
+        "V3Carousel"
+      ],
+      "modules": [
+        {
+          "id": "house-atlas",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Atlas.client.tsx",
+          "job": "The map is Atlas, not a Google default embed."
+        },
+        {
+          "id": "house-sheet",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Sheet.tsx",
+          "job": "All-filters as the house sheet, one language."
+        },
+        {
+          "id": "beui-range-slider",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/range-slider",
+          "job": "Price range with tick stops. Reduce bounce. Navy fill."
+        },
+        {
+          "id": "beui-morphing-search",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/blocks/morphing-search",
+          "job": "Field morphs into results. No glass surface."
+        },
+        {
+          "id": "shadcn-command",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/command",
+          "job": "Command search. Adapt into v3, do not paste radix chrome on the public map."
+        }
+      ]
+    },
+    "sell": {
+      "layoutLock": "Sell opens Stage then the address sheet. The sourced answer sits between the address and the contact step. Do not demote the ask to a ghost because the header carries Value my home.",
+      "primitivesToAdd": [
+        "V3ButtonGroup"
+      ],
+      "modules": [
+        {
+          "id": "house-stage",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Stage.tsx",
+          "job": "Sell hero is Stage, not a stacked memo."
+        },
+        {
+          "id": "house-sheet",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Sheet.tsx",
+          "job": "Address then answer then contact, one question at a time on 390."
+        },
+        {
+          "id": "beui-input",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/input",
+          "job": "Address field error shake and success check, restyled navy on cream."
+        },
+        {
+          "id": "transitions-panel",
+          "catalog": "transitions",
+          "url": "https://transitions.dev",
+          "job": "Answer panel reveal after the address, at our motion band."
+        }
+      ]
+    },
+    "city": {
+      "layoutLock": "A place page opens with a drawing and a figure beside the alerts sentence. Do not replace Atlas or MOS bars with a portal search hero. Inventory counts on the same page must agree.",
+      "primitivesToAdd": [
+        "V3Carousel"
+      ],
+      "modules": [
+        {
+          "id": "house-mos",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3MosBars.tsx",
+          "job": "Months of supply as two named bars, not a KPI tile."
+        },
+        {
+          "id": "house-atlas",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Atlas.client.tsx",
+          "job": "The map is Atlas, not a Google default embed."
+        },
+        {
+          "id": "house-alerts",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3AlertsStrip.client.tsx",
+          "job": "Alerts in the first viewport, not a buried form."
+        },
+        {
+          "id": "beautifului-insight",
+          "catalog": "beautifului",
+          "url": "https://beautifului.dev",
+          "job": "Paged insights with a scrubber over live charts. Adapt into V3Chart, do not paste an AI insight card."
+        },
+        {
+          "id": "beui-number",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/number",
+          "job": "Live counts that swap digits. Only sourced figures. Reduced-motion shows the finished number."
+        }
+      ]
+    },
+    "about": {
+      "layoutLock": "Faces open the page at display scale. Do not lead with a three-tile KPI grid of rating / reviews / broker count. The 5.0-from-25 lives on a face card, not a figure row.",
+      "modules": [
+        {
+          "id": "house-faces",
+          "catalog": "house-v3",
+          "url": "app/about/_v3/AboutFaces.tsx",
+          "job": "Broker photographs and the firm's record open the page."
+        },
+        {
+          "id": "house-proof",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Proof.client.tsx",
+          "job": "Proof as words and a sourced record, not a score tile."
+        },
+        {
+          "id": "house-doors",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Doors.tsx",
+          "job": "Call at display scale with live hours; Text Email Schedule lighter."
+        },
+        {
+          "id": "house-atlas",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Atlas.client.tsx",
+          "job": "Service-area Atlas, not a default Google embed."
+        },
+        {
+          "id": "shadcn-avatar",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/avatar",
+          "job": "Portrait treatment. Adapt into AboutFaces, do not paste a second face kit."
+        }
+      ]
+    },
+    "compare": {
+      "layoutLock": "The four slots open filled with the live sample. Do not lead with four dashed empty Add-a-home boxes above the comparison.",
+      "modules": [
+        {
+          "id": "house-slots",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Slots.client.tsx",
+          "job": "Four homes side by side as the first object."
+        },
+        {
+          "id": "house-compare-empty",
+          "catalog": "house-v3",
+          "url": "app/compare/_v3/CompareEmpty.client.tsx",
+          "job": "Empty tray is the filled sample, labelled as a sample."
+        },
+        {
+          "id": "shadcn-table",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/table",
+          "job": "Feature table. Adapt into the house compare sheet, navy on cream."
+        },
+        {
+          "id": "shadcn-carousel",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/carousel",
+          "job": "Photo strip per slot. Adapt into V3Carousel, do not install a second kit."
+        }
+      ]
+    },
+    "contact": {
+      "layoutLock": "One ask. Doors have hierarchy and live hours. Brokers are AboutFaces, not a second flatter roster. Do not open on four identical link rows.",
+      "modules": [
+        {
+          "id": "house-ask",
+          "catalog": "house-v3",
+          "url": "app/contact/_v3/ContactAsk.client.tsx",
+          "job": "The whole form at once, one question path."
+        },
+        {
+          "id": "house-doors",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Doors.tsx",
+          "job": "Call at display scale with live hours as the reach control."
+        },
+        {
+          "id": "house-faces",
+          "catalog": "house-v3",
+          "url": "app/about/_v3/AboutFaces.tsx",
+          "job": "Who answers, with photographs, same roster as /about and /team."
+        },
+        {
+          "id": "beui-input",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/input",
+          "job": "Field error shake and success check, restyled navy on cream."
+        },
+        {
+          "id": "shadcn-input",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/input",
+          "job": "Form fields. We already installed components/ui/input.tsx — restyle in v3."
+        }
+      ]
+    },
+    "invest": {
+      "layoutLock": "The first viewport carries a drawn finding and a live count, not two memo paragraphs headed What this page is. No cash-flow or rent figure without a live source.",
+      "modules": [
+        {
+          "id": "house-pulse",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Pulse.tsx",
+          "job": "The finding drawn: composition of the income market, part-to-whole."
+        },
+        {
+          "id": "house-ledger",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Ledger.tsx",
+          "job": "Per-type doors with how each one trades, sourced."
+        },
+        {
+          "id": "house-quiet",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Quiet.tsx",
+          "job": "Cost of money and the math doors, not a README about the page."
+        },
+        {
+          "id": "beautifului-insight",
+          "catalog": "beautifului",
+          "url": "https://beautifului.dev",
+          "job": "Paged insights with a scrubber. Adapt into V3Chart, do not paste an AI card."
+        },
+        {
+          "id": "shadcn-table",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/table",
+          "job": "Segment table. Adapt into V3Ledger, do not paste radix chrome on public."
+        }
+      ]
+    },
+    "buy": {
+      "layoutLock": "Buy opens on Stage with live inventory in the hero, then Field. Do not open on a stacked buyer-guide memo with no homes on screen.",
+      "modules": [
+        {
+          "id": "house-stage",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Stage.tsx",
+          "job": "Owned photo carrying the live market in its inventory variant."
+        },
+        {
+          "id": "house-field",
+          "catalog": "house-v3",
+          "url": "app/_v3/HomeHomesField.tsx",
+          "job": "A field of live homes, not a wall of identical cards."
+        },
+        {
+          "id": "house-ledger",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Ledger.tsx",
+          "job": "Buyer-guide rows as a ledger, not a second stacked section."
+        },
+        {
+          "id": "shadcn-carousel",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/carousel",
+          "job": "Inventory rails. Adapt into V3Carousel, do not paste a second kit."
+        }
+      ]
+    },
+    "reviews": {
+      "layoutLock": "The page opens on the rating as V3Proof: stars, count, one client's words in full. Do not lead with a Quiet list of reach rows above the proof.",
+      "modules": [
+        {
+          "id": "house-proof",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Proof.client.tsx",
+          "job": "Google score as stars and the count, then one quote in full."
+        },
+        {
+          "id": "house-doors",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Doors.tsx",
+          "job": "Reach closes the page, it does not open it."
+        },
+        {
+          "id": "shadcn-avatar",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/avatar",
+          "job": "Reviewer portraits if we have them. Adapt, do not paste a card grid."
+        }
+      ]
+    },
+    "price-drops": {
+      "layoutLock": "Opening is the Field of cut houses. Count is a caption. Do not open on a KPI of reductions this week with no photographs.",
+      "modules": [
+        {
+          "id": "house-field",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Field.tsx",
+          "job": "The cut houses as a field, photographs first."
+        },
+        {
+          "id": "house-drawing",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Drawing.client.tsx",
+          "job": "A drawing of the week's cuts, not a tile that says a percent."
+        },
+        {
+          "id": "shadcn-carousel",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/carousel",
+          "job": "Photo rails of the week's cuts. Adapt into V3Carousel."
+        }
+      ]
+    },
+    "blog": {
+      "layoutLock": "The article is an island with a measure. Related homes are a ledger when the post names a buyable place. Do not flatten CMS markup into a Quiet string.",
+      "modules": [
+        {
+          "id": "house-quiet",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Quiet.tsx",
+          "job": "The article answer as a Quiet claim, then the island."
+        },
+        {
+          "id": "house-article-island",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3ArticleIsland.css",
+          "job": "CMS body stays markup on the v3 measure, not a flattened string."
+        },
+        {
+          "id": "house-ledger",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Ledger.tsx",
+          "job": "Related homes and related posts as ledgers, not a card grid."
+        },
+        {
+          "id": "beautifului-insight",
+          "catalog": "beautifului",
+          "url": "https://beautifului.dev",
+          "job": "Charts inside a post. Adapt into V3Chart, sourced figures only."
+        }
+      ]
+    },
+    "market-report": {
+      "layoutLock": "Market destinations open on Instrument. Months of supply is two bars, never a KPI tile. One ask on the page. Absent is not zero.",
+      "modules": [
+        {
+          "id": "house-instrument",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Instrument.tsx",
+          "job": "The market answer as Instrument, verdict with a trace."
+        },
+        {
+          "id": "house-mos",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3MosBars.tsx",
+          "job": "Months of supply as two named bars, not a tile."
+        },
+        {
+          "id": "house-chart",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Chart.tsx",
+          "job": "Long-view series as house charts, navy on cream, hover required."
+        },
+        {
+          "id": "beautifului-insight",
+          "catalog": "beautifului",
+          "url": "https://beautifului.dev",
+          "job": "Paged insights with a scrubber. Adapt into V3Chart, do not paste an AI card."
+        },
+        {
+          "id": "beui-number",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/number",
+          "job": "Live counts that swap digits. Only sourced figures."
+        }
+      ]
+    },
+    "oregon-city": {
+      "layoutLock": "Honesty first: this is not our market. Live inventory the feed reports, then a referral. Do not paint a Central Oregon place page onto Medford. A city stand-in for a school or a tour CTA that contradicts we-don't-work-here is a fail.",
+      "modules": [
+        {
+          "id": "house-instrument",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Instrument.tsx",
+          "job": "The place answer with the honest out-of-area claim."
+        },
+        {
+          "id": "house-quiet",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Quiet.tsx",
+          "job": "The honest block: we do not work here, here is who does."
+        },
+        {
+          "id": "house-ledger",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Ledger.tsx",
+          "job": "Live listings the feed reports, photo treatment if they carry photographs."
+        },
+        {
+          "id": "shadcn-alert",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/alert",
+          "job": "Honesty banner. Adapt into Quiet, do not paste a yellow callout."
+        }
+      ]
+    },
+    "place-type": {
+      "layoutLock": "H1 is the type in the place, then one plain sentence with the count and the price band, then Atlas. Do not say the type twice as two display lines with no fact. Count and band from the same listing-tile read as the map marks.",
+      "modules": [
+        {
+          "id": "house-atlas",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Atlas.client.tsx",
+          "job": "The map is Atlas, guaranteed in a Suspense boundary of its own footprint."
+        },
+        {
+          "id": "house-quiet",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Quiet.tsx",
+          "job": "One claim sentence with the count and the price band."
+        },
+        {
+          "id": "shadcn-carousel",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/carousel",
+          "job": "Photographed listings as a rail. Adapt into V3Carousel."
+        }
+      ]
+    },
+    "subdivisions": {
+      "layoutLock": "A-Z directory of recorded subdivisions with live counts on the rows. Not a mini-Bend KPI Instrument. Visitor copy says subdivision, never plat.",
+      "modules": [
+        {
+          "id": "house-place-index",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3PlaceIndex.tsx",
+          "job": "The index of subdivisions as a house place index."
+        },
+        {
+          "id": "house-ledger",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Ledger.tsx",
+          "job": "Rows with live counts, photo treatment if a row carries a photograph."
+        },
+        {
+          "id": "shadcn-command",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/command",
+          "job": "A-Z jump. Adapt into v3, do not paste radix chrome on the public index."
+        }
+      ]
+    }
+  },
+  "approach": {
+    "ux": "Fetch the module, adapt the interaction into the house barrel, keep required listing sections and SEO.",
+    "dx": "One command prints the builder card (house files, ≤8 fetches, missing primitives). --preflight fails if a house file or the layout lock is gone. New primitives are files in v3 / admin v2, exported from the barrel, wired to a public route (G73). Next catalog-class receipt must name adaptedFrom and replaceWith.",
+    "ax": "The evaluator prompt includes evaluatorBrief(class). A stacked-section page that ignored the catalog is a named defect.",
+    "frankenstein": "A second component family, a second stylesheet, or a catalog palette on a public page. Growing v3 with V3Carousel is the opposite."
+  },
+  "routeClasses": {
+    "listing-detail": "listing-detail",
+    "homepage": "homepage-v6",
+    "homepage-v6": "homepage-v6",
+    "search": "search",
+    "sell": "sell",
+    "city": "city",
+    "cities": "city",
+    "community": "city",
+    "neighborhood": "city",
+    "subdivision": "city",
+    "zip": "city",
+    "about": "about",
+    "team": "about",
+    "compare": "compare",
+    "contact": "contact",
+    "invest": "invest",
+    "buy": "buy",
+    "reviews": "reviews",
+    "price-drops": "price-drops",
+    "blog": "blog",
+    "market-report": "market-report",
+    "market-report-annual": "market-report",
+    "market-report-detail": "market-report",
+    "market-report-region": "market-report",
+    "oregon-city": "oregon-city",
+    "place-type": "place-type",
+    "place-type-community": "place-type",
+    "subdivisions": "subdivisions"
+  }
+}

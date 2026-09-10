@@ -6,15 +6,16 @@
  * this file only names the place and hands over the calls.
  */
 
-import { V3PlaceValue } from '@/components/site/v3'
+import { V3PlaceValue, type V3PlaceValueActivity } from '@/components/site/v3/V3PlaceValue.client'
 import { answerPlaceValue, requestPlaceValuation } from './place-value-actions'
 
 type Props = {
   slug: string
   placeName: string
+  activity?: V3PlaceValueActivity | null
 }
 
-export function CommunityPlaceValue({ slug, placeName }: Props) {
+export function CommunityPlaceValue({ slug, placeName, activity }: Props) {
   return (
     <div className="place-opening__ask">
       {/* #value is the hash the closing answer set links to (SITE-08): the last
@@ -25,6 +26,7 @@ export function CommunityPlaceValue({ slug, placeName }: Props) {
         id="value"
         slug={slug}
         placeName={placeName}
+        activity={activity}
         answer={answerPlaceValue}
         request={requestPlaceValuation}
       />

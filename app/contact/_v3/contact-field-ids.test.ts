@@ -27,6 +27,7 @@ describe('contact field locators', () => {
   it('keeps one-screen V3Ask and pads the consent checkbox on this route', () => {
     const src = readFileSync(ASK_FILE, 'utf8')
     expect(src).toContain('<V3Ask')
+    expect(src).toContain('Field={V3Input}')
     expect(src).toContain('className="contact-ask"')
     expect(src).toContain("from '../actions'")
     expect(src).not.toContain('V3Sheet')

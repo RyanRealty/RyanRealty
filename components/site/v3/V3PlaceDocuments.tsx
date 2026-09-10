@@ -44,7 +44,7 @@ import {
   documentKindLabel,
   recordingLabel,
   type PlaceDocument,
-} from '@/lib/data/places/getPlaceDocuments'
+} from '@/lib/data/places/place-document-view'
 import { v3Text } from './atoms'
 import { V3Ledger, type V3LedgerPlainRow } from './V3Ledger'
 

@@ -198,12 +198,12 @@ describe('ci:offmarket-listing-cta', () => {
     const p = join(SANDBOX, STRIP)
     const src = readFileSync(p, 'utf8')
     const start = src.indexOf('        {offMarket ? (')
-    const end = src.indexOf('        <button', start)
+    const end = src.indexOf('        <V3Button\n          type="button"', start)
     expect(start).toBeGreaterThan(-1)
     expect(end).toBeGreaterThan(start)
-    const onMarketArm = `        <a href={tourHref} className="btn alt">Tour</a>
-        <a href={callHref!} className="btn">Call</a>
-        <a href={textHref!} className="btn">Text</a>
+    const onMarketArm = `        <V3Button href={tourHref}>Tour</V3Button>
+        <V3Button href={callHref!} variant="ghost">Call</V3Button>
+        <V3Button href={textHref!} variant="ghost">Text</V3Button>
 `
     writeFileSync(p, src.slice(0, start) + onMarketArm + src.slice(end))
     const r = run()

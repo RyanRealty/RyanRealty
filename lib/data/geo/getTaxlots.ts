@@ -42,6 +42,7 @@ const TAXLOT_SOURCES: Record<string, string> = {
   klamath: 'Klamath County GIS',
   josephine: 'Josephine County GIS',
   jackson: 'City of Medford GIS',
+  crook: 'Crook County GIS',
 }
 
 /** "Klamath County GIS", or a generic credit when we cannot name one. */

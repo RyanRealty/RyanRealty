@@ -15,6 +15,7 @@ export function ZipHomesField({
   source,
   emptyMessage,
   populationNote,
+  boundary,
 }: {
   zip: string
   /**
@@ -36,10 +37,13 @@ export function ZipHomesField({
    * activeCount) never reads the gap as a disagreement.
    */
   populationNote?: string
+  /** Census TIGER ZCTA for this ZIP. Null when the boundary row is missing. */
+  boundary?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null
 }) {
   const pins = fieldMapPins(fieldItems)
   const missing = fieldItems.length - pins.length
   const posterSrc = fieldItems.find((item) => item.photoSrc)?.photoSrc
+  const showMap = fieldItems.length > 0 || boundary != null
   return (
     <>
       <V3Heading level={1} size="field" className="v3-field-place-name">
@@ -50,8 +54,13 @@ export function ZipHomesField({
         ariaLabel={`Active single-family listings in ${zip}`}
         items={fieldItems}
         mapSlot={
-          fieldItems.length > 0 ? (
-            <PlaceFieldMap pins={pins} placeName={`ZIP ${zip}`} posterSrc={posterSrc} />
+          showMap ? (
+            <PlaceFieldMap
+              pins={pins}
+              boundary={boundary ?? undefined}
+              placeName={`ZIP ${zip}`}
+              posterSrc={posterSrc}
+            />
           ) : undefined
         }
         mapNote={caption ?? undefined}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BellAlertIcon } from '@heroicons/react/24/outline'
+import { V3Icon } from '@/components/site/v3/V3Icon'
 import {
   dismissGuestWatch, // hydration-safe: event/effect storage only
   readGuestWatch, // hydration-safe: event/effect storage only
@@ -95,7 +95,7 @@ export default function GuestWatchingBanner() {
     >
       <div className="pointer-events-auto mx-auto flex max-w-xl flex-col gap-2 border-2 border-primary bg-card px-3 py-2.5 text-foreground shadow-md sm:flex-row sm:items-center sm:gap-3 sm:px-4">
         <div className="flex min-w-0 flex-1 items-start gap-2 sm:items-center">
-          <BellAlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary sm:mt-0" aria-hidden />
+          <V3Icon name="BellNotification" size={16} className="mt-0.5 shrink-0 text-primary sm:mt-0" />
           <div className="min-w-0 text-sm leading-snug">
             <p className="font-medium">
               You&apos;re watching{' '}

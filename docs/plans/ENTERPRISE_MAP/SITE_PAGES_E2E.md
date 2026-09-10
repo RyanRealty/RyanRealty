@@ -64,7 +64,7 @@ After **every** wave: Playwright 1440 + 375, **look**, dedicated evaluator on th
 
 Nodes: 58bd29ba-c0b0-4cbe-bee2-d46b292015df
 
-This table is the only site backlog. Sessions pull the oldest open node (`npx tsx scripts/loop-brief.ts` serves it first whenever `app/**` or `components/site/**` changed in the last 14 days); they do not re-audit. A commit touching the public site names its node in a `Node:` trailer (G72). Decisions behind the queue: Matt 2026-09-07, recorded in the conversion research artifact 525cdcda and memory `project_site_conversion_decisions_2026-09-07`. Seeded by `scripts/seed-site-queue.ts` (idempotent).
+This table is the only site backlog. Sessions pull the oldest open node (`npx tsx scripts/loop-brief.ts` serves it first whenever `app/**` or `components/site/**` changed in the last 14 days); they do not re-audit. A commit touching the public site names its node in a `Node:` trailer (G72). Decisions behind the queue: Matt 2026-09-07, recorded in the conversion research artifact 525cdcda and memory `project_site_conversion_decisions_2026-09-07`. Seeded by `scripts/seed-site-queue.ts` (idempotent). Round reseeding is not automatic: `node scripts/taste-table.mjs --seed-draft` emits draft seeds for every class under 70; a person edits `scripts/seed-site-queue.ts` then runs `npx tsx scripts/seed-site-queue.ts` (SITE-62).
 
 | version_gap | id | title |
 |---|---|---|
@@ -119,6 +119,36 @@ This table is the only site backlog. Sessions pull the oldest open node (`npx ts
 | SITE-59 | `a446f730-7bba-429e-ab3d-0127c0d8b4bb` | Nothing renders an empty frame: the dead Google pane comes out (Matt 2026-09-09), and the out-of-area listing rows get their photographs |
 | SITE-60 | `e3c3e151-3238-4082-8e38-3217981019d7` | A page that links to listings prefetches ~25 MB of MLS photographs nobody sees (measured on /oregon/[city]; belongs to app/listing/**) |
 | SITE-61 | `edb9bf36-2734-4cb2-99bc-01f544a7b079` | The listing-shaped ledgers still drawing a photo in a 44px tap mark pick up V3Ledger's photo treatment |
+| SITE-64 | `13814dc4-a5bd-4d79-93ac-6d61e9a66ee2` | /about first viewport: faces open the page, not a three-tile KPI grid of 5.0 / 25 / 3 (live 2026-09-10) |
+| SITE-65 | `ee7852f3-c9a9-4307-87f2-f0e337b2305f` | /compare first viewport: the four slots open filled with the live sample, not four dashed empty boxes above it |
+| SITE-66 | `756b610c-93f9-4d77-a1d3-b424a170be77` | Every public park, ZIP, school, and taxlot surface has an authoritative polygon — most is not done |
+| SITE-67 | `2815cf9e-a39f-4ecc-8cdc-8d595525e943` | SITE-66 left most: last OSM park, 13 out-of-Deschutes schools, Jefferson taxlots |
+| SITE-75 | `d4df3bdd-6826-46e0-9ec8-a8a39ced4961` | /housing-market first viewport: live market Instrument, not Pick a report / Five products (claimed 2026-09-10) |
+| SITE-77 | `95b3edfe-e265-4519-a14f-9270fd4bccbc` | /buy first viewport: not a three-tile KPI strip of 1,562 / $749,900 / 29 (claimed 2026-09-10) |
+| SITE-68 | `1168a18c-5523-4a2a-80bd-aff4b4365570` | /invest first viewport: drawn finding and a live count, not a cover memo (catalog builder card) |
+| SITE-69 | `bebcec55-8c94-4f96-86cf-57aede1a7b7a` | /cities first viewport: not a hairline list of Oregon rows (catalog builder card) |
+| SITE-70 | `c35f52e6-6c7e-4f2b-8ae3-cd5e0bda8ab9` | /price-drops first viewport: field of cut houses, count as caption |
+| SITE-71 | `3a2e11f7-d7a2-4ca6-b687-475172bf1699` | market-report-annual first viewport: Instrument, not a KPI tile |
+| SITE-72 | `c33400e1-7007-409b-9e4a-18dc139fa504` | /search first viewport: Atlas-grade map plus list |
+| SITE-73 | `bc55bad2-4dd1-4f46-a422-b73508994bae` | /zip first viewport: Field of this ZIP's houses (city grain) |
+| SITE-74 | `0ca6a153-3668-4c52-b9a8-148cd53025a2` | /team first viewport: faces plus a sourced coverage fact, not identical directory cards |
+| SITE-75 | `d4df3bdd-6826-46e0-9ec8-a8a39ced4961` | /housing-market first viewport: Instrument + MOS bars |
+| SITE-76 | `de87b75a-feeb-4cf8-9266-e506f575d0b0` | /oregon/[city] first viewport: honesty first, not a Central Oregon place page |
+| SITE-77 | `95b3edfe-e265-4519-a14f-9270fd4bccbc` | /buy first viewport: Stage with live inventory, then Field |
+| SITE-78 | `3e98dc8e-45e5-462b-b0ae-7a88f417ca10` | place-type-community first viewport: claim sentence then Atlas |
+| SITE-79 | `7fda19f1-0e6b-4791-a31e-6a3b0fe341ed` | /reviews first viewport: V3Proof, not a Quiet list of reach rows |
+| SITE-80 | `0a06cb7f-4b9e-452d-8dd2-1b2aaff9a788` | /contact first viewport: one ask, doors with hierarchy |
+| SITE-81 | `96587b99-0861-4819-93a0-2d959b39618c` | market-report-detail first viewport: Instrument |
+| SITE-82 | `3ff28940-ae58-4e22-a4be-a7ed2c440652` | /cities/[slug] first viewport: drawing and a figure beside alerts |
+| SITE-83 | `15968659-eb1a-4930-a227-e3658063d9eb` | homepage first viewport: live inventory, not a stock search hero |
+| SITE-84 | `8358e6a9-788a-4983-a33f-a60b3ec06a5d` | neighborhood first viewport: drawing and figure beside alerts |
+| SITE-85 | `e7db6225-5d83-4f8a-88d2-b34bc2794c64` | /sell first viewport: Stage then address sheet, sourced answer |
+| SITE-86 | `ff530d52-5221-4422-8e31-689af23b2c91` | subdivision first viewport: authored caption, Atlas |
+| SITE-87 | `adc5bb3e-f44d-4cb7-8145-a7a4923efb22` | community first viewport: drawing and figure beside alerts |
+| SITE-88 | `08545734-a7cc-4d3b-b6a0-d1129911f21c` | market-report-region first viewport: Instrument |
+| SITE-89 | `0a032f84-2c09-485e-8efa-88a568a219ee` | place-type first viewport: claim sentence then Atlas |
+
+**Round four (seeded 2026-09-10, SITE-68 to SITE-89).** Catalog-backed class nodes from the 2026-09-08 table, bottom first. Skipped listing-detail (SITE-60 live), about (SITE-64 done today), compare (SITE-65 done today). Each objective carries `node scripts/lib/taste-catalog.mjs <class> --preflight`. Accept requires adaptedFrom + replaceWith and a rise on the table instrument. A lane re-measures the live first viewport before building — the 2026-09-08 scores predate round three.
 
 **Round two (seeded 2026-09-08, SITE-20 to SITE-33).** Source: Search Console 2026-06-08..2026-09-05 pulled by `scripts/_gsc-by-class.mjs` (129,817 impressions, 1,368 clicks, 1.05% CTR site-wide), four investigation lenses and twenty-two adversarial verifications (workflow `wf_71474111-a25`), every code fact re-read and every live claim re-curled with a browser UA. Every traffic-causation claim was refuted against this site's own query data (the class CTR gap is rank on head terms, not copy; cross-class position comparison is uninformative), so round two claims no click it cannot prove: it is correctness on a licensed broker's public site (wrong prices in the SERP and the structured data, MLS abbreviations as place names, out-of-market pages under a Central Oregon title), consolidation (one canonical per listing, plats attributable by polygon), origin cost, and two policy calls that are Matt's (SITE-32, SITE-33). Refuted and NOT seeded: registry-alias noindex for plats (already shipped by `getIndexableSubdivisions`; what remains is recrawl latency), a /cities out-of-area gate (middleware already 308s), cannibalization and crawl-budget mechanisms (no measurement on this site), and the greenwood-playhouse snippet (every impression is a quoted navigational query for the venue's own site).
 

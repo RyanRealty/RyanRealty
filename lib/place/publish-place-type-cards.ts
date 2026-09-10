@@ -15,6 +15,7 @@ import {
 } from '@/lib/data/market-truth/public-segments'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { placeTypeKey, type PlaceTypeKey } from '@/lib/place/place-type-style'
 
 export type PlaceTypeCard = {
@@ -118,7 +119,7 @@ export function placeTypeCoverPhotos(
       row.PropertyType ?? row.propertyType,
       row.PropertySubType ?? row.propertySubType,
     )
-    if (!covers[key]) covers[key] = photo
+    if (!covers[key]) covers[key] = listingRowPhotoSrc(photo)
   }
   return covers
 }

@@ -34,6 +34,13 @@ type Status = 'address' | 'answering' | 'answer' | 'sending' | 'sent' | 'failed'
 
 const TRAP = { name: 'company', label: 'Company' } as const
 
+export type V3PlaceValueActivity = {
+  count: string
+  label: string
+  asOf: string | null
+  spark?: { d: string; last: { x: number; y: number } | null } | null
+}
+
 export type V3PlaceValueProps = {
   /** The place's route slug, passed through to both calls and to the events. */
   slug: string
@@ -41,6 +48,8 @@ export type V3PlaceValueProps = {
   placeName: string
   answer: (input: PlaceValueAnswerInput) => Promise<PlaceValueAnswerResult>
   request: (input: PlaceValueRequestInput) => Promise<PlaceValueRequestResult>
+  /** Thin count or spark of this place's own recent activity, behind the eyebrow. */
+  activity?: V3PlaceValueActivity | null
   id?: string
   className?: string
 }
@@ -48,7 +57,7 @@ export type V3PlaceValueProps = {
 type Answer = Extract<PlaceValueAnswerResult, { ok: true }>
 type Sent = Extract<PlaceValueRequestResult, { ok: true }>
 
-export function V3PlaceValue({ slug, placeName, answer, request, id, className }: V3PlaceValueProps) {
+export function V3PlaceValue({ slug, placeName, answer, request, activity, id, className }: V3PlaceValueProps) {
   const [status, setStatus] = useState<Status>('address')
   const [stepId, setStepId] = useState<string>('answer')
   const [got, setGot] = useState<Answer | null>(null)
@@ -252,6 +261,27 @@ export function V3PlaceValue({ slug, placeName, answer, request, id, className }
 
   return (
     <div className={['v3-place-value', className].filter(Boolean).join(' ')} id={id}>
+      {activity ? (
+        <p className="v3-place-value__activity">
+          <span className="v3-place-value__activity-count">{activity.count}</span>
+          <span className="v3-place-value__activity-label">{activity.label}</span>
+          {activity.spark?.d ? (
+            <svg
+              className="v3-place-value__spark"
+              viewBox="0 0 72 18"
+              width="72"
+              height="18"
+              aria-hidden="true"
+            >
+              <path d={activity.spark.d} fill="none" stroke="currentColor" strokeWidth="1.5" />
+              {activity.spark.last ? (
+                <circle cx={activity.spark.last.x} cy={activity.spark.last.y} r="2" fill="currentColor" />
+              ) : null}
+            </svg>
+          ) : null}
+          {activity.asOf ? <span className="v3-place-value__activity-asof">as of {activity.asOf}</span> : null}
+        </p>
+      ) : null}
       <V3Sheet
         heading={`What would your home sell for in ${placeName}?`}
         headingLevel={2}

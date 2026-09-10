@@ -9,7 +9,7 @@
  * company honeypot. Guest-watch residual and alert_create measurement stay.
  */
 import { useCallback, useRef, useState } from 'react'
-import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
+import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3/V3Sheet'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { readRrSessionId } from '@/lib/tracking'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'

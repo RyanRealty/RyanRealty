@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { PlaceTypeCard } from '@/lib/place/publish-place-type-cards'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import '@/components/search/search-ledger.css'
 
 /** Horizontal type cards. Each card is leftover/segment data, miss omitted. */
@@ -24,7 +25,7 @@ export function PlaceTypeSlider({
             <div className="place-type-card__thumb" aria-hidden="true">
               {card.photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={card.photoUrl} alt="" />
+                <img src={listingRowPhotoSrc(card.photoUrl)} alt="" />
               ) : null}
             </div>
             {card.count ? <div className="place-type-card__count">{card.count}</div> : null}

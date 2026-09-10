@@ -610,19 +610,9 @@ export default async function HousingMarketHubPage() {
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Housing market' }]} />
 
-        <V3Quiet
-          id="chooser"
-          eyebrow="Market reports"
-          heading="Pick a report"
-          items={[
-            {
-              kind: 'prose',
-              term: 'Five products',
-              body: 'Live market · City pulse · Sales reports · Weekly snapshots · Market stories. Choose a door below.',
-            },
-            ...chooserItems,
-          ]}
-        />
+        {/* SITE-75: catalog lock — market destinations open on Instrument.
+            The chooser used to consume the first viewport ("Pick a report" /
+            "Five products"). It now follows the live drawing. */}
 
         {/* LEVEL 1, THE PAGE'S ANSWER (2026-08-27 hero-reorder fix, parity.json
             market-report openDefects item 1): live single-family figures lead,
@@ -682,6 +672,13 @@ export default async function HousingMarketHubPage() {
             ]}
           />
         )}
+
+        <V3Quiet
+          id="chooser"
+          eyebrow="Market reports"
+          heading="More reports"
+          items={chooserItems}
+        />
 
         {firstCityRow ? (
           <V3Ledger

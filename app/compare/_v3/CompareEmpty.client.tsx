@@ -65,7 +65,7 @@ export function CompareEmpty({ columns, rows, source, caption }: CompareEmptyPro
       eyebrow="Central Oregon"
       headline={v3Text('Compare homes')}
       headingLevel={1}
-      claim="Four homes, side by side. Add them from a search or a listing page — or start from the example below."
+      claim="Four homes, side by side. The comparison below is a live sample — add any of them, or pick your own from a search."
       slots={SLOTS}
       filled={filled}
       emptyLabel="Add a home"

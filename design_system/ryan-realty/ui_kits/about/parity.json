@@ -1,8 +1,8 @@
 {
   "route": "app/about/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat generic national-brokerage profile pages by OPENING on proof \u2014 the three brokers' faces and the firm's Google record with its trace \u2014 and then one reach control, rather than a license line over seven identical contact rows. Origin is short Quiet below the fold.",
-  "note": "SITE-48 2026-09-09 (supersedes the PAGE_OUTLINE 2026-09-05 lock). Order is Breadcrumb, AboutFaces (H1 About Ryan Realty \u00b7 Bend, eyebrow, one claim, the firm's figures with a V3SourceLine, the three brokers), V3Doors #reach as a REACH CONTROL (one call door at display scale carrying the live hours state, then text, email and the calendar as lighter links), V3Proof (the words, headline 'In their own words' \u2014 the score is in the fold and is not restated), FirmClosings, V3Atlas, Quiet #about (How it started + firm/PB license line, OREA source), V3Answers, Footer. No V3Instrument. The V3Quiet #who that used to open the page is GONE: the taste table of 2026-09-08 scored that fold 31 with the verdict 'a phone book, not a proof point'. Dates render in Pacific through formatDate.",
+  "competitiveTarget": "Beat generic national-brokerage profile pages by OPENING on proof — the three brokers' faces and the firm's Google record with its trace — and then one reach control, rather than a license line over seven identical contact rows. Origin is short Quiet below the fold.",
+  "note": "SITE-48 2026-09-09 (supersedes the PAGE_OUTLINE 2026-09-05 lock). Order is Breadcrumb, AboutFaces (H1 About Ryan Realty · Bend, eyebrow, one claim, the firm's figures with a V3SourceLine, the three brokers), V3Doors #reach as a REACH CONTROL (one call door at display scale carrying the live hours state, then text, email and the calendar as lighter links), V3Proof (the words, headline 'In their own words' — the score is in the fold and is not restated), FirmClosings, V3Atlas, Quiet #about (How it started + firm/PB license line, OREA source), V3Answers, Footer. No V3Instrument. The V3Quiet #who that used to open the page is GONE: the taste table of 2026-09-08 scored that fold 31 with the verdict 'a phone book, not a proof point'. Dates render in Pacific through formatDate.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -21,7 +21,7 @@
     },
     {
       "name": "V3Quiet",
-      "section": "Once: #about, late \u2014 a short origin plus the firm and principal-broker licences as sourced facts, never a KPI Instrument. The second instance (#who, seven contact rows as the fold) was deleted by SITE-48; the reach it carried is the V3Doors reach control.",
+      "section": "Once: #about, late — a short origin plus the firm and principal-broker licences as sourced facts, never a KPI Instrument. The second instance (#who, seven contact rows as the fold) was deleted by SITE-48; the reach it carried is the V3Doors reach control.",
       "blocking": true
     },
     {
@@ -31,7 +31,7 @@
     },
     {
       "name": "V3Answers",
-      "section": "Pattern 8, closing. The same ABOUT_FAQ_ITEMS array the FAQPage JSON-LD emits, as native disclosures, with the three edges /about has not offered yet (Value my home, Homes for sale, Central Oregon housing market) in the left rail. Replaces the closing V3Quiet 2026-09-02: as prose it measured 1,491px at 1440 with 8 paragraphs, no figure and no control, which is the wall of text TASTE.md bans by name, and four of those paragraphs restated a section above them. The D11 mission sentence went with them \u2014 VOICE.md permits it on About and requires it nowhere, and it opened on smallness positioning. No answer moved behind script: a closed disclosure is still in the served HTML.",
+      "section": "Pattern 8, closing. The same ABOUT_FAQ_ITEMS array the FAQPage JSON-LD emits, as native disclosures, with the three edges /about has not offered yet (Value my home, Homes for sale, Central Oregon housing market) in the left rail. Replaces the closing V3Quiet 2026-09-02: as prose it measured 1,491px at 1440 with 8 paragraphs, no figure and no control, which is the wall of text TASTE.md bans by name, and four of those paragraphs restated a section above them. The D11 mission sentence went with them — VOICE.md permits it on About and requires it nowhere, and it opened on smallness positioning. No answer moved behind script: a closed disclosure is still in the served HTML.",
       "blocking": true
     },
     {
@@ -41,7 +41,7 @@
     },
     {
       "name": "V3Proof",
-      "section": "The newest verified Google reviews AS WORDS, headingLevel 2, a door to /reviews. Same DAL read (getReviews) and the same quote shaping as /reviews. The count and the average are NOT the headline here \u2014 the opening already prints them, and printing them again is one page written twice.",
+      "section": "The newest verified Google reviews AS WORDS, headingLevel 2, a door to /reviews. Same DAL read (getReviews) and the same quote shaping as /reviews. The count and the average are NOT the headline here — the opening already prints them, and printing them again is one page written twice.",
       "blocking": true
     },
     {
@@ -56,7 +56,7 @@
     },
     {
       "name": "V3OnDuty",
-      "section": "The live state on the reach control: our published booking hours against the Pacific clock, from the same crm_company_settings.booking_hours rows /book offers time from. NEVER a reply-time figure \u2014 see components/site/v3/V3OnDuty.view.ts and SITE-09.",
+      "section": "The live state on the reach control: our published booking hours against the Pacific clock, from the same crm_company_settings.booking_hours rows /book offers time from. NEVER a reply-time figure — see components/site/v3/V3OnDuty.view.ts and SITE-09.",
       "blocking": true
     }
   ],
@@ -86,22 +86,22 @@
     }
   ],
   "removedComponents": [
-    "KbHero \u2014 brand eyebrow, poetry H1, Central Oregon photo, property search.",
-    "KbAbout \u2014 origin story and facts, rebuilt as the opening V3Quiet plus the Instrument.",
-    "KbExploreTowns \u2014 city ledger, rebuilt as V3Ledger from getMarketPulseCitySnapshots.",
-    "KbTestimonials \u2014 eight Google reviews. Canonical set lives on /reviews. Door in the closing Quiet.",
-    "KbArticles \u2014 getRecentBlogPosts rail. Dropped; the read is gone.",
-    "KbSell \u2014 address prefill to /sell/valuation. Replaced by valuationHref('/about') on the Instrument.",
-    "KbTeam \u2014 already removed 2026-07-08 as a duplicate of /team.",
-    "FAQBlock \u2014 rebuilt as V3Quiet prose from the same ABOUT_FAQ_ITEMS array MetadataBlock emits as FAQPage.",
-    "SmoothScrollProvider \u2014 Lenis + GSAP. v3 motion is CSS tokens.",
-    "KbFooter \u2014 replaced by V3Footer outside <main>.",
+    "KbHero — brand eyebrow, poetry H1, Central Oregon photo, property search.",
+    "KbAbout — origin story and facts, rebuilt as the opening V3Quiet plus the Instrument.",
+    "KbExploreTowns — city ledger, rebuilt as V3Ledger from getMarketPulseCitySnapshots.",
+    "KbTestimonials — eight Google reviews. Canonical set lives on /reviews. Door in the closing Quiet.",
+    "KbArticles — getRecentBlogPosts rail. Dropped; the read is gone.",
+    "KbSell — address prefill to /sell/valuation. Replaced by valuationHref('/about') on the Instrument.",
+    "KbTeam — already removed 2026-07-08 as a duplicate of /team.",
+    "FAQBlock — rebuilt as V3Quiet prose from the same ABOUT_FAQ_ITEMS array MetadataBlock emits as FAQPage.",
+    "SmoothScrollProvider — Lenis + GSAP. v3 motion is CSS tokens.",
+    "KbFooter — replaced by V3Footer outside <main>.",
     "kb-root and the kb.css import."
   ],
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "AboutFaces -- H1 About Ryan Realty \u00b7 Bend, the firm's figures with their trace, the three brokers",
+    "AboutFaces -- H1 About Ryan Realty · Bend, the firm's figures with their trace, the three brokers",
     "V3Doors #reach -- one call door at display scale with the live hours, then text, email, calendar",
     "V3Proof #proof -- the firm's Google reviews as words",
     "FirmClosings #firm-sales -- recent Ryan Realty closings, house row",
@@ -115,11 +115,11 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
+    "evaluatedAt": "2026-09-10",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate Sonnet evaluator agent, SITE-48 pass three, about page class \u2014 one call, three independent scorings of the same two shots, run against the rubric table in design_system/public/TASTE.md and asked explicitly whether a contact list is the first content of the page",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts about — grok-4.6 via grok CLI, three scorings of the SITE-64 production first-viewport shots, separate from the grok-4.5 builder",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/about"
@@ -131,91 +131,73 @@
       "states": [
         "default"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, against the lane's own dev server before the push"
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, https://ryan-realty.com/about after 036a4276"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png"
     },
-    "shotsHash": "sha256:98f090cf3a341efc8d4f4b42660c18b4610ad28f9d48cb00fce6425813f1fe32",
+    "shotsHash": "sha256:68728feab1c84fd8f1113bab386b2ad66525224e131fb39538fd28fe50806cfd",
     "scores": [
-      53,
-      55,
-      58
+      52,
+      47,
+      57
     ],
-    "score": 55,
-    "breakdown": {
-      "design": 15,
-      "originality": 15,
-      "interaction": 7,
-      "craft": 10,
-      "honesty": 8
-    },
-    "beats": "Beats the fold it replaced, and that is the win this pass claims: a visitor now meets the firm's Google record with its trace and three broker faces before any bare link, where the 2026-09-08 table found \"a phone book, not a proof point\". The evaluator named NO win over a live competitor page (Cascade Sotheby's Bend, a Zillow agent-team module) from the captured viewport, and TASTE.md forbids inventing one, so none is claimed here.",
-    "contactListIsFirstContent": false,
-    "contactListAnswer": "The H1 'About Ryan Realty \u00b7 Bend' with a one-sentence claim, then three sourced figures (5.0 Google rating, 25 client reviews, 3 licensed Oregon brokers) and a 'how we calculate this' disclosure. Contact links start below that, at the bottom of the desktop fold and off-screen at 375.",
+    "score": 52,
+    "beats": "Cascade Sotheby's Bend agents page wins on place photography and editorial portraits; this fold wins on a traced 5.0 from 25 and printed Oregon licenses, and loses the screenshot test to a three-up directory. This site's own /reviews fold draws the same 5.0 as stars with a quote — we lose that metric to ourselves.",
     "defects": [
       {
-        "section": "#faces figures (5.0 / 25 / 3)",
+        "section": "#faces .about-faces__grid",
         "severity": "taste",
-        "finding": "Three bare figures with no plain sentence beside any of them saying what it means for the reader, and none opens the rows behind it \u2014 the KPI-grid tell in a softer form."
+        "finding": "Three equal yearbook columns on a hairline shelf. Matt as owner is the same scale as the other two, so the fold is a staff directory, not a composed house of faces. A template would ship this. replaceWith: AboutFaces compact (the homepage subgrid table) or transitions.dev avatar-group-hover adapted into the barrel."
       },
       {
-        "section": "#faces reach row",
+        "section": "#faces .about-faces__reach-row",
         "severity": "taste",
-        "finding": "The four reach chips repeat identically on all three cards. Call now carries the weight and the number, but Text, Email and Schedule are still three boxed controls per card rather than plain links under one button."
+        "finding": "Four icon chips times three faces is twelve reach controls in one viewport, which is the icon-card-grid tell with Call merely painted navy. Text, Email and Schedule stay boxed on every card. replaceWith: V3ButtonGroup or beui-action-swap — one Call per person, the rest as text links — or no card reach at all."
       },
       {
-        "section": "#faces figures at 375",
+        "section": "#faces .about-faces__claim",
+        "severity": "taste",
+        "finding": "The firm's only data (5.0 from 25 Google reviews, three brokers, 2014) is a clause in a paragraph. Killing the KPI tiles was the right ban; replacing them with prose is not a form. The 5.0 has no face. replaceWith: V3Proof as the opening, stars plus one quote, the job /reviews already does."
+      },
+      {
+        "section": "#faces .about-faces__item",
+        "severity": "taste",
+        "finding": "No per-broker figure, place list, or hover. Name, boxed title, license, chips — three identical cards. The record slot in this component is empty here, so nothing rewards a hover or tap with more data except the page-level source disclosure. replaceWith: the AboutFaces record figure plus shadcn hover-card adapted into v3."
+      },
+      {
+        "section": "#faces",
+        "severity": "taste",
+        "finding": "Zero Central Oregon in the frame: no office, no Bend photograph, no map peek. The fold could be any city's shop with different names. Catalog ignored on a page whose subject is a place."
+      },
+      {
+        "section": "#faces .about-faces__item (375)",
         "severity": "craft",
-        "finding": "The three opening figures wrap 2-up then 1, so \"3 licensed Oregon brokers\" is orphaned on its own row instead of a deliberate stack or a three-across line."
+        "finding": "At 375 the claim is three licensed brokers and the viewport holds Matt in full and Rebecca cropped through the face. Schedule sits alone on a third chip row under Email. The trio that is the proof does not survive the phone."
       },
       {
-        "section": "#faces record",
-        "severity": "interaction",
-        "finding": "The per-broker MLS record that /team now carries is NOT wired on /about, so this page's faces are still name, licence and reach with no figure of their own. Left on purpose this pass: /about's subject is the firm, and adding three per-broker MLS reads to it is a change with its own shots and its own score."
+        "section": "#faces .about-faces__title",
+        "severity": "craft",
+        "finding": "OWNER & PRINCIPAL BROKER and BROKER sit in hairline boxes. That is product-UI chrome on an editorial page; the compact table already sets role as a plain muted line."
+      },
+      {
+        "section": "#faces details.v3-source",
+        "severity": "taste",
+        "finding": "The only data control in the shot is how we calculate this. Nothing on a face, rating, or license reveals more on hover, scrub, or toggle. Interaction here is a methodology disclosure, not a display."
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-08",
-      "score": 31,
-      "scores": [
-        31,
-        35,
-        28
-      ],
+      "evaluatedAt": "2026-09-09",
+      "score": 55,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "not recorded \u2014 the cross-class table predates per-row shot hashes",
-      "source": "design_system/public/taste-table.json"
+      "shotsHash": "sha256:98f090cf3a341efc8d4f4b42660c18b4610ad28f9d48cb00fce6425813f1fe32"
     },
-    "rebaselineReason": "The prior mark is the cross-class taste table of 2026-09-08 (design_system/public/taste-table.json), which is the instrument SITE-48's accept test names. Same evaluatorModel and same rubricVersion; the shots are new captures of a rebuilt page, so shotsHash differs and the mark re-baselines rather than \"rises\". The raw numbers, plainly: before 31 (raw [31, 35, 28]), after 55 (raw [53, 55, 58]), a rise of 24 points on the same rubric and the same evaluator model. The shotsHash is the only identity key that differs.",
-    "verdict": "No longer a phone book: the fold opens on a claim, three sourced figures with a left-aligned trace, and the three brokers standing on a hairline shelf with Call weighted above the rest. What is left is that the figure row is still three bare numerals and the per-broker record does not reach this page.",
-    "priorRouteMark": {
-      "evaluatedAt": "2026-09-06",
-      "score": 51,
-      "evaluator": "separate grok-4.6 evaluator, remaining-issues pass, about",
-      "note": "the route's own receipt at HEAD, on a different instrument (a different evaluator model and/or a different shot set). Kept so the history is readable; the mark this pass is measured against is priorMark, the cross-class table SITE-48's accept test names."
-    },
-    "passes": {
-      "note": "Three build-and-score rounds ran in this lane before the mark above, each on its own shots. The score recorded here is the LAST one, on the shots this receipt hashes.",
-      "roundOne": {
-        "score": 46,
-        "scores": [
-          46,
-          46,
-          47
-        ]
-      },
-      "roundTwo": {
-        "score": 60,
-        "scores": [
-          58,
-          60,
-          62
-        ]
-      }
-    }
+    "rebaselineReason": "evaluatorModel and shotsHash differ: SITE-48's 55 was claude-sonnet-5 on the KPI-grid fold (shotsHash sha256:98f090cf); this mark is grok-4.6 on new first-viewport shots after SITE-64 cut the 5.0/25/3 tiles. Same rubricVersion v1-2026-09-08. Mechanical accept holds: three broker photographs in the 1440 fold, no three-cell Google-rating KPI grid.",
+    "verdict": "This is not better than a 55. The KPI row is gone, which was the correct deletion, but it was replaced with a sentence rather than a better object, so the fold is a type block plus a yearbook. Identity lives in the H1; under it the page is a staff directory a template would ship, and at 375 the three-broker claim is one cropped face.",
+    "contactListIsFirstContent": false,
+    "contactListAnswer": "The H1 and one claim sentence (including 5.0 from 25 Google reviews as prose) then three broker photographs. No three-tile KPI grid. Reach chips sit on the cards, not as a phone-book list above them."
   }
 }

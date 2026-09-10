@@ -82,8 +82,8 @@ function baseReceipt(over = {}) {
   }
 }
 
-function writeReceipt(tasteReview) {
-  writeJson(`${KIT}/parity.json`, { route: 'app/testroute/page.tsx', requiredComponents: [], tasteReview })
+function writeReceipt(tasteReview, requiredComponents = []) {
+  writeJson(`${KIT}/parity.json`, { route: 'app/testroute/page.tsx', requiredComponents, tasteReview })
 }
 
 function run() {
@@ -356,7 +356,7 @@ describe('check-taste-canon — instrument receipt (2026-09-08)', () => {
 
 describe('check-taste-canon — the committed receipt is a prior mark', () => {
   /** Commit a receipt at HEAD so the working tree has something to compare to. */
-  function commitReceipt(tasteReview) {
+  function commitReceipt(tasteReview, requiredComponents = []) {
     const git = (args) => {
       const r = spawnSync('git', args, { cwd: SANDBOX, encoding: 'utf8', env: cleanEnv })
       if (r.status !== 0) throw new Error(`git ${args.join(' ')} failed:\n${r.stdout}${r.stderr}`)
@@ -364,17 +364,18 @@ describe('check-taste-canon — the committed receipt is a prior mark', () => {
     git(['init', '-q'])
     git(['config', 'user.email', 'test@test.invalid'])
     git(['config', 'user.name', 'test'])
-    writeReceipt(tasteReview)
+    writeReceipt(tasteReview, requiredComponents)
     git(['add', '-A'])
     git(['commit', '-qm', 'seed'])
   }
 
-  const committed = () =>
+  const committed = (over = {}) =>
     baseReceipt({
       evaluatedAt: '2026-09-08',
       scores: [74, 76, 75],
       score: 75,
       defects: [{ section: '#hero', severity: 'taste', finding: 'centered hero with no reason to scroll' }],
+      ...over,
     })
 
   it('refuses "first" when the route already carries a scored receipt at HEAD', () => {
@@ -385,6 +386,125 @@ describe('check-taste-canon — the committed receipt is a prior mark', () => {
     expect(r.code).toBe(1)
     expect(r.out).toContain('already scored 75')
     expect(r.out).toContain('not an exit from the rise rule')
+  })
+
+  it('refuses a taste rise that drops honestyFunction vs the prior mark', () => {
+    scaffold()
+    commitReceipt(
+      committed({
+        criteria: { designQuality: 20, originality: 18, interaction: 10, craft: 12, honestyFunction: 8 },
+      }),
+    )
+    writeReceipt(
+      baseReceipt({
+        comparedToPrior: 'rose',
+        scores: [81, 84, 82],
+        score: 82,
+        criteria: { designQuality: 28, originality: 25, interaction: 14, craft: 12, honestyFunction: 3 },
+        priorMark: {
+          evaluatedAt: '2026-09-08',
+          score: 75,
+          evaluatorModel: 'claude-opus-4-1',
+          rubricVersion: 'v1-2026-09-08',
+          shotsHash: hash(),
+          criteria: { designQuality: 20, originality: 18, interaction: 10, craft: 12, honestyFunction: 8 },
+        },
+      }),
+    )
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toMatch(/honestyFunction 3 fell below the prior mark 8/)
+  })
+
+  it('refuses a taste rise that omits honestyFunction after the prior mark recorded it', () => {
+    scaffold()
+    commitReceipt(
+      committed({
+        criteria: { designQuality: 20, originality: 18, interaction: 10, craft: 12, honestyFunction: 8 },
+      }),
+    )
+    writeReceipt(
+      baseReceipt({
+        comparedToPrior: 'rose',
+        scores: [81, 84, 82],
+        score: 82,
+        priorMark: {
+          evaluatedAt: '2026-09-08',
+          score: 75,
+          evaluatorModel: 'claude-opus-4-1',
+          rubricVersion: 'v1-2026-09-08',
+          shotsHash: hash(),
+          criteria: { designQuality: 20, originality: 18, interaction: 10, craft: 12, honestyFunction: 8 },
+        },
+      }),
+    )
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toMatch(/honestyFunction omitted while the prior mark recorded 8/)
+  })
+
+  it('refuses a taste rise that shrinks requiredComponents vs HEAD', () => {
+    scaffold()
+    const comps = [{ name: 'MetadataBlock' }, { name: 'V3Ask' }, { name: 'V3Stage' }]
+    commitReceipt(committed(), comps)
+    writeReceipt(
+      baseReceipt({
+        comparedToPrior: 'rose',
+        priorMark: {
+          evaluatedAt: '2026-09-08',
+          score: 75,
+          evaluatorModel: 'claude-opus-4-1',
+          rubricVersion: 'v1-2026-09-08',
+          shotsHash: hash(),
+        },
+      }),
+      [{ name: 'V3Ask' }, { name: 'V3Stage' }],
+    )
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toMatch(/requiredComponents shrank 3 → 2/)
+  })
+
+  it('refuses swapping JSON-LD out of requiredComponents even when the count holds', () => {
+    scaffold()
+    commitReceipt(committed(), [{ name: 'MetadataBlock' }, { name: 'V3Ask' }, { name: 'V3Stage' }])
+    writeReceipt(
+      baseReceipt({
+        comparedToPrior: 'rose',
+        priorMark: {
+          evaluatedAt: '2026-09-08',
+          score: 75,
+          evaluatorModel: 'claude-opus-4-1',
+          rubricVersion: 'v1-2026-09-08',
+          shotsHash: hash(),
+        },
+      }),
+      [{ name: 'V3Quiet' }, { name: 'V3Ask' }, { name: 'V3Stage' }],
+    )
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toMatch(/JSON-LD dropped from requiredComponents/)
+  })
+
+  it('accepts renaming ContactAsk to V3Ask and growing the contract', () => {
+    scaffold()
+    commitReceipt(committed(), [{ name: 'ContactAsk' }, { name: 'MetadataBlock' }])
+    writeReceipt(
+      baseReceipt({
+        comparedToPrior: 'rose',
+        priorMark: {
+          evaluatedAt: '2026-09-08',
+          score: 75,
+          evaluatorModel: 'claude-opus-4-1',
+          rubricVersion: 'v1-2026-09-08',
+          shotsHash: hash(),
+        },
+      }),
+      [{ name: 'V3Ask' }, { name: 'MetadataBlock' }, { name: 'V3Stage' }],
+    )
+    const r = run()
+    expect(r.out).toContain('taste-canon OK')
+    expect(r.code).toBe(0)
   })
 
   it('accepts a rise that names the committed mark', () => {
@@ -450,5 +570,111 @@ describe('check-taste-canon — the rules that were already there', () => {
     const r = run()
     expect(r.code).toBe(1)
     expect(r.out).toContain('no longer cites design_system/public/TASTE.md')
+  })
+})
+
+describe('check-taste-canon — catalog receipts (adaptedFrom + replaceWith)', () => {
+  const EXM = [
+    ['beautifului', 'https://beautifului.dev'],
+    ['beui', 'https://beui.dev'],
+    ['rareui', 'https://rareui.com'],
+    ['transitions', 'https://transitions.dev'],
+    ['shadcn', 'https://ui.shadcn.com'],
+  ]
+  function n(count, prefix) {
+    return Array.from({ length: count }, (_, i) => ({
+      name: `${prefix}-${i}`,
+      url: `https://example.test/${prefix}-${i}`,
+      take: true,
+      surfaces: ['public'],
+      jobs: ['listing-detail'],
+    }))
+  }
+  function stubCatalog() {
+    const two = (id, url) => ({ id, url, job: 'A twenty-character job for the module.' })
+    const klass = (lock) => ({
+      layoutLock: lock,
+      modules: [two('house-mod', 'components/site/v3/V3Stage.tsx'), two('shadcn-carousel', 'https://ui.shadcn.com/docs/components/carousel')],
+    })
+    return {
+      source: 'https://x.com/EXM7777/status/2092250905655812121',
+      catalogUrls: EXM.map(([, u]) => u),
+      refuse: ['purple', 'orbs', 'npx shadcn add onto app/'],
+      catalogs: [
+        ...EXM.map(([id, url]) => ({
+          id,
+          name: id,
+          url,
+          kind: 'external',
+          take: 'Adapt the named job into the house barrel only.',
+          refuse: 'Do not install this kit on the public site.',
+        })),
+        {
+          id: 'house-v3',
+          name: 'house',
+          url: 'components/site/v3',
+          kind: 'house',
+          take: 'Open the house primitive and keep its layout.',
+          refuse: 'Do not replace it with a catalog kit.',
+        },
+      ],
+      shadcn: { components: Array.from({ length: 50 }, (_, i) => ({ name: `comp-${i}` })) },
+      lists: {
+        beautifului: { url: EXM[0][1], components: n(20, 'bu') },
+        beui: { url: EXM[1][1], components: n(40, 'be') },
+        rareui: { url: EXM[2][1], components: n(15, 'ra') },
+        transitions: { url: EXM[3][1], components: n(25, 'tr') },
+      },
+      classes: {
+        'listing-detail': klass('Listing media is full-bleed above the grid, never a column frame.'),
+        'homepage-v6': klass('The homepage opens with live inventory in the first viewport.'),
+        search: klass('Search is Atlas-grade cartography plus a list, not a default embed.'),
+        sell: klass('Sell opens Stage then the address sheet, then the sourced answer.'),
+        city: klass('A place page opens with a drawing and a figure beside alerts.'),
+      },
+      routeClasses: { testroute: 'listing-detail' },
+    }
+  }
+
+  it('fails a catalog-class receipt with empty adaptedFrom unless it sits on the baseline', () => {
+    scaffold()
+    writeJson('design_system/public/taste-catalog.json', stubCatalog())
+    writeReceipt(baseReceipt())
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toMatch(/adaptedFrom is empty|write-catalog-baseline/)
+  })
+
+  it('lets a predating catalog receipt sit on the shrink-only baseline', () => {
+    scaffold()
+    writeJson('design_system/public/taste-catalog.json', stubCatalog())
+    writeReceipt(baseReceipt())
+    writeJson('scripts/taste-receipt-catalog-baseline.json', { routes: [`${KIT}/parity.json`] })
+    const r = run()
+    expect(r.out).toContain('taste-canon OK')
+    expect(r.out).toContain('1 catalog receipt(s) (baseline)')
+    expect(r.code).toBe(0)
+  })
+
+  it('passes a catalog-class receipt that names adaptedFrom and replaceWith', () => {
+    scaffold()
+    writeJson('design_system/public/taste-catalog.json', stubCatalog())
+    writeReceipt(
+      baseReceipt({
+        adaptedFrom: [{ id: 'house-mod' }],
+        defects: [{ section: '#rails', severity: 'taste', finding: 'three consecutive sections share one form', replaceWith: 'shadcn-carousel' }],
+      }),
+    )
+    const r = run()
+    expect(r.out).toContain('taste-canon OK')
+    expect(r.code).toBe(0)
+  })
+
+  it('does not require a catalog baseline file when the kit is not a catalog class', () => {
+    scaffold()
+    writeReceipt(baseReceipt())
+    const r = run()
+    expect(r.out).toContain('taste-canon OK')
+    expect(r.code).toBe(0)
   })
 })

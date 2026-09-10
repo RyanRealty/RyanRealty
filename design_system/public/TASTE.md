@@ -14,6 +14,14 @@ no page for that place that we won't beat in every single metric." Every rule
 below serves that verdict. A section that is correct, gated, on-token, and dull
 has failed.
 
+**Priority (Matt 2026-09-10).** SEO first (titles, index, JSON-LD, crawlable
+links, payload/LCP) so the page can be found. Then information (sourced
+figures, full listing facts, remarks as written) so the page is true. Then
+look, sense, and ease of use so a person stays. UI/UX may rise; it may not
+steal from SEO or information. A catalog control that drops MLS remarks or
+the bleed hero is not done. A cream box named after a catalog demo is not
+done.
+
 ## Why our pages come out generic when the model can clearly do better
 
 Research (2026-09-01, `docs/research/taste-for-agents.md`) and our own history
@@ -84,7 +92,7 @@ JSON file. As of 2026-09-08 it records the INSTRUMENT, not just the number:
 ```json
 {
   "evaluatedAt": "YYYY-MM-DD",
-  "rubricVersion": "v1-2026-09-08",
+  "rubricVersion": "v1-2026-09-10",
   "evaluator": "separate agent id and how it was run — never the builder, never 'pending'",
   "evaluatorModel": "claude-opus-4-1",
   "builderModel": "claude-sonnet-4-5",
@@ -101,8 +109,9 @@ JSON file. As of 2026-09-08 it records the INSTRUMENT, not just the number:
   "scores": [81, 84, 82],
   "score": 82,
   "beats": "named competing page and the metric we win",
+  "adaptedFrom": [{ "id": "house-module-or-catalog-id" }],
   "defects": [
-    { "section": "#rails", "severity": "taste", "finding": "named finding, 10+ characters" }
+    { "section": "#rails", "severity": "taste", "finding": "named finding, 10+ characters", "replaceWith": "V3Carousel" }
   ],
   "comparedToPrior": "first | rose | rebaselined",
   "priorMark": {
@@ -116,10 +125,13 @@ JSON file. As of 2026-09-08 it records the INSTRUMENT, not just the number:
 }
 ```
 
-**Rubric version: `v1-2026-09-08`** — the five-criterion table below. Change a
-weight, a criterion, or a passing bar and the version changes with it, so a
-receipt says which rubric produced its number. Versions: `v1-2026-09-08`
-(first versioned rubric; the table is the one in use since 2026-09-01).
+**Rubric version: `v1-2026-09-10`** — the five-criterion table below, plus the
+SITE-63 rule that every data-display defect names a house replacement form.
+Change a weight, a criterion, a passing bar, or the form-prescription rule and
+the version changes with it, so a receipt says which rubric produced its
+number. Versions: `v1-2026-09-08` (first versioned rubric); `v1-2026-09-10`
+(evaluator must set `replaceWith` from the house form list — see
+`design_system/public/taste-evaluator.v1-2026-09-10.md`).
 
 Each field is checked, not decorative (`scripts/check-taste-canon.mjs`, contract
 in `scripts/lib/taste-receipt.mjs`):
@@ -140,6 +152,16 @@ in `scripts/lib/taste-receipt.mjs`):
 - **`comparedToPrior` cannot be `"first"` when the route's committed receipt
   already carries a score.** The gate reads the receipt at HEAD; a fresh mark
   that ignores it is refused. "First" is not an exit from the rise rule.
+- **Product hold (Matt 2026-09-10).** UI/UX (design, originality, interaction)
+  may rise. Honesty (`honestyFunction` / HF/10), sourced figures, required
+  sections, JSON-LD, titles, conversion asks, tap targets, and page payload
+  must hold or improve. A prettier page that drops any of those is not done.
+  When the prior mark recorded `honestyFunction` or `perCriterion.honesty`,
+  the new receipt must record it and must not be lower — omitting the
+  criterion to skip the hold fails (`ci:taste-canon`). `requiredComponents`
+  cannot shrink vs HEAD; a JSON-LD or conversion-ask role present at HEAD
+  must remain (rename allowed). Titles, payload, and tap targets stay on
+  `ci:seo-shell` / `ci:runtime-gates` (shrink-only).
 
 Both PNGs must exist in the repo. `ci:taste-canon` fails a new review without
 them. Receipts written before this shape landed stay valid; ones already dated
@@ -149,6 +171,16 @@ and the Atlas "pinch to zoom" sentence are mechanical tells: a score of 86
 cannot outvote them (`scripts/taste-tells-baseline.json`, shrink-only). X
 research: `docs/research/taste-on-x-2026-09-05.md`.
 
+**THE ONE INSTRUMENT (Matt 2026-09-09).** The judge is **grok-4.6**, run through the
+`grok` CLI so it spends the Grok subscription rather than API credit, and it is the judge
+whatever built the page — `scripts/taste-evaluate.ts` for a route's receipt,
+`scripts/taste-table.mjs` for the site table. Before this the judge followed the builder
+(Claude lanes scored with claude-sonnet-5, Grok lanes with grok-4.5), so every page a Grok
+lane touched rebaselined and its previous mark stopped counting; a rise rule needs one
+ruler. Because the gate below refuses `evaluatorModel == builderModel`, a **Grok lane
+builds with grok-4.5**. Every class rebaselines ONCE on the switch: the first mark on this
+instrument is the new baseline, and the 70 finish line applies to those numbers.
+
 The critique pass is a SEPARATE agent (mandatory since 2026-09-01)
 
 The builder never grades its own page. After the ritual, spawn an evaluator
@@ -156,6 +188,14 @@ The builder never grades its own page. After the ritual, spawn an evaluator
 screenshots and the rendered page's URL) with this rubric. It returns named
 defects with the section id and three scorings; the builder fixes and
 re-submits. Ship only when the evaluator passes every row.
+
+**Evaluator prompt file:** `design_system/public/taste-evaluator.v1-2026-09-10.md`
+(loaded by `scripts/taste-evaluate.ts`). On every data-display defect the
+evaluator names which house form replaces it (`replaceWith`: hero figure ·
+stat tile with sparkline · emphasis line with a scrubber · horizontal bar ·
+dot strip · slope · small multiples · beeswarm · map with data-encoded cells ·
+table), or a house primitive / catalog module id (`V3Carousel`, …). Diagnosis
+alone is incomplete. Craft/honesty defects use `null`.
 
 **The pass runs against the lane's own dev server, BEFORE the branch is
 pushed** (2026-09-08). A defect found before the push costs a fix. The same
@@ -254,6 +294,66 @@ The full method is the `dataviz` skill (form → color → validate → marks �
 
 "The AI doesn't invent criteria; it averages them" (X, 2026-09-01 research,
 `docs/research/taste-for-agents-x.md`). "Make it elegant" transfers nothing.
+
+**Lego, not a skill (Machina @EXM7777, 2026-08-25; Matt 2026-09-10: the
+catalogs are the UX bar).** The floor of five, then any URL Matt pastes
+into `catalogUrls` (append-only):
+
+- https://beautifului.dev
+- https://beui.dev
+- https://rareui.com
+- https://transitions.dev
+- https://ui.shadcn.com
+
+Fetch the list, **install the source** (`npx shadcn add` / registry URL into
+`components/ui` or a new `components/site/v3` primitive), restyle to navy
+`#102742`, cream `#faf8f4`, Geist, Amboqia, Iconoir, and **keep the
+interaction**. If you open the demo and our control, a person must recognize
+the same object. Do not generate a layout from an adjective. Do not submodule
+their GitHub tree. Do not copy Inter, purple, orbs, or agent-chat chrome.
+Do not keep the catalog name and throw away the motion (homepage
+`V3MorphSearch` as a labeled cream field is that miss). The lists live in
+`design_system/public/taste-catalog.json`. A lane starts with:
+
+```bash
+node scripts/lib/taste-catalog.mjs listing-detail --preflight
+```
+
+That prints the **builder card**: the layout lock, house files to OPEN, up to
+eight catalog URLs to FETCH and install, and primitives still missing from
+the barrel. `--preflight` fails if a house file or the layout lock is gone.
+**If the job has no house primitive, add one to the v3 barrel** that still
+matches the demo (OPEN set). A second kit or catalog palette on a public page
+is Frankenstein. Admin jobs land in `components/admin/v2`. Record
+`adaptedFrom`. Empty `adaptedFrom` is inventing a layout — SITE-45 invented
+"one frame in the column" instead of fetching a carousel into the full-bleed
+hero, and Matt lost the hero, the facts, and the buttons. `ci:taste-canon`
+refuses a new catalog-class receipt without `adaptedFrom`; existing receipts
+sit on a shrink-only baseline until their next score.
+
+**Listing inventory is a hold, same as honesty.** UX may restyle the house
+page. It may not drop or summarize away the 13-row contract: full-bleed
+media, Tour/Call/Text, PropertySpecs, MLS remarks as written
+(`DescriptionBlock`), payment line items, map/Atlas, schools, parks, tax,
+CC&Rs, similar homes, broker. `heroInMain` is the SITE-45 shrink and fails
+the layout lock.
+
+**Photographs.** A Spark `320x240` derivative is the 88×66 ledger thumb.
+Cards, rails, and the listing hero ask the size they draw (`800x600` or the
+1600 mosaic plate). Stretching a thumb across a card is a defect.
+
+The evaluator (`scripts/taste-evaluate.ts` and `scripts/taste-table.mjs`)
+injects `evaluatorBrief(class)` so a node is judged against this catalog, not
+against "clean." Diagnose the job from our shots, then pick `replaceWith`
+from the short option list (id + demo URL) — not from 200 components, not a
+house primitive that already lost. A stacked-section page that ignored the
+catalog is a named defect. A live control that does not match the chosen demo
+is a named defect even if the score rose. `replaceWith` is `null` only when
+the finding is craft, honesty, or SEO, not form. A catalog load error fails
+the evaluator out loud — it does not swallow and score "clean." Score still
+exists; it cannot override a failed demo match, a dropped required section,
+or a fallen `honestyFunction`.
+
 Before composing a page class, write down three to five references and *what
 specifically works in each*, and design against those sentences. Two stronger
 forms of the same discipline: point the builder at REAL component code (a
@@ -262,8 +362,14 @@ description, and feed a machine-readable token sheet from a shipped site you
 admire as pre-build context. An installed generic "anti-slop" skill file is a
 starting constraint, never the answer: used alone it swaps one default
 aesthetic for another, shared by everyone who installed it. Our references are
-our own — the brand tokens, the Old Mill hero, Central Oregon itself. The
-standing set for this site:
+our own — the brand tokens, the Old Mill hero, Central Oregon itself.
+
+**Per-class reference files (SITE-63):** every class under 70 on the taste
+table has `design_system/public/references/<class>.md` — two or three named
+external pages with one sentence each on what works, plus at least one shipped
+component path to adapt. Cite that file from the SITE node brief and hand it
+to the evaluator so `beats` is judged against something named. The standing
+set for this site:
 
 - **Editorial data journalism** (the claim-first headline over a chart; the
   scrubber that lets the reader find their own year; annotation on the mark).
@@ -289,6 +395,18 @@ one prop, rendered side by side on a decision sheet (screenshots, desktop +
 mobile) for Matt to pick per surface. The picked variant becomes the one canon
 for that section; the losing variants are DELETED in the commit that records
 the pick. One surface, one look, forever (anti-Frankenstein).
+
+**Capture (SITE-63):** pages switch on `?taste_variant=<name>`. Run:
+
+```bash
+node scripts/take-route-shots.mjs --variants a,b,c <class> <url>
+```
+
+That writes every variant at 1440 and 375 into
+`design_system/public/references/<class>/variants/` and one HTML decision
+sheet at `design_system/public/references/<class>-decision-sheet.html`. Record
+the sheet path and the one-line pick question on the SITE node; do not delete
+losers until Matt answers.
 
 ## Design the CLASS, not the instance (Matt 2026-09-01: "one-off approach")
 

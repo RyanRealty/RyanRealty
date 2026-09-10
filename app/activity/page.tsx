@@ -106,6 +106,7 @@ export default async function ActivityPage() {
                 : `${rows.length.toLocaleString('en-US')} recent moves`,
             )}
             rows={[firstRow, ...restRows]}
+            media="photo"
             source={v3Text(ACTIVITY_TRACE)}
           />
         ) : (
@@ -114,6 +115,7 @@ export default async function ActivityPage() {
             headingLevel={1}
             heading={v3Text('What just moved on the list')}
             rows={[]}
+            media="photo"
             emptyMessage={v3Text(
               'The market is quiet right now. Browse active homes or check back for new listings, price changes, and sales.',
             )}

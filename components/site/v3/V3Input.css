@@ -1,0 +1,145 @@
+/* V3Input — labelled control, native validity. Tokens only.
+   Job from beui-input: shake on error, check draw on success.
+   Job from shadcn-input: label + field + focus ring, restyled navy on cream. */
+
+.v3-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-3xs);
+  min-width: 0;
+}
+
+.v3-input__label {
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3-input__optional {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: var(--v3-weight-body);
+}
+
+.v3-input__hint {
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink-muted);
+}
+
+.v3-input__field {
+  position: relative;
+  min-width: 0;
+}
+
+.v3-input__control {
+  width: 100%;
+  min-height: var(--v3-tap);
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  font-family: inherit;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-control);
+  transition: border-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-input__control[required] {
+  padding-right: var(--v3-space-xl);
+}
+
+.v3-input__control::placeholder {
+  color: var(--v3-ink-muted);
+}
+
+.v3-input__control:hover {
+  border-color: var(--v3-ink-muted);
+}
+
+.v3-input__control:focus-visible {
+  outline: 3px solid var(--v3-wash);
+  outline-offset: 0;
+  border-color: var(--v3-navy);
+}
+
+/* Invalid is weight, not a hue. Two colors only. */
+.v3-input__control:user-invalid {
+  border-width: 2px;
+  border-color: var(--v3-navy);
+}
+
+.v3-input:has(.v3-input__control:user-invalid) .v3-input__field {
+  animation: v3-input-shake var(--v3-dur-rise) var(--v3-ease-out);
+}
+
+.v3-input__control--area {
+  min-height: calc(var(--v3-tap) * 3);
+  line-height: var(--v3-leading-body);
+  resize: vertical;
+}
+
+/* Success check: navy stroke draw. Hidden until the browser has accepted
+   a required value the visitor actually edited. */
+.v3-input__check {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.7rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--v3-navy);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.v3-input__check path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+}
+
+.v3-input:has(.v3-input__control[required]:user-valid) .v3-input__check {
+  opacity: 1;
+}
+
+.v3-input:has(.v3-input__control[required]:user-valid) .v3-input__check path {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--v3-dur-enter) var(--v3-ease-out);
+}
+
+.v3-input:has(.v3-input__control:user-invalid) .v3-input__check {
+  opacity: 0;
+}
+
+@keyframes v3-input-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(calc(var(--v3-travel) * -0.6));
+  }
+  40% {
+    transform: translateX(calc(var(--v3-travel) * 0.6));
+  }
+  60% {
+    transform: translateX(calc(var(--v3-travel) * -0.4));
+  }
+  80% {
+    transform: translateX(calc(var(--v3-travel) * 0.4));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-input__control {
+    transition: none;
+  }
+  .v3-input:has(.v3-input__control:user-invalid) .v3-input__field {
+    animation: none;
+  }
+  .v3-input:has(.v3-input__control[required]:user-valid) .v3-input__check path {
+    transition: none;
+    stroke-dashoffset: 0;
+  }
+}

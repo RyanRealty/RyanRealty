@@ -44,4 +44,12 @@ describe('priceDropFieldItems photographs', () => {
     expect(items[0].photoSrc).toBe('/p.jpg')
     expect(items[0].overlay).toBe('-8.3%')
   })
+
+  it('asks Spark for the row size so a prefetched drops Flight never names a 1600 plate', () => {
+    const spark = 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260501165710852242000000-o.jpg'
+    const items = priceDropFieldItems([drop({ photoUrl: spark })])
+    expect(items[0]?.photoSrc).toBe(
+      'https://cdn.resize.sparkplatform.com/ore/320x240/true/20260501165710852242000000-o.jpg',
+    )
+  })
 })

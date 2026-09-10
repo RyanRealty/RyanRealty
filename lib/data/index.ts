@@ -92,6 +92,13 @@ export {
   getListingTilesCount,
 } from '@/lib/data/listings/getListingTiles'
 export type { GetListingTilesFilter } from '@/lib/data/listings/getListingTiles'
+export { getPlaceOpeningListings } from '@/lib/data/listings/getPlaceOpeningListings'
+export type {
+  PlaceOpeningListingsInput,
+  PlaceOpeningListingBucket,
+  PlaceOpeningListing,
+  PlaceOpeningTypeKey,
+} from '@/lib/data/listings/getPlaceOpeningListings'
 
 // Listings — typeahead suggestion rows via the listing_tile_mv tsvector GIN
 // index (W4.1 search merge, 2026-07-22). Replaces the five-column ILIKE scan

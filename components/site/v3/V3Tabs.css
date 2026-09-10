@@ -1,0 +1,77 @@
+/* Sliding Buy/Sell (and similar) control. Adapted from beUI tabs + shared-layout-bg:
+   cream track, navy sliding indicator, no glass, tokens only. Radios stay first
+   siblings so the switch works with scripting off. */
+
+.v3 .v3-tabs {
+  position: relative;
+  width: fit-content;
+  --v3-tabs-index: 0;
+}
+
+.v3 .v3-tabs__list {
+  position: relative;
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 0;
+  margin: 0;
+  width: fit-content;
+  min-width: 11rem;
+  border: 2px solid var(--v3-surface);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface);
+  box-shadow: var(--v3-media-shadow);
+  overflow: hidden;
+}
+
+.v3 .v3-tabs__indicator {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: calc(100% / var(--v3-tabs-count, 2));
+  background: var(--v3-ink);
+  border-radius: var(--v3-radius-control);
+  pointer-events: none;
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+  transform: translateX(calc(var(--v3-tabs-index, 0) * 100%));
+  z-index: 0;
+}
+
+.v3 .v3-tabs__tab {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: var(--v3-tap);
+  min-width: 5.5rem;
+  margin: 0;
+  padding: 0 var(--v3-space-md);
+  border: 0;
+  background: transparent;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-body);
+  line-height: var(--v3-leading-control);
+  cursor: pointer;
+  transition: color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-tabs__tab--active {
+  color: var(--v3-ink-on-navy);
+  font-weight: var(--v3-weight-strong);
+}
+
+.v3 .v3-tabs:focus-within .v3-tabs__list {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3 .v3-tabs__indicator {
+    transition: none;
+  }
+}

@@ -31,7 +31,7 @@ describe('V3Stage inventory · opt-in', () => {
     expect(close).toBeGreaterThan(open)
     const guarded = SRC.slice(open, close)
     const render = SRC.slice(SRC.indexOf('  return (\n    <section'))
-    for (const mark of ['v3-stage-band', 'v3-stage-strip', '<V3Figure', '<V3SourceLine']) {
+    for (const mark of ['v3-stage-band', 'v3-stage-strip', 'v3-stage-strip__claim', '<V3SourceLine']) {
       expect(guarded).toContain(mark)
       const inRender = render.split(mark).length - 1
       const inGuard = guarded.split(mark).length - 1

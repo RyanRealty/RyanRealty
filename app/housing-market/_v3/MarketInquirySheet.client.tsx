@@ -24,7 +24,7 @@
  */
 
 import { useCallback, useRef, useState } from 'react'
-import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
+import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3/V3Sheet'
 import { submitMarketPageInquiry } from '@/app/housing-market/actions'
 
 type Status = 'asking' | 'sending' | 'sent' | 'failed'
