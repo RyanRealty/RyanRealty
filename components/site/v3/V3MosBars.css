@@ -107,6 +107,13 @@
   margin-inline: 0;
 }
 
+/* PHONE COMPACTION. The plate tightens so the alerts field lands in the first
+   screen: padding, gap, the plain-language line, the caption size. What is NOT
+   available is the source disclosure's tap floor — a
+   `.v3.v3-mos .v3-source .v3-source__summary { min-block-size: 0 }` outranks
+   V3SourceLine's floor on specificity ((0,4,0) over (0,3,1)) and drops the
+   control to 41.4px. That buys 2.6px and costs a WCAG 2.5.5 target; it failed
+   ci:tap-targets on /cities/bend @390. Compact something that is not a control. */
 @media (max-width: 39.99rem) {
   .v3.v3-mos {
     padding: var(--v3-space-xs) var(--v3-space-sm);
@@ -120,10 +127,6 @@
 
   .v3-mos__caption {
     font-size: var(--v3-size-body-sm);
-  }
-
-  .v3.v3-mos .v3-source .v3-source__summary {
-    min-block-size: 0;
   }
 }
 
