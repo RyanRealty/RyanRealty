@@ -1,34 +1,43 @@
-# Current — 2026-09-10 16:2xZ (CMA engine: comp selection rebuilt, branch not merged)
+# Current — 2026-09-10 18:45Z (CMA engine: comp selection rebuilt, branch not merged)
 
-Owner: `claude-opus-5` on `wt/cma-ship-20260907` (pushed). **Site-queue agents: nothing here touches
-`app/`, `components/site/**` or the design system. Do not merge this branch to `main` for me.**
+Owner: `claude-opus-5` on `wt/cma-ship-20260907` (pushed, not merged). **Site-queue agents: nothing
+here touches `app/`, `components/site/**` or the design system. Do not merge this branch for me.**
 
 Matt on 23 Benaiah: "none of the rules created were followed for this, we should never have a range
-this wide." One root cause per layer, all fixed and committed:
+this wide." Nine defects, each its own commit, all with tests and all pushed:
 
-- **The facts pool reached back six months, not eighteen.** `selectPricingFactsPool` orders by close
-  date and caps at 800; 2,471 Bend sales matched the window and 800 came back. Every rung below that
-  line walked an empty pool, so the ladder left the neighborhood while the report said the
-  neighborhood was exhausted. `selectPricingFactsNear` now reads a complete three-mile box.
-- **Nothing graded a subject on price when its plat had no cell.** `lib/pricing/price-anchor.ts`, now
-  reaching 2/3/5/8 miles on rural ground where a one-mile ring holds two sales.
-- **The exact-bath wall** is replaced by one room rule for beds and baths (`lib/pricing/room-counts.ts`),
-  with a derived $0 adjustment printed in the comp matrix.
-- **The LLM judge** could drop the identical house next door for sitting outside the band the other
-  comps set. Held to the same-street rule the deterministic selector already used.
-- **An adjacent plat is a different plat** — the listings ladder exempted it from the price cut.
-- **Conflicting MLS facts** flag for review and price off the closed record inside ten years
-  (`lib/cma/subject-room-conflict.ts`).
-- **New contract check** `recommendation-in-range`: the headline number must sit inside the printed range.
+1. **The facts pool reached back six months, not eighteen.** `selectPricingFactsPool` orders by close
+   date and caps at 800; 2,471 Bend sales matched the window and 800 came back, oldest 2026-03-10.
+   Every rung under that line walked an empty pool, so the ladder left the neighborhood while the
+   report said the neighborhood was exhausted. `selectPricingFactsNear` reads a complete 3-mile box.
+2. **Nothing graded a subject on price when its plat had no cell** (`lib/pricing/price-anchor.ts`),
+   and the anchor now steps out 2/3/5/8 miles on rural ground where a one-mile ring holds two sales.
+3. **The exact-bath wall** became one room rule for beds and baths (`lib/pricing/room-counts.ts`),
+   with a derived $0 printed in the comp matrix.
+4. **The LLM judge** could drop the identical house next door for sitting outside the band the other
+   comps set. Held to the same-street rule the deterministic selector already used.
+5. **An adjacent plat is a different plat** — the listings ladder exempted it from the price cut.
+6. **The starved widening stacked with the resort crossing**, letting a $595/sqft Caldera Springs
+   sale price a $427/sqft plat.
+7. **One closed sale could enter a set twice** — a relisting carries a new ListingKey.
+8. **A custom subject skipped the price cut entirely**; it now keeps the floor and loses the ceiling.
+9. **Conflicting MLS facts** flag for review and price off the closed record inside ten years.
 
-All four rulings are written into `marketing_brain_skills/producers/cma/SKILL.md` §0.1. 125/125 gates
-pass, G46 clean, 3,570 tests green. The wide-range backlog is being rebuilt with
-`scripts/cma-rebuild-wide-ranges.ts` and every result is held in the queue. Nothing sends; auto-send
-is still OFF pending SITE-56.
+Two new contract checks: `recommendation-in-range` (review) and `value-has-a-basis` (hard — refuses a
+number under half the owner's ask when nothing graded the comps on price).
 
-**Open for Matt:** 73 queue documents fail to build for want of comparable sales, the dominant
-recorded causes being the bath wall and the missing price tier — both fixed today, so most should now
-build. And `MIN_COMPS` is 5 on the listings path against 3 on the facts path.
+**Measured.** Ranges wider than 1.2x: 56 → 38, and the 38 includes 11 documents that previously
+produced nothing at all. Widest was 2.61x, now 2.21x. Of the 38 left: 13 where the last-resort
+widening supplied most of the set, 9 where every sale is in the subject's own plat and the plat spans
+that range, 8 custom/new, 2 with no resolvable price tier. 125/125 gates, G46 clean, 3,578 tests.
+
+All four rulings are in `marketing_brain_skills/producers/cma/SKILL.md` §0.1. Nothing sends;
+auto-send is still OFF pending SITE-56.
+
+**Open for Matt.** 63 queue documents still fail for want of comparable sales. `MIN_COMPS` is 5 on
+the listings path against 3 on the facts path. `SIZE_ADJ_FACTOR` is 0.5, which is most of what is
+left in the wide set. And 23 Benaiah recommends $653,000 while the identical plan next door sold at
+$512,000 fourteen months ago — both numbers are on the document.
 
 ---
 
