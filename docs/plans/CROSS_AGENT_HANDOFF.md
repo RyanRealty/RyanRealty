@@ -1,3 +1,36 @@
+# Current — 2026-09-09 (Matt's three rulings: remove the empty frame, cut the redundant number blocks, re-measure and continue)
+
+Owner: Claude (Opus 5), session claude-opus5-9d4aa6fc-2026-09-09, main checkout.
+
+**Asked and answered, 2026-09-09.**
+1. **The dead Google pane comes out.** Matt turned the Google Field and place Split canvas off on
+   2026-09-03 ("the atlas is the map") and the empty pane stayed. Ruling: remove the frame, keep
+   Google off, leave the list. The Atlas above it is still the map. Seeded as **SITE-59**.
+2. **Cut the redundant number blocks.** The 28-row closed-sales-by-year list on the region page goes
+   (the chart two sections above already shows it, at three viewport heights on desktop and five at
+   375); the twelve-cell disclosure grid is trimmed to the four or five figures that matter, folded
+   into the hero row with their sentences and traces. Recorded on SITE-41, which is in flight. A
+   later pass must not restore them.
+3. **Re-measure and continue.** After SITE-41 lands, run the instrument across all 25 classes and
+   seed the next round from the bottom.
+
+**A finding I answered rather than asked about.** The grey placeholder squares on /oregon/[city]
+listing rows (10 of 12 on Medford) are NOT a licensing or opt-out problem: sampled through the DAL,
+40 of 40 active Medford listings carry a non-empty PhotoURL, zero are internet opt-out, zero are
+non-IDX, and Bend samples identically. The photographs exist and the row does not show them — a
+render bug in that template. Filed on SITE-59 beside the empty frame, since both are a box with
+nothing in it.
+
+**SITE-41 is mid-flight and its four evaluators already reported** (recorded on the node so nothing
+is lost): annual-review 31 → 61 but still a KPI grid, detail still a KPI grid, region 63 → 65 with
+its hero chart drawing dots on 2026 and none on 2024 or 2025 — which fails the marker clause
+outright — and oregon-city 41 → 52 with Medford and Salem opening byte-for-byte identical, which
+fails the place-mark clause. Scores rose everywhere; two accept clauses did not pass, so the lane
+was sent back rather than landed.
+
+**Also for a chrome-owning node:** the footer accordion summaries read "Markets26", "Buy · Sell ·
+Join9", "Company6", "Contact2" — a bare row count glued to the label, on every page.
+
 # Current — 2026-09-09 (SITE-58: Crook plats ingested; Jefferson publishes none)
 
 Owner: Grok (grok-01a0884a-2026-09-09), main checkout. Push `ea8be553`; deploy
