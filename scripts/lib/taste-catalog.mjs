@@ -112,7 +112,10 @@ export function loadTasteCatalog(raw) {
         forbid: isNonEmptyString(c.forbid) ? c.forbid : null,
       })
     }
-    classes[key] = { layoutLock: entry.layoutLock ?? '', modules, primitivesToAdd, layoutLockChecks }
+    const demoStates = Array.isArray(entry.demoStates)
+      ? entry.demoStates.filter((s) => isNonEmptyString(s))
+      : []
+    classes[key] = { layoutLock: entry.layoutLock ?? '', modules, primitivesToAdd, layoutLockChecks, demoStates }
   }
   for (const required of ['listing-detail', 'homepage-v6', 'search', 'sell', 'city']) {
     if (!classes[required]) problems.push(`classes must include "${required}" so a lane has a catalog, not adjectives`)
@@ -419,6 +422,7 @@ export function builderCard(catalog, classKey) {
     open,
     fetch,
     add,
+    demoStates: demoStateSpecs(catalog, key),
     refuse: Array.isArray(catalog?.refuse) ? catalog.refuse : [],
   }
 }
@@ -447,6 +451,9 @@ export function formatBuilderCard(card) {
   lines.push('', 'Record adaptedFrom with the ids you used. Empty adaptedFrom is inventing a layout.')
   lines.push('ci:catalog-install fails a named catalog id whose file is missing or whose house primitive does not import it.')
   lines.push('Rebaseline is not done. A taste score below 70 is not done.')
+  if (Array.isArray(card.demoStates) && card.demoStates.length) {
+    lines.push(`Demo-match shots (take-route-shots captures these without --states): ${card.demoStates.join('; ')}`)
+  }
   return lines.join('\n')
 }
 
@@ -470,6 +477,55 @@ export function evaluatorBrief(catalog, classKey) {
     'Each defect names replaceWith from that list, or null if the finding is craft/honesty/SEO not form. Refuse purple, orbs, gooey, magnetic buttons, agent-chat chrome on public, and 320x240 Spark thumbs on a card/hero. Navy #102742, cream #faf8f4, Geist, Amboqia stay.',
   )
   return lines.join('\n')
+}
+
+/** Ids the evaluator may put on replaceWith for this class (card open + fetch + add). */
+export function optionListIds(catalog, classKey) {
+  const ids = new Set()
+  const key = classForRoute(catalog, classKey) || (isNonEmptyString(classKey) ? classKey : '')
+  if (!key) return ids
+  const card = builderCard(catalog, key)
+  for (const o of card.open ?? []) if (o?.id) ids.add(o.id)
+  for (const f of card.fetch ?? []) if (f?.id) ids.add(f.id)
+  for (const a of card.add ?? []) if (a) ids.add(a)
+  for (const m of modulesForClass(catalog, key)) if (m?.id) ids.add(m.id)
+  for (const [id, spec] of Object.entries(catalog?.installById ?? {})) {
+    if (ids.has(id) && spec && isNonEmptyString(spec.aliasOf)) ids.add(spec.aliasOf)
+    if (spec && isNonEmptyString(spec.aliasOf) && ids.has(spec.aliasOf)) ids.add(id)
+  }
+  return ids
+}
+
+/** Capture specs (`name=SEL!click`) the shot tool runs so the evaluator can see the demo. */
+export function demoStateSpecs(catalog, routeKey) {
+  const key = classForRoute(catalog, routeKey) || (isNonEmptyString(routeKey) ? routeKey : '')
+  const list = catalog?.classes?.[key]?.demoStates
+  return Array.isArray(list) ? list.filter((s) => isNonEmptyString(s)) : []
+}
+
+/**
+ * replaceWith must be on the builder-card option list, or null for craft/honesty/SEO.
+ * A house primitive that already lost (V3Pulse on home) is how cream boxes close.
+ */
+export function replaceWithOptionProblems(catalog, classKey, tr) {
+  if (!isPlainObject(tr) || !Array.isArray(tr.defects)) return []
+  const allowed = optionListIds(catalog, classKey)
+  if (allowed.size === 0) return []
+  const p = []
+  for (const [i, d] of tr.defects.entries()) {
+    if (!isPlainObject(d) || !('replaceWith' in d)) continue
+    if (d.replaceWith == null) continue
+    if (!isNonEmptyString(d.replaceWith)) {
+      p.push(`defects[${i}] replaceWith must be a module id or null`)
+      continue
+    }
+    if (!allowed.has(d.replaceWith)) {
+      p.push(
+        `defects[${i}] (${d.section ?? '?'}) replaceWith "${d.replaceWith}" is not on the option list for ${classKey}. Pick an id from the builder card (catalog job or house module), or null if craft/honesty/SEO not form.`,
+      )
+    }
+  }
+  return p
 }
 
 /** A receipt on a catalog class must name the modules it adapted, and each defect names replaceWith. */

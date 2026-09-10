@@ -10,9 +10,12 @@ import {
   catalogCoverageProblems,
   catalogInstallProblems,
   catalogReceiptProblems,
+  demoStateSpecs,
   evaluatorBrief,
   formatBuilderCard,
   isHouseAdaptedId,
+  optionListIds,
+  replaceWithOptionProblems,
   resolveInstallSpec,
   layoutLockForClass,
   layoutLockProblems,
@@ -206,7 +209,7 @@ describe('catalogReceiptProblems', () => {
     expect(
       catalogReceiptProblems(loaded, 'listing-detail', {
         adaptedFrom: [{ id: 'listing-hero-bleed' }],
-        defects: [{ section: '#hero', finding: 'column frame instead of bleed', replaceWith: 'v3-carousel' }],
+        defects: [{ section: '#hero', finding: 'column frame instead of bleed', replaceWith: 'shadcn-carousel' }],
       }),
     ).toEqual([])
     expect(
@@ -215,6 +218,48 @@ describe('catalogReceiptProblems', () => {
         defects: [{ section: '#copy', finding: 'unsourced figure in the fold', replaceWith: null }],
       }),
     ).toEqual([])
+  })
+})
+
+describe('option list is the only legal replaceWith', () => {
+  it('names house modules and catalog jobs the evaluator may pick', () => {
+    const ids = optionListIds(loaded, 'homepage-v6')
+    expect(ids.has('beui-morphing-search')).toBe(true)
+    expect(ids.has('beui-tabs')).toBe(true)
+    expect(ids.has('shadcn-carousel')).toBe(true)
+    expect(ids.has('house-home-rails')).toBe(true)
+    expect(ids.has('V3Pulse')).toBe(false)
+  })
+
+  it('refuses a house primitive that already lost (V3Pulse on home)', () => {
+    const problems = replaceWithOptionProblems(loaded, 'homepage-v6', {
+      defects: [
+        {
+          section: '#hero .v3-stage-band',
+          finding: 'three-cell KPI strip',
+          replaceWith: 'V3Pulse',
+        },
+      ],
+    })
+    expect(problems.some((p) => /V3Pulse/.test(p) && /option list/.test(p))).toBe(true)
+  })
+
+  it('accepts a catalog id from the card, or null for craft', () => {
+    expect(
+      replaceWithOptionProblems(loaded, 'homepage-v6', {
+        defects: [
+          { section: '#hero .v3-morph-search', finding: 'field never morphs', replaceWith: 'beui-morphing-search' },
+          { section: '#hero .source', finding: 'muted cream on navy', replaceWith: null },
+        ],
+      }),
+    ).toEqual([])
+  })
+})
+
+describe('demoStates are the capture the evaluator can actually see', () => {
+  it('prints a search-open spec for homepage so rest shots are not the only record', () => {
+    const specs = demoStateSpecs(loaded, 'homepage-v6')
+    expect(specs.some((s) => /search-open/.test(s) && /click/.test(s))).toBe(true)
   })
 })
 

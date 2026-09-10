@@ -234,6 +234,8 @@ describe('buildSeedDrafts', () => {
     expect(drafts[0].accept).toMatch(/replaceWith/)
     expect(drafts[0].accept).toMatch(/demo match/)
     expect(drafts[0].accept).toMatch(/inventory/)
+    expect(drafts[0].accept).toMatch(/70/)
+    expect(drafts[0].accept).toMatch(/[Rr]ebaseline is not done/)
     expect(JSON.stringify(drafts)).not.toContain('DoesNotExist')
   })
 })

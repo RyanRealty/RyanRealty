@@ -148,6 +148,7 @@ import { join, resolve } from 'node:path'
 import sharp from 'sharp'
 import { chromium } from 'playwright'
 import { SHOT_BYTE_CAP } from './check-shot-weight.mjs'
+import { CATALOG_PATH, demoStateSpecs, loadTasteCatalog } from './lib/taste-catalog.mjs'
 
 const UI_KITS = 'design_system/ryan-realty/ui_kits'
 
@@ -246,6 +247,14 @@ export function parseStates(raw) {
     states.push({ name, selector, anchor, click, hover, type, selectorImplied: false })
   }
   return states
+}
+
+/** Catalog demoStates fill in when the lane did not pass --states. */
+export function mergeCatalogDemoStates(explicit, specs) {
+  if (Array.isArray(explicit) && explicit.length) return explicit
+  if (!Array.isArray(specs) || specs.length === 0) return []
+  const joined = specs.join(specs.some((s) => String(s).includes('!type:')) ? ';' : ',')
+  return parseStates(joined)
 }
 
 /** Comma-separated variant names for `--variants a,b,c` (SITE-63). */
@@ -822,6 +831,16 @@ async function main() {
   }
 
   const variantsMode = opts.variants.length > 0
+  if (!variantsMode && opts.states.length === 0 && existsSync(CATALOG_PATH)) {
+    try {
+      const catalog = loadTasteCatalog(JSON.parse(readFileSync(CATALOG_PATH, 'utf8')))
+      if (catalog.problems.length === 0) {
+        opts.states = mergeCatalogDemoStates([], demoStateSpecs(catalog, opts.routeKey))
+      }
+    } catch {
+      // Capture still runs; demo-match states are a bonus, not a reason to refuse the base pair.
+    }
+  }
   const outDir =
     opts.out ??
     (variantsMode
@@ -849,6 +868,9 @@ async function main() {
     console.log(
       `  naming     ${naming.style === '1440' ? '<state>-1440 / <state>-375' : '<state>-desktop / <state>-mobile375'} (from ${existing.length} existing shot${existing.length === 1 ? '' : 's'})`,
     )
+    if (opts.states.length) {
+      console.log(`  demoStates ${opts.states.map((s) => s.name).join(', ')}`)
+    }
   }
   console.log(
     `  capture    ${opts.full ? `full page (height-capped at ${MAX_FULL_PAGE_HEIGHT}px)` : 'first viewport'} · scale 1 · palette-quantized`,

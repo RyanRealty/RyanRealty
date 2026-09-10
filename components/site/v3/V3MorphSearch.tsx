@@ -6,7 +6,7 @@
  * results. Navy edge, no glass, no catalog purple. The native field in
  * `children` stays in the form for no-JS submits (`scripting: none`).
  */
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import {
   MorphingSearch,
   type MorphingSearchItem,
@@ -47,6 +47,10 @@ export function V3MorphSearch({
 }: V3MorphSearchProps) {
   const catalogItems = items ? [...items] : []
   const useCatalog = catalogItems.length > 0 || onQueryChange != null || onSelect != null
+  const [live, setLive] = useState(false)
+  useEffect(() => {
+    if (useCatalog) setLive(true)
+  }, [useCatalog])
 
   return (
     <div
@@ -55,6 +59,7 @@ export function V3MorphSearch({
         'v3-morph-search',
         open && 'v3-morph-search--open',
         useCatalog && 'v3-morph-search--catalog',
+        live && 'v3-morph-search--live',
         className,
       )}
     >
@@ -67,6 +72,7 @@ export function V3MorphSearch({
             onOpenChange={onOpenChange}
             onQueryChange={onQueryChange}
             onSelect={onSelect}
+            shortcut=""
             className="v3-morph-search__catalog"
           />
         </div>

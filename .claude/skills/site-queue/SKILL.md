@@ -311,7 +311,9 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
    cream box with the catalog name is not adapted. `motion/react` on a house
    wrapper is a beUI dependency, not the component. `ci:catalog-install`
    fails a named id whose file is missing or whose house primitive does not
-   import it. A comment is not an import. Rebaseline is not done. A taste
+   import it. A comment is not an import. `taste-evaluate` fails a
+   `replaceWith` off the builder-card option list. `take-route-shots`
+   captures class `demoStates` (control open) without `--states`. Rebaseline is not done. A taste
    score below 70 is not done. **If the job has no house primitive, ADD one to
    `components/site/v3`** that still matches the demo. Growing the barrel is
    the one design system. Submoduling a catalog repo or copying Inter/purple

@@ -2147,6 +2147,9 @@
       "primitivesToAdd": [
         "V3Carousel"
       ],
+      "demoStates": [
+        "search-open=.v3-morph-search--live [aria-haspopup=dialog]!click"
+      ],
       "modules": [
         {
           "id": "house-home-rails",

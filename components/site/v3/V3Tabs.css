@@ -10,7 +10,7 @@
 
 .v3 .v3-tabs__list {
   position: relative;
-  display: inline-grid;
+  display: inline-grid !important;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
   gap: 0;
@@ -24,16 +24,23 @@
   overflow: hidden;
 }
 
+/* Catalog TabsTrigger already positions the pill on the active tab
+   (`absolute inset-0`). Do not reuse the old house sliding-bar math
+   (50% width + translateX) — that paints a navy circle over "Buy". */
+.v3 .v3-tabs__list > div {
+  width: 100%;
+  min-height: var(--v3-tap);
+}
+
 .v3 .v3-tabs__indicator {
   position: absolute;
-  inset-block: 0;
+  inset: 0;
   left: 0;
-  width: calc(100% / var(--v3-tabs-count, 2));
+  width: auto;
   background: var(--v3-ink) !important;
   border-radius: var(--v3-radius-control);
   pointer-events: none;
-  transition: transform var(--v3-dur-state) var(--v3-ease-out);
-  transform: translateX(calc(var(--v3-tabs-index, 0) * 100%));
+  transform: none;
   z-index: 0;
 }
 
@@ -60,8 +67,9 @@
   transition: color var(--v3-dur-state) var(--v3-ease-out);
 }
 
-.v3 .v3-tabs__tab--active {
-  color: var(--v3-ink-on-navy);
+.v3 .v3-tabs__tab--active,
+.v3 .v3-tabs [role="tab"][aria-selected="true"] {
+  color: var(--v3-ink-on-navy) !important;
   font-weight: var(--v3-weight-strong);
 }
 

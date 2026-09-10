@@ -575,7 +575,7 @@ function buildOneDraft(row, versionGap, defects, shotSpec, card) {
       `A reviewed seed in scripts/seed-site-queue.ts for class ${key}; recapture first-viewport shots on the table instrument; taste receipt per TASTE.md with adaptedFrom and replaceWith.`,
     accept:
       `On the table instrument, class ${key} scores above ${median}. Recapture shotSpec ${shotSpecText(shotSpec)}. ` +
-      `tasteReview.adaptedFrom names a catalog module for this class. Each defect names replaceWith from the builder-card option list (id + demo URL), or null if craft/honesty/SEO not form. Live control must match the chosen demo (same interaction, our colors). Score rise without a demo match is not done. Evidence names an SEO increment and an information/listing-inventory increment; a UX-only restyle is not done. ` +
+      `tasteReview.adaptedFrom names a catalog module for this class. Each defect names replaceWith from the builder-card option list (id + demo URL), or null if craft/honesty/SEO not form. Live control must match the chosen demo (same interaction, our colors). Score rise without a demo match is not done. A taste score below 70 is not done for the class. Rebaseline is not done. Evidence names an SEO increment and an information/listing-inventory increment; a UX-only restyle is not done. ` +
       PRODUCT_HOLD,
   }
 }

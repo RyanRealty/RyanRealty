@@ -156,7 +156,7 @@ export function HomeHeroSearch({
           Find a home
         </label>
         <V3MorphSearch
-          open={resultsOpen}
+          open={open}
           onOpenChange={setOpen}
           placeholder="Bend, Tetherow, or an address"
           items={items.map((item) => ({
