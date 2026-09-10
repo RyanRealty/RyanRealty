@@ -14,6 +14,7 @@ import { useCallback, useId, useMemo, useState } from 'react'
 import { buildPairPlot } from '@/lib/charts/plot'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3SourceLine } from './atoms'
+import { V3Number } from './V3Number.client'
 import './tokens.css'
 import './V3MosBars.css'
 
@@ -67,6 +68,14 @@ export function V3MosBars({
 
   if (!plot) return null
 
+  // Whole-number faces count up (beui-number / rareui); fractional sales stay static.
+  const valueFace = (label: string, value: number) => {
+    const whole = Number.isFinite(value) && Math.abs(value - Math.round(value)) < 1e-9
+    if (!whole) return label
+    const n = Math.round(value)
+    return <V3Number key={`${id}-${n}-${label}`} value={n} formatted={label} />
+  }
+
   return (
     <figure
       id={id}
@@ -100,17 +109,18 @@ export function V3MosBars({
                 aria-hidden="true"
               />
             </span>
-            <span className="v3-mos__barvalue">{bar.label}</span>
+            <span className="v3-mos__barvalue">
+              {valueFace(bar.label, bar.index === 0 ? homesValue : salesValue)}
+            </span>
           </button>
         ))}
       </div>
       {open ? (
         <div className="v3-mos__tip" id={tipId} role="status">
+          {/* More data than the bars: the ratio and the dated source — not a
+              second label of the same two numerals (SITE-84 evaluator). */}
           <p>
-            {homesName}: {tooltip.homes}
-          </p>
-          <p>
-            {salesName}: {tooltip.sales}
+            Supply ratio: {homesLabel} detached ÷ {salesLabel} sales a month.
           </p>
           <p className="v3-mos__tip-source">{tooltip.source}</p>
         </div>

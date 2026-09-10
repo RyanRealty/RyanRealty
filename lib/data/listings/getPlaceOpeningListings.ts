@@ -15,8 +15,12 @@ import {
   getListingTilesCount,
   type GetListingTilesFilter,
 } from '@/lib/data/listings/getListingTiles'
+import { formatPriceCompact } from '@/lib/format/money'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
-import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import {
+  LISTING_FIELD_LEAD_PHOTO_SIZE,
+  listingRowPhotoSrc,
+} from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
 
 export type PlaceOpeningTypeKey = 'houses' | 'condo' | 'land'
@@ -24,7 +28,13 @@ export type PlaceOpeningTypeKey = 'houses' | 'condo' | 'land'
 export type PlaceOpeningListing = {
   href: string
   photoSrc: string
+  /** Street line (address). */
   title: string
+  /** Compact list price, or null when the tile has none. */
+  price: string | null
+  beds: number | null
+  baths: number | null
+  sqft: number | null
 }
 
 export type PlaceOpeningListingBucket = {
@@ -110,7 +120,20 @@ async function fetchPlaceOpeningListings(
             streetName: tile.streetName,
             streetSuffix: tile.streetSuffix,
           }) ?? tile.city ?? type.label
-        listings.push({ href: listingTileHref(tile), photoSrc: listingRowPhotoSrc(photo), title })
+        const price =
+          tile.listPrice != null && Number.isFinite(tile.listPrice) && tile.listPrice > 0
+            ? formatPriceCompact(tile.listPrice)
+            : null
+        listings.push({
+          href: listingTileHref(tile),
+          // Cards and rails ask for 800×600 — never the 320×240 ledger thumb.
+          photoSrc: listingRowPhotoSrc(photo, LISTING_FIELD_LEAD_PHOTO_SIZE),
+          title,
+          price,
+          beds: tile.beds,
+          baths: tile.baths,
+          sqft: tile.sqft,
+        })
         if (listings.length >= 4) break
       }
       const newCount30d = count > 0 ? count : null
