@@ -89,9 +89,21 @@ export function buildCityLedger(
           : undefined,
       value: v3Text(formatPriceExact(snapshot.median_list_price)),
       id: slug,
+      weight: snapshot.median_list_price,
     })
   }
   rows.sort((a, b) => String(a.what).localeCompare(String(b.what)))
+  // THE LIST IS THE COMPARISON (SITE-41): weight is stashed as the raw median through
+  // the loop above (sort would scramble a parallel array by index), then converted to
+  // a 0-1 share of this list's own maximum here, after every row and the sort are
+  // both settled — the same "table wearing hairlines" fix as the sibling city ledger
+  // in [...slug]/_v3/geo-figures.ts.
+  const maxMedian = rows.reduce((max, r) => Math.max(max, r.weight ?? 0), 0)
+  if (maxMedian > 0) {
+    for (const row of rows) row.weight = (row.weight ?? 0) / maxMedian
+  } else {
+    for (const row of rows) row.weight = undefined
+  }
 
   const footnotes: CityFootnote[] = CITY_LABELS.filter(
     (label) => CITY_SLUG[label] !== undefined && !rowed.has(label),
@@ -169,6 +181,12 @@ export function buildClosedLedger(series: CoMarketAnnualRow[]): ClosedLedger {
     .filter((row) => row.year > 0 && row.soldCount > 0 && row.totalVolume > 0)
     .sort((a, b) => b.year - a.year)
 
+  // THE LIST IS THE COMPARISON (SITE-41): the 2026-09-09 evaluator named this ledger
+  // by TASTE.md's "scrolling lists as the design" tell — up to 28 years, no mark, the
+  // one ungated ledger left on this page once the sibling-city ledger above it got
+  // its own bar. weight is a share of this list's own largest closed-dollar-volume
+  // year, the same quantity `value` already prints.
+  const maxVolume = years.reduce((max, row) => Math.max(max, row.totalVolume), 0)
   const rows: V3LedgerFigureRow[] = years.map((row) => ({
     href: `${HISTORY_PATH}?year=${row.year}`,
     when: v3Text(String(row.year)),
@@ -179,6 +197,7 @@ export function buildClosedLedger(series: CoMarketAnnualRow[]): ClosedLedger {
         : undefined,
     value: v3Text(volumeLabel(row.totalVolume)),
     id: String(row.year),
+    weight: maxVolume > 0 ? row.totalVolume / maxVolume : undefined,
   }))
 
   const stamp = years.every((row) => row.source === 'mart')

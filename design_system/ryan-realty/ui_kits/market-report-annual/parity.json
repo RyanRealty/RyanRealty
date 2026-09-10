@@ -165,5 +165,52 @@
     "AnnualInquirySheet (V3Sheet, broker inquiry)",
     "V3Quiet (questions and outbound edges, carrying the valuation door)",
     "V3Footer"
-  ]
+  ],
+  "tasteReview": {
+    "evaluatedAt": "2026-09-09",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-41 round two. Two passes in this session: round one, given the class's prior twelve-cell KPI-grid finding to verify against the live lane dev server and four shots, scored the fold's fix and the two city ledgers' new bar encoding (median 79); a build pass then cut the fold from 4 to 3 tiles, capped property-type supply tiles, and rewrote the closed-sales ledger's visible source clause to drop the internal 'Market Truth mt-v1' cache label that was leading it. A second fresh instance of the same evaluator re-scored the resulting state end to end, confirming the mt-v1 leak gone and the KPI grid still absent (median 83, recorded here). The table mark for this class before this node was 31, from an instrument with no receipt, no recorded evaluator model and no shots on disk, so it is stated here rather than as priorMark.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": ["/housing-market/annual-review"],
+      "viewports": [1440, 375],
+      "states": ["default", "source-line"]
+    },
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/market-report-annual/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/market-report-annual/shots/mobile375.png",
+      "sourceDesktop": "design_system/ryan-realty/ui_kits/market-report-annual/shots/source-desktop.png",
+      "sourceMobile375": "design_system/ryan-realty/ui_kits/market-report-annual/shots/source-mobile375.png"
+    },
+    "shotsHash": "sha256:e28ef624d337a839933a0e025ed6c562069ca4aabdc88147a00fd3f08b4a0cb1",
+    "scores": [83, 82, 87],
+    "score": 83,
+    "breakdown": {
+      "design": 25,
+      "originality": 26,
+      "interaction": 10,
+      "craft": 13,
+      "honesty": 9
+    },
+    "beats": "Redfin/Zillow year-in-review posts and aggregator market recaps: this page compares the trailing 12 months against the same 12-month window one year earlier for the region and every report city, prints the months-of-supply formula and thresholds beside every verdict, and carries a hover-synced three-year chart plus bar-encoded city ledgers no aggregator recap offers.",
+    "defects": [
+      {
+        "section": "#faq",
+        "severity": "taste",
+        "finding": "Five question-and-answer pairs render fully expanded as flat prose with zero interaction — TASTE.md's named wall-of-text tell ('FAQ blocks count'). Confirmed unfixed in this round; recorded as a known remaining defect, not attempted here (V3Quiet has a fold/accordion kind used elsewhere on this same page but the FAQ items are not built with it)."
+      },
+      {
+        "section": "page rhythm",
+        "severity": "taste",
+        "finding": "Chart-instrument / encoded-ledger / chart-instrument / encoded-ledger repeats through the page body — not a hard rhythm-rule violation (no three consecutive identical shapes) but a pattern a critical read notices."
+      },
+      {
+        "section": "#methodology",
+        "severity": "taste",
+        "finding": "The methodology and coverage block (Tumalo attribution, leftover-cities note) is accurate and specific but renders as unstyled prose paragraphs with no figure or mark."
+      }
+    ],
+    "comparedToPrior": "first"
+  }
 }

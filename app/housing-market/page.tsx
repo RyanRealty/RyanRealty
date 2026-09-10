@@ -116,6 +116,7 @@ import { MarketInquirySheet } from './_v3/MarketInquirySheet.client'
 import { CITY_SLUG, CLOSED_SALES_YEAR, HISTORY_PATH } from './_v3/hub-constants'
 import { buildCityLedger, buildHubLead, buildSfrFollowFigures } from './_v3/hub-sections'
 import { buildRegionMedianChart, dropInProgressMonth } from './_v3/market-charts'
+import { MARKET_FOLD_LABEL } from './_v3/opening'
 import { buildMosSupplyChart } from '@/app/months-of-supply/_v3/mos-chart'
 import {
   marketHubChooser,
@@ -644,10 +645,15 @@ export default async function HousingMarketHubPage() {
             )}
             figures={[firstSfrFigure, ...restSfrFigures]}
             /* First viewport is the verdict + chart, not the leftover KPI wall.
-               Pace, mix, and extra-type tiles fold behind "All N figures" the
-               way city pages fold the long tail. */
+               The tail keeps folding whole here: this opening's figure ORDER is
+               data-dependent (segments, then pace, then mix, with a month of sales
+               spliced in), so there is no fixed lead set to write sentences for, and
+               a capped row without them would be the KPI grid with fewer tiles. What
+               it does take from SITE-41 is the summary: what the fold holds, not how
+               many rows are in it. */
             chartFirst
             foldAfter={0}
+            foldLabel={v3Text(MARKET_FOLD_LABEL)}
             source={v3Text(
               publicMarketPulseSource(
                 [

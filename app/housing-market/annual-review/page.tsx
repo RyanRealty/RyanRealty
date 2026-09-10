@@ -134,7 +134,7 @@ import {
   publicSegmentBrowseHref,
   publicSegmentNoun,
 } from '@/lib/data/market-truth/public-segments'
-import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
+import { getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
 import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
@@ -155,6 +155,7 @@ import {
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
+  type V3InstrumentFigure,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -168,6 +169,8 @@ import {
   WRITTEN_VALUATION_HREF,
   dbGeoSlug,
 } from './_v3/annual-constants'
+import { CLOSED_LEAD_FIGURES, MARKET_LEAD_FIGURES } from '../_v3/opening'
+import { buildPaceTailFigures } from '../_v3/tail-figures'
 import {
   CITY_REPORTS_PATH,
   REGION_REPORT_PATH,
@@ -311,23 +314,30 @@ export default async function AnnualReviewPage() {
 
   // Sections, built from the rows (./_v3/annual-sections.ts). Built BEFORE the
   // Dataset payload because the payload is derived from what actually rendered.
-  const extraFigures: Array<{ value: ReturnType<typeof v3Text>; label: ReturnType<typeof v3Text>; href?: string }> = []
+  //
+  // CURATED, NOT DUMPED (SITE-41 round two). This fold used to merge every property-type
+  // months-of-supply row with every 12-month pace cell, none of them captioned — the
+  // 2026-09-09 evaluator's own words, "the exact banned tell 'realized at three times
+  // the usual size and hidden one click deep instead of being visible up front.'"
+  // Property-type supply is small by construction (detached is already the hero figure
+  // above; condo and townhome are the only other types that usually publish), so each
+  // one keeps its figure, captioned. Pace is cut to the priority set
+  // ../_v3/tail-figures.ts keeps — the five cells a buyer or seller actually asks
+  // about — rather than sentencing all twelve.
+  const extraFigures: V3InstrumentFigure[] = []
   for (const row of publicSegments) {
     if (row.monthsOfSupply == null || row.activeCount == null || row.activeCount <= 0) continue
+    const noun = publicSegmentNoun(row.segment, row.activeCount)
     extraFigures.push({
       value: v3Text(formatMonthsOfSupply(row.monthsOfSupply)),
-      label: v3Text(`${publicSegmentNoun(row.segment, row.activeCount)} · months of supply`),
+      label: v3Text(`${noun} · months of supply`),
       href: publicSegmentBrowseHref(null, row.segment),
+      sentence: v3Text(
+        `How long the ${noun} on the market now would last at their own sale pace, split out from the single-family figure above.`,
+      ),
     })
   }
-  const paceItems = publicPaceItems(publicPace)
-  for (const item of paceItems) {
-    if (item.key === 'medClose' || item.key === 'closed' || item.key === 'yoy') continue
-    extraFigures.push({
-      value: v3Text(item.value),
-      label: v3Text(item.label),
-    })
-  }
+  extraFigures.push(...buildPaceTailFigures(publicPace))
   const [firstRegionFigure, ...restRegionFigures] = [
     ...buildRegionFigures(hud, mosRaw, medianListDisplay),
     ...extraFigures,
@@ -348,9 +358,14 @@ export default async function AnnualReviewPage() {
       : null,
   )
   if (publicPace.medianClose != null || publicPace.closedCount != null || publicPace.yoyMedian != null) {
+    // Human clause FIRST (SITE-41): V3SourceLine's visible summary is the shorter of
+    // the pre-comma segment and the first sentence, and "Market Truth mt-v1" leading
+    // the string made that internal cache label the pre-comma winner — a system name
+    // a visitor was never meant to read, surfaced without a click (2026-09-09
+    // evaluator). Reordered so the plain clause is both first and shortest.
     closed.source =
-      '12-month leftover figures are Market Truth mt-v1, labeled by window, not the cache rolling row. ' +
-      closed.source.replace(/^closed/, 'Closed')
+      closed.source.replace(/^closed/, 'Closed') +
+      ' 12-month leftover figures are Market Truth mt-v1, labeled by window, not the cache rolling row.'
   }
   const [firstClosedFigure, ...restClosedFigures] = closed.figures
   const year = buildYearLedger(GRID_CITIES, cityDetails)
@@ -405,10 +420,16 @@ export default async function AnnualReviewPage() {
     MOS_METHODOLOGY_CLAUSE +
     ' ' +
     MOS_THRESHOLD_CLAUSE
+  // Human clause FIRST (SITE-41, same fix as the closed-sales instrument above): the
+  // internal cache label "Market Truth mt-v1" used to open this trace, and
+  // V3SourceLine's summary derivation picks the SHORTER of the pre-comma segment and
+  // the first sentence — which made that system name the visible clause with no
+  // click (2026-09-09 evaluator). Reordered so the plain clause wins both ways.
   const yearTrace =
-    '12-month leftover figures are Market Truth mt-v1, labeled by window, not the cache rolling row. ' +
     'Closed MLS sales through Oregon Data Share, single-family homes, the trailing 12 months against ' +
-    'the same 12-month window one year earlier, one row per report city. Not active inventory. Cache median days on market may remain on the row.'
+    'the same 12-month window one year earlier, one row per report city. Not active inventory. Cache ' +
+    'median days on market may remain on the row. 12-month leftover figures are Market Truth mt-v1, ' +
+    'labeled by window, not the cache rolling row.'
 
   // Methodology and coverage: every claim the KB page made in its Methodology
   // section and its exemption caption, the Oregon Data Share citation MarketSources
@@ -568,8 +589,20 @@ export default async function AnnualReviewPage() {
                 : `Central Oregon housing market annual review: a ${verdict.label}`,
             )}
             figures={[firstRegionFigure, ...restRegionFigures]}
+            /* THE OPENING IS A CLAIM AND A DRAWING (SITE-41). This page used to open
+               on sixteen number-and-label tiles in a four-column grid, with the year
+               overlay pushed a thousand pixels below the fold and the seventh row cut
+               mid-figure at 375. The four figures that answer "what is the Central
+               Oregon market doing" lead, each saying what it means; the long tail of
+               property-type supply and pace measures keeps every one of its figures,
+               one tap away, behind a summary that names them. */
+            chartFirst
+            foldAfter={MARKET_LEAD_FIGURES}
+            foldLabel={v3Text('Supply by property type, and how fast homes are selling')}
             source={v3Text(regionTrace)}
+            sourceName={v3Text('Oregon Data Share MLS')}
             updated={inventoryAsOf ? v3Text(formatDate(inventoryAsOf)) : undefined}
+            asOf={inventoryAsOf ?? undefined}
             action={{ label: v3Text('Live Central Oregon market report'), href: REGION_REPORT_PATH }}
             chart={annualCharts.region}
           />
@@ -596,6 +629,11 @@ export default async function AnnualReviewPage() {
             rows={[firstInventoryRow, ...restInventoryRows]}
             source={v3Text(inventoryTrace)}
             updated={inventory.stamp ? v3Text(formatDate(inventory.stamp)) : undefined}
+            /* THE LIST IS THE COMPARISON (SITE-41). Nine cities by median list price
+               is exactly the "table wearing hairlines" TASTE.md bans past six rows.
+               weight is buildInventoryLedger's own arithmetic, computed off the same
+               median it prints (see that function). */
+            encode="bar"
           />
         ) : (
           <V3Ledger
@@ -617,7 +655,13 @@ export default async function AnnualReviewPage() {
             eyebrow={v3Text('Trailing 12 months')}
             headline={v3Text(closed.headline)}
             figures={[firstClosedFigure, ...restClosedFigures]}
+            /* Three lead, two folded (SITE-41): the same cap the opening keeps, so the
+               page never shows a row of five silent tiles under a row of four that
+               speak. */
+            foldAfter={CLOSED_LEAD_FIGURES}
+            foldLabel={v3Text('Sale price against asking, and price per square foot')}
             source={v3Text(closed.source)}
+            sourceName={v3Text('Oregon Data Share MLS')}
             updated={salesAsOf ? v3Text(formatDate(salesAsOf)) : undefined}
             action={{
               label: v3Text('Weekly market reports by city'),
@@ -649,6 +693,7 @@ export default async function AnnualReviewPage() {
             rows={[firstYearRow, ...restYearRows]}
             source={v3Text(yearTrace)}
             updated={year.stamp ? v3Text(formatDate(year.stamp)) : undefined}
+            encode="bar"
           />
         ) : (
           <V3Ledger

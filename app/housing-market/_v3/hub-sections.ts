@@ -28,7 +28,6 @@ import { namePulseCityRemainder, pulseCityHrefSlug } from '@/lib/market/pulse-ci
 import { CITY_LABELS, CITY_SLUG, HISTORY_PATH } from './hub-constants'
 import {
   buildAllTypeFigures,
-  buildCompositionFigures,
   closedMartMissingBody,
   closedMartRow,
   closedMartSource,
@@ -165,12 +164,11 @@ export function buildHubLead(closedYear: CoMarketAnnualRow | null | undefined): 
         historyHref: historyPath,
       }),
     )
-    figures.push(
-      ...buildCompositionFigures({
-        parts: compositionParts(closed.propertyTypeBreakdown),
-        historyHref: historyPath,
-      }),
-    )
+    // NOT buildCompositionFigures (SITE-41 round two, same fix as
+    // central-oregon/_v3/region-figures.ts buildRegionLead): the composition
+    // chart below draws this exact breakdown with its own hover, so an
+    // unsentenced figure row repeating it is the KPI-grid tell TASTE.md bans,
+    // not a second fact.
   }
 
   const parts = closed ? compositionParts(closed.propertyTypeBreakdown) : []
