@@ -67,7 +67,7 @@ describe('compact reach rows', () => {
 
 describe('compact markup', () => {
   it('is an explicit size the homepage passes; /about and /team do not', () => {
-    expect(FACES).toContain('size?: "roster" | "portrait" | "compact"')
+    expect(FACES).toContain('size?: "roster" | "portrait" | "compact" | "editorial"')
     expect(HOME).toContain('<AboutFaces people={faces} heading="Talk to a broker" headingLevel={2} size="compact" />')
     expect(readFileSync('app/about/page.tsx', 'utf8')).not.toContain('size="compact"')
     expect(readFileSync('app/team/page.tsx', 'utf8')).not.toContain('size="compact"')

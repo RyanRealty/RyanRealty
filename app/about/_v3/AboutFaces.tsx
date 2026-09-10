@@ -3,7 +3,9 @@
  * reach (Call / Text / Email / Schedule). Portrait puts Oregon license,
  * readable phone/email, and the same CTA strip above the fold.
  *
- * roster: /team (H1), /about (H2).
+ * roster: /about (H2).
+ * editorial: /team (H1). Principal at conversation scale, the other two as
+ *   rows, Call as the one primary reach. SITE-74.
  * portrait: /team/[slug] at card-photo scale, not AboutFaces poster size.
  * compact: the homepage (H2). One table, not three cards: the three cutouts
  *   stand on a shared hairline shelf as the column heads, and every row
@@ -19,6 +21,7 @@ import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading } from "@/components/site
 import { teamPath } from "@/lib/slug"
 import type { AboutFace, AboutFaceRecord } from "./about-faces"
 import { aboutCompactReach } from "./about-faces"
+import { FacePortrait } from "./FacePortrait.client"
 import "./about-faces.css"
 
 function IconPhone() {
@@ -140,6 +143,64 @@ function faceRecord(record: AboutFaceRecord | null | undefined) {
   )
 }
 
+function faceCredential(person: AboutFace) {
+  return (
+    <>
+      {person.title ? <p className="about-faces__title">{person.title}</p> : null}
+      {person.license ? (
+        <p className="about-faces__license about-faces__license--credential">
+          <span className="about-faces__license-term">Oregon license</span>
+          <span className="about-faces__license-num">{person.license}</span>
+        </p>
+      ) : null}
+    </>
+  )
+}
+
+function editorialReach(person: AboutFace) {
+  return (
+    <div className="about-faces__reach-row">
+      {person.tel ? (
+        <a
+          href={`tel:${person.tel}`}
+          className={cn("about-faces__reach", "about-faces__reach--call")}
+          aria-label={`Call ${person.name}`}
+        >
+          <span className="about-faces__reach-label">
+            Call
+            {person.phoneDisplay ? (
+              <span className="about-faces__reach-num">{person.phoneDisplay}</span>
+            ) : null}
+          </span>
+        </a>
+      ) : null}
+      {person.tel ? (
+        <a href={`sms:${person.tel}`} className="about-faces__reach-text" aria-label={`Text ${person.name}`}>
+          Text
+        </a>
+      ) : null}
+      {person.email ? (
+        <a
+          href={`mailto:${person.email}`}
+          className="about-faces__reach-text"
+          aria-label={`Email ${person.name}`}
+        >
+          Email
+        </a>
+      ) : null}
+      {person.bookHref ? (
+        <Link
+          href={person.bookHref}
+          className="about-faces__reach-text"
+          aria-label={`Schedule with ${person.name}`}
+        >
+          Schedule
+        </Link>
+      ) : null}
+    </div>
+  )
+}
+
 function faceIdentity(person: AboutFace, opts?: { contact?: boolean }) {
   return (
     <>
@@ -190,12 +251,13 @@ export function AboutFaces({
    */
   headingLevel?: 1 | 2
   /**
-   * roster: the /team and /about cards. portrait: one broker, /team/[slug].
-   * compact: the homepage table, three faces + names + licenses + Call /
-   * Text / Book in one 390 screen. Compact ignores `reach`: its rows ARE the
-   * reach, and there is no Email or Schedule chip to switch off.
+   * roster: the /about cards. editorial: the /team fold (principal + rows).
+   * portrait: one broker, /team/[slug]. compact: the homepage table, three
+   * faces + names + licenses + Call / Text / Book in one 390 screen. Compact
+   * ignores `reach`: its rows ARE the reach, and there is no Email or
+   * Schedule chip to switch off.
    */
-  size?: "roster" | "portrait" | "compact"
+  size?: "roster" | "portrait" | "compact" | "editorial"
   /** Call / Text / Email / Schedule buttons on the face row, including portrait. */
   reach?: boolean
   /**
@@ -372,6 +434,87 @@ export function AboutFaces({
           </V3Heading>
           {faceIdentity(first, { contact: true })}
           {reachLinks(first)}
+        </div>
+      </section>
+    )
+  }
+
+  if (size === "editorial") {
+    const [leadPerson, ...companions] = shown
+    if (!leadPerson) return null
+    return (
+      <section
+        id="faces"
+        className={cn(V3_ROOT_CLASS, "about-faces", "about-faces--editorial", "about-faces--lead")}
+        aria-labelledby="faces-heading"
+      >
+        <div className="about-faces__head">
+          <V3Heading level={headingLevel} id="faces-heading" className="about-faces__heading">
+            {heading}
+          </V3Heading>
+          {claim ? <p className="about-faces__claim">{claim}</p> : null}
+        </div>
+        <div className="about-faces__editorial">
+          <article className="about-faces__lead">
+            <Link href={leadPerson.href} className="about-faces__photo-link">
+              <FacePortrait src={leadPerson.src} name={leadPerson.name} priority />
+            </Link>
+            <div className="about-faces__row">
+              <Link href={leadPerson.href} className="about-faces__name">
+                {leadPerson.name}
+              </Link>
+              {faceCredential(leadPerson)}
+              {faceRecord(leadPerson.record)}
+              {reach ? editorialReach(leadPerson) : null}
+            </div>
+          </article>
+          {companions.length > 0 ? (
+            <ul className="about-faces__companions">
+              {companions.map((person) => (
+                <li key={person.href} className="about-faces__companion">
+                  <Link href={person.href} className="about-faces__photo-link">
+                    <FacePortrait src={person.src} name={person.name} />
+                  </Link>
+                  <div className="about-faces__row">
+                    <Link href={person.href} className="about-faces__name">
+                      {person.name}
+                    </Link>
+                    {faceCredential(person)}
+                    {person.record ? (
+                      <p className="about-faces__specialty">
+                        <span className="about-faces__record-value">{person.record.value}</span>
+                        {person.record.places.length > 0
+                          ? ` in ${person.record.places.map((p) => p.name).join(', ')}`
+                          : ` ${person.record.label}`}
+                      </p>
+                    ) : null}
+                    {person.record ? (
+                      <details className="about-faces__where">
+                        <summary className="about-faces__where-summary">
+                          <span className="about-faces__where-text">{person.record.placesSummary}</span>
+                          <span className="about-faces__where-caret" aria-hidden="true" />
+                        </summary>
+                        {person.record.places.length > 0 ? (
+                          <ul className="about-faces__where-list">
+                            {person.record.places.map((place) => (
+                              <li key={place.name} className="about-faces__where-row">
+                                <span className="about-faces__where-place">{place.name}</span>
+                                <span className="about-faces__where-n">{place.n}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                        <p className="about-faces__where-trace">
+                          <span className="about-faces__where-trace-label">Source</span> {person.record.trace}
+                        </p>
+                      </details>
+                    ) : null}
+                    {reach ? editorialReach(person) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       </section>
     )

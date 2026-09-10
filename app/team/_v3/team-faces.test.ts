@@ -12,6 +12,8 @@ describe('team fold', () => {
     expect(PAGE).toContain('aboutFaceFromBroker')
     expect(FOLD).toContain('<AboutFaces')
     expect(FOLD).toContain('heading="The brokers"')
+    expect(FOLD).toContain('size="editorial"')
+    expect(FOLD).toContain('team-fold')
     expect(FOLD).not.toContain('V3Quiet')
     expect(PAGE).not.toContain('valuationHref')
     expect(PAGE).not.toContain('Value my home')

@@ -172,6 +172,12 @@ export type V3AtlasProps = {
    */
   headlineTone?: 'display' | 'eyebrow'
   /**
+   * Opt-in sentence that replaces the generated claim. Closings maps otherwise
+   * print "N closings." which reads as a KPI tile (SITE-74). Absent, the
+   * generated claim is unchanged for every existing caller.
+   */
+  claimText?: string
+  /**
    * OPT-IN (SITE-47). Whether the Atlas prints a CLAIM SENTENCE above the map
    * on a live-inventory map.
    *
@@ -369,6 +375,7 @@ export function V3Atlas({
   headingLevel = 1,
   headlineTone = 'display',
   claimTone = 'none',
+  claimText,
   keyPlacement = 'dock',
   dots,
   regions,
@@ -786,6 +793,7 @@ export function V3Atlas({
   }, [allTypesOn, typesOn])
 
   const claim = useMemo(() => {
+    if (claimText) return claimText
     if (incomplete) return 'Live counts are unavailable right now. The map shows what could be read.'
     // SITE_PAGES / PLACE_PAGES kill list: no old-style triple-count line (every
     // type for sale, pending, sold in the last 30 days) with its trailing
@@ -806,7 +814,7 @@ export function V3Atlas({
     }
     const ceiling = atCeiling ? '' : ` under ${fmtShort(maxPrice)}`
     return `${counts.closed.toLocaleString('en-US')} ${filterPhrase}${noun(counts.closed)}${ceiling}.`
-  }, [counts, atCeiling, maxPrice, noun, incomplete, filterPhrase, closingsMap, claimTone, sourceName])
+  }, [claimText, counts, atCeiling, maxPrice, noun, incomplete, filterPhrase, closingsMap, claimTone, sourceName])
 
   /* The pulses: the newest real events, with slots per kind so closes always
      show; capped so the map breathes and the main thread never notices. */
