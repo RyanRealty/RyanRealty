@@ -13,7 +13,7 @@ import { livePrice } from '@/app/_v3/live-format'
 export const SHOWN_LISTINGS = 6
 
 export const OUR_LISTINGS_TRACE =
-  'active and pending single-family listings where ListOfficeName is Ryan Realty LLC, regional MLS'
+  'Central Oregon MLS, active and pending single-family homes listed by Ryan Realty.'
 
 export function sellListingRows(
   listings: readonly PriceDropTile[],
