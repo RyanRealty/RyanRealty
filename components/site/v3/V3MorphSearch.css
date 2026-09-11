@@ -155,6 +155,13 @@
   -webkit-backdrop-filter: none;
 }
 
+.v3 .v3-morph-search--live .v3-morph-search__catalog kbd,
+.v3-morph-overlay-dialog kbd {
+  border-color: var(--v3-ink);
+  color: var(--v3-ink-muted);
+  background: transparent;
+}
+
 @layer base {
   .v3 .v3-morph-search--live .v3-morph-search__catalog button[aria-haspopup='dialog'] {
     color: var(--v3-ink);

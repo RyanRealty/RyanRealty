@@ -71,7 +71,7 @@ export function V3MorphSearch({
             {...(open !== undefined ? { open, onOpenChange } : { onOpenChange })}
             onQueryChange={onQueryChange}
             onSelect={onSelect}
-            shortcut=""
+            shortcut="f"
             emptyMessage="No places match that."
             className="v3-morph-search__catalog"
           />

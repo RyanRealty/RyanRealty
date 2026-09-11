@@ -740,6 +740,11 @@ export function MorphingSearch({
 							{placeholder}
 						</span>
 					)}
+					{iconOnly || !shortcut ? null : (
+						<kbd className="flex h-7 shrink-0 items-center rounded-md border border-border px-2 text-xs uppercase text-muted-foreground">
+							{shortcut}
+						</kbd>
+					)}
 				</motion.div>
 			</div>
 			{overlay}

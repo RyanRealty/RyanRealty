@@ -55,6 +55,7 @@ describe('homepage hero search uses the public search stack', () => {
     expect(morph).toContain('<kbd')
     expect(morph).toContain('typeof window === "undefined"')
     expect(wrap).not.toMatch(/\binline\b/)
+    expect(wrap).toContain('shortcut="f"')
     expect(SEARCH).not.toMatch(/open=\{open\}/)
     expect(SEARCH).toContain('PLACE_SEEDS')
   })
