@@ -1,5 +1,4 @@
 "use client";
-// beui.dev/components/blocks/morphing-search
 
 import { type LucideIcon, Search } from "lucide-react";
 import {

@@ -54,7 +54,6 @@ describe('homepage hero search uses the public search stack', () => {
     expect(morph).toContain('layoutId')
     expect(morph).toContain('<kbd')
     expect(morph).toContain('backdrop-blur-xl')
-    expect(morph).toContain('beui.dev/components/blocks/morphing-search')
     expect(wrap).not.toMatch(/\binline\b/)
     expect(wrap).toContain('shortcut="f"')
     expect(SEARCH).not.toMatch(/open=\{open\}/)
