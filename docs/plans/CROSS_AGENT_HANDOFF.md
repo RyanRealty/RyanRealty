@@ -1,10 +1,11 @@
-# Current — 2026-09-11 08:10Z (grinder 01a08eda: SITE-29 + SITE-86 live)
+# Current — 2026-09-11 09:45Z (grinder 01a08eda: SITE-73 + SITE-89 landing)
 
-Owner: `grok-4.5-2026-09-10-22`. origin/main `f7f3c89a` READY `cli-f7f3c89`. 15m launchd stays. No auto-seed.
+Owner: `grok-4.5-2026-09-11-01`. 15m launchd stays. No auto-seed.
 
-- **SITE-29 done** blog `/blog` + `/blog/:path*` `public, s-maxage=300`. Production second curl HIT on sunriver, bend, /blog, and the Sunriver post. H1+≥8 h2 held.
-- **SITE-86 done** subdivision fold Atlas + this-plat alerts, no plat MOS (REGISTRY §4). grok-4.6 median **62** rebaselined. Finish 70 not met.
-- Next open: SITE-89 place-type, SITE-73 zip. Skip overlapping place families.
+- **SITE-29 done** blog s-maxage=300 HIT. **SITE-86 done** subdivision fold, no plat MOS, grok-4.6 **62**.
+- **SITE-73** zip fold Atlas + MOS + alerts (207 vs 68). grok-4.6 median **57** rebaselined. Finish 70 not met. V3Number in-view amount 0.15 (fold numerals).
+- **SITE-89** place-type H1 + claim + Atlas + shadcn carousel. grok-4.6 median **55** rebaselined. Finish 70 not met. 777 address vs 502 city-limits remains.
+- Next: empty of eligible after these land; 15m fire continues. No auto-seed.
 
 
 # Current — 2026-09-10 23:48Z (homepage uses the MorphingSearch demo, not inline)
