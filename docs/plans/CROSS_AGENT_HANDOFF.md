@@ -1,11 +1,11 @@
-# Current — 2026-09-11 09:45Z (grinder 01a08eda: SITE-73 + SITE-89 landing)
+# Current — 2026-09-11 09:50Z (grinder 01a08eda: SITE-73 + SITE-89 live)
 
-Owner: `grok-4.5-2026-09-11-01`. 15m launchd stays. No auto-seed.
+Owner: `grok-4.5-2026-09-11-01`. origin/main `fa9ab2df` READY `dpl_9uKjTo7rxqEheXtr1aXxCivnura8`. 15m launchd stays. No auto-seed.
 
 - **SITE-29 done** blog s-maxage=300 HIT. **SITE-86 done** subdivision fold, no plat MOS, grok-4.6 **62**.
-- **SITE-73** zip fold Atlas + MOS + alerts (207 vs 68). grok-4.6 median **57** rebaselined. Finish 70 not met. V3Number in-view amount 0.15 (fold numerals).
-- **SITE-89** place-type H1 + claim + Atlas + shadcn carousel. grok-4.6 median **55** rebaselined. Finish 70 not met. 777 address vs 502 city-limits remains.
-- Next: empty of eligible after these land; 15m fire continues. No auto-seed.
+- **SITE-73 done** `/zip/97702` Atlas + MOS + alerts live (no Google embed). grok-4.6 median **57**. Finish 70 not met.
+- **SITE-89 done** `/cities/bend/types/single-family` H1 + claim + Atlas + carousel live. grok-4.6 median **55**. Finish 70 not met.
+- Queue: no eligible open SITE nodes. 15m fire continues as new nodes get entered. Do not auto-seed.
 
 
 # Current — 2026-09-10 23:48Z (homepage uses the MorphingSearch demo, not inline)
