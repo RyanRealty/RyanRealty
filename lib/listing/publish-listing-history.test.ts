@@ -214,3 +214,42 @@ describe('publishHistoryRowPrice', () => {
     expect(publishHistoryRowPrice({ isSale: true, rowPrice: 849_000, closePrice: Number.NaN })).toBeNull()
   })
 })
+
+// A CUT THE SELLER HAS SINCE UNDONE IS NOT A CUT (2026-09-11).
+//
+// The badge and the mark (lib/listing/publish-listing-drop-mark.ts) read the
+// same rows and must agree, or the page shows a "Price drop" badge naming a cut
+// the mark refuses to draw. Both used to walk past a newer price INCREASE to
+// reach an older decrease. Live case: 21357 SE Kilimanjaro Loop asked $614,995
+// while the page advertised a $1,000 cut from Aug 19, after a $6,000 increase
+// on Sep 2 had already undone it.
+describe('publishListingLastDrop — a rise newer than the cut', () => {
+  const raisedAfterCut = [
+    { event: 'listed', event_date: '2026-06-04', price_change: null },
+    { event: 'pricechange', event_date: '2026-08-19', price_change: -1_000 },
+    { event: 'pricechange', event_date: '2026-09-02', price_change: 6_000 },
+  ]
+
+  it('labels nothing once the price has gone back up', () => {
+    expect(publishListingLastDrop(raisedAfterCut)).toBeNull()
+  })
+
+  it('still labels the cut when the rise is OLDER than it', () => {
+    const rows = [
+      { event: 'listed', event_date: '2026-06-04', price_change: null },
+      { event: 'pricechange', event_date: '2026-07-01', price_change: 20_000 },
+      { event: 'pricechange', event_date: '2026-08-19', price_change: -15_000 },
+    ]
+    expect(publishListingLastDrop(rows)).toEqual({ amount: 15_000, label: 'Price drop $15K' })
+  })
+
+  it('reads past zero and unclassifiable changes rather than calling them a rise', () => {
+    const rows = [
+      { event: 'listed', event_date: '2026-06-04', price_change: null },
+      { event: 'pricechange', event_date: '2026-08-01', price_change: -50_000 },
+      { event: 'pricechange', event_date: '2026-08-20', price_change: 0 },
+      { event: 'pricechange', event_date: '2026-08-21', price_change: null },
+    ]
+    expect(publishListingLastDrop(rows)?.amount).toBe(50_000)
+  })
+})
