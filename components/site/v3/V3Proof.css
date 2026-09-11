@@ -229,6 +229,13 @@
 
 /* One initials layer only: .v3-proof__avatar-ink. Radix leaves Avatar empty
    on SSR and may paint Fallback later — never stack ::before + ink + fallback. */
+/* The fallback is the navy dot, not the letters. The VISIBLE initials are drawn
+   by the sibling .v3-proof__avatar-ink, which is already aria-hidden, so this
+   copy is a duplicate that is invisible (transparent at font-size 0) yet still
+   sat in the accessibility tree — where ci:a11y measured its transparent text
+   against the navy and reported 1.39:1. It is marked aria-hidden in
+   V3Proof.client.tsx to match its twin; the name a reader needs is on the
+   button's aria-label ("Read <author>'s review") and the wrap's title. */
 .v3-proof__avatar-fallback {
   background: var(--v3-navy) !important;
   color: transparent !important;

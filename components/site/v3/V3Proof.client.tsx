@@ -149,7 +149,7 @@ function FaceAvatarRow({
             >
               <span className="v3-proof__avatar-wrap" title={q.author}>
                 <Avatar size="lg" className="v3-proof__avatar" data-initials={initials}>
-                  <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0}>
+                  <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0} aria-hidden="true">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
@@ -215,7 +215,7 @@ function QuoteFigure({
             className="v3-proof__avatar v3-proof__avatar--quote"
             data-initials={reviewerInitials(q.author)}
           >
-            <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0}>
+            <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0} aria-hidden="true">
               {reviewerInitials(q.author)}
             </AvatarFallback>
           </Avatar>

@@ -125,6 +125,7 @@ export function HomeHeroSearch({
         id={buyModeId}
         value="buy"
         defaultChecked
+        aria-label="Buy a home"
         className="home-hero-search__mode home-hero-search__mode--buy"
       />
       <input
@@ -132,6 +133,7 @@ export function HomeHeroSearch({
         name={`${uid}-mode`}
         id={sellModeId}
         value="sell"
+        aria-label="Sell a home"
         className="home-hero-search__mode home-hero-search__mode--sell"
       />
 
