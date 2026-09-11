@@ -1,11 +1,11 @@
-# Current — 2026-09-11 14:00Z (fleet 3/3: SITE-106/108 + SITE-95 + SITE-101/104)
+# Current — 2026-09-11 14:26Z (fleet 3/3: 106/108 scoring; 95 + 101/104 held)
 
-origin/main `e5b25694`. 15m stays. No auto-seed. Fleet full — do not claim.
+origin/main `ae21de87`. 15m stays. No auto-seed. Fleet full — do not claim.
 
-- **SITE-95 in_progress** compare. Owner `grok-4.6-2026-09-11-13`. UUID `a782d1a3-5b16-4970-9157-eaa5d1590240`. Prior grok-4.6 **56**, finish **≥70**. Port 3221. Exclusive: `app/compare/**`, `components/compare/**`, `V3Slots*`, `ui_kits/compare/**`. Worktree lane `01a090c5`.
-- **SITE-106 in_progress** place-type. Owner `grok-4.6-2026-09-11-01a090bd`. UUID `a59bf941-e062-48a8-b57d-085c508802b8`. Beat grok-4.6 **55**, finish **≥70**. Port 3206. Do not restyle `V3Atlas`/`V3Carousel` globally.
-- **SITE-108 in_progress** `/price-drops`. Same owner. UUID `3d1f25ad-6a6b-4992-8693-ef8c4e63e205`. Beat grok-4.6 **60**, finish **≥70**. Port 3208. Do not restyle `V3Field`/`V3Drawing` globally.
-- **SITE-101 + SITE-104 in_progress** Owner `grok-4.5-2026-09-11-13`. Skip V3Instrument family (SITE-102/103/105) and place-opening family (SITE-93/94/112).
+- **SITE-106 in_progress** place-type. Owner `grok-4.6-2026-09-11-01a090bd`. UUID `a59bf941-e062-48a8-b57d-085c508802b8`. Beat grok-4.6 **55**, finish **≥70**. Worktree `…/subagent-01a090c4-faa5-7693-b7ad-cd9dd4e3bd43` `wt/site-106-place-type-20260911` :3206. Uncommitted: in-boundary mark census (claim 501 = atlas 501), Bend neighborhood crawl doors, atlas-first fold. Shots 14:23Z. Desktop atlas still inset; last rail card sheared. Do not restyle V3Atlas/V3Carousel globally.
+- **SITE-108 in_progress** `/price-drops`. Same owner. UUID `3d1f25ad-6a6b-4992-8693-ef8c4e63e205`. Beat **60**, finish **≥70**. Worktree `…/subagent-01a090c4-faa6-7172-b88c-429114b25d0b` `wt/site-108-price-drops-20260911` :3208. Uncommitted: cut-bar mark, city doors, title/JSON-LD increment. grok-4.6 `taste-evaluate --beat 60` running on 14:24Z shots. Mobile shears second card; beeswarm unlabeled in fold. Do not restyle V3Field/V3Drawing globally.
+- **SITE-95 in_progress, not landable.** Owner `grok-4.6-2026-09-11-13`. UUID `a782d1a3-5b16-4970-9157-eaa5d1590240`. Lane `01a090c5` :3221. Prior **56**. Exclusive: `app/compare/**`, `components/compare/**`, `V3Slots*`, `ui_kits/compare/**`.
+- **SITE-101 + SITE-104** `grok-4.5-2026-09-11-13`. Skip V3Instrument (102/103/105) and place-opening (93/94/112).
 
 
 # Current — 2026-09-10 23:48Z (homepage uses the MorphingSearch demo, not inline)
