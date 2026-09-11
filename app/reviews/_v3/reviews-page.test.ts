@@ -18,16 +18,9 @@ describe('reviews page composition', () => {
   })
 
   /**
-   * SITE-48 replaced the earlier rule here. The reach used to be a V3Quiet
-   * SECTION above V3Proof, on the argument that 375 needed a way to reach a
-   * broker without scrolling past the instrument. The taste table of
-   * 2026-09-08 scored the result 48 and named that section as the dullest
-   * thing on the page: "a person landing on a reviews page to judge
-   * trustworthiness meets four identical arrow-tipped rows of contact info
-   * before seeing a single star or quote." The reach is still on the first
-   * screen — it is now a slim action row INSIDE the proof band, under the
-   * score and the lead quote — so the same four destinations survive and the
-   * page opens on the rating.
+   * SITE-48 folded reach into the proof band. SITE-79 keeps Call + Book as the
+   * slim ask under the lead quote so 375 still has a path to a broker; Text /
+   * Email / fuller doors close the page. Never a Quiet #reach above the proof.
    */
   it('folds the reach into the proof band, after the score, never as a section above it', () => {
     expect(PAGE).not.toContain('id="reach"')
@@ -39,9 +32,8 @@ describe('reviews page composition', () => {
     expect(PAGE).toContain('actions={reachActions}')
     expect(doorsIdx).toBeGreaterThan(proofIdx)
     expect(PAGE).toContain('tel:${CONTACT.phoneDirectTel}')
-    expect(PAGE).toContain('sms:${CONTACT.phoneDirectTel}')
-    expect(PAGE).toContain('mailto:${CONTACT.email.primary}')
     expect(PAGE).toContain("href: '/book'")
+    expect(PAGE).toContain("href: '/team'")
   })
 
   it('leads with the score face rather than a bare figure row', () => {

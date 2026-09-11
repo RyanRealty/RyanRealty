@@ -36,7 +36,6 @@ import {
   V3Quiet,
   V3SectionTracker,
 } from '@/components/site/v3'
-import { formatDate } from '@/lib/format/date'
 import { buildReviewsJsonLd } from './_v3/reviews-jsonld'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 
@@ -47,19 +46,34 @@ const ROUTE_PATH = '/reviews'
 export const revalidate = 3600
 
 export async function generateMetadata(): Promise<Metadata> {
-  const quotes = toReviewQuotes((await getReviews(50)).reviews)
+  const summary = await getReviews(50)
+  const quotes = toReviewQuotes(summary.reviews)
   const n = quotes.length
+  const average = summary.count > 0 ? summary.averageRating : 5
+  const dated = quotes.filter((q) => q.date).sort((a, b) => (a.date! < b.date! ? -1 : 1))
+  const firstYear = dated[0]?.year
+  const newestYear = dated[dated.length - 1]?.year
+  const span =
+    firstYear && newestYear && firstYear !== newestYear
+      ? `${firstYear}–${newestYear}`
+      : firstYear
+        ? String(firstYear)
+        : null
+  const description = span
+    ? `${n} verified Google reviews of Ryan Realty in Central Oregon (${average.toFixed(1)} of 5, ${span}). Every review in full on this page — nothing picked, nothing trimmed.`
+    : `${n} verified Google reviews of Ryan Realty in Central Oregon (${average.toFixed(1)} of 5). Every review in full on this page — nothing picked, nothing trimmed.`
   return {
-    title: `${n} client reviews · Ryan Realty`,
-    description: `${n} verified Google reviews from buyers and sellers across Central Oregon. Full text on this page.`,
+    title: `${n} Google reviews · Ryan Realty`,
+    description,
     alternates: { canonical: `${siteUrl}${ROUTE_PATH}` },
     openGraph: {
-      title: `${n} client reviews | Ryan Realty`,
+      title: `${n} Google reviews · ${average.toFixed(1)} of 5 | Ryan Realty`,
+      description,
       url: `${siteUrl}${ROUTE_PATH}`,
       type: 'website',
       images: [{ url: ogImage, width: 1200, height: 630 }],
     },
-    twitter: { card: 'summary_large_image', images: [ogImage] },
+    twitter: { card: 'summary_large_image', title: `${n} Google reviews · Ryan Realty`, description, images: [ogImage] },
   }
 }
 
@@ -67,35 +81,27 @@ export default async function ReviewsPage() {
   const summary = await getReviews(50)
   const quotes = toReviewQuotes(summary.reviews)
   const reviewsJsonLd = buildReviewsJsonLd(siteUrl, quotes)
-  const heading = `${quotes.length} Google reviews`
   // Every figure below is the source's own: count and average from the
   // reviews table (all non-hidden Google rows), first and newest from the
   // dates on the quotes printed. A live read that returned nothing falls back
   // to the recorded testimonials, whose count and 5.0 are what they carry.
   const count = summary.count > 0 ? summary.count : quotes.length
   const average = summary.count > 0 ? summary.averageRating : 5
+  /* Layout lock: H1 is the rating, not the bare inventory integer. */
+  const heading = `${average.toFixed(1)} from ${count}`
   const dated = quotes.filter((q) => q.date).sort((a, b) => (a.date! < b.date! ? -1 : 1))
-  const firstDate = dated[0]?.date ?? null
-  const newestDate = dated[dated.length - 1]?.date ?? null
   const firstYear = dated[0]?.year
   const newestYear = dated[dated.length - 1]?.year
-  const thisYear = new Date().getFullYear()
-  const thisYearCount = quotes.filter((q) => q.year === thisYear).length
-  /* The claim no longer restates the score. The headline carries the count and
-     the score face under it carries the average drawn as stars, so a claim of
-     "5.0 of 5 across 25 reviews" printed the same two numbers a third and a
-     fourth time in one screen. What the sentence is FOR is the promise the
-     figures cannot make: nothing here is picked, cut, or rewritten. */
   const claim =
     firstYear && newestYear && firstYear !== newestYear
-      ? `Every review Ryan Realty has, ${firstYear} to ${newestYear}, in full and exactly as it was written. Nothing picked, nothing trimmed.`
-      : 'Every review Ryan Realty has, in full and exactly as it was written. Nothing picked, nothing trimmed.'
+      ? `Full text, ${firstYear}–${newestYear}, exactly as written.`
+      : 'Full text, exactly as written. Nothing picked or trimmed.'
+  /* Face mode prints average + count at display scale. Extra span/tally tiles
+     were a KPI caption the timeline already answers (SITE-79 evaluator). Keep
+     only the two figures the score face reads. */
   const figures = [
     { value: String(count), label: 'Google reviews' },
     { value: average.toFixed(1), label: 'average of 5' },
-    ...(thisYearCount > 0 ? [{ value: String(thisYearCount), label: `in ${thisYear}` }] : []),
-    ...(firstDate ? [{ value: formatDate(firstDate, { month: 'short', day: undefined, year: 'numeric' }), label: 'first review' }] : []),
-    ...(newestDate ? [{ value: formatDate(newestDate, { month: 'short', day: undefined, year: 'numeric' }), label: 'newest' }] : []),
   ]
 
   /* The reach, folded into the Proof band as one slim row under the opening
@@ -104,11 +110,12 @@ export default async function ReviewsPage() {
      landing on a reviews page to judge trustworthiness meets four identical
      arrow-tipped rows of contact info before seeing a single star or quote".
      Same four destinations, one row, after the score and the lead quote. */
+  /* Two asks after the quote so the 375 fold keeps a path to a broker without
+     another four-row contact list (SITE-48 dullest finding). Doors still close
+     the page with the fuller set. */
   const reachActions = [
     { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
-    { label: 'Text us', href: `sms:${CONTACT.phoneDirectTel}` },
-    { label: 'Email', href: `mailto:${CONTACT.email.primary}` },
-    { label: 'Book a time', href: '/book' },
+    { label: 'Book a broker', href: '/book' },
   ]
 
   return (
