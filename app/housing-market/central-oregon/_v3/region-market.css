@@ -1,0 +1,123 @@
+/* Region fold — MOS proof + year overlay split (SITE-88). Tokens only. */
+
+.region-market-mos {
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  background: transparent;
+  border: 0;
+  padding-inline: 0;
+  box-shadow: none;
+}
+
+.v3.v3-mos.region-market-mos {
+  max-width: none;
+  width: 100%;
+}
+
+#market.v3-instrument {
+  padding-top: var(--v3-space-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+#market .v3-instrument__eyebrow { order: 1; }
+#market .v3-instrument__headline { order: 2; }
+#market .v3-instrument__stage { order: 3; }
+#market .v3-instrument__figures { order: 4; }
+#market .v3-instrument__action { order: 5; }
+#market .v3-instrument__fold { order: 6; }
+#market .v3-instrument__source { order: 7; }
+
+#market .v3-instrument__action {
+  margin-top: var(--v3-space-sm);
+  margin-bottom: 0;
+}
+
+#market .v3-instrument__drawing {
+  width: 100%;
+  min-width: 0;
+}
+
+#market .v3-instrument__chart {
+  width: 100%;
+  min-width: 0;
+}
+
+#market .v3-source__trace {
+  max-width: 40rem;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}
+
+/* Desktop: MOS left, year series right — both in the first viewport. */
+@media (min-width: 64rem) {
+  #market .v3-instrument__stage--split {
+    display: grid;
+    grid-template-columns: minmax(16rem, 0.85fr) minmax(0, 1.4fr);
+    gap: var(--v3-space-md);
+    align-items: start;
+  }
+
+}
+
+/* Instrument renders chart then drawing; MOS is the layout-lock answer first. */
+#market .v3-instrument__stage--split .v3-instrument__drawing {
+  order: -1;
+}
+
+@media (max-width: 63.99rem) {
+  #market .v3-instrument__stage--split {
+    display: flex;
+    flex-direction: column;
+    gap: var(--v3-space-sm);
+  }
+
+  #central-oregon-mos .v3-mos__caption {
+    font-size: var(--v3-size-body-sm);
+  }
+
+  #central-oregon-mos .v3-mos__pair {
+    gap: 0.25rem;
+  }
+
+  #central-oregon-mos .v3-mos__barrow {
+    min-height: 2rem;
+  }
+
+  /* Phone: both MOS bars clear the fold; year series follows after the ask. */
+  #market .v3-instrument__stage--split .v3-instrument__chart {
+    order: 2;
+  }
+
+  #market-chart .v3-chart__legend {
+    display: none;
+  }
+
+  #market-chart .v3-chart__y {
+    font-size: var(--v3-size-label);
+  }
+
+  #market-chart .v3-chart__plot,
+  #market-chart .v3-chart__svg {
+    max-height: 6.5rem;
+  }
+
+  #market-chart .v3-chart__tip--resting {
+    display: none;
+  }
+
+  #market-chart .v3-chart__tip {
+    min-width: 0;
+    max-width: 9rem;
+    font-size: var(--v3-size-label);
+  }
+
+  #market-chart .v3-chart__tip-row dt {
+    display: none;
+  }
+
+  #market.v3-instrument.hm-tremor .v3-figure__value {
+    font-size: clamp(1.25rem, 6.5vw, 1.75rem);
+  }
+}

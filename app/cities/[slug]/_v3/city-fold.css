@@ -1,0 +1,397 @@
+/* SITE-82 city first viewport: Atlas drawing + alerts figure.
+   Page-local only — does not restyle neighborhood/community openings. */
+
+@layer base {
+  .city-fold a {
+    color: inherit;
+  }
+}
+
+/* Shorten the photograph — MOS lives in the fold figure, so the still only
+   needs H1 + crawlable doors (overflow:hidden clips past max-height). */
+.place-opening.place-opening--city.place-opening--media {
+  min-height: 9rem;
+  max-height: 12rem;
+}
+
+@media (min-width: 64rem) {
+  .place-opening.place-opening--city.place-opening--media {
+    min-height: 8.5rem;
+    max-height: 11rem;
+  }
+
+  .place-opening--city.place-opening--media .place-opening__copy {
+    align-self: end;
+    padding-top: calc(var(--v3-space-lg) + 2rem);
+    padding-bottom: var(--v3-space-sm);
+    max-width: none;
+  }
+}
+
+@media (max-width: 39.99rem) {
+  /* Barely a still — H1 + doors only so Atlas + MOS + alerts fit in 812. */
+  .place-opening.place-opening--city.place-opening--media {
+    min-height: 5rem;
+    max-height: 6.25rem;
+  }
+
+  .place-opening--city.place-opening--media .place-opening__copy {
+    align-self: end;
+    padding-top: calc(var(--v3-space-lg) + 1.5rem);
+    padding-bottom: var(--v3-space-2xs);
+  }
+
+  .place-opening--city .place-opening__caption--doors {
+    font-size: var(--v3-size-source);
+  }
+}
+
+.place-opening--city .place-opening__caption {
+  font-size: var(--v3-size-body-sm);
+  margin-top: var(--v3-space-2xs);
+}
+
+.place-opening--city .place-opening__caption a {
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.place-opening--city .place-opening__caption a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.city-fold {
+  width: 100%;
+  max-width: var(--v3-measure);
+  margin-inline: auto;
+  padding-inline: var(--v3-gutter);
+  padding-top: var(--v3-space-md);
+  padding-bottom: var(--v3-space-lg);
+}
+
+.city-fold__stage {
+  display: grid;
+  gap: var(--v3-space-lg);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  /* Atlas owns more of the fold; alerts figure stays wide enough to read. */
+  .city-fold__stage {
+    grid-template-columns: minmax(0, 1.45fr) minmax(20rem, 0.95fr);
+    column-gap: var(--v3-space-lg);
+  }
+}
+
+/* Fold Atlas: MOS owns the inventory numeral. Hide the key's competing
+   for-sale / pending counts (tile population ≠ leftover HUD). Keep type + scrub. */
+.city-fold__drawing .v3-atlas__key {
+  display: none;
+}
+
+.city-fold__drawing {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.city-fold__drawing .v3-atlas {
+  max-width: 100%;
+}
+
+/* Cap the map plate so drawing + figure + alerts ask fit the first viewport. */
+.city-fold__drawing .v3-atlas__frame {
+  max-height: min(32vh, 16rem);
+}
+
+.city-fold__drawing .v3-atlas__sales-legend {
+  display: none;
+}
+
+/* Keep type toggles + price scrubber (the house-atlas interaction). Hide the
+   tall events rail and aside so the fold still fits the first viewport. */
+.city-fold__drawing .v3-atlas__aside,
+.city-fold__drawing .v3-atlas__events {
+  display: none;
+}
+
+.city-fold__drawing .v3-atlas__dock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-xs);
+  padding-top: var(--v3-space-2xs);
+  max-height: none;
+}
+
+.city-fold__drawing .v3-atlas__types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs);
+}
+
+.city-fold__drawing .v3-atlas__scrub {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+}
+
+/* Fold polygons are the drawing, not the hit target. Type chips + the price
+   scrubber are the 44×44 controls (WCAG 2.5.8). Hiding the aside list would
+   otherwise leave the paths as the only named "Old Bend" control. */
+.city-fold__drawing .v3-atlas__place {
+  pointer-events: none;
+}
+
+.city-fold__drawing .v3-atlas__scrub input,
+.city-fold__drawing .v3-atlas__range,
+.city-fold__drawing .v3-range,
+.city-fold__drawing .v3-range__beui {
+  min-block-size: var(--v3-tap);
+  min-inline-size: var(--v3-tap);
+}
+
+@media (max-width: 63.99rem) {
+  .city-fold {
+    padding-top: var(--v3-space-2xs);
+    padding-bottom: var(--v3-space-sm);
+    gap: 0;
+  }
+
+  .city-fold__stage {
+    gap: var(--v3-space-sm);
+  }
+
+  /* Phone: tiny Atlas drawing, then MOS + alerts ask — all in 812. */
+  .city-fold__drawing .v3-atlas__frame {
+    max-height: min(10vh, 4.75rem);
+  }
+
+  .city-fold__drawing .v3-atlas__head {
+    padding-bottom: 0;
+  }
+
+  .city-fold__drawing .v3-atlas__headline {
+    font-size: var(--v3-size-body-sm);
+  }
+
+  .city-fold__drawing .v3-atlas__claim {
+    display: none;
+  }
+
+  /* Scrubber stays — the house-atlas interaction on a phone. */
+  .city-fold__drawing .v3-atlas__dock {
+    position: static;
+    padding-top: 0;
+  }
+
+  .city-fold__drawing .v3-atlas__types {
+    display: none;
+  }
+
+  .city-fold__drawing .v3-atlas__sales-legend {
+    display: none;
+  }
+
+  .city-fold__figure .v3-alerts__strip {
+    max-height: none;
+  }
+
+  /* One proof card on a phone — price + beds/baths/sqft stay with the claim. */
+  .city-fold__figure .v3-alerts__strip > li:nth-child(n + 2) {
+    display: none;
+  }
+
+  .city-fold__figure .v3-alerts__thumb {
+    grid-template-columns: 4.25rem minmax(0, 1fr);
+  }
+
+  .city-fold__figure .v3-alerts__thumb img {
+    width: 4.25rem;
+  }
+
+  .city-fold__figure .v3-alerts__thumb-facts {
+    display: block !important;
+    font-size: var(--v3-size-body-sm);
+  }
+
+  /* Drop source + proof thumb on phone so ask + types land in the first viewport. */
+  .city-fold__figure .v3-source,
+  .city-fold__figure .v3-alerts__source,
+  .city-fold__figure .v3-alerts__strip {
+    display: none;
+  }
+
+  /* Claim → types → email. */
+  .city-fold__figure .v3.v3-alerts .v3-alerts__grid {
+    grid-template-areas: 'lead' 'ask' !important;
+  }
+
+  .city-fold__figure .v3.v3-mos {
+    padding: var(--v3-space-2xs) var(--v3-space-xs);
+  }
+
+  .city-fold__figure .v3-mos__plain,
+  .city-fold__figure .v3-mos .v3-source {
+    display: none;
+  }
+
+  .city-fold__figure .v3-mos__caption {
+    -webkit-line-clamp: 1;
+  }
+
+  .city-fold__figure .v3-alerts__num {
+    font-size: clamp(2rem, 10vw, 2.75rem);
+  }
+}
+
+/* Fold figure: one ghost ask (email). Scope methodology + browse stay off. */
+.city-fold__figure .v3-alerts__scope,
+.city-fold__figure .v3-alerts__browse {
+  display: none;
+}
+
+.city-fold__figure {
+  display: grid;
+  gap: var(--v3-space-md);
+  min-width: 0;
+}
+
+.city-fold__figure .v3-mos,
+.city-fold__figure .v3-alerts {
+  margin: 0;
+}
+
+/* MOS in the figure column — compact cream plate, full caption + as-of visible. */
+.city-fold__mos {
+  display: grid;
+  gap: var(--v3-space-2xs);
+}
+
+.city-fold__figure .v3.v3-mos {
+  padding: var(--v3-space-xs) var(--v3-space-sm);
+  gap: var(--v3-space-2xs);
+  max-width: 100%;
+}
+
+.city-fold__figure .v3-mos__caption {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+
+.city-fold__figure .v3-alerts__thumb-price {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Alerts live inside the fold figure — drop the default section gutters that
+   assume a full-bleed strip below the opening. */
+.city-fold__figure .v3.v3-alerts {
+  padding-inline: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  max-width: none;
+}
+
+/* Stack claim → thumbs → form so the 30-day figure stays readable.
+   Must override both columns AND areas — areas alone keep an implicit
+   second column and collapse the claim (SITE-87 / SITE-82). */
+.city-fold__figure .v3.v3-alerts .v3-alerts__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-areas: 'lead' 'figure' 'ask' !important;
+  column-gap: 0;
+  row-gap: var(--v3-space-sm);
+  gap: var(--v3-space-sm);
+}
+
+.city-fold__figure .v3.v3-alerts .v3-alerts__ask {
+  padding-left: 0 !important;
+  border-left: 0 !important;
+}
+
+/* Primary submit must clear 44×44 at 375 (--v3-tap). */
+.city-fold__figure .v3-alerts__ask .v3-btn,
+.city-fold__figure .v3-alerts__ask button[type='submit'] {
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+}
+
+.city-fold__figure .v3-alerts__eyebrow {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.city-fold__figure .v3-alerts__claim {
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-snug, 1.25);
+}
+
+.city-fold__figure .v3-alerts__claim-text {
+  display: inline;
+}
+
+.city-fold__figure .v3-alerts__num {
+  font-size: clamp(2.5rem, 6vw, 3.5rem);
+  line-height: 0.95;
+  margin-right: 0.2em;
+}
+
+/* Type toggle stays in the fold so the reader can change the ask. */
+.city-fold__figure .v3-alerts__types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs);
+  min-height: var(--v3-tap);
+}
+
+.city-fold__figure .v3-alerts__types button {
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+}
+
+/* Compact proof rows — one card so the email ask stays in the 1440 fold. */
+.city-fold__figure .v3-alerts__strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-xs);
+  max-height: 5.5rem;
+  overflow: hidden;
+}
+
+.city-fold__figure .v3-alerts__strip > li:nth-child(n + 2) {
+  display: none;
+}
+
+.city-fold__figure .v3-alerts__thumb {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--v3-space-xs);
+  min-width: 0;
+  max-width: none;
+}
+
+.city-fold__figure .v3-alerts__thumb img {
+  width: 5.5rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.city-fold__figure .v3-alerts__thumb-name,
+.city-fold__figure .v3-alerts__thumb-facts,
+.city-fold__figure .v3-alerts__thumb-price {
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: manual;
+}
+
+@media (max-width: 39.99rem) {
+  .city-fold {
+    padding-top: var(--v3-space-sm);
+    padding-bottom: var(--v3-space-md);
+  }
+
+  .city-fold__figure .v3-alerts__claim {
+    font-size: var(--v3-size-body-lg);
+  }
+}

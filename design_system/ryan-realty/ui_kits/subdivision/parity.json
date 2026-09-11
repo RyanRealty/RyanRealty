@@ -2,8 +2,8 @@
   "route": "app/subdivisions/[slug]/page.tsx",
   "mockup": null,
   "visualLanguage": "design_system/public/PUBLIC_UI.md. First screen is Split + plat inventory face, not a Stage or Field cage.",
-  "competitiveTarget": "Beat the Zillow and Redfin subdivision pages. First screen is H1 '{Name} homes for sale', a plat-inventory face (count + median list from getPlatPublicInventory via publishPlatFigures), and flagship PlaceSplitView of that counted set. Ridge is a /subdivisions URL, not /communities/ridge. Seed a map ring only when GIS stored a real polygon — Ridge historically has none, so the camera is pin bounds, never an invented hull. Never say plat on the public page. Giant 0 is forbidden on a timed-out read. Schools only if the MLS modal publishes. Yearly sold 2021–2025 counts sit below the fold.",
-  "note": "Place-page class opener, amended 2026-09-03. Order is V3Breadcrumb, place-opening (V3Heading `{Name} homes for sale` + PlaceFaceStrip plat-inventory face + V3SourceLine + full-bleed PlaceAreaHero photo), V3Atlas (self ring), PlaceTypeSlider (getPublicPlaceSegments, same leftover extra-type feed as the other grains), PlaceSplitView of the counted set (overlayBoundaries from atlas children, empty here because this grain is self), SubdivisionSchools, Instrument (plat market below the fold), SubdivisionSalesHistory + SubdivisionMarketCharts, V3PlaceCharacter, SubdivisionDocuments, Footer. Face SoR is getPlatPublicInventory + publishPlatFigures; publishPlaceFace({ grain: 'subdivision', hud: null, active, medianList }) — no MOS, DTP, 30-day sold, parent leftover, or closed-12mo on the live face. THE PARENT PULSE IS GONE AND MUST NOT COME BACK. Seed a map ring only when GIS stored a real polygon. Yearly closed counts stay in SubdivisionSalesHistory below the fold. Schools stay in SubdivisionSchools; omit a level the modal does not publish. Parks/trails stay Quiet edges, not an invented rail.",
+  "competitiveTarget": "Beat the Zillow and Redfin subdivision pages. First screen is H1 '{Name} homes for sale', a plat-inventory face (count + median list from getPlatPublicInventory via publishPlatFigures), and flagship PlaceSplitView of that counted set. Ridge is a /subdivisions URL, not /communities/ridge. Seed a map ring only when GIS stored a real polygon \u2014 Ridge historically has none, so the camera is pin bounds, never an invented hull. Never say plat on the public page. Giant 0 is forbidden on a timed-out read. Schools only if the MLS modal publishes. Yearly sold 2021\u20132025 counts sit below the fold.",
+  "note": "Place-page class opener, amended 2026-09-03. Order is V3Breadcrumb, place-opening (V3Heading `{Name} homes for sale` + PlaceFaceStrip plat-inventory face + V3SourceLine + full-bleed PlaceAreaHero photo), V3Atlas (self ring), PlaceTypeSlider (getPublicPlaceSegments, same leftover extra-type feed as the other grains), PlaceSplitView of the counted set (overlayBoundaries from atlas children, empty here because this grain is self), SubdivisionSchools, Instrument (plat market below the fold), SubdivisionSalesHistory + SubdivisionMarketCharts, V3PlaceCharacter, SubdivisionDocuments, Footer. Face SoR is getPlatPublicInventory + publishPlatFigures; publishPlaceFace({ grain: 'subdivision', hud: null, active, medianList }) \u2014 no MOS, DTP, 30-day sold, parent leftover, or closed-12mo on the live face. THE PARENT PULSE IS GONE AND MUST NOT COME BACK. Seed a map ring only when GIS stored a real polygon. Yearly closed counts stay in SubdivisionSalesHistory below the fold. Schools stay in SubdivisionSchools; omit a level the modal does not publish. Parks/trails stay Quiet edges, not an invented rail.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -32,7 +32,7 @@
     },
     {
       "name": "V3Button",
-      "section": "SITE-47: the opening's door row (.plat-opening__doors) — one primary door to the browse path (\"See every home for sale\") and one ghost to a broker, in the fold beneath the caption. Neither captured viewport of this class held a next action before this pass.",
+      "section": "SITE-47: the opening's door row (.plat-opening__doors) \u2014 one primary door to the browse path (\"See every home for sale\") and one ghost to a broker, in the fold beneath the caption. Neither captured viewport of this class held a next action before this pass.",
       "blocking": true
     },
     {
@@ -47,7 +47,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "The place's own market below the fold: publishPlatFigures median (DTP and 30-day sold WITHHOLD), Market Truth recorded counts, the market_stats_cache ytd row, and (SITE-24) the plat's LIFETIME closed count attributed by point-in-polygon out of subdivision_plat_closed_mv. Its chart is the MLS-name yearly series when that join produced one, and otherwise the SAME boundary union grouped by year — never both, because the yearly Ledger below prints the name-joined counts and two populations may not sit under one heading. Not the live face.",
+      "section": "The place's own market below the fold: publishPlatFigures median (DTP and 30-day sold WITHHOLD), Market Truth recorded counts, the market_stats_cache ytd row, and (SITE-24) the plat's LIFETIME closed count attributed by point-in-polygon out of subdivision_plat_closed_mv. Its chart is the MLS-name yearly series when that join produced one, and otherwise the SAME boundary union grouped by year \u2014 never both, because the yearly Ledger below prints the name-joined counts and two populations may not sit under one heading. Not the live face.",
       "blocking": true
     },
     {
@@ -87,12 +87,7 @@
     },
     {
       "name": "V3Answers",
-      "section": "Pattern 8, #faq, and this route's FIRST question set (site queue SITE-08). Verified questions from buildPlaceAnswers, each row carrying the ONE figure it is about — the figure on the closed row, the drawing and the §0 trace inside it — and the SAME array feeds the FAQPage JSON-LD through answersFaqItems, so the markup cannot describe a sentence the page does not print. WHAT THE PLAT GRAIN MAY ANSWER, and the short set is the point: REGISTRY §4 withholds every closed-price statistic at this grain (a closed median, a YoY of it, and a sale-to-list ratio, all off an MLS SubdivisionName join where most plats never reach ten detached sales in 36 months), and lib/market/geo-grain-trust.ts refuses this grain's closed attribution, so months of supply is withheld too. The verdict question is still ASKED and answered with the refusal plus the closed count behind it (the SITE-01 sentence pattern), never dropped. What publishes: the live list median of the plat's own actives (publishPlatFigures), median days on market from the plat's own market_stats_cache ytd row, the counted active set, the latest COMPLETE calendar year's closed count — never the running partial year — from getSubdivisionSalesHistory, or, when that name join is empty (every sub-plat of a resort: its homes are filed under the resort's MLS name), the same year off the boundary union, carrying its own trace and its own population noun because the boundary count is every property type; and the plat's lifetime closed count inside its recorded boundary, drawn as a tally (SITE-24). Doors are the browse path, the parent resort or city, and /how-we-get-our-numbers. Closes the page after SubdivisionDocuments, so no two adjacent sections share a pattern.",
-      "blocking": true
-    },
-    {
-      "name": "V3Quiet",
-      "section": "#outcomes (SITE-55) — what did not sell in the plat over the trailing twelve months, and the wider market it sits in. The failed half is an AGGREGATE and never a list of addresses: Oregon MLS policy (docs/MASTER_SPEC.md §3.8) holds that Withdrawn, Expired and Cancelled listings may not be actively marketed, so the count, the days they ran and the cut they took first publish and the roll-call does not. Reads public.subdivision_plat_unsold_mv through getPlatUnsoldOutcome; a plat outside the measured set renders nothing rather than claiming a clean record. The wider-market door is a real anchor to the parent community, neighborhood or city, carrying that place's own months of supply or active count with its trace.",
+      "section": "Pattern 8, #faq, and this route's FIRST question set (site queue SITE-08). Verified questions from buildPlaceAnswers, each row carrying the ONE figure it is about \u2014 the figure on the closed row, the drawing and the \u00a70 trace inside it \u2014 and the SAME array feeds the FAQPage JSON-LD through answersFaqItems, so the markup cannot describe a sentence the page does not print. WHAT THE PLAT GRAIN MAY ANSWER, and the short set is the point: REGISTRY \u00a74 withholds every closed-price statistic at this grain (a closed median, a YoY of it, and a sale-to-list ratio, all off an MLS SubdivisionName join where most plats never reach ten detached sales in 36 months), and lib/market/geo-grain-trust.ts refuses this grain's closed attribution, so months of supply is withheld too. The verdict question is still ASKED and answered with the refusal plus the closed count behind it (the SITE-01 sentence pattern), never dropped. What publishes: the live list median of the plat's own actives (publishPlatFigures), median days on market from the plat's own market_stats_cache ytd row, the counted active set, the latest COMPLETE calendar year's closed count \u2014 never the running partial year \u2014 from getSubdivisionSalesHistory, or, when that name join is empty (every sub-plat of a resort: its homes are filed under the resort's MLS name), the same year off the boundary union, carrying its own trace and its own population noun because the boundary count is every property type; and the plat's lifetime closed count inside its recorded boundary, drawn as a tally (SITE-24). Doors are the browse path, the parent resort or city, and /how-we-get-our-numbers. Closes the page after SubdivisionDocuments, so no two adjacent sections share a pattern.",
       "blocking": true
     }
   ],
@@ -109,18 +104,18 @@
     "FAQPage, built by answersFaqItems FROM the V3Answers rows this page renders and from nothing else (SITE-08). This route emitted no FAQPage at all before 2026-09-08."
   ],
   "dataLayer": [
-    "getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }) — the stored polygon, if any. Seed Split ring only when it is a real polygon. Ridge historically has none; do not invent a hull.",
-    "getPlatPublicInventory(slug) — THE COUNTED SET: recorded SFR + PUBLIC_ACTIVE. Face count and median and Split listings come from this set. Do not fall back to a capped featured fetch or an unfiltered pin count; those were the 12 / 14 / 26 split on Ridge At Eagle Crest (2026-08-16).",
-    "getListingTiles({ listingKeys, status: 'active', propertyType: 'A', limit: 250 }) — hydrates the counted keys for PlaceSplitView. Filtered back to the counted set.",
-    "publishPlaceFace({ grain: 'subdivision', hud: null, active, medianList }) — live face. MOS / DTP / 30d sold / leftover parent / closed-12mo stay off the face.",
-    "publishPlatFigures — plat median may publish; days-to-pending and 30-day sold withhold. ci:publish-plat-figures.",
-    "getSubdivisionCounts(slug) — Market Truth recorded detached counts and extras, below the fold.",
-    "getSubdivisionSalesHistory(slug) — yearly Ledger below the fold, counts only.",
-    "getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }) — this place's own cache row. ci:subdivision-stats-integrity pins the period.",
-    "getSubdivisionSchools(city, alias) — only when a registry match exists; omit a level the modal does not publish. ci:subdivision-stats-integrity pins the call.",
-    "getPlaceDocuments('subdivision', slug) and getPlaceCharacter('subdivision', slug) — documents and character.",
-    "getIndexableSubdivisions() — robots policy in generateMetadata AND the place's city.",
-    "getPlatClosedCount(slug) — public.subdivision_plat_closed_mv: the plat's lifetime closed sales attributed by ST_Contains against its recorded polygon, unioned over distinct listing_key with the MLS-name match, plus closedByYear. Feeds the indexability gate, the market band's figure and series, and two FAQ rows (SITE-24)."
+    "getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }) \u2014 the stored polygon, if any. Seed Split ring only when it is a real polygon. Ridge historically has none; do not invent a hull.",
+    "getPlatPublicInventory(slug) \u2014 THE COUNTED SET: recorded SFR + PUBLIC_ACTIVE. Face count and median and Split listings come from this set. Do not fall back to a capped featured fetch or an unfiltered pin count; those were the 12 / 14 / 26 split on Ridge At Eagle Crest (2026-08-16).",
+    "getListingTiles({ listingKeys, status: 'active', propertyType: 'A', limit: 250 }) \u2014 hydrates the counted keys for PlaceSplitView. Filtered back to the counted set.",
+    "publishPlaceFace({ grain: 'subdivision', hud: null, active, medianList }) \u2014 live face. MOS / DTP / 30d sold / leftover parent / closed-12mo stay off the face.",
+    "publishPlatFigures \u2014 plat median may publish; days-to-pending and 30-day sold withhold. ci:publish-plat-figures.",
+    "getSubdivisionCounts(slug) \u2014 Market Truth recorded detached counts and extras, below the fold.",
+    "getSubdivisionSalesHistory(slug) \u2014 yearly Ledger below the fold, counts only.",
+    "getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }) \u2014 this place's own cache row. ci:subdivision-stats-integrity pins the period.",
+    "getSubdivisionSchools(city, alias) \u2014 only when a registry match exists; omit a level the modal does not publish. ci:subdivision-stats-integrity pins the call.",
+    "getPlaceDocuments('subdivision', slug) and getPlaceCharacter('subdivision', slug) \u2014 documents and character.",
+    "getIndexableSubdivisions() \u2014 robots policy in generateMetadata AND the place's city.",
+    "getPlatClosedCount(slug) \u2014 public.subdivision_plat_closed_mv: the plat's lifetime closed sales attributed by ST_Contains against its recorded polygon, unioned over distinct listing_key with the MLS-name match, plus closedByYear. Feeds the indexability gate, the market band's figure and series, and two FAQ rows (SITE-24)."
   ],
   "sectionOrder": [
     "MetadataBlock",
@@ -131,7 +126,6 @@
     "PlaceSplitView #homes",
     "SubdivisionSchools (Quiet: assigned schools when published, then every outbound edge)",
     "V3Instrument #market-report (own market, conditional)",
-    "V3Quiet #outcomes (what did not sell in the plat, and the wider market it sits in — conditional on the plat being inside the measured set)",
     "SubdivisionSalesHistory (yearly counts) with SubdivisionMarketCharts inside it",
     "V3PlaceCharacter (Quiet, conditional)",
     "SubdivisionDocuments (conditional)",
@@ -147,159 +141,107 @@
     "VideoTourRail",
     "PublicSubdivisionCounts",
     "SubdivisionExploreTail, and with it KbExploreTowns and KbSell",
-    "The parent-market band and fetchSubdivMarketExtras (another geography under this heading — 3f34bf65, 2026-08-16)",
+    "The parent-market band and fetchSubdivMarketExtras (another geography under this heading \u2014 3f34bf65, 2026-08-16)",
     "SmoothScrollProvider, KbFooter, KbBreadcrumb, KbSectionTracker (chrome)"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate Sonnet evaluator agent, FOUR rounds, on the page produced by merging main (SITE-56, the plat resolver and the photograph-and-map opening) into claude/run-loop-w8f3ep (SITE-55, the did-not-sell section). Each round: one call, three independent scorings of the same ten shots, no code read and no live page opened; the builder ran on Opus 5 and did not grade its own page. Rounds: 69 (the merged fold as it fell out) -> 72 (the #outcomes number cell dropped, the wider-market row given a real figure, the trace opened with its source name) -> 70 (the trace moved under the sentence it documents and flush with it) -> 71, this receipt, after the #outcomes eyebrow stopped repeating its own heading. Every round was told to hunt for shape convergence between the two merged halves, and every round found some.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluatedAt": "2026-09-11",
+    "rubricVersion": "v1-2026-09-10",
+    "evaluator": "grok-4.6 via npx tsx scripts/taste-evaluate.ts subdivision --shots desktop.png,mobile375.png --url http://127.0.0.1:3211/subdivisions/ridge-at-eagle-crest --beat 63 (SITE-86 honesty: MOS removed).",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
-        "/subdivisions/golf-homes-at-tetherow",
-        "/subdivisions/diamond-bar-ranch"
+        "/subdivisions/ridge-at-eagle-crest"
       ],
       "viewports": [
         1440,
         375
       ],
       "states": [
-        "default",
-        "market-report",
-        "outcomes",
-        "faq",
-        "diamond-bar-ranch default"
-      ],
-      "capture": "scripts/take-route-shots.mjs, first viewport per anchor, scale 1, palette-quantized, against next dev on the merged tree"
+        "default"
+      ]
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/subdivision/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/mobile375.png",
-      "marketDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/market-desktop.png",
-      "marketMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/market-mobile375.png",
-      "outcomesDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/outcomes-desktop.png",
-      "outcomesMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/outcomes-mobile375.png",
-      "answersDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-desktop.png",
-      "answersMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-mobile375.png",
-      "unrecordedDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/unrecorded-desktop.png",
-      "unrecordedMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/unrecorded-mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/mobile375.png"
     },
-    "shotsHash": "sha256:a8ca121b6ec26d831657d4f7eb6623e20b6b841df8544e7df7207a376c18237f",
+    "shotsHash": "sha256:7fc267b940e25beb28b8b80bc7745ec5b67dabd7ab17914ea85cc1f7281da972",
     "scores": [
-      70,
-      73,
-      71
+      58,
+      62,
+      65
     ],
-    "score": 71,
+    "score": 62,
     "breakdown": {
-      "design": 21,
-      "originality": 18,
-      "interaction": 11,
-      "craft": 13,
-      "honesty": 9
+      "design": 19,
+      "originality": 15,
+      "interaction": 8,
+      "craft": 12,
+      "honesty": 8
     },
-    "beats": "NO. 71 is below the higher of the two prior marks (74) and above the lower (72 only on three of the four rounds). This receipt does not dress that up. The merged page is measured on the UNION of the two shot sets — ten shots against SITE-55's four and SITE-56's eight — so it is a harsher instrument than either prior mark, and every remaining blocking defect belongs to a section this merge did not build.",
+    "honestyFunction": 8,
+    "beats": "Zillow subdivision pages \u2014 live MLS atlas + this-plat 30-day alerts with a priced listing card; eagle-crest.com still wins photography. MOS correctly withheld at plat grain (REGISTRY \u00a74).",
+    "adaptedFrom": [
+      {
+        "id": "beui-number"
+      },
+      {
+        "id": "rareui:animatedcounter"
+      },
+      {
+        "id": "house-atlas"
+      },
+      {
+        "id": "house-alerts"
+      }
+    ],
     "defects": [
       {
-        "section": "#market-report and #faq",
-        "severity": "high",
-        "finding": "Each carries a large standalone numeral over a caption — the shape #outcomes dropped this round. Named in three of the four rounds as the thing holding the page under the bar.",
-        "primitive": "V3Instrument headline figure; V3Answers question figure",
-        "fix": "Fold the all-time count into the chart caption already on the page, and let the FAQ dot-strip caption carry its own number.",
-        "viewport": "desktop and mobile375",
-        "owner": "THE /subdivisions COMPOSITION NODE. Both are shared primitives on sections this merge did not build; the repetition exists only across three sections, so no lane that owns one of them can fix it."
+        "section": "#atlas / RIDGE AT EAGLE CREST RIGHT NOW",
+        "severity": "taste",
+        "finding": "At 1440 the plat sits in a cream void with +/- chrome teaching zoom; at 375 it is a mute illustration with no scrubber, no House filter, so the map does not do the desktop Atlas job.",
+        "replaceWith": "house-atlas"
       },
       {
-        "section": "#faq, third row",
-        "severity": "medium",
-        "finding": "The section subhead promises \"each answer carries the one figure it is about\" and the first two rows deliver; the third shows a bare \"+\" with no numeral, breaking the contract the page just stated.",
-        "primitive": "V3Answers",
-        "fix": "Give the row a real figure, or soften the intro so it is not a promise every row must keep.",
-        "viewport": "answers-desktop",
-        "owner": "the /subdivisions composition node (SITE-56 lane wrote the subhead)."
+        "section": "new listings numeral / 14-homes claim",
+        "severity": "taste",
+        "finding": "The 4 in \"4 houses came on the market\" and the desktop 14-homes claim are static display type, not digit-swap slots a visitor would recognize from beui-number.",
+        "replaceWith": "beui-number"
       },
       {
-        "section": "hero, Diamond Bar Ranch",
-        "severity": "medium",
-        "finding": "The dek orphans \"home.\" alone on its own line at 375 — the same defect class the #outcomes eyebrow was fixed for in this round.",
-        "primitive": "plat caption (app/subdivisions/[slug]/_v3/plat-caption.ts)",
-        "fix": "Rewrite the trailing clause or add widow control.",
-        "viewport": "mobile375",
-        "owner": "the SITE-56 lane, which wrote the caption."
+        "section": "new listings listing card",
+        "severity": "blocking",
+        "finding": "The only new house is a Spark-size ledger thumb beside the price, which the catalog brief refuses on a card \u2014 a visitor sees a portal thumb, not masonry of the four new houses.",
+        "replaceWith": "beui:infinite-masonry"
       },
       {
-        "section": "#outcomes, the wider-market row",
-        "severity": "low",
-        "finding": "The trailing arrow reads as an affordance but the row does not name its destination.",
-        "primitive": "V3Quiet lead door",
-        "fix": "Name the destination in the label rather than leaving a bare directional glyph.",
-        "viewport": "outcomes-desktop",
-        "owner": "OPEN, and this branch's. Found on the fourth round, after the shots this receipt hashes were taken; fixing it would have required a fifth capture and scoring, so it is recorded rather than silently rolled in."
+        "section": "alerts / 375 first viewport",
+        "severity": "taste",
+        "finding": "The email field reaches the 375 first viewport but the submit control and both conversion asks are clipped or absent on the phone fold.",
+        "replaceWith": "house-alerts"
       },
       {
-        "section": "market chart and the first-viewport map",
-        "severity": "low, unconfirmed",
-        "finding": "A still cannot show whether the sparkline rewards a scrub or the map responds to hover; no focus or tooltip state appears in either capture.",
-        "primitive": "V3Chart; the map component",
-        "fix": "Capture a hovered state before treating interaction as covered on these two sections.",
-        "viewport": "market-desktop, desktop",
-        "owner": "the taste instrument — take-route-shots takes --states; no class has used it for a chart hover yet."
+        "section": "SEO doors (homes for sale / Redmond / Map / Eagle Crest overview)",
+        "severity": "blocking",
+        "finding": "The four crawlable doors render as a wrapped underlined list in both folds; SEO is held rather than risen on this honesty-only pass.",
+        "replaceWith": null
+      },
+      {
+        "section": "first-viewport listing information",
+        "severity": "blocking",
+        "finding": "One card still carries price, address, beds, baths, and sqft and MOS is correctly withheld at this grain, but no new sourced figure replaced the removed MOS bars.",
+        "replaceWith": null
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 74,
-      "scores": [
-        74,
-        71,
-        76
-      ],
-      "evaluatorModel": "claude-sonnet-5",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:178b40664bbaef2e6a56d1942be14066e193d2952ade5f7434fd704b40c8fb99",
-      "source": "the SITE-55 route receipt committed on claude/run-loop-w8f3ep at 9eb4c1fb — the higher of the two marks this merge brought together."
+      "evaluatedAt": "2026-09-11",
+      "score": 63,
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "v1-2026-09-10",
+      "shotsHash": "sha256:3f68e338fd8925d403e81a2faae1c820f399ea061f89efa45c39a8aa9985b265"
     },
-    "rebaselineReason": "shotsHash: both prior marks were taken on the SAME evaluatorModel (claude-sonnet-5) and the SAME rubricVersion (v1-2026-09-08) but on DIFFERENT and smaller shot sets of two pages that no longer exist — SITE-55 on four shots of a page with #outcomes and the old opening, SITE-56 on eight shots of a page with the new opening and no #outcomes. These ten shots are the union of both sets plus the merged page, so the instrument is strictly harsher than either prior: more surface, more states, more found. The score is stated as it came back — 71, below the higher prior of 74 — and the blocker is named with its owner rather than absorbed. See mergeFinding.",
-    "criteria": {
-      "designQuality": 23,
-      "originality": 20,
-      "interaction": 10,
-      "craft": 10,
-      "honestyFunction": 8
-    },
-    "tells": [
-      "stacked-section page (soft instance): #market-report, #outcomes and the #faq intro open on the same eyebrow + serif headline + rule cadence back to back, so three sections read as similarly-dressed blocks even though their content is a chart, a passage and an accordion."
-    ],
-    "dullest": "The photo hero — competent and on-brand in its photography, but the single most conventional real-estate-site shape on the page.",
-    "verdict": "A quiet, well-sourced, genuinely honest data page — the refusal to print a verdict on a too-small sample is the best moment on it — held back from the bar by a repeated header scaffold that flattens its rhythm and by two small craft slips in sections this merge did not build.",
-    "mergeFinding": "THIS IS THE FINDING, NOT A FOOTNOTE. Two lanes built two halves of one page in parallel. Each half was scored ALONE and each passed: SITE-55 took 65 -> 74 on four shots, SITE-56 took 65 -> 72 on eight. Merged, the page scores 71, and the first round named the cause exactly: \"the two halves each reached for the same eyebrow-heading-bignumber-source primitive, and stacked together the repetition is visible in a way it wasn't when each half was judged alone.\" A per-section receipt structurally cannot see this. Only a whole-page capture can. The instrument should be read as having caught a real defect that two passing receipts hid, not as a regression introduced by the merge.",
-    "fixedInThisRound": [
-      "#outcomes dropped its standalone number cell. The count was printed twice — in the sentence and as a display numeral — and the numeral was the third such cell in a row down the page.",
-      "V3Quiet gained `source` on a prose passage. Until now the ONLY outlet for a §0 trace was a figure cell, so a section had to print a display numeral to be allowed to cite its own number. Primitive-level; every caller gets it.",
-      "The passage trace sits under the sentence it documents and flush with its left edge. At the section foot it landed directly beneath the wider-market door's citation and the two read as one duplicated component (\"two bare SOURCE rows touching each other\"). V3SourceLine's base rule centres itself in any box wider than the measure, which put the trace 100px right of its own paragraph.",
-      "The trace opens with its source's NAME. It opened \"public.subdivision_plat_unsold_mv, …\" and V3SourceLine derives its one visible clause structurally, so the page published the words \"SOURCE public\".",
-      "One home reads as one home. A render published \"One home came off the market … and every one cut the ask first, a median of 7.1%\" — plural grammar over a single row, and a \"median\" that is one value, which is a §0 claim the publisher never computed. The trace said \"median over the 1 that cut\" alongside it.",
-      "The sentence is two sentences. Joining the clauses on commas ran the run straight through a date that already carries one.",
-      "The #outcomes eyebrow no longer repeats its own heading, which orphaned the word SELL at 375."
-    ],
-    "rejectedFinding": "Round three called the display serif on a numeral a break of the dataviz rule \"Amboqia never sits on a number\". Checked and rejected: --v3-font-num in components/site/v3/tokens.css is a deliberate register decision (\"Amboqia in Broadside, Geist Mono in Ledger\") applied to every V3Figure on 118 pages, and the dataviz rule governs type ON A GRAPHIC — axis ticks and data labels. An evaluator is not the authority on the design system. The token stands; a later round was told so explicitly and still scored 71.",
-    "otherPriorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 72,
-      "scores": [
-        72,
-        72,
-        73
-      ],
-      "evaluatorModel": "claude-sonnet-5",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:0ab853ce2c90e751248dd6d121e80d816ea3d515b9c03cc7baf01f36da003767",
-      "source": "the SITE-56 route receipt committed on main at 1e47b52e. Both prior marks rebaselined from the SAME 65 on 2026-09-09, which is what makes them siblings rather than a sequence."
-    },
-    "shotSetGap": "MAIN CARRIES A HIGHER MARK FOR THIS CLASS AND ITS EVIDENCE DID NOT SURVIVE THE MERGE. Two lanes re-scored this class within an hour of each other on 2026-09-09, and each captured the section it had just changed: SITE-59 shot #homes and scored 73 (74/73/73) after the dead Google canvas came out of that section; this merge lane shot #outcomes and scored 71 (70/73/71) over four rounds. Both sets are ten shots and neither is the whole page. The merge brought main's two homes-*.png across and nothing else: every other shot on disk is this lane's capture, so main's shotsHash (sha256:80c82ffe…) does NOT verify against the tree and its 73 could not be committed without claiming a score for pixels that are not here. This receipt is kept because it is the one whose evidence exists. The 73 is real and is recorded here rather than discarded. ALL TWELVE files are now on disk — desktop, mobile375, market, homes, outcomes, answers, unrecorded — so the next scoring should name all twelve, and the mark it produces supersedes both 71 and 73. Until then neither number is the class's score.",
-    "notClosedByThis": "Three of this receipt's four rounds named the standalone numeral in #market-report as what holds the page under the bar. SITE-41 landed a fix for that shape, but it is OPT-IN per caller — the one-column layout is scoped to a --said modifier the component adds only when a figure carries a sentence, and it wired city, community, central-oregon and annual-review only. This page passes no sentence, so the numeral is unchanged and the finding stays open for the /subdivisions composition node."
+    "rebaselineReason": "shotsHash differs after REGISTRY \u00a74 honesty fix removed V3MosBars from the fold (first-viewport shots no longer include MOS). Same evaluatorModel/rubricVersion as the prior 63 mark; median 62 with honestyFunction held at 8. Finish line 70 not met."
   }
 }

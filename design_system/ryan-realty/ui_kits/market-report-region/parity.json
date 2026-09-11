@@ -119,9 +119,9 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-10",
     "rubricVersion": "v1-2026-09-10",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts market-report-region — grok-4.6 via grok CLI, three scorings of the SITE-88 worktree first-viewport shots plus source-line pair on http://127.0.0.1:3194/housing-market/central-oregon. Builder claude-opus-5 did not grade the page.",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts market-report-region — grok-4.6 via grok CLI, three scorings of the SITE-88 worktree first-viewport shots plus source and year-page pairs on http://127.0.0.1:3221/housing-market/central-oregon. Builder grok-4.5 did not grade the page.",
     "evaluatorModel": "grok-4.6",
-    "builderModel": "claude-opus-5",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/housing-market/central-oregon"
@@ -132,89 +132,98 @@
       ],
       "states": [
         "default",
-        "source-line"
+        "source",
+        "year-page"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3194/housing-market/central-oregon on /Users/matthewryan/RyanRealty-wt-site-88-20260910"
+      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3221/housing-market/central-oregon on SITE-88 worktree"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/market-report-region/shots/mobile375.png",
       "sourceDesktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/source-desktop.png",
-      "sourceMobile375": "design_system/ryan-realty/ui_kits/market-report-region/shots/source-mobile375.png"
+      "sourceMobile375": "design_system/ryan-realty/ui_kits/market-report-region/shots/source-mobile375.png",
+      "yearPageDesktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/year-page-desktop.png",
+      "yearPageMobile375": "design_system/ryan-realty/ui_kits/market-report-region/shots/year-page-mobile375.png"
     },
-    "shotsHash": "sha256:a46152de1e46188a149a4fd4779feb457d3961e8511a1c40a6eba430617f05cf",
+    "shotsHash": "sha256:4e46f2ae12975882ee7943bc7e3daed284799e935de91e22f6cdda3f8f034099",
     "scores": [
-      62,
-      54,
-      61
+      64,
+      58,
+      63
     ],
-    "score": 61,
+    "score": 63,
     "criteria": {
       "designQuality": 18,
-      "originality": 16,
-      "interaction": 7,
+      "originality": 15,
+      "interaction": 10,
       "craft": 11,
       "honestyFunction": 9
     },
     "perCriterion": {
       "design": 18,
-      "originality": 16,
-      "interaction": 7,
+      "originality": 15,
+      "interaction": 10,
       "craft": 11,
       "honesty": 9
     },
-    "beats": "Redfin Data Center (https://www.redfin.com/news/data-center/) — we win on months of supply as two named bars and on the claim-first sentence over the chart; we lose on a scrubber that isolates a year.",
+    "beats": "Redfin Data Center (https://www.redfin.com/news/data-center/) — we win on months of supply as two named bars (1,548 homes for sale vs 325 a month of sales) and a broker ask in the 1440 fold; we lose on paged insights and on live digit-swap counts.",
     "adaptedFrom": [
-      { "id": "house-instrument" },
-      { "id": "house-mos" },
-      { "id": "house-chart" }
+      {
+        "id": "house-instrument"
+      },
+      {
+        "id": "house-mos"
+      },
+      {
+        "id": "house-chart"
+      },
+      {
+        "id": "beui-number"
+      },
+      {
+        "id": "beautifului-insight"
+      }
     ],
     "defects": [
       {
-        "section": "$749,900 / 572 two-up under the chart",
+        "section": "$749,900 / 556 two-up under the chart",
         "severity": "taste",
-        "finding": "After MOS was correctly taken off tiles, the fold still closes on two static posters ($749,900 median list, 572 under contract). Sentences keep them off a KPI-grid tell, but nothing ticks or sparklines. Job is live sourced counts.",
+        "finding": "The fold still closes on two static posters (median list $749,900, under contract 556). Plain sentences keep them off a KPI-grid tell, but YEAR 2024 and the AUG scrubber do not change the digits, so they are not beui-number and they are not the chart’s claim.",
         "replaceWith": "beui-number"
       },
       {
-        "section": "MEDIAN SALE PRICE BY MONTH",
+        "section": "YEAR 2026 3/3",
         "severity": "taste",
-        "finding": "Three year overlays share one navy field; the August tooltip is the only interrogation. You cannot isolate a year or scrub the series. Job is paged insight with a scrubber, adapted into V3Chart, not a hairball overlay.",
+        "finding": "The arrows page 2024/2025/2026 of the same median-sale series. That is a year switcher, not the beautifului-insight demo of distinct claims with a scrubber; a person who opened both would not recognize the same interaction.",
         "replaceWith": "beautifului-insight"
       },
       {
-        "section": "Cities and towns",
-        "severity": "taste",
-        "finding": "Each city encodes months of supply as one meter bar plus 3.7 mo (La Pine 9.0, Bend 3.7). That is the banned MOS tile drawn sideways. House MOS is two named bars (homes for sale vs a month of sales), which the region fold already got right. Desktop also drops the for-sale counts mobile shows.",
-        "replaceWith": "house-mos"
-      },
-      {
-        "section": "how we calculate this",
-        "severity": "taste",
-        "finding": "Opened source is a methodology essay (formula, 4/6 thresholds, Pace figures behind the fold) — the dull citation the class reference named, now behind a disclosure but still not a one-line buyer citation.",
+        "section": "YEAR 2024 with live $749,900 / 556",
+        "severity": "blocking",
+        "finding": "On the year-page shots the chart is Aug 2024 at $650K while $749,900 median list and 556 under contract remain on the same fold, so live inventory reads as 2024 facts.",
         "replaceWith": null
       },
       {
-        "section": "mobile375 first viewport / chart",
+        "section": "mobile375 first viewport",
         "severity": "craft",
-        "finding": "At 375px the Y-axis labels collide with the series, and the fold clips $749,900 so the first screen ends on a cut numeral.",
+        "finding": "At 375 the first screen is headline, MOS bars, and a chart cut through the month labels; the scrubber, the two figures, and Ask about Central Oregon sit below the fold.",
         "replaceWith": null
       },
       {
-        "section": "HOMES FOR SALE VS A MONTH OF SALES claim",
+        "section": "chart hover card",
         "severity": "craft",
-        "finding": "322.0 sales a month prints a tenth of a closing against 1,550 homes — spreadsheet precision, not a counted month of sales.",
+        "finding": "The AUG 2026 $665K (and AUG 2024 $650K) tooltip sits on the series and covers the neighboring marks it should be comparing.",
         "replaceWith": null
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 77,
-      "evaluatorModel": "claude-sonnet-5",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:f214d1f06e79f2276a5c9f02e5449adaa66da5239c57d493b09437d56e05c181"
+      "evaluatedAt": "2026-09-10",
+      "score": 61,
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "v1-2026-09-10",
+      "shotsHash": "sha256:a46152de1e46188a149a4fd4779feb457d3961e8511a1c40a6eba430617f05cf"
     },
-    "rebaselineReason": "evaluatorModel, rubricVersion, and shotsHash differ — grok-4.6 on rubric v1-2026-09-10 against SITE-88 fold shots, vs claude-sonnet-5 on v1-2026-09-08."
+    "rebaselineReason": "shotsHash differs — new SITE-88 fold shots (MOS + year pages + source + year-page states) vs prior sha256:a46152de…; evaluatorModel grok-4.6 and rubricVersion v1-2026-09-10 match. Median 63 > prior 61 on the same model/rubric."
   }
 }

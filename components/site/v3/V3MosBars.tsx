@@ -120,7 +120,7 @@ export function V3MosBars({
           {/* More data than the bars: the ratio and the dated source — not a
               second label of the same two numerals (SITE-84 evaluator). */}
           <p>
-            Supply ratio: {homesLabel} detached ÷ {salesLabel} sales a month.
+            Supply ratio: {homesLabel} homes for sale ÷ {salesLabel} sales a month.
           </p>
           <p className="v3-mos__tip-source">{tooltip.source}</p>
         </div>

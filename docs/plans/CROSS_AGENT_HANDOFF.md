@@ -1,12 +1,11 @@
-# Current — 2026-09-11 01:20Z (grinder 01a08d23: SITE-76 + SITE-79 live)
+# Current — 2026-09-11 08:10Z (grinder 01a08eda: SITE-29 + SITE-86 live)
 
-Owner: `grok-4.5-2026-09-10-21`. origin/main `ed3bc172` READY `dpl_AAbjiC6uD8E87AE4CXaiLiDH9Vn8`. 15m launchd stays. No auto-seed.
+Owner: `grok-4.5-2026-09-10-22`. origin/main `f7f3c89a` READY `cli-f7f3c89`. 15m launchd stays. No auto-seed.
 
-- **SITE-81 done** market-report-detail grok-4.6 median **61**. Finish 70 not met.
-- **SITE-87 done** community grok-4.6 median **64**. Finish 70 not met.
-- **SITE-76 done** oregon-city honesty Alert fold grok-4.6 median **49**. Finish 70 not met.
-- **SITE-79 done** reviews V3Proof + avatar initials grok-4.6 median **67**. Finish 70 not met.
-- Next open: SITE-89, SITE-88, SITE-73, SITE-82, SITE-86. Skip overlapping families.
+- **SITE-29 done** blog `/blog` + `/blog/:path*` `public, s-maxage=300`. Production second curl HIT on sunriver, bend, /blog, and the Sunriver post. H1+≥8 h2 held.
+- **SITE-86 done** subdivision fold Atlas + this-plat alerts, no plat MOS (REGISTRY §4). grok-4.6 median **62** rebaselined. Finish 70 not met.
+- Next open: SITE-89 place-type, SITE-73 zip. Skip overlapping place families.
+
 
 # Current — 2026-09-10 23:48Z (homepage uses the MorphingSearch demo, not inline)
 

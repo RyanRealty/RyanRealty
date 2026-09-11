@@ -152,6 +152,8 @@ describe('evaluatorBrief', () => {
     expect(brief).toMatch(/COMPREHENSIVE/)
     expect(brief.length).toBeLessThan(4500)
     expect(brief).toMatch(/https:\/\//)
+    expect(brief).toMatch(/github.com\/starc007\/ui-components/)
+    expect(brief).toMatch(/demoMatch/)
   })
 
   it('accepts a new house primitive as adaptedFrom', () => {
@@ -315,8 +317,21 @@ describe('catalogInstallProblems', () => {
   })
 
   it('refuses a catalog name with no install spec', () => {
-    const problems = catalogInstallProblems(loaded, [{ id: 'beautifului-insight' }])
+    // beautifului-insight is installed (SITE-88); probe a name that is not.
+    const problems = catalogInstallProblems(loaded, [{ id: 'beautifului-not-a-real-install' }])
     expect(problems.some((p) => /no install spec/.test(p))).toBe(true)
+  })
+
+  it('fails when the installed MorphingSearch is a house fork, not the beUI repo file', () => {
+    const problems = catalogInstallProblems(loaded, [{ id: 'beui-morphing-search' }], {
+      existsSync: (p) =>
+        p === 'components/motion/morphing-search.tsx' || p === 'components/site/v3/V3MorphSearch.tsx',
+      readFileSync: (p) =>
+        p.endsWith('V3MorphSearch.tsx')
+          ? "import { MorphingSearch } from '@/components/motion/morphing-search'\nexport function V3MorphSearch() { return <MorphingSearch items={[]} /> }"
+          : 'export function MorphingSearch() { return <input /> }',
+    })
+    expect(problems.some((p) => /not the catalog source/.test(p))).toBe(true)
   })
 })
 

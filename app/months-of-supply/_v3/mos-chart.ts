@@ -15,6 +15,11 @@ function formatHomes(n: number): string {
 }
 
 function formatMonthlyPace(n: number): string {
+  // Whole counted paces print as integers (SITE-88); fractional callers keep
+  // one decimal until they round upstream.
+  if (Number.isFinite(n) && Math.abs(n - Math.round(n)) < 1e-9) {
+    return Math.round(n).toLocaleString('en-US')
+  }
   return n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 }
 

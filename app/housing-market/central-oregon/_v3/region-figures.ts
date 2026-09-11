@@ -64,23 +64,26 @@ export const REGION_JARGON_RE =
 
 /**
  * Monthly closing pace implied by leftover MOS: active / months of supply.
- * Same rearrangement the hub and annual review print. Miss omits — never a zero.
+ * Counted integer — a tenth of a closing is spreadsheet precision (SITE-88).
+ * Miss omits — never a zero.
  */
 export function monthlyPaceFromMos(
   active: number | null | undefined,
   mosRaw: number | null | undefined,
 ): number | null {
   if (active == null || !(active > 0) || mosRaw == null || !(mosRaw > 0)) return null
-  return Math.round((active / mosRaw) * 10) / 10
+  const pace = Math.round(active / mosRaw)
+  return pace > 0 ? pace : null
 }
 
 function formatMonthlyPace(n: number): string {
-  return n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+  return Math.round(n).toLocaleString('en-US')
 }
 
 /**
  * MOS as two named bars (catalog house-mos). Digits stay on the chart claim
- * through formatMonthsOfSupply — never a 4.9 KPI tile.
+ * through formatMonthsOfSupply — never a 4.9 KPI tile. Kept for tests and
+ * callers that still mount a range chart; the fold prefers buildRegionPlaceMos.
  */
 export function buildRegionMosChart(
   hud: LeftoverHudKpis,
@@ -98,6 +101,63 @@ export function buildRegionMosChart(
     'central-oregon-mos',
   )
 }
+
+/** Props for V3MosBars on the region fold (SITE-88 / house-mos). */
+export type RegionPlaceMos = {
+  caption: string
+  plainLabel: string
+  homesName: string
+  homesLabel: string
+  homesValue: number
+  salesName: string
+  salesLabel: string
+  salesValue: number
+  source: string
+  asOf: string | null
+  tooltip: { homes: string; sales: string; source: string }
+}
+
+/**
+ * Region fold MOS drawing. Integer sales face; methodology behind the bars'
+ * own source disclosure — not an Instrument essay.
+ */
+export function buildRegionPlaceMos(
+  hud: LeftoverHudKpis,
+  mosText: string | null,
+  asOf: string | null,
+): RegionPlaceMos | null {
+  const active = hud.active != null && hud.active > 0 ? hud.active : null
+  const monthOfSales = monthlyPaceFromMos(active, hud.monthsSupply)
+  if (active == null || monthOfSales == null || !mosText) return null
+  const homesLabel = active.toLocaleString('en-US')
+  const salesLabel = formatMonthlyPace(monthOfSales)
+  const tipSource = asOf
+    ? `Oregon Data Share · single-family · as of ${asOf}`
+    : 'Oregon Data Share · single-family'
+  return {
+    caption: `About ${mosText} months of homes on the market.`,
+    plainLabel: 'Homes for sale vs a month of sales',
+    homesName: 'Homes for sale',
+    homesLabel,
+    homesValue: active,
+    salesName: 'A month of sales',
+    salesLabel,
+    salesValue: monthOfSales,
+    // One visitor line on the bars; formula stays behind the Instrument
+    // disclosure / /months-of-supply door — not a second methodology essay.
+    source: `Oregon Data Share MLS. ${homesLabel} homes for sale vs ${salesLabel} sales a month.`,
+    asOf,
+    tooltip: {
+      homes: homesLabel,
+      sales: salesLabel,
+      source: `${tipSource}. ${MOS_METHODOLOGY_CLAUSE}`,
+    },
+  }
+}
+
+/** One-line visitor citation for the Instrument face (SITE-88). */
+export const REGION_LIVE_CITATION =
+  'Active single-family houses across Central Oregon from Oregon Data Share MLS.'
 
 const REGION_LIVE_EXTRA =
   'Condo, townhome, and other property types appear when enough listings exist to publish them. Pace figures behind the fold are the ones buyers and sellers ask about.'
@@ -164,6 +224,7 @@ export function buildRegionInstruments(
       sentence: v3Text(
         'Half the houses for sale across Central Oregon ask more than this, half ask less.',
       ),
+      count: medianListPrice,
     })
   }
   // SITE-88 / catalog house-mos: when the two-bar drawing publishes, do not
@@ -178,6 +239,7 @@ export function buildRegionInstruments(
       label: v3Text('homes for sale, single-family'),
       href: listingsBrowsePath(),
       sentence: v3Text('Single-family houses on the market across the region right now.'),
+      count: activeCount,
     })
   }
   if (hud.pending != null && hud.pending > 0) {
@@ -185,6 +247,7 @@ export function buildRegionInstruments(
       value: v3Text(hud.pending.toLocaleString('en-US')),
       label: v3Text('under contract now'),
       sentence: v3Text('Sellers who have accepted an offer and have not closed yet.'),
+      count: hud.pending,
     })
   }
   if (monthOfSales != null && !mosChartPublishes) {
@@ -195,18 +258,17 @@ export function buildRegionInstruments(
       sentence: v3Text(
         'Homes that typically close in one month, the pace the listings on the market are measured against.',
       ),
+      count: monthOfSales,
     })
   }
 
-  const liveClauses = [
-    'Oregon Data Share, active single-family houses currently listed across Central Oregon',
-  ]
-  // The two canonical clauses append whole, never edited, and only when the figure they
-  // govern is on the screen. lib/market/classify.ts owns that wording and
-  // ci:market-formula exists because it drifted once already.
-  const liveTrace =
-    `${liveClauses.join('. ')}.` +
-    (mosText != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
+  // Visitor one-line citation at rest. MOS math rides on the bars' own source
+  // when the drawing publishes (SITE-88); otherwise keep the clauses here.
+  const liveTrace = mosChartPublishes
+    ? REGION_LIVE_CITATION
+    : mosText != null
+      ? `${REGION_LIVE_CITATION} ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`
+      : REGION_LIVE_CITATION
 
   // ── Pace ──────────────────────────────────────────────────────────────────────
   // Neither figure carries an href. A figure's door has to be a node that shows that

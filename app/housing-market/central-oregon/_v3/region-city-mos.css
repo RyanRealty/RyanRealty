@@ -1,0 +1,112 @@
+/* Region city MOS — two named bars per town (SITE-88). Tokens only. */
+
+.region-city-mos {
+  margin: 0 0 var(--v3-space-md);
+  width: 100%;
+}
+
+.region-city-mos__plain {
+  margin: 0 0 var(--v3-space-sm);
+  font-size: var(--v3-size-label);
+  font-weight: 600;
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.region-city-mos__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--v3-space-sm);
+}
+
+.region-city-mos__door {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  text-decoration: none;
+  color: inherit;
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-xs) 0;
+  border-bottom: 1px solid var(--v3-hairline);
+}
+
+.region-city-mos__door:hover .region-city-mos__name,
+.region-city-mos__door:focus-visible .region-city-mos__name {
+  color: var(--v3-ink);
+}
+
+.region-city-mos__door:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--v3-cream) 85%, var(--v3-navy));
+}
+
+.region-city-mos__name {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  font-size: var(--v3-size-body);
+  font-weight: 600;
+  color: var(--v3-ink);
+}
+
+.region-city-mos__mos {
+  font-size: var(--v3-size-label);
+  font-weight: 500;
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.region-city-mos__bars {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.region-city-mos__barrow {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr) 3.5rem;
+  align-items: center;
+  gap: var(--v3-space-xs);
+}
+
+.region-city-mos__barlabel {
+  font-size: var(--v3-size-label);
+  color: var(--v3-ink-muted);
+}
+
+.region-city-mos__track {
+  position: relative;
+  display: block;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--v3-hairline);
+  overflow: hidden;
+}
+
+.region-city-mos__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--v3-ink) 45%, transparent);
+}
+
+.region-city-mos__fill--homes {
+  background: var(--v3-ink);
+}
+
+.region-city-mos__value {
+  font-size: var(--v3-size-body-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--v3-ink);
+}
+
+@media (min-width: 48rem) {
+  .region-city-mos__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--v3-space-lg);
+  }
+}

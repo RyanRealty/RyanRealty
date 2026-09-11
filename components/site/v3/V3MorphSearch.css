@@ -140,32 +140,6 @@
 .v3 .v3-morph-search--live .v3-morph-search__catalog {
   width: 100%;
   max-width: none;
-  height: var(--v3-tap);
-  min-height: var(--v3-tap);
-}
-
-.v3 .v3-morph-search--live .v3-morph-search__catalog button[aria-haspopup='dialog'] {
-  width: 100%;
-  height: var(--v3-tap);
-  background: var(--v3-surface);
-  border: 2px solid var(--v3-ink);
-  border-radius: var(--v3-radius-control);
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-.v3 .v3-morph-search--live .v3-morph-search__catalog kbd,
-.v3-morph-overlay-dialog kbd {
-  border-color: var(--v3-ink);
-  color: var(--v3-ink-muted);
-  background: transparent;
-}
-
-@layer base {
-  .v3 .v3-morph-search--live .v3-morph-search__catalog button[aria-haspopup='dialog'] {
-    color: var(--v3-ink);
-  }
 }
 
 /* Native is clipped after hydrate so the catalog input is the one you see.
@@ -202,26 +176,7 @@
   }
 }
 
-/* Above Places mega (chrome z-index 200). */
+/* Official MorphingSearch portals to document.body. Keep it above Places mega. */
 .v3-morph-overlay-root {
   z-index: 300;
-}
-
-/* Portaled overlay sits on document.body. Same cream field, navy edge, no glass. */
-.v3-morph-overlay-shell {
-  background: var(--v3-surface);
-  border-radius: var(--v3-radius-control);
-  box-shadow: inset 0 0 0 2px var(--v3-ink);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-.v3-morph-overlay-dialog {
-  background: var(--v3-surface);
-  border-radius: var(--v3-radius-control);
-  color: var(--v3-ink);
-}
-
-.v3-morph-overlay-split {
-  border-bottom: 1px solid var(--v3-edge);
 }
