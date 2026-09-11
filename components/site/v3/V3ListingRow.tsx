@@ -155,7 +155,7 @@ export function V3ListingRow({
   const photoTags = tags.filter((tag) => tag.kind !== 'video')
   const hasTour = Boolean(listing.tourUrl) || listing.hasTour === true
 
-  const photo = (
+  const still = (
     <>
       {listing.photoUrl ? (
         <Image
@@ -178,34 +178,44 @@ export function V3ListingRow({
           ))}
         </span>
       ) : null}
-      {hasTour ? (
-        onOpenTour ? (
-          <button
-            type="button"
-            className="v3-lrow__tour"
-            onClick={(event) => {
-              event.preventDefault()
-              event.stopPropagation()
-              onOpenTour()
-            }}
-          >
-            <span className="v3-lrow__tour-label">3D tour</span>
-          </button>
-        ) : (
-          <span className="v3-lrow__tour">
-            <span className="v3-lrow__tour-label">3D tour</span>
-          </span>
-        )
-      ) : null}
       <span className="v3-lrow__addr-tip">{listing.addressLine}</span>
     </>
   )
 
+  const tourControl = hasTour ? (
+    onOpenTour ? (
+      <button
+        type="button"
+        className="v3-lrow__tour"
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          onOpenTour()
+        }}
+      >
+        <span className="v3-lrow__tour-label">3D tour</span>
+      </button>
+    ) : (
+      <span className="v3-lrow__tour">
+        <span className="v3-lrow__tour-label">3D tour</span>
+      </span>
+    )
+  ) : null
+
   if (splitThumb) {
+    // SITE-115: photo and copy share the detail href. Tour stays outside the
+    // photo link so a button is never nested inside an anchor.
     return (
       <article className={cn(V3_ROOT_CLASS, 'v3-lrow', className)}>
-        <div className="v3-lrow__media" aria-hidden={!onOpenTour}>
-          {photo}
+        <div className="v3-lrow__media">
+          <Link
+            href={listing.href}
+            className="v3-lrow__photo-link"
+            aria-label={`Open ${listing.addressLine}`}
+          >
+            {still}
+          </Link>
+          {tourControl}
         </div>
         <Link href={listing.href} className="v3-lrow__copy">
           <span className="v3-lrow__price">{ask ?? '—'}</span>
@@ -221,7 +231,8 @@ export function V3ListingRow({
   return (
     <Link href={listing.href} className={cn(V3_ROOT_CLASS, 'v3-lrow', className)}>
       <span className="v3-lrow__media" aria-hidden>
-        {photo}
+        {still}
+        {tourControl}
       </span>
       <span className="v3-lrow__body">
         <span className="v3-lrow__addr">{listing.addressLine}</span>

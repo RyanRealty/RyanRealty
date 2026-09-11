@@ -130,6 +130,7 @@ export function SplitListingCard({
         priority={priority}
         tourLabel={tourLabel}
         sizes={SPLIT_CARD_MEDIA_SIZES_SPLIT}
+        href={href}
       />
       <Link href={href} className="v3-lrow__copy">
         <span className="v3-lrow__price">{ask ?? '—'}</span>

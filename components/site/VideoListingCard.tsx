@@ -91,9 +91,9 @@ export default function VideoListingCard({ listing }: { listing: ListingCardData
     )
   }
 
-  // Poster + price/address. The whole tile is a button when embeddable (play
-  // inline) and a link to detail otherwise (never a broken player).
-  const poster = (
+  // Poster + price/address. SITE-115: photo and copy open detail. The play
+  // disc is the only intentional non-nav control when a tour embeds.
+  const body = (
     <>
       <div className="relative aspect-[4/3] bg-muted">
         {listing.photoUrl ? (
@@ -108,20 +108,8 @@ export default function VideoListingCard({ listing }: { listing: ListingCardData
           <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/20" />
         )}
 
-        {/* Soft scrim so the play button reads on any photo. */}
         <div className="absolute inset-0 bg-foreground/10 group-hover:bg-foreground/15 transition" />
 
-        {/* Centered play overlay: a triangle in a disc, the universal "this is
-            video" affordance (not a static badge). */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="relative flex h-16 w-16 items-center justify-center rounded-full bg-white/95 text-primary shadow-lg transition group-hover:scale-105 group-hover:bg-white">
-            <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden className="ml-1">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </span>
-        </div>
-
-        {/* Corner "Video tour" label so the card reads as video even before hover. */}
         <div className="absolute top-2.5 left-2.5">
           <span className="inline-flex items-center rounded-full border border-border bg-white/95 px-2.5 py-0.5 text-[11px] font-medium text-primary">
             <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden className="mr-1 shrink-0">
@@ -146,27 +134,40 @@ export default function VideoListingCard({ listing }: { listing: ListingCardData
   )
 
   if (!embeddable) {
-    // No playable tour URL. Degrade to a link to listing detail (where the
-    // full tour DAL still resolves the video). Never a broken inline player.
     return (
       <Link
         href={listing.href}
         className="group block bg-card rounded-xl overflow-hidden shadow-sm ring-1 ring-foreground/10 hover:ring-primary/30 hover:shadow-md transition"
         aria-label={`View ${listing.addressLine}, ${ask} (opens the listing with its video tour)`}
       >
-        {poster}
+        {body}
       </Link>
     )
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => setPlaying(true)}
-      className="group block w-full text-left bg-card rounded-xl overflow-hidden shadow-sm ring-1 ring-foreground/10 hover:ring-primary/30 hover:shadow-md transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-      aria-label={`Play the video tour of ${listing.addressLine}, ${ask}`}
-    >
-      {poster}
-    </button>
+    <div className="group relative bg-card rounded-xl overflow-hidden shadow-sm ring-1 ring-foreground/10 hover:ring-primary/30 hover:shadow-md transition">
+      <Link
+        href={listing.href}
+        className="block text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        aria-label={`View ${listing.addressLine}, ${ask}`}
+      >
+        {body}
+      </Link>
+      <button
+        type="button"
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          setPlaying(true)
+        }}
+        className="absolute left-1/2 top-[22%] z-10 flex h-16 w-16 -translate-x-1/2 items-center justify-center rounded-full bg-white/95 text-primary shadow-lg transition hover:scale-105 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        aria-label={`Play the video tour of ${listing.addressLine}, ${ask}`}
+      >
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden className="ml-1">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+      </button>
+    </div>
   )
 }

@@ -10,6 +10,16 @@ describe('listing remainder composition', () => {
     expect(HERO).toContain('preferListingMosaicPhotoUrl')
     expect(HERO).toMatch(/const live = preferListingMosaicPhotoUrl\(src\)/)
     expect(PAGE).toContain('LISTING_FIELD_LEAD_PHOTO_SIZE')
+    expect(PAGE).toContain('LISTING_MOSAIC_LEAD_PHOTO_SIZE')
+  })
+
+  it('keeps beds, baths, and living sqft on the Facts sheet (SITE-115)', () => {
+    const SPECS = readFileSync(resolve('components/site/listing-detail/PropertySpecs.tsx'), 'utf8')
+    expect(SPECS).toContain('listing.beds')
+    expect(SPECS).toContain('listing.baths')
+    expect(SPECS).toMatch(/Living area/)
+    expect(SPECS).toMatch(/sqft|totalLivingAreaSqFt/)
+    expect(SPECS).toContain('Garage')
   })
 
   it('states the 13-section house page on the route', () => {

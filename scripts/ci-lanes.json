@@ -1291,6 +1291,13 @@
       "components/site/listing-detail/**",
       "lib/listing/publish-listing-remarks.ts",
       "lib/data/listings/getListingDetail.ts"
+    ],
+    "ci:listing-facts-sheet": [
+      "app/listing/**",
+      "components/site/listing-detail/**",
+      "lib/listing/publish-listing-mosaic.ts",
+      "lib/listing/row-photo.ts",
+      "lib/data/listings/getListingDetail.ts"
     ]
   },
   "nightly": [

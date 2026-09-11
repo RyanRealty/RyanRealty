@@ -42,7 +42,12 @@ import {
 } from '@/components/site/listing-detail/ListingUnavailable'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
 import { isNextRouterPrefetch } from '@/lib/listing/is-next-router-prefetch'
-import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import {
+  LISTING_FIELD_LEAD_PHOTO_SIZE,
+  LISTING_MOSAIC_LEAD_PHOTO_SIZE,
+  listingRowPhotoSrc,
+} from '@/lib/listing/row-photo'
+import { preferListingMosaicPhotoUrl } from '@/lib/listing/publish-listing-mosaic'
 import { publishListingDropMark } from '@/lib/listing/publish-listing-drop-mark'
 import { publishListingPillRead } from '@/lib/listing/publish-listing-pill-read'
 import { daysLiveOnMarket } from '@/lib/listing/days-live'
@@ -426,18 +431,28 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
       : listing.photoUrl
         ? [{ url: listing.photoUrl, caption: null, order: 0 }]
         : []
-  // SITE-60: a Flight payload that names 1600×1200 Spark URLs still gets
-  // those plates fetched. Speculative renders used to rewrite to 320×240,
-  // which painted the hero pixelated (Matt 2026-09-10). 800×600 is the
-  // field-lead bucket; MosaicStill upgrades the on-screen frame to 1600.
+  // SITE-60 + SITE-115: speculative Flight must not name 1600×1200 (list-page
+  // tax). Real document navigations lock the gallery to the mosaic plate so
+  // the hero never paints 320/800 even when listing_photos.cdn_url stored an
+  // 800 derivative. MosaicStill also upgrades via preferListingMosaicPhotoUrl.
   const flightPhotos = lcpPriority
-    ? galleryPhotos
+    ? galleryPhotos.map((p) => ({
+        ...p,
+        url: preferListingMosaicPhotoUrl(
+          listingRowPhotoSrc(p.url, LISTING_MOSAIC_LEAD_PHOTO_SIZE),
+        ),
+      }))
     : galleryPhotos.map((p) => ({
         ...p,
         url: listingRowPhotoSrc(p.url, LISTING_FIELD_LEAD_PHOTO_SIZE),
       }))
   const flightFloorPlans = lcpPriority
-    ? floorPlans
+    ? floorPlans.map((p) => ({
+        ...p,
+        url: preferListingMosaicPhotoUrl(
+          listingRowPhotoSrc(p.url, LISTING_MOSAIC_LEAD_PHOTO_SIZE),
+        ),
+      }))
     : floorPlans.map((p) => ({
         ...p,
         url: listingRowPhotoSrc(p.url, LISTING_FIELD_LEAD_PHOTO_SIZE),

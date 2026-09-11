@@ -18,6 +18,13 @@ describe('preferListingMosaicPhotoUrl', () => {
     ).toBe('https://cdn.photos.sparkplatform.com/ore/abc-o.jpg')
   })
 
+  it('bumps an 800 field-lead plate to 1600 mosaic', () => {
+    const src = 'https://cdn.resize.sparkplatform.com/ore/800x600/true/abc-o.jpg'
+    expect(preferListingMosaicPhotoUrl(src)).toBe(
+      'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/abc-o.jpg',
+    )
+  })
+
   it('does not shrink a 1600-wide Spark plate', () => {
     const src = 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/abc-o.jpg'
     expect(preferListingMosaicPhotoUrl(src)).toBe(src)

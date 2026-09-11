@@ -43,9 +43,18 @@ export const LISTING_ROW_PHOTO_SIZE = '320x240' as const
  */
 export const LISTING_FIELD_LEAD_PHOTO_SIZE = '800x600' as const
 
+/**
+ * Listing-detail hero / lightbox plate (SITE-115). The full-bleed frame is
+ * hundreds of CSS pixels; 320 and 800 look pixelated there (Matt 2026-09-10,
+ * 2026-09-11). Prefer this size — or preferListingMosaicPhotoUrl — never the
+ * row thumb or the field-lead bucket for the main frame.
+ */
+export const LISTING_MOSAIC_LEAD_PHOTO_SIZE = '1600x1200' as const
+
 export type ListingPhotoSize =
   | typeof LISTING_ROW_PHOTO_SIZE
   | typeof LISTING_FIELD_LEAD_PHOTO_SIZE
+  | typeof LISTING_MOSAIC_LEAD_PHOTO_SIZE
 
 /** `/ore/1600x1200/true/<asset>.jpg` — feed, size, crop flag, asset. */
 const SPARK_RESIZE_PATH = /^\/([^/]+)\/\d+x\d+\/([^/]+)\/(.+)$/
@@ -67,7 +76,12 @@ export function listingRowPhotoSrc(
   const parts = SPARK_RESIZE_PATH.exec(url.pathname)
   if (!parts) return src
   const [, feed, crop, asset] = parts
-  const render = size === LISTING_FIELD_LEAD_PHOTO_SIZE ? LISTING_FIELD_LEAD_PHOTO_SIZE : LISTING_ROW_PHOTO_SIZE
+  const render =
+    size === LISTING_MOSAIC_LEAD_PHOTO_SIZE
+      ? LISTING_MOSAIC_LEAD_PHOTO_SIZE
+      : size === LISTING_FIELD_LEAD_PHOTO_SIZE
+        ? LISTING_FIELD_LEAD_PHOTO_SIZE
+        : LISTING_ROW_PHOTO_SIZE
   url.pathname = `/${feed}/${render}/${crop}/${asset}`
   return url.toString()
 }

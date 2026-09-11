@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import Link from 'next/link'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
@@ -32,6 +33,7 @@ export function SplitCardMedia({
   priority,
   tourLabel = '3D Walkthrough',
   sizes = SPLIT_CARD_MEDIA_SIZES_DEFAULT,
+  href,
 }: {
   urls: string[]
   tags: Array<{ kind: V3ListingRowBadge; label: string }>
@@ -41,6 +43,8 @@ export function SplitCardMedia({
   priority?: boolean
   tourLabel?: string
   sizes?: string
+  /** SITE-115: photo opens the listing detail page (same href as the card copy). */
+  href?: string
 }) {
   const [index, setIndex] = useState(0)
   const touchX = useRef<number | null>(null)
@@ -75,13 +79,29 @@ export function SplitCardMedia({
       }}
     >
       {src ? (
-        <Image
-          src={src}
-          alt={listingPhotoAlt({ addressLine })}
-          fill
-          priority={priority}
-          sizes={sizes}
-        />
+        href ? (
+          <Link
+            href={href}
+            className="v3-lrow__photo-link"
+            aria-label={`Open ${addressLine}`}
+          >
+            <Image
+              src={src}
+              alt={listingPhotoAlt({ addressLine })}
+              fill
+              priority={priority}
+              sizes={sizes}
+            />
+          </Link>
+        ) : (
+          <Image
+            src={src}
+            alt={listingPhotoAlt({ addressLine })}
+            fill
+            priority={priority}
+            sizes={sizes}
+          />
+        )
       ) : null}
       {photos.length > 1 ? (
         <>
