@@ -24,6 +24,7 @@ import {
   leftoverNeighborhoodOrCityMonthly,
 } from '@/lib/data/market-truth/public-monthly'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { getLiveMortgageRate } from '@/lib/data/market/getLiveMortgageRate'
@@ -109,7 +110,11 @@ import {
   tooFewSalesItems,
 } from '@/app/cities/[slug]/_v3/place-graphics'
 import { NeighborhoodAlertsStrip } from './_v3/NeighborhoodAlertsSheet.client'
+import { NeighborhoodMosFigure } from './_v3/NeighborhoodMosFigure.client'
+import { buildNeighborhoodSupplyPages } from './_v3/neighborhood-mos-insight'
 import { dailyLifeRows } from './_v3/neighborhood-daily-life'
+import '../_v3/city-fold.css'
+import './_v3/neighborhood-fold.css'
 import {
   neighborhoodAboutItems,
   neighborhoodExploreItems,
@@ -423,8 +428,8 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         ),
       }
     : null
-  // SITE-84: opening listings already carry price + beds/baths/sqft + 800×600
-  // photos; buildPlaceAlertTypes forwards those facts into the alerts figure.
+  // SITE-84/104: opening listings already carry price + beds/baths/sqft + 800×600
+  // photos; buildPlaceAlertTypes aligns claim count to the cards shown.
   const alertTypes = buildPlaceAlertTypes({
     placeName: neighborhood.name,
     scopeName: cityName,
@@ -540,6 +545,26 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     : undefined
   const closedN = leftoverClosedCount(hud, placeMonthly ? chartMonths.months : [])
   const costChart = placeMonthly ? placeCostChart(closedN, medianChart) : undefined
+  // SITE-104: year/now InsightPager pages — how sales moved beside the MOS bars.
+  // Prefer this neighborhood's leftover months; fall back to the chartMonths set.
+  const mosSupplySource =
+    leftoverNeighborhoodMonthly.length > 0
+      ? leftoverNeighborhoodMonthly.map((row) => ({
+          periodStart: row.periodStart,
+          soldCount: row.closedCount,
+        }))
+      : chartMonths.months.map((row) => ({
+          periodStart: row.periodStart,
+          soldCount: row.soldCount,
+        }))
+  const mosSupplyPages = placeMos
+    ? buildNeighborhoodSupplyPages({
+        months: mosSupplySource,
+        homesForSale: placeMos.homesForSale,
+        monthOfSales: placeMos.monthOfSales,
+        mosText: formatMonthsOfSupply(placeMos.mos),
+      })
+    : []
 
   /* ── The ledgers ───────────────────────────────────────────────────────── */
 
@@ -709,13 +734,18 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           }
         >
           <PlaceAreaHero posterSrc={stagePosterSrc} mos={placeMos} />
+          {placeMos && mosSupplyPages.length >= 2 ? (
+            <div className="place-opening__mos-insight">
+              <NeighborhoodMosFigure supplyPages={mosSupplyPages} />
+            </div>
+          ) : null}
           {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
           <V3Breadcrumb trail={trail} tone={stagePosterSrc ? 'on-media' : 'surface'} />
           <div className="place-opening__copy">
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
             </V3Heading>
-            {/* SITE-84 SEO: crawlable city + inventory doors in the opening. */}
+            {/* SITE-84/104 SEO: crawlable city + inventory doors in the opening. */}
             <p className="place-opening__caption">
               <a href={`/cities/${citySlug}`}>{cityName} real estate</a>
               {' · '}

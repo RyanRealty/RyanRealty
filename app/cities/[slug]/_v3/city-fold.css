@@ -395,3 +395,129 @@
     font-size: var(--v3-size-body-lg);
   }
 }
+
+/* ── SITE-104 neighborhood grain only (selectors stay scoped) ─────────────
+   City / community openings are untouched. Imported from the neighborhood
+   page so these rules land beside PlaceAreaHero's place-opening.css. */
+
+/* Full MOS claim — do not mid-sentence clamp under the cream plate. */
+.place-opening.place-opening--neighborhood .place-opening__mos .v3-mos__caption {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+
+.place-opening.place-opening--neighborhood .place-opening__mos {
+  overflow: visible;
+  max-width: min(22rem, 100%);
+}
+
+.place-opening.place-opening--neighborhood .place-opening__mos .v3.v3-mos {
+  padding: var(--v3-space-xs) var(--v3-space-sm);
+  gap: var(--v3-space-2xs);
+  max-width: 100%;
+}
+
+/* Alerts figure: real 800×600 first paint, not ~80px postage stamps. */
+.place-opening.place-opening--neighborhood + .v3.v3-alerts {
+  scroll-margin-top: calc(var(--v3-chrome-h, 4rem) + var(--v3-space-lg));
+  padding-top: var(--v3-space-md);
+}
+
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__ask {
+  scroll-margin-top: calc(var(--v3-chrome-h, 4rem) + var(--v3-space-md));
+  padding-top: var(--v3-space-xs);
+}
+
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--v3-space-sm);
+  max-height: none;
+  overflow: visible;
+}
+
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__strip > li:nth-child(n + 2) {
+  display: list-item;
+}
+
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--v3-space-sm);
+  min-width: 0;
+  max-width: none;
+}
+
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb img {
+  width: 100%;
+  max-width: 14rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb-name,
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb-price,
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb-facts {
+  overflow-wrap: anywhere;
+  white-space: normal;
+  text-overflow: unset;
+}
+
+/* Sticky ask: keep the email field clear of the navy chrome. */
+.place-opening.place-opening--neighborhood ~ .v3.v3-alerts-sticky {
+  padding-top: calc(var(--v3-space-sm) + 0.25rem);
+}
+
+@media (max-width: 39.99rem) {
+  /* Compact MOS overlay — leave hillside + caption visible beside alerts. */
+  .place-opening.place-opening--neighborhood.place-opening--media {
+    min-height: 11rem;
+    max-height: 13rem;
+  }
+
+  .place-opening.place-opening--neighborhood .place-opening__copy {
+    padding-bottom: 4.75rem;
+  }
+
+  .place-opening.place-opening--neighborhood .place-opening__caption {
+    display: block;
+    font-size: var(--v3-size-source);
+  }
+
+  .place-opening.place-opening--neighborhood .place-opening__mos .v3.v3-mos {
+    padding: var(--v3-space-2xs) var(--v3-space-xs);
+  }
+
+  .place-opening.place-opening--neighborhood .place-opening__mos .v3-mos__caption {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+  }
+
+  .place-opening.place-opening--neighborhood .place-opening__mos .v3-source,
+  .place-opening.place-opening--neighborhood .nbh-mos__insight {
+    display: none;
+  }
+
+  .place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__strip > li:nth-child(n + 2) {
+    display: none;
+  }
+
+  .place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb {
+    grid-template-columns: minmax(7.5rem, 9rem) minmax(0, 1fr);
+  }
+
+  .place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb img {
+    max-width: 9rem;
+  }
+}

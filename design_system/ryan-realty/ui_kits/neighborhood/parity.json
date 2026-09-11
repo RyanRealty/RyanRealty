@@ -76,12 +76,12 @@
     },
     {
       "name": "V3Answers",
-      "section": "Pattern 8, #faq (site queue SITE-08, 2026-09-08). Rows come from buildPlaceAnswers and EACH CARRIES ONE SOURCED DATED FIGURE: the value on the closed row (so a shut section already reads as an answer sheet), and inside the disclosure the figure DRAWN plus its own §0 trace. Two drawings cover the class — a banded rule (months of supply lands inside seller's / balanced / buyer's, so the verdict is a position and not a word) and a tally of one mark per home, grouped in fives. The parent city sits on the same rule as a named context mark where one exists, never as a figure under this place's name. The SAME array feeds the FAQPage JSON-LD through answersFaqItems, which is the whole point of the node: a schema built beside the rows instead of from them can drift from the visible text. The questions with no figure (HOA, school district, which subdivisions a community holds) still come from buildMarketFaq and are merged in after the figured rows, deduped by question text. The last row is the closing ask and links to the address field. ON THIS GRAIN the verdict PUBLISHES: hud.monthsSupply comes from Market Truth headlines at neighborhood grain (Awbrey Butte 4.9, balanced, 2026-09-08). TWO HONEST ACTIVE COUNTS, NAMED APART: the metric layer counts 49 by primary place membership and the recorded polygon holds 60 in a publicly active MLS status. The inventory row publishes the 60 this page's own Field publishes, with its own population clause, and the verdict's trace names the 49 its ratio was computed on — so the two can never be read as one number disagreeing with itself (§0 rule 5). No SITE-01 address field exists on this route yet, so the closing action is valuationHref('/cities/{city}/{neighborhood}'), the valuation spine carrying this page as its attribution source.",
+      "section": "Pattern 8, #faq (site queue SITE-08, 2026-09-08). Rows come from buildPlaceAnswers and EACH CARRIES ONE SOURCED DATED FIGURE: the value on the closed row (so a shut section already reads as an answer sheet), and inside the disclosure the figure DRAWN plus its own \u00a70 trace. Two drawings cover the class \u2014 a banded rule (months of supply lands inside seller's / balanced / buyer's, so the verdict is a position and not a word) and a tally of one mark per home, grouped in fives. The parent city sits on the same rule as a named context mark where one exists, never as a figure under this place's name. The SAME array feeds the FAQPage JSON-LD through answersFaqItems, which is the whole point of the node: a schema built beside the rows instead of from them can drift from the visible text. The questions with no figure (HOA, school district, which subdivisions a community holds) still come from buildMarketFaq and are merged in after the figured rows, deduped by question text. The last row is the closing ask and links to the address field. ON THIS GRAIN the verdict PUBLISHES: hud.monthsSupply comes from Market Truth headlines at neighborhood grain (Awbrey Butte 4.9, balanced, 2026-09-08). TWO HONEST ACTIVE COUNTS, NAMED APART: the metric layer counts 49 by primary place membership and the recorded polygon holds 60 in a publicly active MLS status. The inventory row publishes the 60 this page's own Field publishes, with its own population clause, and the verdict's trace names the 49 its ratio was computed on \u2014 so the two can never be read as one number disagreeing with itself (\u00a70 rule 5). No SITE-01 address field exists on this route yet, so the closing action is valuationHref('/cities/{city}/{neighborhood}'), the valuation spine carrying this page as its attribution source.",
       "blocking": true
     },
     {
       "name": "V3PlaceAffordability",
-      "section": "#afford — SITE-07, the two-way affordability instrument, after the typical-price Instrument and before #daily-life. Its own barrel pattern, so neither neighbour repeats one. A payment and a price each SOLVE THE OTHER: typing or dragging a monthly number returns the price ceiling it reaches (lib/finance/affordability.ts solvePriceForMonthlyPayment, which seeds off the closed form and then snaps to the largest whole-dollar price whose PUBLISHED payment — the same estimatedMonthlyPayment the listing pages print, down payment rounded through publishFinancingSplit — is at or under the target, so the ceiling on the button is never above the ceiling that was solved). It opens pre-filled at THIS place's own published median asking price, the same figure this page publishes on its face (getNeighborhoodPublicInventory, over pricedCount — the population the median was actually taken across, never activeCount), so the calculator cannot disagree with the section above it. THE RATE IS MEASURED, NOT ASSUMED: getLiveMortgageRate() reads market_history_weekly national/us mortgage_rate_30yr, written every Monday from Freddie Mac PMMS (read 2026-09-08: 6.71%, week of 2026-09-07, source freddie:pmms30), and it publishes WITH its week stamp. When that series is dark the field falls back to lib/mortgage.ts DEFAULT_DISPLAY_RATE, which has no source, and the copy then says in plain words that the number is an assumption the visitor sets — it never says \"today's rate\" or \"current rate\" on either path. THE FINANCING MIX IS PUBLISHED BESIDE IT AS A FACT ABOUT CLOSED SALES (market_metric financing_mix, {Neighborhood} detached, 12-month window widened by the registry ladder where a place is thin; shares under 5% are not published so they do not add to 100) and it SEEDS THE OPENING MODE ONLY — cash opens the calculator only where cash was the MAJORITY of closed sales (opensOnCash, threshold 0.5; {Neighborhood} detached cash_share read 2026-09-08 puts it under that, so it opens financed). A cash share is never turned into a down payment. THE DRAWINGS ARE ALL V3Drawing 'pair' — your monthly number against the middle of this market, what you bring against what you borrow, and how the last year's buyers actually paid — because every one is a comparison, because a place's asking prices are too right-skewed for a price axis to say anything (Bend, read 2026-09-08: 761 active single-family asks from $350,000 to $11,900,000, median $899,000), and because V3Drawing's strip marks are 24x24 buttons on a route ci:tap-targets measures. NO COUNT OF HOMES UNDER THE CEILING IS PUBLISHED: the only per-listing active price set this page can reach is the Atlas population off listing_tile_mv, and it is a materially different population from the median this page prints (Bend: 761 asks at a $899,000 median there against the published 664 detached at $947,000), so a count drawn from one under a median from the other is two answers to one question. The count belongs to the search. THE ENDING IS THE SEARCH AT THE CEILING: the page's OWN homes link plus maxPrice (the confirmed param, normalised by lib/search-filters.ts and read by PlaceSplitView), with the ceiling rounded DOWN so the search can keep the promise on the button. Fires calculator_used on a real changed input, debounced 600ms — a mount is not a use — and calculator_interact on the result-link click, both carrying the ceiling and rr_vid so the click-through is measurable per visitor.",
+      "section": "#afford \u2014 SITE-07, the two-way affordability instrument, after the typical-price Instrument and before #daily-life. Its own barrel pattern, so neither neighbour repeats one. A payment and a price each SOLVE THE OTHER: typing or dragging a monthly number returns the price ceiling it reaches (lib/finance/affordability.ts solvePriceForMonthlyPayment, which seeds off the closed form and then snaps to the largest whole-dollar price whose PUBLISHED payment \u2014 the same estimatedMonthlyPayment the listing pages print, down payment rounded through publishFinancingSplit \u2014 is at or under the target, so the ceiling on the button is never above the ceiling that was solved). It opens pre-filled at THIS place's own published median asking price, the same figure this page publishes on its face (getNeighborhoodPublicInventory, over pricedCount \u2014 the population the median was actually taken across, never activeCount), so the calculator cannot disagree with the section above it. THE RATE IS MEASURED, NOT ASSUMED: getLiveMortgageRate() reads market_history_weekly national/us mortgage_rate_30yr, written every Monday from Freddie Mac PMMS (read 2026-09-08: 6.71%, week of 2026-09-07, source freddie:pmms30), and it publishes WITH its week stamp. When that series is dark the field falls back to lib/mortgage.ts DEFAULT_DISPLAY_RATE, which has no source, and the copy then says in plain words that the number is an assumption the visitor sets \u2014 it never says \"today's rate\" or \"current rate\" on either path. THE FINANCING MIX IS PUBLISHED BESIDE IT AS A FACT ABOUT CLOSED SALES (market_metric financing_mix, {Neighborhood} detached, 12-month window widened by the registry ladder where a place is thin; shares under 5% are not published so they do not add to 100) and it SEEDS THE OPENING MODE ONLY \u2014 cash opens the calculator only where cash was the MAJORITY of closed sales (opensOnCash, threshold 0.5; {Neighborhood} detached cash_share read 2026-09-08 puts it under that, so it opens financed). A cash share is never turned into a down payment. THE DRAWINGS ARE ALL V3Drawing 'pair' \u2014 your monthly number against the middle of this market, what you bring against what you borrow, and how the last year's buyers actually paid \u2014 because every one is a comparison, because a place's asking prices are too right-skewed for a price axis to say anything (Bend, read 2026-09-08: 761 active single-family asks from $350,000 to $11,900,000, median $899,000), and because V3Drawing's strip marks are 24x24 buttons on a route ci:tap-targets measures. NO COUNT OF HOMES UNDER THE CEILING IS PUBLISHED: the only per-listing active price set this page can reach is the Atlas population off listing_tile_mv, and it is a materially different population from the median this page prints (Bend: 761 asks at a $899,000 median there against the published 664 detached at $947,000), so a count drawn from one under a median from the other is two answers to one question. The count belongs to the search. THE ENDING IS THE SEARCH AT THE CEILING: the page's OWN homes link plus maxPrice (the confirmed param, normalised by lib/search-filters.ts and read by PlaceSplitView), with the ceiling rounded DOWN so the search can keep the promise on the button. Fires calculator_used on a real changed input, debounced 600ms \u2014 a mount is not a use \u2014 and calculator_interact on the result-link click, both carrying the ceiling and rr_vid so the click-through is measurable per visitor.",
       "blocking": true
     }
   ],
@@ -99,7 +99,7 @@
     },
     {
       "name": "V3Ledger, for the subdivision set and the peer-neighborhood set",
-      "reason": "V3Ledger itself is NOT deferred — daily life and Latest market activity both render. What is deferred is a THIRD Ledger for subdivision and peer-neighborhood counts."
+      "reason": "V3Ledger itself is NOT deferred \u2014 daily life and Latest market activity both render. What is deferred is a THIRD Ledger for subdivision and peer-neighborhood counts."
     },
     {
       "name": "V3Stage",
@@ -107,30 +107,30 @@
     }
   ],
   "removedComponents": [
-    "KbHero (hero photo, neighborhood search field, and stat row) — replaced by V3Instrument level 1. The hero photo and its curated/regional-fallback resolution (communityImage, cityHero, mediaCaption) go with it: a photo is a Stage, and Stage is the pattern this page does not have. The H1 head term is preserved exactly: 'Homes for Sale' becomes the sentence-case 'homes for sale' the v3 register spells, and ci:seo-shell's contract for this route was moved in the same change to accept either register's spelling.",
-    "KbBreadcrumb overlay — replaced by V3Breadcrumb, surface tone, since there is no dark hero to sit on.",
-    "KbListingMap with its boundary polygon overlay, and PlaceMapListSplit — replaced by V3Field with PlaceFieldMap in the map slot. The polygon is still read (getGeoBoundaryMapData) because it is what makes the in-boundary count and the Place geo centroid honest, and it is drawn when the Field mounts the map. Place.hasMap returns with that map.",
-    "KbFeatured (poster grid of top-priced in-boundary listings) and resolveFeaturedItems — the same listings are the V3Field rows, price-descending, so the grid was a second rendering of one set.",
-    "KbTicker (scrolling price and address strip) — decoration, not a pattern.",
+    "KbHero (hero photo, neighborhood search field, and stat row) \u2014 replaced by V3Instrument level 1. The hero photo and its curated/regional-fallback resolution (communityImage, cityHero, mediaCaption) go with it: a photo is a Stage, and Stage is the pattern this page does not have. The H1 head term is preserved exactly: 'Homes for Sale' becomes the sentence-case 'homes for sale' the v3 register spells, and ci:seo-shell's contract for this route was moved in the same change to accept either register's spelling.",
+    "KbBreadcrumb overlay \u2014 replaced by V3Breadcrumb, surface tone, since there is no dark hero to sit on.",
+    "KbListingMap with its boundary polygon overlay, and PlaceMapListSplit \u2014 replaced by V3Field with PlaceFieldMap in the map slot. The polygon is still read (getGeoBoundaryMapData) because it is what makes the in-boundary count and the Place geo centroid honest, and it is drawn when the Field mounts the map. Place.hasMap returns with that map.",
+    "KbFeatured (poster grid of top-priced in-boundary listings) and resolveFeaturedItems \u2014 the same listings are the V3Field rows, price-descending, so the grid was a second rendering of one set.",
+    "KbTicker (scrolling price and address strip) \u2014 decoration, not a pattern.",
     "KbMarketHud and KbMarketChart, and with them getPriceHistory for both the neighborhood and the parent-city fallback series, getRegionPulse (county median), and the chartScopeLabel machinery. The HUD's figures survive, split across the two Instruments by population. The 60-month median-close CHART does not: the barrel ships no chart primitive. The city-fallback rule it existed to make honest (a neighborhood series under 8 points or under 2 calendar years relabeled as the city's) is therefore moot on this route.",
-    "KbExploreTowns, twice (the subdivisions-in-this-neighborhood ledger and the other-cities ledger) — the subdivision and peer-neighborhood doors survive as links in the closing Quiet block; their per-row activeCount and medianPrice do not. getAllCitySnapshots goes with the other-cities ledger, replaced by one 'Every Central Oregon city' edge to /cities.",
-    "LifestyleNearSection with its lifestyleNearLatLng and mapCentroid reads — a lat-lng proximity rail with no pattern in the closed set.",
-    "KbAreaGuideVideo and getAreaGuideVideo — owned video is a Stage, and this page has no Stage.",
-    "KbOpenHouses and getOpenHousesWithListings — the read was CITY-scoped with an honest city eyebrow, so it was never neighborhood data. The open-houses door for the parent city survives in the closing Quiet block.",
-    "KbSell — a CTA block whose figures duplicated the Instrument's. The valuation ask survives as the Instrument's PRIMARY action. It was written down as surviving 'as the Instrument's ghost action and as the sticky header's filled primary', and the second half of that was false below 880px, where the header CTA computes display:none: between the deleted KbHero primary, the deleted KbHero ctaSecondary to /sell/valuation, and the deleted KbSell block, mobile was left with no filled seller CTA anywhere on the page.",
-    "KbArticles — the same three posts survive as links in the closing Quiet block; the thumbnails and excerpts do not.",
-    "KbTestimonials and KbTeam — brokerage trust blocks with no pattern in the closed set on a place node.",
-    "FAQBlock — the same buildMarketFaq array renders as V3Quiet prose and the FAQPage JSON-LD moved to MetadataBlock.",
-    "MarketSources — replaced by the Oregon Data Share edge in the closing Quiet block (same anchor text, same href) plus the per-section source lines, which name Oregon Data Share on every figure block INCLUDING the Field. That last clause was written before it was true: the Field's source line said only 'the recorded boundary polygon joined to the live listing index', naming no MLS, over the one block that renders individual listing records with street address, price, beds, baths and size. It now opens with the feed and with MarketSources' own explanatory clause ('the regional MLS cooperative behind every listing and market figure on this page'), so the attribution sits over the listing data rather than only thirty rows below it.",
-    "SmoothScrollProvider (Lenis smooth scroll) — PUBLIC_UI.md section 5 allows a scroll-bound sequence on exactly two moments and neither is here.",
-    "getMarketStatsCacheRowForGeo — a SECOND read of the same market_stats_cache row getMarketStats already returns, kept only for avg_sale_to_list_ratio, which getMarketStats projects as saleToListRatio. One row, one read.",
-    "getBlogPostsBySlugs for amenity topic-cluster links — verified 2026-08-12 that zero of the thirteen data/resort-community-bend-*.json configs carries a blog_slug, so the branch never fired on this route.",
-    "getCommunitiesInNeighborhood replaced by getCommunitiesInNeighborhoodLite — the heavy variant pulls up to 5,000 city tiles to compute a per-subdivision count and median, and this page no longer renders either figure. Reading them and dropping them is the discarded-read defect.",
-    "The post-submit 'Sign in to manage alerts' ANCHOR, from inside the Sheet — a terminal V3Sheet step carries prose, not links. The sentence naming the unsubscribe path survives in the terminal step, and the anchor itself survives on the page: same label, same href (/login?returnUrl=%2Faccount%2Fsaved-searches), in the closing Quiet block that carries this node's outbound edges. Nothing about this destination left the page.",
-    "The hero's in-boundary count as the page's headline inventory figure — the KB page published the raw listings_in_boundary pin count, which the RPC returns for EVERY active property type, under a hero that said single-family, so land, duplexes and condos were inside that number. The headline count now comes from the market_pulse_live row, which is the polygon narrowed to PropertyType A AND the Single Family Residence subtype, under the pulse's own trace and stamp, labelled 'single-family homes for sale'. The Field keeps the wider PropertyType A set, because hiding ten townhouses and four condominiums that are genuinely for sale inside the boundary would be a worse page than showing them, and it labels that set as what it is.",
+    "KbExploreTowns, twice (the subdivisions-in-this-neighborhood ledger and the other-cities ledger) \u2014 the subdivision and peer-neighborhood doors survive as links in the closing Quiet block; their per-row activeCount and medianPrice do not. getAllCitySnapshots goes with the other-cities ledger, replaced by one 'Every Central Oregon city' edge to /cities.",
+    "LifestyleNearSection with its lifestyleNearLatLng and mapCentroid reads \u2014 a lat-lng proximity rail with no pattern in the closed set.",
+    "KbAreaGuideVideo and getAreaGuideVideo \u2014 owned video is a Stage, and this page has no Stage.",
+    "KbOpenHouses and getOpenHousesWithListings \u2014 the read was CITY-scoped with an honest city eyebrow, so it was never neighborhood data. The open-houses door for the parent city survives in the closing Quiet block.",
+    "KbSell \u2014 a CTA block whose figures duplicated the Instrument's. The valuation ask survives as the Instrument's PRIMARY action. It was written down as surviving 'as the Instrument's ghost action and as the sticky header's filled primary', and the second half of that was false below 880px, where the header CTA computes display:none: between the deleted KbHero primary, the deleted KbHero ctaSecondary to /sell/valuation, and the deleted KbSell block, mobile was left with no filled seller CTA anywhere on the page.",
+    "KbArticles \u2014 the same three posts survive as links in the closing Quiet block; the thumbnails and excerpts do not.",
+    "KbTestimonials and KbTeam \u2014 brokerage trust blocks with no pattern in the closed set on a place node.",
+    "FAQBlock \u2014 the same buildMarketFaq array renders as V3Quiet prose and the FAQPage JSON-LD moved to MetadataBlock.",
+    "MarketSources \u2014 replaced by the Oregon Data Share edge in the closing Quiet block (same anchor text, same href) plus the per-section source lines, which name Oregon Data Share on every figure block INCLUDING the Field. That last clause was written before it was true: the Field's source line said only 'the recorded boundary polygon joined to the live listing index', naming no MLS, over the one block that renders individual listing records with street address, price, beds, baths and size. It now opens with the feed and with MarketSources' own explanatory clause ('the regional MLS cooperative behind every listing and market figure on this page'), so the attribution sits over the listing data rather than only thirty rows below it.",
+    "SmoothScrollProvider (Lenis smooth scroll) \u2014 PUBLIC_UI.md section 5 allows a scroll-bound sequence on exactly two moments and neither is here.",
+    "getMarketStatsCacheRowForGeo \u2014 a SECOND read of the same market_stats_cache row getMarketStats already returns, kept only for avg_sale_to_list_ratio, which getMarketStats projects as saleToListRatio. One row, one read.",
+    "getBlogPostsBySlugs for amenity topic-cluster links \u2014 verified 2026-08-12 that zero of the thirteen data/resort-community-bend-*.json configs carries a blog_slug, so the branch never fired on this route.",
+    "getCommunitiesInNeighborhood replaced by getCommunitiesInNeighborhoodLite \u2014 the heavy variant pulls up to 5,000 city tiles to compute a per-subdivision count and median, and this page no longer renders either figure. Reading them and dropping them is the discarded-read defect.",
+    "The post-submit 'Sign in to manage alerts' ANCHOR, from inside the Sheet \u2014 a terminal V3Sheet step carries prose, not links. The sentence naming the unsubscribe path survives in the terminal step, and the anchor itself survives on the page: same label, same href (/login?returnUrl=%2Faccount%2Fsaved-searches), in the closing Quiet block that carries this node's outbound edges. Nothing about this destination left the page.",
+    "The hero's in-boundary count as the page's headline inventory figure \u2014 the KB page published the raw listings_in_boundary pin count, which the RPC returns for EVERY active property type, under a hero that said single-family, so land, duplexes and condos were inside that number. The headline count now comes from the market_pulse_live row, which is the polygon narrowed to PropertyType A AND the Single Family Residence subtype, under the pulse's own trace and stamp, labelled 'single-family homes for sale'. The Field keeps the wider PropertyType A set, because hiding ten townhouses and four condominiums that are genuinely for sale inside the boundary would be a worse page than showing them, and it labels that set as what it is.",
     "KbActivity - RESTORED 2026-08-12 as a V3Ledger, not deleted. The KB component stays off this route (the barrel law and the register ratchet both forbid re-importing it); getActivityFeedWithFallbackMulti, buildActivityItems and the in-boundary scoping are back in full.",
     "KbMarketHud + PublicProductTypes + PublicPaceStats + PublicMixStats + NeighborhoodMarketCharts-as-markup - re-expressed, not dropped: the KPI row, pace items, and mix figures are the opening Instrument's figures off the same leftoverHudKpis pile; the property-type panel is the V3PlacePropertyTypes enumeration; the district chart room is neighborhoodMarketChartCards on the Instrument's cards slot. One market section per page (Matt 2026-07-29) holds because every chart rides inside the Instrument.",
-    "KbHero + publishNeighborhoodHero - the v3 opening is the Instrument (PUBLIC_UI §3), so there is no hero photo position for a stock image to land on. ci:publish-place-index-truth's neighborhood arm moved to the no-unvetted-hero form (2026-08-26).",
+    "KbHero + publishNeighborhoodHero - the v3 opening is the Instrument (PUBLIC_UI \u00a73), so there is no hero photo position for a stock image to land on. ci:publish-place-index-truth's neighborhood arm moved to the no-unvetted-hero form (2026-08-26).",
     "PlaceMapListSplit's boundary polygon overlay - the Field's PlaceFieldMap plots the listed set's pins; the recorded polygon still drives the counted set and the schema centroid, but is not drawn. Reintroducing the overlay is a PlaceFieldMap prop, not a second map.",
     "KbSell + publishSellMedian - the page publishes no sell median; the valuation door is the 'Value my home' edge in the closing Quiet, built by valuationHref so ?from= attribution survives. ci:publish-median-caption's neighborhood arm moved to the no-median-surface form on NeighborhoodAlertsSheet.",
     "KbOpenHouses - the open-houses surface is /open-houses/[city]; the closing Quiet keeps the door.",
@@ -155,14 +155,14 @@
       },
       {
         "type": "Dataset",
-        "emittedBy": "MetadataBlock schemas array (dataset entry), variableMeasured and dateModified from the branch's own builder. Emitted only when there is at least one variable. Name, url, and spatialCoverage strings unchanged. THE DESCRIPTION IS NOW DERIVED FROM variableMeasured (datasetDescription) and names exactly the variables in the payload. It was a fixed sentence promising 'Live single-family home market data ... median list price, active inventory, and market statistics' beside whatever survived the per-figure guards — a machine-readable claim that could outrun its own payload, and that called the no-pulse branch's every-residential-type figures single-family. It now names no single population either, because the payload has none: months of supply divides an active count by a closed series and days-to-pending is measured on closed sales, so the sentence points the reader at the per-figure source lines on the page instead of picking one."
+        "emittedBy": "MetadataBlock schemas array (dataset entry), variableMeasured and dateModified from the branch's own builder. Emitted only when there is at least one variable. Name, url, and spatialCoverage strings unchanged. THE DESCRIPTION IS NOW DERIVED FROM variableMeasured (datasetDescription) and names exactly the variables in the payload. It was a fixed sentence promising 'Live single-family home market data ... median list price, active inventory, and market statistics' beside whatever survived the per-figure guards \u2014 a machine-readable claim that could outrun its own payload, and that called the no-pulse branch's every-residential-type figures single-family. It now names no single population either, because the payload has none: months of supply divides an active count by a closed series and days-to-pending is measured on closed sales, so the sentence points the reader at the per-figure source lines on the page instead of picking one."
       },
       {
         "type": "FAQPage",
         "emittedBy": "MetadataBlock schemas array (faqPage entry), items = the same faqs array V3Quiet renders. On the KB page this came out of FAQBlock's includeJsonLd; the payload's meaning is unchanged."
       }
     ],
-    "note": "ONE DERIVATION PER BRANCH, AND EACH ONE NAMES THE POPULATION IT READ. The visible Q&A, the FAQPage items and the Dataset variables always come from one call, so the copy and the markup cannot diverge. On the pulse branch that call is buildMarketFaq, the shared builder that also owns the buyer's/seller's verdict. On the no-pulse branch it is fallbackFaqSet (_v3/neighborhood-claims.ts), because buildMarketFaq's prose is written for the single-family population and the KB page's habit of handing it getNeighborhoodBySlug's every-residential-type numbers published them as 'active single-family listings' in the visible rows, the FAQPage markup and the Dataset variables at once — on the one branch whose own on-page source line says that count is not the single-family subtype. The fallback pair names what it counted, publishes its count as 'Active Residential Listings' rather than 'Active Listings' so a machine is not told two different measures are the same one, carries no asOf stamp because that read carries none, and states no verdict because months of supply exists only on the pulse row."
+    "note": "ONE DERIVATION PER BRANCH, AND EACH ONE NAMES THE POPULATION IT READ. The visible Q&A, the FAQPage items and the Dataset variables always come from one call, so the copy and the markup cannot diverge. On the pulse branch that call is buildMarketFaq, the shared builder that also owns the buyer's/seller's verdict. On the no-pulse branch it is fallbackFaqSet (_v3/neighborhood-claims.ts), because buildMarketFaq's prose is written for the single-family population and the KB page's habit of handing it getNeighborhoodBySlug's every-residential-type numbers published them as 'active single-family listings' in the visible rows, the FAQPage markup and the Dataset variables at once \u2014 on the one branch whose own on-page source line says that count is not the single-family subtype. The fallback pair names what it counted, publishes its count as 'Active Residential Listings' rather than 'Active Listings' so a machine is not told two different measures are the same one, carries no asOf stamp because that read carries none, and states no verdict because months of supply exists only on the pulse row."
   },
   "dataLayer": {
     "getNeighborhoodBySlug": "app/actions/cities.ts. Resolves the neighborhoods row and computes activeCount and medianPrice off listing_tile_mv for the neighborhood NAME, residential inventory types only. Feeds the metadata, the identity, the About fallback prose, and the level-1 Instrument's no-pulse branch.",
@@ -174,7 +174,7 @@
     "peerNeighborhoodTowns": "lib/explore/neighborhood-peers.ts over getBendNeighborhoodLedger. Feeds the sideways rung of the place ladder.",
     "getResortCommunityContent": "lib/resort-community-content.ts, keyed by the same city-qualified slug. Feeds the About block.",
     "getRecentBlogPosts": "lib/data/blog/getRecentBlogPosts.ts, cityName-weighted, limit 3. Feeds the guide doors.",
-    "note": "ROUTE-LOCAL SHAPING IS TWO FILES. _v3/neighborhood-sections.ts turns rows into barrel props; _v3/neighborhood-claims.ts holds every SENTENCE the route publishes about a figure — the meta description, the Field's empty message and footnote, the no-pulse branch's Q&A, the Dataset and Place descriptions, and the four structured-data payloads themselves — under one rule: no claim may outrun its payload, so each function takes the payload it describes as its argument. Every read is a DAL function from @/lib/data or a route action (G8), and every one is still wrapped in withTimeoutFallback, which is a deadline and not a swallowed error: the underlying functions are resilient-cached and throw on a transient failure rather than caching a confident empty. NOTHING IS FETCHED THAT THIS PAGE DOES NOT RENDER; the seven reads the KB page made whose results are no longer displayed are listed in removedComponents. Route-local shaping lives in app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections.ts so the route file stays under the ci:file-size-budget 600-line floor.",
+    "note": "ROUTE-LOCAL SHAPING IS TWO FILES. _v3/neighborhood-sections.ts turns rows into barrel props; _v3/neighborhood-claims.ts holds every SENTENCE the route publishes about a figure \u2014 the meta description, the Field's empty message and footnote, the no-pulse branch's Q&A, the Dataset and Place descriptions, and the four structured-data payloads themselves \u2014 under one rule: no claim may outrun its payload, so each function takes the payload it describes as its argument. Every read is a DAL function from @/lib/data or a route action (G8), and every one is still wrapped in withTimeoutFallback, which is a deadline and not a swallowed error: the underlying functions are resilient-cached and throw on a transient failure rather than caching a confident empty. NOTHING IS FETCHED THAT THIS PAGE DOES NOT RENDER; the seven reads the KB page made whose results are no longer displayed are listed in removedComponents. Route-local shaping lives in app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections.ts so the route file stays under the ci:file-size-budget 600-line floor.",
     "leftoverHud": "lib/market/publish-leftover-hud.ts leftoverHudKpis({grain:'neighborhood', headlines/inventory: getDetachedOverlays keyed neighborhood:cityDetachedSlug(metricNeighborhoodSlug), pace:getPublicDetachedPace}). The ONE pile: hero count hud.active, median hud.medianList, published MoS hud.monthsSupply (sample-gated inside publishMonthsOfSupply). Miss omits; pulse and cache never fill."
   },
   "sectionOrder": [
@@ -208,9 +208,9 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
+    "evaluatedAt": "2026-09-11",
     "rubricVersion": "v1-2026-09-10",
-    "evaluator": "separate grok-4.6 via npx tsx scripts/taste-evaluate.ts neighborhood --url http://127.0.0.1:3284/cities/bend/awbrey-butte --beat 58 --shots desktop,mobile375,alerts,alerts-toggle,mos-hover only (stale section PNGs excluded). Did not read page code.",
+    "evaluator": "separate grok-4.6 via scratchpad/taste-evaluate-sanitize.ts neighborhood --shots (8 state PNGs only; stale section PNGs excluded) --url http://127.0.0.1:3214/cities/bend/awbrey-butte --beat 62. Did not read page code.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
     "comparedToPrior": "rebaselined",
@@ -240,28 +240,32 @@
       "mosHoverMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/mos-hover-mobile375.png"
     },
     "scores": [
-      57,
-      62,
-      66
+      44,
+      54,
+      48
     ],
-    "score": 62,
+    "score": 48,
     "perCriterion": {
-      "design": 21,
-      "originality": 17,
-      "interaction": 9,
-      "craft": 9,
-      "honesty": 6
+      "design": 14,
+      "originality": 12,
+      "interaction": 8,
+      "craft": 7,
+      "honesty": 7
     },
     "criteria": {
-      "designQuality": 21,
-      "originality": 17,
-      "interaction": 9,
-      "craft": 9,
-      "honestyFunction": 6
+      "designQuality": 14,
+      "originality": 12,
+      "interaction": 8,
+      "craft": 7,
+      "honestyFunction": 7
     },
-    "honestyFunction": 6,
-    "beats": "Zillow's Awbrey Butte neighborhood page — we win on months of supply drawn as two named bars (48 homes vs 10.3 a month of sales) with an Oregon Data Share date in the opening; we lose on listing-photo scale and on a map you can use before scrolling. Better than a 58/100 sentence-and-form fold, short of 70.",
+    "honestyFunction": 7,
+    "demoMatch": false,
+    "beats": "Zillow neighborhood pages \u2014 we should win on a sourced two-bar MOS and dated Oregon Data Share listings they do not print; the 1440 MOS card is clipped to \u201cply.\u201d and Atlas is below the fold, so that win does not land. Worse than a 62: a 62 is complete and dull; this is richer and broken.",
     "adaptedFrom": [
+      {
+        "id": "beautifului-insight"
+      },
       {
         "id": "beui-number"
       },
@@ -275,6 +279,9 @@
         "id": "V3Number"
       },
       {
+        "id": "InsightPager"
+      },
+      {
         "id": "house-mos"
       },
       {
@@ -283,52 +290,52 @@
     ],
     "defects": [
       {
-        "section": "#place-mos .v3-mos__caption",
-        "severity": "craft",
-        "finding": "The MOS claim sentence is clipped off the top of the cream overlay on desktop, so the bars have numbers and no readable verdict; hover then shoves the same 48 / 10.3 off the right edge.",
-        "replaceWith": null
-      },
-      {
-        "section": "#place-mos .v3-mos__tip",
-        "severity": "taste",
-        "finding": "MOS hover restates Homes for sale: 48 and A month of sales: 10.3 — the bars already said that — and on 375 the two-bar drawing is replaced by a paragraph. The job is more data (how supply moved), not a second label.",
-        "replaceWith": "beautifului-insight"
-      },
-      {
-        "section": ".place-opening--neighborhood .place-opening__mos",
-        "severity": "craft",
-        "finding": "At 375 the white MOS card covers the hillside and the Bend real estate / homes-for-sale caption, so the page does not open as a drawing with a figure beside alerts; it opens as a form card on a sliver of photo.",
-        "replaceWith": null
-      },
-      {
-        "section": "#alerts .v3-alerts__strip",
-        "severity": "taste",
-        "finding": "New inventory is three ~80px Spark thumbs with streets that wrap or truncate (577 Greyh, 1945 Sun, 3130 Colonial Drive) — postage stamps, not a figure. The live strip is not a catalog demo.",
-        "replaceWith": "hero figure"
-      },
-      {
-        "section": "#alerts land source",
+        "section": "MOS overlay (desktop hero)",
         "severity": "blocking",
-        "finding": "Land toggle prints 1 lot came on the market and SOURCE 1 lots: live MLS listings (neighborhood:bend-awbrey-butte) while three land cards sit under it. Raw slug in visitor copy; 1 vs 3 inventory counts disagree; 1 lots is broken English.",
+        "finding": "The months-of-supply claim is clipped to \u201cply.\u201d under the navy place chrome, so 47 vs 10 read as a KPI tile with no sentence.",
         "replaceWith": null
       },
       {
-        "section": "#alerts email vs sticky nav",
-        "severity": "craft",
-        "finding": "On the scrolled desktop land state the navy header clips the email field and Email me each one, so the conversion ask collides with chrome.",
+        "section": "first viewport / Atlas",
+        "severity": "taste",
+        "finding": "Layout lock is a drawing plus a figure beside the alerts sentence; Atlas only peeks after scroll, and the fold is a pine still plus a newsletter-and-card stack.",
         "replaceWith": null
+      },
+      {
+        "section": "NEW LISTINGS listing grid",
+        "severity": "taste",
+        "finding": "Four portal cards, photo beside a starved meta column, is the inventory display; it is not a field of houses and it is not a catalog masonry or shadcn card.",
+        "replaceWith": "beui:infinite-masonry"
+      },
+      {
+        "section": "listing address column",
+        "severity": "craft",
+        "finding": "Desktop addresses wrap one word per line and break mid-word (Promonto ry, Perspecti ve, Constella tion).",
+        "replaceWith": null
+      },
+      {
+        "section": "Houses / Land toggle",
+        "severity": "blocking",
+        "finding": "Land replaces the sourced \u201c15 houses came on the market in Awbrey Butte in the last 30 days\u201d with a newsletter pitch and drops beds/baths/sqft with no lot size in their place.",
+        "replaceWith": null
+      },
+      {
+        "section": "MOS hover (HOW SALES MOVED)",
+        "severity": "taste",
+        "finding": "Desktop hover is a scrap labeled \u201c4/4\u201d; the matching mobile shot shows no interrogation at all.",
+        "replaceWith": "beautifului-insight"
       }
     ],
-    "rebaselineReason": "evaluatorModel changed from grok-4.5 to grok-4.6, rubricVersion from v1-2026-09-08 to v1-2026-09-10, and shotsHash changed after the SITE-84 fold recapture (compact neighborhood opening, V3Number on alerts/MOS, listing facts + 800x600 thumbs, crawlable opening links). Median 62 is above the table instrument mark 58 on the new instrument; honestyFunction recorded at 6 (prior breakdown honesty was 5).",
     "priorMark": {
       "evaluatedAt": "2026-09-10",
-      "score": 68,
-      "evaluatorModel": "grok-4.5",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:e78735440c0f4b1114f8b7d77d044ef572702a3b3b2eedc0f7b8f9e27068290a",
-      "honesty": 5
+      "score": 62,
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "v1-2026-09-10",
+      "shotsHash": "sha256:87bddff3cda2588deeb161199e103d94d8fde270d02655993fe6e2486114b052",
+      "honestyFunction": 6
     },
-    "shotsHash": "sha256:87bddff3cda2588deeb161199e103d94d8fde270d02655993fe6e2486114b052",
-    "notes": "SITE-84 comprehensive pass: SEO title prefers live inventory count ('Awbrey Butte homes for sale · Bend, Oregon') plus crawlable city/homes doors in the opening caption; information adds price + address + beds/baths/sqft on 800×600 alert thumbs; UX installs V3Number (beui-number / rareui / transitions) on the 30-day count and MOS bar values, keeps V3MosBars drawing, and packs MOS + alerts figure + email into the first viewport at 1440 and 375 via place-opening--neighborhood. Do not mark the node done — remaining defects (Land source slug, MOS hover form, thumb scale) stay on the node."
+    "shotsHash": "sha256:ead95aa198bcec3f46207e142c4a91bc59e1299b4579ed438897653d84ad96be",
+    "notes": "SITE-104 comprehensive attempt: land source no longer prints neighborhood:slug; claim cards capped so land cards cannot outrun the 30-day count; neighborhood-local InsightPager (beautifului-insight) on MOS hover for year/now sales pages; larger 800x600 alert thumbs via neighborhood-fold.css; sticky ask offset. Median 48 fell vs prior 62 on the same instrument \u2014 node not done. Remaining: MOS chrome clip at 1440 (evaluator), Atlas not in opening, demoMatch false, land toggle drops house facts, address mid-word wrap.",
+    "rebaselineReason": "shotsHash changed after SITE-104 recapture (neighborhood-fold.css, NeighborhoodMosFigure InsightPager, land source/slug fix, larger alert thumbs). Same evaluatorModel/rubricVersion; new shots. Median 48 is not a rise over the prior 62 on the previous shots \u2014 node not done."
   }
 }

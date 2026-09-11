@@ -281,6 +281,18 @@ export function newestFirstHref(browseHref: string): string {
   return `${href}${href.includes('?') ? '&' : '?'}sort=newest`
 }
 
+/** Human place label for a source line — never `neighborhood:slug` / raw geoSlug. */
+export function placeAlertsWhere(placeName: string | undefined, geoSlug: string): string {
+  const named = placeName?.trim()
+  if (named) return named
+  // Last resort: strip a geoType prefix and hyphens. Never print "neighborhood:…".
+  return geoSlug
+    .replace(/^(city|neighborhood|zip|community):/i, '')
+    .replace(/^bend-/i, '')
+    .replace(/-/g, ' ')
+    .trim()
+}
+
 export function placeAlertsSource(input: {
   count: number
   geoType: PlaceAlertsGeoType
@@ -292,7 +304,9 @@ export function placeAlertsSource(input: {
 }): string {
   const noun = input.noun ?? HOUSES
   const unit = units(input.count, noun)
-  const where = input.placeName?.trim() || input.geoSlug.replace(/^bend-/, '').replace(/-/g, ' ')
+  const where = placeAlertsWhere(input.placeName, input.geoSlug)
+  // geoType is for the caller / tests only — never interpolate into visitor copy.
+  void input.geoType
   if (input.table === 'listing_tile_mv') {
     return (
       `${formatCount(input.count)} ${unit}: live MLS listings in ${where}, ` +
@@ -403,7 +417,15 @@ export function buildPlaceAlertTypes(input: {
     const count30 =
       bucket.key === 'houses' ? input.leftoverHouses30d : bucket.newCount30d
     const n = publishableNewCount(count30)
+    // Condo/land without a publishable 30-day count must not render — a
+    // newsletter pitch over active-lot photos is the SITE-104 land honesty miss.
+    if (n == null && bucket.key !== 'houses') continue
     if (n == null && bucket.listings.length === 0) continue
+    // Claim stays the 30-day count. Cards never outrun that count (three land
+    // thumbs under "1 lot" was the SITE-84 honesty fail). A short photo strip
+    // under a larger count is a sample, not a second answer.
+    const photoCap = Math.min(4, bucket.listings.length)
+    const cardCount = n == null ? photoCap : Math.min(n, photoCap)
     const copy = placeAlertsCopy({
       placeName: input.placeName,
       scopeName: input.scopeName,
@@ -414,6 +436,16 @@ export function buildPlaceAlertTypes(input: {
       noun: bucket.noun,
     })
     const table = bucket.key === 'houses' ? 'market_metric' : 'listing_tile_mv'
+    const listings = bucket.listings.slice(0, cardCount).map((listing) => ({
+      ...listing,
+      // Caller may already have asked for 800×600; re-assert card size so a
+      // 320 ledger thumb never lands in the alerts figure.
+      photoSrc: listingRowPhotoSrc(listing.photoSrc, LISTING_FIELD_LEAD_PHOTO_SIZE),
+      price: listing.price ?? null,
+      beds: listing.beds ?? null,
+      baths: listing.baths ?? null,
+      sqft: listing.sqft ?? null,
+    }))
     options.push({
       key: bucket.key,
       label: bucket.label,
@@ -431,20 +463,7 @@ export function buildPlaceAlertTypes(input: {
               noun: bucket.noun,
               table,
             }),
-      // When the 30-day count is known, do not show more cards than that count —
-      // three land thumbs under "1 lot came on the market" reads as two answers.
-      listings: bucket.listings
-        .slice(0, n == null ? bucket.listings.length : Math.max(1, Math.min(n, 4)))
-        .map((listing) => ({
-          ...listing,
-          // Caller may already have asked for 800×600; re-assert card size so a
-          // 320 ledger thumb never lands in the alerts figure.
-          photoSrc: listingRowPhotoSrc(listing.photoSrc, LISTING_FIELD_LEAD_PHOTO_SIZE),
-          price: listing.price ?? null,
-          beds: listing.beds ?? null,
-          baths: listing.baths ?? null,
-          sqft: listing.sqft ?? null,
-        })),
+      listings,
     })
   }
   return options

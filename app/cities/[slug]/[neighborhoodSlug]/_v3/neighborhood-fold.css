@@ -1,0 +1,147 @@
+/* SITE-104 neighborhood fold overrides. Imported last from the neighborhood
+   page so these beat place-opening.css without touching city/community. */
+
+.place-opening.place-opening--neighborhood.place-opening--media {
+  min-height: 16rem !important;
+  max-height: 18rem !important;
+}
+
+@media (min-width: 64rem) {
+  .place-opening.place-opening--neighborhood.place-opening--media {
+    min-height: 15rem !important;
+    max-height: 17rem !important;
+  }
+
+  .place-opening.place-opening--neighborhood.place-opening--media .place-opening__copy {
+    padding-top: calc(var(--v3-space-lg) + 2rem) !important;
+    padding-bottom: var(--v3-space-xs) !important;
+  }
+
+  /* Keep the cream plate fully on-canvas so the claim is not cut to “ply.” */
+  .place-opening.place-opening--neighborhood .place-opening__mos {
+    align-self: end;
+    max-height: none;
+    overflow: visible !important;
+  }
+}
+
+.place-opening.place-opening--neighborhood .place-opening__mos .v3.v3-mos {
+  padding: var(--v3-space-sm) var(--v3-space-sm) var(--v3-space-xs) !important;
+  gap: var(--v3-space-2xs) !important;
+  overflow: visible !important;
+}
+
+.place-opening.place-opening--neighborhood .place-opening__mos .v3-mos__caption {
+  display: block !important;
+  -webkit-line-clamp: unset !important;
+  overflow: visible !important;
+  overflow-wrap: anywhere;
+  font-size: var(--v3-size-body-sm) !important;
+  line-height: var(--v3-leading-note);
+  padding-top: 0.1em;
+}
+
+.place-opening.place-opening--neighborhood .place-opening__mos .v3-mos__tip {
+  display: none !important;
+}
+
+.place-opening.place-opening--neighborhood + .v3.v3-alerts {
+  scroll-margin-top: calc(var(--v3-chrome-h, 4rem) + var(--v3-space-lg));
+}
+
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__ask {
+  scroll-margin-top: calc(var(--v3-chrome-h, 4rem) + var(--v3-space-md));
+  padding-top: var(--v3-space-sm);
+}
+
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__strip {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)) !important;
+  gap: var(--v3-space-sm) !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__strip > li {
+  display: list-item !important;
+}
+
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb {
+  display: grid !important;
+  grid-template-columns: minmax(11rem, 14rem) minmax(0, 1fr) !important;
+  align-items: start !important;
+  column-gap: var(--v3-space-sm) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb img {
+  width: 100% !important;
+  max-width: 14rem !important;
+  aspect-ratio: 4 / 3 !important;
+  object-fit: cover !important;
+}
+
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb-name,
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb-price,
+.place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb-facts {
+  overflow-wrap: anywhere !important;
+  white-space: normal !important;
+  text-overflow: unset !important;
+}
+
+.place-opening.place-opening--neighborhood ~ .v3.v3-alerts-sticky {
+  padding-top: calc(var(--v3-space-sm) + 0.35rem);
+}
+
+@media (max-width: 39.99rem) {
+  .place-opening.place-opening--neighborhood.place-opening--media {
+    min-height: 10.5rem !important;
+    max-height: 12rem !important;
+  }
+
+  .place-opening.place-opening--neighborhood .place-opening__copy {
+    padding-bottom: 4.25rem !important;
+  }
+
+  .place-opening.place-opening--neighborhood .place-opening__caption {
+    display: block !important;
+    font-size: var(--v3-size-source) !important;
+  }
+
+  .place-opening.place-opening--neighborhood .place-opening__mos {
+    bottom: var(--v3-space-2xs) !important;
+  }
+
+  .place-opening.place-opening--neighborhood .place-opening__mos .v3.v3-mos {
+    padding: var(--v3-space-2xs) var(--v3-space-xs) !important;
+  }
+
+  .place-opening.place-opening--neighborhood .place-opening__mos .v3-mos__caption {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 1 !important;
+    overflow: hidden !important;
+  }
+
+  .place-opening.place-opening--neighborhood .place-opening__mos .v3-source,
+  .place-opening.place-opening--neighborhood .nbh-mos__insight {
+    display: none !important;
+  }
+
+  .place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__strip {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__strip > li:nth-child(n + 2) {
+    display: none !important;
+  }
+
+  .place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb {
+    grid-template-columns: minmax(8rem, 10rem) minmax(0, 1fr) !important;
+  }
+
+  .place-opening.place-opening--neighborhood + .v3.v3-alerts .v3-alerts__thumb img {
+    max-width: 10rem !important;
+  }
+}

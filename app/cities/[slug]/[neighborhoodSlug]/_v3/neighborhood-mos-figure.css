@@ -1,0 +1,63 @@
+/* Neighborhood-only MOS insight (SITE-104). Does not restyle city/community. */
+
+.nbh-mos {
+  position: relative;
+  display: grid;
+  gap: var(--v3-space-2xs);
+  max-width: 100%;
+}
+
+/* Sits under the house MOS plate when hover reveals year pages. */
+.place-opening.place-opening--neighborhood .place-opening__mos-insight {
+  position: absolute;
+  right: var(--v3-gutter);
+  bottom: var(--v3-space-sm);
+  width: min(22rem, calc(100% - 2 * var(--v3-gutter)));
+  z-index: 3;
+  pointer-events: none;
+}
+
+.place-opening.place-opening--neighborhood .place-opening__mos-insight .nbh-mos {
+  pointer-events: auto;
+}
+
+@media (max-width: 39.99rem) {
+  .place-opening.place-opening--neighborhood .place-opening__mos-insight {
+    display: none;
+  }
+}
+
+.nbh-mos__insight {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  padding: var(--v3-space-xs) var(--v3-space-sm);
+  background: var(--v3-surface);
+  border: var(--v3-rule-hairline);
+  color: var(--v3-ink);
+  max-width: 100%;
+}
+
+.nbh-mos__insight-kicker {
+  margin: 0;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.nbh-mos__insight-read {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  overflow-wrap: anywhere;
+}
+
+/* Hide the house tip on this grain — InsightPager is the "more data" layer. */
+.place-opening--neighborhood .place-opening__mos .v3-mos__tip {
+  display: none;
+}
+
+.place-opening--neighborhood .nbh-mos .insight-pager {
+  max-width: 100%;
+}

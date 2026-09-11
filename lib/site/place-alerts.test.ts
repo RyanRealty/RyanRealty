@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  buildPlaceAlertTypes,
   earnsDisplayFigure,
   joinClaimParts,
   joinNames,
@@ -14,6 +15,7 @@ import {
   placeAlertsSource,
   placeAlertsStickyClaim,
   placeAlertsStickyNote,
+  placeAlertsWhere,
   publishableNewCount,
   readableMatchNames,
 } from './place-alerts'
@@ -231,6 +233,127 @@ describe('placeAlertsCopy', () => {
     expect(source).not.toMatch(/1 lots/)
     expect(source).toContain('Awbrey Butte')
     expect(source).not.toContain('neighborhood:bend-awbrey-butte')
+  })
+
+  it('never prints a geoType:slug when placeName is present', () => {
+    expect(placeAlertsWhere('Awbrey Butte', 'bend-awbrey-butte')).toBe('Awbrey Butte')
+    expect(placeAlertsWhere(undefined, 'neighborhood:bend-awbrey-butte')).toBe('awbrey butte')
+    const source = placeAlertsSource({
+      count: 3,
+      geoType: 'neighborhood',
+      geoSlug: 'bend-awbrey-butte',
+      placeName: 'Awbrey Butte',
+      noun: { one: 'lot', many: 'lots' },
+      table: 'listing_tile_mv',
+    })
+    expect(source).not.toMatch(/neighborhood:/)
+    expect(source).not.toContain('bend-awbrey-butte')
+  })
+})
+
+describe('buildPlaceAlertTypes land honesty', () => {
+  const landCards = [
+    {
+      href: '/a',
+      photoSrc: 'https://example.com/a.jpg',
+      title: 'Lot A',
+      price: '$400K',
+      beds: null,
+      baths: null,
+      sqft: null,
+    },
+    {
+      href: '/b',
+      photoSrc: 'https://example.com/b.jpg',
+      title: 'Lot B',
+      price: '$500K',
+      beds: null,
+      baths: null,
+      sqft: null,
+    },
+    {
+      href: '/c',
+      photoSrc: 'https://example.com/c.jpg',
+      title: 'Lot C',
+      price: '$600K',
+      beds: null,
+      baths: null,
+      sqft: null,
+    },
+  ]
+
+  it('never shows more land cards than the 30-day claim, and never prints a slug', () => {
+    const types = buildPlaceAlertTypes({
+      placeName: 'Awbrey Butte',
+      scopeName: 'Bend',
+      geoType: 'neighborhood',
+      geoSlug: 'bend-awbrey-butte',
+      leftoverHouses30d: 15,
+      buckets: [
+        {
+          key: 'land',
+          label: 'Land',
+          noun: { one: 'lot', many: 'lots' },
+          newCount30d: 1,
+          source: 'listing_tile_mv',
+          listings: landCards,
+        },
+      ],
+    })
+    const land = types.find((t) => t.key === 'land')
+    expect(land).toBeTruthy()
+    expect(land!.listings).toHaveLength(1)
+    expect(land!.claim).toBe('1 lot came on the market in Awbrey Butte in the last 30 days.')
+    expect(land!.source).toMatch(/^1 lot: /)
+    expect(land!.source).not.toMatch(/1 lots/)
+    expect(land!.source).toContain('Awbrey Butte')
+    expect(land!.source).not.toMatch(/neighborhood:/)
+    expect(land!.source).not.toContain('bend-awbrey-butte')
+  })
+
+  it('omits land when the 30-day count is withheld (no newsletter pitch over cards)', () => {
+    const types = buildPlaceAlertTypes({
+      placeName: 'Awbrey Butte',
+      scopeName: 'Bend',
+      geoType: 'neighborhood',
+      geoSlug: 'bend-awbrey-butte',
+      leftoverHouses30d: 15,
+      buckets: [
+        {
+          key: 'land',
+          label: 'Land',
+          noun: { one: 'lot', many: 'lots' },
+          newCount30d: null,
+          source: 'listing_tile_mv',
+          listings: landCards,
+        },
+      ],
+    })
+    expect(types.find((t) => t.key === 'land')).toBeUndefined()
+  })
+
+  it('keeps the house leftover count when photos are only a sample', () => {
+    const types = buildPlaceAlertTypes({
+      placeName: 'Awbrey Butte',
+      scopeName: 'Bend',
+      geoType: 'neighborhood',
+      geoSlug: 'bend-awbrey-butte',
+      leftoverHouses30d: 15,
+      buckets: [
+        {
+          key: 'houses',
+          label: 'Houses',
+          noun: { one: 'house', many: 'houses' },
+          newCount30d: 15,
+          source: 'listing_tile_mv',
+          listings: landCards.map((c, i) => ({ ...c, href: `/h${i}`, title: `Home ${i}` })),
+        },
+      ],
+    })
+    const houses = types.find((t) => t.key === 'houses')
+    expect(houses!.claim).toBe('houses came on the market in Awbrey Butte in the last 30 days.')
+    expect(houses!.count).toBe('15')
+    expect(houses!.listings).toHaveLength(3)
   })
 })
 
