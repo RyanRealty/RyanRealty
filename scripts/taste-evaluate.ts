@@ -153,10 +153,10 @@ async function main() {
     '',
     'Score the SAME shots THREE separate times, independently, as three different reviewers would. One pass is noise.',
     'Honesty is not a trade. The loop is comprehensive: SEO, listing/page information, and UX must all improve on this pass. A prettier fold that hides a sourced figure, drops JSON-LD, removes an ask, drops listing facts from a card, or makes a number unverifiable is a blocking defect. honestyFunction must not fall. Omitting honesty to skip the hold is a blocking defect. requiredComponents, JSON-LD, titles, conversion asks, tap targets, and page payload must not fall. Listing pages may not drop or summarize PropertySpecs, MLS remarks, schools, payment, or Tour/Call/Text. Name in the verdict whether SEO improved and whether inventory/information improved; if either is only "held," that is a defect.',
-    'Diagnose each defect as a JOB, then set replaceWith from the catalog option list in the brief (id + demo URL). Do not pick a house primitive that already lost. A cream box that kept a catalog name is a taste defect. If the live control and the demo are not the same interaction, say so. Shots named search-open / *-open are the demo-match record — judge whether the opened control matches the catalog demo, not only the rest fold.',
+    'Diagnose each defect as a JOB, then set replaceWith from the catalog option list in the brief (id + demo URL). Do not pick a house primitive that already lost. A cream box that kept a catalog name is a taste defect. If the live control and the demo are not the same interaction, demoMatch is false. Shots named search-open / *-open are the demo-match record — judge whether the opened control matches the catalog demo, not only the rest fold. A V3 wrapper that imported the file then hid the morph, the card body, or the carousel is demoMatch false.',
     'Then list the named defects behind the number: each one names the section (a css class or an id you can see), the severity (blocking | taste | craft), a finding of at least ten characters, and replaceWith — a catalog id from the option list, a house form from the rubric list, or null if the finding is craft/honesty/SEO not form.',
     'Empty defects is only allowed above 95.',
-    'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"...","replaceWith":"<house form, primitive, catalog id, or null>"}],"verdict":"<two sentences>"}',
+    'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"demoMatch":true|false,"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"...","replaceWith":"<house form, primitive, catalog id, or null>"}],"verdict":"<two sentences>"}',
   ]
     .filter(Boolean)
     .join('\n')
@@ -203,6 +203,18 @@ async function main() {
   const optionProblems = replaceWithOptionProblems(loaded, classKey, { defects })
   if (optionProblems.length) {
     console.error(`taste-evaluate: replaceWith not on the option list:\n${optionProblems.join('\n')}`)
+    process.exit(2)
+  }
+  const demoMatch =
+    parsed && typeof parsed === 'object' ? (parsed as { demoMatch?: unknown }).demoMatch : undefined
+  if (typeof demoMatch !== 'boolean') {
+    console.error('taste-evaluate: demoMatch must be true or false. The catalog demo is the UX bar.')
+    process.exit(2)
+  }
+  if (demoMatch === false) {
+    console.error(
+      'taste-evaluate: demoMatch is false. The live control is not the catalog object. Copy the GitHub source; do not wrap it in a cream box.',
+    )
     process.exit(2)
   }
   console.log(

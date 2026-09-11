@@ -12,10 +12,25 @@ same rubric `design_system/public/TASTE.md` defines for a route's own
 passing bar, or the form-prescription rule and this file's version number
 changes with it.
 
-You are judging a Ryan Realty public page from two screenshots only — you did
+You are judging a Ryan Realty public page from screenshots — you did
 not build this page, you are not told which model built it, and you have no
 other access to it (no code, no live browsing, no DOM). Judge what a visitor
 would actually see.
+
+## Catalog demo match (blocking)
+
+The UX bar is the five catalog repos, not a house wrapper:
+
+- https://github.com/slev12397/beautiful-ui (beautifului.dev)
+- https://github.com/starc007/ui-components (beui.dev)
+- https://github.com/swamimalode07/rare-ui (rareui.com)
+- https://github.com/Jakubantalik/transitions.dev (transitions.dev)
+- https://github.com/shadcn-ui/ui (ui.shadcn.com)
+
+`demoMatch` is true only if the visible control is the same object as the
+named demo URL (morphing search morphs; a shadcn Card is photo then title;
+a carousel is the shadcn rail). A cream box that imported the file and hid
+the interaction is `demoMatch: false`. Set it on every response.
 
 ## What you are given
 

@@ -35,6 +35,15 @@ export const EXM7777_URLS = Object.freeze([
 ])
 export const EXM7777_IDS = Object.freeze(['beautifului', 'beui', 'rareui', 'transitions', 'shadcn'])
 
+/** GitHub sources for those five. Install from these; do not rewrite the demo. */
+export const EXM7777_REPOS = Object.freeze([
+  'https://github.com/slev12397/beautiful-ui',
+  'https://github.com/starc007/ui-components',
+  'https://github.com/swamimalode07/rare-ui',
+  'https://github.com/Jakubantalik/transitions.dev',
+  'https://github.com/shadcn-ui/ui',
+])
+
 export function loadTasteCatalog(raw) {
   const problems = []
   if (!isPlainObject(raw)) {
@@ -70,6 +79,7 @@ export function loadTasteCatalog(raw) {
       id: c.id,
       name: String(c.name ?? c.id),
       url: c.url,
+      repo: isNonEmptyString(c.repo) ? c.repo : '',
       kind: c.kind,
       take: c.take,
       refuse: c.refuse,
@@ -203,6 +213,10 @@ export function loadTasteCatalog(raw) {
       file: spec.file,
       import: spec.import,
       house: isNonEmptyString(spec.house) ? spec.house : null,
+      repo: isNonEmptyString(spec.repo) ? spec.repo : '',
+      mustContain: Array.isArray(spec.mustContain)
+        ? spec.mustContain.filter((s) => isNonEmptyString(s))
+        : [],
     }
   }
   if (Object.keys(installById).length > 0) {
@@ -300,6 +314,22 @@ export function catalogInstallProblems(catalog, adaptedFrom, io = {}) {
       problems.push(
         `adaptedFrom[${i}] "${id}": ${where} must import ${spec.import} from the installed source. A comment is not an import. motion/react on a house wrapper is not the component.`,
       )
+    }
+    const needles = Array.isArray(spec.mustContain) ? spec.mustContain.filter((s) => isNonEmptyString(s)) : []
+    if (needles.length && exists(spec.file)) {
+      let src = ''
+      try {
+        src = String(read(spec.file, 'utf8') ?? '')
+      } catch {
+        src = ''
+      }
+      for (const needle of needles) {
+        if (!src.includes(needle)) {
+          problems.push(
+            `adaptedFrom[${i}] "${id}": ${spec.file} is not the catalog source (missing ${JSON.stringify(needle)}). Copy from ${spec.repo || spec.add}, do not fork the demo out.`,
+          )
+        }
+      }
     }
   }
   return problems
@@ -465,7 +495,8 @@ export function evaluatorBrief(catalog, classKey) {
   const lock = card.layoutLock ? String(card.layoutLock).slice(0, 280) : ''
   const lines = [
     'COMPREHENSIVE LOOP: SEO, listing/page information, and UX all rise on the same pass. A prettier page with no SEO increment and no inventory increment is not done. Blocking if a title, JSON-LD, crawlable link, ask, sourced figure, required section, or listing fact is worse than HEAD.',
-    'CATALOG is the UX bar. Diagnose the JOB from our shots, then pick replaceWith from the option list below (id + demo URL). Do not invent a house primitive that already lost. A cream box with the catalog name is a defect — open the demo and our control; a person must recognize the same interaction. Growing v3 with a new primitive that still matches the demo is the OPEN set; a second kit (their Inter/purple/demo app) is Frankenstein.',
+    'CATALOG REPOS (copy the source from these GitHub trees; do not rewrite the demo): https://github.com/slev12397/beautiful-ui · https://github.com/starc007/ui-components · https://github.com/swamimalode07/rare-ui · https://github.com/Jakubantalik/transitions.dev · https://github.com/shadcn-ui/ui',
+    'CATALOG is the UX bar. Diagnose the JOB from our shots, then pick replaceWith from the option list below (id + demo URL). Do not invent a house primitive that already lost. A cream box with the catalog name is a defect — open the demo and our control; a person must recognize the same interaction. demoMatch is false if a V3 wrapper hid the catalog control. Growing a new primitive that still matches the demo is allowed; a second kit (their Inter/purple/demo app) is Frankenstein.',
   ]
   if (lock) lines.push(`Layout lock: ${lock}`)
   if (card.add.length) lines.push(`House primitives this class owes: ${card.add.join(', ')}.`)
