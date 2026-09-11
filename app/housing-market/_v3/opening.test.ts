@@ -106,5 +106,6 @@ describe('one marker rule across every series', () => {
     expect(YEAR_OVERLAY_READING.marks).toBe(true)
     expect(YEAR_OVERLAY_READING.restingRead).toBe('last')
     expect(YEAR_OVERLAY_READING.keysToggle).toBe(true)
+    expect('yearPages' in YEAR_OVERLAY_READING).toBe(false)
   })
 })

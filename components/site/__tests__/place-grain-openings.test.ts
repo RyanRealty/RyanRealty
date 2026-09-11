@@ -52,10 +52,12 @@ function tile(partial: Partial<ListingTile> & Pick<ListingTile, 'listingKey'>): 
 describe('city opening', () => {
   const page = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
 
-  it('draws leftover MOS in the city hero, not a listing_tile_mv count', () => {
+  it('draws leftover MOS in the city fold, not a listing_tile_mv count', () => {
     expect(page).toMatch(/buildPlaceMosView\(\{/)
     expect(page).toMatch(/grain: 'city'/)
-    expect(page).toMatch(/<PlaceAreaHero posterSrc=\{stagePosterSrc\} mos=\{placeMos\} \/>/)
+    expect(page).toMatch(/<PlaceAreaHero posterSrc=\{stagePosterSrc\} \/>/)
+    expect(page).toMatch(/<V3MosBars/)
+    expect(page).toMatch(/caption=\{placeMos\.caption\}/)
     expect(page).toMatch(/types=\{alertTypes\}/)
     expect(page).toMatch(/getPlaceOpeningListings\(\{ city: cityName \}\)/)
     expect(page).not.toMatch(/listing_tile_mv[\s\S]{0,80}monthsSupply/)
@@ -357,9 +359,9 @@ describe('place door (SITE-03, city grain only this round)', () => {
 
   it('states the verdict ONCE on the city page, in the caption and not on the door', () => {
     expect(cityPage).toMatch(/cityVerdictCaption/)
-    // The door comes first, then the line that states the supply figure and the
-    // verdict. The door itself carries neither.
-    expect(cityPage.indexOf('<V3PlaceDoor')).toBeLessThan(cityPage.indexOf('place-opening__caption'))
+    // SITE-82: crawlable doors caption leads; MOS owns supply in the fold.
+    // The fallback door still carries neither verdict nor MOS.
+    expect(cityPage).toMatch(/!placeMos && verdictCaption/)
     expect(cityPage).not.toMatch(/verdict=\{placeDoor/)
   })
 

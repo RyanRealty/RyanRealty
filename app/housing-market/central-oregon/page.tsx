@@ -249,6 +249,9 @@ export default async function CentralOregonRegionPage() {
     dropInProgressMonth(priceHistory, currentMonthKey),
   )
   const regionChart = buildRegionMedianChart(chartMonths.months, chartMonths.leftoverUsed)
+  // SITE-88: year isolate lives on THIS route's opening chart only. Do not put
+  // yearPages on YEAR_OVERLAY_READING — that object is shared with city detail
+  // and the annual review.
   // Two market-truth rows feed this section's figures. One stamp only when
   // both rows carry one clock; a mismatch withholds the stamp rather than
   // aging the fresher row (publishInstrumentStamp contract).
@@ -261,7 +264,7 @@ export default async function CentralOregonRegionPage() {
     mosText,
     leftoverStamp ? formatDate(leftoverStamp) : null,
   )
-  const openingChart = regionChart
+  const openingChart = regionChart ? { ...regionChart, yearPages: true } : regionChart
 
   // buildMarketFaq - the single source for the visible FAQ, the FAQPage JSON-LD, and
   // the Dataset variableMeasured. The pulse-or-fallback input is the timeout fallback
