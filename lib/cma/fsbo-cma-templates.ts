@@ -225,7 +225,7 @@ export function composeCmaCoverIntro(facts: FsboCmaMergeFacts): {
  const phone = trim(facts.agentPhone)
  const calendar = trim(facts.calendarLink)
 
- const title = `Pricing report for ${address}`
+ const title = `Comparative market analysis for ${address}`
  const preparedLine =
  owner && reportDate
  ? `Prepared for ${owner} · ${reportDate}`
@@ -236,7 +236,7 @@ export function composeCmaCoverIntro(facts: FsboCmaMergeFacts): {
  : null
  const placeLine = city ? `${city}, Oregon` : null
 
- const body = 'This is a pricing report based on recent nearby sales. It is not an appraisal.'
+ const body = 'This is a comparative market analysis based on recent nearby sales. It is not an appraisal.'
 
  const suggestedLine = suggested ? `Suggested list price: ${suggested}` : null
  const rangeLine = lo && hi ? `Suggested range: ${lo} - ${hi}` : null

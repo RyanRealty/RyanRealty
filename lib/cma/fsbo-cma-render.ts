@@ -76,7 +76,7 @@ export function factsFromCmaSurface(input: {
  * not the document's masthead.
  */
 export function cmaCoverLabelHtml(): string {
-  return `<div class="cover-label" data-template="${CMA_COVER_INTRO_V1}">Price opinion</div>`
+  return `<div class="cover-label" data-template="${CMA_COVER_INTRO_V1}">Comparative market analysis</div>`
 }
 
 export function cmaCoverIntroBlurbHtml(facts: FsboCmaMergeFacts): string {

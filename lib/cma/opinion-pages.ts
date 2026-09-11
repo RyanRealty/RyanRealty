@@ -1247,7 +1247,7 @@ export function nextStepSignatureHtml(a: OpinionPageArgs): string {
     </div>
   </div>
   <p class="fine">${esc(
-    `Prepared ${dateLong(a.generatedAtIso)}${client ? ` for ${client}` : ''}. This is a pricing report. It is not an appraisal.`,
+    `Prepared ${dateLong(a.generatedAtIso)}${client ? ` for ${client}` : ''}. This is a comparative market analysis. It is not an appraisal.`,
   )}</p>`
 }
 

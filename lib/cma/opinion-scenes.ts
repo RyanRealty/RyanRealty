@@ -244,7 +244,7 @@ function nextScene(a: OpinionSceneArgs): string {
         <div class="fine r">${esc(
           `Prepared ${formatDate(a.generatedAtIso, { month: 'long', day: 'numeric', year: 'numeric' })} for ${
             a.clientName ?? a.client?.name ?? 'the owner'
-          }. This is a pricing report. It is not an appraisal.`,
+          }. This is a comparative market analysis. It is not an appraisal.`,
         )}</div>
         <div class="print-out r"><a href="?print=1" data-rr-track="cma-print">Print this report</a></div>
       </div>
