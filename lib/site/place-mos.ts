@@ -42,7 +42,8 @@ export type PlaceMosView = {
   tooltip: { homes: string; sales: string; source: string }
 }
 
-const PACE = new Intl.NumberFormat('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+/** Whole sales-a-month for the visitor face; math stays full precision in values. */
+const PACE = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 
 function asFinitePositive(value: number | null | undefined): number | null {
   if (value == null || !Number.isFinite(value) || value <= 0) return null
@@ -83,14 +84,17 @@ export function placeMosSource(input: {
   mosText: string
   asOf: string | null
 }): string {
+  // Visitor-English only — no leftoverHudKpis / market_metric / slug keys (SITE-82).
+  // Math and grain are unchanged; the string is what V3SourceLine prints.
+  void input.geoSlug
   const n = Math.round(input.impliedSixMonthCloses)
   const body =
-    `leftoverHudKpis via public.market_metric, ${input.grain}:${input.geoSlug}, ` +
-    `segment=detached, ${MOS_PLAIN_LABEL}: ${formatCount(input.homesForSale)} homes for sale vs ` +
+    `Oregon Data Share · detached single-family · ${input.grain}. ` +
+    `${MOS_PLAIN_LABEL}: ${formatCount(input.homesForSale)} homes for sale vs ` +
     `${formatPace(input.monthOfSales)} sales a month (${input.mosText} months). ` +
     `${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE} ` +
-    `n=${formatCount(n)} implied six-month closes.`
-  return input.asOf ? `${body} · updated ${input.asOf}` : body
+    `About ${formatCount(n)} closed sales over six months.`
+  return input.asOf ? `${body} · as of ${input.asOf}` : body
 }
 
 export function buildPlaceMosView(input: {

@@ -74,7 +74,7 @@ export function buildCitySchemas(input: {
       type: 'place',
       placeType: 'City',
       name: cityName,
-      description: `Active single-family homes and live market data for ${cityName}, Oregon.`,
+      description: `Live ${cityName}, Oregon real estate: active single-family homes, months of supply, neighborhoods, recorded plats, and MLS market data from Oregon Data Share.`,
       url: `/cities/${slug}`,
       address: { city: cityName, state: 'OR', country: 'US' },
       containedInPlace: 'Central Oregon',
