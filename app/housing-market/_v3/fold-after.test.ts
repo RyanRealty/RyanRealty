@@ -62,11 +62,11 @@ describe('market instruments open on a claim and a drawing', () => {
     }
   })
 
-  it('SITE-88 year isolate is the region opening chart, not every year overlay', () => {
+  it('SITE-88/101 year isolate is the region and annual year overlays', () => {
     expect(region).toMatch(/yearPages:\s*true/)
+    expect(annual).toMatch(/yearPages:\s*true/)
     expect(hub).not.toMatch(/yearPages/)
     expect(city).not.toMatch(/yearPages/)
-    expect(annual).not.toMatch(/yearPages/)
   })
 
   it('draws MOS on the hub opening instrument, not two leftover tiles above the chart', () => {

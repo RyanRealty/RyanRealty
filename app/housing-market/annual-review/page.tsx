@@ -152,6 +152,7 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Instrument,
+  V3MosBars,
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
@@ -160,6 +161,7 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { AnnualInquirySheet } from './_v3/AnnualInquirySheet.client'
+import './_v3/annual-market.css'
 import {
   CANONICAL_PATH,
   PERIOD_TYPE,
@@ -180,6 +182,7 @@ import {
   buildYearLedger,
   buildAnnualCharts,
   buildAnnualMosChart,
+  buildAnnualPlaceMos,
   overlayYearDetailWithLeftover,
   type MissingCity,
 } from './_v3/annual-sections'
@@ -204,15 +207,16 @@ const NAMED_EXEMPTIONS = REPORT_CITIES.filter((c) => c.label in NON_MLS_CITY_EXE
 // Metadata — unchanged from the KB page.
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
-    title: 'Central Oregon housing market annual review',
+    title: 'Central Oregon housing market annual review — inventory, MOS, and year sales',
     description:
-      'The citable Central Oregon market reference: active inventory, months of supply, and the trailing 12 months of closed sales against the same window a year earlier, for the region and every report city. Live from Oregon Data Share.',
+      'Active single-family inventory and months of supply for Central Oregon right now, plus trailing-12-month closed sales versus the same window a year earlier for Bend, Redmond, Sisters, and every report city. Sourced from Oregon Data Share with a refresh stamp under each section.',
     path: CANONICAL_PATH,
     keywords: [
       'Central Oregon housing market annual review',
-      'Central Oregon real estate market report',
+      'Central Oregon real estate market report 2026',
       'Bend Redmond Sisters home sales year over year',
       'Central Oregon months of supply',
+      'Central Oregon active listings by city',
       'Oregon real estate market data',
       'Ryan Realty',
     ],
@@ -269,6 +273,7 @@ export default async function AnnualReviewPage() {
   // display it, and hand the RAW value to buildMarketFaq so the shared builder
   // repeats the same two steps in the same order.
   const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
+  const mosText = mosRaw == null ? null : formatMonthsOfSupply(mosRaw)
   const verdict = marketVerdict(mosRaw)
 
   // THE OTHER DERIVATION (invariant 6). formatPrice rounds a list price to the
@@ -340,9 +345,20 @@ export default async function AnnualReviewPage() {
   }
   extraFigures.push(...buildPaceTailFigures(publicPace))
   const mosChart = buildAnnualMosChart(hud.active, mosRaw)
+  const placeMos = buildAnnualPlaceMos(
+    hud.active,
+    mosRaw,
+    inventoryAsOf ? formatDate(inventoryAsOf) : null,
+  )
+  // When the MOS drawing publishes, drop restated homes / month tiles AND keep
+  // property-type / pace extras out of the first viewport (SITE-101): the fold
+  // was ending on a four-up KPI strip under the claim.
+  const mosDrawingPublishes = placeMos != null || mosChart != null
   const [firstRegionFigure, ...restRegionFigures] = [
-    ...buildRegionFigures(hud, mosRaw, medianListDisplay),
-    ...extraFigures,
+    ...buildRegionFigures(hud, mosRaw, medianListDisplay, {
+      omitMosTiles: mosDrawingPublishes,
+    }),
+    ...(mosDrawingPublishes ? [] : extraFigures),
   ]
   const inventory = buildInventoryLedger(GRID_CITIES, citySnapshots, {
     regionActive: hud.active,
@@ -360,23 +376,41 @@ export default async function AnnualReviewPage() {
       : null,
   )
   if (publicPace.medianClose != null || publicPace.closedCount != null || publicPace.yoyMedian != null) {
-    // Human clause FIRST (SITE-41): V3SourceLine's visible summary is the shorter of
-    // the pre-comma segment and the first sentence, and "Market Truth mt-v1" leading
-    // the string made that internal cache label the pre-comma winner — a system name
-    // a visitor was never meant to read, surfaced without a click (2026-09-09
-    // evaluator). Reordered so the plain clause is both first and shortest.
+    // Visitor English only (SITE-101): never surface internal cache labels in the
+    // source line. Plain clause first so V3SourceLine's summary picks it.
     closed.source =
       closed.source.replace(/^closed/, 'Closed') +
-      ' 12-month leftover figures are Market Truth mt-v1, labeled by window, not the cache rolling row.'
+      ' Median sale price, homes sold, and year-over-year change use the same 12-month closed-sales window labeled below.'
   }
   const [firstClosedFigure, ...restClosedFigures] = closed.figures
   const year = buildYearLedger(GRID_CITIES, cityDetails)
   const [firstYearRow, ...restYearRows] = year.rows
   const annualCharts = buildAnnualCharts(chartMonths.months, currentMonthKey, chartMonths.leftoverUsed)
-  // SITE-71: MOS two-bar is the opening drawing. The year overlay stays as
-  // the annual insight (scrubber + resting reading) when MOS publishes.
-  const openingChart = mosChart ?? annualCharts.region
-  const openingChartSecondary = mosChart ? annualCharts.region : undefined
+  // SITE-101: year overlay is the Instrument chart with yearPages (InsightPager)
+  // so the year is an object. MOS mounts as V3MosBars `drawing` so stage--split
+  // keeps both in the first viewport and mos-hover reveals counts + source.
+  const yearOverlay = annualCharts.region
+    ? { ...annualCharts.region, yearPages: true as const }
+    : undefined
+  const openingChart = yearOverlay ?? mosChart
+  const openingMosDrawing =
+    yearOverlay && placeMos ? (
+      <V3MosBars
+        id="region-mos"
+        className="annual-market-mos"
+        caption={placeMos.caption}
+        plainLabel={placeMos.plainLabel}
+        homesName={placeMos.homesName}
+        homesLabel={placeMos.homesLabel}
+        homesValue={placeMos.homesValue}
+        salesName={placeMos.salesName}
+        salesLabel={placeMos.salesLabel}
+        salesValue={placeMos.salesValue}
+        source={placeMos.source}
+        asOf={placeMos.asOf}
+        tooltip={placeMos.tooltip}
+      />
+    ) : undefined
 
   // Dataset variableMeasured — region core stats (from buildMarketFaq, so the FAQ
   // and the Dataset never disagree) plus one YoY price-change variable per report
@@ -426,16 +460,12 @@ export default async function AnnualReviewPage() {
     MOS_METHODOLOGY_CLAUSE +
     ' ' +
     MOS_THRESHOLD_CLAUSE
-  // Human clause FIRST (SITE-41, same fix as the closed-sales instrument above): the
-  // internal cache label "Market Truth mt-v1" used to open this trace, and
-  // V3SourceLine's summary derivation picks the SHORTER of the pre-comma segment and
-  // the first sentence — which made that system name the visible clause with no
-  // click (2026-09-09 evaluator). Reordered so the plain clause wins both ways.
+  // Visitor English only (SITE-101): no internal cache labels in the source line.
   const yearTrace =
     'Closed MLS sales through Oregon Data Share, single-family homes, the trailing 12 months against ' +
-    'the same 12-month window one year earlier, one row per report city. Not active inventory. Cache ' +
-    'median days on market may remain on the row. 12-month leftover figures are Market Truth mt-v1, ' +
-    'labeled by window, not the cache rolling row.'
+    'the same 12-month window one year earlier, one row per report city. Not active inventory. ' +
+    'Median sale price, homes sold, and year-over-year change use that same closed-sales window; ' +
+    'median days on market may remain on the cache row.'
 
   // Methodology and coverage: every claim the KB page made in its Methodology
   // section and its exemption caption, the Oregon Data Share citation MarketSources
@@ -453,7 +483,7 @@ export default async function AnnualReviewPage() {
         // documented ground truth. "Single-family homes only" is the verified
         // claim; the unverifiable technical aside is cut per §0 rather than shipped.
         // Also split the pre-existing semicolon into two sentences (brand-voice gate).
-        "Single-family homes only. Year-over-year figures compare the trailing 12 months against the same 12-month window one year earlier, never a partial-year or quarter-versus-year comparison. Report-city year-ledger median, sold count, and YoY are leftover Market Truth cells. A leftover miss omits those three rather than filling from cache.",
+        'Single-family homes only. Year-over-year figures compare the trailing 12 months against the same 12-month window one year earlier, never a partial-year or quarter-versus-year comparison. When a city has no closed-sales median, sold count, or year-over-year change for that window, this page omits those three rather than inventing a zero.',
         'Active inventory and closed sales are two tiers on two clocks: inventory refreshes every 10 to 15 minutes, closed-sales figures every 6 hours. Each section above prints the refresh timestamp of the query behind it, never a render-time clock.',
       ],
     },
@@ -588,18 +618,20 @@ export default async function AnnualReviewPage() {
           <V3Instrument
             id="market"
             level={1}
+            className="annual-market"
             eyebrow={v3Text('Central Oregon annual review')}
             headline={v3Text(
               verdict.kind === 'unknown'
-                ? 'Central Oregon housing market annual review'
-                : `Central Oregon housing market annual review: a ${verdict.label}`,
+                ? 'The year in Central Oregon housing'
+                : mosText
+                  ? `A ${verdict.label} at ${mosText} months of supply`
+                  : `A ${verdict.label}`,
             )}
             figures={[firstRegionFigure, ...restRegionFigures]}
-            /* SITE-71: layout lock — MOS is two named bars, never a 4.9 tile.
-               Year overlay (beautifului-insight) scrubs beside it when MOS
-               publishes; sourced digits swap on the resting reading (beui-number).
-               Lead figures are the two bars plus list and wait; the long tail
-               still folds behind a named summary. */
+            /* SITE-101: one claim (verdict + MOS). MOS is V3MosBars drawing
+               (house-mos hover reveal); year overlay is the chart with
+               yearPages (beautifului-insight). stage--split keeps both in the
+               first viewport. Sourced digits swap on the resting reading. */
             chartFirst
             foldAfter={MARKET_LEAD_FIGURES}
             foldLabel={v3Text('Supply by property type, and how fast homes are selling')}
@@ -609,7 +641,7 @@ export default async function AnnualReviewPage() {
             asOf={inventoryAsOf ?? undefined}
             action={{ label: v3Text('Live Central Oregon market report'), href: REGION_REPORT_PATH }}
             chart={openingChart}
-            chartSecondary={openingChartSecondary}
+            drawing={openingMosDrawing}
           />
         ) : (
           <V3Quiet
@@ -629,20 +661,24 @@ export default async function AnnualReviewPage() {
         {firstInventoryRow ? (
           <V3Ledger
             id="cities-now"
+            className="annual-inventory-ledger"
             eyebrow={v3Text('Report cities')}
             heading={v3Text('Active inventory by city')}
+            note={v3Text(
+              'Bar length is each city’s share of the largest active count in this list. The figure is median list price.',
+            )}
             rows={[firstInventoryRow, ...restInventoryRows]}
             source={v3Text(inventoryTrace)}
             updated={inventory.stamp ? v3Text(formatDate(inventory.stamp)) : undefined}
-            /* THE LIST IS THE COMPARISON (SITE-41). Nine cities by median list price
-               is exactly the "table wearing hairlines" TASTE.md bans past six rows.
-               weight is buildInventoryLedger's own arithmetic, computed off the same
-               median it prints (see that function). */
+            /* SITE-101: weight encodes active_count (heading promised inventory);
+               median stays the printed value; when prints the active count at
+               both widths via annual-market.css. */
             encode="bar"
           />
         ) : (
           <V3Ledger
             id="cities-now"
+            className="annual-inventory-ledger"
             eyebrow={v3Text('Report cities')}
             heading={v3Text('Active inventory by city')}
             rows={[]}

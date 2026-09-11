@@ -1,6 +1,6 @@
 {
   "route": "app/housing-market/annual-review/page.tsx",
-  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). This directory holds NO index.html on purpose. The KB-era annual review never had a bespoke mockup — the retired route file opened with a `// @no-parity` directive saying exactly that — and the visual target now is the six closed patterns in PUBLIC_UI.md, built from components/site/v3, not a picture. ci:mockup-coverage fires only on directories that carry an index.html, so an index-less directory is not a coverage violation, while ci:mockup-parity binds on the `route` field above and now gates this route's component set.",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). This directory holds NO index.html on purpose. The KB-era annual review never had a bespoke mockup \u2014 the retired route file opened with a `// @no-parity` directive saying exactly that \u2014 and the visual target now is the six closed patterns in PUBLIC_UI.md, built from components/site/v3, not a picture. ci:mockup-coverage fires only on directories that carry an index.html, so an index-less directory is not a coverage violation, while ci:mockup-parity binds on the `route` field above and now gates this route's component set.",
   "competitiveTarget": "The citable Central Oregon annual reference. Beat the aggregators' year-in-review posts by publishing the trailing 12 months against the SAME 12-month window one year earlier (never a partial-year or quarter-versus-year comparison), for the region and every report city, with the months-of-supply formula and thresholds printed beside every verdict they produce, a source trace and a real refresh stamp under every section, and Dataset plus FAQPage JSON-LD so an LLM or an analyst can cite a URL and a number. No aggregator publishes the trace under the number, and none states the reason a place has no figure.",
   "note": "Migrated off the KB register onto the v3 barrel 2026-08-12 (P9), and this contract was authored 2026-08-12 as the repair of an UNDECLARED-DELETION defect: the migration shipped first with no parity.json anywhere on disk, so ci:mockup-parity did not bind the route and the KB-era sections it removed were declared nowhere. Rhythm: no two adjacent sections share a pattern. There is NO cap on how many patterns a page uses (the four-pattern cap was killed 2026-08-27) and the pattern set is OPEN, chrome exempt. Order is Breadcrumb, Instrument level 1 (region now), Ledger (city inventory), Instrument (region trailing 12 months), Ledger (city trailing 12 months), Quiet (methodology and coverage), Sheet (broker inquiry), Quiet (questions and outbound edges), Footer. FOUR POPULATIONS, FOUR TRACES, FOUR STAMPS, and no section borrows another's clock: live inventory off market_pulse_live at 10-to-15-minute freshness, closed sales off market_stats_cache period_type='rolling_365d' at 6-hour freshness, each for the region and for the report cities. THE VERDICT IS DERIVED ONCE and it classifies the RAW months-of-supply value, through marketVerdict from lib/market/classify.ts. Display goes through formatMonthsOfSupply (lib/format/months-of-supply.ts), never Math.round, so the printed digits never cross a threshold the raw value did not: a stored 4.02 prints 4.1 rather than the 4.0 that would contradict the verdict beside it and MOS_THRESHOLD_CLAUSE under it. buildMarketFaq receives the same raw figure and repeats the same two steps in the same order, so the Instrument figure, the visible FAQ sentence, and the Dataset variableMeasured are one number and one verdict. EVERY PULSE FIGURE SHIPS ON ITS CONSUMER'S GUARD, `!= null && > 0`, the condition buildMarketFaq applies to that same figure, so the page cannot print a figure the shared builder declined to answer for. ABSENT IS NOT ZERO: a report city with no live row, or a row carrying no published median, is dropped from the Ledger, keeps its door, and states its own reason in the coverage Quiet, read off its own data (no row returned, no active listings, or active with no published median). Tumalo and any other NON_MLS_CITY_EXEMPTIONS place is named with the MLS city its listings file under, never given a structural-stub zero row. Trailing-12-month medians publish in whole dollars through formatWholeDollars rather than formatPrice, because the same figure goes into the Dataset payload as Math.round(medianSalePrice) and formatPrice rounds to the nearest $1,000, which would print $652,000 on screen beside $652,450 in the markup. REPAIRED 2026-08-12 against the fresh-context verifier, four findings, none closed by loosening a gate: (1) THE ONE-PRIMARY PREMISE WAS FALSE AT 390 and is struck from this file and from the route docblock rather than qualified. The header's filled valuation CTA is display:none until 880px, so the opening Instrument's action is now PRIMARY and the page carries its own visible filled control in the first viewport at every width; the level-2 ask stays ghost. (2) THE LEVEL-2 SECTION NOW HAS A DECLARED DEGRADE. It used to render null when the trailing-12-month row published no figure, which both removed a section silently and left the two Ledgers adjacent against the rhythm rule; it renders a Quiet stating which read happened. (3) ONE WINDOW, NOT TWO. The closed-sales trace formats the cache row's date-only period columns in UTC, so the printed window matches the Dataset temporalCoverage built from the same two fields; formatting them in the brand's Pacific zone printed each end one day early. (4) ONE MEDIAN LIST PRICE. The figure is rounded once in the page and that rounded figure feeds the Instrument, the FAQ sentence and the Dataset variable, which previously published the unrounded column value under a rounded number on screen. The city year-over-year variables are also narrowed to cities that earned a rendered row.",
   "deletions": [
@@ -8,7 +8,7 @@
       "component": "KbSell",
       "path": "components/site/kb/KbSell.client.tsx",
       "callSite": "The KB page rendered <KbSell data={{ medianListPrice, medianDaysToPending, soldCount30d }} eyebrow=\"Sell in Central Oregon\" /> as its last content section.",
-      "wentTo": "SPLIT, AND ONE PIECE IS DELETED OUTRIGHT. (1) The ADDRESS-PREFILL CAPTURE FIELD — the `Enter your home address` input and its `Value my home` submit, which pushed /sell/valuation?address=<typed>&from=<pathname> — is DELETED OUTRIGHT. It is the one capture affordance this migration does not carry across, and the visitor now types the address on /sell/valuation instead of before they arrive. The page's one on-page ask is the broker-inquiry Sheet (PUBLIC_UI.md section 1, one primary per viewport), and a second form competing with it in the same scroll would be the defect that rule exists to prevent. (2) THE VALUATION DOOR ITSELF SURVIVES, as a text edge in the closing Quiet, and it carries KbSell's `?from=` parameter unchanged — see the attribution entry below, which is the whole reason this deletion is safe. (3) The THREE PROOF FIGURES: medianListPrice became the region Instrument's `median list price` figure and medianDaysToPending became its `median days to pending` figure, both from the same market_pulse_live row KbSell read. soldCount30d (regionPulse.closedLast30Days) IS NOT RENDERED ANYWHERE ON THIS PAGE, and that is deliberate rather than an oversight: this page's closed-sales population is the trailing-12-month market_stats_cache row, on a 6-hour clock with its own trace, and dropping a 30-day closed count off the 10-to-15-minute pulse tier into the region Instrument would put two closed-sales windows on two clocks in one viewport on a page whose whole subject is the annual window. That figure is published, under its own trace, on /housing-market/central-oregon, which is this page's opening Instrument action and its first closing edge. No read was added or kept for it — closedLast30Days is a column on the single region pulse row the Instrument already needs, so nothing is queried that the page does not render."
+      "wentTo": "SPLIT, AND ONE PIECE IS DELETED OUTRIGHT. (1) The ADDRESS-PREFILL CAPTURE FIELD \u2014 the `Enter your home address` input and its `Value my home` submit, which pushed /sell/valuation?address=<typed>&from=<pathname> \u2014 is DELETED OUTRIGHT. It is the one capture affordance this migration does not carry across, and the visitor now types the address on /sell/valuation instead of before they arrive. The page's one on-page ask is the broker-inquiry Sheet (PUBLIC_UI.md section 1, one primary per viewport), and a second form competing with it in the same scroll would be the defect that rule exists to prevent. (2) THE VALUATION DOOR ITSELF SURVIVES, as a text edge in the closing Quiet, and it carries KbSell's `?from=` parameter unchanged \u2014 see the attribution entry below, which is the whole reason this deletion is safe. (3) The THREE PROOF FIGURES: medianListPrice became the region Instrument's `median list price` figure and medianDaysToPending became its `median days to pending` figure, both from the same market_pulse_live row KbSell read. soldCount30d (regionPulse.closedLast30Days) IS NOT RENDERED ANYWHERE ON THIS PAGE, and that is deliberate rather than an oversight: this page's closed-sales population is the trailing-12-month market_stats_cache row, on a 6-hour clock with its own trace, and dropping a 30-day closed count off the 10-to-15-minute pulse tier into the region Instrument would put two closed-sales windows on two clocks in one viewport on a page whose whole subject is the annual window. That figure is published, under its own trace, on /housing-market/central-oregon, which is this page's opening Instrument action and its first closing edge. No read was added or kept for it \u2014 closedLast30Days is a column on the single region pulse row the Instrument already needs, so nothing is queried that the page does not render."
     },
     {
       "component": "KbSell attribution parameter",
@@ -19,7 +19,7 @@
       "component": "SmoothScrollProvider",
       "path": "components/site/kb/SmoothScrollProvider.client.tsx",
       "callSite": "The KB page wrapped every content section between KbBreadcrumb and KbFooter in <SmoothScrollProvider>.",
-      "wentTo": "NOWHERE, deliberately. It mounts Lenis inertial scroll and drives GSAP ScrollTrigger off it, retiming every scroll the visitor makes on the page. PUBLIC_UI.md section 1 admits motion only where it encodes a state change the visitor caused, and inertial scroll encodes none — it restyles an input the browser already handles, on a reference page whose job is to be read and cited. The v3 barrel ships no scroll hijack of its own, so removing the wrapper leaves native scroll, which is also what the provider itself fell back to under prefers-reduced-motion. Its second job, routing same-document hash anchors through lenis.scrollTo because Lenis can swallow native hash scroll, is a problem that only exists while Lenis is mounted, and it disappears with it. Nothing else on the route depended on the provider: no section on this page is scroll-bound, and the component stays on disk for the KB surfaces that still mount it, so ci:reachable-exports is unaffected."
+      "wentTo": "NOWHERE, deliberately. It mounts Lenis inertial scroll and drives GSAP ScrollTrigger off it, retiming every scroll the visitor makes on the page. PUBLIC_UI.md section 1 admits motion only where it encodes a state change the visitor caused, and inertial scroll encodes none \u2014 it restyles an input the browser already handles, on a reference page whose job is to be read and cited. The v3 barrel ships no scroll hijack of its own, so removing the wrapper leaves native scroll, which is also what the provider itself fell back to under prefers-reduced-motion. Its second job, routing same-document hash anchors through lenis.scrollTo because Lenis can swallow native hash scroll, is a problem that only exists while Lenis is mounted, and it disappears with it. Nothing else on the route depended on the provider: no section on this page is scroll-bound, and the component stays on disk for the KB surfaces that still mount it, so ci:reachable-exports is unaffected."
     },
     {
       "component": "KbBreadcrumb",
@@ -67,7 +67,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, TWICE, and the two never sit adjacent. Region now (id='market', level 1): the verdict headline plus months of supply as TWO NAMED BARS (homes for sale vs a month of sales via buildMosSupplyChart / formatMonthsOfSupply — never a MOS KPI tile), median list price, and median days to pending, every one a door. The year overlay of completed monthly medians is the secondary drawing (beautifului-insight scrubber; sourced digits swap on the resting reading), under one trace from market_pulse_live geo_type='region' geo_slug='central-oregon' carrying MOS_METHODOLOGY_CLAUSE and MOS_THRESHOLD_CLAUSE, stamped with that row's own refreshedAt. Region trailing 12 months (id='closed-sales', level 2): median sale price, homes sold, median days on market, average sale to list, and median dollars per square foot, from market_stats_cache period_type='rolling_365d', each year-over-year change riding its figure's label, under a trace naming the window read off the cache row itself (formatted in UTC, so the printed window and the Dataset temporalCoverage built from the same two date-only columns are one window) and stamped with that row's updatedAt. THE OPENING ASK IS PRIMARY, AND THE PREMISE THAT ONCE MADE IT GHOST IS STRUCK AS FALSE: the header's filled valuation CTA is not carried at every scroll position, it is display:none until 880px and below that sits inside the closed Menu+ overlay, so a ghost opening ask shipped a first viewport with no visible filled control at 390 (PUBLIC_UI.md section 1: the count is of VISIBLE filled controls, and the chrome's CTA counts only where the chrome shows it). The level-2 ask stays ghost because it is a second filled control in no viewport and the page's conversion ask is the Sheet. DECLARED DEGRADES, BOTH: when the region pulse row does not return the opening section is a level-1 Quiet stating that fact instead of an Instrument asserting a verdict; when the trailing-12-month row publishes no figure the level-2 section is a Quiet (id='closed-sales') stating which of the two things happened, the row not returning or the row returning with nothing published, and keeping the city-reports door. That section never simply disappears: V3Instrument types figures as a non-empty tuple, and a vanished section would leave the two Ledgers adjacent, which the rhythm rule forbids.",
+      "section": "Pattern 1, TWICE, and the two never sit adjacent. Region now (id='market', level 1): the verdict headline plus months of supply as TWO NAMED BARS (homes for sale vs a month of sales via buildMosSupplyChart / formatMonthsOfSupply \u2014 never a MOS KPI tile), median list price, and median days to pending, every one a door. The year overlay of completed monthly medians is the secondary drawing (beautifului-insight scrubber; sourced digits swap on the resting reading), under one trace from market_pulse_live geo_type='region' geo_slug='central-oregon' carrying MOS_METHODOLOGY_CLAUSE and MOS_THRESHOLD_CLAUSE, stamped with that row's own refreshedAt. Region trailing 12 months (id='closed-sales', level 2): median sale price, homes sold, median days on market, average sale to list, and median dollars per square foot, from market_stats_cache period_type='rolling_365d', each year-over-year change riding its figure's label, under a trace naming the window read off the cache row itself (formatted in UTC, so the printed window and the Dataset temporalCoverage built from the same two date-only columns are one window) and stamped with that row's updatedAt. THE OPENING ASK IS PRIMARY, AND THE PREMISE THAT ONCE MADE IT GHOST IS STRUCK AS FALSE: the header's filled valuation CTA is not carried at every scroll position, it is display:none until 880px and below that sits inside the closed Menu+ overlay, so a ghost opening ask shipped a first viewport with no visible filled control at 390 (PUBLIC_UI.md section 1: the count is of VISIBLE filled controls, and the chrome's CTA counts only where the chrome shows it). The level-2 ask stays ghost because it is a second filled control in no viewport and the page's conversion ask is the Sheet. DECLARED DEGRADES, BOTH: when the region pulse row does not return the opening section is a level-1 Quiet stating that fact instead of an Instrument asserting a verdict; when the trailing-12-month row publishes no figure the level-2 section is a Quiet (id='closed-sales') stating which of the two things happened, the row not returning or the row returning with nothing published, and keeping the city-reports door. That section never simply disappears: V3Instrument types figures as a non-empty tuple, and a vanished section would leave the two Ledgers adjacent, which the rhythm rule forbids.",
       "blocking": true
     },
     {
@@ -157,7 +157,7 @@
     "MetadataBlock",
     "V3SectionTracker",
     "V3Breadcrumb",
-    "V3Instrument (level 1, region now) — or V3Quiet level 1 when the pulse row is absent",
+    "V3Instrument (level 1, region now) \u2014 or V3Quiet level 1 when the pulse row is absent",
     "V3Ledger (active inventory by city)",
     "V3Instrument (level 2, region trailing 12 months) - or V3Quiet when the trailing-12-month row publishes no figure",
     "V3Ledger (closed sales by city, year over year)",
@@ -167,94 +167,113 @@
     "V3Footer"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts market-report-annual — grok-4.6 via grok CLI, three scorings of the same 1440/375 first-viewport shots plus source-line pair on the lane dev server http://localhost:3221. Builder grok-4.5 did not grade the page.",
+    "evaluatedAt": "2026-09-11",
+    "rubricVersion": "v1-2026-09-10",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts market-report-annual \u2014 grok-4.6 via grok CLI, three scorings of the same 1440/375 first-viewport shots plus source-line / year-page / mos-hover states on the lane dev server http://127.0.0.1:3211. Builder grok-4.5 did not grade the page.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
     "shotSpec": {
-      "routes": ["/housing-market/annual-review"],
-      "viewports": [1440, 375],
-      "states": ["default", "source-line"],
-      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://localhost:3221/housing-market/annual-review on wt/site-71-20260910"
+      "routes": [
+        "/housing-market/annual-review"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default",
+        "source-line",
+        "year-page",
+        "mos-hover"
+      ],
+      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3211/housing-market/annual-review on wt/site-101-annual-20260911"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/market-report-annual/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/market-report-annual/shots/mobile375.png",
-      "sourceDesktop": "design_system/ryan-realty/ui_kits/market-report-annual/shots/source-desktop.png",
-      "sourceMobile375": "design_system/ryan-realty/ui_kits/market-report-annual/shots/source-mobile375.png"
+      "sourceLineDesktop": "design_system/ryan-realty/ui_kits/market-report-annual/shots/source-line-desktop.png",
+      "sourceLineMobile375": "design_system/ryan-realty/ui_kits/market-report-annual/shots/source-line-mobile375.png",
+      "yearPageDesktop": "design_system/ryan-realty/ui_kits/market-report-annual/shots/year-page-desktop.png",
+      "yearPageMobile375": "design_system/ryan-realty/ui_kits/market-report-annual/shots/year-page-mobile375.png",
+      "mosHoverDesktop": "design_system/ryan-realty/ui_kits/market-report-annual/shots/mos-hover-desktop.png",
+      "mosHoverMobile375": "design_system/ryan-realty/ui_kits/market-report-annual/shots/mos-hover-mobile375.png"
     },
-    "shotsHash": "sha256:307e3cdd018faf4fb8012fcf9104fd713a631530dd77979b76fb1226d4fe7063",
-    "scores": [64, 70, 58],
-    "score": 64,
+    "shotsHash": "sha256:6af12518a9cfbce065fcf2fe8ebd0c1a86b665c866d25cc232b71c7afce55864",
+    "scores": [
+      70,
+      74,
+      67
+    ],
+    "score": 70,
     "criteria": {
-      "designQuality": 20,
-      "originality": 16,
-      "interaction": 9,
+      "designQuality": 21,
+      "originality": 18,
+      "interaction": 12,
       "craft": 11,
       "honestyFunction": 8
     },
     "perCriterion": {
-      "design": 20,
-      "originality": 16,
-      "interaction": 9,
+      "design": 21,
+      "originality": 18,
+      "interaction": 12,
       "craft": 11,
       "honesty": 8
     },
-    "beats": "Redfin's Bend / Central Oregon year-in-review recap: we win the sourced months-of-supply two-bar and a same-month 2024/2025/2026 hover; we lose the year as an object you would send, because the captured page is still a cover title plus the shop's default Instrument-then-Ledger stack.",
+    "honestyFunction": 8,
+    "demoMatch": true,
+    "beats": "NAR Housing Statistics annual: this page wins a sourced two-bar months of supply and a year you can page (August 2025 $689K vs August 2026 $665K on the same month); it loses NAR/Case-Shiller density because years are serial, the 2025 peak is clipped by a $680K ceiling, and the 375 fold never completes the monthly axis.",
     "adaptedFrom": [
-      { "id": "house-instrument" },
-      { "id": "house-mos" },
-      { "id": "house-chart" },
-      { "id": "beui-number" }
+      {
+        "id": "house-instrument"
+      },
+      {
+        "id": "house-mos"
+      },
+      {
+        "id": "house-chart"
+      },
+      {
+        "id": "beautifului-insight"
+      },
+      {
+        "id": "beui-number"
+      }
     ],
     "defects": [
       {
-        "section": "#market",
-        "severity": "taste",
-        "finding": "The opening Instrument is a cover title that restates the eyebrow, then two stacked eyebrow-claim-drawing blocks, so 'a balanced market' is a trailing clause and the annual page reads as the shop's default stack rather than one composed year.",
-        "replaceWith": "house-instrument"
-      },
-      {
-        "section": "#cities-now",
-        "severity": "taste",
-        "finding": "Bars encode unlabeled median list price, so Bend and Sisters read as nearly the same length while the heading promised inventory; desktop also drops the active count the 375 rows still print.",
-        "replaceWith": "V3Ledger"
-      },
-      {
-        "section": "#region-median",
-        "severity": "taste",
-        "finding": "The year overlay rewards hover with a three-year card, but there is no scrubber and no paged insight, so beautifului-insight was not used as specified and the MOS bars beside it do not reveal more on tap.",
-        "replaceWith": "beautifului-insight"
-      },
-      {
         "section": "#region-median",
         "severity": "craft",
-        "finding": "The August comparison sits in a shadowed white card, against hairline rules, radius zero, and no elevation on every box.",
-        "replaceWith": "house-chart"
-      },
-      {
-        "section": "#region-mos",
-        "severity": "craft",
-        "finding": "A month of sales prints as 322.0, a trailing tenth that reads as fake precision on a pace figure.",
+        "finding": "On year 2025 the August callout reads $689K while the y-scale stops at $680K, so the peak sits on the plot frame and the series is clipped.",
         "replaceWith": null
       },
       {
         "section": "#region-median",
-        "severity": "craft",
-        "finding": "At 375 the long-view series is a clipped fragment of dots under the claim, so the annual chart does not complete a first read.",
+        "severity": "taste",
+        "finding": "The paged year still annotates as a cream box parked on the series, covering nearby marks; YEAR 3/3 is the InsightPager object, so the reading should live in that card, not on top of the dots.",
+        "replaceWith": "beautifului-insight"
+      },
+      {
+        "section": "#region-median",
+        "severity": "taste",
+        "finding": "At 375 the first viewport cuts the monthly axis and the month scrubber, so the annual chart is a line fragment under the overlay until the reader scrolls.",
         "replaceWith": "house-chart"
+      },
+      {
+        "section": "#market",
+        "severity": "taste",
+        "finding": "Desktop spends a tall empty band under the breadcrumb, then the fold slices $750,000 and 29 with no labels, so the first screen ends on orphaned numerals instead of one finished instrument.",
+        "replaceWith": "house-instrument"
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 83,
-      "evaluatorModel": "claude-sonnet-5",
+      "evaluatedAt": "2026-09-10",
+      "score": 64,
+      "evaluatorModel": "grok-4.6",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:e28ef624d337a839933a0e025ed6c562069ca4aabdc88147a00fd3f08b4a0cb1"
+      "shotsHash": "sha256:307e3cdd018faf4fb8012fcf9104fd713a631530dd77979b76fb1226d4fe7063"
     },
-    "rebaselineReason": "evaluatorModel and shotsHash differ: SITE-41's 83 was claude-sonnet-5 on the four-tile opening; this mark is grok-4.6 on new first-viewport shots after SITE-71 opened the annual review on Instrument with MOS two bars. Same rubricVersion v1-2026-09-08. Table instrument to beat was 31.",
-    "verdict": "The register is the house's, and the two-bar supply drawing plus the same-month year overlay are the only moves a template would not make; everything around them is a stacked market cover. Until the city list encodes inventory, the fold is one Instrument instead of two captions, and the year can be scrubbed rather than tooltipped, this is a correct page that is still dull."
+    "rebaselineReason": "rubricVersion and shotsHash differ: SITE-71's 64 was grok-4.6 on rubric v1-2026-09-08 with shotsHash sha256:307e3cdd\u2026; this SITE-101 mark is grok-4.6 on rubric v1-2026-09-10 against new first-viewport shots after composing one claim, inventory bars by active count, yearPages InsightPager, whole-home MOS pace, and V3MosBars hover reveal. New median 70 still clears the \u226570 accept line.",
+    "verdict": "The fold is finally an instrument: a verdict headline, two named MOS bars, and a year you page, not the sixteen-tile wall this class used to be. InsightPager actually pages 2026\u21922025 and MOS hover prints 1,547 \u00f7 325 plus the Oregon Data Share stamp, so the catalog interaction is in the pixels. It is still not a year you would send: the 2025 series is clipped by a $680K ceiling, the month callout sits on the marks, and at 375 the annual chart loses its axis in the first screen. Information in the fold rose; SEO cannot be judged from these shots."
   }
 }
