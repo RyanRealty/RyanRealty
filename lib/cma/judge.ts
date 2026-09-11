@@ -31,6 +31,7 @@ import { GROK_MODELS, generateGrokStructured, grokConfigured, type GrokMessage }
 import type { CmaComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
 import { setJudgeUnavailableReason } from '@/lib/cma/llm-unavailable'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
+import { SAME_STREET_SIZE_BAND, sameStreetPeer } from '@/lib/pricing/price-anchor'
 import {
   EXCLUSION_BASES,
   checkJudgmentConsistency,
@@ -455,7 +456,7 @@ export async function judgeComps(
       verdicts: judged.verdicts,
     })
     judged.verdicts = restored.verdicts
-    const protectedKeys = new Set(restored.restoredKeys)
+    const protectedKeys = new Set<string>(restored.restoredKeys)
     if (restored.restoredKeys.length > 0) {
       for (const key of restored.restoredKeys) {
         const c = byKey.get(key)
@@ -467,6 +468,36 @@ export async function judgeComps(
         }
         resolvedByCode.push(`${key}: restored, custom/new year-quality peer cannot be dropped as luxury`)
       }
+    }
+
+    // THE HOUSE NEXT DOOR IS NOT A DIFFERENT PRICE TIER (Matt 2026-09-10).
+    // On 23 Benaiah the judge excluded 31 Benaiah — the identical 2,080 sqft
+    // floorplan on the same street, an arm's-length sale that closed above its
+    // last ask — on the basis "sold at $246/sqft, outside the $305 to $362
+    // range this analysis prices the subject in". That band came from the OTHER
+    // comps, so the reasoning was circular: the one sale that would have moved
+    // the number was removed for disagreeing with the sales that set it. The
+    // deterministic selector already exempts a same-street, same-size peer from
+    // its own price cut (lib/pricing/price-anchor.ts); the judge is held to the
+    // same rule. A gap that wide between the twin next door and the wider
+    // neighborhood is the finding, not the noise, and the review page shows it.
+    for (const v of judged.verdicts) {
+      const c = byKey.get(v.listingKey)
+      if (!c) continue
+      if (
+        !sameStreetPeer(
+          { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft ?? 0 },
+          { address: c.address, city: c.city, sqft: c.sqft },
+        )
+      ) {
+        continue
+      }
+      protectedKeys.add(v.listingKey)
+      if (v.tier !== 'exclude') continue
+      v.tier = 'strong'
+      delete v.basis
+      v.reason = `Same street as the subject and within ${Math.round(SAME_STREET_SIZE_BAND * 100)}% of its size. The closest sale there is to this house, so it prices it whatever the wider neighborhood runs at.`
+      resolvedByCode.push(`${v.listingKey}: restored, a same-street peer of the subject's size cannot be dropped on price`)
     }
 
     // Band and strand violators get excluded. Their reason is written after the

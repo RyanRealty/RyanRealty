@@ -1,4 +1,15 @@
 /**
+ * WHO THIS TEXT IS TALKING TO (VOICE.md: "Talk to the reader. 'You' and 'we.'").
+ *
+ * Every sentence in this file is about the READER'S OWN HOME, and the reader is
+ * the owner. It used to write about that home in the third person — "It asked
+ * $615,000 for 29 days" — two lines from "the range homes like yours sold in",
+ * so one paragraph addressed the owner and the next talked past them about an
+ * object (Matt 2026-09-10: "way too impersonal"). Second person throughout.
+ * A comp is somebody else's house and stays in the third person; that text
+ * lives in lib/cma/comp-matrix.ts and lib/cma/client-facing.ts.
+ */
+/**
  * WHICH STORY CHAPTER 1 IS ALLOWED TO TELL.
  *
  * The document's first act was written for one case: an ask far above what the
@@ -63,12 +74,12 @@ export function askAgainstRangeSentence(
   const high = Math.max(rangeLow, rangeHigh)
   if (!(low > 0) || !(high > 0)) return ''
   if (ask > high) {
-    return `The asking price was ${pct1((ask - high) / high)} percent above the top of the range homes like yours sold in.`
+    return `You were asking ${pct1((ask - high) / high)} percent above the top of the range homes like yours sold in.`
   }
   if (ask < low) {
-    return `The asking price was ${pct1((low - ask) / low)} percent below the bottom of the range homes like yours sold in.`
+    return `You were asking ${pct1((low - ask) / low)} percent below the bottom of the range homes like yours sold in.`
   }
-  return 'The asking price was inside the range homes like yours sold in.'
+  return 'You were asking inside the range homes like yours sold in.'
 }
 
 /**
@@ -118,16 +129,16 @@ export function walkTheHouseSentence(cls: AskGapClass, days: number | null): str
   // sell"). Only a price inside or below the range earns the sentence that
   // points away from the number.
   if (cls === 'near-above') {
-    return `That ask was above what the sales support, and it went ${d} days without an offer. We would walk the house before saying more.`
+    return `You were asking above what the sales support, and your home went ${d} days without an offer. We would walk it with you before saying more.`
   }
-  return `${atThatPrice(cls)}, ${d} days without an offer points at something other than the number. We would walk the house before saying what.`
+  return `${atThatPrice(cls)}, ${d} days without an offer points at something other than the number. We would walk it with you before saying what.`
 }
 
-/** "It sat 187 days." — and, off the overpricing story, what it sat without. */
+/** "Your home sat 187 days." — and, off the overpricing story, what it sat without. */
 function satSentence(cls: AskGapClass, days: number | null): string {
   if (days == null || !(days > 0)) return ''
   const n = Math.round(days).toLocaleString('en-US')
-  return cls === 'far-above' ? `It sat ${n} days.` : `It sat ${n} days without an offer.`
+  return cls === 'far-above' ? `Your home sat ${n} days.` : `Your home sat ${n} days without an offer.`
 }
 
 /**
@@ -146,7 +157,7 @@ function medianSentence(cls: AskGapClass, city: string, medianDays: number | nul
 }
 
 /**
- * "It asked $475,000 for 152 days, then $460,000 for 35."
+ * "You asked $475,000 for 152 days, then $460,000 for 35."
  *
  * ROUND-FOUR CLASS B. Chapter 1 opened on the ask the listing came OFF at —
  * the cut made five weeks before it expired — and measured the whole story
@@ -170,14 +181,14 @@ export function askExposureSentence(
   if (!allDated) {
     const asks = runs.map((s) => usd(s.ask))
     return asks.length === 1
-      ? `It asked ${asks[0]}.`
-      : `It asked ${asks.slice(0, -1).join(', then ')}, then ${asks[asks.length - 1]}.`
+      ? `You asked ${asks[0]}.`
+      : `You asked ${asks.slice(0, -1).join(', then ')}, then ${asks[asks.length - 1]}.`
   }
   const parts = runs.map((s, i) => {
     const n = Math.round(s.days!).toLocaleString('en-US')
     return i === 0 ? `${usd(s.ask)} for ${n} days` : `${usd(s.ask)} for ${n}`
   })
-  return `It asked ${parts.join(', then ')}.`
+  return `You asked ${parts.join(', then ')}.`
 }
 
 function usd(n: number): string {
@@ -199,7 +210,7 @@ export function neutralAskReading(input: {
   days: number | null
 }): string {
   const bits: string[] = []
-  if (input.ask != null && input.ask > 0) bits.push(`It asked ${usd(input.ask)}.`)
+  if (input.ask != null && input.ask > 0) bits.push(`You asked ${usd(input.ask)}.`)
   const low = Math.min(input.rangeLow, input.rangeHigh)
   const high = Math.max(input.rangeLow, input.rangeHigh)
   if (low > 0 && high > 0) {
@@ -210,7 +221,7 @@ export function neutralAskReading(input: {
     )
   }
   if (input.days != null && input.days > 0) {
-    bits.push(`It was on the market ${Math.round(input.days).toLocaleString('en-US')} days.`)
+    bits.push(`You were on the market ${Math.round(input.days).toLocaleString('en-US')} days.`)
   }
   return bits.join(' ')
 }
@@ -256,7 +267,7 @@ export function askStoryReading(input: {
   if (input.exposureKnown === false) {
     const days =
       input.days != null && input.days > 0
-        ? `It sat ${Math.round(input.days).toLocaleString('en-US')} days.`
+        ? `Your home sat ${Math.round(input.days).toLocaleString('en-US')} days.`
         : ''
     return [days, medianSentence('near-above', input.city, input.marketMedianDom)]
       .filter((s) => s.trim())

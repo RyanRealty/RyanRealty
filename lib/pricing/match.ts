@@ -7,6 +7,7 @@ import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { communitySlugForSubdivision, isResortCommunity } from '@/lib/cma/resort-guard'
 import { resolvePriceAnchor, sameStreetPeer, type PriceAnchor } from '@/lib/pricing/price-anchor'
 import { bathCountCompatible, distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
+import { roomCountsUsable } from '@/lib/pricing/room-counts'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -26,6 +27,7 @@ import {
   productCompatible,
   resolveIrrigationClass,
   sewerCompatible,
+  customSalePriceFloorOk,
   SAME_NEIGHBORHOOD_TIER_RATIO,
   similarPerformingSubdivision,
   untieredSalePriceTierOk,
@@ -140,6 +142,13 @@ export type SelectedPricingComp = PricingSale & {
   selectionTier: string
   proximity: string | null
   monthsBeforeAsOf: number
+  /**
+   * Which room counts differ from the subject on a sale the selector admitted
+   * anyway (Matt 2026-09-10: adjust inside, wall outside). The document
+   * discloses it, and the accuracy contract reads it instead of re-applying
+   * the wall the selector deliberately opened.
+   */
+  roomDifference?: Array<'beds' | 'baths'> | null
 }
 
 /**
@@ -167,6 +176,9 @@ export type PricingLadderRung = {
 
 export type PricingMatchResult = {
   comps: SelectedPricingComp[]
+  /** The $/sqft tier every comp was graded against, or null when none could be
+   *  resolved — meaning nothing cut a comp on price on this build. */
+  priceAnchor?: PriceAnchor | null
   tiersUsed: string[]
   trace: string[]
   reachedTarget: boolean
@@ -231,6 +243,18 @@ function applesOk(
    * treats both as walls.
    */
   allowFeatureCross = false,
+  /**
+   * True when the sale sits on the subject's OWN GROUND — its plat, its mapped
+   * neighborhood, or its street. A room-count difference is usable only there
+   * (lib/pricing/room-counts.ts).
+   */
+  local = false,
+  /**
+   * True on the subject's OWN recorded plat. Location is the comp there
+   * (Matt 2026-09-10), so the room rule does not run — the size band and the
+   * hard product, water, sewer, lot and resort walls are the whole test.
+   */
+  ownPlat = false,
 ): boolean {
   if (!productCompatible(subject.productClass, sale.productClass)) return false
   const customOrNew = isCustomOrNewSubject(
@@ -248,7 +272,18 @@ function applesOk(
     if (!customBathCompatible(subject.baths, sale.baths)) return false
     if (!customLotCompatible(subject.lotAcres, sale.lotAcres)) return false
   } else {
-    if (!bathCountCompatible(subject.baths, sale.baths)) return false
+    // ONE ROOM RULE for beds and baths alike (Matt 2026-09-10). Same whole
+    // count travels anywhere; one room apart is used only on this home's own
+    // ground and is disclosed; wider is refused. It does not run on the
+    // subject's own plat, where location is the comp and the size band is the
+    // whole test.
+    if (
+      !ownPlat &&
+      !roomCountsUsable({ beds: subject.beds, baths: subject.baths }, { beds: sale.beds, baths: sale.baths }, { local })
+        .ok
+    ) {
+      return false
+    }
     if (!lotCompatible(subject.lotAcres, sale.lotAcres)) return false
   }
   if (!resortCommunityCompatible(subject.subdivision, sale.subdivision)) return false
@@ -342,7 +377,7 @@ function passesTier(
    * $579/sqft downtown sale (Matt 2026-09-10).
    */
   anchor: PriceAnchor | null = null,
-): { ok: boolean; miles: number | null } {
+): { ok: boolean; miles: number | null; roomDifference?: Array<'beds' | 'baths'> | null } {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return { ok: false, miles: null }
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
     return { ok: false, miles: null }
@@ -351,11 +386,15 @@ function passesTier(
   if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return { ok: false, miles: null }
   if (monthsBetween(asOf, sale.closeDate) > tier.monthsBack) return { ok: false, miles: null }
   if (!tier.ignoreCity && sale.citySlug !== subject.citySlug) return { ok: false, miles: null }
-  if (tier.sameSubdivision) {
-    if (!subject.subdivisionNorm || sale.subdivisionNorm !== subject.subdivisionNorm) {
-      return { ok: false, miles: null }
-    }
-  }
+  const onOwnStreet = sameStreetPeer(
+    { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft },
+    { address: sale.address, city: sale.city, sqft: sale.sqft },
+  )
+  if (tier.sameStreetOnly && !onOwnStreet) return { ok: false, miles: null }
+  // The subject's own street is its own ground for every rule below, exactly as
+  // its own plat is.
+  const ownPlat = tier.sameSubdivision === true || tier.sameStreetOnly === true
+  if (tier.sameSubdivision && !samePlat(subject, sale)) return { ok: false, miles: null }
   // THE PARENT LEVEL IS A WALL (Matt 2026-09-09): a plat inside a planned or
   // golf community is priced from that community until the community itself is
   // exhausted. Only the like-community rung and a boundary-exit rung may look
@@ -393,11 +432,43 @@ function passesTier(
 
   const asOfYear = Number(asOf.slice(0, 4))
   const allowFeatureCross = Boolean(tier.whenStarved) && subject.marketArea == null
-  if (!applesOk(subject, sale, tier.apples, asOfYear, allowFeatureCross)) return { ok: false, miles: null }
-  if (!ageOk(subject.yearBuilt, sale.yearBuilt, asOfYear, tier.ageYears)) return { ok: false, miles: null }
-  if (!storyOk(subject.storyClass, sale.storyClass, tier.sameStory)) return { ok: false, miles: null }
-  if (!slopOk(subject.beds, sale.beds, tier.bedSlop)) return { ok: false, miles: null }
-  if (!slopOk(subject.baths, sale.baths, tier.bathSlop)) return { ok: false, miles: null }
+  // THIS HOME'S OWN GROUND: its plat, its mapped neighborhood, or its street.
+  // The room rule opens by one room here and nowhere else (Matt 2026-09-10).
+  const saleArea = sale.marketArea ?? resolveMarketArea(sale.latitude, sale.longitude) ?? null
+  const localSale =
+    (subject.subdivisionNorm != null && sale.subdivisionNorm === subject.subdivisionNorm) ||
+    (subject.marketArea != null && saleArea === subject.marketArea) ||
+    sameStreetPeer(
+      { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft },
+      { address: sale.address, city: sale.city, sqft: sale.sqft },
+    )
+  if (!applesOk(subject, sale, tier.apples, asOfYear, allowFeatureCross, localSale, ownPlat)) {
+    return { ok: false, miles: null }
+  }
+  // LOCATION IS THE COMP, INSIDE THE PLAT (Matt 2026-09-10). "Within the
+  // subdivision, that's the truest sense of comp... we might even comp it out
+  // against a 4-bedroom." A sale in the subject's own recorded plat, inside the
+  // size band, is used whatever its bed count, bath count, vintage or story
+  // count, and the adjustments and the comparability notes carry the rest.
+  // Product type, water, sewer, lot character and the resort wall are hard
+  // everywhere and stay hard here.
+  const rooms = ownPlat
+    ? { ok: true, notes: roomDifferenceNotes(subject, sale) }
+    : roomCountsUsable(
+        { beds: subject.beds, baths: subject.baths },
+        { beds: sale.beds, baths: sale.baths },
+        { local: localSale },
+      )
+  if (!ownPlat && !ageOk(subject.yearBuilt, sale.yearBuilt, asOfYear, tier.ageYears)) {
+    return { ok: false, miles: null }
+  }
+  if (!ownPlat && !storyOk(subject.storyClass, sale.storyClass, tier.sameStory)) {
+    return { ok: false, miles: null }
+  }
+  // Beds and baths are decided by the ONE ROOM RULE inside applesOk above. The
+  // per-tier bedSlop/bathSlop numbers no longer gate anything: a rung cannot be
+  // looser than the room rule, and a rung that was tighter (bedSlop 1 on a
+  // faraway rung) was re-imposing the wall the rule deliberately opened.
 
   const customOrNew = isCustomOrNewSubject(
     {
@@ -489,10 +560,14 @@ function passesTier(
       { address: sale.address, city: sale.city, sqft: sale.sqft },
     )
     const gradeOnOwnPpsf = !ownStreet && (!comp || !sale.subdivisionNorm || subj == null)
-    if (!customPeer && gradeOnOwnPpsf) {
-      if (!untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)) {
-        return { ok: false, miles: null }
-      }
+    if (gradeOnOwnPpsf) {
+      // Custom and new subjects keep the FLOOR and lose the ceiling. A custom
+      // home selling far above its neighborhood's median is what custom means;
+      // being priced from a sale far below it is not. See customSalePriceFloorOk.
+      const ok = customPeer
+        ? customSalePriceFloorOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)
+        : untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)
+      if (!ok) return { ok: false, miles: null }
     }
   }
 
@@ -503,7 +578,7 @@ function passesTier(
   if (tier.maxMiles != null) {
     if (miles == null || miles > tier.maxMiles) return { ok: false, miles }
   }
-  return { ok: true, miles }
+  return { ok: true, miles, roomDifference: rooms.notes.length > 0 ? rooms.notes : null }
 }
 
 const GLA_BRACKET_BAND = 0.25
@@ -533,6 +608,50 @@ function saleMiles(subject: PricingSubject, sale: PricingSale): number {
   )
 }
 
+/**
+ * The oldest sale the GLA bracket may reach for. Matches COMP_MAX_AGE_MONTHS in
+ * lib/cma/contract.ts, which hard-fails a build carrying anything older.
+ */
+const BRACKET_MAX_AGE_MONTHS = 24
+
+/**
+ * IS THIS SALE IN THE SUBJECT'S OWN PLAT? (Matt 2026-09-10: "location is the
+ * primary thing... within the subdivision, that's the truest sense of comp.")
+ *
+ * The RECORDED plat polygon first, from the county boundary both the subject
+ * and the sale were resolved against, and the MLS SubdivisionName only as a
+ * fallback. The MLS field is typed by a listing agent and 31 of 330 priced
+ * subjects carry a placeholder or a blank in it.
+ *
+ * MEASURED, because the first version of this comment guessed and was wrong.
+ * Recorded-plat coverage over the queue's own subjects on 2026-09-10: 120 of
+ * the 299 that name a subdivision also sit inside a recorded plat, and 5 of
+ * the 31 that name none do. So the polygon rescues five documents, not the
+ * hundred the ladder's skip counter suggested. It is still the better key
+ * where both are known — a polygon does not depend on how someone typed a
+ * tract name — and it costs nothing, because select.ts already resolves these
+ * slugs for the adjacent-plat rung.
+ */
+function samePlat(subject: PricingSubject, sale: PricingSale): boolean {
+  if (subject.subdivisionSlug && sale.subdivisionSlug) return sale.subdivisionSlug === subject.subdivisionSlug
+  if (subject.subdivisionNorm) return sale.subdivisionNorm === subject.subdivisionNorm
+  return false
+}
+
+/** Which room counts differ, on a sale the plat rung took regardless. */
+function roomDifferenceNotes(subject: PricingSubject, sale: PricingSale): Array<'beds' | 'baths'> {
+  const notes: Array<'beds' | 'baths'> = []
+  const w = (n: number | null | undefined) =>
+    n == null || !Number.isFinite(n) || n <= 0 ? null : Math.floor(n)
+  const sb = w(subject.beds)
+  const cb = w(sale.beds)
+  if (sb != null && cb != null && sb !== cb) notes.push('beds')
+  const sa = w(subject.baths)
+  const ca = w(sale.baths)
+  if (sa != null && ca != null && sa !== ca) notes.push('baths')
+  return notes
+}
+
 function bracketEligible(
   subject: PricingSubject,
   sale: PricingSale,
@@ -546,6 +665,12 @@ function bracketEligible(
   if (subject.listingKey && sale.listingKey === subject.listingKey) return false
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) return false
   if (sale.closeDate >= asOf) return false
+  // THE BRACKET SWAP OBEYS THE SAME 24-MONTH WALL AS EVERY RUNG. It checked
+  // only that the sale was not in the future, so on a custom or new subject —
+  // whose pool reaches back thirty months — it could import a sale the accuracy
+  // contract then hard-fails as older than 24 months, and the whole build died
+  // on a comp the swap itself had chosen (cma-63531-gentry, 2026-09-10).
+  if (monthsBetween(asOf, sale.closeDate) > BRACKET_MAX_AGE_MONTHS) return false
   if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return false
   const asOfYear = Number(asOf.slice(0, 4))
   if (!applesOk(subject, sale, 'product_lot', asOfYear)) return false
@@ -584,12 +709,18 @@ function bracketEligible(
   if (!glaWithinBand(subject.sqft, sale.sqft, GLA_BRACKET_BAND)) return false
   // The bracket may not import a different price tier. A swap is a size fix,
   // not a licence to reach across town.
-  if (!customOrNew) {
+  {
     const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
     const subjectPpsf = subj?.medianPpsf ?? anchor?.ppsf ?? null
     const subjectN = subj?.n ?? anchor?.n ?? 0
     const ratio = subject.marketArea != null ? SAME_NEIGHBORHOOD_TIER_RATIO : undefined
-    if (!untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, ratio)) return false
+    // Custom and new keep the FLOOR here too. Skipping the cut outright let the
+    // bracket swap reach past the ladder and import the cheap sale the ladder
+    // itself had just refused.
+    const ok = customOrNew
+      ? customSalePriceFloorOk(subjectPpsf, subjectN, sale.closePpsf, ratio)
+      : untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, ratio)
+    if (!ok) return false
   }
   if (wantLarger) return sale.sqft > subject.sqft
   return sale.sqft < subject.sqft
@@ -699,6 +830,8 @@ export function walkPricingLadder(
   )
   const tiers = opts.tiers ?? pricingTierLadder({ customOrNew: customLadder })
   const byKey = new Map<string, SelectedPricingComp>()
+  /** Sales already held, so one closed sale cannot enter a set twice. */
+  const bySale = new Set<string>()
   const rungs: PricingLadderRung[] = []
   const tiersUsed: string[] = []
   const trace: string[] = [
@@ -745,8 +878,8 @@ export function walkPricingLadder(
         ? 'the subject is not inside a golf or resort community'
         : tier.likeCommunity && byKey.size >= PRICING_MIN_COMPS
         ? 'the community supplied the minimum, so no peer community was needed'
-        : tier.sameSubdivision && !subject.subdivisionNorm
-        ? 'the subject has no subdivision on its MLS row'
+        : tier.sameSubdivision && !subject.subdivisionSlug && !subject.subdivisionNorm
+        ? 'no recorded plat holds the subject, and its MLS row names none either'
         : tier.adjacentSubdivision && !(subject.adjacentSubdivisionSlugs?.length)
           ? 'no plat next to the subject\'s is known'
           : tier.crossBoundary && !subject.marketArea
@@ -773,9 +906,21 @@ export function walkPricingLadder(
     let added = 0
     for (const sale of pool) {
       if (byKey.has(sale.listingKey)) continue
-      const { ok, miles } = passesTier(subject, sale, tier, asOf, cells, priceAnchor)
+      // ONE SALE, ONE ROW. A relisting of the same closed transaction carries a
+      // new listing key, so keying on that alone lets one sale into a set twice
+      // — once in the median and again at an end of the printed range. Address
+      // plus city plus close price: two different homes do not close at the
+      // exact same price at the same street address, and a duplicate always
+      // agrees with itself on price even when it disagrees on square footage.
+      const saleKey = `${sale.address.trim().toLowerCase()}|${(sale.city ?? '').trim().toLowerCase()}|${Math.round(sale.closePrice)}`
+      if (bySale.has(saleKey)) continue
+      const { ok, roomDifference } = passesTier(subject, sale, tier, asOf, cells, priceAnchor)
       if (!ok) continue
-      byKey.set(sale.listingKey, toSelected(subject, sale, asOf, tier.name))
+      byKey.set(sale.listingKey, {
+        ...toSelected(subject, sale, asOf, tier.name),
+        roomDifference: roomDifference ?? null,
+      })
+      bySale.add(saleKey)
       added++
     }
     rungs.push({
@@ -813,5 +958,14 @@ export function walkPricingLadder(
   } else {
     trace.push(`Final set: ${comps.length} closed sales from ${tiersUsed.join(', ') || 'none'}.`)
   }
-  return { comps, tiersUsed, trace, reachedTarget, starved: !reachedTarget, rungs, ...(ruralSplits ? { ruralSplits } : {}) }
+  return {
+    comps,
+    tiersUsed,
+    trace,
+    reachedTarget,
+    starved: !reachedTarget,
+    rungs,
+    priceAnchor,
+    ...(ruralSplits ? { ruralSplits } : {}),
+  }
 }

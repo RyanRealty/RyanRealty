@@ -40,6 +40,8 @@ export type PricingTier = {
    * step above the subject's plat and below the designated neighborhood.
    */
   sameCommunity?: boolean
+  /** Only sales on the subject's own street, at close to its size. Runs first. */
+  sameStreetOnly?: boolean
   /**
    * When the community itself is exhausted at two years, another community of
    * the same kind (Matt 2026-09-09: "a Tetherow home's substitute is a Broken
@@ -59,7 +61,7 @@ export type PricingTier = {
 
 export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): PricingTier[] {
   const customOrNew = opts.customOrNew === true
-  const sub = (months: number, sqftBand = 0.15, suffix = ''): PricingTier => ({
+  const sub = (months: number, sqftBand = PLAT_SQFT_BAND, suffix = ''): PricingTier => ({
     name: `subdivision-${months}mo${suffix}`,
     monthsBack: months,
     maxMiles: null,
@@ -71,6 +73,28 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     sameStory: true,
     bedSlop: 1,
     bathSlop: 1,
+  })
+  /**
+   * The subject's own street, at the plat's size band, across the full window.
+   * `sameStreetOnly` is matched in passesTier by lib/pricing/price-anchor.ts's
+   * sameStreetPeer, which already decides what "same street, same size" means
+   * for the price anchor and the recommendation ceiling. One definition.
+   */
+  const street = (months: number): PricingTier => ({
+    name: `own-street-${months}mo`,
+    monthsBack: months,
+    maxMiles: null,
+    sameSubdivision: false,
+    similarSubdivision: false,
+    sameStreetOnly: true,
+    apples: 'utilities',
+    sqftBand: PLAT_SQFT_BAND,
+    ageYears: null,
+    sameStory: false,
+    bedSlop: null,
+    bathSlop: null,
+    disclosure:
+      'These sales are on your own street, at close to your size. They are the nearest thing to a sale of your home and they are used before anything else.',
   })
   const near = (miles: number, months: number, apples: AppleStrictness): PricingTier => ({
     name: `nearby-${miles}mi-${months}mo`,
@@ -195,16 +219,25 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       'This home sits in a golf or resort community, and that community did not have enough of its own sales even across two years. The sales below come from comparable golf and resort communities in Central Oregon rather than from ordinary neighborhoods nearby, because that is the market a buyer of this home shops against.',
   })
   return [
+    // YOUR OWN STREET, FIRST, WHATEVER THE MLS CALLS THE TRACT (Matt
+    // 2026-09-10: "We want to look specifically at that address or in that
+    // subdivision"). 23 Benaiah carries "N/A" for a subdivision, so every plat
+    // rung below skips, and 31 Benaiah — the identical 2,080 sqft plan next
+    // door — was only reachable on the five-mile eighteen-month rung, eight
+    // sales deep. Whether it made the set at all then depended on how fast the
+    // rings above filled, and it moved between builds. A street is a place;
+    // this rung finds it before any of that.
+    street(24),
     sub(3),
     sub(6),
     sub(9),
     // Same street, different floorplan, before the next tract. Hayloft 2500 vs
     // 1927 is 23% — inside 30%, outside the tight 15% band.
-    sub(3, 0.3, '-wide'),
-    sub(6, 0.3, '-wide'),
-    sub(9, 0.3, '-wide'),
+    sub(3, PLAT_WIDE_SQFT_BAND, '-wide'),
+    sub(6, PLAT_WIDE_SQFT_BAND, '-wide'),
+    sub(9, PLAT_WIDE_SQFT_BAND, '-wide'),
     sub(12),
-    sub(12, 0.3, '-wide'),
+    sub(12, PLAT_WIDE_SQFT_BAND, '-wide'),
     // TIME BEFORE LOCATION, ALL THE WAY TO TWO YEARS INSIDE THE PLAT (Matt
     // 2026-09-09: exhaust the boundary out to 24 months before leaving it).
     sub(18),
@@ -328,14 +361,14 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       sameSubdivision: false,
       similarSubdivision: false,
       apples: 'product_lot',
-      sqftBand: 0.45,
+      sqftBand: WIDENED_SQFT_BAND,
       ageYears: null,
       sameStory: false,
       bedSlop: null,
       bathSlop: null,
       whenStarved: true,
       disclosure:
-        'The bounded search did not reach the minimum number of sales this price needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 45% of this home in size, up to 10 miles out, sales from outside the community this home sits in, where it sits in one, and where it sits outside every mapped neighborhood, sales across a highway or a river from it. An older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening when it is explained.',
+        'The bounded search did not reach the minimum number of sales this price needs, so it was widened one more step rather than left unanswered: sales up to 24 months old, within 25% of this home in size, up to 10 miles out, sales from outside the community this home sits in, where it sits in one, and where it sits outside every mapped neighborhood, sales across a highway or a river from it. An older sale carries a larger market-conditions adjustment and less weight, and a wider search means a wider range. Fannie Mae B4-1.3-08 permits the widening when it is explained.',
     },
   ]
 }
@@ -359,3 +392,33 @@ export const BOUNDARY_EXIT_BELOW = 5
 export const FACTS_STANDALONE_MIN = BOUNDARY_EXIT_BELOW
 /** Cap the priced set. Extra comps past ten dilute the median. */
 export const PRICING_MAX_COMPS = 10
+/**
+ * How far the subject's own ground reaches for the POOL read (not for any
+ * rung). Every containment rung — the plat, the plats beside it, the
+ * community, and the 1- and 2-mile rings — sits inside three miles, so this is
+ * the box those rungs need in order to see the whole window instead of
+ * whatever fit under the citywide row cap. See selectPricingFactsNear in
+ * lib/data/pricing/facts.ts for what that cap was costing.
+ */
+export const LOCAL_POOL_RADIUS_MILES = 3
+/**
+ * The last-resort rung's size band (Matt 2026-09-10). Was 45%, which let a
+ * sale half again the subject's size price it while only half the gap was
+ * adjusted back. See WIDENED_SQFT_BAND in lib/cma/comp-tiers.ts.
+ */
+export const WIDENED_SQFT_BAND = 0.25
+/**
+ * THE SIZE BAND INSIDE THE SUBJECT'S OWN PLAT (Matt 2026-09-10).
+ *
+ * "Location is primary, and within the subdivision, that's the truest sense of
+ * comp. When we can get close comps, even if they're a bedroom off one way or
+ * another, a bathroom off one way or another, 500 sq ft more or less, we want
+ * to try and use stuff in that subdivision first."
+ *
+ * Five hundred feet on an ordinary Central Oregon home is about a quarter of
+ * it, so the plat rungs carry 25% and the wider same-street rungs 35%. Inside
+ * the plat this band is the ONLY dimensional test: beds, baths, vintage and
+ * story count are all disclosed rather than refused (lib/pricing/match.ts).
+ */
+export const PLAT_SQFT_BAND = 0.25
+export const PLAT_WIDE_SQFT_BAND = 0.35

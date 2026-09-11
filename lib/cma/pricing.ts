@@ -19,8 +19,16 @@
  * justify it from the data, do not make it").
  */
 
-import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
+import type {
+  CmaAdjustedComp,
+  CmaComp,
+  CmaMarketContext,
+  CmaPricing,
+  CmaPricingStreetAnchor,
+  CmaSubject,
+} from '@/lib/cma/types'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { SAME_STREET_PREMIUM_MAX, sameStreetPeer } from '@/lib/pricing/price-anchor'
 import { landProduct, priceLandSubject } from '@/lib/cma/land-pricing'
 import type { CmaSiteData } from '@/lib/cma/county'
 
@@ -108,6 +116,73 @@ export function adjustComps(
     }
     return out
   })
+}
+
+/**
+ * THE HOUSE NEXT DOOR IS THE EVIDENCE (Matt 2026-09-10).
+ *
+ * 23 Benaiah recommended $653,000 off six sales in Tanglewood, Gardenside and
+ * Cessna at $305 to $349 a square foot, while 31 Benaiah — the identical 2,080
+ * sqft plan on the same street, an arm's-length sale that closed above its last
+ * ask — had sold at $246. A sale on the subject's own street at the subject's
+ * own size is not one comp among several: it is the closest thing to a sale of
+ * this house that exists. It anchors the number, and the other sales bracket it
+ * rather than set it.
+ *
+ * A ceiling, not a replacement. The recommendation may sit up to
+ * SAME_STREET_PREMIUM_MAX above the anchor for condition and updates, and no
+ * further without a person saying so. A broker priceOverride is deliberate and
+ * untouched.
+ *
+ * Idempotent, and it must be: computePricing applies it, then the engine cover
+ * re-derives the tiers, then priceCmaSet applies it again. The first `before`
+ * survives so the sentence names the whole distance once instead of half of it
+ * twice.
+ */
+export function applyStreetAnchor(
+  ctx: {
+    subject: CmaSubject
+    adjusted: CmaAdjustedComp[]
+    priceOverride?: number | null
+    notes: string[]
+    /** A previous application, when one has already run on this pricing. */
+    prior?: CmaPricingStreetAnchor | null
+  },
+  tiers: { conservative: number; recommended: number; highEnd: number },
+): CmaPricingStreetAnchor | null {
+  const subjectSqft = ctx.subject.sqft ?? 0
+  if (ctx.priceOverride != null || subjectSqft <= 0) return null
+  const peers = ctx.adjusted.filter((c) =>
+    sameStreetPeer(
+      { streetAddress: ctx.subject.streetAddress, city: ctx.subject.city, sqft: subjectSqft },
+      { address: c.address, city: c.city, sqft: c.sqft },
+    ),
+  )
+  if (peers.length === 0) return null
+  const prices = peers.map((c) => c.adjustedPrice).filter((v) => v > 0)
+  if (prices.length === 0) return null
+  const anchor = median(prices)
+  const ceiling = round5000(anchor * (1 + SAME_STREET_PREMIUM_MAX))
+  if (!(anchor > 0) || tiers.recommended <= ceiling) return ctx.prior ?? null
+  const before = ctx.prior?.before ?? tiers.recommended
+  const addresses = peers.map((c) => c.address)
+  const list = addresses.join(', ')
+  const sentence =
+    peers.length === 1
+      ? `${list} is the same size as this home and sits on the same street. It sold for $${Math.round(anchor).toLocaleString()} after adjusting for date and size, so the recommended list is held to $${ceiling.toLocaleString()} rather than the $${before.toLocaleString()} the wider set of sales supported.`
+      : `${list} are the same size as this home and sit on the same street. They sold for a median of $${Math.round(anchor).toLocaleString()} after adjusting for date and size, so the recommended list is held to $${ceiling.toLocaleString()} rather than the $${before.toLocaleString()} the wider set of sales supported.`
+  if (!ctx.notes.some((n) => n.includes('sits on the same street') || n.includes('sit on the same street'))) {
+    ctx.notes.push(sentence)
+  }
+  return {
+    addresses,
+    anchor: Math.round(anchor),
+    ceiling,
+    floor: round5000(anchor),
+    before,
+    after: ceiling,
+    sentence,
+  }
 }
 
 export function computePricing(
@@ -261,6 +336,25 @@ export function computePricing(
   if (conservative > recommended) conservative = recommended
   if (highEnd < recommended) highEnd = recommended
 
+  // THE HOUSE NEXT DOOR IS THE EVIDENCE (Matt 2026-09-10). Applied here so a
+  // direct caller of computePricing gets it, and AGAIN after the engine cover
+  // in priceCmaSet, which re-derives the tiers from the range rule and would
+  // otherwise undo it. The function is idempotent and keeps the first
+  // `before`, so a reader is told the whole distance once.
+  const streetAnchor = applyStreetAnchor(
+    { subject, adjusted, priceOverride, notes },
+    { conservative, recommended, highEnd },
+  )
+  if (streetAnchor) {
+    recommended = streetAnchor.after
+    // The twin is the floor, not the number. Pulling conservative to the
+    // recommendation instead would print the number at the bottom of its own
+    // range, which is exactly what Matt objected to on 655 12th.
+    conservative = Math.min(conservative, streetAnchor.floor)
+    if (highEnd < recommended) highEnd = recommended
+  }
+
+
   // Confidence per skill step 9: comp count, dispersion, recency, convergence.
   const medianCompAgeMonths = median(adjusted.map((c) => c.monthsSinceClose))
 
@@ -297,7 +391,7 @@ export function computePricing(
   }
 
   // The dispersion guard: floor confidence and flag for broker review.
-  let needsReview = false
+  let needsReview = streetAnchor != null
   let reviewReason: string | null = null
   if (highDispersion) {
     confidence = 'Supportable'
@@ -334,6 +428,7 @@ export function computePricing(
     highEnd,
     valueLow: conservative,
     valueHigh: highEnd,
+    streetAnchor,
     predictedClose: null,
     confidence,
     confidenceReason,

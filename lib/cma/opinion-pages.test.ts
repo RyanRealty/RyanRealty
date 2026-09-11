@@ -405,19 +405,19 @@ const EXPOSURE = {
   ],
   dominant: 500000,
   final: 460000,
-  sentence: 'It asked $500,000 for 152 days, then $460,000 for 35.',
+  sentence: 'You asked $500,000 for 152 days, then $460,000 for 35.',
 }
 
 function withAudit(expiredAudit: unknown): OpinionPageArgs {
   return { ...args(), expiredAudit: expiredAudit as OpinionPageArgs['expiredAudit'] }
 }
 
-const FINDINGS = [{ lens: 'pricing' as const, fact: 'It sat 187 days.', meaning: '' }]
+const FINDINGS = [{ lens: 'pricing' as const, fact: 'Your home sat 187 days.', meaning: '' }]
 
 describe('chapter one reads the ask that ran the clock', () => {
   it('names both asks and their days', () => {
     const a = withAudit({ findings: FINDINGS, askExposure: EXPOSURE, finalCycle: { days: 187 } })
-    expect(whatHappenedHeading(a)).toBe('It asked $500,000 for 152 days, then $460,000 for 35.')
+    expect(whatHappenedHeading(a)).toBe('You asked $500,000 for 152 days, then $460,000 for 35.')
   })
 
   it('measures the gap off the dominant ask, not the final one', () => {
@@ -431,7 +431,7 @@ describe('chapter one reads the ask that ran the clock', () => {
   it('tells no causal story when the row does not say which ask ran the clock', () => {
     const a = withAudit({ findings: FINDINGS, finalCycle: { days: 187 } })
     expect(storyClassFor(a)).toBeNull()
-    expect(whatHappenedHeading(a)).toBe('It asked $460,000 and did not sell.')
+    expect(whatHappenedHeading(a)).toBe('You asked $460,000 and did not sell.')
   })
 
   it('goes neutral when the ask sat below the bottom of the range', () => {
@@ -457,7 +457,7 @@ describe('chapter one reads the ask that ran the clock', () => {
       },
     }
     expect(storyClassFor(a)).toBe('neutral')
-    expect(whatHappenedHeading(a)).toBe('It is listed at $460,000.')
+    expect(whatHappenedHeading(a)).toBe('Your home is listed at $460,000.')
   })
 })
 

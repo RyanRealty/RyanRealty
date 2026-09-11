@@ -528,14 +528,15 @@ export function buildAskExposure(args: {
   for (const seg of segments) if (seg.days > dominant.days) dominant = seg
   const final = segments[segments.length - 1]!
 
+  // Second person: this is the reader's own listing (VOICE.md, Matt 2026-09-10).
   const sentence =
     segments.length === 1
-      ? `The listing asked ${usd(dominant.ask)} for all ${total.toLocaleString('en-US')} days it was on the market.`
-      : `The listing asked ${usd(dominant.ask)} for ${dominant.days.toLocaleString(
+      ? `You asked ${usd(dominant.ask)} for all ${total.toLocaleString('en-US')} days you were on the market.`
+      : `You asked ${usd(dominant.ask)} for ${dominant.days.toLocaleString(
           'en-US',
-        )} of its ${total.toLocaleString('en-US')} days, ${pct1(
+        )} of your ${total.toLocaleString('en-US')} days, ${pct1(
           dominant.sharePct,
-        )} percent of the time it was on the market. It came off at ${usd(final.ask)}, which it held for ${final.days.toLocaleString(
+        )} percent of the time you were on the market. You came off at ${usd(final.ask)}, which you held for ${final.days.toLocaleString(
           'en-US',
         )}.`
 
@@ -689,7 +690,7 @@ export function buildFailureFindings(args: {
   if (history.failedAttemptsCount >= 2) {
     findings.push({
       lens: 'attempts',
-      fact: `This property has been listed ${history.attemptsCount} times, with ${history.failedAttemptsCount} attempts ending without a sale${history.peakAskingPrice ? `, peaking at ${usd(history.peakAskingPrice)}` : ''}.`,
+      fact: `You have listed ${history.attemptsCount} times, with ${history.failedAttemptsCount} attempts ending without a sale${history.peakAskingPrice ? `, peaking at ${usd(history.peakAskingPrice)}` : ''}.`,
       meaning: '',
     })
   }
@@ -1026,11 +1027,27 @@ export function applyFailedAskCap(
     return none
 
   const uncapped = pricing.recommended
+  // What each tier was worth ON ENTRY to this call. A tier the ceiling did not
+  // actually move is not an application of the ceiling, whatever a previous
+  // call recorded — the same-street anchor (lib/cma/pricing.ts) can hold the
+  // recommendation below this ceiling, and the clamp used to claim that move
+  // and print the failed ask as the reason for it (23 Benaiah, 2026-09-10).
+  const entry = {
+    conservative: pricing.conservative,
+    recommended: pricing.recommended,
+    highEnd: pricing.highEnd,
+  } as const
+  const ceilFor: Record<CmaPricingClampTier, number> = {
+    conservative: consCeil,
+    recommended: recCeil,
+    highEnd: highCeil,
+  }
   // What the EVIDENCE supported, not what a previous application of this same
   // ceiling left behind: `lib/pricing/estimate.ts` clips to the bare ask before
   // `lib/cma/build.ts` re-applies with the real off-market date, and a reader
   // must be told the whole distance once rather than half of it twice.
   const baseline = (tier: CmaPricingClampTier, current: number) => priorBefore.get(tier) ?? current
+  const boundHere = (tier: CmaPricingClampTier) => entry[tier] > ceilFor[tier]
   const baselines = {
     conservative: baseline('conservative', pricing.conservative),
     recommended: baseline('recommended', pricing.recommended),
@@ -1042,7 +1059,7 @@ export function applyFailedAskCap(
   const applications: CmaPricingClampApplication[] = (
     ['conservative', 'recommended', 'highEnd'] as const
   )
-    .filter((tier) => pricing[tier] !== baselines[tier])
+    .filter((tier) => boundHere(tier) && pricing[tier] !== baselines[tier])
     .map((tier) => ({
       tier,
       before: baselines[tier],

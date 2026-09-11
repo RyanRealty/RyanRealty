@@ -409,7 +409,7 @@ describe('print CMA price-opinion spine', () => {
 describe('immersive CMA price-opinion spine', () => {
   it('uses the same chapters and tap-pin hooks', () => {
     const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
-    expect(html).toContain('Price opinion · 850 Quince')
+    expect(html).toContain('Comparative market analysis · 850 Quince')
     expect(html).toContain('$475,000')
     expect(html).toContain('id="what-its-worth"')
     expect(html).toContain('id="competition"')

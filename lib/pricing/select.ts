@@ -26,13 +26,14 @@ import {
   getListingWaterSource,
   getPricingMarketIndex,
   getPricingSubdivisionCells,
+  selectPricingFactsNear,
   selectPricingFactsPool,
 } from '@/lib/data/pricing/facts'
 import { estimateClosePrice, pricingSaleToCmaComp } from '@/lib/pricing/estimate'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CompSelection } from '@/lib/cma/comps'
 import { emptyExclusions } from '@/lib/cma/comp-trace'
-import { FACTS_STANDALONE_MIN, PRICING_MIN_COMPS, PRICING_TARGET_COMPS } from '@/lib/pricing/ladder'
+import { FACTS_STANDALONE_MIN, LOCAL_POOL_RADIUS_MILES, PRICING_MIN_COMPS, PRICING_TARGET_COMPS } from '@/lib/pricing/ladder'
 import { walkPricingLadder, type PricingMatchResult, type PricingSubject } from '@/lib/pricing/match'
 import type { CmaMarketContext, CmaPricing } from '@/lib/cma/types'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
@@ -132,7 +133,29 @@ export async function selectPricingComps(
   const closeAfter = new Date(asOf)
   closeAfter.setMonth(closeAfter.getMonth() - (customOrNew ? 30 : 18))
   const sqft = pricingSubject.sqft
-  const [pool, ruralPool, cells, ring] = await Promise.all([
+  // THE SUBJECT'S OWN GROUND, COMPLETE, ALONGSIDE THE CITYWIDE READ (Matt
+  // 2026-09-10). The citywide pool below is ordered newest-first and capped at
+  // 800 rows, so for a Bend subject it reaches back about six months against
+  // the eighteen it asks for — 2,471 sales matched, 800 came back. Every rung
+  // under that line walked an empty older pool, so the ladder left the
+  // neighborhood while the report said the neighborhood was exhausted. This
+  // read covers the rungs containment actually depends on — the plat, the
+  // plats beside it, the community, the 1- and 2-mile rings — across the whole
+  // window and paged, so nothing local is lost to a row cap.
+  const nearPool =
+    pricingSubject.latitude != null && pricingSubject.longitude != null
+      ? selectPricingFactsNear({
+          latitude: pricingSubject.latitude,
+          longitude: pricingSubject.longitude,
+          radiusMiles: LOCAL_POOL_RADIUS_MILES,
+          closeBefore: asOf,
+          closeAfter: closeAfter.toISOString().slice(0, 10),
+          sqftMin: Math.round(sqft * 0.6),
+          sqftMax: Math.round(sqft * 1.4),
+          productClass: pricingSubject.productClass,
+        })
+      : Promise.resolve([])
+  const [pool, localPool, ruralPool, cells, ring] = await Promise.all([
     selectPricingFactsPool({
       citySlug: pricingSubject.citySlug,
       closeBefore: asOf,
@@ -142,6 +165,7 @@ export async function selectPricingComps(
       productClass: pricingSubject.productClass,
       limit: 800,
     }),
+    nearPool,
     pricingSubject.ruralAcreage
       ? selectPricingFactsPool({
           citySlug: null,
@@ -158,6 +182,7 @@ export async function selectPricingComps(
     getSubdivisionRing(subject.latitude, subject.longitude),
   ])
   const byKey = new Map(pool.map((s) => [s.listingKey, s]))
+  for (const s of localPool) if (!byKey.has(s.listingKey)) byKey.set(s.listingKey, s)
   for (const s of ruralPool) if (!byKey.has(s.listingKey)) byKey.set(s.listingKey, s)
   const sales = [...byKey.values()].map((s) => ({
     ...s,
@@ -328,6 +353,9 @@ export function matchToCompSelection(
         running_total: r.runningTotal,
         excluded: emptyExclusions(),
       })),
+      price_anchor: match.priceAnchor
+        ? { ppsf: Math.round(match.priceAnchor.ppsf), n: match.priceAnchor.n }
+        : null,
       tiers_used: match.tiersUsed,
       reached_target: match.reachedTarget,
       starved: match.starved,

@@ -21,6 +21,7 @@ import {
   type CmaCompInsert,
 } from '@/lib/data'
 import { applySubjectFactOverrides, resolveCmaSubject } from '@/lib/cma/subject'
+import { applyReconciledRoomCounts, reconcileSubjectRoomCounts } from '@/lib/cma/subject-room-conflict'
 import { pickCoverPhoto } from '@/lib/cma/cover-photo'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
 import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
@@ -328,6 +329,30 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         subject.lastListDate = null
         subject.listingHistoryLine = null
       }
+    }
+
+    // WHEN THE LISTING AND THE HOUSE'S OWN RECORD DISAGREE (Matt 2026-09-10:
+    // "flag it, use the history"). The room counts decide which sales are
+    // comparable, so a typed bed or bath count propagates into the whole comp
+    // set before anyone sees the document. Reconciled HERE, ahead of selection,
+    // and re-overridden by the broker's own facts, which always win.
+    const roomCheck = reconcileSubjectRoomCounts(
+      { beds: subject.beds, baths: subject.baths, sqft: subject.sqft },
+      cycleRows.map((r) => ({
+        beds: Number(r['BedroomsTotal'] ?? NaN),
+        baths: Number(r['BathroomsTotal'] ?? NaN),
+        sqft: Number(r['TotalLivingAreaSqFt'] ?? NaN),
+        closeDate: typeof r['CloseDate'] === 'string' ? r['CloseDate'] : null,
+        status: typeof r['StandardStatus'] === 'string' ? r['StandardStatus'] : null,
+      })),
+      { asOf: generatedAtIso.slice(0, 10) },
+    )
+    const roomConflicts = roomCheck.conflicts
+    if (roomConflicts.length > 0) {
+      const applied = applyReconciledRoomCounts(subject, roomCheck)
+      const brokerCorrected = applySubjectFactOverrides(applied, input.subjectFacts)
+      subject.beds = brokerCorrected.beds
+      subject.baths = brokerCorrected.baths
     }
 
     // 2 + 3. Comps, market context, and authoritative site data (zoning / well
@@ -825,6 +850,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       subjectBaths: subject.baths,
       subjectIsCustomOrNew,
       failedAsk: pricing.failedAsk ?? null,
+      // Null when nothing graded a comp on price on this build.
+      priceAnchorPpsf: selection.diagnostics?.price_anchor?.ppsf ?? null,
       tiersUsed: selection.tiersUsed,
     })
     if (!contract.pass) {
@@ -841,6 +868,15 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         contractChecks: contract.checks,
       })
       return { ok: false, error: err, slug }
+    }
+    // THE ROOM-COUNT CONFLICT REACHES THE REVIEWER (Matt 2026-09-10). A count
+    // the listing and the house's own closed sale disagree on is never a quiet
+    // resolution: whichever number priced the document, a person confirms it.
+    if (roomConflicts.length > 0) {
+      pricing.needsReview = true
+      pricing.reviewReason = [pricing.reviewReason, ...roomConflicts.map((c) => c.note)]
+        .filter(Boolean)
+        .join(' ')
     }
     if (contract.forceReview) {
       // Every failing review check reaches the reason, even when the engine
@@ -1272,6 +1308,12 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         address: `${subject.streetAddress}, ${subject.city}, OR ${subject.postalCode ?? ''}`.trim(),
         source: 'Supabase listings',
         resolution: resolved.trace,
+        beds: subject.beds,
+        baths: subject.baths,
+        // Present only when the listing and this home's own closed sale gave
+        // different room counts at the same square footage. Each entry names
+        // both numbers, which one priced the document, and why.
+        room_conflicts: roomConflicts.length > 0 ? roomConflicts : undefined,
       },
       comp_selection: {
         tiers_used: selection.tiersUsed,

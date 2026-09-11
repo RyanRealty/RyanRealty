@@ -30,11 +30,17 @@ function subject(over: Partial<PricingSubject> = {}): PricingSubject {
   }
 }
 
+let saleSeq = 0
 function sale(over: Partial<PricingSale> = {}): PricingSale {
+  // A DISTINCT ADDRESS PER SALE unless the test names one. The ladder now
+  // refuses a second row for the same address at the same close price — one
+  // closed sale may not enter a set twice — and every fixture built on the old
+  // shared '9 Comp St' default was two sales of one house.
+  saleSeq += 1
   return {
     listingKey: over.listingKey ?? `K${Math.random().toString(16).slice(2)}`,
     listNumber: null,
-    address: over.address ?? '9 Comp St',
+    address: over.address ?? `${saleSeq} Comp St`,
     city: 'Bend',
     citySlug: 'bend',
     subdivision: 'Kenwood',
@@ -120,13 +126,65 @@ describe('walkPricingLadder', () => {
     expect(out.comps).toHaveLength(0)
   })
 
-  it('never prices a one-bath house from a two-bath sale', () => {
+  /**
+   * THE ONE ROOM RULE (Matt 2026-09-10: adjust inside, wall outside). The old
+   * invariant here was "never prices a one-bath house from a two-bath sale"
+   * anywhere. That wall cut 438 nearby sales on 23 Benaiah and pushed the
+   * search into four other neighborhoods. What replaces it: one bath apart is
+   * used on the subject's OWN plat and recorded on the comp, and never from
+   * outside it.
+   */
+  it('uses a one-bath difference from inside the subject’s own plat, and records it', () => {
     const pool = [
       sale({ listingKey: 'TWO', baths: 2, address: '14 Kenwood' }),
       sale({ listingKey: 'ONE', baths: 1, address: '15 Kenwood' }),
     ]
     const out = walkPricingLadder(subject({ baths: 1 }), pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey)).toEqual(['ONE'])
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['ONE', 'TWO'])
+    expect(out.comps.find((c) => c.listingKey === 'TWO')?.roomDifference).toEqual(['baths'])
+    expect(out.comps.find((c) => c.listingKey === 'ONE')?.roomDifference).toBeNull()
+  })
+
+  it('never takes that one-bath difference from outside the subject’s ground', () => {
+    const pool = [
+      sale({
+        listingKey: 'AWAY',
+        baths: 2,
+        address: '9 Stone',
+        subdivision: 'Stone Creek',
+        subdivisionNorm: 'stone creek',
+        latitude: 44.12,
+        longitude: -121.18,
+      }),
+    ]
+    const out = walkPricingLadder(subject({ baths: 1, marketArea: null }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('AWAY')
+  })
+
+  // Matt 2026-09-10 opened the subject's OWN plat: "location is the primary
+  // thing... we might even comp it out against a 4-bedroom." The room rule
+  // still holds everywhere else.
+  it('takes two whole baths apart inside the subject’s own plat, and records it', () => {
+    const pool = [sale({ listingKey: 'FOUR', baths: 4, address: '16 Kenwood' })]
+    const out = walkPricingLadder(subject({ baths: 2 }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['FOUR'])
+    expect(out.comps[0]!.roomDifference).toEqual(['baths'])
+  })
+
+  it('still refuses two whole baths apart outside the plat', () => {
+    const pool = [
+      sale({
+        listingKey: 'FOUR_AWAY',
+        baths: 4,
+        address: '16 Stone',
+        subdivision: 'Stone Creek',
+        subdivisionNorm: 'stone creek',
+        latitude: 44.062,
+        longitude: -121.302,
+      }),
+    ]
+    const out = walkPricingLadder(subject({ baths: 2, marketArea: null }), pool, { asOf })
+    expect(out.comps).toHaveLength(0)
   })
 
   it('drops a much more expensive subdivision once the similar-sub rungs run', () => {
@@ -281,7 +339,11 @@ describe('walkPricingLadder', () => {
     ]
     const out = walkPricingLadder(subject({ sqft: 2500, streetAddress: '21451 Hayloft' }), pool, { asOf })
     expect(out.comps.map((c) => c.listingKey)).toEqual(['SAME_STREET'])
-    expect(out.tiersUsed[0]).toBe('subdivision-3mo-wide')
+    // Hayloft 1927 against 2500 is 22.9%, inside the plat band Matt widened to
+    // 25% on 2026-09-10, so the plain rung takes it and the -wide rung is not
+    // needed. What the test locks either way: the plat comes before the ring.
+    expect(out.tiersUsed[0]!.startsWith('subdivision-')).toBe(true)
+    expect(out.tiersUsed.some((t) => t.startsWith('nearby-'))).toBe(false)
   })
 
   it('does not stop a rural subject on the city-5mi rung', () => {
@@ -429,9 +491,15 @@ describe('walkPricingLadder', () => {
         sqft: 2200,
       }),
     )
+    // Outside the plat on purpose: the plat band and the bracket band are both
+    // 25% since 2026-09-10, so a same-plat sale the rung refuses is a sale the
+    // bracket refuses too. The nearby rungs sit at 15%, which is the gap the
+    // bracket exists to close.
     const smaller = sale({
       listingKey: 'SMALL',
-      address: '40 Kenwood',
+      address: '40 Aubrey',
+      subdivision: 'Aubrey',
+      subdivisionNorm: 'aubrey',
       closeDate: '2026-06-15',
       sqft: 1600,
     })
@@ -472,7 +540,10 @@ describe('walkPricingLadder', () => {
     ]
     const out = walkPricingLadder(subject({ sqft: 2500, marketArea: 'bend-old-bend' }), pool, { asOf })
     expect(out.comps.map((c) => c.listingKey)).toContain('NEAR')
-    expect(out.tiersUsed.some((t) => t.endsWith('-wide'))).toBe(true)
+    // 1927 against 2500 is inside the 25% plat band now, so these arrive on the
+    // plain rung rather than the -wide one. The point stands: three plat sales
+    // at the edge of the band are not a reason to stop before the ring.
+    expect(out.tiersUsed.some((t) => t.startsWith('subdivision-'))).toBe(true)
     expect(out.tiersUsed.some((t) => t.startsWith('nearby-'))).toBe(true)
   })
 
@@ -1126,5 +1197,163 @@ describe('Delta 4 — rural homes are read as property (Matt 2026-09-09)', () =>
     const subj = subject({ publicRemarks: 'Detached shop in the back yard.', zoning: 'RS' })
     const pool = [sale({ publicRemarks: 'Nice yard.', zoning: 'RS', listingKey: 'TOWN' })]
     expect(walkPricingLadder(subj, pool, { asOf }).comps.map((c) => c.listingKey)).toContain('TOWN')
+  })
+})
+
+describe('one sale, one row', () => {
+  it('refuses a relisting of the same closed sale, whatever its listing key says', () => {
+    const pool = [
+      sale({ listingKey: 'FIRST', address: '2745 Ordway', closePrice: 799_000, sqft: 1926, closeDate: '2026-06-22' }),
+      sale({ listingKey: 'RELIST', address: '2745 Ordway', closePrice: 799_000, sqft: 1925, closeDate: '2026-03-14' }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(out.comps).toHaveLength(1)
+    expect(out.comps[0]!.listingKey).toBe('FIRST')
+  })
+
+  it('keeps two real sales of the same house at different prices', () => {
+    const pool = [
+      sale({ listingKey: 'A', address: '2745 Ordway', closePrice: 799_000, closeDate: '2026-06-22' }),
+      sale({ listingKey: 'B', address: '2745 Ordway', closePrice: 640_000, closeDate: '2025-09-14' }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B'])
+  })
+})
+
+describe('a custom subject keeps the floor and loses the ceiling', () => {
+  function customSubject() {
+    return subject({
+      sqft: 2685,
+      yearBuilt: 2024,
+      newConstruction: true,
+      publicRemarks: 'Custom built modern home.',
+      subdivision: null,
+      subdivisionNorm: null,
+      marketArea: 'bend-century-west',
+    })
+  }
+  // A neighborhood median the anchor can actually read: 19479 Campbell's own
+  // is $489/sqft over 132 Century West sales.
+  function neighbors(n: number, ppsf: number) {
+    return Array.from({ length: n }, (_, i) =>
+      sale({
+        listingKey: `N${i}`,
+        address: `${100 + i} Century`,
+        sqft: 2600,
+        closePrice: Math.round(2600 * ppsf) + i,
+        closePpsf: ppsf,
+        yearBuilt: 2022,
+        newConstruction: true,
+        publicRemarks: 'Custom built.',
+        subdivision: null,
+        subdivisionNorm: null,
+        marketArea: 'bend-century-west',
+        closeDate: '2026-06-01',
+      }),
+    )
+  }
+
+  it('refuses a sale at 0.45 of the neighborhood rate', () => {
+    const cheap = sale({
+      listingKey: 'CHEAP',
+      address: '61289 Bronze Meadow',
+      sqft: 3000,
+      closePrice: 665_000,
+      closePpsf: 222,
+      yearBuilt: 2021,
+      newConstruction: true,
+      publicRemarks: 'Custom built.',
+      subdivision: null,
+      subdivisionNorm: null,
+      marketArea: 'bend-century-west',
+      closeDate: '2026-07-04',
+    })
+    const out = walkPricingLadder(customSubject(), [...neighbors(8, 489), cheap], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('CHEAP')
+  })
+
+  it('keeps a same-generation custom peer far ABOVE that rate', () => {
+    const dear = sale({
+      listingKey: 'DEAR',
+      address: '2060 NW Perspective Dr',
+      sqft: 2800,
+      closePrice: 2_332_400,
+      closePpsf: 833,
+      yearBuilt: 2023,
+      newConstruction: true,
+      publicRemarks: 'Custom built modern home.',
+      subdivision: null,
+      subdivisionNorm: null,
+      marketArea: 'bend-century-west',
+      closeDate: '2026-07-04',
+    })
+    const out = walkPricingLadder(customSubject(), [...neighbors(8, 489), dear], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toContain('DEAR')
+  })
+})
+
+describe('the GLA bracket obeys the 24-month wall', () => {
+  it('will not swap in a sale the accuracy contract would hard-fail as stale', () => {
+    // Every kept sale smaller than the subject, so the bracket wants a larger
+    // one. The only larger sale on offer closed 27 months ago.
+    const smaller = Array.from({ length: 3 }, (_, i) =>
+      sale({ listingKey: `S${i}`, address: `${i} Kenwood`, sqft: 1800, closeDate: '2026-06-01' }),
+    )
+    const staleBigger = sale({
+      listingKey: 'STALE',
+      address: '99 Kenwood',
+      sqft: 2300,
+      closeDate: '2024-05-01',
+    })
+    const out = walkPricingLadder(subject({ sqft: 2000 }), [...smaller, staleBigger], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('STALE')
+  })
+
+  it('still swaps in a larger sale inside the window', () => {
+    const smaller = Array.from({ length: 3 }, (_, i) =>
+      sale({ listingKey: `S${i}`, address: `${i} Kenwood`, sqft: 1800, closeDate: '2026-06-01' }),
+    )
+    const fresh = sale({ listingKey: 'FRESH', address: '98 Kenwood', sqft: 2300, closeDate: '2026-05-01' })
+    const out = walkPricingLadder(subject({ sqft: 2000 }), [...smaller, fresh], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toContain('FRESH')
+  })
+})
+
+describe('your own street comes first', () => {
+  it('finds the twin next door on the first rung, whatever the MLS calls the tract', () => {
+    const twin = sale({
+      listingKey: 'TWIN',
+      address: '31 Benaiah',
+      sqft: 2080,
+      beds: 4,
+      baths: 4,
+      closeDate: '2025-07-08',
+      closePrice: 512_000,
+      lastAsk: 499_000,
+      subdivision: null,
+      subdivisionNorm: null,
+    })
+    const elsewhere = Array.from({ length: 8 }, (_, i) =>
+      sale({
+        listingKey: `OTHER${i}`,
+        address: `${i} Tanglewood`,
+        subdivision: 'Tanglewood',
+        subdivisionNorm: 'tanglewood',
+        sqft: 1900,
+        closeDate: '2026-07-01',
+      }),
+    )
+    const subj = subject({ streetAddress: '23 Benaiah', sqft: 2080, subdivision: null, subdivisionNorm: null })
+    const out = walkPricingLadder(subj, [...elsewhere, twin], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toContain('TWIN')
+    expect(out.tiersUsed[0]).toBe('own-street-24mo')
+  })
+
+  it('does not take a same-street sale of a very different size', () => {
+    const big = sale({ listingKey: 'BIG', address: '31 Benaiah', sqft: 3400, subdivisionNorm: null })
+    const subj = subject({ streetAddress: '23 Benaiah', sqft: 2080, subdivision: null, subdivisionNorm: null })
+    const out = walkPricingLadder(subj, [big], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('BIG')
   })
 })

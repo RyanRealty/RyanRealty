@@ -1,3 +1,11 @@
+# Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)
+
+Owner: this land (`wt/cma-ship-20260907` → `main`). No owner sends / no emails. HOLD SITE-56 auto-send.
+
+- **CMA ship landed.** Comp-selection + owner voice + pricing ladder/room rule + street-anchor from `wt/cma-ship-20260907` (tip `6e10ef47`) merged onto main. Scope stayed `lib/cma`, `lib/pricing`, `marketing_brain_skills/producers/cma`, `scripts/cma-*` / diagnostic scripts, docs — no `app/**` or `components/site/**` (SITE-115 safe).
+- Site-queue Current below is unchanged from the prior 14:50Z fleet note; SITE-106/108/101/104/95 claims stand.
+- Auto-send remains OFF. Nothing sends from this land.
+
 # Current — 2026-09-11 14:50Z (fleet 3/3: 108 scored 66; 106 iterating; 101 local merge; 95 held)
 
 15m stays. No auto-seed. Fleet full — do not claim. Local main is **ahead 2** with SITE-101 (`3e64c8aa`); this fire does not push that merge.
@@ -64,6 +72,51 @@ Owner: `grok-4.5-2026-09-10-13`. Local `e672d978` (sell) on `9e209ab6` (search).
 Owner: `claude-opus-5-019RdEm6-2026-09-10`. Worktree `/Users/matthewryan/RyanRealty-wt-site-88-20260910` on `wt/site-88-20260910`.
 
 - **SITE-88 in_progress, not done.** `/housing-market/central-oregon` fold: MOS two named bars, visitor English source. grok-4.6 median **61**, rebaselined. **Rebaseline is not done.** Do not steal.
+# Current — 2026-09-10 21:00Z (CMA engine: comp selection rebuilt — historical; landed 2026-09-11)
+
+Owner: `claude-opus-5` on `wt/cma-ship-20260907` (**landed onto origin/main** 2026-09-11). Site-queue agents: this ship did not touch `app/` or `components/site/**`.
+
+Matt on 23 Benaiah: "none of the rules created were followed for this, we should never have a range
+this wide." Twelve defects, each its own commit with tests, all pushed:
+
+1. **The facts pool reached back six months, not eighteen** — ordered by close date and capped at
+   800, so every rung under that line walked an empty pool and the ladder left the neighborhood while
+   the report said the neighborhood was exhausted. `selectPricingFactsNear` reads a complete 3-mile box.
+2. **Nothing graded a subject on price when its plat had no cell**, and a one-mile ring holds two
+   sales out in the county — the anchor now steps out 2/3/5/8 miles.
+3. **The exact-bath wall** became one room rule for beds and baths, with a derived $0 in the matrix.
+4. **The judge** could drop the identical house next door for sitting outside the band the other
+   comps set.
+5. **An adjacent plat is a different plat** — the listings ladder exempted it from the price cut.
+6. **The starved widening stacked with the resort crossing.**
+7. **One closed sale could enter a set twice** — a relisting carries a new ListingKey.
+8. **A custom subject skipped the price cut entirely**; it keeps the floor and loses the ceiling.
+9. **Conflicting MLS facts** flag for review and price off the closed record inside ten years.
+10. **The house next door now anchors the number** (Matt's ruling): the recommendation may sit at
+    most 10% above a same-street sale of the subject's own size, and that sale becomes the floor.
+11. **The last-resort rung stops at 25% on size**, down from 45% (Matt's ruling).
+12. **One comp floor across both ladders**, 3 and 3, was 5 and 3 (Matt's ruling). Plus: the GLA
+    bracket swap obeys the same 24-month wall as every rung, and the failed-ask ceiling stopped
+    claiming moves the street anchor made.
+
+Two new contract checks: `recommendation-in-range` (review) and `value-has-a-basis` (hard).
+
+**23 Benaiah**: $653,000 became $565,000, held to the twin next door that sold at $512,000, with
+$515,000 to $665,000 around it and that sale in the priced set.
+
+**Measured across the queue.** Ranges wider than 1.2x: 56 to 33. Nothing prints 2x or wider any
+more, down from three; the widest was 2.61x and is now 1.75x. 18 documents that had produced nothing
+at all now price. Of the 33 left: 9 where the last-resort widening supplied most of the set, 9
+custom or new, 7 where every sale is inside the subject's own plat and the plat itself spans that
+range, 2 with no resolvable price tier.
+
+All rulings are in `marketing_brain_skills/producers/cma/SKILL.md` §0.1. 3,596 tests, gates and G46
+clean. Nothing sends; auto-send is still OFF pending SITE-56.
+
+**Open for Matt.** 57 documents still fail, and most are genuinely unpriceable: zero candidate sales
+of that size and product type in the city. `SIZE_ADJ_FACTOR` is still 0.5.
+
+---
 
 # Current — 2026-09-10 (loop process: catalogs are the UX bar)
 

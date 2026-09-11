@@ -152,6 +152,69 @@ export async function selectPricingFactsPool(opts: {
     .filter((r): r is PricingSale => r != null)
 }
 
+/**
+ * THE SUBJECT'S OWN GROUND, COMPLETE — every sale inside a box around the
+ * subject across the whole window, rather than the newest N sales citywide.
+ *
+ * Why this exists (Matt 2026-09-10, 23 Benaiah). `selectPricingFactsPool`
+ * orders by close date and caps the read, so for a Bend subject the pool
+ * reaches back about SIX months, not the eighteen it asks for: 2,471 Bend
+ * sales matched that window on 2026-09-10 and the read returned 800, the
+ * oldest closing 2026-03-10. Every rung below that line — the 9-, 12-, 18- and
+ * 24-month subdivision rungs, the adjacent-plat rungs, the community rungs —
+ * was walking a pool with nothing older in it. The ladder then left the
+ * neighborhood, and the report said the neighborhood was exhausted, when what
+ * was exhausted was the POOL. The identical floorplan next door at 31 Benaiah,
+ * sold fourteen months earlier, was never a candidate at all.
+ *
+ * A box, not a city: containment is measured from the subject, and a sale four
+ * blocks away does not stop being local because its mailing city differs.
+ * Paged, so the local window is complete instead of truncated.
+ */
+export async function selectPricingFactsNear(opts: {
+  latitude: number
+  longitude: number
+  radiusMiles: number
+  closeBefore: string
+  closeAfter: string
+  sqftMin: number
+  sqftMax: number
+  productClass?: string | null
+  maxRows?: number
+}): Promise<PricingSale[]> {
+  const sb = client()
+  if (!sb) return []
+  if (!Number.isFinite(opts.latitude) || !Number.isFinite(opts.longitude)) return []
+  const dLat = opts.radiusMiles / 69
+  const cos = Math.abs(Math.cos((opts.latitude * Math.PI) / 180))
+  const dLng = opts.radiusMiles / (69 * Math.max(cos, 0.1))
+  const { rows, error } = await fetchPagedRows<Record<string, unknown>>((from, to) => {
+    let q = sb
+      .from('sale_pricing_facts')
+      .select(FACT_COLS)
+      .lt('close_date', opts.closeBefore)
+      .gte('close_date', opts.closeAfter)
+      .gte('sqft', opts.sqftMin)
+      .lte('sqft', opts.sqftMax)
+      .gt('close_price', 0)
+      .gte('latitude', opts.latitude - dLat)
+      .lte('latitude', opts.latitude + dLat)
+      .gte('longitude', opts.longitude - dLng)
+      .lte('longitude', opts.longitude + dLng)
+    if (opts.productClass && opts.productClass !== 'unknown') q = q.eq('product_class', opts.productClass)
+    // Stable total order — range paging without one skips and duplicates rows.
+    return q
+      .order('close_date', { ascending: false })
+      .order('listing_key', { ascending: false })
+      .range(from, to)
+  }, opts.maxRows ?? 3000)
+  if (error) {
+    console.error('[selectPricingFactsNear]', error.message)
+    return []
+  }
+  return rows.map((r) => rowToSale(r)).filter((r): r is PricingSale => r != null)
+}
+
 export async function getPricingMarketIndex(citySlug: string): Promise<MarketIndexPoint[]> {
   const sb = client()
   if (!sb) return []

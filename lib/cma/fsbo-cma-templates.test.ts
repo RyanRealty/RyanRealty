@@ -90,14 +90,14 @@ describe('fsbo_cma_first_touch_v1', () => {
 })
 
 describe('cma_cover_intro_v1', () => {
- it('names it a pricing report, not an appraisal, and requires prepared-for name', () => {
+ it('names it a comparative market analysis, not an appraisal, and requires prepared-for name', () => {
  const cover = composeCmaCoverIntro(FULL)
  expect(cover.templateId).toBe(CMA_COVER_INTRO_V1)
- expect(cover.title).toBe('Pricing report for 123 NW Cascade Ave, Bend, OR 97703')
+ expect(cover.title).toBe('Comparative market analysis for 123 NW Cascade Ave, Bend, OR 97703')
  expect(cover.preparedLine).toBe('Prepared for Sarah Nguyen · September 3, 2026')
  expect(cover.body).toMatch(/not an appraisal/i)
- expect(cover.body).toMatch(/pricing report/i)
- expect(cover.body).not.toMatch(/comparative market analysis/i)
+ // Matt 2026-09-10: the document is a comparative market analysis, and says so.
+ expect(cover.body).toMatch(/comparative market analysis/i)
  expect(cover.body).not.toMatch(/Lenders order appraisals/i)
  expect(cover.askLine).toContain('Current ask: $679,000')
  expect(cover.fullText).toContain('Sarah Nguyen')
@@ -175,7 +175,7 @@ describe('formatFsboCmaUsd', () => {
 describe('subjectHasBareCma', () => {
  it('flags legacy CMA - address subjects', () => {
  expect(subjectHasBareCma('CMA - 648 SE Douglas')).toBe(true)
- expect(subjectHasBareCma('Pricing report for 648 SE Douglas')).toBe(false)
+ expect(subjectHasBareCma('Comparative market analysis for 648 SE Douglas')).toBe(false)
  })
 })
 

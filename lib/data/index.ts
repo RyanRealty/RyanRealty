@@ -610,6 +610,7 @@ export {
 export type { CmaListingRow, CmaMarketStatsRow, CmaMarketPulseRow, CmaClosedSkinnyRow, CmaBandInventory, CmaSubdivisionSaleRow, CmaSubdivisionHistoryRow, CmaPriorSaleRow } from '@/lib/data/cma/builderReads'
 export {
   countSalePricingFacts,
+  selectPricingFactsNear,
   selectPricingFactsPool,
   getPricingMarketIndex,
   getPricingSubdivisionCells,

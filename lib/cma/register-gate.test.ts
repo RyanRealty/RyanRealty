@@ -3,7 +3,7 @@ import { blamesPriorAgent, isWorthQuestionCopy } from '@/lib/crm/first-touch-cop
 import { decideCmaAccess, renderConsentBarHtml, renderConsentShell, renderRegisterShell } from './register-gate'
 
 describe('CMA register shell — inbound packet', () => {
-  it('names THIS home and the price opinion, never a worth-question', () => {
+  it('names THIS home and the comparative market analysis, never a worth-question', () => {
     const html = renderRegisterShell({
       slug: 'cma-1842-nw-foo',
       address: '1842 NW Foo St',

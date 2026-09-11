@@ -30,6 +30,14 @@ const RESTRICTIVE_ZONE_RE = /\b(EFU|EFUTRB|F1|F2|SM)\b/i
 
 export const COMP_MAX_AGE_MONTHS = 24
 
+/**
+ * How far under the owner's own ask a recommendation may sit before an
+ * unanchored build is refused rather than published. Half: an expired listing
+ * 20 or 30 percent over the market is ordinary, and a number under half the
+ * ask with nothing grading the comps on price is a different product.
+ */
+export const VALUE_VS_ASK_FLOOR = 0.5
+
 export interface ContractCheck {
   /** hard = fail the build; review = force needs_review; info = recorded only,
    *  never gates (the signal it carries is already surfaced elsewhere, e.g. the
@@ -80,6 +88,13 @@ export function evaluateAccuracyContract(args: {
    */
   subjectIsCustomOrNew?: boolean
   failedAsk?: number | null
+  /**
+   * The $/sqft tier the comps were graded against, or null when none could be
+   * resolved. Null means NOTHING cut a comp on price on this build — the hole
+   * 23 Benaiah fell through — so the value is read beside the owner's own ask
+   * before it is allowed to print (`value-has-a-basis`).
+   */
+  priceAnchorPpsf?: number | null
 }): AccuracyContract {
   const { comps, pricing, judgment, audit, site, minComps, subjectSubType, subjectBaths, subjectIsCustomOrNew } = args
   const widened = (args.tiersUsed ?? []).some((t) => t.includes(WIDENED_TIER_MARK))
@@ -151,6 +166,36 @@ export function evaluateAccuracyContract(args: {
       detail: `Subject is on the market at $${pricing.currentAsk.toLocaleString()}; comp support $${low.toLocaleString()}–$${high.toLocaleString()} (gap ${gapPct}%). Shown side by side on the document.`,
     })
   }
+  // A NUMBER A LONG WAY UNDER THE OWNER'S OWN ASK, WITH NOTHING GRADING IT.
+  //
+  // 19717 Mt Bachelor Drive is a fractional interest at Mt Bachelor Village
+  // asking about $90,000. The ladder found no price tier for it, reached the
+  // like-community rung, and priced it at $14,000 off Beaver Ridge fractionals
+  // in Sunriver — a different share size in a different community. The
+  // document had been FAILING to build; a rebuild gave it a wrong number,
+  // which is worse.
+  //
+  // Either signal alone is ordinary. An expired listing is often 20 or 30
+  // percent over the market, and a thin market often has no anchor. Together —
+  // no price tier resolved AND a recommendation under half the owner's own ask
+  // — the engine has no basis for the number it is about to print, and section
+  // 0 says a deliverable goes out with fewer numbers rather than one wrong one.
+  {
+    const ask = args.failedAsk ?? pricing.failedAsk ?? pricing.currentAsk ?? null
+    const unanchored = args.priceAnchorPpsf == null
+    const farUnder = ask != null && ask > 0 && pricing.recommended > 0 && pricing.recommended < ask * VALUE_VS_ASK_FLOOR
+    checks.push({
+      id: 'value-has-a-basis',
+      severity: 'hard',
+      pass: !(unanchored && farUnder),
+      detail:
+        unanchored && farUnder
+          ? `No price tier could be resolved for this home, and the recommended $${pricing.recommended.toLocaleString()} is under ${Math.round(VALUE_VS_ASK_FLOOR * 100)}% of the $${(ask as number).toLocaleString()} it is asking. With nothing grading the comps on price, that gap is a product mismatch, not a price opinion.`
+          : unanchored
+            ? 'No price tier was resolved, and the value sits within reach of what this home is asking.'
+            : 'The comps were graded against this home\'s own price tier.',
+    })
+  }
   const crossType = comps.find((c) => !productTypeCompatible(subjectSubType ?? null, c.propertySubType))
   checks.push({
     id: 'product-type-match',
@@ -167,7 +212,15 @@ export function evaluateAccuracyContract(args: {
           : `Every priced sale is the same property type as the subject (${subjectSubType}).`,
   })
   const bathRuleOk = subjectIsCustomOrNew ? customBathCompatible : bathCountCompatible
-  const crossBath = comps.find((c) => !bathRuleOk(subjectBaths ?? null, c.baths))
+  // The selector may admit a sale ONE room apart on the subject's own ground
+  // and record that it did (`roomDifference`, lib/pricing/room-counts.ts). The
+  // contract grades what the selector decided; it does not re-apply a wall the
+  // rule deliberately opened. A bath gap with no such record is still a hard
+  // failure — that is a sale nothing signed off on.
+  const crossBath = comps.find(
+    (c) => !bathRuleOk(subjectBaths ?? null, c.baths) && !(c.roomDifference ?? []).includes('baths'),
+  )
+  const bathNoted = comps.filter((c) => (c.roomDifference ?? []).includes('baths')).length
   checks.push({
     id: 'bath-count-match',
     severity: 'hard',
@@ -179,9 +232,11 @@ export function evaluateAccuracyContract(args: {
           ? subjectIsCustomOrNew
             ? `Comp ${crossBath.address} has ${crossBath.baths ?? 'an unknown'} bath, more than one whole bathroom away from this ${subjectBaths}-bath custom or new home.`
             : `Comp ${crossBath.address} has ${crossBath.baths ?? 'an unknown'} bath and cannot price a ${subjectBaths}-bath house.`
-          : subjectIsCustomOrNew
-            ? `Custom or new subject: every priced sale is within one whole bathroom of the subject (${subjectBaths}).`
-            : `Every priced sale has the same whole bathroom count as the subject (${subjectBaths}).`,
+          : bathNoted > 0
+            ? `Every priced sale matches the subject's ${subjectBaths} bathrooms, except ${bathNoted} on this home's own ground that sit one bathroom away and are disclosed as such.`
+            : subjectIsCustomOrNew
+              ? `Custom or new subject: every priced sale is within one whole bathroom of the subject (${subjectBaths}).`
+              : `Every priced sale has the same whole bathroom count as the subject (${subjectBaths}).`,
   })
   checks.push({
     id: 'dispersion-computed',
@@ -238,6 +293,33 @@ export function evaluateAccuracyContract(args: {
       detail: width.wide
         ? `The value range is wider than ${pct(RANGE_REVIEW_SHARE)} of the recommended list on a side: $${Math.min(pricing.valueLow, pricing.valueHigh).toLocaleString()} to $${Math.max(pricing.valueLow, pricing.valueHigh).toLocaleString()} around $${pricing.recommended.toLocaleString()} (${pct(width.lowShare)} below, ${pct(width.highShare)} above).`
         : `Value range within ${pct(RANGE_REVIEW_SHARE)} of the recommended list on both sides (${pct(width.lowShare)} below, ${pct(width.highShare)} above).`,
+    })
+  }
+  // THE NUMBER HAS TO SIT INSIDE THE SALES THAT SUPPORT IT (Matt 2026-09-10).
+  // A document can print "the sales support $577,000 to $832,000" over a
+  // headline of $535,000 and nothing here caught it. The failed-ask cap
+  // legitimately pulls a recommendation BELOW the band — a home that could not
+  // sell at its last ask may not be re-listed above it, whatever the comps say
+  // — so this forces review rather than failing the build, and the sentence
+  // names the cap when the cap is the reason.
+  {
+    const low = Math.min(pricing.valueLow, pricing.valueHigh)
+    const high = Math.max(pricing.valueLow, pricing.valueHigh)
+    const rec = pricing.recommended
+    const inside = rec >= low && rec <= high
+    const gapPct = inside ? 0 : rec > high ? Math.round(((rec - high) / high) * 100) : Math.round(((low - rec) / low) * 100)
+    const capped = pricing.clamp != null && rec < low
+    checks.push({
+      id: 'recommendation-in-range',
+      severity: 'review',
+      pass: inside,
+      detail: inside
+        ? `Recommended $${rec.toLocaleString()} sits inside the supported range $${low.toLocaleString()} to $${high.toLocaleString()}.`
+        : rec > high
+          ? `Recommended $${rec.toLocaleString()} sits ${gapPct}% ABOVE the top of the range the sales support ($${low.toLocaleString()} to $${high.toLocaleString()}). Nothing in the comp evidence carries a list that high.`
+          : capped
+            ? `Recommended $${rec.toLocaleString()} sits ${gapPct}% below the range the sales support ($${low.toLocaleString()} to $${high.toLocaleString()}), because the price that already failed to sell caps what this home can be listed at. Confirm the two numbers read together on the page.`
+            : `Recommended $${rec.toLocaleString()} sits ${gapPct}% below the range the sales support ($${low.toLocaleString()} to $${high.toLocaleString()}) with no cap explaining the gap.`,
     })
   }
   checks.push({

@@ -231,7 +231,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
   const why = rangeSpreadCauseSentence(a.pricing)
   return {
     cover: true,
-    meta: `Pricing report · ${dateLong(a.generatedAtIso)}`,
+    meta: `Comparative market analysis · ${dateLong(a.generatedAtIso)}`,
     body: `
   <div class="cover-stage">
     ${hero.src ? `<img class="hero-photo" src="${esc(hero.src)}" alt="${esc(a.subject.streetAddress)}" />` : '<div class="hero-photo"></div>'}
@@ -263,7 +263,7 @@ function withReviewNotice(a: RenderCmaArgs, pages: PageDef[]): PageDef[] {
   const band = reviewNoticeBandHtml(review.notice ?? '', 'letter')
   if (!band) return pages
   const at = pages.findIndex((p) => !p.cover)
-  if (at < 0) return [...pages, { meta: 'Pricing report', body: band }]
+  if (at < 0) return [...pages, { meta: 'Comparative market analysis', body: band }]
   return pages.map((p, i) => (i === at ? { ...p, body: `${band}
 ${p.body}` } : p))
 }
@@ -280,7 +280,7 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex,nofollow" />
-<title>Pricing report · ${esc(a.subject.streetAddress)} · ${esc(a.subject.city)}, OR ${esc(a.subject.postalCode ?? '')}</title>
+<title>Comparative market analysis · ${esc(a.subject.streetAddress)} · ${esc(a.subject.city)}, OR ${esc(a.subject.postalCode ?? '')}</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
 <style>${cmaStylesheet(SITE_URL)}</style>
 </head>
