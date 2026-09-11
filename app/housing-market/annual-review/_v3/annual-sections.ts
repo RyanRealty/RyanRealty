@@ -37,7 +37,7 @@
 import type { MarketDetail, MarketPulseSnapshot } from '@/lib/data'
 import type { ReportCity } from '@/lib/data/geo/report-cities'
 import type { PublicPaceRow } from '@/lib/data/market-truth/public-pace'
-import { marketVerdict } from '@/lib/market/classify'
+import { marketVerdict, MOS_METHODOLOGY_CLAUSE } from '@/lib/market/classify'
 import { namePulseCityRemainder, pulseCityHrefSlug } from '@/lib/market/pulse-city-remainder'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPriceExact } from '@/lib/format/money'
@@ -83,6 +83,7 @@ export type CityLedger = {
 /**
  * Monthly pace implied by leftover MOS: active / months of supply.
  * Miss omits. This is the other bar of the two-bar drawing, not a MOS tile.
+ * Homes are whole counts — round to a whole home for display (SITE-101).
  * MOS digits themselves still go through formatMonthsOfSupply on the chart claim.
  */
 export function monthlyPaceFromMos(
@@ -90,11 +91,12 @@ export function monthlyPaceFromMos(
   mosRaw: number | null,
 ): number | null {
   if (active == null || !(active > 0) || mosRaw == null || !(mosRaw > 0)) return null
-  return Math.round((active / mosRaw) * 10) / 10
+  const pace = Math.round(active / mosRaw)
+  return pace > 0 ? pace : null
 }
 
 function formatMonthlyPace(n: number): string {
-  return n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+  return Math.round(n).toLocaleString('en-US')
 }
 
 /**
@@ -118,6 +120,58 @@ export function buildAnnualMosChart(
   )
 }
 
+/** Props for V3MosBars on the annual opening (SITE-101 / house-mos hover reveal). */
+export type AnnualPlaceMos = {
+  caption: string
+  plainLabel: string
+  homesName: string
+  homesLabel: string
+  homesValue: number
+  salesName: string
+  salesLabel: string
+  salesValue: number
+  source: string
+  asOf: string | null
+  tooltip: { homes: string; sales: string; source: string }
+}
+
+/**
+ * Annual fold MOS drawing. Whole-home sales face; hover/tap reveals both counts
+ * and the section-0 source (V3MosBars). Prefer this over the range chart on the
+ * opening so mos-hover is a real reveal.
+ */
+export function buildAnnualPlaceMos(
+  active: number | null | undefined,
+  mosRaw: number | null,
+  asOf: string | null,
+): AnnualPlaceMos | null {
+  const monthOfSales = monthlyPaceFromMos(active, mosRaw)
+  const mosText = mosRaw != null && mosRaw > 0 ? formatMonthsOfSupply(mosRaw) : null
+  if (active == null || !(active > 0) || monthOfSales == null || !mosText) return null
+  const homesLabel = active.toLocaleString('en-US')
+  const salesLabel = formatMonthlyPace(monthOfSales)
+  const tipSource = asOf
+    ? `Oregon Data Share · single-family · as of ${asOf}`
+    : 'Oregon Data Share · single-family'
+  return {
+    caption: `About ${mosText} months of homes on the market.`,
+    plainLabel: 'Homes for sale vs a month of sales',
+    homesName: 'Homes for sale',
+    homesLabel,
+    homesValue: active,
+    salesName: 'A month of sales',
+    salesLabel,
+    salesValue: monthOfSales,
+    source: `Oregon Data Share MLS. ${homesLabel} homes for sale vs ${salesLabel} sales a month.`,
+    asOf,
+    tooltip: {
+      homes: homesLabel,
+      sales: salesLabel,
+      source: `${tipSource}. ${MOS_METHODOLOGY_CLAUSE}`,
+    },
+  }
+}
+
 /**
  * `mosRaw` and `medianListDisplay` are the page's derivations, already guarded.
  * They are passed in rather than re-read off the pulse so this file cannot become
@@ -128,19 +182,20 @@ export function buildAnnualMosChart(
  * (see the page's invariant 6). formatPriceExact prints those digits, not a
  * second thousand-round of an already-shared figure.
  *
- * SITE-71: months of supply is the two-bar drawing, never a lead tile. When the
- * rearrangement publishes, the first two figures are the two bars (homes for
- * sale, a month of sales). MOS digits stay on the chart claim via
- * formatMonthsOfSupply.
+ * SITE-101: when the MOS two-bar drawing publishes, omit the homes / month-of-
+ * sales tiles so the fold does not restate the bars as a four-up. MOS digits
+ * stay on the drawing; list price and wait remain the lead figures.
  */
 export function buildRegionFigures(
   hud: { active: number | null; daysToPending: number | null } | null,
   mosRaw: number | null,
   medianListDisplay: number | null,
+  options?: { omitMosTiles?: boolean },
 ): V3InstrumentFigure[] {
   const figures: V3InstrumentFigure[] = []
   const monthOfSales = monthlyPaceFromMos(hud?.active, mosRaw)
-  if (hud != null && hud.active != null && hud.active > 0) {
+  const omitMosTiles = options?.omitMosTiles === true
+  if (!omitMosTiles && hud != null && hud.active != null && hud.active > 0) {
     figures.push({
       value: v3Text(hud.active.toLocaleString('en-US')),
       label: v3Text('homes for sale, single-family'),
@@ -150,7 +205,7 @@ export function buildRegionFigures(
       ),
     })
   }
-  if (monthOfSales != null) {
+  if (!omitMosTiles && monthOfSales != null) {
     figures.push({
       value: v3Text(formatMonthlyPace(monthOfSales)),
       label: v3Text('a month of sales'),
@@ -198,12 +253,9 @@ export function buildInventoryLedger(
 ): CityLedger {
   const byLabel = new Map(snapshots.map((s) => [s.geo_label, s]))
   const rows: V3LedgerFigureRow[] = []
-  // Parallel to `rows`, the raw median behind each row's `value` string. The bar
-  // TASTE.md's evaluator asked for has to be this list's own comparison — nine
-  // cities by median list price is the table this Ledger already prints, so the
-  // bar's length is a share of THIS list's own maximum, computed after the loop
-  // once every row's median is known, never a second population.
-  const medians: number[] = []
+  // Parallel to `rows`: bar length encodes active inventory (the heading's claim),
+  // as a share of THIS list's own max active. Median stays the printed `value`.
+  const actives: number[] = []
   const stamps: string[] = []
   const missing: MissingCity[] = []
 
@@ -231,11 +283,14 @@ export function buildInventoryLedger(
       snapshot.months_of_supply != null && snapshot.months_of_supply > 0
         ? snapshot.months_of_supply
         : null
-    if (snapshot.active_count == null) {
+    if (snapshot.active_count == null || !(snapshot.active_count > 0)) {
       missing.push({
         label: city.label,
         slug: city.slug,
-        fact: `${city.label} has no published active single-family count`,
+        fact:
+          snapshot.active_count == null
+            ? `${city.label} has no published active single-family count`
+            : `${city.label} shows no active single-family listings`,
       })
       continue
     }
@@ -245,17 +300,17 @@ export function buildInventoryLedger(
       what: v3Text(city.label),
       detail:
         mos != null
-          ? v3Text(`${formatMonthsOfSupply(mos)} months of supply, a ${marketVerdict(mos).label}`)
+          ? v3Text(`${formatMonthsOfSupply(mos)} mo · ${marketVerdict(mos).label}`)
           : undefined,
       value: v3Text(formatPriceExact(snapshot.median_list_price)),
       id: city.slug,
     })
-    medians.push(snapshot.median_list_price)
+    actives.push(snapshot.active_count)
   }
-  const maxMedian = medians.length > 0 ? Math.max(...medians) : 0
-  if (maxMedian > 0) {
+  const maxActive = actives.length > 0 ? Math.max(...actives) : 0
+  if (maxActive > 0) {
     rows.forEach((row, i) => {
-      row.weight = medians[i]! / maxMedian
+      row.weight = actives[i]! / maxActive
     })
   }
 
