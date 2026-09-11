@@ -459,10 +459,12 @@ export function MorphingSearch({
 			</div>
 		);
 	}
+	const viewportHeight =
+		typeof window === "undefined" ? 800 : window.innerHeight;
 	const resultsHeight = !showList
 		? 0
 		: filteredItems.length > 0
-			? Math.max(120, Math.min(288, window.innerHeight - anchorRect.top - 80))
+			? Math.max(120, Math.min(288, viewportHeight - anchorRect.top - 80))
 			: 56;
 	const collapsedContentClip = `inset(0px ${Math.max(
 		0,

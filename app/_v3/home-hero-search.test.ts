@@ -53,6 +53,7 @@ describe('homepage hero search uses the public search stack', () => {
     expect(morph).toContain('aria-haspopup="dialog"')
     expect(morph).toContain('layoutId')
     expect(morph).toContain('<kbd')
+    expect(morph).toContain('typeof window === "undefined"')
     expect(wrap).not.toMatch(/\binline\b/)
     expect(SEARCH).not.toMatch(/open=\{open\}/)
     expect(SEARCH).toContain('PLACE_SEEDS')
