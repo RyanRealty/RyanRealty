@@ -21,6 +21,7 @@ import { communityImage, cityHero, preferPlaceHero } from '@/lib/geo-images'
 import { publishFeaturedPlats } from '@/lib/market/publish-featured-plat-inventory'
 import { formatCount } from '@/lib/format/count'
 import { formatIndexMedianUsd } from '@/lib/market/publish-index-median'
+import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import CommunityIndexBrowser from '@/components/community/CommunityIndexBrowser'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -63,7 +64,28 @@ function fmtPrice(n: number | null | undefined): string | null {
 }
 
 export default async function SubdivisionsPage() {
-  const childPlats = registryChildPlats()
+  // ONE NAME AUTHORITY FOR BOTH SURFACES.
+  //
+  // registryChildPlats() returns the RAW registry alias, and the alias is not
+  // always the recorded plat name: data/resort-communities.json carries the
+  // Tetherow alias "Triple", whose recorded name is "Triple Knot" (the MLS
+  // SubdivisionName really is the truncated token — 9 Bend rows — so this is a
+  // repair, not a display trim). The DETAIL page has always run that alias
+  // through publishPlatDisplayName; this index published `p.name` directly, so
+  // /subdivisions listed a plat as "Triple" and linked to a page headed
+  // "Triple Knot" (production, 2026-09-11).
+  //
+  // Repaired HERE, at the one place the list is built, rather than at the four
+  // display sites below: the sentence, the photo alt, the row label, the aria
+  // label, the A-Z entry and the ItemList JSON-LD all read `name`, and the
+  // A-Z sort does too — so sorting now orders by the name a reader actually
+  // sees. `?? p.name` is the detail page's own fallback contract
+  // (publishPlatDisplayName returns null for a withheld MLS abbreviation);
+  // keeping it means this change repairs names and never drops a plat.
+  const childPlats = registryChildPlats().map((p) => ({
+    ...p,
+    name: publishPlatDisplayName(p.name) ?? p.name,
+  }))
 
   const [inventory, heroPhotoPool, parentHeroBySlug] = await Promise.all([
     getRegistryPlatPublicInventory(),

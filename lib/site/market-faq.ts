@@ -39,6 +39,24 @@ export type MarketFaqInput = {
    */
   source?: 'pulse' | 'market-truth'
   activeCount?: number | null
+  /**
+   * Sentences appended to the inventory answer when ANOTHER count of the same
+   * place is published on the same page and does not match this one.
+   *
+   * Two correct traces a few rows apart are not a reconciliation. The
+   * neighborhood grain learned this on 2026-09-08: both its traces already
+   * named their own population, and a separate evaluator still read 48-vs-57
+   * on one page as an unreconciled contradiction — it was right, because a
+   * reader has to be TOLD, not left to rebuild the distinction out of two
+   * source lines. §0 rule 5 (reconcile the narrative to the data).
+   *
+   * Same field name as `PlaceAnswersInput.activeCountNotes` in
+   * lib/site/place-answers.ts on purpose: the two answer builders feed the
+   * same question on different grains and must not word this differently.
+   * The CALLER supplies the sentence, because only the page knows which two
+   * populations it put on screen.
+   */
+  activeCountNotes?: readonly string[] | null
   medianListPrice?: number | null
   /**
    * Median SALE price of closed single-family homes in the latest complete
@@ -176,9 +194,18 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
 
   const sfrPublished = publishSearchCount({ value: pulse.activeCount, grain: 'sfr' })
   if (sfrPublished && sfrPublished.value > 0) {
+    // The reconciling sentence rides INSIDE the answer, so it reaches the
+    // visible FAQ and the FAQPage JSON-LD together. An answer engine that
+    // quotes the count without the distinction republishes the contradiction.
+    const inventoryNotes = (pulse.activeCountNotes ?? [])
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
     faqs.push({
       question: `How many single-family homes are for sale in ${geoName}?`,
-      answer: `There are ${sfrPublished.value.toLocaleString('en-US')} active single-family listings in ${geoName}${asOf}.`,
+      answer: [
+        `There are ${sfrPublished.value.toLocaleString('en-US')} active single-family listings in ${geoName}${asOf}.`,
+        ...inventoryNotes,
+      ].join(' '),
     })
     datasetVariables.push({ name: 'Active Listings', value: sfrPublished.value })
   }

@@ -56,6 +56,28 @@ checks.push({
     /export function isDisplayablePlatName/.test(catalog),
 })
 
+// THE INDEX, NOT ONLY THE DETAIL PAGE (fleet place-pages 2026-09-11,
+// fingerprint 5e6b484539289ab6583397a8d763f78f).
+//
+// Every check above guarded a plat name on its way to ONE page. The
+// /subdivisions INDEX read `registryChildPlats()` and published the raw
+// registry alias, so the same plat was listed as "Triple" and linked to a
+// detail page headed "Triple Knot" — the repair table in this very gate held
+// the right answer and the index never asked for it. The alias is the raw MLS
+// SubdivisionName, so the index was the one surface publishing an unrepaired
+// name as a heading, a link label and an ItemList entry.
+const platIndex = src('app/subdivisions/page.tsx')
+checks.push({
+  label: '/subdivisions index gates plat names through publishPlatDisplayName',
+  ok:
+    /from ['"]@\/lib\/market\/publish-plat-display-name['"]/.test(platIndex) &&
+    /publishPlatDisplayName\(/.test(platIndex) &&
+    // Repaired where the list is BUILT, so the sentence, the photo alt, the row
+    // label, the aria label, the A-Z entry, the ItemList and the sort all read
+    // the repaired name. A per-call-site fix regrows the moment a site is added.
+    /registryChildPlats\(\)\s*\.map\(/.test(platIndex),
+})
+
 const extras = src('lib/explore/subdivision-page-extras.ts')
 checks.push({
   label: 'peerPlatsForResort gates names through publishPlatDisplayName',
