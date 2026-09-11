@@ -60,8 +60,6 @@ export interface MorphingSearchProps {
 	onOpenChange?: (open: boolean) => void;
 	onQueryChange?: (query: string) => void;
 	onSelect?: (item: MorphingSearchItem) => void;
-	/** In-flow field that grows. Homepage search cannot use a fixed portal. */
-	inline?: boolean;
 	className?: string;
 }
 
@@ -86,13 +84,12 @@ export function MorphingSearch({
 	placeholder = "Search",
 	shortcut = "f",
 	iconOnly = false,
-	emptyMessage = "No places match that.",
+	emptyMessage = "No results found.",
 	open: controlledOpen,
 	defaultOpen = false,
 	onOpenChange,
 	onQueryChange,
 	onSelect,
-	inline = false,
 	className,
 }: MorphingSearchProps) {
 	const [internalOpen, setInternalOpen] = useState(defaultOpen);
@@ -135,6 +132,7 @@ export function MorphingSearch({
 
 	const openSearch = useCallback(() => {
 		measureAnchor();
+		setBackgroundScrollLocked(true);
 		previousFocusRef.current =
 			document.activeElement instanceof HTMLElement
 				? document.activeElement
@@ -174,11 +172,8 @@ export function MorphingSearch({
 	useEffect(() => setMounted(true), []);
 
 	useEffect(() => {
-		if (inline) return;
-		if (open && (query.trim().length > 0 || items.length > 0)) {
-			setBackgroundScrollLocked(true);
-		}
-	}, [inline, open, query, items.length]);
+		if (open) setBackgroundScrollLocked(true);
+	}, [open]);
 
 	useEffect(() => {
 		measureAnchor();
@@ -228,7 +223,6 @@ export function MorphingSearch({
 	}, [backgroundScrollLocked]);
 
 	useEffect(() => {
-		if (inline) return;
 		const handleShortcut = (event: KeyboardEvent) => {
 			if (event.key === "Escape" && open) {
 				event.preventDefault();
@@ -254,12 +248,11 @@ export function MorphingSearch({
 
 		window.addEventListener("keydown", handleShortcut);
 		return () => window.removeEventListener("keydown", handleShortcut);
-	}, [closeSearch, inline, open, openSearch, shortcut]);
+	}, [closeSearch, open, openSearch, shortcut]);
 
 	// Only this component's own state. Telling the consumer the query changed is
 	// a side effect, so it waits for the effect below.
 	useOnOpen(open, () => {
-		if (inline) return;
 		setQuery("");
 		moveTo(null);
 	});
@@ -274,7 +267,6 @@ export function MorphingSearch({
 	});
 
 	useEffect(() => {
-		if (inline) return;
 		if (open) {
 			notifyQuery.current?.("");
 			const frame = requestAnimationFrame(() => inputRef.current?.focus());
@@ -291,7 +283,7 @@ export function MorphingSearch({
 			});
 			return () => cancelAnimationFrame(frame);
 		}
-	}, [inline, open]);
+	}, [open]);
 
 	useEffect(() => {
 		wasOpenRef.current = open;
@@ -354,118 +346,15 @@ export function MorphingSearch({
 
 	const shellLayoutId = `${uid}-shell`;
 	const listboxId = `${uid}-results`;
-	const panelWidth = anchorRect.width;
-	const showList = inline
-		? query.trim().length > 0
-		: query.trim().length > 0 || filteredItems.length > 0;
-	if (inline) {
-		return (
-			<div ref={anchorRef} className={cn("relative w-full", className)}>
-				<div className="v3-morph-overlay-shell v3-morph-overlay-dialog relative w-full overflow-hidden">
-					<div
-						className={cn(
-							"flex min-h-12 items-center gap-2.5 px-3.5",
-							showList && "v3-morph-overlay-split",
-						)}
-					>
-						<Search className="size-4 shrink-0 text-muted-foreground" />
-						<input
-							ref={inputRef}
-							type="search"
-							value={query}
-							onChange={(event) => updateQuery(event.target.value)}
-							onFocus={() => setOpen(true)}
-							onKeyDown={(event) => {
-								if (event.key === "ArrowDown") {
-									event.preventDefault();
-									moveActive(1);
-									return;
-								}
-								if (event.key === "ArrowUp") {
-									event.preventDefault();
-									moveActive(-1);
-									return;
-								}
-								if (event.key === "Enter") {
-									const item = filteredItems[activeIndex];
-									if (item) {
-										event.preventDefault();
-										selectItem(item);
-									}
-									return;
-								}
-								if (event.key === "Escape") {
-									event.preventDefault();
-									if (query) updateQuery("");
-									else setOpen(false);
-								}
-							}}
-							role="combobox"
-							aria-label={placeholder}
-							aria-expanded={showList}
-							aria-controls={showList ? listboxId : undefined}
-							aria-autocomplete="list"
-							placeholder={placeholder}
-							className="h-12 min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
-						/>
-					</div>
-					{showList ? (
-						<div
-							ref={listRef}
-							id={listboxId}
-							role="listbox"
-							aria-label="Search results"
-							className="max-h-72 overflow-y-auto p-2"
-						>
-							{filteredItems.length > 0 ? (
-								filteredItems.map((item, index) => {
-									const Icon = item.icon;
-									const active = index === activeIndex;
-									return (
-										<button
-											key={item.id}
-											id={`${uid}-option-${index}`}
-											type="button"
-											role="option"
-											aria-selected={active}
-											onMouseMove={() => moveTo(item.id)}
-											onClick={() => selectItem(item)}
-											className="relative flex w-full items-center gap-2.5 rounded-none px-3 py-2.5 text-left outline-none"
-										>
-											{Icon ? (
-												<Icon className="relative size-4 shrink-0 text-muted-foreground" />
-											) : null}
-											<span className="relative min-w-0">
-												<span className="block truncate text-sm font-medium text-foreground">
-													{item.title}
-												</span>
-												{item.description ? (
-													<span className="block truncate text-xs text-muted-foreground">
-														{item.description}
-													</span>
-												) : null}
-											</span>
-										</button>
-									);
-								})
-							) : query.trim() ? (
-								<p className="px-3 py-3 text-sm text-muted-foreground">
-									{emptyMessage}
-								</p>
-							) : null}
-						</div>
-					) : null}
-				</div>
-			</div>
-		);
-	}
-	const viewportHeight =
-		typeof window === "undefined" ? 800 : window.innerHeight;
-	const resultsHeight = !showList
-		? 0
-		: filteredItems.length > 0
-			? Math.max(120, Math.min(288, viewportHeight - anchorRect.top - 80))
-			: 56;
+	const panelWidth = mounted
+		? Math.max(
+				anchorRect.width,
+				Math.min(448, window.innerWidth - anchorRect.left - 16),
+			)
+		: anchorRect.width;
+	const resultsHeight = mounted
+		? Math.max(96, Math.min(288, window.innerHeight - anchorRect.top - 80))
+		: 288;
 	const collapsedContentClip = `inset(0px ${Math.max(
 		0,
 		panelWidth - anchorRect.width,
@@ -482,8 +371,7 @@ export function MorphingSearch({
 				<div
 					aria-hidden={!open}
 					inert={!open}
-					data-v3-morph-overlay=""
-					className="v3-morph-overlay-root pointer-events-none fixed left-0 top-0 size-0"
+					className="pointer-events-none fixed left-0 top-0 z-50 size-0"
 				>
 					<AnimatePresence
 						initial={false}
@@ -505,12 +393,13 @@ export function MorphingSearch({
 								<motion.div
 									layoutId={shellLayoutId}
 									aria-hidden="true"
-									className="v3-morph-overlay-shell fixed z-10"
+									className="fixed z-10 rounded-xl bg-background/90 backdrop-blur-xl"
 									style={{
 										top: anchorRect.top,
 										left: anchorRect.left,
 										width: panelWidth,
 										height: 48 + resultsHeight,
+										boxShadow: "inset 0 0 0 1px var(--color-border)",
 									}}
 									transition={morphTransition}
 								/>
@@ -545,7 +434,7 @@ export function MorphingSearch({
 													opacity: SEARCH_MORPH,
 												}
 									}
-									className="v3-morph-overlay-dialog pointer-events-auto fixed z-20 overflow-hidden"
+									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl"
 									style={{
 										top: anchorRect.top,
 										left: anchorRect.left,
@@ -554,8 +443,7 @@ export function MorphingSearch({
 								>
 									<div
 										className={cn(
-											"flex h-12 items-center gap-2.5",
-											showList && "v3-morph-overlay-split",
+											"flex h-12 items-center gap-2.5 border-b border-border",
 											iconOnly ? "px-4" : "px-3.5",
 										)}
 									>
@@ -569,8 +457,8 @@ export function MorphingSearch({
 												onChange={(event) => updateQuery(event.target.value)}
 												role="combobox"
 												aria-label={placeholder}
-												aria-expanded={showList}
-												aria-controls={showList ? listboxId : undefined}
+												aria-expanded="true"
+												aria-controls={listboxId}
 												aria-autocomplete="list"
 												aria-activedescendant={
 													filteredItems.length > 0
@@ -586,7 +474,6 @@ export function MorphingSearch({
 										</kbd>
 									</div>
 
-									{showList ? (
 									<motion.div
 										ref={listRef}
 										id={listboxId}
@@ -672,13 +559,12 @@ export function MorphingSearch({
 													</button>
 												);
 											})
-										) : query.trim() ? (
-											<p className="px-3 py-3 text-sm text-muted-foreground">
+										) : (
+											<p className="px-3 py-8 text-center text-sm text-muted-foreground">
 												{emptyMessage}
 											</p>
-										) : null}
+										)}
 									</motion.div>
-									) : null}
 								</motion.div>
 							</motion.div>
 						) : null}
@@ -709,8 +595,11 @@ export function MorphingSearch({
 						aria-label={placeholder}
 						onClick={openSearch}
 						transition={morphTransition}
+						style={{
+							boxShadow: "inset 0 0 0 1px var(--search-trigger-stroke)",
+						}}
 						className={cn(
-							"flex size-full items-center text-left outline-none",
+							"flex size-full items-center rounded-xl bg-background/60 text-left backdrop-blur-md outline-none [--search-trigger-stroke:var(--color-border)] hover:[--search-trigger-stroke:var(--color-border-strong)] focus-visible:ring-2 focus-visible:ring-ring",
 							iconOnly ? "cursor-pointer justify-center" : "cursor-text px-3.5",
 						)}
 					></motion.button>
@@ -736,14 +625,16 @@ export function MorphingSearch({
 				>
 					<Search className="size-4 shrink-0 text-muted-foreground" />
 					{iconOnly ? null : (
-						<span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-							{placeholder}
-						</span>
-					)}
-					{iconOnly || !shortcut ? null : (
-						<kbd className="flex h-7 shrink-0 items-center rounded-md border border-border px-2 text-xs uppercase text-muted-foreground">
-							{shortcut}
-						</kbd>
+						<>
+							<span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+								{placeholder}
+							</span>
+							{shortcut ? (
+								<kbd className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md border border-border px-2 text-xs text-muted-foreground">
+									{shortcut.toUpperCase()}
+								</kbd>
+							) : null}
+						</>
 					)}
 				</motion.div>
 			</div>
