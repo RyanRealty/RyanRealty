@@ -145,13 +145,7 @@ import { platCaption } from './_v3/plat-caption'
 import './_v3/plat-opening.css'
 import './_v3/plat-fold.css'
 import { SubdivisionAlertsStrip } from './_v3/SubdivisionAlertSheet.client'
-import {
-  formatPlatSalesPaceLabel,
-  platClosedPace12mo,
-  platMonthsSupplyFromPace,
-  platNewCount30dFromTiles,
-} from './_v3/plat-fold-figures'
-import { buildPlaceMosView } from '@/lib/site/place-mos'
+import { platNewCount30dFromTiles } from './_v3/plat-fold-figures'
 import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { getSubdivisionSalesHistory } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
@@ -183,7 +177,6 @@ import {
   V3SectionTracker,
   V3SourceLine,
   V3Button,
-  V3MosBars,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -860,37 +853,9 @@ export default async function SubdivisionPage({ params }: Props) {
     { label: 'Talk to a broker', href: '/contact' },
   ]
 
-  // SITE-86: MOS from THIS plat only — counted actives vs this plat's closed pace.
-  // Never parent Redmond/Bend pulse (ci:subdivision-stats-integrity).
-  const mosActive = activeCount
-  const closedPace12 = platClosedPace12mo({
-    mtClosed12: mtCounts.closedCount,
-    salesYears: salesHistory,
-    closedByYear: platClosed?.closedByYear ?? null,
-  })
-  const mosMonths = platMonthsSupplyFromPace(mosActive, closedPace12)
-  const mosAsOf = inventory?.readAt ? formatDate(inventory.readAt) : null
-  const placeMosRaw = buildPlaceMosView({
-    active: mosActive,
-    monthsSupply: mosMonths,
-    grain: 'subdivision',
-    geoSlug: slug,
-    asOf: mosAsOf,
-  })
-  // Keep the sales bar label precise enough that homes÷sales matches the caption
-  // (SITE-86: whole-number "2" next to "About 6.5 months" read as 14÷2=7).
-  const placeMos =
-    placeMosRaw == null
-      ? null
-      : (() => {
-          const salesFace = formatPlatSalesPaceLabel(placeMosRaw.monthOfSales)
-          if (salesFace === placeMosRaw.salesLabel) return placeMosRaw
-          return {
-            ...placeMosRaw,
-            salesLabel: salesFace,
-            tooltip: { ...placeMosRaw.tooltip, sales: salesFace },
-          }
-        })()
+  // SITE-86 honesty: REGISTRY §4 — subdivision grain publishes counts only.
+  // MOS / months-of-supply / verdict stay off this grain (no active/(closed/12)
+  // under a 6-month MOS clause). Alerts use THIS plat's 30-day house count.
   const inventoryKeySet =
     inventory?.listingKeys && inventory.listingKeys.length > 0
       ? new Set(inventory.listingKeys)
@@ -1403,24 +1368,6 @@ export default async function SubdivisionPage({ params }: Props) {
                     </>
                   ) : null}
                 </p>
-                {placeMos ? (
-                  <div className="plat-fold__mos">
-                    <V3MosBars
-                      caption={placeMos.caption}
-                      plainLabel={placeMos.plainLabel}
-                      homesName={placeMos.homesName}
-                      homesLabel={placeMos.homesLabel}
-                      homesValue={placeMos.homesValue}
-                      salesName={placeMos.salesName}
-                      salesLabel={placeMos.salesLabel}
-                      salesValue={placeMos.salesValue}
-                      source={placeMos.source}
-                      asOf={placeMos.asOf}
-                      sourceName="Oregon Data Share"
-                      tooltip={placeMos.tooltip}
-                    />
-                  </div>
-                ) : null}
                 <SubdivisionAlertsStrip
                   id="alerts"
                   placeName={displayName}
