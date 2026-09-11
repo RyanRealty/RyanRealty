@@ -1,10 +1,11 @@
-# Current — 2026-09-11 03:40Z (grinder 01a08d23: SITE-82 + SITE-88 live)
+# Current — 2026-09-11 08:05Z (grinder 01a08eda: SITE-29 + SITE-86 landing)
 
-Owner: `grok-4.5-2026-09-10-18`. origin/main `2f11e4dd` READY `dpl_8rnoqmwMsz9snEJSFokLgad6BWMP`. 15m launchd stays. No auto-seed.
+Owner: `grok-4.5-2026-09-10-22`. 15m launchd stays. No auto-seed.
 
-- **SITE-82 done** city fold Atlas + MOS/alerts. grok-4.6 median **63**. Finish 70 not met.
-- **SITE-88 done** region MOS + year pager + beui-number. grok-4.6 median **63**. Finish 70 not met. Year isolate is region-only.
-- Next open: SITE-86, SITE-89, SITE-73. Skip overlapping place families.
+- **SITE-29** blog edge cache: `next.config.ts` `/blog` + `/blog/:path*` `public, s-maxage=300`. Place pages already `s-maxage=60`. Production accept (HIT) after this deploy.
+- **SITE-86** subdivision fold: Atlas + this-plat 30-day alerts, crawlable doors, source line off the H1. MOS **not** on plat grain (REGISTRY §4). grok-4.6 median **62** rebaselined. Finish 70 not met.
+- Next open: SITE-73 zip, SITE-89 place-type. Skip overlapping place families.
+
 
 # Current — 2026-09-10 23:48Z (homepage uses the MorphingSearch demo, not inline)
 
