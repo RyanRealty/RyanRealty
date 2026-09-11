@@ -1,14 +1,15 @@
 /**
  * /cities/[slug] - the city node. Same template for Bend, Redmond, every city.
  *
- * First screen: place still owns the fold. H1 `{City} real estate` sits on the
- * photograph (not a cream bar above it). Search owns "homes for sale". Atlas
- * is the inventory graphic. Then living atlas, flagship PlaceSplitView seeded
- * from the city polygon. Nested places draw as Atlas regions and Split
- * overlayBoundaries (Bend neighborhoods, plats elsewhere). Do not write
- * ?shapes= onto this URL. Type chips live on Split, not as first-screen
- * property-type H2s. One typical-price slope sits after the child doors.
- * MOS is a caption, never a five-number HUD.
+ * First screen (SITE-82): shortened place photograph + MOS bars, then a city
+ * fold where Atlas is the drawing and CityAlertsStrip (V3Number) is the figure.
+ * Search owns "homes for sale". Flagship PlaceSplitView is seeded from the city
+ * polygon. Nested places draw as Atlas regions and Split overlayBoundaries
+ * (Bend neighborhoods, plats elsewhere). Do not write ?shapes= onto this URL.
+ * Type chips live on Split, not as first-screen property-type H2s. One
+ * typical-price slope sits after the child doors. MOS is two bars, never a
+ * five-number HUD. When MOS publishes, PlaceDoor is omitted so one inventory
+ * count owns the fold.
  *
  * Face numbers are leftover HUD for THIS slug, used by FAQ/schema. Miss omits.
  * Median close 12mo stays on the city chart, never as a fake list price. Do
@@ -99,6 +100,7 @@ import {
   V3_FOOTER_COLUMNS,
   V3Heading,
   V3Instrument,
+  V3MosBars,
   V3PlaceDoor,
   V3Ledger,
   V3Answers,
@@ -123,6 +125,7 @@ import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
 import { overlaysFromRegions } from '@/lib/place/child-rings'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { CityAlertsStrip } from './_v3/CityAlertSheet.client'
+import './_v3/city-fold.css'
 import { cityLibraryHero, cityStagePoster } from './_v3/city-opening'
 import { bendNeighborhoodPlaces } from './_v3/city-places'
 import {
@@ -213,7 +216,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const cityName = snapshot.geoLabel
   return pageMetadata({
     title: `Homes for Sale in ${cityName}, Oregon`,
-    description: `Active single-family homes in ${cityName}, Oregon. Live list prices, neighborhoods, open houses, and recent market activity from the regional MLS.`,
+    description: `Live ${cityName}, Oregon real estate: active single-family homes, months of supply, neighborhoods, recorded plats, open houses, and MLS market data from Oregon Data Share.`,
     path: `/cities/${slug}`,
   })
 }
@@ -580,7 +583,9 @@ export default async function CityDetailPage({ params }: Props) {
   // The href goes through publishPlaceBrowseHref inside the publisher, so a
   // candidate that would land on the unfiltered regional index, or that
   // middleware would 301 away, renders no door at all.
-  const placeDoor = publishPlaceDoor({
+  // SITE-82: when MOS bars publish the same active count, omit PlaceDoor so
+  // the fold does not print the inventory numeral twice (receipt named 655×2).
+  const placeDoorRaw = publishPlaceDoor({
     face,
     grain: 'city',
     placeName: cityName,
@@ -588,6 +593,7 @@ export default async function CityDetailPage({ params }: Props) {
     // The stamp belongs to the same Market Truth read as the count.
     readDate: leftoverStamp ? formatDate(leftoverStamp) : null,
   })
+  const placeDoor = placeMos ? null : placeDoorRaw
 
   // SITE-07: the affordability instrument, opened at the SAME median this
   // page's market section prints (hud.medianList), so the calculator can never
@@ -785,6 +791,14 @@ export default async function CityDetailPage({ params }: Props) {
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
+  // SITE-82: fold Atlas defaults to Houses so the for-sale count agrees with
+  // MOS / leftover HUD detached (same inventory question, one answer). Other
+  // types stay available via the type toggles when their marks are present —
+  // we keep every house mark (active + pending + recent sold) and only the
+  // house type chip, so the dock still has a scrubber and a real toggle set
+  // cannot disagree with 645 on first paint.
+  const foldAtlasDots = atlasView.dots.filter((d) => d.t === 'house')
+  const foldAtlasTypes = atlasView.types.filter((t) => t.key === 'house')
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -798,14 +812,34 @@ export default async function CityDetailPage({ params }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={citySchemas} />
 
-        <div className={stagePosterSrc ? 'place-opening place-opening--media' : 'place-opening'}>
-          <PlaceAreaHero posterSrc={stagePosterSrc} mos={placeMos} />
+        <div
+          className={
+            stagePosterSrc
+              ? 'place-opening place-opening--media place-opening--city'
+              : 'place-opening place-opening--city'
+          }
+        >
+          {/* SITE-82: shortened photograph for place still + H1. MOS moves into
+              the fold figure so Atlas owns the drawing, not a portal hero card. */}
+          <PlaceAreaHero posterSrc={stagePosterSrc} />
           {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
           <V3Breadcrumb trail={trail} tone={stagePosterSrc ? 'on-media' : 'surface'} />
           <div className="place-opening__copy">
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
             </V3Heading>
+            {/* SITE-82 SEO: crawlable inventory + market doors in the opening. */}
+            <p className="place-opening__caption place-opening__caption--doors">
+              <a href={homesForSalePath(cityName)}>{cityName} homes for sale</a>
+              {' · '}
+              <a href={`/housing-market/${slug}`}>{cityName} housing market</a>
+              {slug === 'bend' ? (
+                <>
+                  {' · '}
+                  <a href={`#neighborhoods`}>{cityName} neighborhoods</a>
+                </>
+              ) : null}
+            </p>
             {placeDoor ? (
               <V3PlaceDoor
                 href={placeDoor.href}
@@ -820,40 +854,70 @@ export default async function CityDetailPage({ params }: Props) {
           </div>
         </div>
 
-        {/* SITE-04: the one on-page ask as the first callout after the opening,
-            with the real 30-day count as its claim, and the sticky repeat past
-            #atlas from the same component. Same server action, same payload,
-            same honeypot as the sheet it replaces. */}
-        <CityAlertsStrip
-          id="alerts"
-          cityName={cityName}
-          geoSlug={slug}
-          newCount30d={publicPace.newCount30d}
-          updatedAt={leftoverStamp}
-          browseHref={homesForSalePath(cityName)}
-          // ONE filled control in the first viewport, and never none: the strip
-          // steps down to the outline only when the door above it actually
-          // rendered. A city whose Market Truth read published no active count
-          // has no door, and then the strip's submit is the fold's primary.
-          demote={placeDoor != null}
-          types={alertTypes}
-        />
-
-        {(
-          <V3Atlas
-            id="atlas"
-            headingLevel={2}
-            headline={v3Text(`${cityName} right now`)}
-            dots={atlasView.dots}
-            regions={atlasRegions}
-            basemap={basemapForRegions(atlasRegions)}
-            types={atlasView.types}
-            events={atlasView.events}
-            source={atlasView.source}
-            stamp={atlasView.stamp}
-            incomplete={!atlasView.complete}
-          />
-        )}
+        {/* SITE-82: drawing + figure in the first viewport. Atlas is the drawing
+            (type toggles + price scrubber). MOS two-bar + alerts/V3Number are
+            the figure. Sticky alerts still key off #atlas scrolling past. */}
+        <div className="city-fold">
+          <div className="city-fold__stage">
+            <div className="city-fold__drawing">
+              <V3Atlas
+                id="atlas"
+                headingLevel={2}
+                headline={v3Text(`${cityName} right now`)}
+                headlineTone="eyebrow"
+                claimText={`${cityName} houses — every active and pending detached mark inside the recorded boundary. Scrub price; the claim updates with your filter.`}
+                keyPlacement="dock"
+                sourceName="Oregon Data Share"
+                dots={foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots}
+                regions={atlasRegions}
+                basemap={basemapForRegions(atlasRegions)}
+                types={foldAtlasTypes.length > 0 ? foldAtlasTypes : atlasView.types}
+                events={atlasView.events}
+                source={
+                  foldAtlasDots.length > 0
+                    ? `Detached single-family (Houses) active and pending marks inside the recorded ${cityName} boundary, from the same Oregon Data Share listing tiles the map draws. Price scrubber filters this set.`
+                    : atlasView.source
+                }
+                stamp={atlasView.stamp}
+                incomplete={!atlasView.complete}
+              />
+            </div>
+            <aside className="city-fold__figure">
+              {placeMos ? (
+                <div className="city-fold__mos">
+                  <V3MosBars
+                    caption={placeMos.caption}
+                    plainLabel={placeMos.plainLabel}
+                    homesName={placeMos.homesName}
+                    homesLabel={placeMos.homesLabel}
+                    homesValue={placeMos.homesValue}
+                    salesName={placeMos.salesName}
+                    salesLabel={placeMos.salesLabel}
+                    salesValue={placeMos.salesValue}
+                    source={placeMos.source}
+                    asOf={placeMos.asOf}
+                    sourceName="Oregon Data Share"
+                    tooltip={placeMos.tooltip}
+                  />
+                </div>
+              ) : null}
+              <CityAlertsStrip
+                id="alerts"
+                cityName={cityName}
+                geoSlug={slug}
+                newCount30d={publicPace.newCount30d}
+                updatedAt={leftoverStamp}
+                browseHref={homesForSalePath(cityName)}
+                // ONE filled control in the first viewport, and never none: the
+                // strip steps down only when PlaceDoor rendered above. When MOS
+                // owns the inventory count, PlaceDoor is omitted and submit is
+                // primary (44×44 filled, not a hairline outline).
+                demote={placeDoor != null}
+                types={alertTypes}
+              />
+            </aside>
+          </div>
+        </div>
 
         {/* SITE-30: the map's legend, in the served HTML. Every plat the Atlas
             draws plus every plat in this city with a page of its own, each one
