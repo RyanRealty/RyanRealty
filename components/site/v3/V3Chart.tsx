@@ -35,10 +35,14 @@ import {
   type PlotSeriesIn,
   type RangeBandIn,
 } from '@/lib/charts/plot'
+import { InsightPager } from '@/components/motion/insight-pager'
 import { V3ChartHover, type V3ChartHoverColumn } from './V3ChartHover.client'
 import { V3_ROOT_CLASS, type V3Text } from './atoms'
 import './tokens.css'
 import './V3Chart.css'
+
+export type { InsightPagerProps } from '@/components/motion/insight-pager'
+export { InsightPager }
 
 export type V3ChartPoint = {
   value: number
@@ -193,6 +197,12 @@ export type V3ChartProps = {
    */
   keysToggle?: boolean
   /**
+   * Year pages (SITE-88 / beautifului-insight). With keysToggle, isolates one
+   * year at a time via InsightPager and keeps the month scrubber on that year.
+   * Additive: omit and the legend toggle behaves as before.
+   */
+  yearPages?: boolean
+  /**
    * THE RESTING READING (SITE-41). `'last'` opens the newest stop's crosshair and
    * tooltip before the reader touches anything, and returns there when the pointer
    * leaves. It is how the chart says it is interactive without a sentence teaching a
@@ -300,10 +310,10 @@ function buildAnyPlot(props: V3ChartProps): AnyPlot | null {
 const LABEL_GAP = 12
 const LABEL_LANE = 22
 
-function placeEndLabels(
-  raw: readonly { x: number; y: number; name: string }[],
+function placeEndLabels<T extends { x: number; y: number; name: string }>(
+  raw: readonly T[],
   vbH: number,
-): { x: number; y: number; name: string }[] {
+): T[] {
   const top = 12
   const bottom = vbH - 4
   const placed = raw.map((r) => ({ ...r }))
@@ -398,6 +408,7 @@ export function V3Chart({
   emphasisTone,
   hover,
   keysToggle,
+  yearPages,
   restingRead,
   sampleKey,
   rangeKeyLabel,
@@ -625,7 +636,9 @@ export function V3Chart({
       <figcaption id={captionId} className="v3-chart__caption">
         {caption}
       </figcaption>
-      {claim ? <p className="v3-chart__claim">{claim}</p> : null}
+      {/* Year pages isolate one series; a frozen multi-year claim beside the
+          open year is a §0 contradiction (SITE-88). Tip + pager carry the read. */}
+      {claim && !yearPages ? <p className="v3-chart__claim">{claim}</p> : null}
 
       {keys.length > 1 && !liveKeys ? (
         <ul className="v3-chart__legend">
@@ -713,19 +726,19 @@ export function V3Chart({
                   d={line.d}
                 />
               ))}
-              {yoy
+              {yoy && !yearPages
                 ? placeEndLabels(
-                    plot.lines.flatMap((line) => {
+                    plot.lines.flatMap((line, li) => {
                       const last = [...line.points].reverse().find((p) => p.plot)
                       return last
-                        ? [{ x: Math.min(312, last.x + 3), y: Math.max(12, last.y - 3), name: line.name }]
+                        ? [{ x: Math.min(312, last.x + 3), y: Math.max(12, last.y - 3), name: line.name, i: li }]
                         : []
                     }),
                     plot.vbH,
-                  ).map((label, i) => (
+                  ).map((label) => (
                     <text
-                      key={`lbl-${i}-${label.name}`}
-                      className="v3-chart__line-label"
+                      key={`lbl-${label.i}-${label.name}`}
+                      className={cn('v3-chart__line-label', seriesClass(label.i))}
                       x={label.x}
                       y={label.y}
                     >
@@ -794,6 +807,7 @@ export function V3Chart({
               keys={keys}
               keyClasses={keys.map((_, i) => cn(keyClass(i)))}
               frame={{ axis: yAxis, plot: svg, xTicks: xAxis }}
+              yearPages={yearPages === true}
             />
           )
         }

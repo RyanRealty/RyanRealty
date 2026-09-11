@@ -127,6 +127,7 @@ export function buildMonthlyMedianChart(
 export const YEAR_OVERLAY_READING = {
   marks: true,
   keysToggle: true,
+  yearPages: true,
   restingRead: 'last',
 } as const satisfies Partial<V3ChartProps>
 

@@ -797,6 +797,49 @@
   box-shadow: var(--v3-media-shadow);
 }
 
+/* Year pager (beautifului-insight) — isolate one year; month scrub below. */
+.v3 .v3-chart__year-pager {
+  margin-bottom: var(--v3-space-sm);
+}
+
+.v3 .v3-chart__year-pager .insight-pager__title {
+  font-size: var(--v3-size-label);
+  font-weight: 600;
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-chart__year-pager .insight-pager__current {
+  font-size: var(--v3-size-body);
+  font-weight: 600;
+  color: var(--v3-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3 .v3-chart__year-pager .insight-pager__count {
+  font-size: var(--v3-size-label);
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3 .v3-chart__year-pager .insight-pager__btn {
+  color: var(--v3-ink-muted);
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+}
+
+.v3 .v3-chart__year-pager .insight-pager__btn:hover,
+.v3 .v3-chart__year-pager .insight-pager__btn:focus-visible {
+  background: color-mix(in srgb, var(--v3-navy) 8%, var(--v3-cream));
+  color: var(--v3-ink);
+  outline: none;
+}
+
+.v3 .v3-chart__year-pager .insight-pager__btn:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--v3-cream) 85%, var(--v3-navy));
+}
+
 /* Visible month scrubber under the plot — beautifului-insight adapted as a
    house control (navy/cream), not an AI card paste. */
 .v3 .v3-chart__scrub {

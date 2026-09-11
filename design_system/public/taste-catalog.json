@@ -95,6 +95,14 @@
     "beui:number": { "aliasOf": "beui-number" },
     "rareui:animatedcounter": { "aliasOf": "beui-number" },
     "transitions:number-pop-in": { "aliasOf": "beui-number" },
+    "beautifului-insight": {
+      "add": "https://www.beautifului.dev/r/insight-cards.json",
+      "file": "components/motion/insight-pager.tsx",
+      "import": "@/components/motion/insight-pager",
+      "house": "components/site/v3/V3Chart.tsx"
+    },
+    "beautifului:insight": { "aliasOf": "beautifului-insight" },
+    "beautifului:insight-cards": { "aliasOf": "beautifului-insight" },
     "shadcn-input": {
       "add": "input",
       "file": "components/ui/input.tsx",

@@ -122,6 +122,7 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Ledger,
+  V3MosBars,
   V3Quiet,
   V3SectionTracker,
   type V3InstrumentFigure,
@@ -129,6 +130,8 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { RegionInquirySheet } from './_v3/RegionInquirySheet.client'
+import { RegionCityMos } from './_v3/RegionCityMos.client'
+import './_v3/region-market.css'
 import {
   CLOSED_SALES_FROM_YEAR,
   CLOSED_SALES_TO_YEAR,
@@ -141,9 +144,11 @@ import {
 import {
   buildRegionInstruments,
   buildRegionLead,
-  buildRegionMosChart,
+  buildRegionPlaceMos,
   composeRegionLiveTrace,
+  REGION_LIVE_CITATION,
 } from './_v3/region-figures'
+import { formatPriceCompact } from '@/lib/format/money'
 import {
   buildCityLedger,
   buildClosedLedger,
@@ -160,16 +165,28 @@ import '../_v3/tremor-density.css'
 
 export const revalidate = 300
 
-// Metadata - unchanged from the KB page.
+// Title carries one live figure when the region row answers (SITE-88 SEO).
 export async function generateMetadata(): Promise<Metadata> {
+  const overlays = await getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }])
+  const regionMt = overlays.get('region:central-oregon')
+  const pace = await getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' })
+  const hud = leftoverHudKpis({
+    grain: 'region',
+    headlines: regionMt?.headlines ?? null,
+    inventory: regionMt?.inventory ?? null,
+    pace,
+  })
+  const median =
+    hud.medianList != null && hud.medianList > 0 ? formatPriceCompact(hud.medianList) : null
   return pageMetadata({
-    title: 'Central Oregon region deep dive',
+    title: median
+      ? `Central Oregon housing market · ${median} median list`
+      : 'Central Oregon region deep dive',
     description:
-      'Regional market data for Central Oregon: active inventory, median list price, months of supply, and pace by city. ' +
-      'Single-family homes. Updated every 15 minutes from Oregon Data Share.',
+      'Central Oregon housing market: live single-family inventory, months of supply as homes for sale vs a month of sales, and city doors for Bend, Redmond, Sisters, and the rest of the region. Oregon Data Share via Ryan Realty.',
     path: '/housing-market/central-oregon',
     keywords: [
-      'Central Oregon region deep dive',
+      'Central Oregon housing market',
       'Central Oregon real estate market',
       'Central Oregon region deep dive',
       'Bend Redmond Sisters market data',
@@ -232,9 +249,6 @@ export default async function CentralOregonRegionPage() {
     dropInProgressMonth(priceHistory, currentMonthKey),
   )
   const regionChart = buildRegionMedianChart(chartMonths.months, chartMonths.leftoverUsed)
-  const mosChart = buildRegionMosChart(hud, mosText)
-  const openingChart = mosChart ?? regionChart
-  const openingChartSecondary = mosChart ? regionChart : undefined
   // Two market-truth rows feed this section's figures. One stamp only when
   // both rows carry one clock; a mismatch withholds the stamp rather than
   // aging the fresher row (publishInstrumentStamp contract).
@@ -242,6 +256,12 @@ export default async function CentralOregonRegionPage() {
     regionMt?.headlines?.computedAt,
     regionMt?.inventory?.computedAt,
   ])
+  const regionMos = buildRegionPlaceMos(
+    hud,
+    mosText,
+    leftoverStamp ? formatDate(leftoverStamp) : null,
+  )
+  const openingChart = regionChart
 
   // buildMarketFaq - the single source for the visible FAQ, the FAQPage JSON-LD, and
   // the Dataset variableMeasured. The pulse-or-fallback input is the timeout fallback
@@ -285,16 +305,25 @@ export default async function CentralOregonRegionPage() {
     ...buildSegmentTailFigures(publicSegments, null),
     ...buildPaceTailFigures(publicPace),
   ]
-  // SITE-88: months of supply is the two-bar drawing (catalog house-mos), not
-  // a 4.9 tile. Lead figures are median list and under contract. The year
-  // overlay rides as chartSecondary when MOS publishes.
-  const [firstLiveFigure, ...restLiveFigures] = [...region.live.figures, ...extraLive]
+  // SITE-88: MOS + year chart own the fold. Lead figures stay median + under
+  // contract (beui-number); property-type/pace extras move to the pace band so
+  // the opening is not a collapsed "all N figures" row.
+  const [firstLiveFigure, ...restLiveFigures] = region.live.figures
+  const [firstExtraFigure, ...restExtraFigures] = extraLive
   const liveTrace =
-    composeRegionLiveTrace(region.live.trace, extraLive.length > 0) +
+    composeRegionLiveTrace(regionMos ? REGION_LIVE_CITATION : region.live.trace, false) +
     (publicMixHasRow(publicMix)
       ? ' Financing, feature, and bedroom mix for this refresh is not shown on this page.'
       : '')
-  const [firstPaceFigure, ...restPaceFigures] = region.pace.figures
+  const [firstPaceFigure, ...restPaceFigures] = firstExtraFigure
+    ? [...region.pace.figures, firstExtraFigure, ...restExtraFigures]
+    : region.pace.figures
+  // Pace band may be empty of native figures but still carry segment extras.
+  const paceFigures = firstPaceFigure
+    ? ([firstPaceFigure, ...restPaceFigures] as const)
+    : firstExtraFigure
+      ? ([firstExtraFigure, ...restExtraFigures] as const)
+      : null
   const cityLedger = buildCityLedger(citySnapshots, {
     regionActive: hud.active,
   })
@@ -367,9 +396,12 @@ export default async function CentralOregonRegionPage() {
     },
     {
       type: 'webPage',
-      name: 'Central Oregon region deep dive',
+      name:
+        hud.medianList != null && hud.medianList > 0
+          ? `Central Oregon housing market · ${formatPriceCompact(hud.medianList)} median list`
+          : 'Central Oregon housing market',
       description:
-        'Live Central Oregon regional market data: active inventory, median list price, months of supply, and pace. Single-family homes only.',
+        'Live Central Oregon regional market data: active inventory, median list price, months of supply as homes for sale vs a month of sales, and city doors. Single-family homes. Oregon Data Share via Ryan Realty.',
       url: '/housing-market/central-oregon',
     },
   ]
@@ -443,14 +475,35 @@ export default async function CentralOregonRegionPage() {
                lead, each with a sentence; the tail keeps every figure behind a summary
                that names what is in it. */
             chartFirst
+            /* Two lead figures only — no collapsed appendix in the first viewport. */
             foldAfter={REGION_LEAD_FIGURES}
             foldLabel={v3Text(REGION_FOLD_LABEL)}
             source={v3Text(liveTrace)}
             sourceName={v3Text('Oregon Data Share')}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
             asOf={refreshedAt ?? undefined}
+            action={{ label: v3Text('Ask about Central Oregon'), href: '#ask' }}
             chart={openingChart}
-            chartSecondary={openingChartSecondary}
+            drawing={
+              regionMos ? (
+                <V3MosBars
+                  id="central-oregon-mos"
+                  className="region-market-mos"
+                  caption={regionMos.caption}
+                  plainLabel={regionMos.plainLabel}
+                  homesName={regionMos.homesName}
+                  homesLabel={regionMos.homesLabel}
+                  homesValue={regionMos.homesValue}
+                  salesName={regionMos.salesName}
+                  salesLabel={regionMos.salesLabel}
+                  salesValue={regionMos.salesValue}
+                  source={regionMos.source}
+                  asOf={regionMos.asOf}
+                  sourceName="Oregon Data Share MLS"
+                  tooltip={regionMos.tooltip}
+                />
+              ) : null
+            }
           />
         ) : (
           <V3Quiet
@@ -474,12 +527,14 @@ export default async function CentralOregonRegionPage() {
             eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Cities and towns')}
             rows={[firstCityRow, ...restCityRows]}
-            // The row prints count, months of supply (figure + bar), and median
-            // list as the detail — all from the same live single-family inventory.
+            // For-sale count stays on desktop; MOS is two named bars (house-mos),
+            // not encode=bar meters that hid the count above 48rem.
             source={v3Text(REGION_CITIES_SOURCE)}
             updated={cityLedger.stamp ? v3Text(formatDate(cityLedger.stamp)) : undefined}
             action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
-            encode="bar"
+            drawing={
+              cityLedger.mos.length > 0 ? <RegionCityMos cities={cityLedger.mos} /> : null
+            }
           />
         ) : (
           <V3Ledger
@@ -546,14 +601,21 @@ export default async function CentralOregonRegionPage() {
             because both are closed-sales facts, and Quiet-Instrument-Ledger keeps the
             rhythm. When it has no figures the neighbours are Quiet and Ledger, which is
             a legal pair, so its absence breaks nothing. */}
-        {firstPaceFigure ? (
+        {paceFigures ? (
           <V3Instrument
             id="pace"
             level={2}
             eyebrow={v3Text('Closed sales')}
             headline={v3Text('The pace of the Central Oregon market')}
-            figures={[firstPaceFigure, ...restPaceFigures]}
-            source={v3Text(region.pace.trace)}
+            figures={paceFigures}
+            foldAfter={2}
+            foldLabel={v3Text(REGION_FOLD_LABEL)}
+            source={v3Text(
+              firstExtraFigure
+                ? composeRegionLiveTrace(region.pace.trace, true)
+                : region.pace.trace,
+            )}
+            sourceName={v3Text('Oregon Data Share')}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
           />
         ) : null}
