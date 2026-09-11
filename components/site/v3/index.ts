@@ -505,6 +505,7 @@ export { V3Quiet } from './V3Quiet'
 
 export type {
   V3QuietProps,
+  V3QuietAlert,
   V3QuietItem,
   V3QuietLink,
   V3QuietProse,
