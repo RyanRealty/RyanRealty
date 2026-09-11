@@ -32,6 +32,11 @@ if [ -z "$(git status --porcelain)" ] && [ "$(git rev-parse --abbrev-ref HEAD)" 
 fi
 
 echo "──── $(date '+%Y-%m-%d %H:%M:%S') grok routine start ($(git rev-parse --short HEAD))" >> "$LOG"
+# Subscription only: grok CLI uses ~/.grok/auth.json. XAI_API_KEY (console.x.ai
+# pay-per-token) is the CLI fallback when no session is active — strip it so a
+# launchd fire cannot silently bill the API.
+unset XAI_API_KEY
+export HOME="${HOME:-/Users/matthewryan}"
 "$GROK" -p "$(cat scripts/site-queue-routine-prompt.md)" \
   --permission-mode bypassPermissions \
   --output-format plain >> "$LOG" 2>&1

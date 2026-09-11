@@ -336,10 +336,12 @@ function scoreWithGrok(prompt, shots) {
     `${prompt}\n\nRead these two image files with your file tool and judge what is IN them — do not guess from their names:\n` +
     `Desktop (1440x900): ${shots.desktopPath}\nMobile (375x812): ${shots.mobilePath}\n\n` +
     'Reply with the JSON object only, no preamble and no code fence.'
+  const grokEnv = { ...process.env }
+  delete grokEnv.XAI_API_KEY
   const res = spawnSync(
     GROK_CLI,
     ['-p', fullPrompt, '-m', EVALUATOR_MODEL, '--permission-mode', 'bypassPermissions', '--output-format', 'plain'],
-    { cwd: REPO_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 900000 },
+    { cwd: REPO_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 900000, env: grokEnv },
   )
   if (res.error) throw res.error
   if (res.status !== 0) throw new Error(`grok CLI exited ${res.status}: ${(res.stderr || '').slice(0, 500)}`)
