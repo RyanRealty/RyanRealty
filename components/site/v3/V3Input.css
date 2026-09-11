@@ -47,6 +47,17 @@
   transition: border-color var(--v3-dur-state) var(--v3-ease-out);
 }
 
+/* THE FLOOR HAS TO SIT ON THE THING THAT IS THE CONTROL. `v3-input__control`
+   is passed to the motion Field, which renders it on a WRAPPER div and puts the
+   real <input> inside at h-full — and because that wrapper is h-11 (44px) WITH a
+   border, h-full resolves to 42. The wrapper met the tap floor while the control
+   a person actually touches did not; ci:tap-targets measured 207.8x42 on
+   /contact. The wrapper is overflow-hidden, so the two extra pixels are clipped
+   and nothing moves visually. */
+.v3-input__control input {
+  min-block-size: var(--v3-tap);
+}
+
 .v3-input__control[required] {
   padding-right: var(--v3-space-xl);
 }
