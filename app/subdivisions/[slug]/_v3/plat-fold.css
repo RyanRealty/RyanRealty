@@ -1,0 +1,409 @@
+/* SITE-86 plat first viewport: Atlas drawing + MOS/alerts figure.
+   Page-local only — does not restyle city/neighborhood/community openings. */
+
+@layer base {
+  .plat-fold a {
+    color: inherit;
+  }
+}
+
+/* Shorten the photograph — MOS lives in the fold figure, so the still only
+   needs H1 + crawlable doors (overflow:hidden clips past max-height).
+   Beat .place-opening--media's 62vh floor with higher specificity. */
+.place-opening.place-opening--plat.place-opening--media {
+  min-height: 9rem !important;
+  max-height: 12rem !important;
+}
+
+.place-opening--plat.place-opening--media .v3-heading--field {
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  line-height: 1.05;
+}
+
+/* Long resort/listing photo caption steals fold height; SEO doors live in the fold. */
+.place-opening--plat .place-opening__caption {
+  display: none;
+}
+
+@media (min-width: 64rem) {
+  .place-opening.place-opening--plat.place-opening--media {
+    min-height: 8rem !important;
+    max-height: 10rem !important;
+  }
+
+  .place-opening--plat.place-opening--media .place-opening__copy {
+    align-self: end;
+    padding-top: calc(var(--v3-space-md) + 1.25rem);
+    padding-bottom: var(--v3-space-2xs);
+    max-width: none;
+  }
+}
+
+@media (max-width: 39.99rem) {
+  .place-opening.place-opening--plat.place-opening--media {
+    min-height: 5rem;
+    max-height: 6.25rem;
+  }
+
+  .place-opening--plat.place-opening--media .place-opening__copy {
+    align-self: end;
+    padding-top: calc(var(--v3-space-lg) + 1.5rem);
+    padding-bottom: var(--v3-space-2xs);
+  }
+
+  .place-opening--plat .place-opening__caption--doors {
+    font-size: var(--v3-size-source);
+  }
+}
+
+.place-opening--plat .place-opening__caption {
+  font-size: var(--v3-size-body-sm);
+  margin-top: var(--v3-space-2xs);
+}
+
+.place-opening--plat .place-opening__caption a {
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.place-opening--plat .place-opening__caption a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.place-opening--plat .plat-opening__doors {
+  margin-top: var(--v3-space-sm);
+}
+
+.plat-fold {
+  width: 100%;
+  max-width: var(--v3-measure);
+  margin-inline: auto;
+  padding-inline: var(--v3-gutter);
+  padding-top: var(--v3-space-md);
+  padding-bottom: var(--v3-space-lg);
+}
+
+.plat-fold__doors {
+  margin-top: var(--v3-space-md);
+}
+
+.plat-fold__seo-doors {
+  margin-top: var(--v3-space-xs);
+  font-size: var(--v3-size-source);
+}
+
+.plat-fold__seo-doors a {
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.plat-fold__stage {
+  display: grid;
+  gap: var(--v3-space-lg);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .plat-fold__stage {
+    grid-template-columns: minmax(0, 1.45fr) minmax(20rem, 0.95fr);
+    column-gap: var(--v3-space-lg);
+  }
+}
+
+/* Fold Atlas: MOS owns the inventory numeral. Hide the key's competing
+   for-sale / pending counts. Keep type + scrub. */
+.plat-fold__drawing .v3-atlas__key {
+  display: none;
+}
+
+.plat-fold__drawing {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.plat-fold__drawing .v3-atlas {
+  max-width: 100%;
+}
+
+.plat-fold__drawing .v3-atlas__frame {
+  max-height: min(32vh, 16rem);
+}
+
+.plat-fold__drawing .v3-atlas__sales-legend {
+  display: none;
+}
+
+.plat-fold__drawing .v3-atlas__aside,
+.plat-fold__drawing .v3-atlas__events {
+  display: none;
+}
+
+.plat-fold__drawing .v3-atlas__dock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-xs);
+  padding-top: var(--v3-space-2xs);
+  max-height: none;
+}
+
+.plat-fold__drawing .v3-atlas__types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs);
+}
+
+.plat-fold__drawing .v3-atlas__scrub {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+}
+
+.plat-fold__drawing .v3-atlas__place {
+  pointer-events: none;
+}
+
+.plat-fold__drawing .v3-atlas__scrub input,
+.plat-fold__drawing .v3-atlas__range,
+.plat-fold__drawing .v3-range,
+.plat-fold__drawing .v3-range__beui {
+  min-block-size: var(--v3-tap);
+  min-inline-size: var(--v3-tap);
+}
+
+@media (max-width: 63.99rem) {
+  .plat-fold {
+    padding-top: var(--v3-space-2xs);
+    padding-bottom: var(--v3-space-sm);
+    gap: 0;
+  }
+
+  .plat-fold__stage {
+    gap: var(--v3-space-2xs);
+  }
+
+  /* Readable Atlas strip — still short enough for MOS + ask. */
+  .plat-fold__drawing .v3-atlas__frame {
+    max-height: min(12vh, 5.5rem);
+  }
+
+  .plat-fold__drawing .v3-atlas__head {
+    padding-bottom: 0;
+  }
+
+  .plat-fold__drawing .v3-atlas__headline {
+    font-size: var(--v3-size-body-sm);
+  }
+
+  .plat-fold__drawing .v3-atlas__claim,
+  .plat-fold__drawing .v3-atlas__zoom,
+  .plat-fold__drawing .v3-atlas__types,
+  .plat-fold__drawing .v3-atlas__sales-legend,
+  .plat-fold__drawing .v3-atlas__dock {
+    display: none;
+  }
+
+  .plat-fold__figure .v3-alerts__strip,
+  .plat-fold__figure .v3-source,
+  .plat-fold__figure .v3-alerts__source,
+  .plat-fold__doors {
+    display: none;
+  }
+
+  /* Claim → full-width email ask. MOS caption stays; proof + V3 doors wait. */
+  .plat-fold__figure .v3.v3-alerts .v3-alerts__grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas: 'lead' 'ask' !important;
+  }
+
+  .plat-fold__figure .v3.v3-mos {
+    padding: var(--v3-space-2xs) var(--v3-space-xs);
+  }
+
+  .plat-fold__figure .v3-mos__plain,
+  .plat-fold__figure .v3-mos .v3-source {
+    display: none;
+  }
+
+  .plat-fold__figure .v3-mos__caption {
+    -webkit-line-clamp: 2;
+    font-size: var(--v3-size-source);
+  }
+
+  .plat-fold__seo-doors {
+    font-size: var(--v3-size-source);
+    margin-top: 0;
+    margin-bottom: var(--v3-space-2xs);
+  }
+
+  .plat-fold__figure .v3-alerts__num {
+    font-size: clamp(1.75rem, 9vw, 2.5rem);
+  }
+
+  .plat-fold__figure .v3-alerts__claim {
+    font-size: var(--v3-size-body-sm);
+  }
+
+  .plat-fold__figure .v3-alerts__ask .v3-btn,
+  .plat-fold__figure .v3-alerts__ask button[type='submit'] {
+    min-height: var(--v3-tap);
+    width: 100%;
+  }
+}
+
+.plat-fold__figure .v3-alerts__scope,
+.plat-fold__figure .v3-alerts__browse {
+  display: none;
+}
+
+.plat-fold__figure {
+  display: grid;
+  gap: var(--v3-space-md);
+  min-width: 0;
+}
+
+.plat-fold__figure .v3-mos,
+.plat-fold__figure .v3-alerts {
+  margin: 0;
+}
+
+.plat-fold__mos {
+  display: grid;
+  gap: var(--v3-space-2xs);
+}
+
+.plat-fold__figure .v3.v3-mos {
+  padding: var(--v3-space-xs) var(--v3-space-sm);
+  gap: var(--v3-space-2xs);
+  max-width: 100%;
+}
+
+.plat-fold__figure .v3-mos__caption {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+
+.plat-fold__figure .v3-alerts__thumb-price {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.plat-fold__figure .v3.v3-alerts {
+  padding-inline: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  max-width: none;
+}
+
+.plat-fold__figure .v3.v3-alerts .v3-alerts__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-areas: 'lead' 'figure' 'ask' !important;
+  column-gap: 0;
+  row-gap: var(--v3-space-sm);
+  gap: var(--v3-space-sm);
+}
+
+.plat-fold__figure .v3.v3-alerts .v3-alerts__ask {
+  padding-left: 0 !important;
+  border-left: 0 !important;
+}
+
+.plat-fold__figure .v3-alerts__ask .v3-btn,
+.plat-fold__figure .v3-alerts__ask button[type='submit'] {
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+}
+
+.plat-fold__figure .v3-alerts__eyebrow {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.plat-fold__figure .v3-alerts__claim {
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-snug, 1.25);
+}
+
+.plat-fold__figure .v3-alerts__claim-text {
+  display: inline;
+}
+
+.plat-fold__figure .v3-alerts__num {
+  font-size: clamp(2.5rem, 6vw, 3.5rem);
+  line-height: 0.95;
+  margin-right: 0.2em;
+}
+
+.plat-fold__figure .v3-alerts__types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs);
+  min-height: var(--v3-tap);
+}
+
+.plat-fold__figure .v3-alerts__types button {
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+}
+
+.plat-fold__figure .v3-alerts__strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-xs);
+  max-height: 4.25rem;
+  overflow: hidden;
+}
+
+/* Desktop: keep the email field inside the 900px first viewport. */
+@media (min-width: 64rem) {
+  .plat-fold__figure .v3.v3-mos {
+    padding: var(--v3-space-2xs) var(--v3-space-sm);
+  }
+
+  .plat-fold__figure .v3-mos .v3-source {
+    display: none;
+  }
+
+  .plat-fold__figure .v3-source {
+    display: none;
+  }
+}
+
+.plat-fold__figure .v3-alerts__strip > li:nth-child(n + 2) {
+  display: none;
+}
+
+.plat-fold__figure .v3-alerts__thumb {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--v3-space-xs);
+  min-width: 0;
+  max-width: none;
+}
+
+.plat-fold__figure .v3-alerts__thumb img {
+  width: 5.5rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.plat-fold__figure .v3-alerts__thumb-name,
+.plat-fold__figure .v3-alerts__thumb-facts,
+.plat-fold__figure .v3-alerts__thumb-price {
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: manual;
+}
+
+@media (max-width: 39.99rem) {
+  .plat-fold {
+    padding-top: var(--v3-space-sm);
+    padding-bottom: var(--v3-space-md);
+  }
+
+  .plat-fold__figure .v3-alerts__claim {
+    font-size: var(--v3-size-body-lg);
+  }
+}

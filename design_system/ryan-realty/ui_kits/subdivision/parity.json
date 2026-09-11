@@ -2,8 +2,8 @@
   "route": "app/subdivisions/[slug]/page.tsx",
   "mockup": null,
   "visualLanguage": "design_system/public/PUBLIC_UI.md. First screen is Split + plat inventory face, not a Stage or Field cage.",
-  "competitiveTarget": "Beat the Zillow and Redfin subdivision pages. First screen is H1 '{Name} homes for sale', a plat-inventory face (count + median list from getPlatPublicInventory via publishPlatFigures), and flagship PlaceSplitView of that counted set. Ridge is a /subdivisions URL, not /communities/ridge. Seed a map ring only when GIS stored a real polygon — Ridge historically has none, so the camera is pin bounds, never an invented hull. Never say plat on the public page. Giant 0 is forbidden on a timed-out read. Schools only if the MLS modal publishes. Yearly sold 2021–2025 counts sit below the fold.",
-  "note": "Place-page class opener, amended 2026-09-03. Order is V3Breadcrumb, place-opening (V3Heading `{Name} homes for sale` + PlaceFaceStrip plat-inventory face + V3SourceLine + full-bleed PlaceAreaHero photo), V3Atlas (self ring), PlaceTypeSlider (getPublicPlaceSegments, same leftover extra-type feed as the other grains), PlaceSplitView of the counted set (overlayBoundaries from atlas children, empty here because this grain is self), SubdivisionSchools, Instrument (plat market below the fold), SubdivisionSalesHistory + SubdivisionMarketCharts, V3PlaceCharacter, SubdivisionDocuments, Footer. Face SoR is getPlatPublicInventory + publishPlatFigures; publishPlaceFace({ grain: 'subdivision', hud: null, active, medianList }) — no MOS, DTP, 30-day sold, parent leftover, or closed-12mo on the live face. THE PARENT PULSE IS GONE AND MUST NOT COME BACK. Seed a map ring only when GIS stored a real polygon. Yearly closed counts stay in SubdivisionSalesHistory below the fold. Schools stay in SubdivisionSchools; omit a level the modal does not publish. Parks/trails stay Quiet edges, not an invented rail.",
+  "competitiveTarget": "Beat the Zillow and Redfin subdivision pages. First screen is H1 '{Name} homes for sale', a plat-inventory face (count + median list from getPlatPublicInventory via publishPlatFigures), and flagship PlaceSplitView of that counted set. Ridge is a /subdivisions URL, not /communities/ridge. Seed a map ring only when GIS stored a real polygon \u2014 Ridge historically has none, so the camera is pin bounds, never an invented hull. Never say plat on the public page. Giant 0 is forbidden on a timed-out read. Schools only if the MLS modal publishes. Yearly sold 2021\u20132025 counts sit below the fold.",
+  "note": "Place-page class opener, amended 2026-09-03. Order is V3Breadcrumb, place-opening (V3Heading `{Name} homes for sale` + PlaceFaceStrip plat-inventory face + V3SourceLine + full-bleed PlaceAreaHero photo), V3Atlas (self ring), PlaceTypeSlider (getPublicPlaceSegments, same leftover extra-type feed as the other grains), PlaceSplitView of the counted set (overlayBoundaries from atlas children, empty here because this grain is self), SubdivisionSchools, Instrument (plat market below the fold), SubdivisionSalesHistory + SubdivisionMarketCharts, V3PlaceCharacter, SubdivisionDocuments, Footer. Face SoR is getPlatPublicInventory + publishPlatFigures; publishPlaceFace({ grain: 'subdivision', hud: null, active, medianList }) \u2014 no MOS, DTP, 30-day sold, parent leftover, or closed-12mo on the live face. THE PARENT PULSE IS GONE AND MUST NOT COME BACK. Seed a map ring only when GIS stored a real polygon. Yearly closed counts stay in SubdivisionSalesHistory below the fold. Schools stay in SubdivisionSchools; omit a level the modal does not publish. Parks/trails stay Quiet edges, not an invented rail.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -32,7 +32,7 @@
     },
     {
       "name": "V3Button",
-      "section": "SITE-47: the opening's door row (.plat-opening__doors) — one primary door to the browse path (\"See every home for sale\") and one ghost to a broker, in the fold beneath the caption. Neither captured viewport of this class held a next action before this pass.",
+      "section": "SITE-47: the opening's door row (.plat-opening__doors) \u2014 one primary door to the browse path (\"See every home for sale\") and one ghost to a broker, in the fold beneath the caption. Neither captured viewport of this class held a next action before this pass.",
       "blocking": true
     },
     {
@@ -47,7 +47,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "The place's own market below the fold: publishPlatFigures median (DTP and 30-day sold WITHHOLD), Market Truth recorded counts, the market_stats_cache ytd row, and (SITE-24) the plat's LIFETIME closed count attributed by point-in-polygon out of subdivision_plat_closed_mv. Its chart is the MLS-name yearly series when that join produced one, and otherwise the SAME boundary union grouped by year — never both, because the yearly Ledger below prints the name-joined counts and two populations may not sit under one heading. Not the live face.",
+      "section": "The place's own market below the fold: publishPlatFigures median (DTP and 30-day sold WITHHOLD), Market Truth recorded counts, the market_stats_cache ytd row, and (SITE-24) the plat's LIFETIME closed count attributed by point-in-polygon out of subdivision_plat_closed_mv. Its chart is the MLS-name yearly series when that join produced one, and otherwise the SAME boundary union grouped by year \u2014 never both, because the yearly Ledger below prints the name-joined counts and two populations may not sit under one heading. Not the live face.",
       "blocking": true
     },
     {
@@ -87,7 +87,7 @@
     },
     {
       "name": "V3Answers",
-      "section": "Pattern 8, #faq, and this route's FIRST question set (site queue SITE-08). Verified questions from buildPlaceAnswers, each row carrying the ONE figure it is about — the figure on the closed row, the drawing and the §0 trace inside it — and the SAME array feeds the FAQPage JSON-LD through answersFaqItems, so the markup cannot describe a sentence the page does not print. WHAT THE PLAT GRAIN MAY ANSWER, and the short set is the point: REGISTRY §4 withholds every closed-price statistic at this grain (a closed median, a YoY of it, and a sale-to-list ratio, all off an MLS SubdivisionName join where most plats never reach ten detached sales in 36 months), and lib/market/geo-grain-trust.ts refuses this grain's closed attribution, so months of supply is withheld too. The verdict question is still ASKED and answered with the refusal plus the closed count behind it (the SITE-01 sentence pattern), never dropped. What publishes: the live list median of the plat's own actives (publishPlatFigures), median days on market from the plat's own market_stats_cache ytd row, the counted active set, the latest COMPLETE calendar year's closed count — never the running partial year — from getSubdivisionSalesHistory, or, when that name join is empty (every sub-plat of a resort: its homes are filed under the resort's MLS name), the same year off the boundary union, carrying its own trace and its own population noun because the boundary count is every property type; and the plat's lifetime closed count inside its recorded boundary, drawn as a tally (SITE-24). Doors are the browse path, the parent resort or city, and /how-we-get-our-numbers. Closes the page after SubdivisionDocuments, so no two adjacent sections share a pattern.",
+      "section": "Pattern 8, #faq, and this route's FIRST question set (site queue SITE-08). Verified questions from buildPlaceAnswers, each row carrying the ONE figure it is about \u2014 the figure on the closed row, the drawing and the \u00a70 trace inside it \u2014 and the SAME array feeds the FAQPage JSON-LD through answersFaqItems, so the markup cannot describe a sentence the page does not print. WHAT THE PLAT GRAIN MAY ANSWER, and the short set is the point: REGISTRY \u00a74 withholds every closed-price statistic at this grain (a closed median, a YoY of it, and a sale-to-list ratio, all off an MLS SubdivisionName join where most plats never reach ten detached sales in 36 months), and lib/market/geo-grain-trust.ts refuses this grain's closed attribution, so months of supply is withheld too. The verdict question is still ASKED and answered with the refusal plus the closed count behind it (the SITE-01 sentence pattern), never dropped. What publishes: the live list median of the plat's own actives (publishPlatFigures), median days on market from the plat's own market_stats_cache ytd row, the counted active set, the latest COMPLETE calendar year's closed count \u2014 never the running partial year \u2014 from getSubdivisionSalesHistory, or, when that name join is empty (every sub-plat of a resort: its homes are filed under the resort's MLS name), the same year off the boundary union, carrying its own trace and its own population noun because the boundary count is every property type; and the plat's lifetime closed count inside its recorded boundary, drawn as a tally (SITE-24). Doors are the browse path, the parent resort or city, and /how-we-get-our-numbers. Closes the page after SubdivisionDocuments, so no two adjacent sections share a pattern.",
       "blocking": true
     }
   ],
@@ -104,18 +104,18 @@
     "FAQPage, built by answersFaqItems FROM the V3Answers rows this page renders and from nothing else (SITE-08). This route emitted no FAQPage at all before 2026-09-08."
   ],
   "dataLayer": [
-    "getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }) — the stored polygon, if any. Seed Split ring only when it is a real polygon. Ridge historically has none; do not invent a hull.",
-    "getPlatPublicInventory(slug) — THE COUNTED SET: recorded SFR + PUBLIC_ACTIVE. Face count and median and Split listings come from this set. Do not fall back to a capped featured fetch or an unfiltered pin count; those were the 12 / 14 / 26 split on Ridge At Eagle Crest (2026-08-16).",
-    "getListingTiles({ listingKeys, status: 'active', propertyType: 'A', limit: 250 }) — hydrates the counted keys for PlaceSplitView. Filtered back to the counted set.",
-    "publishPlaceFace({ grain: 'subdivision', hud: null, active, medianList }) — live face. MOS / DTP / 30d sold / leftover parent / closed-12mo stay off the face.",
-    "publishPlatFigures — plat median may publish; days-to-pending and 30-day sold withhold. ci:publish-plat-figures.",
-    "getSubdivisionCounts(slug) — Market Truth recorded detached counts and extras, below the fold.",
-    "getSubdivisionSalesHistory(slug) — yearly Ledger below the fold, counts only.",
-    "getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }) — this place's own cache row. ci:subdivision-stats-integrity pins the period.",
-    "getSubdivisionSchools(city, alias) — only when a registry match exists; omit a level the modal does not publish. ci:subdivision-stats-integrity pins the call.",
-    "getPlaceDocuments('subdivision', slug) and getPlaceCharacter('subdivision', slug) — documents and character.",
-    "getIndexableSubdivisions() — robots policy in generateMetadata AND the place's city.",
-    "getPlatClosedCount(slug) — public.subdivision_plat_closed_mv: the plat's lifetime closed sales attributed by ST_Contains against its recorded polygon, unioned over distinct listing_key with the MLS-name match, plus closedByYear. Feeds the indexability gate, the market band's figure and series, and two FAQ rows (SITE-24)."
+    "getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }) \u2014 the stored polygon, if any. Seed Split ring only when it is a real polygon. Ridge historically has none; do not invent a hull.",
+    "getPlatPublicInventory(slug) \u2014 THE COUNTED SET: recorded SFR + PUBLIC_ACTIVE. Face count and median and Split listings come from this set. Do not fall back to a capped featured fetch or an unfiltered pin count; those were the 12 / 14 / 26 split on Ridge At Eagle Crest (2026-08-16).",
+    "getListingTiles({ listingKeys, status: 'active', propertyType: 'A', limit: 250 }) \u2014 hydrates the counted keys for PlaceSplitView. Filtered back to the counted set.",
+    "publishPlaceFace({ grain: 'subdivision', hud: null, active, medianList }) \u2014 live face. MOS / DTP / 30d sold / leftover parent / closed-12mo stay off the face.",
+    "publishPlatFigures \u2014 plat median may publish; days-to-pending and 30-day sold withhold. ci:publish-plat-figures.",
+    "getSubdivisionCounts(slug) \u2014 Market Truth recorded detached counts and extras, below the fold.",
+    "getSubdivisionSalesHistory(slug) \u2014 yearly Ledger below the fold, counts only.",
+    "getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }) \u2014 this place's own cache row. ci:subdivision-stats-integrity pins the period.",
+    "getSubdivisionSchools(city, alias) \u2014 only when a registry match exists; omit a level the modal does not publish. ci:subdivision-stats-integrity pins the call.",
+    "getPlaceDocuments('subdivision', slug) and getPlaceCharacter('subdivision', slug) \u2014 documents and character.",
+    "getIndexableSubdivisions() \u2014 robots policy in generateMetadata AND the place's city.",
+    "getPlatClosedCount(slug) \u2014 public.subdivision_plat_closed_mv: the plat's lifetime closed sales attributed by ST_Contains against its recorded polygon, unioned over distinct listing_key with the MLS-name match, plus closedByYear. Feeds the indexability gate, the market band's figure and series, and two FAQ rows (SITE-24)."
   ],
   "sectionOrder": [
     "MetadataBlock",
@@ -141,83 +141,104 @@
     "VideoTourRail",
     "PublicSubdivisionCounts",
     "SubdivisionExploreTail, and with it KbExploreTowns and KbSell",
-    "The parent-market band and fetchSubdivMarketExtras (another geography under this heading — 3f34bf65, 2026-08-16)",
+    "The parent-market band and fetchSubdivMarketExtras (another geography under this heading \u2014 3f34bf65, 2026-08-16)",
     "SmoothScrollProvider, KbFooter, KbBreadcrumb, KbSectionTracker (chrome)"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-59. The class was re-scored after #homes stopped holding the dead Google canvas's fixed 600px height. Matt turned that canvas off on 2026-09-03 and the height stayed, so /subdivisions/diamond-bar-ranch painted 996px of section for one home, about 530px of it empty cream. The height is a cap now, and on phones the list rail moved out of `position: absolute` into normal flow. The evaluator rendered /subdivisions/diamond-bar-ranch and /subdivisions/golf-homes-at-tetherow at 1440x2600 and 375 wide, measured the section box at both, and scored three times: 74, 73, 73.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluatedAt": "2026-09-11",
+    "rubricVersion": "v1-2026-09-10",
+    "evaluator": "grok-4.6 via npx tsx scripts/taste-evaluate.ts subdivision --shots desktop.png,mobile375.png --url http://127.0.0.1:3211/subdivisions/ridge-at-eagle-crest --beat 59 (SITE-86). Three scorings median 63 on first-viewport Ridge shots.",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
-        "/subdivisions/golf-homes-at-tetherow",
-        "/subdivisions/diamond-bar-ranch"
+        "/subdivisions/ridge-at-eagle-crest"
       ],
       "viewports": [
         1440,
         375
       ],
       "states": [
-        "default",
-        "market-report",
-        "faq",
-        "homes"
+        "default"
       ]
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/subdivision/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/mobile375.png",
-      "marketDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/market-desktop.png",
-      "marketMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/market-mobile375.png",
-      "answersDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-desktop.png",
-      "answersMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-mobile375.png",
-      "unrecordedDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/unrecorded-desktop.png",
-      "unrecordedMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/unrecorded-mobile375.png",
-      "homesDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/homes-desktop.png",
-      "homesMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/homes-mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/mobile375.png"
     },
-    "shotsHash": "sha256:80c82ffede0029461ec3edd01807ca988ad91b4a70db5a26f15bfce139fb750a",
+    "shotsHash": "sha256:3f68e338fd8925d403e81a2faae1c820f399ea061f89efa45c39a8aa9985b265",
     "scores": [
-      74,
-      73,
-      73
+      61,
+      67,
+      63
     ],
-    "score": 73,
+    "score": 63,
     "breakdown": {
-      "design": 21,
-      "originality": 18,
-      "interaction": 11,
-      "craft": 14,
-      "honesty": 9
+      "design": 19,
+      "originality": 16,
+      "interaction": 8,
+      "craft": 12,
+      "honesty": 8
     },
-    "beats": "Beats Zillow's and Redfin's neighborhood pages on identity \u2014 a photograph of a live, named listing on arrival, which a portal's generic map view never shows, over the county's own recorded plat and its lot lines. It does not beat a resort developer's own site on photography: the frame is one MLS listing photo, not a commissioned shoot.",
+    "honestyFunction": 8,
+    "beats": "Zillow subdivision/neighborhood pages \u2014 this fold wins on months-of-supply as two named bars (14 homes vs 2.2 sales, about 6.5 months) and a plat Atlas with a price scrubber in the first viewport; it still loses eagle-crest.com on setting photography and story.",
+    "adaptedFrom": [
+      {
+        "id": "beui-number"
+      },
+      {
+        "id": "rareui:animatedcounter"
+      },
+      {
+        "id": "house-mos"
+      },
+      {
+        "id": "house-atlas"
+      },
+      {
+        "id": "house-alerts"
+      }
+    ],
     "defects": [
       {
-        "section": "#homes filter rail",
+        "section": "mobile atlas (RIDGE AT EAGLE CREST RIGHT NOW)",
         "severity": "taste",
-        "finding": "Carried, unchanged by this node: the PLACES / FOR SALE / PRICE / BEDS / BATHS / HOME TYPE bar still reads as a portal search widget bolted under the editorial opening rather than in the register the Atlas above it uses."
+        "finding": "At 375 the plat is a mute illustration: no price scrubber, no House filter, no zoom, and no 14-homes claim, so the map does not do the job the desktop Atlas does.",
+        "replaceWith": "house-atlas"
       },
       {
-        "section": "#faq 2025-vs-2024 dot row",
+        "section": "mobile first viewport / alerts",
         "severity": "taste",
-        "finding": "Carried: the dot comparison shows no hover or tap affordance in the static render, so it reads as a picture of data rather than something a visitor can interrogate."
+        "finding": "The listing-alert ask (email field and Email me each one) sits in the desktop first viewport and is absent from the 375 first viewport, so the place-page job is not one path on the phone.",
+        "replaceWith": "house-alerts"
       },
       {
-        "section": "#faq valuation row",
+        "section": "new listings numeral and MOS counts",
         "severity": "taste",
-        "finding": "Carried: \"What is my <plat> home worth?\", the page's lead-gen moment, renders at the same plain-accordion weight as every other disclosure row."
+        "finding": "The 4 in the new-listings sentence and the 14 / 2.2 bar labels are static type, not beui Number digit-swap slots; a visitor cannot recognize the catalog motion object at beui.dev/components/motion/number.",
+        "replaceWith": "beui-number"
+      },
+      {
+        "section": "SEO doors (homes for sale / Redmond / Map / Eagle Crest overview)",
+        "severity": "taste",
+        "finding": "The four crawlable doors render as a wrapped underlined list that occupies the 375 fold between Atlas and MOS; they help SEO but they are a crawl dump in the composition.",
+        "replaceWith": null
+      },
+      {
+        "section": "MOS (HOMES FOR SALE VS A MONTH OF SALES)",
+        "severity": "taste",
+        "finding": "The two named bars state the 6.5-month claim but reward no hover or tap with the underlying closes, so the only interactive data object in the fold is the desktop Atlas scrubber.",
+        "replaceWith": "house-mos"
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-09",
-      "score": 72,
+      "score": 73,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:0ab853ce2c90e751248dd6d121e80d816ea3d515b9c03cc7baf01f36da003767"
+      "shotsHash": "sha256:80c82ffede0029461ec3edd01807ca988ad91b4a70db5a26f15bfce139fb750a"
     },
-    "rebaselineReason": "shotsHash differs: two frames of #homes on the one-home plat \u2014 the section and the case this node changed \u2014 joined the shot set, so the committed 72 was taken on a different instrument. Measured on this branch, the diamond-bar-ranch #homes box went 996px to 786px with zero trailing blank, and the golf-homes-at-tetherow list is unchanged; at 375 the rail renders in flow with no clipping on either route. Craft 13 to 14; no category fell."
+    "rebaselineReason": "evaluatorModel, rubricVersion, and shotsHash all differ from the committed SITE-59 mark (claude-sonnet-5 / v1-2026-09-08 / multi-route shot set). First grok-4.6 / v1-2026-09-10 / Ridge first-viewport instrument for SITE-86. A follow-up pass on the same shots scored 62 (demoMatch true) and did not rise above 63; finish line 70 not met."
   }
 }
