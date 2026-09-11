@@ -1,11 +1,11 @@
-# Current — 2026-09-11 09:50Z (grinder 01a08eda: SITE-73 + SITE-89 live)
+# Current — 2026-09-11 14:00Z (fleet 3/3: SITE-106/108 + SITE-95 + SITE-101/104)
 
-Owner: `grok-4.5-2026-09-11-01`. origin/main `fa9ab2df` READY `dpl_9uKjTo7rxqEheXtr1aXxCivnura8`. 15m launchd stays. No auto-seed.
+origin/main `e5b25694`. 15m stays. No auto-seed. Fleet full — do not claim.
 
-- **SITE-29 done** blog s-maxage=300 HIT. **SITE-86 done** subdivision fold, no plat MOS, grok-4.6 **62**.
-- **SITE-73 done** `/zip/97702` Atlas + MOS + alerts live (no Google embed). grok-4.6 median **57**. Finish 70 not met.
-- **SITE-89 done** `/cities/bend/types/single-family` H1 + claim + Atlas + carousel live. grok-4.6 median **55**. Finish 70 not met.
-- Queue: no eligible open SITE nodes. 15m fire continues as new nodes get entered. Do not auto-seed.
+- **SITE-95 in_progress** compare. Owner `grok-4.6-2026-09-11-13`. UUID `a782d1a3-5b16-4970-9157-eaa5d1590240`. Prior grok-4.6 **56**, finish **≥70**. Port 3221. Exclusive: `app/compare/**`, `components/compare/**`, `V3Slots*`, `ui_kits/compare/**`. Worktree lane `01a090c5`.
+- **SITE-106 in_progress** place-type. Owner `grok-4.6-2026-09-11-01a090bd`. UUID `a59bf941-e062-48a8-b57d-085c508802b8`. Beat grok-4.6 **55**, finish **≥70**. Port 3206. Do not restyle `V3Atlas`/`V3Carousel` globally.
+- **SITE-108 in_progress** `/price-drops`. Same owner. UUID `3d1f25ad-6a6b-4992-8693-ef8c4e63e205`. Beat grok-4.6 **60**, finish **≥70**. Port 3208. Do not restyle `V3Field`/`V3Drawing` globally.
+- **SITE-101 + SITE-104 in_progress** Owner `grok-4.5-2026-09-11-13`. Skip V3Instrument family (SITE-102/103/105) and place-opening family (SITE-93/94/112).
 
 
 # Current — 2026-09-10 23:48Z (homepage uses the MorphingSearch demo, not inline)
