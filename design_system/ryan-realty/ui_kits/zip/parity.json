@@ -1,27 +1,27 @@
 {
   "route": "app/zip/[zip]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Long-tail SEO: 'homes for sale in {zip}'. A ZIP is the CITY grain in PUBLIC_UI.md §3: the Field of this ZIP's houses opens the page, the verdict is a caption inside the market section, and child neighborhoods are doors below the fold.",
-  "note": "MIGRATED TO THE v3 BARREL 2026-08-26. Four patterns, which is the rhythm cap: Field (the houses and their map) · Instrument (the market, and once per other property type the ZIP holds) · Ledger (the neighborhoods here, then the rest of the service area) · Sheet (listing alerts, then the seller door). No two adjacent sections share a pattern. The property-type run is ONE logical section under the 2026-08-26 enumeration amendment. THE PAGE CONTRACT is unchanged: same generateMetadata strings on both branches, same ten canonical ZIPs in the same order, dynamicParams=false, revalidate 60, the same three JSON-LD payloads with the same five Dataset variables, the section tracker, and the listing-alert capture payload. THE READS ARE UNCHANGED: one getZipListings call feeds the Field, its map and the neighborhood Ledger; getMetric (geoType 'zip', segment 'detached') overlays Market Truth on a hit; getPublicPlaceSegments / getPublicDetachedPace / getPublicDetachedMix / getPublicDetachedMonthly carry the leftover figures and the median-close overlay. MetadataBlock stays on the legacy register because ci:ai-structured-data pins this route to it by name and JSON-LD is not visual language.",
+  "competitiveTarget": "Long-tail SEO: 'homes for sale in {zip}'. A ZIP is the CITY grain in PUBLIC_UI.md \u00a73: the Field of this ZIP's houses opens the page, the verdict is a caption inside the market section, and child neighborhoods are doors below the fold.",
+  "note": "MIGRATED TO THE v3 BARREL 2026-08-26. Four patterns, which is the rhythm cap: Field (the houses and their map) \u00b7 Instrument (the market, and once per other property type the ZIP holds) \u00b7 Ledger (the neighborhoods here, then the rest of the service area) \u00b7 Sheet (listing alerts, then the seller door). No two adjacent sections share a pattern. The property-type run is ONE logical section under the 2026-08-26 enumeration amendment. THE PAGE CONTRACT is unchanged: same generateMetadata strings on both branches, same ten canonical ZIPs in the same order, dynamicParams=false, revalidate 60, the same three JSON-LD payloads with the same five Dataset variables, the section tracker, and the listing-alert capture payload. THE READS ARE UNCHANGED: one getZipListings call feeds the Field, its map and the neighborhood Ledger; getMetric (geoType 'zip', segment 'detached') overlays Market Truth on a hit; getPublicPlaceSegments / getPublicDetachedPace / getPublicDetachedMix / getPublicDetachedMonthly carry the leftover figures and the median-close overlay. MetadataBlock stays on the legacy register because ci:ai-structured-data pins this route to it by name and JSON-LD is not visual language.",
   "requiredComponents": [
     {
       "name": "V3Chrome",
-      "section": "chrome — the public header, mounted by app/layout.tsx. Not a page-level import; ci:mockup-parity auto-satisfies this entry because the layout owns the header.",
+      "section": "chrome \u2014 the public header, mounted by app/layout.tsx. Not a page-level import; ci:mockup-parity auto-satisfies this entry because the layout owns the header.",
       "blocking": true
     },
     {
       "name": "V3SectionTracker",
-      "section": "tracking — section view + scroll depth. It derives pageType from the path, and lib/analytics/page-type.ts maps /zip/ to 'zip', so the emitted pageType is the same string the KB tracker sent.",
+      "section": "tracking \u2014 section view + scroll depth. It derives pageType from the path, and lib/analytics/page-type.ts maps /zip/ to 'zip', so the emitted pageType is the same string the KB tracker sent.",
       "blocking": true
     },
     {
       "name": "MetadataBlock",
-      "section": "AI-citability — BreadcrumbList + Place + Dataset JSON-LD, the same three payloads the KB page emitted. ci:ai-structured-data pins this route to MetadataBlock by name.",
+      "section": "AI-citability \u2014 BreadcrumbList + Place + Dataset JSON-LD, the same three payloads the KB page emitted. ci:ai-structured-data pins this route to MetadataBlock by name.",
       "blocking": true
     },
     {
       "name": "V3Breadcrumb",
-      "section": "breadcrumb — Home > Homes for sale > {zip}. Surface tone, below-nav offset on.",
+      "section": "breadcrumb \u2014 Home > Homes for sale > {zip}. Surface tone, below-nav offset on.",
       "blocking": true
     },
     {
@@ -31,7 +31,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, Instrument, level 1 — the market. The verdict is the caption sentence under the headline, the KPI row is the figure set (leftover HUD tiles, then the 12-month pace items the HUD does not already print, then the detached mix), and the median-close year overlay is the chart. Replaces KbMarketHud, PublicPaceStats and PublicMixStats.",
+      "section": "Pattern 1, Instrument, level 1 \u2014 the market. The verdict is the caption sentence under the headline, the KPI row is the figure set (leftover HUD tiles, then the 12-month pace items the HUD does not already print, then the detached mix), and the median-close year overlay is the chart. Replaces KbMarketHud, PublicPaceStats and PublicMixStats.",
       "blocking": true
     },
     {
@@ -46,17 +46,17 @@
     },
     {
       "name": "ZipAlertsSheet",
-      "section": "Pattern 5, Sheet, route-local — free listing alerts. THE CAPTURE CONTRACT IS UNCHANGED from KbCommunityAlerts: submitSearchAlertSignup with { email, filters: { city, propertyType: 'A', postalCode: zip }, company }, the same honeypot key, the same guest-watch residual and the same alert_create search event.",
+      "section": "Pattern 5, Sheet, route-local \u2014 free listing alerts. THE CAPTURE CONTRACT IS UNCHANGED from KbCommunityAlerts: submitSearchAlertSignup with { email, filters: { city, propertyType: 'A', postalCode: zip }, company }, the same honeypot key, the same guest-watch residual and the same alert_create search event.",
       "blocking": true
     },
     {
       "name": "ZipSellSheet",
-      "section": "Pattern 5, Sheet, route-local — the seller door. THE NAVIGATION CONTRACT IS UNCHANGED from KbSell: `${valuationPath()}?address=<typed>&from=<pathname>`, so the prefill survives and the lead still records which page converted. It publishes no median: the two figures KbSell printed above its form are the same numbers the market Instrument already prints under that section's own trace.",
+      "section": "Pattern 5, Sheet, route-local \u2014 the seller door. THE NAVIGATION CONTRACT IS UNCHANGED from KbSell: `${valuationPath()}?address=<typed>&from=<pathname>`, so the prefill survives and the lead still records which page converted. It publishes no median: the two figures KbSell printed above its form are the same numbers the market Instrument already prints under that section's own trace.",
       "blocking": true
     },
     {
       "name": "V3Footer",
-      "section": "footer — rendered outside <main> so the page ships a contentinfo landmark.",
+      "section": "footer \u2014 rendered outside <main> so the page ships a contentinfo landmark.",
       "blocking": true
     }
   ],
@@ -65,7 +65,7 @@
     "KbMarketHud (replaced by V3Instrument: verdict caption, figure set, chart)",
     "KbFeatured (replaced by ZipHomesField, which lists every active home rather than the top 14)",
     "KbListingMap (the same Google map, in the Field's map slot, bound to the list both ways)",
-    "KbExploreTowns ×2 (replaced by the two V3Ledgers)",
+    "KbExploreTowns \u00d72 (replaced by the two V3Ledgers)",
     "KbCommunityAlerts (replaced by ZipAlertsSheet, same server action and payload)",
     "KbSell (replaced by ZipSellSheet, same ?address=&from= navigation)",
     "PublicProductTypes (replaced by V3PlacePropertyTypes)",
@@ -74,7 +74,7 @@
     "SmoothScrollProvider (Lenis wrapper; no v3 section is scroll-bound)",
     "KbFooter (replaced by V3Footer)",
     "KbBreadcrumb (replaced by V3Breadcrumb)",
-    "The KB market HUD's question heading, 'Is ZIP {zip} a buyer's or seller's market?' — dropped by the 2026-08-26 migration pending a family decision, RESTORED the same day: Matt ruled the question stays on all five place grains. In v3 idiom it is the market Instrument's headline whenever a live verdict exists (the verdict sentence beneath it is the answer), falling back to 'Homes for sale in {zip}' when no verdict is publishable, because a question with no answer under it is worse than a label (§0). Family consistency is gated by ci:market-question (scripts/check-market-question-heading.mjs); the route's exact template is pinned in app/zip/[zip]/page.test.ts."
+    "The KB market HUD's question heading, 'Is ZIP {zip} a buyer's or seller's market?' \u2014 dropped by the 2026-08-26 migration pending a family decision, RESTORED the same day: Matt ruled the question stays on all five place grains. In v3 idiom it is the market Instrument's headline whenever a live verdict exists (the verdict sentence beneath it is the answer), falling back to 'Homes for sale in {zip}' when no verdict is publishable, because a question with no answer under it is worse than a label (\u00a70). Family consistency is gated by ci:market-question (scripts/check-market-question-heading.mjs); the route's exact template is pinned in app/zip/[zip]/page.test.ts."
   ],
   "sectionOrder": [
     "MetadataBlock",
@@ -95,21 +95,21 @@
     "Dataset, with the same five variables in the same order and the same unitText: active listings, median list price, median price per sq ft, median days on market, new listings last 30 days. A degraded read publishes no variable rather than a zero."
   ],
   "dataLayer": [
-    "getZipListings(zip, { status: 'active', propertyType: 'A', limit: 5000 }) — the Field, its map, the neighborhood Ledger, and the tile-derived Dataset variables. The 5000 cap is never reported as inventory.",
-    "getMetric({ stat, geoType: 'zip', geoSlug: zip, segment: 'detached' }) ×4 — active_count, median_list_active, months_of_supply, market_verdict. A publishable 0 that contradicts visible pins is a disagreement, not an inventory.",
-    "getPublicPlaceSegments({ geoType: 'zip' }) — the property-type enumeration.",
-    "getPublicDetachedPace({ geoType: 'zip' }) — the leftover HUD tiles and the 12-month pace figures.",
-    "getPublicDetachedMix({ geoType: 'zip' }) — the detached mix figures.",
-    "getPublicDetachedMonthly({ geoType: 'zip' }) with the parent city's own leftover months and getPriceHistory('city', …) as the documented fallback — the median-close year overlay. When the series is the city's, the chart caption says so."
+    "getZipListings(zip, { status: 'active', propertyType: 'A', limit: 5000 }) \u2014 the Field, its map, the neighborhood Ledger, and the tile-derived Dataset variables. The 5000 cap is never reported as inventory.",
+    "getMetric({ stat, geoType: 'zip', geoSlug: zip, segment: 'detached' }) \u00d74 \u2014 active_count, median_list_active, months_of_supply, market_verdict. A publishable 0 that contradicts visible pins is a disagreement, not an inventory.",
+    "getPublicPlaceSegments({ geoType: 'zip' }) \u2014 the property-type enumeration.",
+    "getPublicDetachedPace({ geoType: 'zip' }) \u2014 the leftover HUD tiles and the 12-month pace figures.",
+    "getPublicDetachedMix({ geoType: 'zip' }) \u2014 the detached mix figures.",
+    "getPublicDetachedMonthly({ geoType: 'zip' }) with the parent city's own leftover months and getPriceHistory('city', \u2026) as the documented fallback \u2014 the median-close year overlay. When the series is the city's, the chart caption says so."
   ],
   "openDefects": {
     "_": "Closed 2026-08-27.",
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
+    "evaluatedAt": "2026-09-11",
     "rubricVersion": "v1-2026-09-10",
-    "evaluator": "SITE-73. Separate evaluator via `npx tsx scripts/taste-evaluate.ts zip --url http://127.0.0.1:3273/zip/97702 --beat 33` (grok-4.6). Builder did not score the page.",
+    "evaluator": "SITE-73. Separate evaluator via scratch print-on-miss around `npx tsx scripts/taste-evaluate.ts zip --shots desktop.png,mobile375.png --url http://127.0.0.1:3220/zip/97702 --beat 53` (grok-4.6). Builder did not score the page. Official CLI exits before JSON when demoMatch is false; JSON was captured before that exit.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
     "shotSpec": {
@@ -128,22 +128,23 @@
       "desktop": "design_system/ryan-realty/ui_kits/zip/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/zip/shots/mobile375.png"
     },
-    "shotsHash": "sha256:11d908c3912136cc61033ef7693fc04832cc43eb906dc43e55adadd2c6edf21b",
+    "shotsHash": "sha256:cd49f8177e2b1d1e8cda8cafa7e2902f4f70a3a04ca3ac27cd0ef2aa12baa1d6",
     "scores": [
-      53,
-      45,
-      58
+      60,
+      47,
+      57
     ],
-    "score": 53,
+    "score": 57,
     "perCriterion": {
       "design": 17,
-      "originality": 15,
-      "interaction": 6,
-      "craft": 7,
+      "originality": 14,
+      "interaction": 8,
+      "craft": 10,
       "honesty": 8
     },
     "honestyFunction": 8,
-    "beats": "Zillow ZIP pages (zillow.com 97702) — this fold wins on months-of-supply clarity (two named bars plus a sourced sentence) and house cartography; it loses on listing-row shopping in the first viewport.",
+    "demoMatch": false,
+    "beats": "Zillow ZIP pages (zillow.com 97702) \u2014 we win on months-of-supply honesty (two named bars, 207 homes for sale vs 68 a month of sales, Oregon Data Share) and broker reach (email ask in the fold); we lose on first-viewport inventory spectacle and catalog demo match.",
     "adaptedFrom": [
       {
         "id": "beui-number"
@@ -178,44 +179,50 @@
     ],
     "defects": [
       {
-        "section": "#atlas",
-        "severity": "taste",
-        "finding": "The ZIP drawing is capped so short that marks read as a stain, and type toggles are hidden on this opening so the map reveals less than a full Atlas.",
+        "section": ".zip-opening__drawing",
+        "severity": "blocking",
+        "finding": "On 375 the Atlas is a thin stain with only +/-; the House chip and price scrubber the desktop caption promises are missing, so the layout-lock drawing is not actually interactive on the phone.",
         "replaceWith": "house-atlas"
       },
       {
+        "section": "375 first viewport",
+        "severity": "taste",
+        "finding": "The stacked-section page: claim, map strip, MOS box, then alerts form, same width and density, no change in form or media across the fold.",
+        "replaceWith": "beui:scroll-animation"
+      },
+      {
+        "section": "desktop field peek",
+        "severity": "taste",
+        "finding": "The 1440 fold dies on a clipped landscape band instead of this ZIP's houses as a photograph field with masonry rhythm.",
+        "replaceWith": "beui:infinite-masonry"
+      },
+      {
+        "section": ".zip-opening__doors",
+        "severity": "craft",
+        "finding": "375 clamps the SEO doors to one truncated line (Bend market...), so the crawlable-link increment is desktop-only.",
+        "replaceWith": null
+      },
+      {
         "section": "#alerts",
-        "severity": "blocking",
-        "finding": "Desktop crops the alerts display sentence; the 375 first viewport can end on the MOS source with a weak ask, so the layout lock ask is incomplete on the phone.",
+        "severity": "taste",
+        "finding": "375 shows the 43 count and an email ask with zero listing facts \u2014 no photo, price, address, or beds/baths/sqft in the phone fold.",
         "replaceWith": "house-alerts"
       },
       {
-        "section": ".zip-opening__claim",
+        "section": ".zip-opening__claim / #alerts 43",
         "severity": "taste",
-        "finding": "The claim count uses V3Number, but the alerts 30-day figure still reads as static display type rather than the same digit-swap.",
+        "finding": "207 and 43 read as static display type in the stills with no digit-swap affordance visible; the beui number demo is not recognized (demoMatch false).",
         "replaceWith": "beui-number"
-      },
-      {
-        "section": "#alerts .v3-alerts__control",
-        "severity": "craft",
-        "finding": "The email placeholder can clip beside the submit button on the narrow figure column.",
-        "replaceWith": null
-      },
-      {
-        "section": "h1 / breadcrumb",
-        "severity": "craft",
-        "finding": "First-viewport SEO is the H1, breadcrumb, and two crawlable doors — held-to-risen, not a dramatic title rewrite; JSON-LD cannot be verified from these shots.",
-        "replaceWith": null
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 60,
-      "evaluatorModel": "sonnet",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:09d231428f1eb00b3f916fca7f94a8bd903da88be83f8d3b5dc6802418e68455"
+      "evaluatedAt": "2026-09-10",
+      "score": 53,
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "v1-2026-09-10",
+      "shotsHash": "sha256:11d908c3912136cc61033ef7693fc04832cc43eb906dc43e55adadd2c6edf21b"
     },
-    "rebaselineReason": "Prior receipt used evaluatorModel sonnet and rubricVersion v1-2026-09-08. This pass is grok-4.6 / v1-2026-09-10 with new first-viewport shots (Atlas + MOS + alerts). Table accept was above 33; median 53 clears it on the new instrument."
+    "rebaselineReason": "New first-viewport shots after fold densify + AnimatedNumber in-view fix (amount 0.15) + alert types/proof + SEO doors. Same grok-4.6 / v1-2026-09-10 instrument family as the prior 53, but shotsHash changed so the mark rebaselines at median 57. Finish line 70 and demoMatch true not met; honestyFunction held at 8."
   }
 }

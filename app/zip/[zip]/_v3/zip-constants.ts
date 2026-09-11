@@ -48,7 +48,8 @@ import { moneyTicks, monthTicks, yoyClaim } from '@/lib/charts/ticks'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
-import { publishCardAddress } from '@/lib/listing/publish-street-line'
+import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
+import type { PlaceAlertListing, PlaceAlertTypeBucket } from '@/lib/site/place-alerts'
 
 /** Month ticks for the year overlay, in the order a calendar year runs. */
 const MONTH_TICK = [
@@ -324,6 +325,60 @@ export function zipFieldItems(tiles: readonly ListingTile[], zip: string): V3Fie
           : {}),
       }
     })
+}
+
+/**
+ * Newest photographed houses for the alerts proof strip (SITE-73). Built from
+ * the same ZIP tiles the Field already fetched — no second inventory query.
+ * Photos stay card-sized (800×600), never the 320 ledger thumb.
+ */
+export function zipAlertListings(tiles: readonly ListingTile[]): PlaceAlertListing[] {
+  return [...tiles]
+    .filter((tile) => Boolean(tile.photoUrl?.trim()) && isFigure(tile.listPrice, 1))
+    .sort((a, b) => {
+      const aOn = a.onMarketDate ? Date.parse(a.onMarketDate) : 0
+      const bOn = b.onMarketDate ? Date.parse(b.onMarketDate) : 0
+      if (bOn !== aOn) return bOn - aOn
+      return (b.listPrice ?? 0) - (a.listPrice ?? 0)
+    })
+    .slice(0, 4)
+    .map((tile) => {
+      const photo = tile.photoUrl!.trim()
+      const title =
+        publishStreetLine({
+          streetNumber: tile.streetNumber,
+          streetName: tile.streetName,
+          streetSuffix: tile.streetSuffix,
+        }) ?? tile.city ?? 'Home'
+      return {
+        href: listingTileHref(tile),
+        photoSrc: listingRowPhotoSrc(photo, LISTING_FIELD_LEAD_PHOTO_SIZE),
+        title,
+        price:
+          tile.listPrice != null && Number.isFinite(tile.listPrice) && tile.listPrice > 0
+            ? formatPriceCompact(tile.listPrice)
+            : null,
+        beds: tile.beds,
+        baths: tile.baths,
+        sqft: tile.sqft,
+      }
+    })
+}
+
+/** Houses-only alert bucket for buildPlaceAlertTypes on the ZIP grain. */
+export function zipAlertBuckets(tiles: readonly ListingTile[]): PlaceAlertTypeBucket[] {
+  const listings = zipAlertListings(tiles)
+  if (listings.length === 0) return []
+  return [
+    {
+      key: 'houses',
+      label: 'Houses',
+      noun: { one: 'house', many: 'houses' },
+      newCount30d: null,
+      source: 'listing_tile_mv',
+      listings,
+    },
+  ]
 }
 
 /* -------------------------------------------------------------------------- */

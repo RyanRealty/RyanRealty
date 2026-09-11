@@ -1,4 +1,5 @@
-/* ZIP first viewport: Atlas drawing beside MOS figure + alerts sentence. */
+/* SITE-73 ZIP first viewport: Atlas drawing beside MOS figure + alerts.
+   Page-local only — does not restyle PlaceFieldMap or V3Atlas globally. */
 
 @layer base {
   .zip-opening__claim a,
@@ -12,13 +13,14 @@
   max-width: var(--v3-measure);
   margin-inline: auto;
   padding-inline: var(--v3-gutter);
+  padding-bottom: var(--v3-space-lg);
 }
 
 .zip-opening__claim {
-  margin: var(--v3-space-sm) 0;
+  margin: var(--v3-space-2xs) 0;
   font-family: var(--v3-font-sans);
-  font-size: var(--v3-text-lg);
-  line-height: 1.4;
+  font-size: var(--v3-size-body-lg);
+  line-height: 1.35;
   color: var(--v3-navy);
   max-width: 42rem;
 }
@@ -38,9 +40,10 @@
 }
 
 .zip-opening__doors {
-  margin: 0 0 var(--v3-space-md);
+  margin: 0 0 var(--v3-space-sm);
   font-family: var(--v3-font-sans);
-  font-size: var(--v3-text-sm);
+  font-size: var(--v3-size-source);
+  line-height: 1.35;
   color: color-mix(in oklab, var(--v3-navy) 72%, transparent);
 }
 
@@ -51,16 +54,23 @@
 
 .zip-opening__stage {
   display: grid;
-  gap: var(--v3-space-lg);
-  margin-bottom: var(--v3-space-xl);
+  gap: var(--v3-space-md);
+  margin-bottom: var(--v3-space-lg);
   align-items: start;
 }
 
 @media (min-width: 64rem) {
+  /* Atlas owns more of the fold; figure stays wide enough to read MOS + ask. */
   .zip-opening__stage {
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.95fr);
-    column-gap: var(--v3-space-xl);
+    grid-template-columns: minmax(0, 1.35fr) minmax(22rem, 1fr);
+    column-gap: var(--v3-space-md);
   }
+}
+
+/* Fold Atlas: MOS owns the inventory numeral. Hide the key's competing
+   for-sale / pending counts. Keep type + scrub (house-atlas interaction). */
+.zip-opening__drawing .v3-atlas__key {
+  display: none;
 }
 
 .zip-opening__drawing {
@@ -72,37 +82,175 @@
   max-width: 100%;
 }
 
-/* Cap the map plate so drawing + figure fit the first viewport. */
+/* Cap the plate so H1 + claim + MOS + alerts ask + a listing peek share 900. */
 .zip-opening__drawing .v3-atlas__frame {
-  max-height: min(38vh, 20rem);
+  max-height: min(22vh, 11rem);
 }
 
-/* Dock/events/key counts stay off this opening — the H1 claim + MOS own the
-   inventory number so the map cannot print a second disagreeing total. */
-.zip-opening__drawing .v3-atlas__dock,
-.zip-opening__drawing .v3-atlas__aside,
-.zip-opening__drawing .v3-atlas__key {
+.zip-opening__drawing .v3-atlas__head {
+  padding-bottom: var(--v3-space-2xs);
+}
+
+.zip-opening__drawing .v3-atlas__claim {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.zip-opening__drawing .v3-atlas__sales-legend {
   display: none;
 }
 
+.zip-opening__drawing .v3-atlas__aside,
+.zip-opening__drawing .v3-atlas__events {
+  display: none;
+}
+
+.zip-opening__drawing .v3-atlas__dock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-xs);
+  padding-top: var(--v3-space-2xs);
+  max-height: none;
+}
+
+.zip-opening__drawing .v3-atlas__types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs);
+}
+
+.zip-opening__drawing .v3-atlas__scrub {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+}
+
+.zip-opening__drawing .v3-atlas__place {
+  pointer-events: none;
+}
+
+.zip-opening__drawing .v3-atlas__scrub input,
+.zip-opening__drawing .v3-atlas__range,
+.zip-opening__drawing .v3-range,
+.zip-opening__drawing .v3-range__beui {
+  min-block-size: var(--v3-tap);
+  min-inline-size: var(--v3-tap);
+}
+
 @media (max-width: 63.99rem) {
-  /* Phone: short drawing, then MOS + alerts — all three in the first viewport. */
+  .zip-opening {
+    padding-bottom: var(--v3-space-sm);
+  }
+
+  .zip-opening__stage {
+    gap: var(--v3-space-2xs);
+    margin-bottom: var(--v3-space-sm);
+  }
+
+  /* Phone: drawing first (layout lock), then compact MOS + ask. */
   .zip-opening__drawing .v3-atlas__frame {
-    max-height: min(18vh, 8.5rem);
+    max-height: min(7vh, 3.25rem);
   }
 
   .zip-opening__drawing .v3-atlas__head {
-    padding-bottom: var(--v3-space-xs);
+    padding-bottom: 0;
   }
 
-  .zip-opening__figure .v3-alerts {
-    font-size: 0.95em;
+  .zip-opening__drawing .v3-atlas__headline {
+    font-size: var(--v3-size-body-sm);
   }
+
+  .zip-opening__drawing .v3-atlas__claim,
+  .zip-opening__drawing .v3-atlas__dock {
+    display: none;
+  }
+
+  .zip-opening__figure {
+    gap: var(--v3-space-2xs);
+  }
+
+  /* Drop source + proof thumbs on phone so ask lands in the fold. */
+  .zip-opening__figure .v3-source,
+  .zip-opening__figure .v3-alerts__source,
+  .zip-opening__figure .v3-alerts__strip,
+  .zip-opening__figure .v3-alerts__types {
+    display: none !important;
+  }
+
+  .zip-opening__figure .v3.v3-alerts .v3-alerts__grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas: 'lead' 'ask' !important;
+    gap: var(--v3-space-2xs);
+    row-gap: var(--v3-space-2xs);
+  }
+
+  .zip-opening__figure .v3.v3-mos {
+    padding: var(--v3-space-2xs) var(--v3-space-xs);
+    gap: 0;
+  }
+
+  .zip-opening__figure .v3-mos__plain,
+  .zip-opening__figure .v3-mos .v3-source,
+  .zip-opening__figure .v3-mos__tip {
+    display: none !important;
+  }
+
+  .zip-opening__figure .v3-mos__caption {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+    font-size: var(--v3-size-source);
+    margin: 0;
+  }
+
+  .zip-opening__figure .v3-mos__pair {
+    gap: 0;
+  }
+
+  .zip-opening__figure .v3-alerts__num {
+    font-size: clamp(1.75rem, 9vw, 2.5rem);
+  }
+
+  .zip-opening__figure .v3-alerts__claim {
+    font-size: var(--v3-size-body-sm);
+  }
+
+  .zip-opening__figure .v3-alerts__eyebrow {
+    font-size: var(--v3-size-source);
+  }
+
+  .zip-opening__claim {
+    font-size: var(--v3-size-body-sm);
+    margin: var(--v3-space-2xs) 0;
+    /* One line on a phone so Atlas + MOS + ask fit. */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .zip-opening__doors {
+    margin-bottom: var(--v3-space-2xs);
+    font-size: var(--v3-size-source);
+    /* Keep the two primary doors; SEO extras stay on desktop. */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+  }
+}
+
+/* Fold figure: one ghost ask. Scope methodology + browse stay off. */
+.zip-opening__figure .v3-alerts__scope,
+.zip-opening__figure .v3-alerts__browse {
+  display: none;
 }
 
 .zip-opening__figure {
   display: grid;
-  gap: var(--v3-space-md);
+  gap: var(--v3-space-sm);
   min-width: 0;
 }
 
@@ -111,8 +259,161 @@
   margin: 0;
 }
 
-/* Compact the alerts eyebrow so "Bend SE" does not orphan. */
+/* MOS in the figure column — compact cream plate so alerts claim stays whole. */
+.zip-opening__figure .v3.v3-mos {
+  padding: var(--v3-space-xs) var(--v3-space-sm);
+  gap: var(--v3-space-2xs);
+  max-width: 100%;
+}
+
+.zip-opening__figure .v3-mos__caption {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+
+.zip-opening__figure .v3-alerts__thumb-price {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.zip-opening__figure .v3.v3-alerts {
+  padding-inline: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  max-width: none;
+}
+
+/* Stack claim → thumbs → form so the 30-day figure does not collide with MOS.
+   Override both columns AND areas — areas alone keep an implicit second
+   column and collapse the claim (SITE-87 / SITE-82 / SITE-73). */
+.zip-opening__figure .v3.v3-alerts .v3-alerts__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-areas: 'lead' 'ask' 'figure' !important;
+  column-gap: 0;
+  row-gap: var(--v3-space-sm);
+  gap: var(--v3-space-sm);
+}
+
+.zip-opening__figure .v3.v3-alerts .v3-alerts__ask {
+  padding-left: 0 !important;
+  border-left: 0 !important;
+}
+
+.zip-opening__figure .v3-alerts__ask .v3-btn,
+.zip-opening__figure .v3-alerts__ask button[type='submit'] {
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+}
+
 .zip-opening__figure .v3-alerts__eyebrow {
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+.zip-opening__figure .v3-alerts__claim {
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-snug, 1.25);
+}
+
+.zip-opening__figure .v3-alerts__claim-text {
+  display: inline;
+}
+
+.zip-opening__figure .v3-alerts__num {
+  font-size: clamp(2.25rem, 5vw, 3rem);
+  line-height: 0.95;
+  margin-right: 0.2em;
+}
+
+.zip-opening__figure .v3-alerts__types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs);
+  min-height: var(--v3-tap);
+}
+
+.zip-opening__figure .v3-alerts__types button {
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+}
+
+/* One compact proof card on desktop (price + beds/baths/sqft); ask stays above. */
+@media (min-width: 64rem) {
+  .zip-opening__figure .v3.v3-alerts .v3-alerts__grid {
+    grid-template-areas: 'lead' 'ask' 'figure' !important;
+  }
+
+  .zip-opening__figure .v3-alerts__strip {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--v3-space-xs);
+    max-height: 4.25rem;
+    overflow: hidden;
+  }
+
+  .zip-opening__figure .v3-alerts__strip > li:nth-child(n + 2) {
+    display: none;
+  }
+}
+
+.zip-opening__figure .v3-alerts__thumb {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--v3-space-xs);
+  min-width: 0;
+  max-width: none;
+}
+
+.zip-opening__figure .v3-alerts__thumb img {
+  width: 5.5rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.zip-opening__figure .v3-alerts__thumb-name,
+.zip-opening__figure .v3-alerts__thumb-facts,
+.zip-opening__figure .v3-alerts__thumb-price {
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: manual;
+}
+
+/* Keep the form row from clipping the placeholder beside submit. */
+.zip-opening__figure .v3-alerts__control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--v3-space-xs);
+  align-items: stretch;
+  min-width: 0;
+}
+
+.zip-opening__figure .v3-alerts__control input {
+  min-width: 0;
+  width: 100%;
+}
+
+/* Peek the Field's first photographed rows in the first viewport (inventory). */
+.zip-opening .v3-field {
+  margin-top: var(--v3-space-sm);
+}
+
+.zip-opening .v3-field__list {
+  max-height: 9rem;
+  overflow: hidden;
+}
+
+@media (max-width: 63.99rem) {
+  .zip-opening .v3-field__list {
+    max-height: 0;
+    overflow: hidden;
+  }
+
+  .zip-opening .v3-field__map,
+  .zip-opening .v3-source {
+    display: none;
+  }
 }

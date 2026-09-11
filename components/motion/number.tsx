@@ -22,7 +22,9 @@ export function AnimatedNumber({
   startOnView = true,
 }: AnimatedNumberProps) {
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.6 });
+  // amount 0.15: fold numerals (claim, MOS bars, alerts) are often <60% of a
+  // short mobile plate — 0.6 left them stuck at the initial 0 (SITE-73 honesty).
+  const inView = useInView(ref, { once: true, amount: 0.15 });
   const reduce = useReducedMotion();
   const [display, setDisplay] = useState(0);
   const fromRef = useRef(0);

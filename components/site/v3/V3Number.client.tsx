@@ -19,10 +19,18 @@ export type V3NumberProps = {
   formatted: string
   /** Rough settle time in ms. */
   durationMs?: number
+  /** When false, count up on mount (fold numerals that may never hit 60% in-view). */
+  startOnView?: boolean
   className?: string
 }
 
-export function V3Number({ value, formatted, durationMs = 900, className }: V3NumberProps) {
+export function V3Number({
+  value,
+  formatted,
+  durationMs = 900,
+  startOnView = true,
+  className,
+}: V3NumberProps) {
   const safe = Number.isFinite(value) ? Math.max(0, value) : 0
   return (
     <AnimatedNumber
@@ -33,7 +41,7 @@ export function V3Number({ value, formatted, durationMs = 900, className }: V3Nu
         return Math.round(n).toLocaleString('en-US')
       }}
       className={cn(V3_ROOT_CLASS, 'v3-number', className)}
-      startOnView
+      startOnView={startOnView}
     />
   )
 }

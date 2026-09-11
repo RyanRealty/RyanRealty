@@ -131,6 +131,7 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { buildPlaceMosView } from '@/lib/site/place-mos'
+import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
 // The one copy of the mix turn the migrated Market family already uses.
 // Importing it beats a second implementation that would drift the day one of
 // the two was fixed — the same reason lib/kb/place-sections is shared across
@@ -152,6 +153,7 @@ import {
   normalizeZip,
   numeric,
   ZIP_FIELD_PREVIEW,
+  zipAlertBuckets,
   zipFieldCaption,
   zipFieldItems,
   zipMedianChart,
@@ -186,9 +188,10 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     })
   }
   const area = ZIP_AREA[zip] ?? 'Central Oregon'
+  const cityName = ZIP_CITY_NAME[zip] ?? 'Bend'
   return pageMetadata({
     title: `Homes for sale in ${zip} · ${area}, Oregon | Ryan Realty`,
-    description: `Live single-family inventory in ZIP ${zip} (${area}), Bend and Central Oregon — every active home on the Atlas, months of supply when publishable, and neighborhood doors.`,
+    description: `Live single-family inventory in ZIP ${zip} (${area}, ${cityName}) — Atlas map of every active home, months of supply as two bars, 30-day new-listing alerts, and neighborhood doors with median list prices.`,
     path: `/zip/${zip}`,
   })
 }
@@ -367,6 +370,14 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     grain: 'zip',
     geoSlug: zip,
     asOf: mosAsOf,
+  })
+  const alertTypes = buildPlaceAlertTypes({
+    placeName: zip,
+    scopeName: zip,
+    geoType: 'zip',
+    geoSlug: zip,
+    leftoverHouses30d: publicPace.newCount30d,
+    buckets: zipAlertBuckets(tiles),
   })
 
   const listingNoun = mtHit ? 'detached single-family' : 'single-family'
@@ -689,6 +700,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           zip={zip}
           area={area}
           city={cityName}
+          citySlug={cacheCitySlug}
           headline={v3Text(`Homes for sale in ${zip}`)}
           claimCount={activeCount != null && activeCount > 0 ? activeCount : null}
           claimNoun={mtHit ? 'detached single-family homes' : 'single-family homes'}
@@ -720,6 +732,8 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
               updatedAt={hudAsOf ?? null}
               browseHref={zipSearchHref(zip)}
               demote={placeMos != null || (activeCount != null && activeCount > 0)}
+              types={alertTypes}
+              mosHomes={placeMos?.homesForSale ?? null}
             />
           }
           emptyMessage={

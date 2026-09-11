@@ -27,6 +27,7 @@ export function ZipHomesField({
   zip,
   area,
   city,
+  citySlug,
   headline,
   claimCount,
   claimNoun,
@@ -46,6 +47,8 @@ export function ZipHomesField({
   zip: string
   area: string
   city: string
+  /** Market-report cache slug for the parent city (SEO door). */
+  citySlug: string
   headline: V3Text
   /** Sourced active count shared with the market Instrument. Null omits the claim. */
   claimCount: number | null
@@ -75,6 +78,12 @@ export function ZipHomesField({
   alerts: ReactNode
 }) {
   const showAtlas = atlas.dots.length > 0 || (boundary != null && atlas.regions.length > 0)
+  // Keep house marks + the house type chip so the dock scrubber cannot disagree
+  // with the H1 / MOS inventory figure on first paint (city fold pattern).
+  const foldAtlasDots = atlas.dots.filter((d) => d.t === 'house')
+  const foldAtlasTypes = atlas.types.filter((t) => t.key === 'house')
+  const foldDots = foldAtlasDots.length > 0 ? foldAtlasDots : atlas.dots
+  const foldTypes = foldAtlasTypes.length > 0 ? foldAtlasTypes : atlas.types
 
   return (
     <div className="zip-opening">
@@ -96,6 +105,10 @@ export function ZipHomesField({
         <a href={cityHref}>{city} real estate</a>
         {' · '}
         <a href={browseHref}>{zip} homes for sale</a>
+        {' · '}
+        <a href={`/housing-market/${citySlug}`}>{city} market report</a>
+        {' · '}
+        <a href="/months-of-supply">Months of supply</a>
       </p>
 
       <div className="zip-opening__stage">
@@ -110,15 +123,19 @@ export function ZipHomesField({
                  Atlas claimTone inventory would print every property type inside
                  the ZCTA and disagree with that detached figure. */
               claimTone="none"
-              claimText="Every listing inside this ZIP's recorded boundary — hover a mark for the home."
-              keyPlacement="head"
+              claimText="Every listing inside this ZIP's recorded boundary — hover a mark for the home. Type chips and the price scrubber filter this set."
+              keyPlacement="dock"
               sourceName="Oregon Data Share"
-              dots={atlas.dots}
+              dots={foldDots}
               regions={atlas.regions}
               basemap={atlas.basemap}
-              types={atlas.types}
+              types={foldTypes}
               events={atlas.events}
-              source={atlas.source}
+              source={
+                foldAtlasDots.length > 0
+                  ? `Detached single-family (Houses) active and pending marks inside ZIP ${zip}, from the same Oregon Data Share listing tiles the map draws. Price scrubber filters this set.`
+                  : atlas.source
+              }
               stamp={atlas.stamp}
               incomplete={atlas.incomplete}
             />
