@@ -15,6 +15,7 @@
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { InsightPager } from '@/components/motion/insight-pager'
 import { cn } from '@/lib/utils'
 
 export type V3ChartHoverReading = { name: string; label: string; frac: number; emphasis: boolean }
@@ -80,6 +81,12 @@ export type V3ChartHoverProps = {
    * geometry is still the server's: nothing here recomputes a plot.
    */
   frame?: V3ChartHoverFrame
+  /**
+   * Year pages (beautifului-insight adapted). Isolates one series at a time with
+   * a prev/next pager. Month scrubber under the plot still walks the open year.
+   * Opt-in beside keysToggle so charts that only want legend filters stay put.
+   */
+  yearPages?: boolean
 }
 
 export type V3ChartHoverFrame = {
@@ -99,16 +106,36 @@ export function V3ChartHover({
   keys,
   keyClasses,
   frame,
+  yearPages = false,
 }: V3ChartHoverProps) {
   const vertical = axis === 'y'
   const live = keys != null && keys.length > 1 && frame != null
+  const pageable = live && yearPages && (keys?.length ?? 0) > 1
+  const newestYear = Math.max(0, (keys?.length ?? 1) - 1)
+  // null until the reader pages — resolve to the newest year so a missing
+  // keys array on the first tick cannot pin the pager at 2024 (SITE-88).
+  const [yearPage, setYearPage] = useState<number | null>(null)
+  const activeYear = yearPage == null ? newestYear : yearPage
   const [off, setOff] = useState<readonly number[]>([])
-  const toggleKey = (i: number) =>
+  useEffect(() => {
+    if (!pageable || !keys) {
+      if (!pageable) setOff([])
+      return
+    }
+    const keep = Math.max(0, Math.min(keys.length - 1, activeYear))
+    setOff(keys.map((_, i) => i).filter((i) => i !== keep))
+  }, [pageable, keys, activeYear])
+  const toggleKey = (i: number) => {
+    if (pageable) {
+      setYearPage(i)
+      return
+    }
     setOff((prev) => {
       if (prev.includes(i)) return prev.filter((n) => n !== i)
       if (prev.length >= (keys?.length ?? 0) - 1) return prev
       return [...prev, i]
     })
+  }
   // The reading follows the drawing: a series that is not on the plot is not in the
   // tooltip, and a stop with nothing left to say leaves the walk entirely.
   const hidden = useMemo(
@@ -270,7 +297,7 @@ export function V3ChartHover({
             ? null
             : col.readings.map((r) => (
                 <span
-                  key={r.name}
+                  key={`${r.name}-${r.label}-${r.frac}`}
                   className={cn('v3-chart__hoverdot', r.emphasis && 'v3-chart__hoverdot--em')}
                   style={{ left: pos, top: `${r.frac * 100}%` }}
                   aria-hidden="true"
@@ -297,9 +324,9 @@ export function V3ChartHover({
           >
             <p className="v3-chart__tip-tick">{col.tick}</p>
             <dl className="v3-chart__tip-list">
-              {col.readings.map((r) => (
+              {col.readings.map((r, ri) => (
                 <div
-                  key={r.name || r.label}
+                  key={`${ri}-${r.name}-${r.label}`}
                   className={cn('v3-chart__tip-row', r.emphasis && 'v3-chart__tip-row--em')}
                 >
                   {r.name ? <dt>{r.name}</dt> : null}
@@ -323,21 +350,31 @@ export function V3ChartHover({
 
   return (
     <>
-      <ul className="v3-chart__legend v3-chart__legend--live">
-        {keys.map((name, i) => (
-          <li key={`${i}-${name}`}>
-            <button
-              type="button"
-              className={cn('v3-chart__key', 'v3-chart__key--btn', keyClasses?.[i])}
-              aria-pressed={!off.includes(i)}
-              onClick={() => toggleKey(i)}
-            >
-              <span className="v3-chart__swatch" aria-hidden="true" />
-              {name}
-            </button>
-          </li>
-        ))}
-      </ul>
+      {pageable ? (
+        <InsightPager
+          className="v3-chart__year-pager"
+          title="Year"
+          pages={keys}
+          page={activeYear}
+          onPage={setYearPage}
+        />
+      ) : (
+        <ul className="v3-chart__legend v3-chart__legend--live">
+          {keys.map((name, i) => (
+            <li key={`${i}-${name}`}>
+              <button
+                type="button"
+                className={cn('v3-chart__key', 'v3-chart__key--btn', keyClasses?.[i])}
+                aria-pressed={!off.includes(i)}
+                onClick={() => toggleKey(i)}
+              >
+                <span className="v3-chart__swatch" aria-hidden="true" />
+                {name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       {/* The same frame the static branch composes, with one extra attribute: the
           list of series indexes the stylesheet drops from the drawing. Nothing about
           the geometry is recomputed on the client. */}

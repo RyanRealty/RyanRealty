@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
-import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { MOS_METHODOLOGY_CLAUSE } from '@/lib/market/classify'
 import { REGION_CITIES_SOURCE, REGION_FOLD_LABEL } from './region-constants'
 import { marketReportHereBody } from '@/lib/market/report-doors'
 import {
@@ -32,11 +32,17 @@ describe('SITE-88 visitor-facing region traces', () => {
     }
   })
 
-  it('names Oregon Data Share and keeps the MOS methodology when supply publishes', () => {
+  it('uses a one-line visitor citation when the MOS drawing publishes', () => {
     const { live } = buildRegionInstruments(HUD, '3.8')
-    expect(live.trace).toMatch(/^Oregon Data Share, active single-family houses currently listed across Central Oregon\./)
-    expect(live.trace).toContain(MOS_METHODOLOGY_CLAUSE)
-    expect(live.trace).toContain(MOS_THRESHOLD_CLAUSE)
+    expect(live.trace).toBe(
+      'Active single-family houses across Central Oregon from Oregon Data Share MLS.',
+    )
+    expect(live.trace).not.toContain(MOS_METHODOLOGY_CLAUSE)
+  })
+
+  it('keeps MOS methodology on the Instrument when the drawing cannot publish', () => {
+    const { live } = buildRegionInstruments({ ...HUD, monthsSupply: null }, null)
+    expect(live.trace).toContain('Oregon Data Share')
   })
 
   it('describes extra figures in buyer language, not pipeline vocabulary', () => {
@@ -60,8 +66,9 @@ describe('SITE-88 visitor-facing region traces', () => {
 })
 
 describe('SITE-88 months of supply is two bars, not a 4.9 tile', () => {
-  it('rearranges active / MOS into a monthly pace', () => {
-    expect(monthlyPaceFromMos(655, 3.8)).toBe(172.4)
+  it('rearranges active / MOS into a counted integer monthly pace', () => {
+    expect(monthlyPaceFromMos(655, 3.8)).toBe(172)
+    expect(monthlyPaceFromMos(1550, 4.81)).toBe(322)
     expect(monthlyPaceFromMos(null, 3.8)).toBeNull()
     expect(monthlyPaceFromMos(655, 0)).toBeNull()
   })
@@ -74,6 +81,7 @@ describe('SITE-88 months of supply is two bars, not a 4.9 tile', () => {
     expect(String(chart?.rows?.[0]?.tick).toLowerCase()).toContain('homes for sale')
     expect(String(chart?.rows?.[1]?.tick).toLowerCase()).toContain('month of sales')
     expect(String(chart?.claim)).toContain('3.8')
+    expect(String(chart?.claim)).not.toMatch(/\d+\.\d+\s+sales/)
   })
 
   it('omits the MOS tile and does not reprint the two bars as jumbo figures', () => {
@@ -87,6 +95,7 @@ describe('SITE-88 months of supply is two bars, not a 4.9 tile', () => {
     for (const figure of live.figures) {
       expect(figure.sentence, String(figure.label)).toBeTruthy()
       expect(String(figure.sentence)).not.toMatch(/\d/)
+      expect(figure.count, String(figure.label)).toEqual(expect.any(Number))
     }
   })
 

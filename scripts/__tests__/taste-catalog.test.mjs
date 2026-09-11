@@ -315,7 +315,8 @@ describe('catalogInstallProblems', () => {
   })
 
   it('refuses a catalog name with no install spec', () => {
-    const problems = catalogInstallProblems(loaded, [{ id: 'beautifului-insight' }])
+    // beautifului-insight is installed (SITE-88); probe a name that is not.
+    const problems = catalogInstallProblems(loaded, [{ id: 'beautifului-not-a-real-install' }])
     expect(problems.some((p) => /no install spec/.test(p))).toBe(true)
   })
 })

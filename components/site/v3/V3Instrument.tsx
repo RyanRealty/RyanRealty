@@ -53,6 +53,7 @@
 import { Fragment, type ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { V3Number } from './V3Number.client'
 import {
   V3Button,
   V3Eyebrow,
@@ -122,6 +123,12 @@ export type V3InstrumentFigure = {
    * trace of its own. Say what the measurement is; the value beside it is the value.
    */
   sentence?: V3Text
+  /**
+   * Live numeric value for beui-number (V3Number). When set, the face counts
+   * up to this number and settles on `value` (already formatted). Omit for
+   * static posters. Caller still owns §0.
+   */
+  count?: number
 }
 
 /**
@@ -415,9 +422,23 @@ export function V3Instrument({
         )
         const renderFigure = (figure: (typeof figures)[number], i: number) => {
           const key = `${i}-${figure.label}`
-          const rendered = (
-            <V3Figure value={figure.value} label={figure.label} emphasis={emphasis} />
-          )
+          const face =
+            figure.count != null && Number.isFinite(figure.count) ? (
+              <div
+                className={cn(
+                  'v3-figure',
+                  emphasis === 'lead' && 'v3-figure--lead',
+                )}
+              >
+                <span className="v3-figure__value">
+                  <V3Number value={figure.count} formatted={figure.value} />
+                </span>
+                <span className="v3-figure__label">{figure.label}</span>
+              </div>
+            ) : (
+              <V3Figure value={figure.value} label={figure.label} emphasis={emphasis} />
+            )
+          const rendered = face
           // The sentence is a SIBLING of the figure, inside the figure's own cell, so a
           // door still wraps only the number and its label: the sentence explains the
           // figure, it is not another thing to click. A figure with no sentence renders

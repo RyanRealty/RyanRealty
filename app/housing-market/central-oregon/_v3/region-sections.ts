@@ -36,16 +36,31 @@ import {
   type V3QuietItem,
 } from '@/components/site/v3'
 import { namePulseCityRemainder, pulseCityHrefSlug } from '@/lib/market/pulse-city-remainder'
+import { monthlyPaceFromMos } from './region-figures'
 import { CITY_LABELS, CITY_SLUG, HISTORY_PATH, volumeLabel } from './region-constants'
 
 /** A covered city that earned no row, with the reason read off its own data. */
 export type CityFootnote = { label: string; fact: string; slug?: string }
+
+/** Per-city homes vs a month of sales for the region house-mos drawing. */
+export type CityMosPair = {
+  slug: string
+  name: string
+  homes: number
+  homesLabel: string
+  sales: number
+  salesLabel: string
+  mosText: string
+  href: string
+}
 
 export type CityLedger = {
   rows: V3LedgerFigureRow[]
   /** The newest updated_at among the returned city rows, or undefined. */
   stamp: string | undefined
   footnotes: CityFootnote[]
+  /** Two-bar MOS inputs per city (SITE-88). Empty when no city can publish MOS. */
+  mos: CityMosPair[]
 }
 
 /**
@@ -72,6 +87,7 @@ export function buildCityLedger(
 ): CityLedger {
   const byLabel = new Map(snapshots.map((s) => [s.geo_label, s]))
   const rows: V3LedgerFigureRow[] = []
+  const mos: CityMosPair[] = []
   const rowed = new Set<string>()
 
   for (const label of CITY_LABELS) {
@@ -79,32 +95,38 @@ export function buildCityLedger(
     const snapshot = byLabel.get(label)
     if (!slug || !snapshot || snapshot.median_list_price == null || snapshot.active_count == null) continue
     rowed.add(label)
+    const href = `/housing-market/${slug}`
+    // SITE-88: for-sale count stays on every viewport (encode=bar hid it on
+    // desktop). Median is the value. MOS is the two-bar drawing, not a 3.7 mo tile.
     rows.push({
-      href: `/housing-market/${slug}`,
+      href,
       when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} for sale`),
       what: v3Text(label),
-      // SITE-88: bar length AND the figure are months of supply. Median list
-      // stays on the row as the detail so the eye does not read a long bar as
-      // a high price (La Pine 9.0 next to $499,000).
-      detail: v3Text(`median list ${formatPriceExact(snapshot.median_list_price)}`),
-      value:
-        snapshot.months_of_supply != null && snapshot.months_of_supply > 0
-          ? v3Text(`${formatMonthsOfSupply(snapshot.months_of_supply)} mo`)
-          : v3Text(formatPriceExact(snapshot.median_list_price)),
+      detail: undefined,
+      value: v3Text(formatPriceExact(snapshot.median_list_price)),
       id: slug,
-      weight:
-        snapshot.months_of_supply != null && snapshot.months_of_supply > 0
-          ? snapshot.months_of_supply
-          : undefined,
     })
+    const sales = monthlyPaceFromMos(snapshot.active_count, snapshot.months_of_supply)
+    if (
+      sales != null &&
+      snapshot.months_of_supply != null &&
+      snapshot.months_of_supply > 0 &&
+      snapshot.active_count > 0
+    ) {
+      mos.push({
+        slug,
+        name: label,
+        homes: snapshot.active_count,
+        homesLabel: snapshot.active_count.toLocaleString('en-US'),
+        sales,
+        salesLabel: sales.toLocaleString('en-US'),
+        mosText: formatMonthsOfSupply(snapshot.months_of_supply),
+        href,
+      })
+    }
   }
   rows.sort((a, b) => String(a.what).localeCompare(String(b.what)))
-  const maxSupply = rows.reduce((max, r) => Math.max(max, r.weight ?? 0), 0)
-  if (maxSupply > 0) {
-    for (const row of rows) row.weight = (row.weight ?? 0) / maxSupply
-  } else {
-    for (const row of rows) row.weight = undefined
-  }
+  mos.sort((a, b) => a.name.localeCompare(b.name))
 
   const footnotes: CityFootnote[] = CITY_LABELS.filter(
     (label) => CITY_SLUG[label] !== undefined && !rowed.has(label),
@@ -152,7 +174,7 @@ export function buildCityLedger(
     .sort()
     .at(-1)
 
-  return { rows, stamp, footnotes }
+  return { rows, stamp, footnotes, mos }
 }
 
 export type ClosedLedger = {
