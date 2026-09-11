@@ -1,11 +1,12 @@
-# Current — 2026-09-11 14:32Z (fleet 3/3: 108 scored 62; 106 iterating; 95 + 101/104 held)
+# Current — 2026-09-11 14:50Z (fleet 3/3: 108 scored 66; 106 iterating; 101 local merge; 95 held)
 
-origin/main `f3abbc86`. 15m stays. No auto-seed. Fleet full — do not claim.
+15m stays. No auto-seed. Fleet full — do not claim. Local main is **ahead 2** with SITE-101 (`3e64c8aa`); this fire does not push that merge.
 
-- **SITE-106 in_progress** place-type. Owner `grok-4.6-2026-09-11-01a090bd`. UUID `a59bf941-e062-48a8-b57d-085c508802b8`. Beat grok-4.6 **55**, finish **≥70**. Worktree `…/subagent-01a090c4-faa5-7693-b7ad-cd9dd4e3bd43` `wt/site-106-place-type-20260911` :3206. Uncommitted: mark-census claim (501 = atlas 501), Bend crawl doors. Shots 14:29Z. Desktop atlas still inset; last rail card sheared. No new receipt yet. Do not restyle V3Atlas/V3Carousel globally.
-- **SITE-108 in_progress** `/price-drops`. Same owner. UUID `3d1f25ad-6a6b-4992-8693-ef8c4e63e205`. grok-4.6 **62** (56/67/62), honesty **8**, demoMatch true — rose from 60, **<70 not done**. Worktree `…/subagent-01a090c4-faa6-7172-b88c-429114b25d0b` :3208. Next: house-field (not portal tiles), unclip beeswarm+axis, both shadcn chevrons, stop wrapping city doors at 375. Do not restyle V3Field/V3Drawing globally.
-- **SITE-95 in_progress** Owner `grok-4.6-2026-09-11-13`. Lane `01a090c5` :3221 evaluating vs 56. Exclusive: `app/compare/**`, `components/compare/**`, `V3Slots*`.
-- **SITE-101 + SITE-104** `grok-4.5-2026-09-11-13`. Skip V3Instrument (102/103/105) and place-opening (93/94/112).
+- **SITE-106 in_progress** place-type. Owner `grok-4.6-2026-09-11-01a090bd`. UUID `a59bf941-e062-48a8-b57d-085c508802b8`. grok-4.6 **58** (54/58/61) on 14:39 shots, demoMatch **false** (rail was photo+price). Recaptured 14:45 with address/beds/baths/sqft; second eval empty. Atlas still inset. Beat 55, finish **≥70**. Worktree `…/subagent-01a090c4-faa5-7693-b7ad-cd9dd4e3bd43` :3206. Do not restyle V3Atlas/V3Carousel globally.
+- **SITE-108 in_progress** `/price-drops`. Same owner. UUID `3d1f25ad-6a6b-4992-8693-ef8c4e63e205`. grok-4.6 **66** (70/63/66), honesty 8, demoMatch true — rose from 62, **<70 not done**. Next: house-field (not portal SERP), beeswarm drives rail, 375 axis in fold. Worktree `…/subagent-01a090c4-faa6-7172-b88c-429114b25d0b` :3208. Do not restyle V3Field/V3Drawing globally.
+- **SITE-101** grok-4.6 **70** (70/74/67) merged locally `3e64c8aa` by `grok-4.5-2026-09-11-13`. Their push + deploy:verify. Skip 102/103. Do not restyle V3Instrument.
+- **SITE-104 in_progress** neighborhood. Same owner. grok-4.6 **48**, demoMatch false. Skip 93/94.
+- **SITE-95** `grok-4.6-2026-09-11-13` :3221. Exclusive: `app/compare/**`, `components/compare/**`, `V3Slots*`.
 
 
 # Current — 2026-09-10 23:48Z (homepage uses the MorphingSearch demo, not inline)
