@@ -1,12 +1,10 @@
-# Current — 2026-09-11 01:20Z (grinder 01a08d23: SITE-76 + SITE-79 live)
+# Current — 2026-09-11 03:15Z (grinder 01a08d23: SITE-82 + SITE-88 merging)
 
-Owner: `grok-4.5-2026-09-10-21`. origin/main `ed3bc172` READY `dpl_AAbjiC6uD8E87AE4CXaiLiDH9Vn8`. 15m launchd stays. No auto-seed.
+Owner: `grok-4.5-2026-09-10-18`. Local main `ab9f8432` (ahead of origin `7e4eb9e9`; includes catalog vendor `c7cf0021`). 15m launchd stays. No auto-seed. Do not stage `live-home-fold.png`.
 
-- **SITE-81 done** market-report-detail grok-4.6 median **61**. Finish 70 not met.
-- **SITE-87 done** community grok-4.6 median **64**. Finish 70 not met.
-- **SITE-76 done** oregon-city honesty Alert fold grok-4.6 median **49**. Finish 70 not met.
-- **SITE-79 done** reviews V3Proof + avatar initials grok-4.6 median **67**. Finish 70 not met.
-- Next open: SITE-89, SITE-88, SITE-73, SITE-82, SITE-86. Skip overlapping families.
+- **SITE-82** city fold: Atlas drawing + MOS/alerts figure. grok-4.6 median **63** (59/67/63), HF 8, rose vs 60. Accept >54. Finish 70 not met. UUID `3ff28940-ae58-4e22-a4be-a7ed2c440652`.
+- **SITE-88** region fold: MOS bars, beui-number, year pager. grok-4.6 median **63** (64/58/63), HF 9, rebaselined vs 61. Accept >63 not strictly met. Finish 70 not met. UUID `08545734-a7cc-4d3b-b6a0-d1129911f21c`. Year isolate is region-only (`yearPages` not on YEAR_OVERLAY_READING).
+- Skip overlapping families (SITE-86/89 PlaceAreaHero/Atlas; SITE-81 V3Instrument). Next open after these land: SITE-86, SITE-89, SITE-73.
 
 # Current — 2026-09-10 23:48Z (homepage uses the MorphingSearch demo, not inline)
 

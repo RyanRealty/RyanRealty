@@ -133,6 +133,21 @@
   min-width: 10rem;
 }
 
+/* Fold polygons are the drawing, not the hit target. Type chips + the price
+   scrubber are the 44×44 controls (WCAG 2.5.8). Hiding the aside list would
+   otherwise leave the paths as the only named "Old Bend" control. */
+.city-fold__drawing .v3-atlas__place {
+  pointer-events: none;
+}
+
+.city-fold__drawing .v3-atlas__scrub input,
+.city-fold__drawing .v3-atlas__range,
+.city-fold__drawing .v3-range,
+.city-fold__drawing .v3-range__beui {
+  min-block-size: var(--v3-tap);
+  min-inline-size: var(--v3-tap);
+}
+
 @media (max-width: 63.99rem) {
   .city-fold {
     padding-top: var(--v3-space-2xs);
