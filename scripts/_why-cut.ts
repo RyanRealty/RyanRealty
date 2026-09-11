@@ -64,6 +64,19 @@ async function main() {
   const sales = [...merged.values()].map((s) => ({ ...s, marketArea: s.marketArea ?? resolveMarketArea(s.latitude, s.longitude) }))
   console.log(`subject ${subject.streetAddress} | ${ps.sqft}sf | ${ps.beds}bd/${ps.baths}ba | city ${ps.citySlug} | area ${ps.marketArea ?? 'none'} | sub ${ps.subdivisionNorm ?? 'none'}`)
   console.log(`citywide ${pool.length} (oldest ${pool[pool.length - 1]?.closeDate}) | local ${LOCAL_POOL_RADIUS_MILES}mi ${near.length} (oldest ${near[near.length - 1]?.closeDate}) | merged ${sales.length}`)
+  const { getSubdivisionRing, assignSubdivisionSlugs } = await import('@/lib/data/geo/subdivision-ring')
+  console.log(`subject coords: ${subject.latitude} , ${subject.longitude}`)
+  const ring = await getSubdivisionRing(subject.latitude, subject.longitude)
+  if (ring) {
+    ps.subdivisionSlug = ring.homeSlug
+    ps.adjacentSubdivisionSlugs = ring.ring.filter((r) => r.inNeighborhood !== false).map((r) => r.slug)
+    const slugs = await assignSubdivisionSlugs(sales.map((s) => ({ lat: s.latitude, lng: s.longitude })))
+    sales.forEach((s, i) => { s.subdivisionSlug = slugs[i] })
+  }
+  console.log(`subject plat slug: ${ps.subdivisionSlug ?? 'NONE'} | ring ${ps.adjacentSubdivisionSlugs?.length ?? 0}`)
+  const withSlug = sales.filter((s) => s.subdivisionSlug).length
+  const inPlat = sales.filter((s) => s.subdivisionSlug && s.subdivisionSlug === ps.subdivisionSlug).length
+  console.log(`sales with a plat slug: ${withSlug}/${sales.length} | in the subject's plat: ${inPlat}`)
   const anchor = resolvePriceAnchor(ps, sales)
   console.log(`anchor ${anchor ? `$${Math.round(anchor.ppsf)}/sf over n=${anchor.n} (${anchor.source})` : 'none'}`)
 

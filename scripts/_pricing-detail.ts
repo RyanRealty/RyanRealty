@@ -23,6 +23,8 @@ async function main() {
   for (const c of adj) {
     console.log(`  ${String(c.address).padEnd(24)} close $${Number(c.closePrice ?? 0).toLocaleString().padStart(9)} -> adj $${Number(c.adjustedPrice ?? c.adjusted ?? 0).toLocaleString().padStart(9)} | time ${c.timeAdjustment ?? '-'} | size ${c.sizeAdjustment ?? '-'} | ${c.keepTier ?? c.tier ?? ''} | rooms ${JSON.stringify(c.roomDifference ?? null)}`)
   }
+  console.log('\nstreetAnchor:', JSON.stringify(pricing.streetAnchor ?? null))
+  console.log('clamp:', JSON.stringify(pricing.clamp ?? null).slice(0, 400))
   const rr = (pricing.rangeRule ?? {}) as Record<string, unknown>
   if (Object.keys(rr).length) console.log('\nrangeRule', JSON.stringify(rr))
 }
