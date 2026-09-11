@@ -1,0 +1,11 @@
+/* SITE-76: Alert-only honesty Quiet hands straight to the place answer.
+   Do not restyle V3Instrument globally — only the seam on this route. */
+.v3.v3-quiet--alert + .v3.v3-instrument {
+  padding-top: var(--v3-space-xl);
+}
+
+@media (max-width: 40rem) {
+  .v3.v3-quiet--alert + .v3.v3-instrument {
+    padding-top: var(--v3-space-lg);
+  }
+}

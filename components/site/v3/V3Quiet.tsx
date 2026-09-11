@@ -56,9 +56,10 @@
  * get this primitive's crash.
  *
  * Barrel law honored here:
- *  - Imports only ./atoms, ./tokens.css, next/link, and @/lib/utils. Nothing
- *    from the deleted KB register, components/site (flat), components/site/primitives,
- *    components/site/explore, or components/ui.
+ *  - Imports ./atoms, ./tokens.css, next/link, @/lib/utils, and catalog source
+ *    from components/ui or components/motion when a class adapts a demo (SITE-76:
+ *    shadcn Alert). Nothing from the deleted KB register, components/site (flat),
+ *    components/site/primitives, or components/site/explore.
  *  - The region's name is required in the type AND it can only be given once:
  *    the props are a union of `heading` (a visible title, which becomes the
  *    name) or `ariaLabel` (no visible title). Passing both is a compile error,
@@ -75,6 +76,12 @@
 import { Fragment } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from '@/components/ui/alert'
 import {
   V3Eyebrow,
   V3Figure,
@@ -320,12 +327,30 @@ type V3QuietNaming =
       ariaLabel: string
     }
 
+/**
+ * Honesty banner adapted from shadcn Alert (SITE-76 / oregon-city). Title +
+ * description keep the catalog composition; the optional action is AlertAction
+ * (a real door, usually the referral). Painted navy/cream in V3Quiet.css — not
+ * a yellow callout.
+ */
+export type V3QuietAlert = {
+  title: string
+  description: string | readonly string[]
+  action?: { label: string; href: string }
+}
+
 export type V3QuietProps = {
   /**
    * The rows, in reading order: doors, questions, definitions, passages. A
    * plain array, so a set built by `.filter()` passes without a cast.
    */
   items: readonly V3QuietItem[]
+  /**
+   * Optional honesty / status banner. Renders the installed shadcn Alert
+   * under the head, before the rows. Used when the page must lead with a
+   * plain claim (out-of-market referral) without a yellow callout.
+   */
+  alert?: V3QuietAlert
   /**
    * One quiet line under the rows: a caveat, a disclosure, a basis. Plain text.
    * A number belongs in an Instrument with its source line, not here.
@@ -727,6 +752,7 @@ export function V3Quiet({
   heading,
   headingLevel = 2,
   ariaLabel,
+  alert,
   note,
   source,
   eyebrow,
@@ -739,6 +765,13 @@ export function V3Quiet({
   const sourceLine = text(source)
   const contextLine = text(eyebrow)
   const name = title ?? text(ariaLabel)
+  const alertTitle = text(alert?.title)
+  const alertBody = alert
+    ? paragraphs(typeof alert.description === 'string' ? alert.description : alert.description)
+    : []
+  const alertActionLabel = text(alert?.action?.label)
+  const alertActionHref = text(alert?.action?.href)
+  const alertRenderable = Boolean(alertTitle && alertBody.length > 0)
 
   if (process.env.NODE_ENV !== 'production') {
     const dropped = items.length - rendered.length
@@ -747,7 +780,7 @@ export function V3Quiet({
         `V3Quiet${name ? ` (${name})` : ''}: dropped ${dropped} item(s) with no text or no destination.`,
       )
     }
-    if (rendered.length === 0 && !trailingNote) {
+    if (rendered.length === 0 && !trailingNote && !alertRenderable) {
       console.warn(
         `V3Quiet${name ? ` (${name})` : ''}: nothing to render, so the section was omitted. A node closing on Quiet needs at least one exit.`,
       )
@@ -756,8 +789,8 @@ export function V3Quiet({
 
   // Nothing to say: render nothing. A bare rule under a title is the visual
   // equivalent of a dead end, and this primitive will not invent the content
-  // that would fill it.
-  if (rendered.length === 0 && !trailingNote) return null
+  // that would fill it. An honesty alert alone is enough to keep the section.
+  if (rendered.length === 0 && !trailingNote && !alertRenderable) return null
 
   // No hooks in a server component, so the heading id comes from the caller's
   // id. Without one the region falls back to naming itself with the same text.
@@ -789,6 +822,7 @@ export function V3Quiet({
         V3_ROOT_CLASS,
         'v3-quiet',
         !contextLine && !title && 'v3-quiet--headless',
+        alertRenderable && 'v3-quiet--alert',
         className,
       )}
       aria-labelledby={headingId}
@@ -807,6 +841,24 @@ export function V3Quiet({
             </V3Heading>
           ) : null}
         </div>
+      ) : null}
+
+      {alertRenderable ? (
+        <Alert className="v3-quiet__alert">
+          <AlertTitle className="v3-quiet__alert-title">{alertTitle}</AlertTitle>
+          <AlertDescription className="v3-quiet__alert-body">
+            {alertBody.map((line, lineIndex) => (
+              <p key={lineIndex}>{line}</p>
+            ))}
+          </AlertDescription>
+          {alertActionLabel && alertActionHref ? (
+            <AlertAction className="v3-quiet__alert-action">
+              <Link href={alertActionHref} className="v3-quiet__alert-link">
+                {alertActionLabel}
+              </Link>
+            </AlertAction>
+          ) : null}
+        </Alert>
       ) : null}
 
       {rendered.length > 0 ? (

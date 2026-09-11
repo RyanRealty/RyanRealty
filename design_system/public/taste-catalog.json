@@ -90,7 +90,14 @@
       "import": "@/components/ui/button-group",
       "house": "components/site/v3/V3ButtonGroup.tsx"
     },
-    "shadcn:button-group": { "aliasOf": "shadcn-button-group" }
+    "shadcn:button-group": { "aliasOf": "shadcn-button-group" },
+    "shadcn-alert": {
+      "add": "alert",
+      "file": "components/ui/alert.tsx",
+      "import": "@/components/ui/alert",
+      "house": "components/site/v3/V3Quiet.tsx"
+    },
+    "shadcn:alert": { "aliasOf": "shadcn-alert" }
   },
   "catalogs": [
     {
@@ -173,7 +180,9 @@
       {
         "name": "alert",
         "installed": "components/ui/alert.tsx",
-        "jobs": []
+        "jobs": [
+          "oregon-city:honesty"
+        ]
       },
       {
         "name": "alert-dialog",
