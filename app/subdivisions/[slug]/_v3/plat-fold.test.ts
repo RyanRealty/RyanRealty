@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { buildPlaceMosView } from '@/lib/site/place-mos'
 
 const PAGE = readFileSync(resolve('app/subdivisions/[slug]/page.tsx'), 'utf8')
 const FOLD_CSS = readFileSync(resolve('app/subdivisions/[slug]/_v3/plat-fold.css'), 'utf8')
@@ -12,7 +11,7 @@ const ALERT_BINDER = readFileSync(
 )
 
 describe('SITE-86 plat fold composition', () => {
-  it('imports page-local plat-fold.css and composes Atlas beside alerts/MOS', () => {
+  it('imports page-local plat-fold.css and composes Atlas beside alerts', () => {
     expect(PAGE).toMatch(/import '\.\/_v3\/plat-fold\.css'/)
     expect(PAGE).toMatch(/className="plat-fold"/)
     expect(PAGE).toMatch(/plat-fold__drawing/)
@@ -32,11 +31,12 @@ describe('SITE-86 plat fold composition', () => {
     expect(FOLD_CSS).toMatch(/\.plat-fold__drawing \.v3-atlas__dock/)
   })
 
-  it('puts MOS + alerts in the fold figure when MOS publishes', () => {
-    expect(PAGE).toMatch(/<V3MosBars/)
+  it('puts alerts in the fold figure and never mounts MOS on this grain', () => {
     expect(PAGE).toMatch(/plat-fold__figure/)
     expect(PAGE).toMatch(/foldAtlasDots/)
-    expect(PAGE).toMatch(/buildPlaceMosView/)
+    expect(PAGE).not.toMatch(/<V3MosBars/)
+    expect(PAGE).not.toMatch(/buildPlaceMosView/)
+    expect(PAGE).not.toMatch(/platMonthsSupplyFromPace/)
   })
 
   it('does not mount V3SourceLine as hero under the H1', () => {
@@ -64,48 +64,9 @@ describe('SITE-86 plat fold composition', () => {
   })
 })
 
-describe('SITE-86 visitor-English plat MOS source', () => {
-  it('accepts subdivision grain and never prints leftoverHudKpis', () => {
-    expect(PLACE_MOS).toMatch(/'subdivision'/)
+describe('SITE-86 REGISTRY §4 — no plat MOS grain', () => {
+  it('does not accept subdivision as a PlaceMosGrain', () => {
+    expect(PLACE_MOS).not.toMatch(/'subdivision'/)
     expect(PLACE_MOS).not.toMatch(/leftoverHudKpis via/)
-    const view = buildPlaceMosView({
-      active: 14,
-      monthsSupply: 4.2,
-      grain: 'subdivision',
-      geoSlug: 'ridge-at-eagle-crest',
-      asOf: 'Sep 10, 2026',
-    })
-    expect(view).not.toBeNull()
-    expect(view!.source).toContain('Oregon Data Share')
-    expect(view!.source).toContain('detached single-family')
-    expect(view!.source).toContain('subdivision')
-    expect(view!.source).not.toMatch(/leftoverHudKpis/)
-    expect(view!.source).not.toMatch(/market_metric/)
-    expect(view!.homesValue).toBe(14)
-  })
-
-  it('keeps MOS homes-for-sale equal to the plat active the page already publishes', () => {
-    const active = 14
-    const view = buildPlaceMosView({
-      active,
-      monthsSupply: 4.2,
-      grain: 'subdivision',
-      geoSlug: 'ridge-at-eagle-crest',
-      asOf: 'Sep 10, 2026',
-    })
-    expect(view!.homesForSale).toBe(active)
-    expect(view!.homesLabel).toBe('14')
-  })
-
-  it('omits MOS when implied six-month closes sit under the floor', () => {
-    const view = buildPlaceMosView({
-      active: 2,
-      monthsSupply: 12,
-      grain: 'subdivision',
-      geoSlug: 'tiny-plat',
-      asOf: null,
-    })
-    // 2 / 12 * 6 = 1 close implied — under PLACE_MOS_MIN_CLOSES
-    expect(view).toBeNull()
   })
 })
