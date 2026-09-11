@@ -216,6 +216,11 @@ const nextConfig: NextConfig = {
       { source: '/about', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=300, stale-while-revalidate=3600' }] },
       { source: '/team', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=300, stale-while-revalidate=3600' }] },
       { source: '/team/:slug', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=300, stale-while-revalidate=3600' }] },
+      // SITE-29 — blog index + posts already export revalidate=300 and read no
+      // cookies; without these headers Vercel still served max-age=0,
+      // must-revalidate (measured 2026-09-11). Match /about+/team.
+      { source: '/blog', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=300, stale-while-revalidate=3600' }] },
+      { source: '/blog/:path*', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=300, stale-while-revalidate=3600' }] },
     ];
   },
   // SEO: canonical URLs use /homes-for-sale (keyword-rich). Old /search links redirect.
