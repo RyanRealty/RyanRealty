@@ -19,18 +19,18 @@ describe('V3Proof compact band', () => {
   it('keeps the featured pull quote out of the picks list (H11)', () => {
     expect(SRC).toContain('.filter((q) => q.id !== compactReading?.id)')
   })
-})
 
-  it('compact band can mount a Google score face from figures', () => {
+  it('compact band can mount a score face from figures', () => {
     expect(SRC).toContain('v3-proof__face')
     expect(SRC).toContain('function ScoreFace')
-    expect(SRC).toContain('function GoogleMark')
+    expect(SRC).not.toContain('function GoogleMark')
+    expect(SRC).toContain("from '@/components/ui/avatar'")
     expect(CSS).toContain('.v3-proof__face')
     expect(CSS).toContain('.v3-proof__card')
   })
 
   it('compact picks and reading sit in card chrome', () => {
-    expect(SRC).toContain("v3-proof__reading v3-proof__card")
+    expect(SRC).toContain('v3-proof__reading v3-proof__card')
     expect(SRC).toMatch(/v3-proof__pick.*v3-proof__card/)
   })
-
+})

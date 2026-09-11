@@ -2,7 +2,7 @@
   "route": "app/reviews/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md, built from components/site/v3. THIS FILE BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat brokerage testimonial walls and portal review widgets: every verified Google review on its month as a working strip, year chips that filter, full text in the served HTML, no aggregateRating on our own site, a door to a broker.",
-  "note": "SITE-48 2026-09-09. Order is Breadcrumb, V3Proof AS THE WHOLE OPENING (headingLevel 1: the count as the headline, one claim about how the reviews are shown, the Google score face \u2014 5.0 drawn as stars with the count \u2014 the span as context figures, one client's words in full, then the reach as a slim action row), then the strip of every review on its month with the year chips, the archive disclosure holding every quote, and V3Doors #next. The V3Quiet #reach section that used to sit ABOVE all of it is GONE: the taste table of 2026-09-08 scored the page 48 and named it the dullest thing on it \u2014 'four identical arrow-tipped rows of contact info before seeing a single star or quote'. Empty pool still falls back to a Quiet with the Google URL. Reviews are quoted as written. No aggregateRating JSON-LD (self-serving). Stars print from the live 1-5 rating.",
+  "note": "SITE-79 2026-09-10. Order is Breadcrumb, V3Proof AS THE WHOLE OPENING (score face first: 5.0 drawn as stars with the count and shadcn Avatar initials for recent reviewers \u2014 reviews table has no photo column; H1 is sr-only so the rating is not printed twice; one client quote in full; Call/Book after the quote; packed year-axis strip + year chips; archive disclosure), then V3Doors #next. Quiet reach above the proof is GONE. Catalog: house-proof, house-doors, shadcn-avatar via installById.",
   "requiredComponents": [
     {
       "name": "V3SectionTracker",
@@ -67,11 +67,11 @@
     "V3Footer"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate Sonnet evaluator agent, SITE-48 pass three, reviews page class \u2014 one call, three independent scorings of the same two shots, run against the rubric table in design_system/public/TASTE.md and asked explicitly whether a contact list is the first content of the page",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluatedAt": "2026-09-10",
+    "rubricVersion": "v1-2026-09-10",
+    "evaluator": "separate grok-4.6 via grok CLI (scripts/taste-evaluate.ts / constrained catalog replaceWith), SITE-79 reviews class \u2014 three independent scorings of the same two shots",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/reviews"
@@ -83,49 +83,65 @@
       "states": [
         "default"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, against the lane's own dev server before the push"
+      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, against lane dev server :3213"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/reviews/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/reviews/shots/mobile375.png"
     },
-    "shotsHash": "sha256:f5d1e64b947278d63a6112ed39385ebe88a5c629a87c4dafd1acaa33109a3467",
+    "shotsHash": "sha256:6a9b95818fcf9af5d2a7263c6c04eb689b8af960cb276e5e8335c6588f46d439",
     "scores": [
-      79,
-      81,
-      84
+      64,
+      70,
+      67
     ],
-    "score": 81,
+    "score": 67,
     "breakdown": {
-      "design": 23,
-      "originality": 24,
-      "interaction": 13,
-      "craft": 12,
+      "design": 19,
+      "originality": 20,
+      "interaction": 9,
+      "craft": 10,
+      "honesty": 9,
+      "honestyFunction": 9
+    },
+    "honestyFunction": 9,
+    "perCriterion": {
+      "design": 19,
+      "originality": 20,
+      "interaction": 9,
+      "craft": 10,
       "honesty": 9
     },
-    "beats": "Beats a Zillow or Realtor.com agent-profile reviews tab and the Google Business Profile card itself on completeness and on interrogability: every one of the 25 reviews is in the served HTML in full, placed on its own month in a strip that reads back on hover and filters by year, where a portal shows a curated handful behind \"read more\" with no timeline and contact on another tab.",
-    "contactListIsFirstContent": false,
-    "contactListAnswer": "The eyebrow, the headline '25 Google reviews', the claim, the meta line and the Google score face \u2014 all before any client words \u2014 then the lead quote. The four contact links sit as one slim underlined row AFTER both the rating and the first quote's attribution.",
+    "beats": "Beats Google Business Profile's reviews UI and a Zillow agent-reviews tab on first-read of the full quote (display type, not a truncated snippet) and on seeing all 25 reviews as a year-encoded strip instead of a paginated handful.",
+    "adaptedFrom": [
+      {
+        "id": "house-proof"
+      },
+      {
+        "id": "house-doors"
+      },
+      {
+        "id": "shadcn-avatar"
+      }
+    ],
     "defects": [
       {
-        "section": "meta row",
+        "section": "reviewer avatars",
+        "severity": "taste",
+        "finding": "Under the quote the control is four navy letter-circles (MJ, EO, AH, DG). Catalog is shadcn-avatar portraits if we have them; initials-only is the Google-widget fallback. Desktop prints names; 375 drops them, so the selected ring sits on four unmarked discs.",
+        "replaceWith": "shadcn-avatar"
+      },
+      {
+        "section": "year chips",
         "severity": "craft",
-        "finding": "At 375 the middot separator wraps to the start of the second line, leaving an orphaned mark leading a line."
+        "finding": "At 1440 the year chips are clipped by the bottom of the first viewport, so the beeswarm's filter is not operable before scroll. At 375 the chips wrap into a two-column keypad (All 25, 2026 4, 2025 8, 2024 6 / 2023 3, 2019 4) with leftover empty cells.",
+        "replaceWith": null
       },
       {
-        "section": "review timeline",
+        "section": "review beeswarm",
         "severity": "taste",
-        "finding": "The evaluator reads \"Point at a mark to read it, or pick a year.\" as a teaching caption, the reviews-page analogue of the banned Atlas pinch-to-zoom sentence. KEPT this pass, and the disagreement is recorded rather than resolved: an earlier evaluator round (2026-09-05, REVIEWS-4) added that sentence for the opposite reason \u2014 \"nothing on the page said the strip could be worked\". Removing it undoes a shipped fix on one later opinion; the next pass on this class should settle it with an affordance that needs no sentence."
-      },
-      {
-        "section": "review timeline",
-        "severity": "taste",
-        "finding": "The year axis is linear 2019 to 2026, so the empty 2020-2022 stretch takes roughly half the strip while 21 of the 25 reviews compress into the other half."
-      },
-      {
-        "section": "score plate",
-        "severity": "taste",
-        "finding": "A Google glyph, an aggregate, five stars and a count is still the shape every review widget uses, even de-boxed. It reads as the least composed object on an otherwise composed page."
+        "finding": "Linear 2019\u20132026 axis leaves 2020\u20132022 as empty cream while 21 of 25 marks crush into 2023\u20132026; the opening data graphic spends its width on absence.",
+        "replaceWith": null
       }
     ],
     "comparedToPrior": "rebaselined",
@@ -142,26 +158,9 @@
       "shotsHash": "not recorded \u2014 the cross-class table predates per-row shot hashes",
       "source": "design_system/public/taste-table.json"
     },
-    "rebaselineReason": "The prior mark is the cross-class taste table of 2026-09-08 (design_system/public/taste-table.json), which is the instrument SITE-48's accept test names. Same evaluatorModel and same rubricVersion; the shots are new captures of a rebuilt page, so shotsHash differs and the mark re-baselines rather than \"rises\". The raw numbers, plainly: before 48 (raw [45, 51, 48]), after 81 (raw [79, 81, 84]), a rise of 33 points on the same rubric and the same evaluator model. The shotsHash is the only identity key that differs.",
-    "verdict": "The page opens on the rating, the count and a client's own words, with every phone and mail link after them; the reach that used to be four identical rows above the instrument is one slim action line inside the band; and the month strip with its year chips is inside the first viewport at 1440.",
-    "passes": {
-      "note": "Three build-and-score rounds ran in this lane before the mark above, each on its own shots. The score recorded here is the LAST one, on the shots this receipt hashes.",
-      "roundOne": {
-        "score": 63,
-        "scores": [
-          61,
-          65,
-          63
-        ]
-      },
-      "roundTwo": {
-        "score": 85,
-        "scores": [
-          85,
-          84,
-          86
-        ]
-      }
-    }
+    "rebaselineReason": "Instrument changed: evaluatorModel claude-sonnet-5 \u2192 grok-4.6, rubricVersion v1-2026-09-08 \u2192 v1-2026-09-10, and shotsHash after SITE-79 rebuild (V3Proof + shadcn-avatar initials, Quiet reach no longer opens). Table mark 48 is the accept-test prior; median 67 on the new instrument.",
+    "verdict": "The opening is house-proof: 5.0 as stars, the count, then one client's words in full, with Call and Book after the quote \u2014 not a Quiet list of reach rows. What still fails is Google-widget residue and a half-working record: letter-circle avatars instead of shadcn-avatar portraits, year chips clipped at 1440 and keypad-wrapped at 375, and a beeswarm whose empty 2020\u20132022 stretch is the dullest thing in the frame. Doors correctly stay off this viewport. Composed and on-brand, not breathtaking.",
+    "contactListIsFirstContent": false,
+    "contactListAnswer": "The fold opens on 5.0 as stars, the count, and one client quote in full; Call and Book sit after the quote. V3Doors closes the page."
   }
 }

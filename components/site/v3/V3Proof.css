@@ -40,6 +40,25 @@
   margin: var(--v3-space-3xs) 0 0;
 }
 
+/* Score-led H1 mirrors the face plate for screen readers; hide the second
+   poster so the fold is stars → count → client words once. */
+.v3-proof__headline--score {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.v3-proof__head--score {
+  position: relative;
+  max-width: var(--v3-measure-text);
+}
+
 .v3-proof__claim {
   margin: var(--v3-space-sm) 0 0;
   font-size: var(--v3-size-body-lg);
@@ -47,16 +66,117 @@
   color: var(--v3-ink);
 }
 
-/* Compact score face: Google mark + aggregate + stars. Home density without
-   inventing a rating — values arrive as figures from the caller. */
+.v3-proof__claim--after-face {
+  margin-top: var(--v3-space-md);
+  max-width: var(--v3-measure-text);
+}
+
+/* 375: stars + quote + Call in the first viewport. Claim is desktop context. */
+@media (max-width: 47.99rem) {
+  .v3-proof--score {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .v3-proof--score > .v3-proof__face {
+    order: 1;
+  }
+
+  .v3-proof--score > .v3-proof__head {
+    order: 2;
+  }
+
+  .v3-proof--score > .v3-proof__reading--lead {
+    order: 3;
+  }
+
+  .v3-proof--score > .v3-proof__face-avatars {
+    order: 4;
+  }
+
+  .v3-proof--score > .v3-proof__actions {
+    order: 5;
+  }
+
+  .v3-proof--score > .v3-proof__claim--after-face {
+    display: none;
+  }
+
+  .v3-proof--score > .v3-proof__record {
+    order: 6;
+  }
+
+  .v3-proof--score > .v3-proof__status,
+  .v3-proof--score > .v3-proof__archive-wrap,
+  .v3-proof--score > .v3-proof__source {
+    order: 7;
+  }
+
+  .v3-proof--score .v3-proof__face {
+    gap: var(--v3-space-2xs);
+    padding-top: var(--v3-space-sm);
+  }
+
+  .v3-proof--score .v3-proof__face-value {
+    font-size: var(--v3-size-num);
+  }
+
+  .v3-proof--score .v3-proof__face-avatars {
+    gap: var(--v3-space-2xs);
+    margin-top: var(--v3-space-2xs);
+  }
+
+  .v3-proof--score .v3-proof__avatar-name {
+    display: none;
+  }
+
+  .v3-proof--score .v3-proof__avatar-btn .v3-proof__avatar {
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+  }
+
+  .v3-proof--score .v3-proof__reading--lead {
+    padding-top: var(--v3-space-xs);
+    padding-bottom: 0;
+    min-height: 0;
+  }
+
+  .v3-proof--score .v3-proof__reading--lead .v3-proof__para {
+    display: none;
+  }
+
+  .v3-proof--score .v3-proof__actions {
+    margin-top: var(--v3-space-2xs);
+  }
+
+  .v3-proof--score .v3-proof__record {
+    position: static;
+    margin-top: var(--v3-space-xs);
+    padding-bottom: 0;
+  }
+
+  .v3-proof--score .v3-proof__how {
+    display: none;
+  }
+
+  .v3-proof--score .v3-proof__strip,
+  .v3-proof--score .v3-proof__marks-layer {
+    height: 4.5rem;
+  }
+
+  .v3-proof--score .v3-proof__archive-wrap {
+    /* Keep the ledger caption out of the first viewport at 375. */
+    margin-top: 6rem;
+  }
+}
+
+/* Compact score face: aggregate + stars + reviewer initials. Home density
+   without inventing a rating — values arrive as figures from the caller. */
 .v3-proof__face {
   display: flex;
-  align-items: center;
-  gap: var(--v3-space-md);
-  /* The band is a SCORE, not a shelf: at 1440 a full-measure wash bar with a
-     G mark at the far left and 1,100px of empty fill beside it was the widest
-     thing on the page and said nothing (SITE-48). It takes the width of what
-     it holds, with a floor so it is still a plate and not a chip. */
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--v3-space-sm);
   width: fit-content;
   min-width: min(100%, 20rem);
   max-width: 100%;
@@ -66,34 +186,19 @@
   background: var(--v3-wash);
 }
 
-/* THE SCORE, EDITORIAL (SITE-48 round two). On a record page the plate read as
-   "a plain grey rounded rectangle holding an icon, a number, five stars and a
-   caption — a generic review-widget shape", the kind any plugin ships. The
-   fill and the border go; what is left is a rule, the aggregate at display
-   scale, the stars drawn to it, and the count. The compact bands keep the
-   plate, because there the wash is what separates proof from the page around
-   it. */
+/* THE SCORE, EDITORIAL (SITE-48 / SITE-79). Drop the Google-widget plate
+   (glyph + boxed aggregate). What remains: the number at display scale, the
+   stars, the count, and an AvatarGroup of reviewer initials — people, not a
+   plugin badge. Compact bands keep the wash plate so proof separates from the
+   page around it. */
 .v3-proof--score .v3-proof__face {
-  align-items: flex-start;
-  gap: var(--v3-space-sm);
+  gap: var(--v3-space-md);
   width: auto;
   min-width: 0;
   padding: var(--v3-space-md) 0 0;
   border: 0;
   border-top: var(--v3-rule-section);
   background: transparent;
-}
-
-.v3-proof--score .v3-proof__face-mark {
-  width: 2rem;
-  height: 2rem;
-  border: 0;
-  background: transparent;
-}
-
-.v3-proof--score .v3-proof__face-mark svg {
-  width: 22px;
-  height: 22px;
 }
 
 .v3-proof--score .v3-proof__face-value {
@@ -105,12 +210,134 @@
   height: 1.3rem;
 }
 
+/* shadcn Avatar restyled to navy/cream. No invented portraits — fallback only.
+   data-initials paints when AvatarFallback has not hydrated (radix leaves the
+   root empty on the server). */
+.v3-proof__avatar {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  background: var(--v3-navy) !important;
+  color: var(--v3-cream) !important;
+  border-radius: 999px;
+  font-family: var(--v3-font-body);
+  font-size: 0.7rem;
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+/* One initials layer only: .v3-proof__avatar-ink. Radix leaves Avatar empty
+   on SSR and may paint Fallback later — never stack ::before + ink + fallback. */
+.v3-proof__avatar-fallback {
+  background: var(--v3-navy) !important;
+  color: transparent !important;
+  font-size: 0;
+}
+
+/* shadcn paints a full-bleed ::after border with mix-blend that buries the
+   cream initials on navy. AboutFaces disables it the same way. */
+.v3-proof__avatar::after {
+  display: none !important;
+}
+
+.v3-proof__face-avatars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-sm);
+  margin: var(--v3-space-sm) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-proof__avatar-btn {
+  display: grid;
+  justify-items: center;
+  gap: var(--v3-space-3xs);
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.v3-proof__avatar-btn:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--v3-radius-md, 8px);
+}
+
+.v3-proof__avatar-btn.is-on .v3-proof__avatar {
+  box-shadow: 0 0 0 2px var(--v3-cream), 0 0 0 4px var(--v3-navy);
+}
+
+.v3-proof__avatar-btn.is-on .v3-proof__avatar-name {
+  color: var(--v3-ink);
+  font-weight: var(--v3-weight-medium);
+}
+
+.v3-proof__face-of {
+  margin-left: 0.35rem;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: 0;
+  color: var(--v3-ink-muted);
+  vertical-align: baseline;
+}
+
+.v3-proof__avatar-name {
+  max-width: 4.5rem;
+  overflow: hidden;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v3-proof__avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Sole visible initials. Always on — Fallback text is transparent. */
+.v3-proof__avatar-ink {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--v3-cream);
+  font-family: var(--v3-font-body);
+  font-size: 0.8rem;
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.v3-proof__avatar-wrap:has(.v3-proof__avatar--quote) .v3-proof__avatar-ink {
+  font-size: 0.65rem;
+}
+
+.v3-proof__avatar--quote {
+  flex: none;
+}
+
 /* The span and the tally, as one caption line under the headline. */
 .v3-proof__context {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.35rem var(--v3-space-sm);
+  gap: var(--v3-space-3xs) var(--v3-space-md);
   margin: var(--v3-space-md) 0 0;
   padding: 0;
   color: var(--v3-ink-muted);
@@ -119,16 +346,21 @@
 }
 
 .v3-proof__context-item {
-  display: flex;
+  display: inline-flex;
   align-items: baseline;
   gap: 0.35rem;
   min-width: 0;
+  white-space: nowrap;
 }
 
-.v3-proof__context-item + .v3-proof__context-item::before {
-  content: '·';
-  margin-right: 0.35rem;
-  color: var(--v3-ink-muted);
+/* No middot separators — at 375 a · before a wrapped item was the SITE-48
+   craft defect. Gap alone separates the pairs. */
+@media (min-width: 48rem) {
+  .v3-proof__context-item:not(:last-child)::after {
+    content: '·';
+    margin-left: var(--v3-space-md);
+    color: var(--v3-ink-muted);
+  }
 }
 
 .v3-proof__context-value {
@@ -140,22 +372,6 @@
 
 .v3-proof__context-label {
   margin: 0;
-}
-
-.v3-proof__face-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 3rem;
-  height: 3rem;
-  color: var(--v3-ink);
-  background: var(--v3-cream);
-  border: 1px solid var(--v3-edge);
-}
-
-.v3-proof__google {
-  display: block;
 }
 
 .v3-proof__face-score {
@@ -189,6 +405,14 @@
   font-size: var(--v3-size-body-sm);
   color: var(--v3-ink-muted);
   font-variant-numeric: tabular-nums;
+}
+
+.v3-proof__face-line {
+  margin: var(--v3-space-3xs) 0 0;
+  max-width: 18rem;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
 }
 
 /* Quote / pick chrome: hairline panel on cream, not bare text. */
@@ -309,20 +533,28 @@
     grid-column: 1 / -1;
   }
 
-  .v3-proof--score > .v3-proof__head {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
   .v3-proof--score > .v3-proof__face {
-    grid-column: 2;
-    grid-row: 1 / span 2;
+    grid-column: 1 / -1;
+    grid-row: 1;
     margin-top: 0;
     min-width: 0;
   }
 
+  .v3-proof--score > .v3-proof__head--score {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    /* Occupies the a11y H1 slot; visually clipped. */
+    pointer-events: none;
+  }
+
+  .v3-proof--score > .v3-proof__claim--after-face {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin-top: var(--v3-space-sm);
+  }
+
   .v3-proof--score > .v3-proof__context {
-    grid-column: 1;
+    grid-column: 1 / -1;
     grid-row: 2;
   }
 }
@@ -349,10 +581,20 @@
 }
 
 .v3-proof__how {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem var(--v3-space-sm);
   margin: 0 0 var(--v3-space-2xs);
-  color: var(--v3-ink-muted);
+  color: var(--v3-ink);
   font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
   line-height: var(--v3-leading-note);
+}
+
+.v3-proof__how-meta {
+  color: var(--v3-ink-muted);
+  font-weight: var(--v3-weight-regular, 400);
 }
 
 .v3-proof__strip-wrap {
@@ -476,7 +718,7 @@
 .v3-proof__year {
   position: absolute;
   top: 0;
-  transform: translateX(0.25rem);
+  transform: translateX(-50%);
   font-size: var(--v3-size-eyebrow);
   letter-spacing: var(--v3-track-eyebrow);
   color: var(--v3-ink-muted);
@@ -570,6 +812,17 @@
   text-wrap: balance;
 }
 
+/* At 375 the display pull was cropping mid-sentence in the first viewport. */
+@media (max-width: 47.99rem) {
+  .v3-proof__reading--lead .v3-proof__pull {
+    font-size: var(--v3-size-body-lg);
+    font-family: var(--v3-font-body);
+    font-weight: var(--v3-weight-medium);
+    letter-spacing: 0;
+    text-wrap: pretty;
+  }
+}
+
 .v3-proof__pull.is-long {
   font-size: var(--v3-size-body-lg);
   font-family: var(--v3-font-body);
@@ -588,7 +841,7 @@
 .v3-proof__who {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   gap: var(--v3-space-3xs) var(--v3-space-sm);
   margin-top: var(--v3-space-sm);
 }
@@ -762,12 +1015,21 @@
   border-top: 0;
 }
 
+/* Lead pane shows the first sentence; full text stays in the archive. */
+.v3-proof--score > .v3-proof__reading--lead .v3-proof__para {
+  display: none;
+}
+
 .v3-proof--score .v3-proof__actions {
-  margin-top: var(--v3-space-sm);
+  margin-top: var(--v3-space-xs);
 }
 
 .v3-proof--score .v3-proof__record {
-  margin-top: var(--v3-space-md);
+  margin-top: var(--v3-space-sm);
+}
+
+.v3-proof--score .v3-proof__face {
+  margin-top: var(--v3-space-sm);
 }
 
 .v3-proof__reading-empty {

@@ -23,6 +23,12 @@
     "Mark a SITE node done on comparedToPrior rebaselined or a taste score below 70"
   ],
   "installById": {
+    "shadcn-avatar": {
+      "add": "avatar",
+      "file": "components/ui/avatar.tsx",
+      "import": "@/components/ui/avatar",
+      "house": "components/site/v3/V3Proof.client.tsx"
+    },
     "shadcn-carousel": {
       "add": "carousel",
       "file": "components/ui/carousel.tsx",
@@ -196,7 +202,8 @@
         "name": "avatar",
         "installed": "components/ui/avatar.tsx",
         "jobs": [
-          "team:faces"
+          "team:faces",
+          "reviews:proof"
         ]
       },
       {
