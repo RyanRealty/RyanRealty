@@ -16,7 +16,7 @@ import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 /** DATA_GRAPHICS: fewer than 6 closes in the window is not a typical. */
 export const PLACE_MOS_MIN_CLOSES = 6
 
-export type PlaceMosGrain = 'city' | 'neighborhood' | 'community' | 'zip'
+export type PlaceMosGrain = 'city' | 'neighborhood' | 'community' | 'zip' | 'subdivision'
 
 export type PublishedPlaceMos = {
   homesForSale: number

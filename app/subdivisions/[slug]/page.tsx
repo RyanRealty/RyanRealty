@@ -143,6 +143,17 @@ import { getPlatBoundaryCity } from '@/lib/data/subdivisions/getPlatBoundaryCity
 import { platPageTitle } from './_v3/plat-title'
 import { platCaption } from './_v3/plat-caption'
 import './_v3/plat-opening.css'
+import './_v3/plat-fold.css'
+import { SubdivisionAlertsStrip } from './_v3/SubdivisionAlertSheet.client'
+import {
+  formatPlatSalesPaceLabel,
+  platClosedPace12mo,
+  platMonthsSupplyFromPace,
+  platNewCount30dFromTiles,
+} from './_v3/plat-fold-figures'
+import { buildPlaceMosView } from '@/lib/site/place-mos'
+import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { getSubdivisionSalesHistory } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 import { getSubdivisionSchools } from '@/lib/data/subdivisions/getSubdivisionSchools'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
@@ -172,6 +183,7 @@ import {
   V3SectionTracker,
   V3SourceLine,
   V3Button,
+  V3MosBars,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -848,6 +860,97 @@ export default async function SubdivisionPage({ params }: Props) {
     { label: 'Talk to a broker', href: '/contact' },
   ]
 
+  // SITE-86: MOS from THIS plat only — counted actives vs this plat's closed pace.
+  // Never parent Redmond/Bend pulse (ci:subdivision-stats-integrity).
+  const mosActive = activeCount
+  const closedPace12 = platClosedPace12mo({
+    mtClosed12: mtCounts.closedCount,
+    salesYears: salesHistory,
+    closedByYear: platClosed?.closedByYear ?? null,
+  })
+  const mosMonths = platMonthsSupplyFromPace(mosActive, closedPace12)
+  const mosAsOf = inventory?.readAt ? formatDate(inventory.readAt) : null
+  const placeMosRaw = buildPlaceMosView({
+    active: mosActive,
+    monthsSupply: mosMonths,
+    grain: 'subdivision',
+    geoSlug: slug,
+    asOf: mosAsOf,
+  })
+  // Keep the sales bar label precise enough that homes÷sales matches the caption
+  // (SITE-86: whole-number "2" next to "About 6.5 months" read as 14÷2=7).
+  const placeMos =
+    placeMosRaw == null
+      ? null
+      : (() => {
+          const salesFace = formatPlatSalesPaceLabel(placeMosRaw.monthOfSales)
+          if (salesFace === placeMosRaw.salesLabel) return placeMosRaw
+          return {
+            ...placeMosRaw,
+            salesLabel: salesFace,
+            tooltip: { ...placeMosRaw.tooltip, sales: salesFace },
+          }
+        })()
+  const inventoryKeySet =
+    inventory?.listingKeys && inventory.listingKeys.length > 0
+      ? new Set(inventory.listingKeys)
+      : null
+  const platNew30d = platNewCount30dFromTiles(mapTiles, inventoryKeySet)
+  const nowMs = Date.now()
+  const recentHouseListings = mapTiles
+    .filter((t) => {
+      if (inventoryKeySet && inventoryKeySet.size > 0 && !inventoryKeySet.has(t.listingKey)) return false
+      if (t.propertyType != null && t.propertyType !== 'A') return false
+      if (
+        t.propertySubType != null &&
+        t.propertySubType !== '' &&
+        t.propertySubType !== 'Single Family Residence'
+      ) {
+        return false
+      }
+      if (!t.onMarketDate || !t.photoUrl) return false
+      const ts = Date.parse(t.onMarketDate)
+      return Number.isFinite(ts) && ts >= nowMs - 30 * 86_400_000
+    })
+    .slice(0, 4)
+    .map((t) => {
+      const title =
+        publishStreetLine({
+          streetNumber: t.streetNumber,
+          streetName: t.streetName,
+          streetSuffix: t.streetSuffix,
+        }) || displayName
+      return {
+        href: t.listNumber
+          ? `/homes-for-sale/listing/${t.listNumber}`
+          : browseHref ?? `/subdivisions/${slug}`,
+        photoSrc: t.photoUrl as string,
+        title,
+        price: t.listPrice != null ? formatPriceExact(t.listPrice) : null,
+        beds: t.beds ?? null,
+        baths: t.baths ?? null,
+        sqft: t.sqft ?? null,
+      }
+    })
+  const alertTypes = buildPlaceAlertTypes({
+    placeName: displayName,
+    scopeName: displayName,
+    geoType: 'neighborhood',
+    geoSlug: slug,
+    leftoverHouses30d: platNew30d,
+    matchNames: [displayName],
+    buckets: [
+      {
+        key: 'houses',
+        label: 'Houses',
+        noun: { one: 'house', many: 'houses' },
+        newCount30d: platNew30d,
+        source: 'listing_tile_mv',
+        listings: recentHouseListings,
+      },
+    ],
+  })
+
   const marketFigures: V3InstrumentFigure[] = []
   if (platFigures.medianListPrice != null) {
     marketFigures.push({
@@ -1190,6 +1293,14 @@ export default async function SubdivisionPage({ params }: Props) {
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
+  // SITE-86: fold Atlas marks match the counted SFR face (city layout lock).
+  const foldAtlasDots = atlasView.dots.filter((d) => d.t === 'house')
+  const foldAtlasTypes = atlasView.types.filter((t) => t.key === 'house')
+  const foldHouseCount = activeCount ?? (foldAtlasDots.length > 0 ? foldAtlasDots.length : null)
+  const atlasClaimText =
+    foldHouseCount != null && foldHouseCount > 0
+      ? `${foldHouseCount} homes for sale in ${displayName} right now. Drag the price scrubber to narrow the map.`
+      : `Homes for sale in ${displayName}. Drag the price scrubber to narrow the map.`
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -1198,8 +1309,14 @@ export default async function SubdivisionPage({ params }: Props) {
 
         <div
           id="overview"
-          className={stagePosterSrc ? 'place-opening place-opening--media' : 'place-opening'}
+          className={
+            stagePosterSrc
+              ? 'place-opening place-opening--media place-opening--plat'
+              : 'place-opening place-opening--plat'
+          }
         >
+          {/* SITE-86: shortened photograph for place still + H1. MOS moves into
+              the fold figure so Atlas owns the drawing, not a portal hero card. */}
           <PlaceAreaHero posterSrc={stagePosterSrc} />
           {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
           <V3Breadcrumb
@@ -1214,93 +1331,133 @@ export default async function SubdivisionPage({ params }: Props) {
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
             </V3Heading>
-            {/* The opening is a photograph, an H1 and a face of figures. The
-                trace belongs to the face, so it mounts as the chip beside it
-                (SITE-42) — the full sentence under the headline read as hero
-                body copy the page never wrote. Nothing is cut: the disclosure
-                still holds this exact string. */}
-            <V3SourceLine
-              source={inventorySource}
-              mount="hero"
-              onMedia={Boolean(stagePosterSrc)}
-              // THE CHIP'S AS-OF (SITE-47). The counted set now publishes when
-              // it was read (getPlatPublicInventory.readAt), so the opening's
-              // trace carries a date instead of a source name alone. A recorded
-              // plat resolved off the boundary has no such stamp and stays
-              // undated — nothing is invented to fill the clause.
-              asOf={inventory?.readAt ?? null}
-            />
             {posterCaption ? <p className="place-opening__caption">{posterCaption}</p> : null}
+          </div>
+        </div>
+
+        {/* SITE-86: drawing + figure in the first viewport. Atlas is the drawing
+            (type toggles + price scrubber). MOS two-bar + alerts/V3Number are
+            the figure. Source chip sits under the figure it supports — never
+            mount="hero" at H1 weight. Doors sit after the stage so the short
+            photograph does not clip the primary ask. */}
+        {canMapAtlas ? (
+          <div className="plat-fold">
+            <div className="plat-fold__stage">
+              <div className="plat-fold__drawing">
+                <V3Atlas
+                  id="atlas"
+                  headingLevel={2}
+                  headline={v3Text(`${displayName} right now`)}
+                  headlineTone="eyebrow"
+                  claimText={atlasClaimText}
+                  keyPlacement="dock"
+                  sourceName={PLAT_FEED}
+                  dots={foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots}
+                  regions={atlasRegions}
+                  {...(frame ? { frame: frame.geometry } : {})}
+                  basemap={
+                    frame
+                      ? basemapForFrame({ bbox: frame.bbox, pad: ATLAS_FRAME_PAD })
+                      : basemapForRegions(atlasRegions, {
+                          dots: foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots,
+                          fit: atlasRegions.length > 0 ? 'regions' : 'dots',
+                        })
+                  }
+                  parcels={platLots.map((lot) => ({
+                    id: lot.taxlot,
+                    subject: false,
+                    geometry: lot.geometry,
+                  }))}
+                  types={foldAtlasTypes.length > 0 ? foldAtlasTypes : atlasView.types}
+                  events={atlasView.events}
+                  source={[
+                    foldAtlasDots.length > 0
+                      ? `Detached single-family (Houses) active and pending marks inside the recorded ${displayName} boundary, from the same Oregon Data Share listing tiles the map draws. Price scrubber filters this set.`
+                      : atlasView.source,
+                    footprintNote,
+                    platLots.length > 0 && nearLotsCentre
+                      ? `The lot lines are every parcel within ${Math.round(nearLotsRadiusM)} m of these homes, not a boundary of ${displayName}: the county recorded no plat under this name.`
+                      : null,
+                    platLots.length > 0 ? TAXLOT_DISCLAIMER : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  stamp={atlasView.stamp}
+                  incomplete={!atlasView.complete}
+                  {...(frame == null && atlasRegions.length === 0 ? { fit: 'dots' as const } : {})}
+                />
+              </div>
+              <aside className="plat-fold__figure">
+                {/* SITE-86 SEO: crawlable doors at the top of the figure so they
+                    land in the first viewport (not under the H1, not below the ask). */}
+                <p className="place-opening__caption place-opening__caption--doors plat-fold__seo-doors">
+                  {browseHref ? <a href={browseHref}>{displayName} homes for sale</a> : null}
+                  {browseHref && citySlug ? ' · ' : null}
+                  {citySlug ? <a href={`/cities/${citySlug}`}>{cityName} real estate</a> : null}
+                  {(browseHref || citySlug) && canMapAtlas ? ' · ' : null}
+                  {canMapAtlas ? <a href="#atlas">Map of {displayName}</a> : null}
+                  {resortSlug ? (
+                    <>
+                      {' · '}
+                      <a href={`/communities/${resortSlug}`}>{resortLabel ?? 'Resort'} overview</a>
+                    </>
+                  ) : null}
+                </p>
+                {placeMos ? (
+                  <div className="plat-fold__mos">
+                    <V3MosBars
+                      caption={placeMos.caption}
+                      plainLabel={placeMos.plainLabel}
+                      homesName={placeMos.homesName}
+                      homesLabel={placeMos.homesLabel}
+                      homesValue={placeMos.homesValue}
+                      salesName={placeMos.salesName}
+                      salesLabel={placeMos.salesLabel}
+                      salesValue={placeMos.salesValue}
+                      source={placeMos.source}
+                      asOf={placeMos.asOf}
+                      sourceName="Oregon Data Share"
+                      tooltip={placeMos.tooltip}
+                    />
+                  </div>
+                ) : null}
+                <SubdivisionAlertsStrip
+                  id="alerts"
+                  placeName={displayName}
+                  city={cityName}
+                  subdivision={displayName}
+                  geoSlug={slug}
+                  newCount30d={platNew30d}
+                  updatedAt={inventory?.readAt ?? null}
+                  browseHref={browseHref ?? `/subdivisions/${slug}`}
+                  types={alertTypes}
+                />
+                <div className="plat-opening__doors plat-fold__doors">
+                  {platDoors.map((door, i) => (
+                    <V3Button key={door.href} href={door.href} variant={i === 0 ? 'primary' : 'ghost'}>
+                      {door.label}
+                    </V3Button>
+                  ))}
+                </div>
+                <V3SourceLine
+                  source={inventorySource}
+                  asOf={inventory?.readAt ?? null}
+                  sourceName={PLAT_FEED}
+                />
+              </aside>
+            </div>
+          </div>
+        ) : (
+          <>
             <div className="plat-opening__doors">
               {platDoors.map((door, i) => (
-                <V3Button
-                  key={door.href}
-                  href={door.href}
-                  variant={i === 0 ? 'primary' : 'ghost'}
-                  onMedia={Boolean(stagePosterSrc)}
-                >
+                <V3Button key={door.href} href={door.href} variant={i === 0 ? 'primary' : 'ghost'}>
                   {door.label}
                 </V3Button>
               ))}
             </div>
-          </div>
-        </div>
-        {canMapAtlas && (
-          <V3Atlas
-            id="atlas"
-            headingLevel={2}
-            headline={v3Text(`${displayName} right now`)}
-            /* SITE-47. The section opened on a bare label over a map whose
-               marks meant nothing until a hover, with the key below a frame
-               tall enough to push it off the first read (measured at 1440:
-               the key sat at y=1348 on /subdivisions/ridge-at-eagle-crest,
-               724px into the section, under the map). Both opt-ins:
-               `inventory` prints ONE claim clause built from the same filtered
-               count the marks are drawn from and names the feed; `head` moves
-               the dot key up beside it, above the map, in every layout. */
-            claimTone="inventory"
-            keyPlacement="head"
-            // The feed, spelled once for the whole route (subdivision-traces).
-            sourceName={PLAT_FEED}
-            dots={atlasView.dots}
-            regions={atlasRegions}
-            /* THE FRAME IS NAMED, NOT INFERRED (SITE-56). The plat's footprint
-               or the box holding its homes, widened until the basemap draws a
-               real map — so a plat with one home gets a map of the streets it
-               stands on instead of a projection divided by zero. V3Atlas pads
-               what it is given by 60%, and the basemap is clipped at the same
-               padding so the ground reaches the frame's edges. */
-            {...(frame ? { frame: frame.geometry } : {})}
-            basemap={
-              frame
-                ? basemapForFrame({ bbox: frame.bbox, pad: ATLAS_FRAME_PAD })
-                : basemapForRegions(atlasRegions, {
-                    dots: atlasView.dots,
-                    fit: atlasRegions.length > 0 ? 'regions' : 'dots',
-                  })
-            }
-            parcels={platLots.map((lot) => ({ id: lot.taxlot, subject: false, geometry: lot.geometry }))}
-            types={atlasView.types}
-            events={atlasView.events}
-            /* WHAT THE OUTLINE IS, IN WORDS (§0). A drawn boundary makes a
-               claim about the world exactly as a printed figure does, and a
-               footprint joined out of four recorded phases is not the same
-               claim as one filed polygon. The sentence names the parts and the
-               county that recorded them. */
-            source={[
-              atlasView.source,
-              footprintNote,
-              platLots.length > 0 && nearLotsCentre
-                ? `The lot lines are every parcel within ${Math.round(nearLotsRadiusM)} m of these homes, not a boundary of ${displayName}: the county recorded no plat under this name.`
-                : null,
-              platLots.length > 0 ? TAXLOT_DISCLAIMER : null,
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            stamp={atlasView.stamp}
-            incomplete={!atlasView.complete}
-            {...(frame == null && atlasRegions.length === 0 ? { fit: 'dots' as const } : {})}
-          />
+            <V3SourceLine source={inventorySource} asOf={inventory?.readAt ?? null} sourceName={PLAT_FEED} />
+          </>
         )}
 
         <PlaceTypeSlider cards={typeCards} label={`${displayName} property types`} />
