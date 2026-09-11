@@ -1,10 +1,10 @@
-# Current — 2026-09-11 08:05Z (grinder 01a08eda: SITE-29 + SITE-86 landing)
+# Current — 2026-09-11 08:10Z (grinder 01a08eda: SITE-29 + SITE-86 live)
 
-Owner: `grok-4.5-2026-09-10-22`. 15m launchd stays. No auto-seed.
+Owner: `grok-4.5-2026-09-10-22`. origin/main `f7f3c89a` READY `cli-f7f3c89`. 15m launchd stays. No auto-seed.
 
-- **SITE-29** blog edge cache: `next.config.ts` `/blog` + `/blog/:path*` `public, s-maxage=300`. Place pages already `s-maxage=60`. Production accept (HIT) after this deploy.
-- **SITE-86** subdivision fold: Atlas + this-plat 30-day alerts, crawlable doors, source line off the H1. MOS **not** on plat grain (REGISTRY §4). grok-4.6 median **62** rebaselined. Finish 70 not met.
-- Next open: SITE-73 zip, SITE-89 place-type. Skip overlapping place families.
+- **SITE-29 done** blog `/blog` + `/blog/:path*` `public, s-maxage=300`. Production second curl HIT on sunriver, bend, /blog, and the Sunriver post. H1+≥8 h2 held.
+- **SITE-86 done** subdivision fold Atlas + this-plat alerts, no plat MOS (REGISTRY §4). grok-4.6 median **62** rebaselined. Finish 70 not met.
+- Next open: SITE-89 place-type, SITE-73 zip. Skip overlapping place families.
 
 
 # Current — 2026-09-10 23:48Z (homepage uses the MorphingSearch demo, not inline)
