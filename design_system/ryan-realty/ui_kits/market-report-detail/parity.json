@@ -119,11 +119,11 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-41, third pass on this instrument. The committed prior mark (score 54) came from a SITE-42 round. This node's evaluator round one, given that round's findings to re-verify plus the mix-cell duplicate-row finding, scored the fold's sentencing and the mix-data cut at median 72 but wrote \"KPI grid present: yes (in substance, dodged on the letter)\" — the fold had grown to ~18 tiles, 9 of them property-type supply tiles sharing one templated sentence with only the noun swapped. A build pass cut property-type supply to the top 2 by active count, capped pace cells at 3, and removed the internal \"Market Truth (mt-v1)\" label from the fold's own disclosure text. A THIRD fresh evaluator instance re-scored the resulting ~10-tile fold end to end, confirmed the jargon gone and the bar-encoded sibling-city ledger, and returned \"KPI grid present: no\" with one residual craft note (median 78, recorded here).",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluatedAt": "2026-09-10",
+    "rubricVersion": "v1-2026-09-10",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts market-report-detail \u2014 grok-4.6 via grok CLI, three scorings of the same 1440/375 first-viewport shots plus source-line pair on http://127.0.0.1:3210/housing-market/bend. Builder grok-4.5 did not grade the page.",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/housing-market/bend"
@@ -143,51 +143,77 @@
       "sourceDesktop": "design_system/ryan-realty/ui_kits/market-report-detail/shots/source-desktop.png",
       "sourceMobile375": "design_system/ryan-realty/ui_kits/market-report-detail/shots/source-mobile375.png"
     },
-    "shotsHash": "sha256:c64989e8d7bb764bdaf3cd2a50f7dbc6a4e000e95239ea97365d9700e8cb1944",
+    "shotsHash": "sha256:a8c513adffc29b7909f5880793f66096614ef4e8fd2a70fa61eecca4be5577f4",
     "scores": [
-      78,
-      75,
-      82
+      61,
+      58,
+      64
     ],
-    "score": 78,
+    "score": 61,
     "breakdown": {
-      "design": 24,
-      "originality": 21,
-      "interaction": 11,
-      "craft": 13,
-      "honesty": 9
+      "design": 19,
+      "originality": 16,
+      "interaction": 10,
+      "craft": 8,
+      "honesty": 8
     },
-    "beats": "Redfin's Bend housing-market page: one median-price line with basic hover and no stated method. This page wins on trace — every section's disclosure names the source, the filter, the window and the row count, the hero chart's hover returns all three plotted years for the same calendar month in one tooltip, and the sibling-city ledger and the property-type/pace fold are both now captioned rather than bare.",
+    "perCriterion": {
+      "design": 19,
+      "originality": 16,
+      "interaction": 10,
+      "craft": 8,
+      "honestyFunction": 8
+    },
+    "beats": "Redfin Bend housing-market (redfin.com/city/1687/OR/Bend/housing-market): we win on MOS as two named bars (646 vs 173) and on reaching a broker (Ask about Bend + 541.703.3095); we lose on 375 chart craft. Better than a 53/100 page \u2014 the mt-v1 dump is gone, the fold is Instrument + MOS bars + a hovered year overlay, not a methodology footnote \u2014 still not a 70.",
+    "adaptedFrom": [
+      {
+        "id": "beui-number"
+      },
+      {
+        "id": "house-mos"
+      },
+      {
+        "id": "house-chart"
+      },
+      {
+        "id": "house-instrument"
+      }
+    ],
     "defects": [
       {
-        "section": "market fold, lots/townhomes tiles",
-        "severity": "taste",
-        "finding": "The two surviving property-type tiles (lots, townhomes) still open with the identical five-word clause \"[noun] on the market right now\" before diverging — a shrunk, considered pair, not the prior 9-tile template wall, but the shared opener is a visible seam."
-      },
-      {
-        "section": "Bend real estate questions (FAQ)",
-        "severity": "taste",
-        "finding": "Five question and answer pairs render fully expanded with no disclosure and no figure beside any of them — the banned wall-of-text tell, unchanged from the prior round."
-      },
-      {
-        "section": "how we calculate this (fold trace)",
+        "section": "#market V3Chart (375)",
         "severity": "craft",
-        "finding": "The opened trace is a dense five-clause run-on. Correctly gated behind a disclosure now (the internal \"Market Truth mt-v1\" label is gone), but still a small wall-of-text moment once opened."
+        "finding": "At 375 the year overlay is a collision: AUG $741K $795K $750K sit on the series, the y-axis packs $800K/$780K/$760K, the plot is clipped, and the desktop month scrubber is not in the frame \u2014 the fold's only interactive object is unreadable.",
+        "replaceWith": "house-chart"
       },
       {
-        "section": "How Bend homes get bought",
+        "section": "#market action (375)",
         "severity": "taste",
-        "finding": "Unconfirmed this round whether the financing bar chart's hover is real (no screenshot reached that far down the page) — carried over as unverified, not as a new finding."
+        "finding": "The one ask (Ask about Bend) is in the desktop first viewport and missing from the 375 first viewport; MOS plus the broken chart ate the fold, so the page job is not one path on a phone.",
+        "replaceWith": null
+      },
+      {
+        "section": "#cities",
+        "severity": "taste",
+        "finding": "Sibling cities encode median list price as bar length while months of supply is a caption numeral (3.9, 6.7, 5.9) \u2014 a price directory on a market-condition page, MOS reduced to a tile-like number instead of two named bars.",
+        "replaceWith": "house-mos"
+      },
+      {
+        "section": "#market source-line (desktop open)",
+        "severity": "craft",
+        "finding": "The source-open desktop shot is a dead cream slab: the opened disclosure sits under the nav, the MOS pair and year overlay are gone, then a hairline and #cities \u2014 expanding how we calculate this must not empty the instrument.",
+        "replaceWith": null
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-09",
-      "score": 54,
+      "score": 78,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:620ac07fdfde783aefc9ff2ea577885e0009662c6dd87e5bbabfbe6eba1bdb69"
+      "shotsHash": "sha256:c64989e8d7bb764bdaf3cd2a50f7dbc6a4e000e95239ea97365d9700e8cb1944"
     },
-    "rebaselineReason": "shotsHash differs — the property-type/pace fold was cut from ~18 to ~10 tiles, the sibling-city ledger gained bar encoding, and the \"Market Truth mt-v1\" internal label was removed from the fold's disclosure text, changing the rendered page the shots capture."
+    "rebaselineReason": "evaluatorModel grok-4.6 vs claude-sonnet-5; rubricVersion v1-2026-09-10 vs v1-2026-09-08; shotsHash differs after MOS bars, chart scrubber, visitor-English source, and first-viewport ask door.",
+    "honestyFunction": 8
   }
 }

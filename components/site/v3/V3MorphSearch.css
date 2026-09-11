@@ -39,7 +39,8 @@
 }
 
 .v3 .v3-morph-search__field input,
-.v3 .v3-morph-search__field .home-hero-search__input {
+.v3 .v3-morph-search__field .home-hero-search__input,
+.v3 .v3-morph-search--live .v3-morph-search__catalog input {
   border: 0 !important;
   box-shadow: none !important;
   border-radius: 0 !important;
@@ -123,58 +124,81 @@
   }
 }
 
-/* Installed MorphingSearch is the JS control. Native field stays for no-JS.
-   `--live` is set after hydrate — do not use `@media (scripting: enabled)`;
-   rest shots were capturing the native cream field + Search button while
-   the catalog control stayed `display: none`. */
+/* Installed MorphingSearch is the JS field. Native stays in the form for
+   no-JS (SITE-12). `--live` is set after hydrate — do not use
+   `@media (scripting: enabled)`; rest shots were capturing the native cream
+   field + Search button while the catalog control stayed `display: none`. */
 .v3 .v3-morph-search__beui {
   display: none;
 }
 
-/* Native field is the visible control. A second catalog overlay on top of
-   it is how the field vanished ("Find a home" with no box). */
 .v3 .v3-morph-search--live .v3-morph-search__beui {
-  display: none;
+  display: block;
+  width: 100%;
 }
 
 .v3 .v3-morph-search--live .v3-morph-search__catalog {
   width: 100%;
   max-width: none;
-  height: auto;
+  height: var(--v3-tap);
   min-height: var(--v3-tap);
 }
 
-.v3 .v3-morph-search--live .v3-morph-search__catalog button {
-  background: var(--v3-surface) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border-radius: var(--v3-radius-control);
-  box-shadow: none !important;
+.v3 .v3-morph-search--live .v3-morph-search__catalog button[aria-haspopup='dialog'] {
+  width: 100%;
+  height: var(--v3-tap);
+  background: var(--v3-surface);
   border: 2px solid var(--v3-ink);
+  border-radius: var(--v3-radius-control);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-/* `color` on a bare `button` lives in @layer base so Tailwind utilities keep winning. */
+.v3 .v3-morph-search--live .v3-morph-search__catalog kbd,
+.v3-morph-overlay-dialog kbd {
+  border-color: var(--v3-ink);
+  color: var(--v3-ink-muted);
+  background: transparent;
+}
+
 @layer base {
-  .v3 .v3-morph-search--live .v3-morph-search__catalog button {
+  .v3 .v3-morph-search--live .v3-morph-search__catalog button[aria-haspopup='dialog'] {
     color: var(--v3-ink);
   }
 }
 
+/* Native is clipped after hydrate so the catalog input is the one you see.
+   `inert` on the node (set in JS) keeps it off the tab order. */
 .v3 .v3-morph-search--live .v3-morph-search__native {
-  position: relative;
-  width: auto;
-  height: auto;
-  clip: auto;
-  clip-path: none;
-  overflow: visible;
-  margin: 0;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
   padding: 0;
-  white-space: normal;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 @media (scripting: none) {
   .v3 .v3-morph-search__beui {
     display: none;
+  }
+
+  .v3 .v3-morph-search--live .v3-morph-search__native {
+    position: relative;
+    width: auto;
+    height: auto;
+    margin: 0;
+    clip: auto;
+    clip-path: none;
+    overflow: visible;
+    white-space: normal;
   }
 }
 

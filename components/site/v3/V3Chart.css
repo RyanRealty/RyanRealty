@@ -790,6 +790,45 @@
   transform: translateX(calc(-100% - 10px));
 }
 
+/* Resting tip (SITE-81): the newest month is open before a pointer arrives,
+   so a still of the fold already shows the chart is interactive. */
+.v3 .v3-chart__tip--resting {
+  border-color: var(--v3-navy);
+  box-shadow: var(--v3-media-shadow);
+}
+
+/* Visible month scrubber under the plot — beautifului-insight adapted as a
+   house control (navy/cream), not an AI card paste. */
+.v3 .v3-chart__scrub {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--v3-space-sm);
+  margin-top: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+  width: 100%;
+}
+
+.v3 .v3-chart__scrub-label {
+  font-size: var(--v3-size-label);
+  font-weight: 600;
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 4.5ch;
+}
+
+.v3 .v3-chart__scrub-input {
+  width: 100%;
+  height: var(--v3-tap);
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--v3-navy);
+  background: transparent;
+}
+
 /* The range plot's hover layer -------------------------------------------
    Same layer, turned ninety degrees: the crosshair is a rule ACROSS the rows.
    There is no floating tip here — the plot already prints every value at the

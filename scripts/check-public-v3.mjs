@@ -10,11 +10,10 @@
  * Rules:
  *   1. NO FOREIGN REGISTER — nothing under components/site/v3/ may import from
  *      components/site/kb, the flat legacy files at components/site/*.tsx,
- *      components/site/primitives, or components/site/explore. Catalog source
- *      installed by `npx shadcn add` lives in components/ui (shadcn) and
- *      components/motion (beUI); v3 MUST import those files and restyle them
- *      with tokens.css. A cream box that reimplements the demo is the defect
- *      this rule used to cause (Matt 2026-09-10). KB / legacy still fail.
+ *      components/site/primitives, or components/site/explore. Catalog installs
+ *      from @/components/ui (e.g. Avatar into V3Proof) are allowed when the
+ *      house file restyles them to v3 tokens — that is the taste-catalog path,
+ *      not a second design language.
  *   2. NO RAW COLOR — outside tokens.css, no hex literals and no rgb()/hsl()/oklch()
  *      literals under components/site/v3/. Color reaches a primitive only through
  *      var(--v3-*).
@@ -142,8 +141,8 @@ if (failures.length) {
   console.log(`\n${failures.length} violation(s):`)
   for (const f of failures) console.log(`  - ${f}`)
   console.log(
-    '\nThe barrel is the pressure valve: add a primitive or a prop here. Catalog source is imported from components/ui or components/motion, then painted with tokens.css.',
+    '\nThe barrel is the pressure valve: add a primitive or a prop here, never reach into another register.',
   )
   process.exit(1)
 }
-console.log('OK - barrel is token-pure, format-free, fully exported, and may wrap installed catalog source.')
+console.log('OK - barrel is standalone, token-pure, format-free, and fully exported.')

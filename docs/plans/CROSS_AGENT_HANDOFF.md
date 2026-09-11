@@ -1,3 +1,25 @@
+# Current — 2026-09-11 01:20Z (grinder 01a08d23: SITE-76 + SITE-79 live)
+
+Owner: `grok-4.5-2026-09-10-21`. origin/main `ed3bc172` READY `dpl_AAbjiC6uD8E87AE4CXaiLiDH9Vn8`. 15m launchd stays. No auto-seed.
+
+- **SITE-81 done** market-report-detail grok-4.6 median **61**. Finish 70 not met.
+- **SITE-87 done** community grok-4.6 median **64**. Finish 70 not met.
+- **SITE-76 done** oregon-city honesty Alert fold grok-4.6 median **49**. Finish 70 not met.
+- **SITE-79 done** reviews V3Proof + avatar initials grok-4.6 median **67**. Finish 70 not met.
+- Next open: SITE-89, SITE-88, SITE-73, SITE-82, SITE-86. Skip overlapping families.
+
+# Current — 2026-09-10 23:48Z (homepage uses the MorphingSearch demo, not inline)
+
+Owner: this session (`01a08c7c`). Do not steal SITE-76 / SITE-79. 15m stays. No auto-seed.
+
+- **SITE-83 homepage:** V3MorphSearch no longer passes `inline` or `open={false}`. Click morphs the catalog trigger into the overlay with seed places. Rail cards are shadcn CardHeader/CardTitle under the photo — no `v3-lrow`. Tests that forbade `<kbd>` / required `inline` are gone.
+
+# Current — 2026-09-10 21:02Z (homepage catalog-visible: MorphingSearch / Card / typed count)
+
+Owner: this session (`01a08c7c`). Do not steal SITE-88 / SITE-76 / SITE-79 / SITE-81. 15m scheduler stays. No auto-seed.
+
+- **SITE-83 homepage:** live CSS had been hiding MorphingSearch (`display:none`) and stamping prices on photos. Catalog field is the JS control (native clipped after hydrate). Rails are Card photo + CardTitle/CardDescription. Navy live count is `forSaleLabel` type, not V3Number. Places mega still house chrome.
+
 # Current — 2026-09-10 17:47Z (grinder 01a08b99: SITE-89 + SITE-73 on main)
 
 Owner: `grok-4.5-2026-09-10-16`. Local `ea9f3cc5` (SITE-73 merge) on `48a3d62b` (SITE-89). Do not steal SITE-88. Do not steal SITE-76 / SITE-79 (`grok-4.5-2026-09-10-17`). Skip SITE-81. 15m scheduler stays. No auto-seed.

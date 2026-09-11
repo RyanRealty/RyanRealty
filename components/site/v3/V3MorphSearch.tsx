@@ -19,7 +19,7 @@ import './V3MorphSearch.css'
 export type V3MorphSearchItem = MorphingSearchItem
 
 export type V3MorphSearchProps = {
-  /** Whether the results surface is expanded. */
+  /** Controlled open. Omit it so MorphingSearch owns the morph (the demo). */
   open?: boolean
   onOpenChange?: (open: boolean) => void
   placeholder?: string
@@ -35,7 +35,7 @@ export type V3MorphSearchProps = {
 }
 
 export function V3MorphSearch({
-  open = false,
+  open,
   onOpenChange,
   placeholder = 'Search',
   items,
@@ -68,18 +68,16 @@ export function V3MorphSearch({
           <MorphingSearch
             items={catalogItems}
             placeholder={placeholder}
-            open={open}
-            onOpenChange={onOpenChange}
+            {...(open !== undefined ? { open, onOpenChange } : { onOpenChange })}
             onQueryChange={onQueryChange}
             onSelect={onSelect}
-            shortcut=""
-            inline
+            shortcut="f"
             emptyMessage="No places match that."
             className="v3-morph-search__catalog"
           />
         </div>
       ) : null}
-      <div className="v3-morph-search__native">
+      <div className="v3-morph-search__native" aria-hidden={live || undefined} inert={live || undefined}>
         <div className="v3-morph-search__shell">
           <div className="v3-morph-search__row">{children}</div>
           {results != null ? (

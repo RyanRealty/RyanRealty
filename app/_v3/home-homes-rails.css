@@ -72,13 +72,16 @@
    compact Stage (evaluator cropped through the photograph otherwise). */
 .home-rail__carousel.v3-carousel--rail .v3-carousel__slide,
 .home-rail__carousel.v3-carousel--rail [data-slot='carousel-item'] {
-  flex-basis: min(14rem, 72vw);
+  flex-basis: min(17.5rem, 78vw);
   overflow: visible;
   height: auto;
+  min-height: auto;
 }
 
 .home-rail__card[data-slot='card'] {
-  overflow: visible;
+  overflow: hidden;
+  height: auto;
+  gap: 0;
   border-radius: var(--v3-radius-control);
   background: var(--v3-surface);
   color: var(--v3-ink);
@@ -87,20 +90,8 @@
 
 .home-rail__carousel .home-rail__media,
 .home-rail__carousel .v3-lrow__media {
-  aspect-ratio: 5 / 3;
+  aspect-ratio: 4 / 3;
   min-height: 0;
-}
-
-/* Vertical Zillow-style card face on the rail (photo over copy). */
-.v3.v3-lrow.v3-lrow--card,
-.v3 .v3-lrow.v3-lrow--card {
-  display: flex;
-  flex-direction: column;
-  grid-template-columns: none;
-  min-height: 0;
-  height: 100%;
-  background: var(--v3-surface);
-  border: var(--v3-rule-hairline);
 }
 
 .home-rail__media {
@@ -108,56 +99,28 @@
   width: 100%;
 }
 
-.home-rail__on-photo {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15em;
-  padding: var(--v3-space-sm) var(--v3-space-sm) var(--v3-space-xs);
-  background: linear-gradient(transparent, var(--v3-scrim-strong));
-  color: var(--v3-ink-on-navy);
-  pointer-events: none;
-}
-
-.home-rail__on-photo-price {
-  font-family: var(--v3-font-display);
-  font-size: var(--v3-size-display-2);
-  font-weight: var(--v3-weight-display);
-  line-height: 1.1;
-  letter-spacing: var(--v3-track-display);
-}
-
-.home-rail__on-photo-meta {
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body-sm);
-  line-height: var(--v3-leading-control);
-  opacity: 0.92;
-}
-
-.v3-lrow--card .v3-lrow__media,
 .home-rail__card .v3-lrow__media {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
   height: auto;
-  min-height: var(--v3-carousel-h);
+  min-height: 0;
 }
 
-.home-rail__copy {
+.home-rail__card .v3-lrow__addr-tip {
+  display: none;
+}
+
+.home-rail__copy,
+.home-rail__card [data-slot='card-header'] {
   display: flex;
   flex-direction: column;
   gap: var(--v3-space-3xs);
-  padding: var(--v3-space-sm);
-  text-decoration: none;
-  color: inherit;
+  padding: var(--v3-space-sm) var(--v3-space-sm) 0;
 }
 
 .home-rail__card [data-slot='card-content'] {
-  padding: var(--v3-space-sm);
+  padding: var(--v3-space-2xs) var(--v3-space-sm) var(--v3-space-sm);
 }
 
 .home-rail__copy-link {
@@ -168,10 +131,19 @@
   color: inherit;
 }
 
-.home-rail__copy .v3-lrow__price {
+.home-rail__card [data-slot='card-title'] {
   font-family: var(--v3-font-display);
   font-size: var(--v3-size-display-2);
   font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink);
+}
+
+.home-rail__card [data-slot='card-description'],
+.home-rail__addr,
+.home-rail__city,
+.home-rail__kind {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
 }
 
 .v3 .home-rail__save {

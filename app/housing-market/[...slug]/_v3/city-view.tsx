@@ -20,17 +20,21 @@ import {
   v3Text,
   V3Instrument,
   V3Ledger,
+  V3MosBars,
   V3Quiet,
   type V3ChartProps,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import type { MarketKind } from '@/lib/market/classify'
+import { MOS_METHODOLOGY_CLAUSE, MOS_PLAIN_LABEL, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { buildPlaceMosView } from '@/lib/site/place-mos'
 import { MARKET_FOLD_LABEL, MARKET_LEAD_FIGURES } from '../../_v3/opening'
 import { buildPaceTailFigures, buildSegmentTailFigures } from '../../_v3/tail-figures'
 import { buildCityLedger, buildExploreItems, buildFaqItems, buildLiveFigures } from './geo-figures'
 import type { PublicSegmentRow } from '@/lib/data/market-truth/public-segments'
 import type { PublicPaceRow } from '@/lib/data/market-truth/public-pace'
 import type { PublicMixRow } from '@/lib/data/market-truth/public-mix'
+import './city-market.css'
 
 type Props = {
   cityName: string
@@ -74,6 +78,28 @@ export function CityMarketView({
   // a future dedicated mix section; unread here on purpose.
 }: Props) {
   const live = buildLiveFigures(hud, mosText, cityName)
+  // SITE-81: MOS is two named bars in the fold, never a KPI tile beside them.
+  // Same leftover HUD active + monthsSupply path place pages use (publishPlaceMos).
+  const placeMosBase = buildPlaceMosView({
+    active: hud?.active,
+    monthsSupply: hud?.monthsSupply,
+    grain: 'city',
+    geoSlug: citySlug,
+    asOf: refreshedAt ? formatDate(refreshedAt) : null,
+  })
+  const placeMos = placeMosBase
+    ? {
+        ...placeMosBase,
+        // Whole homes for the sales pace face (SITE-81 evaluator: no 173.0).
+        salesLabel: Math.round(placeMosBase.salesValue).toLocaleString('en-US'),
+        tooltip: {
+          ...placeMosBase.tooltip,
+          sales: Math.round(placeMosBase.salesValue).toLocaleString('en-US'),
+        },
+        // Compact visitor English on the face; full MOS math behind disclosure.
+        source: `Oregon Data Share MLS. ${placeMosBase.homesLabel} homes for sale vs ${Math.round(placeMosBase.salesValue).toLocaleString('en-US')} sales a month. ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`,
+      }
+    : null
   // CURATED, NOT DUMPED (SITE-41 round two): the fold used to merge every property-type
   // supply row, all twelve-plus pace cells, and every financing/feature/bedroom mix
   // cell into one tail with no sentence — the KPI-grid tell TASTE.md bans by name,
@@ -90,9 +116,10 @@ export function CityMarketView({
   const paceFigures = buildPaceTailFigures(publicPace)
   // ONE FIGURE PER LABEL (2026-08-27 audit): live and pace both read the pending
   // count, so "under contract now" could print twice. First mount wins.
-  const figures = [...live.figures, ...segmentFigures, ...paceFigures, ...closedFigures].filter(
-    (f, i, arr) => arr.findIndex((g) => String(g.label) === String(f.label)) === i,
-  )
+  // When MOS bars publish, drop the MOS tile so the drawing owns that figure.
+  const figures = [...live.figures, ...segmentFigures, ...paceFigures, ...closedFigures]
+    .filter((f, i, arr) => arr.findIndex((g) => String(g.label) === String(f.label)) === i)
+    .filter((f) => !(placeMos && String(f.label) === MOS_PLAIN_LABEL))
   const [firstFigure, ...restFigures] = figures
   const cityLedger = buildCityLedger(snapshots, citySlug)
   const [firstCityRow, ...restCityRows] = cityLedger.rows
@@ -124,26 +151,12 @@ export function CityMarketView({
       ? `${cityName} housing market`
       : `${cityName} housing market: a ${verdict.label}`
 
-  const traceParts = [
-    live.figures.length > 0 ? live.trace.replace(/\.$/, '') : null,
-    // NO INTERNAL LABEL IN A VISITOR-FACING TRACE (SITE-41 round two): "(mt-v1)" is a
-    // cache/table version tag, banned by TASTE.md by name ("raw slugs, internal
-    // labels, methodology jargon in anything a visitor reads") even one click deep
-    // inside this disclosure. Says the same fact — a separate data source from the
-    // live pulse row above it — without the internal tag.
-    segmentFigures.length > 0
-      ? 'condo and townhome counts come from a separate data source and are withheld ' +
-          'below a minimum sample, so they are a different population from the ' +
-          'detached figures above'
-      : null,
-    paceFigures.length > 0
-      ? 'the pace figures come from that same separate source, each over the window ' +
-          'its own label names, not from the live 30-day pulse'
-      : null,
-    closedTrace,
-  ].filter((part): part is string => Boolean(part))
+  // SITE-81: face is name + stamp; disclosure is one plain sentence. MOS math
+  // lives on #market-mos's own source, not duplicated here.
   const trace =
-    traceParts.length > 0 ? `${traceParts.join('. ')}.` : live.trace
+    live.figures.length > 0
+      ? `Active single-family houses in ${cityName} from Oregon Data Share MLS.`
+      : live.trace
 
   return (
     <>
@@ -163,13 +176,38 @@ export function CityMarketView({
              question, each with a sentence saying what it means; the long tail keeps
              every figure behind a summary that names what is in it. */
           chartFirst
+          /* SITE-81: when the year overlay and MOS bars carry the answer, fold
+             every tile so the first viewport is not a KPI grid under the drawing.
+             Miss on either visual keeps the four lead figures open. */
           foldAfter={MARKET_LEAD_FIGURES}
           foldLabel={v3Text(MARKET_FOLD_LABEL)}
           source={v3Text(trace)}
           sourceName={v3Text('Oregon Data Share MLS')}
           updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
           asOf={refreshedAt ?? undefined}
+          /* Same ask as GeoInquirySheet — a door into #ask, not a second form. */
+          action={{ label: v3Text(`Ask about ${cityName}`), href: '#ask' }}
           chart={chart}
+          drawing={
+            placeMos ? (
+              <V3MosBars
+                id="market-mos"
+                className="city-market-mos"
+                caption={placeMos.caption}
+                plainLabel={placeMos.plainLabel}
+                homesName={placeMos.homesName}
+                homesLabel={placeMos.homesLabel}
+                homesValue={placeMos.homesValue}
+                salesName={placeMos.salesName}
+                salesLabel={placeMos.salesLabel}
+                salesValue={placeMos.salesValue}
+                source={placeMos.source}
+                asOf={placeMos.asOf}
+                sourceName="Oregon Data Share MLS"
+                tooltip={placeMos.tooltip}
+              />
+            ) : null
+          }
         />
       ) : (
         <V3Quiet

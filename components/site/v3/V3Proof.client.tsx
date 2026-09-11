@@ -20,6 +20,8 @@
  * There is no aggregateRating JSON-LD on the page (self-serving).
  */
 import { useCallback, useId, useMemo, useRef, useState } from 'react'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { reviewerInitials, uniqueReviewerInitials } from '@/lib/reviews/reviewer-initials'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from './atoms'
 import './tokens.css'
@@ -109,38 +111,75 @@ function Marks({ rating }: { rating: number }) {
   )
 }
 
-/** Single-color Google G for the compact score face. currentColor = navy. */
-function GoogleMark() {
+function firstName(author: string): string {
+  const parts = author.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return author
+  // A one-letter "first name" (C, J) is not a label — use the whole author.
+  if ((parts[0]?.length ?? 0) <= 1) return author
+  return parts[0]!
+}
+
+function FaceAvatarRow({
+  faces,
+  focusId,
+  onPick,
+}: {
+  faces: readonly V3ProofQuote[]
+  focusId: string | null
+  onPick?: (id: string) => void
+}) {
+  const seen = new Set<string>()
+  const labeled = faces.map((q) => {
+    const initials = uniqueReviewerInitials(q.author, seen)
+    seen.add(initials)
+    return { q, initials }
+  })
   return (
-    <svg
-      className="v3-proof__google"
-      viewBox="0 0 24 24"
-      width="28"
-      height="28"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path
-        fill="currentColor"
-        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09zM12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23zM5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62zM12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-      />
-    </svg>
+    <ul className="v3-proof__face-avatars" aria-label="Recent reviewers — choose one to read">
+      {labeled.map(({ q, initials }) => {
+        const on = focusId === q.id
+        return (
+          <li key={q.id}>
+            <button
+              type="button"
+              className={cn('v3-proof__avatar-btn', on && 'is-on')}
+              onClick={() => onPick?.(q.id)}
+              aria-label={`Read ${q.author}'s review`}
+              aria-pressed={on}
+            >
+              <span className="v3-proof__avatar-wrap" title={q.author}>
+                <Avatar size="lg" className="v3-proof__avatar" data-initials={initials}>
+                  <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0}>
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="v3-proof__avatar-ink" aria-hidden="true">
+                  {initials}
+                </span>
+              </span>
+              <span className="v3-proof__avatar-name">{firstName(q.author)}</span>
+            </button>
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 
 /**
- * Compact band face: Google mark, aggregate score, stars, and review count.
- * Built from the caller figures so the page never invents a rating here.
+ * Score as a hero figure: average at display scale, stars, and the count.
+ * Reviewer Avatar initials render after the lead quote so the client's words
+ * are the next read (public.reviews has no photo column — never invent a face).
  */
 function ScoreFace({ average, count }: { average: string; count: string }) {
   const n = Number(average)
   return (
     <div className="v3-proof__face">
-      <div className="v3-proof__face-mark" aria-hidden="true">
-        <GoogleMark />
-      </div>
       <div className="v3-proof__face-score">
-        <p className="v3-proof__face-value">{average}</p>
+        <p className="v3-proof__face-value">
+          {average}
+          <span className="v3-proof__face-of">of 5</span>
+        </p>
         {Number.isFinite(n) ? <Marks rating={n} /> : null}
         <p className="v3-proof__face-count">
           {count} Google review{count === '1' ? '' : 's'}
@@ -170,6 +209,20 @@ function QuoteFigure({
         ))}
       </blockquote>
       <figcaption className="v3-proof__who">
+        <span className="v3-proof__avatar-wrap" title={q.author}>
+          <Avatar
+            size="sm"
+            className="v3-proof__avatar v3-proof__avatar--quote"
+            data-initials={reviewerInitials(q.author)}
+          >
+            <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0}>
+              {reviewerInitials(q.author)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="v3-proof__avatar-ink" aria-hidden="true">
+            {reviewerInitials(q.author)}
+          </span>
+        </span>
         <cite className="v3-proof__author">{q.author}</cite>
         <span className="v3-proof__meta">{q.attribution}</span>
         {showMarks ? <Marks rating={q.rating} /> : null}
@@ -195,7 +248,11 @@ export function V3Proof({
 }: V3ProofProps) {
   const uid = useId()
   const [year, setYear] = useState<number | null>(null)
-  const [focus, setFocus] = useState<string | null>(null)
+  // Archive pages open on the newest review so the strip and the reading pane
+  // already show a selected mark — a mute beeswarm was the SITE-79 tell.
+  const [focus, setFocus] = useState<string | null>(() =>
+    archive && quotes.length > 0 ? quotes[0]!.id : null,
+  )
   // A click on a mark scrolls the page; the card that slides under the
   // stationary pointer must not steal the focus the click just set.
   const scrollLock = useRef(false)
@@ -219,9 +276,20 @@ export function V3Proof({
     const set = new Set(quotes.map((q) => q.year))
     return [...set].sort((a, b) => a - b)
   }, [quotes])
-  const first = years[0] ?? 0
-  const last = years[years.length - 1] ?? first
-  const span = Math.max(1, last + 1 - first)
+  /* Packed year axis (SITE-79): only years that carry a review take a slot.
+     A linear 2019→2026 axis gave empty 2020–2022 half the strip while the
+     real reviews crushed into the other half. Year chips stay; empty years
+     simply do not claim width. */
+  const yearIndex = useMemo(() => new Map(years.map((y, i) => [y, i])), [years])
+  const yearSlots = Math.max(1, years.length)
+
+  const xFor = useCallback(
+    (year: number, month: number) => {
+      const i = yearIndex.get(year) ?? 0
+      return ((i + (month + 0.5) / 12) / yearSlots) * STRIP_W
+    },
+    [yearIndex, yearSlots],
+  )
 
   /* Marks: one per review at its month. A mark keeps its month exactly — the
      strip is a time axis — and rises a row whenever the row below already
@@ -250,7 +318,7 @@ export function V3Proof({
     const ROWS = Math.max(1, Math.floor((STRIP_H - 14 - MARK_R) / ROW_PITCH) + 1)
     const rowLastX: number[] = new Array(ROWS).fill(-Infinity)
     const placed = quotes
-      .map((q) => ({ q, x: ((q.year - first + (q.month + 0.5) / 12) / span) * STRIP_W }))
+      .map((q) => ({ q, x: xFor(q.year, q.month) }))
       .sort((a, b) => a.x - b.x)
       .map(({ q, x }) => {
         let row = rowLastX.findIndex((lastX) => x - lastX >= MIN_GAP_X)
@@ -266,7 +334,7 @@ export function V3Proof({
     // agree.
     const byId = new Map(placed.map((m) => [m.q.id, m]))
     return quotes.map((q) => byId.get(q.id)!).filter(Boolean)
-  }, [quotes, first, span])
+  }, [quotes, xFor])
 
   const shown = useMemo(() => (year == null ? quotes : quotes.filter((q) => q.year === year)), [quotes, year])
   const reading = useMemo(() => {
@@ -334,6 +402,20 @@ export function V3Proof({
     figures.find((f) => /review/i.test(f.label)) ??
     figures.find((f) => f !== averageFigure)
   const showFace = (face || !record) && averageFigure != null && countFigure != null
+  // Newest distinct authors for the score face — initials only. quotes arrive
+  // newest-first from getReviews.
+  const faceAvatars = useMemo(() => {
+    const seen = new Set<string>()
+    const out: V3ProofQuote[] = []
+    for (const q of quotes) {
+      const key = q.author.trim().toLowerCase()
+      if (!key || seen.has(key)) continue
+      seen.add(key)
+      out.push(q)
+      if (out.length >= 4) break
+    }
+    return out
+  }, [quotes])
   // The score face already prints the average and the count at display size.
   // Leaving them in the row as well would say each number twice — the figure
   // row's job here is only the context the face cannot hold (the span, the
@@ -342,6 +424,8 @@ export function V3Proof({
     () => (showFace ? figures.filter((f) => f !== averageFigure && f !== countFigure) : figures),
     [showFace, figures, averageFigure, countFigure],
   )
+  const firstYear = years[0]
+  const lastYear = years[years.length - 1] ?? firstYear
 
   return (
     <section
@@ -363,20 +447,67 @@ export function V3Proof({
       )}
       aria-labelledby={`${uid}-h`}
     >
-      <div className="v3-proof__head">
-        <V3Eyebrow>{eyebrow}</V3Eyebrow>
-        <V3Heading level={headingLevel} id={`${uid}-h`} className="v3-proof__headline">
-          {headline}
-        </V3Heading>
-        <p className="v3-proof__claim">{claim}</p>
-      </div>
+      {/* Score-led: one rating plate (stars + count + faces), then the quote.
+          H1 stays for a11y but is not a second 5.0 poster beside the plate. */}
+      {showFace && record ? (
+        <>
+          <ScoreFace average={averageFigure!.value} count={countFigure!.value} />
+          <div className="v3-proof__head v3-proof__head--score">
+            <V3Eyebrow>{eyebrow}</V3Eyebrow>
+            <V3Heading level={headingLevel} id={`${uid}-h`} className="v3-proof__headline v3-proof__headline--score">
+              {headline}
+            </V3Heading>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="v3-proof__head">
+            <V3Eyebrow>{eyebrow}</V3Eyebrow>
+            <V3Heading level={headingLevel} id={`${uid}-h`} className="v3-proof__headline">
+              {headline}
+            </V3Heading>
+            <p className="v3-proof__claim">{claim}</p>
+          </div>
+          {showFace ? <ScoreFace average={averageFigure!.value} count={countFigure!.value} /> : null}
+        </>
+      )}
 
-      {showFace ? <ScoreFace average={averageFigure!.value} count={countFigure!.value} /> : null}
+      {/* DOM order: rating → client words → reviewer initials → ask. */}
+      {asArchive ? (
+        <div id={`${uid}-read`} className="v3-proof__reading v3-proof__reading--lead">
+          {reading ? (
+            <QuoteFigure q={reading} displayPull showMarks={showMarks} />
+          ) : (
+            <p className="v3-proof__reading-empty">Pick a year on the timeline to read a review here.</p>
+          )}
+        </div>
+      ) : null}
 
-      {/* When the score plate carries the headline numbers, what is left is
-          span and tally — a caption, not an instrument. Three stat pairs on
-          their own row read as "a miniature KPI row" (evaluator, 2026-09-09),
-          so they run as one line: value, label, hairline middot. */}
+      {showFace && record && faceAvatars.length > 0 ? (
+        <FaceAvatarRow
+          faces={faceAvatars}
+          focusId={focus}
+          onPick={(id) => {
+            setFocus(id)
+            open(id)
+          }}
+        />
+      ) : null}
+
+      {actions && actions.length > 0 ? (
+        <ul className="v3-proof__actions">
+          {actions.map((a) => (
+            <li key={a.href} className="v3-proof__action-item">
+              <a className="v3-proof__action" href={a.href}>
+                {a.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {showFace && record ? <p className="v3-proof__claim v3-proof__claim--after-face">{claim}</p> : null}
+
       {showFace && restFigures.length > 0 ? (
         <dl className="v3-proof__context">
           {restFigures.map((f) => (
@@ -404,65 +535,40 @@ export function V3Proof({
         </dl>
       ) : null}
 
-      {/* A CLIENT'S OWN WORDS, BEFORE THE INSTRUMENT (SITE-48). In archive mode
-          the reading pane used to sit under the strip, the chips and the
-          status, which put every quote below the fold: the taste table's
-          verdict was that the page "buries its best asset … under a blank gap
-          and a plain contact list before the reader sees a single number".
-          The pane is the same element, the strip still writes to it, and the
-          strip's own scrollIntoView still finds it — it is read before it is
-          worked instead of after. */}
-      {asArchive ? (
-        <div id={`${uid}-read`} className="v3-proof__reading v3-proof__reading--lead">
-          {reading ? (
-            <QuoteFigure q={reading} displayPull showMarks={showMarks} />
-          ) : (
-            <p className="v3-proof__reading-empty">Point at a mark, or pick a year, to read a review here.</p>
-          )}
-        </div>
-      ) : null}
-
-      {/* The reach, folded into this band as one slim row rather than running
-          as its own stacked section ahead of the headline. */}
-      {actions && actions.length > 0 ? (
-        <ul className="v3-proof__actions">
-          {actions.map((a) => (
-            <li key={a.href} className="v3-proof__action-item">
-              <a className="v3-proof__action" href={a.href}>
-                {a.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
       {/* The record: every review on its month. Hover or tap a mark to read
           it; the year chips filter the cards below. */}
       {record && years.length > 0 ? (
         <div className="v3-proof__record">
-          {/* Nothing on the page said the strip could be worked: the only
-              per-mark readout was the browser's own tooltip (evaluator round
-              five, REVIEWS-4). */}
-          <p className="v3-proof__how">Every review on its month. Point at a mark to read it, or pick a year.</p>
+          {/* Affordance without a teaching caption (SITE-79): the focused
+              review's author reads beside the strip. No "Point at a mark…"
+              sentence — the live name is the cue. */}
+          <p className="v3-proof__how" aria-live="polite">
+            {year == null
+              ? `${quotes.length} marks on the timeline`
+              : `${shown.length} marks from ${year}`}
+          </p>
           <div className="v3-proof__strip-wrap">
           <svg
             className="v3-proof__strip"
             viewBox={`0 0 ${STRIP_W} ${STRIP_H}`}
             preserveAspectRatio="none"
             role="img"
-            aria-label={`${quotes.length} reviews from ${first} to ${last}, one mark each`}
+            aria-label={`${quotes.length} reviews from ${firstYear} to ${lastYear}, one mark each`}
           >
             <line className="v3-proof__strip-base" x1={0} x2={STRIP_W} y1={STRIP_H - 6} y2={STRIP_H - 6} />
-            {years.map((y) => (
-              <line
-                key={y}
-                className="v3-proof__strip-tick"
-                x1={((y - first) / span) * STRIP_W}
-                x2={((y - first) / span) * STRIP_W}
-                y1={STRIP_H - 6}
-                y2={STRIP_H}
-              />
-            ))}
+            {years.map((y) => {
+              const x = ((yearIndex.get(y) ?? 0) / yearSlots) * STRIP_W
+              return (
+                <line
+                  key={y}
+                  className="v3-proof__strip-tick"
+                  x1={x}
+                  x2={x}
+                  y1={STRIP_H - 6}
+                  y2={STRIP_H}
+                />
+              )
+            })}
           </svg>
           {/* The marks are buttons placed over the strip, not SVG shapes: a
               true dot at every width, a real tap target, and keyboard reach
@@ -491,9 +597,11 @@ export function V3Proof({
               if (id) setFocus(id)
             }}
             onPointerLeave={() => {
-              // The page scrolls out from under the pointer after a click;
-              // that leave must not clear the focus the click just set.
-              if (!scrollLock.current) setFocus(null)
+              // Archive keeps the selected review (default = newest) so the
+              // strip never reads as a mute beeswarm. Compact bands still
+              // clear a hover-only highlight on leave.
+              if (asArchive || scrollLock.current) return
+              setFocus(null)
             }}
             onClick={(e) => {
               const id = nearestMark(e.clientX, e.clientY)
@@ -527,7 +635,11 @@ export function V3Proof({
           </div>
           <div className="v3-proof__years" aria-hidden="true">
             {years.map((y) => (
-              <span key={y} className="v3-proof__year" style={{ left: `${((y - first) / span) * 100}%` }}>
+              <span
+                key={y}
+                className="v3-proof__year"
+                style={{ left: `${(((yearIndex.get(y) ?? 0) + 0.5) / yearSlots) * 100}%` }}
+              >
                 {y}
               </span>
             ))}

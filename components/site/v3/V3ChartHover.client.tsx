@@ -212,6 +212,30 @@ export function V3ChartHover({
       : `${col.tick}: ${col.readings.map((r) => `${r.name} ${r.label}`).join(', ')}`
     : ''
 
+  const scrubValue = active ?? rest ?? 0
+  const scrubber =
+    !vertical && columns.length > 1 ? (
+      <label className="v3-chart__scrub">
+        <span className="v3-chart__scrub-label">
+          {col ? col.tick : columns[scrubValue]?.tick ?? 'Month'}
+        </span>
+        <input
+          type="range"
+          className="v3-chart__scrub-input"
+          min={0}
+          max={columns.length - 1}
+          step={1}
+          value={scrubValue}
+          aria-label={`Scrub ${label}`}
+          aria-valuetext={columns[scrubValue]?.tick}
+          onChange={(e) => {
+            setHeld(true)
+            setActive(Number(e.target.value))
+          }}
+        />
+      </label>
+    ) : null
+
   const layer = (
     <div
       ref={ref}
@@ -220,7 +244,7 @@ export function V3ChartHover({
       aria-label={
         vertical
           ? `${label}. Move down the rows or use the arrow keys to read each value.`
-          : `${label}. Move across the chart or use the arrow keys to read each value.`
+          : `${label}. Move across the chart, scrub the month, or use the arrow keys to read each value.`
       }
       tabIndex={0}
       onPointerMove={onMove}
@@ -263,7 +287,11 @@ export function V3ChartHover({
           */}
           {vertical ? null : (
           <div
-            className={cn('v3-chart__tip', flip && 'v3-chart__tip--flip')}
+            className={cn(
+              'v3-chart__tip',
+              flip && 'v3-chart__tip--flip',
+              rest != null && active === rest && 'v3-chart__tip--resting',
+            )}
             style={{ left: pos }}
             aria-hidden="true"
           >
@@ -289,6 +317,8 @@ export function V3ChartHover({
     </div>
   )
 
+  // Non-live path mounts inside `.v3-chart__plot` (absolute overlay). Keep the
+  // scrubber on the live frame path only, under the plot — not clipped inside it.
   if (!live || !keys || !frame) return layer
 
   return (
@@ -321,6 +351,7 @@ export function V3ChartHover({
           {columns.length > 0 ? layer : null}
         </div>
         {frame.xTicks}
+        {scrubber}
       </div>
     </>
   )

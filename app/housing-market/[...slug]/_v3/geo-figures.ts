@@ -170,6 +170,8 @@ export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | 
     })
   }
 
+  // Trace string kept greppable for leftover-pending-hud (D26). CityMarketView
+  // replaces the visitor-facing Instrument source with plain MLS English (SITE-81).
   const clauses = [`Oregon Data Share via MarketPulse, active single-family houses in ${geoName}`]
   const trace =
     `${clauses.join('. ')}.` + (mosText != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
@@ -342,9 +344,10 @@ export function buildCityLedger(snapshots: MarketPulseSnapshot[], currentCitySlu
       href: `/housing-market/${slug}`,
       when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} for sale`),
       what: v3Text(label),
+      // Plain language (SITE-81): not a "months of supply" KPI tile under a price bar.
       detail:
         snapshot.months_of_supply != null
-          ? v3Text(`${formatMonthsOfSupply(snapshot.months_of_supply)} months of supply`)
+          ? v3Text(`${formatMonthsOfSupply(snapshot.months_of_supply)} months on market`)
           : undefined,
       value: v3Text(formatPriceExact(snapshot.median_list_price)),
       id: slug,
@@ -510,7 +513,7 @@ export function buildCityPeriodFigures(args: {
   if (figures.length === 0) return { figures, trace: null }
   return {
     figures,
-    trace: '12-month figures via Oregon Data Share / MarketPulse, labeled by window',
+    trace: '12-month closed sales from Oregon Data Share MLS',
   }
 }
 

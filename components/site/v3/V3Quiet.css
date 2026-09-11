@@ -72,6 +72,130 @@
   margin: 0;
 }
 
+/* Alert-only Quiet opens tighter than a full supporting block so the place
+   answer can share the first viewport (SITE-76 oregon-city). */
+.v3.v3-quiet--alert {
+  padding-top: var(--v3-space-lg);
+  padding-bottom: var(--v3-space-md);
+}
+
+.v3.v3-quiet--alert .v3-quiet__alert {
+  margin-bottom: 0;
+}
+
+/* Honesty banner — shadcn Alert painted with house tokens (SITE-76). Keeps the
+   catalog title / description / action slots; never a yellow callout. */
+.v3-quiet__alert {
+  position: relative;
+  display: grid;
+  width: 100%;
+  gap: var(--v3-space-xs);
+  margin: 0 0 var(--v3-space-lg);
+  padding: var(--v3-space-md) 0 var(--v3-space-md) var(--v3-space-lg);
+  padding-right: calc(var(--v3-space-lg) + 9rem);
+  border: none;
+  border-left: var(--v3-rule-weight-section) solid var(--v3-navy);
+  border-radius: 0;
+  background: transparent;
+  color: var(--v3-ink);
+  text-align: left;
+}
+
+.v3-quiet__alert-title {
+  margin: 0;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-body-lg);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: var(--v3-leading-heading);
+}
+
+.v3-quiet__alert-body {
+  color: var(--v3-ink-muted);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  text-wrap: pretty;
+}
+
+.v3-quiet__alert-body p {
+  margin: 0;
+}
+
+.v3-quiet__alert-body p + p {
+  margin-top: var(--v3-space-xs);
+}
+
+.v3-quiet__alert-action {
+  position: absolute;
+  top: var(--v3-space-md);
+  right: var(--v3-space-md);
+}
+
+.v3-quiet__alert-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: var(--v3-rule-weight-hairline) solid var(--v3-navy);
+  background: var(--v3-cream);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  transition:
+    background-color var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out),
+    transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-quiet__alert-link:hover,
+.v3-quiet__alert-link:focus-visible {
+  background: var(--v3-wash);
+  color: var(--v3-ink);
+  outline: none;
+}
+
+.v3-quiet__alert-link:focus-visible {
+  box-shadow: 0 0 0 3px var(--v3-cream), 0 0 0 6px var(--v3-navy);
+}
+
+.v3-quiet__alert-link:active {
+  transform: translateY(1px);
+}
+
+@media (max-width: 40rem) {
+  .v3.v3-quiet--alert {
+    padding-top: var(--v3-space-md);
+    padding-bottom: var(--v3-space-sm);
+  }
+
+  .v3-quiet__alert {
+    padding: var(--v3-space-sm) var(--v3-space-md);
+    padding-right: var(--v3-space-md);
+    gap: var(--v3-space-xs);
+  }
+
+  .v3-quiet__alert-action {
+    position: static;
+    margin-top: var(--v3-space-xs);
+  }
+
+  .v3-quiet__alert-link {
+    width: auto;
+    justify-content: center;
+    min-height: var(--v3-tap);
+    padding: 0 var(--v3-space-md);
+  }
+
+  .v3.v3-quiet--alert .v3-quiet__head {
+    margin-bottom: var(--v3-space-sm);
+  }
+}
+
 .v3-quiet__list {
   margin: 0;
   padding: 0;

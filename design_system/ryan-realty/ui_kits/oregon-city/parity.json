@@ -21,7 +21,7 @@
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6, id='about'. The honest block: the three paragraphs the KB KbAbout carried, verbatim, saying this is outside our market and what we do instead. It also carries the five home-market towns the prose names as real links, because pattern 6 is defined as the block that carries the graph's outbound edges and a paragraph naming Bend, Redmond, Sisters, Sunriver and La Pine while linking nowhere is the dead-text defect. The same component is the level-1 fallback when the snapshot row does not return, so the page states the absence instead of asserting a figure.",
+      "section": "Pattern 6, id='about', honesty-first (SITE-76). Opens the fold with shadcn Alert adapted into Quiet (navy/cream, not a yellow callout): title 'We don't work in <city>', description carrying the live active count from the same geo snapshot the Instrument prints, AlertAction door to #referral. Home-market towns remain real doors (Bend, Redmond, Sisters, Sunriver, La Pine). The same component is the level-1 fallback when the snapshot row does not return.",
       "blocking": true
     },
     {
@@ -120,8 +120,8 @@
     "MetadataBlock",
     "V3SectionTracker",
     "V3Breadcrumb",
+    "V3Quiet (id=about, honesty-first Alert + home-market edges)",
     "V3Instrument (level 1, id=top, the place answer)",
-    "V3Quiet (id=about, the honest block + home-market edges)",
     "V3Ledger (id=listings, live active listings)",
     "OutOfAreaReferralSheet (V3Sheet, id=referral)",
     "V3Ledger (id=other-markets, other Oregon cities)",
@@ -132,11 +132,11 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-59. The class was re-scored after the listing rows stopped drawing each home's photograph in the pattern's 44px mark. The picture is now 4:3 at 88x66 (72x54 under 480px), on the glyph's navy tile rather than the pale wash, with the row's three cells centred instead of sitting on a baseline the picture's bottom edge was setting, and the src asks cdn.resize.sparkplatform.com for a 320x240 render of the SAME asset id instead of a 1600x1200 one (330,871 bytes to 30,147, measured against the live CDN). The evaluator rendered /oregon/medford and /oregon/salem at 1440x2600 and 375 wide, captured per-section frames, and scored three times: 82, 81, 80.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "evaluatedAt": "2026-09-10",
+    "rubricVersion": "v1-2026-09-10",
+    "evaluator": "SITE-76. Separate evaluator via `npx tsx scripts/taste-evaluate.ts oregon-city --url http://127.0.0.1:3212/oregon/medford --beat 41` (grok-4.6). Builder did not score the page.",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/oregon/medford"
@@ -147,7 +147,7 @@
       ],
       "states": [
         "default",
-        "source-line",
+        "source",
         "listings"
       ]
     },
@@ -159,46 +159,83 @@
       "listingsDesktop": "design_system/ryan-realty/ui_kits/oregon-city/shots/listings-desktop.png",
       "listingsMobile375": "design_system/ryan-realty/ui_kits/oregon-city/shots/listings-mobile375.png"
     },
-    "shotsHash": "sha256:8673b567f6ea325da5d9234140b5a6f053f8e89b4e8f949ba610d6b75d51600b",
+    "shotsHash": "sha256:c53f1889524bed34751d218381d1436115a42f4f835ad3bc6e535c7278c45149",
     "scores": [
-      82,
-      81,
-      80
+      46,
+      49,
+      53
     ],
-    "score": 81,
-    "breakdown": {
-      "design": 24,
-      "originality": 23,
-      "interaction": 11,
-      "craft": 13,
-      "honesty": 10
+    "score": 49,
+    "perCriterion": {
+      "design": 16,
+      "originality": 14,
+      "interaction": 2,
+      "craft": 9,
+      "honesty": 8
     },
-    "beats": "Realtor.com / Zillow out-of-area referral pages, which show either nothing or a bare listing grid for a city outside an agent's MLS coverage: this page states plainly it does not work the city, still surfaces live statewide MLS inventory with sourced figures, and draws that city's own newest-listings asking-price spread as a real, hoverable chart no referral competitor offers.",
+    "honestyFunction": 8,
+    "beats": "Redfin Medford (redfin.com/city/11422/OR/Medford): we lose the first-viewport interactive map and listing grid; we win the out-of-area confession and a dated Oregon Data Share MLS stamp. Zillow's Medford home-values page still wins the market time series. Better than the 41/100 three-tile fold, not a 70.",
+    "adaptedFrom": [
+      {
+        "id": "shadcn-alert"
+      },
+      {
+        "id": "house-quiet"
+      },
+      {
+        "id": "house-instrument"
+      },
+      {
+        "id": "house-ledger"
+      }
+    ],
     "defects": [
       {
-        "section": "#about",
+        "section": "#top figures",
         "severity": "taste",
-        "finding": "Carried, unchanged by this node: the \"We don't work in <city>\" honesty block is three paragraphs of prose beside a five-item link grid, with no figure, map or interactive element."
+        "finding": "The first desktop viewport still ends on a three-up KPI grid — 726, 344, $465,000 — the same banned form the 41-mark page was. Sentences under the tiles do not make them a drawing; the lollipop above already stated the price range.",
+        "replaceWith": "house-instrument"
+      },
+      {
+        "section": "#top chart",
+        "severity": "taste",
+        "finding": "The newest-asks lollipop is a static list wearing dots. $1,850,000 at 3311 Biddle (11,620 sqft, no beds/baths) crushes the scale so six marks pile between $215k and $420k, and no slider, toggle, or hover cursor is visible in the shot.",
+        "replaceWith": "house-instrument"
+      },
+      {
+        "section": "#top headline",
+        "severity": "taste",
+        "finding": "After the page admits we do not work in Medford, it shouts the portal H1 Homes for sale in Medford, Oregon with no photograph, map, or place mark. The fold is still a template, not this city.",
+        "replaceWith": "house-instrument"
       },
       {
         "section": "#listings",
         "severity": "taste",
-        "finding": "Carried, unchanged by this node: the ledger rewards no hover or focus with more data \u2014 price, beds, baths, sqft and address all render statically, and the row wash only signals that the row is a door."
+        "finding": "Newest listings are a hairline ledger of Spark-sized 320×240 thumbs. D'ANJOU VILLAGE UNIT NO 1 and KERRISDALE RIDGE SUBDIVISION read as MLS internals, and the row reveals no more data than the static line.",
+        "replaceWith": "house-ledger"
       },
       {
-        "section": "#top dot-strip (/oregon/salem)",
+        "section": "#listings (375)",
         "severity": "craft",
-        "finding": "The lot listing whose street number is \"0\" prints as \"0 55th\" on the dot-strip mark while the ledger below it prints \"55th Avenue, Salem\" \u2014 two spellings of one address on one page. Pre-existing, outside this node's files."
+        "finding": "At 375 the Kerrisdale Ridge Drive price is clipped at the right edge and the address wraps under a postage-stamp photo.",
+        "replaceWith": null
+      },
+      {
+        "section": "#top chart (375)",
+        "severity": "craft",
+        "finding": "At 375 the label 2663 Kerrisdale R... is truncated and $1,850,000 collides with its dot, so the instrument cannot be read as a set of eight.",
+        "replaceWith": null
       }
     ],
+    "verdict": "Better than the 41/100 KPI-only fold: honesty leads, a lollipop encodes newest asks, listing rows carry price/address/beds/baths/sqft, and the source is dated — inventory and honesty rose; SEO cannot be verified from these pixels so it is not a scored rise. It still will not beat Redfin Medford: the banned KPI grid remains under the chart, the lollipops are a static list crushed by one land-scale outlier, and nothing visible rewards a hover or scrub. Finish line 70 not met.",
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-09",
-      "score": 80,
+      "score": 81,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:f42fd4862f3bb4c5f5d2b06407d1dddc80bbfa5d68844c1f23d4957aec0134c6"
+      "shotsHash": "sha256:8673b567f6ea325da5d9234140b5a6f053f8e89b4e8f949ba610d6b75d51600b"
     },
-    "rebaselineReason": "shotsHash differs: the base pair was re-captured on this branch through scripts/take-route-shots.mjs, and two frames of #listings \u2014 the section this node changed, and the one the prior mark's craft defect was written against \u2014 joined the shot set, so the committed 80 was taken on a different instrument. The prior mark's third defect, \"lazy-loaded listing photos render as a flat gray placeholder momentarily before the real image swaps in\", is closed: the photo box now paints the navy tile at all times and a pseudo-element covers the browser's broken-image glyph, so there is no unstyled grey state to catch. Craft 12 to 13; no category fell."
+    "rebaselineReason": "SITE-76 rebaseline onto grok-4.6 / v1-2026-09-10 with a new honesty-first instrument: shadcn Alert adapted into Quiet, chartFirst ask strip, ItemList JSON-LD, and retaken default/source/listings shots. The prior 81 was claude-sonnet-5 on v1-2026-09-08 against a different shotsHash."
   }
 }

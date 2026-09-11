@@ -1,20 +1,16 @@
 {
-  "note": "ci:taste-canon — SHRINK-ONLY. Catalog-class receipts that predate adaptedFrom + replaceWith. A route leaves by its next evaluator pass naming the modules it fetched; no route may be added.",
-  "generatedAt": "2026-09-10T06:50:13.877Z",
+  "note": "ci:taste-canon \u2014 SHRINK-ONLY. Catalog-class receipts that predate adaptedFrom + replaceWith. A route leaves by its next evaluator pass naming the modules it fetched; no route may be added.",
+  "generatedAt": "2026-09-10",
   "routes": [
     "design_system/ryan-realty/ui_kits/about/parity.json",
     "design_system/ryan-realty/ui_kits/blog/parity.json",
     "design_system/ryan-realty/ui_kits/cities/parity.json",
     "design_system/ryan-realty/ui_kits/city/parity.json",
-    "design_system/ryan-realty/ui_kits/community/parity.json",
     "design_system/ryan-realty/ui_kits/compare/parity.json",
     "design_system/ryan-realty/ui_kits/listing-detail/parity.json",
-    "design_system/ryan-realty/ui_kits/market-report-detail/parity.json",
     "design_system/ryan-realty/ui_kits/neighborhood/parity.json",
-    "design_system/ryan-realty/ui_kits/oregon-city/parity.json",
     "design_system/ryan-realty/ui_kits/place-type/parity.json",
     "design_system/ryan-realty/ui_kits/price-drops/parity.json",
-    "design_system/ryan-realty/ui_kits/reviews/parity.json",
     "design_system/ryan-realty/ui_kits/subdivision/parity.json",
     "design_system/ryan-realty/ui_kits/subdivisions/parity.json",
     "design_system/ryan-realty/ui_kits/zip/parity.json"

@@ -33,10 +33,21 @@ export function buildReviewsJsonLd(
 
   return {
     '@context': 'https://schema.org',
-    '@type': 'RealEstateAgent',
-    '@id': `${siteUrl}#organization`,
-    name: 'Ryan Realty',
-    url: `${siteUrl}/reviews`,
-    review: reviews,
+    '@graph': [
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: `${siteUrl}/` },
+          { '@type': 'ListItem', position: 2, name: 'Reviews', item: `${siteUrl}/reviews` },
+        ],
+      },
+      {
+        '@type': 'RealEstateAgent',
+        '@id': `${siteUrl}#organization`,
+        name: 'Ryan Realty',
+        url: `${siteUrl}/reviews`,
+        review: reviews,
+      },
+    ],
   }
 }

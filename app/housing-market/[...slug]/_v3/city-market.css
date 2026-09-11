@@ -1,0 +1,96 @@
+/* City market fold — MOS proof + year overlay (SITE-81). */
+
+.city-market-mos {
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  background: transparent;
+  border: 0;
+  padding-inline: 0;
+  box-shadow: none;
+}
+
+.v3.v3-mos.city-market-mos {
+  max-width: none;
+  width: 100%;
+}
+
+.city-market-mos .v3-mos__plain {
+  max-width: 28ch;
+}
+
+/* Pull the Instrument up under the breadcrumb. Ask before source so the
+   door to #ask lands in the first viewport. */
+#market.v3-instrument {
+  padding-top: var(--v3-space-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+#market .v3-instrument__eyebrow { order: 1; }
+#market .v3-instrument__headline { order: 2; }
+#market .v3-instrument__stage { order: 3; }
+#market .v3-instrument__action { order: 4; }
+#market .v3-instrument__fold { order: 5; }
+#market .v3-instrument__source { order: 6; }
+
+#market .v3-instrument__action {
+  margin-top: var(--v3-space-sm);
+  margin-bottom: 0;
+}
+
+#market .v3-instrument__drawing {
+  order: -1;
+  width: 100%;
+  min-width: 0;
+}
+
+#market .v3-instrument__chart {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Compact opened source. */
+#market .v3-source__trace {
+  max-width: 40rem;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}
+
+/* Desktop: MOS left (verdict proof), chart right — both in the first viewport. */
+@media (min-width: 64rem) {
+  #market .v3-instrument__stage--split {
+    display: grid;
+    grid-template-columns: minmax(18rem, 0.9fr) minmax(0, 1.35fr);
+    gap: var(--v3-space-md);
+    align-items: start;
+  }
+}
+
+/* Phone: MOS first, then a short chart so scrubber can clear the fold. */
+@media (max-width: 63.99rem) {
+  #market .v3-instrument__stage--split {
+    display: flex;
+    flex-direction: column;
+    gap: var(--v3-space-sm);
+  }
+
+  #market-chart .v3-chart__legend {
+    display: none;
+  }
+
+  #market-chart .v3-chart__plot,
+  #market-chart .v3-chart__svg {
+    max-height: 7.5rem;
+  }
+
+  #market-chart .v3-chart__tip {
+    min-width: 0;
+    max-width: 9.5rem;
+    font-size: var(--v3-size-label);
+  }
+
+  #market-chart .v3-chart__tip-row dt {
+    display: none;
+  }
+}

@@ -466,7 +466,7 @@ export type { V3IconName, V3IconProps, V3IconSize } from './V3Icon'
 export { V3Tabs } from './V3Tabs'
 export type { V3TabsProps } from './V3Tabs'
 export { V3MorphSearch } from './V3MorphSearch'
-export type { V3MorphSearchProps } from './V3MorphSearch'
+export type { V3MorphSearchProps, V3MorphSearchItem } from './V3MorphSearch'
 export { V3Number } from './V3Number.client'
 export type { V3NumberProps } from './V3Number.client'
 /**
@@ -505,6 +505,7 @@ export { V3Quiet } from './V3Quiet'
 
 export type {
   V3QuietProps,
+  V3QuietAlert,
   V3QuietItem,
   V3QuietLink,
   V3QuietProse,

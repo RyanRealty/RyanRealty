@@ -273,14 +273,18 @@ function geoDescription(input: {
   const clauses: string[] = []
   if (active != null) clauses.push(`${Number(active).toLocaleString('en-US')} homes for sale`)
   if (medianList != null) clauses.push(`${formatPriceExact(Number(medianList))} median list price`)
-  if (supply != null) clauses.push(`${supply} months of supply`)
+  // Plain language in the snippet (SITE-81): "homes for sale vs a month of sales"
+  // matches the on-page MOS bars, not the internal MOS acronym alone.
+  if (supply != null) {
+    clauses.push(`${supply} months of homes for sale vs a month of sales`)
+  }
 
   if (clauses.length === 0) {
     return `Single-family market data for ${input.geoName}, Oregon: inventory, list prices, and how fast homes go under contract.`
   }
   const verdictClause = supply != null ? ` A ${input.verdictLabel}.` : ''
   const head = `${input.geoName} single-family homes: ${clauses.join(', ')}.${verdictClause}`
-  const tail = ' Live from Oregon Data Share.'
+  const tail = ' Live from Oregon Data Share MLS.'
   return head.length + tail.length <= 155 ? head + tail : head
 }
 
