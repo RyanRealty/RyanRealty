@@ -149,9 +149,14 @@ function FaceAvatarRow({
             >
               <span className="v3-proof__avatar-wrap" title={q.author}>
                 <Avatar size="lg" className="v3-proof__avatar" data-initials={initials}>
-                  <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0} aria-hidden="true">
-                    {initials}
-                  </AvatarFallback>
+                  {/* NO TEXT. The visible initials are the sibling
+                      .v3-proof__avatar-ink below; this fallback is only the navy
+                      dot behind them. It used to repeat the initials and hide
+                      them with `color: transparent; font-size: 0`, which ci:a11y
+                      read as 1.39:1 text — and aria-hidden did NOT exempt it,
+                      because pa11y checks contrast on hidden elements too. An
+                      element with no text cannot fail a text-contrast rule. */}
+                  <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0} aria-hidden="true" />
                 </Avatar>
                 <span className="v3-proof__avatar-ink" aria-hidden="true">
                   {initials}
@@ -215,9 +220,8 @@ function QuoteFigure({
             className="v3-proof__avatar v3-proof__avatar--quote"
             data-initials={reviewerInitials(q.author)}
           >
-            <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0} aria-hidden="true">
-              {reviewerInitials(q.author)}
-            </AvatarFallback>
+            {/* No text — see the note on the other fallback above. */}
+            <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0} aria-hidden="true" />
           </Avatar>
           <span className="v3-proof__avatar-ink" aria-hidden="true">
             {reviewerInitials(q.author)}
