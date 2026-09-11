@@ -61,6 +61,23 @@
       "house": "components/site/v3/V3Tabs.tsx"
     },
     "beui:tabs": { "aliasOf": "beui-tabs" },
+    "beui-combobox": {
+      "add": "@beui/combobox",
+      "file": "components/motion/combobox.tsx",
+      "import": "@/components/motion/combobox",
+      "house": "components/site/v3/V3MorphSearch.tsx",
+      "repo": "https://github.com/starc007/ui-components",
+      "mustContain": ["ComboboxTrigger", "ComboboxList"]
+    },
+    "beui:combobox": { "aliasOf": "beui-combobox" },
+    "beui-expandable-control": {
+      "add": "@beui/expandable-control",
+      "file": "components/motion/expandable-control.tsx",
+      "import": "@/components/motion/expandable-control",
+      "repo": "https://github.com/starc007/ui-components",
+      "mustContain": ["ExpandableControl", "CONTINUITY_SPRING"]
+    },
+    "beui:expandable-control": { "aliasOf": "beui-expandable-control" },
     "beui:shared-layout-bg": { "aliasOf": "beui-tabs" },
     "beui-range-slider": {
       "add": "@beui/range-slider",
