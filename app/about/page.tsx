@@ -271,7 +271,7 @@ export default async function AboutPage() {
               height={640}
             />
             <figcaption>
-              {BRAND.address.street}, {BRAND.address.city}
+              Bend office · {BRAND.address.street}
             </figcaption>
           </figure>
           <div className="about-fold__sales">
