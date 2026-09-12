@@ -152,7 +152,7 @@
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png"
     },
-    "shotsHash": "sha256:53c72a66b398b9de5a06935ba2dbed4f3171f1231769f14625b5a7c57fd19d85",
+    "shotsHash": "sha256:e8412e597743df5a8f68a4dc990860f631316a04f789e80edfcab95862edd49d",
     "scores": [
       52,
       47,
@@ -197,7 +197,7 @@
       "rubricVersion": "v1-2026-09-08",
       "shotsHash": "sha256:79ad786fe5d34960b88199dd066b0ab6ab91edc0a23cee56fe3aa148b19a9c10"
     },
-    "rebaselineReason": "Contract change 2026-09-12: requiredComponents no longer opens on AboutFaces / three broker Cards. competitiveTarget is firm story first (Researchy + Matt lock). shotsHash and rubricVersion may still track the prior capture until Cos re-scores; that prior mark is not a pass of a Meet-the-Team About.",
+    "rebaselineReason": "Contract change 2026-09-12: requiredComponents no longer opens on AboutFaces / three broker Cards. competitiveTarget is firm story first (Researchy + Matt lock). New shotsHash sha256:e8412e59 after the firm-story capture. Prior SITE-64 scores are not a pass of a Meet-the-Team About.",
     "verdict": "Looking/taste cannot pass a Meet-the-Team About. The contract opens on AboutFirm. demoMatch is false. Cos scores the shots.",
     "contactListIsFirstContent": false,
     "contactListAnswer": "H1 and one purpose line (boutique · Central Oregon · buy and sell) on the Bend office exterior, Google reviews as primary proof, dated local closings, Call/Text/Email/Schedule, a Who you work with teaser that only doors to /team, and a one-line inquiry to /contact. No three equal broker Cards as the opener. No methodology disclosure."
