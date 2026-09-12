@@ -18,12 +18,28 @@ describe('siteQueueDoneEvidenceProblems', () => {
     expect(p.join('\n')).toMatch(/CLI missing/)
   })
 
-  it('accepts a real demo match', () => {
+  it('accepts a real demo match with the Researchy brief pass', () => {
     expect(
       siteQueueDoneEvidenceProblems(
-        'npx tsx scripts/taste-evaluate.ts about — grok-4.6 demoMatch: true, median 71',
+        'npx tsx scripts/taste-evaluate.ts about — grok-4.6 demoMatch: true, competitiveBriefPass: true, median 71',
         { versionGap: 'SITE-90' },
       ),
     ).toEqual([])
+  })
+
+  it('refuses SITE-90 Tip Ready when competitiveBriefPass is omitted', () => {
+    const p = siteQueueDoneEvidenceProblems(
+      'npx tsx scripts/taste-evaluate.ts about — grok-4.6 demoMatch: true, median 71',
+      { versionGap: 'SITE-90' },
+    )
+    expect(p.join('\n')).toMatch(/competitiveBriefPass: true/)
+  })
+
+  it('refuses competitiveBriefPass false', () => {
+    const p = siteQueueDoneEvidenceProblems(
+      'grok-4.6 demoMatch: true, competitiveBriefPass: false',
+      { versionGap: 'SITE-90' },
+    )
+    expect(p.join('\n')).toMatch(/competitiveBriefPass false/)
   })
 })

@@ -61,6 +61,24 @@ the rest fold.
 Navy / cream / Geist / Amboqia stay. Do not install a catalog demo app
 as a second design system (their Inter, purple, orbs).
 
+## Competitive brief (blocking when the route publishes one)
+
+About first. The route's `parity.json` may carry a structured
+`competitiveBrief` next to `competitiveTarget` — Researchy beats as a
+checklist, not prose. When that object exists, `competitiveBriefPass`
+MUST be the boolean `true` or `false` on every response. Omitting it is
+invalid. Inventing `true` when a beat is missing from the shots is
+invalid. Checklist all true (`competitiveBriefChecklist` with every beat
+id `true`) is the other pass path.
+
+`competitiveBriefPass` is true only if every numbered beat is visible in
+the shots. A score rise that ignored the brief is refuse — same
+seriousness as `demoMatch`. Leave the node in_progress.
+
+For About, the product lock is firm story + reviews + closings +
+Call|Text|Email|Schedule + team teaser→/team + inquiry→/contact. Three
+broker Cards as the opener is a fail on beat 1.
+
 ## What you are given
 
 - The page CLASS's key and route file (for your own reference only — do
@@ -192,6 +210,7 @@ required. Omitting it discards the response.**
     "honestyFunction": 0
   },
   "demoMatch": false,
+  "competitiveBriefPass": false,
   "tells": ["named TASTE.md tell — quote the tell's name, then say where you saw it"],
   "defects": [
     {
@@ -212,6 +231,8 @@ required. Omitting it discards the response.**
   invalid and will be discarded.
 - `score` is the median of `scores` (three independent integers 0-100).
 - `demoMatch` is `true` or `false`. Never omit. Never a string.
+- `competitiveBriefPass` is `true` or `false` when the route has a
+  `competitiveBrief`. Never omit then. Never invent true.
 - `severity` is `"taste"` (a design/composition failure) or `"defect"`
   (a functional/craft break — an overlap, a clipped element, broken
   contrast).

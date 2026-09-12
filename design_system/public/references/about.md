@@ -21,9 +21,19 @@ The #who contact-link stack — it is a column of seven anchor tags with an arro
 - `components/site/v3/V3Proof.client.tsx` — open the file; adapt its markup/CSS rather than restating "quiet / editorial / expensive."
 - `components/site/v3/V3Doors.tsx` — open the file; adapt its markup/CSS rather than restating "quiet / editorial / expensive."
 
+## Researchy beats 1–8 (required checklist)
+
+Pull `competitiveBrief` from `ui_kits/about/parity.json` before building.
+Fail Looking if the page invents past it. Product lock: firm story +
+reviews + closings + Call|Text|Email|Schedule + team teaser→/team +
+inquiry→/contact. AboutFaces three Cards is not the opener.
+
 ## House form to reach for
 
-Per TASTE.md preference order, replace the dull display with: **hero figure / editorial faces (AboutFaces) opening; doors as secondary reach**.
+Per TASTE.md preference order and the Researchy brief: **firm story
+opens; reviews and closings in the fold; Call|Text|Email|Schedule as
+one reach control; team teaser doors to /team; inquiry doors to
+/contact**.
 
 Banned fallback: another stacked Quiet → figure-row → ledger. If the section is data, pick a form from: hero figure · stat tile with sparkline · emphasis line with a scrubber · horizontal bar · dot strip · slope · small multiples · beeswarm · map with data-encoded cells · table.
 
