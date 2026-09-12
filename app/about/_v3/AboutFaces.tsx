@@ -4,7 +4,8 @@
  * readable phone/email, and the same CTA strip above the fold.
  *
  * roster: leftover cards. proof: /about (H1) — overlapping AvatarGroup,
- *   one ButtonGroup, 5.0 badge. editorial: /team (H1). Principal at
+ *   one principal Card (name, title, Call, ghost Text/Email/Schedule),
+ *   5.0 AvatarBadge. editorial: /team (H1). Principal at
  *   conversation scale, the other two as rows, Call as the one primary
  *   reach. SITE-74.
  * portrait: /team/[slug] at card-photo scale, not AboutFaces poster size.
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils"
 import { Avatar, AvatarBadge, AvatarFallback, AvatarGroup, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { faceInitials } from "./about-faces"
 import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading } from "@/components/site/v3"
 import { teamPath } from "@/lib/slug"
@@ -626,57 +628,58 @@ export function AboutFaces({
               </Avatar>
             ))}
           </AvatarGroup>
-          <ButtonGroup className="about-faces__names" aria-label="Ryan Realty brokers">
-            {shown.map((person) => (
-              <Button key={person.href} asChild variant="ghost" size="lg">
-                <Link href={person.href} aria-label={person.name}>
-                  {person.name.split(/\s+/)[0]}
-                </Link>
-              </Button>
-            ))}
-          </ButtonGroup>
-          {proof ? (
-            <p className="about-faces__face-proof">
-              <Button asChild variant="link">
-                <Link href={proof.href}>
-                  {proof.value} from {proof.count} Google reviews
-                </Link>
-              </Button>
-            </p>
-          ) : null}
-          {leadPerson.record ? (
-            <p className="about-faces__proof-record">
-              {leadPerson.name.split(/\s+/)[0]} {leadPerson.record.value} {leadPerson.record.label}
-              {leadPerson.record.places.length > 0
-                ? ` in ${leadPerson.record.places.map((place) => place.name).join(", ")}`
-                : ""}
-              .
-            </p>
-          ) : null}
-          {reach ? (
-            <ButtonGroup className="about-faces__ask" aria-label={`Reach ${leadPerson.name}`}>
-              {leadPerson.tel ? (
-                <Button asChild size="lg">
-                  <a href={`tel:${leadPerson.tel}`}>Call</a>
+          <Card className="about-faces__broker">
+            <CardHeader>
+              <CardTitle>
+                <Link href={leadPerson.href}>{leadPerson.name}</Link>
+              </CardTitle>
+              <CardDescription>{leadPerson.title}</CardDescription>
+            </CardHeader>
+            <CardContent className="about-faces__broker-body">
+              {proof ? (
+                <Button asChild variant="link">
+                  <Link href={proof.href}>
+                    {proof.value} from {proof.count} Google reviews
+                  </Link>
                 </Button>
               ) : null}
-              {leadPerson.tel ? (
-                <Button asChild variant="outline" size="lg">
-                  <a href={`sms:${leadPerson.tel}`}>Text</a>
-                </Button>
+              {leadPerson.record ? (
+                <p className="about-faces__proof-record">
+                  {leadPerson.name.split(/\s+/)[0]} {leadPerson.record.value} {leadPerson.record.label}
+                  {leadPerson.record.places.length > 0
+                    ? ` in ${leadPerson.record.places.map((place) => place.name).join(", ")}`
+                    : ""}
+                  .
+                </p>
               ) : null}
-              {leadPerson.email ? (
-                <Button asChild variant="outline" size="lg">
-                  <a href={`mailto:${leadPerson.email}`}>Email</a>
-                </Button>
+              {reach ? (
+                <div className="about-faces__ask">
+                  {leadPerson.tel ? (
+                    <Button asChild size="lg">
+                      <a href={`tel:${leadPerson.tel}`}>Call</a>
+                    </Button>
+                  ) : null}
+                  <ButtonGroup aria-label={`Message ${leadPerson.name}`}>
+                    {leadPerson.tel ? (
+                      <Button asChild variant="ghost" size="lg">
+                        <a href={`sms:${leadPerson.tel}`}>Text</a>
+                      </Button>
+                    ) : null}
+                    {leadPerson.email ? (
+                      <Button asChild variant="ghost" size="lg">
+                        <a href={`mailto:${leadPerson.email}`}>Email</a>
+                      </Button>
+                    ) : null}
+                    {leadPerson.bookHref ? (
+                      <Button asChild variant="ghost" size="lg">
+                        <Link href={leadPerson.bookHref}>Schedule</Link>
+                      </Button>
+                    ) : null}
+                  </ButtonGroup>
+                </div>
               ) : null}
-              {leadPerson.bookHref ? (
-                <Button asChild variant="outline" size="lg">
-                  <Link href={leadPerson.bookHref}>Book</Link>
-                </Button>
-              ) : null}
-            </ButtonGroup>
-          ) : null}
+            </CardContent>
+          </Card>
           {source}
         </div>
       </section>

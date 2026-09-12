@@ -16,7 +16,7 @@
     },
     {
       "name": "AboutFaces",
-      "section": "OPENS THE PAGE, headingLevel 1, size proof. Carries the H1, one claim sentence, a V3SourceLine, then one overlapping shadcn AvatarGroup (Avatar + AvatarImage + AvatarFallback + AvatarBadge 5.0 on the principal). Names as a ButtonGroup. One firm ButtonGroup (Call / Text / Email / Book). The review count links to /reviews. One sourced principal MLS record. Not stacked broker cards and not a KPI row. Canonical /images/brokers/*.png.",
+      "section": "OPENS THE PAGE, headingLevel 1, size proof. Carries the H1, one claim sentence, a V3SourceLine, then one overlapping shadcn AvatarGroup (Avatar + AvatarImage + AvatarFallback + AvatarBadge 5.0 on the principal). One principal Card (name, title, Call Button; Text / Email / Schedule as ghost). The review count links to /reviews. One sourced principal MLS record. Not three equal portrait tiles and not a KPI row. Canonical /images/brokers/*.png.",
       "blocking": true
     },
     {
@@ -26,7 +26,7 @@
     },
     {
       "name": "FirmClosings",
-      "section": "Recent Ryan Realty closings as shadcn Cards in the first-viewport about-fold (photo, CardTitle address, CardDescription beds/baths/sqft, CardAction recorded ClosePrice). Child of the page so about/page.tsx never mounts a city-stats Ledger.",
+      "section": "Recent Ryan Realty closings as shadcn Accordion in the first-viewport about-fold (trigger: address + recorded ClosePrice; content: photo, beds/baths/sqft, listing door). Child of the page so about/page.tsx never mounts a city-stats Ledger.",
       "blocking": true
     },
     {
@@ -101,7 +101,7 @@
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "about-fold -- AboutFaces proof (H1, overlapping AvatarGroup, 5.0 AvatarBadge, one ButtonGroup) + Street View exterior of 115 NW Oregon Ave #2 + FirmClosings #firm-sales as Cards. Never the interior sofa.",
+    "about-fold -- AboutFaces proof (H1, overlapping AvatarGroup, 5.0 AvatarBadge, one principal Card) + Street View exterior of 115 NW Oregon Ave #2 + FirmClosings #firm-sales as Accordion. Never the interior sofa.",
     "V3Doors #reach -- one call door at display scale with the live hours, then text, email, calendar",
     "V3Proof #proof -- the firm's Google reviews as words",
     "V3Atlas #service-area -- where we work",
@@ -130,13 +130,13 @@
       "states": [
         "default"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, SITE-90 localhost:3190/about after Street View exterior + AvatarGroup/ButtonGroup/Cards fold. Evaluator 402 — scores below are SITE-64, not this capture."
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, SITE-90 localhost:3190/about after Critiquito P0 fold (AvatarGroup + principal Card + Accordion closings + Street View). Evaluator 402 — scores below are SITE-64, not this capture."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png"
     },
-    "shotsHash": "sha256:d0150f385a4135f1ed5be0f2bfc98c7e8b5e253cb1c04de5614e990dccf11c89",
+    "shotsHash": "sha256:79ad786fe5d34960b88199dd066b0ab6ab91edc0a23cee56fe3aa148b19a9c10",
     "scores": [
       52,
       47,
@@ -148,9 +148,10 @@
       { "id": "shadcn-avatar" },
       { "id": "shadcn-button-group" },
       { "id": "shadcn-card" },
+      { "id": "shadcn-accordion" },
       { "id": "house-faces" }
     ],
-    "evaluatorBlocked": "2026-09-12 SITE-90 Street View + Avatar demo fold: npx tsx scripts/taste-evaluate.ts about failed — no grok CLI at ~/.grok/bin/grok (Grok Build 402). Scores 52/47/57 are the SITE-64 grok-4.6 pass, not this capture. comparedToPrior stays rebaselined. Do not treat this as rose, demoMatch, or done.",
+    "evaluatorBlocked": "2026-09-12 SITE-90 Critiquito P0 fold: npx tsx scripts/taste-evaluate.ts about failed — no grok CLI at ~/.grok/bin/grok (Grok Build 402). Scores 52/47/57 are the SITE-64 grok-4.6 pass, not this capture. comparedToPrior stays rebaselined. Do not treat this as rose, demoMatch, or done.",
     "defects": [
       {
         "section": "#faces .about-faces__grid",

@@ -1,6 +1,6 @@
 /**
  * /about first viewport (SITE-90). People as AvatarGroup, the Bend office
- * as the Street View exterior, closings as Cards. Never the interior sofa.
+ * as the Street View exterior, closings as Accordion. Never the interior sofa.
  */
 
 .about-fold {
@@ -28,7 +28,6 @@
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-label);
   letter-spacing: var(--v3-track-label);
-  text-transform: uppercase;
 }
 
 .about-fold__sales {
@@ -56,44 +55,39 @@
   line-height: var(--v3-leading-heading);
 }
 
-.about-closings__grid {
-  display: grid;
-  grid-template-columns: 1fr;
+.about-closings__accordion {
+  max-width: 48rem;
+}
+
+.about-closings__trigger {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
   gap: var(--v3-space-sm);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  padding-right: var(--v3-space-sm);
 }
 
-.about-closings__link {
-  display: block;
-  height: 100%;
-  color: inherit;
-  text-decoration: none;
+.about-closings__address {
+  min-width: 0;
 }
 
-.about-closings__link:focus-visible {
-  outline: var(--v3-focus-ring);
-  outline-offset: var(--v3-focus-offset);
+.about-closings__price {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
-.about-closings [data-slot='card'] {
-  height: 100%;
-  background: var(--v3-cream);
-  color: var(--v3-ink);
+.about-closings__facts {
+  margin: var(--v3-space-2xs) 0;
 }
 
 .about-closings img {
   display: block;
   width: 100%;
+  max-width: 22rem;
   aspect-ratio: 3 / 2;
   object-fit: cover;
-}
-
-@media (min-width: 40rem) {
-  .about-closings__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (min-width: 64rem) {
@@ -128,7 +122,7 @@
     padding-inline: var(--v3-gutter);
   }
 
-  .about-closings__grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .about-closings__accordion {
+    max-width: none;
   }
 }
