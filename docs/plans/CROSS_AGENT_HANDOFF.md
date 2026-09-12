@@ -1,10 +1,9 @@
-# Current — 2026-09-12 17:40Z (SITE-90 About fold — Tip Ready for Cos)
+# Current — 2026-09-12 18:55Z (HARD Tip Ready — competitiveBrief on About)
 
-Owner: `cursor-cloud-2026-09-12-0e8e`. Do not merge — Cos cherry-picks + `npm run push`. No emails.
+Owner: `cursor-cloud-2026-09-12-b093`. Do not merge — Tip Ready PR only. No emails.
 
-- **SITE-90 Tip Ready** `/about` on `cursor/about-fold-redo-0e8e` (PR, draft off). Matt hard list is in the fold: three broker Cards (Matt, Rebecca, Paul) with separate Avatars; firm beat since 2014 / Bend / who you call works your deal; V3Carousel of real firm closings; no AvatarGroup overlap; no V3SourceLine on faces/closings/fold; Street View `BEND OFFICE · 115 NW Oregon Ave #2` between beat and roster at 375. Shots 1440/375 + firm-sales. grok CLI missing — `demoMatch: false`, scores still SITE-64 52. Cos evaluates.
-- Exclusive: `app/about/**` this lane until Cos lands.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `marketing_brain_skills/brand-voice/VOICE.md`.
+- **Process tip** `cursor/competitive-brief-taste-gate-b093`: Researchy About 1–8 is `competitiveBrief` on `ui_kits/about/parity.json` next to `competitiveTarget` (and on taste-catalog about). `ci:taste-canon` / Tip Ready / `completeWorkNode` refuse rise/score without `competitiveBriefPass: true` (omit = refuse, same as demoMatch). About parity requiredComponents no longer open on AboutFaces three Cards — firm story + reviews + closings + Call|Text|Email|Schedule + team teaser→/team + inquiry→/contact. Honest `competitiveBriefPass: false` on the current receipt. About page tip has not landed.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 
 # Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)
 

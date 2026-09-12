@@ -17,7 +17,12 @@
  * matches the demo. Submoduling a catalog's demo app is refused.
  */
 import { existsSync, readFileSync } from 'node:fs'
-import { isNonEmptyString, isPlainObject } from './taste-receipt.mjs'
+import {
+  competitiveBriefShapeProblems,
+  isNonEmptyString,
+  isPlainObject,
+  parseCompetitiveBrief,
+} from './taste-receipt.mjs'
 
 /** Remote catalog URLs a lane fetches for one class. The rest of the inventory stays in the JSON. */
 export const BUILDER_FETCH_CAP = 8
@@ -125,7 +130,26 @@ export function loadTasteCatalog(raw) {
     const demoStates = Array.isArray(entry.demoStates)
       ? entry.demoStates.filter((s) => isNonEmptyString(s))
       : []
-    classes[key] = { layoutLock: entry.layoutLock ?? '', modules, primitivesToAdd, layoutLockChecks, demoStates }
+    const competitiveBrief = parseCompetitiveBrief(entry.competitiveBrief)
+    if (entry.competitiveBrief != null && !competitiveBrief) {
+      problems.push(`classes.${key}: competitiveBrief must be a structured checklist with id + 20+ character text per beat`)
+    }
+    if (key === 'about') {
+      for (const p of competitiveBriefShapeProblems(entry.competitiveBrief, {
+        minBeats: 8,
+        label: 'classes.about.competitiveBrief',
+      })) {
+        problems.push(p)
+      }
+    }
+    classes[key] = {
+      layoutLock: entry.layoutLock ?? '',
+      modules,
+      primitivesToAdd,
+      layoutLockChecks,
+      demoStates,
+      competitiveBrief,
+    }
   }
   for (const required of ['listing-detail', 'homepage-v6', 'search', 'sell', 'city']) {
     if (!classes[required]) problems.push(`classes must include "${required}" so a lane has a catalog, not adjectives`)
@@ -454,6 +478,7 @@ export function builderCard(catalog, classKey) {
     add,
     demoStates: demoStateSpecs(catalog, key),
     refuse: Array.isArray(catalog?.refuse) ? catalog.refuse : [],
+    competitiveBrief: catalog?.classes?.[key]?.competitiveBrief ?? null,
   }
 }
 
@@ -482,6 +507,13 @@ export function formatBuilderCard(card) {
   lines.push('ci:catalog-install fails a named catalog id whose file is missing or whose house primitive does not import it.')
   lines.push('Rebaseline is not done. A taste score below 70 is not done.')
   lines.push('Score rise without demoMatch: true is not done and is not Tip Ready.')
+  if (card.competitiveBrief?.beats?.length) {
+    lines.push('', '## Competitive brief (pull this before building; fail Looking if you invent past it)')
+    if (card.competitiveBrief.productLock) lines.push(`Product lock: ${card.competitiveBrief.productLock}`)
+    if (card.competitiveBrief.refuse) lines.push(`Refuse: ${card.competitiveBrief.refuse}`)
+    for (const b of card.competitiveBrief.beats) lines.push(`- ${b.id}. ${b.text}`)
+    lines.push('Score rise without competitiveBriefPass: true (or checklist all true) is not Tip Ready. Omit is refuse. Do not invent true.')
+  }
   if (Array.isArray(card.demoStates) && card.demoStates.length) {
     lines.push(`Demo-match shots (take-route-shots captures these without --states): ${card.demoStates.join('; ')}`)
   }
@@ -500,6 +532,12 @@ export function evaluatorBrief(catalog, classKey) {
     'CATALOG is the UX bar. Diagnose the JOB from our shots, then pick replaceWith from the option list below (id + demo URL) — not a vague house adjective. Do not invent a house primitive that already lost. Cream-box examples (demoMatch false): Avatar import ≠ AvatarGroup demo; Button import ≠ flat V3Button navy rect; Sheet import ≠ custom drawer. A cream box with the catalog name is a defect — open the demo and our control; a person must recognize the same interaction. demoMatch is required true|false; omit is refuse. Growing a new primitive that still matches the demo is allowed; a second kit (their Inter/purple/demo app) is Frankenstein.',
   ]
   if (lock) lines.push(`Layout lock: ${lock}`)
+  if (card.competitiveBrief?.beats?.length) {
+    lines.push(
+      `COMPETITIVE BRIEF: ${card.competitiveBrief.productLock || 'required checklist'}. Fail Looking if the page invents past these beats. competitiveBriefPass omit is refuse.`,
+    )
+    for (const b of card.competitiveBrief.beats) lines.push(`Brief ${b.id}: ${b.text}`)
+  }
   if (card.add.length) lines.push(`House primitives this class owes: ${card.add.join(', ')}.`)
   for (const o of card.open.slice(0, 5)) lines.push(`- ${o.id}: ${o.job}`)
   for (const f of card.fetch.slice(0, 6)) {
