@@ -1,9 +1,10 @@
-# Current — 2026-09-12 13:35Z (SITE-100 market-report hub, Cursor cloud)
+# Current — 2026-09-12 14:00Z (SITE-100 hub fold on PR, Tip Ready)
 
-Owner: `cursor-cloud-2026-09-12-06-c` on `cursor/site-100-market-hub-1dd4`. PR only — do not merge to main. No emails.
+Owner: `cursor-cloud-2026-09-12-06-c` on `cursor/site-100-market-hub-1dd4`. PR only — Cos lands from Mini. No emails. No merge to main.
 
-- **SITE-100 in_progress** `/housing-market` first viewport. Instrument + MOS two-bar + InsightPager city MOS (city grain, miss omits). Chooser moved below `#cities`. Title carries live count. Taste: grok-4.6; if CLI 402, Tip Ready — do not fake a receipt.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `TASTE.md`, `VOICE.md`.
+- **SITE-100 in_progress** `/housing-market` first viewport: Live market Instrument + region MOS two-bar (integer month of sales) + beautifului-insight city MOS pager (city grain via `publishMonthsOfSupply`, miss omits). `#chooser` after `#cities`. Layer A title stays `Central Oregon Housing Market`; live count is in the description + ItemList JSON-LD. `ci:gates` 154/154 on this branch.
+- **Tip Ready:** grok CLI is not installed here (`~/.grok/bin/grok` missing). Did not fake a `tasteReview`. Prior receipt stays 63. New 1440/375 shots are artifacts only, not committed, so `ci:taste-canon` stays honest.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `scripts/site-queue-routine-prompt.md`, `docs/CLOUD_ENVIRONMENT_SETUP.md`, `TASTE.md`, `VOICE.md`.
 - Do not restyle `V3Instrument` / `V3Chart` globally. Do not steal SITE-102/103.
 
 # Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)
