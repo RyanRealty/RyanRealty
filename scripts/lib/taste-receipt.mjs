@@ -352,6 +352,24 @@ export function competitiveBriefShapeProblems(raw, { minBeats = 8, label = 'comp
 }
 
 /**
+ * `ci:page-purpose` companion to competitiveTarget ≥40 chars.
+ * About must encode the Researchy 1–8 checklist. Any other kit that
+ * carries `competitiveBrief` must be complete — empty / prose-only / short
+ * beats are refuse. Kits without the field stay on the string target only.
+ * Tip Ready / node-complete still refuse via taste-receipt --ship + site-queue-done.
+ */
+export function competitiveBriefPurposeProblems(kit, parsed) {
+  if (!isPlainObject(parsed)) {
+    return [
+      'competitiveBrief must be a structured checklist ({ id, source, beats[] }), not prose.',
+    ]
+  }
+  const hasField = Object.prototype.hasOwnProperty.call(parsed, 'competitiveBrief')
+  if (kit !== 'about' && !hasField) return []
+  return competitiveBriefShapeProblems(parsed.competitiveBrief)
+}
+
+/**
  * true | false | undefined (omit / incomplete). Checklist all true is a pass.
  * A lone `competitiveBriefPass: true` with a partial false checklist is false.
  */

@@ -15,6 +15,10 @@
  *
  *   1. competitiveTarget EXISTS and is non-trivial. A public page with no
  *      stated way to beat the field is unfinished, and "TODO" is not a target.
+ *      About (and any kit that already carries `competitiveBrief`) also binds
+ *      the structured Researchy checklist — empty / incomplete is refuse here,
+ *      same as a missing target. Tip Ready / node-complete still refuse via
+ *      taste-receipt --ship + site-queue-done (competitiveBriefPass twin).
  *   2. Every binding sectionOrder entry RESOLVES IN THE PAGE FILE -- by its
  *      `#id` (preferred) or by its leading `<Component` mount -- so a deleted
  *      section fails the build instead of vanishing quietly.
@@ -37,6 +41,7 @@
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { competitiveBriefPurposeProblems } from './lib/taste-receipt.mjs'
 
 const ROOT = process.cwd()
 const KITS = 'design_system/ryan-realty/ui_kits'
@@ -69,6 +74,10 @@ for (const rel of contracts) {
       `${rel}: competitiveTarget is ${target ? `${target.length} chars` : 'missing'}. ` +
       `Every public page states how it beats the field, or it is unfinished (Matt 2026-08-27).`
     )
+  }
+  const kit = rel.match(/ui_kits\/([^/]+)\/parity\.json$/)?.[1] ?? ''
+  for (const problem of competitiveBriefPurposeProblems(kit, d)) {
+    failures.push(`${rel}: ${problem}`)
   }
 
   // -- 2 + 3. the section order binds against the page source -------------------
