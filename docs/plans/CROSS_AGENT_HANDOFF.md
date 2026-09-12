@@ -1,3 +1,12 @@
+# Current — 2026-09-12 14:45Z (SITE-100 catalog pager applied, Tip Ready)
+
+Owner: `cursor-cloud-2026-09-12-06-c` on `cursor/site-100-market-hub-1dd4`. PR only — Cos lands from Mini. No emails. No merge to main.
+
+- **SITE-100 in_progress** `/housing-market`: leftover extras page through InsightPager (`Also` title + 1/N + prev/next). Closed cream fold is gone. City MOS pager + beui-number on whole counts. House v3 imports `insight-pager` and `number`. Receipt `adaptedFrom` names house-instrument, house-mos, beautifului-insight, beui-number. `ci:gates` 157/157 at `b8c1c2f53`.
+- **Tip Ready:** grok CLI missing (`taste-evaluate: no grok CLI at ~/.grok/bin/grok`). Did not fake a receipt. Score stays 63. Score rise without demoMatch is not done. Live pager clicks: Bend→Redmond, Price and wait→Types.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `scripts/site-queue-routine-prompt.md`, `TASTE.md`.
+- Do not restyle `V3Instrument` / `V3Chart` globally. Do not steal SITE-102/103.
+
 # Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)
 
 Owner: this land (`wt/cma-ship-20260907` → `main`). No owner sends / no emails. HOLD SITE-56 auto-send.

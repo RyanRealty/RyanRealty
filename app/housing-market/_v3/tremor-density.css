@@ -51,3 +51,9 @@
 .v3.v3-instrument.hm-tremor.v3-instrument--said .v3-instrument__figures {
   gap: var(--v3-space-lg) var(--v3-space-md);
 }
+
+/* SITE-100: the fold summary is a short name, not a tracked essay. */
+.v3.v3-instrument.hm-tremor .v3-instrument__fold-summary {
+  max-width: 22rem;
+  text-wrap: balance;
+}

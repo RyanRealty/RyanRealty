@@ -1,8 +1,8 @@
 /**
  * THE FOLD, CURATED (SITE-41 round two).
  *
- * The disclosure behind "Supply by property type, sale pace, and what the houses have"
- * (opening.ts's MARKET_FOLD_LABEL) turned into the exact tell TASTE.md bans by name on
+ * The disclosure behind MARKET_FOLD_LABEL in opening.ts
+ * turned into the exact tell TASTE.md bans by name on
  * three of the four market classes at once: property-type supply and 12-month pace cells
  * merged into one tail with a value, a label, and no sentence saying what either number
  * means for the reader. The 2026-09-09 evaluator round named it on market-report-annual

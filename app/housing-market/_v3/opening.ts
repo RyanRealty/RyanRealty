@@ -35,7 +35,7 @@ export const MARKET_LEAD_FIGURES = 4
  * pace figures over their own windows, and the feature shares — so a reader can decide
  * whether they want them.
  */
-export const MARKET_FOLD_LABEL = 'Supply by property type, sale pace, and what the houses have'
+export const MARKET_FOLD_LABEL = 'Pace, types, and features'
 
 /**
  * The same cap for a closed-sales band, one lower.
