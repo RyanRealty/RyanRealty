@@ -40,7 +40,7 @@ describe('SITE-90 /about house fold', () => {
     expect(PAGE).not.toContain('openingFigures')
     expect(PAGE).not.toContain('figures={openingFigures}')
     expect(PROOF).toContain('about-faces--proof')
-    expect(PROOF).toContain('about-faces__proof-group')
+    expect(PROOF).toContain('-space-x-8')
     expect(PROOF).toContain('about-faces__ask')
     expect(PROOF).not.toContain('about-faces__lead')
     expect(PROOF).not.toContain('about-faces__companions')
@@ -61,17 +61,21 @@ describe('SITE-90 /about house fold', () => {
     expect(PROOF).toContain('leadPerson.record')
   })
 
-  it('puts recent closings in the first viewport and refuses an office stand-in', () => {
+  it('puts the Street View exterior and recent closings in the first viewport', () => {
     expect(PAGE).toContain('about-fold__sales')
     expect(PAGE).toContain('<FirmClosings')
-    expect(FOLD_JSX).not.toContain('about-fold__place')
+    expect(FOLD_JSX).toContain('about-fold__place')
+    expect(FOLD_JSX).toContain('ryan-realty-bend-office-exterior-01.jpg')
     expect(FOLD_JSX).not.toContain('ryan-realty-bend-office-interior')
     expect(FOLD).toMatch(/grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\)/)
   })
 
-  it('keeps the AvatarGroup overlap and one joined ask', () => {
-    expect(CSS).toContain('.about-faces--proof .about-faces__proof-group')
-    expect(CSS).not.toMatch(/\.about-faces--proof[\s\S]*margin-inline-start: 0/)
+  it('keeps the AvatarGroup overlap and one joined ask, without painting Avatar into a card', () => {
+    expect(PROOF).toContain('-space-x-8')
+    expect(CSS).not.toMatch(/\[data-slot=['"]avatar['"]\][\s\S]{0,80}border-radius:\s*0/)
+    expect(CSS).not.toContain('about-faces__avatar')
+    expect(PORTRAIT).not.toContain('about-faces__avatar')
+    expect(PORTRAIT).not.toContain('about-faces__photo')
     expect(PROOF).toContain('about-faces__ask')
     expect(PROOF).toContain('>Call<')
     expect(PROOF).toContain('>Book<')

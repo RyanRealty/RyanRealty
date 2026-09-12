@@ -1,12 +1,10 @@
 'use client'
 
 /**
- * shadcn Avatar demo, restyled into AboutFaces (SITE-90).
+ * shadcn Avatar demo as shipped (SITE-90).
  *
- * Catalog composition from ui.shadcn.com/docs/components/avatar:
- *   Avatar → AvatarImage → AvatarFallback → AvatarBadge
- * A raw <img> inside Avatar is a cream box. This file is the installed
- * primitive (`@/components/ui/avatar`), not a second face kit.
+ * Catalog: Avatar → AvatarImage → AvatarFallback → AvatarBadge
+ * No house classNames — about-faces.css must not restyle this into a card.
  */
 
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -21,13 +19,12 @@ export function FacePortrait({
   src: string
   name: string
   priority?: boolean
-  /** SITE-90: the firm's 5.0 lives on the principal's face, not a KPI row. */
+  /** SITE-90: the firm's 5.0 lives on the principal AvatarBadge, not a KPI row. */
   proof?: string
 }) {
   return (
-    <Avatar className="about-faces__avatar">
+    <Avatar size="lg">
       <AvatarImage
-        className="about-faces__photo"
         src={src}
         alt={name}
         width={800}
@@ -36,12 +33,8 @@ export function FacePortrait({
         fetchPriority={priority ? 'high' : undefined}
         decoding="async"
       />
-      <AvatarFallback className="about-faces__avatar-fallback" delayMs={600}>
-        {faceInitials(name)}
-      </AvatarFallback>
-      {proof ? (
-        <AvatarBadge className="about-faces__proof-badge">{proof}</AvatarBadge>
-      ) : null}
+      <AvatarFallback delayMs={600}>{faceInitials(name)}</AvatarFallback>
+      {proof ? <AvatarBadge>{proof}</AvatarBadge> : null}
     </Avatar>
   )
 }

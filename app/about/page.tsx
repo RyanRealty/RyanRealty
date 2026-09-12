@@ -3,8 +3,8 @@
  *
  * PAGE OUTLINE (SITE-90, 2026-09-12 — one proof object, not a phone book):
  * 1. The fold: AboutFaces proof (H1, overlapping AvatarGroup, one ButtonGroup,
- *    5.0 on Matt's AvatarBadge) + FirmClosings as shadcn Cards. No interior
- *    office stand-in — there is no verified exterior of 115 NW Oregon Ave #2.
+ *    5.0 on Matt's AvatarBadge) + Street View exterior of 115 NW Oregon Ave #2
+ *    + FirmClosings as shadcn Cards. Never the interior sofa.
  * 2. One reach control: Call at display scale with the live hours, then Text,
  *    Email and the calendar as the lighter alternatives (V3Doors #reach)
  * 3. Firm proof, the words rather than the score again (V3Proof)
@@ -82,7 +82,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: 'About Ryan Realty · Bend',
     description: `${reviewLine}Three licensed Oregon brokers. Recent closings with recorded prices, addresses, and beds. Local experts since ${BRAND.llcSince}.`,
     path: ROUTE_PATH,
-    ogImage: '/images/office/ryan-realty-bend-office-interior-01.jpg',
+    ogImage: '/images/office/ryan-realty-bend-office-exterior-01.jpg',
     keywords: [
       'Ryan Realty',
       'Bend Oregon real estate',
@@ -241,8 +241,8 @@ export default async function AboutPage() {
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
 
-        {/* SITE-90 fold: overlapping AvatarGroup, one ButtonGroup, 5.0 badge,
-            and recent closings as Cards. No office photo — no verified exterior. */}
+        {/* SITE-90 fold: overlapping AvatarGroup, one ButtonGroup, Street View
+            exterior of 115 NW Oregon Ave, closings as Cards. Never the sofa. */}
         <div className="about-fold">
           <AboutFaces
             people={faces}
@@ -262,6 +262,18 @@ export default async function AboutPage() {
                 : undefined
             }
           />
+          <figure className="about-fold__place">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/office/ryan-realty-bend-office-exterior-01.jpg"
+              alt={`Ryan Realty at ${BRAND.address.street}, ${BRAND.address.city}`}
+              width={640}
+              height={640}
+            />
+            <figcaption>
+              {BRAND.address.street}, {BRAND.address.city}
+            </figcaption>
+          </figure>
           <div className="about-fold__sales">
             <FirmClosings rows={firmRows} />
           </div>

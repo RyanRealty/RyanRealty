@@ -1,7 +1,6 @@
 /**
- * /about first viewport (SITE-90). One proof object on the left
- * (overlapping AvatarGroup + one ButtonGroup); recent closings as
- * Cards on the right. No office interior stand-in.
+ * /about first viewport (SITE-90). People as AvatarGroup, the Bend office
+ * as the Street View exterior, closings as Cards. Never the interior sofa.
  */
 
 .about-fold {
@@ -9,6 +8,27 @@
   flex-direction: column;
   gap: var(--v3-space-md);
   padding-bottom: var(--v3-space-md);
+}
+
+.about-fold__place {
+  margin: 0;
+  padding: 0 var(--v3-gutter);
+}
+
+.about-fold__place img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.about-fold__place figcaption {
+  margin-top: var(--v3-space-2xs);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
 }
 
 .about-fold__sales {
@@ -89,12 +109,22 @@
     grid-row: 1;
   }
 
-  .about-fold__sales {
+  .about-fold__place {
     grid-column: 2;
     grid-row: 1;
+    padding-inline: 0 var(--v3-gutter);
+  }
+
+  .about-fold__sales {
+    grid-column: 1 / span 2;
+    grid-row: 2;
   }
 
   .about-closings {
-    padding-inline: 0 var(--v3-gutter);
+    padding-inline: var(--v3-gutter);
+  }
+
+  .about-closings__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
