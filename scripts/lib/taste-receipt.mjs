@@ -443,32 +443,68 @@ export function competitiveBriefProblems(tr, brief) {
  * and, when a competitiveBrief exists, competitiveBriefPass true.
  * Used by completeWorkNode and `node scripts/lib/taste-receipt.mjs --ship`.
  */
-export function tasteDoneProblems(tr, { competitiveBrief = null } = {}) {
-  if (!isPlainObject(tr)) return ['tasteReview is required to mark a SITE node done.']
-  const catalogIds = adaptedFromCatalogIds(tr.adaptedFrom)
+export const TIP_READY_EVALUATOR = 'grok-4.6'
+
+/**
+ * About opener contract (Matt 2026-09-12 / PR 213). AboutFaces as the
+ * required opener or teaser is refuse. Team teaser is AboutTeamTeaser → /team.
+ */
+export function aboutOpenerProblems(kit, parsed) {
+  if (kit !== 'about') return []
+  const list = Array.isArray(parsed?.requiredComponents) ? parsed.requiredComponents : []
+  if (list.length === 0) return []
+  const names = componentNames(list)
+  if (!names.includes('AboutFaces')) return []
+  const faces = list.find((c) => (typeof c === 'string' ? c : c?.name) === 'AboutFaces')
+  const section = isPlainObject(faces) ? String(faces.section ?? '') : ''
+  if (/OPENS THE PAGE|opens the page/i.test(section)) {
+    return ['About opener must be AboutFirm (firm story). AboutFaces as opener is refuse.']
+  }
+  return ['AboutFaces must not stay as a requiredComponent teaser. Team teaser is AboutTeamTeaser → /team.']
+}
+
+/**
+ * Tip Ready on the receipt itself — not on evidence prose.
+ * competitiveBriefPass must be the boolean true on tasteReview. A hand-typed
+ * "competitiveBriefPass: true" string is not a pass.
+ */
+export function tipReadyReceiptProblems(tr, { competitiveBrief = null, requireBrief = false } = {}) {
+  if (!isPlainObject(tr)) {
+    return ['tasteReview is required to mark a SITE node done. Bare evidence prose is refuse.']
+  }
   const p = []
+  if (String(tr.evaluatorModel ?? '').trim() !== TIP_READY_EVALUATOR) {
+    p.push(
+      'evaluatorModel must be grok-4.6 — the same instrument as demoMatch. Leave the node in_progress.',
+    )
+  }
   if (typeof tr.demoMatch !== 'boolean') {
     p.push('demoMatch must be true or false — do not invent it. Leave the node in_progress.')
   } else if (tr.demoMatch !== true) {
-    p.push('demoMatch is false. The live control is not the catalog demo. Not done; leave the node in_progress.')
+    p.push('demoMatch is false. Honest false stays in_progress. Do not invent demoMatch.')
   }
+  const parsed = parseCompetitiveBrief(competitiveBrief) || parseCompetitiveBrief(tr.competitiveBrief)
+  if (requireBrief || parsed) {
+    if (tr.competitiveBriefPass !== true) {
+      p.push(
+        'parity tasteReview.competitiveBriefPass must be the boolean true. Bare evidence prose is refuse. Leave the node in_progress.',
+      )
+    }
+  }
+  if (tr.shotsHash != null && !HASH_RE.test(String(tr.shotsHash).trim())) {
+    p.push('tasteReview.shotsHash must be sha256:<64 hex> like a v2 receipt.')
+  }
+  return p
+}
+
+export function tasteDoneProblems(tr, { competitiveBrief = null } = {}) {
+  if (!isPlainObject(tr)) return ['tasteReview is required to mark a SITE node done.']
+  const catalogIds = adaptedFromCatalogIds(tr.adaptedFrom)
+  const p = tipReadyReceiptProblems(tr, { competitiveBrief })
   if (catalogIds.length && tr.demoMatch !== true) {
     p.push(
       `adaptedFrom names catalog modules (${catalogIds.join(', ')}) but demoMatch is not true. File-on-disk / score rise is not a demo match.`,
     )
-  }
-  const parsed = parseCompetitiveBrief(competitiveBrief) || parseCompetitiveBrief(tr.competitiveBrief)
-  if (parsed) {
-    const verdict = competitiveBriefVerdict(tr, parsed)
-    if (verdict === undefined) {
-      p.push(
-        'competitiveBriefPass must be true or false — do not invent it. Leave the node in_progress.',
-      )
-    } else if (verdict !== true) {
-      p.push(
-        'competitiveBriefPass is false. The page does not hit the Researchy checklist. Not done; leave the node in_progress.',
-      )
-    }
   }
   return p
 }
@@ -477,7 +513,34 @@ export function tasteDoneProblems(tr, { competitiveBrief = null } = {}) {
  * SITE-* done evidence must record a grok-4.6 demoMatch: true.
  * CLI missing / 402 in the evidence is an honest fail, not Tip Ready.
  */
-export function siteQueueDoneEvidenceProblems(evidence, { versionGap, competitiveBriefRequired } = {}) {
+export function resolveSiteQueueKit(evidence, versionGap) {
+  const gap = String(versionGap ?? '')
+  const text = String(evidence ?? '')
+  const fromPath = text.match(/ui_kits\/([a-z0-9-]+)/i)
+  if (fromPath) return fromPath[1]
+  const fromEval = text.match(/taste-evaluate(?:\.ts)?\s+([a-z0-9-]+)/i)
+  if (fromEval) return fromEval[1]
+  if (/SITE-90/.test(gap)) return 'about'
+  if (/SITE-80|SITE-63/.test(gap)) return 'contact'
+  if (/SITE-74/.test(gap)) return 'team'
+  return null
+}
+
+function loadKitParity(kit, root = process.cwd()) {
+  if (!kit) return null
+  const rel = join(root, 'design_system/ryan-realty/ui_kits', kit, 'parity.json')
+  if (!existsSync(rel)) return null
+  try {
+    return JSON.parse(readFileSync(rel, 'utf8'))
+  } catch {
+    return null
+  }
+}
+
+export function siteQueueDoneEvidenceProblems(
+  evidence,
+  { versionGap, competitiveBriefRequired, tasteReview, competitiveBrief, parity, loadParity, root } = {},
+) {
   const gap = String(versionGap ?? '')
   if (gap && !/^SITE-\d+/.test(gap)) return []
   const text = String(evidence ?? '')
@@ -501,15 +564,26 @@ export function siteQueueDoneEvidenceProblems(evidence, { versionGap, competitiv
       'evidence records competitiveBriefPass false — Looking invented past the brief, or the checklist is not all true. Not done. Leave the node in_progress.',
     ]
   }
+
+  const kit = resolveSiteQueueKit(text, gap)
+  const loaded = loadParity === false ? null : isPlainObject(parity) ? parity : loadKitParity(kit, root)
+  const tr = isPlainObject(tasteReview) ? tasteReview : loaded?.tasteReview
+  const brief = competitiveBrief ?? loaded?.competitiveBrief
   const needsBrief =
     competitiveBriefRequired === true ||
+    Boolean(parseCompetitiveBrief(brief)) ||
     /SITE-90/.test(gap) ||
     /taste-evaluate(?:\.ts)?\s+about\b/i.test(text) ||
     /ui_kits\/about/i.test(text)
-  if (needsBrief && !/\bcompetitiveBriefPass\b\s*[:=]\s*true\b/i.test(text)) {
+  const claimsBriefPass = /\bcompetitiveBriefPass\b\s*[:=]\s*true\b/i.test(text)
+
+  if (needsBrief && !claimsBriefPass) {
     return [
-      'SITE done evidence must include competitiveBriefPass: true (or checklist all true). Score rise without the Researchy brief is not Tip Ready.',
+      'SITE done evidence must include competitiveBriefPass: true. Score rise without the Researchy brief is not Tip Ready.',
     ]
+  }
+  if (needsBrief || claimsBriefPass) {
+    return tipReadyReceiptProblems(tr, { competitiveBrief: brief, requireBrief: true })
   }
   return []
 }

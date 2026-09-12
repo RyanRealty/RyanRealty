@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import {
+  aboutOpenerProblems,
   competitiveBriefProblems,
   competitiveBriefPurposeProblems,
   competitiveBriefShapeProblems,
@@ -147,7 +149,7 @@ describe('competitiveBriefPurposeProblems — ci:page-purpose', () => {
 describe('tasteDoneProblems — Tip Ready refuse', () => {
   it('refuses omitted competitiveBriefPass when a brief exists', () => {
     expect(tasteDoneProblems({ demoMatch: true }, { competitiveBrief: ABOUT_BRIEF }).join('\n')).toMatch(
-      /competitiveBriefPass must be true or false/,
+      /competitiveBriefPass must be the boolean true/,
     )
   })
 
@@ -156,13 +158,25 @@ describe('tasteDoneProblems — Tip Ready refuse', () => {
       tasteDoneProblems({ demoMatch: true, competitiveBriefPass: false }, { competitiveBrief: ABOUT_BRIEF }).join(
         '\n',
       ),
-    ).toMatch(/competitiveBriefPass is false/)
+    ).toMatch(/competitiveBriefPass must be the boolean true/)
   })
 
-  it('passes only when both demoMatch and competitiveBriefPass are true', () => {
+  it('passes only when both demoMatch and competitiveBriefPass are true on grok-4.6', () => {
     expect(
-      tasteDoneProblems({ demoMatch: true, competitiveBriefPass: true }, { competitiveBrief: ABOUT_BRIEF }),
+      tasteDoneProblems(
+        { demoMatch: true, competitiveBriefPass: true, evaluatorModel: 'grok-4.6' },
+        { competitiveBrief: ABOUT_BRIEF },
+      ),
     ).toEqual([])
+  })
+
+  it('refuses checklist-all-true without the receipt boolean', () => {
+    const checklist = Object.fromEntries(ABOUT_BRIEF.beats.map((b) => [b.id, true]))
+    const p = tasteDoneProblems(
+      { demoMatch: true, evaluatorModel: 'grok-4.6', competitiveBriefChecklist: checklist },
+      { competitiveBrief: ABOUT_BRIEF },
+    )
+    expect(p.join('\n')).toMatch(/competitiveBriefPass must be the boolean true/)
   })
 })
 
@@ -183,12 +197,95 @@ describe('siteQueueDoneEvidenceProblems — About / SITE-90 brief', () => {
     expect(p.join('\n')).toMatch(/competitiveBriefPass false/)
   })
 
-  it('passes honest demoMatch true and competitiveBriefPass true', () => {
+  it('refuses evidence competitiveBriefPass:true when parity pass is false', () => {
+    const p = siteQueueDoneEvidenceProblems(
+      'npx tsx scripts/taste-evaluate.ts about — grok-4.6 demoMatch: true, competitiveBriefPass: true, median 71',
+      {
+        versionGap: 'SITE-90',
+        tasteReview: {
+          competitiveBriefPass: false,
+          demoMatch: false,
+          evaluatorModel: 'grok-4.6',
+        },
+      },
+    )
+    expect(p.join('\n')).toMatch(/competitiveBriefPass must be the boolean true/)
+    expect(p.join('\n')).toMatch(/Bare evidence prose/)
+  })
+
+  it('refuses a hand-typed pass against the live About receipt (pass is false)', () => {
+    const p = siteQueueDoneEvidenceProblems(
+      'npx tsx scripts/taste-evaluate.ts about — grok-4.6 demoMatch: true, competitiveBriefPass: true, median 71',
+      { versionGap: 'SITE-90' },
+    )
+    expect(p.join('\n')).toMatch(/competitiveBriefPass must be the boolean true/)
+  })
+
+  it('passes only when the receipt boolean is true on grok-4.6', () => {
     expect(
       siteQueueDoneEvidenceProblems(
         'npx tsx scripts/taste-evaluate.ts about — grok-4.6 demoMatch: true, competitiveBriefPass: true, median 71',
-        { versionGap: 'SITE-90' },
+        {
+          versionGap: 'SITE-90',
+          tasteReview: {
+            competitiveBriefPass: true,
+            demoMatch: true,
+            evaluatorModel: 'grok-4.6',
+            shotsHash: `sha256:${'a'.repeat(64)}`,
+          },
+        },
       ),
     ).toEqual([])
+  })
+})
+
+describe('aboutOpenerProblems — AboutFirm, not AboutFaces', () => {
+  it('fails AboutFaces required as opener', () => {
+    const p = aboutOpenerProblems('about', {
+      requiredComponents: [
+        { name: 'V3Breadcrumb', section: 'Chrome' },
+        { name: 'AboutFaces', section: 'OPENS THE PAGE, three broker Cards' },
+      ],
+    })
+    expect(p.join('\n')).toMatch(/AboutFirm/)
+    expect(p.join('\n')).toMatch(/AboutFaces as opener/)
+  })
+
+  it('fails AboutFaces kept as a required teaser', () => {
+    const p = aboutOpenerProblems('about', {
+      requiredComponents: [
+        { name: 'AboutFirm', section: 'OPENS THE PAGE' },
+        { name: 'AboutFaces', section: 'team teaser after the fold' },
+      ],
+    })
+    expect(p.join('\n')).toMatch(/AboutTeamTeaser/)
+  })
+
+  it('passes the live About kit (AboutFirm opener, no AboutFaces)', () => {
+    const parsed = JSON.parse(readFileSync('design_system/ryan-realty/ui_kits/about/parity.json', 'utf8'))
+    expect(aboutOpenerProblems('about', parsed)).toEqual([])
+  })
+})
+
+describe('Contact + Team competitiveBrief shape', () => {
+  it('passes the live Contact Looking 1–8 brief', () => {
+    const parsed = JSON.parse(readFileSync('design_system/ryan-realty/ui_kits/contact/parity.json', 'utf8'))
+    expect(competitiveBriefPurposeProblems('contact', parsed)).toEqual([])
+    expect(parsed.competitiveBrief.id).toBe('contact-looking-1-8')
+    expect(parsed.competitiveBrief.beats).toHaveLength(8)
+  })
+
+  it('passes the live Team/broker 1–8 brief', () => {
+    const parsed = JSON.parse(readFileSync('design_system/ryan-realty/ui_kits/team/parity.json', 'utf8'))
+    expect(competitiveBriefPurposeProblems('team', parsed)).toEqual([])
+    expect(parsed.competitiveBrief.id).toBe('team-broker-researchy-1-8')
+    expect(parsed.competitiveBrief.beats).toHaveLength(8)
+    expect(competitiveBriefShapeProblems(parsed.perBrokerPage.competitiveBrief)).toEqual([])
+  })
+
+  it('refuses a three-beat Contact brief', () => {
+    const parsed = JSON.parse(readFileSync('design_system/ryan-realty/ui_kits/contact/parity.json', 'utf8'))
+    parsed.competitiveBrief.beats = parsed.competitiveBrief.beats.slice(0, 3)
+    expect(competitiveBriefPurposeProblems('contact', parsed).join('\n')).toMatch(/8 Researchy beats/)
   })
 })

@@ -301,6 +301,25 @@ describe('layoutLockProblems', () => {
   it('passes the committed listing files', () => {
     expect(layoutLockProblems(loaded)).toEqual([])
   })
+
+  it('fails AboutFaces required as the About opener', () => {
+    const problems = layoutLockProblems(loaded, {
+      existsSync: () => true,
+      readFileSync: (p) => {
+        if (String(p).endsWith('about/page.tsx')) {
+          return 'export default function Page() { return <AboutFaces people={[]} /> }'
+        }
+        if (String(p).endsWith('about/parity.json')) {
+          return JSON.stringify({
+            requiredComponents: [{ name: 'AboutFaces', section: 'OPENS THE PAGE, three broker Cards' }],
+          })
+        }
+        return ''
+      },
+    })
+    expect(problems.some((p) => /AboutFaces/.test(p))).toBe(true)
+    expect(problems.some((p) => /AboutFirm/.test(p) || /AboutFaces/.test(p))).toBe(true)
+  })
 })
 
 describe('catalogInstallProblems', () => {

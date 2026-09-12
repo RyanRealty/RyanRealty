@@ -41,7 +41,11 @@
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { competitiveBriefPurposeProblems } from './lib/taste-receipt.mjs'
+import {
+  aboutOpenerProblems,
+  competitiveBriefPurposeProblems,
+  competitiveBriefShapeProblems,
+} from './lib/taste-receipt.mjs'
 
 const ROOT = process.cwd()
 const KITS = 'design_system/ryan-realty/ui_kits'
@@ -78,6 +82,17 @@ for (const rel of contracts) {
   const kit = rel.match(/ui_kits\/([^/]+)\/parity\.json$/)?.[1] ?? ''
   for (const problem of competitiveBriefPurposeProblems(kit, d)) {
     failures.push(`${rel}: ${problem}`)
+  }
+  for (const problem of aboutOpenerProblems(kit, d)) {
+    failures.push(`${rel}: ${problem}`)
+  }
+  if (d.perBrokerPage && Object.prototype.hasOwnProperty.call(d.perBrokerPage, 'competitiveBrief')) {
+    for (const problem of competitiveBriefShapeProblems(d.perBrokerPage.competitiveBrief, {
+      minBeats: 8,
+      label: 'perBrokerPage.competitiveBrief',
+    })) {
+      failures.push(`${rel}: ${problem}`)
+    }
   }
 
   // -- 2 + 3. the section order binds against the page source -------------------
