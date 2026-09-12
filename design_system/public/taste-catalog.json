@@ -123,6 +123,13 @@
       "import": "@/components/ui/button-group",
       "house": "components/site/v3/V3ButtonGroup.tsx"
     },
+    "shadcn-accordion": {
+      "add": "accordion",
+      "file": "components/ui/accordion.tsx",
+      "import": "@/components/ui/accordion",
+      "house": "app/about/_v3/FirmClosings.tsx"
+    },
+    "shadcn:accordion": { "aliasOf": "shadcn-accordion" },
     "shadcn:button-group": { "aliasOf": "shadcn-button-group" },
     "shadcn-alert": {
       "add": "alert",
@@ -2347,13 +2354,13 @@
       ]
     },
     "about": {
-      "layoutLock": "Faces open the page at display scale. Do not lead with a three-tile KPI grid of rating / reviews / broker count. The 5.0-from-25 lives on a face card, not a figure row.",
+      "layoutLock": "The fold is one proof object: an overlapping AvatarGroup, one principal Card (name, title, Call Button, Text/Email/Schedule as ghost), and recent closings as Accordion. Do not stack three equal portrait tiles or a three-tile KPI grid. The 5.0-from-25 lives on the principal AvatarBadge, not a figure row. Street View exterior of 115 NW Oregon Ave #2 only; never the interior sofa.",
       "modules": [
         {
           "id": "house-faces",
           "catalog": "house-v3",
           "url": "app/about/_v3/AboutFaces.tsx",
-          "job": "Broker photographs and the firm's record open the page."
+          "job": "Broker photographs and the firm's record open the page as one proof object, not a phone book."
         },
         {
           "id": "house-proof",
@@ -2377,7 +2384,25 @@
           "id": "shadcn-avatar",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/avatar",
-          "job": "Portrait treatment. Adapt into AboutFaces, do not paste a second face kit."
+          "job": "Overlapping AvatarGroup with AvatarImage, AvatarFallback, and AvatarBadge. Keep the circular overlap; do not flatten into a 3-up yearbook."
+        },
+        {
+          "id": "shadcn-button-group",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/button-group",
+          "job": "Call is the default Button. Text / Email / Schedule are ghost Buttons in one group. Not three Call rows."
+        },
+        {
+          "id": "shadcn-card",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/card",
+          "job": "One principal broker Card (name, title, Call). Never three equal portrait tiles."
+        },
+        {
+          "id": "shadcn-accordion",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/accordion",
+          "job": "Recent closings as AccordionItem rows. Trigger is address + ClosePrice; open reveals photo and beds/baths/sqft."
         }
       ]
     },

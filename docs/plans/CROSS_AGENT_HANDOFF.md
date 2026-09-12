@@ -1,3 +1,11 @@
+# Current — 2026-09-12 15:10Z (SITE-90 Critiquito P0s Tip Ready, 402)
+
+Owner: `cursor-cloud-2026-09-12-06-a`. Claim held. Do not steal SITE-90. No emails. Do not merge — Cos cherry-picks + `npm run push`.
+
+- **SITE-90 in_progress** `/about`. UUID `edabba8e-f8aa-4271-909d-c258914f75ef`. PR #207. Critiquito P0s: AvatarGroup + one principal Card (vertical name/title/Call; Text/Email/Schedule ghost); Street View caption `BEND OFFICE · 115 NW Oregon Ave #2`; closings as Accordion. Never three portrait tiles or the sofa. shotsHash `sha256:79ad786f…`. Scores still SITE-64 **52** — grok CLI missing (402). No fake demoMatch. Not done.
+- Exclusive: `app/about/**` this lane.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
+
 # Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)
 
 Owner: this land (`wt/cma-ship-20260907` → `main`). No owner sends / no emails. HOLD SITE-56 auto-send.
