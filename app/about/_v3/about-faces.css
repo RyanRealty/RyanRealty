@@ -993,7 +993,8 @@
   outline-offset: var(--v3-focus-offset);
 }
 
-/* SITE-90 proof fold: layout only. Do not restyle Avatar into a card. */
+/* SITE-90 proof fold: three separate broker Cards. Do not restyle Avatar
+   into a cream box, and do not overlap the circles. */
 .about-faces--proof {
   max-width: none;
 }
@@ -1006,22 +1007,30 @@
   .about-faces--proof .about-faces__head {
     margin-bottom: var(--v3-space-xs);
   }
+}
 
-  .about-faces--proof .about-faces__proof {
-    gap: var(--v3-space-xs);
+.about-faces--proof .about-faces__claim {
+  max-width: 44rem;
+}
+
+.about-faces--proof .about-faces__roster {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--v3-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 48rem) {
+  .about-faces--proof .about-faces__roster {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
   }
 }
 
-.about-faces--proof .about-faces__proof {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--v3-space-sm);
-}
-
 .about-faces--proof .about-faces__broker {
-  width: 100%;
-  max-width: var(--v3-measure);
+  height: 100%;
 }
 
 .about-faces--proof .about-faces__broker-body {
@@ -1042,13 +1051,8 @@
   min-height: var(--v3-tap);
 }
 
-.about-faces--proof .about-faces__face-proof {
-  margin: 0;
-}
-
 .about-faces--proof .about-faces__proof-record {
   margin: 0;
-  max-width: var(--v3-measure);
   color: var(--v3-ink);
   font-size: var(--v3-size-body-sm);
   line-height: var(--v3-leading-body);

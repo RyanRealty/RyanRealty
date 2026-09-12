@@ -2,7 +2,7 @@
   "route": "app/about/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat generic national-brokerage profile pages by OPENING on proof — the three brokers' faces and the firm's Google record with its trace — and then one reach control, rather than a license line over seven identical contact rows. Origin is short Quiet below the fold.",
-  "note": "SITE-48 2026-09-09 (supersedes the PAGE_OUTLINE 2026-09-05 lock). Order is Breadcrumb, AboutFaces (H1 About Ryan Realty · Bend, eyebrow, one claim, the firm's figures with a V3SourceLine, the three brokers), V3Doors #reach as a REACH CONTROL (one call door at display scale carrying the live hours state, then text, email and the calendar as lighter links), V3Proof (the words, headline 'In their own words' — the score is in the fold and is not restated), FirmClosings, V3Atlas, Quiet #about (How it started + firm/PB license line, OREA source), V3Answers, Footer. No V3Instrument. The V3Quiet #who that used to open the page is GONE: the taste table of 2026-09-08 scored that fold 31 with the verdict 'a phone book, not a proof point'. Dates render in Pacific through formatDate.",
+  "note": "SITE-90 2026-09-12 (Matt fold redo). Order is Breadcrumb, AboutFaces (H1 About Ryan Realty · Bend, eyebrow, a real firm beat, three broker Cards with separate Avatars), V3Doors #reach as a REACH CONTROL (one call door at display scale carrying the live hours state, then text, email and the calendar as lighter links), V3Proof (the words, headline 'In their own words' — the score is in the fold and is not restated), FirmClosings as carousel, V3Atlas, Quiet #about (How it started + firm/PB license line, OREA source), V3Answers, Footer. No V3Instrument. No V3SourceLine on faces, closings, or fold proof. Dates render in Pacific through formatDate.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -16,7 +16,7 @@
     },
     {
       "name": "AboutFaces",
-      "section": "OPENS THE PAGE, headingLevel 1, size proof. Carries the H1, one claim sentence, a V3SourceLine, then one overlapping shadcn AvatarGroup (Avatar + AvatarImage + AvatarFallback + AvatarBadge 5.0 on the principal). One principal Card (name, title, Call Button; Text / Email / Schedule as ghost). The review count links to /reviews. One sourced principal MLS record. Not three equal portrait tiles and not a KPI row. Canonical /images/brokers/*.png.",
+      "section": "OPENS THE PAGE, headingLevel 1, size proof. Carries the H1, a real firm beat (since 2014, Bend office, who you call works your deal), then three separate broker Cards (Matt, Rebecca, Paul) each with Avatar + AvatarImage + AvatarFallback, name, title, Call Button, ghost Text / Email / Schedule. The review count links to /reviews. Per-broker MLS record as a plain line, no methodology disclosure. No AvatarGroup overlap. Not a KPI row. Canonical /images/brokers/*.png.",
       "blocking": true
     },
     {
@@ -26,7 +26,7 @@
     },
     {
       "name": "FirmClosings",
-      "section": "Recent Ryan Realty closings as shadcn Accordion in the first-viewport about-fold (trigger: address + recorded ClosePrice; content: photo, beds/baths/sqft, listing door). Child of the page so about/page.tsx never mounts a city-stats Ledger.",
+      "section": "Recent Ryan Realty closings as V3Carousel / shadcn carousel in the first-viewport about-fold (Card slides: photo, address, recorded ClosePrice, beds/baths/sqft, listing door). As many real closings as the firm record returned. Child of the page so about/page.tsx never mounts a city-stats Ledger.",
       "blocking": true
     },
     {
@@ -101,7 +101,7 @@
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "about-fold -- AboutFaces proof (H1, overlapping AvatarGroup, 5.0 AvatarBadge, one principal Card) + Street View exterior of 115 NW Oregon Ave #2 + FirmClosings #firm-sales as Accordion. Never the interior sofa.",
+    "about-fold -- AboutFaces proof (H1, firm beat, three broker Cards with separate Avatars) + Street View exterior of 115 NW Oregon Ave #2 + FirmClosings #firm-sales as carousel. Never the interior sofa.",
     "V3Doors #reach -- one call door at display scale with the live hours, then text, email, calendar",
     "V3Proof #proof -- the firm's Google reviews as words",
     "V3Atlas #service-area -- where we work",
@@ -148,7 +148,7 @@
       { "id": "shadcn-avatar" },
       { "id": "shadcn-button-group" },
       { "id": "shadcn-card" },
-      { "id": "shadcn-accordion" },
+      { "id": "shadcn-carousel" },
       { "id": "house-faces" }
     ],
     "evaluatorBlocked": "2026-09-12 SITE-90 Critiquito P0 fold: npx tsx scripts/taste-evaluate.ts about failed — no grok CLI at ~/.grok/bin/grok (Grok Build 402). Scores 52/47/57 are the SITE-64 grok-4.6 pass, not this capture. comparedToPrior stays rebaselined. Do not treat this as rose, demoMatch, or done.",

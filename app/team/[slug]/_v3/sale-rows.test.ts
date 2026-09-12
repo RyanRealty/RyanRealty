@@ -7,6 +7,7 @@ import {
   publishActiveListingRows,
   publishFirmClosingRows,
   publishOwnClosingRows,
+  uniqueListingTiles,
 } from './sale-rows'
 
 function sale(overrides: Partial<BrokerSaleTile> = {}): BrokerSaleTile {
@@ -135,6 +136,17 @@ describe('publishFirmClosingRows', () => {
       sale({ ListingKey: 'open', CloseDate: null, ClosePrice: 500000, StandardStatus: 'Active' }),
     ])
     expect(rows.map((row) => row.id)).toEqual(['keep'])
+  })
+
+  it('dedupes the same ListingKey and honors a higher about-fold limit', () => {
+    const tiles = [
+      sale({ ListingKey: 'a', CloseDate: '2025-08-01', ClosePrice: 400000, PostalCode: '97701' }),
+      sale({ ListingKey: 'a', CloseDate: '2025-08-01', ClosePrice: 400000, PostalCode: '97701' }),
+      sale({ ListingKey: 'b', CloseDate: '2025-07-01', ClosePrice: 500000, PostalCode: '97703' }),
+      sale({ ListingKey: 'c', CloseDate: '2025-06-01', ClosePrice: 600000, PostalCode: '97702' }),
+    ]
+    expect(uniqueListingTiles(tiles).map((t) => t.ListingKey)).toEqual(['a', 'b', 'c'])
+    expect(publishFirmClosingRows(tiles, 48).map((row) => row.id)).toEqual(['a', 'b', 'c'])
   })
 })
 

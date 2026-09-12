@@ -3,11 +3,11 @@
  * reach (Call / Text / Email / Schedule). Portrait puts Oregon license,
  * readable phone/email, and the same CTA strip above the fold.
  *
- * roster: leftover cards. proof: /about (H1) — overlapping AvatarGroup,
- *   one principal Card (name, title, Call, ghost Text/Email/Schedule),
- *   5.0 AvatarBadge. editorial: /team (H1). Principal at
- *   conversation scale, the other two as rows, Call as the one primary
- *   reach. SITE-74.
+ * roster: leftover cards. proof: /about (H1) — three separate broker
+ *   Cards (Matt, Rebecca, Paul), each with its own Avatar, Call Button,
+ *   and ghost Text/Email/Schedule. No AvatarGroup overlap. editorial:
+ *   /team (H1). Principal at conversation scale, the other two as rows,
+ *   Call as the one primary reach. SITE-74.
  * portrait: /team/[slug] at card-photo scale, not AboutFaces poster size.
  * compact: the homepage (H2). One table, not three cards: the three cutouts
  *   stand on a shared hairline shelf as the column heads, and every row
@@ -19,7 +19,7 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Avatar, AvatarBadge, AvatarFallback, AvatarGroup, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarGroup, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -271,8 +271,9 @@ export function AboutFaces({
    * portrait: one broker, /team/[slug]. compact: the homepage table, three
    * faces + names + licenses + Call / Text / Book in one 390 screen. Compact
    * ignores `reach`: its rows ARE the reach, and there is no Email or
-   * Schedule chip to switch off. proof: /about only — one overlapping
-   * AvatarGroup, name links, one ButtonGroup, the 5.0 badge, one record.
+   * Schedule chip to switch off. proof: /about only — three separate
+   * broker Cards, each Avatar + name + title + Call / Text / Email /
+   * Schedule. No overlapping AvatarGroup.
    */
   size?: "roster" | "portrait" | "compact" | "editorial" | "proof"
   /** Call / Text / Email / Schedule buttons on the face row, including portrait. */
@@ -293,8 +294,8 @@ export function AboutFaces({
   /** The section 0 trace for `figures`. Required whenever figures are passed. */
   source?: ReactNode
   /**
-   * SITE-90 layout lock: the 5.0-from-25 lives on the principal's face card,
-   * not a three-tile KPI row and not only a clause in the claim sentence.
+   * Firm Google record as a link in the head — not a KPI tile and not a
+   * badge on one overlapping circle.
    */
   proof?: AboutFaceProof
 }) {
@@ -592,8 +593,10 @@ export function AboutFaces({
   }
 
   if (size === "proof") {
-    const [leadPerson] = shown
-    if (!leadPerson) return null
+    if (shown.length === 0) return null
+    const claimBlocks = claim
+      ? claim.split(/\n\n+/).map((para) => para.trim()).filter(Boolean)
+      : []
     return (
       <section
         id="faces"
@@ -601,87 +604,86 @@ export function AboutFaces({
         aria-labelledby="faces-heading"
       >
         <div className="about-faces__head">
+          {eyebrow ? <V3Eyebrow>{eyebrow}</V3Eyebrow> : null}
           <V3Heading level={headingLevel} id="faces-heading" className="about-faces__heading">
             {heading}
           </V3Heading>
-          {claim ? <p className="about-faces__claim">{claim}</p> : null}
+          {claimBlocks.map((para) => (
+            <p key={para} className="about-faces__claim">
+              {para}
+            </p>
+          ))}
+          {proof ? (
+            <Button asChild variant="link">
+              <Link href={proof.href}>
+                {proof.value} from {proof.count} Google reviews
+              </Link>
+            </Button>
+          ) : null}
         </div>
-        <div className="about-faces__proof">
-          <AvatarGroup className="-space-x-6">
-            {shown.map((person) => (
-              <Avatar key={person.href} className="size-24 lg:size-32">
-                <AvatarImage
-                  src={person.src}
-                  alt={person.name}
-                  width={800}
-                  height={1200}
-                  loading="eager"
-                  fetchPriority={person === leadPerson ? "high" : "auto"}
-                  decoding="async"
-                />
-                <AvatarFallback delayMs={400}>{faceInitials(person.name)}</AvatarFallback>
-                {person === leadPerson && proof ? (
-                  <AvatarBadge className="min-w-7 px-1.5 text-xs font-medium leading-none group-data-[size=default]/avatar:size-7">
-                    {proof.value}
-                  </AvatarBadge>
-                ) : null}
-              </Avatar>
-            ))}
-          </AvatarGroup>
-          <Card className="about-faces__broker">
-            <CardHeader>
-              <CardTitle>
-                <Link href={leadPerson.href}>{leadPerson.name}</Link>
-              </CardTitle>
-              <CardDescription>{leadPerson.title}</CardDescription>
-            </CardHeader>
-            <CardContent className="about-faces__broker-body">
-              {proof ? (
-                <Button asChild variant="link">
-                  <Link href={proof.href}>
-                    {proof.value} from {proof.count} Google reviews
-                  </Link>
-                </Button>
-              ) : null}
-              {leadPerson.record ? (
-                <p className="about-faces__proof-record">
-                  {leadPerson.name.split(/\s+/)[0]} {leadPerson.record.value} {leadPerson.record.label}
-                  {leadPerson.record.places.length > 0
-                    ? ` in ${leadPerson.record.places.map((place) => place.name).join(", ")}`
-                    : ""}
-                  .
-                </p>
-              ) : null}
-              {reach ? (
-                <div className="about-faces__ask">
-                  {leadPerson.tel ? (
-                    <Button asChild size="lg">
-                      <a href={`tel:${leadPerson.tel}`}>Call</a>
-                    </Button>
+        <ul className="about-faces__roster">
+          {shown.map((person, index) => (
+            <li key={person.href}>
+              <Card className="about-faces__broker">
+                <CardHeader>
+                  <Avatar className="size-20 lg:size-24">
+                    <AvatarImage
+                      src={person.src}
+                      alt={person.name}
+                      width={800}
+                      height={1200}
+                      loading={index === 0 ? "eager" : "lazy"}
+                      fetchPriority={index === 0 ? "high" : "auto"}
+                      decoding="async"
+                    />
+                    <AvatarFallback delayMs={400}>{faceInitials(person.name)}</AvatarFallback>
+                  </Avatar>
+                  <CardTitle>
+                    <Link href={person.href}>{person.name}</Link>
+                  </CardTitle>
+                  <CardDescription>{person.title}</CardDescription>
+                </CardHeader>
+                <CardContent className="about-faces__broker-body">
+                  {person.record ? (
+                    <p className="about-faces__proof-record">
+                      {person.record.value} {person.record.label}
+                      {person.record.places.length > 0
+                        ? ` in ${person.record.places.map((place) => place.name).join(", ")}`
+                        : ""}
+                      .
+                    </p>
                   ) : null}
-                  <ButtonGroup aria-label={`Message ${leadPerson.name}`}>
-                    {leadPerson.tel ? (
-                      <Button asChild variant="ghost" size="lg">
-                        <a href={`sms:${leadPerson.tel}`}>Text</a>
-                      </Button>
-                    ) : null}
-                    {leadPerson.email ? (
-                      <Button asChild variant="ghost" size="lg">
-                        <a href={`mailto:${leadPerson.email}`}>Email</a>
-                      </Button>
-                    ) : null}
-                    {leadPerson.bookHref ? (
-                      <Button asChild variant="ghost" size="lg">
-                        <Link href={leadPerson.bookHref}>Schedule</Link>
-                      </Button>
-                    ) : null}
-                  </ButtonGroup>
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-          {source}
-        </div>
+                  {reach ? (
+                    <div className="about-faces__ask">
+                      {person.tel ? (
+                        <Button asChild size="lg">
+                          <a href={`tel:${person.tel}`}>Call</a>
+                        </Button>
+                      ) : null}
+                      <ButtonGroup aria-label={`Message ${person.name}`}>
+                        {person.tel ? (
+                          <Button asChild variant="ghost" size="lg">
+                            <a href={`sms:${person.tel}`}>Text</a>
+                          </Button>
+                        ) : null}
+                        {person.email ? (
+                          <Button asChild variant="ghost" size="lg">
+                            <a href={`mailto:${person.email}`}>Email</a>
+                          </Button>
+                        ) : null}
+                        {person.bookHref ? (
+                          <Button asChild variant="ghost" size="lg">
+                            <Link href={person.bookHref}>Schedule</Link>
+                          </Button>
+                        ) : null}
+                      </ButtonGroup>
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+            </li>
+          ))}
+        </ul>
       </section>
     )
   }

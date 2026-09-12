@@ -1,10 +1,12 @@
 /**
  * /about - brokerage profile, on the components/site/v3 barrel.
  *
- * PAGE OUTLINE (SITE-90, 2026-09-12 — one proof object, not a phone book):
- * 1. The fold: AboutFaces proof (H1, overlapping AvatarGroup, one ButtonGroup,
- *    5.0 on Matt's AvatarBadge) + Street View exterior of 115 NW Oregon Ave #2
- *    + FirmClosings as shadcn Cards. Never the interior sofa.
+ * PAGE OUTLINE (SITE-90, 2026-09-12 — people + firm + closings):
+ * 1. The fold: AboutFaces proof (H1, a real firm beat, three broker Cards
+ *    with separate Avatars — Matt, Rebecca, Paul) + Street View exterior of
+ *    115 NW Oregon Ave #2 + FirmClosings as a shadcn carousel of real
+ *    closings. Never the interior sofa. No AvatarGroup overlap. No
+ *    methodology disclosure on the fold.
  * 2. One reach control: Call at display scale with the live hours, then Text,
  *    Email and the calendar as the lighter alternatives (V3Doors #reach)
  * 3. Firm proof, the words rather than the score again (V3Proof)
@@ -30,7 +32,7 @@
  */
 
 import type { Metadata } from 'next'
-import { getBrokerageListingTiles, getReviews } from '@/lib/data'
+import { getReviews } from '@/lib/data'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
@@ -38,7 +40,6 @@ import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { listingsBrowsePath, teamPath } from '@/lib/slug'
-import { formatDate } from '@/lib/format/date'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
 import {
@@ -57,20 +58,17 @@ import {
   V3Proof,
   V3Doors,
   V3OnDuty,
-  V3SourceLine,
 } from '@/components/site/v3'
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { ABOUT_FAQ_ITEMS, FIRM_LICENSE } from './_v3/about-constants'
 import { AboutFaces } from './_v3/AboutFaces'
 import { FirmClosings } from './_v3/FirmClosings'
-import { loadAboutFaces } from './_v3/load-about-faces'
-import { publishFirmClosingRows } from '@/app/team/[slug]/_v3/sale-rows'
+import { loadAboutProof } from './_v3/load-about-faces'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import './_v3/about-fold.css'
 
 const ROUTE_PATH = '/about'
-const OFFICE_NAME = 'Ryan Realty'
 
 export async function generateMetadata(): Promise<Metadata> {
   const reviewSummary = await getReviews(6).catch(() => null)
@@ -80,7 +78,7 @@ export async function generateMetadata(): Promise<Metadata> {
       : ''
   return pageMetadata({
     title: 'About Ryan Realty · Bend',
-    description: `${reviewLine}Three licensed Oregon brokers. Recent closings with recorded prices, addresses, and beds. Local experts since ${BRAND.llcSince}.`,
+    description: `${reviewLine}${BROKERS.matt.nameShort}, ${BROKERS.rebecca.nameShort}, and ${BROKERS.paul.nameShort}. Recent closings with recorded prices, addresses, and beds. Bend office since ${BRAND.llcSince}.`,
     path: ROUTE_PATH,
     ogImage: '/images/office/ryan-realty-bend-office-exterior-01.jpg',
     keywords: [
@@ -95,57 +93,37 @@ export async function generateMetadata(): Promise<Metadata> {
 export const revalidate = 3600
 
 export default async function AboutPage() {
-  const [atlasRead, regionAtlas, reviewSummary, brokerageTiles, companySettings, faces] = await Promise.all([
+  const [atlasRead, regionAtlas, reviewSummary, companySettings, proof] = await Promise.all([
     withTimeoutFallback(buildPlaceAtlas({ cities: [], label: 'Central Oregon' }).catch(() => null), null, 6000, 'about atlas'),
     buildRegionAtlasRegions().catch(() => null),
     getReviews(6).catch(() => null),
-    getBrokerageListingTiles({ officeName: OFFICE_NAME, limit: 60 }).catch(() => []),
     // The published hours behind the reach control's live state — the same
     // rows /book fills its calendar from. Why hours and not a reply-time
     // figure: components/site/v3/V3OnDuty.view.ts.
     getCrmCompanySettings().catch(() => null),
-    loadAboutFaces(),
+    loadAboutProof(),
   ])
   const atlas = atlasRead ?? EMPTY_PLACE_ATLAS
   const atlasRegions = regionAtlas?.regions ?? []
   const quotes = reviewSummary ? toReviewQuotes(reviewSummary.reviews).slice(0, 4) : []
   const reviewCount = reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : quotes.length
   const reviewAverage = reviewSummary && reviewSummary.count > 0 ? reviewSummary.averageRating : 5
-  const firmRows = publishFirmClosingRows(brokerageTiles, 4)
+  const faces = proof.faces
+  const firmRows = proof.closings
   const newestReviewDate = reviewSummary?.reviews.find((r) => r.reviewDate)?.reviewDate ?? undefined
-
-  /* SITE-64: the fold used to print these as a three-tile KPI grid
-     (5.0 / 25 / 3) above the faces. TASTE.md bans that shape. The same
-     numbers now sit in the claim sentence; the source line still traces
-     them. Closings stay below as rows — getBrokerageListingTiles is capped
-     at 60, so a count off it could be a ceiling. */
-  const openingTrace =
-    reviewSummary && reviewSummary.count > 0
-      ? `Google reviews through the public.reviews table, source = 'google' and is_hidden = false: ${reviewCount} rows, mean rating ${reviewAverage.toFixed(1)} of 5, read in this render (getReviews). The ${reviewAverage.toFixed(1)} mark sits on the principal broker's face card. Brokers are public.brokers where is_active is true, ${faces.length} rows, each with an Oregon licence number on file with the Oregon Real Estate Agency (getBrokers). Closings on each card are that broker's MLS record (getBrokerSales): list side by list_agent_email, buy side by buyer_agent_mls_id, recorded ClosePrice.`
-      : `Brokers are public.brokers where is_active is true, ${faces.length} rows, each with an Oregon licence number on file with the Oregon Real Estate Agency (getBrokers). The reviews read returned nothing in this render, so no rating is printed.`
+  const firmBeat = [
+    `Ryan Realty has been a Bend brokerage since ${BRAND.llcSince}. The office is at ${BRAND.address.street}. ${BROKERS.matt.nameShort}, ${BROKERS.rebecca.nameShort}, and ${BROKERS.paul.nameShort} are the licensed brokers.`,
+    'The person you call is the person who works your purchase or sale through closing.',
+  ].join('\n\n')
 
   /* The reach control's live state. Hours, never a reply-time promise — the
-     reasoning and the SITE-09 read are in components/site/v3/V3OnDuty.view.ts. */
+     reasoning and the SITE-09 read are in components/site/v3/V3OnDuty.view.ts.
+     About fold proof stays people + firm + closings, not a method disclosure. */
   const hoursBlocks = companySettings?.booking_hours ?? []
   const hoursTimeZone = companySettings?.time_zone || 'America/Los_Angeles'
   const hoursLive =
     hoursBlocks.length > 0 ? (
-      <>
-        <V3OnDuty blocks={hoursBlocks} timeZone={hoursTimeZone} nowIso={new Date().toISOString()} />
-        {/* No `asOf` stamp on this one. The state above is as of NOW — that is
-            what makes it live — and "as of <the day the row was last edited>"
-            beside it reads as a stale figure, besides wrapping onto a line of
-            its own behind a stray middot at 375. The row's own edit date is
-            inside the trace, where it belongs. */}
-        <V3SourceLine
-          sourceName={v3Text('Ryan Realty booking hours')}
-          source={v3Text(
-            `Ryan Realty booking hours, public.crm_company_settings.booking_hours — ${hoursBlocks
-              .map((b) => `${b.days.join(', ')} ${b.start_time} to ${b.end_time}`)
-              .join('; ')}, evaluated in ${hoursTimeZone} against the clock at page render. Hours row last edited ${companySettings?.updated_at ? formatDate(companySettings.updated_at) : 'unknown'}. The same windows /book offers time from (lib/booking/slots.ts). Published hours only: this page makes no claim about how fast anyone replies.`,
-          )}
-        />
-      </>
+      <V3OnDuty blocks={hoursBlocks} timeZone={hoursTimeZone} nowIso={new Date().toISOString()} />
     ) : null
 
   const originItems: V3QuietItem[] = [
@@ -241,8 +219,8 @@ export default async function AboutPage() {
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
 
-        {/* SITE-90 fold: overlapping AvatarGroup, one principal Card,
-            Street View exterior, closings as Accordion. Never the sofa. */}
+        {/* SITE-90 fold: three broker Cards, Street View exterior,
+            closings as a carousel. Never the sofa. */}
         <div className="about-fold">
           <AboutFaces
             people={faces}
@@ -250,8 +228,7 @@ export default async function AboutPage() {
             headingLevel={1}
             size="proof"
             eyebrow="Ryan Realty · Central Oregon"
-            claim={`A Bend brokerage since ${BRAND.llcSince}. Three licensed Oregon brokers, and the one you call is the one who works your deal.`}
-            source={<V3SourceLine sourceName={v3Text('Ryan Realty record')} source={v3Text(openingTrace)} />}
+            claim={firmBeat}
             proof={
               reviewSummary && reviewSummary.count > 0
                 ? {
@@ -275,7 +252,7 @@ export default async function AboutPage() {
             </figcaption>
           </figure>
           <div className="about-fold__sales">
-            {/* id="firm-sales" — FirmClosings mounts the Accordion (page-purpose binds here). */}
+            {/* id="firm-sales" — FirmClosings mounts the carousel (page-purpose binds here). */}
             <FirmClosings rows={firmRows} />
           </div>
         </div>
