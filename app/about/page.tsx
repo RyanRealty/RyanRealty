@@ -1,34 +1,23 @@
 /**
  * /about - brokerage profile, on the components/site/v3 barrel.
  *
- * PAGE OUTLINE (SITE-90, 2026-09-12 — people + firm + closings):
- * 1. The fold: AboutFaces proof (H1, a real firm beat, three broker Cards
- *    with separate Avatars — Matt, Rebecca, Paul) + Street View exterior of
- *    115 NW Oregon Ave #2 + FirmClosings as a shadcn carousel of real
- *    closings. Never the interior sofa. No AvatarGroup overlap. No
- *    methodology disclosure on the fold.
- * 2. One reach control: Call at display scale with the live hours, then Text,
- *    Email and the calendar as the lighter alternatives (V3Doors #reach)
- * 3. Firm proof, the words rather than the score again (V3Proof)
- * 4. Atlas of the service area
- * 5. How it started (short Quiet) + licenses as one sourced line
- * 6. V3Answers
- *
- * WHAT MOVED AND WHY. The page opened on a V3Quiet whose entire fold was a
- * license line and seven identical hairline link rows — Principal broker,
- * Call, Text, Email, Schedule, Client reviews, Contact — with the Proof, the
- * closings, the faces and the Atlas all below it. The taste table of
- * 2026-09-08 scored it 31 and its verdict was "the About page's first screen
- * is a phone book, not a proof point". So the faces and the firm's record are
- * the opening, the seven rows are one reach control, and the licences stay on
- * the origin Quiet where they were always restated anyway.
+ * PAGE OUTLINE (Researchy 1–8 + Matt 2026-09-12 — brokerage, not Team):
+ * 1. Hero: AboutFirm — office exterior + one purpose line
+ *    (boutique · Central Oregon · buy and sell). Not broker Cards.
+ * 2. V3Proof — client reviews PRIMARY (Google + featured quote). Not press.
+ * 3. FirmClosings — dated local sold homes. Never invented MOS.
+ * 4. AboutTeamTeaser — photo + name → /team only. No bios/licenses.
+ * 5. V3Doors four-up matching Contact (Call / Text / Email / Schedule)
+ * 6. AboutInquiry GET to /contact. Full form stays on Contact.
+ * Then Atlas, How it started + OREA, V3Answers.
+ * Never the sofa interior. No coast-to-coast / fee copy.
  *
  * THE PAGE CONTRACT: generateMetadata through pageMetadata, MetadataBlock
  * JSON-LD (AboutPage + aboutOrganization + BreadcrumbList + FAQPage),
  * V3SectionTracker pageType="about", revalidate 3600.
  *
- * No invented quote. MLS remarks N/A. D11 mission sentence is off this page.
- * Parity: design_system/ryan-realty/ui_kits/about/parity.json
+ * No invented quote. MLS remarks N/A. Parity:
+ * design_system/ryan-realty/ui_kits/about/parity.json
  */
 
 import type { Metadata } from 'next'
@@ -39,7 +28,7 @@ import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { listingsBrowsePath, teamPath } from '@/lib/slug'
+import { listingsBrowsePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
 import {
@@ -62,7 +51,9 @@ import {
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { ABOUT_FAQ_ITEMS, FIRM_LICENSE } from './_v3/about-constants'
-import { AboutFaces } from './_v3/AboutFaces'
+import { AboutFirm } from './_v3/AboutFirm'
+import { AboutInquiry } from './_v3/AboutInquiry'
+import { AboutTeamTeaser } from './_v3/AboutTeamTeaser'
 import { FirmClosings } from './_v3/FirmClosings'
 import { loadAboutProof } from './_v3/load-about-faces'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
@@ -78,7 +69,7 @@ export async function generateMetadata(): Promise<Metadata> {
       : ''
   return pageMetadata({
     title: 'About Ryan Realty · Bend',
-    description: `${reviewLine}${BROKERS.matt.nameShort}, ${BROKERS.rebecca.nameShort}, and ${BROKERS.paul.nameShort}. Recent closings with recorded prices, addresses, and beds. Bend office since ${BRAND.llcSince}.`,
+    description: `${reviewLine}A small boutique brokerage in Central Oregon. We help clients buy and sell. Bend office at ${BRAND.address.street}.`,
     path: ROUTE_PATH,
     ogImage: '/images/office/ryan-realty-bend-office-exterior-01.jpg',
     keywords: [
@@ -97,9 +88,6 @@ export default async function AboutPage() {
     withTimeoutFallback(buildPlaceAtlas({ cities: [], label: 'Central Oregon' }).catch(() => null), null, 6000, 'about atlas'),
     buildRegionAtlasRegions().catch(() => null),
     getReviews(6).catch(() => null),
-    // The published hours behind the reach control's live state — the same
-    // rows /book fills its calendar from. Why hours and not a reply-time
-    // figure: components/site/v3/V3OnDuty.view.ts.
     getCrmCompanySettings().catch(() => null),
     loadAboutProof(),
   ])
@@ -108,17 +96,13 @@ export default async function AboutPage() {
   const quotes = reviewSummary ? toReviewQuotes(reviewSummary.reviews).slice(0, 4) : []
   const reviewCount = reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : quotes.length
   const reviewAverage = reviewSummary && reviewSummary.count > 0 ? reviewSummary.averageRating : 5
-  const faces = proof.faces
   const firmRows = proof.closings
+  const teamTeaser = proof.faces.map((face) => ({ name: face.name, src: face.src }))
+  const featuredQuote = quotes[0]
+    ? { pull: quotes[0].pull, author: quotes[0].author }
+    : undefined
   const newestReviewDate = reviewSummary?.reviews.find((r) => r.reviewDate)?.reviewDate ?? undefined
-  const firmBeat = [
-    `Ryan Realty has been a Bend brokerage since ${BRAND.llcSince}. The office is at ${BRAND.address.street}. ${BROKERS.matt.nameShort}, ${BROKERS.rebecca.nameShort}, and ${BROKERS.paul.nameShort} are the licensed brokers.`,
-    'The person you call is the person who works your purchase or sale through closing.',
-  ].join('\n\n')
 
-  /* The reach control's live state. Hours, never a reply-time promise — the
-     reasoning and the SITE-09 read are in components/site/v3/V3OnDuty.view.ts.
-     About fold proof stays people + firm + closings, not a method disclosure. */
   const hoursBlocks = companySettings?.booking_hours ?? []
   const hoursTimeZone = companySettings?.time_zone || 'America/Los_Angeles'
   const hoursLive =
@@ -137,7 +121,7 @@ export default async function AboutPage() {
     { kind: 'fact', term: 'Firm license', value: FIRM_LICENSE },
     {
       label: `Principal broker OR #${BROKERS.matt.license}`,
-      href: teamPath(BROKERS.matt.slug),
+      href: '/team',
     },
   ]
 
@@ -148,7 +132,7 @@ export default async function AboutPage() {
   }))
 
   const faqDoors: V3AnswersDoor[] = [
-    { label: 'Broker profiles', href: '/team' },
+    { label: 'Meet the team', href: '/team' },
     { label: 'Client reviews', href: '/reviews' },
     { label: 'Call, text, or write', href: '/contact' },
     { label: 'Value my home', href: valuationHref(ROUTE_PATH) },
@@ -163,7 +147,7 @@ export default async function AboutPage() {
       aboutOrganization: true,
       name: 'About Ryan Realty',
       description:
-        'Ryan Realty is based in Bend, Oregon. We cover Bend, Redmond, Sisters, Sunriver, and the surrounding Central Oregon communities.',
+        'Ryan Realty is a small boutique brokerage in Bend, Oregon. We cover all of Central Oregon and help clients buy and sell their properties.',
       url: '/about',
     },
     {
@@ -179,8 +163,8 @@ export default async function AboutPage() {
     },
     {
       type: 'itemList',
-      name: 'Ryan Realty brokers',
-      items: faces.map((face) => ({ name: face.name, url: face.href })),
+      name: 'Meet the Ryan Realty team',
+      items: [{ name: 'The brokers', url: '/team' }],
     },
     ...(firmRows.length > 0
       ? [
@@ -219,16 +203,13 @@ export default async function AboutPage() {
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
 
-        {/* SITE-90 fold: three broker Cards, Street View exterior,
-            closings as a carousel. Never the sofa. */}
         <div className="about-fold">
-          <AboutFaces
-            people={faces}
+          <AboutFirm
+            id="firm"
             heading="About Ryan Realty · Bend"
-            headingLevel={1}
-            size="proof"
-            eyebrow="Ryan Realty · Central Oregon"
-            claim={firmBeat}
+            officeSrc="/images/office/ryan-realty-bend-office-exterior-01.jpg"
+            officeAlt={`Ryan Realty at ${BRAND.address.street}, ${BRAND.address.city}`}
+            officeCaption={`BEND OFFICE · ${BRAND.address.street}`}
             proof={
               reviewSummary && reviewSummary.count > 0
                 ? {
@@ -238,76 +219,65 @@ export default async function AboutPage() {
                   }
                 : undefined
             }
+            quote={featuredQuote}
           />
-          <figure className="about-fold__place">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/office/ryan-realty-bend-office-exterior-01.jpg"
-              alt={`Ryan Realty at ${BRAND.address.street}, ${BRAND.address.city}`}
-              width={640}
-              height={640}
-            />
-            <figcaption>
-              BEND OFFICE · {BRAND.address.street}
-            </figcaption>
-          </figure>
+          {quotes.length > 0 ? (
+            <div className="about-fold__proof">
+              <V3Proof
+                id="proof"
+                eyebrow="Ryan Realty · Google"
+                headline="In their own words"
+                headingLevel={2}
+                claim={`The newest four of ${reviewCount} verified Google reviews, in full, exactly as they were written.`}
+                figures={[]}
+                quotes={quotes}
+                source={{ label: 'Every review', href: '/reviews' }}
+                record={false}
+              />
+            </div>
+          ) : null}
           <div className="about-fold__sales">
-            {/* id="firm-sales" — FirmClosings mounts the carousel (page-purpose binds here). */}
-            <FirmClosings rows={firmRows} />
+            <FirmClosings id="firm-sales" rows={firmRows} />
+          </div>
+          <AboutTeamTeaser id="team-teaser" people={teamTeaser} />
+          <div className="about-fold__reach">
+            <V3Doors
+              id="reach"
+              name={v3Text('Reach a broker')}
+              doors={[
+                {
+                  kicker: v3Text('Call'),
+                  label: v3Text(CONTACT.phoneDirect),
+                  fact: v3Text('One number for the whole brokerage'),
+                  href: `tel:${CONTACT.phoneDirectTel}`,
+                  primary: true,
+                  live: hoursLive,
+                },
+                {
+                  kicker: v3Text('Text'),
+                  label: v3Text('Send a text'),
+                  fact: v3Text('Same line as the call'),
+                  href: `sms:${CONTACT.phoneDirectTel}`,
+                },
+                {
+                  kicker: v3Text('Email'),
+                  label: v3Text('Send an email'),
+                  fact: v3Text("Straight to Matt's inbox"),
+                  href: `mailto:${CONTACT.email.primary}`,
+                },
+                {
+                  kicker: v3Text('Schedule'),
+                  label: v3Text('Book a time'),
+                  fact: v3Text('Open slots on the calendar'),
+                  href: '/book',
+                },
+              ]}
+            />
+          </div>
+          <div className="about-fold__write">
+            <AboutInquiry id="write" />
           </div>
         </div>
-
-        {/* One reach control instead of seven identical rows: Call at display
-            scale with the live hours under it, the rest as lighter links. */}
-        <V3Doors
-          id="reach"
-          name={v3Text('Reach a broker')}
-          doors={[
-            {
-              kicker: v3Text('Call or text'),
-              label: v3Text(CONTACT.phoneDirect),
-              fact: v3Text('One number for the whole brokerage'),
-              href: `tel:${CONTACT.phoneDirectTel}`,
-              primary: true,
-              live: hoursLive,
-            },
-            {
-              kicker: v3Text('Text'),
-              label: v3Text(`Text ${CONTACT.phoneDirect}`),
-              fact: v3Text('Same line, if a call is not the moment'),
-              href: `sms:${CONTACT.phoneDirectTel}`,
-            },
-            {
-              kicker: v3Text('Email'),
-              label: v3Text(CONTACT.email.primary),
-              fact: v3Text("Straight to Matt's inbox"),
-              href: `mailto:${CONTACT.email.primary}`,
-            },
-            {
-              kicker: v3Text('Schedule'),
-              label: v3Text('Book a time'),
-              fact: v3Text('Open slots on the calendar'),
-              href: '/book',
-            },
-          ]}
-        />
-
-        {quotes.length > 0 ? (
-          <V3Proof
-            id="proof"
-            eyebrow="Ryan Realty · Google"
-            /* The score is in the fold above; this band is for the WORDS. A
-               headline of the count here would print the same figure twice
-               on one page, which is how a page reads as two builders' work. */
-            headline="In their own words"
-            headingLevel={2}
-            claim={`The newest four of ${reviewCount} verified Google reviews, in full, exactly as they were written.`}
-            figures={[]}
-            quotes={quotes}
-            source={{ label: 'Every review', href: '/reviews' }}
-            record={false}
-          />
-        ) : null}
 
         <V3Atlas
           id="service-area"
@@ -341,11 +311,6 @@ export default async function AboutPage() {
         />
       </main>
 
-      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
-          when it is NOT nested in sectioning content, and <main> is sectioning
-          content, so inside it the element is a generic and the page ships no
-          contentinfo landmark. ci:default-chrome-footer counts footers without
-          checking placement. */}
       <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )

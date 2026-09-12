@@ -2354,29 +2354,47 @@
       ]
     },
     "about": {
-      "layoutLock": "The fold is the firm: story (since 2014, Bend office, who you call works your deal), firm Google reviews, firm closings, and Call|Text|Email|Schedule. Team is a teaser that doors to /team. Inquiry doors to /contact. Do not open on AboutFaces three broker Cards. Do not mount a poster-sized three-headshot fold. Do not hide reviews and closings below a staff directory.",
+      "layoutLock": "About is the brokerage, not Meet the Team. FAIL if the page opens on AboutFaces or three equal broker Cards. Hero is AboutFirm: office exterior + one purpose line (boutique · all of Central Oregon · buy and sell). V3Proof is primary client reviews (Google + featured quote, not press). FirmClosings is dated local sold homes — never invented MOS. V3Doors is Call|Text|Email|Schedule. AboutTeamTeaser doors only to /team. AboutInquiry GET /contact. No V3SourceLine. Never the sofa, coast-to-coast, or fee copy.",
+      "layoutLockChecks": [
+        {
+          "path": "app/about/page.tsx",
+          "mustMatch": "<AboutFirm",
+          "forbid": "<AboutFaces"
+        },
+        {
+          "path": "design_system/ryan-realty/ui_kits/about/parity.json",
+          "mustMatch": "OPENS THE PAGE",
+          "forbid": "\"name\": \"AboutFaces\""
+        }
+      ],
       "competitiveBrief": {
         "id": "about-researchy-1-8",
         "source": "Researchy About 2026-09-12 beats 1–8; docs/plans/PUBLIC_PRODUCT/PAGE_INVENTORY.md §6",
         "productLock": "firm story + reviews + closings + Call|Text|Email|Schedule + team teaser→/team + inquiry→/contact",
         "refuse": "AboutFaces three broker Cards as the opener. Poster-sized three-headshot fold. Looking that invents past this checklist.",
         "beats": [
-          { "id": "1", "text": "Firm story opens the page: since 2014, Bend office, who you call works your deal. Not a staff-directory fold." },
+          { "id": "1", "text": "Firm story opens the page: small boutique brokerage, all of Central Oregon, help clients buy and sell. Not a staff-directory fold." },
           { "id": "2", "text": "Firm reviews: brokerage Google record as words (V3Proof), with a door to /reviews." },
-          { "id": "3", "text": "Firm closings: recent Ryan Realty sales as house-row cards (photo, address, ClosePrice, beds/baths/sqft)." },
+          { "id": "3", "text": "Firm closings: recent Ryan Realty sales as house-row cards (photo, address, ClosePrice, beds/baths/sqft). Never invent MOS." },
           { "id": "4", "text": "Call is the primary conversion on the reach control, carrying live hours." },
           { "id": "5", "text": "Text sits on the same reach control as Call, not a seven-row phone book." },
           { "id": "6", "text": "Email sits on the same reach control as Call, Text, and Schedule." },
           { "id": "7", "text": "Schedule sits on the same reach control as Call, Text, and Email." },
-          { "id": "8", "text": "Team teaser doors to /team (and /team/[slug]); inquiry doors to /contact. Brokers are not the opener." }
+          { "id": "8", "text": "Team teaser doors only to /team; compact inquiry GET /contact. No /team/[slug] on About. Brokers are not the opener." }
         ]
       },
       "modules": [
         {
+          "id": "house-firm",
+          "catalog": "house-v3",
+          "url": "app/about/_v3/AboutFirm.tsx",
+          "job": "Opens About on the firm story + office exterior. Not three broker Cards."
+        },
+        {
           "id": "house-faces",
           "catalog": "house-v3",
-          "url": "app/about/_v3/AboutFaces.tsx",
-          "job": "Team teaser only: brokers as doors to /team/[slug] with Call/Text on the row. Not the fold opener."
+          "url": "app/about/_v3/AboutTeamTeaser.tsx",
+          "job": "Who you work with teasers only — photo + name, every door to /team. Never the About opener."
         },
         {
           "id": "house-proof",
@@ -2400,7 +2418,7 @@
           "id": "shadcn-avatar",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/avatar",
-          "job": "Avatar on the team teaser row only — doors to /team, not a three-Card opener."
+          "job": "Avatar is not the About opener. Team teasers are photo + name on AboutTeamTeaser."
         },
         {
           "id": "shadcn-button-group",
@@ -2409,10 +2427,16 @@
           "job": "Call|Text|Email|Schedule on the one reach control. Not a button group per broker Card in the fold."
         },
         {
+          "id": "shadcn-input",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/input",
+          "job": "One-line inquiry on About. GET to /contact. Adapt into V3Input. Full form stays on Contact."
+        },
+        {
           "id": "shadcn-card",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/card",
-          "job": "Closing cards and review words, not three equal broker Cards opening the page."
+          "job": "Closings carousel slides and Who you work with teasers. Photo + name only on the teaser. No licenses."
         },
         {
           "id": "shadcn-carousel",
@@ -2453,6 +2477,22 @@
     },
     "contact": {
       "layoutLock": "One ask. Doors have hierarchy and live hours. Brokers are AboutFaces, not a second flatter roster. Do not open on four identical link rows.",
+      "competitiveBrief": {
+        "id": "contact-looking-1-8",
+        "source": "Researchy Contact Looking 2026-09-12 beats 1–8; docs/plans/PUBLIC_PRODUCT/PAGE_INVENTORY.md §6 /contact",
+        "productLock": "hero Call/text/write + address on fold + Call|Text|Email|Schedule PASS + form+SMS + brokers→/team; FAQ optional; do not reopen CTAs as missing",
+        "refuse": "Five-step wizard. Four equal link cells. Looking that reopens Call|Text|Email|Schedule as missing. Invented reply-time.",
+        "beats": [
+          { "id": "1", "text": "Hero H1 is Call, text, or write — one conversion sentence, not a five-step contact wizard." },
+          { "id": "2", "text": "Street address sits on the fold (115 NW Oregon Ave #2). A visitor can find the office without scrolling." },
+          { "id": "3", "text": "Call is on the reach control at display scale with live published hours. PASS regression — do not drop Call." },
+          { "id": "4", "text": "Text sits on the same reach control as Call. PASS regression — do not drop Text." },
+          { "id": "5", "text": "Email sits on the same reach control as Call and Text. PASS regression — do not drop Email." },
+          { "id": "6", "text": "Schedule sits on the same reach control as Call, Text, and Email. PASS regression — do not drop Schedule." },
+          { "id": "7", "text": "Form plus SMS consent (ContactAsk) is the write path. Do not reopen CTAs as missing when the form is present." },
+          { "id": "8", "text": "Brokers who answer door to /team. FAQ (V3Answers) is optional. Do not invent a reply-time clock." }
+        ]
+      },
       "modules": [
         {
           "id": "house-ask",
