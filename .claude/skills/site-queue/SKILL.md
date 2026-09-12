@@ -333,20 +333,25 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
 3. Spawns the evaluator: a SEPARATE `Agent` on a DIFFERENT model from the
    builder, given the shots, the local URL, **and the builder card option
    list (id + demo URL)**. It diagnoses the job from our shots, picks
-   `replaceWith` from that list, and scores the same shots THREE times in
-   the one call per the rubric in TASTE.md. It does not browse 200
-   components from memory.
+   `replaceWith` from that list, scores the same shots THREE times in
+   the one call per the rubric in TASTE.md, **and reads the words**
+   (`VOICE.md` — `tasteReview.voice`). It does not browse 200
+   components from memory. A page that looks fine and talks like a
+   briefing has failed. `npx tsx scripts/taste-evaluate.ts` exits 2 if
+   voice is missing or `voice.pass` is false.
 4. Acts on the named defects by installing the picked item, re-captures,
    and re-scores. Repeat until the median rises above the previous mark
-   from the same instrument **and** the live control matches the demo.
+   from the same instrument **and** the live control matches the demo
+   **and** voice passes.
 5. Writes the full receipt into the route's `parity.json` `tasteReview`
    (shape in TASTE.md, "The receipt"): `evaluatorModel`, `builderModel`,
    `rubricVersion`, `shotSpec`, `shotsHash`
    (`node scripts/lib/taste-receipt.mjs <parity.json>`), the three `scores` and
    their median, the named `defects` (each with `replaceWith`), `adaptedFrom`,
-   and `comparedToPrior` with `priorMark`. `ci:taste-canon` recomputes the
+   `voice`, and `comparedToPrior` with `priorMark`. `ci:taste-canon` recomputes the
    hash and the median and refuses a receipt that claims a rise it did not
-   make, or a catalog-class receipt that invented a layout.
+   make, a catalog-class receipt that invented a layout, or a review dated
+   2026-09-12 or later that skipped voice.
 6. Only then: `npm run gates:stamp`, commit with the `Node: <id>` trailer, push
    its own branch, and report. The evaluator's remaining findings append to the
    node.

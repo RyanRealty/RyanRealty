@@ -21,6 +21,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { isNonEmptyString, isPlainObject, median3 } from './taste-receipt.mjs'
 import { builderCard, classForRoute } from './taste-catalog.mjs'
+import { evaluateVoiceResult } from './taste-voice.mjs'
 
 export { isNonEmptyString, isPlainObject, median3 }
 
@@ -229,6 +230,9 @@ export function buildRow({ key, url, route, scorings, builderModel, shots, root 
     problems.push('no defect names a primitive that exists on disk.')
   }
 
+  const voiceProblems = evaluateVoiceResult(picked?.voice)
+  problems.push(...voiceProblems)
+
   const row = {
     key,
     url,
@@ -241,6 +245,7 @@ export function buildRow({ key, url, route, scorings, builderModel, shots, root 
     dullest: picked?.dullest ?? '',
     beats: picked?.beats ?? '',
     verdict: picked?.verdict ?? '',
+    voice: picked?.voice ?? null,
     builderModel,
     shots,
   }

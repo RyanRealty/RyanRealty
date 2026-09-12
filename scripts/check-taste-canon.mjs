@@ -31,6 +31,10 @@
  *    fall or be omitted to skip the hold; requiredComponents cannot shrink
  *    vs HEAD; a JSON-LD or conversion-ask role present at HEAD must remain.
  *    Payload / tap targets / titles stay on their own gates.
+ * 8. Voice (Matt 2026-09-12): every page being worked on records
+ *    tasteReview.voice. Reviews dated 2026-09-12 or later must quote the
+ *    words and pass. Omitting voice or voice.pass false fails. Not the
+ *    retired banned-word gate — contract in scripts/lib/taste-voice.mjs.
  *
  * Seed unreviewed with `--write-baseline`, the v2 backlog with
  * `--write-v2-baseline`, catalog receipts with `--write-catalog-baseline`.

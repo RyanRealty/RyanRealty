@@ -42,6 +42,14 @@ const goodDefect = {
   primitive: 'components/site/v3/V3Ledger.tsx',
 }
 const goodCriteria = { designQuality: 10, originality: 8, interaction: 3, craft: 7, honestyFunction: 2 }
+const goodVoice = {
+  pass: true,
+  lines: [
+    'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne.',
+    'Local experts, live listings, and a team that takes care of you.',
+  ],
+  findings: [],
+}
 const goodScoring = (score, criteria = goodCriteria) => ({
   score,
   criteria,
@@ -50,6 +58,7 @@ const goodScoring = (score, criteria = goodCriteria) => ({
   dullest: 'the whole list',
   beats: 'No win named',
   verdict: 'A table wearing hairlines.',
+  voice: goodVoice,
 })
 
 // ---------------------------------------------------------------------------
@@ -140,6 +149,22 @@ describe('buildRow', () => {
     expect(row.median).toBe(30)
     expect(row.defects).toHaveLength(1)
     expect(row.invalid).toBeUndefined()
+    expect(row.voice.pass).toBe(true)
+  })
+
+  it('marks the row invalid when the evaluator skipped voice', () => {
+    const mute = { ...goodScoring(30), voice: undefined }
+    const { problems, row } = buildRow({
+      key: 'cities',
+      url: '/cities',
+      route: 'app/cities/page.tsx',
+      scorings: [goodScoring(33), goodScoring(29), mute],
+      builderModel: 'claude-fable-5-1',
+      shots: { desktop: 'cities/desktop.png', mobile375: 'cities/mobile375.png' },
+      root: SANDBOX,
+    })
+    expect(problems.join('\n')).toMatch(/voice is missing/)
+    expect(row.invalid).toMatch(/voice is missing/)
   })
 
   it('drops a defect whose primitive does not exist, and marks the row invalid when none survive', () => {

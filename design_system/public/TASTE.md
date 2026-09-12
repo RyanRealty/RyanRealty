@@ -93,6 +93,10 @@ not a tile that says 3.9.
    page) and the metric where we win: data depth, freshness, interactivity,
    clarity, speed, how easy it is to reach a broker. If you cannot name a win,
    the section is not done.
+8. **Did you read the words?** Quote the fold sentence and the ask. If it
+   sounds like a briefing, rewrite it before the evaluator. Voice is part of
+   every page pass (`marketing_brain_skills/brand-voice/VOICE.md`). Looking
+   at layout and skipping the copy is how SITE-99 shipped "4.6 times the 23."
 
 ## The receipt (`tasteReview` on the route's `parity.json`) is not a score in a
 JSON file. As of 2026-09-08 it records the INSTRUMENT, not just the number:
@@ -118,6 +122,11 @@ JSON file. As of 2026-09-08 it records the INSTRUMENT, not just the number:
   "score": 82,
   "beats": "named competing page and the metric we win",
   "adaptedFrom": [{ "id": "house-module-or-catalog-id" }],
+  "voice": {
+    "pass": true,
+    "lines": ["two visitor sentences the evaluator actually read"],
+    "findings": []
+  },
   "defects": [
     { "section": "#rails", "severity": "taste", "finding": "named finding, 10+ characters", "replaceWith": "V3Carousel" }
   ],
@@ -157,6 +166,11 @@ in `scripts/lib/taste-receipt.mjs`):
   desktop width of 1280 or more), and which states.
 - **`defects`** are the named findings behind the number. Empty is allowed only
   above 95 — below that the rubric lost points somewhere, so say where.
+- **`voice`** is required on reviews dated 2026-09-12 or later
+  (`scripts/lib/taste-voice.mjs`). The evaluator quotes at least two visitor
+  sentences and sets `pass`. A visually fine page that talks like an analyst
+  briefing has failed. Omitting voice to skip the hold fails. This is not the
+  retired banned-word gate.
 - **`comparedToPrior` cannot be `"first"` when the route's committed receipt
   already carries a score.** The gate reads the receipt at HEAD; a fresh mark
   that ignores it is refused. "First" is not an exit from the rise rule.
@@ -166,7 +180,9 @@ in `scripts/lib/taste-receipt.mjs`):
   must hold or improve. A prettier page that drops any of those is not done.
   When the prior mark recorded `honestyFunction` or `perCriterion.honesty`,
   the new receipt must record it and must not be lower — omitting the
-  criterion to skip the hold fails (`ci:taste-canon`). `requiredComponents`
+  criterion to skip the hold fails (`ci:taste-canon`). Voice is the same
+  kind of hold: every page being worked on records `voice`, and `voice.pass`
+  must be true. `requiredComponents`
   cannot shrink vs HEAD; a JSON-LD or conversion-ask role present at HEAD
   must remain (rename allowed). Titles, payload, and tap targets stay on
   `ci:seo-shell` / `ci:runtime-gates` (shrink-only).
@@ -262,6 +278,10 @@ quiet, editorial, expensive, data-first, Central Oregon, never "modern SaaS."
   media, the density.
 - **Raw slugs, internal labels, methodology jargon** in anything a visitor
   reads ("caldera-springs", "median to pending · 90 days" as a label).
+- **Analyst-briefing voice.** A sentence a broker would not say to a client:
+  "N times the T", leftover membership, "Watch {address} by email", "sits
+  38.7% under", "What to do about this house", KPI jargon as the line. Judge
+  the words against `VOICE.md`. Every page, not listing-only.
 - **The generic tells** the two-color system already makes impossible, kept
   here so nobody argues them back in: a purple gradient at the top of the page,
   Inter/Roboto, card grids with icons, frosted-glass panels, one corner radius

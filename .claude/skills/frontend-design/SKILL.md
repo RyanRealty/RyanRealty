@@ -77,7 +77,7 @@ Anthropic's skill assumes you get to invent a new aesthetic per project. **We do
 
 These move design quality more than any single rule. Adopted from designers on X (Afonso Matos, Aakash Gupta) and Hallmark's pre-emit self-critique.
 
-- **Screenshot loop, then a SEPARATE evaluator.** The builder takes 1440 and 375 PNGs and looks. The builder does **not** assign the score. A second agent grades those PNGs with TASTE.md's table and writes `tasteReview` including `shots.desktop` and `shots.mobile375`. Self-score ≥ 8 is the failure Anthropic named. Green tests are not this loop. Atlas is the named good object.
+- **Screenshot loop, then a SEPARATE evaluator.** The builder takes 1440 and 375 PNGs and looks — layout AND the words (`VOICE.md`). The builder does **not** assign the score. A second agent grades those PNGs with TASTE.md's table and writes `tasteReview` including `shots.desktop`, `shots.mobile375`, and `voice`. Self-score ≥ 8 is the failure Anthropic named. Green tests are not this loop. Atlas is the named good object. A briefing-voice page is not done.
 - **Design-critique subagent.** Before showing Matt, hand the screenshot to a fresh reviewer (the `design:design-critique` skill / a Sonnet subagent) prompted to find what reads as generic-AI and what a senior designer would change. Fix those, then surface.
 - **Commit the direction first.** State the one-sentence visual thesis for the page before writing JSX. If you cannot say what makes it memorable, you are about to build generic-safe again.
 - **Pre-emit critique stamp.** Score the artifact (Philosophy, Hierarchy, Execution, Specificity, Restraint, Variety) before handing back. Below 3 on any axis triggers a revision.

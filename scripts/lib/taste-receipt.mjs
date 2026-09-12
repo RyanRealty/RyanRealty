@@ -22,6 +22,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { voiceReceiptProblems } from './taste-voice.mjs'
 
 /** Receipts evaluated on or after this date must carry the v2 fields. */
 export const RECEIPT_V2_FROM = '2026-09-08'
@@ -234,6 +235,10 @@ export function receiptV2Problems(tr, { root, rubricText, headReceipt = null }) 
   const holdPrior = isPlainObject(tr.priorMark) ? tr.priorMark : headScored
   p.push(...productHoldProblems(tr, holdPrior))
   if (headScored && holdPrior !== headScored) p.push(...productHoldProblems(tr, headScored))
+
+  // 9. Voice is part of every page pass (Matt 2026-09-12). New-dated receipts
+  //    must quote the words and pass. Not the retired banned-word gate.
+  p.push(...voiceReceiptProblems(tr))
 
   return p
 }

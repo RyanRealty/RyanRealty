@@ -25,7 +25,10 @@ routine reads. Nothing in the queue depends on which model builds.
 - **The taste ritual**: shots at 1440 and 375 through `scripts/take-route-shots.mjs`, a
   SEPARATE evaluator that is a DIFFERENT model from the builder, three scorings in one
   call, the receipt in the route's `parity.json` (`scripts/lib/taste-receipt.mjs`), and
-  the score must rise. The finish line is 70 on the table instrument (Matt 2026-09-09).
+  the score must rise. Voice is part of every page pass: the builder reads the words
+  (`VOICE.md`), the evaluator quotes them and sets `tasteReview.voice`, and
+  `ci:taste-canon` / `taste-evaluate` refuse a skip or a fail. The finish line is 70
+  on the table instrument (Matt 2026-09-09).
   **Before building:** `node scripts/lib/taste-catalog.mjs <class>` — fetch
   modules from beautifului.dev, beui.dev, rareui.com, transitions.dev, and
   ui.shadcn.com. Adapt into v3. If the job has no house primitive, ADD one to

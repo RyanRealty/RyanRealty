@@ -131,6 +131,21 @@ label) set `replaceWith` to `null`.
 If the class has a reference file at `design_system/public/references/<class>.md`,
 prefer naming a win against one of the pages listed there in `beats`.
 
+## Voice (blocking — every page)
+
+Voice is part of this pass the same way `demoMatch` is. A page that looks
+fine and talks like a briefing has failed. The only voice document is
+`marketing_brain_skills/brand-voice/VOICE.md`. One question: does it sound
+like a person who knows Central Oregon and wants to help.
+
+You MUST look at the words a visitor can read — Amboqia shots OCR poorly,
+so quote the sentences you actually see. Return `voice` on every response.
+`voice.pass` false is blocking. Do not pass a page whose words you did not
+read. Do not invent a banned-word list. Named analyst tells if you see
+them: "N times the T"; leftover membership; "Watch {address} by email";
+"sits 38.7% under"; "What to do about this house"; KPI jargon as the
+sentence; Talk to a broker as the card headline.
+
 ## The output — ONE JSON object, nothing else
 
 Reply with exactly one JSON object as your entire response. No prose before
@@ -160,6 +175,11 @@ Every field is required.
   ],
   "dullest": "the single dullest part of what you saw, and why — honest, not diplomatic",
   "beats": "the competing page you are judging this against and the specific metric this page wins on, or the literal string \"No win named\" if you cannot name one",
+  "voice": {
+    "pass": true,
+    "lines": ["exact visitor sentence one", "exact visitor sentence two"],
+    "findings": []
+  },
   "verdict": "two to four sentences: what this page actually is versus what it should be, referencing the tells, the replacement forms, and defects above"
 }
 ```
@@ -178,6 +198,9 @@ Every field is required.
   is one literal string from the house form list above; for craft-only
   failures it is `null`. A response that only says "static figure row, banned
   KPI grid" with no `replaceWith` is incomplete and will be discarded.
+- **`voice` is required on every response.** Quote at least two visitor
+  sentences. `pass` false is blocking. A response with no `voice` is
+  incomplete and will be discarded.
 - Do not soften the score to be encouraging. A page that is correct, on-brand,
   and dull scores in the 30s-50s under this rubric, not the 70s — see the
   weights: craft and honesty/function are what this model already does well,

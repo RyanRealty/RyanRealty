@@ -54,6 +54,7 @@ import {
   evaluatorBrief,
   loadTasteCatalog,
 } from './lib/taste-catalog.mjs'
+import { evaluatorVoiceBrief } from './lib/taste-voice.mjs'
 import {
   FINISH_LINE,
   RUBRIC_VERSION,
@@ -255,6 +256,7 @@ function normalizeScoring(parsed) {
     dullest: typeof parsed.dullest === 'string' ? parsed.dullest : '',
     beats: typeof parsed.beats === 'string' ? parsed.beats : '',
     verdict: typeof parsed.verdict === 'string' ? parsed.verdict : '',
+    voice: isPlainObject(parsed.voice) ? parsed.voice : null,
   }
 }
 
@@ -274,9 +276,11 @@ function buildPrompt({ key, route, url }, instrumentText) {
     `${instrumentText}\n\n---\n\n` +
     `Class: ${key}\nRoute file: ${route}\nURL captured: ${url}\n\n` +
     (catalog ? `${catalog}\n\n` : '') +
+    `${evaluatorVoiceBrief()}\n\n` +
     'The model that built this page is NOT you. You are a separate evaluator ' +
     'judging only the two screenshots — no code, no live browsing, no DOM. ' +
-    'A stacked-section page that ignored the catalog is a defect.'
+    'A stacked-section page that ignored the catalog is a defect. ' +
+    'Voice is part of this pass: quote the words you read and set voice.pass.'
   )
 }
 
