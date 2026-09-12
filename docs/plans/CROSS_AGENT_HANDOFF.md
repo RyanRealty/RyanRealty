@@ -1,8 +1,8 @@
-# Current — 2026-09-12 19:10Z (HARD Tip Ready — competitiveBrief on About)
+# Current — 2026-09-12 20:45Z (HARD Tip Ready — competitiveBrief loop tightened)
 
-Owner: `cursor-cloud-2026-09-12-b093`. Do not merge — Tip Ready PR only. No emails.
+Owner: `cursor-cloud-2026-09-12-86e0`. Do not merge — Tip Ready PR only. No emails.
 
-- **Process tip** `cursor/competitive-brief-taste-gate-b093`: Researchy About 1–8 is `competitiveBrief` on `ui_kits/about/parity.json` next to `competitiveTarget`. `ci:page-purpose` refuses missing/incomplete brief on About (and any kit that already carries the field). `ci:taste-canon` / Tip Ready / `completeWorkNode` refuse rise/score without `competitiveBriefPass: true` (omit = refuse, same as demoMatch). About parity no longer opens on AboutFaces three Cards. Honest `competitiveBriefPass: false` on the current receipt. About page tip has not landed.
+- **Process tip** `cursor/competitive-brief-tip-ready-86e0`: Cos gaps A–D. About opener is AboutFirm + AboutTeamTeaser→/team (PR 213 wins; AboutFaces is not a required teaser). Tip Ready / `completeWorkNode` refuse a hand-typed `competitiveBriefPass: true` unless `parity.json` `tasteReview.competitiveBriefPass === true` on grok-4.6. Contact Looking 1–8 and Team/broker 1–8 are structured briefs. Honest `competitiveBriefPass: false` / `demoMatch: false` on About. Do not invent a pass.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 
 # Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
-import { competitiveBriefPurposeProblems } from '../lib/taste-receipt.mjs'
+import { aboutOpenerProblems, competitiveBriefPurposeProblems } from '../lib/taste-receipt.mjs'
 
 /**
  * Break-tests for ci:page-purpose (scripts/check-page-purpose.mjs).
@@ -157,9 +157,39 @@ describe('check-page-purpose — competitiveBrief contract', () => {
     expect(r.out).toMatch(/beats/)
   })
 
-  it('passes the real tree (About brief present, other kits still string-only)', () => {
+  it('passes the real tree (About + Contact + Team briefs complete)', () => {
     const r = run(REPO)
     expect(r.out).toMatch(/OK - every public page/)
     expect(r.code).toBe(0)
+  })
+
+  it('fails AboutFaces required as opener', () => {
+    const p = aboutOpenerProblems('about', {
+      requiredComponents: [{ name: 'AboutFaces', section: 'OPENS THE PAGE, three broker Cards' }],
+    })
+    expect(p.join('\n')).toMatch(/AboutFirm/)
+    expect(p.join('\n')).toMatch(/AboutFaces as opener/)
+
+    scaffold(
+      aboutParity({
+        competitiveBrief: ABOUT_BRIEF,
+        requiredComponents: [{ name: 'AboutFaces', section: 'OPENS THE PAGE, three broker Cards' }],
+      }),
+    )
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toMatch(/AboutFirm/)
+  })
+
+  it('loads live Contact and Team briefs as complete checklists', () => {
+    const contact = JSON.parse(
+      readFileSync(join(REPO, 'design_system/ryan-realty/ui_kits/contact/parity.json'), 'utf8'),
+    )
+    const team = JSON.parse(readFileSync(join(REPO, 'design_system/ryan-realty/ui_kits/team/parity.json'), 'utf8'))
+    expect(competitiveBriefPurposeProblems('contact', contact)).toEqual([])
+    expect(competitiveBriefPurposeProblems('team', team)).toEqual([])
+    expect(contact.competitiveBrief.beats).toHaveLength(8)
+    expect(team.competitiveBrief.beats).toHaveLength(8)
+    expect(team.perBrokerPage.competitiveBrief.beats).toHaveLength(8)
   })
 })
