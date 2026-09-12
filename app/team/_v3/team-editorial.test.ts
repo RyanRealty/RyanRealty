@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { faceInitials } from '@/app/about/_v3/FacePortrait.client'
+import { faceInitials } from '@/app/about/_v3/about-faces'
 
 const FACES = readFileSync('app/about/_v3/AboutFaces.tsx', 'utf8')
 const CSS = readFileSync('app/about/_v3/about-faces.css', 'utf8')
