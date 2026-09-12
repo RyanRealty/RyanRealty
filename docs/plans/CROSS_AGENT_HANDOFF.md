@@ -1,9 +1,10 @@
-# Current — 2026-09-12 14:00Z (SITE-90 catalog install, evaluator still 402)
+# Current — 2026-09-12 14:25Z (SITE-90 proof fold, evaluator still 402)
 
 Owner: `cursor-cloud-2026-09-12-06-a`. Claim held. Do not steal SITE-90. No emails. Do not merge — Cos cherry-picks + `npm run push`.
 
-- **SITE-90 in_progress** `/about`. UUID `edabba8e-f8aa-4271-909d-c258914f75ef`. PR #207. Catalog job `shadcn-avatar` is now the demo composition (Avatar + AvatarImage + AvatarFallback + AvatarBadge + AvatarGroup), not a cream box around `<img>`. Receipt has adaptedFrom + replaceWith; left catalog baseline. Scores still SITE-64 **52** — grok CLI missing (402). No fake demoMatch. Not done.
+- **SITE-90 in_progress** `/about`. UUID `edabba8e-f8aa-4271-909d-c258914f75ef`. PR #207. Fold is one proof object: overlapping AvatarGroup (5.0 AvatarBadge), one ButtonGroup, closings as Cards. No interior office stand-in. adaptedFrom: shadcn-avatar + shadcn-button-group + shadcn-card + house-faces. Scores still SITE-64 **52** — grok CLI missing (402). No fake demoMatch. Not done.
 - Exclusive: `app/about/**` this lane.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 
 # Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)
 

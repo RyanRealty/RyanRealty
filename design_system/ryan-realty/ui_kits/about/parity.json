@@ -16,7 +16,7 @@
     },
     {
       "name": "AboutFaces",
-      "section": "OPENS THE PAGE, headingLevel 1, size editorial. Carries the H1, the eyebrow, one claim sentence, a V3SourceLine, then the principal at display scale with the 5.0-from-N Google mark on that face card (not a KPI row) and the other two as companion rows. Each card carries that broker's MLS record when one exists. Canonical /images/brokers/*.png. One Call per person; Text Email Schedule as text links. shadcn Avatar + AvatarFallback + AvatarBadge.",
+      "section": "OPENS THE PAGE, headingLevel 1, size proof. Carries the H1, one claim sentence, a V3SourceLine, then one overlapping shadcn AvatarGroup (Avatar + AvatarImage + AvatarFallback + AvatarBadge 5.0 on the principal). Names as a ButtonGroup. One firm ButtonGroup (Call / Text / Email / Book). The review count links to /reviews. One sourced principal MLS record. Not stacked broker cards and not a KPI row. Canonical /images/brokers/*.png.",
       "blocking": true
     },
     {
@@ -26,7 +26,7 @@
     },
     {
       "name": "FirmClosings",
-      "section": "Recent Ryan Realty closings as the one house row, in the first-viewport about-fold beside the faces (price, address, beds/baths/sqft). Child of the page so about/page.tsx never mounts a city-stats Ledger.",
+      "section": "Recent Ryan Realty closings as shadcn Cards in the first-viewport about-fold (photo, CardTitle address, CardDescription beds/baths/sqft, CardAction recorded ClosePrice). Child of the page so about/page.tsx never mounts a city-stats Ledger.",
       "blocking": true
     },
     {
@@ -101,7 +101,7 @@
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "about-fold -- AboutFaces editorial (H1, 5.0 on the principal face, per-broker records) + Bend office photo + FirmClosings #firm-sales",
+    "about-fold -- AboutFaces proof (H1, overlapping AvatarGroup, 5.0 AvatarBadge, one ButtonGroup) + FirmClosings #firm-sales as Cards. No office interior.",
     "V3Doors #reach -- one call door at display scale with the live hours, then text, email, calendar",
     "V3Proof #proof -- the firm's Google reviews as words",
     "V3Atlas #service-area -- where we work",
@@ -146,6 +146,8 @@
     "beats": "Cascade Sotheby's Bend agents page wins on place photography and editorial portraits; this fold wins on a traced 5.0 from 25 and printed Oregon licenses, and loses the screenshot test to a three-up directory. This site's own /reviews fold draws the same 5.0 as stars with a quote — we lose that metric to ourselves.",
     "adaptedFrom": [
       { "id": "shadcn-avatar" },
+      { "id": "shadcn-button-group" },
+      { "id": "shadcn-card" },
       { "id": "house-faces" }
     ],
     "evaluatorBlocked": "2026-09-12 SITE-90: npx tsx scripts/taste-evaluate.ts about failed — no grok CLI at ~/.grok/bin/grok (Grok Build 402). Scores 52/47/57 are the SITE-64 grok-4.6 pass, not a new mark. comparedToPrior stays rebaselined. Do not treat this as rose, demoMatch, or done.",

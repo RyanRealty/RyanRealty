@@ -1,9 +1,10 @@
 /**
  * /about - brokerage profile, on the components/site/v3 barrel.
  *
- * PAGE OUTLINE (SITE-90, 2026-09-12 — faces + closings share the fold):
- * 1. The fold: AboutFaces editorial (H1, principal at display scale, 5.0 on
- *    Matt's card, per-broker MLS records) + Bend office photo + FirmClosings
+ * PAGE OUTLINE (SITE-90, 2026-09-12 — one proof object, not a phone book):
+ * 1. The fold: AboutFaces proof (H1, overlapping AvatarGroup, one ButtonGroup,
+ *    5.0 on Matt's AvatarBadge) + FirmClosings as shadcn Cards. No interior
+ *    office stand-in — there is no verified exterior of 115 NW Oregon Ave #2.
  * 2. One reach control: Call at display scale with the live hours, then Text,
  *    Email and the calendar as the lighter alternatives (V3Doors #reach)
  * 3. Firm proof, the words rather than the score again (V3Proof)
@@ -240,15 +241,14 @@ export default async function AboutPage() {
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
 
-        {/* SITE-90 fold: principal at display scale, companions as rows, the
-            5.0 on Matt's face card, per-broker MLS records, Bend office photo,
-            and recent closings with price / address / beds in the first screen. */}
+        {/* SITE-90 fold: overlapping AvatarGroup, one ButtonGroup, 5.0 badge,
+            and recent closings as Cards. No office photo — no verified exterior. */}
         <div className="about-fold">
           <AboutFaces
             people={faces}
             heading="About Ryan Realty · Bend"
             headingLevel={1}
-            size="editorial"
+            size="proof"
             eyebrow="Ryan Realty · Central Oregon"
             claim={`A Bend brokerage since ${BRAND.llcSince}. Three licensed Oregon brokers, and the one you call is the one who works your deal.`}
             source={<V3SourceLine sourceName={v3Text('Ryan Realty record')} source={v3Text(openingTrace)} />}
@@ -262,16 +262,6 @@ export default async function AboutPage() {
                 : undefined
             }
           />
-          <figure className="about-fold__place">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/office/ryan-realty-bend-office-interior-01.jpg"
-              alt="Ryan Realty office in Bend, Oregon"
-              width={1200}
-              height={800}
-            />
-            <figcaption>Bend office</figcaption>
-          </figure>
           <div className="about-fold__sales">
             <FirmClosings rows={firmRows} />
           </div>

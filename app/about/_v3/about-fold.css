@@ -1,7 +1,7 @@
 /**
- * /about first viewport (SITE-90). Faces at display scale on the left;
- * recent firm closings (price, address, beds/baths/sqft) on the right so
- * the fold is a house of people and houses, not a yearbook.
+ * /about first viewport (SITE-90). One proof object on the left
+ * (overlapping AvatarGroup + one ButtonGroup); recent closings as
+ * Cards on the right. No office interior stand-in.
  */
 
 .about-fold {
@@ -11,52 +11,90 @@
   padding-bottom: var(--v3-space-md);
 }
 
-.about-fold__place {
-  margin: 0;
-  max-width: 22rem;
+.about-fold__sales {
+  min-width: 0;
 }
 
-.about-fold__place img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 3 / 2;
-  object-fit: cover;
-  object-position: center;
+.about-closings {
+  padding: 0 var(--v3-gutter);
 }
 
-.about-fold__place figcaption {
-  margin-top: var(--v3-space-2xs);
+.about-closings__eyebrow {
+  margin: 0 0 var(--v3-space-3xs);
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-label);
   letter-spacing: var(--v3-track-label);
   text-transform: uppercase;
 }
 
-.about-fold__sales {
-  min-width: 0;
+.about-closings__heading {
+  margin: 0 0 var(--v3-space-sm);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+}
+
+.about-closings__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--v3-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.about-closings__link {
+  display: block;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.about-closings__link:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.about-closings [data-slot='card'] {
+  height: 100%;
+  background: var(--v3-cream);
+  color: var(--v3-ink);
+}
+
+.about-closings img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+}
+
+@media (min-width: 40rem) {
+  .about-closings__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 64rem) {
   .about-fold {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: start;
     column-gap: var(--v3-space-lg);
   }
 
   .about-fold > .about-faces {
     grid-column: 1;
-    grid-row: 1 / span 2;
-  }
-
-  .about-fold__place {
-    grid-column: 2;
     grid-row: 1;
-    max-width: none;
   }
 
   .about-fold__sales {
     grid-column: 2;
-    grid-row: 2;
+    grid-row: 1;
+  }
+
+  .about-closings {
+    padding-inline: 0 var(--v3-gutter);
   }
 }

@@ -2347,13 +2347,13 @@
       ]
     },
     "about": {
-      "layoutLock": "Faces open the page at display scale. Do not lead with a three-tile KPI grid of rating / reviews / broker count. The 5.0-from-25 lives on a face card, not a figure row.",
+      "layoutLock": "The fold is one proof object: an overlapping AvatarGroup, one ButtonGroup, and recent closings as Cards. Do not stack three broker cards or a three-tile KPI grid. The 5.0-from-25 lives on the principal AvatarBadge, not a figure row. Do not put an interior or stock stand-in where an office exterior would go.",
       "modules": [
         {
           "id": "house-faces",
           "catalog": "house-v3",
           "url": "app/about/_v3/AboutFaces.tsx",
-          "job": "Broker photographs and the firm's record open the page."
+          "job": "Broker photographs and the firm's record open the page as one proof object, not a phone book."
         },
         {
           "id": "house-proof",
@@ -2377,7 +2377,19 @@
           "id": "shadcn-avatar",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/avatar",
-          "job": "Portrait treatment. Adapt into AboutFaces, do not paste a second face kit."
+          "job": "Overlapping AvatarGroup with AvatarImage, AvatarFallback, and AvatarBadge. Keep the circular overlap; do not flatten into a 3-up yearbook."
+        },
+        {
+          "id": "shadcn-button-group",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/button-group",
+          "job": "One joined ButtonGroup for Call / Text / Email / Book. Not three Call rows."
+        },
+        {
+          "id": "shadcn-card",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/card",
+          "job": "Recent closings as Card + photo + CardTitle + CardDescription + CardAction. Not a ledger phone book."
         }
       ]
     },
