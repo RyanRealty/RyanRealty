@@ -43,9 +43,10 @@ describe('expectedSale', () => {
 describe('cover and immersive value blocks', () => {
   it('leads with recommended list and list range, without expected sale', () => {
     const html = coverValueBlockHtml(args)
-    expect(html).toContain('Recommended list')
+    expect(html).toContain('Our Recommended List Price for your home')
     expect(html).toContain('$505,000')
     expect(html).toContain('List $470,000 to $515,000')
+    expect(html).not.toContain('Recommended list $')
     expect(html).not.toContain('Expected close')
     expect(html).toContain('opened to 1 mile')
     expect(html).not.toMatch(/[—;]/)
@@ -58,7 +59,7 @@ describe('cover and immersive value blocks', () => {
       pricing: { ...pricing, predictedClose: null },
       tiersUsed: [],
     })
-    expect(html).toContain('Recommended list')
+    expect(html).toContain('Our Recommended List Price for your home')
     expect(html).toContain('$505,000')
     expect(html).not.toContain('Expected close')
     expect(html).not.toMatch(/stayed inside/)
@@ -67,10 +68,12 @@ describe('cover and immersive value blocks', () => {
   it('puts the recommended list on the immersive hero payoff', () => {
     const html = immersiveHeroNumberHtml(args)
     expect(html).toContain('hero-payoff')
-    expect(html).toContain('Recommended list')
+    expect(html).toContain('Our Recommended List Price for your home')
     expect(html).toContain('$505,000')
     expect(html).not.toContain('Expected close')
     expect(html).not.toMatch(/[—;]/)
+    // Headline is the long form once; fold label is not the short "Recommended list".
+    expect(html).not.toMatch(/>Recommended list</)
   })
 
   it('names what the sales support when the list sits outside it', () => {

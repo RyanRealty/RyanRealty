@@ -98,9 +98,9 @@ img{max-width:100%;display:block}
    down the page. A twenty-one-row, seven-column table is a desktop object.
    Above 700px the matrix stands (what Matt asked for on screen); below it, the
    stacked cards — the same data, one sale at a time. Never both. */
-.comp-matrix-wrap{display:block;margin:18px 0 8px;overflow-x:auto;max-width:100%}
-.comp-stack{display:none;margin:18px 0 8px;max-width:100%;min-width:0}
-@media screen and (max-width:700px){.comp-matrix-wrap,.matrix-group-h{display:none}.comp-stack{display:block}}
+/* C4 Tip Ready (Matt 2026-09-12): ALL screen reads the sold-comp stack; wide matrix is print-only. */
+.comp-matrix-wrap,.matrix-group-h{display:none}
+.comp-stack{display:block;margin:18px 0 8px;max-width:100%;min-width:0}
 .comp-stack-card{border:1px solid var(--ink12);padding:14px;margin:0 0 14px;background:#fff;max-width:100%;min-width:0;overflow-wrap:anywhere;box-sizing:border-box}
 .comp-stack-addr{font-weight:600;margin:0 0 6px;font-size:17px;line-height:1.25}
 .comp-stack-sold{font-size:15px;margin:0 0 10px;font-variant-numeric:tabular-nums}
@@ -122,7 +122,7 @@ table.comp-matrix{width:100%;table-layout:fixed;border-collapse:collapse;font-si
 /* The MLS sentence, as written, reads as prose: left-aligned and a size down
    from the figures beside it. */
 table.comp-matrix td.is-note{text-align:left;font-size:12px;line-height:1.4;opacity:.85}
-table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px solid var(--ink12);text-align:right;white-space:normal;overflow-wrap:anywhere}
+table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px solid var(--ink12);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 table.comp-matrix td.n{white-space:nowrap}
 /* Matrix 3's status filter hides COLUMNS. A table cell needs the rule said
    out loud: our own padding rule would otherwise fight the UA [hidden]. */
@@ -427,7 +427,7 @@ ul.rejected-list .rj-why{opacity:.7}
 @media (max-width:700px){ul.rejected-list li{grid-template-columns:1fr;gap:2px}}
 /* The phone card carries the same grid lines as the column. */
 .comp-stack-grid{display:grid;gap:4px;margin-top:10px}
-.comp-stack-line{display:flex;justify-content:space-between;gap:14px;font-size:14px}
+.comp-stack-line{display:flex;justify-content:space-between;gap:14px;font-size:14px;flex-wrap:nowrap;white-space:nowrap}
 .comp-stack-line .k{opacity:.6}
 .comp-stack-line .v{font-variant-numeric:tabular-nums;font-weight:600}
 /* Chapter 2b's centrepiece: what the first ask realized, by weeks. */

@@ -33,8 +33,6 @@ import {
   usdSigned,
 } from '@/lib/cma/render-blocks'
 import {
-  priceHistoryLineHtml,
-  priceHistorySparkHtml,
   shortUsd,
   type PricePathRange,
 } from '@/lib/cma/price-path'
@@ -239,16 +237,18 @@ const SHARED_ROWS: ReadonlyArray<MatrixRow> = [
   { label: 'Year built', figure: true },
   { label: 'Remodel or update notes', figure: false, note: true },
   { label: 'Size', figure: true },
+  // Matt ADD 2026-09-12: lot size on every row (subject + comps) — never fold away.
   { label: 'Lot size', figure: true },
   { label: 'Rooms', figure: true },
   { label: 'Beds', figure: true },
   { label: 'Baths', figure: true },
   { label: 'Days on market', figure: true, fact: 'dom' },
   { label: 'Price changes', figure: true },
-  { label: 'How the price moved', figure: false, html: true },
-  // NOT `figure`: `td.n` is nowrap, and "$475K → $460K → came off" in a 93px
-  // column then ran 4pt past the right margin on the print sheet
-  // (page-safety.int). The arc wraps; every figure inside it is still short.
+  // Matt ADD 2026-09-12: list $/sqft AND sold $/sqft + concession $ on sold.
+  { label: 'List $/sqft', figure: true },
+  { label: 'Sold $/sqft', figure: true },
+  { label: 'Seller concessions', figure: true },
+  // NOT `figure`: keep arc short; Tip Ready also bans wrapping crumbs.
   { label: 'First ask → last ask → outcome', figure: false },
 ]
 
@@ -323,7 +323,22 @@ export function askArcCell(entry: MatrixEntry): string {
 }
 
 /** The shared cells for one home, in SHARED_ROWS order. */
-function sharedCells(entry: MatrixEntry, range?: PricePathRange | null): string[] {
+function ppsfCell(price: number | null | undefined, sqft: number | null | undefined): string {
+  if (price == null || !(price > 0) || sqft == null || !(sqft > 0)) return '-'
+  return usd(Math.round(price / sqft))
+}
+
+function sharedConcessionCell(entry: MatrixEntry): string {
+  if (entry.family !== 'closed') return '-'
+  const c = entry.concessionsAmount
+  if (c == null || !Number.isFinite(c)) return '-'
+  return c > 0 ? usd(c) : 'none'
+}
+
+function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string[] {
+  // Matt ADD 2026-09-12: kill "how the price moved" spark entirely.
+  void _range
+  const listForPpsf = entry.listPrice ?? entry.lastAsk ?? entry.firstAsk
   return [
     entry.outcome || '-',
     entry.yearBuilt != null ? String(entry.yearBuilt) : '-',
@@ -341,7 +356,9 @@ function sharedCells(entry: MatrixEntry, range?: PricePathRange | null): string[
         : entry.priceChangesExact
           ? int(entry.priceChanges)
           : 'at least 1',
-    priceHistorySparkHtml(entry.path, range) || '-',
+    ppsfCell(listForPpsf, entry.sqft),
+    ppsfCell(entry.closePrice, entry.sqft),
+    sharedConcessionCell(entry),
     askArcCell(entry),
   ]
 }
@@ -475,12 +492,11 @@ const SHARED_PHRASE: Record<string, (v: string) => string> = {
   Baths: (v) => `${v} ba`,
   'Year built': (v) => `built in ${v}`,
   Size: (v) => v,
-  'Lot size': (v) => `on ${v}`,
   Rooms: (v) => `${v} rooms`,
 }
 
 /** The clauses read best in this order, whatever order the rows are in. */
-const SHARED_ORDER = ['Beds', 'Baths', 'Rooms', 'Year built', 'Size', 'Lot size']
+const SHARED_ORDER = ['Beds', 'Baths', 'Rooms', 'Year built', 'Size']
 
 function foldIdenticalRows(
   cols: readonly Col[],
@@ -490,6 +506,17 @@ function foldIdenticalRows(
   const shared: Array<{ label: string; clause: string }> = []
   const keptIndexes: number[] = []
   rows.forEach((row, i) => {
+    // Matt ADD 2026-09-12: these rows stay on every sold matrix even when blank.
+    if (
+      row.label === 'Lot size' ||
+      row.label === 'List $/sqft' ||
+      row.label === 'Sold $/sqft' ||
+      row.label === 'Seller concessions'
+    ) {
+      kept.push(row)
+      keptIndexes.push(i)
+      return
+    }
     const values = cols.map((c) => c.cells[i] ?? '-').filter((v) => v !== '-')
     // A row every column left empty is not a comparison. Nor is a row of
     // zeros: "Adjusted for style, $0, $0, $0, $0, $0" is five cells saying
@@ -649,10 +676,9 @@ function matrixStack(input: {
     }</span></div>`
   const cardFor = (col: Col, entry: MatrixEntry | null, i: number): string => {
     const pin = col.key === 'subject' ? 'subject' : (col.pin ?? col.key)
-    const src = col.photoUrl ? sparkPhotoAt(col.photoUrl, '320x240') ?? col.photoUrl : null
-    const img = src
-      ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="eager" referrerpolicy="no-referrer"/>`
-      : ''
+    // Tip Ready P1: stack is the screen reading path — facts first, no photo
+    // spam burying the number. Print matrix keeps thumbs.
+    const img = ''
     // The phone card has room for the whole line; the desktop column head,
     // 93px wide, does not. "Your home · 2465 7th" is what a seller looks for.
     const cardLabel =
@@ -680,7 +706,7 @@ function matrixStack(input: {
     // columns is still on the card — but only the four a reader compares homes
     // on are open: what happened, what it asked and got, how long it took, and
     // how big it is. The rest opens with the price path and the working.
-    const OPEN = new Set(['Outcome', 'First ask \u2192 last ask \u2192 outcome', 'Days on market', 'Size'])
+    const OPEN = new Set(['Outcome', 'First ask \u2192 last ask \u2192 outcome', 'Days on market', 'Size', 'Lot size', 'List $/sqft', 'Sold $/sqft', 'Seller concessions', 'Price changes'])
     const headline = facts
       .filter(({ row }) => row.label === 'Outcome')
       .map(({ row, value }) => line(row.label, value, row.html === true, false, false))
@@ -690,7 +716,7 @@ function matrixStack(input: {
       .map(({ row, value }) => line(row.label, value, row.html === true, false, false))
       .join('')
     const rest = facts
-      .filter(({ row }) => !OPEN.has(row.label) && row.label !== 'How the price moved')
+      .filter(({ row }) => !OPEN.has(row.label))
       .map(({ row, value }) => line(row.label, value, row.html === true, false, false))
       .join('')
     const adjCol = input.adjustment?.cols[i] ?? null
@@ -701,11 +727,10 @@ function matrixStack(input: {
           .map(({ row, value }) => line(row.label, value, false, row.rule !== true, row.rule === true))
           .join('')
       : ''
+    // Matt ADD 2026-09-12: no "how the price moved" chart on the stack either.
     const fold = `<div class="comp-fold" data-fold-label="The rest of this home">${
       rest ? `<div class="comp-stack-grid">${rest}</div>` : ''
-    }${priceHistoryLineHtml(entry?.path ?? null, `${input.family}-${pin}`, input.range)}${
-      adjLines ? `<div class="comp-stack-grid">${adjLines}</div>` : ''
-    }</div>`
+    }${adjLines ? `<div class="comp-stack-grid">${adjLines}</div>` : ''}</div>`
     return `<article class="comp-stack-card${
       col.key === 'subject' ? ' is-yours' : ''
     }" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${

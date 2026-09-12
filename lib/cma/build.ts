@@ -80,7 +80,7 @@ import { renderCmaHtml } from '@/lib/cma/render'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { buildSubjectStatus } from '@/lib/pricing/subject-status'
 import { buildCompSearch } from '@/lib/pricing/comp-search'
-import { buildCompArea, resolveCompetitionArea } from '@/lib/pricing/comp-area'
+import { buildCompArea } from '@/lib/pricing/comp-area'
 import { getCmaAreaUnsoldCycles } from '@/lib/data/cma/areaUnsoldReads'
 import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
 import { buildExpiredPeerSet, keptCompMedianPpsf, marketAreaPriceBand } from '@/lib/cma/market-status'
@@ -1154,23 +1154,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         longitude: c.longitude,
       })),
     })
-    // Matt 2026-09-08, "definitely tighter on rural homes, make the best
-    // decision": a subject with no mapped neighborhood or community widens
-    // its competition circle only as far as it has to. `resolveCompetitionArea`
-    // returns the RING ORDER to try — one ring for a mapped boundary or a
-    // no-coordinate subject, otherwise 5 miles, then 10, then the comp
-    // search's own reach, never past it.
-    const competitionRings = compArea
-      ? resolveCompetitionArea({
-          compArea,
-          subject: { latitude: subject.latitude, longitude: subject.longitude, city: subject.city },
-          keptComps: renderComps.map((c) => ({ latitude: c.latitude, longitude: c.longitude })),
-        })
-      : []
-    // The rows are read ONCE, at the widest ring — `pickCompetitionRing` below
-    // walks the narrower rings over rows already in hand, the same shape as
-    // the expired-peer window ladder just below it (one read, then a walk).
-    const widestCompetitionRing = competitionRings[competitionRings.length - 1] ?? null
+    // Matt ADD 2026-09-12: same geographic pocket for solds, expired peers, and
+    // actives — do NOT widen competition past the comps area.
+    const competitionRings = compArea ? [compArea] : []
+    const widestCompetitionRing = compArea
 
     // The peer band is the market-area band (0.55x-1.85x of the anchor) the
     // status grid already uses; the competition band is the +/-10% live band
@@ -1199,6 +1186,20 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         : Promise.resolve(null),
     ])
 
+    // Same lookback as the closed sales that set the price — no older expireds
+    // from a longer window than the solds (Matt ADD 2026-09-12).
+    const compsLookbackMonths = (() => {
+      const ages = renderComps
+        .map((c) => {
+          const iso = (c.closeDate ?? '').slice(0, 10)
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null
+          const ms = Date.now() - Date.parse(`${iso}T12:00:00.000Z`)
+          if (!Number.isFinite(ms) || ms < 0) return null
+          return Math.ceil(ms / (1000 * 60 * 60 * 24 * 30.44))
+        })
+        .filter((n): n is number => n != null && n > 0)
+      return ages.length > 0 ? Math.max(3, Math.max(...ages)) : 12
+    })()
     const expiredPeers =
       compArea && unsoldRead
         ? buildExpiredPeerSet({
@@ -1214,6 +1215,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             },
             area: compArea,
             keptCompMedianPpsf: keptCompMedianPpsf(renderComps),
+            maxWindowMonths: compsLookbackMonths,
           })
         : null
 

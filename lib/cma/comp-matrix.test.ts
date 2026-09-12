@@ -79,7 +79,9 @@ describe('renderCompMatrixHtml', () => {
       'Outcome',
       'Size',
       'Days on market',
-      'How the price moved',
+      'List $/sqft',
+      'Sold $/sqft',
+      'Seller concessions',
       'First ask \u2192 last ask \u2192 outcome',
       'Sold for',
       'Sale price today',
@@ -391,17 +393,17 @@ describe('the adjustment grid, line by line', () => {
     expect(html).toContain('17.0%')
   })
 
-  it('draws each sale its price path ONCE, as a column of the grid', () => {
+  it('kills the how-the-price-moved chart; keeps list/sold $/sqft + concessions', () => {
     const html = renderCompMatrixHtml(subj, five(sale))
-    // The stacked "How each of these sales was priced" block is gone: every
-    // path was drawn twice, once in the card and once again under the grid
-    // (tasteReview item 3).
+    // Matt ADD 2026-09-12: no price-path spark chart in the letter.
+    expect(html).not.toContain('How the price moved')
     expect(html).not.toContain('How each of these sales was priced')
-    expect(html).toContain('How the price moved')
-    expect(html).toContain('class="pp-spark"')
-    expect(html).toContain('class="price-path"')
-    // The cell holds a drawing, not an escaped string.
-    expect(html).toContain('<td class="v is-draw"><span class="pp-spark"')
+    expect(html).not.toContain('class="pp-spark"')
+    expect(html).not.toContain('class="price-path"')
+    // Replaced by explicit $/sqft + concession amount columns (force-kept).
+    expect(html).toContain('List $/sqft')
+    expect(html).toContain('Sold $/sqft')
+    expect(html).toContain('Seller concessions')
   })
 
   it('leads the phone stack with their own home, then the sales', () => {
@@ -412,7 +414,8 @@ describe('the adjustment grid, line by line', () => {
     const card = html.split('comp-stack-card')[2] ?? ''
     expect(card).toContain('Net adjustment')
     expect(card).toContain('Sale price today')
-    expect(card).toContain('class="price-path"')
+    expect(card).not.toContain('class="price-path"')
+    expect(card).toContain('List $/sqft')
   })
 })
 

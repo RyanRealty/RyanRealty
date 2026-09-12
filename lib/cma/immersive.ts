@@ -10,6 +10,7 @@ import { immersiveHeroNumberHtml } from '@/lib/cma/cover-value'
 import { inboundImmersiveHeroKick, inboundImmersiveTitle } from '@/lib/cma/inbound-packet'
 import { cleanText, dateLong, reviewNoticeBandHtml } from '@/lib/cma/render-blocks'
 import { readReviewNotice } from '@/lib/cma/render-contract'
+import { isCmaClientReady } from '@/lib/cma/draft-access'
 import {
   immersiveInteractionCss,
   immersiveInteractionScript,
@@ -67,7 +68,7 @@ ${immersiveInteractionCss()}
   <div class="cue" aria-hidden="true"></div>
 </section>
 
-${reviewNoticeBandHtml(readReviewNotice(a.pricing)?.notice ?? '', 'immersive')}
+${isCmaClientReady(a.documentStatus) ? '' : reviewNoticeBandHtml(readReviewNotice(a.pricing)?.notice ?? '', 'immersive')}
 ${assembleOpinionScenes(a)}
 
 <script>

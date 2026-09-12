@@ -125,6 +125,8 @@ export async function immersiveFromRow(
       // Identity for every tracked link in the document. Resolved here rather
       // than at build: it belongs to the delivery, not to the stored figures.
       docLinks: slug ? await resolveDocLinkCtx(slug, broker.slug) : null,
+      // Finalized/delivered owner docs never print the draft review band.
+      documentStatus: row.status,
     }
     const hydrated = hydrateArea ? await hydrateCmaMarketArea(base) : base
     return renderImmersiveCmaHtml(hydrated, origin)

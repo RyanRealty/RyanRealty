@@ -259,11 +259,11 @@ export function assembleOpinionScenes(a: OpinionSceneArgs): string {
   const build: Record<OpinionChapterId, () => string> = {
     'what-happened': () => whatHappenedScene(a),
     'did-not-sell': () => didNotSellScene(a),
-    'priced-right': () => pricedRightScene(a),
     'what-its-worth': () => priceScene(a),
     'the-map': () => mapScene(a),
     'sales-that-set-it': () => salesThatSetItScene(a),
     competition: () => competitionScene(a),
+    'priced-right': () => pricedRightScene(a),
     'this-market': () => thisMarketScene(a),
     'net-at-list': () => sellerNetScene(a),
     disclosure: () => disclosureScene(a),

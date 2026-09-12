@@ -80,6 +80,7 @@ export async function resolveCmaPrintHtmlFromSource(
       mapOverlay,
       subjectMapDataUri: null,
       docLinks: await resolveDocLinkCtx(slug, broker.slug),
+      documentStatus: source.status,
     })
     return { html, status: source.status }
   }

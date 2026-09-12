@@ -375,7 +375,9 @@ describe('chapter 2 — priced right sells, priced high sits', () => {
     // matrices. Each peer keeps its dollars-a-foot story line under the table.
     const chapter = letter().split('The listings near you that did not sell.')[1]!.split('</section>')[0]!
     expect(chapter).toContain('comp-matrix is-unsold')
-    expect(chapter).toContain('class="price-path"')
+    // Matt ADD 2026-09-12: how-the-price-moved / price-path chart killed.
+    expect(chapter).not.toContain('class="price-path"')
+    expect(chapter).not.toContain('class="pp-spark"')
     expect(chapter).toContain('Your home')
     expect(chapter).not.toContain('dns-card')
     expect(chapter).toMatch(/<a class="matrix-addr" href="https:\/\/ryan-realty\.com\/[^"]*utm_source=cma/)
@@ -390,7 +392,10 @@ describe('chapter 1 — what happened comes FIRST, before the number', () => {
   it('opens the document on what happened to their listing', () => {
     const chapters = letterChapters(letter())
     const happened = chapters.findIndex((c) => /and did not sell\./i.test(c))
-    const price = chapters.indexOf('$389,000.')
+    // Tip Ready P0: chapter title is "What the sales say" (not "$389,000.").
+    const price = chapters.findIndex(
+      (c) => /What the sales say/i.test(c) || /\$389,000/.test(c),
+    )
     const competition = chapters.findIndex((c) => /compete with/i.test(c))
     expect(happened).toBe(0)
     expect(price).toBeGreaterThan(happened)
@@ -563,21 +568,23 @@ describe('P10 — one chapter order, both documents', () => {
 })
 
 describe('F1 — the immersive comps table on a phone', () => {
-  it('hides the side-by-side matrix and shows the stack below 700px', () => {
+  it('shows the stack on all screen widths; matrix is print-only (Tip Ready C4)', () => {
     const css = immersiveStylesheet()
-    expect(css).toMatch(/@media screen and \(max-width:\s*700px\)\s*\{[^}]*\.comp-matrix-wrap,\s*\.matrix-group-h\s*\{\s*display:\s*none/)
-    expect(css).toMatch(/@media screen and \(max-width:\s*700px\)\s*\{[\s\S]{0,200}\.comp-stack\s*\{\s*display:\s*block/)
+    expect(css).toMatch(/\.comp-matrix-wrap,\.matrix-group-h\{display:none\}/)
+    expect(css).toMatch(/\.comp-stack\{display:block/)
+    expect(css).toMatch(/@media print\{\.comp-stack\{display:none!important\}\.comp-matrix-wrap,\.matrix-group-h\{display:block!important\}/)
   })
 })
 
-describe('F2 — the letter shows the matrix on screen at reading width', () => {
-  it('shows the matrix and hides the cards above 700px', () => {
+describe('F2 — Tip Ready: letter screen stacks comps; print restores matrix', () => {
+  it('shows the stack on screen and restores the matrix in print', () => {
     const css = cmaStylesheet('https://ryan-realty.com')
-    expect(css).toMatch(/\.comp-matrix-wrap\s*\{\s*display:\s*block/)
-    expect(css).toMatch(/@media screen and \(max-width:\s*700px\)\s*\{[\s\S]{0,300}\.comp-stack\s*\{\s*display:\s*block/)
+    expect(css).toMatch(/\.comp-stack \{ display: block;/)
+    expect(css).toMatch(/\.comp-matrix-wrap, \.matrix-group-h \{ display: none;/)
+    expect(css).toMatch(/@media print \{[\s\S]*\.comp-matrix-wrap \{[^}]*display:\s*block/)
   })
 
-  it('loads every comp thumbnail eagerly so no photo box renders blank', () => {
+    it('loads every comp thumbnail eagerly so no photo box renders blank', () => {
     const html = letter()
     const thumbs = [...html.matchAll(/<img class="matrix-thumb"[^>]*>/g)].map((m) => m[0])
     expect(thumbs.length).toBeGreaterThan(0)
@@ -1145,22 +1152,17 @@ describe('tasteReview 1 — nothing in the document argues with itself', () => {
  * chrome leaves the letter.
  */
 describe('tasteReview 2 — the answer is drawn, and nothing floats over it', () => {
-  it('opens chapter 3 on a dot strip, before the method and the grid', () => {
+  it('opens chapter 3 without restating the recommend dollars on a fold strip', () => {
     for (const html of [letter(), immersive()]) {
-      const worth = html.slice(html.indexOf('The sales that set this price') - 12000)
-      expect(html).toContain('class="szn worth-wide"')
-      expect(html).toContain('class="szn worth-phone"')
-      expect(html).toContain('Where the sales put this home, and where we would list it')
-      // The strip sits ABOVE the method sentences and the grid.
-      const strip = html.indexOf('class="szn worth-wide"')
-      const grid = html.indexOf('table class="kv is-wide comp-matrix is-closed"')
-      expect(strip).toBeGreaterThan(-1)
-      expect(grid).toBeGreaterThan(strip)
-      expect(worth.length).toBeGreaterThan(0)
+      // Tip Ready P0 / Cos Falcon: cover carries recommend once; strip's list mark is gone.
+      expect(html).not.toContain('class="szn worth-wide"')
+      expect(html).not.toContain('list $')
+      expect(html).toContain('What the sales say')
+      expect(html).toContain('The sales that set this price')
     }
   })
 
-  it('states the method in at most three sentences and moves the weight sentence under the grid', () => {
+    it('states the method in at most three sentences and moves the weight sentence under the grid', () => {
     const html = letter()
     expect((html.match(/class="method-line"/g) ?? []).length).toBeLessThanOrEqual(3)
   })
@@ -1334,13 +1336,12 @@ describe('tasteReview 3 — the phone document, and the close', () => {
     expect(first).toMatch(/Came off after \d+ days|Listed \$460,000/)
   })
 
-  it('draws every price path exactly once', () => {
+  it('kills every how-the-price-moved spark in the letter', () => {
     const html = immersive()
     expect(html).not.toContain('How each of these sales was priced')
-    // One sparkline per home per matrix — five closed sales, and the subject
-    // column that leads each of the three matrices.
-    const closed = html.split('id="did-not-sell"')[0] ?? ''
-    expect((closed.match(/class="pp-spark"/g) ?? []).length).toBe(6)
+    expect(html).not.toContain('How the price moved')
+    expect(html).not.toContain('class="pp-spark"')
+    expect(html).not.toContain('class="price-path"')
   })
 
   it('gives every chart mark a real tap target, not a 7px dot', () => {
