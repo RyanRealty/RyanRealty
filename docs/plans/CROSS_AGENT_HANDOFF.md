@@ -1,3 +1,10 @@
+# Current — 2026-09-12 13:50Z (SITE-90 /about Tip Ready, evaluator blocked)
+
+Owner: `cursor-cloud-2026-09-12-06-a`. Claim held. Do not steal SITE-90. No emails. Do not merge this PR to main — Cos cherry-picks + `npm run push`.
+
+- **SITE-90 in_progress** `/about`. UUID `edabba8e-f8aa-4271-909d-c258914f75ef`. Branch `cursor/site-90-about-fold-deb7` PR #207. Fold: editorial faces + 5.0 on Matt + per-broker MLS + Bend office + FirmClosings. 375 trio (faces, first names, Call). Shots recaptured. **taste-evaluate blocked:** no grok CLI at `~/.grok/bin/grok` (Grok Build 402). No fake receipt. Prior mark 52 stays. Skills read: site-queue, TASTE.md, VOICE.md.
+- Exclusive: `app/about/**` this lane.
+
 # Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)
 
 Owner: this land (`wt/cma-ship-20260907` → `main`). No owner sends / no emails. HOLD SITE-56 auto-send.
