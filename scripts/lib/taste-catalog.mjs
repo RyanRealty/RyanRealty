@@ -481,6 +481,7 @@ export function formatBuilderCard(card) {
   lines.push('', 'Record adaptedFrom with the ids you used. Empty adaptedFrom is inventing a layout.')
   lines.push('ci:catalog-install fails a named catalog id whose file is missing or whose house primitive does not import it.')
   lines.push('Rebaseline is not done. A taste score below 70 is not done.')
+  lines.push('Score rise without demoMatch: true is not done and is not Tip Ready.')
   if (Array.isArray(card.demoStates) && card.demoStates.length) {
     lines.push(`Demo-match shots (take-route-shots captures these without --states): ${card.demoStates.join('; ')}`)
   }
@@ -496,7 +497,7 @@ export function evaluatorBrief(catalog, classKey) {
   const lines = [
     'COMPREHENSIVE LOOP: SEO, listing/page information, and UX all rise on the same pass. A prettier page with no SEO increment and no inventory increment is not done. Blocking if a title, JSON-LD, crawlable link, ask, sourced figure, required section, or listing fact is worse than HEAD.',
     'CATALOG REPOS (copy the source from these GitHub trees; do not rewrite the demo): https://github.com/slev12397/beautiful-ui · https://github.com/starc007/ui-components · https://github.com/swamimalode07/rare-ui · https://github.com/Jakubantalik/transitions.dev · https://github.com/shadcn-ui/ui',
-    'CATALOG is the UX bar. Diagnose the JOB from our shots, then pick replaceWith from the option list below (id + demo URL). Do not invent a house primitive that already lost. A cream box with the catalog name is a defect — open the demo and our control; a person must recognize the same interaction. demoMatch is false if a V3 wrapper hid the catalog control. Growing a new primitive that still matches the demo is allowed; a second kit (their Inter/purple/demo app) is Frankenstein.',
+    'CATALOG is the UX bar. Diagnose the JOB from our shots, then pick replaceWith from the option list below (id + demo URL) — not a vague house adjective. Do not invent a house primitive that already lost. Cream-box examples (demoMatch false): Avatar import ≠ AvatarGroup demo; Button import ≠ flat V3Button navy rect; Sheet import ≠ custom drawer. A cream box with the catalog name is a defect — open the demo and our control; a person must recognize the same interaction. demoMatch is required true|false; omit is refuse. Growing a new primitive that still matches the demo is allowed; a second kit (their Inter/purple/demo app) is Frankenstein.',
   ]
   if (lock) lines.push(`Layout lock: ${lock}`)
   if (card.add.length) lines.push(`House primitives this class owes: ${card.add.join(', ')}.`)

@@ -31,6 +31,11 @@
  *    fall or be omitted to skip the hold; requiredComponents cannot shrink
  *    vs HEAD; a JSON-LD or conversion-ask role present at HEAD must remain.
  *    Payload / tap targets / titles stay on their own gates.
+ * 8. Catalog demoMatch (Matt 2026-09-12): a receipt dated on/after
+ *    2026-09-12 (or rubric v1-2026-09-12) whose adaptedFrom names catalog
+ *    modules cannot claim comparedToPrior "rose" or score ≥ 70 unless
+ *    demoMatch is true. Omit is refuse. Honest false below 70 on a
+ *    rebaseline stays valid so a lane can record an in-progress fail.
  *
  * Seed unreviewed with `--write-baseline`, the v2 backlog with
  * `--write-v2-baseline`, catalog receipts with `--write-catalog-baseline`.
