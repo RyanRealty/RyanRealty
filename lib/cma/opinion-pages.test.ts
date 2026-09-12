@@ -344,13 +344,14 @@ describe('net at list itemises, or prints no figure at all', () => {
   it('prints the list, every cost line with its source, and the net', () => {
     const html = sellerNetBodyHtml(withNet(NET_SHEET))
     expect(html).toContain('List price')
-    expect(html).toContain('$429,000')
+    expect(html).toContain('that price')
+    expect(html).not.toContain('$429,000')
     expect(html).toContain('Commission')
     expect(html).toContain('Listing agreement, 5.0%')
     expect(html).toContain('Deschutes County schedule')
     expect(html).toContain('Payoff quote you provided')
     expect(html).toContain('$194,450')
-    expect(html).toContain('What you keep at $429,000')
+    expect(html).toContain('What you keep at that price')
   })
 
   it('names what is not in the net and refuses the phrase when something is missing', () => {
@@ -366,7 +367,7 @@ describe('net at list itemises, or prints no figure at all', () => {
   it('prints no figure when there are no cost lines, and says what a net would need', () => {
     const html = sellerNetBodyHtml(withNet({ list: 475000, lines: [], net: 475000, unknowns: [] }))
     expect(html).not.toContain('$475,000')
-    expect(html).toContain('A net at $429,000 needs')
+    expect(html).toContain('A net at that price needs')
     expect(html).toContain('the commission written into your listing agreement')
   })
 
@@ -375,22 +376,22 @@ describe('net at list itemises, or prints no figure at all', () => {
       withNet({ expectedConcessions: 8000, predictedSellerNet: 467000, knownCount: 3 }),
     )
     expect(html).not.toContain('$467,000')
-    expect(html).toContain('A net at $429,000 needs')
+    expect(html).toContain('A net at that price needs')
   })
 
   it('refuses a line with no source, and refuses a net above the list', () => {
     const noSource = sellerNetBodyHtml(
       withNet({ ...NET_SHEET, lines: [{ label: 'Commission', amount: 23750, source: '' }], net: 451250 }),
     )
-    expect(noSource).toContain('A net at $429,000 needs')
+    expect(noSource).toContain('A net at that price needs')
     const overList = sellerNetBodyHtml(withNet({ ...NET_SHEET, net: 480000 }))
-    expect(overList).toContain('A net at $429,000 needs')
+    expect(overList).toContain('A net at that price needs')
     expect(overList).not.toContain('$480,000')
   })
 
   it('refuses a column that does not add up', () => {
     const html = sellerNetBodyHtml(withNet({ ...NET_SHEET, net: 300000 }))
-    expect(html).toContain('A net at $429,000 needs')
+    expect(html).toContain('A net at that price needs')
   })
 })
 

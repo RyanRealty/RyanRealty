@@ -131,7 +131,8 @@ function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs & { broker: CmaB
 describe('pricing beat craft', () => {
   it('never titles THE LIST / This list; uses the recommend headline', () => {
     const html = renderImmersiveCmaHtml(args(), 'https://ryan-realty.com')
-    expect(html).toContain('$563,000.')
+    expect(html).toContain('$563,000')
+    expect(html).toContain('Our Recommended List Price for your home')
     expect(html).not.toMatch(/>\s*THE LIST\s*</i)
     expect(html).not.toMatch(/>\s*The list\s*</)
     expect(html).not.toContain('This list')
@@ -198,7 +199,7 @@ describe('pricing beat craft', () => {
       broker,
       generatedAtIso: '2026-09-07T00:00:00.000Z',
     })
-    expect(scenes).toContain('$563,000.')
+    expect(scenes).not.toContain('$563,000.')
     expect(scenes).toContain('comp-matrix')
     expect(scenes).toContain('The sales that set this price')
     // A HEADING reading "The list" — not any sentence containing those words,

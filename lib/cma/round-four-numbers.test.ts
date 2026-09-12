@@ -306,7 +306,7 @@ describe('E2 — one list ceiling per document', () => {
       asOfIso: AS_OF,
       hasFinalCycle: true,
     })
-    expect(lead).toContain('List between $1,413,000 and $1,473,000.')
+    expect(lead).toContain('List between $1,413,000 and that price.')
     expect(lead).not.toContain('$1,500,000')
   })
 
