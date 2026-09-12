@@ -68,6 +68,7 @@ import {
   isNonEmptyString,
   isPlainObject,
   loadClassRegistry,
+  mixedEvaluatorWarning,
   regenerateMarkdownSection,
   renderMarkdownTable,
   sameModelWarning,
@@ -346,6 +347,84 @@ function scoreWithGrok(prompt, shots) {
   return String(res.stdout ?? '')
 }
 
+/**
+ * The xAI API transport — the one that needs nothing but XAI_API_KEY.
+ *
+ * WHY (2026-09-12). On 2026-09-09 the evaluator model became grok-4.6 and only
+ * the grok CLI path was moved with it. `scoreWithSdk` still sends that id to
+ * the Anthropic API and `scoreWithCli` still passes it to the claude CLI, so
+ * both 404 on every call — verified here: `claude -p … --model grok-4.6` exits
+ * 1 with `[claude-code:unrecognized_model]` while `--model sonnet` succeeds.
+ * That left exactly one working transport, a CLI installed on Matt's machine
+ * and on no cloud runner, so a cloud lane could capture shots, reach the
+ * evaluator, and never produce a score. The finish line (a class is done at 70
+ * on the table) was unreachable from a cloud session, which is the one place
+ * the grinder actually runs.
+ *
+ * Same model and same prompt as the CLI path, so marks stay comparable: this
+ * changes who carries the bytes, not who judges. The call goes through
+ * lib/grok (CLAUDE.md §4) for the key, the retry policy and the model table —
+ * which is why this file is run under tsx, and why the import is lazy so
+ * `--diff` and `--seed-draft` still run under plain node.
+ */
+async function scoreWithXai(prompt, shots) {
+  let generateGrokVisionText
+  try {
+    ;({ generateGrokVisionText } = await import('../lib/grok/vision.ts'))
+  } catch (err) {
+    throw new Error(
+      'the xai transport imports lib/grok, so this script must run under tsx: ' +
+        `npx tsx scripts/taste-table.mjs … (${err instanceof Error ? err.message : String(err)})`,
+    )
+  }
+  const fullPrompt =
+    `${prompt}\n\nTwo screenshots of the page follow: the desktop first viewport (1440x900), ` +
+    'then the mobile first viewport (375x812). Judge what is IN them.\n\n' +
+    'Reply with the JSON object only, per the contract above.'
+  const { text } = await generateGrokVisionText({
+    prompt: fullPrompt,
+    images: [{ bytes: readFileSync(shots.desktopPath) }, { bytes: readFileSync(shots.mobilePath) }],
+    model: EVALUATOR_MODEL,
+  })
+  return text
+}
+
+/** A Grok model id is served by xAI and by no Anthropic surface. */
+export function isGrokModel(model) {
+  return /^grok-/i.test(String(model ?? ''))
+}
+
+/**
+ * Pick the transport that can actually serve `model` here, or say why none can.
+ *
+ * Pure, so the wiring is testable without a key, a CLI or a network. The two
+ * Anthropic-surface transports stay reachable by explicit flag, but they now
+ * refuse a Grok evaluator id up front instead of failing once per scoring and
+ * leaving a table of nulls behind. Refusing on the id rather than on the name
+ * keeps this correct if the ruler ever moves back to an Anthropic model.
+ */
+export function chooseTransport({ api = false, claude = false, env = {}, grokCliPresent = false, model = EVALUATOR_MODEL } = {}) {
+  if (api) {
+    if (!env.ANTHROPIC_API_KEY) return { transport: null, problem: '--api needs ANTHROPIC_API_KEY, which is unset.' }
+    if (isGrokModel(model)) {
+      return { transport: null, problem: `--api sends the evaluator model to the Anthropic API, which does not serve ${model}. Drop the flag to use the xAI transport.` }
+    }
+    return { transport: 'sdk', problem: null }
+  }
+  if (claude) {
+    if (isGrokModel(model)) {
+      return { transport: null, problem: `--claude passes the evaluator model to the claude CLI, which rejects ${model} with unrecognized_model. Drop the flag to use the xAI transport.` }
+    }
+    return { transport: 'claude', problem: null }
+  }
+  if (grokCliPresent) return { transport: 'grok', problem: null }
+  if (env.XAI_API_KEY) return { transport: 'xai', problem: null }
+  return {
+    transport: null,
+    problem: `no transport can serve ${model}: the grok CLI is not at ${GROK_CLI} and XAI_API_KEY is unset.`,
+  }
+}
+
 async function evaluateClass(cls, shots, { transport, apiKey, instrumentText }) {
   const scorings = []
   for (let i = 0; i < SCORINGS_PER_CLASS; i += 1) {
@@ -357,7 +436,9 @@ async function evaluateClass(cls, shots, { transport, apiKey, instrumentText }) 
           ? await scoreWithSdk(prompt, shots, apiKey)
           : transport === 'claude'
             ? scoreWithCli(prompt, shots)
-            : scoreWithGrok(prompt, shots)
+            : transport === 'xai'
+              ? await scoreWithXai(prompt, shots)
+              : scoreWithGrok(prompt, shots)
     } catch (err) {
       console.error(`  ${cls.key}: scoring ${i + 1}/${SCORINGS_PER_CLASS} failed — ${err.message}`)
     }
@@ -551,9 +632,16 @@ async function main() {
     process.exit(1)
   }
 
-  // Default is the grok CLI on Matt's subscription. An ambient ANTHROPIC_API_KEY must
-  // never silently flip billing or the ruler, so both alternatives are explicit flags.
-  const transport = opts.api && process.env.ANTHROPIC_API_KEY ? 'sdk' : opts.claude ? 'claude' : 'grok'
+  // The grok CLI first — it spends Matt's subscription rather than API credit.
+  // Without it (every cloud runner) the xAI API serves the same model off
+  // XAI_API_KEY. An ambient ANTHROPIC_API_KEY must never silently flip billing
+  // or the ruler, so both Anthropic paths stay behind explicit flags.
+  const { transport, problem: transportProblem } = chooseTransport({
+    api: opts.api,
+    claude: opts.claude,
+    env: process.env,
+    grokCliPresent: existsSync(GROK_CLI),
+  })
   const runDir = opts.evaluateOnlyDir ?? join('.taste-table', isoTimestamp())
 
   if (opts.dryRun) {
@@ -561,11 +649,16 @@ async function main() {
     console.log(`  classes (${selected.length}): ${selected.map((c) => c.key).join(', ')}`)
     console.log(`  runDir: ${runDir}${opts.evaluateOnlyDir ? ' (existing — --evaluate-only)' : ' (would be created)'}`)
     if (!opts.evaluateOnlyDir) console.log(`  baseUrl: ${opts.baseUrl ?? '(missing — required unless --evaluate-only)'}`)
-    console.log(`  transport: ${transport} (${transport === 'sdk' ? 'ANTHROPIC_API_KEY is set' : 'ANTHROPIC_API_KEY is unset — falls back to the claude CLI'})`)
+    console.log(`  transport: ${transport ?? 'NONE'} (${transportProblem ?? `serves ${EVALUATOR_MODEL}`})`)
     console.log(`  shotsOnly: ${opts.shotsOnly}`)
     console.log(`  repeat: ${opts.repeat}`)
     console.log(`  diff: ${opts.diff}${opts.diffPath ? ` (against ${opts.diffPath})` : opts.diff ? ' (against HEAD)' : ''}`)
     process.exit(0)
+  }
+
+  if (!transport && !opts.shotsOnly) {
+    console.error(`taste-table: ${transportProblem}`)
+    process.exit(2)
   }
 
   if (!opts.evaluateOnlyDir) {
@@ -634,6 +727,8 @@ async function main() {
       route: cls.route,
       scorings,
       builderModel,
+      evaluatorModel: EVALUATOR_MODEL,
+      transport,
       shots: { desktop: shots.desktopRel, mobile375: shots.mobileRel },
       root: REPO_ROOT,
     })
@@ -688,6 +783,9 @@ async function main() {
     const bm = Number.isInteger(b.median) ? b.median : Infinity
     return am - bm
   })
+
+  const mixed = mixedEvaluatorWarning(allRows, EVALUATOR_MODEL)
+  if (mixed) console.error(`\ntaste-table: WARNING — ${mixed}`)
 
   const instrument = {
     evaluatorModel: EVALUATOR_MODEL,

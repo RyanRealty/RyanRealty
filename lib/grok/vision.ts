@@ -11,7 +11,7 @@
  * cannot be counted, trended, or gated; an enum can.
  */
 import { GROK_MODELS, GrokError, ticksToUsd, xaiFetch } from './client'
-import { parseJsonLoose } from './text'
+import { generateGrokText, parseJsonLoose } from './text'
 
 /**
  * Still-frame defects. Every one of these is a hard fail.
@@ -175,4 +175,68 @@ export function normalizeVerdict(
     fixHint: typeof raw.fixHint === 'string' ? raw.fixHint.trim() : '',
     costUsd,
   }
+}
+
+/**
+ * A base64 `data:` URL for one image, the shape xAI's `image_url` content part
+ * takes. Pure so the message assembly below is testable without a network call.
+ */
+export function imageDataUrl(bytes: Uint8Array, mime = 'image/png'): string {
+  if (!bytes?.length) throw new GrokError('imageDataUrl needs image bytes', 0, '')
+  return `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`
+}
+
+export type GrokVisionImage = {
+  /** Raw bytes. Encoded here so callers never assemble a data URL by hand. */
+  bytes: Uint8Array
+  /** Defaults to image/png — the format take-route-shots.mjs writes. */
+  mime?: string
+}
+
+export type GrokVisionTextInput = {
+  prompt: string
+  images: readonly GrokVisionImage[]
+  model?: string
+  maxTokens?: number
+  timeoutMs?: number
+}
+
+/**
+ * Free-form vision: a prompt plus images in, the model's text out.
+ *
+ * `inspectFrame` above answers one fixed question with a closed defect
+ * vocabulary, which is right for the render gate and wrong for a judge whose
+ * whole output is an essay-shaped JSON contract owned by another file. This is
+ * the general path: the caller owns the question and the reply contract, and
+ * lib/grok owns the key, the retries and the model ids (CLAUDE.md §4).
+ *
+ * Added 2026-09-12 for the site-queue taste instrument. It had three
+ * transports and, in a session without the grok CLI, no working one: the two
+ * Anthropic-surface paths were still sending EVALUATOR_MODEL after that
+ * constant became a Grok id, so both 404 on every call. This is the fourth,
+ * and the only one that runs off nothing but XAI_API_KEY.
+ */
+export async function generateGrokVisionText(
+  input: GrokVisionTextInput,
+): Promise<{ text: string; model: string }> {
+  const prompt = input.prompt?.trim()
+  if (!prompt) throw new GrokError('generateGrokVisionText needs a prompt', 0, '')
+  if (!input.images?.length) throw new GrokError('generateGrokVisionText needs at least one image', 0, '')
+
+  const model = input.model ?? GROK_MODELS.vision
+  const content: Array<Record<string, unknown>> = [
+    { type: 'text', text: prompt },
+    ...input.images.map((img) => ({
+      type: 'image_url',
+      image_url: { url: imageDataUrl(img.bytes, img.mime) },
+    })),
+  ]
+
+  const { text } = await generateGrokText({
+    messages: [{ role: 'user', content }],
+    model,
+    maxTokens: input.maxTokens ?? 4000,
+    timeoutMs: input.timeoutMs ?? 600_000,
+  })
+  return { text, model }
 }

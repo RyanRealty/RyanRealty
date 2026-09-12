@@ -11,6 +11,7 @@ import {
   filterClasses,
   loadClassRegistry,
   median3,
+  mixedEvaluatorWarning,
   primitiveNamedMost,
   regenerateMarkdownSection,
   renderMarkdownTable,
@@ -19,7 +20,7 @@ import {
   TASTE_TABLE_END,
   TASTE_TABLE_START,
 } from '../lib/taste-table-core.mjs'
-import { parseArgv, parseEvaluatorJson } from '../taste-table.mjs'
+import { chooseTransport, isGrokModel, parseArgv, parseEvaluatorJson } from '../taste-table.mjs'
 
 // A disposable sandbox so "does this primitive exist on disk" tests do not
 // depend on the real repo tree (and never touch it).
@@ -497,5 +498,152 @@ describe('parseEvaluatorJson', () => {
   it('returns null for unparsable text', () => {
     expect(parseEvaluatorJson('not json at all')).toBeNull()
     expect(parseEvaluatorJson('')).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// chooseTransport (2026-09-12)
+//
+// On 2026-09-09 the evaluator model became grok-4.6 and only the grok CLI path
+// moved with it: scoreWithSdk still sent that id to the Anthropic API and
+// scoreWithCli still passed it to the claude CLI. Both 404 on every call —
+// `claude -p … --model grok-4.6` exits 1 with [claude-code:unrecognized_model]
+// while `--model sonnet` succeeds. So the instrument had one working transport,
+// a CLI on no cloud runner, and a cloud lane could capture shots and never
+// score. These hold the fourth transport and the two refusals.
+// ---------------------------------------------------------------------------
+describe('chooseTransport', () => {
+  it('prefers the grok CLI when it is installed — it spends the subscription, not API credit', () => {
+    expect(chooseTransport({ env: { XAI_API_KEY: 'k' }, grokCliPresent: true })).toEqual({
+      transport: 'grok',
+      problem: null,
+    })
+  })
+
+  it('falls back to the xAI API when the CLI is absent but the key is present (every cloud runner)', () => {
+    expect(chooseTransport({ env: { XAI_API_KEY: 'k' }, grokCliPresent: false })).toEqual({
+      transport: 'xai',
+      problem: null,
+    })
+  })
+
+  it('has no transport, and says so, when neither the CLI nor the key is there', () => {
+    const { transport, problem } = chooseTransport({ env: {}, grokCliPresent: false })
+    expect(transport).toBeNull()
+    expect(problem).toMatch(/XAI_API_KEY is unset/)
+  })
+
+  it('refuses --claude for a Grok evaluator id instead of failing once per scoring', () => {
+    const { transport, problem } = chooseTransport({ claude: true, env: {}, grokCliPresent: false, model: 'grok-4.6' })
+    expect(transport).toBeNull()
+    expect(problem).toMatch(/unrecognized_model/)
+  })
+
+  it('refuses --api for a Grok evaluator id even when ANTHROPIC_API_KEY is set', () => {
+    const { transport, problem } = chooseTransport({
+      api: true,
+      env: { ANTHROPIC_API_KEY: 'sk-ant' },
+      grokCliPresent: false,
+      model: 'grok-4.6',
+    })
+    expect(transport).toBeNull()
+    expect(problem).toMatch(/does not serve grok-4\.6/)
+  })
+
+  it('still allows the Anthropic paths if the ruler ever moves back to an Anthropic model', () => {
+    expect(
+      chooseTransport({ api: true, env: { ANTHROPIC_API_KEY: 'sk-ant' }, model: 'claude-sonnet-5' }),
+    ).toEqual({ transport: 'sdk', problem: null })
+    expect(chooseTransport({ claude: true, env: {}, model: 'claude-sonnet-5' })).toEqual({
+      transport: 'claude',
+      problem: null,
+    })
+  })
+
+  it('--api without a key is a missing key, not a model mismatch', () => {
+    const { transport, problem } = chooseTransport({ api: true, env: {}, model: 'claude-sonnet-5' })
+    expect(transport).toBeNull()
+    expect(problem).toMatch(/ANTHROPIC_API_KEY/)
+  })
+
+  it('isGrokModel separates the two families', () => {
+    expect(isGrokModel('grok-4.6')).toBe(true)
+    expect(isGrokModel('grok-4.5')).toBe(true)
+    expect(isGrokModel('claude-sonnet-5')).toBe(false)
+    expect(isGrokModel(undefined)).toBe(false)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Per-row evaluator provenance (2026-09-12)
+//
+// `instrument` is written once per run while `rows` are merged by key, so
+// `--classes about` re-stamped all 25 rows with that run's evaluator though it
+// had scored one. The committed table said claude-sonnet-5 and the evaluator
+// constant had since become grok-4.6, so the next partial run would have
+// relabelled two dozen sonnet marks as Grok marks.
+// ---------------------------------------------------------------------------
+describe('per-row evaluator provenance', () => {
+  const scorings = [
+    { score: 70, criteria: { design: 14, originality: 14, interaction: 14, craft: 14, honesty: 14 }, defects: [{ primitive: 'components/site/v3/V3Quiet.tsx', finding: 'x' }], tells: [] },
+    { score: 71, criteria: { design: 15, originality: 14, interaction: 14, craft: 14, honesty: 14 }, defects: [{ primitive: 'components/site/v3/V3Quiet.tsx', finding: 'x' }], tells: [] },
+    { score: 72, criteria: { design: 15, originality: 15, interaction: 14, craft: 14, honesty: 14 }, defects: [{ primitive: 'components/site/v3/V3Quiet.tsx', finding: 'x' }], tells: [] },
+  ]
+
+  it('records the evaluator and the carrier on the row it scored', () => {
+    const { row } = buildRow({
+      key: 'about',
+      url: '/about',
+      route: 'app/about/page.tsx',
+      scorings,
+      builderModel: 'claude-opus-5',
+      evaluatorModel: 'grok-4.6',
+      transport: 'xai',
+      shots: { desktop: 'd.png', mobile375: 'm.png' },
+      root: SANDBOX,
+    })
+    expect(row.evaluatorModel).toBe('grok-4.6')
+    expect(row.transport).toBe('xai')
+  })
+
+  it('carries provenance onto an invalid row too, so a null mark is still attributable', () => {
+    const { row } = buildRow({
+      key: 'about',
+      url: '/about',
+      route: 'app/about/page.tsx',
+      scorings: [{ score: null }, { score: null }, { score: null }],
+      builderModel: 'claude-opus-5',
+      evaluatorModel: 'grok-4.6',
+      transport: 'xai',
+      shots: { desktop: 'd.png', mobile375: 'm.png' },
+      root: SANDBOX,
+    })
+    expect(row.median).toBeNull()
+    expect(row.evaluatorModel).toBe('grok-4.6')
+  })
+})
+
+describe('mixedEvaluatorWarning', () => {
+  const on = (key, median, evaluatorModel) => ({ key, median, evaluatorModel })
+
+  it('is silent when every scored row came off one ruler', () => {
+    expect(mixedEvaluatorWarning([on('a', 70, 'grok-4.6'), on('b', 40, 'grok-4.6')], 'grok-4.6')).toBeNull()
+  })
+
+  it('names the split when two models are mixed', () => {
+    const w = mixedEvaluatorWarning([on('a', 70, 'grok-4.6'), on('b', 40, 'claude-sonnet-5')], 'grok-4.6')
+    expect(w).toMatch(/1 on claude-sonnet-5/)
+    expect(w).toMatch(/1 on grok-4\.6/)
+    expect(w).toMatch(/not comparable/)
+  })
+
+  it('reports rows with no stamp as unrecorded rather than assuming they match', () => {
+    const w = mixedEvaluatorWarning([on('a', 70, 'grok-4.6'), { key: 'b', median: 31 }], 'grok-4.6')
+    expect(w).toMatch(/1 unrecorded/)
+  })
+
+  it('says nothing about a table where nothing scored', () => {
+    expect(mixedEvaluatorWarning([{ key: 'a', median: null }], 'grok-4.6')).toBeNull()
+    expect(mixedEvaluatorWarning([], 'grok-4.6')).toBeNull()
   })
 })

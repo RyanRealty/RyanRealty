@@ -1,3 +1,43 @@
+# Current — 2026-09-12 00:40Z (the taste instrument had no transport a cloud session could use)
+
+Owner: this session (`019RdEm6`), branch `claude/run-loop-w8f3ep` (PR #206). Nothing claimed in the graph.
+
+- **The evaluator was unreachable from any cloud runner, and had been since 2026-09-09.** On that
+  date `EVALUATOR_MODEL` became `grok-4.6` and only the grok CLI path moved with it. `scoreWithSdk`
+  still sent that id to the **Anthropic** API and `scoreWithCli` still passed it to the **claude**
+  CLI. Verified, with a control: `claude -p … --model grok-4.6` exits 1 with
+  `[claude-code:unrecognized_model]` while `--model sonnet` succeeds. So the instrument had exactly
+  one working transport — a CLI on Matt's machine and on no runner — and a cloud lane could capture
+  shots, reach the bar, and never produce a score. `taste-evaluate.ts` exits 2 in that case; the
+  table wrote a row of nulls. The grinder cron's last run FAILED.
+- **Fixed: a fourth transport, `xai`, through `lib/grok` (§4).** `generateGrokVisionText` in
+  `lib/grok/vision.ts`; `chooseTransport` picks grok CLI → xai → refuse. Same model, same prompt —
+  this changes who carries the bytes, not who judges. `npm run taste:table` now runs under **tsx**
+  (the import is lazy, so `--diff` and `--seed-draft` still run under plain `node`). `--api` and
+  `--claude` now refuse a Grok evaluator id up front instead of failing once per scoring.
+- **PROVED END TO END, not inferred:** `about` captured at 1440+375 off a local dev server and scored
+  **41 (41 · 44 · 37)** by grok-4.6 over the xai carrier, three independent scorings, criteria summing
+  to the median, defects naming a real file. Evidence `out/about-row-grok46-xai.json`.
+- **Fixed: rows now carry their own `evaluatorModel` + `transport`.** `instrument` is written once per
+  run while `rows` merge by key, so `--classes about` re-stamped all 25 rows with that run's evaluator
+  having scored one. `mixedEvaluatorWarning` reports the split instead.
+
+**THREE THINGS FOR THE NEXT SESSION — none of them shipped here, on purpose.**
+
+1. **`design_system/public/taste-table.json` has never been re-run since the ruler changed.** Written
+   once (`beea58a9`), `evaluatedAt` 2026-09-08, all 25 rows on **claude-sonnet-5**, zero rows carrying
+   their own stamp. The constant is now grok-4.6. **The next full-table run rebaselines all 25 classes.**
+   That is a measurement decision, so this session did not take it as a side effect of a transport fix:
+   the one row it scored was restored and kept as evidence in gitignored `out/` instead. Do it
+   deliberately, all 25 in one run, or the ranking mixes rulers.
+2. **SITE-90 (the one node the loop serves) describes a page that no longer exists.** Its defects are
+   seven hairline contact rows; `app/about/page.tsx` was rebuilt in `036a4276` ("about opens on faces")
+   and now opens on three broker faces at display scale — the node's own layout lock. Its receipt
+   already records **52 on grok-4.6 / builder grok-4.5**. The node's accept ("scores above 31") reads a
+   claude-sonnet-5 mark of the OLD page. Re-diagnose before building.
+3. **A 25-class run is slow on this carrier**: grok-4.6 at default (high) reasoning took ~13 min for
+   three scorings of one class. Budget it, or set `reasoningEffort` deliberately.
+
 # Current — 2026-09-11 08:10Z (grinder 01a08eda: SITE-29 + SITE-86 live)
 
 Owner: `grok-4.5-2026-09-10-22`. origin/main `f7f3c89a` READY `cli-f7f3c89`. 15m launchd stays. No auto-seed.

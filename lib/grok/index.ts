@@ -51,8 +51,12 @@ export {
 export {
   inspectFrame,
   normalizeVerdict,
+  generateGrokVisionText,
+  imageDataUrl,
   FRAME_DEFECTS,
   type FrameDefect,
+  type GrokVisionImage,
+  type GrokVisionTextInput,
   type VisionQaInput,
   type VisionVerdict,
 } from './vision'

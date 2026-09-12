@@ -32,6 +32,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { config } from 'dotenv'
 import { parseJsonLoose } from '../lib/grok/text'
+import { generateGrokVisionText } from '../lib/grok/vision'
 import {
   classForRoute,
   evaluatorBrief,
@@ -161,33 +162,69 @@ async function main() {
     .filter(Boolean)
     .join('\n')
 
-  if (!existsSync(GROK_CLI)) {
-    console.error(`taste-evaluate: no grok CLI at ${GROK_CLI}. Set GROK_CLI to its path.`)
-    process.exit(2)
-  }
-  // The CLI is an agent: it is told to open the files rather than handed base64,
-  // which is also why the shots must be absolute paths.
-  const prompt = [
-    'You are a design critic reviewing a page you did not build. You are hard to impress and you say why. You never praise a page for being clean; clean is the floor. You name what is dull. When the display is a banned data form, you name the house form that replaces it.',
-    '',
-    `Read these screenshot files with your file tool and judge what is IN them:`,
-    ...images.map((i) => `  ${i.path}`),
-    '',
-    question,
-    '',
-    'Reply with the JSON object and nothing else — no preamble, no code fence.',
-  ].join('\n')
+  const critic =
+    'You are a design critic reviewing a page you did not build. You are hard to impress and you say why. You never praise a page for being clean; clean is the floor. You name what is dull. When the display is a banned data form, you name the house form that replaces it.'
 
-  const res = spawnSync(
-    GROK_CLI,
-    ['-p', prompt, '-m', EVALUATOR_MODEL, '--permission-mode', 'bypassPermissions', '--output-format', 'plain'],
-    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 900_000 },
-  )
-  if (res.status !== 0) {
-    console.error(`taste-evaluate: grok CLI exited ${res.status}: ${(res.stderr || '').trim().slice(0, 400)}`)
+  // Two carriers, one judge. The CLI spends Matt's Grok subscription and is the
+  // default wherever it is installed; the API path serves the SAME model off
+  // XAI_API_KEY and is what a cloud runner has. Before 2026-09-12 there was only
+  // the CLI, so a cloud lane could capture shots and never score — and this file
+  // exits 2 rather than print a receipt, so those lanes stalled at the bar.
+  let content = ''
+  let carrier = ''
+  if (existsSync(GROK_CLI)) {
+    carrier = 'grok-cli'
+    // The CLI is an agent: it is told to open the files rather than handed base64,
+    // which is also why the shots must be absolute paths.
+    const prompt = [
+      critic,
+      '',
+      `Read these screenshot files with your file tool and judge what is IN them:`,
+      ...images.map((i) => `  ${i.path}`),
+      '',
+      question,
+      '',
+      'Reply with the JSON object and nothing else — no preamble, no code fence.',
+    ].join('\n')
+
+    const res = spawnSync(
+      GROK_CLI,
+      ['-p', prompt, '-m', EVALUATOR_MODEL, '--permission-mode', 'bypassPermissions', '--output-format', 'plain'],
+      { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 900_000 },
+    )
+    if (res.status !== 0) {
+      console.error(`taste-evaluate: grok CLI exited ${res.status}: ${(res.stderr || '').trim().slice(0, 400)}`)
+      process.exit(2)
+    }
+    content = res.stdout ?? ''
+  } else if (process.env.XAI_API_KEY?.trim()) {
+    carrier = 'xai-api'
+    const prompt = [
+      critic,
+      '',
+      `The ${images.length} screenshot(s) below are the page, in this order: ${images.map((i) => i.name).join(', ')}. Judge what is IN them.`,
+      '',
+      question,
+      '',
+      'Reply with the JSON object and nothing else — no preamble, no code fence.',
+    ].join('\n')
+    try {
+      const out = await generateGrokVisionText({
+        prompt,
+        images: images.map((i) => ({ bytes: readFileSync(i.path) })),
+        model: EVALUATOR_MODEL,
+      })
+      content = out.text
+    } catch (err) {
+      console.error(`taste-evaluate: xAI evaluator failed — ${err instanceof Error ? err.message : String(err)}`)
+      process.exit(2)
+    }
+  } else {
+    console.error(
+      `taste-evaluate: no evaluator transport — no grok CLI at ${GROK_CLI} and XAI_API_KEY is unset. Set one.`,
+    )
     process.exit(2)
   }
-  const content = res.stdout ?? ''
   const parsed = parseJsonLoose(content)
   const defects =
     parsed && typeof parsed === 'object' && Array.isArray((parsed as { defects?: unknown }).defects)
@@ -221,6 +258,7 @@ async function main() {
     JSON.stringify(
       {
         evaluatorModel: EVALUATOR_MODEL,
+        evaluatorTransport: carrier,
         rubricVersion: RUBRIC_VERSION,
         shots: images.map((i) => i.name),
         result: parsed ?? content,
