@@ -11,29 +11,20 @@ The #who contact-link stack — it is a column of seven anchor tags with an arro
 
 ## External pages to beat (one sentence each)
 
-1. **Compass About** (https://www.compass.com/about/) — Faces and the firm's own record open the page; contact channels are secondary reach, not the fold.
-2. **The Agency About** (https://www.theagencyre.com/) — Editorial portraits at display scale carry identity before any link list.
+1. **Compass About** (https://www.compass.com/about/) — Steal STRUCTURE (story, proof, reach), not coast-to-coast scale and not a faces-first Meet the Team.
+2. **Redfin / SIR Heather Wells** (2026-09-07/12 brief) — Reviews and dated local closings are the proof; skip fee/Rocket copy.
 3. **Stripe About** (https://stripe.com/about) — Quiet claim + one proof object; no phone-book stack of equal weight links.
 
 ## Adapt from shipped code (do not generate from adjectives)
 
-- `app/about/_v3/AboutFaces.tsx` — open the file; adapt its markup/CSS rather than restating "quiet / editorial / expensive."
-- `components/site/v3/V3Proof.client.tsx` — open the file; adapt its markup/CSS rather than restating "quiet / editorial / expensive."
-- `components/site/v3/V3Doors.tsx` — open the file; adapt its markup/CSS rather than restating "quiet / editorial / expensive."
-
-## Researchy beats 1–8 (required checklist)
-
-Pull `competitiveBrief` from `ui_kits/about/parity.json` before building.
-Fail Looking if the page invents past it. Product lock: firm story +
-reviews + closings + Call|Text|Email|Schedule + team teaser→/team +
-inquiry→/contact. AboutFaces three Cards is not the opener.
+- `app/about/_v3/AboutFirm.tsx` — open the file; the About opener is the firm story, not AboutFaces.
+- `components/site/v3/V3Proof.client.tsx` — open the file; client reviews are the primary proof.
+- `app/about/_v3/AboutTeamTeaser.tsx` — photo + name only; every door is `/team`.
+- `components/site/v3/V3Doors.tsx` — Call | Text | Email | Schedule, Contact match.
 
 ## House form to reach for
 
-Per TASTE.md preference order and the Researchy brief: **firm story
-opens; reviews and closings in the fold; Call|Text|Email|Schedule as
-one reach control; team teaser doors to /team; inquiry doors to
-/contact**.
+Per TASTE.md and the 2026-09-12 Matt/Researchy lock: **firm-story hero; V3Proof reviews; local closings; Contact four-up; compact inquiry; Who you work with teasers → /team only**. A page that opens on three broker Cards fails, even if looking/taste likes the portraits.
 
 Banned fallback: another stacked Quiet → figure-row → ledger. If the section is data, pick a form from: hero figure · stat tile with sparkline · emphasis line with a scrubber · horizontal bar · dot strip · slope · small multiples · beeswarm · map with data-encoded cells · table.
 
