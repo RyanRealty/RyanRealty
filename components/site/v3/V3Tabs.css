@@ -67,10 +67,42 @@
   transition: color var(--v3-dur-state) var(--v3-ease-out);
 }
 
+/* THE SELECTED TAB CARRIES ITS OWN GROUND. Cream text here sits over
+   .v3-tabs__indicator, an absolutely-positioned sibling at z-index 0. A person
+   reads cream on navy; a contrast checker cannot resolve a z-stacked background
+   and measures the label against the list's cream, so ci:a11y reported 1:1.
+
+   I fixed this once on the homepage's own :checked rules. The hero was then
+   rebuilt onto this primitive and the defect came straight back, which is the
+   tell that the page was the wrong home for it. Fixing it here covers every
+   caller and every future reimplementation.
+
+   The fill is delayed by exactly the indicator's travel so the bar still
+   animates across an empty track and the ground lands as it arrives; the tab
+   being left clears with no delay, so the bar is the only navy in motion. No
+   border-radius here — the caller's own rounding applies. */
 .v3 .v3-tabs__tab--active,
 .v3 .v3-tabs [role="tab"][aria-selected="true"] {
+  background: var(--v3-ink);
   color: var(--v3-ink-on-navy) !important;
   font-weight: var(--v3-weight-strong);
+  transition:
+    color var(--v3-dur-state) var(--v3-ease-out),
+    background-color 0s linear var(--v3-dur-state);
+}
+
+.v3 .v3-tabs [role="tab"][aria-selected="false"] {
+  background: transparent;
+  transition:
+    color var(--v3-dur-state) var(--v3-ease-out),
+    background-color 0s linear 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3 .v3-tabs__tab--active,
+  .v3 .v3-tabs [role="tab"][aria-selected="true"] {
+    transition: background-color 0s linear 0s;
+  }
 }
 
 .v3 .v3-tabs:focus-within .v3-tabs__list {

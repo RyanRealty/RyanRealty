@@ -44,6 +44,16 @@ import { getListingTiles } from '@/lib/data/listings/getListingTiles'
 import { isServiceAreaCity } from '@/lib/data/listings/service-area'
 import type { ListingTile } from '@/lib/data/types/listing'
 
+/**
+ * How many price_drop events one pull reads before filtering. Named because
+ * Step 4 publishes the post-filter count as the page's headline population,
+ * so this number is the ceiling on a figure a reader sees. ~545 events land in
+ * a typical 7 days (see the DATA SOURCE note above), so 1000 is headroom, not
+ * a cap in practice — and the saturation check below shouts if that stops
+ * being true.
+ */
+const EVENT_BUFFER = 1000
+
 // ─── Types ────────────────────────────────────────────────────────────────
 
 /** One listing with a documented price reduction. */
@@ -143,6 +153,28 @@ export type ActivityEventRow = {
     previous_price?: number | null
     new_price?: number | null
   } | null
+}
+
+/**
+ * Split the two questions a price-drops page asks: WHAT DO WE DRAW, and HOW
+ * MANY ARE THERE. Exported so the rule is unit-testable — getPriceDrops itself
+ * needs Supabase, and this is the line that was wrong.
+ *
+ * `total` is the population (`joined.length`). The cap governs only the drawn
+ * set. Returning `capped.length` made the two answers the same number, so the
+ * page could never report more cuts than it drew: /price-drops said "60 price
+ * cuts this week" (region cap 60) and /price-drops/bend said "40 price cuts in
+ * Bend" (city cap 40), which is how Bend 40 + Redmond 32 came to exceed a
+ * region of 60 on production, 2026-09-11.
+ */
+export function drawnRowsAndTotal<T>(
+  joined: readonly T[],
+  regionCap: number,
+  offset: number,
+  limit: number,
+): { page: T[]; total: number } {
+  const capped = joined.slice(0, regionCap)
+  return { page: capped.slice(offset, offset + limit), total: joined.length }
 }
 
 // ─── Tile → PriceDrop mapper ──────────────────────────────────────────────
@@ -256,10 +288,26 @@ async function fetchPriceDrops(
     .eq('event_type', 'price_drop')
     .gte('event_at', windowStart)
     .order('event_at', { ascending: false })
-    .limit(1000) // generous buffer: fetch all, filter after join
+    .limit(EVENT_BUFFER) // generous buffer: fetch all, filter after join
 
   if (eventsError) {
     throw new Error(`[getPriceDrops] activity_events query error: ${eventsError.message}`)
+  }
+
+  // THE BUFFER IS THE ONE THING THAT CAN STILL MAKE `total` A FLOOR (§0).
+  //
+  // Step 4 now publishes `joined.length` as the population, which is only a
+  // true count while this fetch sees every event in the window. The buffer is
+  // 1000 against a documented ~545 price-drop events per 7 days, so it has
+  // headroom — but volume grows, and a silently saturated buffer would put the
+  // page right back to publishing a cap as a count, which is the defect that
+  // was just fixed. Say so loudly rather than let it rot back in.
+  if (rawEvents && rawEvents.length >= EVENT_BUFFER) {
+    console.error(
+      `[getPriceDrops] event buffer saturated at ${EVENT_BUFFER} over ${days}d — ` +
+        'the published total is now a FLOOR, not a count. Raise EVENT_BUFFER or ' +
+        'move the count to a server-side aggregate before trusting it (§0).',
+    )
   }
 
   if (!rawEvents || rawEvents.length === 0) {
@@ -338,8 +386,25 @@ async function fetchPriceDrops(
   joined.sort((a, b) => (b.lastDropPct ?? 0) - (a.lastDropPct ?? 0))
   const capped = joined.slice(0, regionCap)
 
-  const total = capped.length
-  const page = capped.slice(offset, offset + limit)
+  // THE TOTAL IS THE POPULATION, NOT THE CAP (§0, 2026-09-11).
+  //
+  // This read `capped.length`, so `total` could never exceed regionCap — 60
+  // region-wide, 40 for a city. /price-drops therefore published "60 price
+  // cuts this week" and /price-drops/bend published exactly "40 price cuts in
+  // Bend", both of them caps wearing a count's clothes. The arithmetic gave it
+  // away on production: Bend 40 + Redmond 32 = 72 cuts inside a region that
+  // claimed 60. Two cities cannot contain more than the whole.
+  //
+  // app/price-drops/page.tsx has asked for the population since the
+  // 2026-08-27 audit — its own comment reads "THE COUNT IS THE FULL
+  // POPULATION" and it deliberately captions with `total` rather than with the
+  // rendered row count. That audit fixed the caption; the DAL behind it never
+  // returned a population, so the page has been printing a cap ever since.
+  // `joined` is every eligible drop after the city filter and the was>now
+  // test, which is exactly the population the caption names. The cap still
+  // governs what is DRAWN (`capped`), which is the honest split: show the
+  // steepest sixty, say how many there are.
+  const { page, total } = drawnRowsAndTotal(joined, regionCap, offset, limit)
 
   return { drops: page, total, fetchedAt }
 }

@@ -88,7 +88,22 @@ export function listedVsDetachedNote(input: {
     return null
   }
   return [
-    `That ${detachedCount.toLocaleString('en-US')} is single-family only, which is the population every figure on this page measures.`,
+    // "this page's market figures", NOT "every figure on this page" (2026-09-11).
+    //
+    // The old wording was a universal claim the page itself contradicts. The
+    // Atlas on a community route is passed `atlasView.dots` UNFILTERED — every
+    // property type — where the city route passes houses only, and its own
+    // header says so: Tetherow's map reads "every active and pending mark is a
+    // live MLS listing" against Bend's "every active and pending DETACHED
+    // mark". Live on /communities/tetherow, that map published 28 for sale
+    // beside this sentence's claim that every figure on the page measures
+    // single-family. A sentence written to reconcile two counts must not
+    // overclaim about a third.
+    //
+    // Narrowed rather than extended to name the map: the map carries its own
+    // trace already, and asserting here what the map draws would couple this
+    // wording to a component this file cannot see.
+    `That ${detachedCount.toLocaleString('en-US')} is single-family only, which is the population this page's market figures measure.`,
     `${placeName} also has ${listedCount.toLocaleString('en-US')} homes listed across its named subdivisions when every property type is counted.`,
   ]
 }

@@ -292,3 +292,61 @@ describe('buildMarketFaq at an untrusted grain', () => {
     expect(datasetVariables.find((v) => v.name === 'Months of Supply')?.value).toBe(7.5)
   })
 })
+
+// TWO COUNTS OF ONE PLACE, RECONCILED IN THE ANSWER (§0 rule 5).
+//
+// /cities/bend published 645 in its H1, its months-of-supply ratio and this FAQ
+// — every detached house whose MLS city is Bend — beside an Atlas dock reading
+// "502 for sale", the houses inside the recorded Bend boundary (production,
+// 2026-09-11). Both traces were correct and each named its own population, which
+// is precisely the state the neighborhood grain was in when a separate evaluator
+// read it as an unreconciled contradiction on 2026-09-08 and was right to: the
+// reader has to be told. The note rides inside the answer so the visible FAQ and
+// the FAQPage JSON-LD carry it together.
+describe('buildMarketFaq — the inventory answer reconciles a second count', () => {
+  const bend = {
+    grain: 'city' as const,
+    source: 'market-truth' as const,
+    activeCount: 645,
+    refreshedAt: '2026-09-11',
+  }
+  // Worded as the city page words it: "the recorded Bend boundary", never
+  // "Bend's" — four Central Oregon cities end in s and the possessive read
+  // "Sisters's recorded boundary" on a dev render (2026-09-11).
+  const note =
+    'The map on this page counts 502 — the houses inside the recorded Bend ' +
+    'boundary. This count is every detached house whose MLS city is Bend. ' +
+    'Two honest counts of two populations, and neither is a correction of the other.'
+
+  const inventoryOf = (input: Parameters<typeof buildMarketFaq>[1]) =>
+    buildMarketFaq('Bend', input).faqs.find((f) => f.question.includes('How many single-family'))
+
+  it('appends the note to the answer, after the count sentence', () => {
+    const faq = inventoryOf({ ...bend, activeCountNotes: [note] })
+    expect(faq?.answer).toContain('There are 645 active single-family listings in Bend')
+    expect(faq?.answer).toContain('The map on this page counts 502')
+    expect(faq?.answer).toContain('neither is a correction of the other')
+    // The count sentence still leads: an answer engine quoting the first
+    // sentence alone quotes the figure, not the caveat.
+    expect(faq?.answer.indexOf('There are 645')).toBeLessThan(faq!.answer.indexOf('The map on this page'))
+  })
+
+  it('says nothing extra when the caller passes no note — one count, one sentence', () => {
+    const faq = inventoryOf(bend)
+    expect(faq?.answer).toBe('There are 645 active single-family listings in Bend as of September 2026.')
+  })
+
+  it('ignores empty and whitespace-only notes rather than publishing a dangling space', () => {
+    const faq = inventoryOf({ ...bend, activeCountNotes: ['', '   '] })
+    expect(faq?.answer).toBe('There are 645 active single-family listings in Bend as of September 2026.')
+  })
+
+  it('never lets the note become the count: the Dataset variable stays the figure', () => {
+    // `grain` is written out rather than spread: ci:mos-grain-trust reads this
+    // call with the TypeScript AST and requires a LITERAL grain at every
+    // buildMarketFaq site, because a spread can carry an untrusted grain in
+    // from somewhere the reader of this line cannot see.
+    const r = buildMarketFaq('Bend', { ...bend, grain: 'city', activeCountNotes: [note] })
+    expect(r.datasetVariables).toContainEqual({ name: 'Active Listings', value: 645 })
+  })
+})

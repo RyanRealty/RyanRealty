@@ -292,6 +292,11 @@ describe('V3Instrument mounts the chart atom', () => {
  * words "All 1 figures". /subdivisions/golf-homes-at-tetherow hit both at once:
  * one figure, no chart, and that figure — the plat's 107 lifetime closed sales —
  * is the entire reason the section renders.
+ *
+ * SITE-88 later replaced that unlabelled default with "The rest of the figures",
+ * because a row count tells a reader nothing about whether they want what is
+ * behind the fold. The assertions below moved with it; what they protect did
+ * not change — a lone figure is still never hidden, whatever the summary says.
  */
 describe('V3Instrument fold', () => {
   const two = [
@@ -319,7 +324,7 @@ describe('V3Instrument fold', () => {
       chart: { caption: v3Text('Closed by year'), series: [MEDIAN] },
     })
     expect(html).toContain('v3-instrument__fold')
-    expect(html).toContain('All 2 figures')
+    expect(html).toContain('The rest of the figures')
   })
 
   it('leaves the figures open when foldAfter is 0 and there is no chart to answer', () => {
@@ -329,7 +334,7 @@ describe('V3Instrument fold', () => {
     expect(html).toContain('$475K')
   })
 
-  it('never folds a lone figure behind "All 1 figures"', () => {
+  it('never folds a lone figure behind the summary, whatever the summary says', () => {
     const html = render({
       figures: one,
       foldAfter: 0,
@@ -337,6 +342,7 @@ describe('V3Instrument fold', () => {
       chart: { caption: v3Text('Closed by year'), series: [MEDIAN] },
     })
     expect(html).not.toContain('All 1 figures')
+    expect(html).not.toContain('The rest of the figures')
     expect(html).not.toContain('v3-instrument__fold')
     expect(html).toContain('107')
   })

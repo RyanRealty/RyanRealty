@@ -1496,7 +1496,12 @@ export default async function SubdivisionPage({ params }: Props) {
         {unsoldRead.measured ? (
         <V3Quiet
           id="outcomes"
-          eyebrow={`${displayName} · What did not sell`}
+          // THE EYEBROW DOES NOT REPEAT THE HEADING. The heading right under it
+          // already reads "What did not sell in Golf Homes at Tetherow", so the
+          // plat name in the eyebrow bought nothing and cost a line: at 375 it
+          // wrapped and orphaned the single word "SELL" (2026-09-09 evaluator).
+          // The same rule SITE-52 applied to the Ledger's `when`.
+          eyebrow="What did not sell"
           heading={
             unsoldRead.clean
               ? `Everything that came off the market in ${displayName} sold`
@@ -1504,30 +1509,33 @@ export default async function SubdivisionPage({ params }: Props) {
           }
           headingLevel={2}
           items={[
+            // NO STANDALONE FIGURE CELL HERE (2026-09-09, the merge evaluator).
+            // Two things were wrong with it. It printed the count a second
+            // time — the sentence already opens "One home came off the market
+            // in X without selling" — and, worse, it was the THIRD
+            // eyebrow-heading-bignumber-source cell in a row once main's plat
+            // opening landed on the same page: "the two halves each reached
+            // for the same primitive, and stacked together the repetition is
+            // visible in a way it wasn't when each half was judged alone."
+            // The count stays in the sentence, where it reads, and the §0
+            // trace moves to the section's own source line below.
             {
               kind: 'prose' as const,
               body: unsoldRead.sentence,
-              ...(unsoldRead.figure
-                ? {
-                    figure: {
-                      value: unsoldRead.figure.value,
-                      label: unsoldRead.figure.label,
-                      source: unsoldRead.source,
-                      sourceName: 'Central Oregon MLS, this plat',
-                      ...(platUnsold?.windowEnd ? { updatedAt: platUnsold.windowEnd } : {}),
-                    },
-                  }
-                : {}),
+              // The trace sits under the sentence that carries the number, not
+              // at the section's foot. At the foot it landed directly beneath
+              // the wider-market door's own citation and the two read as one
+              // duplicated component ("two bare SOURCE rows touching each
+              // other", the merge evaluator, 2026-09-09).
+              source: unsoldRead.source,
+              sourceName: 'Central Oregon MLS, this plat',
+              ...(platUnsold?.windowEnd ? { updatedAt: platUnsold.windowEnd } : {}),
             },
-            ...(unsoldRead.clean
-              ? [
-                  {
-                    kind: 'prose' as const,
-                    term: 'How this is counted',
-                    body: unsoldRead.source,
-                  },
-                ]
-              : []),
+            // The clean case used to restate the trace as a prose row headed
+            // "How this is counted", because the zero had no figure to hang a
+            // source line on. The section carries `source` now, so both cases
+            // trace the same way and neither prints the method twice.
+
             ...(widerPlace
               ? [
                   {
@@ -1535,9 +1543,16 @@ export default async function SubdivisionPage({ params }: Props) {
                     href: widerPlace.href,
                     lead: true,
                     mark: 'market' as const,
-                    detail:
-                      widerPlace.geoType === 'city'
-                        ? `Every neighborhood, every plat, and the pace the whole city is setting.`
+                    // A FACT, NOT A FLOURISH. Two separate evaluators called
+                    // the old copy filler by name — "connective filler between
+                    // two stronger ideas" and "adds nothing the FAQ rows below
+                    // it don't already do". The active count is already inside
+                    // the door figure's own trace, so printing it here is the
+                    // same sourced number said out loud rather than a new one.
+                    detail: widerOverlay?.headlines
+                      ? `${widerOverlay.headlines.activeCount.toLocaleString('en-US')} homes for sale across ${widerPlace.label} right now.`
+                      : widerPlace.geoType === 'city'
+                        ? `Every neighborhood and every plat in the city, on one page.`
                         : `The ring around this plat, with its own inventory and its own pace.`,
                     ...(widerOverlay?.headlines
                       ? {

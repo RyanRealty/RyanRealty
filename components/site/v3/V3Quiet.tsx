@@ -237,6 +237,23 @@ export type V3QuietProse = {
    * read as "an unfinished card, not restraint".
    */
   figure?: V3QuietFigure
+  /**
+   * The §0 trace for a passage that states its number IN WORDS, with no figure
+   * column. Until this existed the only outlet for a trace was `figure`, which
+   * forced a section to print its number twice — once in the sentence and once
+   * as a display numeral — to be allowed to cite it. On /subdivisions the
+   * separate evaluator scored exactly that: three sections in a row resolving
+   * to the same eyebrow-heading-bignumber-source cell, and when #outcomes
+   * dropped its numeral to break the repeat, the trace had nowhere to go but
+   * the section-level `source`, which then collided with the door's own
+   * citation ("two bare SOURCE rows touching each other", 2026-09-09).
+   * A passage's trace belongs under the passage.
+   */
+  source?: string
+  /** The plain-words clause shown before the trace opens. See V3QuietFigure. */
+  sourceName?: string
+  /** When the passage's figures were read. Rendered through the formatter. */
+  updatedAt?: string
 }
 
 /**
@@ -477,6 +494,9 @@ type RenderableItem =
       body: string[]
       id?: string
       figure?: V3QuietFigure
+      source?: string
+      sourceName?: string
+      updatedAt?: string
     }
   | {
       kind: 'fact'
@@ -514,6 +534,12 @@ function toRenderable(items: readonly V3QuietItem[]): RenderableItem[] {
         body,
         id: text(item.id),
         figure: figureOf(item.figure),
+        // A passage's own trace. Dropped rather than rendered empty, the way
+        // every other optional here is: an unsourced disclosure control is
+        // worse than none.
+        ...(text(item.source) ? { source: text(item.source) as string } : {}),
+        ...(text(item.sourceName) ? { sourceName: text(item.sourceName) as string } : {}),
+        ...(text(item.updatedAt) ? { updatedAt: text(item.updatedAt) as string } : {}),
       })
       continue
     }
@@ -1012,6 +1038,17 @@ export function V3Quiet({
                         ))}
                       </div>
                     )}
+                    {/* The passage's own trace, under the passage, when the
+                        number it documents is in the words rather than in a
+                        figure column. */}
+                    {item.source && !item.figure ? (
+                      <V3SourceDisclosure
+                        source={item.source}
+                        sourceName={item.sourceName ?? undefined}
+                        updatedAt={item.updatedAt ?? undefined}
+                        className="v3-quiet__prosesource"
+                      />
+                    ) : null}
                   </li>
                 )}
                 {sourceLine && index === lastFactIndex ? (

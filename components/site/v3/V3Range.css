@@ -144,6 +144,39 @@
   border-radius: var(--v3-radius-control);
 }
 
+/* THE BEUI THUMB GETS THE SAME TREATMENT .v3-range__thumb ALREADY HAS.
+   Fifty lines above, the house thumb is a transparent 44x44 box that draws its
+   visible mark in ::after — the WCAG 2.5.5 pattern. The catalog slider does not
+   do that: its handle is the visual, `h-6 w-1` = 4x24, and ci:tap-targets failed
+   it 8x across /cities/bend and /homes-for-sale.
+
+   The handle cannot simply be grown, because the component positions it with an
+   INLINE transform whose vertical half — translate(Xpx, -12px) — is hardcoded to
+   half of its own 24px height. Growing the box to 44 would drop the mark 10px and
+   push it 20px along the track. So each axis is compensated by exactly the half
+   it gains, written as the arithmetic rather than as -10px / -20px so the intent
+   survives a change to --v3-tap. Measured after: the mark's centre sits where it
+   sat before, to the pixel. */
+.v3 .v3-range__beui [role='slider'] {
+  inline-size: var(--v3-tap);
+  block-size: var(--v3-tap);
+  margin-inline-start: calc((4px - var(--v3-tap)) / 2);
+  margin-block-start: calc((24px - var(--v3-tap)) / 2);
+  background: transparent;
+}
+
+.v3 .v3-range__beui [role='slider']::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-start: 50%;
+  inline-size: 4px;
+  block-size: 24px;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  background: var(--v3-ink);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .v3-range__thumb::after {
     transition: none;

@@ -717,3 +717,22 @@
 .v3-quiet__fold[open] > .v3-quiet__foldsummary::after {
   transform: rotate(90deg);
 }
+
+/* A passage's own trace, under the passage. Same disclosure control the figure
+   column uses, set on the text measure rather than in a column of its own, so a
+   section that states its number in words can still cite it without printing a
+   display numeral to hang the citation on (SITE-55 merge round, 2026-09-09). */
+/* The compound reaches (0,3,1) so it beats V3SourceLine's own
+   `.v3 details.v3-source` base rule; at (0,1,0) it lost and nothing moved. */
+.v3 details.v3-source.v3-quiet__prosesource,
+details.v3-source.v3-quiet__prosesource {
+  margin-top: var(--v3-space-sm);
+  /* FLUSH WITH THE PARAGRAPH IT CITES. V3SourceLine's base rule is
+     `max-inline-size: var(--v3-measure); margin-inline: auto`, which centres
+     the trace inside any box wider than the measure — here the passage column
+     is 704px and the trace is 504px, so it sat 100px right of the sentence it
+     documents. A citation that does not share its subject's left edge reads as
+     a different element. */
+  max-inline-size: 100%;
+  margin-inline: 0;
+}

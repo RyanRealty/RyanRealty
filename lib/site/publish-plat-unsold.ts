@@ -40,6 +40,16 @@ function windowPhrase(row: Pick<PlatUnsoldOutcome, 'windowStart' | 'windowEnd'>)
  * for a plat where nothing came off unsold in the window — so a null is the
  * clean case, not a missing read.
  */
+/**
+ * The behaviour clauses are written to follow a comma ("it ran 223 days",
+ * "and cut the ask 7.1% first"). Standing alone as their own sentence, the
+ * leading conjunction is noise and the first letter is a capital.
+ */
+function sentenceCase(text: string): string {
+  const body = text.replace(/^and\s+/, '')
+  return body.charAt(0).toUpperCase() + body.slice(1)
+}
+
 export function publishPlatUnsold(input: {
   placeName: string
   outcome: PlatUnsoldOutcome | null
@@ -73,9 +83,15 @@ export function publishPlatUnsold(input: {
       clean: true,
       figure: null,
       sentence: `Every home that came off the market in ${placeName} in ${when} sold. None expired, none was withdrawn, none was cancelled.`,
+      // THE TRACE OPENS WITH ITS SOURCE'S NAME. V3SourceLine derives the one
+      // visible clause structurally, so a trace that opened
+      // "public.subdivision_plat_unsold_mv, …" published the visible words
+      // "SOURCE public" — a table identifier, and half of one. The name comes
+      // first and the plumbing follows it.
       source:
-        `public.subdivision_plat_unsold_mv, the plat's own row, measured and zero — listings with StandardStatus Expired, Canceled or Withdrawn and an off-market date inside the window, ` +
-        `attributed to the recorded plat by point-in-polygon and by MLS subdivision name, counted once each. The view carries a row for every plat it measures, so this zero was measured.`,
+        `Central Oregon MLS, this plat — measured and zero. Listings with StandardStatus Expired, Canceled or Withdrawn and an off-market date inside the window, ` +
+        `attributed to the recorded plat by point-in-polygon and by MLS subdivision name, counted once each, read from public.subdivision_plat_unsold_mv. ` +
+        `The view carries a row for every plat it measures, so this zero was measured rather than missing.`,
     }
   }
 
@@ -91,12 +107,19 @@ export function publishPlatUnsold(input: {
   if (outcome.cutCount > 0 && outcome.medianCutPct != null) {
     const cut = outcome.medianCutPct.toFixed(1)
     parts.push(
-      outcome.cutCount === n
-        ? `and every one cut the ask first, a median of ${cut}%`
-        : `and ${outcome.cutCount} of them cut the ask first, a median of ${cut}%`,
+      // The n === 1 case has to read as one home, not as a population. "every
+      // one cut the ask first, a median of 7.1%" beside "One home came off the
+      // market" was the sentence a Golf Homes at Tetherow render actually
+      // printed: grammatically plural, and a "median" over a single row is a
+      // value, not a median.
+      n === 1
+        ? `and cut the ask ${cut}% first`
+        : outcome.cutCount === n
+          ? `and every one cut the ask first, a median of ${cut}%`
+          : `and ${outcome.cutCount} of them cut the ask first, a median of ${cut}%`,
     )
   } else if (outcome.cutCount === 0) {
-    parts.push(`and not one of them cut the ask first`)
+    parts.push(n === 1 ? `and never cut the ask` : `and not one of them cut the ask first`)
   }
 
   // NO SOLD COMPARISON IN THIS SENTENCE. It read well — "19 did not sell, 9
@@ -112,13 +135,27 @@ export function publishPlatUnsold(input: {
     measured: true,
     clean: false,
     figure: { value: n.toLocaleString('en-US'), label: n === 1 ? 'home did not sell' : 'homes did not sell' },
-    sentence: `${parts.join(', ')}.${beside}`,
+    // TWO SENTENCES, NOT ONE COMMA RUN. The window phrase ends in a date that
+    // already carries a comma ("the twelve months to Sep 9, 2026"), so joining
+    // the whole thing on commas published "…to Sep 9, 2026, it ran 223 days,
+    // and cut the ask 7.1% first." The count and its window are one statement;
+    // what those listings did is the next.
+    sentence: `${parts[0]}.${parts.length > 1 ? ` ${sentenceCase(parts.slice(1).join(', '))}.` : ''}${beside}`,
     source:
-      `public.subdivision_plat_unsold_mv, the plat's own row: listings with StandardStatus Expired, Canceled or Withdrawn and an off-market date between ` +
+      // Opens with the source's name for the same reason as the clean case.
+      `Central Oregon MLS, this plat — listings with StandardStatus Expired, Canceled or Withdrawn and an off-market date between ` +
       `${outcome.windowStart ?? 'the window start'} and ${outcome.windowEnd ?? 'the window end'}, attributed to the recorded plat by point-in-polygon ` +
-      `(${outcome.unsoldInPolygon}) and by MLS subdivision name (${outcome.unsoldByName}), counted once each. ` +
-      `Days listed is the contract date to the off-market date, median over ${outcome.daysSample} of the ${n} that carry both dates` +
-      (outcome.cutCount > 0 ? `; the cut is the total price change, median over the ${outcome.cutCount} that cut` : '; none of them cut the ask') +
+      `(${outcome.unsoldInPolygon}) and by MLS subdivision name (${outcome.unsoldByName}), counted once each, read from public.subdivision_plat_unsold_mv. ` +
+      // A "median over 1" is a value, not a median, and the trace should not
+      // claim a statistic it did not compute (§0).
+      (outcome.daysSample === 1 && n === 1
+        ? `Days listed is the contract date to the off-market date, on the one listing that carries both dates`
+        : `Days listed is the contract date to the off-market date, median over ${outcome.daysSample} of the ${n} that carry both dates`) +
+      (outcome.cutCount === 0
+        ? '; none of them cut the ask'
+        : outcome.cutCount === 1
+          ? '; the cut is the total price change on the one that cut'
+          : `; the cut is the total price change, median over the ${outcome.cutCount} that cut`) +
       `. Internet-display and IDX opt-outs are excluded, as everywhere else on the site.`,
   }
 }

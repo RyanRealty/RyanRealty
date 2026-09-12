@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { publishableYearBuilt } from './getListingDetail'
 
 /**
  * A malformed listing key must be a MISS, never a thrown exception.
@@ -44,5 +45,42 @@ describe('getListingDetail input handling', () => {
 
   it('keeps throwing on a transient DB failure so an error-null is never cached', () => {
     expect(SRC).toMatch(/throw new Error\(\s*`listings detail lookup failed for/)
+  })
+})
+
+// A YEAR THE FEED CANNOT MEAN IS NOT A YEAR (§0, 2026-09-11).
+//
+// 2448 NW Violet Ave (ListNumber 220223541) published "Built 3672" on the page
+// AND "yearBuilt":3672 in its RealEstateListing JSON-LD, because the MLS row
+// carries year_built = 3672 — the identical value as its TotalLivingAreaSqFt.
+// Someone typed the square footage into the Year Built box. The old guard was
+// `year_built > 1800`, which 3672 clears, so the same value also produced a
+// propertyAge of -1646. A year needs a CEILING, not only a floor.
+describe('publishableYearBuilt', () => {
+  const thisYear = new Date().getFullYear()
+
+  it('withholds a square footage typed into the year box', () => {
+    expect(publishableYearBuilt(3672)).toBeNull()
+  })
+
+  it('withholds anything past next year, and keeps next year itself', () => {
+    // New construction legitimately names next year; two years out is a typo.
+    expect(publishableYearBuilt(thisYear + 1)).toBe(thisYear + 1)
+    expect(publishableYearBuilt(thisYear + 2)).toBeNull()
+  })
+
+  it('keeps a real year, including a genuinely old one', () => {
+    expect(publishableYearBuilt(1910)).toBe(1910)
+    expect(publishableYearBuilt(thisYear)).toBe(thisYear)
+    expect(publishableYearBuilt(1801)).toBe(1801)
+  })
+
+  it('withholds the floor cases and anything unreadable', () => {
+    expect(publishableYearBuilt(1800)).toBeNull()
+    expect(publishableYearBuilt(0)).toBeNull()
+    expect(publishableYearBuilt(-1)).toBeNull()
+    expect(publishableYearBuilt(null)).toBeNull()
+    expect(publishableYearBuilt(undefined)).toBeNull()
+    expect(publishableYearBuilt(Number.NaN)).toBeNull()
   })
 })

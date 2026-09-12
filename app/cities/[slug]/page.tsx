@@ -517,10 +517,47 @@ export default async function CityDetailPage({ params }: Props) {
   // complete month, so the FAQ and the chart cannot disagree.
   const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
   const saleMedian = latestSaleMedian(chartMonths.months, currentMonthKey)
+  // TWO COUNTS OF ONE CITY, AND THE PAGE SAYS WHY (§0 rule 5).
+  //
+  // This page publishes hud.active in the H1, the MOS ratio and the FAQ — every
+  // detached house whose MLS city is this one. The Atlas below publishes the
+  // houses whose mark falls inside the recorded boundary, which is a different
+  // population: Bend reads 645 against the map's 502 (production, 2026-09-11).
+  // Both traces were already correct and each named its own population, which
+  // is exactly the state the NEIGHBORHOOD grain was in when an evaluator read
+  // it as a contradiction on 2026-09-08 and was right to — a reader has to be
+  // told, not left to reconstruct it from two source lines. That ruling is in
+  // docs/plans/PUBLIC_PRODUCT/decisions.md (§3, the community grain: "the
+  // count, the map, and the list cannot describe three populations"); it was
+  // never carried to the city grain. It is now.
+  //
+  // Counted off atlas.dots with the SAME predicate the dock counts with
+  // (V3Atlas.client.tsx: houses, d.s === 'active'), so the sentence can never
+  // name a number the map does not show. A timed-out atlas is null, so the
+  // note is dropped rather than guessed — absent is not zero.
+  const atlasActiveHouses = atlas
+    ? atlas.dots.filter((d) => d.t === 'house' && d.s === 'active').length
+    : null
+  const activeCountNotes =
+    atlasActiveHouses != null &&
+    atlasActiveHouses > 0 &&
+    hud.active != null &&
+    atlasActiveHouses !== hud.active
+      ? [
+          // "the recorded <city> boundary", never "<city>'s" — Sisters, Madras,
+          // Metolius and Warm Springs all end in s and the possessive rendered
+          // "Sisters's recorded boundary" (dev, 2026-09-11). This is also the
+          // Atlas's own wording for the same set, so the two lines read as one
+          // description of one population instead of two paraphrases.
+          `The map on this page counts ${atlasActiveHouses.toLocaleString('en-US')} — the houses inside the recorded ${cityName} boundary. This count is every detached house whose MLS city is ${cityName}. Two honest counts of two populations, and neither is a correction of the other.`,
+        ]
+      : null
+
   const marketFaqInput: MarketFaqInput = {
     grain: 'city',
     source: 'market-truth',
     activeCount: hud.active,
+    activeCountNotes,
     pulseActiveCount: hud.active,
     medianListPrice: hud.medianList,
     medianSalePrice: saleMedian?.value ?? null,

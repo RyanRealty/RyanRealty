@@ -194,7 +194,7 @@ export function survivingDefects(defects, root) {
  * carries an `invalid` field in that case so the run can record the class
  * rather than silently drop it (ACCEPT: "Exit non-zero on any invalid row").
  */
-export function buildRow({ key, url, route, scorings, builderModel, shots, root }) {
+export function buildRow({ key, url, route, scorings, builderModel, shots, root, evaluatorModel = null, transport = null }) {
   const problems = []
   const { median, picked, scores } = selectMedianScoring(scorings)
 
@@ -214,6 +214,8 @@ export function buildRow({ key, url, route, scorings, builderModel, shots, root 
         beats: '',
         verdict: '',
         builderModel,
+        evaluatorModel,
+        transport,
         shots,
         invalid: problems.join(' '),
       },
@@ -242,10 +244,43 @@ export function buildRow({ key, url, route, scorings, builderModel, shots, root 
     beats: picked?.beats ?? '',
     verdict: picked?.verdict ?? '',
     builderModel,
+    evaluatorModel,
+    transport,
     shots,
   }
   if (problems.length > 0) row.invalid = problems.join(' ')
   return { row, problems }
+}
+
+/**
+ * A table whose rows were not all scored by the same model is not a ranking.
+ *
+ * WHY (2026-09-12). `instrument` is written once per run and `rows` are merged
+ * by key, so scoring one class with `--classes about` re-stamped all 25 rows
+ * with that run's evaluator while 24 of them still held marks from an earlier
+ * one. The committed table's instrument said claude-sonnet-5 and the evaluator
+ * constant had since become grok-4.6, so the next partial run would have
+ * relabelled two dozen sonnet marks as Grok marks. Rows now carry their own
+ * evaluatorModel; this reports the mix rather than averaging across rulers.
+ *
+ * Rows written before per-row provenance have no stamp and are reported as
+ * unrecorded — absent is not the same as matching.
+ */
+export function mixedEvaluatorWarning(rows, currentModel) {
+  const scored = (Array.isArray(rows) ? rows : []).filter((r) => Number.isInteger(r?.median))
+  if (scored.length === 0) return null
+  const unrecorded = scored.filter((r) => !isNonEmptyString(r.evaluatorModel))
+  const models = new Set(scored.filter((r) => isNonEmptyString(r.evaluatorModel)).map((r) => r.evaluatorModel))
+  if (unrecorded.length === 0 && models.size <= 1) return null
+  const parts = []
+  for (const m of [...models].sort()) {
+    parts.push(`${scored.filter((r) => r.evaluatorModel === m).length} on ${m}`)
+  }
+  if (unrecorded.length) parts.push(`${unrecorded.length} unrecorded (scored before per-row provenance)`)
+  return (
+    `this table mixes rulers — ${parts.join(', ')}. ` +
+    `Marks from different evaluator models are not comparable; re-score the rest on ${currentModel} before reading the ranking.`
+  )
 }
 
 /** builderModel === evaluatorModel is allowed (recorded + warned), never silently dropped. */

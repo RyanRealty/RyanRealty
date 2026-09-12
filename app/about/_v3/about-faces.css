@@ -894,7 +894,13 @@
 .about-faces__reach-text {
   display: inline-flex;
   align-items: center;
+  /* "Text" is a short label, so the row shrank this control to 38.2px wide and
+     ci:tap-targets failed it on /team at both widths. min-height alone only
+     guards one axis; WCAG 2.5.5 wants both. Centred so the label does not sit
+     against the left edge of the wider box. */
+  justify-content: center;
   min-height: var(--v3-tap);
+  min-inline-size: var(--v3-tap);
   padding-inline: var(--v3-space-2xs);
   color: var(--v3-ink);
   font-size: var(--v3-size-body-sm);

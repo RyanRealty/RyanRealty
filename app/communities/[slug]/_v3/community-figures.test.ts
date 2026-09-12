@@ -111,6 +111,21 @@ describe('reconcileListedVsDetachedFaq', () => {
     expect(reconcileListedVsDetachedFaq(baseFaqs, { placeName: 'Tetherow', listedCount: 25, detachedCount: null })).toEqual(baseFaqs)
     expect(reconcileListedVsDetachedFaq(baseFaqs, { placeName: 'Tetherow', listedCount: 0, detachedCount: 18 })).toEqual(baseFaqs)
   })
+
+  // THE RECONCILING SENTENCE MUST NOT OVERCLAIM ABOUT A THIRD FIGURE
+  // (2026-09-11). It read "the population every figure on this page measures",
+  // which the page itself contradicts: a community route passes the Atlas its
+  // dots UNFILTERED, so the map draws every property type, and on
+  // /communities/tetherow it published "28 for sale" beside this sentence while
+  // the answer said 15. (The city route filters the same map to houses — hence
+  // "every active and pending DETACHED mark" on Bend against "every active and
+  // pending mark" on Tetherow.) The claim is scoped to the market figures,
+  // which is what is actually true and what this file can actually know.
+  it('scopes its claim to the market figures, never to every figure on the page', () => {
+    const lines = listedVsDetachedNote({ placeName: 'Tetherow', listedCount: 27, detachedCount: 15 })
+    expect(lines?.[0]).toContain("this page's market figures")
+    expect(lines?.[0]).not.toContain('every figure on this page')
+  })
 })
 
 // D103 (2026-08-27): the FAQ's HOA answer must not print an unexplained

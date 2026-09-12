@@ -24,7 +24,7 @@ describe('publishPlatUnsold', () => {
     const read = publishPlatUnsold({ placeName: 'Tetherow Phase 1', outcome: outcome(), closedCount: 31 })
     expect(read.clean).toBe(false)
     expect(read.sentence).toContain('19 homes came off the market in Tetherow Phase 1 without selling')
-    expect(read.sentence).toContain('the middle one ran 124 days')
+    expect(read.sentence).toContain('The middle one ran 124 days')
     expect(read.sentence).toContain('8 of them cut the ask first, a median of 7.0%')
     expect(read.sentence).not.toContain('Over the same stretch')
     expect(read.figure).toEqual({ value: '19', label: 'homes did not sell' })
@@ -59,19 +59,48 @@ describe('publishPlatUnsold', () => {
       outcome: outcome({ medianDaysListed: null, daysSample: 0, cutCount: 0, medianCutPct: null }),
     })
     expect(read.sentence).not.toMatch(/\b0 days\b/)
-    expect(read.sentence).toContain('not one of them cut the ask first')
+    expect(read.sentence).toContain('Not one of them cut the ask first')
     expect(read.source).toContain('none of them cut the ask')
   })
 
-  it('says one home in the singular, and that it ran', () => {
+  it('says one home in the singular, and never calls a single value a median', () => {
     const read = publishPlatUnsold({
       placeName: 'Awbrey Glen',
       outcome: outcome({ unsoldCount: 1, cutCount: 1, daysSample: 1, medianCutPct: 3.2 }),
     })
     expect(read.sentence).toContain('One home came off the market')
-    expect(read.sentence).toContain('it ran 124 days')
-    expect(read.sentence).toContain('every one cut the ask first')
+    expect(read.sentence).toContain('It ran 124 days')
+    // A Golf Homes at Tetherow render printed "One home came off the market …
+    // and every one cut the ask first, a median of 7.1%": plural grammar over
+    // one row, and a "median" that is a single value. Both are wrong, and the
+    // second is a §0 claim the publisher did not compute.
+    expect(read.sentence).toContain('cut the ask 3.2% first')
+    expect(read.sentence).not.toContain('every one')
+    expect(read.sentence).not.toContain('median')
+    expect(read.source).toContain('on the one listing that carries both dates')
+    expect(read.source).toContain('the total price change on the one that cut')
     expect(read.figure?.label).toBe('home did not sell')
+  })
+
+  it('keeps the plural median wording when there is a population to take one over', () => {
+    const read = publishPlatUnsold({
+      placeName: 'Awbrey Glen',
+      outcome: outcome({ unsoldCount: 6, cutCount: 6, daysSample: 5, medianCutPct: 3.2 }),
+    })
+    expect(read.sentence).toContain('6 homes came off the market')
+    expect(read.sentence).toContain('The middle one ran 124 days')
+    expect(read.sentence).toContain('every one cut the ask first, a median of 3.2%')
+    expect(read.source).toContain('median over 5 of the 6 that carry both dates')
+    expect(read.source).toContain('median over the 6 that cut')
+  })
+
+  it('says a single home never cut, without the plural', () => {
+    const read = publishPlatUnsold({
+      placeName: 'Awbrey Glen',
+      outcome: outcome({ unsoldCount: 1, cutCount: 0, daysSample: 1, medianCutPct: null }),
+    })
+    expect(read.sentence).toContain('never cut the ask')
+    expect(read.sentence).not.toContain('not one of them')
   })
 
   it('carries both attributions and the window in the trace, and never an address', () => {

@@ -514,13 +514,23 @@ export function V3Instrument({
             ) : null}
             {tail.length > 0 ? (
               <details className="v3-instrument__fold">
-                {/* The default is the original JSX, not a joined string: React
-                    separates adjacent text nodes with a comment marker in the
-                    stream, so `All {n} figures` and `${'All '}${n} figures` are
-                    the same words and different bytes. A caller that passes no
-                    label must diff clean. */}
+                {/* THE DEFAULT NAMES A READING, NOT A ROW COUNT. It used to render
+                    `All {n} figures`, and fold-after.test.ts already said why that
+                    is wrong — a count "tells a reader nothing about whether they
+                    want it" — but the test only guards the five market pages, so
+                    every other folding caller kept publishing the count. SITE-88's
+                    evaluator found it on the region page and named this file.
+                    /cities/[slug], /cities/[slug]/[neighborhoodSlug],
+                    /communities/[slug], /subdivisions/[slug] and /months-of-supply
+                    all fold without a label and all inherit this line.
+
+                    A primitive cannot know what its caller's figures are about, so
+                    the default stays generic — but generic and editorial, not
+                    generic and numeric. Pass `foldLabel` and say the actual thing;
+                    this is the floor, not the target. No digit, which is also what
+                    fold-after.test.ts asserts of every label it checks. */}
                 <summary className="v3-instrument__fold-summary">
-                  {foldLabel ? foldLabel : <>All {figures.length} figures</>}
+                  {foldLabel ? foldLabel : 'The rest of the figures'}
                 </summary>
                 <div className="v3-instrument__figures">
                   {tail.map((figure, i) => renderFigure(figure, i + lead.length))}
