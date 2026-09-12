@@ -16,6 +16,7 @@ import type { MarketPulseSnapshot } from '@/lib/data'
 import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import { formatPriceExact } from '@/lib/format/money'
 import { MOS_PLAIN_LABEL } from '@/lib/market/classify'
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { listingsBrowsePath } from '@/lib/slug'
 import {
@@ -70,10 +71,18 @@ export function buildCityLedger(
       href: `/housing-market/${slug}`,
       when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} for sale`),
       what: v3Text(label),
-      detail:
-        snapshot.months_of_supply != null
-          ? v3Text(`${formatMonthsOfSupply(snapshot.months_of_supply)} months of supply`)
-          : undefined,
+      detail: (() => {
+        const mos = publishMonthsOfSupply({
+          grain: 'city',
+          source: 'market-truth',
+          pulseMos: snapshot.months_of_supply,
+          pulseActiveCount: snapshot.active_count,
+          displayedActiveCount: snapshot.active_count,
+        })
+        return mos != null
+          ? v3Text(`${formatMonthsOfSupply(mos)} months of supply`)
+          : undefined
+      })(),
       value: v3Text(formatPriceExact(snapshot.median_list_price)),
       id: slug,
     })
@@ -220,6 +229,9 @@ export function buildSfrFollowFigures(hud: {
       value: v3Text(formatPriceExact(hud.medianList)),
       label: v3Text('median list price, single-family'),
       href: '/housing-market/central-oregon',
+      sentence: v3Text(
+        'Half the listed single-family houses sit above this price, half sit below.',
+      ),
     })
   }
   if (hud != null && hud.active != null && hud.active > 0) {
@@ -227,6 +239,8 @@ export function buildSfrFollowFigures(hud: {
       value: v3Text(hud.active.toLocaleString('en-US')),
       label: v3Text('homes for sale, single-family'),
       href: listingsBrowsePath(),
+      count: hud.active,
+      sentence: v3Text('Single-family houses on the market across Central Oregon right now.'),
     })
   }
   if (mosText) {
@@ -234,6 +248,9 @@ export function buildSfrFollowFigures(hud: {
       value: v3Text(mosText),
       label: v3Text(MOS_PLAIN_LABEL),
       href: '/months-of-supply',
+      sentence: v3Text(
+        'How long the houses listed today would last at the recent sales pace, with nothing new coming on.',
+      ),
     })
   }
   if (hud?.daysToPending != null && hud.daysToPending > 0) {
@@ -241,6 +258,10 @@ export function buildSfrFollowFigures(hud: {
       value: v3Text(String(hud.daysToPending)),
       label: v3Text('days to an offer, last 90 days, single-family'),
       href: '/housing-market/central-oregon',
+      count: hud.daysToPending,
+      sentence: v3Text(
+        'The typical wait between a house going on the market and a seller accepting an offer.',
+      ),
     })
   }
   return figures
