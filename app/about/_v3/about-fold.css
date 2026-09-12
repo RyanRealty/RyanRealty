@@ -1,16 +1,36 @@
 /**
  * /about first viewport (SITE-90). Three broker Cards, the Bend office
  * as the Street View exterior, closings as a carousel. Never the interior sofa.
+ *
+ * Proof AboutFaces is display:contents so the office can sit between the
+ * firm beat and the roster on a phone (Matt: keep the exterior in the fold).
  */
 
 .about-fold {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-areas:
+    "beat"
+    "office"
+    "roster"
+    "sales";
   gap: var(--v3-space-md);
   padding-bottom: var(--v3-space-md);
 }
 
+.about-fold > .about-faces--proof {
+  display: contents;
+}
+
+.about-fold .about-faces--proof .about-faces__head {
+  grid-area: beat;
+}
+
+.about-fold .about-faces--proof .about-faces__roster {
+  grid-area: roster;
+}
+
 .about-fold__place {
+  grid-area: office;
   margin: 0;
   padding: 0 var(--v3-gutter);
 }
@@ -31,6 +51,7 @@
 }
 
 .about-fold__sales {
+  grid-area: sales;
   min-width: 0;
 }
 
@@ -76,30 +97,27 @@
 
 @media (min-width: 64rem) {
   .about-fold {
-    display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+    grid-template-areas:
+      "beat office"
+      "roster office"
+      "sales sales";
     align-items: start;
     column-gap: var(--v3-space-lg);
   }
 
-  .about-fold > .about-faces {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
   .about-fold__place {
-    grid-column: 2;
-    grid-row: 1;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
     padding-inline: 0 var(--v3-gutter);
   }
 
   .about-fold__place img {
-    aspect-ratio: 1 / 1;
-  }
-
-  .about-fold__sales {
-    grid-column: 1 / span 2;
-    grid-row: 2;
+    flex: 1 1 auto;
+    min-height: 18rem;
+    aspect-ratio: auto;
+    height: 100%;
   }
 
   .about-closings {

@@ -632,11 +632,11 @@ export function AboutFaces({
                       alt={person.name}
                       width={800}
                       height={1200}
-                      loading={index === 0 ? "eager" : "lazy"}
+                      loading="eager"
                       fetchPriority={index === 0 ? "high" : "auto"}
                       decoding="async"
                     />
-                    <AvatarFallback delayMs={400}>{faceInitials(person.name)}</AvatarFallback>
+                    <AvatarFallback delayMs={0}>{faceInitials(person.name)}</AvatarFallback>
                   </Avatar>
                   <CardTitle>
                     <Link href={person.href}>{person.name}</Link>
