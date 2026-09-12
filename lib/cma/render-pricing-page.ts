@@ -26,6 +26,7 @@ import {
 import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { clampSentence, keptCompCount, setAsideCompIndexes, setAsideRows } from '@/lib/cma/set-aside'
+import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import { listCeiling, readMeasure, readRangeRuleKept } from '@/lib/cma/render-contract'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
@@ -242,7 +243,15 @@ function listRangeSentence(pricing: CmaPricing, failedAsk: number | null): strin
     // Same two numbers. The instruction survives; the figures do not repeat.
     return 'List in that range.'
   }
-  return lo === hi ? `List at ${usd(lo)}.` : `List between ${usd(lo)} and ${usd(hi)}.`
+  // Cover already printed the recommend. A bound that *is* the recommend
+  // is an echo — keep the conservative floor, point at "that price".
+  const rec = pricing.recommended
+  if (lo === hi) {
+    return isRecommendMark(lo, rec) ? 'List at that price.' : `List at ${usd(lo)}.`
+  }
+  const loBit = isRecommendMark(lo, rec) ? 'that price' : usd(lo)
+  const hiBit = isRecommendMark(hi, rec) ? 'that price' : usd(hi)
+  return `List between ${loBit} and ${hiBit}.`
 }
 
 /**
@@ -452,7 +461,7 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   // stated a method yielding $1,973,000 and printed $1,473,000 with nothing
   // between them (tasteReview round three, §2 item 1). lib/pricing writes the
   // sentence; it prints where the reader meets the number, and nowhere else.
-  const clamp = clampSentence(p)
+  const clamp = deRepeatRecommendDollars(clampSentence(p), p.recommended)
   const clampHtml = clamp ? `<p class="worth-lead-note">${esc(clamp)}</p>` : ''
   const lead = input.omitLeadPrices
     ? ''

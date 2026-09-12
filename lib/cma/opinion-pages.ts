@@ -62,6 +62,7 @@ import {
 import { renderMatrixHtml, subjectListingFailed, subjectPrintableAsk } from '@/lib/cma/comp-matrix'
 import { compAreaSentence } from '@/lib/cma/matrix-sets'
 import { setAsideCompIndexes } from '@/lib/cma/set-aside'
+import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import type { CmaBroker, CmaClient } from '@/lib/cma/types'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { CmaExtras } from '@/lib/cma/extras'
@@ -376,17 +377,28 @@ export function sellerNetKick(a: OpinionPageArgs): string {
 }
 
 export function sellerNetBodyHtml(a: OpinionPageArgs): string {
+  const rec = a.pricing.recommended
   const sheet = sellerNetSheetForDoc(a)
   if (!sheet) {
     const named = readSellerNetUnknowns(a.pricing)
     const needs = named.length > 0 ? named : NET_AT_LIST_REQUIRES
     return `<p>${esc(
-      `A net at ${usd(a.pricing.recommended)} needs ${orList(
+      `A net at that price needs ${orList(
         needs,
       )}. None of those is in the record this report reads. We put them in writing, against a real list price, before anything is signed.`,
     )}</p>`
   }
   const everything = netIsEverything(sheet)
+  const listIsRec = isRecommendMark(sheet.list, rec)
+  const listCell = listIsRec ? 'that price' : usd(sheet.list)
+  const netLabel = everything
+    ? listIsRec
+      ? 'What you keep at that price'
+      : `What you keep at ${usd(sheet.list)}`
+    : listIsRec
+      ? 'Net at that price'
+      : `Net at ${usd(sheet.list)}`
+  const sentence = sheet.sentence ? deRepeatRecommendDollars(sheet.sentence, rec) : ''
   const rows = sheet.lines
     .map(
       (l) =>
@@ -395,14 +407,12 @@ export function sellerNetBodyHtml(a: OpinionPageArgs): string {
         )}</td></tr>`,
     )
     .join('\n    ')
-  return `${sheet.sentence ? `<p>${esc(sheet.sentence)}</p>` : ''}
+  return `${sentence ? `<p>${esc(sentence)}</p>` : ''}
   <table class="kv netsheet">
     <tbody>
-    <tr><th>List price</th><td class="v">${usd(sheet.list)}</td></tr>
+    <tr><th>List price</th><td class="v">${esc(listCell)}</td></tr>
     ${rows}
-    <tr class="is-net"><th>${esc(
-      everything ? `What you keep at ${usd(sheet.list)}` : `Net at ${usd(sheet.list)}`,
-    )}</th><td class="v">${usd(sheet.net)}</td></tr>
+    <tr class="is-net"><th>${esc(netLabel)}</th><td class="v">${usd(sheet.net)}</td></tr>
     </tbody>
   </table>
   ${sheet.basis ? `<p class="small">${esc(sheet.basis)}</p>` : ''}
