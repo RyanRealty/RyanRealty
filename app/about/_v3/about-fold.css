@@ -303,17 +303,26 @@
   }
 
   .about-fold__proof .v3-proof {
-    grid-template-columns: minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     row-gap: var(--v3-space-sm);
     padding-block: var(--v3-space-md);
   }
 
-  .about-fold__proof .v3-proof__face,
-  .about-fold__proof .v3-proof__head,
-  .about-fold__proof .v3-proof__reader,
+  .about-fold__proof .v3-proof__face {
+    order: 1;
+  }
+
+  .about-fold__proof .v3-proof__head {
+    order: 2;
+  }
+
+  .about-fold__proof .v3-proof__reader {
+    order: 3;
+  }
+
   .about-fold__proof .v3-proof__source {
-    grid-column: 1;
-    grid-row: auto;
+    order: 4;
   }
 
   .about-fold__proof .v3-proof__picks {
