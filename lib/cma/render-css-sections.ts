@@ -269,9 +269,16 @@ export function cmaSectionStyles(): string {
        prints — a reviewer opening ?print=1 sees what the client gets. Only
        below 700px, where a seven-column table cannot hold, does it fall back
        to the stacked cards. Never both visible at once. */
-  /* C4 Tip Ready (Matt 2026-09-12): ALL screen uses the sold-comp stack; matrix is print-only. */
-  .comp-stack { display: block; margin: 8px 0 14px; max-width: 100%; min-width: 0; }
-  .comp-matrix-wrap, .matrix-group-h { display: none; margin: 8px 0 14px; overflow-x: auto; }
+  /* Restore (Matt 2026-09-12): desktop/screen matrix visible; below 700px stack.
+     Tip Ready C4 hid matrix on all screen — Review looked empty. */
+  .comp-stack { display: none; margin: 8px 0 14px; max-width: 100%; min-width: 0; }
+  .comp-matrix-wrap { display: block; margin: 8px 0 14px; overflow-x: auto; }
+  @media screen and (max-width: 700px) {
+    .comp-stack { display: block; }
+    /* The group heading belongs to the table, so it goes when the table does.
+       Both headings rendered back to back at 375 with nothing between them. */
+    .comp-matrix-wrap, .matrix-group-h { display: none; }
+  }
   .comp-stack-card {
     border: 1px solid var(--navy-line);
     padding: 12px;

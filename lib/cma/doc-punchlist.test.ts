@@ -568,19 +568,20 @@ describe('P10 — one chapter order, both documents', () => {
 })
 
 describe('F1 — the immersive comps table on a phone', () => {
-  it('shows the stack on all screen widths; matrix is print-only (Tip Ready C4)', () => {
+  it('shows matrix on default screen; stack below 700px; print keeps matrix', () => {
     const css = immersiveStylesheet()
-    expect(css).toMatch(/\.comp-matrix-wrap,\.matrix-group-h\{display:none\}/)
-    expect(css).toMatch(/\.comp-stack\{display:block/)
+    expect(css).toMatch(/\.comp-matrix-wrap\{display:block/)
+    expect(css).toMatch(/\.comp-stack\{display:none/)
+    expect(css).toMatch(/@media screen and \(max-width:700px\)\{\.comp-matrix-wrap,\.matrix-group-h\{display:none\}\.comp-stack\{display:block\}/)
     expect(css).toMatch(/@media print\{\.comp-stack\{display:none!important\}\.comp-matrix-wrap,\.matrix-group-h\{display:block!important\}/)
   })
 })
 
-describe('F2 — Tip Ready: letter screen stacks comps; print restores matrix', () => {
-  it('shows the stack on screen and restores the matrix in print', () => {
+describe('F2 — letter screen matrix; print keeps matrix', () => {
+  it('shows matrix on default screen and keeps it in print', () => {
     const css = cmaStylesheet('https://ryan-realty.com')
-    expect(css).toMatch(/\.comp-stack \{ display: block;/)
-    expect(css).toMatch(/\.comp-matrix-wrap, \.matrix-group-h \{ display: none;/)
+    expect(css).toMatch(/\.comp-matrix-wrap \{ display: block;/)
+    expect(css).toMatch(/\.comp-stack \{ display: none;/)
     expect(css).toMatch(/@media print \{[\s\S]*\.comp-matrix-wrap \{[^}]*display:\s*block/)
   })
 
