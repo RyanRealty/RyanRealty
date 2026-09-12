@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   competitiveBriefProblems,
+  competitiveBriefPurposeProblems,
   competitiveBriefShapeProblems,
   competitiveBriefVerdict,
   parseCompetitiveBrief,
@@ -98,6 +99,48 @@ describe('competitiveBriefProblems — omit / false refuse', () => {
 
   it('ignores routes with no competitiveBrief', () => {
     expect(competitiveBriefProblems(receipt(), null)).toEqual([])
+  })
+})
+
+describe('competitiveBriefPurposeProblems — ci:page-purpose', () => {
+  it('refuses About with no competitiveBrief field', () => {
+    const p = competitiveBriefPurposeProblems('about', {
+      competitiveTarget: 'Beat generic national-brokerage profile pages by opening on the firm.',
+    })
+    expect(p.join('\n')).toMatch(/structured checklist/)
+  })
+
+  it('refuses an empty or prose-only brief on About', () => {
+    expect(competitiveBriefPurposeProblems('about', { competitiveBrief: {} }).join('\n')).toMatch(/beats/)
+    expect(
+      competitiveBriefPurposeProblems('about', { competitiveBrief: 'Beat Compass with a firm story opener.' }).join(
+        '\n',
+      ),
+    ).toMatch(/structured checklist/)
+  })
+
+  it('refuses a three-beat incomplete checklist', () => {
+    const p = competitiveBriefPurposeProblems('about', {
+      competitiveBrief: { id: 'short', beats: ABOUT_BRIEF.beats.slice(0, 3) },
+    })
+    expect(p.join('\n')).toMatch(/8 Researchy beats/)
+  })
+
+  it('passes the Researchy 1–8 About brief', () => {
+    expect(competitiveBriefPurposeProblems('about', { competitiveBrief: ABOUT_BRIEF })).toEqual([])
+  })
+
+  it('leaves kits without a brief on the string target only', () => {
+    expect(
+      competitiveBriefPurposeProblems('home', {
+        competitiveTarget: 'Beat Zillow by opening on live inventory and a broker one tap away.',
+      }),
+    ).toEqual([])
+  })
+
+  it('refuses an incomplete brief on a non-About kit that already carries the field', () => {
+    const p = competitiveBriefPurposeProblems('home', { competitiveBrief: { beats: [] } })
+    expect(p.join('\n')).toMatch(/beats/)
   })
 })
 

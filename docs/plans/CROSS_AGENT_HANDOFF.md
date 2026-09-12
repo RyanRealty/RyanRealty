@@ -1,8 +1,8 @@
-# Current — 2026-09-12 18:55Z (HARD Tip Ready — competitiveBrief on About)
+# Current — 2026-09-12 19:10Z (HARD Tip Ready — competitiveBrief on About)
 
 Owner: `cursor-cloud-2026-09-12-b093`. Do not merge — Tip Ready PR only. No emails.
 
-- **Process tip** `cursor/competitive-brief-taste-gate-b093`: Researchy About 1–8 is `competitiveBrief` on `ui_kits/about/parity.json` next to `competitiveTarget` (and on taste-catalog about). `ci:taste-canon` / Tip Ready / `completeWorkNode` refuse rise/score without `competitiveBriefPass: true` (omit = refuse, same as demoMatch). About parity requiredComponents no longer open on AboutFaces three Cards — firm story + reviews + closings + Call|Text|Email|Schedule + team teaser→/team + inquiry→/contact. Honest `competitiveBriefPass: false` on the current receipt. About page tip has not landed.
+- **Process tip** `cursor/competitive-brief-taste-gate-b093`: Researchy About 1–8 is `competitiveBrief` on `ui_kits/about/parity.json` next to `competitiveTarget`. `ci:page-purpose` refuses missing/incomplete brief on About (and any kit that already carries the field). `ci:taste-canon` / Tip Ready / `completeWorkNode` refuse rise/score without `competitiveBriefPass: true` (omit = refuse, same as demoMatch). About parity no longer opens on AboutFaces three Cards. Honest `competitiveBriefPass: false` on the current receipt. About page tip has not landed.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 
 # Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)

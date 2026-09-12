@@ -303,9 +303,10 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
    install**, primitives still missing from the barrel, the layout lock, the
    refuse list, and `competitiveBrief` when the class has one (About first:
    Researchy beats 1–8). Pull the brief before composing. Fail Looking if
-   the page invents past it. `ci:taste-canon` and Tip Ready refuse a rise
-   / score ≥ 70 without `competitiveBriefPass: true` (or checklist all
-   true). Omit is refuse. Do not invent true. Do not dump `taste-catalog.json`. Fetch those URLs
+   the page invents past it. `ci:page-purpose` refuses a missing or
+   incomplete `competitiveBrief` on About. `ci:taste-canon` and Tip Ready
+   refuse a rise / score ≥ 70 without `competitiveBriefPass: true` (or
+   checklist all true). Omit is refuse. Do not invent true. Do not dump `taste-catalog.json`. Fetch those URLs
    (beautifului / beui / rareui / transitions / ui.shadcn.com, plus any URL
    later appended to `catalogUrls`). **Install the source** (`npx shadcn add`
    / the registry JSON) into `components/ui` or `components/motion`, then wrap
