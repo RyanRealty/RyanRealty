@@ -22,6 +22,7 @@ describe('SITE-90 /about house fold', () => {
     expect(FACES).toMatch(/from ['"]@\/components\/ui\/button-group['"]/)
     expect(PROOF).toContain('AvatarGroup')
     expect(PROOF).toContain('AvatarImage')
+    expect(PROOF).toContain('loading="eager"')
     expect(PROOF).toContain('AvatarFallback')
     expect(PROOF).toContain('AvatarBadge')
     expect(PROOF).toContain('ButtonGroup')
@@ -40,7 +41,7 @@ describe('SITE-90 /about house fold', () => {
     expect(PAGE).not.toContain('openingFigures')
     expect(PAGE).not.toContain('figures={openingFigures}')
     expect(PROOF).toContain('about-faces--proof')
-    expect(PROOF).toContain('-space-x-8')
+    expect(PROOF).toContain('-space-x-6')
     expect(PROOF).toContain('about-faces__ask')
     expect(PROOF).not.toContain('about-faces__lead')
     expect(PROOF).not.toContain('about-faces__companions')
@@ -49,6 +50,7 @@ describe('SITE-90 /about house fold', () => {
 
   it('puts the 5.0 mark on the principal AvatarBadge and links the count to /reviews', () => {
     expect(PROOF).toContain('AvatarBadge')
+    expect(PROOF).toContain('group-data-[size=default]/avatar:size-7')
     expect(PROOF).toContain('from {proof.count} Google reviews')
     expect(PAGE).toContain("href: '/reviews'")
     expect(PAGE).toContain('value: reviewAverage.toFixed(1)')
@@ -67,11 +69,13 @@ describe('SITE-90 /about house fold', () => {
     expect(FOLD_JSX).toContain('about-fold__place')
     expect(FOLD_JSX).toContain('ryan-realty-bend-office-exterior-01.jpg')
     expect(FOLD_JSX).not.toContain('ryan-realty-bend-office-interior')
+    expect(FOLD_JSX).toContain('Bend office ·')
+    expect(FOLD_JSX).toContain('BRAND.address.street')
     expect(FOLD).toMatch(/grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\)/)
   })
 
   it('keeps the AvatarGroup overlap and one joined ask, without painting Avatar into a card', () => {
-    expect(PROOF).toContain('-space-x-8')
+    expect(PROOF).toContain('-space-x-6')
     expect(CSS).not.toMatch(/\[data-slot=['"]avatar['"]\][\s\S]{0,80}border-radius:\s*0/)
     expect(CSS).not.toContain('about-faces__avatar')
     expect(PORTRAIT).not.toContain('about-faces__avatar')

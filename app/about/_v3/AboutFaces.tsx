@@ -605,20 +605,24 @@ export function AboutFaces({
           {claim ? <p className="about-faces__claim">{claim}</p> : null}
         </div>
         <div className="about-faces__proof">
-          <AvatarGroup className="-space-x-8">
+          <AvatarGroup className="-space-x-6">
             {shown.map((person) => (
-              <Avatar key={person.href} size="lg" className="size-24 lg:size-32">
+              <Avatar key={person.href} className="size-24 lg:size-32">
                 <AvatarImage
                   src={person.src}
                   alt={person.name}
                   width={800}
                   height={1200}
-                  loading={person === leadPerson ? "eager" : "lazy"}
-                  fetchPriority={person === leadPerson ? "high" : undefined}
+                  loading="eager"
+                  fetchPriority={person === leadPerson ? "high" : "auto"}
                   decoding="async"
                 />
                 <AvatarFallback delayMs={400}>{faceInitials(person.name)}</AvatarFallback>
-                {person === leadPerson && proof ? <AvatarBadge>{proof.value}</AvatarBadge> : null}
+                {person === leadPerson && proof ? (
+                  <AvatarBadge className="min-w-7 px-1.5 text-xs font-medium leading-none group-data-[size=default]/avatar:size-7">
+                    {proof.value}
+                  </AvatarBadge>
+                ) : null}
               </Avatar>
             ))}
           </AvatarGroup>

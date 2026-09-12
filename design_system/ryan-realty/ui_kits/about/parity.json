@@ -130,13 +130,13 @@
       "states": [
         "default"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, SITE-90 localhost:3190/about after proof fold (AvatarGroup + ButtonGroup + Cards, no office interior). Evaluator 402 — scores below are SITE-64, not this capture."
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, SITE-90 localhost:3190/about after Street View exterior + AvatarGroup/ButtonGroup/Cards fold. Evaluator 402 — scores below are SITE-64, not this capture."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png"
     },
-    "shotsHash": "sha256:89b929277c8305604b83463595eb697793d34d777edc2e729ef015f17ed54107",
+    "shotsHash": "sha256:d0150f385a4135f1ed5be0f2bfc98c7e8b5e253cb1c04de5614e990dccf11c89",
     "scores": [
       52,
       47,
@@ -150,7 +150,7 @@
       { "id": "shadcn-card" },
       { "id": "house-faces" }
     ],
-    "evaluatorBlocked": "2026-09-12 SITE-90 proof fold: npx tsx scripts/taste-evaluate.ts about failed — no grok CLI at ~/.grok/bin/grok (Grok Build 402). Scores 52/47/57 are the SITE-64 grok-4.6 pass, not this capture. comparedToPrior stays rebaselined. Do not treat this as rose, demoMatch, or done.",
+    "evaluatorBlocked": "2026-09-12 SITE-90 Street View + Avatar demo fold: npx tsx scripts/taste-evaluate.ts about failed — no grok CLI at ~/.grok/bin/grok (Grok Build 402). Scores 52/47/57 are the SITE-64 grok-4.6 pass, not this capture. comparedToPrior stays rebaselined. Do not treat this as rose, demoMatch, or done.",
     "defects": [
       {
         "section": "#faces .about-faces__grid",
