@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 import {
@@ -192,7 +192,7 @@ describe('builderCard', () => {
     expect(r.stdout).not.toMatch(/"shadcn":/)
   })
 
-  it('CLI --preflight resolves routeClasses aliases (zip → city, team → about)', () => {
+  it('CLI --preflight resolves routeClasses aliases (zip → city, team → team)', () => {
     const zip = spawnSync('node', ['scripts/lib/taste-catalog.mjs', 'zip', '--preflight'], { encoding: 'utf8' })
     expect(zip.status, zip.stderr).toBe(0)
     expect(zip.stdout).toMatch(/preflight OK/)
@@ -284,6 +284,15 @@ describe('layoutLockProblems', () => {
 
   it('passes the committed listing files', () => {
     expect(layoutLockProblems(loaded)).toEqual([])
+  })
+
+  it('fails About when AboutFaces or the proof roster returns', () => {
+    const rogue = 'import { AboutFaces } from "./_v3/AboutFaces"\n<AboutFaces size="proof" />'
+    const problems = layoutLockProblems(loaded, {
+      existsSync,
+      readFileSync: (p) => (p === 'app/about/page.tsx' ? rogue : readFileSync(p)),
+    })
+    expect(problems.some((p) => /<AboutFaces/.test(p))).toBe(true)
   })
 })
 

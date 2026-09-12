@@ -2354,19 +2354,35 @@
       ]
     },
     "about": {
-      "layoutLock": "The fold is people + firm + closings: three separate broker Cards (Matt, Rebecca, Paul) each with its own Avatar, Call Button, and ghost Text/Email/Schedule; a real firm beat (since 2014, Bend office, who you call works your deal); Street View exterior of 115 NW Oregon Ave #2; and past brokerage closings as a shadcn carousel. Do not overlap AvatarGroup circles. Do not hide two brokers behind one principal Card. Do not mount V3SourceLine or how-we-calculate-this on About faces or closings. Never the interior sofa.",
-      "modules": [
+      "layoutLock": "Looking stack on /about: firm hero (H1, Bend office exterior, who you call works your deal) then reviews as the primary proof band, then local closings, then the four-up CTA, then a short who-you-work-with teaser (photo+name only) linking to /team, then inquiry to /contact. Do not mount AboutFaces, three equal broker Cards, licenses, or Call buttons per broker on About. Do not bury reviews after closings or CTAs. Never the interior sofa.",
+      "layoutLockChecks": [
         {
-          "id": "house-faces",
-          "catalog": "house-v3",
-          "url": "app/about/_v3/AboutFaces.tsx",
-          "job": "Broker photographs and the firm's record open the page as one proof object, not a phone book."
+          "path": "app/about/page.tsx",
+          "forbid": "<AboutFaces"
         },
+        {
+          "path": "app/about/page.tsx",
+          "forbid": "size=\"proof\""
+        },
+        {
+          "path": "app/about/page.tsx",
+          "mustMatch": "AboutFirmHero"
+        },
+        {
+          "path": "app/about/page.tsx",
+          "mustMatch": "id=\"proof\""
+        },
+        {
+          "path": "app/about/page.tsx",
+          "mustMatch": "AboutTeamTeaser"
+        }
+      ],
+      "modules": [
         {
           "id": "house-proof",
           "catalog": "house-v3",
           "url": "components/site/v3/V3Proof.client.tsx",
-          "job": "Proof as words and a sourced record, not a score tile."
+          "job": "Reviews are the primary proof band after the firm hero, score face plus the words."
         },
         {
           "id": "house-doors",
@@ -2384,25 +2400,42 @@
           "id": "shadcn-avatar",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/avatar",
-          "job": "Separate Avatar + AvatarImage + AvatarFallback on each broker Card. No AvatarGroup overlap."
-        },
-        {
-          "id": "shadcn-button-group",
-          "catalog": "shadcn",
-          "url": "https://ui.shadcn.com/docs/components/button-group",
-          "job": "Call is the default Button on each broker Card. Text / Email / Schedule are ghost Buttons in one group."
-        },
-        {
-          "id": "shadcn-card",
-          "catalog": "shadcn",
-          "url": "https://ui.shadcn.com/docs/components/card",
-          "job": "One Card per broker (name, title, Call). All three brokers visible as people."
+          "job": "Photo plus name on the /team teaser. No Card, no Call, no license line."
         },
         {
           "id": "shadcn-carousel",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/carousel",
           "job": "Past brokerage closings as a rail carousel of Cards. Photo, address, ClosePrice, beds/baths/sqft. Adapt into V3Carousel."
+        }
+      ]
+    },
+    "team": {
+      "layoutLock": "The /team fold is the AboutFaces roster: principal at conversation scale, companions as rows, Call as the one primary reach, Oregon license as a credential. Not a second About: no Proof as the opener, no FAQ, no seller ask. Do not mount V3SourceLine on the faces.",
+      "modules": [
+        {
+          "id": "house-faces",
+          "catalog": "house-v3",
+          "url": "app/about/_v3/AboutFaces.tsx",
+          "job": "Broker photographs and the firm's record open /team as the roster, not a phone book."
+        },
+        {
+          "id": "house-atlas",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3Atlas.client.tsx",
+          "job": "Every Ryan Realty closing with a coordinate, not a default Google embed."
+        },
+        {
+          "id": "shadcn-avatar",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/avatar",
+          "job": "Separate Avatar + AvatarImage + AvatarFallback on each broker. No AvatarGroup overlap."
+        },
+        {
+          "id": "shadcn-button-group",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/button-group",
+          "job": "Call is the default Button. Text / Email / Schedule are ghost Buttons in one group."
         }
       ]
     },
@@ -2739,7 +2772,7 @@
     "subdivision": "city",
     "zip": "city",
     "about": "about",
-    "team": "about",
+    "team": "team",
     "compare": "compare",
     "contact": "contact",
     "invest": "invest",

@@ -21,6 +21,9 @@
  *   3. The entries resolve IN ORDER (greedy subsequence over the page source,
  *      which is JSX order, which is DOM order). A reorder is a contract edit,
  *      visible in the diff, never a silent drift.
+ *   4. Optional forbiddenMounts tokens must NOT appear in the page source.
+ *      About uses this so AboutFaces / a broker-card roster cannot return
+ *      without failing the gate.
  *
  * WHAT A BINDING ENTRY IS. sectionOrder lines are prose for a human plus tokens
  * for this gate. A line binds iff it contains a `#some-id` token whose id starts
@@ -116,6 +119,18 @@ for (const rel of contracts) {
       continue
     }
     cursor = pos
+  }
+
+  const forbidden = Array.isArray(d.forbiddenMounts) ? d.forbiddenMounts : []
+  for (const raw of forbidden) {
+    const token = typeof raw === 'string' ? raw.trim() : ''
+    if (!token) continue
+    if (src.includes(token)) {
+      failures.push(
+        `${rel}: forbidden mount "${token}" is in ${route}. ` +
+          `A mount the contract forbids came back — change the page, not the contract, unless the plan itself changed.`,
+      )
+    }
   }
 }
 

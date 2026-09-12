@@ -1,8 +1,8 @@
 /**
  * Streaming fallback for /about.
  *
- * First screen is Call/Text, not the faces poster. Geometry matches V3Quiet
- * on cream. Tokens from components/site/v3/tokens.css via V3_ROOT_CLASS.
+ * First screen is the firm hero, not a broker roster. Geometry matches cream
+ * Quiet. Tokens from components/site/v3/tokens.css via V3_ROOT_CLASS.
  */
 
 import { V3_ROOT_CLASS } from '@/components/site/v3'

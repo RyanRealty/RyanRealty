@@ -1,27 +1,18 @@
 /**
  * /about - brokerage profile, on the components/site/v3 barrel.
  *
- * PAGE OUTLINE (SITE-90, 2026-09-12 — people + firm + closings):
- * 1. The fold: AboutFaces proof (H1, a real firm beat, three broker Cards
- *    with separate Avatars — Matt, Rebecca, Paul) + Street View exterior of
- *    115 NW Oregon Ave #2 + FirmClosings as a shadcn carousel of real
- *    closings. Never the interior sofa. No AvatarGroup overlap. No
- *    methodology disclosure on the fold.
- * 2. One reach control: Call at display scale with the live hours, then Text,
- *    Email and the calendar as the lighter alternatives (V3Doors #reach)
- * 3. Firm proof, the words rather than the score again (V3Proof)
- * 4. Atlas of the service area
- * 5. How it started (short Quiet) + licenses as one sourced line
- * 6. V3Answers
+ * PAGE OUTLINE (Looking brief, 2026-09-12 — reviews primary, no roster):
+ * 1. Firm hero (H1, Bend office, who you call works your deal)
+ * 2. Reviews as the primary proof band (V3Proof #proof, score face + words)
+ * 3. Local closings (FirmClosings #firm-sales)
+ * 4. Four-up CTA (V3Doors #reach)
+ * 5. Who-you-work-with teaser → /team (photo + name only)
+ * 6. Inquiry → /contact
+ * 7. Atlas, origin Quiet, FAQ
  *
- * WHAT MOVED AND WHY. The page opened on a V3Quiet whose entire fold was a
- * license line and seven identical hairline link rows — Principal broker,
- * Call, Text, Email, Schedule, Client reviews, Contact — with the Proof, the
- * closings, the faces and the Atlas all below it. The taste table of
- * 2026-09-08 scored it 31 and its verdict was "the About page's first screen
- * is a phone book, not a proof point". So the faces and the firm's record are
- * the opening, the seven rows are one reach control, and the licences stay on
- * the origin Quiet where they were always restated anyway.
+ * AboutFaces / three equal broker Cards / per-broker Call buttons stay off
+ * this page. The roster lives on /team. layoutLock + page-purpose fail if
+ * that roster comes back.
  *
  * THE PAGE CONTRACT: generateMetadata through pageMetadata, MetadataBlock
  * JSON-LD (AboutPage + aboutOrganization + BreadcrumbList + FAQPage),
@@ -62,7 +53,8 @@ import {
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { ABOUT_FAQ_ITEMS, FIRM_LICENSE } from './_v3/about-constants'
-import { AboutFaces } from './_v3/AboutFaces'
+import { AboutFirmHero } from './_v3/AboutFirmHero'
+import { AboutTeamTeaser } from './_v3/AboutTeamTeaser'
 import { FirmClosings } from './_v3/FirmClosings'
 import { loadAboutProof } from './_v3/load-about-faces'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
@@ -97,9 +89,6 @@ export default async function AboutPage() {
     withTimeoutFallback(buildPlaceAtlas({ cities: [], label: 'Central Oregon' }).catch(() => null), null, 6000, 'about atlas'),
     buildRegionAtlasRegions().catch(() => null),
     getReviews(6).catch(() => null),
-    // The published hours behind the reach control's live state — the same
-    // rows /book fills its calendar from. Why hours and not a reply-time
-    // figure: components/site/v3/V3OnDuty.view.ts.
     getCrmCompanySettings().catch(() => null),
     loadAboutProof(),
   ])
@@ -116,9 +105,6 @@ export default async function AboutPage() {
     'The person you call is the person who works your purchase or sale through closing.',
   ].join('\n\n')
 
-  /* The reach control's live state. Hours, never a reply-time promise — the
-     reasoning and the SITE-09 read are in components/site/v3/V3OnDuty.view.ts.
-     About fold proof stays people + firm + closings, not a method disclosure. */
   const hoursBlocks = companySettings?.booking_hours ?? []
   const hoursTimeZone = companySettings?.time_zone || 'America/Los_Angeles'
   const hoursLive =
@@ -219,46 +205,36 @@ export default async function AboutPage() {
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
 
-        {/* SITE-90 fold: three broker Cards, Street View exterior,
-            closings as a carousel. Never the sofa. */}
-        <div className="about-fold">
-          <AboutFaces
-            people={faces}
-            heading="About Ryan Realty · Bend"
-            headingLevel={1}
-            size="proof"
-            eyebrow="Ryan Realty · Central Oregon"
-            claim={firmBeat}
-            proof={
-              reviewSummary && reviewSummary.count > 0
-                ? {
-                    value: reviewAverage.toFixed(1),
-                    count: reviewCount,
-                    href: '/reviews',
-                  }
-                : undefined
-            }
-          />
-          <figure className="about-fold__place">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/office/ryan-realty-bend-office-exterior-01.jpg"
-              alt={`Ryan Realty at ${BRAND.address.street}, ${BRAND.address.city}`}
-              width={640}
-              height={640}
-            />
-            <figcaption>
-              BEND OFFICE · {BRAND.address.street}
-            </figcaption>
-          </figure>
-          <div className="about-fold__sales">
-            {/* id="firm-sales" — FirmClosings mounts the carousel (page-purpose binds here). */}
-            <FirmClosings rows={firmRows} />
-          </div>
-        </div>
+        {/* id="firm" — AboutFirmHero mounts the landmark (page-purpose binds here). */}
+        <AboutFirmHero
+          heading="About Ryan Realty · Bend"
+          eyebrow="Ryan Realty · Central Oregon"
+          beat={firmBeat}
+          office={{
+            src: '/images/office/ryan-realty-bend-office-exterior-01.jpg',
+            alt: `Ryan Realty at ${BRAND.address.street}, ${BRAND.address.city}`,
+            caption: `BEND OFFICE · ${BRAND.address.street}`,
+          }}
+        />
 
-        {/* One reach control instead of seven identical rows: Call at display
-            scale with the live hours under it, the rest as lighter links. */}
+        {quotes.length > 0 ? (
+          <V3Proof
+            id="proof"
+            eyebrow="Ryan Realty · Google"
+            headline={`${reviewAverage.toFixed(1)} from ${reviewCount} Google reviews`}
+            headingLevel={2}
+            claim={`The newest four of ${reviewCount} verified Google reviews, in full, exactly as they were written.`}
+            figures={[]}
+            quotes={quotes}
+            source={{ label: 'Every review', href: '/reviews' }}
+            record={false}
+            face
+          />
+        ) : null}
+
+        {/* id="firm-sales" — FirmClosings mounts the carousel (page-purpose binds here). */}
+        <FirmClosings rows={firmRows} />
+
         <V3Doors
           id="reach"
           name={v3Text('Reach a broker')}
@@ -292,22 +268,22 @@ export default async function AboutPage() {
           ]}
         />
 
-        {quotes.length > 0 ? (
-          <V3Proof
-            id="proof"
-            eyebrow="Ryan Realty · Google"
-            /* The score is in the fold above; this band is for the WORDS. A
-               headline of the count here would print the same figure twice
-               on one page, which is how a page reads as two builders' work. */
-            headline="In their own words"
-            headingLevel={2}
-            claim={`The newest four of ${reviewCount} verified Google reviews, in full, exactly as they were written.`}
-            figures={[]}
-            quotes={quotes}
-            source={{ label: 'Every review', href: '/reviews' }}
-            record={false}
-          />
-        ) : null}
+        {/* id="who-you-work-with" — AboutTeamTeaser mounts the teaser (page-purpose binds here). */}
+        <AboutTeamTeaser people={faces.map((face) => ({ name: face.name, src: face.src }))} />
+
+        <V3Quiet
+          id="inquiry"
+          heading="Write the office"
+          headingLevel={2}
+          items={[
+            {
+              label: 'Send a question',
+              href: '/contact',
+              detail: 'The contact form reaches the brokerage. A broker writes back.',
+              lead: true,
+            },
+          ]}
+        />
 
         <V3Atlas
           id="service-area"

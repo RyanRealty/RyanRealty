@@ -1,38 +1,36 @@
 # References — `about`
 
-Table mark: **31** (`design_system/public/taste-table.json`, instrument v1-2026-09-08, evaluated 2026-09-08).
+Table mark: **52** prior instrument (`design_system/public/taste-table.json` / SITE-64). Looking brief 2026-09-12 is the contract, not a researchy invent.
+
 Route: `app/about/page.tsx` · sample URL: `/about`.
 
 Cite this file from the SITE node brief. Hand it to the evaluator so `beats` is judged against a named page, not an invented compliment.
 
-## What the table says is dull
+## Looking stack (the brief)
 
-The #who contact-link stack — it is a column of seven anchor tags with an arrow icon, no image, no data mark, nothing that earns a second look before the reader either clicks a phone number or leaves.
+1. Firm hero — H1, Bend office, who you call works your deal.
+2. Client reviews primary — V3Proof after the hero, before closings and CTAs.
+3. Local closings — real recorded sales.
+4. Team teaser → `/team` only — photo + name. No AboutFaces roster, no licenses, no Call buttons per broker.
+5. Four-up CTA — call / text / email / schedule.
+6. Inquiry → `/contact`.
+7. No national pitch.
 
 ## External pages to beat (one sentence each)
 
-1. **Compass About** (https://www.compass.com/about/) — Faces and the firm's own record open the page; contact channels are secondary reach, not the fold.
-2. **The Agency About** (https://www.theagencyre.com/) — Editorial portraits at display scale carry identity before any link list.
+1. **Compass About** (https://www.compass.com/about/) — Faces and the firm's own record open the page; contact channels are secondary reach, not the fold. We win by leading with reviews as proof, not a staff directory.
+2. **The Agency About** (https://www.theagencyre.com/) — Editorial portraits at display scale carry identity before any link list. Portraits live on `/team`; About teasers them.
 3. **Stripe About** (https://stripe.com/about) — Quiet claim + one proof object; no phone-book stack of equal weight links.
 
 ## Adapt from shipped code (do not generate from adjectives)
 
-- `app/about/_v3/AboutFaces.tsx` — open the file; adapt its markup/CSS rather than restating "quiet / editorial / expensive."
-- `components/site/v3/V3Proof.client.tsx` — open the file; adapt its markup/CSS rather than restating "quiet / editorial / expensive."
-- `components/site/v3/V3Doors.tsx` — open the file; adapt its markup/CSS rather than restating "quiet / editorial / expensive."
+- `app/about/_v3/AboutFirmHero.tsx` — firm hero.
+- `components/site/v3/V3Proof.client.tsx` — reviews as the primary proof band.
+- `app/about/_v3/AboutTeamTeaser.tsx` — photo + name door to `/team`.
+- `components/site/v3/V3Doors.tsx` — four-up reach.
 
 ## House form to reach for
 
-Per TASTE.md preference order, replace the dull display with: **hero figure / editorial faces (AboutFaces) opening; doors as secondary reach**.
+Per TASTE.md preference order: **firm hero, then proof as words, then closings, then doors, then a teaser**.
 
-Banned fallback: another stacked Quiet → figure-row → ledger. If the section is data, pick a form from: hero figure · stat tile with sparkline · emphasis line with a scrubber · horizontal bar · dot strip · slope · small multiples · beeswarm · map with data-encoded cells · table.
-
-## Variants rule
-
-A NEW data-display section on this class ships as two or three named variants behind one prop. Capture with:
-
-```bash
-node scripts/take-route-shots.mjs --variants a,b,c about <url>
-```
-
-Matt picks from the decision sheet; losers are deleted in the commit that records the pick.
+Banned fallback: AboutFaces roster / three equal broker Cards on About. If the section is data, pick a form from: hero figure · stat tile with sparkline · emphasis line with a scrubber · horizontal bar · dot strip · slope · small multiples · beeswarm · map with data-encoded cells · table.

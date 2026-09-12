@@ -11,8 +11,8 @@ const COMPACT_CSS = CSS.slice(CSS.indexOf('COMPACT (homepage, SITE-M1)'))
 /**
  * SITE-M1 (Matt 2026-09-07): on a phone the homepage brokers section opens
  * with all three faces, names, licenses, and Call / Text / Book in one
- * screen. The compact variant is the homepage's only; /about and /team keep
- * the roster byte-for-byte.
+ * screen. The compact variant is the homepage's only; /team keeps the roster
+ * and /about teasers to /team.
  */
 describe('compact reach rows', () => {
   const matt = aboutFaceFromBroker({
