@@ -405,7 +405,7 @@ export function PriceCtaStrip({
         </div>
       ) : null}
 
-      <div className="mt-3.5 flex flex-wrap gap-2">
+      <div className="mt-3.5 flex flex-nowrap gap-2 overflow-x-auto no-scrollbar">
         <Pill kind={listing.status}>
           <span aria-hidden>●</span>{' '}
           {isClosed && listing.closeDate

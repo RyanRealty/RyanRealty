@@ -67,9 +67,9 @@ export type V3ListingCloseProps = {
 }
 
 const ACTS: ReadonlyArray<{ id: ActId; label: string; hint: string }> = [
-  { id: 'watch', label: 'Tell me if this price drops', hint: 'One email, only on a change' },
-  { id: 'tour', label: 'Walk through it', hint: 'See a broker\u2019s open times' },
-  { id: 'payment', label: 'Email me this payment', hint: 'Your own numbers, sent once' },
+  { id: 'watch', label: 'Watch this price', hint: 'One email on a change' },
+  { id: 'tour', label: 'Walk through it', hint: 'A broker\u2019s open times' },
+  { id: 'payment', label: 'Email this payment', hint: 'Your numbers, once' },
 ]
 
 /* -------------------------------------------------------------------------- */
