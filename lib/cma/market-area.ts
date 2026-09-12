@@ -19,6 +19,7 @@
  * docs/plans/PROSPECT_TO_CMA_AND_SITE_IA_2026-07-28.md §A5.
  */
 
+import { lotCompatible } from '@/lib/pricing/classes'
 import polygonData from '@/data/bend/bend-neighborhood-polygons.json'
 
 type Ring = number[][]
@@ -191,21 +192,12 @@ export function proximityLabel(
  * Lot-character comparability (Matt's hard exclusion, 2026-07-28: "different
  * zoning / lot character" is excluded at any distance).
  *
- * An acreage property and an in-town lot are different products with different
- * buyer pools, so they are never comparable however close they sit. The split is
- * drawn at 1 acre: below it is a platted in-town lot, at or above it is acreage.
- * Within acreage, the band still applies so a 1-acre subject is not compared to
- * a 40-acre ranch. A missing lot size on either side is UNKNOWN, and unknown
- * fails open (excluding on absent data would silently drop good comps).
+ * Delegates to lotCompatible so the listings ladder and the facts path cannot
+ * disagree. Near-acre lots share a class; a half-acre lot and two acres do not.
+ * Unknown size fails open.
  */
 export function lotCharacterCompatible(subjectAcres: number | null, compAcres: number | null): boolean {
-  if (subjectAcres == null || compAcres == null) return true
-  const ACREAGE = 1
-  const subjectIsAcreage = subjectAcres >= ACREAGE
-  const compIsAcreage = compAcres >= ACREAGE
-  if (subjectIsAcreage !== compIsAcreage) return false
-  if (!subjectIsAcreage) return true
-  return compAcres >= subjectAcres * 0.4 && compAcres <= subjectAcres * 2.5
+  return lotCompatible(subjectAcres, compAcres)
 }
 
 /** Product class a comp competes in. Null = the MLS did not say. */

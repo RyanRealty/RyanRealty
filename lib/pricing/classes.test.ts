@@ -123,6 +123,22 @@ describe('hard comparability', () => {
     expect(lotCompatible(2, 40)).toBe(false)
     expect(lotCompatible(null, 2)).toBe(true)
   })
+
+  /**
+   * Falcon 15991: subject 0.96 ac ("not acreage") was cliff-split from same-plat
+   * Tall Pines peers at 1.01–1.08. Nearly one acre is the same product. A half
+   * acre and two acres are not.
+   */
+  it('treats near-acre lots as one class (0.96 vs 1.08 same; 0.5 vs 2.0 different)', () => {
+    expect(lotCompatible(0.96, 1.08)).toBe(true)
+    expect(lotCompatible(1.08, 0.96)).toBe(true)
+    expect(lotCompatible(0.96, 1.01)).toBe(true)
+    expect(lotCompatible(0.75, 1.25)).toBe(true)
+    expect(lotCompatible(0.5, 2.0)).toBe(false)
+    expect(lotCompatible(2.0, 0.5)).toBe(false)
+    expect(lotCompatible(0.96, 2.0)).toBe(false)
+    expect(lotCompatible(0.74, 1.26)).toBe(false)
+  })
 })
 
 describe('similar-performing subdivision (the gated / different-tier cut)', () => {
@@ -327,5 +343,10 @@ describe('customLotCompatible', () => {
     expect(customLotCompatible(5, 1.19)).toBe(true)
     expect(customLotCompatible(2, 0.25)).toBe(false)
     expect(customLotCompatible(null, 1.19)).toBe(true)
+  })
+
+  it('does not cliff-split near-acre custom peers at exactly 1.0', () => {
+    expect(customLotCompatible(0.96, 1.08)).toBe(true)
+    expect(customLotCompatible(0.5, 2.0)).toBe(false)
   })
 })
