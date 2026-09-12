@@ -124,6 +124,45 @@
       "house": "components/site/v3/V3ButtonGroup.tsx"
     },
     "shadcn:button-group": { "aliasOf": "shadcn-button-group" },
+    "shadcn-sheet": {
+      "add": "sheet",
+      "file": "components/ui/sheet.tsx",
+      "import": "@/components/ui/sheet",
+      "house": "components/site/v3/V3Sheet.tsx"
+    },
+    "shadcn:sheet": { "aliasOf": "shadcn-sheet" },
+    "shadcn-dialog": {
+      "add": "dialog",
+      "file": "components/ui/dialog.tsx",
+      "import": "@/components/ui/dialog",
+      "house": "components/site/listing-detail/PhotoGalleryLightbox.tsx"
+    },
+    "shadcn:dialog": { "aliasOf": "shadcn-dialog" },
+    "beui-action-swap": {
+      "add": "https://beui.dev/r/action-swap.json",
+      "file": "components/motion/action-swap.tsx",
+      "import": "@/components/motion/action-swap",
+      "house": "components/site/v3/V3ActionSwap.tsx",
+      "repo": "https://github.com/starc007/ui-components",
+      "mustContain": ["ActionSwapText", "SPRING_SWAP"]
+    },
+    "beui:action-swap": { "aliasOf": "beui-action-swap" },
+    "transitions-modal": {
+      "add": "https://transitions.dev",
+      "file": "components/motion/transitions-modal.ts",
+      "import": "@/components/motion/transitions-modal",
+      "house": "components/site/listing-detail/PhotoGalleryLightbox.tsx",
+      "mustContain": ["TRANSITIONS_MODAL_SURFACE", "zoom-in-95"]
+    },
+    "transitions:modal": { "aliasOf": "transitions-modal" },
+    "beautifului-loading": {
+      "add": "https://beautifului.dev",
+      "file": "components/motion/photo-skeleton.tsx",
+      "import": "@/components/motion/photo-skeleton",
+      "house": "components/site/listing-detail/ListingHero.tsx",
+      "mustContain": ["PhotoSkeleton", "data-elapsed"]
+    },
+    "beautifului:loading": { "aliasOf": "beautifului-loading" },
     "shadcn-alert": {
       "add": "alert",
       "file": "components/ui/alert.tsx",

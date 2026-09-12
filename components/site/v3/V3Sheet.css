@@ -528,3 +528,17 @@
     text-underline-offset: var(--v3-underline-offset);
   }
 }
+
+/* Catalog job shadcn-sheet: listing asks (Save, alerts) as a bottom drawer. */
+.v3-sheet-drawer {
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  max-height: 90dvh;
+  overflow: auto;
+}
+
+.v3-sheet-drawer .v3-sheet {
+  max-width: none;
+  margin: 0;
+  padding: var(--v3-space-md) 0;
+}

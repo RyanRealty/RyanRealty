@@ -88,7 +88,8 @@
  *
  * Barrel law honored here:
  *  - Nothing imported from the deleted KB register, components/site (flat),
- *    components/site/primitives, components/site/explore, or components/ui.
+ *    components/site/primitives, or components/site/explore. Catalog-installed
+ *    primitives from components/ui (sheet) are the one allowed import.
  *  - Color, size, radius, ring, and duration come from ./tokens.css. No raw color here.
  *  - It formats nothing. Values arrive as strings the caller already formatted, so the
  *    source trace stays with whoever pulled the number. The one date this pattern passes
@@ -99,6 +100,7 @@
 import type { CSSProperties, ComponentPropsWithRef, ReactElement, ReactNode } from 'react'
 import { createElement, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading, V3SourceLine } from './atoms'
 import './tokens.css'
 import './V3Sheet.css'
@@ -364,6 +366,12 @@ export type V3SheetProps = {
   unknownStepActionLabel?: string
   id?: string
   className?: string
+  /** Catalog job shadcn-sheet: listing asks open as a drawer, not an inline cream box. */
+  surface?: 'inline' | 'drawer'
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  /** Extra control under the step, e.g. "Save with Google instead". */
+  footer?: ReactNode
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1039,11 +1047,27 @@ export function V3Sheet({
   unknownStepActionLabel,
   id,
   className,
+  surface = 'inline',
+  open,
+  onOpenChange,
+  footer,
 }: V3SheetProps) {
   const uid = useId()
   const title = text(heading)
   const headingId = title ? `${uid}-heading` : undefined
   const contextLine = text(eyebrow)
+  const wrapSurface = (node: ReactNode) => {
+    if (surface !== 'drawer') return node
+    return (
+      <Sheet open={open ?? true} onOpenChange={onOpenChange}>
+        <SheetContent side="bottom" className={cn(V3_ROOT_CLASS, 'v3-sheet-drawer')}>
+          <SheetTitle className="sr-only">{title ?? heading}</SheetTitle>
+          {node}
+        </SheetContent>
+      </Sheet>
+    )
+  }
+
 
   const ready = useMemo(() => normalizeSteps(steps), [steps])
   const bait = useMemo(() => normalizeTrap(trap, ready), [trap, ready])
@@ -1118,7 +1142,7 @@ export function V3Sheet({
           .join(', ')}.`,
       )
 
-      return (
+      return wrapSurface(
         <section
           id={id}
           className={cn(V3_ROOT_CLASS, 'v3-sheet', className)}
@@ -1146,7 +1170,7 @@ export function V3Sheet({
 
     // Nothing to work through at all. The heading still names the region rather than
     // the section disappearing without explanation.
-    return (
+    return wrapSurface(
       <section
         id={id}
         className={cn(V3_ROOT_CLASS, 'v3-sheet', className)}
@@ -1276,7 +1300,7 @@ export function V3Sheet({
       }
     : null
 
-  return (
+  return wrapSurface(
     <section
       id={id}
       className={cn(V3_ROOT_CLASS, 'v3-sheet', className)}
@@ -1496,6 +1520,8 @@ export function V3Sheet({
 
         {step.source ? <V3SourceLine source={step.source} /> : null}
       </form>
+
+      {footer}
 
       {trace ? (
         <V3SourceLine className="v3-sheet-foot" source={trace} updatedAt={freshness} />

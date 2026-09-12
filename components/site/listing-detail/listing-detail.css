@@ -199,6 +199,17 @@
   text-align: right;
 }
 
+.listing-spec-door {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.listing-spec-door:hover,
+.listing-spec-door:focus-visible {
+  text-decoration-thickness: 2px;
+}
+
 .listing-schools {
   display: flex;
   flex-direction: column;
@@ -571,6 +582,12 @@
   cursor: default;
 }
 
+.listing-mosaic__skeleton {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--v3-navy) 10%, var(--v3-cream));
+}
+
 .listing-mosaic__empty-label {
   margin: 0;
   padding: var(--v3-space-sm);
@@ -650,14 +667,35 @@
 }
 
 .listing-ask-row,
-.listing-ask-row.v3-btn-group {
+.listing-ask-row.v3-btn-group,
+.v3.listing-ask-row.v3-btn-group {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
+  width: 100%;
 }
 
 .listing-ask-row .btn,
 .listing-ask-row .v3-btn {
+  width: 100%;
+}
+
+/* SITE-99. Save / Share stay visible at every width. Desktop used to
+   hide the whole actions row at 64rem because the sidebar already
+   carries Tour / Call / Text — and that rule took Save and Share
+   with it. The keep group is the live control. */
+.listing-face__keep,
+.listing-face__keep.v3-btn-group,
+.v3.listing-face__keep.v3-btn-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(8rem, 1fr));
+  gap: 0;
+  width: 100%;
+  max-width: 24rem;
+  margin-top: var(--v3-space-sm);
+}
+
+.listing-face__keep .v3-btn {
   width: 100%;
 }
 
@@ -674,7 +712,15 @@
   }
   .listing-ask-row,
   .listing-ask-row.v3-btn-group {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  /* Tour / Call / Text already live in the sidebar at this width.
+     Beat .v3.v3-btn-group { display: grid } or the ask stays painted
+     and the keep pair collapses beside it. */
+  .listing-face__ask,
+  .listing-face__ask.v3-btn-group,
+  .v3.listing-face__ask.v3-btn-group {
+    display: none;
   }
 }
 
@@ -721,7 +767,7 @@
     padding-bottom: var(--v3-space-md);
   }
   .listing-face__actions {
-    display: none;
+    display: block;
   }
 }
 
@@ -989,6 +1035,11 @@
   align-items: center;
   gap: 2px;
   position: relative;
+}
+
+.listing-strip__tabs {
+  flex: 1;
+  min-width: 0;
 }
 
 .listing-strip__tool,

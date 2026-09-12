@@ -246,7 +246,7 @@ export function loadTasteCatalog(raw) {
 /** House ids are files we already own. Catalog ids must resolve through installById. */
 export function isHouseAdaptedId(id) {
   const s = String(id ?? '')
-  return /^(house-|listing-|V3)/.test(s) || s.startsWith('components/')
+  return /^(house-|listing-|v3-|V3)/.test(s) || s.startsWith('components/')
 }
 
 export function resolveInstallSpec(installById, id, seen = new Set()) {

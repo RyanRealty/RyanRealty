@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { ListingPhoto } from '@/lib/data/types/listing'
 import type { VideoEmbed } from '@/lib/data/types/video'
-import { V3Carousel } from '@/components/site/v3'
+import { PhotoSkeleton } from '@/components/motion/photo-skeleton'
+import { V3Carousel, V3Tabs } from '@/components/site/v3'
 import { PhotoGalleryLightbox } from './PhotoGalleryLightbox'
 import { ListingTourOverlay } from './ListingTourOverlay'
 import { ListingStreetViewOverlay } from './ListingStreetViewOverlay'
@@ -133,8 +134,6 @@ export function ListingHero({
   const [frame, setFrame] = useState(0)
   /** The filmstrip's expanded state; hover expands it too (CSS). */
   const [stripOpen, setStripOpen] = useState(false)
-  /** The phone's overflow: the media controls past "N photos". */
-  const [moreOpen, setMoreOpen] = useState(false)
   const [mediaTab, setMediaTab] = useState<MediaTab>(() => {
     if (photos.length > 0) return 'photos'
     if (floorPlans.length > 0) return 'floor'
@@ -250,7 +249,6 @@ export function ListingHero({
   }
 
   function openCaption(pill: ListingMosaicPill) {
-    setMoreOpen(false)
     if (pill.action === 'gallery') {
       setMediaTab('photos')
       openGallery(frame)
@@ -280,6 +278,17 @@ export function ListingHero({
   const primaryPill = mosaicPills.find((pill) => pill.action === 'gallery') ?? null
   const otherPills = mosaicPills.filter((pill) => pill.action !== 'gallery')
   const overflowCount = otherPills.length + (hasMap ? 1 : 0)
+  const streetPill = otherPills.find((pill) => pill.action === 'street') ?? null
+  const mediaTabItems = [
+    { value: 'photos' as const, label: primaryPill?.label ?? 'Photos' },
+    ...otherPills
+      .filter((pill) => pill.action === 'floor' || pill.action === 'tour')
+      .map((pill) => ({
+        value: (pill.action === 'floor' ? 'floor' : 'tour') as MediaTab,
+        label: pill.label,
+      })),
+    hasMap ? { value: 'map' as const, label: 'Map' } : null,
+  ].filter((row): row is { value: MediaTab; label: string } => row != null)
 
   return (
     <div
@@ -492,7 +501,34 @@ export function ListingHero({
             </div>
           ) : null}
           <div className="listing-strip__tools" role="group" aria-label="Listing media">
-            {primaryPill ? (
+            {mediaTabItems.length > 1 ? (
+              <V3Tabs
+                label="Listing media"
+                count={mediaTabItems.length}
+                value={mediaTab}
+                onValueChange={(next) => {
+                  if (next === 'tour') {
+                    const tour = otherPills.find((pill) => pill.action === 'tour')
+                    if (tour) {
+                      openCaption(tour)
+                      return
+                    }
+                  }
+                  if (next === 'floor') {
+                    const floor = otherPills.find((pill) => pill.action === 'floor')
+                    if (floor) {
+                      openCaption(floor)
+                      return
+                    }
+                  }
+                  if (next === 'photos' || next === 'map' || next === 'tour' || next === 'floor') {
+                    setMediaTab(next)
+                  }
+                }}
+                items={mediaTabItems}
+                className="listing-strip__tabs"
+              />
+            ) : primaryPill ? (
               <button
                 type="button"
                 className="listing-strip__tool listing-strip__tool--primary"
@@ -501,50 +537,15 @@ export function ListingHero({
                 {primaryPill.label}
               </button>
             ) : null}
-            {overflowCount > 0 ? (
+            {streetPill ? (
               <button
                 type="button"
-                className="listing-strip__more"
-                onClick={() => setMoreOpen((open) => !open)}
-                aria-expanded={moreOpen}
-                aria-controls="listing-strip-overflow"
+                className="listing-strip__tool"
+                onClick={() => openCaption(streetPill)}
               >
-                More
+                {streetPill.label}
               </button>
             ) : null}
-            <div
-              id="listing-strip-overflow"
-              className={cn('listing-strip__overflow', moreOpen && 'is-open')}
-            >
-              {otherPills.map((pill) => (
-                <button
-                  key={pill.id}
-                  type="button"
-                  className={cn(
-                    'listing-strip__tool',
-                    ((pill.action === 'floor' && mediaTab === 'floor') ||
-                      (pill.action === 'tour' && mediaTab === 'tour')) &&
-                      'is-on',
-                  )}
-                  onClick={() => openCaption(pill)}
-                >
-                  {pill.label}
-                </button>
-              ))}
-              {hasMap ? (
-                <button
-                  type="button"
-                  className={cn('listing-strip__tool', mediaTab === 'map' && 'is-on')}
-                  onClick={() => {
-                    setMoreOpen(false)
-                    setMediaTab((tab) => (tab === 'map' ? 'photos' : 'map'))
-                  }}
-                  aria-pressed={mediaTab === 'map'}
-                >
-                  Map
-                </button>
-              ) : null}
-            </div>
           </div>
         </div>
       ) : null}
@@ -608,16 +609,21 @@ function MosaicStill({
   // The hero is a full-bleed frame. 320 and 800 Spark plates look pixelated
   // here (Matt 2026-09-10). Always paint the 1600 mosaic derivative.
   const live = preferListingMosaicPhotoUrl(src)
+  const [ready, setReady] = useState(false)
   return (
-    <Image
-      src={live}
-      alt={alt}
-      fill
-      sizes={sizes}
-      quality={LISTING_MOSAIC_PHOTO_QUALITY}
-      priority={priority}
-      className={contain ? 'object-contain' : 'object-cover'}
-    />
+    <>
+      {ready ? null : <PhotoSkeleton label="Loading photograph" />}
+      <Image
+        src={live}
+        alt={alt}
+        fill
+        sizes={sizes}
+        quality={LISTING_MOSAIC_PHOTO_QUALITY}
+        priority={priority}
+        onLoad={() => setReady(true)}
+        className={cn(contain ? 'object-contain' : 'object-cover', !ready && 'opacity-0')}
+      />
+    </>
   )
 }
 

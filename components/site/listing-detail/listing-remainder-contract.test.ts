@@ -22,6 +22,88 @@ describe('listing remainder composition', () => {
     expect(SPECS).toContain('Garage')
   })
 
+  it('turns leftover facts into doors on the house contract (SITE-99)', () => {
+    const SPECS = readFileSync(resolve('components/site/listing-detail/PropertySpecs.tsx'), 'utf8')
+    expect(SPECS).toContain("href: '#location'")
+    expect(SPECS).toContain("href: '#schools'")
+    expect(SPECS).toContain("href: '#tax'")
+    expect(SPECS).toContain('listing-spec-door')
+  })
+
+  it('locks Save and Share on the listing page so they cannot silently vanish', () => {
+    const STRIP = readFileSync(resolve('components/site/listing-detail/PriceCtaStrip.tsx'), 'utf8')
+    const CSS = readFileSync(resolve('components/site/listing-detail/listing-detail.css'), 'utf8')
+    const PARITY = readFileSync(
+      resolve('design_system/ryan-realty/ui_kits/listing-detail/parity.json'),
+      'utf8',
+    )
+    expect(PAGE).toMatch(/import \{ ListingSaveButton/)
+    expect(PAGE).toMatch(/import \{ ListingShareButton/)
+    expect(PAGE).toContain('listingDocumentTitle')
+    expect(STRIP).toContain('<ListingSaveButton')
+    expect(STRIP).toContain('<ListingShareButton')
+    expect(STRIP).toContain('listing-face__keep')
+    const SAVE_SHEET = readFileSync(
+      resolve('components/site/listing-detail/ListingGuestSaveSheet.client.tsx'),
+      'utf8',
+    )
+    expect(SAVE_SHEET).toContain('surface="drawer"')
+    expect(HERO).toContain('V3Tabs')
+    expect(HERO).toContain('PhotoSkeleton')
+    const SHEET = readFileSync(resolve('components/site/v3/V3Sheet.tsx'), 'utf8')
+    expect(SHEET).toMatch(/from '@\/components\/ui\/sheet'/)
+    expect(PARITY).toContain('"name": "ListingSaveButton"')
+    expect(PARITY).toContain('"name": "ListingShareButton"')
+    // Desktop used to hide the whole actions row at 64rem and take Save/Share
+    // with Tour / Call / Text. The keep group must stay painted.
+    expect(CSS).toMatch(/\.listing-face__keep[\s\S]*display:\s*grid/)
+    const rules = CSS.replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(rules).not.toMatch(/\.listing-face__keep[^{]*\{[^}]*display:\s*none/)
+    expect(rules).not.toMatch(/\.listing-face__actions\s*\{\s*display:\s*none/)
+  })
+
+  it('names installed catalog jobs on the receipt and imports the source (SITE-99)', () => {
+    const PARITY = JSON.parse(
+      readFileSync(resolve('design_system/ryan-realty/ui_kits/listing-detail/parity.json'), 'utf8'),
+    ) as {
+      tasteReview?: { adaptedFrom?: Array<string | { id?: string }>; defects?: Array<{ replaceWith?: unknown }> }
+    }
+    const adapted = (PARITY.tasteReview?.adaptedFrom ?? []).map((hit) =>
+      typeof hit === 'string' ? hit : hit.id,
+    )
+    expect(adapted.length).toBeGreaterThan(0)
+    for (const id of [
+      'shadcn-carousel',
+      'shadcn-button-group',
+      'shadcn-sheet',
+      'shadcn-dialog',
+      'beui-tabs',
+      'beui-action-swap',
+      'transitions-modal',
+      'beautifului-loading',
+    ]) {
+      expect(adapted).toContain(id)
+    }
+    for (const defect of PARITY.tasteReview?.defects ?? []) {
+      expect(defect).toHaveProperty('replaceWith')
+    }
+    const CAROUSEL = readFileSync(resolve('components/site/v3/V3Carousel.client.tsx'), 'utf8')
+    const GROUP = readFileSync(resolve('components/site/v3/V3ButtonGroup.tsx'), 'utf8')
+    const SHEET = readFileSync(resolve('components/site/v3/V3Sheet.tsx'), 'utf8')
+    const LIGHTBOX = readFileSync(resolve('components/site/listing-detail/PhotoGalleryLightbox.tsx'), 'utf8')
+    const TABS = readFileSync(resolve('components/site/v3/V3Tabs.tsx'), 'utf8')
+    const SWAP = readFileSync(resolve('components/site/v3/V3ActionSwap.tsx'), 'utf8')
+    expect(CAROUSEL).toMatch(/from '@\/components\/ui\/carousel'/)
+    expect(GROUP).toMatch(/from '@\/components\/ui\/button-group'/)
+    expect(SHEET).toMatch(/from '@\/components\/ui\/sheet'/)
+    expect(LIGHTBOX).toMatch(/from '@\/components\/ui\/dialog'/)
+    expect(LIGHTBOX).toMatch(/from '@\/components\/motion\/transitions-modal'/)
+    expect(TABS).toMatch(/from '@\/components\/motion\/tabs'/)
+    expect(SWAP).toMatch(/from '@\/components\/motion\/action-swap'/)
+    expect(HERO).toMatch(/from '@\/components\/motion\/photo-skeleton'/)
+    expect(GROUP).not.toMatch(/from '@\/components\/motion\/action-swap'/)
+  })
+
   it('states the 13-section house page on the route', () => {
     // 12 became 13 on 2026-09-09 when the MLS public remarks came back as row 5
     // (Matt: "mls descriptions must come back"; CLAUDE.md §2). The count and the

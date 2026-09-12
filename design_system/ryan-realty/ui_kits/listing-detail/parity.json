@@ -36,7 +36,17 @@
     },
     {
       "name": "PriceCtaStrip",
-      "section": "H1 is the street. One ask: Tour / Call / Text. Face Est. $/mo is off.",
+      "section": "H1 is the street. On-market ask: Tour / Call / Text. Save and Share stay on Active, Pending, and off-market (SITE-21 / SITE-99). Face Est. $/mo is off.",
+      "blocking": true
+    },
+    {
+      "name": "ListingSaveButton",
+      "section": "SITE-99. Save this home from the PriceCtaStrip keep group. Required on Active and Pending; also stays on off-market. Search tiles stay no-heart.",
+      "blocking": true
+    },
+    {
+      "name": "ListingShareButton",
+      "section": "SITE-99. Share this home from the PriceCtaStrip keep group. Required on Active and Pending; also stays on off-market.",
       "blocking": true
     },
     {
@@ -274,7 +284,7 @@
   "sectionOrder": [
     "ListingHero (price, beds, baths, sqft, street on the media)",
     "V3Atlas #location with lot figure",
-    "PriceCtaStrip Tour / Call / Text on market; homes-for-sale + alerts off market",
+    "PriceCtaStrip Tour / Call / Text on market; homes-for-sale + alerts off market; Save + Share always",
     "ListingOffMarketFacts the sold facts, off market only, first thing under the price",
     "ListingSimilarStrip off market: the homes a reader CAN buy, promoted to just under the sold facts",
     "ListingLikeThisAlerts off market: the saved search that replaces the tour",
@@ -352,6 +362,21 @@
       "honestyFunction": 6
     },
     "beats": "Redfin — this page's #close section turns a bare price-history table into a plain-English narrative ('46% of homes that sold had dropped price') backed by a dot-matrix chart and a day-count comparison; Redfin shows the same underlying facts as an unglossed table with no interpretation.",
+    "adaptedFrom": [
+      { "id": "listing-hero-bleed" },
+      { "id": "listing-specs" },
+      { "id": "listing-ask" },
+      { "id": "v3-carousel" },
+      { "id": "v3-button-group" },
+      { "id": "shadcn-carousel" },
+      { "id": "shadcn-button-group" },
+      { "id": "shadcn-sheet" },
+      { "id": "shadcn-dialog" },
+      { "id": "beui-tabs" },
+      { "id": "beui-action-swap" },
+      { "id": "transitions-modal" },
+      { "id": "beautifului-loading" }
+    ],
     "tells": [
       "Raw slugs, internal labels or methodology jargon in anything a visitor reads — the breadcrumb reads 'Bend / Easton / EASTON COMMERCIAL / 60936 SE Apollo Place' on a single-family home, both desktop.png and mobile375.png."
     ],
@@ -364,6 +389,7 @@
         "finding": "Breadcrumb shows the raw plat/subdivision alias 'EASTON COMMERCIAL' in all caps ahead of the address on a residential listing — reads as an internal slug, not a place a buyer would recognize.",
         "primitive": "listing breadcrumb / place-hierarchy component",
         "fix": "Suppress or humanize the subdivision alias before render; drop 'COMMERCIAL' segments on residential listings.",
+        "replaceWith": null,
         "viewport": "both"
       },
       {
@@ -372,6 +398,7 @@
         "finding": "The broker card still offers Tour / Call / Text for the Medford lot directly beside copy stating 'We don't work in Medford' — the CTA contradicts the disclaimer in the same viewport.",
         "primitive": "broker contact card (shared sidebar component)",
         "fix": "On out-of-area listings, replace Tour/Call/Text with the 'introduce me to a Medford broker' action; do not show the generic tour CTA.",
+        "replaceWith": null,
         "viewport": "both"
       },
       {
@@ -380,6 +407,7 @@
         "finding": "The mortgage calculator still renders a precise $2,315/month, line-item breakdown for the Medford lot in the same block that admits Ryan Realty has no local knowledge of Medford — a specific number implies authority the copy just disclaimed.",
         "primitive": "payment/mortgage calculator component",
         "fix": "Hide or generic-ize the calculator on out-of-area listings, or caveat it explicitly as a statewide-rate estimate carrying no local knowledge.",
+        "replaceWith": null,
         "viewport": "both"
       },
       {
@@ -388,6 +416,7 @@
         "finding": "At 375, the breadcrumb wraps into an orphaned second line ('/ 60936 SE Apollo Place') separated from 'Bend / Easton / EASTON COMMERCIAL' above it.",
         "primitive": "breadcrumb component, mobile wrap behavior",
         "fix": "Truncate to the last one or two segments at 375, or collapse to a back-chevron, instead of wrapping the full trail.",
+        "replaceWith": null,
         "viewport": "mobile"
       },
       {
@@ -396,6 +425,7 @@
         "finding": "The explanation is two paragraphs of prose plus one text link and nothing else visual — the one section on the route with no figure, chart, or map, even though it stays under the two-paragraph banned-tell line.",
         "primitive": "out-of-area notice section",
         "fix": "Replace one paragraph with a simple service-area map or a labeled distance stat ('Medford is X miles outside our 14-community coverage').",
+        "replaceWith": null,
         "viewport": "both"
       },
       {
@@ -404,7 +434,17 @@
         "finding": "The Facts block (lot size / year built / HOA) is plain static text with no hover, tap, or expand — the one clearly non-interactive data block on the route.",
         "primitive": "Facts list component",
         "fix": "Add a lightweight interaction, e.g. tap-to-expand each fact with its source, or link acreage to a map overlay.",
+        "replaceWith": "listing-specs",
         "viewport": "both"
+      },
+      {
+        "section": "PriceCtaStrip keep group",
+        "severity": "honesty",
+        "finding": "SITE-99 product hold, not a re-score. Desktop CSS had hidden listing-face__actions at 64rem because the sidebar already had Tour / Call / Text, which also hid Save and Share. Those two stay on the live control (listing-face__keep) on Active, Pending, and off-market. Search tiles stay no-heart.",
+        "primitive": "ListingSaveButton / ListingShareButton + v3-button-group",
+        "fix": "Keep the keep-group painted. Do not hide Save/Share with the ask row. Do not add hearts to search tiles.",
+        "replaceWith": "v3-button-group",
+        "viewport": "desktop"
       }
     ],
     "comparedToPrior": "rebaselined",

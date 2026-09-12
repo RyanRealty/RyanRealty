@@ -1,9 +1,10 @@
 /**
  * v3 BUTTON GROUP — one clustered ask, not three ghost buttons.
  *
- * Adapted from the shadcn button-group job and beUI action-swap: Tour / Call /
- * Text (or Homes for sale / Get alerts) as one control. Navy on cream, 44px
- * taps, hairline joins. Not magnetic, not metallic, not a second kit.
+ * Adapted from the shadcn button-group job: Tour / Call / Text (or Homes for
+ * sale / Get alerts) as one grouped control. Navy on cream, 44px taps,
+ * hairline joins. Not magnetic, not metallic, not a second kit. Action-swap
+ * lives on Save / Share via V3ActionSwap, which imports the motion source.
  *
  * Server-safe. Callers that need onClick already sit in a client island.
  */
