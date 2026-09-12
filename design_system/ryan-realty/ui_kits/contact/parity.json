@@ -2,6 +2,22 @@
   "route": "app/contact/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md, built from components/site/v3. THIS FILE BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat five-step contact wizards and generic 'get in touch' pages: one-screen V3Ask in the first viewport, a reach control with one dominant call door carrying a live hours state and the principal photograph, and the brokers who answer shown as photographs rather than a flat hairline list.",
+  "competitiveBrief": {
+    "id": "contact-looking-1-8",
+    "source": "Researchy Contact Looking 2026-09-12 beats 1–8; docs/plans/PUBLIC_PRODUCT/PAGE_INVENTORY.md §6 /contact",
+    "productLock": "hero Call/text/write + address on fold + Call|Text|Email|Schedule PASS + form+SMS + brokers→/team; FAQ optional; do not reopen CTAs as missing",
+    "refuse": "Five-step wizard. Four equal link cells. Looking that reopens Call|Text|Email|Schedule as missing. Invented reply-time.",
+    "beats": [
+      { "id": "1", "text": "Hero H1 is Call, text, or write — one conversion sentence, not a five-step contact wizard." },
+      { "id": "2", "text": "Street address sits on the fold (115 NW Oregon Ave #2). A visitor can find the office without scrolling." },
+      { "id": "3", "text": "Call is on the reach control at display scale with live published hours. PASS regression — do not drop Call." },
+      { "id": "4", "text": "Text sits on the same reach control as Call. PASS regression — do not drop Text." },
+      { "id": "5", "text": "Email sits on the same reach control as Call and Text. PASS regression — do not drop Email." },
+      { "id": "6", "text": "Schedule sits on the same reach control as Call, Text, and Email. PASS regression — do not drop Schedule." },
+      { "id": "7", "text": "Form plus SMS consent (ContactAsk) is the write path. Do not reopen CTAs as missing when the form is present." },
+      { "id": "8", "text": "Brokers who answer door to /team. FAQ (V3Answers) is optional. Do not invent a reply-time clock." }
+    ]
+  },
   "note": "SITE-80 2026-09-10. Order is Breadcrumb, ContactFold (Quiet H1 + sourced Google-reviews figure, V3Doors #reach as a REACH CONTROL \u2014 one call door at display scale with the principal cutout and V3OnDuty live hours, then text, email and the calendar as lighter links \u2014 ContactAsk as the one ask in the same viewport via V3Input), AboutFaces (who answers \u2014 the same roster /team and /about use), V3Answers, Footer. Consent checkbox is padded to --v3-tap on this route without changing SMS_CONSENT_TEXT. The live state is PUBLISHED HOURS, never a reply time: SITE-09's response clock is still unproven and its answered ratio is a backlog, not a promise.",
   "requiredComponents": [
     {

@@ -301,7 +301,12 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
 
    That is the card: house files to OPEN, ≤8 catalog URLs to FETCH **and
    install**, primitives still missing from the barrel, the layout lock, the
-   refuse list. Do not dump `taste-catalog.json`. Fetch those URLs
+   refuse list, and `competitiveBrief` when the class has one (About first:
+   Researchy beats 1–8). Pull the brief before composing. Fail Looking if
+   the page invents past it. `ci:page-purpose` refuses a missing or
+   incomplete `competitiveBrief` on About. `ci:taste-canon` and Tip Ready
+   refuse a rise / score ≥ 70 without `competitiveBriefPass: true` (or
+   checklist all true). Omit is refuse. Do not invent true. Do not dump `taste-catalog.json`. Fetch those URLs
    (beautifului / beui / rareui / transitions / ui.shadcn.com, plus any URL
    later appended to `catalogUrls`). **Install the source** (`npx shadcn add`
    / the registry JSON) into `components/ui` or `components/motion`, then wrap
@@ -344,13 +349,17 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
    `rubricVersion`, `shotSpec`, `shotsHash`
    (`node scripts/lib/taste-receipt.mjs <parity.json>`), the three `scores` and
    their median, the named `defects` (each with `replaceWith`), `adaptedFrom`,
-   `demoMatch` (required true|false), and `comparedToPrior` with `priorMark`.
+   `demoMatch` (required true|false), `competitiveBriefPass` when the route
+   publishes a brief, and `comparedToPrior` with `priorMark`.
    `ci:taste-canon` recomputes the hash and the median and refuses a receipt
    that claims a rise it did not make, a catalog-class receipt that invented
    a layout, or (rubric `v1-2026-09-12+`) a catalog `adaptedFrom` that claims
-   rise / score ≥ 70 without `demoMatch: true`. `completeWorkNode` refuses
-   SITE-* evidence that omits `demoMatch: true` or records grok CLI missing /
-   402. Score rise on a cream box is not Tip Ready.
+   rise / score ≥ 70 without `demoMatch: true`, or a briefed route that
+   claims rise / ≥70 without `competitiveBriefPass: true`. `completeWorkNode`
+   refuses SITE-* evidence that omits `demoMatch: true` or
+   `competitiveBriefPass: true` on a briefed class (About / SITE-90), or
+   records grok CLI missing / 402. Score rise on a cream box or past the
+   Researchy checklist is not Tip Ready.
 6. Only then: `npm run gates:stamp`, commit with the `Node: <id>` trailer, push
    its own branch, and report. The evaluator's remaining findings append to the
    node.

@@ -39,11 +39,13 @@ import {
   loadTasteCatalog,
   replaceWithOptionProblems,
 } from './lib/taste-catalog.mjs'
+import { parseCompetitiveBrief } from './lib/taste-receipt.mjs'
 import {
   EVALUATOR_MODEL,
   RUBRIC_PATH,
   RUBRIC_VERSION,
-  demoMatchBlocksDone,
+  competitiveBriefBlocksDone,
+  evaluatorBlocksDone,
   evaluatorEnvelope,
   evaluatorResultProblems,
   grokCliFailure,
@@ -68,8 +70,9 @@ import {
  * builderModel), so a Grok lane BUILDS with grok-4.5 and is judged by 4.6.
  *
  * Matt 2026-09-12: demoMatch is required. A false or omitted verdict prints
- * the JSON then exits 2 — do not invent true. CLI missing / 402 is an honest
- * fail; leave the node in_progress.
+ * the JSON then exits 2 — do not invent true. When the route publishes a
+ * competitiveBrief, competitiveBriefPass is the same rule. CLI missing / 402
+ * is an honest fail; leave the node in_progress.
  */
 const GROK_CLI = process.env.GROK_CLI ?? `${process.env.HOME}/.grok/bin/grok`
 
@@ -139,6 +142,21 @@ async function main() {
   const classKey = classForRoute(loaded, args.routeKey) ?? args.routeKey
   catalogNote = evaluatorBrief(loaded, classKey)
 
+  const parityRel = join(UI_KITS, args.routeKey, 'parity.json')
+  let competitiveBrief = null
+  if (existsSync(parityRel)) {
+    try {
+      const parity = JSON.parse(readFileSync(parityRel, 'utf8'))
+      competitiveBrief =
+        parseCompetitiveBrief(parity?.competitiveBrief) ||
+        parseCompetitiveBrief(loaded.classes?.[classKey]?.competitiveBrief)
+    } catch {
+      competitiveBrief = parseCompetitiveBrief(loaded.classes?.[classKey]?.competitiveBrief)
+    }
+  } else {
+    competitiveBrief = parseCompetitiveBrief(loaded.classes?.[classKey]?.competitiveBrief)
+  }
+
   const bar =
     args.beat == null
       ? 'There is NO previous recorded mark for this page class. This is its first mark, so score it on its merits with no anchor.'
@@ -147,6 +165,18 @@ async function main() {
   const refPath = join('design_system/public/references', `${args.routeKey}.md`)
   const refNote = existsSync(refPath)
     ? `A class reference file exists at ${refPath}. Prefer naming \`beats\` against one of the pages listed there.`
+    : ''
+
+  const briefNote = competitiveBrief
+    ? [
+        'COMPETITIVE BRIEF (required checklist — fail Looking if the page invents past it):',
+        competitiveBrief.productLock ? `Product lock: ${competitiveBrief.productLock}` : '',
+        competitiveBrief.refuse ? `Refuse: ${competitiveBrief.refuse}` : '',
+        ...competitiveBrief.beats.map((b) => `${b.id}. ${b.text}`),
+        'Score competitiveBriefPass true only if every beat is visible in the shots. Omit is refuse. Do not invent true. Checklist all true is the other pass path.',
+      ]
+        .filter(Boolean)
+        .join('\n')
     : ''
 
   const question = [
@@ -158,6 +188,7 @@ async function main() {
     args.url ? `The page is rendered at ${args.url}.` : '',
     args.focus ? `What changed in this pass: ${args.focus}` : '',
     catalogNote,
+    briefNote,
     refNote,
     bar,
     '',
@@ -166,7 +197,9 @@ async function main() {
     'Diagnose each defect as a JOB, then set replaceWith from the catalog option list in the brief (id + demo URL). Prefer those ids over vague house adjectives. Do not pick a house primitive that already lost. Cream-box examples that are demoMatch false: Avatar import ≠ AvatarGroup demo; Button import ≠ flat V3Button navy rect; Sheet import ≠ custom drawer. If the live control and the demo are not the same interaction, demoMatch is false. Shots named search-open / *-open are the demo-match record — judge whether the opened control matches the catalog demo, not only the rest fold. A V3 wrapper that imported the file then hid the morph, the card body, or the carousel is demoMatch false.',
     'Then list the named defects behind the number: each one names the section (a css class or an id you can see), the severity (blocking | taste | craft), a finding of at least ten characters, and replaceWith — a catalog id from the option list, a house form from the rubric list only when no catalog job fits, or null if the finding is craft/honesty/SEO not form.',
     'Empty defects is only allowed above 95.',
-    'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"demoMatch":true|false,"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"...","replaceWith":"<catalog option-list id, house form, or null>"}],"verdict":"<two sentences>"}. demoMatch is required. Omitting it discards the response.',
+    competitiveBrief
+      ? 'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"demoMatch":true|false,"competitiveBriefPass":true|false,"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"...","replaceWith":"<catalog option-list id, house form, or null>"}],"verdict":"<two sentences>"}. demoMatch and competitiveBriefPass are required. Omitting either discards the response.'
+      : 'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"demoMatch":true|false,"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"...","replaceWith":"<catalog option-list id, house form, or null>"}],"verdict":"<two sentences>"}. demoMatch is required. Omitting it discards the response.',
   ]
     .filter(Boolean)
     .join('\n')
@@ -251,7 +284,7 @@ async function main() {
     process.exit(2)
   }
   const parsed = parseJsonLoose(content)
-  const schemaProblems = evaluatorResultProblems(parsed)
+  const schemaProblems = evaluatorResultProblems(parsed, { competitiveBrief })
   const defects =
     parsed && typeof parsed === 'object' && Array.isArray((parsed as { defects?: unknown }).defects)
       ? (parsed as { defects: Array<{ replaceWith?: unknown }> }).defects
@@ -283,10 +316,17 @@ async function main() {
       2,
     ),
   )
-  if (demoMatchBlocksDone(parsed)) {
-    console.error(
-      'taste-evaluate: demoMatch is false. The live control is not the catalog object. Copy the GitHub source; do not wrap it in a cream box. Leave the node in_progress.',
-    )
+  if (evaluatorBlocksDone(parsed, { competitiveBrief })) {
+    if (demoMatchBlocksDone(parsed)) {
+      console.error(
+        'taste-evaluate: demoMatch is false. The live control is not the catalog object. Copy the GitHub source; do not wrap it in a cream box. Leave the node in_progress.',
+      )
+    }
+    if (competitiveBriefBlocksDone(parsed, { competitiveBrief })) {
+      console.error(
+        'taste-evaluate: competitiveBriefPass is false or omitted. The shots miss the Researchy checklist. Do not invent true. Leave the node in_progress.',
+      )
+    }
     process.exit(2)
   }
 }

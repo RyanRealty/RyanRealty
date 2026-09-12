@@ -1,8 +1,24 @@
 {
   "route": "app/about/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat generic national-brokerage profile pages by OPENING on proof — the three brokers' faces and the firm's Google record with its trace — and then one reach control, rather than a license line over seven identical contact rows. Origin is short Quiet below the fold.",
-  "note": "SITE-90 2026-09-12 (Matt fold redo). Order is Breadcrumb, AboutFaces (H1 About Ryan Realty · Bend, eyebrow, a real firm beat, three broker Cards with separate Avatars), V3Doors #reach as a REACH CONTROL (one call door at display scale carrying the live hours state, then text, email and the calendar as lighter links), V3Proof (the words, headline 'In their own words' — the score is in the fold and is not restated), FirmClosings as carousel, V3Atlas, Quiet #about (How it started + firm/PB license line, OREA source), V3Answers, Footer. No V3Instrument. No V3SourceLine on faces, closings, or fold proof. Dates render in Pacific through formatDate.",
+  "competitiveTarget": "Beat Compass/Redfin/SIR About on STRUCTURE, not scale. OPEN on the firm story (small boutique brokerage · all of Central Oregon · help clients buy and sell) plus an optional Bend office exterior / mission band. Then client reviews as the primary proof (Google score + featured quote — never press). Then dated local closings. Then Contact four-up Call|Text|Email|Schedule. Then a short Who you work with teaser that only doors to /team. Then a compact inquiry that GET-submits to Contact. FAIL if the page opens on brokers' faces or three equal broker Cards. About is the brokerage, not Meet the Team. Skip coast-to-coast, Redfin fee, and Rocket copy. Never invent MOS, prices, or licenses.",
+  "competitiveBrief": {
+    "id": "about-researchy-1-8",
+    "source": "Researchy About 2026-09-12 beats 1–8; docs/plans/PUBLIC_PRODUCT/PAGE_INVENTORY.md §6. Synced with cursor/competitive-brief-taste-gate-b093 (PR 214) — they own ci:taste-canon; this file owns requiredComponents.",
+    "productLock": "firm story + reviews + closings + Call|Text|Email|Schedule + team teaser→/team + inquiry→/contact",
+    "refuse": "AboutFaces three broker Cards as the opener. Poster-sized three-headshot fold. Looking that invents past this checklist.",
+    "beats": [
+      { "id": "1", "text": "Firm story opens the page: small boutique brokerage, all of Central Oregon, help clients buy and sell. Not a staff-directory fold." },
+      { "id": "2", "text": "Firm reviews: brokerage Google record as words (V3Proof), with a door to /reviews." },
+      { "id": "3", "text": "Firm closings: recent Ryan Realty sales as house-row cards (photo, address, ClosePrice, beds/baths/sqft). Never invent MOS." },
+      { "id": "4", "text": "Call is the primary conversion on the reach control, carrying live hours." },
+      { "id": "5", "text": "Text sits on the same reach control as Call, not a seven-row phone book." },
+      { "id": "6", "text": "Email sits on the same reach control as Call, Text, and Schedule." },
+      { "id": "7", "text": "Schedule sits on the same reach control as Call, Text, and Email." },
+      { "id": "8", "text": "Team teaser doors only to /team; compact inquiry GET /contact. No /team/[slug] on About. Brokers are not the opener." }
+    ]
+  },
+  "note": "SITE-90 2026-09-12 Matt lock + Researchy 1–8. About = brokerage, not Meet the Team. Synced with PR 214 competitiveBrief (about-researchy-1-8). requiredComponents opener is AboutFirm, not AboutFaces. Order: AboutFirm hero, V3Proof reviews PRIMARY, FirmClosings, V3Doors Call/Text/Email/Schedule, AboutTeamTeaser → /team only, AboutInquiry GET /contact, Atlas, Quiet #about, V3Answers, Footer. No deep bios or licenses on the fold. No V3Instrument. No V3SourceLine on the fold.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -11,22 +27,42 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "Chrome. Home > About. Surface tone (this page opens on cream faces, not a dark Stage). Current page never a link.",
+      "section": "Chrome. Home > About. Surface tone (cream under the firm-story hero, not a dark Stage). Current page never a link.",
       "blocking": true
     },
     {
-      "name": "AboutFaces",
-      "section": "OPENS THE PAGE, headingLevel 1, size proof. Carries the H1, a real firm beat (since 2014, Bend office, who you call works your deal), then three separate broker Cards (Matt, Rebecca, Paul) each with Avatar + AvatarImage + AvatarFallback, name, title, Call Button, ghost Text / Email / Schedule. The review count links to /reviews. Per-broker MLS record as a plain line, no methodology disclosure. No AvatarGroup overlap. Not a KPI row. Canonical /images/brokers/*.png.",
+      "name": "AboutFirm",
+      "section": "OPENS THE PAGE. Firm story + mood: optional full-bleed Bend office exterior (115 NW Oregon Ave #2, never the sofa) with H1 and one purpose line — small boutique brokerage, all of Central Oregon, help buy and sell. Navy/cream. NOT three broker Cards. NOT Meet the Team. Do not hang a thin Google score link on the hero; the primary reviews beat is the V3Proof band that follows.",
+      "blocking": true
+    },
+    {
+      "name": "V3Proof",
+      "section": "PRIMARY client-reviews proof, immediately after the firm hero. Display-scale Google score + featured quote as words (headingLevel 2), door to /reviews. Same DAL read (getReviews). Must read as the first proof band — not a thin score link that loses to closings or CTA. Do not muddle with press. Do not invent a rating. The count and average are sourced or omitted.",
+      "blocking": true
+    },
+    {
+      "name": "FirmClosings",
+      "section": "SALES PROOF. Recent local closings as V3Carousel / shadcn carousel (Card slides: photo, address, recorded ClosePrice, close date, beds/baths/sqft, listing door). Dated sold homes from the firm record. Not national scale counts. Never invent MOS or prices. Child of the page so about/page.tsx never mounts a city-stats Ledger.",
+      "blocking": true
+    },
+    {
+      "name": "V3Doors",
+      "section": "#reach four-up matching Contact: Call | Text | Email | Schedule. `primary` on the call door (display scale) with V3OnDuty live hours; text, email and Schedule as the lighter alternatives. Replaces the seven-row contact list SITE-48 removed.",
+      "blocking": true
+    },
+    {
+      "name": "AboutTeamTeaser",
+      "section": "Short Who you work with teaser AFTER the reach control. Face row + Meet the team door to /team only. No Card roster, no per-broker CTAs, licenses, bios, or /team/[slug] doors. Licenses live on Team / broker heroes.",
+      "blocking": true
+    },
+    {
+      "name": "AboutInquiry",
+      "section": "One short inquiry on About. Native GET to /contact?inquiry=. Label Send a message. Not a second ContactAsk. Full form stays on Contact.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
       "section": "Once: #about, late — a short origin plus the firm and principal-broker licences as sourced facts, never a KPI Instrument. The second instance (#who, seven contact rows as the fold) was deleted by SITE-48; the reach it carried is the V3Doors reach control.",
-      "blocking": true
-    },
-    {
-      "name": "FirmClosings",
-      "section": "Recent Ryan Realty closings as V3Carousel / shadcn carousel in the first-viewport about-fold (Card slides: photo, address, recorded ClosePrice, beds/baths/sqft, listing door). As many real closings as the firm record returned. Child of the page so about/page.tsx never mounts a city-stats Ledger.",
       "blocking": true
     },
     {
@@ -40,18 +76,8 @@
       "blocking": true
     },
     {
-      "name": "V3Proof",
-      "section": "The newest verified Google reviews AS WORDS, headingLevel 2, a door to /reviews. Same DAL read (getReviews) and the same quote shaping as /reviews. The count and the average are NOT the headline here — the opening already prints them, and printing them again is one page written twice.",
-      "blocking": true
-    },
-    {
       "name": "V3Footer",
       "section": "Chrome. V3_FOOTER_COLUMNS. Rendered OUTSIDE <main> so the footer maps to role=contentinfo.",
-      "blocking": true
-    },
-    {
-      "name": "V3Doors",
-      "section": "#reach, the one reach control. `primary` on the call door (display scale, larger bounding box) with the V3OnDuty live state and its trace under it; text, email and Schedule as the lighter alternatives. Replaces the seven-row contact list SITE-48 removed.",
       "blocking": true
     },
     {
@@ -74,7 +100,7 @@
     },
     {
       "name": "V3Stage",
-      "reason": "Pattern 4 needs owned media and is never allowed over a number. V3Stage is one full-bleed frame with a navy scrim, which would put a rectangle behind the transparent broker PNGs. AboutFaces does that owned-media job on cream instead."
+      "reason": "Pattern 4 needs owned media and is never allowed over a number. AboutFirm already uses the office exterior as the mood hero; a second Stage would restage the same photo."
     },
     {
       "name": "V3Field",
@@ -86,6 +112,7 @@
     }
   ],
   "removedComponents": [
+    "AboutFaces as opener / three equal broker Cards — Matt 2026-09-12 lock: About is the brokerage, not Meet the Team. Looking/taste must not pass a faces-first About. Deep bios and licenses stay on /team.",
     "KbHero — brand eyebrow, poetry H1, Central Oregon photo, property search.",
     "KbAbout — origin story and facts, rebuilt as the opening V3Quiet plus the Instrument.",
     "KbExploreTowns — city ledger, rebuilt as V3Ledger from getMarketPulseCitySnapshots.",
@@ -101,9 +128,12 @@
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "about-fold -- AboutFaces proof (H1, firm beat, three broker Cards with separate Avatars) + Street View exterior of 115 NW Oregon Ave #2 + FirmClosings #firm-sales as carousel. Never the interior sofa.",
-    "V3Doors #reach -- one call door at display scale with the live hours, then text, email, calendar",
-    "V3Proof #proof -- the firm's Google reviews as words",
+    "AboutFirm #firm — OPENS. Firm story (boutique · Central Oregon · buy+sell) on the office exterior. Never broker Cards. Never the sofa.",
+    "V3Proof #proof — PRIMARY client reviews (Google + featured quote). Not press.",
+    "FirmClosings #firm-sales — dated local closings carousel. Never invented MOS.",
+    "V3Doors #reach — Call | Text | Email | Schedule, Contact match, live hours",
+    "AboutTeamTeaser #team-teaser — face row + Meet the team → /team only. No Card roster.",
+    "AboutInquiry #write — compact Send a message GET /contact",
     "V3Atlas #service-area -- where we work",
     "V3Quiet #about -- how it started plus licenses as one sourced line",
     "V3Answers #faq -- working with Ryan Realty",
@@ -115,11 +145,12 @@
   },
   "tasteReview": {
     "evaluatedAt": "2026-09-12",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts about — grok CLI missing in this cloud lane. Scores below are the SITE-64 grok-4.6 pass, not this capture. Cos scores the attached 1440/375 shots.",
+    "rubricVersion": "v1-2026-09-12",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts about — grok CLI missing in this cloud lane. Cos scores the attached 1440/375 shots against the Researchy lock (firm story first). A Meet-the-Team / three-broker-Card fold is a fail, not a pass.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
     "demoMatch": false,
+    "competitiveBriefPass": false,
     "shotSpec": {
       "routes": [
         "/about"
@@ -130,48 +161,58 @@
       ],
       "states": [
         "default",
-        "firm-sales"
+        "proof",
+        "team-teaser"
       ],
-      "capture": "first viewport + firm-sales=#firm-sales, scripts/take-route-shots.mjs, scale 1, palette-quantized, localhost:3190/about after Matt 2026-09-12 fold redo (three broker Cards, no AvatarGroup, firm beat, Street View office, V3Carousel closings). Office sits between beat and roster at 375."
+      "capture": "first viewport + proof=#proof + team-teaser=#team-teaser, scripts/take-route-shots.mjs, scale 1, palette-quantized. Lock: AboutFirm firm-story hero, V3Proof reviews band as first proof, FirmClosings, V3Doors four-up, AboutTeamTeaser face row → /team, AboutInquiry. Not three broker Cards. Not a Card roster teaser."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png"
     },
-    "shotsHash": "sha256:53c72a66b398b9de5a06935ba2dbed4f3171f1231769f14625b5a7c57fd19d85",
+    "shotsHash": "sha256:712930e0fbbb1eb2c73aaab003ecf20203e2ab010cf8b186d8c0eb90c6e96d87",
     "scores": [
       52,
       47,
       57
     ],
     "score": 52,
-    "beats": "Matt's hard list is in the pixels: three named brokers as people, a two-paragraph firm beat, Bend office Street View, a closings rail with multiple recorded sales. Cos still owns the score. Cascade Sotheby's still wins editorial portrait scale.",
+    "beats": "Lock under test: firm-story hero, V3Proof Google reviews as the first proof band (display-scale score + words), dated local closings, Contact four-up, short face-row teaser → /team. A faces-first / Card-roster About fails this class. Cos still owns the score. demoMatch is false. competitiveBriefPass is false.",
     "adaptedFrom": [
+      { "id": "house-firm" },
+      { "id": "house-proof" },
+      { "id": "house-faces" },
+      { "id": "house-doors" },
       { "id": "shadcn-avatar" },
-      { "id": "shadcn-button-group" },
       { "id": "shadcn-card" },
       { "id": "shadcn-carousel" },
-      { "id": "house-faces" }
+      { "id": "shadcn-input" }
     ],
-    "evaluatorBlocked": "2026-09-12 Matt fold redo: npx tsx scripts/taste-evaluate.ts about failed — grok CLI missing (no ~/.grok/bin/grok). Do not invent demoMatch. Scores 52/47/57 are SITE-64, not this shotsHash. comparedToPrior is rebaselined because shotsHash changed. Tip Ready for Cos, not done.",
+    "evaluatorBlocked": "2026-09-12 Looking 2+4 craft: grok CLI missing in this cloud lane. Do not invent demoMatch or competitiveBriefPass. New shotsHash sha256:712930e0 after the weighted V3Proof band and non-card teaser capture. Scores 52/47/57 stay the prior instrument. Tip Ready for Cos, not done.",
     "defects": [
       {
-        "section": "#faces .about-faces__roster (375)",
-        "severity": "craft",
-        "finding": "At 375 the first viewport is the firm beat plus the Bend office. Matt's Avatar only peeks under the caption, so the three-broker claim is not three people on the phone fold.",
-        "replaceWith": "shadcn-avatar"
+        "section": "#firm",
+        "severity": "taste",
+        "finding": "The opener must be the firm story on the office exterior, not three equal broker Cards. If a shot still shows a staff-directory About, the page fails this lock.",
+        "replaceWith": "house-proof"
       },
       {
-        "section": "#faces .about-faces__broker",
+        "section": "#proof",
         "severity": "taste",
-        "finding": "Three equal shadcn Cards is the roster Matt asked for, and it still reads as a staff directory. Nothing in the 1440 frame ranks the principal or rewards a hover on a face.",
-        "replaceWith": "house-faces"
+        "finding": "Client reviews are the primary proof band after the firm hero. Google score at display scale plus the client's words. Do not replace them with press, a thin hero score link, or a national scale count.",
+        "replaceWith": "house-proof"
       },
       {
         "section": "#firm-sales",
         "severity": "taste",
-        "finding": "The 1440 first viewport only peeks rooftops of the closings rail. The recorded prices and addresses live one scroll down, so the fold claim of many closings is a crop until you move.",
+        "finding": "Dated local closings must be visible as a carousel of recorded sales. Do not invent MOS.",
         "replaceWith": "shadcn-carousel"
+      },
+      {
+        "section": "#team-teaser",
+        "severity": "taste",
+        "finding": "Who you work with is a short face row and one Meet the team door to /team. A Card roster or per-broker CTAs fail Researchy 4.",
+        "replaceWith": "house-faces"
       }
     ],
     "comparedToPrior": "rebaselined",
@@ -182,9 +223,9 @@
       "rubricVersion": "v1-2026-09-08",
       "shotsHash": "sha256:79ad786fe5d34960b88199dd066b0ab6ab91edc0a23cee56fe3aa148b19a9c10"
     },
-    "rebaselineReason": "shotsHash differs: SITE-64/SITE-90 Critiquito receipt was sha256:79ad786fe5d34960; this capture is sha256:53c72a66b398b9de after the Matt 2026-09-12 people + firm + closings redo. evaluatorModel and rubricVersion match. Score is the stale SITE-64 median, not a new grok-4.6 pass.",
-    "verdict": "Builder eyes: Matt's five hard items are in the fold. The grok CLI is missing, so this is not a 70 and demoMatch is false. Cos scores the attached shots.",
+    "rebaselineReason": "Craft pass 2026-09-12: V3Proof is the first proof band after AboutFirm; AboutTeamTeaser is a face row not a Card roster. New shotsHash sha256:712930e0. Prior SITE-64 scores are not a Looking pass.",
+    "verdict": "Looking/taste cannot pass a Meet-the-Team About. The contract opens on AboutFirm. demoMatch is false. Cos scores the shots.",
     "contactListIsFirstContent": false,
-    "contactListAnswer": "H1, two firm paragraphs, a reviews link, three separate broker Cards with Avatars, the Bend office photograph, then a closings carousel. No methodology disclosure. No overlapping AvatarGroup."
+    "contactListAnswer": "H1 and one purpose line (boutique · Central Oregon · buy and sell) on the Bend office exterior, Google reviews as primary proof, dated local closings, Call/Text/Email/Schedule, a Who you work with teaser that only doors to /team, and a one-line inquiry to /contact. No three equal broker Cards as the opener. No methodology disclosure."
   }
 }

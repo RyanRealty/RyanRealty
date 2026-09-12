@@ -141,6 +141,22 @@ describe('the full EXM7777 inventories', () => {
   })
 })
 
+describe('about competitiveBrief', () => {
+  it('publishes Researchy beats 1–8 on the about class', () => {
+    const brief = loaded.classes.about?.competitiveBrief
+    expect(brief?.beats).toHaveLength(8)
+    expect(brief?.beats.map((b) => b.id)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8'])
+    expect(brief?.productLock).toMatch(/firm story/)
+    expect(brief?.refuse).toMatch(/AboutFaces/)
+    const card = formatBuilderCard(builderCard(loaded, 'about'))
+    expect(card).toMatch(/Competitive brief/)
+    expect(card).toMatch(/competitiveBriefPass/)
+    const evalBrief = evaluatorBrief(loaded, 'about')
+    expect(evalBrief).toMatch(/COMPETITIVE BRIEF/)
+    expect(evalBrief).toMatch(/Brief 1:/)
+  })
+})
+
 describe('evaluatorBrief', () => {
   it('tells the judge to pick from named catalog jobs with demo URLs', () => {
     const brief = evaluatorBrief(loaded, 'listing-detail')
@@ -284,6 +300,64 @@ describe('layoutLockProblems', () => {
 
   it('passes the committed listing files', () => {
     expect(layoutLockProblems(loaded)).toEqual([])
+  })
+
+  it('fails AboutFaces required as the About opener', () => {
+    const problems = layoutLockProblems(loaded, {
+      existsSync: () => true,
+      readFileSync: (p) => {
+        if (String(p).endsWith('about/page.tsx')) {
+          return 'export default function Page() { return <AboutFaces people={[]} /> }'
+        }
+        if (String(p).endsWith('about/parity.json')) {
+          return JSON.stringify({
+            requiredComponents: [{ name: 'AboutFaces', section: 'OPENS THE PAGE, three broker Cards' }],
+          })
+        }
+        return ''
+      },
+    })
+    expect(problems.some((p) => /AboutFaces/.test(p))).toBe(true)
+    expect(problems.some((p) => /AboutFirm/.test(p) || /AboutFaces/.test(p))).toBe(true)
+  })
+
+  it('fails About when size="proof" roster markup returns', () => {
+    const problems = layoutLockProblems(loaded, {
+      existsSync: () => true,
+      readFileSync: (p) => {
+        if (String(p).endsWith('about/page.tsx')) {
+          return 'export default function Page() { return <AboutFirm /><AboutFaces size="proof" /> }'
+        }
+        if (String(p).endsWith('about/parity.json')) {
+          return JSON.stringify({
+            requiredComponents: [{ name: 'AboutFirm', section: 'OPENS THE PAGE' }],
+          })
+        }
+        return ''
+      },
+    })
+    expect(problems.some((p) => /size=\\"proof\\"/.test(p) || /size="proof"/.test(p))).toBe(true)
+  })
+
+  it('fails About when the team teaser reintroduces a Card roster', () => {
+    const problems = layoutLockProblems(loaded, {
+      existsSync: () => true,
+      readFileSync: (p) => {
+        if (String(p).endsWith('AboutTeamTeaser.tsx')) {
+          return "import { Card } from '@/components/ui/card'\n"
+        }
+        if (String(p).endsWith('about/page.tsx')) {
+          return 'export default function Page() { return <AboutFirm /> }'
+        }
+        if (String(p).endsWith('about/parity.json')) {
+          return JSON.stringify({
+            requiredComponents: [{ name: 'AboutFirm', section: 'OPENS THE PAGE' }],
+          })
+        }
+        return ''
+      },
+    })
+    expect(problems.some((p) => /card/i.test(p))).toBe(true)
   })
 })
 

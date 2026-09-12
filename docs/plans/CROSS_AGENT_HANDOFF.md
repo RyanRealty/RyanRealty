@@ -1,10 +1,17 @@
-# Current — 2026-09-12 17:40Z (SITE-90 About fold — Tip Ready for Cos)
+# Current — 2026-09-12 21:40Z (About Looking 2+4 craft — Tip Ready)
 
-Owner: `cursor-cloud-2026-09-12-0e8e`. Do not merge — Cos cherry-picks + `npm run push`. No emails.
+Owner: `cursor-cloud-2026-09-12-917e`. Do not merge — Tip Ready PR only. No emails.
 
-- **SITE-90 Tip Ready** `/about` on `cursor/about-fold-redo-0e8e` (PR, draft off). Matt hard list is in the fold: three broker Cards (Matt, Rebecca, Paul) with separate Avatars; firm beat since 2014 / Bend / who you call works your deal; V3Carousel of real firm closings; no AvatarGroup overlap; no V3SourceLine on faces/closings/fold; Street View `BEND OFFICE · 115 NW Oregon Ave #2` between beat and roster at 375. Shots 1440/375 + firm-sales. grok CLI missing — `demoMatch: false`, scores still SITE-64 52. Cos evaluates.
-- Exclusive: `app/about/**` this lane until Cos lands.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `marketing_brain_skills/brand-voice/VOICE.md`.
+- **About craft residual** on `cursor/about-proof-teaser-917e` from `main` `fe01ba3cf`. Order stays firm → V3Proof → closings → CTA → teaser→/team → inquiry. V3Proof is the first proof band (display-scale Google score + words; no thin hero score link). AboutTeamTeaser is a face row + Meet the team → `/team` (no Card roster). Structured `competitiveBrief` `about-researchy-1-8` and 13 requiredComponents kept. layoutLock still forbids AboutFaces / `size="proof"` / Card on the teaser. `demoMatch: false`, `competitiveBriefPass: false`.
+- Exclusive: `app/about/**` this lane.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
+
+# Current — 2026-09-12 20:45Z (HARD Tip Ready — competitiveBrief loop tightened)
+
+Owner: `cursor-cloud-2026-09-12-86e0`. Do not merge — Tip Ready PR only. No emails.
+
+- **Process tip** `cursor/competitive-brief-tip-ready-86e0`: Cos gaps A–D. About opener is AboutFirm + AboutTeamTeaser→/team (PR 213 wins; AboutFaces is not a required teaser). Tip Ready / `completeWorkNode` refuse a hand-typed `competitiveBriefPass: true` unless `parity.json` `tasteReview.competitiveBriefPass === true` on grok-4.6. Contact Looking 1–8 and Team/broker 1–8 are structured briefs. Honest `competitiveBriefPass: false` / `demoMatch: false` on About. Do not invent a pass.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 
 # Current — 2026-09-12 00:40Z (the taste instrument had no transport a cloud session could use)
 

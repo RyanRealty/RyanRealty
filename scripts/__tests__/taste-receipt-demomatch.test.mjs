@@ -87,8 +87,14 @@ describe('tasteDoneProblems — Tip Ready / node-complete', () => {
     )
   })
 
-  it('passes demoMatch true', () => {
-    expect(tasteDoneProblems({ demoMatch: true, adaptedFrom: catalogAdapted })).toEqual([])
+  it('passes demoMatch true on the grok-4.6 instrument', () => {
+    expect(
+      tasteDoneProblems({
+        demoMatch: true,
+        evaluatorModel: 'grok-4.6',
+        adaptedFrom: catalogAdapted,
+      }),
+    ).toEqual([])
   })
 })
 
@@ -123,13 +129,29 @@ describe('siteQueueDoneEvidenceProblems — SITE evidence text', () => {
     expect(p.join('\n')).toMatch(/CLI missing/)
   })
 
-  it('passes honest grok-4.6 demoMatch true evidence', () => {
+  it('passes honest grok-4.6 demoMatch true evidence only with a true receipt', () => {
     expect(
       siteQueueDoneEvidenceProblems(
-        'grok-4.6 median 72 (70/74/72) demoMatch: true. SEO title + inventory facts on cards.',
-        { versionGap: 'SITE-90' },
+        'grok-4.6 median 72 (70/74/72) demoMatch: true, competitiveBriefPass: true. SEO title + inventory facts on cards.',
+        {
+          versionGap: 'SITE-90',
+          tasteReview: {
+            competitiveBriefPass: true,
+            demoMatch: true,
+            evaluatorModel: 'grok-4.6',
+            shotsHash: `sha256:${'a'.repeat(64)}`,
+          },
+        },
       ),
     ).toEqual([])
+  })
+
+  it('refuses SITE-90 evidence that omits competitiveBriefPass', () => {
+    const p = siteQueueDoneEvidenceProblems(
+      'grok-4.6 median 72 (70/74/72) demoMatch: true. SEO title + inventory facts on cards.',
+      { versionGap: 'SITE-90' },
+    )
+    expect(p.join('\n')).toMatch(/competitiveBriefPass: true/)
   })
 
   it('does not bind a non-SITE node', () => {

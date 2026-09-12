@@ -4,13 +4,10 @@
  * Split out of page.tsx so the page stays under the file-size floor. Nothing
  * here fetches or formats.
  *
- * THE D11 MISSION SENTENCE IS OFF THIS PAGE (2026-09-02). What it opened the
- * closing section with was "We are a boutique real estate brokerage in Bend,
- * Oregon", which is the positioning Matt killed on 2026-06-10 ("is that going
- * to position us, our intent is to grow") and which VOICE.md's no-smallness
- * framing still rules out everywhere. The record below it states the firm
- * without the gloss: founded, firm license, principal broker license, each
- * traceable to the Oregon Real Estate Agency.
+ * THE FIRM STORY LIVES ON THE FOLD (Matt 2026-09-12). Three plain sentences:
+ * small boutique brokerage, all of Central Oregon, help buy and sell. That
+ * lock is ABOUT_FIRM_STORY. "How it started" stays origin + OREA licenses —
+ * it does not restate the fold.
  *
  * THE FAQ IS FOUR QUESTIONS, NOT SIX (2026-09-02). The set is what /about can
  * answer that /about has not already said. "When did Ryan Realty start?" went:
@@ -38,6 +35,13 @@ import { BROKERS, type BrokerKey } from '@/lib/brand/contact'
 
 /** Firm license as published on the pre-v3 about page (OREA 201253677). */
 export const FIRM_LICENSE = 'OREA 201253677'
+
+/** Matt 2026-09-12 lock. Fold copy only — not How it started, not Team. */
+export const ABOUT_FIRM_STORY = [
+  'We are a small boutique brokerage.',
+  'We work all of Central Oregon.',
+  'We help clients buy and sell their properties.',
+] as const
 
 /**
  * Service-area cities that earn a Ledger row, in row order. Presentation, not

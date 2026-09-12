@@ -10,29 +10,19 @@ function at(marker: string): number {
   return i
 }
 
-/**
- * SITE-48 (2026-09-09) rewrote the first two cases here. They used to assert
- * the inverse — a V3Quiet #who ABOVE the faces — on the argument that the
- * faces were a poster eating the fold. The taste table of 2026-09-08 measured
- * what that produced: 31, with the verdict "the About page's first screen is
- * a phone book, not a proof point … the page's actual assets (broker faces,
- * firm sales, reviews, the service-area map) sit entirely below the fold".
- * The poster worry is still honoured — AboutFaces renders at conversation
- * scale here, not at 70vh, which the CSS case below still holds.
- */
 describe('/about section order', () => {
-  it('opens on the faces and the firm record, never on a stack of contact links', () => {
-    expect(at('<AboutFaces')).toBeLessThan(at('id="reach"'))
-    expect(at('<AboutFaces')).toBeLessThan(at('id="proof"'))
+  it('opens on the firm hero, never broker Cards or a contact-link stack', () => {
+    expect(at('<AboutFirm')).toBeLessThan(at('id="reach"'))
+    expect(at('<AboutFirm')).toBeLessThan(at('id="proof"'))
     expect(BODY).toContain('heading="About Ryan Realty · Bend"')
-    expect(BODY).toContain('headingLevel={1}')
-    // The H1 is on the faces section; the page has no #who list any more.
+    expect(BODY).not.toContain('<AboutFaces')
+    expect(BODY).not.toContain('size="proof"')
     expect(BODY).not.toContain('id="who"')
     expect(PAGE).not.toContain('whoItems')
   })
 
-  it('groups the four channels into one reach control with a live state', () => {
-    expect(at('id="reach"')).toBeLessThan(at('id="proof"'))
+  it('groups the four Contact channels into one reach control with a live state', () => {
+    expect(at('id="proof"')).toBeLessThan(at('id="reach"'))
     expect(PAGE).toContain('primary: true')
     expect(PAGE).toContain('live: hoursLive')
     expect(PAGE).toContain('<V3OnDuty')
@@ -40,20 +30,27 @@ describe('/about section order', () => {
     expect(PAGE).toContain('sms:${CONTACT.phoneDirectTel}')
     expect(PAGE).toContain('mailto:${CONTACT.email.primary}')
     expect(PAGE).toContain("href: '/book'")
+    expect(PAGE).toContain("kicker: v3Text('Call')")
+    expect(PAGE).toContain("kicker: v3Text('Text')")
+    expect(PAGE).toContain("kicker: v3Text('Email')")
+    expect(PAGE).toContain("kicker: v3Text('Schedule')")
   })
 
-  it('prints firm sales in the fold, then the reviews as words — the score is not the Proof headline', () => {
-    expect(at('<FirmClosings')).toBeLessThan(at('id="proof"'))
-    expect(at('<AboutFaces')).toBeLessThan(at('<FirmClosings'))
+  it('prints reviews as primary proof, then dated local closings', () => {
+    expect(at('<AboutFirm')).toBeLessThan(at('id="proof"'))
+    expect(at('id="proof"')).toBeLessThan(at('<FirmClosings'))
+    expect(at('<FirmClosings')).toBeLessThan(at('id="reach"'))
+    expect(at('id="reach"')).toBeLessThan(at('<AboutTeamTeaser'))
+    expect(at('<AboutTeamTeaser')).toBeLessThan(at('<AboutInquiry'))
     expect(BODY).toContain('headline="In their own words"')
     expect(BODY).not.toContain('headline={`${reviewCount} Google reviews`}')
   })
 
-  it('does not open on a KPI grid; the Google mark is a firm link, not methodology', () => {
+  it('does not open on a KPI grid or methodology chrome', () => {
     expect(PAGE).not.toContain('openingFigures')
     expect(PAGE).not.toContain('figures={openingFigures}')
-    expect(PAGE).toContain('size="proof"')
-    expect(PAGE).toContain('proof=')
+    expect(PAGE).toContain("label: 'Average rating'")
+    expect(PAGE).toContain("label: 'Google reviews'")
     expect(PAGE).toContain("href: '/reviews'")
     expect(PAGE).not.toContain('openingTrace')
     expect(BODY).not.toContain('<V3SourceLine')

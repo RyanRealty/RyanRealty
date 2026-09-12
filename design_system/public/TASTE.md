@@ -102,6 +102,7 @@ JSON file. As of 2026-09-08 it records the INSTRUMENT, not just the number:
   "evaluatedAt": "YYYY-MM-DD",
   "rubricVersion": "v1-2026-09-12",
   "demoMatch": true,
+  "competitiveBriefPass": true,
   "evaluator": "separate agent id and how it was run — never the builder, never 'pending'",
   "evaluatorModel": "claude-opus-4-1",
   "builderModel": "claude-sonnet-4-5",
@@ -135,16 +136,20 @@ JSON file. As of 2026-09-08 it records the INSTRUMENT, not just the number:
 ```
 
 **Rubric version: `v1-2026-09-12`** — the five-criterion table below, plus
-the SITE-63 `replaceWith` rule, plus the Matt 2026-09-12 demo-match rule:
-evaluator JSON must include `demoMatch: true|false` (omit is refuse), and a
-score rise is not done while the live control is a cream box. Change a
-weight, a criterion, a passing bar, the demo-match rule, or the
+the SITE-63 `replaceWith` rule, plus the Matt 2026-09-12 demo-match rule,
+plus the competitive-brief rule (About first): when the route's
+`parity.json` publishes a structured `competitiveBrief` next to
+`competitiveTarget`, evaluator JSON must include `competitiveBriefPass:
+true|false` (omit is refuse; checklist all true is the other pass). A
+rise or score ≥ 70 without a true pass is refuse — same seriousness as
+`demoMatch`. Do not invent true. Change a weight, a criterion, a passing
+bar, the demo-match rule, the competitive-brief rule, or the
 form-prescription rule and the version changes with it. Versions:
 `v1-2026-09-08` (first versioned rubric); `v1-2026-09-10` (evaluator must
 set `replaceWith` — see `design_system/public/taste-evaluator.v1-2026-09-10.md`);
 `v1-2026-09-12` (`demoMatch` required; cream-box examples; catalog
-option-list ids preferred — see
-`design_system/public/taste-evaluator.v1-2026-09-12.md`).
+option-list ids preferred; `competitiveBriefPass` when a brief exists —
+see `design_system/public/taste-evaluator.v1-2026-09-12.md`).
 
 Each field is checked, not decorative (`scripts/check-taste-canon.mjs`, contract
 in `scripts/lib/taste-receipt.mjs`):
@@ -175,6 +180,15 @@ in `scripts/lib/taste-receipt.mjs`):
   cannot shrink vs HEAD; a JSON-LD or conversion-ask role present at HEAD
   must remain (rename allowed). Titles, payload, and tap targets stay on
   `ci:seo-shell` / `ci:runtime-gates` (shrink-only).
+- **`competitiveBriefPass` (Matt 2026-09-12, About first).** When
+  `parity.json` publishes a structured `competitiveBrief` next to
+  `competitiveTarget`, the receipt must score it `true` or `false`. Omit
+  is refuse. Rise / finish line / Tip Ready without `true` (or checklist
+  all true) is refuse. Do not invent true. Honest false below 70 on a
+  rebaseline stays valid. `ci:page-purpose` (`scripts/check-page-purpose.mjs`)
+  refuses a missing or incomplete `competitiveBrief` on About, and on any
+  kit that already carries the field. Tip Ready refuse stays on
+  `taste-receipt --ship` + site-queue-done (`demoMatch` twin).
 
 Both PNGs must exist in the repo. `ci:taste-canon` fails a new review without
 them. Receipts written before this shape landed stay valid; ones already dated
@@ -206,13 +220,15 @@ re-submits. Ship only when the evaluator passes every row.
 (loaded by `scripts/taste-evaluate.ts`). `demoMatch` is required. A cream-box
 import (Avatar ≠ AvatarGroup demo; Button ≠ flat navy rect; Sheet ≠ custom
 drawer) is `demoMatch: false` even when `ci:catalog-install` is green.
-`replaceWith` prefers a catalog option-list id from the builder card; house
+When the route publishes `competitiveBrief`, `competitiveBriefPass` is
+required the same way — Looking that invents past the Researchy checklist
+is refuse. `replaceWith` prefers a catalog option-list id from the builder card; house
 forms (hero figure · stat tile with sparkline · emphasis line with a
 scrubber · horizontal bar · dot strip · slope · small multiples · beeswarm ·
 map with data-encoded cells · table) only when no catalog job fits.
 Craft/honesty/SEO defects use `null`. Diagnosis alone is incomplete. A grok
-CLI miss or 402 is an honest fail — do not invent `demoMatch` true; leave
-the node `in_progress`.
+CLI miss or 402 is an honest fail — do not invent `demoMatch` or
+`competitiveBriefPass` true; leave the node `in_progress`.
 
 **The pass runs against the lane's own dev server, BEFORE the branch is
 pushed** (2026-09-08). A defect found before the push costs a fix. The same

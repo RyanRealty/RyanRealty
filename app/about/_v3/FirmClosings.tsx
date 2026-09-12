@@ -15,11 +15,17 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Carousel, V3Heading, type V3LedgerFigureRow } from '@/components/site/v3'
 
-export function FirmClosings({ rows }: { rows: readonly V3LedgerFigureRow[] }) {
+export function FirmClosings({
+  id = 'firm-sales',
+  rows,
+}: {
+  id?: string
+  rows: readonly V3LedgerFigureRow[]
+}) {
   if (rows.length === 0) return null
   return (
     <section
-      id="firm-sales"
+      id={id}
       className={cn(V3_ROOT_CLASS, 'about-closings')}
       aria-labelledby="firm-sales-heading"
     >
