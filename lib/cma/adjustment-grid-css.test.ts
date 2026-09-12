@@ -12,24 +12,24 @@ describe('adjustment grid stays inside the print box', () => {
     expect(pricingPage).not.toContain('Market conditions (time)')
   })
 
-  it('letter + immersive: stack on screen / matrix on print (C1/C4 Tip Ready)', () => {
+  it('letter + immersive: matrix on default screen / stack below 700 / print matrix', () => {
     const css = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
     const immersive = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
-    // Tip Ready P0: every screen path stacks; print keeps the side-by-side matrix.
-    expect(css).toMatch(/\.comp-stack \{[^}]*display:\s*block/)
-    expect(css).toMatch(/\.comp-matrix-wrap, \.matrix-group-h \{[^}]*display:\s*none/)
-    expect(immersive).toMatch(/\.comp-matrix-wrap,\.matrix-group-h\{display:none/)
-    expect(immersive).toMatch(/\.comp-stack\{display:block/)
+    // Default screen shows side-by-side matrix; narrow keeps stack; print keeps matrix.
+    expect(css).toMatch(/\.comp-matrix-wrap \{[^}]*display:\s*block/)
+    expect(css).toMatch(/\.comp-stack \{[^}]*display:\s*none/)
+    expect(immersive).toMatch(/\.comp-matrix-wrap\{display:block/)
+    expect(immersive).toMatch(/\.comp-stack\{display:none/)
     expect(css).toMatch(/@media print \{[\s\S]*\.comp-stack \{[^}]*display:\s*none/)
     expect(css).toMatch(/@media print \{[\s\S]*\.comp-matrix-wrap \{[^}]*display:\s*block/)
     expect(immersive).toMatch(/@media print\{\.comp-stack\{display:none!important\}/)
   })
 
-  it('contains comps on 375 via stack, not a document-widening scroll (C4)', () => {
+  it('contains comps on 375 via stack at max-width 700, not a document-widening scroll', () => {
     const css = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
     expect(css).toContain('.comp-stack')
     expect(css).toMatch(/\.comp-stack-card/)
-    expect(css).toMatch(/\.comp-matrix-wrap, \.matrix-group-h \{[^}]*display:\s*none/)
+    expect(css).toMatch(/@media screen and \(max-width: 700px\) \{[\s\S]*\.comp-matrix-wrap, \.matrix-group-h \{[^}]*display:\s*none/)
     expect(css).not.toMatch(/@media screen and \(min-width: 701px\)[\s\S]*min-width:\s*44rem/)
   })
 

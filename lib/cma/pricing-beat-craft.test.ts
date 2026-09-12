@@ -186,8 +186,8 @@ describe('pricing beat craft', () => {
     expect(matrix).not.toContain('>Subject</span><span class="h c">Sale<')
 
     const css = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
-    expect(css).toMatch(/\.comp-matrix-wrap,\.matrix-group-h\{display:none\}/)
-    expect(css).toMatch(/\.comp-stack\{display:block/)
+    expect(css).toMatch(/\.comp-matrix-wrap\{display:block/)
+    expect(css).toMatch(/\.comp-stack\{display:none/)
     expect(css).toMatch(/@media print\{\.comp-stack\{display:none!important\}\.comp-matrix-wrap,\.matrix-group-h\{display:block!important\}/)
 
     const scenes = assembleOpinionScenes({

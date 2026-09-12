@@ -281,18 +281,19 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
     expect(html).not.toContain('id="listing-trend"')
   })
 
-  it('C4: screen stylesheet stacks comps; print restores matrix (Tip Ready 2026-09-12)', () => {
+  it('C4 restore: default screen CSS shows matrix; narrow stacks; print keeps matrix', () => {
     const css = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
     const immersive = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
-    // ALL screen uses .comp-stack; .comp-matrix-wrap is print-only.
-    expect(css).toMatch(/\.comp-stack \{ display: block;/)
-    expect(css).toMatch(/\.comp-matrix-wrap, \.matrix-group-h \{ display: none;/)
-    expect(css).not.toMatch(/@media screen and \(max-width: 700px\) \{[\s\S]{0,200}\.comp-stack \{ display: block;/)
+    // Desktop/screen default: side-by-side matrix visible.
+    expect(css).toMatch(/\.comp-matrix-wrap \{ display: block;/)
+    expect(css).toMatch(/\.comp-stack \{ display: none;/)
+    expect(css).toMatch(/@media screen and \(max-width: 700px\) \{[\s\S]{0,200}\.comp-stack \{ display: block;/)
     expect(css).toMatch(/@media print \{[\s\S]*\.comp-matrix-wrap \{[^}]*display:\s*block/)
     expect(css).not.toContain('comp-stack-cols')
     expect(css).not.toContain('grid-template-columns: 1.1fr 1fr 1fr')
-    expect(immersive).toMatch(/\.comp-stack\{display:block/)
-    expect(immersive).toMatch(/\.comp-matrix-wrap,\.matrix-group-h\{display:none\}/)
+    expect(immersive).toMatch(/\.comp-matrix-wrap\{display:block/)
+    expect(immersive).toMatch(/\.comp-stack\{display:none/)
+    expect(immersive).toMatch(/@media screen and \(max-width:700px\)\{\.comp-matrix-wrap,\.matrix-group-h\{display:none\}\.comp-stack\{display:block\}/)
     expect(immersive).toMatch(/@media print\{\.comp-stack\{display:none!important\}\.comp-matrix-wrap,\.matrix-group-h\{display:block!important\}/)
     expect(immersive).not.toContain('comp-stack-cols')
     expect(immersive).toContain('overflow-wrap:anywhere')

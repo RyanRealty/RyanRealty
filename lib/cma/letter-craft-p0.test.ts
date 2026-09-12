@@ -176,14 +176,15 @@ describe('letter craft P0 — one product name', () => {
   })
 })
 
-describe('letter craft P0 — screen stack / print matrix', () => {
-  it('CSS hides matrix on all screen and shows it in print', () => {
+describe('letter craft P0 — screen matrix / print matrix', () => {
+  it('CSS shows matrix on default screen; narrow stacks; print keeps matrix', () => {
     const letterCss = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
     const immersiveCss = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
-    expect(letterCss).toMatch(/\.comp-stack \{ display: block;/)
-    expect(letterCss).toMatch(/\.comp-matrix-wrap, \.matrix-group-h \{ display: none;/)
-    expect(immersiveCss).toMatch(/\.comp-stack\{display:block/)
-    expect(immersiveCss).toMatch(/\.comp-matrix-wrap,\.matrix-group-h\{display:none\}/)
+    expect(letterCss).toMatch(/\.comp-matrix-wrap \{ display: block;/)
+    expect(letterCss).toMatch(/\.comp-stack \{ display: none;/)
+    expect(letterCss).toMatch(/@media screen and \(max-width: 700px\)/)
+    expect(immersiveCss).toMatch(/\.comp-matrix-wrap\{display:block/)
+    expect(immersiveCss).toMatch(/\.comp-stack\{display:none/)
     expect(immersiveCss).toMatch(
       /@media print\{\.comp-stack\{display:none!important\}\.comp-matrix-wrap,\.matrix-group-h\{display:block!important\}/,
     )
