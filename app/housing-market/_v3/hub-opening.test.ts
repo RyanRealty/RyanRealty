@@ -102,12 +102,12 @@ describe('extra leftover pages — pager, not a closed cream fold', () => {
 
   it('pages leftover types, pace, and mix and drops empty groups', () => {
     const pages = buildHubExtraPages({
-      priceAndWait: [{ value: '$749K', label: 'typical sale, last 12 months' }],
+      priceAndWait: [{ value: v3Text('$749K'), label: v3Text('typical sale, last 12 months') }],
       types: [
-        { value: '1,200', label: 'houses for sale', count: 1200 },
-        { value: '180', label: 'condos and townhomes', count: 180 },
+        { value: v3Text('1,200'), label: v3Text('houses for sale'), count: 1200 },
+        { value: v3Text('180'), label: v3Text('condos and townhomes'), count: 180 },
       ],
-      pace: [{ value: '6.2', label: 'months of supply' }],
+      pace: [{ value: v3Text('6.2'), label: v3Text('months of supply') }],
       mix: [],
     })
     expect(pages.map((page) => page.id)).toEqual(['price', 'types', 'pace'])
@@ -118,9 +118,13 @@ describe('extra leftover pages — pager, not a closed cream fold', () => {
   })
 
   it('keeps only homes and a month of sales as the opening tiles', () => {
-    expect(isHubLeadFigure({ value: '1,531', label: 'homes for sale, single-family' })).toBe(true)
-    expect(isHubLeadFigure({ value: '326', label: 'a month of sales' })).toBe(true)
-    expect(isHubLeadFigure({ value: '$749K', label: 'median list, last 12 months' })).toBe(false)
+    expect(
+      isHubLeadFigure({ value: v3Text('1,531'), label: v3Text('homes for sale, single-family') }),
+    ).toBe(true)
+    expect(isHubLeadFigure({ value: v3Text('326'), label: v3Text('a month of sales') })).toBe(true)
+    expect(
+      isHubLeadFigure({ value: v3Text('$749K'), label: v3Text('median list, last 12 months') }),
+    ).toBe(false)
   })
 })
 
