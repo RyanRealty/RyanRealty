@@ -971,75 +971,11 @@
   align-items: center;
 }
 
-.about-faces .about-faces__avatar {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: var(--v3-card-photo-h);
-  overflow: hidden;
-  border-radius: 0;
-  background: transparent;
-}
-
-.about-faces .about-faces__avatar::after {
-  display: none;
-}
-
-.about-faces .about-faces__avatar .about-faces__photo,
-.about-faces .about-faces__avatar img {
-  width: 100%;
-  height: 100%;
-  border-radius: 0;
-  object-fit: contain;
-  object-position: center bottom;
-}
-
-.about-faces .about-faces__avatar-fallback {
-  width: 100%;
-  height: 100%;
-  border-radius: 0;
-  background: transparent;
-  color: var(--v3-ink-muted);
-  font-family: var(--v3-font-display);
-  font-size: var(--v3-size-display-2);
-}
-
-.about-faces__photo-link {
-  position: relative;
-}
-
-.about-faces__proof-badge {
-  right: var(--v3-space-2xs);
-  bottom: var(--v3-space-2xs);
-  width: auto;
-  min-width: var(--v3-tap);
-  min-height: var(--v3-tap);
-  padding-inline: var(--v3-space-xs);
-  border-radius: 0;
-  font-family: var(--v3-font-display);
-  font-size: var(--v3-size-body);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
 .about-faces__face-proof {
   display: flex;
   align-items: center;
   gap: var(--v3-space-xs);
   margin: var(--v3-space-2xs) 0 0;
-}
-
-.about-faces__face-proof-avatar {
-  border-radius: 0;
-  background: var(--v3-navy);
-}
-
-.about-faces__face-proof-fallback {
-  border-radius: 0;
-  background: var(--v3-navy);
-  color: var(--v3-cream);
-  font-family: var(--v3-font-display);
-  font-variant-numeric: tabular-nums;
 }
 
 .about-faces__face-proof-link {
@@ -1057,175 +993,7 @@
   outline-offset: var(--v3-focus-offset);
 }
 
-/* SITE-90: three faces in the first 375 screen. The trio is decorative
-   (aria-hidden); the named lead and companion rows stay for AT. Hide the
-   duplicate photos so the viewport is not Matt-only. */
-.about-faces__trio {
-  display: none;
-  margin: 0;
-  padding: 0;
-}
-
-@media (max-width: 47.99rem) {
-  .about-faces--house {
-    padding-block: var(--v3-space-md);
-  }
-
-  .about-faces--house .about-faces__head {
-    margin-bottom: var(--v3-space-sm);
-  }
-
-  .about-faces--house .about-faces__trio {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--v3-space-2xs);
-    margin-bottom: var(--v3-space-sm);
-  }
-
-  /* AvatarGroup ships overlapping circles. House portraits stay a 3-up
-     row at display scale — keep the group primitive, drop the overlap. */
-  .about-faces--house .about-faces__trio > * + * {
-    margin-inline-start: 0;
-  }
-
-  .about-faces--house .about-faces__trio [data-slot='avatar'] {
-    box-shadow: none;
-  }
-
-  .about-faces--house .about-faces__trio .about-faces__photo-link {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    aspect-ratio: auto;
-    border-bottom: 0;
-  }
-
-  .about-faces--house .about-faces__trio .about-faces__avatar {
-    width: 100%;
-    aspect-ratio: 2 / 3;
-    border-bottom: var(--v3-rule-hairline);
-    min-height: 0;
-  }
-
-  .about-faces--house .about-faces__trio-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 0;
-  }
-
-  .about-faces--house .about-faces__trio-name {
-    display: block;
-    margin-top: var(--v3-space-3xs);
-    color: var(--v3-ink);
-    font-size: var(--v3-size-body-sm);
-    line-height: var(--v3-leading-heading);
-    text-align: center;
-  }
-
-  .about-faces--house .about-faces__trio-call {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: var(--v3-tap);
-    min-width: var(--v3-tap);
-    color: var(--v3-ink);
-    font-size: var(--v3-size-body-sm);
-    text-decoration: underline;
-    text-underline-offset: var(--v3-underline-offset);
-  }
-
-  .about-faces--house .about-faces__trio-call:focus-visible {
-    outline: var(--v3-focus-ring);
-    outline-offset: var(--v3-focus-offset);
-  }
-
-  .about-faces--house .about-faces__lead .about-faces__name,
-  .about-faces--house .about-faces__lead .about-faces__title,
-  .about-faces--house .about-faces__lead .about-faces__license {
-    display: none;
-  }
-
-  .about-faces--house .about-faces__lead > .about-faces__photo-link,
-  .about-faces--house .about-faces__companion > .about-faces__photo-link {
-    display: none;
-  }
-
-  .about-faces--house .about-faces__lead,
-  .about-faces--house .about-faces__companion {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .about-faces--house .about-faces__companions {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .about-faces--house .about-faces__companion {
-    padding-block: var(--v3-space-xs);
-  }
-
-  .about-faces--house .about-faces__lead {
-    align-items: start;
-    padding-bottom: var(--v3-space-sm);
-  }
-
-  .about-faces--house .about-faces__lead .about-faces__name {
-    white-space: normal;
-    font-size: var(--v3-size-display-3, var(--v3-size-display-2));
-  }
-}
-
-@media (min-width: 48rem) {
-  .about-faces__lead {
-    grid-template-columns: calc(var(--v3-card-photo-w) * 1.45) minmax(0, 1fr);
-    align-items: end;
-  }
-
-  .about-faces--house .about-faces__lead {
-    grid-template-columns: var(--v3-card-photo-w) minmax(0, 1fr);
-  }
-
-  .about-faces--editorial .about-faces__lead .about-faces__photo-link {
-    width: 100%;
-  }
-
-  .about-faces__companion {
-    grid-template-columns: var(--v3-card-photo-h) minmax(0, 1fr);
-    align-items: center;
-  }
-
-  .about-faces--editorial .about-faces__companion .about-faces__photo-link {
-    width: var(--v3-card-photo-h);
-  }
-
-  .about-faces--house .about-faces__companions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    column-gap: var(--v3-space-md);
-  }
-
-  .about-faces--house .about-faces__companion {
-    grid-template-columns: var(--v3-card-photo-h) minmax(0, 1fr);
-    align-items: start;
-    padding-block: var(--v3-space-sm);
-    border-bottom: 0;
-  }
-
-  .about-faces--house .about-faces__companion .about-faces__photo-link {
-    width: var(--v3-card-photo-h);
-    max-width: none;
-  }
-
-  .about-faces--house .about-faces__face-proof-avatar {
-    display: none;
-  }
-}
-
-/* SITE-90 proof fold: keep the shadcn AvatarGroup / ButtonGroup demo.
-   Overlapping circles, one joined ask, no stacked broker cards. */
+/* SITE-90 proof fold: layout only. Do not restyle Avatar into a card. */
 .about-faces--proof {
   max-width: none;
 }
@@ -1251,31 +1019,6 @@
   gap: var(--v3-space-sm);
 }
 
-.about-faces--proof .about-faces__proof-group {
-  display: flex;
-}
-
-.about-faces--proof .about-faces__proof-group > [data-slot='avatar'] + [data-slot='avatar'] {
-  margin-inline-start: -1.35rem;
-}
-
-.about-faces--proof .about-faces__proof-avatar {
-  width: 5.5rem;
-  height: 5.5rem;
-  min-height: 0;
-  overflow: hidden;
-  box-shadow: 0 0 0 2px var(--v3-cream);
-}
-
-.about-faces--proof .about-faces__proof-badge {
-  width: auto;
-  min-width: 1.75rem;
-  min-height: 1.75rem;
-  padding-inline: 0.35rem;
-  border-radius: 999px;
-  font-variant-numeric: tabular-nums;
-}
-
 .about-faces--proof .about-faces__names,
 .about-faces--proof .about-faces__ask {
   flex-wrap: wrap;
@@ -1297,15 +1040,4 @@
   color: var(--v3-ink);
   font-size: var(--v3-size-body-sm);
   line-height: var(--v3-leading-body);
-}
-
-@media (min-width: 48rem) {
-  .about-faces--proof .about-faces__proof-avatar {
-    width: 8rem;
-    height: 8rem;
-  }
-
-  .about-faces--proof .about-faces__proof-group > [data-slot='avatar'] + [data-slot='avatar'] {
-    margin-inline-start: -1.75rem;
-  }
 }

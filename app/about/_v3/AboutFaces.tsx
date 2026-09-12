@@ -605,9 +605,9 @@ export function AboutFaces({
           {claim ? <p className="about-faces__claim">{claim}</p> : null}
         </div>
         <div className="about-faces__proof">
-          <AvatarGroup className="about-faces__proof-group">
+          <AvatarGroup className="-space-x-8">
             {shown.map((person) => (
-              <Avatar key={person.href} size="lg" className="about-faces__proof-avatar">
+              <Avatar key={person.href} size="lg" className="size-24 lg:size-32">
                 <AvatarImage
                   src={person.src}
                   alt={person.name}
@@ -618,9 +618,7 @@ export function AboutFaces({
                   decoding="async"
                 />
                 <AvatarFallback delayMs={400}>{faceInitials(person.name)}</AvatarFallback>
-                {person === leadPerson && proof ? (
-                  <AvatarBadge className="about-faces__proof-badge">{proof.value}</AvatarBadge>
-                ) : null}
+                {person === leadPerson && proof ? <AvatarBadge>{proof.value}</AvatarBadge> : null}
               </Avatar>
             ))}
           </AvatarGroup>
