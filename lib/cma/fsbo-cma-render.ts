@@ -68,15 +68,15 @@ export function factsFromCmaSurface(input: {
 /**
  * Cover masthead label.
  *
- * ONE NAME FOR THE DOCUMENT. The web document's kicker reads "Price opinion ·
- * <address>" (lib/cma/inbound-packet.ts); the letter's eyebrow read "PRICING
- * REPORT", so the same document introduced itself by two names depending on
- * which copy a reader opened (tasteReview round two, closing note). The page
- * <title> and the PDF filename keep "Pricing report" — that is the file's name,
- * not the document's masthead.
+ * ONE NAME FOR THE DOCUMENT (Matt 2026-09-12 Tip Ready craft): owner-facing
+ * mast and <title> say "Pricing report". Never bare CMA. Internal type names
+ * stay as-is. The statutory closing line may still say this is a comparative
+ * market analysis (not an appraisal) — that is the legal sentence, not the mast.
  */
+export const OWNER_FACING_PRODUCT_NAME = 'Pricing report'
+
 export function cmaCoverLabelHtml(): string {
-  return `<div class="cover-label" data-template="${CMA_COVER_INTRO_V1}">Comparative market analysis</div>`
+  return `<div class="cover-label" data-template="${CMA_COVER_INTRO_V1}">${OWNER_FACING_PRODUCT_NAME}</div>`
 }
 
 export function cmaCoverIntroBlurbHtml(facts: FsboCmaMergeFacts): string {

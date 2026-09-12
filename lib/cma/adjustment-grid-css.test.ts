@@ -12,16 +12,14 @@ describe('adjustment grid stays inside the print box', () => {
     expect(pricingPage).not.toContain('Market conditions (time)')
   })
 
-  it('letter: stack on screen / matrix on print (C1/C4); immersive /view: matrix on screen', () => {
+  it('letter + immersive: stack on screen / matrix on print (C1/C4 Tip Ready)', () => {
     const css = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
     const immersive = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
-    // Letter Open report: stack on screen — no wide multi-column table at 375.
+    // Tip Ready P0: every screen path stacks; print keeps the side-by-side matrix.
     expect(css).toMatch(/\.comp-stack \{[^}]*display:\s*block/)
     expect(css).toMatch(/\.comp-matrix-wrap, \.matrix-group-h \{[^}]*display:\s*none/)
-    // Immersive /view override: side-by-side sold matrix required on screen (pricing beat).
-    expect(immersive).toMatch(/\.comp-matrix-wrap\{display:block/)
-    expect(immersive).toMatch(/\.comp-stack\{display:none/)
-    // Print PDF keeps the side-by-side matrix on both paths.
+    expect(immersive).toMatch(/\.comp-matrix-wrap,\.matrix-group-h\{display:none/)
+    expect(immersive).toMatch(/\.comp-stack\{display:block/)
     expect(css).toMatch(/@media print \{[\s\S]*\.comp-stack \{[^}]*display:\s*none/)
     expect(css).toMatch(/@media print \{[\s\S]*\.comp-matrix-wrap \{[^}]*display:\s*block/)
     expect(immersive).toMatch(/@media print\{\.comp-stack\{display:none!important\}/)

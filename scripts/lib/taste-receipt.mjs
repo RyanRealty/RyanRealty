@@ -26,6 +26,16 @@ import { fileURLToPath } from 'node:url'
 /** Receipts evaluated on or after this date must carry the v2 fields. */
 export const RECEIPT_V2_FROM = '2026-09-08'
 
+/**
+ * Catalog demoMatch rule (Matt 2026-09-12). Receipts on this date / rubric
+ * that name a catalog adaptedFrom id cannot claim rise or the 70 finish
+ * line without demoMatch: true. Older receipts stay valid so ci:taste-canon
+ * stays green for honest pre-rule marks.
+ */
+export const DEMO_MATCH_RULE_FROM = '2026-09-12'
+export const DEMO_MATCH_RUBRIC = 'v1-2026-09-12'
+export const FINISH_LINE = 70
+
 /** The three identity keys that decide whether two marks are the same instrument. */
 export const IDENTITY_KEYS = ['evaluatorModel', 'rubricVersion', 'shotsHash']
 
@@ -235,7 +245,107 @@ export function receiptV2Problems(tr, { root, rubricText, headReceipt = null }) 
   p.push(...productHoldProblems(tr, holdPrior))
   if (headScored && holdPrior !== headScored) p.push(...productHoldProblems(tr, headScored))
 
+  // 9. Catalog adaptedFrom + rise/done without demoMatch true is a cream box
+  //    (Matt 2026-09-12). Score rise is not Tip Ready.
+  p.push(...catalogDemoMatchProblems(tr))
+
   return p
+}
+
+/** House ids are files we already own. Catalog ids must show a real demo match. */
+export function isHouseAdaptedId(id) {
+  const s = String(id ?? '')
+  return /^(house-|listing-|V3)/.test(s) || s.startsWith('components/')
+}
+
+export function adaptedFromCatalogIds(adaptedFrom) {
+  if (!Array.isArray(adaptedFrom)) return []
+  return adaptedFrom
+    .map((hit) => (isPlainObject(hit) ? hit.id : hit))
+    .filter((id) => isNonEmptyString(id) && !isHouseAdaptedId(id))
+}
+
+export function underDemoMatchRule(tr) {
+  if (!isPlainObject(tr)) return false
+  const evaluatedAt = String(tr.evaluatedAt ?? '')
+  const rubric = String(tr.rubricVersion ?? '')
+  return evaluatedAt >= DEMO_MATCH_RULE_FROM || rubric >= DEMO_MATCH_RUBRIC
+}
+
+/**
+ * A catalog-class receipt that claims rise or the finish line without
+ * demoMatch: true is not done. Omitting demoMatch on a post-rule receipt
+ * is the same as false.
+ */
+export function catalogDemoMatchProblems(tr) {
+  if (!isPlainObject(tr)) return []
+  const catalogIds = adaptedFromCatalogIds(tr.adaptedFrom)
+  if (catalogIds.length === 0) return []
+  if (!underDemoMatchRule(tr)) return []
+
+  const named = catalogIds.join(', ')
+  const demo = tr.demoMatch
+  const p = []
+  if (typeof demo !== 'boolean') {
+    p.push(
+      `demoMatch must be true or false when adaptedFrom names catalog modules (${named}). Omitting it is a cream-box receipt.`,
+    )
+  }
+  const claimsRiseOrDone =
+    String(tr.comparedToPrior ?? '') === 'rose' || (Number.isInteger(tr.score) && tr.score >= FINISH_LINE)
+  if (claimsRiseOrDone && demo !== true) {
+    p.push(
+      `score rise / finish line is not done while demoMatch is ${demo === false ? 'false' : 'missing'} (adaptedFrom: ${named}). A cream-box import is not a demo match. Leave the node in_progress.`,
+    )
+  }
+  return p
+}
+
+/**
+ * Tip Ready / node-complete: the receipt itself must show demoMatch true.
+ * Used by completeWorkNode and `node scripts/lib/taste-receipt.mjs --ship`.
+ */
+export function tasteDoneProblems(tr) {
+  if (!isPlainObject(tr)) return ['tasteReview is required to mark a SITE node done.']
+  const catalogIds = adaptedFromCatalogIds(tr.adaptedFrom)
+  const p = []
+  if (typeof tr.demoMatch !== 'boolean') {
+    p.push('demoMatch must be true or false — do not invent it. Leave the node in_progress.')
+  } else if (tr.demoMatch !== true) {
+    p.push('demoMatch is false. The live control is not the catalog demo. Not done; leave the node in_progress.')
+  }
+  if (catalogIds.length && tr.demoMatch !== true) {
+    p.push(
+      `adaptedFrom names catalog modules (${catalogIds.join(', ')}) but demoMatch is not true. File-on-disk / score rise is not a demo match.`,
+    )
+  }
+  return p
+}
+
+/**
+ * SITE-* done evidence must record a grok-4.6 demoMatch: true.
+ * CLI missing / 402 in the evidence is an honest fail, not Tip Ready.
+ */
+export function siteQueueDoneEvidenceProblems(evidence, { versionGap } = {}) {
+  const gap = String(versionGap ?? '')
+  if (gap && !/^SITE-\d+/.test(gap)) return []
+  const text = String(evidence ?? '')
+  if (!text.trim()) return ['evidence is required — a node is done when the environment says so']
+  if (/\b402\b/.test(text) && /grok|taste-evaluate|quota|payment required/i.test(text)) {
+    return ['grok CLI 402 — do not invent demoMatch. Leave the node in_progress.']
+  }
+  if (/no grok CLI|grok CLI missing|GROK_CLI/i.test(text)) {
+    return ['grok CLI missing — do not invent demoMatch. Leave the node in_progress.']
+  }
+  if (/\bdemoMatch\b\s*[:=]\s*false\b/i.test(text)) {
+    return ['evidence records demoMatch false — not done. Leave the node in_progress.']
+  }
+  if (!/\bdemoMatch\b\s*[:=]\s*true\b/i.test(text)) {
+    return [
+      'SITE done evidence must include demoMatch: true from grok-4.6. Score rise without a demo match is not Tip Ready.',
+    ]
+  }
+  return []
 }
 
 function criterionScore(obj, names) {
@@ -321,12 +431,30 @@ export function requiredComponentsHoldProblems(currentList, headList) {
   return p
 }
 
-/* CLI: print the shotsHash for a parity.json, or for key=path pairs. */
+/* CLI: print the shotsHash for a parity.json, or for key=path pairs.
+ * `--ship <parity.json>` is the Tip Ready / node-complete gate. */
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const root = process.cwd()
   const args = process.argv.slice(2)
+  if (args[0] === '--ship') {
+    const rel = args[1]
+    if (!rel) {
+      console.error('usage: node scripts/lib/taste-receipt.mjs --ship <parity.json>')
+      process.exit(2)
+    }
+    const d = JSON.parse(readFileSync(join(root, rel), 'utf8'))
+    const problems = tasteDoneProblems(d?.tasteReview)
+    if (problems.length) {
+      console.error(problems.join('\n'))
+      process.exit(1)
+    }
+    console.log('ship OK — demoMatch true')
+    process.exit(0)
+  }
   if (args.length === 0) {
-    console.error('usage: node scripts/lib/taste-receipt.mjs <parity.json> | key=path [key=path ...]')
+    console.error(
+      'usage: node scripts/lib/taste-receipt.mjs <parity.json> | --ship <parity.json> | key=path [key=path ...]',
+    )
     process.exit(2)
   }
   let shots

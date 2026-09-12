@@ -63,14 +63,14 @@ describe('renderImmersiveCmaHtml', () => {
 
   it('opens on the comparative market analysis, not a marketing plan', () => {
     const html = renderImmersiveCmaHtml(args(), 'https://ryan-realty.com')
-    expect(html).toContain('Comparative market analysis · 20513 Byron')
+    expect(html).toContain('Pricing report · 20513 Byron')
     expect(html).not.toContain('How we would market')
     expect(html).not.toContain('listing video')
     expect(html).not.toMatch(/what your home is worth/i)
     expect(html).not.toMatch(/What every listing gets/i)
     const whyAt = html.indexOf('id="what-its-worth"')
     expect(whyAt).toBeGreaterThan(0)
-    expect(html).toContain('$609,000.')
+    expect(html).not.toContain('$609,000.')
   })
 
   it('the failed-listing scene renders with the backtest constants', () => {

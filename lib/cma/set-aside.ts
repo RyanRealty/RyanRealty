@@ -105,7 +105,11 @@ export function setAsideCompIndexes(
     .map((c, i) => ({ i, v: c.adjustedPrice }))
     .filter((r) => r.v != null && Number.isFinite(r.v) && r.v > 0)
     .sort((a, b) => a.v - b.v)
+  // Tip Ready P0 / Cos Falcon smoke: screen needs ≥5 stacked sold comps. Do not
+  // trim ends when that would leave fewer than 5 kept sales on the grid.
+  const MIN_KEPT_ON_STACK = 5
   if (ranked.length < 4) return out
+  if (ranked.length - 2 < MIN_KEPT_ON_STACK) return out
   out.add(ranked[0]!.i)
   out.add(ranked[ranked.length - 1]!.i)
   return out

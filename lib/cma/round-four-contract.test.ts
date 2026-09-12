@@ -182,10 +182,11 @@ describe('A — the net chapter itemises, or prints no figure at all', () => {
   it('itemises every line with its source, and the net is below the list', () => {
     const html = sellerNetBodyHtml(withSheet(NET_SHEET))
     expect(html).toContain('List price')
-    expect(html).toContain('$435,000')
+    expect(html).toContain('that price')
+    expect(html).not.toContain('$435,000')
     expect(html).toContain('Listing agreement, 5.0%')
     expect(html).toContain('Payoff quote you provided')
-    expect(html).toContain('What you keep at $435,000')
+    expect(html).toContain('What you keep at that price')
     expect(html).toContain('$198,700')
     // The one figure a seller quotes back may never exceed the price above it.
     expect(198_700).toBeLessThan(435_000)
@@ -194,7 +195,7 @@ describe('A — the net chapter itemises, or prints no figure at all', () => {
   it('refuses the phrase and names the gap when a deduction is missing', () => {
     const a = withSheet({ ...NET_SHEET, unknowns: ['what you still owe on the home'] })
     const html = sellerNetBodyHtml(a)
-    expect(html).toContain('Net at $435,000')
+    expect(html).toContain('Net at that price')
     expect(html).not.toContain('What you keep')
     expect(html).toContain('This does not include what you still owe on the home.')
     expect(sellerNetKick(a)).toBe('Net at list')
@@ -204,7 +205,7 @@ describe('A — the net chapter itemises, or prints no figure at all', () => {
     // A net ABOVE the list — Concorde shipped $1,707,603 on a $1,473,000 list.
     const html = sellerNetBodyHtml(withSheet({ ...NET_SHEET, net: 1_707_603 }))
     expect(html).not.toContain('List price')
-    expect(html).toContain('A net at $435,000 needs')
+    expect(html).toContain('A net at that price needs')
     expect(html).not.toMatch(/\$1,707,603/)
   })
 

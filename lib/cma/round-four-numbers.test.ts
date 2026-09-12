@@ -306,7 +306,7 @@ describe('E2 — one list ceiling per document', () => {
       asOfIso: AS_OF,
       hasFinalCycle: true,
     })
-    expect(lead).toContain('List between $1,413,000 and $1,473,000.')
+    expect(lead).toContain('List between $1,413,000 and that price.')
     expect(lead).not.toContain('$1,500,000')
   })
 
@@ -372,26 +372,26 @@ describe('E2 — one list ceiling per document', () => {
 describe('E3 — the strip caption, the chapter lead, the range cause and the set-aside list agree', () => {
   it('reads the pricing side kept count', () => {
     expect(readRangeRuleKept(trimmedPricing())).toBe(4)
-    expect(keptSaleCount(trimmedPricing(), SIX_COMPS)).toBe(4)
+    // Floor: six comps cannot trim ends (would leave 4 < 5), so the live
+    // count is every printed sale — not the stale rangeRule.kept.
+    expect(keptSaleCount(trimmedPricing(), SIX_COMPS)).toBe(6)
   })
 
-  it('states four everywhere in the price chapter, over six printed sales', () => {
+  it('states six everywhere when the stack floor blocks end-trimming', () => {
     const html = chapter(trimmedPricing(), SIX_COMPS)
-    expect(html).toContain('One scale: sale price today. 4 sales.')
-    expect(html).toContain('The four closed sales below set this number')
-    expect(html).toContain('Two more are shown below and set aside.')
-    expect(html).toContain('These 2 sales are shown above and did not set the number.')
+    // worth-strip (and its One scale caption) omitted — cover owns the number.
+    expect(html).not.toContain('One scale: sale price today.')
+    expect(html).not.toContain('worth-strip')
+    expect(html).toContain('The six closed sales below set this number')
+    expect(html).not.toContain('Two more are shown below and set aside.')
+    expect(html).not.toContain('These 2 sales are shown above and did not set the number.')
   })
 
-  it('the market chapter counts and ranges the KEPT set, not every printed sale', () => {
+  it('the market chapter counts every printed sale when the floor blocks trim', () => {
     const html = cityMedianReconciliationHtml(opinionArgs())
-    expect(html).toContain('The four sales behind your price')
-    // The kept four close at $368,000 to $477,000. The two set aside —
-    // $295,000 and $510,000 — were the old sentence's two ends.
-    expect(html).toContain('$368,000 to $477,000')
-    expect(html).not.toContain('$295,000')
-    expect(html).not.toContain('$510,000')
-    expect(html).not.toContain('The six sales behind your price')
+    expect(html).toContain('The six sales behind your price')
+    expect(html).toContain('$295,000 to $510,000')
+    expect(html).not.toContain('The four sales behind your price')
   })
 })
 

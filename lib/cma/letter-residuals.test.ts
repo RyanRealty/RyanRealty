@@ -281,17 +281,19 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
     expect(html).not.toContain('id="listing-trend"')
   })
 
-  it('C4: screen stylesheet stacks comps without Subject·Sale 3-col dump; print restores matrix', () => {
+  it('C4: screen stylesheet stacks comps; print restores matrix (Tip Ready 2026-09-12)', () => {
     const css = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
     const immersive = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
-    // F2 (Matt 2026-09-07): ONE matrix with thumbnails is the comps view at
-    // reading width on both documents. The stack is the phone fallback only.
-    expect(css).toMatch(/\.comp-stack \{ display: none;/)
-    expect(css).toMatch(/\.comp-matrix-wrap \{ display: block;/)
-    expect(css).toMatch(/@media screen and \(max-width: 700px\) \{[\s\S]{0,200}\.comp-stack \{ display: block;/)
+    // ALL screen uses .comp-stack; .comp-matrix-wrap is print-only.
+    expect(css).toMatch(/\.comp-stack \{ display: block;/)
+    expect(css).toMatch(/\.comp-matrix-wrap, \.matrix-group-h \{ display: none;/)
+    expect(css).not.toMatch(/@media screen and \(max-width: 700px\) \{[\s\S]{0,200}\.comp-stack \{ display: block;/)
     expect(css).toMatch(/@media print \{[\s\S]*\.comp-matrix-wrap \{[^}]*display:\s*block/)
     expect(css).not.toContain('comp-stack-cols')
     expect(css).not.toContain('grid-template-columns: 1.1fr 1fr 1fr')
+    expect(immersive).toMatch(/\.comp-stack\{display:block/)
+    expect(immersive).toMatch(/\.comp-matrix-wrap,\.matrix-group-h\{display:none\}/)
+    expect(immersive).toMatch(/@media print\{\.comp-stack\{display:none!important\}\.comp-matrix-wrap,\.matrix-group-h\{display:block!important\}/)
     expect(immersive).not.toContain('comp-stack-cols')
     expect(immersive).toContain('overflow-wrap:anywhere')
   })

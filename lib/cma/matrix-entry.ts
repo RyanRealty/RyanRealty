@@ -75,6 +75,12 @@ export type MatrixEntry = {
   path: PricePath | null
   firstAsk: number | null
   lastAsk: number | null
+  /** Close price when family is closed; null otherwise. */
+  closePrice: number | null
+  /** List/ask used for list $/sqft. */
+  listPrice: number | null
+  /** Seller concessions $ on a closed sale; null when unknown or not a sale. */
+  concessionsAmount: number | null
   /** The end of the path in words: "sold $457K", "asking $417K", "came off". */
   endLabel: string
   latitude: number | null
@@ -251,6 +257,12 @@ export function closedEntries(
       path,
       firstAsk: num(c.originalListPrice) ?? num(c.listPrice),
       lastAsk: num(c.listPrice),
+      closePrice: c.closePrice > 0 ? c.closePrice : null,
+      listPrice: num(c.listPrice) ?? num(c.originalListPrice),
+      concessionsAmount: (() => {
+        const v = c.concessions ?? c.concessionsAmount ?? null
+        return v != null && Number.isFinite(v) ? Number(v) : null
+      })(),
       endLabel: c.closePrice > 0 ? `sold ${shortUsd(c.closePrice)}` : 'sold',
       latitude: c.latitude ?? null,
       longitude: c.longitude ?? null,
@@ -316,6 +328,9 @@ export function unsoldEntries(
       path,
       firstAsk: num(p.originalListPrice) ?? num(p.listPrice),
       lastAsk: num(p.listPrice),
+      closePrice: null,
+      listPrice: num(p.listPrice) ?? num(p.originalListPrice),
+      concessionsAmount: null,
       endLabel: 'came off',
       latitude: p.latitude ?? null,
       longitude: p.longitude ?? null,
@@ -386,6 +401,9 @@ export function activeEntries(
       path,
       firstAsk: num(r.originalListPrice) ?? num(r.listPrice),
       lastAsk: num(r.listPrice),
+      closePrice: null,
+      listPrice: num(r.listPrice) ?? num(r.originalListPrice),
+      concessionsAmount: null,
       endLabel: pending ? 'under contract' : 'still for sale',
       latitude: r.latitude ?? null,
       longitude: r.longitude ?? null,
@@ -460,6 +478,9 @@ export function subjectEntry(input: {
     path,
     firstAsk: path?.startPrice ?? input.printableAsk,
     lastAsk: path ? finalAskOf(path) : input.printableAsk,
+    closePrice: null,
+    listPrice: input.printableAsk,
+    concessionsAmount: null,
     endLabel: cameOff ? 'came off' : input.printableAsk != null ? 'still asking' : '',
     latitude: s.latitude ?? null,
     longitude: s.longitude ?? null,

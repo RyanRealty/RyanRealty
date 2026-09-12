@@ -206,7 +206,9 @@ describe('capability blocks return nothing when their data is absent', () => {
     expect(html).toContain('On the market today at $765,000')
     expect(html).toContain('above the top of the supported range')
     // The recommendation printed is the comp-derived number, not the ask.
-    expect(html).toContain('We recommend listing at $594,000.')
+    expect(html).toContain('Our Recommended List Price for your home')
+    expect(html).toContain('$594,000')
+    expect(html).not.toContain('We recommend listing at')
   })
 
   it('an off-market subject prints no ask line', () => {
@@ -218,7 +220,9 @@ describe('capability blocks return nothing when their data is absent', () => {
     const { html } = renderCmaHtml(bareArgs)
     expect(html).not.toContain('>Contents<')
     expect(html).not.toContain('class="toc"')
-    expect(html).toContain('We recommend listing at $715,000.')
+    expect(html).toContain('Our Recommended List Price for your home')
+    expect(html).toContain('$715,000')
+    expect(html).not.toContain('We recommend listing at')
     // The cover carries the recommend inside its one sentence, never as a
     // labelled figure a reader meets again as chapter 3's own title.
     expect(html).not.toContain('Recommended list')
@@ -287,7 +291,7 @@ describe('use-of-property and pricing pages in the assembled document', () => {
     })
     expect(html).not.toContain('What this property can do')
     expect(html).not.toContain('class="zm-code">R-2')
-    expect(html).toContain('$715,000.')
+    expect(html).toContain('$715,000')
     // P5: the search story is prose now, not a "What we searched" bullet list.
     expect(html).toContain('The sales that set this price')
     expect(html).not.toContain('What You Can Do With This Property')

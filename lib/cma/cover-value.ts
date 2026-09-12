@@ -4,7 +4,6 @@
  */
 
 import { countWord, escapeHtml, usd } from '@/lib/cma/render-blocks'
-import { listPriceLead } from '@/lib/cma/client-facing'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
@@ -12,6 +11,9 @@ import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 
 const esc = escapeHtml
+
+/** Locked cover / hero headline (Matt 2026-09-12 Tip Ready craft). */
+export const COVER_LIST_PRICE_HEADLINE = 'Our Recommended List Price for your home'
 
 type CoverArgs = {
   subject: CmaSubject
@@ -126,11 +128,13 @@ export function coverValueBlockHtml(a: CoverArgs): string {
   return `
     <div class="vb-top">
       <div>
-        <div class="vb-label">Recommended list</div>
+        <div class="vb-label">${esc(COVER_LIST_PRICE_HEADLINE)}</div>
         <p class="vb-price">${usd(p.recommended)}</p>
       </div>
     </div>
-    <div class="vb-range">${esc(listPriceLead(p, { includeExpectedClose: false }))}${
+    <div class="vb-range">${esc(
+      `List ${usd(p.conservative)} to ${usd(p.highEnd)}.`,
+    )}${
       range.outOfRange ? ` The sales support ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : ''
     }</div>
     ${currentAskLine(p) ? `<div class="vb-detail vb-ask">${esc(currentAskLine(p)!)}</div>` : ''}
@@ -147,7 +151,7 @@ export function immersiveHeroNumberHtml(a: CoverArgs): string {
   const cause = rangeSpreadCauseSentence(p)
   return `
     <div class="hero-payoff">
-      <div class="ans-l r">Recommended list</div>
+      <div class="ans-l r">${esc(COVER_LIST_PRICE_HEADLINE)}</div>
       <div class="ans-n r">${usd(p.recommended)}</div>
       ${worth ? `<div class="hero-list r">${esc(worth)}</div>` : ''}
       ${cause ? `<div class="hero-why r">${esc(cause)}</div>` : ''}

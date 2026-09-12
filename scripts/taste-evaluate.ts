@@ -39,6 +39,15 @@ import {
   loadTasteCatalog,
   replaceWithOptionProblems,
 } from './lib/taste-catalog.mjs'
+import {
+  EVALUATOR_MODEL,
+  RUBRIC_PATH,
+  RUBRIC_VERSION,
+  demoMatchBlocksDone,
+  evaluatorEnvelope,
+  evaluatorResultProblems,
+  grokCliFailure,
+} from './lib/taste-evaluate-result.mjs'
 
 /**
  * THE ONE INSTRUMENT (Matt 2026-09-09: "default to always having Grok 4.6 do the
@@ -57,12 +66,12 @@ import {
  *
  * The builder must differ (ci:taste-canon refuses evaluatorModel ==
  * builderModel), so a Grok lane BUILDS with grok-4.5 and is judged by 4.6.
+ *
+ * Matt 2026-09-12: demoMatch is required. A false or omitted verdict prints
+ * the JSON then exits 2 — do not invent true. CLI missing / 402 is an honest
+ * fail; leave the node in_progress.
  */
-const EVALUATOR_MODEL = 'grok-4.6'
 const GROK_CLI = process.env.GROK_CLI ?? `${process.env.HOME}/.grok/bin/grok`
-/** SITE-63 bumped rubric — form prescription (`replaceWith`) is required. */
-const RUBRIC_PATH = 'design_system/public/taste-evaluator.v1-2026-09-10.md'
-const RUBRIC_VERSION = 'v1-2026-09-10'
 
 config({ path: '.env.local' })
 
@@ -154,10 +163,10 @@ async function main() {
     '',
     'Score the SAME shots THREE separate times, independently, as three different reviewers would. One pass is noise.',
     'Honesty is not a trade. The loop is comprehensive: SEO, listing/page information, and UX must all improve on this pass. A prettier fold that hides a sourced figure, drops JSON-LD, removes an ask, drops listing facts from a card, or makes a number unverifiable is a blocking defect. honestyFunction must not fall. Omitting honesty to skip the hold is a blocking defect. requiredComponents, JSON-LD, titles, conversion asks, tap targets, and page payload must not fall. Listing pages may not drop or summarize PropertySpecs, MLS remarks, schools, payment, or Tour/Call/Text. Name in the verdict whether SEO improved and whether inventory/information improved; if either is only "held," that is a defect.',
-    'Diagnose each defect as a JOB, then set replaceWith from the catalog option list in the brief (id + demo URL). Do not pick a house primitive that already lost. A cream box that kept a catalog name is a taste defect. If the live control and the demo are not the same interaction, demoMatch is false. Shots named search-open / *-open are the demo-match record — judge whether the opened control matches the catalog demo, not only the rest fold. A V3 wrapper that imported the file then hid the morph, the card body, or the carousel is demoMatch false.',
-    'Then list the named defects behind the number: each one names the section (a css class or an id you can see), the severity (blocking | taste | craft), a finding of at least ten characters, and replaceWith — a catalog id from the option list, a house form from the rubric list, or null if the finding is craft/honesty/SEO not form.',
+    'Diagnose each defect as a JOB, then set replaceWith from the catalog option list in the brief (id + demo URL). Prefer those ids over vague house adjectives. Do not pick a house primitive that already lost. Cream-box examples that are demoMatch false: Avatar import ≠ AvatarGroup demo; Button import ≠ flat V3Button navy rect; Sheet import ≠ custom drawer. If the live control and the demo are not the same interaction, demoMatch is false. Shots named search-open / *-open are the demo-match record — judge whether the opened control matches the catalog demo, not only the rest fold. A V3 wrapper that imported the file then hid the morph, the card body, or the carousel is demoMatch false.',
+    'Then list the named defects behind the number: each one names the section (a css class or an id you can see), the severity (blocking | taste | craft), a finding of at least ten characters, and replaceWith — a catalog id from the option list, a house form from the rubric list only when no catalog job fits, or null if the finding is craft/honesty/SEO not form.',
     'Empty defects is only allowed above 95.',
-    'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"demoMatch":true|false,"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"...","replaceWith":"<house form, primitive, catalog id, or null>"}],"verdict":"<two sentences>"}',
+    'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"demoMatch":true|false,"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"...","replaceWith":"<catalog option-list id, house form, or null>"}],"verdict":"<two sentences>"}. demoMatch is required. Omitting it discards the response.',
   ]
     .filter(Boolean)
     .join('\n')
@@ -165,15 +174,21 @@ async function main() {
   const critic =
     'You are a design critic reviewing a page you did not build. You are hard to impress and you say why. You never praise a page for being clean; clean is the floor. You name what is dull. When the display is a banned data form, you name the house form that replaces it.'
 
-  // Two carriers, one judge. The CLI spends Matt's Grok subscription and is the
-  // default wherever it is installed; the API path serves the SAME model off
-  // XAI_API_KEY and is what a cloud runner has. Before 2026-09-12 there was only
-  // the CLI, so a cloud lane could capture shots and never score — and this file
-  // exits 2 rather than print a receipt, so those lanes stalled at the bar.
+  // Two carriers, one judge, and the ORDER is the whole argument.
   //
-  // The two are not in tension, which is why the order matters: the API path runs
-  // ONLY when the CLI is absent, and that is exactly when there is no subscription
-  // to spend. Where the CLI exists it is used, with the key stripped below.
+  // The CLI spends Matt's Grok subscription and is preferred wherever it is
+  // installed, with XAI_API_KEY stripped so it cannot silently bill per token.
+  // The API path serves the SAME model (EVALUATOR_MODEL) off that key and is
+  // what a cloud runner has; before 2026-09-12 there was no such path, so a
+  // cloud lane could capture shots, reach the bar and never score.
+  //
+  // ae8a7f99 (main, 2026-09-12) made a missing CLI an HONEST FAIL: "Do not
+  // invent demoMatch. Leave the node in_progress." That rule is kept exactly.
+  // What it guards against is a verdict nobody produced — and a real grok-4.6
+  // evaluation over the API is not that. So the honest fail now fires when
+  // there is genuinely NO transport, rather than whenever the CLI is absent.
+  // Every schema check below (demoMatch required, replaceWith on the option
+  // list, demoMatchBlocksDone) applies identically to both carriers.
   let content = ''
   let carrier = ''
   if (existsSync(GROK_CLI)) {
@@ -201,8 +216,11 @@ async function main() {
       ['-p', prompt, '-m', EVALUATOR_MODEL, '--permission-mode', 'bypassPermissions', '--output-format', 'plain'],
       { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 900_000, env: grokEnv },
     )
-    if (res.status !== 0) {
-      console.error(`taste-evaluate: grok CLI exited ${res.status}: ${(res.stderr || '').trim().slice(0, 400)}`)
+    const cliFail = grokCliFailure(res.status, res.stderr, res.stdout, {
+      cliMissing: Boolean(res.error && 'code' in res.error && res.error.code === 'ENOENT'),
+    })
+    if (cliFail) {
+      console.error(cliFail.message)
       process.exit(2)
     }
     content = res.stdout ?? ''
@@ -225,16 +243,15 @@ async function main() {
       })
       content = out.text
     } catch (err) {
-      console.error(`taste-evaluate: xAI evaluator failed — ${err instanceof Error ? err.message : String(err)}`)
+      console.error(`taste-evaluate: xAI evaluator failed — ${err instanceof Error ? err.message : String(err)}. Do not invent demoMatch. Leave the node in_progress.`)
       process.exit(2)
     }
   } else {
-    console.error(
-      `taste-evaluate: no evaluator transport — no grok CLI at ${GROK_CLI} and XAI_API_KEY is unset. Set one.`,
-    )
+    console.error(grokCliFailure(127, `no grok CLI at ${GROK_CLI} and XAI_API_KEY is unset`, '', { cliMissing: true })!.message)
     process.exit(2)
   }
   const parsed = parseJsonLoose(content)
+  const schemaProblems = evaluatorResultProblems(parsed)
   const defects =
     parsed && typeof parsed === 'object' && Array.isArray((parsed as { defects?: unknown }).defects)
       ? (parsed as { defects: Array<{ replaceWith?: unknown }> }).defects
@@ -251,31 +268,27 @@ async function main() {
     console.error(`taste-evaluate: replaceWith not on the option list:\n${optionProblems.join('\n')}`)
     process.exit(2)
   }
-  const demoMatch =
-    parsed && typeof parsed === 'object' ? (parsed as { demoMatch?: unknown }).demoMatch : undefined
-  if (typeof demoMatch !== 'boolean') {
-    console.error('taste-evaluate: demoMatch must be true or false. The catalog demo is the UX bar.')
-    process.exit(2)
-  }
-  if (demoMatch === false) {
-    console.error(
-      'taste-evaluate: demoMatch is false. The live control is not the catalog object. Copy the GitHub source; do not wrap it in a cream box.',
-    )
+  if (schemaProblems.length) {
+    console.error(schemaProblems.join('\n'))
     process.exit(2)
   }
   console.log(
     JSON.stringify(
-      {
-        evaluatorModel: EVALUATOR_MODEL,
-        evaluatorTransport: carrier,
-        rubricVersion: RUBRIC_VERSION,
+      evaluatorEnvelope({
+        parsed,
         shots: images.map((i) => i.name),
-        result: parsed ?? content,
-      },
+        extra: { evaluatorTransport: carrier },
+      }),
       null,
       2,
     ),
   )
+  if (demoMatchBlocksDone(parsed)) {
+    console.error(
+      'taste-evaluate: demoMatch is false. The live control is not the catalog object. Copy the GitHub source; do not wrap it in a cream box. Leave the node in_progress.',
+    )
+    process.exit(2)
+  }
 }
 
 main().catch((err) => {

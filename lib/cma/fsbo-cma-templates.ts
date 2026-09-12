@@ -225,7 +225,7 @@ export function composeCmaCoverIntro(facts: FsboCmaMergeFacts): {
  const phone = trim(facts.agentPhone)
  const calendar = trim(facts.calendarLink)
 
- const title = `Comparative market analysis for ${address}`
+ const title = `Pricing report for ${address}`
  const preparedLine =
  owner && reportDate
  ? `Prepared for ${owner} · ${reportDate}`

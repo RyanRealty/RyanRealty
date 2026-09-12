@@ -100,7 +100,8 @@ JSON file. As of 2026-09-08 it records the INSTRUMENT, not just the number:
 ```json
 {
   "evaluatedAt": "YYYY-MM-DD",
-  "rubricVersion": "v1-2026-09-10",
+  "rubricVersion": "v1-2026-09-12",
+  "demoMatch": true,
   "evaluator": "separate agent id and how it was run — never the builder, never 'pending'",
   "evaluatorModel": "claude-opus-4-1",
   "builderModel": "claude-sonnet-4-5",
@@ -133,13 +134,17 @@ JSON file. As of 2026-09-08 it records the INSTRUMENT, not just the number:
 }
 ```
 
-**Rubric version: `v1-2026-09-10`** — the five-criterion table below, plus the
-SITE-63 rule that every data-display defect names a house replacement form.
-Change a weight, a criterion, a passing bar, or the form-prescription rule and
-the version changes with it, so a receipt says which rubric produced its
-number. Versions: `v1-2026-09-08` (first versioned rubric); `v1-2026-09-10`
-(evaluator must set `replaceWith` from the house form list — see
-`design_system/public/taste-evaluator.v1-2026-09-10.md`).
+**Rubric version: `v1-2026-09-12`** — the five-criterion table below, plus
+the SITE-63 `replaceWith` rule, plus the Matt 2026-09-12 demo-match rule:
+evaluator JSON must include `demoMatch: true|false` (omit is refuse), and a
+score rise is not done while the live control is a cream box. Change a
+weight, a criterion, a passing bar, the demo-match rule, or the
+form-prescription rule and the version changes with it. Versions:
+`v1-2026-09-08` (first versioned rubric); `v1-2026-09-10` (evaluator must
+set `replaceWith` — see `design_system/public/taste-evaluator.v1-2026-09-10.md`);
+`v1-2026-09-12` (`demoMatch` required; cream-box examples; catalog
+option-list ids preferred — see
+`design_system/public/taste-evaluator.v1-2026-09-12.md`).
 
 Each field is checked, not decorative (`scripts/check-taste-canon.mjs`, contract
 in `scripts/lib/taste-receipt.mjs`):
@@ -197,13 +202,17 @@ screenshots and the rendered page's URL) with this rubric. It returns named
 defects with the section id and three scorings; the builder fixes and
 re-submits. Ship only when the evaluator passes every row.
 
-**Evaluator prompt file:** `design_system/public/taste-evaluator.v1-2026-09-10.md`
-(loaded by `scripts/taste-evaluate.ts`). On every data-display defect the
-evaluator names which house form replaces it (`replaceWith`: hero figure ·
-stat tile with sparkline · emphasis line with a scrubber · horizontal bar ·
-dot strip · slope · small multiples · beeswarm · map with data-encoded cells ·
-table), or a house primitive / catalog module id (`V3Carousel`, …). Diagnosis
-alone is incomplete. Craft/honesty defects use `null`.
+**Evaluator prompt file:** `design_system/public/taste-evaluator.v1-2026-09-12.md`
+(loaded by `scripts/taste-evaluate.ts`). `demoMatch` is required. A cream-box
+import (Avatar ≠ AvatarGroup demo; Button ≠ flat navy rect; Sheet ≠ custom
+drawer) is `demoMatch: false` even when `ci:catalog-install` is green.
+`replaceWith` prefers a catalog option-list id from the builder card; house
+forms (hero figure · stat tile with sparkline · emphasis line with a
+scrubber · horizontal bar · dot strip · slope · small multiples · beeswarm ·
+map with data-encoded cells · table) only when no catalog job fits.
+Craft/honesty/SEO defects use `null`. Diagnosis alone is incomplete. A grok
+CLI miss or 402 is an honest fail — do not invent `demoMatch` true; leave
+the node `in_progress`.
 
 **The pass runs against the lane's own dev server, BEFORE the branch is
 pushed** (2026-09-08). A defect found before the push costs a fix. The same
@@ -213,11 +222,17 @@ unit suite — 17 of the site queue's first 37 item commits were that rework
 The lane captures, scores, fixes, and re-scores on its own machine; landing is
 what happens to a page that has already risen.
 
-**The score must rise (Matt 2026-09-07: "I want to be done with these shitty
-looking sites").** A site queue item (`loop_work_nodes`, domain public-ux,
-version_gap SITE-*) is not done until the separate evaluator's score for its
-page class rises above the previous mark in that route's `tasteReview`. The
-shrink-only ratchet (`ci:taste-canon`) stops a fall; this rule demands a rise.
+**The score must rise AND the live control must match the catalog demo
+(Matt 2026-09-07 + 2026-09-12).** A site queue item (`loop_work_nodes`,
+domain public-ux, version_gap SITE-*) is not done until the separate
+evaluator's score for its page class rises above the previous mark in that
+route's `tasteReview` **and** `demoMatch` is `true`. Score rise /
+`adaptedFrom` non-empty / file-on-disk is not Tip Ready on a cream box.
+`ci:taste-canon` fails a post-`v1-2026-09-12` catalog receipt that claims
+`comparedToPrior: "rose"` or score ≥ 70 without `demoMatch: true`.
+`completeWorkNode` refuses SITE-* evidence that omits `demoMatch: true`
+or records CLI missing / 402. The shrink-only ratchet (`ci:taste-canon`)
+stops a fall; this rule demands a rise plus a real demo match.
 It is written into every open SITE node's accept test and into
 `docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md`. A page that still looks bad is
 a failed item, not a done one. Weights are deliberate: craft and function are what the model already

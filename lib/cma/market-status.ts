@@ -713,6 +713,11 @@ export function buildExpiredPeerSet(input: {
   /** Median $/sqft of the sales that set the price, for `whyItSat`. */
   keptCompMedianPpsf?: number | null
   cap?: number
+  /**
+   * Matt ADD 2026-09-12: cap the peer clock to the closed-sales lookback so
+   * expireds do not come from an older pocket than the solds.
+   */
+  maxWindowMonths?: number | null
 }): CmaExpiredPeerSet {
   const asOf = input.asOf ?? new Date()
   const cap = input.cap ?? EXPIRED_PEER_CAP
@@ -722,7 +727,12 @@ export function buildExpiredPeerSet(input: {
     // it is not evidence for any window. It is dropped, never dated.
     .filter((x): x is { row: CmaMarketAreaRow; months: number } => x.months != null)
 
-  const windows = [...EXPIRED_PEER_WINDOWS]
+  const maxW =
+    input.maxWindowMonths != null && Number.isFinite(input.maxWindowMonths) && input.maxWindowMonths > 0
+      ? Math.max(3, Math.round(input.maxWindowMonths))
+      : null
+  const filtered = [...EXPIRED_PEER_WINDOWS].filter((w) => (maxW == null ? true : w <= maxW))
+  const windows = filtered.length > 0 ? filtered : [maxW ?? 12]
   let windowMonths = windows[windows.length - 1]!
   let peers: CmaExpiredPeer[] = []
   let areaTotal = 0

@@ -53,11 +53,12 @@ describe('pricingPage', () => {
   it('leads with one list sentence, then how the matcher works', () => {
     const input = { subject, comps, market, pricing, tiersUsed: ['subdivision-3mo'] }
     const page = pricingPage(input)
-    expect(page.toc).toBe('$655,000.')
+    expect(page.toc).toBe('What the sales say')
     // Delta 3 split the chapter: the number and the method here, the sales
     // that prove it in matrix 1. Both are what a reader meets.
     const html = `${page.body}\n${salesThatSetItPage(input)?.body ?? ''}`
-    expect(html).toContain('$655,000.')
+    // Tip Ready P0: cover owns the recommend; chapter does not restate "$655,000."
+    expect(html).not.toContain('$655,000.')
     // P5, Matt 2026-09-07: the search story is one sentence, not a bulleted
     // heading whose other items restate the table below it.
     expect(html).not.toContain('What we searched')
@@ -72,12 +73,13 @@ describe('pricingPage', () => {
     expect(html).not.toMatch(/Confidence:/)
     expect(html).not.toContain('15 percent')
     expect(html).not.toContain('Cap is')
-    expect(html).toContain('across 1,631 square feet')
+    expect(html).toContain('Across 1,631 square feet')
     // The Sunstone contract keeps predicted close off the seller document, so
     // the per-foot rate is taken over the recommended list — the one number
     // this chapter is titled with — and the sentence names that basis.
     expect(html).not.toContain('$640,000')
-    expect(html).toContain('At $655,000 across 1,631 square feet, that is $402 per square foot.')
+    expect(html).toContain('Across 1,631 square feet, that is $402 per square foot.')
+    expect(html).not.toContain('At $655,000 across')
     // The sale-to-list figure moved to chapter 5 (This market), where the
     // rest of the city's numbers live.
     expect(html).not.toContain('closing at 98.9 percent of list')
@@ -115,6 +117,6 @@ describe('pricingPage — no "as your house"', () => {
   it('does not say as your house', () => {
     expect(page(subject).body).not.toMatch(/as your house/i)
     expect(page(land).body).not.toMatch(/as your house/i)
-    expect(page(land).toc).toBe('$655,000.')
+    expect(page(land).toc).toBe('What the sales say')
   })
 })
