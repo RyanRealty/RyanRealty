@@ -28,6 +28,7 @@ describe('SITE-90 /about house fold', () => {
   it('puts the 5.0 mark on the principal face and links the count to /reviews', () => {
     expect(FACES).toContain('proof={proof?.value}')
     expect(FACES).toContain('from {proof.count} Google reviews')
+    expect(FACES).toContain('about-faces__trio')
     expect(PAGE).toContain("href: '/reviews'")
     expect(PAGE).toContain('value: reviewAverage.toFixed(1)')
   })
@@ -48,7 +49,8 @@ describe('SITE-90 /about house fold', () => {
   })
 
   it('keeps all three faces in the 375 fold and one Call per person', () => {
-    expect(CSS).toMatch(/\.about-faces--house \.about-faces__companions \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\)/)
+    expect(CSS).toMatch(/\.about-faces--house \.about-faces__trio \{[\s\S]*?grid-template-columns: repeat\(3/)
+    expect(CSS).toContain('.about-faces--house .about-faces__lead > .about-faces__photo-link')
     const editorial = FACES.slice(FACES.indexOf('function editorialReach'), FACES.indexOf('function faceIdentity'))
     expect(editorial).toContain('about-faces__reach--call')
     expect(editorial).toContain('about-faces__reach-text')

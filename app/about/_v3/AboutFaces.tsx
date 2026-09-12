@@ -476,6 +476,21 @@ export function AboutFaces({
           {claim ? <p className="about-faces__claim">{claim}</p> : null}
         </div>
         <div className="about-faces__editorial">
+          {proof ? (
+            <ul className="about-faces__trio" aria-hidden="true">
+              {shown.map((person) => (
+                <li key={`trio-${person.href}`} className="about-faces__trio-item">
+                  <Link href={person.href} className="about-faces__photo-link" tabIndex={-1}>
+                    <FacePortrait
+                      src={person.src}
+                      name={person.name}
+                      priority={person === leadPerson}
+                    />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : null}
           <article className="about-faces__lead">
             <Link href={leadPerson.href} className="about-faces__photo-link">
               <FacePortrait
@@ -498,7 +513,7 @@ export function AboutFaces({
                     </AvatarFallback>
                   </Avatar>
                   <Link href={proof.href} className="about-faces__face-proof-link">
-                    {proof.value} from {proof.count} Google reviews
+                    from {proof.count} Google reviews
                   </Link>
                 </p>
               ) : null}
