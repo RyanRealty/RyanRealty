@@ -116,11 +116,11 @@ export function buildCityMosPages(
   return pages
 }
 
-/** Document title. Live count when leftover HUD published one; never invent. */
-export function hubLiveTitle(active: number | null | undefined): string {
-  if (active != null && active > 0) {
-    return `Central Oregon market: ${active.toLocaleString('en-US')} homes for sale`
-  }
+/**
+ * Document title. Layer A (ci:seo-shell) locks the head term. Live counts
+ * go in the description and the H1, never a second title.
+ */
+export function hubLiveTitle(_active?: number | null): string {
   return 'Central Oregon Housing Market'
 }
 

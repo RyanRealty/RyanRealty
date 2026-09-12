@@ -71,8 +71,8 @@ describe('buildCityMosPages — city grain, miss omits', () => {
 })
 
 describe('hub live title and description', () => {
-  it('names the live count when leftover HUD published one', () => {
-    expect(hubLiveTitle(1550)).toBe('Central Oregon market: 1,550 homes for sale')
+  it('keeps the Layer A head term even when leftover HUD published a count', () => {
+    expect(hubLiveTitle(1550)).toBe('Central Oregon Housing Market')
     expect(hubLiveTitle(null)).toBe('Central Oregon Housing Market')
   })
 

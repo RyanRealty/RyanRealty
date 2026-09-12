@@ -124,7 +124,6 @@ import {
   buildHubCityItemList,
   buildOpeningFigures,
   hubLiveDescription,
-  hubLiveTitle,
   hubOpeningNote,
   monthlyPaceFromMos,
 } from './_v3/hub-opening'
@@ -154,7 +153,9 @@ export async function generateMetadata(): Promise<Metadata> {
   })
   const mosText = mos != null ? formatMonthsOfSupply(mos) : null
   return pageMetadata({
-    title: hubLiveTitle(active),
+    // Layer A lock (ci:seo-shell): the document title is the head term.
+    // Live inventory belongs in the description and the H1, never an invented title.
+    title: 'Central Oregon Housing Market',
     description: hubLiveDescription(active, mosText),
     path: '/housing-market',
     keywords: [
@@ -444,7 +445,7 @@ export default async function HousingMarketHubPage() {
     verdictKind: verdict.kind,
     newestWeeklyLabel: newestWeekly ? formatDate(newestWeekly.period_end) : null,
     refreshedAt,
-    cityRefreshedAt,
+    cityRefreshedAt: cityRefreshedAt ?? null,
   })
   const cityItemList = buildHubCityItemList(cityLedger.rows)
 
