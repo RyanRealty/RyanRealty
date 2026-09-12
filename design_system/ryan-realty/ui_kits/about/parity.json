@@ -2,7 +2,23 @@
   "route": "app/about/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat Compass/Redfin/SIR About on STRUCTURE, not scale. OPEN on the firm story (small boutique brokerage · all of Central Oregon · help clients buy and sell) plus an optional Bend office exterior / mission band. Then client reviews as the primary proof (Google score + featured quote — never press). Then dated local closings. Then Contact four-up Call|Text|Email|Schedule. Then a short Who you work with teaser that only doors to /team. Then a compact inquiry that GET-submits to Contact. FAIL if the page opens on brokers' faces or three equal broker Cards. About is the brokerage, not Meet the Team. Skip coast-to-coast, Redfin fee, and Rocket copy. Never invent MOS, prices, or licenses.",
-  "note": "SITE-90 2026-09-12 Matt lock + Researchy Compass/Redfin/SIR brief. About = brokerage, not Meet the Team. Order: Breadcrumb, about-fold (AboutFirm hero, AboutTeamTeaser → /team only, V3Doors #reach Call/Text/Email/Schedule, AboutInquiry GET /contact, FirmClosings carousel), V3Proof #proof (client reviews PRIMARY), V3Atlas, Quiet #about (How it started + OREA), V3Answers, Footer. No AboutFaces opener. No deep bios or licenses on the fold (licenses stay on Team / How it started). No V3Instrument. No V3SourceLine on the fold.",
+  "competitiveBrief": {
+    "id": "about-researchy-1-8",
+    "source": "Researchy About 2026-09-12 beats 1–8; docs/plans/PUBLIC_PRODUCT/PAGE_INVENTORY.md §6. Synced with cursor/competitive-brief-taste-gate-b093 (PR 214) — they own ci:taste-canon; this file owns requiredComponents.",
+    "productLock": "firm story + reviews + closings + Call|Text|Email|Schedule + team teaser→/team + inquiry→/contact",
+    "refuse": "AboutFaces three broker Cards as the opener. Poster-sized three-headshot fold. Looking that invents past this checklist.",
+    "beats": [
+      { "id": "1", "text": "Firm story opens the page: small boutique brokerage, all of Central Oregon, help clients buy and sell. Not a staff-directory fold." },
+      { "id": "2", "text": "Firm reviews: brokerage Google record as words (V3Proof), with a door to /reviews." },
+      { "id": "3", "text": "Firm closings: recent Ryan Realty sales as house-row cards (photo, address, ClosePrice, beds/baths/sqft). Never invent MOS." },
+      { "id": "4", "text": "Call is the primary conversion on the reach control, carrying live hours." },
+      { "id": "5", "text": "Text sits on the same reach control as Call, not a seven-row phone book." },
+      { "id": "6", "text": "Email sits on the same reach control as Call, Text, and Schedule." },
+      { "id": "7", "text": "Schedule sits on the same reach control as Call, Text, and Email." },
+      { "id": "8", "text": "Team teaser doors only to /team; compact inquiry GET /contact. No /team/[slug] on About. Brokers are not the opener." }
+    ]
+  },
+  "note": "SITE-90 2026-09-12 Matt lock + Researchy 1–8. About = brokerage, not Meet the Team. Synced with PR 214 competitiveBrief (about-researchy-1-8). requiredComponents opener is AboutFirm, not AboutFaces. Order: AboutFirm hero, V3Proof reviews PRIMARY, FirmClosings, AboutTeamTeaser → /team only, V3Doors Call/Text/Email/Schedule, AboutInquiry GET /contact, Atlas, Quiet #about, V3Answers, Footer. No deep bios or licenses on the fold. No V3Instrument. No V3SourceLine on the fold.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -134,6 +150,7 @@
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
     "demoMatch": false,
+    "competitiveBriefPass": false,
     "shotSpec": {
       "routes": [
         "/about"

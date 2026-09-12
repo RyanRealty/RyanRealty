@@ -2354,6 +2354,22 @@
       ]
     },
     "about": {
+      "competitiveBrief": {
+        "id": "about-researchy-1-8",
+        "source": "Researchy About 2026-09-12 beats 1–8; docs/plans/PUBLIC_PRODUCT/PAGE_INVENTORY.md §6",
+        "productLock": "firm story + reviews + closings + Call|Text|Email|Schedule + team teaser→/team + inquiry→/contact",
+        "refuse": "AboutFaces three broker Cards as the opener. Poster-sized three-headshot fold. Looking that invents past this checklist.",
+        "beats": [
+          { "id": "1", "text": "Firm story opens the page: small boutique brokerage, all of Central Oregon, help clients buy and sell. Not a staff-directory fold." },
+          { "id": "2", "text": "Firm reviews: brokerage Google record as words (V3Proof), with a door to /reviews." },
+          { "id": "3", "text": "Firm closings: recent Ryan Realty sales as house-row cards (photo, address, ClosePrice, beds/baths/sqft). Never invent MOS." },
+          { "id": "4", "text": "Call is the primary conversion on the reach control, carrying live hours." },
+          { "id": "5", "text": "Text sits on the same reach control as Call, not a seven-row phone book." },
+          { "id": "6", "text": "Email sits on the same reach control as Call, Text, and Schedule." },
+          { "id": "7", "text": "Schedule sits on the same reach control as Call, Text, and Email." },
+          { "id": "8", "text": "Team teaser doors only to /team; compact inquiry GET /contact. No /team/[slug] on About. Brokers are not the opener." }
+        ]
+      },
       "layoutLock": "About is the brokerage, not Meet the Team. FAIL if the page opens on AboutFaces or three equal broker Cards. Hero is AboutFirm: office exterior + one purpose line (boutique · all of Central Oregon · buy and sell). V3Proof is primary client reviews (Google + featured quote, not press). FirmClosings is dated local sold homes — never invented MOS. V3Doors is Call|Text|Email|Schedule. AboutTeamTeaser doors only to /team. AboutInquiry GET /contact. No V3SourceLine. Never the sofa, coast-to-coast, or fee copy.",
       "layoutLockChecks": [
         {

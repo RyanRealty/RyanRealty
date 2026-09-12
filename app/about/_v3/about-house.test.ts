@@ -18,8 +18,10 @@ describe('SITE-90 /about brokerage fold', () => {
     ) as {
       competitiveTarget: string
       note: string
+      competitiveBrief: { id: string; beats: { id: string; text: string }[] }
       requiredComponents: { name: string; section: string }[]
       removedComponents: string[]
+      tasteReview: { competitiveBriefPass: boolean }
     }
     const names = parity.requiredComponents.map((c) => c.name)
     expect(names).toContain('AboutFirm')
@@ -32,6 +34,12 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(parity.competitiveTarget).not.toMatch(/OPENING on proof — the three brokers|open on the three brokers/i)
     expect(parity.competitiveTarget).toMatch(/FAIL if the page opens on brokers' faces/)
     expect(parity.note).toMatch(/not Meet the Team/)
+    expect(parity.competitiveBrief.id).toBe('about-researchy-1-8')
+    expect(parity.competitiveBrief.beats.map((b) => b.id)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8'])
+    expect(parity.competitiveBrief.beats[0]?.text).toMatch(/boutique/)
+    expect(parity.competitiveBrief.beats[7]?.text).toMatch(/\/team/)
+    expect(parity.competitiveBrief.beats[7]?.text).not.toMatch(/doors to \/team \(and \/team\/\[slug\]\)/)
+    expect(parity.tasteReview.competitiveBriefPass).toBe(false)
     const opener = parity.requiredComponents.find((c) => c.name === 'AboutFirm')
     expect(opener?.section).toMatch(/OPENS THE PAGE/)
     expect(opener?.section).toMatch(/NOT three broker Cards/)

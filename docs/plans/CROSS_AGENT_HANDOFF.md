@@ -1,11 +1,10 @@
-# Current — 2026-09-12 18:50Z (SITE-90 parity lock — About ≠ Meet the Team)
+# Current — 2026-09-12 19:00Z (SITE-90 + competitiveBrief sync — Tip Ready)
 
 Owner: `cursor-cloud-2026-09-12-69a2`. Do not merge. No emails.
 
-- **Root cause Matt hit:** `origin/main` parity still required AboutFaces + three broker Cards to OPEN. Looking/taste could pass a Meet-the-Team About.
-- **Fix:** `parity.json` competitiveTarget/note/requiredComponents now FAIL a faces-first opener. AboutFirm opens. V3Proof reviews primary. FirmClosings local. V3Doors four-up. Team teaser → `/team`. Inquiry → Contact. AboutFaces listed in removedComponents. Catalog `layoutLockChecks` forbid `<AboutFaces` on `/about`.
-- Exclusive: `app/about/**` this lane. taste-canon scoring: Cos / competitiveBrief lane.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
+- **This PR (#213):** About page + Researchy requiredComponents. Opener is AboutFirm, not AboutFaces. `competitiveBrief` id `about-researchy-1-8` (beats 1–8) copied from PR 214 so merge stays in sync. `competitiveBriefPass: false` (honest; Cos owns the gate).
+- **PR 214** (`bc-c23a66aa`) owns `ci:taste-canon`. Their requiredComponents still names AboutFaces as teaser — do not take that opener. Take their brief shape.
+- Exclusive: `app/about/**` this lane.
 
 # Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)
 
