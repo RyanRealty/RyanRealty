@@ -1230,6 +1230,20 @@
   max-width: none;
 }
 
+@media (max-width: 47.99rem) {
+  .about-faces--proof {
+    padding-block: var(--v3-space-sm);
+  }
+
+  .about-faces--proof .about-faces__head {
+    margin-bottom: var(--v3-space-xs);
+  }
+
+  .about-faces--proof .about-faces__proof {
+    gap: var(--v3-space-xs);
+  }
+}
+
 .about-faces--proof .about-faces__proof {
   display: flex;
   flex-direction: column;
@@ -1241,24 +1255,16 @@
   display: flex;
 }
 
-.about-faces--proof .about-faces__proof-face {
-  display: block;
-  width: auto;
-  aspect-ratio: auto;
-  color: inherit;
-  text-decoration: none;
-}
-
-.about-faces--proof .about-faces__proof-face:focus-visible {
-  outline: var(--v3-focus-ring);
-  outline-offset: var(--v3-focus-offset);
+.about-faces--proof .about-faces__proof-group > [data-slot='avatar'] + [data-slot='avatar'] {
+  margin-inline-start: -1.35rem;
 }
 
 .about-faces--proof .about-faces__proof-avatar {
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 5.5rem;
+  height: 5.5rem;
   min-height: 0;
   overflow: hidden;
+  box-shadow: 0 0 0 2px var(--v3-cream);
 }
 
 .about-faces--proof .about-faces__proof-badge {
@@ -1295,7 +1301,11 @@
 
 @media (min-width: 48rem) {
   .about-faces--proof .about-faces__proof-avatar {
-    width: 6.5rem;
-    height: 6.5rem;
+    width: 8rem;
+    height: 8rem;
+  }
+
+  .about-faces--proof .about-faces__proof-group > [data-slot='avatar'] + [data-slot='avatar'] {
+    margin-inline-start: -1.75rem;
   }
 }

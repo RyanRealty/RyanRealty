@@ -607,34 +607,29 @@ export function AboutFaces({
         <div className="about-faces__proof">
           <AvatarGroup className="about-faces__proof-group">
             {shown.map((person) => (
-              <Link
-                key={person.href}
-                href={person.href}
-                className="about-faces__proof-face"
-                aria-label={person.name}
-              >
-                <Avatar size="lg" className="about-faces__proof-avatar">
-                  <AvatarImage
-                    src={person.src}
-                    alt={person.name}
-                    width={800}
-                    height={1200}
-                    loading={person === leadPerson ? "eager" : "lazy"}
-                    fetchPriority={person === leadPerson ? "high" : undefined}
-                    decoding="async"
-                  />
-                  <AvatarFallback delayMs={400}>{faceInitials(person.name)}</AvatarFallback>
-                  {person === leadPerson && proof ? (
-                    <AvatarBadge className="about-faces__proof-badge">{proof.value}</AvatarBadge>
-                  ) : null}
-                </Avatar>
-              </Link>
+              <Avatar key={person.href} size="lg" className="about-faces__proof-avatar">
+                <AvatarImage
+                  src={person.src}
+                  alt={person.name}
+                  width={800}
+                  height={1200}
+                  loading={person === leadPerson ? "eager" : "lazy"}
+                  fetchPriority={person === leadPerson ? "high" : undefined}
+                  decoding="async"
+                />
+                <AvatarFallback delayMs={400}>{faceInitials(person.name)}</AvatarFallback>
+                {person === leadPerson && proof ? (
+                  <AvatarBadge className="about-faces__proof-badge">{proof.value}</AvatarBadge>
+                ) : null}
+              </Avatar>
             ))}
           </AvatarGroup>
           <ButtonGroup className="about-faces__names" aria-label="Ryan Realty brokers">
             {shown.map((person) => (
               <Button key={person.href} asChild variant="ghost" size="lg">
-                <Link href={person.href}>{person.name}</Link>
+                <Link href={person.href} aria-label={person.name}>
+                  {person.name.split(/\s+/)[0]}
+                </Link>
               </Button>
             ))}
           </ButtonGroup>
