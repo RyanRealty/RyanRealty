@@ -16,59 +16,68 @@ const PROOF = FACES.slice(proofIf, rosterReturn)
 const FOLD_JSX = PAGE.slice(PAGE.indexOf('className="about-fold"'), PAGE.indexOf('id="reach"'))
 
 describe('SITE-90 /about house fold', () => {
-  it('adapts shadcn Avatar + Card + Accordion into the fold', () => {
+  it('adapts shadcn Avatar + Card + carousel into the fold', () => {
     expect(FACES).toMatch(/from ['"]@\/components\/ui\/avatar['"]/)
     expect(FACES).toMatch(/from ['"]@\/components\/ui\/button['"]/)
     expect(FACES).toMatch(/from ['"]@\/components\/ui\/button-group['"]/)
     expect(FACES).toMatch(/from ['"]@\/components\/ui\/card['"]/)
-    expect(PROOF).toContain('AvatarGroup')
     expect(PROOF).toContain('AvatarImage')
-    expect(PROOF).toContain('loading="eager"')
+    expect(PROOF).toContain('loading={index === 0 ? "eager" : "lazy"}')
     expect(PROOF).toContain('AvatarFallback')
-    expect(PROOF).toContain('AvatarBadge')
     expect(PROOF).toContain('<Card')
     expect(PROOF).toContain('CardTitle')
     expect(PROOF).toContain('CardDescription')
     expect(PROOF).toContain('ButtonGroup')
-    expect(CLOSINGS).toMatch(/from ['"]@\/components\/ui\/accordion['"]/)
-    expect(CLOSINGS).toContain('AccordionItem')
-    expect(CLOSINGS).toContain('AccordionTrigger')
-    expect(CLOSINGS).toContain('AccordionContent')
+    expect(PROOF).toContain('about-faces__roster')
+    expect(CLOSINGS).toMatch(/from ['"]@\/components\/ui\/card['"]/)
+    expect(CLOSINGS).toContain('V3Carousel')
+    expect(CLOSINGS).toContain('mode="rail"')
+    expect(CLOSINGS).not.toMatch(/from ['"]@\/components\/ui\/accordion['"]/)
     expect(PORTRAIT).toMatch(/from ['"]@\/components\/ui\/avatar['"]/)
     expect(PORTRAIT).not.toMatch(/<img[\s\S]*onError/)
   })
 
-  it('opens as one proof object, not stacked broker cards or a KPI row', () => {
+  it('opens as three broker Cards, not one principal and not a KPI row', () => {
     expect(PAGE).toContain('size="proof"')
     expect(PAGE).toContain('className="about-fold"')
     expect(PAGE).not.toContain('size="editorial"')
     expect(PAGE).not.toContain('openingFigures')
     expect(PAGE).not.toContain('figures={openingFigures}')
     expect(PROOF).toContain('about-faces--proof')
-    expect(PROOF).toContain('-space-x-6')
+    expect(PROOF).toContain('shown.map')
     expect(PROOF).toContain('about-faces__ask')
+    expect(PROOF).not.toContain('AvatarGroup')
+    expect(PROOF).not.toContain('-space-x-6')
+    expect(PROOF).not.toContain('AvatarBadge')
     expect(PROOF).not.toContain('about-faces__lead')
     expect(PROOF).not.toContain('about-faces__companions')
     expect(PROOF).not.toContain('about-faces__trio')
     expect(PROOF).not.toContain('about-faces__names')
   })
 
-  it('puts the 5.0 mark on the principal AvatarBadge and links the count to /reviews', () => {
-    expect(PROOF).toContain('AvatarBadge')
-    expect(PROOF).toContain('group-data-[size=default]/avatar:size-7')
+  it('puts the Google mark on a firm link, not a stacked circle, and names all three brokers', () => {
     expect(PROOF).toContain('from {proof.count} Google reviews')
     expect(PAGE).toContain("href: '/reviews'")
     expect(PAGE).toContain('value: reviewAverage.toFixed(1)')
+    expect(PAGE).toContain('BROKERS.matt.nameShort')
+    expect(PAGE).toContain('BROKERS.rebecca.nameShort')
+    expect(PAGE).toContain('BROKERS.paul.nameShort')
+    expect(PAGE).toContain('firmBeat')
+    expect(PAGE).toContain('The person you call is the person who works your purchase or sale through closing.')
   })
 
-  it('loads a sourced MLS record for the principal instead of three identical cards', () => {
+  it('loads a sourced MLS record per broker and the firm closing set', () => {
     expect(LOAD).toContain('brokerRosterRecord')
     expect(LOAD).toContain('getBrokerSales')
-    expect(PAGE).toContain('loadAboutFaces')
-    expect(PROOF).toContain('leadPerson.record')
+    expect(LOAD).toContain('getBrokerageListingTiles')
+    expect(LOAD).toContain('publishFirmClosingRows')
+    expect(LOAD).toContain('uniqueListingTiles')
+    expect(LOAD).toContain('FIRM_CLOSING_LIMIT')
+    expect(PAGE).toContain('loadAboutProof')
+    expect(PROOF).toContain('person.record')
   })
 
-  it('puts the Street View exterior and recent closings in the first viewport', () => {
+  it('puts the Street View exterior and a closings carousel in the first viewport', () => {
     expect(PAGE).toContain('about-fold__sales')
     expect(PAGE).toContain('<FirmClosings')
     expect(FOLD_JSX).toContain('about-fold__place')
@@ -76,11 +85,13 @@ describe('SITE-90 /about house fold', () => {
     expect(FOLD_JSX).not.toContain('ryan-realty-bend-office-interior')
     expect(FOLD_JSX).toContain('BEND OFFICE ·')
     expect(FOLD_JSX).toContain('BRAND.address.street')
-    expect(FOLD).toMatch(/grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\)/)
+    expect(FOLD).toMatch(/grid-template-columns: minmax\(0, 1fr\) minmax\(16rem, 22rem\)/)
+    expect(CLOSINGS).toContain('See this closing')
   })
 
-  it('keeps the AvatarGroup overlap and one joined ask, without painting Avatar into a card', () => {
-    expect(PROOF).toContain('-space-x-6')
+  it('keeps separate Avatars and one Call ask per broker, without painting Avatar into a card', () => {
+    expect(PROOF).not.toContain('-space-x-6')
+    expect(PROOF).not.toContain('AvatarGroup')
     expect(CSS).not.toMatch(/\[data-slot=['"]avatar['"]\][\s\S]{0,80}border-radius:\s*0/)
     expect(CSS).not.toContain('about-faces__avatar')
     expect(PORTRAIT).not.toContain('about-faces__avatar')
@@ -97,5 +108,15 @@ describe('SITE-90 /about house fold', () => {
     expect(PAGE).toContain("name: 'Recent Ryan Realty closings'")
     expect(PAGE).toContain("type: 'dataset'")
     expect(PAGE).toContain('Average Google rating')
+  })
+
+  it('keeps methodology chrome off the About fold', () => {
+    const body = PAGE.slice(PAGE.indexOf('export default'))
+    expect(body).not.toContain('V3SourceLine')
+    expect(body).not.toContain('openingTrace')
+    expect(body).not.toContain('how we calculate this')
+    expect(PROOF).not.toMatch(/\bsource\b/)
+    expect(CLOSINGS).not.toContain('V3SourceLine')
+    expect(CLOSINGS).not.toContain('how we calculate this')
   })
 })
