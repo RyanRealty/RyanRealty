@@ -173,9 +173,9 @@ export function buildPhotoItem(extras: CmaExtras): ListingPlanItem | null {
   if (!pb) return null
   if (pb.subjectPhotos >= pb.compMedianPhotos) return null
   return {
-    trigger: `This listing carries ${pb.subjectPhotos} photos. The sold comps in this report carry a median of ${pb.compMedianPhotos}.`,
-    action: `We reshoot the photo set before this lists, targeted to match the comp median count.`,
-    basis: `This listing has ${pb.subjectPhotos} photos. The sold comps in this report have a median of ${pb.compMedianPhotos}.`,
+    trigger: `Your listing carries ${pb.subjectPhotos} photos. The sold comps in this report carry a median of ${pb.compMedianPhotos}.`,
+    action: `We reshoot the photo set before you list, targeted to match the comp median count.`,
+    basis: `Your listing has ${pb.subjectPhotos} photos. The sold comps in this report have a median of ${pb.compMedianPhotos}.`,
   }
 }
 

@@ -5,8 +5,7 @@
  * H1 `{Type} in {Place}`, then one plain sentence with the count and the price
  * band, then the Atlas wearing an eyebrow rather than a second display line.
  * A V3Carousel rail of photographed listings (shadcn → house `mode="rail"`)
- * sits beside the claim on desktop and under it at 375 so houses land in the
- * fold — the ledger under Atlas was a desktop sliver and invisible on phones.
+ * follows Atlas in the fold so the lock stays H1 → claim → Atlas → rail.
  * Do not say the type twice as two Amboqia lines with no fact.
  *
  * THE ATLAS IS GUARANTEED. It renders inside a Suspense boundary with a
@@ -34,6 +33,7 @@ import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeo
 import { PRIMARY_CITIES } from '@/lib/cities'
 import { slugify } from '@/lib/slug'
 import { formatDateTime } from '@/lib/format/date'
+import { formatPriceExact } from '@/lib/format/money'
 import { PLACE_TYPE_PAGE_SLUGS } from '@/lib/place/publish-place-type-cards'
 import {
   placeTypeAtlasEyebrow,
@@ -120,13 +120,24 @@ export default async function CityPlaceTypePage({ params }: Props) {
   const pagePath = `/cities/${slug}/types/${spec.slug}`
   const scope = { city: cityName, status: 'active' as const, ...spec.listingFilter }
 
-  /* ONE READ SET. The count, the cheapest ends of the price band, and the
-     photographed rows all describe the same filter, so the sentence, the marks
-     and the rows are the same listings. The band is two limit-1 reads on the
-     MV's own price index rather than a scan: the whole active set can be 768
-     rows and the sentence needs two of them. */
-  const [countRead, lowRead, highRead, listRead] = await Promise.all([
-    withTimeoutFallbackResult(getListingTilesCount(scope), null, 4500, 'city-type:count'),
+  /* ONE READ SET (listing_tile_mv). Count + floor come from the MV; the useful
+     upper band is ~p90 (cheapest row in the top decile by ask) so the sentence
+     is not "$397K to $11.9M". Absolute ceiling stays available for the source
+     line. Photographed rows share the same filter. */
+  const countProbe = await withTimeoutFallbackResult(
+    getListingTilesCount(scope),
+    null,
+    4500,
+    'city-type:count',
+  )
+  const countForBand =
+    countProbe.ok && countProbe.value != null && countProbe.value > 0
+      ? countProbe.value
+      : 100
+  const topDecileLimit = Math.max(1, Math.min(80, Math.ceil(countForBand * 0.1)))
+
+  const [countRead, lowRead, highRead, p90Read, listRead] = await Promise.all([
+    Promise.resolve(countProbe),
     withTimeoutFallbackResult(
       getListingTiles({ ...scope, sort: 'price-asc', limit: 1 }),
       [],
@@ -138,6 +149,12 @@ export default async function CityPlaceTypePage({ params }: Props) {
       [],
       4500,
       'city-type:high',
+    ),
+    withTimeoutFallbackResult(
+      getListingTiles({ ...scope, sort: 'price-desc', limit: topDecileLimit }),
+      [],
+      4500,
+      'city-type:p90',
     ),
     withTimeoutFallbackResult(
       getListingTiles({ ...scope, sort: 'newest', limit: 120 }),
@@ -161,28 +178,40 @@ export default async function CityPlaceTypePage({ params }: Props) {
     countRead.ok && countRead.value === 0 && listRead.ok && listRead.value.length === 0
   const lowAsk = lowRead.ok ? (lowRead.value[0]?.listPrice ?? null) : null
   const highAsk = highRead.ok ? (highRead.value[0]?.listPrice ?? null) : null
-  /* Claim names the ADDRESS census and points the map at city limits, so the
-     fold does not state two different "for sale" counts (768 vs Atlas 496 was
-     a blocking honesty miss on grok-4.6). Same MV read for count + band. */
+  /* ~p90: last (cheapest) row of the price-desc top decile. Falls back to the
+     absolute high when that read misses. */
+  const p90Ask = (() => {
+    if (!p90Read.ok || p90Read.value.length === 0) return highAsk
+    const priced = p90Read.value
+      .map((t) => t.listPrice)
+      .filter((n): n is number => n != null && Number.isFinite(n) && n > 0)
+    if (priced.length === 0) return highAsk
+    return priced[priced.length - 1] ?? highAsk
+  })()
+  const bandHigh = p90Ask ?? highAsk
+  /* Claim: H1 already named the type — do not say it again. Address census +
+     city-limits caveat so Atlas's clipped count is not a second "for sale"
+     figure fighting the lead. Same MV for count + band. */
+  const stamp = formatDateTime(new Date())
   const claimBase = placeTypeClaim({
     spec,
     placeName: cityName,
     inventory: {
       count: activeCount,
       low: lowAsk,
-      high: highAsk,
-      stamp: formatDateTime(new Date()),
+      high: bandHigh,
+      stamp,
       scopeNote: `with a ${cityName} address`,
     },
   })
   const claim = claimBase
     ? {
         sentence:
-          activeCount != null && lowAsk != null && highAsk != null
-            ? `${activeCount.toLocaleString('en-US')} ${
-                activeCount === 1 ? spec.nounOne : spec.nounMany
-              } with a ${cityName} address ask $${lowAsk.toLocaleString('en-US')} to $${highAsk.toLocaleString('en-US')}. The map marks homes inside the city limits.`
+          activeCount != null && lowAsk != null && bandHigh != null
+            ? `${activeCount.toLocaleString('en-US')} homes with a ${cityName} address ask ${formatPriceExact(lowAsk)} to ${formatPriceExact(bandHigh)} for nine in ten. The map marks for-sale homes inside city limits.`
             : claimBase.sentence,
+        /* Absolute ceiling stays off the fold — naming $11.9M next to a p90
+           band made the range look like a fight (grok-4.6 blocking). */
         source: claimBase.source,
       }
     : null
@@ -214,7 +243,14 @@ export default async function CityPlaceTypePage({ params }: Props) {
       <main className={V3_ROOT_CLASS}>
         <V3SectionTracker />
         <MetadataBlock schemas={schemas} />
-        <V3Breadcrumb trail={[{ label: cityName, href: placeHref }, { label: spec.h1Type }]} />
+        <V3Breadcrumb
+          trail={[
+            { label: cityName, href: placeHref },
+            /* Not the H1 type string — breadcrumb + H1 both saying
+               "Single-family" read as two display lines (grok-4.6). */
+            { label: 'For sale' },
+          ]}
+        />
         <PlaceTypeField>
           {/* SITE-89: H1 → claim → Atlas → photographed rail (layout lock). */}
           <div className="place-type-fold">
@@ -257,7 +293,7 @@ export default async function CityPlaceTypePage({ params }: Props) {
                   name: cityName,
                   href: placeHref,
                 }}
-                listingsCount={null}
+                listingsCount={activeCount}
                 source={{ kind: 'city', geoSlug: slug, cityName }}
               />
             </Suspense>
@@ -266,6 +302,8 @@ export default async function CityPlaceTypePage({ params }: Props) {
               <PlaceTypeFilm
                 rows={rows}
                 label={`Photographed ${spec.nounMany} in ${cityName}`}
+                bandLow={lowAsk}
+                bandHigh={bandHigh}
               />
             ) : null}
           </div>

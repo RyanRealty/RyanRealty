@@ -20,9 +20,13 @@ vi.mock('@/lib/cma/comps', () => ({
 
 const countSalePricingFacts = vi.hoisted(() => vi.fn(async () => 5000))
 const selectPricingFactsPool = vi.hoisted(() => vi.fn(async () => []))
+// The subject's own ground is a SECOND read (selectPricingFactsNear). Left
+// unmocked it reaches the live database from a unit test, and the ladder then
+// walks real Bend sales against these fixtures.
+const selectPricingFactsNear = vi.hoisted(() => vi.fn(async () => []))
 const getListingWaterSource = vi.hoisted(() => vi.fn(async () => null))
 const getPricingMarketIndex = vi.hoisted(() => vi.fn(async () => []))
-const getPricingSubdivisionCells = vi.hoisted(() => vi.fn(async () => []))
+const getPricingSubdivisionCells = vi.hoisted(() => vi.fn(async () => new Map()))
 
 vi.mock('@/lib/data/pricing/facts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/data/pricing/facts')>()
@@ -30,6 +34,7 @@ vi.mock('@/lib/data/pricing/facts', async (importOriginal) => {
     ...actual,
     countSalePricingFacts,
     selectPricingFactsPool,
+    selectPricingFactsNear,
     getListingWaterSource,
     getPricingMarketIndex,
     getPricingSubdivisionCells,

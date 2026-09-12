@@ -193,7 +193,7 @@ describe('the single-doc fold', () => {
     // opinion for 123 Test Way." — a sentence whose whole job was to restate
     // the two lines above it.
     expect(html).toContain('class="cover-title">123 Test Way')
-    expect(html).not.toContain('A price opinion for 123 Test Way.')
+    expect(html).not.toContain('A comparative market analysis for 123 Test Way.')
     expect(html).not.toContain('How we would market')
     expect(html).not.toContain('listing video')
     expect(html).not.toContain('What Every Listing Gets')
@@ -226,9 +226,9 @@ describe('the single-doc fold', () => {
 
   it('the doc label and title never switch to audit', () => {
     const { html } = renderCmaHtml(withReview)
-    expect(html).toContain('Pricing report')
+    expect(html).toContain('Comparative market analysis')
     expect(html).not.toContain('Listing Audit')
-    expect(html).toContain('<title>Pricing report ·')
+    expect(html).toContain('<title>Comparative market analysis ·')
   })
 
   it('one artifact, two media: screen hides the print page header', () => {

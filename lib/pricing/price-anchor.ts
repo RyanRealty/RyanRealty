@@ -26,15 +26,38 @@
 
 import type { PricingSale, PricingSubject } from '@/lib/pricing/match'
 
-export type PriceAnchorSource = 'subdivision' | 'neighborhood' | 'within-a-mile'
+export type PriceAnchorSource = 'subdivision' | 'neighborhood' | 'within-a-mile' | 'rural-radius'
 
-export type PriceAnchor = { ppsf: number; n: number; source: PriceAnchorSource }
+export type PriceAnchor = {
+  ppsf: number
+  n: number
+  source: PriceAnchorSource
+  /** How far the read had to reach, in miles, when it reached by radius. */
+  radiusMiles?: number
+}
 
 /** A tier read on fewer sales than this is noise, not a market. */
 export const ANCHOR_MIN_N = 5
 
 /** How far out the last-resort anchor looks when no polygon holds the subject. */
 export const ANCHOR_RADIUS_MILES = 1
+
+/**
+ * AND HOW FAR IT REACHES ON RURAL GROUND (Matt 2026-09-10).
+ *
+ * A mile around a Bend tract home holds dozens of sales. A mile around 19496
+ * Tumalo Reservoir holds two, so the anchor came back null, so nothing graded
+ * that document on price at all — the same hole 23 Benaiah fell through, just
+ * out in the county. It then priced a 2,325 sqft home off a $2,800,000 sale at
+ * $1,048/sqft standing beside four sales at $370 to $466, and printed $858,000
+ * to $2,550,000.
+ *
+ * Houses are further apart out there, so the tier is measured over more ground
+ * — never over fewer sales. ANCHOR_MIN_N still binds at every step, and a
+ * subject that cannot reach it even at the widest radius still gets no anchor
+ * rather than an invented one.
+ */
+export const ANCHOR_RURAL_RADII_MILES = [2, 3, 5, 8] as const
 
 function median(values: number[]): number | null {
   if (values.length === 0) return null
@@ -94,7 +117,26 @@ export function resolvePriceAnchor(subject: PricingSubject, pool: readonly Prici
     .filter((v): v is number => v != null)
   const nearMedian = median(near)
   if (nearMedian != null && near.length >= ANCHOR_MIN_N) {
-    return { ppsf: nearMedian, n: near.length, source: 'within-a-mile' }
+    return { ppsf: nearMedian, n: near.length, source: 'within-a-mile', radiusMiles: ANCHOR_RADIUS_MILES }
+  }
+  // Rural ground: reach further for the SAME number of sales, never settle for
+  // fewer. Each step is tried in order and the first that reaches ANCHOR_MIN_N
+  // wins, so the tier is always read over the tightest ring that can support it.
+  for (const radius of ANCHOR_RURAL_RADII_MILES) {
+    const ring = pool
+      .filter((s) => {
+        const miles = milesBetween(
+          { lat: subject.latitude, lng: subject.longitude },
+          { lat: s.latitude, lng: s.longitude },
+        )
+        return miles != null && miles <= radius
+      })
+      .map(ppsfOf)
+      .filter((v): v is number => v != null)
+    const m = median(ring)
+    if (m != null && ring.length >= ANCHOR_MIN_N) {
+      return { ppsf: m, n: ring.length, source: 'rural-radius', radiusMiles: radius }
+    }
   }
   return null
 }
@@ -114,6 +156,17 @@ export function resolvePriceAnchor(subject: PricingSubject, pool: readonly Prici
  * exempts the PRICE cut alone.
  */
 export const SAME_STREET_SIZE_BAND = 0.1
+
+/**
+ * How far the recommendation may sit above a same-street sale of the subject's
+ * own size before a person has to say so (Matt 2026-09-10: "the twin anchors
+ * the number, and the other sales bracket rather than set it").
+ *
+ * Ten percent is room for condition and updates between two houses on one
+ * street. It is not room for the $141,000 that separated 23 Benaiah's
+ * recommendation from what the identical plan next door actually fetched.
+ */
+export const SAME_STREET_PREMIUM_MAX = 0.1
 
 function streetKey(address: string | null | undefined): string | null {
   const s = (address ?? '').trim().toLowerCase()

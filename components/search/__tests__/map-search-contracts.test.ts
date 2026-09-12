@@ -303,6 +303,10 @@ describe('split row and map chrome stay navy', () => {
     const row = readSrc('components/site/v3/V3ListingRow.tsx')
     const css = readSrc('components/site/v3/V3ListingRow.css')
     expect(row).toMatch(/sizes=\{splitThumb \? '200px' : '72px'\}/)
+    // SITE-115: photo opens the same detail href as the copy column.
+    expect(row).toMatch(/v3-lrow__photo-link/)
+    expect(readSrc('components/site/v3/SplitCardMedia.tsx')).toMatch(/v3-lrow__photo-link/)
+    expect(readSrc('components/search/SplitListingCard.tsx')).toMatch(/href=\{href\}/)
     expect(css).toMatch(/box-shadow: inset 0 0 0 2px var\(--v3-navy\)/)
     expect(css).toMatch(/v3-lrow__addr-tip/)
     expect(css).not.toMatch(/content: '‹'/)

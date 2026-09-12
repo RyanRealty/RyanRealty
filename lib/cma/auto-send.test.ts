@@ -144,8 +144,11 @@ describe('autoSendBuiltCma — only ready sends', () => {
   ]
 
   for (const state of blocked) {
-    // 15s: under a full unit+gates suite these hang past the default 5s.
-    it(`leaves a ${state} row untouched even with the lane on`, { timeout: 15_000 }, async () => {
+    // First test in the file, so it absorbs the module-load cost of the whole
+    // auto-send import graph. Its own work is pure mocks and takes under a
+    // millisecond; under a full parallel suite the import alone has crossed
+    // vitest's 5s default and failed the commit hook on unrelated changes.
+    it(`leaves a ${state} row untouched even with the lane on`, { timeout: 30_000 }, async () => {
       const d = deps({ findRow: vi.fn(async () => queueRow({ state })) })
       const res = await autoSendBuiltCma('cma-1-main', d)
       expect(res.outcome).toBe('not-ready')

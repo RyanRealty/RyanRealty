@@ -9,6 +9,8 @@ import {
   publishListingGalleryMobilePills,
   publishListingGalleryTabs,
 } from '@/lib/listing/publish-listing-mosaic-pills'
+import { preferListingMosaicPhotoUrl } from '@/lib/listing/publish-listing-mosaic'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import type { VideoEmbed } from '@/lib/data/types/video'
 import './listing-detail.css'
 
@@ -258,7 +260,7 @@ export function PhotoGalleryLightbox({
                 aria-label={`${altBase} ${i + 1} of ${stills.length}`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.url} alt={p.caption ?? `${altBase} ${i + 1}`} />
+                <img src={preferListingMosaicPhotoUrl(p.url)} alt={p.caption ?? `${altBase} ${i + 1}`} />
               </button>
             ))}
           </div>
@@ -279,7 +281,7 @@ export function PhotoGalleryLightbox({
             {current ? (
               <div className="listing-gallery__frame">
                 <Image
-                  src={current.url}
+                  src={preferListingMosaicPhotoUrl(current.url)}
                   alt={altText}
                   fill
                   sizes="100vw"
@@ -321,7 +323,7 @@ export function PhotoGalleryLightbox({
                 aria-current={i === openIndex ? 'true' : undefined}
               >
                 <Image
-                  src={p.url}
+                  src={listingRowPhotoSrc(p.url)}
                   alt={p.caption ?? `${altBase} thumbnail ${i + 1}`}
                   fill
                   sizes="108px"

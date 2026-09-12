@@ -1,0 +1,72 @@
+/* Annual review fold — SITE-101. Tokens only. Route-local; do not lift to v3. */
+
+/* Inventory bars encode active count: keep the when column at desktop so the
+   count the 375 rows print is also visible at 1440 (house encoded ledger hides
+   when by default to give the track width). */
+@media (min-width: 48rem) {
+  #cities-now.annual-inventory-ledger.v3-ledger--encoded .v3-ledger__row {
+    grid-template-columns: minmax(6.5rem, 9rem) minmax(0, 1fr) minmax(0, 1.2fr);
+  }
+
+  #cities-now.annual-inventory-ledger.v3-ledger--encoded .v3-ledger__when {
+    display: block;
+    grid-column: auto;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* House chart hover: hairline, token radius, no elevation (SITE-101 craft). */
+#market #region-median .v3-chart__tip,
+#market #region-median .v3-chart__tip--resting {
+  box-shadow: none;
+  border-radius: var(--v3-radius-sm, 6px);
+  background: var(--v3-cream);
+  border: 1px solid color-mix(in srgb, var(--v3-navy) 28%, transparent);
+}
+
+#market.annual-market .v3-instrument__drawing,
+#market.annual-market .v3-instrument__chart {
+  width: 100%;
+  min-width: 0;
+}
+
+.annual-market-mos {
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  background: transparent;
+  border: 0;
+  padding-inline: 0;
+  box-shadow: none;
+}
+
+/* MOS answers the claim first (order -1); year overlay pages beside/below. */
+#market.annual-market .v3-instrument__stage--split .v3-instrument__drawing {
+  order: -1;
+}
+
+@media (min-width: 64rem) {
+  #market.annual-market .v3-instrument__stage--split {
+    display: grid;
+    grid-template-columns: minmax(14rem, 0.9fr) minmax(0, 1.35fr);
+    gap: var(--v3-space-md);
+    align-items: start;
+  }
+}
+
+@media (max-width: 63.99rem) {
+  #market.annual-market .v3-instrument__stage--split {
+    display: flex;
+    flex-direction: column;
+    gap: var(--v3-space-xs);
+  }
+
+  /* Compact year so MOS + pager both fit the 375 first read. */
+  #market #region-median {
+    min-height: 0;
+  }
+
+  #market #region-median .v3-chart__plot {
+    max-height: 9.5rem;
+  }
+}

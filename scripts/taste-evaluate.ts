@@ -170,6 +170,10 @@ async function main() {
   // XAI_API_KEY and is what a cloud runner has. Before 2026-09-12 there was only
   // the CLI, so a cloud lane could capture shots and never score — and this file
   // exits 2 rather than print a receipt, so those lanes stalled at the bar.
+  //
+  // The two are not in tension, which is why the order matters: the API path runs
+  // ONLY when the CLI is absent, and that is exactly when there is no subscription
+  // to spend. Where the CLI exists it is used, with the key stripped below.
   let content = ''
   let carrier = ''
   if (existsSync(GROK_CLI)) {
@@ -187,10 +191,15 @@ async function main() {
       'Reply with the JSON object and nothing else — no preamble, no code fence.',
     ].join('\n')
 
+    // Strip XAI_API_KEY so the grok CLI cannot fall back to console.x.ai pay-per-token.
+    // dotenv loaded .env.local above; the CLI otherwise treats that key as API billing
+    // when the grok.com session is missing (launchd). Subscription is ~/.grok/auth.json.
+    const grokEnv = { ...process.env }
+    delete grokEnv.XAI_API_KEY
     const res = spawnSync(
       GROK_CLI,
       ['-p', prompt, '-m', EVALUATOR_MODEL, '--permission-mode', 'bypassPermissions', '--output-format', 'plain'],
-      { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 900_000 },
+      { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 900_000, env: grokEnv },
     )
     if (res.status !== 0) {
       console.error(`taste-evaluate: grok CLI exited ${res.status}: ${(res.stderr || '').trim().slice(0, 400)}`)

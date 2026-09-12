@@ -38,13 +38,23 @@ Owner: this session (`019RdEm6`), branch `claude/run-loop-w8f3ep` (PR #206). Not
 3. **A 25-class run is slow on this carrier**: grok-4.6 at default (high) reasoning took ~13 min for
    three scorings of one class. Budget it, or set `reasoningEffort` deliberately.
 
-# Current — 2026-09-11 08:10Z (grinder 01a08eda: SITE-29 + SITE-86 live)
+# Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)
 
-Owner: `grok-4.5-2026-09-10-22`. origin/main `f7f3c89a` READY `cli-f7f3c89`. 15m launchd stays. No auto-seed.
+Owner: this land (`wt/cma-ship-20260907` → `main`). No owner sends / no emails. HOLD SITE-56 auto-send.
 
-- **SITE-29 done** blog `/blog` + `/blog/:path*` `public, s-maxage=300`. Production second curl HIT on sunriver, bend, /blog, and the Sunriver post. H1+≥8 h2 held.
-- **SITE-86 done** subdivision fold Atlas + this-plat alerts, no plat MOS (REGISTRY §4). grok-4.6 median **62** rebaselined. Finish 70 not met.
-- Next open: SITE-89 place-type, SITE-73 zip. Skip overlapping place families.
+- **CMA ship landed.** Comp-selection + owner voice + pricing ladder/room rule + street-anchor from `wt/cma-ship-20260907` (tip `6e10ef47`) merged onto main. Scope stayed `lib/cma`, `lib/pricing`, `marketing_brain_skills/producers/cma`, `scripts/cma-*` / diagnostic scripts, docs — no `app/**` or `components/site/**` (SITE-115 safe).
+- Site-queue Current below is unchanged from the prior 14:50Z fleet note; SITE-106/108/101/104/95 claims stand.
+- Auto-send remains OFF. Nothing sends from this land.
+
+# Current — 2026-09-11 14:50Z (fleet 3/3: 108 scored 66; 106 iterating; 101 local merge; 95 held)
+
+15m stays. No auto-seed. Fleet full — do not claim. Local main is **ahead 2** with SITE-101 (`3e64c8aa`); this fire does not push that merge.
+
+- **SITE-106 in_progress** place-type. Owner `grok-4.6-2026-09-11-01a090bd`. UUID `a59bf941-e062-48a8-b57d-085c508802b8`. grok-4.6 **58** (54/58/61) on 14:39 shots, demoMatch **false** (rail was photo+price). Recaptured 14:45 with address/beds/baths/sqft; second eval empty. Atlas still inset. Beat 55, finish **≥70**. Worktree `…/subagent-01a090c4-faa5-7693-b7ad-cd9dd4e3bd43` :3206. Do not restyle V3Atlas/V3Carousel globally.
+- **SITE-108 in_progress** `/price-drops`. Same owner. UUID `3d1f25ad-6a6b-4992-8693-ef8c4e63e205`. grok-4.6 **66** (70/63/66), honesty 8, demoMatch true — rose from 62, **<70 not done**. Next: house-field (not portal SERP), beeswarm drives rail, 375 axis in fold. Worktree `…/subagent-01a090c4-faa6-7172-b88c-429114b25d0b` :3208. Do not restyle V3Field/V3Drawing globally.
+- **SITE-101** grok-4.6 **70** (70/74/67) merged locally `3e64c8aa` by `grok-4.5-2026-09-11-13`. Their push + deploy:verify. Skip 102/103. Do not restyle V3Instrument.
+- **SITE-104 in_progress** neighborhood. Same owner. grok-4.6 **48**, demoMatch false. Skip 93/94.
+- **SITE-95** `grok-4.6-2026-09-11-13` :3221. Exclusive: `app/compare/**`, `components/compare/**`, `V3Slots*`.
 
 
 # Current — 2026-09-10 23:48Z (homepage uses the MorphingSearch demo, not inline)
@@ -102,6 +112,51 @@ Owner: `grok-4.5-2026-09-10-13`. Local `e672d978` (sell) on `9e209ab6` (search).
 Owner: `claude-opus-5-019RdEm6-2026-09-10`. Worktree `/Users/matthewryan/RyanRealty-wt-site-88-20260910` on `wt/site-88-20260910`.
 
 - **SITE-88 in_progress, not done.** `/housing-market/central-oregon` fold: MOS two named bars, visitor English source. grok-4.6 median **61**, rebaselined. **Rebaseline is not done.** Do not steal.
+# Current — 2026-09-10 21:00Z (CMA engine: comp selection rebuilt — historical; landed 2026-09-11)
+
+Owner: `claude-opus-5` on `wt/cma-ship-20260907` (**landed onto origin/main** 2026-09-11). Site-queue agents: this ship did not touch `app/` or `components/site/**`.
+
+Matt on 23 Benaiah: "none of the rules created were followed for this, we should never have a range
+this wide." Twelve defects, each its own commit with tests, all pushed:
+
+1. **The facts pool reached back six months, not eighteen** — ordered by close date and capped at
+   800, so every rung under that line walked an empty pool and the ladder left the neighborhood while
+   the report said the neighborhood was exhausted. `selectPricingFactsNear` reads a complete 3-mile box.
+2. **Nothing graded a subject on price when its plat had no cell**, and a one-mile ring holds two
+   sales out in the county — the anchor now steps out 2/3/5/8 miles.
+3. **The exact-bath wall** became one room rule for beds and baths, with a derived $0 in the matrix.
+4. **The judge** could drop the identical house next door for sitting outside the band the other
+   comps set.
+5. **An adjacent plat is a different plat** — the listings ladder exempted it from the price cut.
+6. **The starved widening stacked with the resort crossing.**
+7. **One closed sale could enter a set twice** — a relisting carries a new ListingKey.
+8. **A custom subject skipped the price cut entirely**; it keeps the floor and loses the ceiling.
+9. **Conflicting MLS facts** flag for review and price off the closed record inside ten years.
+10. **The house next door now anchors the number** (Matt's ruling): the recommendation may sit at
+    most 10% above a same-street sale of the subject's own size, and that sale becomes the floor.
+11. **The last-resort rung stops at 25% on size**, down from 45% (Matt's ruling).
+12. **One comp floor across both ladders**, 3 and 3, was 5 and 3 (Matt's ruling). Plus: the GLA
+    bracket swap obeys the same 24-month wall as every rung, and the failed-ask ceiling stopped
+    claiming moves the street anchor made.
+
+Two new contract checks: `recommendation-in-range` (review) and `value-has-a-basis` (hard).
+
+**23 Benaiah**: $653,000 became $565,000, held to the twin next door that sold at $512,000, with
+$515,000 to $665,000 around it and that sale in the priced set.
+
+**Measured across the queue.** Ranges wider than 1.2x: 56 to 33. Nothing prints 2x or wider any
+more, down from three; the widest was 2.61x and is now 1.75x. 18 documents that had produced nothing
+at all now price. Of the 33 left: 9 where the last-resort widening supplied most of the set, 9
+custom or new, 7 where every sale is inside the subject's own plat and the plat itself spans that
+range, 2 with no resolvable price tier.
+
+All rulings are in `marketing_brain_skills/producers/cma/SKILL.md` §0.1. 3,596 tests, gates and G46
+clean. Nothing sends; auto-send is still OFF pending SITE-56.
+
+**Open for Matt.** 57 documents still fail, and most are genuinely unpriceable: zero candidate sales
+of that size and product type in the city. `SIZE_ADJ_FACTOR` is still 0.5.
+
+---
 
 # Current — 2026-09-10 (loop process: catalogs are the UX bar)
 

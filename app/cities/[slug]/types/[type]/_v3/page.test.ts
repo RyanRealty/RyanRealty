@@ -44,14 +44,19 @@ describe('place-type pages', () => {
       expect(src).toMatch(/place-type-claim/)
       expect(src).toMatch(/id="homes"/)
       expect(src).toMatch(/<PlaceTypeRows/)
-      expect(src).toMatch(/<V3Breadcrumb trail=\{\[\{ label: cityName/)
+      expect(src).toMatch(/<V3Breadcrumb/)
+      expect(src).toMatch(/label: cityName/)
       expect(src).not.toMatch(/label: 'Home'/)
     }
+    expect(CITY).toMatch(/label: 'For sale'/)
   })
 
   it('puts a V3Carousel rail of photographed listings in the fold (SITE-89)', () => {
     expect(CITY).toMatch(/<PlaceTypeFilm/)
     expect(CITY).toMatch(/from '\.\/_v3\/PlaceTypeFilm\.client'/)
+    expect(CITY).toMatch(/bandLow=\{lowAsk\}/)
+    expect(CITY).toMatch(/bandHigh=\{bandHigh\}/)
+    expect(CITY).toMatch(/listingsCount=\{activeCount\}/)
     const film = readFileSync(
       resolve('app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx'),
       'utf8',
@@ -61,9 +66,26 @@ describe('place-type pages', () => {
     expect(film).toMatch(/LISTING_FIELD_LEAD_PHOTO_SIZE/)
     expect(film).toMatch(/place-type-film__specs/)
     expect(film).toMatch(/place-type-film__addr/)
-    expect(film).toMatch(/place-type-film__on-photo/)
+    expect(film).toMatch(/place-type-film__body/)
+    expect(film).not.toMatch(/place-type-film__on-photo/)
     // Atlas eyebrow softens so H1 is the only type display line
     expect(CITY).toMatch(/placeTypeAtlasEyebrow\(\s*spec,\s*false,/)
+  })
+
+  it('claims count + useful band without repeating the H1 type (SITE-89)', () => {
+    expect(CITY).toMatch(/homes with a \$\{cityName\} address ask/)
+    expect(CITY).toMatch(/formatPriceExact\(lowAsk\)/)
+    expect(CITY).toMatch(/formatPriceExact\(bandHigh\)/)
+    expect(CITY).toMatch(/city-type:p90/)
+    expect(CITY).toMatch(/The map marks for-sale homes inside city limits/)
+    expect(CITY).toMatch(/for nine in ten/)
+    // Claim body: count + "homes", not `${count} ${spec.nounMany}`
+    expect(CITY).toMatch(
+      /\$\{activeCount\.toLocaleString\('en-US'\)\} homes with a \$\{cityName\} address ask/,
+    )
+    // SEO increment lives in generateMetadata title + ItemList JSON-LD
+    expect(CITY).toMatch(/activeCount\.toLocaleString\('en-US'\)/)
+    expect(CITY).toMatch(/placeTypeSchemas/)
   })
 
   /**

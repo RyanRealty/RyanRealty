@@ -453,3 +453,159 @@ describe('the disclosed widening forces review (Matt 2026-09-09)', () => {
     }
   })
 })
+
+describe('recommendation-in-range — the number sits inside the sales that support it', () => {
+  function checkFor(over: { valueLow: number; valueHigh: number; recommended: number; clamp?: unknown }) {
+    const comps = tightSet()
+    const adjusted = adjustComps(subject(), comps, null)
+    const base = computePricing(subject(), adjusted, null)!
+    const pricing = { ...base, ...over } as typeof base
+    const contract = evaluateAccuracyContract({
+      subjectSubType: 'Single Family Residence',
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+    })
+    return contract.checks.find((c) => c.id === 'recommendation-in-range')!
+  }
+
+  it('passes when the recommendation sits inside the range', () => {
+    const c = checkFor({ valueLow: 600_000, valueHigh: 700_000, recommended: 650_000 })
+    expect(c.pass).toBe(true)
+    expect(c.severity).toBe('review')
+  })
+
+  it('fails and says so when the recommendation is above the top of the range', () => {
+    const c = checkFor({ valueLow: 716_000, valueHigh: 784_000, recommended: 791_000 })
+    expect(c.pass).toBe(false)
+    expect(c.detail).toContain('ABOVE')
+  })
+
+  it('fails and blames the cap when a clamp pulled it below', () => {
+    const c = checkFor({
+      valueLow: 577_000,
+      valueHigh: 832_000,
+      recommended: 535_000,
+      clamp: { tier: 'recommended', from: 600_000, to: 535_000, reason: 'failed ask' },
+    })
+    expect(c.pass).toBe(false)
+    expect(c.detail).toContain('already failed to sell')
+  })
+
+  it('fails with nothing to blame when no clamp explains the gap', () => {
+    const c = checkFor({ valueLow: 577_000, valueHigh: 832_000, recommended: 535_000, clamp: null })
+    expect(c.pass).toBe(false)
+    expect(c.detail).toContain('no cap explaining the gap')
+  })
+})
+
+describe('value-has-a-basis — a number under half the ask with nothing grading it', () => {
+  function checkFor(over: {
+    recommended: number
+    failedAsk?: number | null
+    priceAnchorPpsf?: number | null
+  }) {
+    const comps = tightSet()
+    const adjusted = adjustComps(subject(), comps, null)
+    const base = computePricing(subject(), adjusted, null)!
+    const pricing = { ...base, recommended: over.recommended, failedAsk: over.failedAsk ?? null } as typeof base
+    const contract = evaluateAccuracyContract({
+      subjectSubType: 'Single Family Residence',
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+      failedAsk: over.failedAsk ?? null,
+      priceAnchorPpsf: over.priceAnchorPpsf ?? null,
+    })
+    return contract.checks.find((c) => c.id === 'value-has-a-basis')!
+  }
+
+  it('refuses 19717 Mt Bachelor: $14,000 against a $90,000 ask, no tier resolved', () => {
+    const c = checkFor({ recommended: 14_000, failedAsk: 90_000, priceAnchorPpsf: null })
+    expect(c.pass).toBe(false)
+    expect(c.severity).toBe('hard')
+    expect(c.detail).toContain('product mismatch')
+  })
+
+  it('allows an ordinary overpriced expired: 30% under the ask', () => {
+    expect(checkFor({ recommended: 630_000, failedAsk: 900_000, priceAnchorPpsf: null }).pass).toBe(true)
+  })
+
+  it('allows the same wide gap once a price tier graded the comps', () => {
+    expect(checkFor({ recommended: 14_000, failedAsk: 90_000, priceAnchorPpsf: 420 }).pass).toBe(true)
+  })
+
+  it('says nothing is wrong when there is no ask to compare against', () => {
+    expect(checkFor({ recommended: 14_000, failedAsk: null, priceAnchorPpsf: null }).pass).toBe(true)
+  })
+})
+
+describe('the house next door anchors the number (Matt 2026-09-10)', () => {
+  function twinSubject() {
+    return subject({ streetAddress: '23 Benaiah', city: 'Bend', sqft: 2080, lastListPrice: null })
+  }
+  /** Six sales in other plats, all far above what the street itself fetches. */
+  function otherPlats() {
+    return Array.from({ length: 6 }, (_, i) =>
+      comp({
+        address: `${100 + i} Tanglewood`,
+        city: 'Bend',
+        sqft: 1900,
+        closePrice: 640_000 + i * 5_000,
+        closeDate: new Date(Date.now() - (60 + i * 20) * 86_400_000).toISOString().slice(0, 10),
+      }),
+    )
+  }
+  const twin = () =>
+    comp({
+      address: '31 Benaiah',
+      city: 'Bend',
+      sqft: 2080,
+      closePrice: 512_000,
+      closeDate: new Date(Date.now() - 420 * 86_400_000).toISOString().slice(0, 10),
+    })
+
+  it('holds the recommendation to the twin plus a tenth, and says so', () => {
+    const adjusted = adjustComps(twinSubject(), [...otherPlats(), twin()], null)
+    const pricing = computePricing(twinSubject(), adjusted, null)!
+    expect(pricing.streetAnchor).not.toBeNull()
+    expect(pricing.recommended).toBe(pricing.streetAnchor!.ceiling)
+    expect(pricing.recommended).toBeLessThan(pricing.streetAnchor!.before)
+    expect(pricing.streetAnchor!.addresses).toEqual(['31 Benaiah'])
+    expect(pricing.streetAnchor!.sentence).toContain('31 Benaiah')
+    expect(pricing.needsReview).toBe(true)
+  })
+
+  it('leaves the number alone when no sale sits on the subject’s street', () => {
+    const adjusted = adjustComps(twinSubject(), otherPlats(), null)
+    const pricing = computePricing(twinSubject(), adjusted, null)!
+    expect(pricing.streetAnchor ?? null).toBeNull()
+  })
+
+  it('leaves the number alone when the street sale agrees with the set', () => {
+    const agreeing = comp({ address: '31 Benaiah', city: 'Bend', sqft: 2080, closePrice: 700_000 })
+    const adjusted = adjustComps(twinSubject(), [...otherPlats(), agreeing], null)
+    const pricing = computePricing(twinSubject(), adjusted, null)!
+    expect(pricing.streetAnchor ?? null).toBeNull()
+  })
+
+  it('ignores a same-street sale of a very different size', () => {
+    const bigger = comp({ address: '31 Benaiah', city: 'Bend', sqft: 3400, closePrice: 512_000 })
+    const adjusted = adjustComps(twinSubject(), [...otherPlats(), bigger], null)
+    const pricing = computePricing(twinSubject(), adjusted, null)!
+    expect(pricing.streetAnchor ?? null).toBeNull()
+  })
+
+  it('keeps the contract’s conservative <= recommended <= highEnd', () => {
+    const adjusted = adjustComps(twinSubject(), [...otherPlats(), twin()], null)
+    const p = computePricing(twinSubject(), adjusted, null)!
+    expect(p.conservative).toBeLessThanOrEqual(p.recommended)
+    expect(p.recommended).toBeLessThanOrEqual(p.highEnd)
+  })
+})

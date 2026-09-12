@@ -434,7 +434,7 @@ export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
 /**
  * Chapter 1. What happened.
  *
- * Blueprint: "It asked $460,000 and did not sell." THEIR listing as a timeline
+ * Blueprint: "You asked $460,000 and did not sell." THEIR listing as a timeline
  * — a shaded zone at the value range, their ask stepping down across it and
  * never entering it — then one sentence of fact, then the relist figures.
  *
@@ -580,7 +580,8 @@ export function askExposureFor(a: OpinionPageArgs): AskExposure | null {
 /**
  * Chapter 1's title.
  *
- * "It asked $460,000 and did not sell." was the blueprint's line and it is
+ * "You asked $460,000 and did not sell." is the blueprint's line, in the
+ * second person VOICE.md asks for, and it is
  * still right whenever one price held the whole listing. When the ask stepped,
  * the title names EVERY ask and how long each ran, because the reader's next
  * question — which price actually sat there — was answerable from the row all
@@ -594,7 +595,7 @@ export function whatHappenedHeading(a: OpinionPageArgs): string {
   const exposure = askExposureFor(a)
   if (status?.isActiveWithOtherBrokerage) {
     const ask = exposure?.final ?? a.subject.lastListPrice ?? null
-    return ask != null && ask > 0 ? `It is listed at ${usd(ask)}.` : 'Where this listing stands.'
+    return ask != null && ask > 0 ? `Your home is listed at ${usd(ask)}.` : 'Where your listing stands.'
   }
   if (exposure && exposure.segments.length > 1) {
     const sentence = askExposureSentence(exposure.segments)
@@ -602,8 +603,8 @@ export function whatHappenedHeading(a: OpinionPageArgs): string {
   }
   const ask = exposure?.segments[0]?.ask ?? a.subject.lastListPrice
   return ask != null && ask > 0
-    ? `It asked ${usd(ask)} and did not sell.`
-    : 'It came off the market without selling.'
+    ? `You asked ${usd(ask)} and did not sell.`
+    : 'Your home came off the market without selling.'
 }
 
 /**
@@ -1246,7 +1247,7 @@ export function nextStepSignatureHtml(a: OpinionPageArgs): string {
     </div>
   </div>
   <p class="fine">${esc(
-    `Prepared ${dateLong(a.generatedAtIso)}${client ? ` for ${client}` : ''}. This is a pricing report. It is not an appraisal.`,
+    `Prepared ${dateLong(a.generatedAtIso)}${client ? ` for ${client}` : ''}. This is a comparative market analysis. It is not an appraisal.`,
   )}</p>`
 }
 

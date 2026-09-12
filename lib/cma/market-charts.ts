@@ -48,17 +48,30 @@ function linePath(xs: number[], ys: number[]): string {
  * their own smallest value.
  *
  * So the floor and ceiling are round numbers on a 1/2/5 step, and the drawn
- * band is never less than a quarter of the ceiling. A flat market renders flat
- * and a real move still fills the plot.
+ * band has a floor of its own. A flat market renders flat and a real move still
+ * fills the plot.
+ *
+ * A quarter of the ceiling is a lot of frame. On Bend's twelve months of median
+ * close, $674K to $800K, it drops the floor to $600K and the line runs through
+ * the top half with the bottom forty percent empty. That is CORRECT — the same
+ * 13 percent spread this rule was written to stop drawing as a rollercoaster —
+ * and it still looked broken (Matt 2026-09-10: "we still need to fix the charts
+ * and graphs"), because the plot drew one line at the bottom and no scale. Two
+ * labels floating beside an empty half read as a rendering fault, not as a
+ * quiet market. The fix is to draw the axis, not to shrink it.
  */
+/** The smallest share of the ceiling a price axis may span. See niceAxis. */
+export const MIN_AXIS_BAND_SHARE = 0.25
+
 export function niceAxis(values: readonly number[]): { floor: number; ceil: number } {
   const min = Math.min(...values)
   const max = Math.max(...values)
   const step = niceStep(Math.max(max - min, max * 0.05))
   let floor = Math.floor(min / step) * step
   const ceil = Math.ceil(max / step) * step
-  // A market that moved 3 percent must not draw like one that moved 40.
-  const minBand = ceil * 0.25
+  // A market that moved 3 percent must not draw like one that moved 40, and a
+  // market that moved 15 must not draw inside the top half of its own frame.
+  const minBand = ceil * MIN_AXIS_BAND_SHARE
   if (ceil - floor < minBand) floor = Math.floor((ceil - minBand) / step) * step
   return { floor: Math.max(floor, 0), ceil }
 }
@@ -150,12 +163,24 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
     </g>${tick}`
     })
     .join('')
+  // DRAW THE AXIS, NOT JUST ITS TWO ENDS (Matt 2026-09-10). The plot carried a
+  // label at the ceiling, a label at the floor and a single line under the
+  // whole thing, so on a quiet market the line ran through the top half and the
+  // bottom half was blank — which reads as a chart that failed to render rather
+  // than as a market that did not move. A rule at each labelled value and one
+  // through the middle turns that space back into scale.
+  const mid = (axis.floor + axis.ceil) / 2
+  const rule = (v: number, op: number) =>
+    `<line x1="${left}" y1="${y(v).toFixed(1)}" x2="${right}" y2="${y(v).toFixed(1)}" stroke="#102742" stroke-opacity="${op}" stroke-width="1"/>`
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Median close by month" class="trend-svg month-line">
     <text x="0" y="14" font-size="${fs}" fill="#102742" opacity="0.7">Median close</text>
+    ${rule(axis.ceil, 0.14)}
+    ${rule(mid, 0.1)}
+    ${rule(axis.floor, 0.25)}
     <text x="${left - 10}" y="${(y(axis.ceil) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(axis.ceil)}</text>
+    <text x="${left - 10}" y="${(y(mid) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.55">${chartUsd(mid)}</text>
     <text x="${left - 10}" y="${(y(axis.floor) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(axis.floor)}</text>
     <path d="${path}" fill="none" stroke="#102742" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-    <line x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}" stroke="#102742" stroke-opacity="0.25" stroke-width="1"/>
     ${dots}
   </svg>`
 }

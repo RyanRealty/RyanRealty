@@ -269,6 +269,12 @@ const ADJUSTMENT_ROWS: ReadonlyArray<MatrixRow> = [
   { label: 'Adjusted for date', figure: true, grid: true },
   { label: 'Adjusted for size (theirs vs yours)', figure: true, grid: true },
   { label: 'Adjusted for style (theirs vs yours)', figure: true, grid: true },
+  // A sale one bedroom or bathroom from the subject is used on this home's own
+  // ground and is NOT priced for the room (lib/pricing/room-counts.ts: paired
+  // sales in this market put the extra bath slightly below its pair at the
+  // median). The reader asks "what did you adjust for" in this grid, so the
+  // honest $0 belongs in it. Folds away when no sale carries a difference.
+  { label: 'Adjusted for rooms (theirs vs yours)', figure: true, grid: true },
   { label: 'Net adjustment', figure: true, grid: true },
   { label: 'Net, as a share of the sale', figure: true, grid: true },
   { label: 'Every adjustment added up', figure: true, grid: true },
@@ -412,6 +418,18 @@ function dateCell(iso: string | null | undefined): string {
     : parsed.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 }
 
+/**
+ * What the room difference cost: nothing, and the cell says so out loud.
+ * A dash when the sale matches the subject's room counts, so the row folds
+ * away on a set where every sale matches.
+ */
+function roomAdjustmentCell(comp: CmaAdjustedComp): string {
+  const notes = comp.roomDifference ?? []
+  if (notes.length === 0) return '-'
+  const parts = notes.map((n) => (n === 'beds' ? '1 bed' : '1 bath'))
+  return `$0 (${parts.join(', ')})`
+}
+
 /** The adjustment-grid cells for one closed sale, in ADJUSTMENT_ROWS order. */
 function adjustmentCells(
   comp: CmaAdjustedComp,
@@ -427,6 +445,7 @@ function adjustmentCells(
     signedCell(comp.timeAdjustment),
     signedCell(comp.sizeAdjustment),
     signedCell(comp.storyAdjustment),
+    roomAdjustmentCell(comp),
     adj.net != null ? usdSigned(adj.net) : '-',
     adj.netPct != null
       ? `${adj.netPct > 0 ? '+' : adj.netPct < 0 ? '−' : ''}${Math.abs(adj.netPct).toFixed(1)}%`

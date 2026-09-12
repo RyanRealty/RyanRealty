@@ -4,7 +4,10 @@ import { PRICING_MAX_COMPS, PRICING_TARGET_COMPS, pricingTierLadder } from '@/li
 describe('pricingTierLadder — time before distance', () => {
   it('walks 3 then 6 then 9 months inside the subdivision before any mile ring', () => {
     const names = pricingTierLadder().map((t) => t.name)
-    expect(names.slice(0, 3)).toEqual(['subdivision-3mo', 'subdivision-6mo', 'subdivision-9mo'])
+    // The subject's own street comes before its own plat (Matt 2026-09-10:
+    // "we want to look specifically at that address or in that subdivision").
+    expect(names[0]).toBe('own-street-24mo')
+    expect(names.slice(1, 4)).toEqual(['subdivision-3mo', 'subdivision-6mo', 'subdivision-9mo'])
     expect(names.indexOf('subdivision-9mo')).toBeLessThan(names.indexOf('subdivision-3mo-wide'))
     expect(names.indexOf('subdivision-9mo-wide')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
     expect(names.indexOf('subdivision-9mo')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))

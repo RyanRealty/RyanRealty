@@ -165,7 +165,7 @@ describe('listingTimelineReading', () => {
 
   it('measures the final ask against the top of the range', () => {
     expect(listingTimelineReading({ timeline: base, city: 'Redmond', marketMedianDom: 21 })).toBe(
-      'The asking price was 15.6 percent above the top of the range homes like yours sold in. It sat 187 days. The median home in Redmond has an accepted offer in 21 days.',
+      'You were asking 15.6 percent above the top of the range homes like yours sold in. Your home sat 187 days. The median home in Redmond has an accepted offer in 21 days.',
     )
   })
 
@@ -184,10 +184,10 @@ describe('listingTimelineReading', () => {
       city: 'Redmond',
       marketMedianDom: null,
     })
-    expect(reading).toContain('The asking price was inside the range homes like yours sold in')
-    expect(reading).toContain('It sat 187 days without an offer.')
+    expect(reading).toContain('You were asking inside the range homes like yours sold in')
+    expect(reading).toContain('Your home sat 187 days without an offer.')
     expect(reading).toContain(
-      'At a price inside the range, 187 days without an offer points at something other than the number. We would walk the house before saying what.',
+      'At a price inside the range, 187 days without an offer points at something other than the number. We would walk it with you before saying what.',
     )
     expect(reading).not.toContain('accepted offer in')
   })
@@ -202,7 +202,7 @@ describe('listingTimelineReading', () => {
     })
     expect(reading).toContain('percent above the top of the range homes like yours sold in')
     expect(reading).toContain('Half of the homes that sold in Redmond had an offer inside 26 days.')
-    expect(reading).toContain('That ask was above what the sales support, and it went 187 days without an offer. We would walk the house before saying more.')
+    expect(reading).toContain('You were asking above what the sales support, and your home went 187 days without an offer. We would walk it with you before saying more.')
     expect(reading).not.toContain('points at something other than the number')
   })
 

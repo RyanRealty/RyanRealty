@@ -5,6 +5,7 @@ import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import {
   buildAnnualCharts,
   buildAnnualMosChart,
+  buildInventoryLedger,
   buildRegionFigures,
   buildYearLedger,
   monthlyPaceFromMos,
@@ -131,6 +132,43 @@ describe('overlayYearDetailWithLeftover', () => {
   })
 })
 
+describe('SITE-101 inventory bars encode active count', () => {
+  it('sets weight from active share and prints active in when', () => {
+    const ledger = buildInventoryLedger(
+      [
+        { slug: 'bend', label: 'Bend' },
+        { slug: 'sisters', label: 'Sisters' },
+      ],
+      [
+        {
+          geo_label: 'Bend',
+          geo_slug: 'bend',
+          active_count: 800,
+          median_list_price: 750000,
+          months_of_supply: 4.2,
+          updated_at: '2026-09-11T00:00:00Z',
+        } as never,
+        {
+          geo_label: 'Sisters',
+          geo_slug: 'sisters',
+          active_count: 200,
+          median_list_price: 740000,
+          months_of_supply: 5.1,
+          updated_at: '2026-09-11T00:00:00Z',
+        } as never,
+      ],
+    )
+    expect(ledger.rows).toHaveLength(2)
+    expect(String(ledger.rows[0]?.when)).toBe('800 active')
+    expect(String(ledger.rows[1]?.when)).toBe('200 active')
+    expect(ledger.rows[0]?.weight).toBe(1)
+    expect(ledger.rows[1]?.weight).toBe(0.25)
+    // Medians stay the printed value — nearly equal prices must not equal bar length.
+    expect(String(ledger.rows[0]?.value)).toMatch(/\$750/)
+    expect(String(ledger.rows[1]?.value)).toMatch(/\$740/)
+  })
+})
+
 describe('SITE-71 MOS is two bars, never a KPI tile', () => {
   it('lead figures are the two bars plus list and wait, with no months-of-supply tile', () => {
     const figures = buildRegionFigures({ active: 1562, daysToPending: 29 }, 4.9, 750000)
@@ -148,8 +186,21 @@ describe('SITE-71 MOS is two bars, never a KPI tile', () => {
     }
   })
 
+  it('SITE-101 omits restated MOS tiles when the drawing publishes', () => {
+    const figures = buildRegionFigures({ active: 1562, daysToPending: 29 }, 4.9, 750000, {
+      omitMosTiles: true,
+    })
+    expect(figures.map((f) => String(f.label))).toEqual([
+      'median list price',
+      'days to an offer, last 90 days',
+    ])
+    expect(figures.some((f) => String(f.label) === 'homes for sale, single-family')).toBe(false)
+    expect(figures.some((f) => String(f.label) === 'a month of sales')).toBe(false)
+  })
+
   it('rearranges monthly pace from raw MOS and omits when either input is absent', () => {
-    expect(monthlyPaceFromMos(1562, 4.9)).toBe(318.8)
+    // Whole homes for display (SITE-101): 1562 / 4.9 → 319, not 318.8.
+    expect(monthlyPaceFromMos(1562, 4.9)).toBe(319)
     expect(monthlyPaceFromMos(null, 4.9)).toBeNull()
     expect(monthlyPaceFromMos(1562, null)).toBeNull()
     expect(monthlyPaceFromMos(0, 4.9)).toBeNull()
@@ -161,7 +212,7 @@ describe('SITE-71 MOS is two bars, never a KPI tile', () => {
     expect(chart?.kind).toBe('range')
     expect(chart?.rows?.map((row) => String(row.tick))).toEqual(['Homes for sale', 'A month of sales'])
     expect(String(chart?.rows?.[0]?.label)).toBe('1,562')
-    expect(String(chart?.rows?.[1]?.label)).toBe('318.8')
+    expect(String(chart?.rows?.[1]?.label)).toBe('319')
     expect(String(chart?.claim)).toContain(formatMonthsOfSupply(4.9))
     expect(String(chart?.claim)).toContain('1,562')
     expect(buildAnnualMosChart(null, 4.9)).toBeUndefined()

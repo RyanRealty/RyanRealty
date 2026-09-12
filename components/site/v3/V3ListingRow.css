@@ -374,3 +374,12 @@
     margin-top: var(--v3-space-3xs);
   }
 }
+
+
+/* SITE-115: the photograph itself is a door to the listing detail page. */
+.v3-lrow__photo-link {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+}

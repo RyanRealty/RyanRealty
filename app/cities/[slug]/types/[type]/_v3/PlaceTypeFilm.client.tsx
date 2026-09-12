@@ -5,11 +5,10 @@
  *
  * Adapted from the shadcn carousel job into house V3Carousel `mode="rail"`.
  * Cards carry price + address + beds/baths/sqft on 800×600 plates — never the
- * 320×240 ledger thumb. Prev/next stay visible; swipe is Embla's.
+ * 320×240 ledger thumb. Prev/next stay the installed shadcn controls (icons),
+ * restyled navy/cream — do not replace them with DIY chevrons (demoMatch).
  *
- * Desktop: second column beside the claim so the vertical lock stays
- * H1 → claim → Atlas. Mobile: compact strip under the claim so houses AND
- * Atlas share the 375 fold (a tall film used to push the map off-screen).
+ * Layout lock keeps this AFTER Atlas: H1 → claim → Atlas → rail.
  */
 
 import Link from 'next/link'
@@ -36,19 +35,62 @@ function specsLine(listing: V3ListingRowData): string | null {
   return parts.length > 0 ? parts.join(' · ') : null
 }
 
+/** Pick photographed rows that read as the claim's band, not only the floor. */
+function filmRows(
+  rows: readonly V3ListingRowData[],
+  bandLow: number | null,
+  bandHigh: number | null,
+): V3ListingRowData[] {
+  const filmed = rows.filter((r) => Boolean(r.photoUrl?.trim()))
+  if (filmed.length === 0) return []
+
+  const low = bandLow != null && Number.isFinite(bandLow) ? bandLow : null
+  const high = bandHigh != null && Number.isFinite(bandHigh) ? bandHigh : null
+  const inBand =
+    low != null && high != null
+      ? filmed.filter((r) => {
+          const p = r.price
+          return p != null && p >= low && p <= high
+        })
+      : filmed
+
+  const pool = (inBand.length >= 4 ? inBand : filmed)
+    .slice()
+    .sort((a, b) => (a.price ?? Number.POSITIVE_INFINITY) - (b.price ?? Number.POSITIVE_INFINITY))
+
+  if (pool.length <= FOLD_CAP) return pool
+
+  /* Spread across the band so the rail matches the sentence, not twelve $470Ks. */
+  const picks: V3ListingRowData[] = []
+  const seen = new Set<string>()
+  const push = (row: V3ListingRowData | undefined) => {
+    if (!row || seen.has(row.listingKey)) return
+    seen.add(row.listingKey)
+    picks.push(row)
+  }
+  push(pool[0])
+  push(pool[pool.length - 1])
+  const steps = FOLD_CAP - 2
+  for (let i = 1; i <= steps; i += 1) {
+    const idx = Math.round((i / (steps + 1)) * (pool.length - 1))
+    push(pool[idx])
+    if (picks.length >= FOLD_CAP) break
+  }
+  return picks.slice(0, FOLD_CAP)
+}
+
 export function PlaceTypeFilm({
   rows,
   label,
+  bandLow = null,
+  bandHigh = null,
 }: {
   rows: readonly V3ListingRowData[]
   label: string
+  bandLow?: number | null
+  bandHigh?: number | null
 }) {
-  /* Floor-first so the rail opens near the claim's low ask, not the $11.9M end. */
-  const filmed = rows
-    .filter((r) => Boolean(r.photoUrl?.trim()))
-    .slice()
-    .sort((a, b) => (a.price ?? Number.POSITIVE_INFINITY) - (b.price ?? Number.POSITIVE_INFINITY))
-    .slice(0, FOLD_CAP)
+  const filmed = filmRows(rows, bandLow, bandHigh)
   if (filmed.length === 0) return null
 
   return (
@@ -89,21 +131,16 @@ export function PlaceTypeFilm({
                     width={800}
                     height={600}
                     className="place-type-film__photo"
-                    sizes="(max-width: 40rem) 58vw, 12.5rem"
+                    sizes="(max-width: 40rem) 70vw, 14rem"
                     priority={i < 4}
                   />
                 ) : null}
-                {/* Facts on the plate so a fold peek still shows inventory, not
-                    orphan photo tops (grok-4.6 blocking on desktop strip). */}
-                <span className="place-type-film__scrim" aria-hidden />
-                <span className="place-type-film__on-photo">
-                  <span className="place-type-film__price">{ask ?? '—'}</span>
-                  {shareKind ? (
-                    <span className="place-type-film__share">{shareKind}</span>
-                  ) : null}
-                  <span className="place-type-film__addr">{listing.addressLine}</span>
-                  {specs ? <span className="place-type-film__specs">{specs}</span> : null}
-                </span>
+              </span>
+              <span className="place-type-film__body">
+                <span className="place-type-film__price">{ask ?? '—'}</span>
+                {shareKind ? <span className="place-type-film__share">{shareKind}</span> : null}
+                <span className="place-type-film__addr">{listing.addressLine}</span>
+                {specs ? <span className="place-type-film__specs">{specs}</span> : null}
               </span>
             </Link>
           )

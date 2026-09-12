@@ -147,6 +147,33 @@ This table is the only site backlog. Sessions pull the oldest open node (`npx ts
 | SITE-87 | `adc5bb3e-f44d-4cb7-8145-a7a4923efb22` | community first viewport: drawing and figure beside alerts |
 | SITE-88 | `08545734-a7cc-4d3b-b6a0-d1129911f21c` | market-report-region first viewport: Instrument |
 | SITE-89 | `0a032f84-2c09-485e-8efa-88a568a219ee` | place-type first viewport: claim sentence then Atlas |
+| SITE-90 | `edabba8e-f8aa-4271-909d-c258914f75ef` | about first viewport: faces, not a phone book |
+| SITE-91 | `f7d09828-dd86-47e7-9afd-d92cc3aad527` | /buy first viewport: Stage with live inventory |
+| SITE-92 | `fd7e56bb-00ba-4106-bcbf-6ad6d8c377f0` | /cities first viewport: not a hairline list |
+| SITE-93 | `c53c2c5e-d250-4d9d-9122-1e37a0dcf06c` | /cities/[slug] first viewport: drawing beside alerts |
+| SITE-94 | `b564694b-2b33-431d-9722-98e9c01f6368` | community first viewport: drawing beside alerts |
+| SITE-95 | `a782d1a3-5b16-4970-9157-eaa5d1590240` | /compare first viewport: four slots filled |
+| SITE-96 | `309b471b-961b-4419-a374-05f00e419c5d` | /contact first viewport: one ask |
+| SITE-97 | `29f29f1c-9340-4ac9-9efa-eae498abdd64` | homepage first viewport: catalog MorphingSearch, not a stock hero |
+| SITE-98 | `6c2b8197-0b46-4215-8e43-749481794e9b` | /invest first viewport: drawn finding and live count |
+| SITE-99 | `207ffae3-5242-4446-9e3b-1728dd7220f2` | listing-detail first viewport: interrogable gallery |
+| SITE-100 | `d202be90-0198-43fa-ac06-666560f103c7` | /housing-market first viewport: Instrument |
+| SITE-101 | `1fc38f60-c84f-472f-b399-30cff00d8f32` | market-report-annual first viewport: Instrument, not KPI tiles |
+| SITE-102 | `9cd74519-9ab0-42da-9db2-7ca8d20aff39` | market-report-detail first viewport: Instrument |
+| SITE-103 | `4de56cc6-c112-4db6-b785-a76bb0488b5a` | market-report-region first viewport: Instrument |
+| SITE-104 | `14e29311-e83d-4810-a9c4-eefd3dc7cf99` | neighborhood first viewport: drawing beside alerts |
+| SITE-105 | `0e402cf5-3e29-419d-9e14-3f7896687b53` | /oregon/[city] first viewport: honesty, not a KPI grid |
+| SITE-106 | `a59bf941-e062-48a8-b57d-085c508802b8` | place-type first viewport: claim sentence then Atlas |
+| SITE-107 | `60878edd-4c3f-46c1-88f6-419a209b92b7` | place-type-community first viewport: claim then Atlas |
+| SITE-108 | `3d1f25ad-6a6b-4992-8693-ef8c4e63e205` | /price-drops first viewport: field of cut houses |
+| SITE-109 | `1b11134b-42dd-40f5-84e8-d9f076f53f9c` | /reviews first viewport: faces |
+| SITE-110 | `1a58de09-2afa-4650-9833-f57242b32d30` | /search first viewport: Atlas plus list |
+| SITE-111 | `75009aa9-561b-49c5-b34f-6725412a2e2d` | /sell first viewport: sourced answer |
+| SITE-112 | `19ae02ff-f1b9-49d6-b895-aa7e98f10034` | subdivision first viewport: authored caption, Atlas |
+| SITE-113 | `005519f9-657b-44c8-82d3-b76d1e579088` | /team first viewport: faces |
+| SITE-114 | `d2b42092-600e-45d5-a383-0707cf5c2d76` | /zip first viewport: Field of this ZIP's houses |
+
+**Round five (seeded 2026-09-11, SITE-90 to SITE-114).** Every taste-table class still under 70. Catalog source is in-repo (`components/motion`, `components/ui`); `taste-evaluate` requires `demoMatch`. Accept: score above the 2026-09-08 table mark **and ≥ 70**. `run loop` picks these as open.
 
 **Round four (seeded 2026-09-10, SITE-68 to SITE-89).** Catalog-backed class nodes from the 2026-09-08 table, bottom first. Skipped listing-detail (SITE-60 live), about (SITE-64 done today), compare (SITE-65 done today). Each objective carries `node scripts/lib/taste-catalog.mjs <class> --preflight`. Accept requires adaptedFrom + replaceWith and a rise on the table instrument. A lane re-measures the live first viewport before building — the 2026-09-08 scores predate round three.
 

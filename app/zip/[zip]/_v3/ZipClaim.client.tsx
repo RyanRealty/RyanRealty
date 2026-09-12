@@ -24,7 +24,7 @@ export function ZipClaim({
   return (
     <p className="zip-opening__claim">
       <a href={href} className="zip-opening__claim-count">
-        <V3Number value={count} formatted={formatted} />
+        <V3Number value={count} formatted={formatted} startOnView={false} />
       </a>
       {` ${noun} for sale in ${zip} (${area}) right now.`}
     </p>
