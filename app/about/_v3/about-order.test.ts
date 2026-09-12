@@ -52,7 +52,7 @@ describe('/about section order', () => {
   it('does not open on a KPI grid; 5.0 from 25 lives on the principal face card', () => {
     expect(PAGE).not.toContain('openingFigures')
     expect(PAGE).not.toContain('figures={openingFigures}')
-    expect(PAGE).toContain('size="editorial"')
+    expect(PAGE).toContain('size="proof"')
     expect(PAGE).toContain('proof=')
     expect(PAGE).toContain("href: '/reviews'")
     expect(PAGE).toContain('openingTrace')
