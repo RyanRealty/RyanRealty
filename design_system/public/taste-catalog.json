@@ -2366,6 +2366,10 @@
           "forbid": "size=\"proof\""
         },
         {
+          "path": "app/about/_v3/AboutTeamTeaser.tsx",
+          "forbid": "components/ui/card"
+        },
+        {
           "path": "design_system/ryan-realty/ui_kits/about/parity.json",
           "mustMatch": "OPENS THE PAGE",
           "forbid": "\"name\": \"AboutFaces\""
@@ -2398,13 +2402,13 @@
           "id": "house-faces",
           "catalog": "house-v3",
           "url": "app/about/_v3/AboutTeamTeaser.tsx",
-          "job": "Who you work with teasers only — photo + name, every door to /team. Never the About opener."
+          "job": "Short Who you work with door — face row + Meet the team → /team. Not a Card roster. Never the About opener."
         },
         {
           "id": "house-proof",
           "catalog": "house-v3",
           "url": "components/site/v3/V3Proof.client.tsx",
-          "job": "Proof as words and a sourced record, not a score tile."
+          "job": "First proof after the firm hero: Google score at display scale plus the client's words. Not a thin score link. Not press."
         },
         {
           "id": "house-doors",
@@ -2422,7 +2426,7 @@
           "id": "shadcn-avatar",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/avatar",
-          "job": "Avatar is not the About opener. Team teasers are photo + name on AboutTeamTeaser."
+          "job": "Compact face row on AboutTeamTeaser. Not the opener. Not a broker Card."
         },
         {
           "id": "shadcn-button-group",
@@ -2440,7 +2444,7 @@
           "id": "shadcn-card",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/card",
-          "job": "Closings carousel slides and Who you work with teasers. Photo + name only on the teaser. No licenses."
+          "job": "Closings carousel slides only. Photo, address, ClosePrice, beds/baths/sqft. Team teaser is not a Card roster."
         },
         {
           "id": "shadcn-carousel",

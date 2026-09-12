@@ -1,17 +1,24 @@
 /**
- * Short “Who you work with” teasers. Every card goes to /team.
- * Photo + name only — no bios, OREA numbers, Call rows, or per-broker profile doors.
+ * Short “Who you work with” door. One face row + Meet the team → /team.
+ * Not a Card roster, not per-broker CTAs, licenses, bios, or /team/[slug].
  */
 
 import Link from 'next/link'
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3Button, V3Heading } from '@/components/site/v3'
+import { V3_ROOT_CLASS, V3Heading } from '@/components/site/v3'
 import { teamPath } from '@/lib/slug'
 
 export type AboutTeamTeaserPerson = {
   name: string
   src: string
+}
+
+function faceInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase()
+  return `${parts[0]![0] ?? ''}${parts[parts.length - 1]![0] ?? ''}`.toUpperCase()
 }
 
 export function AboutTeamTeaser({
@@ -32,24 +39,20 @@ export function AboutTeamTeaser({
       <V3Heading level={2} id="team-teaser-heading" className="about-teaser__heading">
         Who you work with
       </V3Heading>
-      <ul className="about-teaser__list">
-        {people.map((person) => (
-          <li key={person.src}>
-            <Card className="about-teaser__card">
-              <Link href={teamHref} className="about-teaser__link">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={person.src} alt="" width={400} height={600} />
-                <CardHeader>
-                  <CardTitle>{person.name}</CardTitle>
-                </CardHeader>
-              </Link>
-            </Card>
-          </li>
-        ))}
-      </ul>
-      <V3Button variant="text" href={teamHref}>
-        Meet the team
-      </V3Button>
+      <Link href={teamHref} className="about-teaser__door">
+        <ul className="about-teaser__faces">
+          {people.map((person) => (
+            <li key={person.src} className="about-teaser__face">
+              <Avatar size="lg" className="about-teaser__avatar">
+                <AvatarImage src={person.src} alt="" />
+                <AvatarFallback delayMs={0}>{faceInitials(person.name)}</AvatarFallback>
+              </Avatar>
+              <span className="about-teaser__name">{person.name}</span>
+            </li>
+          ))}
+        </ul>
+        <span className="about-teaser__cta">Meet the team</span>
+      </Link>
     </section>
   )
 }

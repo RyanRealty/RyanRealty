@@ -1,7 +1,8 @@
 /**
  * /about first viewport — Compass/SIR structure + Matt 2026-09-12 lock.
- * Hero (office exterior + purpose), reviews, closings, team teaser → /team,
- * Contact four-up, one-line inquiry. Never the sofa. Never broker bios.
+ * Hero (office exterior + purpose), V3Proof as first proof, closings,
+ * Contact four-up, short team teaser → /team, one-line inquiry.
+ * Never the sofa. Never a Card roster.
  */
 
 .about-fold {
@@ -10,8 +11,8 @@
     "hero"
     "proof"
     "sales"
-    "teaser"
     "reach"
+    "teaser"
     "write";
   gap: var(--v3-space-md);
   padding-bottom: var(--v3-space-md);
@@ -77,82 +78,143 @@
   line-height: var(--v3-leading-body);
 }
 
-.about-firm__reviews {
+.about-fold__proof {
+  grid-area: proof;
+  min-width: 0;
+  padding-block: var(--v3-space-lg);
+  background: var(--v3-wash);
+  border-block: var(--v3-rule-section);
+}
+
+.about-fold__proof .v3-proof {
+  max-width: none;
   display: grid;
-  gap: var(--v3-space-sm);
-  padding: var(--v3-space-md) var(--v3-gutter) 0;
+  grid-template-columns: minmax(12rem, 20rem) minmax(0, 1fr);
+  column-gap: var(--v3-space-xl);
+  align-items: start;
+  padding-block: var(--v3-space-lg);
 }
 
-.about-firm__reviews [data-slot='button'] {
-  min-height: var(--v3-tap);
-  justify-self: start;
+.about-fold__proof .v3-proof__head {
+  grid-column: 2;
+  grid-row: 1;
+  max-width: none;
 }
 
-.about-firm__quote {
+.about-fold__proof .v3-proof__face {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  width: 100%;
+  min-width: 0;
   margin: 0;
-  max-width: 44rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
-.about-firm__quote p {
-  margin: 0 0 var(--v3-space-2xs);
+.about-fold__proof .v3-proof__face-value {
+  font-size: var(--v3-size-num-lead);
+}
+
+.about-fold__proof .v3-proof__face .v3-proof__star {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.about-fold__proof .v3-proof__face-count {
+  font-size: var(--v3-size-body);
   color: var(--v3-ink);
+}
+
+.about-fold__proof .v3-proof__reader {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.about-fold__proof .v3-proof__source {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.about-fold__proof .v3-proof__pull {
   font-family: var(--v3-font-display);
   font-size: var(--v3-size-display-2);
   line-height: var(--v3-leading-heading);
 }
 
-.about-firm__quote cite {
-  color: var(--v3-ink-muted);
-  font-size: var(--v3-size-label);
-  font-style: normal;
-  letter-spacing: var(--v3-track-label);
-}
-
-.about-fold__proof {
-  grid-area: proof;
-  min-width: 0;
-}
-
 .about-teaser {
   grid-area: teaser;
   max-width: none;
-  padding: 0 var(--v3-gutter);
+  padding: var(--v3-space-sm) var(--v3-gutter);
 }
 
 .about-teaser__heading {
-  margin: 0 0 var(--v3-space-sm);
+  margin: 0 0 var(--v3-space-xs);
+  font-size: var(--v3-size-body);
 }
 
-.about-teaser__list {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--v3-space-sm);
-  margin: 0 0 var(--v3-space-sm);
-  padding: 0;
-  list-style: none;
-}
-
-.about-teaser__card {
-  min-width: 0;
-}
-
-.about-teaser__link {
-  display: block;
+.about-teaser__door {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--v3-space-sm) var(--v3-space-md);
+  min-height: var(--v3-tap);
   color: inherit;
   text-decoration: none;
 }
 
-.about-teaser__link img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 2 / 3;
-  object-fit: contain;
-  object-position: center top;
-  background: transparent;
+.about-teaser__door:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: 4px;
 }
 
-.about-teaser__link [data-slot='card-title'] {
+.about-teaser__faces {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--v3-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.about-teaser__face {
+  display: grid;
+  justify-items: center;
+  gap: var(--v3-space-3xs);
+}
+
+.about-teaser__avatar {
+  width: 3.25rem !important;
+  height: 3.25rem !important;
+  background: var(--v3-navy) !important;
+  color: var(--v3-cream) !important;
+}
+
+.about-teaser__avatar::after {
+  display: none !important;
+}
+
+.about-teaser__name {
+  max-width: 5.5rem;
+  overflow: hidden;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.about-teaser__cta {
+  min-height: var(--v3-tap);
+  display: inline-flex;
+  align-items: center;
+  color: var(--v3-ink);
   font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .about-fold__reach {
@@ -236,13 +298,30 @@
 }
 
 @media (max-width: 47.99rem) {
-  .about-teaser__list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--v3-space-2xs);
-  }
-
   .about-firm__hero img {
     height: 20rem;
+  }
+
+  .about-fold__proof .v3-proof {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--v3-space-sm);
+    padding-block: var(--v3-space-md);
+  }
+
+  .about-fold__proof .v3-proof__face,
+  .about-fold__proof .v3-proof__head,
+  .about-fold__proof .v3-proof__reader,
+  .about-fold__proof .v3-proof__source {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .about-fold__proof .v3-proof__picks {
+    display: none;
+  }
+
+  .about-teaser__name {
+    display: none;
   }
 }
 
@@ -253,8 +332,8 @@
       "hero hero"
       "proof proof"
       "sales sales"
-      "teaser write"
-      "reach reach";
+      "reach reach"
+      "teaser write";
     align-items: start;
     column-gap: var(--v3-space-lg);
   }

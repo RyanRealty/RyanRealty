@@ -32,12 +32,12 @@
     },
     {
       "name": "AboutFirm",
-      "section": "OPENS THE PAGE. Firm story + mood: optional full-bleed Bend office exterior (115 NW Oregon Ave #2, never the sofa) with H1 and one purpose line — small boutique brokerage, all of Central Oregon, help buy and sell. Navy/cream. NOT three broker Cards. NOT Meet the Team. A Google score may link to /reviews as supporting proof; the primary reviews beat is V3Proof.",
+      "section": "OPENS THE PAGE. Firm story + mood: optional full-bleed Bend office exterior (115 NW Oregon Ave #2, never the sofa) with H1 and one purpose line — small boutique brokerage, all of Central Oregon, help buy and sell. Navy/cream. NOT three broker Cards. NOT Meet the Team. Do not hang a thin Google score link on the hero; the primary reviews beat is the V3Proof band that follows.",
       "blocking": true
     },
     {
       "name": "V3Proof",
-      "section": "PRIMARY client-reviews proof. Google score + featured quote as words, headingLevel 2, door to /reviews. Same DAL read (getReviews). Do not muddle with press. Do not invent a rating. The count and average are sourced or omitted.",
+      "section": "PRIMARY client-reviews proof, immediately after the firm hero. Display-scale Google score + featured quote as words (headingLevel 2), door to /reviews. Same DAL read (getReviews). Must read as the first proof band — not a thin score link that loses to closings or CTA. Do not muddle with press. Do not invent a rating. The count and average are sourced or omitted.",
       "blocking": true
     },
     {
@@ -52,7 +52,7 @@
     },
     {
       "name": "AboutTeamTeaser",
-      "section": "Short Who you work with teasers AFTER the firm story. Photo + name only. Every card and the Meet the team door go to /team only. No deep bios, licenses, Call rows, or /team/[slug] doors. Licenses live on Team / broker heroes.",
+      "section": "Short Who you work with teaser AFTER the reach control. Face row + Meet the team door to /team only. No Card roster, no per-broker CTAs, licenses, bios, or /team/[slug] doors. Licenses live on Team / broker heroes.",
       "blocking": true
     },
     {
@@ -132,7 +132,7 @@
     "V3Proof #proof — PRIMARY client reviews (Google + featured quote). Not press.",
     "FirmClosings #firm-sales — dated local closings carousel. Never invented MOS.",
     "V3Doors #reach — Call | Text | Email | Schedule, Contact match, live hours",
-    "AboutTeamTeaser #team-teaser — photo + name → /team only",
+    "AboutTeamTeaser #team-teaser — face row + Meet the team → /team only. No Card roster.",
     "AboutInquiry #write — compact Send a message GET /contact",
     "V3Atlas #service-area -- where we work",
     "V3Quiet #about -- how it started plus licenses as one sourced line",
@@ -161,9 +161,10 @@
       ],
       "states": [
         "default",
-        "firm-sales"
+        "proof",
+        "team-teaser"
       ],
-      "capture": "first viewport + firm-sales=#firm-sales, scripts/take-route-shots.mjs, scale 1, palette-quantized. Lock: AboutFirm firm-story hero, V3Proof reviews, FirmClosings, V3Doors four-up, AboutTeamTeaser → /team, AboutInquiry. Not three broker Cards."
+      "capture": "first viewport + proof=#proof + team-teaser=#team-teaser, scripts/take-route-shots.mjs, scale 1, palette-quantized. Lock: AboutFirm firm-story hero, V3Proof reviews band as first proof, FirmClosings, V3Doors four-up, AboutTeamTeaser face row → /team, AboutInquiry. Not three broker Cards. Not a Card roster teaser."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
@@ -180,7 +181,9 @@
     "adaptedFrom": [
       { "id": "house-firm" },
       { "id": "house-proof" },
+      { "id": "house-faces" },
       { "id": "house-doors" },
+      { "id": "shadcn-avatar" },
       { "id": "shadcn-card" },
       { "id": "shadcn-carousel" },
       { "id": "shadcn-input" }
@@ -196,7 +199,7 @@
       {
         "section": "#proof",
         "severity": "taste",
-        "finding": "Client reviews are the primary proof. Do not replace them with press or a national scale count.",
+        "finding": "Client reviews are the primary proof band after the firm hero. Google score at display scale plus the client's words. Do not replace them with press, a thin hero score link, or a national scale count.",
         "replaceWith": "house-proof"
       },
       {
@@ -204,6 +207,12 @@
         "severity": "taste",
         "finding": "Dated local closings must be visible as a carousel of recorded sales. Do not invent MOS.",
         "replaceWith": "shadcn-carousel"
+      },
+      {
+        "section": "#team-teaser",
+        "severity": "taste",
+        "finding": "Who you work with is a short face row and one Meet the team door to /team. A Card roster or per-broker CTAs fail Researchy 4.",
+        "replaceWith": "house-faces"
       }
     ],
     "comparedToPrior": "rebaselined",
