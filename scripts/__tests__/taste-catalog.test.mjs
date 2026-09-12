@@ -291,7 +291,11 @@ describe('catalogInstallProblems', () => {
     expect(spec?.import).toBe('@/components/ui/carousel')
     expect(resolveInstallSpec(loaded.installById, 'shadcn:carousel')?.file).toBe(spec?.file)
     expect(isHouseAdaptedId('house-atlas')).toBe(true)
+    expect(isHouseAdaptedId('listing-hero-bleed')).toBe(true)
+    expect(isHouseAdaptedId('v3-carousel')).toBe(true)
+    expect(isHouseAdaptedId('v3-button-group')).toBe(true)
     expect(isHouseAdaptedId('beui-morphing-search')).toBe(false)
+    expect(isHouseAdaptedId('shadcn-carousel')).toBe(false)
   })
 
   it('fails a catalog id whose house primitive does not import the installed file', () => {

@@ -457,7 +457,8 @@ export function PriceCtaStrip({
         {/* SITE-21: THE ASK A BROKER CAN FULFIL.
             Off market, Tour / Call / Text are three requests nobody can act
             on. Save and Share stay — they are the next group, not this one.
-            Adapted from shadcn button-group + beUI action-swap into V3ButtonGroup. */}
+            Adapted from shadcn button-group into V3ButtonGroup. Save / Share
+            use V3ActionSwap (beUI action-swap), not this group. */}
         {offMarket ? (
           <>
             <V3Button href={similarHref}>Homes for sale</V3Button>

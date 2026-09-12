@@ -62,6 +62,48 @@ describe('listing remainder composition', () => {
     expect(rules).not.toMatch(/\.listing-face__actions\s*\{\s*display:\s*none/)
   })
 
+  it('names installed catalog jobs on the receipt and imports the source (SITE-99)', () => {
+    const PARITY = JSON.parse(
+      readFileSync(resolve('design_system/ryan-realty/ui_kits/listing-detail/parity.json'), 'utf8'),
+    ) as {
+      tasteReview?: { adaptedFrom?: Array<string | { id?: string }>; defects?: Array<{ replaceWith?: unknown }> }
+    }
+    const adapted = (PARITY.tasteReview?.adaptedFrom ?? []).map((hit) =>
+      typeof hit === 'string' ? hit : hit.id,
+    )
+    expect(adapted.length).toBeGreaterThan(0)
+    for (const id of [
+      'shadcn-carousel',
+      'shadcn-button-group',
+      'shadcn-sheet',
+      'shadcn-dialog',
+      'beui-tabs',
+      'beui-action-swap',
+      'transitions-modal',
+      'beautifului-loading',
+    ]) {
+      expect(adapted).toContain(id)
+    }
+    for (const defect of PARITY.tasteReview?.defects ?? []) {
+      expect(defect).toHaveProperty('replaceWith')
+    }
+    const CAROUSEL = readFileSync(resolve('components/site/v3/V3Carousel.client.tsx'), 'utf8')
+    const GROUP = readFileSync(resolve('components/site/v3/V3ButtonGroup.tsx'), 'utf8')
+    const SHEET = readFileSync(resolve('components/site/v3/V3Sheet.tsx'), 'utf8')
+    const LIGHTBOX = readFileSync(resolve('components/site/listing-detail/PhotoGalleryLightbox.tsx'), 'utf8')
+    const TABS = readFileSync(resolve('components/site/v3/V3Tabs.tsx'), 'utf8')
+    const SWAP = readFileSync(resolve('components/site/v3/V3ActionSwap.tsx'), 'utf8')
+    expect(CAROUSEL).toMatch(/from '@\/components\/ui\/carousel'/)
+    expect(GROUP).toMatch(/from '@\/components\/ui\/button-group'/)
+    expect(SHEET).toMatch(/from '@\/components\/ui\/sheet'/)
+    expect(LIGHTBOX).toMatch(/from '@\/components\/ui\/dialog'/)
+    expect(LIGHTBOX).toMatch(/from '@\/components\/motion\/transitions-modal'/)
+    expect(TABS).toMatch(/from '@\/components\/motion\/tabs'/)
+    expect(SWAP).toMatch(/from '@\/components\/motion\/action-swap'/)
+    expect(HERO).toMatch(/from '@\/components\/motion\/photo-skeleton'/)
+    expect(GROUP).not.toMatch(/from '@\/components\/motion\/action-swap'/)
+  })
+
   it('states the 13-section house page on the route', () => {
     // 12 became 13 on 2026-09-09 when the MLS public remarks came back as row 5
     // (Matt: "mls descriptions must come back"; CLAUDE.md §2). The count and the

@@ -1,3 +1,11 @@
+# Current — 2026-09-12 14:10Z (SITE-99 catalog receipt locked, Tip Ready)
+
+Owner: `cursor-cloud-2026-09-12-06-b`. Branch `cursor/site-99-listing-save-share-f50d`. PR 208. UUID `207ffae3-5242-4446-9e3b-1728dd7220f2`. No merge to main. No owner emails.
+
+- **SITE-99 in_progress, not done.** Preflight 8 jobs installed + imported. Receipt has non-empty `adaptedFrom` + `replaceWith`. listing-detail left catalog baseline. `ci:catalog-install` / `ci:taste-canon` green. Save/Share locked as requiredComponents. SITE-115 facts/mosaic/card doors held.
+- **Evaluator:** grok CLI missing (`/home/ubuntu/.grok/bin/grok`). Not a 402. **No fake receipt.** Score still sonnet 79. Score rise without demoMatch is not done. Tip Ready.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`. Search tiles stay no-heart.
+
 # Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)
 
 Owner: this land (`wt/cma-ship-20260907` → `main`). No owner sends / no emails. HOLD SITE-56 auto-send.
