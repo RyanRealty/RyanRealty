@@ -126,10 +126,18 @@ describe('siteQueueDoneEvidenceProblems — SITE evidence text', () => {
   it('passes honest grok-4.6 demoMatch true evidence', () => {
     expect(
       siteQueueDoneEvidenceProblems(
-        'grok-4.6 median 72 (70/74/72) demoMatch: true. SEO title + inventory facts on cards.',
+        'grok-4.6 median 72 (70/74/72) demoMatch: true, competitiveBriefPass: true. SEO title + inventory facts on cards.',
         { versionGap: 'SITE-90' },
       ),
     ).toEqual([])
+  })
+
+  it('refuses SITE-90 evidence that omits competitiveBriefPass', () => {
+    const p = siteQueueDoneEvidenceProblems(
+      'grok-4.6 median 72 (70/74/72) demoMatch: true. SEO title + inventory facts on cards.',
+      { versionGap: 'SITE-90' },
+    )
+    expect(p.join('\n')).toMatch(/competitiveBriefPass: true/)
   })
 
   it('does not bind a non-SITE node', () => {

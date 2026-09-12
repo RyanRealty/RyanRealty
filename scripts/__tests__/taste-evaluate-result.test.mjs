@@ -3,11 +3,16 @@ import {
   EVALUATOR_MODEL,
   RUBRIC_PATH,
   RUBRIC_VERSION,
+  competitiveBriefBlocksDone,
   demoMatchBlocksDone,
   evaluatorEnvelope,
   evaluatorResultProblems,
   grokCliFailure,
 } from '../lib/taste-evaluate-result.mjs'
+
+const ABOUT_BRIEF = {
+  beats: [{ id: '1', text: 'Firm story opens the page with twenty-plus characters.' }],
+}
 
 describe('taste-evaluate-result — grok CLI honest fail', () => {
   it('names the grok-4.6 / v1-2026-09-12 instrument', () => {
@@ -56,5 +61,36 @@ describe('taste-evaluate-result — demoMatch schema', () => {
     expect(env.rubricVersion).toBe('v1-2026-09-12')
     expect(env.result.demoMatch).toBe(false)
     expect(env.evaluatorModel).toBe('grok-4.6')
+  })
+})
+
+describe('taste-evaluate-result — competitiveBriefPass schema', () => {
+  it('refuses omitted competitiveBriefPass when a brief exists', () => {
+    const p = evaluatorResultProblems({ demoMatch: true }, { competitiveBrief: ABOUT_BRIEF })
+    expect(p.join('\n')).toMatch(/competitiveBriefPass must be true or false/)
+    expect(p.join('\n')).toMatch(/Do not invent true/)
+  })
+
+  it('accepts boolean false as schema-ok but not done', () => {
+    expect(evaluatorResultProblems({ demoMatch: true, competitiveBriefPass: false }, { competitiveBrief: ABOUT_BRIEF })).toEqual(
+      [],
+    )
+    expect(competitiveBriefBlocksDone({ demoMatch: true, competitiveBriefPass: false }, { competitiveBrief: ABOUT_BRIEF })).toBe(
+      true,
+    )
+  })
+
+  it('accepts boolean true as a pass', () => {
+    expect(evaluatorResultProblems({ demoMatch: true, competitiveBriefPass: true }, { competitiveBrief: ABOUT_BRIEF })).toEqual(
+      [],
+    )
+    expect(competitiveBriefBlocksDone({ demoMatch: true, competitiveBriefPass: true }, { competitiveBrief: ABOUT_BRIEF })).toBe(
+      false,
+    )
+  })
+
+  it('does not require the field on routes without a brief', () => {
+    expect(evaluatorResultProblems({ demoMatch: true })).toEqual([])
+    expect(competitiveBriefBlocksDone({ demoMatch: true })).toBe(false)
   })
 })

@@ -141,6 +141,22 @@ describe('the full EXM7777 inventories', () => {
   })
 })
 
+describe('about competitiveBrief', () => {
+  it('publishes Researchy beats 1–8 on the about class', () => {
+    const brief = loaded.classes.about?.competitiveBrief
+    expect(brief?.beats).toHaveLength(8)
+    expect(brief?.beats.map((b) => b.id)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8'])
+    expect(brief?.productLock).toMatch(/firm story/)
+    expect(brief?.refuse).toMatch(/AboutFaces/)
+    const card = formatBuilderCard(builderCard(loaded, 'about'))
+    expect(card).toMatch(/Competitive brief/)
+    expect(card).toMatch(/competitiveBriefPass/)
+    const evalBrief = evaluatorBrief(loaded, 'about')
+    expect(evalBrief).toMatch(/COMPETITIVE BRIEF/)
+    expect(evalBrief).toMatch(/Brief 1:/)
+  })
+})
+
 describe('evaluatorBrief', () => {
   it('tells the judge to pick from named catalog jobs with demo URLs', () => {
     const brief = evaluatorBrief(loaded, 'listing-detail')

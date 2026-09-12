@@ -2354,13 +2354,29 @@
       ]
     },
     "about": {
-      "layoutLock": "The fold is people + firm + closings: three separate broker Cards (Matt, Rebecca, Paul) each with its own Avatar, Call Button, and ghost Text/Email/Schedule; a real firm beat (since 2014, Bend office, who you call works your deal); Street View exterior of 115 NW Oregon Ave #2; and past brokerage closings as a shadcn carousel. Do not overlap AvatarGroup circles. Do not hide two brokers behind one principal Card. Do not mount V3SourceLine or how-we-calculate-this on About faces or closings. Never the interior sofa.",
+      "layoutLock": "The fold is the firm: story (since 2014, Bend office, who you call works your deal), firm Google reviews, firm closings, and Call|Text|Email|Schedule. Team is a teaser that doors to /team. Inquiry doors to /contact. Do not open on AboutFaces three broker Cards. Do not mount a poster-sized three-headshot fold. Do not hide reviews and closings below a staff directory.",
+      "competitiveBrief": {
+        "id": "about-researchy-1-8",
+        "source": "Researchy About 2026-09-12 beats 1–8; docs/plans/PUBLIC_PRODUCT/PAGE_INVENTORY.md §6",
+        "productLock": "firm story + reviews + closings + Call|Text|Email|Schedule + team teaser→/team + inquiry→/contact",
+        "refuse": "AboutFaces three broker Cards as the opener. Poster-sized three-headshot fold. Looking that invents past this checklist.",
+        "beats": [
+          { "id": "1", "text": "Firm story opens the page: since 2014, Bend office, who you call works your deal. Not a staff-directory fold." },
+          { "id": "2", "text": "Firm reviews: brokerage Google record as words (V3Proof), with a door to /reviews." },
+          { "id": "3", "text": "Firm closings: recent Ryan Realty sales as house-row cards (photo, address, ClosePrice, beds/baths/sqft)." },
+          { "id": "4", "text": "Call is the primary conversion on the reach control, carrying live hours." },
+          { "id": "5", "text": "Text sits on the same reach control as Call, not a seven-row phone book." },
+          { "id": "6", "text": "Email sits on the same reach control as Call, Text, and Schedule." },
+          { "id": "7", "text": "Schedule sits on the same reach control as Call, Text, and Email." },
+          { "id": "8", "text": "Team teaser doors to /team (and /team/[slug]); inquiry doors to /contact. Brokers are not the opener." }
+        ]
+      },
       "modules": [
         {
           "id": "house-faces",
           "catalog": "house-v3",
           "url": "app/about/_v3/AboutFaces.tsx",
-          "job": "Broker photographs and the firm's record open the page as one proof object, not a phone book."
+          "job": "Team teaser only: brokers as doors to /team/[slug] with Call/Text on the row. Not the fold opener."
         },
         {
           "id": "house-proof",
@@ -2384,19 +2400,19 @@
           "id": "shadcn-avatar",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/avatar",
-          "job": "Separate Avatar + AvatarImage + AvatarFallback on each broker Card. No AvatarGroup overlap."
+          "job": "Avatar on the team teaser row only — doors to /team, not a three-Card opener."
         },
         {
           "id": "shadcn-button-group",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/button-group",
-          "job": "Call is the default Button on each broker Card. Text / Email / Schedule are ghost Buttons in one group."
+          "job": "Call|Text|Email|Schedule on the one reach control. Not a button group per broker Card in the fold."
         },
         {
           "id": "shadcn-card",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/card",
-          "job": "One Card per broker (name, title, Call). All three brokers visible as people."
+          "job": "Closing cards and review words, not three equal broker Cards opening the page."
         },
         {
           "id": "shadcn-carousel",

@@ -36,6 +36,11 @@
  *    modules cannot claim comparedToPrior "rose" or score ≥ 70 unless
  *    demoMatch is true. Omit is refuse. Honest false below 70 on a
  *    rebaseline stays valid so a lane can record an in-progress fail.
+ * 9. Per-route competitiveBrief (About first, Matt 2026-09-12): a kit that
+ *    publishes a structured Researchy checklist cannot claim rise / ≥70
+ *    without competitiveBriefPass true (or checklist all true). Omit is
+ *    refuse. Do not invent true. About parity must carry beats 1–8 next
+ *    to competitiveTarget.
  *
  * Seed unreviewed with `--write-baseline`, the v2 backlog with
  * `--write-v2-baseline`, catalog receipts with `--write-catalog-baseline`.
@@ -46,7 +51,9 @@ import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import {
   RECEIPT_V2_FROM,
+  competitiveBriefShapeProblems,
   isV2Receipt,
+  parseCompetitiveBrief,
   receiptV2Problems,
   requiredComponentsHoldProblems,
 } from './lib/taste-receipt.mjs'
@@ -213,11 +220,27 @@ for (const rel of kitDirs) {
   for (const p of requiredComponentsHoldProblems(d.requiredComponents, head?.requiredComponents)) {
     failures.push(`${rel}: ${p}`)
   }
+  const kit = rel.split('/').at(-2)
+  const classKey = catalog && catalog.problems.length === 0 ? classForRoute(catalog, kit) : null
+  const catalogBrief =
+    classKey && catalog?.classes?.[classKey]?.competitiveBrief
+      ? catalog.classes[classKey].competitiveBrief
+      : null
+  const routeBrief = d.competitiveBrief ?? (kit === 'about' ? catalogBrief : null)
+  if (kit === 'about' || d.competitiveBrief) {
+    for (const p of competitiveBriefShapeProblems(routeBrief, {
+      minBeats: 8,
+      label: `${rel} competitiveBrief`,
+    })) {
+      failures.push(p)
+    }
+  }
   if (!isV2Receipt(d.tasteReview)) continue
   const problems = receiptV2Problems(d.tasteReview, {
     root: ROOT,
     rubricText,
     headReceipt: head?.tasteReview ?? null,
+    competitiveBrief: parseCompetitiveBrief(routeBrief),
   })
   if (problems.length > 0) v2Broken.set(rel, problems)
   else v2Complete += 1

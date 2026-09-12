@@ -709,6 +709,47 @@ describe('check-taste-canon — catalog receipts (adaptedFrom + replaceWith)', (
     expect(r.out).toMatch(/demoMatch must be true or false|not done while demoMatch/)
   })
 
+  it('fails an About receipt that claims rise without competitiveBriefPass', () => {
+    scaffold()
+    write('app/about/page.tsx', 'export default function Page() { return null }\n')
+    write('design_system/ryan-realty/ui_kits/about/shots/desktop.png', 'desktop-png-bytes')
+    write('design_system/ryan-realty/ui_kits/about/shots/mobile375.png', 'mobile-png-bytes')
+    const aboutShots = {
+      desktop: 'design_system/ryan-realty/ui_kits/about/shots/desktop.png',
+      mobile375: 'design_system/ryan-realty/ui_kits/about/shots/mobile375.png',
+    }
+    const aboutHash = shotsHashFor(SANDBOX, aboutShots)
+    const beats = [1, 2, 3, 4, 5, 6, 7, 8].map((id) => ({
+      id: String(id),
+      text: `Researchy beat ${id} requires twenty-plus characters of checklist text.`,
+    }))
+    writeJson('design_system/ryan-realty/ui_kits/about/parity.json', {
+      route: 'app/about/page.tsx',
+      requiredComponents: [],
+      competitiveTarget: 'Firm story, not three broker Cards.',
+      competitiveBrief: { id: 'about-researchy-1-8', source: 'Researchy', beats },
+      tasteReview: baseReceipt({
+        evaluatedAt: '2026-09-12',
+        rubricVersion: 'v1-2026-09-12',
+        comparedToPrior: 'rose',
+        demoMatch: true,
+        shots: aboutShots,
+        shotsHash: aboutHash,
+        priorMark: {
+          evaluatedAt: '2026-09-12',
+          score: 40,
+          evaluatorModel: 'claude-opus-4-1',
+          rubricVersion: 'v1-2026-09-12',
+          shotsHash: aboutHash,
+        },
+      }),
+    })
+    writeReceipt(baseReceipt())
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toMatch(/competitiveBriefPass must be true or false|not done while competitiveBriefPass/)
+  })
+
   it('passes a catalog receipt that claims rise with demoMatch true', () => {
     scaffold()
     writeJson('design_system/public/taste-catalog.json', stubCatalog())
