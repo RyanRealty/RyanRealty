@@ -1,13 +1,13 @@
 /**
  * /about - brokerage profile, on the components/site/v3 barrel.
  *
- * PAGE OUTLINE (Researchy 1–8 + Matt 2026-09-12 — brokerage, not Team):
+ * PAGE OUTLINE (Researchy 1–8 + Looking order — brokerage, not Team):
  * 1. Hero: AboutFirm — office exterior + one purpose line
  *    (boutique · Central Oregon · buy and sell). Not broker Cards.
  * 2. V3Proof — client reviews PRIMARY (Google + featured quote). Not press.
  * 3. FirmClosings — dated local sold homes. Never invented MOS.
- * 4. AboutTeamTeaser — photo + name → /team only. No bios/licenses.
- * 5. V3Doors four-up matching Contact (Call / Text / Email / Schedule)
+ * 4. V3Doors four-up matching Contact (Call / Text / Email / Schedule)
+ * 5. AboutTeamTeaser — photo + name → /team only. No bios/licenses.
  * 6. AboutInquiry GET to /contact. Full form stays on Contact.
  * Then Atlas, How it started + OREA, V3Answers.
  * Never the sofa interior. No coast-to-coast / fee copy.
@@ -239,7 +239,6 @@ export default async function AboutPage() {
           <div className="about-fold__sales">
             <FirmClosings id="firm-sales" rows={firmRows} />
           </div>
-          <AboutTeamTeaser id="team-teaser" people={teamTeaser} />
           <div className="about-fold__reach">
             <V3Doors
               id="reach"
@@ -274,6 +273,7 @@ export default async function AboutPage() {
               ]}
             />
           </div>
+          <AboutTeamTeaser id="team-teaser" people={teamTeaser} />
           <div className="about-fold__write">
             <AboutInquiry id="write" />
           </div>

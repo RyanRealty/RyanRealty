@@ -39,7 +39,9 @@ describe('/about section order', () => {
   it('prints reviews as primary proof, then dated local closings', () => {
     expect(at('<AboutFirm')).toBeLessThan(at('id="proof"'))
     expect(at('id="proof"')).toBeLessThan(at('<FirmClosings'))
-    expect(at('<FirmClosings')).toBeLessThan(at('<AboutTeamTeaser'))
+    expect(at('<FirmClosings')).toBeLessThan(at('id="reach"'))
+    expect(at('id="reach"')).toBeLessThan(at('<AboutTeamTeaser'))
+    expect(at('<AboutTeamTeaser')).toBeLessThan(at('<AboutInquiry'))
     expect(BODY).toContain('headline="In their own words"')
     expect(BODY).not.toContain('headline={`${reviewCount} Google reviews`}')
   })

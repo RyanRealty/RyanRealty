@@ -18,7 +18,7 @@
       { "id": "8", "text": "Team teaser doors only to /team; compact inquiry GET /contact. No /team/[slug] on About. Brokers are not the opener." }
     ]
   },
-  "note": "SITE-90 2026-09-12 Matt lock + Researchy 1–8. About = brokerage, not Meet the Team. Synced with PR 214 competitiveBrief (about-researchy-1-8). requiredComponents opener is AboutFirm, not AboutFaces. Order: AboutFirm hero, V3Proof reviews PRIMARY, FirmClosings, AboutTeamTeaser → /team only, V3Doors Call/Text/Email/Schedule, AboutInquiry GET /contact, Atlas, Quiet #about, V3Answers, Footer. No deep bios or licenses on the fold. No V3Instrument. No V3SourceLine on the fold.",
+  "note": "SITE-90 2026-09-12 Matt lock + Researchy 1–8. About = brokerage, not Meet the Team. Synced with PR 214 competitiveBrief (about-researchy-1-8). requiredComponents opener is AboutFirm, not AboutFaces. Order: AboutFirm hero, V3Proof reviews PRIMARY, FirmClosings, V3Doors Call/Text/Email/Schedule, AboutTeamTeaser → /team only, AboutInquiry GET /contact, Atlas, Quiet #about, V3Answers, Footer. No deep bios or licenses on the fold. No V3Instrument. No V3SourceLine on the fold.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -131,8 +131,8 @@
     "AboutFirm #firm — OPENS. Firm story (boutique · Central Oregon · buy+sell) on the office exterior. Never broker Cards. Never the sofa.",
     "V3Proof #proof — PRIMARY client reviews (Google + featured quote). Not press.",
     "FirmClosings #firm-sales — dated local closings carousel. Never invented MOS.",
-    "AboutTeamTeaser #team-teaser — photo + name → /team only",
     "V3Doors #reach — Call | Text | Email | Schedule, Contact match, live hours",
+    "AboutTeamTeaser #team-teaser — photo + name → /team only",
     "AboutInquiry #write — compact Send a message GET /contact",
     "V3Atlas #service-area -- where we work",
     "V3Quiet #about -- how it started plus licenses as one sourced line",

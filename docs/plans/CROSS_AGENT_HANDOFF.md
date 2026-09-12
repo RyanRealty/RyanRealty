@@ -1,3 +1,11 @@
+# Current — 2026-09-12 21:20Z (SITE-90 About tip rebased onto main 4dc88a3a)
+
+Owner: `cursor-cloud-2026-09-12-f251`. Do not merge — Cos cherry-picks. No emails.
+
+- **SITE-90 Tip Ready** `/about` on `cursor/about-reviews-on-main-f251` (replaces tip cut at `0a7b3a8ce` / PR 216). Base is current `main` `4dc88a3ac`. Order: AboutFirm → V3Proof PRIMARY → closings → V3Doors CTA → AboutTeamTeaser → /team → AboutInquiry → /contact. Structured `competitiveBrief` id `about-researchy-1-8` kept as an object on parity + taste-catalog. requiredComponents stay 13 (`AboutFirm`, `AboutInquiry` named). layoutLock forbids `<AboutFaces` and `size="proof"`. `demoMatch: false`, `competitiveBriefPass: false`.
+- Exclusive: `app/about/**` this lane until Cos lands.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
+
 # Current — 2026-09-12 20:45Z (HARD Tip Ready — competitiveBrief loop tightened)
 
 Owner: `cursor-cloud-2026-09-12-86e0`. Do not merge — Tip Ready PR only. No emails.
