@@ -1019,13 +1019,25 @@
   gap: var(--v3-space-sm);
 }
 
-.about-faces--proof .about-faces__names,
-.about-faces--proof .about-faces__ask {
-  flex-wrap: wrap;
-  max-width: 100%;
+.about-faces--proof .about-faces__broker {
+  width: 100%;
+  max-width: var(--v3-measure);
 }
 
-.about-faces--proof .about-faces__names [data-slot='button'],
+.about-faces--proof .about-faces__broker-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--v3-space-xs);
+}
+
+.about-faces--proof .about-faces__ask {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--v3-space-2xs);
+}
+
 .about-faces--proof .about-faces__ask [data-slot='button'] {
   min-height: var(--v3-tap);
 }

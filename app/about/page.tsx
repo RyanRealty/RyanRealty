@@ -241,8 +241,8 @@ export default async function AboutPage() {
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
 
-        {/* SITE-90 fold: overlapping AvatarGroup, one ButtonGroup, Street View
-            exterior of 115 NW Oregon Ave, closings as Cards. Never the sofa. */}
+        {/* SITE-90 fold: overlapping AvatarGroup, one principal Card,
+            Street View exterior, closings as Accordion. Never the sofa. */}
         <div className="about-fold">
           <AboutFaces
             people={faces}
@@ -271,7 +271,7 @@ export default async function AboutPage() {
               height={640}
             />
             <figcaption>
-              Bend office · {BRAND.address.street}
+              BEND OFFICE · {BRAND.address.street}
             </figcaption>
           </figure>
           <div className="about-fold__sales">

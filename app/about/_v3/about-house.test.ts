@@ -16,20 +16,24 @@ const PROOF = FACES.slice(proofIf, rosterReturn)
 const FOLD_JSX = PAGE.slice(PAGE.indexOf('className="about-fold"'), PAGE.indexOf('id="reach"'))
 
 describe('SITE-90 /about house fold', () => {
-  it('adapts shadcn Avatar + ButtonGroup + Card into the fold', () => {
+  it('adapts shadcn Avatar + Card + Accordion into the fold', () => {
     expect(FACES).toMatch(/from ['"]@\/components\/ui\/avatar['"]/)
     expect(FACES).toMatch(/from ['"]@\/components\/ui\/button['"]/)
     expect(FACES).toMatch(/from ['"]@\/components\/ui\/button-group['"]/)
+    expect(FACES).toMatch(/from ['"]@\/components\/ui\/card['"]/)
     expect(PROOF).toContain('AvatarGroup')
     expect(PROOF).toContain('AvatarImage')
     expect(PROOF).toContain('loading="eager"')
     expect(PROOF).toContain('AvatarFallback')
     expect(PROOF).toContain('AvatarBadge')
+    expect(PROOF).toContain('<Card')
+    expect(PROOF).toContain('CardTitle')
+    expect(PROOF).toContain('CardDescription')
     expect(PROOF).toContain('ButtonGroup')
-    expect(CLOSINGS).toMatch(/from ['"]@\/components\/ui\/card['"]/)
-    expect(CLOSINGS).toContain('CardTitle')
-    expect(CLOSINGS).toContain('CardDescription')
-    expect(CLOSINGS).toContain('CardAction')
+    expect(CLOSINGS).toMatch(/from ['"]@\/components\/ui\/accordion['"]/)
+    expect(CLOSINGS).toContain('AccordionItem')
+    expect(CLOSINGS).toContain('AccordionTrigger')
+    expect(CLOSINGS).toContain('AccordionContent')
     expect(PORTRAIT).toMatch(/from ['"]@\/components\/ui\/avatar['"]/)
     expect(PORTRAIT).not.toMatch(/<img[\s\S]*onError/)
   })
@@ -46,6 +50,7 @@ describe('SITE-90 /about house fold', () => {
     expect(PROOF).not.toContain('about-faces__lead')
     expect(PROOF).not.toContain('about-faces__companions')
     expect(PROOF).not.toContain('about-faces__trio')
+    expect(PROOF).not.toContain('about-faces__names')
   })
 
   it('puts the 5.0 mark on the principal AvatarBadge and links the count to /reviews', () => {
@@ -69,7 +74,7 @@ describe('SITE-90 /about house fold', () => {
     expect(FOLD_JSX).toContain('about-fold__place')
     expect(FOLD_JSX).toContain('ryan-realty-bend-office-exterior-01.jpg')
     expect(FOLD_JSX).not.toContain('ryan-realty-bend-office-interior')
-    expect(FOLD_JSX).toContain('Bend office ·')
+    expect(FOLD_JSX).toContain('BEND OFFICE ·')
     expect(FOLD_JSX).toContain('BRAND.address.street')
     expect(FOLD).toMatch(/grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\)/)
   })
@@ -82,7 +87,9 @@ describe('SITE-90 /about house fold', () => {
     expect(PORTRAIT).not.toContain('about-faces__photo')
     expect(PROOF).toContain('about-faces__ask')
     expect(PROOF).toContain('>Call<')
-    expect(PROOF).toContain('>Book<')
+    expect(PROOF).toContain('>Schedule<')
+    expect(PROOF).toContain('variant="ghost"')
+    expect(PROOF).not.toContain('>Book<')
   })
 
   it('adds crawlable broker and closing lists to JSON-LD', () => {
