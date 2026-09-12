@@ -29,7 +29,7 @@ describe('listing ask claim MOS grain trust', () => {
     })
     expect(claim?.figures.some((f) => f.label === 'months of supply')).toBe(false)
     expect(claim?.figures.some((f) => f.label === 'homes for sale')).toBe(true)
-    expect(claim?.figures.some((f) => String(f.label).includes('median list'))).toBe(true)
+    expect(claim?.figures.some((f) => String(f.label).includes('typical Tetherow list'))).toBe(true)
   })
 
   it('prints months of supply at city grain', () => {

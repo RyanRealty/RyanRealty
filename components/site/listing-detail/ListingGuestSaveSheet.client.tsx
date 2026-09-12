@@ -80,8 +80,8 @@ export function ListingGuestSaveSheet({
 
   const askStep: V3SheetStep = {
     id: 'email',
-    label: `Where should updates on ${home} go?`,
-    children: 'Price changes and status updates for this home. Unsubscribe any time.',
+    label: 'Where should we send updates?',
+    children: 'Price changes and status updates. Unsubscribe any time.',
     field: {
       kind: 'email',
       name: 'email',
@@ -90,7 +90,7 @@ export function ListingGuestSaveSheet({
       autoComplete: 'email',
       maxLength: 254,
       placeholder: 'you@email.com',
-      requiredMessage: 'An email is required so the updates have somewhere to land.',
+      requiredMessage: 'We need an email so we know where to send them.',
       invalidMessage: 'That address does not look complete.',
     },
     advanceLabel: 'Save this home',
@@ -101,7 +101,7 @@ export function ListingGuestSaveSheet({
       ? [
           {
             id: 'sent',
-            label: `Saved. Updates on ${home} land by email.`,
+            label: `Saved. We'll email you about ${home}.`,
             children: 'Sign in with Google any time to see every home you have saved in one place.',
           },
         ]
@@ -118,7 +118,7 @@ export function ListingGuestSaveSheet({
     <V3Sheet
       id="guest-save"
       eyebrow="Save this home"
-      heading={`Watch ${home} by email`}
+      heading={`We'll email you about ${home}`}
       steps={steps}
       trap={{ name: 'company', label: 'Company' }}
       currentStepId={currentStepId}

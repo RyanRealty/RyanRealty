@@ -106,12 +106,13 @@ describe("the pills' plain read", () => {
   it('prints the sentence and its trace behind a disclosure', () => {
     const html = strip({
       read: {
-        sentence: '112 days listed is about 4.9 times the 23 a typical Bend home takes to go under contract.',
+        sentence: "It's been listed 112 days. Typical Bend homes go under contract in 23.",
         source: 'Market Truth (market_metric, detached): median days from listing to contract, detached homes in Bend, trailing 90 days.',
       },
     })
     expect(html).toContain('class="listing-read"')
-    expect(html).toContain('112 days listed is about 4.9 times')
+    expect(html).toMatch(/It(?:'|&#x27;)s been listed 112 days/)
+    expect(html).not.toContain('times the')
     expect(html).toMatch(/<details class="listing-read__source"><summary>Source<\/summary>/)
     expect(html).toContain('trailing 90 days')
   })

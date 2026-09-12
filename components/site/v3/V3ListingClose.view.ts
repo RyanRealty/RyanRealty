@@ -105,7 +105,7 @@ export function buildCloseSubject(input: CloseSubjectInput): CloseSubject | null
   if (cutDepth == null && daysLive == null) return null
 
   const parts: string[] = []
-  if (cutLabel) parts.push(`has taken ${cutLabel} off its first ask`)
+  if (cutLabel) parts.push(`has come down ${cutLabel} from the first list price`)
   if (daysLive != null) {
     parts.push(`has been on the market ${daysLive} ${daysLive === 1 ? 'day' : 'days'}`)
   }
@@ -143,7 +143,7 @@ export function buildCloseView(facts: ListingCutFacts, subject: CloseSubject | n
   if (facts.cutShare) {
     readings.push({
       id: 'share',
-      label: 'Cut before they sold',
+      label: 'Came down before they sold',
       value: facts.cutShare.label,
       against: 'of every 100 homes that sold',
       sentence: `${n(facts.cutShare.sampleN)} homes closed in ${city} over the window. The filled dots are the ${facts.cutShare.label} of them that had already dropped their price by the time a buyer said yes.`,
@@ -154,16 +154,16 @@ export function buildCloseView(facts: ListingCutFacts, subject: CloseSubject | n
   if (facts.cutSize) {
     readings.push({
       id: 'depth',
-      label: 'How deep the cut went',
+      label: 'How much they came down',
       value: subject?.cutLabel ?? facts.cutSize.label,
       against: subject?.cutLabel
-        ? `off this home\u2019s first ask, against a typical ${facts.cutSize.label}`
-        : 'came off the asking price',
+        ? `off this home\u2019s first list price, against a typical ${facts.cutSize.label}`
+        : 'came off the list price',
       sentence:
         (population
-          ? `Of the ${n(facts.cutSize.sampleN)} ${city} sellers who did cut, half took less than ${facts.cutSize.label} off their first ask and half took more.`
-          : `Half the ${n(facts.cutSize.sampleN)} ${city} sellers who cut took less than ${facts.cutSize.label} off their first ask and half took more.`) +
-        ' A cut is measured against the price the home first listed at, not the last one.',
+          ? `Of the ${n(facts.cutSize.sampleN)} ${city} sellers who dropped the price, half came down less than ${facts.cutSize.label} from the first list price and half came down more.`
+          : `Half the ${n(facts.cutSize.sampleN)} ${city} sellers who dropped the price came down less than ${facts.cutSize.label} from the first list price and half came down more.`) +
+        ' That drop is measured against the price the home first listed at, not the last one.',
       sampleN: facts.cutSize.sampleN,
       source: facts.cutSize.source,
     })
@@ -192,12 +192,12 @@ export function buildCloseView(facts: ListingCutFacts, subject: CloseSubject | n
   const rest: string[] = []
   if (facts.cutShare) {
     claim = `In ${city}, ${facts.cutShare.label} of the homes that sold in the last 12 months had dropped their price before a buyer said yes.`
-    if (facts.cutSize) rest.push(`the typical cut was ${facts.cutSize.label} off the original ask`)
+    if (facts.cutSize) rest.push(`the typical drop was ${facts.cutSize.label} off the original list price`)
     if (facts.daysToPending) {
       rest.push(`and the typical home went under contract in ${facts.daysToPending.label}`)
     }
   } else if (facts.cutSize) {
-    claim = `In ${city}, a seller who cut in the last 12 months typically cut ${facts.cutSize.label} off the price they started at.`
+    claim = `In ${city}, a seller who dropped the price in the last 12 months typically came down ${facts.cutSize.label} from where they started.`
     if (facts.daysToPending) {
       rest.push(`the typical home went under contract in ${facts.daysToPending.label}`)
     }
@@ -221,7 +221,7 @@ export function buildCloseView(facts: ListingCutFacts, subject: CloseSubject | n
     : null
 
   return {
-    eyebrow: `${city} · What to do about this house`,
+    eyebrow: `${city} · How homes here sold`,
     windowLine: [
       `${city} single family homes`,
       through ? `every sale that closed in the 12 months to ${through}` : 'closed sales, 12 months',

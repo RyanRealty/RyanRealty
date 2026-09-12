@@ -4,7 +4,7 @@ import { buildListingAskHeadline, leftoverMarketReportHref } from '@/components/
 describe('listing ask copy', () => {
   it("never says ask in the visitor headline", () => {
     expect(buildListingAskHeadline('Sunriver', 570_000, 928_250)).toBe(
-      "This home's price sits 38.6% under the Sunriver median list",
+      'This home is listed 38.6% under a typical Sunriver home right now',
     )
     expect(buildListingAskHeadline('Sunriver', 570_000, 928_250)).not.toMatch(/ask/i)
   })

@@ -42,21 +42,23 @@ function daysClause(daysLive: number, typical: number, place: string): string {
   const d = Math.round(daysLive)
   const t = Math.round(typical)
   if (t <= 0) return ''
-  if (d <= t) {
-    return `${d} ${d === 1 ? 'day' : 'days'} listed is inside the ${t} a typical ${place} home takes to go under contract`
-  }
-  const ratio = d / t
-  const how = ratio >= 2 ? `about ${ratio.toFixed(1).replace(/\.0$/, '')} times` : 'longer than'
-  return `${d} days listed is ${how} the ${t} a typical ${place} home takes to go under contract`
+  const listed = d === 1 ? "It's been listed 1 day" : `It's been listed ${d} days`
+  return `${listed}. Typical ${place} homes go under contract in ${t}`
 }
 
 function ppsfClause(ppsf: number, median: number, place: string): string {
   if (!(median > 0) || !(ppsf > 0)) return ''
   const pct = ((ppsf - median) / median) * 100
   const tenths = Math.round(Math.abs(pct) * 10) / 10
-  if (tenths === 0) return `${money(ppsf)} a square foot matches the ${place} closed median`
+  if (tenths === 0) return `At ${money(ppsf)} a square foot, it matches ${place}'s closed median`
   const dir = pct > 0 ? 'over' : 'under'
-  return `${money(ppsf)} a square foot is ${tenths.toFixed(1)}% ${dir} the ${place} closed median of ${money(median)}`
+  return `At ${money(ppsf)} a square foot, it's ${tenths.toFixed(1)}% ${dir} ${place}'s closed median of ${money(median)}`
+}
+
+function joinClauses(clauses: string[]): string {
+  const text = clauses.join('. ')
+  const capped = `${text.charAt(0).toUpperCase()}${text.slice(1)}`
+  return /[.!?]$/.test(capped) ? capped : `${capped}.`
 }
 
 export function publishListingPillRead(input: ListingPillReadInput): PublishedListingPillRead | null {
@@ -72,7 +74,7 @@ export function publishListingPillRead(input: ListingPillReadInput): PublishedLi
     if (c) clauses.push(c)
   }
   if (clauses.length === 0) return null
-  const sentence = `${clauses[0]!.charAt(0).toUpperCase()}${clauses[0]!.slice(1)}${clauses.length > 1 ? `; ${clauses[1]}` : ''}.`
+  const sentence = joinClauses(clauses)
   const parts = [
     clauses.length > 0 && input.daysToPending != null
       ? `median days from listing to contract, detached homes in ${place}, trailing 90 days`

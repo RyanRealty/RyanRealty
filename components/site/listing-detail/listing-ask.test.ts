@@ -64,16 +64,16 @@ describe('leftoverMarketReportHref', () => {
 describe('buildListingAskHeadline', () => {
   it("is one sentence the figures can support, and never says ask", () => {
     expect(buildListingAskHeadline('Tetherow', 1_200_000, 1_000_000)).toBe(
-      "This home's price sits 20.0% over the Tetherow median list",
+      'This home is listed 20.0% over a typical Tetherow home right now',
     )
     expect(buildListingAskHeadline('Southeast Bend', 900_000, 1_000_000)).toBe(
-      "This home's price sits 10.0% under the Southeast Bend median list",
+      'This home is listed 10.0% under a typical Southeast Bend home right now',
     )
     expect(buildListingAskHeadline('Sunriver', 697_000, 1_000_000)).toBe(
-      "This home's price sits 30.3% under the Sunriver median list",
+      'This home is listed 30.3% under a typical Sunriver home right now',
     )
     expect(buildListingAskHeadline('Tetherow', 1_000_000, 1_000_000)).toBe(
-      "This home's price matches the Tetherow median list",
+      'This home is listed right around a typical Tetherow home',
     )
     expect(buildListingAskHeadline('Sunriver', 697_000, 1_000_000)).not.toMatch(/ask/i)
   })
@@ -87,14 +87,14 @@ describe('buildListingAskClaim', () => {
       hud: HUD,
       grain: GRAIN,
     })
-    expect(claim?.headline).toBe("This home's price sits 20.0% over the Tetherow median list")
+    expect(claim?.headline).toBe('This home is listed 20.0% over a typical Tetherow home right now')
     expect(claim?.figures[0]?.value).toBe('$1,200,000')
-    expect(claim?.figures[0]?.label).toBe('this price')
+    expect(claim?.figures[0]?.label).toBe('this home')
     expect(claim?.figures[1]?.value).toBe('$1,000,000')
-    expect(claim?.figures[1]?.label).toBe('Tetherow median list')
+    expect(claim?.figures[1]?.label).toBe('typical Tetherow list')
     expect(claim?.figures.map((f) => f.label).join(' ')).not.toMatch(/Median to pending/)
-    expect(claim?.source).toMatch(/leftover membership, active single-family houses in Tetherow/)
-    expect(claim?.source).toMatch(/This price is the published list price/)
+    expect(claim?.source).toMatch(/Active single-family homes for sale in Tetherow/)
+    expect(claim?.source).toMatch(/This is the published list price/)
     expect(claim?.source).not.toMatch(/\bask\b/i)
     expect(claim?.headline).not.toMatch(/ask/i)
     expect(claim?.action).toBeUndefined()
@@ -111,7 +111,7 @@ describe('buildListingAskClaim', () => {
     })
     expect(claim?.figures.some((f) => f.label === 'months of supply')).toBe(true)
     expect(claim?.figures.find((f) => f.label === 'months of supply')?.value).toBeTruthy()
-    expect(claim?.source).toMatch(/leftover membership, active single-family houses in Bend/)
+    expect(claim?.source).toMatch(/Active single-family homes for sale in Bend/)
   })
 
   it('sends a core grain to its market report, not search', () => {

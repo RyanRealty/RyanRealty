@@ -70,8 +70,8 @@ export function buildListingAskHeadline(grainName: string, ask: number, median: 
   if (!name) return null
   const delta = formatAskVsMedianDelta(ask, median)
   if (!delta) return null
-  if (delta.kind === 'match') return `This home's price matches the ${name} median list`
-  return `This home's price sits ${delta.label} ${delta.kind} the ${name} median list`
+  if (delta.kind === 'match') return `This home is listed right around a typical ${name} home`
+  return `This home is listed ${delta.label} ${delta.kind} a typical ${name} home right now`
 }
 
 function stampFrom(iso: string | null | undefined): string | undefined {
@@ -103,10 +103,10 @@ export function buildListingAskClaim(input: {
 
   const placeHref = grain.hubHref.trim() || undefined
   const figures: V3InstrumentFigure[] = [
-    { value: v3Text(formatPriceExact(ask)), label: v3Text('this price') },
+    { value: v3Text(formatPriceExact(ask)), label: v3Text('this home') },
     {
       value: v3Text(formatPriceExact(median)),
-      label: v3Text(`${name} median list`),
+      label: v3Text(`typical ${name} list`),
       ...(placeHref ? { href: placeHref } : {}),
     },
   ]
@@ -136,7 +136,7 @@ export function buildListingAskClaim(input: {
 
   const mosPrints = mos != null && mos > 0
   const source = [
-    `leftover membership, active single-family houses in ${name}. This price is the published list price.`,
+    `Active single-family homes for sale in ${name}. This is the published list price.`,
     mosPrints ? MOS_METHODOLOGY_CLAUSE : '',
     mosPrints ? MOS_THRESHOLD_CLAUSE : '',
   ]

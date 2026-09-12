@@ -12,7 +12,7 @@
  * This gate asserts that a live listing renders its commerce content:
  *   (a) a formatted price matching /$[\d,]{6,}/
  *   (b) at least one listing photo URL (sparkplatform CDN or listing_photos cdn_url)
- *   (c) the listing-agent name marker (Talk to a broker)
+ *   (c) the listing-agent name marker (Want to see it?)
  *   (d) the contact/tour CTA (Schedule a tour)
  *
  * Requires the SMOKE_LISTING_KEY env var OR a dynamic lookup from the site's
@@ -66,11 +66,11 @@ const PHOTO_URL_RE = /(?:sparkplatform\.com|supabase\.co\/storage|_next\/image\?
  * (c) Listing-agent CTA marker: rendered by TextMattCTA.tsx as a static
  * string that is not configurable at the page level.
  */
-const AGENT_CTA_RE = /Talk to a broker/i
+const AGENT_CTA_RE = /Want to see it\?/i
 
 /**
  * (d) Tour CTA: rendered by TextMattCTA.tsx as the primary CTAButton label.
- * Falls back to "Questions about this home?" for the H3. Both stable.
+ * Falls back to "I can take you through this home" for the H3. Both stable.
  */
 const TOUR_CTA_RE = /Schedule a tour/i
 
@@ -154,7 +154,7 @@ async function main() {
 
   if (!PRICE_RE.test(html)) fails.push('no formatted price ($NNN,NNN) found — ListPrice not rendered')
   if (!PHOTO_URL_RE.test(html)) fails.push('no listing photo URL found — photo resolver returned empty or crashed')
-  if (!AGENT_CTA_RE.test(html)) fails.push('no "Talk to a broker" marker — TextMattCTA sidebar not rendering')
+  if (!AGENT_CTA_RE.test(html)) fails.push('no "Want to see it?" marker — TextMattCTA sidebar not rendering')
   if (!TOUR_CTA_RE.test(html)) fails.push('no "Schedule a tour" CTA — TextMattCTA primary button missing')
 
   if (JSON_OUT) {

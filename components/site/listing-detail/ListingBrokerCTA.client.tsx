@@ -2,7 +2,7 @@
 
 /**
  * Listing-detail broker CTA. ONE card, ONE style, ONE location — the
- * TextMattCTA "Talk to a broker / Questions about this home?" card. The only
+ * TextMattCTA "Want to see it? / I can take you through this home" card. The only
  * thing that changes is WHOSE contact it shows:
  *
  *   - Lead has been assigned to a broker (arrived via that broker's CRM link or

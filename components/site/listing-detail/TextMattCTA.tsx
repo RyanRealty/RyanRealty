@@ -39,8 +39,8 @@ type Props = {
    * SITE-21. Null on market; 'sold' for Closed; 'unsold' for Expired, Canceled
    * and Withdrawn.
    *
-   * The card's whole ask is a showing: "Tour" over "Tour requests usually get a
-   * same-day reply", with Call and Text under it. On a home that is not for
+   * The card's whole ask is a showing: "Tour" over "Ask for a tour. I usually
+   * get back the same day.", with Call and Text under it. On a home that is not for
    * sale that is three unfulfillable requests, and the call it starts ends with
    * "that one sold." Off market the card asks the two questions a broker CAN
    * answer — what happened with this listing, and what it means for the
@@ -91,15 +91,22 @@ export function TextMattCTA({
       }}
     >
       <Stack gap="default">
-        <Eyebrow>Talk to a broker</Eyebrow>
-        <H3>{headline ?? (offMarket === 'sold' ? 'Questions about this sale?' : 'Questions about this home?')}</H3>
+        <Eyebrow>Want to see it?</Eyebrow>
+        <H3>
+          {headline ??
+            (offMarket === 'sold'
+              ? 'I can walk you through this sale'
+              : offMarket
+                ? 'This one is off the market'
+                : 'I can take you through this home')}
+        </H3>
         <Body size="small" tone="muted" className="leading-relaxed">
           {body ??
             (offMarket === 'sold'
-              ? 'Ask what this one closed at and why, or what it says about the house you own.'
+              ? 'Ask what it closed at and why, or what it means for the house you own.'
               : offMarket
-                ? 'It came off the market without selling. Ask what happened, or what it means for the house you own.'
-                : 'Tour requests usually get a same-day reply.')}
+                ? 'It came off without selling. I can tell you what happened, or what it means for the house you own.'
+                : 'Ask for a tour. I usually get back the same day.')}
         </Body>
 
         {/* Broker — large photo on the left, all contact on the right */}

@@ -121,7 +121,7 @@ function DepthRule({
     <span className={cn('v3-close__bars', active && 'is-active')} aria-hidden="true">
       <span className="v3-close__bar-row">
         <span className="v3-close__bar-label">
-          typical cut, {Math.round(typicalPct * 10) / 10}%
+          typical drop, {Math.round(typicalPct * 10) / 10}%
         </span>
         <span className="v3-close__bar-track">
           <span className="v3-close__bar v3-close__bar--kept" style={{ width: w(typicalPct) }} />
@@ -138,7 +138,7 @@ function DepthRule({
         </span>
       ) : null}
       <span className="v3-close__axis v3-close__axis--bars">
-        <span>no cut</span>
+        <span>no drop</span>
         <span>{axisMax}% off</span>
       </span>
     </span>
@@ -233,11 +233,11 @@ export function V3ListingClose({
       className={cn(V3_ROOT_CLASS, 'v3-close', className)}
     >
       <div className="v3-close__head">
-        <V3Eyebrow>{view ? view.eyebrow : 'What to do about this house'}</V3Eyebrow>
+        <V3Eyebrow>{view ? view.eyebrow : 'How homes here sold'}</V3Eyebrow>
         <V3Heading level={headingLevel} id={`${uid}-heading`}>
           {view
             ? view.claim
-            : `Three things you can do about ${addressLine || 'this home'} right now.`}
+            : `Here's how ${addressLine || 'this home'} compares to recent sales.`}
         </V3Heading>
         {view?.lede ? <p className="v3-close__lede">{view.lede}</p> : null}
       </div>
@@ -257,7 +257,9 @@ export function V3ListingClose({
                   onClick={() => setPinnedId(pinnedId === 'share' ? null : 'share')}
                   aria-describedby={`${uid}-readout`}
                 >
-                  <span className="v3-close__mark-label">Cut before they sold</span>
+                  <span className="v3-close__mark-label">
+                    {view.readings.find((r) => r.id === 'share')?.label ?? 'Came down before they sold'}
+                  </span>
                   <DotField filled={view.filledDots} active={readingId === 'share'} />
                   <span className="v3-close__mark-value">
                     {view.readings.find((r) => r.id === 'share')?.value}
@@ -280,7 +282,9 @@ export function V3ListingClose({
                     onClick={() => setPinnedId(pinnedId === 'depth' ? null : 'depth')}
                     aria-describedby={`${uid}-readout`}
                   >
-                    <span className="v3-close__mark-label">How deep the cut went</span>
+                    <span className="v3-close__mark-label">
+                      {view.readings.find((r) => r.id === 'depth')?.label ?? 'How much they came down'}
+                    </span>
                     <DepthRule
                       depth={view.cutDepth}
                       active={readingId === 'depth'}
@@ -310,7 +314,9 @@ export function V3ListingClose({
                     onClick={() => setPinnedId(pinnedId === 'pace' ? null : 'pace')}
                     aria-describedby={`${uid}-readout`}
                   >
-                    <span className="v3-close__mark-label">Days to an accepted offer</span>
+                    <span className="v3-close__mark-label">
+                      {view.readings.find((r) => r.id === 'pace')?.label ?? 'Days to an accepted offer'}
+                    </span>
                     <PaceRule
                       days={view.paceDays}
                       active={readingId === 'pace'}
@@ -343,7 +349,7 @@ export function V3ListingClose({
                       : 'Three readings from this city\u2019s own closed sales.'}
                   </span>
                   <span className="v3-close__readout-n">
-                    Tap a drawing for the sales it counts
+                    Tap a drawing to see the sales behind it
                   </span>
                 </>
               )}
@@ -355,7 +361,7 @@ export function V3ListingClose({
         ) : null}
 
         <div className={cn('v3-close__acts', !view && 'is-wide')}>
-          <div className="v3-close__tabs" role="tablist" aria-label="What to do about this home">
+          <div className="v3-close__tabs" role="tablist" aria-label="How homes here sold">
             {ACTS.map((a) => (
               <button
                 key={a.id}
@@ -442,7 +448,7 @@ function WatchPanel({
     return (
       <div className="v3-close__done">
         <p className="v3-close__done-line">
-          We are watching the price on {addressLine || 'this home'}.
+          I will email you if the price on {addressLine || 'this home'} changes.
         </p>
         <p className="v3-close__note">
           One email per price change on this home, and nothing else. Unsubscribe any time from any
@@ -461,8 +467,7 @@ function WatchPanel({
       }}
     >
       <p className="v3-close__panel-lede">
-        Sellers move on price more often than they move on anything else. Leave your email and we
-        will tell you the day this one changes.
+        If the seller changes the price, I will email you that day.
       </p>
       <div className="v3-close__field">
         <label htmlFor={`${uid}-watch-email`}>Your email</label>
@@ -477,7 +482,7 @@ function WatchPanel({
           onChange={(e) => setEmail(e.target.value)}
         />
         <button type="submit" className="v3-close__submit" disabled={pending}>
-          {pending ? 'Setting it up…' : 'Watch this price'}
+          {pending ? 'Setting it up…' : 'Email me if it drops'}
         </button>
       </div>
       <div className="v3-close__trap" aria-hidden="true">

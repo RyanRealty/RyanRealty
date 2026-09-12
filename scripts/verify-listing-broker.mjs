@@ -7,8 +7,8 @@
  *
  * Expected after the fix:
  *   WITH rebecca cookie → ["Your broker"]            (single card, Rebecca)
- *   NO cookie           → ["Talk to a broker"]        (single card, Matt fallback)
- * Before the fix the cookie case showed BOTH "Your broker" + "Talk to a broker".
+ *   NO cookie           → ["Want to see it?"]        (single card, Matt fallback)
+ * Before the fix the cookie case showed BOTH "Your broker" + "Want to see it?".
  */
 import { chromium } from 'playwright'
 import { mkdirSync } from 'node:fs'
@@ -17,7 +17,7 @@ const URL = process.env.LISTING_URL
   ?? 'https://ryan-realty.com/homes-for-sale/bend/stage-stop-meadows/55620-wagon-master-220223345'
 mkdirSync('out', { recursive: true })
 
-const LABELS = /Your broker|Talk to a broker|Listing agent/i
+const LABELS = /Your broker|Want to see it\?|Listing agent/i
 
 async function run(browser, withCookie) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 900 }, deviceScaleFactor: 2 })
@@ -46,9 +46,9 @@ const noCookie = await run(browser, false)
 await browser.close()
 
 const ok =
-  withCookie.filter((l) => /Talk to a broker/i.test(l)).length === 0 &&
+  withCookie.filter((l) => /Want to see it\?/i.test(l)).length === 0 &&
   withCookie.filter((l) => /Your broker/i.test(l)).length === 1 &&
-  noCookie.filter((l) => /Talk to a broker/i.test(l)).length === 1 &&
+  noCookie.filter((l) => /Want to see it\?/i.test(l)).length === 1 &&
   noCookie.filter((l) => /Your broker/i.test(l)).length === 0
 console.log(ok ? '\nPASS — one broker in each case.' : '\nFAIL — broker cards not deduped as expected.')
 process.exit(ok ? 0 : 1)

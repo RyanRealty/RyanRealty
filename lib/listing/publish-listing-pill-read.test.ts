@@ -6,25 +6,29 @@ describe('publishListingPillRead', () => {
     const read = publishListingPillRead({ daysLive: 112, daysToPending: 23, ppsf: 446, medianPpsf: 402, placeName: 'Bend', asOfLabel: 'Sep 9, 2026' })
     expect(read).not.toBeNull()
     expect(read!.sentence).toBe(
-      '112 days listed is about 4.9 times the 23 a typical Bend home takes to go under contract; $446 a square foot is 10.9% over the Bend closed median of $402.',
+      "It's been listed 112 days. Typical Bend homes go under contract in 23. At $446 a square foot, it's 10.9% over Bend's closed median of $402.",
     )
+    expect(read!.sentence).not.toMatch(/times the/)
     expect(read!.source).toContain('trailing 90 days')
     expect(read!.source).toContain('trailing 12 months')
     expect(read!.source).toContain('computed Sep 9, 2026')
   })
 
-  it('says inside, longer than, or about N times, and under or over', () => {
+  it('states both numbers without a ratio, and under or over', () => {
     expect(publishListingPillRead({ daysLive: 9, daysToPending: 23, ppsf: null, medianPpsf: null, placeName: 'Bend' })!.sentence).toBe(
-      '9 days listed is inside the 23 a typical Bend home takes to go under contract.',
+      "It's been listed 9 days. Typical Bend homes go under contract in 23.",
     )
     expect(publishListingPillRead({ daysLive: 30, daysToPending: 23, ppsf: null, medianPpsf: null, placeName: 'Bend' })!.sentence).toBe(
-      '30 days listed is longer than the 23 a typical Bend home takes to go under contract.',
+      "It's been listed 30 days. Typical Bend homes go under contract in 23.",
+    )
+    expect(publishListingPillRead({ daysLive: 1, daysToPending: 23, ppsf: null, medianPpsf: null, placeName: 'Bend' })!.sentence).toBe(
+      "It's been listed 1 day. Typical Bend homes go under contract in 23.",
     )
     expect(publishListingPillRead({ daysLive: null, daysToPending: 23, ppsf: 380, medianPpsf: 402, placeName: 'Bend' })!.sentence).toBe(
-      '$380 a square foot is 5.5% under the Bend closed median of $402.',
+      "At $380 a square foot, it's 5.5% under Bend's closed median of $402.",
     )
     expect(publishListingPillRead({ daysLive: null, daysToPending: null, ppsf: 402, medianPpsf: 402, placeName: 'Bend' })!.sentence).toBe(
-      '$402 a square foot matches the Bend closed median.',
+      "At $402 a square foot, it matches Bend's closed median.",
     )
   })
 

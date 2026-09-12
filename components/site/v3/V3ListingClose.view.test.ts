@@ -37,12 +37,12 @@ describe('buildCloseView', () => {
     expect(view.claim).toBe(
       'In Bend, 47% of the homes that sold in the last 12 months had dropped their price before a buyer said yes.',
     )
-    expect(view.lede).toContain('5.9% off the original ask')
+    expect(view.lede).toContain('5.9% off the original list price')
     expect(view.lede).toContain('29 days')
     // The population sentence lives on the window line, not here: printed in
     // both it cost a line the 375 viewport could not spare.
     expect(view.lede).not.toContain('closed sales only')
-    expect(view.eyebrow).toBe('Bend · What to do about this house')
+    expect(view.eyebrow).toBe('Bend · How homes here sold')
   })
 
   it('fills one dot per whole percent of the share', () => {
@@ -64,7 +64,7 @@ describe('buildCloseView', () => {
     const view = buildCloseView(bendFacts({ cutShare: null }))
     expect(view.filledDots).toBeNull()
     expect(view.claim).toBe(
-      'In Bend, a seller who cut in the last 12 months typically cut 5.9% off the price they started at.',
+      'In Bend, a seller who dropped the price in the last 12 months typically came down 5.9% from where they started.',
     )
     expect(view.lede).toContain('29 days')
   })
@@ -103,8 +103,8 @@ describe('buildCloseView', () => {
     const view = buildCloseView(bendFacts())
     const by = (id: string) => view.readings.find((r) => r.id === id)!
     expect(by('share').sentence).toContain('2,074 homes closed')
-    expect(by('depth').sentence).toContain('965 Bend sellers who did cut')
-    expect(by('depth').sentence).toContain('half took more')
+    expect(by('depth').sentence).toContain('965 Bend sellers who dropped the price')
+    expect(by('depth').sentence).toContain('half came down more')
     expect(by('pace').sentence).toContain('1,987')
     expect(by('pace').sentence).toContain('not to closing')
     // None of the three may simply repeat the claim.
@@ -160,7 +160,7 @@ describe('buildCloseSubject — this house, on the same axes', () => {
     // 24-hour periods, which reads a day short of the date beside it whenever
     // the home was listed in the afternoon. See lib/listing/days-live.ts.
     expect(s.daysLive).toBe(234)
-    expect(s.line).toBe('20892 Caldera Ct has taken 7.2% off its first ask and has been on the market 234 days.')
+    expect(s.line).toBe('20892 Caldera Ct has come down 7.2% from the first list price and has been on the market 234 days.')
     expect(s.source).toContain('OnMarketDate')
     expect(s.source).toContain('not DaysOnMarket')
     // The count must be reproducible from the date the citation prints.
@@ -201,7 +201,7 @@ describe('buildCloseSubject — this house, on the same axes', () => {
     const view = buildCloseView(bendFacts(), subject)
     const by = (id: string) => view.readings.find((r) => r.id === id)!
     expect(by('depth').value).toBe('7.2%')
-    expect(by('depth').against).toBe('off this home’s first ask, against a typical 5.9%')
+    expect(by('depth').against).toBe('off this home’s first list price, against a typical 5.9%')
     expect(by('pace').value).toBe('234 days')
     expect(by('pace').against).toBe('this home has been listed, against 29 days for the typical Bend sale')
   })
@@ -212,7 +212,7 @@ describe('buildCloseSubject — this house, on the same axes', () => {
     const view = buildCloseView(bendFacts(), null)
     const by = (id: string) => view.readings.find((r) => r.id === id)!
     expect(by('depth').value).toBe('5.9%')
-    expect(by('depth').against).toBe('came off the asking price')
+    expect(by('depth').against).toBe('came off the list price')
     expect(by('pace').value).toBe('29 days')
     expect(by('pace').against).toBe('from listing to contract')
   })
