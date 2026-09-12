@@ -994,17 +994,25 @@
 }
 
 /* SITE-90 proof fold: three separate broker Cards. Do not restyle Avatar
-   into a cream box, and do not overlap the circles. */
+   into a cream box, and do not overlap the circles. The section box is
+   display:contents inside .about-fold so the office photo can sit between
+   the firm beat and the roster on a phone — padding lives on the children. */
 .about-faces--proof {
   max-width: none;
 }
 
-@media (max-width: 47.99rem) {
-  .about-faces--proof {
-    padding-block: var(--v3-space-sm);
-  }
+.about-faces--proof .about-faces__head {
+  padding: var(--v3-space-lg) var(--v3-gutter) 0;
+}
 
+.about-faces--proof .about-faces__roster {
+  padding-inline: var(--v3-gutter);
+  padding-bottom: var(--v3-space-md);
+}
+
+@media (max-width: 47.99rem) {
   .about-faces--proof .about-faces__head {
+    padding-top: var(--v3-space-sm);
     margin-bottom: var(--v3-space-xs);
   }
 }

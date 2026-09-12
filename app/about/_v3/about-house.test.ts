@@ -22,7 +22,7 @@ describe('SITE-90 /about house fold', () => {
     expect(FACES).toMatch(/from ['"]@\/components\/ui\/button-group['"]/)
     expect(FACES).toMatch(/from ['"]@\/components\/ui\/card['"]/)
     expect(PROOF).toContain('AvatarImage')
-    expect(PROOF).toContain('loading={index === 0 ? "eager" : "lazy"}')
+    expect(PROOF).toContain('loading="eager"')
     expect(PROOF).toContain('AvatarFallback')
     expect(PROOF).toContain('<Card')
     expect(PROOF).toContain('CardTitle')
@@ -86,6 +86,8 @@ describe('SITE-90 /about house fold', () => {
     expect(FOLD_JSX).toContain('BEND OFFICE ·')
     expect(FOLD_JSX).toContain('BRAND.address.street')
     expect(FOLD).toMatch(/grid-template-columns: minmax\(0, 1fr\) minmax\(16rem, 22rem\)/)
+    expect(FOLD).toContain('display: contents')
+    expect(FOLD).toMatch(/"beat"[\s\S]*"office"[\s\S]*"roster"/)
     expect(CLOSINGS).toContain('See this closing')
   })
 
