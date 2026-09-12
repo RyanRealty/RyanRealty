@@ -47,7 +47,7 @@ function writeJson(rel, value) {
 function scaffold() {
   rmSync(SANDBOX, { recursive: true, force: true })
   mkdirSync(SANDBOX, { recursive: true })
-  write(CANON, '# TASTE\n\nRubric version: `v1-2026-09-08`.\n')
+  write(CANON, '# TASTE\n\nRubric version: `v1-2026-09-08`.\n\nVersions: `v1-2026-09-12` (`demoMatch` required).\n')
   for (const p of POINTERS) write(p, `read ${CANON} first\n`)
   write('app/testroute/page.tsx', 'export default function Page() { return null }\n')
   write(SHOTS.desktop, 'desktop-png-bytes')
@@ -673,6 +673,69 @@ describe('check-taste-canon — catalog receipts (adaptedFrom + replaceWith)', (
   it('does not require a catalog baseline file when the kit is not a catalog class', () => {
     scaffold()
     writeReceipt(baseReceipt())
+    const r = run()
+    expect(r.out).toContain('taste-canon OK')
+    expect(r.code).toBe(0)
+  })
+
+  it('fails a cream-box catalog receipt that claims rise without demoMatch (v1-2026-09-12)', () => {
+    scaffold()
+    writeJson('design_system/public/taste-catalog.json', stubCatalog())
+    writeReceipt(
+      baseReceipt({
+        evaluatedAt: '2026-09-12',
+        rubricVersion: 'v1-2026-09-12',
+        comparedToPrior: 'rose',
+        adaptedFrom: [{ id: 'shadcn-carousel' }],
+        defects: [
+          {
+            section: '#faces',
+            severity: 'taste',
+            finding: 'Avatar imported then painted as cream cards',
+            replaceWith: 'shadcn-carousel',
+          },
+        ],
+        priorMark: {
+          evaluatedAt: '2026-09-12',
+          score: 40,
+          evaluatorModel: 'claude-opus-4-1',
+          rubricVersion: 'v1-2026-09-12',
+          shotsHash: hash(),
+        },
+      }),
+    )
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toMatch(/demoMatch must be true or false|not done while demoMatch/)
+  })
+
+  it('passes a catalog receipt that claims rise with demoMatch true', () => {
+    scaffold()
+    writeJson('design_system/public/taste-catalog.json', stubCatalog())
+    writeReceipt(
+      baseReceipt({
+        evaluatedAt: '2026-09-12',
+        rubricVersion: 'v1-2026-09-12',
+        comparedToPrior: 'rose',
+        demoMatch: true,
+        adaptedFrom: [{ id: 'shadcn-carousel' }],
+        defects: [
+          {
+            section: '#rails',
+            severity: 'taste',
+            finding: 'three consecutive sections share one form',
+            replaceWith: 'shadcn-carousel',
+          },
+        ],
+        priorMark: {
+          evaluatedAt: '2026-09-12',
+          score: 40,
+          evaluatorModel: 'claude-opus-4-1',
+          rubricVersion: 'v1-2026-09-12',
+          shotsHash: hash(),
+        },
+      }),
+    )
     const r = run()
     expect(r.out).toContain('taste-canon OK')
     expect(r.code).toBe(0)

@@ -154,6 +154,8 @@ describe('evaluatorBrief', () => {
     expect(brief).toMatch(/https:\/\//)
     expect(brief).toMatch(/github.com\/starc007\/ui-components/)
     expect(brief).toMatch(/demoMatch/)
+    expect(brief).toMatch(/Avatar import/)
+    expect(brief).toMatch(/option list/)
   })
 
   it('accepts a new house primitive as adaptedFrom', () => {
@@ -180,6 +182,7 @@ describe('builderCard', () => {
     expect(md).toMatch(/Fetch these catalog jobs/)
     expect(md).toMatch(/adaptedFrom/)
     expect(md).toMatch(/Comprehensive pass/)
+    expect(md).toMatch(/demoMatch: true/)
   })
 
   it('CLI prints the builder card, not a JSON dump', () => {

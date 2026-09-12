@@ -17,6 +17,7 @@ import {
   openPunchLines,
   type PunchDisposition,
 } from './fleet-intake-core'
+import { siteQueueDoneEvidenceProblems } from './site-queue-done'
 import {
   assertTransition,
   assertWorkNodeDraft,
@@ -263,10 +264,23 @@ export async function completeWorkNode(input: {
   const sb = createServiceClient()
   const { data: row, error: readErr } = await sb
     .from('loop_work_nodes')
-    .select('title,objective,version_gap')
+    .select('title,objective,version_gap,domain')
     .eq('id', input.id)
     .single()
   if (readErr || !row) return { data: null, error: readErr?.message ?? 'node not found' }
+  if (
+    isSiteClaim({
+      domain: row.domain == null ? null : String(row.domain),
+      versionGap: row.version_gap == null ? null : String(row.version_gap),
+    })
+  ) {
+    const siteProblems = siteQueueDoneEvidenceProblems(input.evidence, {
+      versionGap: row.version_gap == null ? null : String(row.version_gap),
+    })
+    if (siteProblems.length) {
+      return { data: null, error: siteProblems.join(' ') }
+    }
+  }
   if (
     isFleetPunchListNode({
       title: String(row.title),

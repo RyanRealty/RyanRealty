@@ -344,9 +344,13 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
    `rubricVersion`, `shotSpec`, `shotsHash`
    (`node scripts/lib/taste-receipt.mjs <parity.json>`), the three `scores` and
    their median, the named `defects` (each with `replaceWith`), `adaptedFrom`,
-   and `comparedToPrior` with `priorMark`. `ci:taste-canon` recomputes the
-   hash and the median and refuses a receipt that claims a rise it did not
-   make, or a catalog-class receipt that invented a layout.
+   `demoMatch` (required true|false), and `comparedToPrior` with `priorMark`.
+   `ci:taste-canon` recomputes the hash and the median and refuses a receipt
+   that claims a rise it did not make, a catalog-class receipt that invented
+   a layout, or (rubric `v1-2026-09-12+`) a catalog `adaptedFrom` that claims
+   rise / score ≥ 70 without `demoMatch: true`. `completeWorkNode` refuses
+   SITE-* evidence that omits `demoMatch: true` or records grok CLI missing /
+   402. Score rise on a cream box is not Tip Ready.
 6. Only then: `npm run gates:stamp`, commit with the `Node: <id>` trailer, push
    its own branch, and report. The evaluator's remaining findings append to the
    node.
