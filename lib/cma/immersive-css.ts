@@ -98,9 +98,11 @@ img{max-width:100%;display:block}
    down the page. A twenty-one-row, seven-column table is a desktop object.
    Above 700px the matrix stands (what Matt asked for on screen); below it, the
    stacked cards — the same data, one sale at a time. Never both. */
-/* C4 Tip Ready (Matt 2026-09-12): ALL screen reads the sold-comp stack; wide matrix is print-only. */
-.comp-matrix-wrap,.matrix-group-h{display:none}
-.comp-stack{display:block;margin:18px 0 8px;max-width:100%;min-width:0}
+/* Restore (Matt 2026-09-12): desktop/screen shows side-by-side matrix; below 700px stack.
+   Tip Ready C4 had hidden matrix on all screen (print-only) — Review looked empty. */
+.comp-matrix-wrap{display:block;margin:18px 0 8px;overflow-x:auto;max-width:100%}
+.comp-stack{display:none;margin:18px 0 8px;max-width:100%;min-width:0}
+@media screen and (max-width:700px){.comp-matrix-wrap,.matrix-group-h{display:none}.comp-stack{display:block}}
 .comp-stack-card{border:1px solid var(--ink12);padding:14px;margin:0 0 14px;background:#fff;max-width:100%;min-width:0;overflow-wrap:anywhere;box-sizing:border-box}
 .comp-stack-addr{font-weight:600;margin:0 0 6px;font-size:17px;line-height:1.25}
 .comp-stack-sold{font-size:15px;margin:0 0 10px;font-variant-numeric:tabular-nums}

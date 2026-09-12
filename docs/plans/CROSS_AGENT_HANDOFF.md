@@ -1,10 +1,10 @@
-# Current — 2026-09-12 15:10Z (SITE-90 Critiquito P0s Tip Ready, 402)
+# Current — 2026-09-12 17:40Z (SITE-90 About fold — Tip Ready for Cos)
 
-Owner: `cursor-cloud-2026-09-12-06-a`. Claim held. Do not steal SITE-90. No emails. Do not merge — Cos cherry-picks + `npm run push`.
+Owner: `cursor-cloud-2026-09-12-0e8e`. Do not merge — Cos cherry-picks + `npm run push`. No emails.
 
-- **SITE-90 in_progress** `/about`. UUID `edabba8e-f8aa-4271-909d-c258914f75ef`. PR #207. Critiquito P0s: AvatarGroup + one principal Card (vertical name/title/Call; Text/Email/Schedule ghost); Street View caption `BEND OFFICE · 115 NW Oregon Ave #2`; closings as Accordion. Never three portrait tiles or the sofa. shotsHash `sha256:79ad786f…`. Scores still SITE-64 **52** — grok CLI missing (402). No fake demoMatch. Not done.
-- Exclusive: `app/about/**` this lane.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
+- **SITE-90 Tip Ready** `/about` on `cursor/about-fold-redo-0e8e` (PR, draft off). Matt hard list is in the fold: three broker Cards (Matt, Rebecca, Paul) with separate Avatars; firm beat since 2014 / Bend / who you call works your deal; V3Carousel of real firm closings; no AvatarGroup overlap; no V3SourceLine on faces/closings/fold; Street View `BEND OFFICE · 115 NW Oregon Ave #2` between beat and roster at 375. Shots 1440/375 + firm-sales. grok CLI missing — `demoMatch: false`, scores still SITE-64 52. Cos evaluates.
+- Exclusive: `app/about/**` this lane until Cos lands.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `marketing_brain_skills/brand-voice/VOICE.md`.
 
 # Current — 2026-09-12 00:40Z (the taste instrument had no transport a cloud session could use)
 

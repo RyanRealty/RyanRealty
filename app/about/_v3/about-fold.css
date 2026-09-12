@@ -1,16 +1,36 @@
 /**
- * /about first viewport (SITE-90). People as AvatarGroup, the Bend office
- * as the Street View exterior, closings as Accordion. Never the interior sofa.
+ * /about first viewport (SITE-90). Three broker Cards, the Bend office
+ * as the Street View exterior, closings as a carousel. Never the interior sofa.
+ *
+ * Proof AboutFaces is display:contents so the office can sit between the
+ * firm beat and the roster on a phone (Matt: keep the exterior in the fold).
  */
 
 .about-fold {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-areas:
+    "beat"
+    "office"
+    "roster"
+    "sales";
   gap: var(--v3-space-md);
   padding-bottom: var(--v3-space-md);
 }
 
+.about-fold > .about-faces--proof {
+  display: contents;
+}
+
+.about-fold .about-faces--proof .about-faces__head {
+  grid-area: beat;
+}
+
+.about-fold .about-faces--proof .about-faces__roster {
+  grid-area: roster;
+}
+
 .about-fold__place {
+  grid-area: office;
   margin: 0;
   padding: 0 var(--v3-gutter);
 }
@@ -31,6 +51,7 @@
 }
 
 .about-fold__sales {
+  grid-area: sales;
   min-width: 0;
 }
 
@@ -55,74 +76,51 @@
   line-height: var(--v3-leading-heading);
 }
 
-.about-closings__accordion {
-  max-width: 48rem;
-}
-
-.about-closings__trigger {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--v3-space-sm);
-  padding-right: var(--v3-space-sm);
-}
-
-.about-closings__address {
+.about-closings__carousel {
   min-width: 0;
 }
 
-.about-closings__price {
-  flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
+.about-closings__card {
+  min-width: 0;
 }
 
 .about-closings__facts {
-  margin: var(--v3-space-2xs) 0;
+  margin: 0 0 var(--v3-space-2xs);
 }
 
 .about-closings img {
   display: block;
   width: 100%;
-  max-width: 22rem;
   aspect-ratio: 3 / 2;
   object-fit: cover;
 }
 
 @media (min-width: 64rem) {
   .about-fold {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+    grid-template-areas:
+      "beat office"
+      "roster office"
+      "sales sales";
     align-items: start;
     column-gap: var(--v3-space-lg);
   }
 
-  .about-fold > .about-faces {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
   .about-fold__place {
-    grid-column: 2;
-    grid-row: 1;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
     padding-inline: 0 var(--v3-gutter);
   }
 
   .about-fold__place img {
-    aspect-ratio: 1 / 1;
-  }
-
-  .about-fold__sales {
-    grid-column: 1 / span 2;
-    grid-row: 2;
+    flex: 1 1 auto;
+    min-height: 18rem;
+    aspect-ratio: auto;
+    height: 100%;
   }
 
   .about-closings {
     padding-inline: var(--v3-gutter);
-  }
-
-  .about-closings__accordion {
-    max-width: none;
   }
 }

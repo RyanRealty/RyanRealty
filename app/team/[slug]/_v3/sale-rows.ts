@@ -101,12 +101,27 @@ export function hasRealPersonalRecord(count: number): boolean {
   return count >= PERSONAL_RECORD_FLOOR
 }
 
+/** Deduplicate MLS rows so a list-side + buy-side hit is one closing. */
+export function uniqueListingTiles<T extends { ListingKey?: string | null }>(
+  tiles: readonly T[],
+): T[] {
+  const seen = new Set<string>()
+  const out: T[] = []
+  for (const tile of tiles) {
+    const key = (tile.ListingKey ?? '').trim()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    out.push(tile)
+  }
+  return out
+}
+
 /** Newest firm closings for the shared house-row ledger on /about and /team/[slug]. */
 export function publishFirmClosingRows(
   tiles: readonly PriceDropTile[],
   limit = 8,
 ): V3LedgerFigureRow[] {
-  return tiles
+  return uniqueListingTiles(tiles)
     .filter((t) => t.ClosePrice != null && (t.CloseDate != null || /clos|sold/i.test(t.StandardStatus ?? '')))
     .sort((a, b) => new Date(b.CloseDate ?? 0).getTime() - new Date(a.CloseDate ?? 0).getTime())
     .map((t) => brokerageTileToRow(t))
