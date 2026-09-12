@@ -1,10 +1,10 @@
-# Current — 2026-09-12 14:00Z (SITE-100 hub fold on PR, Tip Ready)
+# Current — 2026-09-12 14:45Z (SITE-100 catalog pager applied, Tip Ready)
 
 Owner: `cursor-cloud-2026-09-12-06-c` on `cursor/site-100-market-hub-1dd4`. PR only — Cos lands from Mini. No emails. No merge to main.
 
-- **SITE-100 in_progress** `/housing-market` first viewport: Live market Instrument + region MOS two-bar (integer month of sales) + beautifului-insight city MOS pager (city grain via `publishMonthsOfSupply`, miss omits). `#chooser` after `#cities`. Layer A title stays `Central Oregon Housing Market`; live count is in the description + ItemList JSON-LD. `ci:gates` 154/154 on this branch.
-- **Tip Ready:** grok CLI is not installed here (`~/.grok/bin/grok` missing). Did not fake a `tasteReview`. Prior receipt stays 63. New 1440/375 shots are artifacts only, not committed, so `ci:taste-canon` stays honest.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `scripts/site-queue-routine-prompt.md`, `docs/CLOUD_ENVIRONMENT_SETUP.md`, `TASTE.md`, `VOICE.md`.
+- **SITE-100 in_progress** `/housing-market`: leftover extras page through InsightPager (`Also` title + 1/N + prev/next). Closed cream fold is gone. City MOS pager + beui-number on whole counts. House v3 imports `insight-pager` and `number`. Receipt `adaptedFrom` names house-instrument, house-mos, beautifului-insight, beui-number. `ci:gates` 157/157 at `b8c1c2f53`.
+- **Tip Ready:** grok CLI missing (`taste-evaluate: no grok CLI at ~/.grok/bin/grok`). Did not fake a receipt. Score stays 63. Score rise without demoMatch is not done. Live pager clicks: Bend→Redmond, Price and wait→Types.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `scripts/site-queue-routine-prompt.md`, `TASTE.md`.
 - Do not restyle `V3Instrument` / `V3Chart` globally. Do not steal SITE-102/103.
 
 # Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)
