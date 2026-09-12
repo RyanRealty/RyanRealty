@@ -170,14 +170,14 @@
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png"
     },
-    "shotsHash": "sha256:e8412e597743df5a8f68a4dc990860f631316a04f789e80edfcab95862edd49d",
+    "shotsHash": "sha256:712930e0fbbb1eb2c73aaab003ecf20203e2ab010cf8b186d8c0eb90c6e96d87",
     "scores": [
       52,
       47,
       57
     ],
     "score": 52,
-    "beats": "Lock under test: firm-story hero (boutique · Central Oregon · buy+sell), Google reviews as primary proof, dated local closings, Contact four-up, team teaser → /team. A faces-first / three-Card opener fails this class. Cos still owns the score. demoMatch is false until the live controls match the catalog demos on new shots.",
+    "beats": "Lock under test: firm-story hero, V3Proof Google reviews as the first proof band (display-scale score + words), dated local closings, Contact four-up, short face-row teaser → /team. A faces-first / Card-roster About fails this class. Cos still owns the score. demoMatch is false. competitiveBriefPass is false.",
     "adaptedFrom": [
       { "id": "house-firm" },
       { "id": "house-proof" },
@@ -188,7 +188,7 @@
       { "id": "shadcn-carousel" },
       { "id": "shadcn-input" }
     ],
-    "evaluatorBlocked": "2026-09-12 Researchy lock: npx tsx scripts/taste-evaluate.ts about failed — grok CLI missing (no ~/.grok/bin/grok). Do not invent demoMatch. Scores 52/47/57 are the prior SITE-64 instrument, not a pass of a Meet-the-Team About. comparedToPrior is rebaselined because the contract changed (AboutFaces opener removed). Tip Ready for Cos, not done.",
+    "evaluatorBlocked": "2026-09-12 Looking 2+4 craft: grok CLI missing in this cloud lane. Do not invent demoMatch or competitiveBriefPass. New shotsHash sha256:712930e0 after the weighted V3Proof band and non-card teaser capture. Scores 52/47/57 stay the prior instrument. Tip Ready for Cos, not done.",
     "defects": [
       {
         "section": "#firm",
@@ -223,7 +223,7 @@
       "rubricVersion": "v1-2026-09-08",
       "shotsHash": "sha256:79ad786fe5d34960b88199dd066b0ab6ab91edc0a23cee56fe3aa148b19a9c10"
     },
-    "rebaselineReason": "Contract change 2026-09-12: requiredComponents no longer opens on AboutFaces / three broker Cards. competitiveTarget is firm story first (Researchy + Matt lock). New shotsHash sha256:e8412e59 after the firm-story capture. Prior SITE-64 scores are not a pass of a Meet-the-Team About.",
+    "rebaselineReason": "Craft pass 2026-09-12: V3Proof is the first proof band after AboutFirm; AboutTeamTeaser is a face row not a Card roster. New shotsHash sha256:712930e0. Prior SITE-64 scores are not a Looking pass.",
     "verdict": "Looking/taste cannot pass a Meet-the-Team About. The contract opens on AboutFirm. demoMatch is false. Cos scores the shots.",
     "contactListIsFirstContent": false,
     "contactListAnswer": "H1 and one purpose line (boutique · Central Oregon · buy and sell) on the Bend office exterior, Google reviews as primary proof, dated local closings, Call/Text/Email/Schedule, a Who you work with teaser that only doors to /team, and a one-line inquiry to /contact. No three equal broker Cards as the opener. No methodology disclosure."
