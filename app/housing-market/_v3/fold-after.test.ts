@@ -70,10 +70,22 @@ describe('market instruments open on a claim and a drawing', () => {
   })
 
   it('draws MOS on the hub opening instrument, not two leftover tiles above the chart', () => {
+    const opening = code('app/housing-market/_v3/hub-opening.ts')
     expect(hub).toMatch(/buildMosSupplyChart/)
     expect(hub).toMatch(/chart=\{mosChart \?\? regionChart\}/)
-    expect(hub).toMatch(/label: v3Text\('a month of sales'\)/)
+    expect(hub).toMatch(/buildOpeningFigures/)
+    expect(hub).toMatch(/HubCityMosPages/)
     expect(hub).toMatch(/chartFirst/)
+    expect(opening).toMatch(/label: v3Text\('a month of sales'\)/)
+  })
+
+  it('SITE-100: the hub chooser sits after the city ledger, not in the first viewport', () => {
+    const market = hub.indexOf('id="market"')
+    const cities = hub.indexOf('id="cities"')
+    const chooser = hub.indexOf('id="chooser"')
+    expect(market).toBeGreaterThan(-1)
+    expect(cities).toBeGreaterThan(market)
+    expect(chooser).toBeGreaterThan(cities)
   })
 
   it('does not retarget {city} homes for sale in market metadata keywords', () => {

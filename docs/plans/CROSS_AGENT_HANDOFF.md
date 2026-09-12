@@ -1,3 +1,11 @@
+# Current — 2026-09-12 13:35Z (SITE-100 market-report hub, Cursor cloud)
+
+Owner: `cursor-cloud-2026-09-12-06-c` on `cursor/site-100-market-hub-1dd4`. PR only — do not merge to main. No emails.
+
+- **SITE-100 in_progress** `/housing-market` first viewport. Instrument + MOS two-bar + InsightPager city MOS (city grain, miss omits). Chooser moved below `#cities`. Title carries live count. Taste: grok-4.6; if CLI 402, Tip Ready — do not fake a receipt.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `TASTE.md`, `VOICE.md`.
+- Do not restyle `V3Instrument` / `V3Chart` globally. Do not steal SITE-102/103.
+
 # Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)
 
 Owner: this land (`wt/cma-ship-20260907` → `main`). No owner sends / no emails. HOLD SITE-56 auto-send.
