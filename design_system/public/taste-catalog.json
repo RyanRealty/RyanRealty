@@ -2354,13 +2354,31 @@
       ]
     },
     "about": {
-      "layoutLock": "The fold is the brokerage, not Meet the Team. Hero: office exterior mood photo + one purpose line (small boutique brokerage, all of Central Oregon, help buy and sell). Reviews proof (Google score + featured quote). Dated local closings as a shadcn carousel. Who you work with teasers (photo + name) door only to /team — no bios, licenses, or Call rows. Contact four-up Call/Text/Email/Schedule. One-line inquiry GET to /contact. Do not mount V3SourceLine or how-we-calculate-this. Never the sofa interior. Never coast-to-coast or fee copy.",
+      "layoutLock": "About is the brokerage, not Meet the Team. FAIL if the page opens on AboutFaces or three equal broker Cards. Hero is AboutFirm: office exterior + one purpose line (boutique · all of Central Oregon · buy and sell). V3Proof is primary client reviews (Google + featured quote, not press). FirmClosings is dated local sold homes — never invented MOS. V3Doors is Call|Text|Email|Schedule. AboutTeamTeaser doors only to /team. AboutInquiry GET /contact. No V3SourceLine. Never the sofa, coast-to-coast, or fee copy.",
+      "layoutLockChecks": [
+        {
+          "path": "app/about/page.tsx",
+          "mustMatch": "<AboutFirm",
+          "forbid": "<AboutFaces"
+        },
+        {
+          "path": "design_system/ryan-realty/ui_kits/about/parity.json",
+          "mustMatch": "OPENS THE PAGE",
+          "forbid": "\"name\": \"AboutFaces\""
+        }
+      ],
       "modules": [
+        {
+          "id": "house-firm",
+          "catalog": "house-v3",
+          "url": "app/about/_v3/AboutFirm.tsx",
+          "job": "Opens About on the firm story + office exterior. Not three broker Cards."
+        },
         {
           "id": "house-faces",
           "catalog": "house-v3",
           "url": "app/about/_v3/AboutTeamTeaser.tsx",
-          "job": "Who you work with teasers (photo + name) door only to /team. Bios and licenses stay on Team."
+          "job": "Who you work with teasers only — photo + name, every door to /team. Never the About opener."
         },
         {
           "id": "house-proof",

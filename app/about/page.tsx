@@ -1,14 +1,15 @@
 /**
  * /about - brokerage profile, on the components/site/v3 barrel.
  *
- * PAGE OUTLINE (Compass/SIR brief + Matt 2026-09-12 — brokerage, not Team):
- * 1. Hero: AboutFirm — office exterior mood + one purpose line
- *    (boutique · Central Oregon · buy and sell) + Google score + featured quote
- * 2. AboutTeamTeaser — photo + name, every card → /team. No bios/licenses
- * 3. V3Doors four-up matching Contact (Call / Text / Email / Schedule)
- * 4. AboutInquiry GET to /contact (Send a message). Full form stays on Contact
- * 5. FirmClosings carousel of dated local closings. Never invented MOS
- * 6. V3Proof (more review words), Atlas, How it started + OREA, V3Answers
+ * PAGE OUTLINE (Researchy 1–8 + Matt 2026-09-12 — brokerage, not Team):
+ * 1. Hero: AboutFirm — office exterior + one purpose line
+ *    (boutique · Central Oregon · buy and sell). Not broker Cards.
+ * 2. V3Proof — client reviews PRIMARY (Google + featured quote). Not press.
+ * 3. FirmClosings — dated local sold homes. Never invented MOS.
+ * 4. AboutTeamTeaser — photo + name → /team only. No bios/licenses.
+ * 5. V3Doors four-up matching Contact (Call / Text / Email / Schedule)
+ * 6. AboutInquiry GET to /contact. Full form stays on Contact.
+ * Then Atlas, How it started + OREA, V3Answers.
  * Never the sofa interior. No coast-to-coast / fee copy.
  *
  * THE PAGE CONTRACT: generateMetadata through pageMetadata, MetadataBlock
@@ -219,6 +220,24 @@ export default async function AboutPage() {
             }
             quote={featuredQuote}
           />
+          {quotes.length > 0 ? (
+            <div className="about-fold__proof">
+              <V3Proof
+                id="proof"
+                eyebrow="Ryan Realty · Google"
+                headline="In their own words"
+                headingLevel={2}
+                claim={`The newest four of ${reviewCount} verified Google reviews, in full, exactly as they were written.`}
+                figures={[]}
+                quotes={quotes}
+                source={{ label: 'Every review', href: '/reviews' }}
+                record={false}
+              />
+            </div>
+          ) : null}
+          <div className="about-fold__sales">
+            <FirmClosings rows={firmRows} />
+          </div>
           <AboutTeamTeaser people={teamTeaser} />
           <div className="about-fold__reach">
             <V3Doors
@@ -257,24 +276,7 @@ export default async function AboutPage() {
           <div className="about-fold__write">
             <AboutInquiry />
           </div>
-          <div className="about-fold__sales">
-            <FirmClosings rows={firmRows} />
-          </div>
         </div>
-
-        {quotes.length > 0 ? (
-          <V3Proof
-            id="proof"
-            eyebrow="Ryan Realty · Google"
-            headline="In their own words"
-            headingLevel={2}
-            claim={`The newest four of ${reviewCount} verified Google reviews, in full, exactly as they were written.`}
-            figures={[]}
-            quotes={quotes}
-            source={{ label: 'Every review', href: '/reviews' }}
-            record={false}
-          />
-        ) : null}
 
         <V3Atlas
           id="service-area"

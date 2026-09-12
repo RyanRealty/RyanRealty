@@ -22,7 +22,7 @@ describe('/about section order', () => {
   })
 
   it('groups the four Contact channels into one reach control with a live state', () => {
-    expect(at('id="reach"')).toBeLessThan(at('id="proof"'))
+    expect(at('id="proof"')).toBeLessThan(at('id="reach"'))
     expect(PAGE).toContain('primary: true')
     expect(PAGE).toContain('live: hoursLive')
     expect(PAGE).toContain('<V3OnDuty')
@@ -36,9 +36,10 @@ describe('/about section order', () => {
     expect(PAGE).toContain("kicker: v3Text('Schedule')")
   })
 
-  it('prints reviews and closings in the fold, then more review words below', () => {
-    expect(at('<AboutFirm')).toBeLessThan(at('<FirmClosings'))
-    expect(at('<FirmClosings')).toBeLessThan(at('id="proof"'))
+  it('prints reviews as primary proof, then dated local closings', () => {
+    expect(at('<AboutFirm')).toBeLessThan(at('id="proof"'))
+    expect(at('id="proof"')).toBeLessThan(at('<FirmClosings'))
+    expect(at('<FirmClosings')).toBeLessThan(at('<AboutTeamTeaser'))
     expect(BODY).toContain('headline="In their own words"')
     expect(BODY).not.toContain('headline={`${reviewCount} Google reviews`}')
   })

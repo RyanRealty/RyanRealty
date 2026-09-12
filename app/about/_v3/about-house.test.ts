@@ -12,6 +12,32 @@ const CLOSINGS = readFileSync('app/about/_v3/FirmClosings.tsx', 'utf8')
 const FOLD_JSX = PAGE.slice(PAGE.indexOf('className="about-fold"'), PAGE.indexOf('id="proof"'))
 
 describe('SITE-90 /about brokerage fold', () => {
+  it('parity cannot pass a Meet-the-Team About', () => {
+    const parity = JSON.parse(
+      readFileSync('design_system/ryan-realty/ui_kits/about/parity.json', 'utf8'),
+    ) as {
+      competitiveTarget: string
+      note: string
+      requiredComponents: { name: string; section: string }[]
+      removedComponents: string[]
+    }
+    const names = parity.requiredComponents.map((c) => c.name)
+    expect(names).toContain('AboutFirm')
+    expect(names).toContain('V3Proof')
+    expect(names).toContain('FirmClosings')
+    expect(names).toContain('V3Doors')
+    expect(names).toContain('AboutTeamTeaser')
+    expect(names).toContain('AboutInquiry')
+    expect(names).not.toContain('AboutFaces')
+    expect(parity.competitiveTarget).not.toMatch(/OPENING on proof — the three brokers|open on the three brokers/i)
+    expect(parity.competitiveTarget).toMatch(/FAIL if the page opens on brokers' faces/)
+    expect(parity.note).toMatch(/not Meet the Team/)
+    const opener = parity.requiredComponents.find((c) => c.name === 'AboutFirm')
+    expect(opener?.section).toMatch(/OPENS THE PAGE/)
+    expect(opener?.section).toMatch(/NOT three broker Cards/)
+    expect(parity.removedComponents.some((row) => row.startsWith('AboutFaces'))).toBe(true)
+  })
+
   it('opens on the firm purpose, not three broker Cards', () => {
     expect(PAGE).toContain('<AboutFirm')
     expect(PAGE).not.toContain('<AboutFaces')

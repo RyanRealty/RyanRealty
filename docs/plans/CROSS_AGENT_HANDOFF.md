@@ -1,10 +1,11 @@
-# Current — 2026-09-12 18:40Z (SITE-90 About = brokerage — Tip Ready)
+# Current — 2026-09-12 18:50Z (SITE-90 parity lock — About ≠ Meet the Team)
 
 Owner: `cursor-cloud-2026-09-12-69a2`. Do not merge. No emails.
 
-- **SITE-90 Tip Ready** `/about` on `cursor/about-brokerage-fold-69a2`. Compass/SIR brief + Matt lock: firm-story hero on office exterior (boutique · Central Oregon · buy and sell); Google score + featured quote; closings carousel; Contact four-up; one-line inquiry GET `/contact`; Who you work with teasers → `/team` only. No broker bios/licenses on About. No sofa. No methodology chrome.
-- Exclusive: `app/about/**` this lane until Cos lands.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `marketing_brain_skills/brand-voice/VOICE.md`.
+- **Root cause Matt hit:** `origin/main` parity still required AboutFaces + three broker Cards to OPEN. Looking/taste could pass a Meet-the-Team About.
+- **Fix:** `parity.json` competitiveTarget/note/requiredComponents now FAIL a faces-first opener. AboutFirm opens. V3Proof reviews primary. FirmClosings local. V3Doors four-up. Team teaser → `/team`. Inquiry → Contact. AboutFaces listed in removedComponents. Catalog `layoutLockChecks` forbid `<AboutFaces` on `/about`.
+- Exclusive: `app/about/**` this lane. taste-canon scoring: Cos / competitiveBrief lane.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 
 # Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)
 
