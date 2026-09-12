@@ -23,11 +23,13 @@
  *      visible in the diff, never a silent drift.
  *
  * WHAT A BINDING ENTRY IS. sectionOrder lines are prose for a human plus tokens
- * for this gate. A line binds iff it contains a `#some-id` token, or its first
- * word is a component name (CamelCase with at least one lowercase letter --
- * which is what exempts commentary like "MISSING: ..." and "APP FRAME ...").
- * Lines that bind by neither are annotations and are skipped, so the contract
- * can still carry judgment ("MISSING: live inventory") without lying to CI.
+ * for this gate. A line binds iff it contains a `#some-id` token whose id starts
+ * with a letter (so street-address unit numbers like "Ave #2" are prose, not
+ * section ids), or its first word is a component name (CamelCase with at least
+ * one lowercase letter -- which is what exempts commentary like "MISSING: ..."
+ * and "APP FRAME ..."). Lines that bind by neither are annotations and are
+ * skipped, so the contract can still carry judgment ("MISSING: live inventory")
+ * without lying to CI.
  *
  * Scope: contracts whose route matches app/** minus admin. The change path is
  * two-sided on purpose: edit the page -> the gate makes you edit the contract;
@@ -80,7 +82,7 @@ for (const rel of contracts) {
   let cursor = -1
   for (const raw of order) {
     const entry = typeof raw === 'string' ? raw : ''
-    const idMatch = entry.match(/#([a-z0-9][a-z0-9-]*)/)
+    const idMatch = entry.match(/#([a-z][a-z0-9-]*)/)
     const compMatch = entry.match(/^([A-Z][A-Za-z0-9]*)/)
     const comp =
       compMatch && /[a-z]/.test(compMatch[1]) ? compMatch[1] : null

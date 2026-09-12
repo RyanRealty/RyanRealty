@@ -275,6 +275,7 @@ export default async function AboutPage() {
             </figcaption>
           </figure>
           <div className="about-fold__sales">
+            {/* id="firm-sales" — FirmClosings mounts the Accordion (page-purpose binds here). */}
             <FirmClosings rows={firmRows} />
           </div>
         </div>
