@@ -11,9 +11,13 @@ const LOAD = readFileSync('app/about/_v3/load-about-faces.ts', 'utf8')
 describe('SITE-90 /about house fold', () => {
   it('adapts shadcn Avatar into AboutFaces and FacePortrait', () => {
     expect(FACES).toMatch(/from ['"]@\/components\/ui\/avatar['"]/)
+    expect(FACES).toContain('AvatarGroup')
+    expect(FACES).toContain('AvatarImage')
     expect(PORTRAIT).toMatch(/from ['"]@\/components\/ui\/avatar['"]/)
+    expect(PORTRAIT).toContain('AvatarImage')
     expect(PORTRAIT).toContain('AvatarBadge')
     expect(PORTRAIT).toContain('AvatarFallback')
+    expect(PORTRAIT).not.toMatch(/<img[\s\S]*onError/)
   })
 
   it('opens editorial, not three equal roster columns or a KPI figure row', () => {

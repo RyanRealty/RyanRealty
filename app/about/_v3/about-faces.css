@@ -1064,7 +1064,6 @@
   display: none;
   margin: 0;
   padding: 0;
-  list-style: none;
 }
 
 @media (max-width: 47.99rem) {
@@ -1081,6 +1080,16 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--v3-space-2xs);
     margin-bottom: var(--v3-space-sm);
+  }
+
+  /* AvatarGroup ships overlapping circles. House portraits stay a 3-up
+     row at display scale — keep the group primitive, drop the overlap. */
+  .about-faces--house .about-faces__trio > * + * {
+    margin-inline-start: 0;
+  }
+
+  .about-faces--house .about-faces__trio [data-slot='avatar'] {
+    box-shadow: none;
   }
 
   .about-faces--house .about-faces__trio .about-faces__photo-link {

@@ -8,6 +8,16 @@
 import { BROKERS, type BrokerKey } from '@/lib/brand/contact'
 import { teamPath } from '@/lib/slug'
 
+/** Initials for shadcn AvatarFallback. Server-safe — do not put this on a client module. */
+export function faceInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join('')
+}
+
 /**
  * One differentiator per broker, beyond contact plumbing (SITE-48).
  *

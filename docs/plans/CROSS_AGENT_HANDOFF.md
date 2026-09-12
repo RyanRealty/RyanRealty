@@ -1,8 +1,8 @@
-# Current — 2026-09-12 13:50Z (SITE-90 /about Tip Ready, evaluator blocked)
+# Current — 2026-09-12 14:00Z (SITE-90 catalog install, evaluator still 402)
 
-Owner: `cursor-cloud-2026-09-12-06-a`. Claim held. Do not steal SITE-90. No emails. Do not merge this PR to main — Cos cherry-picks + `npm run push`.
+Owner: `cursor-cloud-2026-09-12-06-a`. Claim held. Do not steal SITE-90. No emails. Do not merge — Cos cherry-picks + `npm run push`.
 
-- **SITE-90 in_progress** `/about`. UUID `edabba8e-f8aa-4271-909d-c258914f75ef`. Branch `cursor/site-90-about-fold-deb7` PR #207. Fold: editorial faces + 5.0 on Matt + per-broker MLS + Bend office + FirmClosings. 375 trio (faces, first names, Call). Shots recaptured. **taste-evaluate blocked:** no grok CLI at `~/.grok/bin/grok` (Grok Build 402). No fake receipt. Prior mark 52 stays. Skills read: site-queue, TASTE.md, VOICE.md.
+- **SITE-90 in_progress** `/about`. UUID `edabba8e-f8aa-4271-909d-c258914f75ef`. PR #207. Catalog job `shadcn-avatar` is now the demo composition (Avatar + AvatarImage + AvatarFallback + AvatarBadge + AvatarGroup), not a cream box around `<img>`. Receipt has adaptedFrom + replaceWith; left catalog baseline. Scores still SITE-64 **52** — grok CLI missing (402). No fake demoMatch. Not done.
 - Exclusive: `app/about/**` this lane.
 
 # Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)

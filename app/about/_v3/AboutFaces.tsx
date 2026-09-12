@@ -17,7 +17,8 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarGroup, AvatarImage } from "@/components/ui/avatar"
+import { faceInitials } from "./about-faces"
 import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading } from "@/components/site/v3"
 import { teamPath } from "@/lib/slug"
 import type { AboutFace, AboutFaceRecord } from "./about-faces"
@@ -477,9 +478,9 @@ export function AboutFaces({
         </div>
         <div className="about-faces__editorial">
           {proof ? (
-            <ul className="about-faces__trio">
+            <AvatarGroup className="about-faces__trio">
               {shown.map((person) => (
-                <li key={`trio-${person.href}`} className="about-faces__trio-item">
+                <div key={`trio-${person.href}`} className="about-faces__trio-item">
                   <Link href={person.href} className="about-faces__photo-link">
                     <FacePortrait
                       src={person.src}
@@ -497,9 +498,9 @@ export function AboutFaces({
                       Call
                     </a>
                   ) : null}
-                </li>
+                </div>
               ))}
-            </ul>
+            </AvatarGroup>
           ) : null}
           <article className="about-faces__lead">
             <Link href={leadPerson.href} className="about-faces__photo-link">
@@ -518,8 +519,9 @@ export function AboutFaces({
               {proof ? (
                 <p className="about-faces__face-proof">
                   <Avatar className="about-faces__face-proof-avatar" size="sm">
-                    <AvatarFallback className="about-faces__face-proof-fallback" delayMs={0}>
-                      {proof.value}
+                    <AvatarImage src={leadPerson.src} alt={leadPerson.name} />
+                    <AvatarFallback className="about-faces__face-proof-fallback" delayMs={400}>
+                      {faceInitials(leadPerson.name)}
                     </AvatarFallback>
                   </Avatar>
                   <Link href={proof.href} className="about-faces__face-proof-link">
