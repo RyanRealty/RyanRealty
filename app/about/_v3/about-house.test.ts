@@ -1,112 +1,86 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { ABOUT_FIRM_STORY } from '@/app/about/_v3/about-constants'
 
-const FACES = readFileSync('app/about/_v3/AboutFaces.tsx', 'utf8')
-const PORTRAIT = readFileSync('app/about/_v3/FacePortrait.client.tsx', 'utf8')
 const PAGE = readFileSync('app/about/page.tsx', 'utf8')
-const CSS = readFileSync('app/about/_v3/about-faces.css', 'utf8')
+const FIRM = readFileSync('app/about/_v3/AboutFirm.tsx', 'utf8')
+const TEASER = readFileSync('app/about/_v3/AboutTeamTeaser.tsx', 'utf8')
+const INQUIRY = readFileSync('app/about/_v3/AboutInquiry.tsx', 'utf8')
 const FOLD = readFileSync('app/about/_v3/about-fold.css', 'utf8')
 const LOAD = readFileSync('app/about/_v3/load-about-faces.ts', 'utf8')
 const CLOSINGS = readFileSync('app/about/_v3/FirmClosings.tsx', 'utf8')
+const FOLD_JSX = PAGE.slice(PAGE.indexOf('className="about-fold"'), PAGE.indexOf('id="proof"'))
 
-const proofIf = FACES.indexOf('if (size === "proof")')
-const proofReturn = FACES.indexOf('return (', proofIf)
-const rosterReturn = FACES.indexOf('\n  return (', proofReturn + 8)
-const PROOF = FACES.slice(proofIf, rosterReturn)
-const FOLD_JSX = PAGE.slice(PAGE.indexOf('className="about-fold"'), PAGE.indexOf('id="reach"'))
-
-describe('SITE-90 /about house fold', () => {
-  it('adapts shadcn Avatar + Card + carousel into the fold', () => {
-    expect(FACES).toMatch(/from ['"]@\/components\/ui\/avatar['"]/)
-    expect(FACES).toMatch(/from ['"]@\/components\/ui\/button['"]/)
-    expect(FACES).toMatch(/from ['"]@\/components\/ui\/button-group['"]/)
-    expect(FACES).toMatch(/from ['"]@\/components\/ui\/card['"]/)
-    expect(PROOF).toContain('AvatarImage')
-    expect(PROOF).toContain('loading="eager"')
-    expect(PROOF).toContain('AvatarFallback')
-    expect(PROOF).toContain('<Card')
-    expect(PROOF).toContain('CardTitle')
-    expect(PROOF).toContain('CardDescription')
-    expect(PROOF).toContain('ButtonGroup')
-    expect(PROOF).toContain('about-faces__roster')
-    expect(CLOSINGS).toMatch(/from ['"]@\/components\/ui\/card['"]/)
-    expect(CLOSINGS).toContain('V3Carousel')
-    expect(CLOSINGS).toContain('mode="rail"')
-    expect(CLOSINGS).not.toMatch(/from ['"]@\/components\/ui\/accordion['"]/)
-    expect(PORTRAIT).toMatch(/from ['"]@\/components\/ui\/avatar['"]/)
-    expect(PORTRAIT).not.toMatch(/<img[\s\S]*onError/)
-  })
-
-  it('opens as three broker Cards, not one principal and not a KPI row', () => {
-    expect(PAGE).toContain('size="proof"')
-    expect(PAGE).toContain('className="about-fold"')
+describe('SITE-90 /about brokerage fold', () => {
+  it('opens on the firm purpose, not three broker Cards', () => {
+    expect(PAGE).toContain('<AboutFirm')
+    expect(PAGE).not.toContain('<AboutFaces')
+    expect(PAGE).not.toContain('size="proof"')
     expect(PAGE).not.toContain('size="editorial"')
     expect(PAGE).not.toContain('openingFigures')
-    expect(PAGE).not.toContain('figures={openingFigures}')
-    expect(PROOF).toContain('about-faces--proof')
-    expect(PROOF).toContain('shown.map')
-    expect(PROOF).toContain('about-faces__ask')
-    expect(PROOF).not.toContain('AvatarGroup')
-    expect(PROOF).not.toContain('-space-x-6')
-    expect(PROOF).not.toContain('AvatarBadge')
-    expect(PROOF).not.toContain('about-faces__lead')
-    expect(PROOF).not.toContain('about-faces__companions')
-    expect(PROOF).not.toContain('about-faces__trio')
-    expect(PROOF).not.toContain('about-faces__names')
+    expect(FIRM).toContain('ABOUT_FIRM_STORY')
+    expect(ABOUT_FIRM_STORY).toEqual([
+      'We are a small boutique brokerage.',
+      'We work all of Central Oregon.',
+      'We help clients buy and sell their properties.',
+    ])
   })
 
-  it('puts the Google mark on a firm link, not a stacked circle, and names all three brokers', () => {
-    expect(PROOF).toContain('from {proof.count} Google reviews')
+  it('puts reviews proof and a featured Google quote on the hero', () => {
+    expect(FIRM).toContain('from {proof.count} Google reviews')
+    expect(FIRM).toContain('quote.pull')
+    expect(FIRM).toContain('quote.author')
     expect(PAGE).toContain("href: '/reviews'")
     expect(PAGE).toContain('value: reviewAverage.toFixed(1)')
-    expect(PAGE).toContain('BROKERS.matt.nameShort')
-    expect(PAGE).toContain('BROKERS.rebecca.nameShort')
-    expect(PAGE).toContain('BROKERS.paul.nameShort')
-    expect(PAGE).toContain('firmBeat')
-    expect(PAGE).toContain('The person you call is the person who works your purchase or sale through closing.')
+    expect(PAGE).toContain('featuredQuote')
+    expect(PAGE).not.toContain('firmBeat')
   })
 
-  it('loads a sourced MLS record per broker and the firm closing set', () => {
-    expect(LOAD).toContain('brokerRosterRecord')
+  it('loads the firm closing set, not a one-row tease', () => {
     expect(LOAD).toContain('getBrokerSales')
     expect(LOAD).toContain('getBrokerageListingTiles')
     expect(LOAD).toContain('publishFirmClosingRows')
     expect(LOAD).toContain('uniqueListingTiles')
     expect(LOAD).toContain('FIRM_CLOSING_LIMIT')
     expect(PAGE).toContain('loadAboutProof')
-    expect(PROOF).toContain('person.record')
+    expect(CLOSINGS).toContain('V3Carousel')
+    expect(CLOSINGS).toContain('mode="rail"')
+    expect(CLOSINGS).toContain('See this closing')
+    expect(CLOSINGS).not.toContain('V3SourceLine')
+    expect(CLOSINGS).not.toContain('how we calculate this')
   })
 
-  it('puts the Street View exterior and a closings carousel in the first viewport', () => {
-    expect(PAGE).toContain('about-fold__sales')
-    expect(PAGE).toContain('<FirmClosings')
-    expect(FOLD_JSX).toContain('about-fold__place')
+  it('uses the office exterior as the mood hero, never the sofa', () => {
     expect(FOLD_JSX).toContain('ryan-realty-bend-office-exterior-01.jpg')
     expect(FOLD_JSX).not.toContain('ryan-realty-bend-office-interior')
     expect(FOLD_JSX).toContain('BEND OFFICE ·')
     expect(FOLD_JSX).toContain('BRAND.address.street')
-    expect(FOLD).toMatch(/grid-template-columns: minmax\(0, 1fr\) minmax\(16rem, 22rem\)/)
-    expect(FOLD).toContain('display: contents')
-    expect(FOLD).toMatch(/"beat"[\s\S]*"office"[\s\S]*"roster"/)
-    expect(CLOSINGS).toContain('See this closing')
+    expect(FOLD).not.toMatch(/70vh|64vh/)
   })
 
-  it('keeps separate Avatars and one Call ask per broker, without painting Avatar into a card', () => {
-    expect(PROOF).not.toContain('-space-x-6')
-    expect(PROOF).not.toContain('AvatarGroup')
-    expect(CSS).not.toMatch(/\[data-slot=['"]avatar['"]\][\s\S]{0,80}border-radius:\s*0/)
-    expect(CSS).not.toContain('about-faces__avatar')
-    expect(PORTRAIT).not.toContain('about-faces__avatar')
-    expect(PORTRAIT).not.toContain('about-faces__photo')
-    expect(PROOF).toContain('about-faces__ask')
-    expect(PROOF).toContain('>Call<')
-    expect(PROOF).toContain('>Schedule<')
-    expect(PROOF).toContain('variant="ghost"')
-    expect(PROOF).not.toContain('>Book<')
+  it('teases the team with photo + name only, every door to /team', () => {
+    expect(PAGE).toContain('<AboutTeamTeaser')
+    expect(TEASER).toContain('Who you work with')
+    expect(TEASER).toContain('teamPath()')
+    expect(TEASER).toContain('Meet the team')
+    expect(TEASER).not.toContain('OR #')
+    expect(TEASER).not.toContain('person.license')
+    expect(TEASER).not.toContain('tel:')
+    expect(TEASER).not.toContain('teamPath(person')
+    expect(TEASER).not.toContain('AvatarGroup')
   })
 
-  it('adds crawlable broker and closing lists to JSON-LD', () => {
-    expect(PAGE).toContain("name: 'Ryan Realty brokers'")
+  it('sends the one-line inquiry to Contact, not a second form', () => {
+    expect(PAGE).toContain('<AboutInquiry')
+    expect(INQUIRY).toContain('action="/contact"')
+    expect(INQUIRY).toContain('method="get"')
+    expect(INQUIRY).toContain('name="inquiry"')
+    expect(INQUIRY).toContain('Send a message')
+    expect(INQUIRY).not.toContain('submitContactForm')
+  })
+
+  it('adds crawlable team, closing, and review lists to JSON-LD', () => {
+    expect(PAGE).toContain("name: 'Meet the Ryan Realty team'")
     expect(PAGE).toContain("name: 'Recent Ryan Realty closings'")
     expect(PAGE).toContain("type: 'dataset'")
     expect(PAGE).toContain('Average Google rating')
@@ -117,8 +91,7 @@ describe('SITE-90 /about house fold', () => {
     expect(body).not.toContain('V3SourceLine')
     expect(body).not.toContain('openingTrace')
     expect(body).not.toContain('how we calculate this')
-    expect(PROOF).not.toMatch(/\bsource\b/)
-    expect(CLOSINGS).not.toContain('V3SourceLine')
-    expect(CLOSINGS).not.toContain('how we calculate this')
+    expect(FIRM).not.toContain('how we calculate this')
+    expect(FOLD).not.toContain('how we calculate this')
   })
 })

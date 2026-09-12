@@ -1,8 +1,8 @@
 {
   "route": "app/about/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat generic national-brokerage profile pages by OPENING on proof — the three brokers' faces and the firm's Google record with its trace — and then one reach control, rather than a license line over seven identical contact rows. Origin is short Quiet below the fold.",
-  "note": "SITE-90 2026-09-12 (Matt fold redo). Order is Breadcrumb, AboutFaces (H1 About Ryan Realty · Bend, eyebrow, a real firm beat, three broker Cards with separate Avatars), V3Doors #reach as a REACH CONTROL (one call door at display scale carrying the live hours state, then text, email and the calendar as lighter links), V3Proof (the words, headline 'In their own words' — the score is in the fold and is not restated), FirmClosings as carousel, V3Atlas, Quiet #about (How it started + firm/PB license line, OREA source), V3Answers, Footer. No V3Instrument. No V3SourceLine on faces, closings, or fold proof. Dates render in Pacific through formatDate.",
+  "competitiveTarget": "Beat Compass/SIR About by opening on the firm story (boutique Central Oregon buy+sell) over the Bend office exterior, then Google reviews + a featured quote, dated local closings, Contact four-up CTAs, a one-line inquiry to /contact, and a Who you work with teaser that only doors to /team. Skip coast-to-coast scale and fee copy.",
+  "note": "SITE-90 2026-09-12 (Matt lock + Compass/SIR brief). Order is Breadcrumb, about-fold (AboutFirm hero, AboutTeamTeaser → /team, V3Doors #reach Call/Text/Email/Schedule, AboutInquiry GET /contact, FirmClosings carousel), V3Proof words, V3Atlas, Quiet #about (How it started + OREA), V3Answers, Footer. No broker bios or licenses on the fold. No V3Instrument. No V3SourceLine on the fold.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -15,8 +15,18 @@
       "blocking": true
     },
     {
-      "name": "AboutFaces",
-      "section": "OPENS THE PAGE, headingLevel 1, size proof. Carries the H1, a real firm beat (since 2014, Bend office, who you call works your deal), then three separate broker Cards (Matt, Rebecca, Paul) each with Avatar + AvatarImage + AvatarFallback, name, title, Call Button, ghost Text / Email / Schedule. The review count links to /reviews. Per-broker MLS record as a plain line, no methodology disclosure. No AvatarGroup overlap. Not a KPI row. Canonical /images/brokers/*.png.",
+      "name": "AboutFirm",
+      "section": "OPENS THE PAGE. Full-bleed office exterior (115 NW Oregon Ave #2, never the sofa) with H1 and one purpose line: small boutique brokerage, all of Central Oregon, help buy and sell. Google score links to /reviews. Featured Google quote when sourced. No broker Cards. No methodology disclosure.",
+      "blocking": true
+    },
+    {
+      "name": "AboutTeamTeaser",
+      "section": "Who you work with. Photo + name teasers only. Every card and the Meet the team door go to /team. No bios, licenses, Call rows, or /team/[slug] doors.",
+      "blocking": true
+    },
+    {
+      "name": "AboutInquiry",
+      "section": "One-line Send a message. Native GET to /contact?inquiry=. Not a second ContactAsk. Full form stays on Contact.",
       "blocking": true
     },
     {
@@ -74,7 +84,7 @@
     },
     {
       "name": "V3Stage",
-      "reason": "Pattern 4 needs owned media and is never allowed over a number. V3Stage is one full-bleed frame with a navy scrim, which would put a rectangle behind the transparent broker PNGs. AboutFaces does that owned-media job on cream instead."
+      "reason": "Pattern 4 needs owned media and is never allowed over a number. AboutFirm already uses the office exterior as the mood hero; a second Stage would restage the same photo."
     },
     {
       "name": "V3Field",
@@ -101,8 +111,8 @@
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "about-fold -- AboutFaces proof (H1, firm beat, three broker Cards with separate Avatars) + Street View exterior of 115 NW Oregon Ave #2 + FirmClosings #firm-sales as carousel. Never the interior sofa.",
-    "V3Doors #reach -- one call door at display scale with the live hours, then text, email, calendar",
+    "about-fold -- AboutFirm hero (office exterior + purpose + Google score + featured quote) + AboutTeamTeaser → /team + V3Doors #reach Call/Text/Email/Schedule + AboutInquiry GET /contact + FirmClosings #firm-sales. Never the sofa.",
+    "V3Doors #reach -- one call door at display scale with the live hours, then text, email, calendar (Contact match)",
     "V3Proof #proof -- the firm's Google reviews as words",
     "V3Atlas #service-area -- where we work",
     "V3Quiet #about -- how it started plus licenses as one sourced line",

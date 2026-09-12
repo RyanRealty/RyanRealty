@@ -23,7 +23,7 @@ The #who contact-link stack — it is a column of seven anchor tags with an arro
 
 ## House form to reach for
 
-Per TASTE.md preference order, replace the dull display with: **hero figure / editorial faces (AboutFaces) opening; doors as secondary reach**.
+Per TASTE.md preference order and the 2026-09-12 lock: **firm-story hero on the office exterior; Google reviews + featured quote; closings carousel; Contact four-up; one-line inquiry to /contact; Who you work with teasers that only door to /team**. Do not open on broker Cards.
 
 Banned fallback: another stacked Quiet → figure-row → ledger. If the section is data, pick a form from: hero figure · stat tile with sparkline · emphasis line with a scrubber · horizontal bar · dot strip · slope · small multiples · beeswarm · map with data-encoded cells · table.
 

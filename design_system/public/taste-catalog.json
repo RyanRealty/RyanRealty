@@ -2354,13 +2354,13 @@
       ]
     },
     "about": {
-      "layoutLock": "The fold is people + firm + closings: three separate broker Cards (Matt, Rebecca, Paul) each with its own Avatar, Call Button, and ghost Text/Email/Schedule; a real firm beat (since 2014, Bend office, who you call works your deal); Street View exterior of 115 NW Oregon Ave #2; and past brokerage closings as a shadcn carousel. Do not overlap AvatarGroup circles. Do not hide two brokers behind one principal Card. Do not mount V3SourceLine or how-we-calculate-this on About faces or closings. Never the interior sofa.",
+      "layoutLock": "The fold is the brokerage, not Meet the Team. Hero: office exterior mood photo + one purpose line (small boutique brokerage, all of Central Oregon, help buy and sell). Reviews proof (Google score + featured quote). Dated local closings as a shadcn carousel. Who you work with teasers (photo + name) door only to /team — no bios, licenses, or Call rows. Contact four-up Call/Text/Email/Schedule. One-line inquiry GET to /contact. Do not mount V3SourceLine or how-we-calculate-this. Never the sofa interior. Never coast-to-coast or fee copy.",
       "modules": [
         {
           "id": "house-faces",
           "catalog": "house-v3",
-          "url": "app/about/_v3/AboutFaces.tsx",
-          "job": "Broker photographs and the firm's record open the page as one proof object, not a phone book."
+          "url": "app/about/_v3/AboutTeamTeaser.tsx",
+          "job": "Who you work with teasers (photo + name) door only to /team. Bios and licenses stay on Team."
         },
         {
           "id": "house-proof",
@@ -2381,22 +2381,16 @@
           "job": "Service-area Atlas, not a default Google embed."
         },
         {
-          "id": "shadcn-avatar",
+          "id": "shadcn-input",
           "catalog": "shadcn",
-          "url": "https://ui.shadcn.com/docs/components/avatar",
-          "job": "Separate Avatar + AvatarImage + AvatarFallback on each broker Card. No AvatarGroup overlap."
-        },
-        {
-          "id": "shadcn-button-group",
-          "catalog": "shadcn",
-          "url": "https://ui.shadcn.com/docs/components/button-group",
-          "job": "Call is the default Button on each broker Card. Text / Email / Schedule are ghost Buttons in one group."
+          "url": "https://ui.shadcn.com/docs/components/input",
+          "job": "One-line inquiry on About. GET to /contact. Adapt into V3Input. Full form stays on Contact."
         },
         {
           "id": "shadcn-card",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/card",
-          "job": "One Card per broker (name, title, Call). All three brokers visible as people."
+          "job": "Closings carousel slides and Who you work with teasers. Photo + name only on the teaser. No licenses."
         },
         {
           "id": "shadcn-carousel",
