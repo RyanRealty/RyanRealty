@@ -1,9 +1,9 @@
-# Current — 2026-09-12 21:20Z (SITE-90 About tip rebased onto main 4dc88a3a)
+# Current — 2026-09-12 21:40Z (About Looking 2+4 craft — Tip Ready)
 
-Owner: `cursor-cloud-2026-09-12-f251`. Do not merge — Cos cherry-picks. No emails.
+Owner: `cursor-cloud-2026-09-12-917e`. Do not merge — Tip Ready PR only. No emails.
 
-- **SITE-90 Tip Ready** `/about` on `cursor/about-reviews-on-main-f251` (replaces tip cut at `0a7b3a8ce` / PR 216). Base is current `main` `4dc88a3ac`. Order: AboutFirm → V3Proof PRIMARY → closings → V3Doors CTA → AboutTeamTeaser → /team → AboutInquiry → /contact. Structured `competitiveBrief` id `about-researchy-1-8` kept as an object on parity + taste-catalog. requiredComponents stay 13 (`AboutFirm`, `AboutInquiry` named). layoutLock forbids `<AboutFaces` and `size="proof"`. `demoMatch: false`, `competitiveBriefPass: false`.
-- Exclusive: `app/about/**` this lane until Cos lands.
+- **About craft residual** on `cursor/about-proof-teaser-917e` from `main` `fe01ba3cf`. Order stays firm → V3Proof → closings → CTA → teaser→/team → inquiry. V3Proof is the first proof band (display-scale Google score + words; no thin hero score link). AboutTeamTeaser is a face row + Meet the team → `/team` (no Card roster). Structured `competitiveBrief` `about-researchy-1-8` and 13 requiredComponents kept. layoutLock still forbids AboutFaces / `size="proof"` / Card on the teaser. `demoMatch: false`, `competitiveBriefPass: false`.
+- Exclusive: `app/about/**` this lane.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 
 # Current — 2026-09-12 20:45Z (HARD Tip Ready — competitiveBrief loop tightened)

@@ -49,7 +49,8 @@ describe('/about section order', () => {
   it('does not open on a KPI grid or methodology chrome', () => {
     expect(PAGE).not.toContain('openingFigures')
     expect(PAGE).not.toContain('figures={openingFigures}')
-    expect(PAGE).toContain('proof=')
+    expect(PAGE).toContain("label: 'Average rating'")
+    expect(PAGE).toContain("label: 'Google reviews'")
     expect(PAGE).toContain("href: '/reviews'")
     expect(PAGE).not.toContain('openingTrace')
     expect(BODY).not.toContain('<V3SourceLine')

@@ -19,7 +19,7 @@ The #who contact-link stack — it is a column of seven anchor tags with an arro
 
 - `app/about/_v3/AboutFirm.tsx` — open the file; the About opener is the firm story, not AboutFaces.
 - `components/site/v3/V3Proof.client.tsx` — open the file; client reviews are the primary proof.
-- `app/about/_v3/AboutTeamTeaser.tsx` — photo + name only; every door is `/team`.
+- `app/about/_v3/AboutTeamTeaser.tsx` — face row + Meet the team → `/team`. Not a Card roster.
 - `components/site/v3/V3Doors.tsx` — Call | Text | Email | Schedule, Contact match.
 
 ## House form to reach for

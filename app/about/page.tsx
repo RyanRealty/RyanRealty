@@ -7,7 +7,7 @@
  * 2. V3Proof — client reviews PRIMARY (Google + featured quote). Not press.
  * 3. FirmClosings — dated local sold homes. Never invented MOS.
  * 4. V3Doors four-up matching Contact (Call / Text / Email / Schedule)
- * 5. AboutTeamTeaser — photo + name → /team only. No bios/licenses.
+ * 5. AboutTeamTeaser — face row + Meet the team → /team only. No Card roster.
  * 6. AboutInquiry GET to /contact. Full form stays on Contact.
  * Then Atlas, How it started + OREA, V3Answers.
  * Never the sofa interior. No coast-to-coast / fee copy.
@@ -98,9 +98,6 @@ export default async function AboutPage() {
   const reviewAverage = reviewSummary && reviewSummary.count > 0 ? reviewSummary.averageRating : 5
   const firmRows = proof.closings
   const teamTeaser = proof.faces.map((face) => ({ name: face.name, src: face.src }))
-  const featuredQuote = quotes[0]
-    ? { pull: quotes[0].pull, author: quotes[0].author }
-    : undefined
   const newestReviewDate = reviewSummary?.reviews.find((r) => r.reviewDate)?.reviewDate ?? undefined
 
   const hoursBlocks = companySettings?.booking_hours ?? []
@@ -210,16 +207,6 @@ export default async function AboutPage() {
             officeSrc="/images/office/ryan-realty-bend-office-exterior-01.jpg"
             officeAlt={`Ryan Realty at ${BRAND.address.street}, ${BRAND.address.city}`}
             officeCaption={`BEND OFFICE · ${BRAND.address.street}`}
-            proof={
-              reviewSummary && reviewSummary.count > 0
-                ? {
-                    value: reviewAverage.toFixed(1),
-                    count: reviewCount,
-                    href: '/reviews',
-                  }
-                : undefined
-            }
-            quote={featuredQuote}
           />
           {quotes.length > 0 ? (
             <div className="about-fold__proof">
@@ -229,7 +216,10 @@ export default async function AboutPage() {
                 headline="In their own words"
                 headingLevel={2}
                 claim={`The newest four of ${reviewCount} verified Google reviews, in full, exactly as they were written.`}
-                figures={[]}
+                figures={[
+                  { value: reviewAverage.toFixed(1), label: 'Average rating' },
+                  { value: String(reviewCount), label: 'Google reviews' },
+                ]}
                 quotes={quotes}
                 source={{ label: 'Every review', href: '/reviews' }}
                 record={false}

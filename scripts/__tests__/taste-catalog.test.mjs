@@ -338,6 +338,27 @@ describe('layoutLockProblems', () => {
     })
     expect(problems.some((p) => /size=\\"proof\\"/.test(p) || /size="proof"/.test(p))).toBe(true)
   })
+
+  it('fails About when the team teaser reintroduces a Card roster', () => {
+    const problems = layoutLockProblems(loaded, {
+      existsSync: () => true,
+      readFileSync: (p) => {
+        if (String(p).endsWith('AboutTeamTeaser.tsx')) {
+          return "import { Card } from '@/components/ui/card'\n"
+        }
+        if (String(p).endsWith('about/page.tsx')) {
+          return 'export default function Page() { return <AboutFirm /> }'
+        }
+        if (String(p).endsWith('about/parity.json')) {
+          return JSON.stringify({
+            requiredComponents: [{ name: 'AboutFirm', section: 'OPENS THE PAGE' }],
+          })
+        }
+        return ''
+      },
+    })
+    expect(problems.some((p) => /card/i.test(p))).toBe(true)
+  })
 })
 
 describe('catalogInstallProblems', () => {

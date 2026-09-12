@@ -60,14 +60,19 @@ describe('SITE-90 /about brokerage fold', () => {
     ])
   })
 
-  it('puts reviews proof and a featured Google quote on the hero', () => {
-    expect(FIRM).toContain('from {proof.count} Google reviews')
-    expect(FIRM).toContain('quote.pull')
-    expect(FIRM).toContain('quote.author')
+  it('puts Google reviews on V3Proof as the first proof band, not a hero score link', () => {
+    expect(FIRM).not.toContain('Google reviews')
+    expect(FIRM).not.toContain('proof.value')
+    expect(FIRM).not.toContain('quote.pull')
     expect(PAGE).toContain("href: '/reviews'")
     expect(PAGE).toContain('value: reviewAverage.toFixed(1)')
-    expect(PAGE).toContain('featuredQuote')
+    expect(PAGE).toContain("label: 'Average rating'")
+    expect(PAGE).toContain("label: 'Google reviews'")
+    expect(PAGE).toContain('id="proof"')
+    expect(PAGE).not.toContain('featuredQuote')
     expect(PAGE).not.toContain('firmBeat')
+    expect(FOLD).toContain('about-fold__proof')
+    expect(FOLD).toContain('--v3-size-num-lead')
   })
 
   it('loads the firm closing set, not a one-row tease', () => {
@@ -92,16 +97,23 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(FOLD).not.toMatch(/70vh|64vh/)
   })
 
-  it('teases the team with photo + name only, every door to /team', () => {
+  it('teases the team with a face row and one /team door, never a Card roster', () => {
     expect(PAGE).toContain('<AboutTeamTeaser')
     expect(TEASER).toContain('Who you work with')
     expect(TEASER).toContain('teamPath()')
     expect(TEASER).toContain('Meet the team')
+    expect(TEASER).toContain("from '@/components/ui/avatar'")
+    expect(TEASER).not.toContain("from '@/components/ui/card'")
+    expect(TEASER).not.toContain('CardHeader')
+    expect(TEASER).not.toContain('CardTitle')
     expect(TEASER).not.toContain('OR #')
     expect(TEASER).not.toContain('person.license')
     expect(TEASER).not.toContain('tel:')
     expect(TEASER).not.toContain('teamPath(person')
     expect(TEASER).not.toContain('AvatarGroup')
+    expect(FOLD).toContain('about-teaser__faces')
+    expect(FOLD).not.toContain('about-teaser__card')
+    expect(FOLD).not.toContain('about-teaser__list')
   })
 
   it('sends the one-line inquiry to Contact, not a second form', () => {
