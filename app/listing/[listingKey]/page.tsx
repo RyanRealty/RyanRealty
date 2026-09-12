@@ -55,6 +55,9 @@ import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-s
 import { formatDate as formatCalendarDate } from '@/lib/format/date'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
+import { ListingSaveButton as _ListingSaveButtonImport } from '@/components/site/listing-detail/ListingSaveButton'
+import { ListingShareButton as _ListingShareButtonImport } from '@/components/site/listing-detail/ListingShareButton'
+import { listingDocumentTitle } from '@/lib/listing/listing-document-title'
 import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
 import { DescriptionBlock } from '@/components/site/listing-detail/DescriptionBlock'
 import { GoverningDocumentsBlock } from '@/components/site/listing-detail/GoverningDocumentsBlock'
@@ -115,6 +118,8 @@ import { basemapForRegions } from '@/lib/geo/basemap-source'
 
 void _PhotoGalleryLightboxImport
 void _TextMattCTAImport
+void _ListingSaveButtonImport
+void _ListingShareButtonImport
 void ListingMobileContactBar
 void ListingVideoEmbed
 void V3ListingRow
@@ -124,7 +129,7 @@ void V3ListingRow
  *
  *   1 breadcrumb   City → neighborhood → community → plat → street
  *   2 media        price, beds, baths, sqft, street on the media; tabs we have
- *   3 ask          Tour / Call / Text (cookies cannot cover)
+ *   3 ask          Tour / Call / Text · Save · Share (cookies cannot cover)
  *   4 facts        type, lot, year, HOA, $/sqft
  *   5 about        the MLS public remarks, as written (§2)
  *   6 payment      computeMonthlyPiti only; P&I, tax, HOA
@@ -183,7 +188,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     city: addressFull ? undefined : (listing.city ?? undefined),
   })
   const addressTitle = addressFull ? addressFull : `Listing ${listing.listingKey}`
-  const title = statusWord ? `${statusWord} · ${addressTitle}` : addressTitle
+  const title = listingDocumentTitle({
+    statusWord,
+    addressTitle,
+    beds: listing.beds,
+    baths: listing.baths,
+  })
 
   // SITE-22: ONE builder for the canonical, the JSON-LD url, the sitemap row
   // and every internal href. The by-address route no longer overrides this with

@@ -12,6 +12,8 @@ import { daysLiveOnMarket } from '@/lib/listing/days-live'
 import { isPublicOffMarketStatus } from '@/lib/listing-status-public'
 import { redirectToLoginForSave } from '@/lib/pending-save'
 import { ListingGuestSaveSheet } from '@/components/site/listing-detail/ListingGuestSaveSheet.client'
+import { ListingSaveButton, type ListingSaveState } from '@/components/site/listing-detail/ListingSaveButton'
+import { ListingShareButton } from '@/components/site/listing-detail/ListingShareButton'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { publishListingDrop, publishListingEstPayment } from '@/lib/listing/publish-listing-ask'
@@ -38,15 +40,15 @@ import { PriceDropMark } from './PriceDropMark'
  * Hierarchy (E4 craft):
  *   1. Price (Layer A H1, address in sr-only + visible lines) — honest MLS numbers only
  *   2. Primary: Schedule a tour (navy-filled, full-width on mobile)
- *   3. Secondary: Ask / Save / Share (outlined, 44px hit targets)
+ *   3. Secondary: Save / Share — always mounted (SITE-21 / SITE-99). Tour /
+ *      Call / Text is the on-market ask; desktop hides that ask because the
+ *      sidebar already carries it. Save and Share stay in the live control.
  *   4. Tertiary: Get alerts for homes like this → #listing-like-alerts
  *
  * Spec source:
  *   design_system/ryan-realty/ui_kits/listing-detail/index.html §ld-price-block
  *   design_system/ryan-realty/ui_kits/listing-detail/parity.json "PriceCtaStrip"
  */
-
-type SaveState = 'idle' | 'saving' | 'saved'
 
 type Props = {
   listing: Pick<
@@ -186,7 +188,7 @@ export function PriceCtaStrip({
   // the close (lib/listing/days-live.ts daysOnMarketToClose), and this strip
   // publishes none.
   const daysLive = offMarket ? null : daysLiveOnMarket(listing.onMarketDate ?? null)
-  const [saveState, setSaveState] = useState<SaveState>(initialSaved ? 'saved' : 'idle')
+  const [saveState, setSaveState] = useState<ListingSaveState>(initialSaved ? 'saved' : 'idle')
   const [guestSaveOpen, setGuestSaveOpen] = useState(false)
 
   // RC7 resume: complete a save this listing was bounced to login for (the hook
@@ -451,11 +453,11 @@ export function PriceCtaStrip({
       <div className="listing-face__actions">
       {/* CTA hierarchy: primary full-width on mobile, secondaries even 3-col.
           Desktop keeps the inline wrap. */}
-      <V3ButtonGroup label={offMarket ? 'Homes like this' : 'Contact about this listing'} className="listing-ask-row mt-5">
+      <V3ButtonGroup label={offMarket ? 'Homes like this' : 'Contact about this listing'} className="listing-ask-row listing-face__ask mt-5">
         {/* SITE-21: THE ASK A BROKER CAN FULFIL.
             Off market, Tour / Call / Text are three requests nobody can act
-            on. Save and Share stay. Adapted from shadcn button-group + beUI
-            action-swap into V3ButtonGroup. */}
+            on. Save and Share stay — they are the next group, not this one.
+            Adapted from shadcn button-group + beUI action-swap into V3ButtonGroup. */}
         {offMarket ? (
           <>
             <V3Button href={similarHref}>Homes for sale</V3Button>
@@ -482,19 +484,14 @@ export function PriceCtaStrip({
             ) : null}
           </>
         )}
-        <V3Button
-          type="button"
-          variant="ghost"
-          onClick={handleSave}
-          disabled={saveState === 'saving'}
-          ariaPressed={saveState === 'saved'}
-          ariaLabel={saveAriaLabel}
-        >
-          {saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving...' : 'Save'}
-        </V3Button>
-        <V3Button type="button" variant="ghost" onClick={handleShare} ariaLabel={`Share ${propertyName}`}>
-          Share
-        </V3Button>
+      </V3ButtonGroup>
+      {/* SITE-99. Save and Share are their own grouped control so a desktop
+          rule that hides Tour / Call / Text (sidebar already has that ask)
+          cannot take the keep actions with it. Always mounted, on and off
+          market. Adapted from shadcn-button-group. */}
+      <V3ButtonGroup label="Save or share this listing" className="listing-face__keep">
+        <ListingSaveButton saveState={saveState} onSave={handleSave} ariaLabel={saveAriaLabel} />
+        <ListingShareButton onShare={handleShare} ariaLabel={`Share ${propertyName}`} />
       </V3ButtonGroup>
 
       {showAlerts ? (

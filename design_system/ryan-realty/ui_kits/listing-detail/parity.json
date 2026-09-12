@@ -36,7 +36,17 @@
     },
     {
       "name": "PriceCtaStrip",
-      "section": "H1 is the street. One ask: Tour / Call / Text. Face Est. $/mo is off.",
+      "section": "H1 is the street. On-market ask: Tour / Call / Text. Save and Share stay on Active, Pending, and off-market (SITE-21 / SITE-99). Face Est. $/mo is off.",
+      "blocking": true
+    },
+    {
+      "name": "ListingSaveButton",
+      "section": "SITE-99. Save this home from the PriceCtaStrip keep group. Required on Active and Pending; also stays on off-market. Search tiles stay no-heart.",
+      "blocking": true
+    },
+    {
+      "name": "ListingShareButton",
+      "section": "SITE-99. Share this home from the PriceCtaStrip keep group. Required on Active and Pending; also stays on off-market.",
       "blocking": true
     },
     {
@@ -274,7 +284,7 @@
   "sectionOrder": [
     "ListingHero (price, beds, baths, sqft, street on the media)",
     "V3Atlas #location with lot figure",
-    "PriceCtaStrip Tour / Call / Text on market; homes-for-sale + alerts off market",
+    "PriceCtaStrip Tour / Call / Text on market; homes-for-sale + alerts off market; Save + Share always",
     "ListingOffMarketFacts the sold facts, off market only, first thing under the price",
     "ListingSimilarStrip off market: the homes a reader CAN buy, promoted to just under the sold facts",
     "ListingLikeThisAlerts off market: the saved search that replaces the tour",

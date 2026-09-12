@@ -22,6 +22,37 @@ describe('listing remainder composition', () => {
     expect(SPECS).toContain('Garage')
   })
 
+  it('turns leftover facts into doors on the house contract (SITE-99)', () => {
+    const SPECS = readFileSync(resolve('components/site/listing-detail/PropertySpecs.tsx'), 'utf8')
+    expect(SPECS).toContain("href: '#location'")
+    expect(SPECS).toContain("href: '#schools'")
+    expect(SPECS).toContain("href: '#tax'")
+    expect(SPECS).toContain('listing-spec-door')
+  })
+
+  it('locks Save and Share on the listing page so they cannot silently vanish', () => {
+    const STRIP = readFileSync(resolve('components/site/listing-detail/PriceCtaStrip.tsx'), 'utf8')
+    const CSS = readFileSync(resolve('components/site/listing-detail/listing-detail.css'), 'utf8')
+    const PARITY = readFileSync(
+      resolve('design_system/ryan-realty/ui_kits/listing-detail/parity.json'),
+      'utf8',
+    )
+    expect(PAGE).toMatch(/import \{ ListingSaveButton/)
+    expect(PAGE).toMatch(/import \{ ListingShareButton/)
+    expect(PAGE).toContain('listingDocumentTitle')
+    expect(STRIP).toContain('<ListingSaveButton')
+    expect(STRIP).toContain('<ListingShareButton')
+    expect(STRIP).toContain('listing-face__keep')
+    expect(PARITY).toContain('"name": "ListingSaveButton"')
+    expect(PARITY).toContain('"name": "ListingShareButton"')
+    // Desktop used to hide the whole actions row at 64rem and take Save/Share
+    // with Tour / Call / Text. The keep group must stay painted.
+    expect(CSS).toMatch(/\.listing-face__keep[\s\S]*display:\s*grid/)
+    const rules = CSS.replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(rules).not.toMatch(/\.listing-face__keep[^{]*\{[^}]*display:\s*none/)
+    expect(rules).not.toMatch(/\.listing-face__actions\s*\{\s*display:\s*none/)
+  })
+
   it('states the 13-section house page on the route', () => {
     // 12 became 13 on 2026-09-09 when the MLS public remarks came back as row 5
     // (Matt: "mls descriptions must come back"; CLAUDE.md §2). The count and the

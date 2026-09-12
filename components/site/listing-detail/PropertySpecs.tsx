@@ -77,6 +77,8 @@ type Props = {
 type Spec = {
   label: string
   value: ReactNode
+  /** In-page door to the house contract section that owns this fact. */
+  href?: string
 }
 
 type Group = {
@@ -189,6 +191,7 @@ function buildGroups(listing: Props['listing']): Group[] {
   if (num(listing.lotSizeAcres)) {
     exterior.push({
       label: 'Lot size',
+      href: '#location',
       value: (
         <>
           <TabularNumber value={listing.lotSizeAcres} fractionDigits={2} /> acres
@@ -198,6 +201,7 @@ function buildGroups(listing: Props['listing']): Group[] {
   } else if (num(listing.lotSizeSqft)) {
     exterior.push({
       label: 'Lot size',
+      href: '#location',
       value: (
         <>
           <TabularNumber value={listing.lotSizeSqft} /> sqft
@@ -300,7 +304,11 @@ function buildGroups(listing: Props['listing']): Group[] {
     })
   }
   if (num(listing.taxAnnualAmount)) {
-    financial.push({ label: 'Annual taxes', value: <Price value={listing.taxAnnualAmount} exact /> })
+    financial.push({
+      label: 'Annual taxes',
+      href: '#tax',
+      value: <Price value={listing.taxAnnualAmount} exact />,
+    })
   }
   if (num(listing.taxAssessedValue)) {
     financial.push({ label: 'Assessed value', value: <Price value={listing.taxAssessedValue} exact /> })
@@ -328,7 +336,11 @@ function buildGroups(listing: Props['listing']): Group[] {
     })
   }
   if (txt(listing.schoolDistrict)) {
-    listingInfo.push({ label: 'School district', value: listing.schoolDistrict })
+    listingInfo.push({
+      label: 'School district',
+      href: '#schools',
+      value: listing.schoolDistrict,
+    })
   }
   if (listingInfo.length > 0) groups.push({ label: 'Listing', specs: listingInfo })
 
@@ -353,8 +365,24 @@ export function PropertySpecs({ listing, className }: Props) {
             <dl className="listing-spec-grid">
               {group.specs.map((spec) => (
                 <div key={spec.label} className="listing-spec-row">
-                  <dt>{spec.label}</dt>
-                  <dd>{spec.value}</dd>
+                  <dt>
+                    {spec.href ? (
+                      <a href={spec.href} className="listing-spec-door">
+                        {spec.label}
+                      </a>
+                    ) : (
+                      spec.label
+                    )}
+                  </dt>
+                  <dd>
+                    {spec.href ? (
+                      <a href={spec.href} className="listing-spec-door">
+                        {spec.value}
+                      </a>
+                    ) : (
+                      spec.value
+                    )}
+                  </dd>
                 </div>
               ))}
             </dl>

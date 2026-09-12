@@ -278,6 +278,7 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
           longitude: input.geo.lng,
         } : undefined,
         numberOfRooms: input.beds,
+        numberOfBedrooms: input.beds,
         numberOfBathroomsTotal: input.baths,
         floorSize: input.livingAreaSqft != null ? {
           '@type': 'QuantitativeValue',
