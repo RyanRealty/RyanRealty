@@ -17,12 +17,21 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading } from "@/components/site/v3"
 import { teamPath } from "@/lib/slug"
 import type { AboutFace, AboutFaceRecord } from "./about-faces"
 import { aboutCompactReach } from "./about-faces"
 import { FacePortrait } from "./FacePortrait.client"
 import "./about-faces.css"
+
+export type AboutFaceProof = {
+  /** Formatted average, e.g. "5.0". Never invented. */
+  value: string
+  /** Review count the average is of. */
+  count: number
+  href: string
+}
 
 function IconPhone() {
   return (
@@ -238,6 +247,7 @@ export function AboutFaces({
   claim,
   figures,
   source,
+  proof,
 }: {
   people: readonly AboutFace[]
   heading: string
@@ -275,6 +285,11 @@ export function AboutFaces({
   figures?: readonly { value: string; label: string }[]
   /** The section 0 trace for `figures`. Required whenever figures are passed. */
   source?: ReactNode
+  /**
+   * SITE-90 layout lock: the 5.0-from-25 lives on the principal's face card,
+   * not a three-tile KPI row and not only a clause in the claim sentence.
+   */
+  proof?: AboutFaceProof
 }) {
   const [first, ...rest] = people
   if (!first) return null
@@ -445,7 +460,13 @@ export function AboutFaces({
     return (
       <section
         id="faces"
-        className={cn(V3_ROOT_CLASS, "about-faces", "about-faces--editorial", "about-faces--lead")}
+        className={cn(
+          V3_ROOT_CLASS,
+          "about-faces",
+          "about-faces--editorial",
+          "about-faces--lead",
+          proof && "about-faces--house",
+        )}
         aria-labelledby="faces-heading"
       >
         <div className="about-faces__head">
@@ -457,13 +478,30 @@ export function AboutFaces({
         <div className="about-faces__editorial">
           <article className="about-faces__lead">
             <Link href={leadPerson.href} className="about-faces__photo-link">
-              <FacePortrait src={leadPerson.src} name={leadPerson.name} priority />
+              <FacePortrait
+                src={leadPerson.src}
+                name={leadPerson.name}
+                priority
+                proof={proof?.value}
+              />
             </Link>
             <div className="about-faces__row">
               <Link href={leadPerson.href} className="about-faces__name">
                 {leadPerson.name}
               </Link>
               {faceCredential(leadPerson)}
+              {proof ? (
+                <p className="about-faces__face-proof">
+                  <Avatar className="about-faces__face-proof-avatar" size="sm">
+                    <AvatarFallback className="about-faces__face-proof-fallback" delayMs={0}>
+                      {proof.value}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Link href={proof.href} className="about-faces__face-proof-link">
+                    {proof.value} from {proof.count} Google reviews
+                  </Link>
+                </p>
+              ) : null}
               {faceRecord(leadPerson.record)}
               {reach ? editorialReach(leadPerson) : null}
             </div>
