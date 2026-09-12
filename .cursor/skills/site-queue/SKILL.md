@@ -32,7 +32,8 @@ routine reads. Nothing in the queue depends on which model builds.
   modules from beautifului.dev, beui.dev, rareui.com, transitions.dev, and
   ui.shadcn.com. Pull `competitiveBrief` from the card / the route's
   `parity.json` (About first: Researchy beats 1–8). Fail Looking if the
-  page invents past that checklist. A rise or score without
+  page invents past that checklist. `ci:page-purpose` refuses a missing
+  or incomplete `competitiveBrief` on About. A rise or score without
   `competitiveBriefPass: true` (or checklist all true) is refuse — same
   seriousness as `demoMatch`. Omit is refuse. Do not invent true. Adapt
   into v3. If the job has no house primitive, ADD one to

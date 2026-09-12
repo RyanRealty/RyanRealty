@@ -185,7 +185,10 @@ in `scripts/lib/taste-receipt.mjs`):
   `competitiveTarget`, the receipt must score it `true` or `false`. Omit
   is refuse. Rise / finish line / Tip Ready without `true` (or checklist
   all true) is refuse. Do not invent true. Honest false below 70 on a
-  rebaseline stays valid.
+  rebaseline stays valid. `ci:page-purpose` (`scripts/check-page-purpose.mjs`)
+  refuses a missing or incomplete `competitiveBrief` on About, and on any
+  kit that already carries the field. Tip Ready refuse stays on
+  `taste-receipt --ship` + site-queue-done (`demoMatch` twin).
 
 Both PNGs must exist in the repo. `ci:taste-canon` fails a new review without
 them. Receipts written before this shape landed stay valid; ones already dated
