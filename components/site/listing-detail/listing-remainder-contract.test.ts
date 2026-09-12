@@ -43,6 +43,15 @@ describe('listing remainder composition', () => {
     expect(STRIP).toContain('<ListingSaveButton')
     expect(STRIP).toContain('<ListingShareButton')
     expect(STRIP).toContain('listing-face__keep')
+    const SAVE_SHEET = readFileSync(
+      resolve('components/site/listing-detail/ListingGuestSaveSheet.client.tsx'),
+      'utf8',
+    )
+    expect(SAVE_SHEET).toContain('surface="drawer"')
+    expect(HERO).toContain('V3Tabs')
+    expect(HERO).toContain('PhotoSkeleton')
+    const SHEET = readFileSync(resolve('components/site/v3/V3Sheet.tsx'), 'utf8')
+    expect(SHEET).toMatch(/from '@\/components\/ui\/sheet'/)
     expect(PARITY).toContain('"name": "ListingSaveButton"')
     expect(PARITY).toContain('"name": "ListingShareButton"')
     // Desktop used to hide the whole actions row at 64rem and take Save/Share

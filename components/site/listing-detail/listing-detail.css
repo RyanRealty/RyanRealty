@@ -582,6 +582,12 @@
   cursor: default;
 }
 
+.listing-mosaic__skeleton {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--v3-navy) 10%, var(--v3-cream));
+}
+
 .listing-mosaic__empty-label {
   margin: 0;
   padding: var(--v3-space-sm);
@@ -1029,6 +1035,11 @@
   align-items: center;
   gap: 2px;
   position: relative;
+}
+
+.listing-strip__tabs {
+  flex: 1;
+  min-width: 0;
 }
 
 .listing-strip__tool,

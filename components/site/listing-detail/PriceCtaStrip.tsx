@@ -512,15 +512,17 @@ export function PriceCtaStrip({
         </>
       ) : null}
       </div>
-      {guestSaveOpen && saveState !== 'saved' ? (
-        <div style={{ marginTop: '0.75rem' }}>
-          <ListingGuestSaveSheet
-            listingKey={listing.listingKey}
-            addressLine={street || null}
-            onUseGoogle={() => redirectToLoginForSave(listing.listingKey)} // hydration-safe: click callback, never runs during render
-          />
-        </div>
-      ) : null}
+      <ListingGuestSaveSheet
+        listingKey={listing.listingKey}
+        addressLine={street || null}
+        open={guestSaveOpen && saveState !== 'saved'}
+        onOpenChange={setGuestSaveOpen}
+        onUseGoogle={() => redirectToLoginForSave(listing.listingKey)} // hydration-safe: click callback, never runs during render
+        onDone={() => {
+          setGuestSaveOpen(false)
+          setSaveState('saved')
+        }}
+      />
     </div>
   )
 }
