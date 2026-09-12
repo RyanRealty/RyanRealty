@@ -16,7 +16,7 @@
     },
     {
       "name": "AboutFaces",
-      "section": "OPENS THE PAGE, headingLevel 1. Carries the H1, the eyebrow, one claim sentence, the firm's figures (Google average and count from getReviews, roster size from getBrokers) with a V3SourceLine under them, then the three brokers as doors. Canonical /images/brokers/*.png at conversation scale. Name, title, licence, Call, Text, Email, Schedule.",
+      "section": "OPENS THE PAGE, headingLevel 1, size proof. Carries the H1, one claim sentence, a V3SourceLine, then one overlapping shadcn AvatarGroup (Avatar + AvatarImage + AvatarFallback + AvatarBadge 5.0 on the principal). One principal Card (name, title, Call Button; Text / Email / Schedule as ghost). The review count links to /reviews. One sourced principal MLS record. Not three equal portrait tiles and not a KPI row. Canonical /images/brokers/*.png.",
       "blocking": true
     },
     {
@@ -26,7 +26,7 @@
     },
     {
       "name": "FirmClosings",
-      "section": "Recent Ryan Realty closings as the one house row. Child of the page so about/page.tsx never mounts a city-stats Ledger.",
+      "section": "Recent Ryan Realty closings as shadcn Accordion in the first-viewport about-fold (trigger: address + recorded ClosePrice; content: photo, beds/baths/sqft, listing door). Child of the page so about/page.tsx never mounts a city-stats Ledger.",
       "blocking": true
     },
     {
@@ -101,10 +101,9 @@
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "AboutFaces -- H1 About Ryan Realty · Bend, the firm's figures with their trace, the three brokers",
+    "about-fold -- AboutFaces proof (H1, overlapping AvatarGroup, 5.0 AvatarBadge, one principal Card) + Street View exterior of 115 NW Oregon Ave #2 + FirmClosings #firm-sales as Accordion. Never the interior sofa.",
     "V3Doors #reach -- one call door at display scale with the live hours, then text, email, calendar",
     "V3Proof #proof -- the firm's Google reviews as words",
-    "FirmClosings #firm-sales -- recent Ryan Realty closings, house row",
     "V3Atlas #service-area -- where we work",
     "V3Quiet #about -- how it started plus licenses as one sourced line",
     "V3Answers #faq -- working with Ryan Realty",
@@ -131,13 +130,13 @@
       "states": [
         "default"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, https://ryan-realty.com/about after 036a4276"
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, SITE-90 localhost:3190/about after Critiquito P0 fold (AvatarGroup + principal Card + Accordion closings + Street View). Evaluator 402 — scores below are SITE-64, not this capture."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png"
     },
-    "shotsHash": "sha256:68728feab1c84fd8f1113bab386b2ad66525224e131fb39538fd28fe50806cfd",
+    "shotsHash": "sha256:79ad786fe5d34960b88199dd066b0ab6ab91edc0a23cee56fe3aa148b19a9c10",
     "scores": [
       52,
       47,
@@ -145,46 +144,62 @@
     ],
     "score": 52,
     "beats": "Cascade Sotheby's Bend agents page wins on place photography and editorial portraits; this fold wins on a traced 5.0 from 25 and printed Oregon licenses, and loses the screenshot test to a three-up directory. This site's own /reviews fold draws the same 5.0 as stars with a quote — we lose that metric to ourselves.",
+    "adaptedFrom": [
+      { "id": "shadcn-avatar" },
+      { "id": "shadcn-button-group" },
+      { "id": "shadcn-card" },
+      { "id": "shadcn-accordion" },
+      { "id": "house-faces" }
+    ],
+    "evaluatorBlocked": "2026-09-12 SITE-90 Critiquito P0 fold: npx tsx scripts/taste-evaluate.ts about failed — no grok CLI at ~/.grok/bin/grok (Grok Build 402). Scores 52/47/57 are the SITE-64 grok-4.6 pass, not this capture. comparedToPrior stays rebaselined. Do not treat this as rose, demoMatch, or done.",
     "defects": [
       {
         "section": "#faces .about-faces__grid",
         "severity": "taste",
-        "finding": "Three equal yearbook columns on a hairline shelf. Matt as owner is the same scale as the other two, so the fold is a staff directory, not a composed house of faces. A template would ship this. replaceWith: AboutFaces compact (the homepage subgrid table) or transitions.dev avatar-group-hover adapted into the barrel."
+        "finding": "Three equal yearbook columns on a hairline shelf. Matt as owner is the same scale as the other two, so the fold is a staff directory, not a composed house of faces. A template would ship this.",
+        "replaceWith": "house-faces"
       },
       {
         "section": "#faces .about-faces__reach-row",
         "severity": "taste",
-        "finding": "Four icon chips times three faces is twelve reach controls in one viewport, which is the icon-card-grid tell with Call merely painted navy. Text, Email and Schedule stay boxed on every card. replaceWith: V3ButtonGroup or beui-action-swap — one Call per person, the rest as text links — or no card reach at all."
+        "finding": "Four icon chips times three faces is twelve reach controls in one viewport, which is the icon-card-grid tell with Call merely painted navy. Text, Email and Schedule stay boxed on every card.",
+        "replaceWith": "house-faces"
       },
       {
         "section": "#faces .about-faces__claim",
         "severity": "taste",
-        "finding": "The firm's only data (5.0 from 25 Google reviews, three brokers, 2014) is a clause in a paragraph. Killing the KPI tiles was the right ban; replacing them with prose is not a form. The 5.0 has no face. replaceWith: V3Proof as the opening, stars plus one quote, the job /reviews already does."
+        "finding": "The firm's only data (5.0 from 25 Google reviews, three brokers, 2014) is a clause in a paragraph. Killing the KPI tiles was the right ban; replacing them with prose is not a form. The 5.0 has no face.",
+        "replaceWith": "shadcn-avatar"
       },
       {
         "section": "#faces .about-faces__item",
         "severity": "taste",
-        "finding": "No per-broker figure, place list, or hover. Name, boxed title, license, chips — three identical cards. The record slot in this component is empty here, so nothing rewards a hover or tap with more data except the page-level source disclosure. replaceWith: the AboutFaces record figure plus shadcn hover-card adapted into v3."
+        "finding": "No per-broker figure, place list, or hover. Name, boxed title, license, chips — three identical cards. The record slot in this component is empty here, so nothing rewards a hover or tap with more data except the page-level source disclosure.",
+        "replaceWith": "house-faces"
       },
       {
         "section": "#faces",
         "severity": "taste",
-        "finding": "Zero Central Oregon in the frame: no office, no Bend photograph, no map peek. The fold could be any city's shop with different names. Catalog ignored on a page whose subject is a place."
+        "finding": "Zero Central Oregon in the frame: no office, no Bend photograph, no map peek. The fold could be any city's shop with different names. Catalog ignored on a page whose subject is a place.",
+        "replaceWith": "house-atlas"
       },
       {
         "section": "#faces .about-faces__item (375)",
         "severity": "craft",
-        "finding": "At 375 the claim is three licensed brokers and the viewport holds Matt in full and Rebecca cropped through the face. Schedule sits alone on a third chip row under Email. The trio that is the proof does not survive the phone."
+        "finding": "At 375 the claim is three licensed brokers and the viewport holds Matt in full and Rebecca cropped through the face. Schedule sits alone on a third chip row under Email. The trio that is the proof does not survive the phone.",
+        "replaceWith": "shadcn-avatar"
       },
       {
         "section": "#faces .about-faces__title",
         "severity": "craft",
-        "finding": "OWNER & PRINCIPAL BROKER and BROKER sit in hairline boxes. That is product-UI chrome on an editorial page; the compact table already sets role as a plain muted line."
+        "finding": "OWNER & PRINCIPAL BROKER and BROKER sit in hairline boxes. That is product-UI chrome on an editorial page; the compact table already sets role as a plain muted line.",
+        "replaceWith": null
       },
       {
         "section": "#faces details.v3-source",
         "severity": "taste",
-        "finding": "The only data control in the shot is how we calculate this. Nothing on a face, rating, or license reveals more on hover, scrub, or toggle. Interaction here is a methodology disclosure, not a display."
+        "finding": "The only data control in the shot is how we calculate this. Nothing on a face, rating, or license reveals more on hover, scrub, or toggle. Interaction here is a methodology disclosure, not a display.",
+        "replaceWith": "shadcn-avatar"
       }
     ],
     "comparedToPrior": "rebaselined",

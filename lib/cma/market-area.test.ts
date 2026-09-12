@@ -95,6 +95,11 @@ describe('lotCharacterCompatible — Matt hard exclusion, any distance', () => {
     expect(lotCharacterCompatible(null, 0.2)).toBe(true)
     expect(lotCharacterCompatible(5, null)).toBe(true)
   })
+
+  it('agrees with lotCompatible on near-acre same-plat peers', () => {
+    expect(lotCharacterCompatible(0.96, 1.08)).toBe(true)
+    expect(lotCharacterCompatible(0.5, 2.0)).toBe(false)
+  })
 })
 
 describe('productTypeCompatible — product-class hard exclusion', () => {

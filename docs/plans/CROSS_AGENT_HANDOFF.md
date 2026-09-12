@@ -1,3 +1,11 @@
+# Current — 2026-09-12 15:10Z (SITE-90 Critiquito P0s Tip Ready, 402)
+
+Owner: `cursor-cloud-2026-09-12-06-a`. Claim held. Do not steal SITE-90. No emails. Do not merge — Cos cherry-picks + `npm run push`.
+
+- **SITE-90 in_progress** `/about`. UUID `edabba8e-f8aa-4271-909d-c258914f75ef`. PR #207. Critiquito P0s: AvatarGroup + one principal Card (vertical name/title/Call; Text/Email/Schedule ghost); Street View caption `BEND OFFICE · 115 NW Oregon Ave #2`; closings as Accordion. Never three portrait tiles or the sofa. shotsHash `sha256:79ad786f…`. Scores still SITE-64 **52** — grok CLI missing (402). No fake demoMatch. Not done.
+- Exclusive: `app/about/**` this lane.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
+
 # Current — 2026-09-12 00:40Z (the taste instrument had no transport a cloud session could use)
 
 Owner: this session (`019RdEm6`), branch `claude/run-loop-w8f3ep` (PR #206). Nothing claimed in the graph.
@@ -37,6 +45,12 @@ Owner: this session (`019RdEm6`), branch `claude/run-loop-w8f3ep` (PR #206). Not
    claude-sonnet-5 mark of the OLD page. Re-diagnose before building.
 3. **A 25-class run is slow on this carrier**: grok-4.6 at default (high) reasoning took ~13 min for
    three scorings of one class. Budget it, or set `reasoningEffort` deliberately.
+**2026-09-12 16:05Z addendum (same session).** The 15:10Z block above records the SITE-90 lane
+stuck at "grok CLI missing (402) … Not done." That is exactly the defect `c7022b2e` on
+`claude/run-loop-w8f3ep` fixes: a fourth carrier for the SAME evaluator model over `XAI_API_KEY`,
+which every cloud runner has. It is green on PR #206 and unmerged. Landing it gives that lane a
+real grok-4.6 verdict instead of a 402 — no invented demoMatch, every schema check unchanged.
+
 
 # Current — 2026-09-11 17:00Z (CMA ship landed on origin/main)
 

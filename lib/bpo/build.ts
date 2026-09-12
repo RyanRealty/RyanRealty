@@ -30,6 +30,7 @@ import { selectComps, MIN_COMPS } from '@/lib/cma/comps'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { loadBpoEngineInputs, priceBpoAdjusted, bpoCompMap } from '@/lib/bpo/engine'
 import { judgeComps } from '@/lib/cma/judge'
+import { JUDGMENT_PRUNE_FLOOR, pricedSetAfterJudgment } from '@/lib/cma/judgment-prune'
 import { auditCma } from '@/lib/cma/audit'
 import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
 import { resolveRentalPotential } from '@/lib/cma/rental-potential'
@@ -124,11 +125,11 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     if (judgment) {
       const keep = new Set(judgment.keptKeys)
       const vetted = selection.comps.filter((c) => keep.has(c.listingKey))
-      if (vetted.length >= MIN_COMPS) compsForPricing = vetted
+      compsForPricing = pricedSetAfterJudgment(selection.comps, vetted)
       selection.trace.push(
         compsForPricing.length === vetted.length
           ? `Comparability judgment (${judgment.model}): kept ${vetted.length} of ${selection.comps.length} candidates, excluded ${judgment.verdicts.filter((v) => v.tier === 'exclude').length} as non-comparable, down-weighted ${judgment.verdicts.filter((v) => v.tier === 'weak').length}.`
-          : `Comparability judgment (${judgment.model}) would keep only ${vetted.length} comps — below the ${MIN_COMPS}-comp floor, so the full set was priced instead.`,
+          : `Comparability judgment (${judgment.model}) would keep only ${vetted.length} comps — below the ${JUDGMENT_PRUNE_FLOOR}-comp floor, so the full set was priced instead.`,
       )
     } else {
       selection.trace.push('Comparability judgment unavailable — priced on the full selection; broker review required.')

@@ -1,0 +1,128 @@
+/**
+ * /about first viewport (SITE-90). People as AvatarGroup, the Bend office
+ * as the Street View exterior, closings as Accordion. Never the interior sofa.
+ */
+
+.about-fold {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-md);
+  padding-bottom: var(--v3-space-md);
+}
+
+.about-fold__place {
+  margin: 0;
+  padding: 0 var(--v3-gutter);
+}
+
+.about-fold__place img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.about-fold__place figcaption {
+  margin-top: var(--v3-space-2xs);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+}
+
+.about-fold__sales {
+  min-width: 0;
+}
+
+.about-closings {
+  padding: 0 var(--v3-gutter);
+}
+
+.about-closings__eyebrow {
+  margin: 0 0 var(--v3-space-3xs);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+}
+
+.about-closings__heading {
+  margin: 0 0 var(--v3-space-sm);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+}
+
+.about-closings__accordion {
+  max-width: 48rem;
+}
+
+.about-closings__trigger {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  padding-right: var(--v3-space-sm);
+}
+
+.about-closings__address {
+  min-width: 0;
+}
+
+.about-closings__price {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.about-closings__facts {
+  margin: var(--v3-space-2xs) 0;
+}
+
+.about-closings img {
+  display: block;
+  width: 100%;
+  max-width: 22rem;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+}
+
+@media (min-width: 64rem) {
+  .about-fold {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    column-gap: var(--v3-space-lg);
+  }
+
+  .about-fold > .about-faces {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .about-fold__place {
+    grid-column: 2;
+    grid-row: 1;
+    padding-inline: 0 var(--v3-gutter);
+  }
+
+  .about-fold__place img {
+    aspect-ratio: 1 / 1;
+  }
+
+  .about-fold__sales {
+    grid-column: 1 / span 2;
+    grid-row: 2;
+  }
+
+  .about-closings {
+    padding-inline: var(--v3-gutter);
+  }
+
+  .about-closings__accordion {
+    max-width: none;
+  }
+}

@@ -55,8 +55,9 @@ export { checkJudgmentConsistency } from '@/lib/cma/judge-consistency'
 // lib/grok/client.ts (ci:grok-models); cost comes back per call from xAI.
 const MODEL = GROK_MODELS.text
 
-/** Below this many kept comps the deterministic resolver stops pruning —
- *  buildCma's own MIN_COMPS floor would discard the whole judgment anyway. */
+/** Below this many kept comps the deterministic resolver stops pruning.
+ *  buildCma then applies JUDGMENT_PRUNE_FLOOR (5): a thinner Grok keep is
+ *  discarded and the filled ladder is priced instead. */
 const RESOLVE_KEEP_FLOOR = 3
 
 export interface CompJudgment {

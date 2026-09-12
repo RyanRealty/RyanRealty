@@ -42,17 +42,19 @@ describe('/about section order', () => {
     expect(PAGE).toContain("href: '/book'")
   })
 
-  it('prints the firm proof as words, then firm sales — the score is not repeated', () => {
-    expect(at('id="proof"')).toBeLessThan(at('<FirmClosings'))
+  it('prints firm sales in the fold, then the reviews as words — the score is not the Proof headline', () => {
+    expect(at('<FirmClosings')).toBeLessThan(at('id="proof"'))
+    expect(at('<AboutFaces')).toBeLessThan(at('<FirmClosings'))
     expect(BODY).toContain('headline="In their own words"')
-    // The count-as-headline restated the same figure the fold already prints.
     expect(BODY).not.toContain('headline={`${reviewCount} Google reviews`}')
   })
 
-  it('does not open on a KPI grid; 5.0 from 25 is a sentence, sourced', () => {
+  it('does not open on a KPI grid; 5.0 from 25 lives on the principal face card', () => {
     expect(PAGE).not.toContain('openingFigures')
     expect(PAGE).not.toContain('figures={openingFigures}')
-    expect(PAGE).toContain('Google reviews')
+    expect(PAGE).toContain('size="proof"')
+    expect(PAGE).toContain('proof=')
+    expect(PAGE).toContain("href: '/reviews'")
     expect(PAGE).toContain('openingTrace')
     expect(PAGE).toContain('<V3SourceLine')
     expect(PAGE).toContain('public.reviews')
@@ -66,7 +68,7 @@ describe('/about section order', () => {
   })
 
   it('keeps origin and licenses below the fold, not as a KPI hero', () => {
-    expect(at('<FirmClosings')).toBeLessThan(at('id="service-area"'))
+    expect(at('id="proof"')).toBeLessThan(at('id="service-area"'))
     expect(at('id="service-area"')).toBeLessThan(at('id="about"'))
     expect(at('id="about"')).toBeLessThan(at('id="faq"'))
     expect(BODY).toContain('heading="How it started"')

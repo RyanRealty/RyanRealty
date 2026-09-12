@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { faceInitials } from '@/app/about/_v3/FacePortrait.client'
+import { faceInitials } from '@/app/about/_v3/about-faces'
 
 const FACES = readFileSync('app/about/_v3/AboutFaces.tsx', 'utf8')
 const CSS = readFileSync('app/about/_v3/about-faces.css', 'utf8')
@@ -50,9 +50,11 @@ describe('SITE-74 editorial /team fold', () => {
     expect(FOLD_CSS).toMatch(/\.team-fold__atlas \{[\s\S]*?grid-column: 2/)
   })
 
-  it('does not draw a box or circular crop behind the cutout', () => {
-    expect(CSS).toMatch(/\.about-faces__avatar \{[\s\S]*?border-radius: 0/)
-    expect(CSS).toMatch(/\.about-faces__avatar::after \{[\s\S]*?display: none/)
+  it('uses the shadcn Avatar circle, not a painted-over cutout card', () => {
+    expect(CSS).not.toContain('about-faces__avatar')
+    expect(PORTRAIT).toContain('AvatarImage')
+    expect(PORTRAIT).toContain('AvatarFallback')
+    expect(PORTRAIT).not.toContain('about-faces__avatar')
     expect(CSS).not.toMatch(/\.about-faces--editorial[\s\S]{0,200}box-shadow/)
   })
 })

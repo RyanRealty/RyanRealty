@@ -1,15 +1,16 @@
 /**
  * /about - brokerage profile, on the components/site/v3 barrel.
  *
- * PAGE OUTLINE (SITE-48, 2026-09-09 — supersedes the 2026-09-05 lock):
- * 1. The brokers' faces, the H1, and the firm's own record (AboutFaces)
+ * PAGE OUTLINE (SITE-90, 2026-09-12 — one proof object, not a phone book):
+ * 1. The fold: AboutFaces proof (H1, overlapping AvatarGroup, one ButtonGroup,
+ *    5.0 on Matt's AvatarBadge) + Street View exterior of 115 NW Oregon Ave #2
+ *    + FirmClosings as shadcn Cards. Never the interior sofa.
  * 2. One reach control: Call at display scale with the live hours, then Text,
  *    Email and the calendar as the lighter alternatives (V3Doors #reach)
  * 3. Firm proof, the words rather than the score again (V3Proof)
- * 4. Firm sales (same house row)
- * 5. Atlas of the service area
- * 6. How it started (short Quiet) + licenses as one sourced line
- * 7. V3Answers
+ * 4. Atlas of the service area
+ * 5. How it started (short Quiet) + licenses as one sourced line
+ * 6. V3Answers
  *
  * WHAT MOVED AND WHY. The page opened on a V3Quiet whose entire fold was a
  * license line and seven identical hairline link rows — Principal broker,
@@ -29,7 +30,7 @@
  */
 
 import type { Metadata } from 'next'
-import { getBrokers, getBrokerageListingTiles, getReviews } from '@/lib/data'
+import { getBrokerageListingTiles, getReviews } from '@/lib/data'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
@@ -62,22 +63,26 @@ import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { ABOUT_FAQ_ITEMS, FIRM_LICENSE } from './_v3/about-constants'
 import { AboutFaces } from './_v3/AboutFaces'
-import { aboutFaceFromBroker, type AboutFace } from './_v3/about-faces'
 import { FirmClosings } from './_v3/FirmClosings'
-import { TEAM_RANK } from '@/app/team/_v3/team-constants'
+import { loadAboutFaces } from './_v3/load-about-faces'
 import { publishFirmClosingRows } from '@/app/team/[slug]/_v3/sale-rows'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
+import './_v3/about-fold.css'
 
 const ROUTE_PATH = '/about'
 const OFFICE_NAME = 'Ryan Realty'
 
 export async function generateMetadata(): Promise<Metadata> {
+  const reviewSummary = await getReviews(6).catch(() => null)
+  const reviewLine =
+    reviewSummary && reviewSummary.count > 0
+      ? `${reviewSummary.averageRating.toFixed(1)} from ${reviewSummary.count} Google reviews. `
+      : ''
   return pageMetadata({
-    title: 'About Ryan Realty · Bend, Oregon',
-    description:
-      'Ryan Realty is a boutique brokerage in Bend, Oregon. Local experts in Central Oregon real estate, known for exceptional customer service. Ryan Realty LLC since 2014, Bend office open since June 2023.',
+    title: 'About Ryan Realty · Bend',
+    description: `${reviewLine}Three licensed Oregon brokers. Recent closings with recorded prices, addresses, and beds. Local experts since ${BRAND.llcSince}.`,
     path: ROUTE_PATH,
-    ogImage: '/images/office/ryan-realty-bend-office-interior-01.jpg',
+    ogImage: '/images/office/ryan-realty-bend-office-exterior-01.jpg',
     keywords: [
       'Ryan Realty',
       'Bend Oregon real estate',
@@ -90,9 +95,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export const revalidate = 3600
 
 export default async function AboutPage() {
-  const brokers = await getBrokers()
-
-  const [atlasRead, regionAtlas, reviewSummary, brokerageTiles, companySettings] = await Promise.all([
+  const [atlasRead, regionAtlas, reviewSummary, brokerageTiles, companySettings, faces] = await Promise.all([
     withTimeoutFallback(buildPlaceAtlas({ cities: [], label: 'Central Oregon' }).catch(() => null), null, 6000, 'about atlas'),
     buildRegionAtlasRegions().catch(() => null),
     getReviews(6).catch(() => null),
@@ -101,21 +104,15 @@ export default async function AboutPage() {
     // rows /book fills its calendar from. Why hours and not a reply-time
     // figure: components/site/v3/V3OnDuty.view.ts.
     getCrmCompanySettings().catch(() => null),
+    loadAboutFaces(),
   ])
   const atlas = atlasRead ?? EMPTY_PLACE_ATLAS
   const atlasRegions = regionAtlas?.regions ?? []
   const quotes = reviewSummary ? toReviewQuotes(reviewSummary.reviews).slice(0, 4) : []
   const reviewCount = reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : quotes.length
   const reviewAverage = reviewSummary && reviewSummary.count > 0 ? reviewSummary.averageRating : 5
-  const firmRows = publishFirmClosingRows(brokerageTiles)
-
-  const orderedBrokers = [...brokers].sort(
-    (a, b) => (TEAM_RANK[a.slug.split('-')[0] ?? ''] ?? 9) - (TEAM_RANK[b.slug.split('-')[0] ?? ''] ?? 9),
-  )
-
-  const faces = orderedBrokers
-    .map((b) => aboutFaceFromBroker(b))
-    .filter((face): face is AboutFace => face !== null)
+  const firmRows = publishFirmClosingRows(brokerageTiles, 4)
+  const newestReviewDate = reviewSummary?.reviews.find((r) => r.reviewDate)?.reviewDate ?? undefined
 
   /* SITE-64: the fold used to print these as a three-tile KPI grid
      (5.0 / 25 / 3) above the faces. TASTE.md bans that shape. The same
@@ -124,7 +121,7 @@ export default async function AboutPage() {
      at 60, so a count off it could be a ceiling. */
   const openingTrace =
     reviewSummary && reviewSummary.count > 0
-      ? `Google reviews through the public.reviews table, source = 'google' and is_hidden = false: ${reviewCount} rows, mean rating ${reviewAverage.toFixed(1)} of 5, read in this render (getReviews). Brokers are public.brokers where is_active is true, ${faces.length} rows, each with an Oregon licence number on file with the Oregon Real Estate Agency (getBrokers).`
+      ? `Google reviews through the public.reviews table, source = 'google' and is_hidden = false: ${reviewCount} rows, mean rating ${reviewAverage.toFixed(1)} of 5, read in this render (getReviews). The ${reviewAverage.toFixed(1)} mark sits on the principal broker's face card. Brokers are public.brokers where is_active is true, ${faces.length} rows, each with an Oregon licence number on file with the Oregon Real Estate Agency (getBrokers). Closings on each card are that broker's MLS record (getBrokerSales): list side by list_agent_email, buy side by buyer_agent_mls_id, recorded ClosePrice.`
       : `Brokers are public.brokers where is_active is true, ${faces.length} rows, each with an Oregon licence number on file with the Oregon Real Estate Agency (getBrokers). The reviews read returned nothing in this render, so no rating is printed.`
 
   /* The reach control's live state. Hours, never a reply-time promise — the
@@ -202,6 +199,39 @@ export default async function AboutPage() {
       type: 'faqPage',
       items: [...ABOUT_FAQ_ITEMS],
     },
+    {
+      type: 'itemList',
+      name: 'Ryan Realty brokers',
+      items: faces.map((face) => ({ name: face.name, url: face.href })),
+    },
+    ...(firmRows.length > 0
+      ? [
+          {
+            type: 'itemList' as const,
+            name: 'Recent Ryan Realty closings',
+            items: firmRows.map((row) => ({
+              name: `${row.what} · ${row.value}`,
+              url: row.href,
+            })),
+          },
+        ]
+      : []),
+    ...(reviewSummary && reviewSummary.count > 0
+      ? [
+          {
+            type: 'dataset' as const,
+            name: 'Ryan Realty Google reviews',
+            description:
+              'Verified Google Business Profile reviews for Ryan Realty in Bend, Oregon. Average rating and count from public.reviews where source is google and is_hidden is false.',
+            url: '/about',
+            dateModified: newestReviewDate?.slice(0, 10),
+            variableMeasured: [
+              { name: 'Average Google rating', value: reviewAverage },
+              { name: 'Google review count', value: reviewCount },
+            ],
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -211,22 +241,44 @@ export default async function AboutPage() {
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
 
-        {/* The fold: faces, the H1, the firm's record. AboutFaces carries the
-            page title now — the section that used to hold it was a list of
-            links, and a reader met no photograph and no figure before
-            scrolling. */}
-        <AboutFaces
-          people={faces}
-          heading="About Ryan Realty · Bend"
-          headingLevel={1}
-          eyebrow="Ryan Realty · Central Oregon"
-          claim={
-            reviewSummary && reviewSummary.count > 0
-              ? `A boutique brokerage in Bend since ${BRAND.llcSince}. Three licensed Oregon brokers, ${reviewAverage.toFixed(1)} from ${reviewCount} Google reviews, and the one you call is the one who works your deal.`
-              : `A boutique brokerage in Bend since ${BRAND.llcSince}. Three licensed Oregon brokers, and the one you call is the one who works your deal.`
-          }
-          source={<V3SourceLine sourceName={v3Text('Ryan Realty record')} source={v3Text(openingTrace)} />}
-        />
+        {/* SITE-90 fold: overlapping AvatarGroup, one principal Card,
+            Street View exterior, closings as Accordion. Never the sofa. */}
+        <div className="about-fold">
+          <AboutFaces
+            people={faces}
+            heading="About Ryan Realty · Bend"
+            headingLevel={1}
+            size="proof"
+            eyebrow="Ryan Realty · Central Oregon"
+            claim={`A Bend brokerage since ${BRAND.llcSince}. Three licensed Oregon brokers, and the one you call is the one who works your deal.`}
+            source={<V3SourceLine sourceName={v3Text('Ryan Realty record')} source={v3Text(openingTrace)} />}
+            proof={
+              reviewSummary && reviewSummary.count > 0
+                ? {
+                    value: reviewAverage.toFixed(1),
+                    count: reviewCount,
+                    href: '/reviews',
+                  }
+                : undefined
+            }
+          />
+          <figure className="about-fold__place">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/office/ryan-realty-bend-office-exterior-01.jpg"
+              alt={`Ryan Realty at ${BRAND.address.street}, ${BRAND.address.city}`}
+              width={640}
+              height={640}
+            />
+            <figcaption>
+              BEND OFFICE · {BRAND.address.street}
+            </figcaption>
+          </figure>
+          <div className="about-fold__sales">
+            {/* id="firm-sales" — FirmClosings mounts the Accordion (page-purpose binds here). */}
+            <FirmClosings rows={firmRows} />
+          </div>
+        </div>
 
         {/* One reach control instead of seven identical rows: Call at display
             scale with the live hours under it, the rest as lighter links. */}
@@ -279,9 +331,6 @@ export default async function AboutPage() {
             record={false}
           />
         ) : null}
-
-        {/* id="firm-sales" — FirmClosings mounts the house-row Ledger. */}
-        <FirmClosings rows={firmRows} />
 
         <V3Atlas
           id="service-area"
