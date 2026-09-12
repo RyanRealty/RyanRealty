@@ -173,7 +173,7 @@ describe('assembleOpinionPages format', () => {
     const all = pages.map((p) => p.body).join('')
     expect(all).not.toContain('data:image/png;base64,subjmap')
     expect((all.match(/data:image\/png;base64,compsmap/g) ?? []).length).toBe(1)
-    const price = pages.findIndex((p) => p.toc === '$429,000.')
+    const price = pages.findIndex((p) => p.toc === 'What the sales say')
     expect(pages.findIndex((p) => p.toc === 'Where all of this is.')).toBe(price + 1)
   })
 
@@ -186,7 +186,7 @@ describe('assembleOpinionPages format', () => {
       comps: [0, 1, 2].map((i) => ({ ...base.comps[0]!, listingKey: `K${i}`, address: `${100 + i} Test St` })),
       mapDataUri: 'data:image/png;base64,compsmap',
     }).map((p) => p.toc)
-    const price = tocs.indexOf('$429,000.')
+    const price = tocs.indexOf('What the sales say')
     const map = tocs.indexOf('Where all of this is.')
     const closed = tocs.indexOf('The sales that set this price')
     const competition = tocs.findIndex((t) => t?.startsWith('Who you would compete with at'))
@@ -251,7 +251,7 @@ describe('assembleOpinionPages format', () => {
     })
     const tocs = pages.map((p) => p.toc)
     const competition = tocs.findIndex((t) => t?.startsWith('Who you would compete with at'))
-    const price = tocs.indexOf('$429,000.')
+    const price = tocs.indexOf('What the sales say')
     // The listings that did not sell are their own chapter (Delta 1), and they
     // sit BEFORE the number they explain. Competition follows the number.
     // Delta 3's order: the number, the map, matrix 1, matrix 2, matrix 3.

@@ -332,11 +332,9 @@ export type BandRivalsInput = {
   asOfIso?: string | null
 }
 
-/** "Who you would compete with at $389,000" — the chapter title. */
-export function competitionHeading(recommendedList: number | null | undefined): string {
-  return recommendedList != null && recommendedList > 0
-    ? `Who you would compete with at ${usd(recommendedList)}`
-    : 'Who you would compete with at this price'
+/** Tip Ready P0: cover already carries the recommend — do not bang it in the title. */
+export function competitionHeading(_recommendedList?: number | null): string {
+  return 'Who you would compete with at this price'
 }
 
 function competitionBody(input: BandRivalsInput): string {

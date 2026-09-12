@@ -194,7 +194,9 @@ describe('renderBandRivalsHtml', () => {
     // facts chapters 1 and 3 already carry.
     expect(html).not.toContain('This home')
     expect(html).not.toContain('is-subject')
-    expect(html).toContain('$392,000')
+    // Tip Ready P0: chapter title no longer bangs the recommend dollars.
+    expect(html).toContain('Who you would compete with at this price')
+    expect(html).not.toMatch(/compete with at \$/)
   })
 
   it('names bed and bath gaps against the subject', () => {

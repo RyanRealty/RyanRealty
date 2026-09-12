@@ -278,16 +278,19 @@ describe('print CMA price-opinion spine', () => {
     const cover = firstPage(html)
     // Blueprint chapter 0: the address, ONE sentence, prepared-for and the
     // date. The list range is chapter 3's line, under chapter 3's number.
-    expect(cover).toContain('We recommend listing at')
+    expect(cover).toContain('Our Recommended List Price for your home')
     expect(cover).toContain('$475,000')
+    expect(cover).not.toContain('We recommend listing at')
     expect(cover).toMatch(/Your home is worth \$[\d,]+ to \$[\d,]+ today\./)
-    expect(cover).not.toContain('List $470,000 to $490,000')
+    expect(cover).toContain('List $470,000 to $490,000')
+    expect(cover).toContain('Our Recommended List Price for your home')
     expect(cover).not.toContain('Expected close')
     // CUT by the blueprint (CMA_REIMAGINED_2026-09-07.md): the property-facts
     // table served none of the three questions a seller opens this for.
     expect(html).not.toContain('<h2 class="section">Home location</h2>')
     expect(html).not.toContain('<h2 class="section">Property facts</h2>')
-    expect(html).toContain('$475,000.')
+    expect(html).toContain('$475,000')
+    expect(html).toContain('What the sales say')
     expect(html).toContain('The sales that set this price')
     expect(html).toContain('pin-map-wrap')
     expect(html).toContain('12 Pine')
@@ -303,12 +306,13 @@ describe('print CMA price-opinion spine', () => {
     // The cover's sentence carries the recommend with a full stop now, so
     // "the figure without a period" no longer separates it from chapter 3's
     // title. Anchor on what each surface actually prints.
-    const recAt = html.indexOf('We recommend listing at $475,000.')
-    const salesAt = html.indexOf('<h2 class="section is-answer">$475,000.</h2>')
+    const recAt = html.indexOf('Our Recommended List Price for your home')
+    const salesAt = html.indexOf('<h2 class="section is-answer">What the sales say</h2>')
     const discAt = html.indexOf('<h2 class="section">Basis and limits</h2>')
     expect(recAt).toBeGreaterThan(0)
     expect(salesAt).toBeGreaterThan(recAt)
     expect(discAt).toBeGreaterThan(salesAt)
+    expect(html).not.toContain('We recommend listing at')
   })
 
   it('omits legal, photos, status, 90-day, permits, and seller net when those extras are unknown', () => {
@@ -386,14 +390,15 @@ describe('print CMA price-opinion spine', () => {
     expect(html).not.toContain('Permits and ownership')
     expect(html).not.toContain('B-88')
     expect(html).toContain('<h2 class="section">Net at list</h2>')
-    expect(html).toContain('At $475,000')
+    expect(html).toContain('Across')
+    expect(html).toContain('per square foot')
     expect(html).toContain('$467,000')
     expect(html).not.toMatch(/typical concessions/)
     expect(html).toContain('sales that set this price')
     expect(html).not.toMatch(BANNED)
     // Blueprint order: what happened, priced right, what it is worth,
     // competition, this market, net at list, basis and limits, next step.
-    const priceAt = html.indexOf('$475,000.')
+    const priceAt = html.indexOf('What the sales say')
     const marketAt = html.indexOf(' right now</h2>')
     const netAt = html.indexOf('<h2 class="section">Net at list</h2>')
     const discAt = html.indexOf('<h2 class="section">Basis and limits</h2>')
@@ -409,7 +414,7 @@ describe('print CMA price-opinion spine', () => {
 describe('immersive CMA price-opinion spine', () => {
   it('uses the same chapters and tap-pin hooks', () => {
     const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
-    expect(html).toContain('Comparative market analysis · 850 Quince')
+    expect(html).toContain('Pricing report · 850 Quince')
     expect(html).toContain('$475,000')
     expect(html).toContain('id="what-its-worth"')
     expect(html).toContain('id="competition"')

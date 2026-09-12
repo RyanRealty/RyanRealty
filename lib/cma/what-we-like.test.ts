@@ -199,9 +199,12 @@ describe('the single-doc fold', () => {
     expect(html).not.toContain('What Every Listing Gets')
     expect(html).not.toMatch(/what your home is worth/i)
     const coverAt = html.indexOf('cover-title')
-    const priceAt = html.indexOf('$715,000.')
+    const priceAt = html.indexOf('Our Recommended List Price for your home')
+    const chapterAt = html.indexOf('What the sales say')
     expect(coverAt).toBeGreaterThan(0)
-    expect(priceAt).toBeGreaterThan(coverAt)
+    expect(priceAt).toBeGreaterThan(coverAt - 1)
+    expect(html).toContain('$715,000')
+    expect(chapterAt).toBeGreaterThan(priceAt)
   })
 
   it('does not render a this-home marketing plan when one is provided on the row', () => {
@@ -226,9 +229,9 @@ describe('the single-doc fold', () => {
 
   it('the doc label and title never switch to audit', () => {
     const { html } = renderCmaHtml(withReview)
-    expect(html).toContain('Comparative market analysis')
+    expect(html).toContain('Pricing report')
     expect(html).not.toContain('Listing Audit')
-    expect(html).toContain('<title>Comparative market analysis ·')
+    expect(html).toContain('<title>Pricing report ·')
   })
 
   it('one artifact, two media: screen hides the print page header', () => {

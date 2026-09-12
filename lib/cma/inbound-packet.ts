@@ -83,17 +83,17 @@ export function inboundImmersiveHeroKick(
   _generatedAtIso?: string,
 ): string {
   const named = trim(streetAddress) ?? 'this home'
-  return `Comparative market analysis · ${named}`
+  return `Pricing report · ${named}`
 }
 
 export function inboundImmersiveTitle(streetAddress: string | null): string {
   const named = trim(streetAddress) ?? 'This home'
-  return `${named} · Comparative market analysis · Ryan Realty`
+  return `${named} · Pricing report · Ryan Realty`
 }
 
 export function composeInboundCoverLine(streetAddress: string | null): string {
   const named = trim(streetAddress)
-  return named ? `A comparative market analysis for ${named}.` : 'A comparative market analysis for this home.'
+  return named ? `A pricing report for ${named}.` : 'A pricing report for this home.'
 }
 
 export function composeInboundNumbersClause(facts: InboundPacketFacts): string | null {

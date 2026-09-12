@@ -269,14 +269,9 @@ export function cmaSectionStyles(): string {
        prints — a reviewer opening ?print=1 sees what the client gets. Only
        below 700px, where a seven-column table cannot hold, does it fall back
        to the stacked cards. Never both visible at once. */
-  .comp-stack { display: none; margin: 8px 0 14px; max-width: 100%; min-width: 0; }
-  .comp-matrix-wrap { display: block; margin: 8px 0 14px; overflow-x: auto; }
-  @media screen and (max-width: 700px) {
-    .comp-stack { display: block; }
-    /* The group heading belongs to the table, so it goes when the table does.
-       Both headings rendered back to back at 375 with nothing between them. */
-    .comp-matrix-wrap, .matrix-group-h { display: none; }
-  }
+  /* C4 Tip Ready (Matt 2026-09-12): ALL screen uses the sold-comp stack; matrix is print-only. */
+  .comp-stack { display: block; margin: 8px 0 14px; max-width: 100%; min-width: 0; }
+  .comp-matrix-wrap, .matrix-group-h { display: none; margin: 8px 0 14px; overflow-x: auto; }
   .comp-stack-card {
     border: 1px solid var(--navy-line);
     padding: 12px;
@@ -474,7 +469,7 @@ export function cmaSectionStyles(): string {
   ul.rejected-list .rj-why { color: var(--muted); }
   /* The phone card carries the same grid lines as the column. */
   .comp-stack-grid { display: grid; gap: 2px; margin-top: 6px; }
-  .comp-stack-line { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; }
+  .comp-stack-line { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; flex-wrap: nowrap; white-space: nowrap; }
   .comp-stack-line .k { color: var(--muted); }
   .comp-stack-line .v { font-variant-numeric: tabular-nums; font-weight: 600; }
   /* Chapter 2b's centrepiece: what the first ask realized, by weeks. */
@@ -631,8 +626,10 @@ export function cmaSectionStyles(): string {
   .pin-badge { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: var(--navy); color: var(--cream); font-size: 9px; font-weight: 700; line-height: 1; margin-right: 5px; flex: 0 0 auto; vertical-align: middle; }
   table.comp-matrix th, table.comp-matrix td {
     padding: 5px 6px;
-    white-space: normal;
-    overflow-wrap: anywhere;
+    /* Matt ADD 2026-09-12: no wrapping crumbs — labels and numbers stay one line. */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     /* Values sit under their own column head. Only the thead rule carried
        this before, so every figure in the body left-aligned away from the
        address it belonged to. The immersive stylesheet always aligned both. */

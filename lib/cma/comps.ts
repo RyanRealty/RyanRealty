@@ -961,34 +961,46 @@ export async function selectComps(
   let comps = Array.from(byKey.values())
   const candidateCount = comps.length
 
-  // Outlier exclusion: drop $/sqft beyond 2 standard deviations, only when the
-  // set stays at or above MIN_COMPS afterward.
+  // Outlier exclusion: drop $/sqft beyond 2 standard deviations OR far from the
+  // peer median band (Tip Ready P1: $201/sf beside $498–561k peers must go),
+  // only when the set stays at or above MIN_COMPS afterward.
   const excludedOutliers: CompSelection['excludedOutliers'] = []
+  const OUTLIER_MEDIAN_BAND = 0.35
   if (comps.length >= TARGET_COMPS) {
     const ppsfs = comps.map((c) => unitRate(c, Boolean(land)))
     const mean = ppsfs.reduce((a, b) => a + b, 0) / ppsfs.length
     const sd = Math.sqrt(ppsfs.reduce((a, b) => a + (b - mean) ** 2, 0) / ppsfs.length)
-    if (sd > 0) {
-      const kept: CmaComp[] = []
-      for (const c of comps) {
-        const ppsf = unitRate(c, Boolean(land))
-        if (Math.abs(ppsf - mean) > 2 * sd && comps.length - excludedOutliers.length > MIN_COMPS) {
-          excludedOutliers.push({
-            address: c.address,
-            closePrice: c.closePrice,
-            ppsf: Math.round(ppsf),
-            reason: `$${Math.round(ppsf)}/${land ? 'acre' : 'sqft'} is more than 2 standard deviations from the set mean of $${Math.round(mean)}/${land ? 'acre' : 'sqft'}`,
-          })
-        } else {
-          kept.push(c)
-        }
+    const sorted = [...ppsfs].sort((a, b) => a - b)
+    const mid = Math.floor(sorted.length / 2)
+    const median =
+      sorted.length % 2 === 0 ? (sorted[mid - 1]! + sorted[mid]!) / 2 : sorted[mid]!
+    const kept: CmaComp[] = []
+    for (const c of comps) {
+      const ppsf = unitRate(c, Boolean(land))
+      const farSd = sd > 0 && Math.abs(ppsf - mean) > 2 * sd
+      const farMedian =
+        median > 0 &&
+        (ppsf < median * (1 - OUTLIER_MEDIAN_BAND) || ppsf > median * (1 + OUTLIER_MEDIAN_BAND))
+      if ((farSd || farMedian) && comps.length - excludedOutliers.length > MIN_COMPS) {
+        excludedOutliers.push({
+          address: c.address,
+          closePrice: c.closePrice,
+          ppsf: Math.round(ppsf),
+          reason: farMedian
+            ? `$${Math.round(ppsf)}/${land ? 'acre' : 'sqft'} sits outside ±${Math.round(
+                OUTLIER_MEDIAN_BAND * 100,
+              )}% of the peer median $${Math.round(median)}/${land ? 'acre' : 'sqft'}`
+            : `$${Math.round(ppsf)}/${land ? 'acre' : 'sqft'} is more than 2 standard deviations from the set mean of $${Math.round(mean)}/${land ? 'acre' : 'sqft'}`,
+        })
+      } else {
+        kept.push(c)
       }
-      comps = kept
-      if (excludedOutliers.length > 0) {
-        trace.push(
-          `Excluded ${excludedOutliers.length} $/${land ? 'acre' : 'sqft'} outlier(s) beyond 2 standard deviations of the set mean.`,
-        )
-      }
+    }
+    comps = kept
+    if (excludedOutliers.length > 0) {
+      trace.push(
+        `Excluded ${excludedOutliers.length} $/${land ? 'acre' : 'sqft'} outlier(s) beyond 2 standard deviations or the peer median band.`,
+      )
     }
   }
 

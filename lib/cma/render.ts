@@ -11,8 +11,10 @@ import {
   monthYear,
   reviewNoticeBandHtml,
   sparkPhotoAt,
+  usd,
 } from '@/lib/cma/render-blocks'
 import { readReviewNotice } from '@/lib/cma/render-contract'
+import { isCmaClientReady } from '@/lib/cma/draft-access'
 import type {
   CmaAdjustedComp,
   CmaBroker,
@@ -32,7 +34,7 @@ import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
 import { assembleOpinionPages } from '@/lib/cma/opinion-pages'
-import { coverWorthSentence, rangeSpreadCauseSentence } from '@/lib/cma/cover-value'
+import { COVER_LIST_PRICE_HEADLINE, coverWorthSentence, rangeSpreadCauseSentence } from '@/lib/cma/cover-value'
 import {
   cmaCoverLabelHtml,
 } from '@/lib/cma/fsbo-cma-render'
@@ -109,6 +111,12 @@ export interface RenderCmaArgs {
    * on render_args — identity belongs to the delivery, not to the figures.
    */
   docLinks?: TrackedDocLinkCtx | null
+  /**
+   * Row status at SERVE (draft / needs_review / finalized / delivered).
+   * Finalized and delivered owner PDFs must never print the draft
+   * "under broker review" band even if pricing.review still carries a notice.
+   */
+  documentStatus?: string | null
 }
 
 interface PageDef {
@@ -225,13 +233,33 @@ function coverPage(a: RenderCmaArgs): PageDef {
     a.client.name ? `Prepared for ${a.client.name}` : 'Prepared',
     `by ${a.broker.displayName}, Ryan Realty`,
   ].join(' ')
-  const worth = coverWorthSentence(a.pricing)
-  // A quarter-of-the-price range meets the reader on the cover first, and it
-  // said nothing about why it was that wide (tasteReview round two, §3.E).
-  const why = rangeSpreadCauseSentence(a.pricing)
+  // Tip Ready P0 (Matt 2026-09-12 / Cos Falcon smoke): recommend + range ONCE
+  // on the photo under the locked headline. Never "We recommend listing at $X"
+  // here — that restated the number the type already carries.
+  const p = a.pricing
+  const worthOnly = coverWorthSentence(p, { omitAsk: true })
+  const listRange =
+    p.conservative > 0 && p.highEnd > 0
+      ? `List ${usd(p.conservative)} to ${usd(p.highEnd)}.`
+      : ''
+  const why = rangeSpreadCauseSentence(p)
+  const payoff =
+    p.recommended > 0
+      ? `<div class="cover-payoff">
+      <div class="cover-headline">${esc(COVER_LIST_PRICE_HEADLINE)}</div>
+      <p class="cover-price">${usd(p.recommended)}</p>
+      ${listRange ? `<p class="cover-range">${esc(listRange)}</p>` : ''}
+      ${worthOnly ? `<p class="cover-worth">${esc(worthOnly)}</p>` : ''}
+      ${why ? `<p class="cover-why">${esc(why)}</p>` : ''}
+    </div>`
+      : worthOnly
+        ? `<p class="cover-worth">${esc(worthOnly)}</p>${why ? `<p class="cover-why">${esc(why)}</p>` : ''}`
+        : why
+          ? `<p class="cover-why">${esc(why)}</p>`
+          : ''
   return {
     cover: true,
-    meta: `Comparative market analysis · ${dateLong(a.generatedAtIso)}`,
+    meta: `Pricing report · ${dateLong(a.generatedAtIso)}`,
     body: `
   <div class="cover-stage">
     ${hero.src ? `<img class="hero-photo" src="${esc(hero.src)}" alt="${esc(a.subject.streetAddress)}" />` : '<div class="hero-photo"></div>'}
@@ -239,8 +267,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
       ${cmaCoverLabelHtml()}
       <h1 class="cover-title">${esc(a.subject.streetAddress)}</h1>
       <div class="cover-sub">${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')}</div>
-      ${worth ? `<p class="cover-worth">${esc(worth)}</p>` : ''}
-      ${why ? `<p class="cover-why">${esc(why)}</p>` : ''}
+      ${payoff}
       <p class="cover-presented">${esc(`${prepared} · ${dateLong(a.generatedAtIso)}`)}</p>
       ${hero.stale ? `<p class="hero-caption">${esc(hero.caption)}</p>` : ''}
     </div>
@@ -258,12 +285,14 @@ function coverPage(a: RenderCmaArgs): PageDef {
  * immediately under the cover on screen — one sheet, no orphan page.
  */
 function withReviewNotice(a: RenderCmaArgs, pages: PageDef[]): PageDef[] {
+  // Owner / finalized PDF: never leak the draft review banner (Tip Ready P0).
+  if (isCmaClientReady(a.documentStatus)) return pages
   const review = readReviewNotice(a.pricing)
   if (!review) return pages
   const band = reviewNoticeBandHtml(review.notice ?? '', 'letter')
   if (!band) return pages
   const at = pages.findIndex((p) => !p.cover)
-  if (at < 0) return [...pages, { meta: 'Comparative market analysis', body: band }]
+  if (at < 0) return [...pages, { meta: 'Pricing report', body: band }]
   return pages.map((p, i) => (i === at ? { ...p, body: `${band}
 ${p.body}` } : p))
 }
@@ -280,7 +309,7 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex,nofollow" />
-<title>Comparative market analysis · ${esc(a.subject.streetAddress)} · ${esc(a.subject.city)}, OR ${esc(a.subject.postalCode ?? '')}</title>
+<title>Pricing report · ${esc(a.subject.streetAddress)} · ${esc(a.subject.city)}, OR ${esc(a.subject.postalCode ?? '')}</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
 <style>${cmaStylesheet(SITE_URL)}</style>
 </head>

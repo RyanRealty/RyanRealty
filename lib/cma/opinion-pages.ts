@@ -1125,6 +1125,13 @@ export function nextStepPage(a: OpinionPageArgs): CmaPageDef | null {
   }
 }
 
+/**
+ * Writing Bot / Matt close (2026-09-12 Tip Ready craft): keep the authentic
+ * sorry heading, and earn the business in one plain line under the CTA.
+ */
+export const CLOSE_EARN_YOUR_BUSINESS =
+  "If you want a second set of eyes on pricing or next steps, I'd like a chance to earn your business. Happy to walk through this anytime."
+
 /** "Sorry this listing did not sell." */
 export function nextStepHeading(a: OpinionPageArgs): string {
   // A home on the market with another brokerage did not fail at anything, and
@@ -1215,6 +1222,7 @@ export function nextStepNoteHtml(a: OpinionPageArgs): string {
   return `<p class="next-note">${esc(
     'Bring this report. We will walk the house, price it against these same sales, and tell you what would have to change to sell it. There is nothing to sign for that.',
   )}</p>
+  <p class="next-note">${esc(CLOSE_EARN_YOUR_BUSINESS)}</p>
   <p class="next-note">${esc(
     `If you would rather look first, the second link opens every home for sale in ${place} on our site.`,
   )}</p>
@@ -1385,6 +1393,11 @@ export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
  * follows has a place, and the three matrices run closed → unsold → active
  * because that is the order the argument needs — this is what sold, this is
  * what did not, this is who you are up against.
+ */
+/**
+ * THREE ACTS first (Matt 2026-09-12): number → sales that prove it → next step.
+ * priced-right / this-market stay AFTER the sales proof so charts do not bury
+ * the number; Cos Falcon smoke did not require cutting them from the order.
  */
 export const OPINION_CHAPTER_ORDER = [
   'what-happened',

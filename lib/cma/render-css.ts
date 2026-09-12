@@ -217,10 +217,35 @@ export function cmaStylesheet(siteUrl: string): string {
   }
   /* The one sentence. Geist, never the display face — Amboqia does not sit on
      a number (.claude/skills/dataviz/SKILL.md). */
-  .cover-worth {
+  .cover-payoff {
     margin: 20px 0 0 0;
     padding-top: 18px;
     border-top: 1px solid var(--navy-line);
+  }
+  .cover-headline {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.62;
+    margin: 0 0 8px 0;
+    font-weight: 600;
+  }
+  .cover-price {
+    font-size: clamp(42px, 9vw, 64px);
+    font-weight: 600;
+    line-height: 1.05;
+    margin: 0 0 8px 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .cover-range {
+    font-size: 16px;
+    margin: 0 0 10px 0;
+    opacity: 0.78;
+  }
+  .cover-worth {
+    margin: 10px 0 0 0;
+    padding-top: 0;
+    border-top: none;
     font-size: 19px;
     line-height: 1.45;
     color: var(--navy);

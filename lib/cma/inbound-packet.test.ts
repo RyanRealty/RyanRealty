@@ -87,14 +87,14 @@ describe('cover + immersive openers', () => {
       expect(line).not.toMatch(/what your home is worth/i)
       expect(line).not.toMatch(/how we would market/i)
     }
-    expect(cover).toBe('A comparative market analysis for 1842 NW Foo St.')
+    expect(cover).toBe('A pricing report for 1842 NW Foo St.')
     // ONE date on the cover, and it is the byline's. A raw ISO slice takes the
     // UTC day and the byline takes the Pacific one, so a document prepared
     // after 5pm carried two different dates on its own cover.
-    expect(kick).toBe('Comparative market analysis · 1842 NW Foo St')
+    expect(kick).toBe('Pricing report · 1842 NW Foo St')
     expect(inboundImmersiveHeroKick('1842 NW Foo St', '2026-09-08T01:00:00.000Z')).toBe(
-      'Comparative market analysis · 1842 NW Foo St',
+      'Pricing report · 1842 NW Foo St',
     )
-    expect(title).toContain('Comparative market analysis')
+    expect(title).toContain('Pricing report')
   })
 })

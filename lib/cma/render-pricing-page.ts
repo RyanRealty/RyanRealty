@@ -25,7 +25,6 @@ import {
 } from '@/lib/cma/pricing-method'
 import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
-import { worthStripHtml } from '@/lib/cma/worth-strip'
 import { clampSentence, keptCompCount, setAsideCompIndexes, setAsideRows } from '@/lib/cma/set-aside'
 import { listCeiling, readMeasure, readRangeRuleKept } from '@/lib/cma/render-contract'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
@@ -37,9 +36,13 @@ const esc = escapeHtml
 
 const ON_MARKET = /^(active|pending|coming)/i
 
-/** The chapter title IS the number. "$389,000." */
-export function whatItsWorthHeading(pricing: CmaPricing): string {
-  return `${usd(pricing.recommended)}.`
+/**
+ * Tip Ready P0 (Matt 2026-09-12 / Cos Falcon smoke): the recommend lives ONCE
+ * on the cover photo. Chapter 3 no longer titles itself "$389,000." — that was
+ * the fold repeating the number.
+ */
+export function whatItsWorthHeading(_pricing: CmaPricing): string {
+  return 'What the sales say'
 }
 
 /**
@@ -212,7 +215,14 @@ export function keptSaleCount(
   pricing: CmaPricing,
   comps: readonly CmaAdjustedComp[],
 ): number {
-  if (setAsideCompIndexes(pricing, comps).size > 0) return keptCompCount(pricing, comps)
+  const aside = setAsideCompIndexes(pricing, comps)
+  if (aside.size > 0) return keptCompCount(pricing, comps)
+  // Tip Ready P0 / Cos Falcon smoke: trimmed-one-each-end may refuse to trim
+  // when that would leave fewer than 5 kept sales. Do not honor a stale
+  // rangeRule.kept that assumed ends were set aside — that reprints "four"
+  // over a six-sale grid with no set-aside list (class E again).
+  const rule = (pricing as { rangeRule?: { rule?: string } } | null)?.rangeRule?.rule
+  if (rule === 'trimmed-one-each-end') return comps.length
   const stated = readRangeRuleKept(pricing)
   if (stated != null && stated > 0) return Math.min(stated, comps.length)
   return keptCompCount(pricing, comps)
@@ -342,8 +352,9 @@ function perSquareFootLine(input: { subject: CmaSubject; pricing: CmaPricing }):
   const sqft = input.subject.sqft
   const price = input.pricing.recommended
   if (sqft == null || !(sqft > 0) || price == null || !(price > 0)) return ''
+  // Tip Ready P0: do not restate the recommend dollars — cover already has them.
   return `<p class="small">${esc(
-    `At ${usd(price)} across ${int(sqft)} square feet, that is ${usd(Math.round(price / sqft))} per square foot.`,
+    `Across ${int(sqft)} square feet, that is ${usd(Math.round(price / sqft))} per square foot.`,
   )}</p>`
 }
 
@@ -454,28 +465,8 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   // Every one of those sentences is written by lib/pricing and stored on the
   // row; nothing here composes one.
   const method = renderPricingMethodHtml({ pricing: pricingWithMeasure(p), whichSales })
-  // The chapter's own conclusion, drawn, BEFORE the method that reached it and
-  // the grid that proves it (tasteReview item 2). One glance lands where five
-  // real sales put this house and where we would list it.
-  const aside = setAsideCompIndexes(p, input.comps)
-  const strip = worthStripHtml({
-    sales: input.comps.map((c, i) => ({
-      n: i + 1,
-      address: c.address,
-      adjustedPrice: c.adjustedPrice,
-      setAside: aside.has(i),
-    })),
-    rangeLow: p.valueLow,
-    rangeHigh: p.valueHigh,
-    recommended: p.recommended,
-    // ONLY AN ASK THAT FAILED. `lastListPrice` on a sold or a live subject is
-    // not the mark this drawing makes: on 19968 it was a 2004 list price of
-    // $140,000 drawn as "asked $140K" beside sales clustered $296K to $441K,
-    // which stretched the axis by 40 percent and stated something untrue about
-    // the home (tasteReview round two, §3.G).
-    lastAsk: failedSubjectAsk(s, input.askCtx),
-    keptCount: keptSaleCount(p, input.comps),
-  })
+  // Tip Ready P0: cover already carries recommend + range. The worth-strip's
+  // "list $521K" mark was the fold repeating the number (~8× on Falcon).
   return {
     meta: `${esc(s.streetAddress)} · ${esc(heading)}`,
     toc: heading,
@@ -483,7 +474,6 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   ${lead}
   ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx))}</p>
   ${clampHtml}` : ''}
-  ${strip}
   ${method}
 `,
   }
