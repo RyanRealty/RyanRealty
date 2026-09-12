@@ -279,6 +279,105 @@ export function buildHubChooserItems(input: HubChooserInput): V3QuietItem[] {
   })
 }
 
+const LEAD_LABELS = new Set(['homes for sale, single-family', 'a month of sales'])
+
+export function isHubLeadFigure(figure: V3InstrumentFigure): boolean {
+  return LEAD_LABELS.has(String(figure.label))
+}
+
+/** Whole-number face for beui-number. Percents and money stay static. */
+export function wholeCountFromLabel(value: string): number | undefined {
+  const trimmed = value.trim()
+  if (!trimmed || trimmed.includes('%') || trimmed.includes('$')) return undefined
+  const n = Number(trimmed.replace(/,/g, ''))
+  if (!Number.isInteger(n) || n <= 0) return undefined
+  return n
+}
+
+export type HubExtraItem = {
+  value: string
+  label: string
+  count?: number
+  href?: string
+}
+
+export type HubExtraPage = {
+  id: string
+  label: string
+  claim: string
+  items: HubExtraItem[]
+}
+
+function extraItemsFromFigures(figures: readonly V3InstrumentFigure[]): HubExtraItem[] {
+  const items: HubExtraItem[] = []
+  for (const figure of figures) {
+    const value = String(figure.value)
+    const label = String(figure.label)
+    if (!value || !label) continue
+    items.push({
+      value,
+      label,
+      ...(figure.count != null && Number.isFinite(figure.count) && figure.count > 0
+        ? { count: figure.count }
+        : wholeCountFromLabel(value) != null
+          ? { count: wholeCountFromLabel(value) }
+          : {}),
+      ...(figure.href ? { href: figure.href } : {}),
+    })
+  }
+  return items
+}
+
+/**
+ * Extra leftover tiles become InsightPager pages, not a closed cream fold.
+ * Miss omits a page. Claims carry no figure — the items do.
+ */
+export function buildHubExtraPages(input: {
+  priceAndWait: readonly V3InstrumentFigure[]
+  types: readonly V3InstrumentFigure[]
+  pace: readonly V3InstrumentFigure[]
+  mix: readonly V3InstrumentFigure[]
+}): HubExtraPage[] {
+  const pages: HubExtraPage[] = []
+  const priceItems = extraItemsFromFigures(input.priceAndWait)
+  if (priceItems.length > 0) {
+    pages.push({
+      id: 'price',
+      label: 'Price and wait',
+      claim: 'Median list and days to an offer, from Oregon Data Share.',
+      items: priceItems,
+    })
+  }
+  const typeItems = extraItemsFromFigures(input.types)
+  if (typeItems.length > 0) {
+    pages.push({
+      id: 'types',
+      label: 'Types',
+      claim: 'Single-family inventory by type, when a type has a live row.',
+      items: typeItems,
+    })
+  }
+  const paceItems = extraItemsFromFigures(input.pace)
+  if (paceItems.length > 0) {
+    pages.push({
+      id: 'pace',
+      label: 'Sale pace',
+      claim: 'How the recent closed and pending pace reads, from Oregon Data Share.',
+      items: paceItems,
+    })
+  }
+  const mixItems = extraItemsFromFigures(input.mix)
+  if (mixItems.length > 0) {
+    pages.push({
+      id: 'features',
+      label: 'Features',
+      claim: 'What a typical recent closed house had, when a share published.',
+      items: mixItems,
+    })
+  }
+  return pages
+}
+
 /**
  * Lead tiles under the MOS drawing. Integer month-of-sales face.
  * Sentences say what each figure means; no second number in a sentence.

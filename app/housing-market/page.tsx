@@ -108,6 +108,7 @@ import {
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
+  type V3InstrumentFigure,
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
@@ -116,15 +117,16 @@ import { MarketInquirySheet } from './_v3/MarketInquirySheet.client'
 import { CITY_SLUG, CLOSED_SALES_YEAR, HISTORY_PATH } from './_v3/hub-constants'
 import { buildCityLedger, buildHubLead, buildSfrFollowFigures } from './_v3/hub-sections'
 import { buildRegionMedianChart, dropInProgressMonth } from './_v3/market-charts'
-import { MARKET_FOLD_LABEL } from './_v3/opening'
-import { HubCityMosPages } from './_v3/HubCityMosPages.client'
+import { HubOpeningDrawings } from './_v3/HubCityMosPages.client'
 import {
   buildCityMosPages,
   buildHubChooserItems,
   buildHubCityItemList,
+  buildHubExtraPages,
   buildOpeningFigures,
   hubLiveDescription,
   hubOpeningNote,
+  isHubLeadFigure,
   monthlyPaceFromMos,
 } from './_v3/hub-opening'
 import { buildMosSupplyChart } from '@/app/months-of-supply/_v3/mos-chart'
@@ -302,10 +304,12 @@ export default async function HousingMarketHubPage() {
   const [firstLeadFigure, ...restLeadFigures] = lead.figures
 
   // Live single-family figures for the LEVEL-1 hero. When the MOS two-bar
-  // publishes, the first two tiles are the two bars (homes for sale, a month
-  // of sales). Median list, days to pending, and leftover extra-type/pace/mix
-  // fold behind "All N figures". One population, one clock (refreshedAt).
+  // publishes, the visible tiles are the two bars (homes for sale, a month
+  // of sales). Median list, days to pending, and leftover type/pace/mix
+  // page through InsightPager — not a closed cream fold. One population,
+  // one clock (refreshedAt).
   const sfrFollow = buildSfrFollowFigures(hud, mosText)
+  const typeFigures: V3InstrumentFigure[] = []
   for (const row of publicSegments) {
     if (row.activeCount == null || row.activeCount <= 0) continue
     // Mobile audit 2026-08-27 (group-c): the full bit list (up to 9 stats)
@@ -316,31 +320,38 @@ export default async function HousingMarketHubPage() {
     // YoY, price-cut share) stay one tap away behind the tile's existing
     // href rather than crammed inline; nothing is removed from the site.
     const bits = publicSegmentDisplayBits(row).slice(0, 3)
-    sfrFollow.push({
+    typeFigures.push({
       value: v3Text(row.activeCount.toLocaleString('en-US')),
       label: v3Text(
         [`${publicSegmentNoun(row.segment, row.activeCount)} for sale`, ...bits].join(' · '),
       ),
       href: publicSegmentBrowseHref(null, row.segment),
+      count: row.activeCount,
     })
   }
-  for (const item of publicPaceItems(publicPace)) {
-    sfrFollow.push({
-      value: v3Text(item.value),
-      label: v3Text(item.label),
-    })
-  }
-  for (const item of publicMixItems(publicMix)) {
-    sfrFollow.push({
-      value: v3Text(item.value),
-      label: v3Text(item.label),
-    })
-  }
+  const paceFigures = publicPaceItems(publicPace).map((item) => ({
+    value: v3Text(item.value),
+    label: v3Text(item.label),
+  }))
+  const mixFigures = publicMixItems(publicMix).map((item) => ({
+    value: v3Text(item.value),
+    label: v3Text(item.label),
+  }))
   const openingFigures = buildOpeningFigures({
     follow: sfrFollow,
     monthOfSales: mosChart ? monthOfSales : null,
   })
-  const [firstSfrFigure, ...restSfrFigures] = openingFigures
+  const leadFigures = openingFigures.filter(isHubLeadFigure)
+  const extraPages = buildHubExtraPages({
+    priceAndWait: openingFigures.filter(
+      (figure) =>
+        String(figure.label).includes('median list') || String(figure.label).includes('days to an offer'),
+    ),
+    types: typeFigures,
+    pace: paceFigures,
+    mix: mixFigures,
+  })
+  const [firstSfrFigure, ...restSfrFigures] = leadFigures.length > 0 ? leadFigures : openingFigures
   const cityMosPages = buildCityMosPages(citySnapshots)
 
   // M1 AEO: the mart-backed size and composition questions, appended to the same FAQ
@@ -564,11 +575,9 @@ export default async function HousingMarketHubPage() {
             )}
             note={v3Text(hubOpeningNote(verdict.kind, cityMosPages.length))}
             figures={[firstSfrFigure, ...restSfrFigures]}
-            /* First viewport is the verdict + MOS drawing + paged city pace
-               (SITE-100). Tiles stay folded; the InsightPager is the extra data. */
+            /* First viewport is the verdict + MOS drawing + InsightPager.
+               Extra leftover tiles page; there is no closed cream fold. */
             chartFirst
-            foldAfter={0}
-            foldLabel={v3Text(MARKET_FOLD_LABEL)}
             source={v3Text(
               publicMarketPulseSource(
                 [
@@ -584,7 +593,9 @@ export default async function HousingMarketHubPage() {
             asOf={refreshedAt ?? undefined}
             chart={mosChart ?? regionChart}
             drawing={
-              cityMosPages.length > 0 ? <HubCityMosPages pages={cityMosPages} /> : undefined
+              cityMosPages.length > 0 || extraPages.length > 0 ? (
+                <HubOpeningDrawings cityPages={cityMosPages} extraPages={extraPages} />
+              ) : undefined
             }
           />
         ) : (

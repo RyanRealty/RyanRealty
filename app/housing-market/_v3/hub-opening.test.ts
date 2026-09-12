@@ -5,12 +5,15 @@ import { v3Text } from '@/components/site/v3'
 import {
   buildCityMosPages,
   buildHubChooserItems,
+  buildHubExtraPages,
   buildOpeningFigures,
   formatHubPace,
   hubLiveDescription,
   hubLiveTitle,
   hubOpeningNote,
+  isHubLeadFigure,
   monthlyPaceFromMos,
+  wholeCountFromLabel,
 } from './hub-opening'
 import { buildSfrFollowFigures } from './hub-sections'
 import { HUB_FOLD_LABEL } from './hub-opening'
@@ -85,6 +88,39 @@ describe('hub live title and description', () => {
     expect(withMos.length).toBeLessThanOrEqual(155)
     expect(hubLiveDescription(null, null)).not.toMatch(/\d{3,}/)
     expect(hubLiveDescription(null, null).length).toBeLessThanOrEqual(155)
+  })
+})
+
+describe('extra leftover pages — pager, not a closed cream fold', () => {
+  it('takes only whole counts for beui-number', () => {
+    expect(wholeCountFromLabel('215')).toBe(215)
+    expect(wholeCountFromLabel('1,531')).toBe(1531)
+    expect(wholeCountFromLabel('$749K')).toBeUndefined()
+    expect(wholeCountFromLabel('4.7')).toBeUndefined()
+    expect(wholeCountFromLabel('98.1%')).toBeUndefined()
+  })
+
+  it('pages leftover types, pace, and mix and drops empty groups', () => {
+    const pages = buildHubExtraPages({
+      priceAndWait: [{ value: '$749K', label: 'typical sale, last 12 months' }],
+      types: [
+        { value: '1,200', label: 'houses for sale', count: 1200 },
+        { value: '180', label: 'condos and townhomes', count: 180 },
+      ],
+      pace: [{ value: '6.2', label: 'months of supply' }],
+      mix: [],
+    })
+    expect(pages.map((page) => page.id)).toEqual(['price', 'types', 'pace'])
+    expect(pages[0]?.items[0]?.count).toBeUndefined()
+    expect(pages[1]?.items[0]?.count).toBe(1200)
+    expect(pages.every((page) => !/\d/.test(page.claim))).toBe(true)
+    expect(pages.every((page) => !/leftover|Market Truth|sample-gated/i.test(page.claim))).toBe(true)
+  })
+
+  it('keeps only homes and a month of sales as the opening tiles', () => {
+    expect(isHubLeadFigure({ value: '1,531', label: 'homes for sale, single-family' })).toBe(true)
+    expect(isHubLeadFigure({ value: '326', label: 'a month of sales' })).toBe(true)
+    expect(isHubLeadFigure({ value: '$749K', label: 'median list, last 12 months' })).toBe(false)
   })
 })
 

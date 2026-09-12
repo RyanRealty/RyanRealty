@@ -44,3 +44,51 @@
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }
+
+.hub-opening-draw {
+  display: grid;
+  gap: var(--v3-space-md);
+  min-width: 0;
+}
+
+.hub-extra-pages__solo,
+.hub-extra-pages__claim {
+  margin: 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+}
+
+.hub-extra-pages__solo {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-body-lg);
+}
+
+.hub-extra-pages__claim {
+  color: var(--v3-ink-muted);
+}
+
+.hub-extra-pages__items {
+  display: grid;
+  gap: var(--v3-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hub-extra-pages__door {
+  display: grid;
+  gap: var(--v3-space-2xs, 0.15rem);
+  min-height: var(--v3-tap);
+  color: var(--v3-ink);
+  text-decoration: none;
+}
+
+.hub-extra-pages__value {
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink);
+}
+
+.hub-extra-pages__label {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+}

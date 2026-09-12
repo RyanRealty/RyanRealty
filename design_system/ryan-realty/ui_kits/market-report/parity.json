@@ -16,7 +16,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, twice. Level 1 is the page's answer: the verdict headline, then the MOS two-bar (homes for sale vs a month of sales) as Instrument.chart when leftover active and months of supply both publish. Folded tiles carry median list, days to pending, and leftover extra-type/pace/mix. The region monthly median series is the fallback drawing when MOS cannot be derived. Flattening MOS to a 3.9 tile is a defect. Neither level carries an action (2026-08-27 single-ask consolidation): the page previously put a GHOST Value My Home button here, but MarketInquirySheet, the on-page inquiry form, is now the page's one ask and this Instrument answers the reader's question without soliciting one of its own. Level 2 is the last full calendar year of closed sales: a different population, its own trace, and its computedAt stamp ONLY when getCoMarketAnnual returned a mart row, because the live-aggregate fallback stamps now() and would print 'updated today' over a closed calendar year. All three of its figures are doors into the closed-sales explorer, the property-type one carrying its own type filter. That closed year is a singleton status (A27) and stays type.",
+      "section": "Pattern 1, twice. Level 1 is the page's answer: the verdict headline, then the MOS two-bar (homes for sale vs a month of sales) as Instrument.chart when leftover active and months of supply both publish. Extra leftover tiles (median list, days to pending, type/pace/mix) page through InsightPager — not a closed cream fold. The region monthly median series is the fallback drawing when MOS cannot be derived. Flattening MOS to a 3.9 tile is a defect. Neither level carries an action (2026-08-27 single-ask consolidation): the page previously put a GHOST Value My Home button here, but MarketInquirySheet, the on-page inquiry form, is now the page's one ask and this Instrument answers the reader's question without soliciting one of its own. Level 2 is the last full calendar year of closed sales: a different population, its own trace, and its computedAt stamp ONLY when getCoMarketAnnual returned a mart row, because the live-aggregate fallback stamps now() and would print 'updated today' over a closed calendar year. All three of its figures are doors into the closed-sales explorer, the property-type one carrying its own type filter. That closed year is a singleton status (A27) and stays type.",
       "blocking": true
     },
     {
@@ -157,6 +157,12 @@
       },
       {
         "id": "house-mos"
+      },
+      {
+        "id": "beautifului-insight"
+      },
+      {
+        "id": "beui-number"
       }
     ],
     "defects": [

@@ -41,9 +41,15 @@ describe('market instruments open on a claim and a drawing', () => {
     }
   })
 
+  it('pages leftover hub figures instead of folding them under a plus', () => {
+    expect(hub).toMatch(/HubOpeningDrawings/)
+    expect(hub).toMatch(/buildHubExtraPages/)
+    expect(hub).not.toMatch(/foldAfter=/)
+    expect(hub).not.toMatch(/foldLabel=/)
+  })
+
   it('names what every fold reveals, and never names a count', () => {
     for (const [name, src] of [
-      ['hub', hub],
       ['city', city],
       ['community', community],
       ['region', region],
@@ -74,7 +80,7 @@ describe('market instruments open on a claim and a drawing', () => {
     expect(hub).toMatch(/buildMosSupplyChart/)
     expect(hub).toMatch(/chart=\{mosChart \?\? regionChart\}/)
     expect(hub).toMatch(/buildOpeningFigures/)
-    expect(hub).toMatch(/HubCityMosPages/)
+    expect(hub).toMatch(/HubOpeningDrawings/)
     expect(hub).toMatch(/chartFirst/)
     expect(opening).toMatch(/label: v3Text\('a month of sales'\)/)
   })
