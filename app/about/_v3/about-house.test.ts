@@ -29,6 +29,8 @@ describe('SITE-90 /about house fold', () => {
     expect(FACES).toContain('proof={proof?.value}')
     expect(FACES).toContain('from {proof.count} Google reviews')
     expect(FACES).toContain('about-faces__trio')
+    expect(FACES).toContain('about-faces__trio-name')
+    expect(FACES).toContain('about-faces__trio-call')
     expect(PAGE).toContain("href: '/reviews'")
     expect(PAGE).toContain('value: reviewAverage.toFixed(1)')
   })

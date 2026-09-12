@@ -1084,9 +1084,58 @@
   }
 
   .about-faces--house .about-faces__trio .about-faces__photo-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    aspect-ratio: auto;
+    border-bottom: 0;
+  }
+
+  .about-faces--house .about-faces__trio .about-faces__avatar {
     width: 100%;
     aspect-ratio: 2 / 3;
     border-bottom: var(--v3-rule-hairline);
+    min-height: 0;
+  }
+
+  .about-faces--house .about-faces__trio-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .about-faces--house .about-faces__trio-name {
+    display: block;
+    margin-top: var(--v3-space-3xs);
+    color: var(--v3-ink);
+    font-size: var(--v3-size-body-sm);
+    line-height: var(--v3-leading-heading);
+    text-align: center;
+  }
+
+  .about-faces--house .about-faces__trio-call {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--v3-tap);
+    min-width: var(--v3-tap);
+    color: var(--v3-ink);
+    font-size: var(--v3-size-body-sm);
+    text-decoration: underline;
+    text-underline-offset: var(--v3-underline-offset);
+  }
+
+  .about-faces--house .about-faces__trio-call:focus-visible {
+    outline: var(--v3-focus-ring);
+    outline-offset: var(--v3-focus-offset);
+  }
+
+  .about-faces--house .about-faces__lead .about-faces__name,
+  .about-faces--house .about-faces__lead .about-faces__title,
+  .about-faces--house .about-faces__lead .about-faces__license {
+    display: none;
   }
 
   .about-faces--house .about-faces__lead > .about-faces__photo-link,
@@ -1150,14 +1199,18 @@
   }
 
   .about-faces--house .about-faces__companion {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: var(--v3-card-photo-h) minmax(0, 1fr);
     align-items: start;
     padding-block: var(--v3-space-sm);
     border-bottom: 0;
   }
 
   .about-faces--house .about-faces__companion .about-faces__photo-link {
-    width: 100%;
-    max-width: var(--v3-card-photo-w);
+    width: var(--v3-card-photo-h);
+    max-width: none;
+  }
+
+  .about-faces--house .about-faces__face-proof-avatar {
+    display: none;
   }
 }

@@ -477,16 +477,26 @@ export function AboutFaces({
         </div>
         <div className="about-faces__editorial">
           {proof ? (
-            <ul className="about-faces__trio" aria-hidden="true">
+            <ul className="about-faces__trio">
               {shown.map((person) => (
                 <li key={`trio-${person.href}`} className="about-faces__trio-item">
-                  <Link href={person.href} className="about-faces__photo-link" tabIndex={-1}>
+                  <Link href={person.href} className="about-faces__photo-link">
                     <FacePortrait
                       src={person.src}
                       name={person.name}
                       priority={person === leadPerson}
                     />
                   </Link>
+                  <span className="about-faces__trio-name">{person.name.split(/\s+/)[0]}</span>
+                  {person.tel ? (
+                    <a
+                      href={`tel:${person.tel}`}
+                      className="about-faces__trio-call"
+                      aria-label={`Call ${person.name}`}
+                    >
+                      Call
+                    </a>
+                  ) : null}
                 </li>
               ))}
             </ul>
