@@ -179,14 +179,31 @@ export function hoaCompatible(a: HoaClass, b: HoaClass): boolean {
 }
 
 /**
+ * Nearly one acre is one product. Falcon 15991 (0.96) and same-plat Tall Pines
+ * peers at 1.01–1.08 were cliff-split at exactly 1.0. Does not mix a half-acre
+ * lot with two acres, cross divides, or invent sales.
+ */
+export const NEAR_ACRE_MIN = 0.75
+export const NEAR_ACRE_MAX = 1.25
+
+export function isNearAcre(acres: number): boolean {
+  return Number.isFinite(acres) && acres >= NEAR_ACRE_MIN && acres <= NEAR_ACRE_MAX
+}
+
+function isAcreageLot(acres: number): boolean {
+  return acres >= 1
+}
+
+/**
  * Rural/urban + acreage band. Mirrors lib/cma/market-area lotCharacterCompatible
- * so the two engines cannot disagree: 1 acre is the hard split; within acreage
- * the 0.4×–2.5× band still applies.
+ * so the two engines cannot disagree. The 1-acre line is the hard split except
+ * inside the near-acre overlap; within acreage the 0.4×–2.5× band still applies.
  */
 export function lotCompatible(subjectAcres: number | null, compAcres: number | null): boolean {
   if (subjectAcres == null || compAcres == null) return true
-  const subjectIsAcreage = subjectAcres >= 1
-  const compIsAcreage = compAcres >= 1
+  if (isNearAcre(subjectAcres) && isNearAcre(compAcres)) return true
+  const subjectIsAcreage = isAcreageLot(subjectAcres)
+  const compIsAcreage = isAcreageLot(compAcres)
   if (subjectIsAcreage !== compIsAcreage) return false
   if (!subjectIsAcreage) return true
   return compAcres >= subjectAcres * 0.4 && compAcres <= subjectAcres * 2.5
@@ -195,13 +212,13 @@ export function lotCompatible(subjectAcres: number | null, compAcres: number | n
  * Custom/new: keep the acreage vs in-town split, drop the 0.4×–2.5× band.
  * Live Rim View (~2 acres) vs Perspective (1.19) is inside the ordinary band,
  * but larger North Rim customs vs ~1-acre Awbrey peers were starving the set
- * on lot-character while baths/divides were already fixed.
+ * on lot-character while baths/divides were already fixed. Near-acre peers
+ * share a class the same way ordinary subjects do.
  */
 export function customLotCompatible(subjectAcres: number | null, compAcres: number | null): boolean {
   if (subjectAcres == null || compAcres == null) return true
-  const subjectIsAcreage = subjectAcres >= 1
-  const compIsAcreage = compAcres >= 1
-  return subjectIsAcreage === compIsAcreage
+  if (isNearAcre(subjectAcres) && isNearAcre(compAcres)) return true
+  return isAcreageLot(subjectAcres) === isAcreageLot(compAcres)
 }
 
 

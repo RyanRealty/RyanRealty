@@ -26,6 +26,7 @@ import { pickCoverPhoto } from '@/lib/cma/cover-photo'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
 import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
 import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
+import { JUDGMENT_PRUNE_FLOOR, pricedSetAfterJudgment } from '@/lib/cma/judgment-prune'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import { adjustCmaCompAlongMarket, adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
 import { buildRejectedSales } from '@/lib/pricing/rejected'
@@ -456,15 +457,16 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     if (judgment && !isCurated) {
       const keep = new Set(judgment.keptKeys)
       const vetted = selection.comps.filter((c) => keep.has(c.listingKey))
-      // Never prune below the comp floor — if judgment would leave too few,
-      // keep the full set (the dispersion guard still flags it).
-      if (vetted.length >= MIN_COMPS) compsForPricing = vetted
+      // Never prune below the document floor (≥5). MIN_COMPS (3) is the
+      // pricing-unit floor so a starved ladder can still print; Grok must not
+      // thin a filled ladder below Matt's ≥5 (Falcon 15991 kept 3 of 8).
+      compsForPricing = pricedSetAfterJudgment(selection.comps, vetted)
       // The judgment step must appear in the rendered verification trace —
       // otherwise the trace says "N comps" while the report prices on fewer.
       selection.trace.push(
         compsForPricing.length === vetted.length
           ? `Comparability judgment (${judgment.model}): kept ${vetted.length} of ${selection.comps.length} candidates, excluded ${judgment.verdicts.filter((v) => v.tier === 'exclude').length} as non-comparable, down-weighted ${judgment.verdicts.filter((v) => v.tier === 'weak').length}. Priced on the ${vetted.length}-comp vetted set.`
-          : `Comparability judgment (${judgment.model}) would keep only ${vetted.length} comps — below the ${MIN_COMPS}-comp floor, so the full ${selection.comps.length}-comp set was priced instead.`,
+          : `Comparability judgment (${judgment.model}) would keep only ${vetted.length} comps — below the ${JUDGMENT_PRUNE_FLOOR}-comp floor, so the full ${selection.comps.length}-comp set was priced instead.`,
       )
     } else if (judgment && isCurated) {
       // Broker-curated set: the broker already vetted these, so every curated
