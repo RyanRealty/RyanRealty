@@ -661,10 +661,12 @@
 }
 
 .listing-ask-row,
-.listing-ask-row.v3-btn-group {
+.listing-ask-row.v3-btn-group,
+.v3.listing-ask-row.v3-btn-group {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
+  width: 100%;
 }
 
 .listing-ask-row .btn,
@@ -677,10 +679,13 @@
    carries Tour / Call / Text — and that rule took Save and Share
    with it. The keep group is the live control. */
 .listing-face__keep,
-.listing-face__keep.v3-btn-group {
+.listing-face__keep.v3-btn-group,
+.v3.listing-face__keep.v3-btn-group {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(8rem, 1fr));
   gap: 0;
+  width: 100%;
+  max-width: 24rem;
   margin-top: var(--v3-space-sm);
 }
 
@@ -703,8 +708,12 @@
   .listing-ask-row.v3-btn-group {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  /* Tour / Call / Text already live in the sidebar at this width. */
-  .listing-face__ask {
+  /* Tour / Call / Text already live in the sidebar at this width.
+     Beat .v3.v3-btn-group { display: grid } or the ask stays painted
+     and the keep pair collapses beside it. */
+  .listing-face__ask,
+  .listing-face__ask.v3-btn-group,
+  .v3.listing-face__ask.v3-btn-group {
     display: none;
   }
 }
