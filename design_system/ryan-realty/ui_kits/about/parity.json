@@ -16,7 +16,7 @@
     },
     {
       "name": "AboutFaces",
-      "section": "OPENS THE PAGE, headingLevel 1. Carries the H1, the eyebrow, one claim sentence, the firm's figures (Google average and count from getReviews, roster size from getBrokers) with a V3SourceLine under them, then the three brokers as doors. Canonical /images/brokers/*.png at conversation scale. Name, title, licence, Call, Text, Email, Schedule.",
+      "section": "OPENS THE PAGE, headingLevel 1, size editorial. Carries the H1, the eyebrow, one claim sentence, a V3SourceLine, then the principal at display scale with the 5.0-from-N Google mark on that face card (not a KPI row) and the other two as companion rows. Each card carries that broker's MLS record when one exists. Canonical /images/brokers/*.png. One Call per person; Text Email Schedule as text links. shadcn Avatar + AvatarFallback + AvatarBadge.",
       "blocking": true
     },
     {
@@ -26,7 +26,7 @@
     },
     {
       "name": "FirmClosings",
-      "section": "Recent Ryan Realty closings as the one house row. Child of the page so about/page.tsx never mounts a city-stats Ledger.",
+      "section": "Recent Ryan Realty closings as the one house row, in the first-viewport about-fold beside the faces (price, address, beds/baths/sqft). Child of the page so about/page.tsx never mounts a city-stats Ledger.",
       "blocking": true
     },
     {
@@ -101,10 +101,9 @@
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "AboutFaces -- H1 About Ryan Realty · Bend, the firm's figures with their trace, the three brokers",
+    "about-fold -- AboutFaces editorial (H1, 5.0 on the principal face, per-broker records) + Bend office photo + FirmClosings #firm-sales",
     "V3Doors #reach -- one call door at display scale with the live hours, then text, email, calendar",
     "V3Proof #proof -- the firm's Google reviews as words",
-    "FirmClosings #firm-sales -- recent Ryan Realty closings, house row",
     "V3Atlas #service-area -- where we work",
     "V3Quiet #about -- how it started plus licenses as one sourced line",
     "V3Answers #faq -- working with Ryan Realty",
