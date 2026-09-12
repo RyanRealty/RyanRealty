@@ -2354,12 +2354,16 @@
       ]
     },
     "about": {
-      "layoutLock": "About is the brokerage, not Meet the Team. FAIL if the page opens on AboutFaces or three equal broker Cards. Hero is AboutFirm: office exterior + one purpose line (boutique · all of Central Oregon · buy and sell). V3Proof is primary client reviews (Google + featured quote, not press). FirmClosings is dated local sold homes — never invented MOS. V3Doors is Call|Text|Email|Schedule. AboutTeamTeaser doors only to /team. AboutInquiry GET /contact. No V3SourceLine. Never the sofa, coast-to-coast, or fee copy.",
+      "layoutLock": "About is the brokerage, not Meet the Team. FAIL if the page opens on AboutFaces or three equal broker Cards. Hero is AboutFirm: office exterior + one purpose line (boutique · all of Central Oregon · buy and sell). V3Proof is primary client reviews (Google + featured quote, not press). FirmClosings is dated local sold homes — never invented MOS. Then V3Doors Call|Text|Email|Schedule, then AboutTeamTeaser (photo+name only) → /team, then AboutInquiry GET /contact. Do not mount AboutFaces or size=\"proof\". No V3SourceLine. Never the sofa, coast-to-coast, or fee copy.",
       "layoutLockChecks": [
         {
           "path": "app/about/page.tsx",
           "mustMatch": "<AboutFirm",
           "forbid": "<AboutFaces"
+        },
+        {
+          "path": "app/about/page.tsx",
+          "forbid": "size=\"proof\""
         },
         {
           "path": "design_system/ryan-realty/ui_kits/about/parity.json",

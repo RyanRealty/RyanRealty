@@ -320,6 +320,24 @@ describe('layoutLockProblems', () => {
     expect(problems.some((p) => /AboutFaces/.test(p))).toBe(true)
     expect(problems.some((p) => /AboutFirm/.test(p) || /AboutFaces/.test(p))).toBe(true)
   })
+
+  it('fails About when size="proof" roster markup returns', () => {
+    const problems = layoutLockProblems(loaded, {
+      existsSync: () => true,
+      readFileSync: (p) => {
+        if (String(p).endsWith('about/page.tsx')) {
+          return 'export default function Page() { return <AboutFirm /><AboutFaces size="proof" /> }'
+        }
+        if (String(p).endsWith('about/parity.json')) {
+          return JSON.stringify({
+            requiredComponents: [{ name: 'AboutFirm', section: 'OPENS THE PAGE' }],
+          })
+        }
+        return ''
+      },
+    })
+    expect(problems.some((p) => /size=\\"proof\\"/.test(p) || /size="proof"/.test(p))).toBe(true)
+  })
 })
 
 describe('catalogInstallProblems', () => {
