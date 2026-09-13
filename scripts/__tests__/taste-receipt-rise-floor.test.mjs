@@ -39,24 +39,24 @@ const riseProblems = (tr) => receiptV2Problems(tr, { root: SANDBOX, rubricText }
 
 describe('the rise floor', () => {
   it('is the measured constant and applies from its date', () => {
-    expect(RISE_FLOOR).toBe(6)
-    expect(riseFloorFor(RISE_FLOOR_FROM)).toBe(6)
-    expect(riseFloorFor('2026-12-01')).toBe(6)
+    expect(RISE_FLOOR).toBe(3)
+    expect(riseFloorFor(RISE_FLOOR_FROM)).toBe(3)
+    expect(riseFloorFor('2026-12-01')).toBe(3)
     expect(riseFloorFor('2026-09-12')).toBe(1)
     expect(riseFloorFor(undefined)).toBe(1)
   })
 
-  it('refuses a rise inside the judge noise — +1 and +5 are not done', () => {
-    for (const delta of [1, 5]) {
+  it('refuses a rise inside the judge noise — +1 and +2 are not done', () => {
+    for (const delta of [1, 2]) {
       const p = riseProblems(receipt({ score: 50 + delta, priorScore: 50 }))
       expect(p).toHaveLength(1)
-      expect(p[0]).toMatch(new RegExp(`score ${50 + delta} did not rise by the floor of 6 over the prior mark 50 \\(needs 56\\)`))
+      expect(p[0]).toMatch(new RegExp(`score ${50 + delta} did not rise by the floor of 3 over the prior mark 50 \\(needs 53\\)`))
       expect(p[0]).toMatch(/inside the judge's own noise/)
     }
   })
 
   it('accepts a rise at or over the floor', () => {
-    expect(riseProblems(receipt({ score: 56, priorScore: 50 }))).toEqual([])
+    expect(riseProblems(receipt({ score: 53, priorScore: 50 }))).toEqual([])
     expect(riseProblems(receipt({ score: 61, priorScore: 50 }))).toEqual([])
   })
 

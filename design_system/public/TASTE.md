@@ -219,7 +219,7 @@ step means the evaluator is not asked:
    video has failed before anyone looks at a screenshot. Lowering a floor is a
    hand edit in the same commit with the reason, never implicit.
 4. **Then the score.** Shots at 1440 and 375, the judge chain below, three scorings
-   in one call, median must rise by at least the rise floor (6) over the previous
+   in one call, median must rise by at least the rise floor (3 on grok-4.6) over the previous
    mark from the same instrument, `demoMatch: true`, `competitiveBriefPass: true`
    where a brief exists. Finish line 70.
 
@@ -236,8 +236,12 @@ only at the next FULL table run, never mid-round: a judge flip between routes wo
 every route into a "rebaseline" and the rise test would mean nothing. **grok-4.6 has two
 links (Matt 2026-09-12: "I now have grok 4.6 in cursor, can we use it there"):** the
 `grok` CLI (Grok subscription, `XAI_API_KEY` stripped) and the **Cursor CLI**
-(`cursor-agent -p --mode ask --model grok-4.6`, Cursor subscription, `CURSOR_API_KEY`
-stripped, `cursor-agent login` once). Same model, same ruler — a mark through either
+(`cursor-agent -p --mode ask --model cursor-grok-4.6-high`, the Cursor plan: `cursor-agent
+login` or `CURSOR_API_KEY`, which draws on the same plan as the IDE and is therefore the
+subscription, not a per-token console like the xAI and Anthropic keys). The id is the
+CLI's own and is checked against the account's model list every run, because a bare
+`grok-4.6` is answered without being refused, on a model the CLI never names; the receipt's
+`evaluatorModel` stays `grok-4.6`. Same model, same ruler — a mark through either
 compares to the other; the receipt and the table record which in `transport` /
 `instrument.judgeLink`, and a round keeps the link its table used first, the other link
 when that one is missing or out. When both grok-4.6 links are out, the last link is the
@@ -300,23 +304,25 @@ what happens to a page that has already risen.
 domain public-ux, version_gap SITE-*) is not done until the separate
 evaluator's score for its page class rises **by at least the rise floor**
 over the previous mark in that route's `tasteReview` **and** `demoMatch` is
-`true`. **The rise floor is 6** (`taste-rule-freeze.json` `riseFloor`, from
+`true`. **The rise floor is 3** (`taste-rule-freeze.json` `riseFloor`, from
 2026-09-13, Matt: "there can be no gaps"). It is not a taste: on the
-2026-09-12 table two medians-of-3 of the SAME page differ by 1 or more in
-34% of no-change draws and by 6 or more in 6.6%, so a rise under 6 is the
-judge disagreeing with itself, and the old "rise by 1" rule let noise ship as
-progress one time in three. The floor is the one-sided 95th percentile of that
-no-change distribution, computed from the table's own 81 scorings by
-`node scripts/taste-rise-floor.mjs` (bootstrap, seeded, reproducible);
-`riseFloorBasis` in the freeze manifest holds the numbers and
-`ci:rubric-freeze` fails if `RISE_FLOOR` in `taste-receipt.mjs` drifts from
-it. Receipts dated before 2026-09-13 were accepted under the bare rise and
-stay valid. The floor sits at the edge of the noise, not above it: a second
-scoring of the same 2026-09-12 shots (4 classes before both judges went out)
-moved `cities` by exactly 6 on identical pictures (`riseFloorBasis.repeatCheck`).
-When a full second pass of one table exists, re-derive the floor from paired
-data (`node scripts/taste-rise-floor.mjs --pair <previous-table.json>`) and
-write it into the manifest in the same change. Score rise /
+2026-09-13 table (grok-4.6 through the Cursor CLI) two medians-of-3 of the
+SAME page differ by 1 or more in 30% of no-change draws, by 2 or more in 12%,
+by 3 or more in 4.1%, so a rise under 3 is the judge disagreeing with itself,
+and the old "rise by 1" rule let noise ship as progress one time in three. The
+floor is the smallest rise whose no-change probability is 5% or less (a
+one-sided q95 taken on the integer lattice — not the 95th-percentile value,
+which on a lattice can still pass noise 12% of the time), computed from the
+table's own 81 scorings by `node scripts/taste-rise-floor.mjs` (bootstrap,
+seeded, reproducible); `riseFloorBasis` in the freeze manifest holds the
+numbers and `ci:rubric-freeze` fails if `RISE_FLOOR` in `taste-receipt.mjs`
+drifts from it. Receipts dated before 2026-09-13 were accepted under the bare
+rise and stay valid. The floor belongs to the judge, not to the site: the
+sonnet-judged table of 2026-09-12 had residual sd 4.84 and needed 6; grok-4.6
+reads at sd 2.24 and needs 3 (`riseFloorBasis.priorBasis`). **Any time the
+table is re-scored, re-derive the floor from it in the same change**; when a
+full second pass of one table exists, use paired data
+(`node scripts/taste-rise-floor.mjs --pair <previous-table.json>`). Score rise /
 `adaptedFrom` non-empty / file-on-disk is not Tip Ready on a cream box.
 `ci:taste-canon` fails a post-`v1-2026-09-12` catalog receipt that claims
 `comparedToPrior: "rose"` or score ≥ 70 without `demoMatch: true`.

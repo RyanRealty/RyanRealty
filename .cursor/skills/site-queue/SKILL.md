@@ -33,7 +33,7 @@ routine reads. Nothing in the queue depends on which model builds.
 - **The taste ritual**: shots at 1440 and 375 through `scripts/take-route-shots.mjs`, a
   SEPARATE evaluator that is a DIFFERENT model from the builder, three scorings in one
   call, the receipt in the route's `parity.json` (`scripts/lib/taste-receipt.mjs`), and
-  the score must rise **by at least 6** (the rise floor — less is the judge's own
+  the score must rise **by at least the rise floor, 3 on grok-4.6** (less is the judge's own
   measured noise, `taste-rule-freeze.json` `riseFloorBasis`) **and** `demoMatch`
   must be `true`. Score rise on a cream-box
   Avatar/Button/Sheet import is not Tip Ready (Matt 2026-09-12, rubric
@@ -79,8 +79,8 @@ link by hand; `SITE_QUEUE_BUILDERS=cursor,claude` reorders. The fire prints a
   **starts at the judge that scored the current `taste-table.json`** (one ruler per round;
   grok gets the chair back at the next full table run, never mid-round on a route). With a
   grok table: link 1 is **grok-4.6**, through the `grok` CLI (Matt's Grok subscription,
-  `XAI_API_KEY` stripped) or through the **Cursor CLI** (`cursor-agent --model grok-4.6`,
-  Matt's Cursor subscription, `CURSOR_API_KEY` stripped) — the same model, the same ruler,
+  `XAI_API_KEY` stripped) or through the **Cursor CLI** (`cursor-agent --model
+  cursor-grok-4.6-high`, Matt's Cursor plan by login or `CURSOR_API_KEY`) — the same model, the same ruler,
   the table's own link first (`instrument.judgeLink`) and the other when it is missing or
   out; the last link, when both grok-4.6 links are out, is the **claude
   CLI** on the subscription (`claude-sonnet-5`, or `claude-opus-5` when the builder is a

@@ -2,7 +2,7 @@
  "evaluatedAt": "2026-09-13",
  "baseUrl": "https://ryan-realty.com",
  "instrument": {
-  "evaluatorModel": "claude-sonnet-5",
+  "evaluatorModel": "grok-4.6",
   "primaryEvaluator": "grok-4.6",
   "fallbackEvaluator": "claude-sonnet-5",
   "rubricVersion": "v1-2026-09-12",
@@ -19,844 +19,1718 @@
    ]
   },
   "promptFile": "design_system/public/taste-evaluator.v1-2026-09-12.md",
-  "transport": "grok",
+  "transport": "cursor",
+  "judgeLink": "cursor",
   "variance": null
  },
  "rows": [
+  {
+   "key": "cities",
+   "url": "/cities",
+   "route": "app/cities/page.tsx",
+   "median": 42,
+   "scores": [
+    47,
+    42,
+    41
+   ],
+   "criteria": {
+    "designQuality": 12,
+    "originality": 10,
+    "interaction": 5,
+    "craft": 8,
+    "honestyFunction": 7
+   },
+   "tells": [
+    "The stacked-section page. — first viewport is eyebrow → Amboqia H1 → MOS sentence → two bars → source, then the same 4.7 Balanced verdict restated as a threshold scale, with no map, photo, or alerts to break the cream column."
+   ],
+   "defects": [
+    {
+     "section": "first viewport / Central Oregon cities fold",
+     "severity": "taste",
+     "finding": "Layout lock wants a drawing and a figure beside the alerts sentence. The fold is only the region MOS pair on cream: no Atlas, no city mark, no photo, no alerts sentence.",
+     "primitive": "app/cities/page.tsx",
+     "replaceWith": "house-atlas"
+    },
+    {
+     "section": "first viewport alerts",
+     "severity": "taste",
+     "finding": "house-alerts is not in the first viewport on 1440 or 375. Call/Sign in sit in chrome; the page ask is not beside the figure.",
+     "primitive": "app/central-oregon/_v3/RegionalAlertSheet.client.tsx",
+     "replaceWith": "house-alerts"
+    },
+    {
+     "section": "OVERLAY A CITY AGAINST THE REGION",
+     "severity": "taste",
+     "finding": "Desktop shows only the overlay heading at the bottom of the fold; the beui combobox object is not in frame. No *-open shot. Mobile never reaches the heading. Inventing a demo match from the label is invalid.",
+     "primitive": "components/site/v3/V3MosCompare.client.tsx",
+     "replaceWith": "beui:combobox"
+    },
+    {
+     "section": "months-of-supply scale at 375",
+     "severity": "defect",
+     "finding": "The seller/balanced/buyer scale is clipped at the bottom of the 375 viewport, so the marker and the 0–12+ axis are not fully readable.",
+     "primitive": "components/site/v3/V3MosCompare.client.tsx",
+     "replaceWith": null
+    }
+   ],
+   "dullest": "The leftover cream after the two MOS bars. A correct supply drawing, then nothing a visitor can open: no Atlas, no city row, no photo, no alerts, and on desktop only a heading that promises a city overlay without showing the combobox.",
+   "beats": "Zillow Bend homes (https://www.zillow.com/bend-or/) on sourced months-of-supply as two named bars (1,529 for sale vs 326 under contract, 4.7 Balanced, Market Truth). No win on the class job: Visit Bend still leads on place identity, and The Upshot still leads on a directory that encodes magnitude on the row.",
+   "verdict": "This is a navy-on-cream MOS lecture, not a city directory. house-mos is in the fold and the 1,529 / 326 / 4.7 Balanced reading is honest, but demoMatch is false: no catalog control is visible as its demo (the combobox is a heading, there is no *-open shot, and Atlas and alerts are absent). The stacked-section tell is the whole first viewport. Leave the node in_progress; this is not Tip Ready.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "cities/desktop.png",
+    "mobile375": "cities/mobile375.png"
+   },
+   "shotsHash": "sha256:3d020a4b2cd0c8b3010b382e95935ffe9eccc005f347d600d7be21fefc021bb5",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
   {
    "key": "subdivisions",
    "url": "/subdivisions",
    "route": "app/subdivisions/page.tsx",
    "median": 43,
    "scores": [
-    43,
-    48,
-    39
+    41,
+    45,
+    43
    ],
    "criteria": {
-    "designQuality": 16,
-    "originality": 8,
+    "designQuality": 15,
+    "originality": 10,
     "interaction": 2,
     "craft": 10,
-    "honestyFunction": 7
+    "honestyFunction": 6
    },
    "tells": [],
    "defects": [
     {
-     "section": "top of list / above the fold",
+     "section": "fold above the ledger",
      "severity": "taste",
-     "finding": "The layout lock calls for a shadcn-command A-Z jump, but nothing in the first viewport offers any way to jump, filter, sort, or search the 47 subdivisions — no visible control of any kind exists before the row list starts. The page is a plain HTML list, not an adaptation of the demo.",
+     "finding": "The class job is an A-Z jump using the shadcn Command demo, but neither first-viewport shot shows a search field, letter rail, palette, or opened control. 47 subdivisions are only reachable by scrolling the row stack, and there is no *-open shot to compare against https://ui.shadcn.com/docs/components/command.",
      "primitive": "app/subdivisions/page.tsx",
      "replaceWith": "shadcn-command"
     },
     {
-     "section": "subdivision row list",
+     "section": "#featured-plats rows",
      "severity": "taste",
-     "finding": "All 47 rows repeat the identical shape (thumbnail or navy monogram, name, one-line description, a single gray progress bar, a count) with no hover state, expansion, or variation caught in the shots — it reads as a static table wearing one bar chart column rather than an interactive ledger.",
-     "primitive": "app/subdivisions/page.tsx",
-     "replaceWith": null
+     "finding": "Every visible row is the same object: a small thumb or navy letter tile, a name, a median-and-place sentence, a gray share bar, and a count. Counts run 5, 12, 13, 2, 7, 3 so the bars never read as a ranking, and nothing in either shot shows hover, expand, filter, or sort.",
+     "primitive": "components/site/v3/V3Ledger.tsx",
+     "replaceWith": "house-ledger"
     },
     {
-     "section": "mobile row rhythm (375px)",
+     "section": "#featured-plats media (7th Mtn Golf Village, Glaze Meadow Homesite Section)",
+     "severity": "taste",
+     "finding": "Rows without a photograph use a solid navy square with a cream initial (7, G) that sits heavier than the small listing-like thumbs on Deer Park, Deschutes River Recreation Homesites, Elkai Woods, and Fairway Crest Village, so the directory does not read as one photo treatment.",
+     "primitive": "components/site/v3/V3Ledger.tsx",
+     "replaceWith": "house-ledger"
+    },
+    {
+     "section": "375px Deschutes River Recreation Homesites row",
      "severity": "defect",
-     "finding": "On mobile the description text wraps to two lines on some rows (e.g. 'Deschutes River Recreation Homesites') and one line on others, so the bar/count baseline shifts row to row and the hairline rhythm breaks down the list instead of staying level.",
-     "primitive": "app/subdivisions/page.tsx",
+     "finding": "On mobile the two-line title plus three-line place sentence run far past the square thumb, so the bar and count drop to a lower baseline than the rows above and the hairline rhythm breaks.",
+     "primitive": "components/site/v3/V3Ledger.tsx",
      "replaceWith": null
     }
    ],
-   "dullest": "The row list itself: 47 near-identical rows (thumbnail or navy-monogram placeholder, name, one-line stat sentence, a plain gray bar, a count) with no map, no photo variety for the majority of rows, and nothing that responds to a cursor — it is a spreadsheet with one decorative bar column, not a directory built to be explored.",
-   "beats": "No win named",
-   "verdict": "This is a correct, on-brand list of subdivisions with real live counts and median prices, but it is not the shadcn-command A-Z directory the layout lock specifies — demoMatch is false because no jump, filter, or search control appears anywhere in the fold, and nothing else in the shot suggests one exists off-screen. Every row is the same inert shape repeated 47 times with a single gray bar as the only visual encoding, so interaction and originality score low even though typography and brand consistency (navy/cream/Amboqia/Geist) are intact. Fix by building the actual shadcn Command demo into the header (A-Z jump, live filter-as-you-type) and giving rows a reason to be touched, not just read.",
+   "dullest": "The list after the heading: six copies of thumb-or-letter, sentence, gray bar, count. Once you have read two rows you have read the page, and the navy 7 / G tiles make missing photos look like placeholders, not a designed variant.",
+   "beats": "Redfin's neighborhood-directory pages that are an alphabet of links with no inventory: this page wins on live for-sale counts and median list price drawn as share-of-max bars on a single scale.",
+   "verdict": "This is a correct, on-brand house ledger of Central Oregon subdivisions, not the shadcn Command A-Z directory the class was handed, so demoMatch is false and the node is not done. Navy, cream, Amboqia, and Geist hold, the caption honestly explains the bars, and the figures look sourced, but the fold is one repeating row with no jump, no opened control, and no reason to keep scrolling. Put the actual Command demo in the header so a visitor can type or jump, and make every row share one photographic treatment instead of mixing listing thumbs with navy letter tiles.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
    "builderModel": "claude-fable-5-1",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
    "shots": {
     "desktop": "subdivisions/desktop.png",
     "mobile375": "subdivisions/mobile375.png"
    },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "listing-detail",
-   "url": "/listing/220222277",
-   "route": "app/listing/[listingKey]/page.tsx",
-   "median": 44,
-   "scores": [
-    44,
-    50,
-    44
-   ],
-   "criteria": {
-    "designQuality": 15,
-    "originality": 6,
-    "interaction": 5,
-    "craft": 10,
-    "honestyFunction": 8
-   },
-   "tells": [
-    "\"Cream box\" — the Tour/Call/Text control on mobile is three separate bordered buttons (one filled navy, two ghost outlines) with visible gaps between them, not the shadcn Button Group / beUI Action-swap single grouped control the catalog specifies for this exact job."
-   ],
-   "defects": [
-    {
-     "section": "Tour/Call/Text action row (mobile footer, desktop under price)",
-     "severity": "taste",
-     "finding": "Three discrete buttons with a filled navy Tour and two outlined ghost buttons for Call/Text, exactly the leftover-ghost-button pattern the brief bans. No shared container, no single sliding/active-state control — it reads as three unrelated CTAs, not one grouped ask.",
-     "primitive": "app/listing/[listingKey]/page.tsx",
-     "replaceWith": "shadcn-button-group"
-    },
-    {
-     "section": "Photo filmstrip under the hero (desktop) / thumbnail strip + arrow pair (mobile)",
-     "severity": "taste",
-     "finding": "The hero media control is a static row of small square thumbnails with a caption chip (\"1/35\", \"35 photos\"), not a swipeable rail with the shadcn carousel's prev/next affordance and card motion. On mobile the round arrow buttons sit disconnected above the strip rather than embedded in the demo's own control, so it reads as a photo strip wearing a carousel's function, not the object itself.",
-     "primitive": "app/listing/[listingKey]/page.tsx",
-     "replaceWith": "shadcn-carousel"
-    },
-    {
-     "section": "Price/specs block and \"Talk to a broker\" sidebar (desktop, left column and right rail)",
-     "severity": "taste",
-     "finding": "Price, cut badge, and the bd/ba/sqft line are a stacked plain-text block with no visual encoding of the price cut over time or how this list price compares to the street/neighborhood; the broker card is a static bordered rectangle with a headshot and phone number, indistinguishable from any MLS syndication template. Nothing here rewards a hover or invites a second look.",
-     "primitive": "app/listing/[listingKey]/page.tsx",
-     "replaceWith": null
-    }
-   ],
-   "dullest": "The price/specs stack on the left and the broker contact card on the right are both static, left-aligned text blocks — the same shape a Zillow or MLS syndication page uses. There is no chart of the $50K cut against days on market, no comp context, nothing that turns the numbers into a story; it is data placed on the page, not designed.",
-   "beats": "Zillow's own listing page — this page wins on directness: a named principal broker (Matt Ryan, photo, direct cell, \"same-day reply\" promise) replaces Zillow's rotating anonymous-agent-farm CTA. It does not win on media interaction, comp context, or visual originality — Zillow's carousel and gallery lightbox are more functional than this static filmstrip.",
-   "verdict": "This is a correct, on-brand, and functional listing page — full-bleed hero restored, real price-cut data, a direct broker ask — but it is the generic MLS-syndication template with Ryan Realty's navy and cream painted over it, not a page that would make someone stop scrolling. demoMatch is false: the Tour/Call/Text row is the exact three-ghost-button pattern the catalog brief calls out as a cream box rather than a grouped control, and the photo filmstrip is a static thumbnail strip standing in for the shadcn carousel's swipe interaction. Nothing here is originality-scored above a template; the fix is installing the two named catalog controls as the actual interactive objects, then giving the specs/price block a visual encoding instead of a stacked text list.",
-   "builderModel": "unknown",
-   "shots": {
-    "desktop": "listing-detail/desktop.png",
-    "mobile375": "listing-detail/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
+   "shotsHash": "sha256:28f231038ad895bbb4595a6e3ca6bce557b72fb4e2ebbee7faa9701066634551",
+   "evaluatorModel": "grok-4.6",
    "rubricVersion": "v1-2026-09-12"
   },
   {
    "key": "compare",
    "url": "/compare",
    "route": "app/compare/page.tsx",
-   "median": 45,
+   "median": 46,
    "scores": [
-    41,
-    47,
-    45
+    46,
+    44,
+    46
    ],
    "criteria": {
-    "designQuality": 18,
-    "originality": 8,
-    "interaction": 2,
-    "craft": 10,
-    "honestyFunction": 7
+    "designQuality": 16,
+    "originality": 10,
+    "interaction": 4,
+    "craft": 8,
+    "honestyFunction": 8
    },
    "tells": [
-    "\"Scrolling lists as the design\" — the entire comparison body below the photo row is a plain table wearing hairlines: label column, four value columns, thin dividers, no chart, no bar, no map.",
-    "Cream box / missing carousel — the photo strip per slot is one static exterior photo with no arrows, dots, or thumbnail strip. shadcn's Carousel demo is not present; this is a `<img>` in a card, not the catalog interaction."
+    "Cream box. — four outline Add this home rectangles under static photo stamps; the slot photos are not the shadcn carousel rail (no arrows, no strip, no card body), and the feature rows are not the shadcn Table object.",
+    "Scrolling lists as the design. — Price, Price / sq ft, Beds, Baths, Sq ft, Lot, and Year built as a hairline spreadsheet with no mark, bar, or winner encoding."
    ],
    "defects": [
     {
-     "section": "photo strip per slot",
+     "section": "four slot photos",
      "severity": "taste",
-     "finding": "Each home shows exactly one static photo with no carousel controls (arrows, dots, swipe affordance) and no second angle — this is the 'Carousel import ≠ photo strip' cream-box case named in the brief, not the shadcn Carousel demo adapted into V3Carousel.",
-     "primitive": "app/compare/page.tsx",
+     "finding": "The houses are the product and they render as small static thumbs. No carousel arrows, dots, or photo strip is visible, so this is not the shadcn carousel demo — a visitor cannot page a listing's photos in the slot.",
+     "primitive": "components/site/v3/V3Slots.client.tsx",
      "replaceWith": "shadcn-carousel"
     },
     {
-     "section": "feature comparison table",
+     "section": "375 compare scroller",
+     "severity": "defect",
+     "finding": "At 375 the second column is sliced through the address (52460 P), the Add this home label (Add th), and the $329,000 price, so four homes cannot be compared in one view and no carousel chrome is present to recover the rest.",
+     "primitive": "components/site/v3/V3Slots.client.tsx",
+     "replaceWith": "shadcn-carousel"
+    },
+    {
+     "section": "feature comparison rows",
      "severity": "taste",
-     "finding": "The table has no sort, no hover-row highlight, no winner-marking, and no visible affordance that it does anything beyond display static text; the partial-width underlines under some numeric cells (e.g. $1,050,000 gets a short underline while the lower $575,000 gets a longer one, and $269 price/sqft is only partially underlined despite being the lowest) don't track any consistent rule, reading as a rendering artifact rather than a real value encoding.",
-     "primitive": "app/compare/page.tsx",
+     "finding": "Price, Price / sq ft, Sq ft and Lot sit on matching hairline underlines that do not encode magnitude, rank, or spread; $1,050,000 next to $199,000 leaves the compare job to the reader's arithmetic.",
+     "primitive": "components/site/v3/V3Slots.client.tsx",
      "replaceWith": "shadcn-table"
     },
     {
-     "section": "mobile comparison table",
+     "section": "Add this home buttons",
+     "severity": "taste",
+     "finding": "Four identical outline Add this home buttons turn the filled sample into a repeated form kit instead of making each house the tap target of the slot.",
+     "primitive": "app/compare/_v3/CompareEmpty.client.tsx",
+     "replaceWith": "house-slots"
+    },
+    {
+     "section": "Year built row",
      "severity": "defect",
-     "finding": "At 375px the second home column is cut off mid-address at the viewport edge with no fade, arrow, or dot indicator signaling more columns exist off-screen — a visitor has no cue to scroll horizontally.",
-     "primitive": "app/compare/page.tsx",
+     "finding": "Year built prints as 1,981, 2,016 and 2,011; calendar years do not take thousands separators.",
+     "primitive": "components/site/v3/V3Slots.client.tsx",
      "replaceWith": null
+    },
+    {
+     "section": "third desktop column (0 Waterhole Place)",
+     "severity": "taste",
+     "finding": "One of the four SAMPLE columns is a vacant lot (dashes for beds, baths, sq ft, year built, and price / sq ft), so the opening object is not four homes side by side.",
+     "primitive": "app/compare/_v3/CompareEmpty.client.tsx",
+     "replaceWith": "house-slots"
     }
    ],
-   "dullest": "The feature comparison table itself — rows of Price, Price/sqft, Beds, Baths, Sqft, Lot, Year built as plain text with hairline dividers. It is accurate and on-brand but functionally identical to any portal's static spec sheet; nothing rewards a hover, tap, or scrub with more information.",
-   "beats": "No win named — this reads as a slightly better-typeset version of Zillow's or Redfin's own compare tool, not a page that beats it. No visible interactivity, no photo carousel, and no data encoding give it an edge over the portals it's implicitly competing with.",
-   "verdict": "This is a correct, on-brand, static feature table dressed in the house serif and navy/cream palette — it avoids the empty-slots trap (good) and cites its MLS source with a timestamp (good), but demoMatch is false: the photo strip has no carousel interaction at all, and the table shows no sort, highlight, or hover behavior that would make it the shadcn Table demo rather than a plain HTML table wearing hairlines. Ship this as the finished comparison and a visitor sees a spec sheet, not a tool worth returning to.",
+   "dullest": "The comparison rows: identical hairline underlines under Price, Price / sq ft, Sq ft and Lot that you have to hunt, while 375 already hid two of the four houses and each column's only control is the same outline Add this home box.",
+   "beats": "Redfin Compare and Zillow saved-homes compare open on the visitor's own thumbnails with large photo columns; Wirecutter comparison tables mark a winner in the first viewport. This page wins a live four-listing MLS sample with a named Oregon Data Share timestamp for a visitor who arrives with nothing. It loses photo scale, a winner or delta reading, and any 375 layout that can hold four homes.",
+   "verdict": "The dashed empty tray is gone and the first screen is a labelled live sample, which is the job, but demoMatch is false: the photos are cream-box stamps, not shadcn-carousel, and the sheet is a hairline list, not shadcn-table. Tells are the four outline Add this home rectangles and the spreadsheet underlines. Until the slots are a photo rail, the table encodes a spread, and 375 stops clipping a house in half, this stays a correct on-brand ledger, not Tip Ready.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
    "builderModel": "claude-opus-5",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
    "shots": {
     "desktop": "compare/desktop.png",
     "mobile375": "compare/mobile375.png"
    },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "buy",
-   "url": "/buy",
-   "route": "app/buy/page.tsx",
-   "median": 50,
-   "scores": [
-    55,
-    50,
-    45
-   ],
-   "criteria": {
-    "designQuality": 18,
-    "originality": 10,
-    "interaction": 3,
-    "craft": 11,
-    "honestyFunction": 8
-   },
-   "tells": [
-    "\"KPI grids\" — seen in the navy stat bar: three numbers (1,529 / $749,500 / 30 days) separated by dots with no bar, sparkline, or mark encoding any of them, only a trailing plain-language clause"
-   ],
-   "defects": [
-    {
-     "section": "photo strip below the stat bar",
-     "severity": "taste",
-     "finding": "The layout lock calls for Field — a field of live homes via an inventory rail — directly under the Stage hero, but the first viewport shows a single static exterior photo with no carousel controls, no second/third home, no arrows, no dots, and no visible interaction of any kind.",
-     "primitive": "app/buy/page.tsx",
-     "replaceWith": "shadcn-carousel"
-    },
-    {
-     "section": "stat bar (1,529 houses / $749,500 / 30 days)",
-     "severity": "taste",
-     "finding": "Three figures sit in a flat horizontal row with no visual encoding — no sparkline, no bar, no trend mark — just bold numbers and dot separators; it reads as a KPI grid softened by prose rather than a data section that rewards a hover or scrub.",
-     "primitive": "app/buy/page.tsx",
-     "replaceWith": "stat tile with sparkline"
-    },
-    {
-     "section": "whole first viewport",
-     "severity": "taste",
-     "finding": "Nothing in either screenshot shows a hover state, cursor affordance, toggle, or scrubber — the 'Search homes' button and the photo are both inert; a visitor has zero reason to touch anything before scrolling.",
-     "primitive": "app/buy/page.tsx",
-     "replaceWith": "shadcn-carousel"
-    }
-   ],
-   "dullest": "The photo strip under the stat bar — one static exterior shot of a home with no caption, no price, no way to see another listing without scrolling past it. It's page filler standing in for 1,529 real, live houses the stat bar just told me exist.",
-   "beats": "Redfin/Zillow's Central Oregon buy pages — this page wins on sourcing transparency (dated MLS citation, inline 'how we calculate this'), but loses on interactivity: their results are live, filterable, and browsable within the first viewport, while this page shows one motionless photo and a button.",
-   "verdict": "This is a correct, on-brand hero (Amboqia headline, navy scrim on the right mountain photo, sourced stats) sitting on top of a page that has no interaction anywhere in the first viewport and no catalog control installed — demoMatch is false because there is no shadcn-carousel, no inventory rail, nothing recognizable as a demo interaction at all. The stat bar edges toward the banned KPI-grid tell despite its plain-language framing, and the photo beneath it directly violates the Field layout lock by showing one static image instead of a scrollable field of live homes. Ship the carousel before this page can be called Field-compliant.",
-   "builderModel": "unknown",
-   "shots": {
-    "desktop": "buy/desktop.png",
-    "mobile375": "buy/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
+   "shotsHash": "sha256:d21c800f3a03658e880ff3918c6f40e4af64142a82999c2191554dfb6299790c",
+   "evaluatorModel": "grok-4.6",
    "rubricVersion": "v1-2026-09-12"
   },
   {
    "key": "contact",
    "url": "/contact",
    "route": "app/contact/page.tsx",
-   "median": 51,
+   "median": 50,
    "scores": [
-    52,
-    51,
-    48
+    50,
+    46,
+    52
    ],
    "criteria": {
-    "designQuality": 18,
-    "originality": 11,
-    "interaction": 4,
-    "craft": 10,
-    "honestyFunction": 8
+    "designQuality": 17,
+    "originality": 12,
+    "interaction": 5,
+    "craft": 9,
+    "honestyFunction": 7
    },
    "tells": [
-    "\"KPI grids\" — borderline: the 5.0 Google Reviews stat is a bare number with a small \"how we calculate this\" link but no plain sentence telling the reader what 5.0 actually means (e.g. review count, recency)."
+    "\"Cream box.\" — Name, Email, Phone, and Message are cream stadium capsules; How can we help is a raised white select. Neither shot shows beui-input error shake or success check, and the fields are not the shadcn Input object.",
+    "\"KPI grids.\" — 5.0 / GOOGLE REVIEWS sits beside a town-list paragraph that never says what the score means (count, recency, who was rated)."
    ],
    "defects": [
     {
-     "section": "hero left column, service-area paragraph",
+     "section": "Contact fold, left column (service-area copy under the H1)",
      "severity": "defect",
-     "finding": "Brief beat 2 (street address 115 NW Oregon Ave #2 on the fold) is missing — the left column names the six service-area towns but no street address appears anywhere in either screenshot, so a visitor cannot find the office without scrolling or clicking through.",
-     "primitive": "app/contact/page.tsx",
+     "finding": "Brief beat 2 is missing: 115 NW Oregon Ave #2 does not appear in the 1440 or 375 first viewport, so a visitor cannot find the office without scrolling.",
+     "primitive": "app/contact/_v3/ContactFold.tsx",
      "replaceWith": null
     },
     {
-     "section": "Send a message form (Name/Email/Phone/Message fields)",
+     "section": "375 first viewport — Send a message",
      "severity": "taste",
-     "finding": "All four form fields are static outlined boxes with no visible affordance beyond a hairline border — no focus state, no error state, no success check caught in either shot. It reads as a generic HTML form wearing house colors rather than a control that rewards interaction.",
-     "primitive": "app/contact/page.tsx",
+     "finding": "At 375 the fold is H1, a 5.0, then the form. Call at display scale, live hours, Text, Email, and Schedule are not in the first viewport, so a phone visitor meets labeled cream fields instead of the reach control.",
+     "primitive": "app/contact/_v3/ContactFold.tsx",
+     "replaceWith": "house-doors"
+    },
+    {
+     "section": "Send a message fields (Name, Email, Phone, Message)",
+     "severity": "taste",
+     "finding": "The write path is empty happy-path cream stadium boxes with no focus, error shake, or success check in frame, so adaptedFrom beui-input/shadcn-input is a cream box, not the demo.",
+     "primitive": "app/contact/_v3/ContactAsk.client.tsx",
      "replaceWith": "beui-input"
     },
     {
-     "section": "TEXT / EMAIL / SCHEDULE row beneath the Call block",
+     "section": "#reach TEXT / EMAIL / SCHEDULE row",
+     "severity": "defect",
+     "finding": "At 1440 the secondary doors crop to orphaned TEXT / EMAIL / SCHEDULE kickers with no values, numbers, or hours, so the reach control is one Call figure plus three clipped labels.",
+     "primitive": "components/site/v3/V3Doors.tsx",
+     "replaceWith": "house-doors"
+    },
+    {
+     "section": "Call door photograph / who answers",
      "severity": "taste",
-     "finding": "The three secondary reach options are reduced to plain column labels with no icon, description, or visual weight of their own, so the reach control reads as one strong Call block plus three afterthought labels rather than four coequal channels — flat originality, no section shape distinct from the form beside it.",
+     "finding": "Beat 8 is not in either shot: one unnamed circular stamp sits on Call, with no names, no door to /team, and no AboutFaces roster in the first viewport.",
+     "primitive": "app/about/_v3/AboutFaces.tsx",
+     "replaceWith": "house-faces"
+    },
+    {
+     "section": "375 5.0 GOOGLE REVIEWS label",
+     "severity": "defect",
+     "finding": "GOOGLE REVIEWS wraps onto two lines under 5.0 while SOURCE and how we calculate this sit on the right, an orphaned label at 375.",
      "primitive": "app/contact/page.tsx",
      "replaceWith": null
     }
    ],
-   "dullest": "The TEXT / EMAIL / SCHEDULE row at the base of the left column — three plain uppercase labels with no visual encoding, cut off before any content renders, sitting directly below the one genuinely strong element on the page (the oversized CALL number). It's the exact point where the page's energy drops to a stacked-section default.",
-   "beats": "Beats a typical brokerage locator/contact page (e.g. a Windermere or Coldwell Banker \"contact us\" page, which is usually a static phone number and a bare form) on trust transparency — the live \"Open now, until 5:00 pm\" status and the sourced 5.0 Google Reviews stat with a visible calculation link are both things most competitor contact pages don't show at all.",
-   "verdict": "This is a correct, on-brand, functionally complete contact page — one clear ask, sourced trust stats, a working write path with SMS consent — but it is not visually breathtaking and demoMatch is false: the form fields are static cream boxes with no catalog interaction (no beui-input shake/check) rather than a genuine demo object. The missing street address on the fold is a hard competitive-brief miss (beat 2), and the TEXT/EMAIL/SCHEDULE row is a flat, undifferentiated stack next to the one strong Call block. It should look and feel like the Call block does — bold, sourced, alive — across every reach option and the form itself, not just the phone number.",
+   "dullest": "The 375 first viewport: a visitor who opened Contact to call sees Call, text, or write, then Send a message and three empty cream pills. The display-scale number and live hours that are the page's only idea are not in the frame.",
+   "beats": "No win named",
+   "verdict": "Desktop is a navy/cream telephone broadside beside one ask, which is the right job, but demoMatch is false: the fields are cream-box capsules, not beui-input or shadcn Input, and no *-open shot shows shake or a check. competitiveBriefPass is false because the street address is absent from both folds and who-answers never appears as a door to /team. 375 throws the Call figure away and opens on a labeled form, so the class is still a correct, on-brand contact sheet, not a catalog control a visitor would screenshot.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
    "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
    "shots": {
     "desktop": "contact/desktop.png",
     "mobile375": "contact/mobile375.png"
    },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "community",
-   "url": "/communities/tetherow",
-   "route": "app/communities/[slug]/page.tsx",
-   "median": 51,
-   "scores": [
-    51,
-    62,
-    44
-   ],
-   "criteria": {
-    "designQuality": 17,
-    "originality": 14,
-    "interaction": 5,
-    "craft": 8,
-    "honestyFunction": 7
-   },
-   "tells": [
-    "\"KPI grids\" — the \"28 for sale · 3 pending\" line is two colored-dot stats sitting beside plain prose with no chart, bar, or sparkline encoding them; it reads as a fact dump rather than a display."
-   ],
-   "defects": [
-    {
-     "section": "Houses/Land toggle + listings feed (right column, desktop; stacked, mobile)",
-     "severity": "taste",
-     "finding": "The Houses/Land control is a flat two-button navy/cream group and the feed below it is one static card — no combobox, no filtering motion, no masonry reflow. Nothing here promises the visitor an interaction; it looks and behaves like a portal filter chip, not a catalog control.",
-     "primitive": "app/communities/[slug]/page.tsx",
-     "replaceWith": "beui:combobox"
-    },
-    {
-     "section": "New-listings count and per-community stat dots",
-     "severity": "taste",
-     "finding": "\"1 house came on the market\" and \"28 for sale / 3 pending\" are static digits with no motion cue. A live-count component would signal freshness (this page's actual advantage over a static competitor site) instead of reading like plain body copy.",
-     "primitive": "app/communities/[slug]/page.tsx",
-     "replaceWith": "beui-number"
-    },
-    {
-     "section": "Email alert form, mobile viewport",
-     "severity": "defect",
-     "finding": "On the 375x812 first viewport the alert copy (\"Every new listing, by email...\") is visible but the email input and submit button fall below the fold — the map above it consumes too much vertical space on mobile, so the layout-lock requirement that alerts sit in the first viewport is not actually met on the phone size.",
-     "primitive": "app/communities/[slug]/page.tsx",
-     "replaceWith": "house-alerts"
-    },
-    {
-     "section": "Whole page below the hero",
-     "severity": "taste",
-     "finding": "Months of supply is required as two named bars per the layout lock, and no such module appears anywhere in either captured viewport — the page opens and stays on inventory count and a single listing card with no market-supply comparison visible.",
-     "primitive": "app/communities/[slug]/page.tsx",
-     "replaceWith": "house-mos"
-    }
-   ],
-   "dullest": "The right-column listings module: one static card, a plain two-button toggle, and a plain-text email form. It is the exact shape of a stock IDX widget — nothing here differs from what any MLS-fed template would render for any subdivision in the country.",
-   "beats": "tetherow.com (the community's own site) has no live MLS feed at all — this page wins on listing freshness and price data (a house-specific, dated, sourced $2.5M/4bd figure updating from MLS) that Tetherow's own marketing site cannot show. But it does not beat a strong portal place page on interactivity: Redfin's neighborhood pages already give scrubbable price-history charts and filterable map pins, which this page does not yet do.",
-   "verdict": "This is a correct, on-brand, quiet page — navy/cream, Amboqia headline, a genuinely useful custom boundary map instead of a generic Google embed — but demoMatch is false: there is no catalog interaction anywhere in the fold, just a static button toggle and one listing card. The stat dots and listing count are inert numbers that could be alive, months-of-supply is missing entirely from what's visible, and mobile buries the alert form's actual input below the viewport. It reads as informative and honest, not breathtaking or interactive.",
-   "builderModel": "unknown",
-   "shots": {
-    "desktop": "community/desktop.png",
-    "mobile375": "community/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "neighborhood",
-   "url": "/cities/bend/awbrey-butte",
-   "route": "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
-   "median": 51,
-   "scores": [
-    51,
-    38,
-    52
-   ],
-   "criteria": {
-    "designQuality": 18,
-    "originality": 12,
-    "interaction": 5,
-    "craft": 11,
-    "honestyFunction": 5
-   },
-   "tells": [
-    "\"Missing states.\" — the first viewport shows only static MOS bars and a static email form; there is no Atlas map or any element that responds to a hover, tap, or scrub anywhere above the fold."
-   ],
-   "defects": [
-    {
-     "section": "hero / MOS overlay",
-     "severity": "defect",
-     "finding": "The layout lock requires a place page to open with a drawing (Atlas) plus a figure beside the alerts sentence. There is no map anywhere in the first viewport on desktop or mobile — only the hero photo and the two static MOS bars. This is a required-section miss, not a style note.",
-     "primitive": "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
-     "replaceWith": "house-atlas"
-    },
-    {
-     "section": "new-listings row",
-     "severity": "taste",
-     "finding": "The three new-listing results are a plain three-up row of tiny thumbnail + price + address, no card hover, no scroll behavior, no way to see more than three without leaving the page. It is a shrunk version of a portal results list, not a distinct display.",
-     "primitive": "components/site/v3/V3ListingRow.tsx",
-     "replaceWith": "beautifului:insight-cards"
-    }
-   ],
-   "dullest": "The MOS bars and the new-listings row are both static, source-labeled facts with zero motion or response to touch — correct and honestly sourced, but nothing on the page moves, scrubs, or reveals more when touched, so the whole first viewport reads as a well-typeset printout rather than a living instrument.",
-   "beats": "Redfin's Awbrey Butte neighborhood page — this page wins on source transparency (an explicit 'Oregon Data Share' citation and an expandable 'how we calculate this' disclosure that Redfin never shows), but Redfin's own neighborhood page opens with an interactive boundary map with pins, which this page is missing entirely in the first viewport.",
-   "verdict": "This is a clean, correctly-branded, honestly-sourced neighborhood summary that is missing its required map and has no interactive layer anywhere above the fold — demoMatch is false because none of the catalog jobs on the option list (scrubber insights, live digit counts, combobox, masonry) show up; what's here is house-built static bars and a shrunk listing row. It clears the honesty bar and most of the craft bar, but fails the layout lock (no Atlas) and scores low on interaction and originality: a visitor sees numbers and a form, not something to touch.",
-   "builderModel": "unknown",
-   "shots": {
-    "desktop": "neighborhood/desktop.png",
-    "mobile375": "neighborhood/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "about",
-   "url": "/about",
-   "route": "app/about/page.tsx",
-   "median": 52,
-   "scores": [
-    45,
-    56,
-    52
-   ],
-   "criteria": {
-    "designQuality": 17,
-    "originality": 12,
-    "interaction": 3,
-    "craft": 12,
-    "honestyFunction": 8
-   },
-   "tells": [],
-   "defects": [
-    {
-     "section": "Hero (About Ryan Realty · Bend)",
-     "severity": "taste",
-     "finding": "The hero is a straight navy-scrim-over-photo-plus-headline treatment with no motion, parallax, or data layer — it reads as a template hero rather than something a visitor would screenshot, even though the office-exterior choice itself is correct per the layout lock.",
-     "primitive": "app/about/page.tsx",
-     "replaceWith": null
-    }
-   ],
-   "dullest": "The reviews section: a 5.0 stat, five static stars, and a small grid of quote boxes with no hover, no carousel, no way to see more than the four shown — the exact 'wall of proof, not a proof experience' problem the rubric penalizes under interaction.",
-   "beats": "No win named — nothing in either viewport (no interaction, no carousel, no data encoding beyond a star rating) demonstrably outperforms a standard brokerage about page or portal agent profile on any named metric.",
-   "verdict": "This is a correct, on-brand opener — AboutFirm hero with office exterior and one purpose line, followed by V3Proof reviews — which respects the layout lock and avoids the three-broker-card opener failure. But demoMatch is false: no catalog interaction (avatar group, button group, carousel) is visible anywhere in either shot, and competitiveBriefPass is false because only beats 1 and 2 (firm story, reviews) are visible in the given first-viewport screenshots — closings, the Call/Text/Email/Schedule reach control, the team teaser, and the inquiry door are all below the fold and unverifiable here. What is visible is static: a photo hero and a list of quote cards, with the one truncated review card as an added craft defect.",
-   "builderModel": "RyanRealty",
-   "shots": {
-    "desktop": "about/desktop.png",
-    "mobile375": "about/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
+   "shotsHash": "sha256:a88e0c7ea52e5ae52acc521afd668f3343b5df74af3dbb88d4a06c21ffbb38b1",
+   "evaluatorModel": "grok-4.6",
    "rubricVersion": "v1-2026-09-12"
   },
   {
    "key": "market-report",
    "url": "/housing-market",
    "route": "app/housing-market/page.tsx",
-   "median": 52,
+   "median": 51,
    "scores": [
-    38,
-    52,
-    54
+    51,
+    50,
+    52
    ],
    "criteria": {
-    "designQuality": 16,
+    "designQuality": 15,
     "originality": 10,
     "interaction": 6,
     "craft": 12,
     "honestyFunction": 8
    },
-   "tells": [],
+   "tells": [
+    "Cream box. — the fold's live counts (1,529 and 326.5) sit as static navy numerals on cream, not the beui-number digit-swap demo; the rest of the instrument is a closed '+' accordion labeled 'Supply by property type, sale pace, and what the houses have,' not a paged insight with a scrubber."
+   ],
    "defects": [
     {
-     "section": "Homes for sale vs a month of sales instrument",
+     "section": "Supply by property type accordion",
      "severity": "taste",
-     "finding": "The page's only data element is a snapshot two-bar comparison (1,529 vs 326.5) with no long-view trend chart anywhere on the page, even though the layout lock calls for a house-chart long-view series alongside the months-of-supply bars — a visitor has no way to see whether 4.7 months is rising, falling, or seasonal, only a single point in time.",
-     "primitive": "app/housing-market/page.tsx",
-     "replaceWith": "house-chart"
-    },
-    {
-     "section": "page body below the instrument",
-     "severity": "taste",
-     "finding": "Immediately after the one bar-chart section the page collapses to a plain-text 'Supply by property type, sale pace, and what the houses have +' accordion trigger and then jumps to a single-row 'More reports' list, leaving most of the visible viewport as bare cream whitespace on both desktop and mobile — this reads as an unfinished stub, not a comprehensive market report.",
-     "primitive": "app/housing-market/page.tsx",
+     "finding": "After the two months-of-supply bars the rest of the market answer is a single collapsed '+' trigger; no paged insight, scrubber, or opened breakdown is visible on desktop or 375, so property type, sale pace, and mix never appear in the first viewport.",
+     "primitive": "components/site/v3/V3Instrument.tsx",
      "replaceWith": "beautifului-insight"
     },
     {
-     "section": "bar chart affordances",
+     "section": "first-viewport instrument",
      "severity": "taste",
-     "finding": "The two bars render as flat navy lines with a static dot at the value end; nothing in the shot (no cursor state, tick marks, threshold band for 'balanced', or scrub handle) signals that hovering or dragging reveals more data, so the instrument reads as a decorative illustration of two numbers rather than an interactive comparison.",
-     "primitive": "app/housing-market/page.tsx",
-     "replaceWith": "house-mos"
+     "finding": "The only drawing in either shot is a snapshot two-bar comparison (1,529 homes for sale vs 326.5 sales a month). There is no long-view series, hover mark, or trend, so a visitor cannot see whether 4.7 months of supply is rising, falling, or seasonal.",
+     "primitive": "components/site/v3/V3Chart.tsx",
+     "replaceWith": "house-chart"
+    },
+    {
+     "section": "More reports / Live market",
+     "severity": "taste",
+     "finding": "The hub chooser under More reports is a single Live market text row with a chevron and arrow and no figure, spark, or live count on the door, so the first viewport below the instrument is a blank cream field plus one unlabeled link.",
+     "primitive": "components/site/v3/V3Ledger.tsx",
+     "replaceWith": "beui-number"
     }
    ],
-   "dullest": "Everything below the hero headline and the one two-bar comparison: on both desktop and mobile the page is mostly cream whitespace bracketed by a collapsed accordion and a one-row 'More reports' link — there is no second data section, no chart, no animated figure, nothing to scroll for.",
-   "beats": "No win named — a Redfin or Zillow local market page, or the resort's own site, both show a historical trend line and multiple cut breakdowns (property type, price band, DOM) rendered by default; this page shows one live snapshot metric and hides the rest behind a '+' with no visible expanded content.",
-   "verdict": "This is a correct, on-brand stub, not a market report: the two-bar months-of-supply instrument follows the house-mos spec and the sourcing line is honest, but demoMatch is false because none of the prescribed catalog forms (house-chart, beautifului-insight, beui-number) are present anywhere in the shots. The page is dominated by empty cream space with a single static-looking data point and a one-line 'More reports' list, which is the opposite of the 'breathtaking, interactive on every page' bar — there is no trend, no scrubber, no live count, nothing that rewards a second look.",
+   "dullest": "The cream void under the two hairline bars: a closed accordion, a source line, then More reports / Live market. That is a stub fold, not a market report a visitor would stop for.",
+   "beats": "Redfin Data Center (https://www.redfin.com/news/data-center/) — this page wins the first-viewport market answer: a balanced-market verdict, two named months-of-supply bars (1,529 vs 326.5 → 4.7 months), and a dated Oregon Data Share via MarketPulse trace. Redfin's hub still opens as a report chooser without that live instrument.",
+   "verdict": "This is a correct, on-brand Instrument stub, not a finished market hub. demoMatch is false: house-mos two bars are on screen, but no catalog demo is — no beui-number digit swap, no beautifului-insight scrubber, no house-chart hover, and no *-open shot of the accordion. The cream-box tell is the closed supply disclosure plus static numerals; the defects are that hidden breakdown, the missing long view, and a More reports row with no figure. Craft and the sourced 4.7-month balanced verdict hold; the fold is still mostly empty cream.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
    "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
    "shots": {
     "desktop": "market-report/desktop.png",
     "mobile375": "market-report/mobile375.png"
    },
-   "evaluatorModel": "claude-sonnet-5",
+   "shotsHash": "sha256:0adf91ee4eff12222ba7c148900c15aea49c654bcd6b3781c97c9deabf5abf95",
+   "evaluatorModel": "grok-4.6",
    "rubricVersion": "v1-2026-09-12"
   },
   {
-   "key": "search",
-   "url": "/search",
-   "route": "app/search/page.tsx",
-   "median": 53,
+   "key": "oregon-city",
+   "url": "/oregon/medford",
+   "route": "app/oregon/[city]/page.tsx",
+   "median": 51,
    "scores": [
-    53,
-    49,
-    53
+    47,
+    58,
+    51
    ],
    "criteria": {
-    "designQuality": 18,
-    "originality": 8,
-    "interaction": 8,
-    "craft": 11,
-    "honestyFunction": 8
+    "designQuality": 15,
+    "originality": 14,
+    "interaction": 4,
+    "craft": 8,
+    "honestyFunction": 10
    },
    "tells": [
-    "\"Not a Google default map\" — a Google attribution wordmark is visible bottom-left on the desktop map. Even with restyled grayscale roads and navy cluster pins, the presence of the Google mark means the underlying tiles are Google Maps, not the site's own Atlas/TIGER cartography the layout lock requires."
+    "\"Cream box.\" — the honesty strip is a cream Quiet band with a left hairline and a flat outlined navy rectangle labeled Get a broker introduction; it is not the shadcn Alert object (icon, rounded bordered container, title/description stack).",
+    "\"KPI grids.\" — desktop fold closes on 725 / 342 / $467,000 with jargon labels (ACTIVE LISTINGS, ALL PROPERTY TYPES; ACTIVE SINGLE-FAMILY LISTINGS; MEDIAN SINGLE-FAMILY LIST PRICE) and sentences that are cut off mid-clause."
    ],
    "defects": [
     {
-     "section": "map panel (desktop split view, mobile map)",
+     "section": "#about honesty banner",
      "severity": "taste",
-     "finding": "Google Maps attribution wordmark is visible, indicating this is a restyled Google Maps embed rather than the house Atlas (TIGER) basemap the layout lock mandates for search. Restyling colors on top of Google tiles is not the same system as the standalone cartography used elsewhere on the site.",
-     "primitive": "app/search/page.tsx",
-     "replaceWith": "house-atlas"
+     "finding": "We don't work in Medford is the right claim, but the control is a cream house strip plus an outlined V3Button, not the shadcn Alert demo in navy/cream. No Alert chrome, no icon, no AlertAction — a visitor would not recognize ui.shadcn.com/docs/components/alert. No *-open shot of the referral either.",
+     "primitive": "components/site/v3/V3Quiet.tsx",
+     "replaceWith": "shadcn-alert"
     },
     {
-     "section": "search field + price range control",
+     "section": "#top newest-listings lollipop",
      "severity": "taste",
-     "finding": "The search input is a static labeled field with no visible morph/expand behavior, and the price slider fill reads as flat dark gray rather than navy with tick-stop motion — neither shot shows the field opening into results or the slider snapping to ticks, so the required catalog interactions cannot be confirmed as present.",
-     "primitive": "app/search/page.tsx",
-     "replaceWith": "beui-morphing-search"
+     "finding": "Eight street names as hairline dots ($275,000–$900,000) encode asking price and nothing else: no photograph, no card body, no visible hover/scrub/toggle, no door affordance. Mobile clips the rail after 627 Terrazzo with no more control. Live inventory the feed reports should be the ledger object, not a static sparkline of addresses.",
+     "primitive": "components/site/v3/V3Instrument.tsx",
+     "replaceWith": "house-ledger"
     },
     {
-     "section": "overall list + map + slider layout",
+     "section": "#top figure row",
      "severity": "taste",
-     "finding": "The composition (dual-handle price slider with dot ticks, cluster-bubble map, plain photo+price+specs list rows, Map/Split/List toggle) is a near 1:1 reprise of Zillow/Redfin's own search page with no Ryan Realty-specific move — nothing here a template wouldn't already produce.",
-     "primitive": "app/search/page.tsx",
-     "replaceWith": null
+     "finding": "After the lollipop, the same viewport still dumps three dashboard tiles (725, 342, $467,000). Two of the plain sentences are truncated on desktop (a house on its / ask more than this,), so the anti-KPI sentence rule fails in pixels.",
+     "primitive": "components/site/v3/V3Instrument.tsx",
+     "replaceWith": "stat tile with sparkline"
     },
     {
-     "section": "mobile bottom bar (Saved Areas / Map-List-Sort / listing count strip)",
+     "section": "#top figure captions",
      "severity": "defect",
-     "finding": "At 375px, the Saved Areas button, the Map/List/Sort segmented control, and the \"Homes for sale · 500 on this map · $57K-$6.6M\" summary strip are all crowded into the last ~90px of the viewport with no visible spacing hierarchy between them, reading as three competing bottom-anchored elements rather than one coherent control bar.",
-     "primitive": "app/search/page.tsx",
+     "finding": "Desktop captions under 342 and $467,000 are clipped mid-sentence, so the figures sit next to incomplete claims.",
+     "primitive": "components/site/v3/V3Instrument.tsx",
      "replaceWith": null
     }
    ],
-   "dullest": "The whole search surface is the dullest part: a price-range slider with dot ticks, a cluster-bubble map, and a plain photo/price/spec list is exactly what every major portal already ships. Nothing here signals Ryan Realty specifically — swap the logo and this is Zillow.",
-   "beats": "No win named",
-   "verdict": "This is a competent, on-brand implementation of the standard portal search pattern (list + map split, price slider, cluster map) but not a page that beats Zillow or Redfin on any visible metric, and demoMatch is false because neither shot shows the search field morphing, the range slider snapping with navy fill, or the filter sheet opening — only rest-fold states were captured. The Google attribution mark on the map is a concrete signal the search map may still be riding Google Maps tiles rather than the house Atlas basemap the layout lock requires. Craft is solid (aligned figures, sourced stat line, tabular numbers) but originality is close to zero — this is the template, not a deliberate departure from it.",
-   "builderModel": "claude-fable-5-1",
-   "shots": {
-    "desktop": "search/desktop.png",
-    "mobile375": "search/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "sell",
-   "url": "/sell",
-   "route": "app/sell/page.tsx",
-   "median": 53,
-   "scores": [
-    50,
-    60,
-    53
+   "dullest": "The three-number KPI row under the lollipop. The page already plotted eight asking prices, then still pasted 725 / 342 / $467,000 like a dashboard footer — the exact tell the old 41-mark fold was failed for.",
+   "beats": "Zillow Medford home-values (zillow.com/medford-or/home-values/): this page wins the out-of-area confession (We don't work in Medford, ask for a local broker introduction). It loses the market time series, the map, and photographed inventory on the first viewport.",
+   "verdict": "A correct, on-brand, honesty-first Medford fold: navy/cream, Amboqia H1, no fake Central Oregon hero, one introduction ask. It is still a stacked document — Quiet hairline, serif title, static lollipop, KPI tiles — not the catalog Alert object, so demoMatch is false and the node stays in_progress. The lollipop is a real chart form, but it hides listing photographs and interaction, and the KPI grid under it is the banned tell in the same viewport. Competitive brief is not published on this class; do not treat a score in the 50s as Tip Ready.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
    ],
-   "criteria": {
-    "designQuality": 20,
-    "originality": 10,
-    "interaction": 3,
-    "craft": 12,
-    "honestyFunction": 8
-   },
-   "tells": [],
-   "defects": [
-    {
-     "section": "hero stat/CTA card",
-     "severity": "taste",
-     "finding": "The layout lock calls for house-sheet: address, then a sourced answer, then contact, one question at a time on mobile. What ships is a single static card — generic Bend-wide stats (2,064 closed, $760K median, 633 vs 175 supply bars) sitting next to a bare address input and a submit button, with no address-to-answer reveal step at all. Nothing here is personalized to what the visitor types, and the address field itself is a plain bordered box with no icon, no InputGroup affix, no visible error/success state — it does not read as any specific catalog demo, just a generic HTML input in house colors.",
-     "primitive": "app/sell/page.tsx",
-     "replaceWith": "house-sheet"
-    },
-    {
-     "section": "months-of-supply comparison bar",
-     "severity": "taste",
-     "finding": "The homes-for-sale-vs-a-month-of-sales bar pair is rendered as two static filled bars with end labels; there is no cursor, tooltip, scrub handle, or any other affordance suggesting it responds to hover or tap. It functions as a decorative graphic printed once, not a data section that rewards interaction.",
-     "primitive": "app/sell/page.tsx",
-     "replaceWith": null
-    },
-    {
-     "section": "overall hero + split-card composition",
-     "severity": "taste",
-     "finding": "Photo hero with a headline, followed by a floating card split into stats-left / form-right, is the same 'get your home value' template every national portal (Redfin, Opendoor, Zillow) already runs. Nothing in the composition, type treatment, or data presentation would let a viewer distinguish this from a generic seller-lead-gen template if the logo were cropped out.",
-     "primitive": "app/sell/page.tsx",
-     "replaceWith": null
-    }
-   ],
-   "dullest": "The months-of-supply bar block: two static gray/navy bars with numbers next to them, showing city-wide aggregate stats that have nothing to do with the address the visitor is about to type — it reads as filler placed above the fold rather than an answer.",
-   "beats": "No win named",
-   "verdict": "This is a competent, on-brand seller landing page — clean type, real numbers, working hierarchy — but it is not the house-sheet the layout lock calls for and demoMatch is false: there's no address-then-answer-then-contact progression, and the address field shows none of the InputGroup/Field/beUI-input affordances it's supposed to carry. The composition (photo hero + split stat/CTA card) is the same shape as every national portal's seller LP, the bar chart is inert, and nothing here would make a visitor stop scrolling or screenshot the page. It is safe and dull rather than breathtaking.",
    "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
    "shots": {
-    "desktop": "sell/desktop.png",
-    "mobile375": "sell/mobile375.png"
+    "desktop": "oregon-city/desktop.png",
+    "mobile375": "oregon-city/mobile375.png"
    },
-   "evaluatorModel": "claude-sonnet-5",
+   "shotsHash": "sha256:d22bbb174fdb217adb522fe6aeb88f69d781228f131f080b31c7eda2d277dd00",
+   "evaluatorModel": "grok-4.6",
    "rubricVersion": "v1-2026-09-12"
   },
   {
    "key": "place-type-community",
    "url": "/communities/tetherow/types/single-family",
    "route": "app/communities/[slug]/types/[type]/page.tsx",
-   "median": 54,
+   "median": 52,
    "scores": [
-    54,
-    64,
-    50
+    53,
+    52,
+    52
    ],
    "criteria": {
-    "designQuality": 20,
-    "originality": 10,
-    "interaction": 6,
-    "craft": 11,
-    "honestyFunction": 7
+    "designQuality": 16,
+    "originality": 12,
+    "interaction": 7,
+    "craft": 9,
+    "honestyFunction": 8
    },
    "tells": [
-    "\"Scrolling lists as the design\" — the Photographed Listings section is a stacked row list (thumbnail, address, price, beds/baths/sqft) with 18 rows and no visual encoding beyond a small photo; a table wearing hairlines, not a rail."
+    "\"Cream box.\" — PHOTOGRAPHED LISTINGS is a hairline thumbnail–address–price ledger with filled navy sort rects, not the shadcn carousel (no arrows, no card body, no title-under-photo).",
+    "\"Scrolling lists as the design.\" — desktop inventory under the map is stacked V3ListingRow hairlines; the photos are Spark-scale thumbs, not a rail."
    ],
    "defects": [
     {
-     "section": "Photographed listings",
+     "section": "PHOTOGRAPHED LISTINGS",
      "severity": "taste",
-     "finding": "Listings render as a plain vertical row list instead of the mandated rail. The layout lock names shadcn-carousel adapted into V3Carousel for photographed listings, but the shots show sortable rows (Newest/Price Low/Price High/Most Beds) stacked top to bottom with no card/rail treatment — the exact list-as-design tell the rubric bans, and a direct miss against the route's own house-primitive requirement.",
-     "primitive": "app/communities/[slug]/types/[type]/page.tsx",
+     "finding": "Inventory is a vertical list of ~120px Spark thumbs, address, beds/baths, and price with NEWEST/PRICE LOW/PRICE HIGH/MOST BEDS as navy rects. A visitor cannot recognize the shadcn carousel: no prev/next arrows, no card body, no title-under-photo.",
+     "primitive": "app/cities/[slug]/types/[type]/_v3/PlaceTypeField.client.tsx",
      "replaceWith": "shadcn-carousel"
     },
     {
-     "section": "Map legend (Fewer sales / More sales gradient)",
+     "section": "SINGLE-FAMILY ON THE MAP canvas",
+     "severity": "taste",
+     "finding": "90-day sales-density blobs and the 18 for-sale dots are the same gray-on-cream, so live marks do not separate from the volume story at a glance on 1440 or 375.",
+     "primitive": "app/cities/[slug]/types/[type]/_v3/PlaceTypeAtlasSection.tsx",
+     "replaceWith": "house-atlas"
+    },
+    {
+     "section": "SINGLE-FAMILY ON THE MAP eyebrow",
      "severity": "defect",
-     "finding": "The four-swatch gradient legend claims to encode '90-day sales density' but no corresponding shading is visible anywhere on the map itself in either screenshot — the dots are uniform gray with no visible density fill tied to the legend, so the legend reads as decoration rather than a working key.",
+     "finding": "The map label restates Single-family as a second display line with no count or price fact after the H1 already named the type.",
      "primitive": "app/communities/[slug]/types/[type]/page.tsx",
      "replaceWith": null
-    }
-   ],
-   "dullest": "The Photographed Listings feed: 18 identical rows of thumbnail + address + price + stats, stacked top to bottom with sort tabs as the only interaction. It is correct and legible but it is a list, not a page — nothing here would make a visitor stop scrolling.",
-   "beats": "Tetherow's own community site (tetherow.com) — that page has no live inventory at all, so this page wins on real-time listing depth (18 active homes, price range, per-listing photos) tied to an actual parcel-boundary map. It does not beat a Redfin/Zillow neighborhood page on interaction or presentation — those also have image galleries and map-synced hover states this page lacks.",
-   "verdict": "This is a correct, on-brand utility page — H1, claim sentence with count and price band, sourced timestamp, and Atlas showing the true Tetherow boundary with per-listing dots and a price slider — but the Photographed Listings section ignores the carousel lock entirely and ships a plain scrolling row list instead (demoMatch: false). The map's density legend also has no visible corresponding encoding on the map, undercutting honesty/function. It reads as functional inventory, not a page built to beat a portal's neighborhood search.",
-   "builderModel": "claude-fable-5-1",
-   "shots": {
-    "desktop": "place-type-community/desktop.png",
-    "mobile375": "place-type-community/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "cities",
-   "url": "/cities",
-   "route": "app/cities/page.tsx",
-   "median": 54,
-   "scores": [
-    54,
-    50,
-    60
-   ],
-   "criteria": {
-    "designQuality": 18,
-    "originality": 10,
-    "interaction": 6,
-    "craft": 12,
-    "honestyFunction": 8
-   },
-   "tells": [],
-   "defects": [
-    {
-     "section": "first viewport / hero",
-     "severity": "taste",
-     "finding": "The entire first fold on both desktop and mobile is type and two thin bars — no photograph, map teaser, or illustrative figure. For a page whose job is to sell 'Central Oregon cities,' there is nothing Central Oregon about it visually; it reads as a spreadsheet in serif type, not a place.",
-     "primitive": "app/cities/page.tsx",
-     "replaceWith": "hero figure"
     },
     {
-     "section": "overlay control ('OVERLAY A CITY AGAINST THE REGION')",
-     "severity": "defect",
-     "finding": "Copy promises an interactive city-vs-region overlay and 'hover, tap or tab a bar for what it counts,' but nothing in either screenshot shows an actual control (no select chevron, no combobox affordance, no visible city list) — the interaction is asserted in prose, not demonstrated as a UI element, and no *-open shot was captured to verify it.",
-     "primitive": "app/cities/page.tsx",
-     "replaceWith": "beui:combobox"
-    },
-    {
-     "section": "months-of-supply bars",
+     "section": "Up to any price slider",
      "severity": "taste",
-     "finding": "The two bars ('For sale right now' / 'Under contract in a month') and the seller/balanced/buyer scale beneath are correct and on-brand but visually identical in weight and color to any generic stat-bar component — nothing here would make a viewer stop scrolling or screenshot the section.",
-     "primitive": "components/site/v3/V3MosBars.tsx",
-     "replaceWith": null
-    }
-   ],
-   "dullest": "The whole visible fold — hero line, one bold sentence, two navy/gray bars, one dot scale — is monochrome stat furniture. It's accurate and legible, but it's the floor for a data page, not a page that beats a competitor's city hub on delight.",
-   "beats": "Zillow/Redfin city hubs: this page wins on showing its own months-of-supply computation with a labeled seller/balanced/buyer threshold and a 'how we calculate this' source disclosure — something neither portal exposes at all. No win named on visual appeal or interactivity, since neither is demonstrated in the shots.",
-   "verdict": "This is a clean, correctly-sourced, on-brand stat card, not yet a breathtaking place page — demoMatch is false because no catalog interaction (combobox, carousel, insight cards) is visible anywhere in the fold, only prose promising one. The house-mos bars are executed properly, but the total absence of imagery, a map, or any city-specific visual in the first viewport leaves the page feeling like a spreadsheet with a nice typeface rather than a hub for 15 real places.",
-   "builderModel": "unknown",
-   "shots": {
-    "desktop": "cities/desktop.png",
-    "mobile375": "cities/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "invest",
-   "url": "/invest",
-   "route": "app/invest/page.tsx",
-   "median": 56,
-   "scores": [
-    56,
-    50,
-    56
-   ],
-   "criteria": {
-    "designQuality": 20,
-    "originality": 14,
-    "interaction": 2,
-    "craft": 12,
-    "honestyFunction": 8
-   },
-   "tells": [],
-   "defects": [
-    {
-     "section": "stat bar list (597 lots / 59 commercial / 45 2-4 unit / 40 farms)",
-     "severity": "taste",
-     "finding": "Four rows of number+label with a static thin bar underneath show part-to-whole composition but nothing in the shot promises a hover, tap, or scrub for per-type detail (median price, price range, freshest close date) — no cursor affordance, no tooltip state, no visible control at all in the first viewport, and no catalog component (shadcn table, beautifului scrubber) appears anywhere on the page.",
-     "primitive": "app/invest/page.tsx",
-     "replaceWith": "shadcn-table"
-    },
-    {
-     "section": "READ sidebar prose block",
-     "severity": "taste",
-     "finding": "The right-column paragraph plus 'how we calculate this' disclosure is honest and well-sourced but purely static text; the whole first viewport is a headline, a static bar list, and a paragraph — no data-journalism interactive layer anywhere above the fold.",
-     "primitive": "app/invest/page.tsx",
-     "replaceWith": "beautifului-insight"
-    }
-   ],
-   "dullest": "The four-row bar list (597 lots, 59 commercial, 45 2-4 unit, 40 farms) — a styled KPI list with a decorative bar underneath each row, nothing to touch, nothing that changes.",
-   "beats": "Beats a Zillow/LoopNet land search page on transparency — the cited source line and 'how we calculate this' disclosure is something portal aggregate counts never show — but loses badly on interactivity: those pages let you filter and sort live, this page is a static image of four numbers.",
-   "verdict": "This is a well-typeset claim-first headline over a static stat list, not the interactive data page the brief calls for. demoMatch is false — no catalog control (table, scrubber, carousel) is visible anywhere in the first viewport, house or catalog. The bars encode part-to-whole cleanly and the sourcing is honest, but nothing here rewards a hover or tap, which is the single biggest gap against both the rubric's interaction criterion and the assigned house-ledger/beautifului-insight jobs.",
-   "builderModel": "claude-opus-5",
-   "shots": {
-    "desktop": "invest/desktop.png",
-    "mobile375": "invest/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "blog",
-   "url": "/blog/awbrey-glen-median-price-hoa-dues-2026",
-   "route": "app/blog/[slug]/page.tsx",
-   "median": 56,
-   "scores": [
-    58,
-    46,
-    56
-   ],
-   "criteria": {
-    "designQuality": 20,
-    "originality": 15,
-    "interaction": 3,
-    "craft": 11,
-    "honestyFunction": 7
-   },
-   "tells": [
-    "\"Walls of text.\" — the two intro paragraphs beneath the hero (\"What Awbrey Glen homes sold for...\" / \"Awbrey Glen sits on Awbrey Butte...\") run as unbroken prose with no figure, image break, or data callout sitting beside them despite the article being about a specific price and HOA number."
-   ],
-   "defects": [
-    {
-     "section": "Intro body copy, left column below the hero",
-     "severity": "taste",
-     "finding": "Two full paragraphs of plain prose open the article with zero visual encoding — no pull quote, inline stat, or image break — even though the headline itself is built entirely from two numbers ($1,349,000 median, $87 HOA). The strongest material in the piece is stated, not shown, right where the reader's attention is highest.",
-     "primitive": "app/blog/[slug]/page.tsx",
+     "finding": "The $1,350,000–$4,250,000 band lives only in the claim sentence; the slider sits at any price with no distribution, so scrubbing is chrome instead of the data.",
+     "primitive": "app/cities/[slug]/types/[type]/_v3/PlaceTypeAtlasSection.tsx",
      "replaceWith": "house-quiet"
-    },
-    {
-     "section": "\"THE NUMBERS IN THIS GUIDE\" sidebar",
-     "severity": "taste",
-     "finding": "The sidebar promises sourced numbers with sample size and window but renders only a static price and a flat one-pixel dash under it in the visible fold — no sparkline, no trend mark, no interactive way to see the other numbers in the guide without scrolling past the article. It's a KPI label dressed as data journalism with no chart backing it in view.",
-     "primitive": "app/blog/[slug]/page.tsx",
-     "replaceWith": "beautifului-insight"
-    }
-   ],
-   "dullest": "The two intro paragraphs — a strong claim-first headline and a real drone hero photo lead into flat, undifferentiated prose with no visual break, right when the page has the most attention.",
-   "beats": "Most portal neighborhood write-ups (Zillow/Redfin style guides) publish a number with no provenance; this page's sidebar promise of window + sample size per figure is a real honesty win over that competitive set. But against beautifului.dev-style data journalism or the portal's own place pages, it has no chart, no interaction, and no visual encoding of the number it's built around, so it does not beat those on data presentation.",
-   "verdict": "This is a correct, on-brand article shell — strong hero, claim-first headline, an honest sourcing gesture in the sidebar — but nothing in the visible fold moves, scrubs, or reveals more on interaction, so demoMatch is false: there's no catalog control here at all, just static text and one static number. The intro reads as filler prose ahead of the numbers it's promising, which is the walls-of-text tell, and the sidebar's own stat card has no chart behind it despite the article naming a specific price and HOA figure. Fix is to put the numbers guide behind an actual beautifului-insight chart and treat the opening claim as a Quiet callout instead of two paragraphs of prose.",
-   "builderModel": "claude-opus-5",
-   "shots": {
-    "desktop": "blog/desktop.png",
-    "mobile375": "blog/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "subdivision",
-   "url": "/subdivisions/ridge-at-eagle-crest",
-   "route": "app/subdivisions/[slug]/page.tsx",
-   "median": 56,
-   "scores": [
-    61,
-    56,
-    55
-   ],
-   "criteria": {
-    "designQuality": 19,
-    "originality": 14,
-    "interaction": 8,
-    "craft": 8,
-    "honestyFunction": 7
-   },
-   "tells": [
-    "\"Missing states.\" — the desktop map renders a large blank quadrant (right half of the map box) with no plat detail or polygons, and the price-scrubber/zoom-control interaction visible on desktop is entirely absent from the mobile first viewport, leaving mobile with a static, non-interactive map thumbnail."
-   ],
-   "defects": [
-    {
-     "section": "the Atlas map (\"Ridge at Eagle Crest right now\")",
-     "severity": "defect",
-     "finding": "On desktop the map canvas is roughly half empty — the right portion shows only faint unlabeled road lines with no subdivision polygon or data, wasting the hero interactive moment the layout lock calls for.",
-     "primitive": "app/subdivisions/[slug]/page.tsx",
-     "replaceWith": null
     },
     {
      "section": "mobile first viewport",
      "severity": "defect",
-     "finding": "The price-drag scrubber, zoom controls, and House-type checkbox that make the desktop map interactive do not appear anywhere in the mobile 375px first viewport — mobile visitors see a static map thumbnail with no filtering affordance at all, so the page's one real interaction does not reach half its traffic.",
-     "primitive": "app/subdivisions/[slug]/page.tsx",
-     "replaceWith": null
-    },
-    {
-     "section": "right column (new listings + email capture + two CTAs)",
-     "severity": "taste",
-     "finding": "Crawlable links, one listing card, an email-capture box, and two buttons (\"See every home for sale\", \"Talk to a broker\") are stacked with almost no visual separation or hierarchy differentiating them — it reads as a generic lead-gen sidebar dump rather than one deliberate editorial moment.",
-     "primitive": "app/subdivisions/[slug]/page.tsx",
-     "replaceWith": "beautifului:insight-cards"
+     "finding": "At 375 the photographed listings, sort, price scrubber, zoom, and a broker path are all gone, so the only object in the fold is a pale map with no house photo and no one-tap listing.",
+     "primitive": "app/communities/[slug]/types/[type]/page.tsx",
+     "replaceWith": "shadcn-carousel"
     }
    ],
-   "dullest": "The right-column stack — a links list, one listing card, an email box, then two stacked buttons — is a generic real-estate lead-gen sidebar; strip the Ryan Realty logo and it would be indistinguishable from any brokerage's boilerplate neighborhood page.",
-   "beats": "Beats Zillow's neighborhood page on data specificity: Zillow shows a generic pin cluster over stock Google Maps tiles with no boundary awareness, while this page draws the actual plat polygons as a custom overlay and ties a live price-drag scrubber to that map — something no major portal offers at the subdivision level. It does not beat Zillow on completeness of interaction reach, since that scrubber disappears entirely on mobile.",
-   "verdict": "This is a page with one genuinely original idea — a hand-drawn plat-boundary map with a price-drag scrubber — bolted onto an otherwise stock real-estate sidebar of links, a listing card, an email box, and two CTAs. demoMatch is false: nothing here is a recognizable catalog demo interaction, restyled or otherwise, so there's no cream-box question, but there's also no borrowed craft from the shadcn/beUI bar to lean on. The map itself has an unfinished feel (a blank right half on desktop) and its one real interaction vanishes completely on mobile's first viewport, which is a functional regression, not just a taste one. It's competent and on-brand but not yet the page that beats every subdivision page on the internet.",
-   "builderModel": "unknown",
+   "dullest": "PHOTOGRAPHED LISTINGS on desktop: Spark-scale thumbs in a hairline address–price stack. That is a search-results dump, not a photographed rail, and it is the first thing after the map.",
+   "beats": "Tetherow.com — this page wins on live MLS count (18), asking-price band ($1,350,000 to $4,250,000), and a named Oregon Data Share timestamp on the mapped inventory; it loses on photography and place character, and Zillow community pages beat the fold on photographed listings.",
+   "verdict": "This is an on-brand H1, one honest count-and-band sentence, and an Atlas — then a cream-box listing ledger. demoMatch is false: the catalog job was shadcn-carousel and the shots show stacked V3ListingRow hairlines with no arrows, card, or title-under-photo, and no *-open state. The cream-box and scrolling-list tells are the photographed rows; the map cells do not encode for-sale versus sales density; mobile first viewport never shows a house. Correct, navy/cream, and dull. Not Tip Ready.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "claude-fable-5-1",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
    "shots": {
-    "desktop": "subdivision/desktop.png",
-    "mobile375": "subdivision/mobile375.png"
+    "desktop": "place-type-community/desktop.png",
+    "mobile375": "place-type-community/mobile375.png"
    },
-   "evaluatorModel": "claude-sonnet-5",
+   "shotsHash": "sha256:fe026d172a74228656a7f8c62b204f1387a5f290c64aa327e4bf110100f3a147",
+   "evaluatorModel": "grok-4.6",
    "rubricVersion": "v1-2026-09-12"
   },
   {
    "key": "zip",
    "url": "/zip/97702",
    "route": "app/zip/[zip]/page.tsx",
-   "median": 57,
+   "median": 52,
+   "scores": [
+    52,
+    52,
+    55
+   ],
+   "criteria": {
+    "designQuality": 16,
+    "originality": 13,
+    "interaction": 7,
+    "craft": 8,
+    "honestyFunction": 8
+   },
+   "tells": [
+    "\"The stacked-section page.\" — on 375 the fold is claim → thin map strip → MOS box → alerts form, same width and density, no change in form or media.",
+    "\"Cream box.\" — 203 / 34 / 69 read as static display type, not the beui-number digit-swap object; \"Email me each one\" is a flat navy rectangle, not a catalog Button demo."
+   ],
+   "defects": [
+    {
+     "section": "375 Atlas / 97702 ON THE MAP",
+     "severity": "defect",
+     "finding": "On 375 the drawing is a cropped stain: +/- sits on the \"97702 ON THE MAP\" label, and the House chip and price scrubber the desktop caption promises are missing, so the layout-lock drawing is not interactive on the phone.",
+     "primitive": "components/site/v3/V3Atlas.client.tsx",
+     "replaceWith": "house-atlas"
+    },
+    {
+     "section": "375 first viewport",
+     "severity": "taste",
+     "finding": "Claim, map strip, MOS box, then alerts stack as one-column repeats with no scroll-tied change in form, width, or media.",
+     "primitive": "app/zip/[zip]/_v3/ZipHomesField.tsx",
+     "replaceWith": "beui:scroll-animation"
+    },
+    {
+     "section": "desktop fold bottom",
+     "severity": "taste",
+     "finding": "The 1440 fold dies on a clipped landscape band instead of this ZIP's photographed houses as a masonry field a visitor could scrub.",
+     "primitive": "app/zip/[zip]/_v3/ZipHomesField.tsx",
+     "replaceWith": "beui:infinite-masonry"
+    },
+    {
+     "section": "375 SEO doors",
+     "severity": "defect",
+     "finding": "375 clamps the crawlable doors to one truncated line ending \"Bend market...\", so the Bend market report and months-of-supply links are desktop-only.",
+     "primitive": "app/zip/[zip]/_v3/ZipClaim.client.tsx",
+     "replaceWith": null
+    },
+    {
+     "section": "375 NEW LISTINGS / email ask",
+     "severity": "taste",
+     "finding": "375 shows the 34-house sentence and an email field with zero listing facts — no photo, price, address, or beds/baths/sqft in the phone fold, while desktop proves 1254 Bryanwood Place.",
+     "primitive": "components/site/v3/V3AlertsStrip.client.tsx",
+     "replaceWith": "house-alerts"
+    },
+    {
+     "section": "claim 203 / MOS 203 / alerts 34",
+     "severity": "taste",
+     "finding": "203, 69, and 34 read as frozen display type with no digit-swap chrome; a visitor would not recognize the beui-number demo, and no *-open shot shows it.",
+     "primitive": "components/site/v3/V3Number.client.tsx",
+     "replaceWith": "beui-number"
+    }
+   ],
+   "dullest": "The 375 Atlas: a dark smear with overlapping zoom, none of the type chips or price scrubber the desktop copy advertises — the drawing that is supposed to open a place page is not actually there on a phone.",
+   "beats": "Zillow ZIP pages (zillow.com/homes/97702) — this page wins on months-of-supply honesty (two named bars, 203 homes for sale vs 69 a month of sales, Oregon Data Share as of Sep 12, 2026) and broker reach (email ask in the fold); it loses on first-viewport inventory spectacle and catalog demo match.",
+   "verdict": "A navy/cream ZIP directory that keeps the house lock on 1440 (Atlas dots, MOS bars, alerts beside them, 203 agreeing with 203) and then throws the drawing away on 375. demoMatch is false: beui-number is not the visible object, the email CTA is a cream-box navy rect, and there is no insight-card, combobox, or masonry demo in these stills. Until the phone Atlas actually filters and the fold is houses you can scrub, this is not Tip Ready.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "zip/desktop.png",
+    "mobile375": "zip/mobile375.png"
+   },
+   "shotsHash": "sha256:78db25308c75e93cac2b0a3cb328d9efeed68e81638e1886e56175905b1db5e4",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "buy",
+   "url": "/buy",
+   "route": "app/buy/page.tsx",
+   "median": 53,
+   "scores": [
+    55,
+    52,
+    53
+   ],
+   "criteria": {
+    "designQuality": 17,
+    "originality": 13,
+    "interaction": 5,
+    "craft": 10,
+    "honestyFunction": 8
+   },
+   "tells": [
+    "\"Cream box.\" — Search homes is a flat outlined house rectangle on the Stage photo, not a catalog Button and not a navy-fill inventory primary.",
+    "\"KPI grids.\" — At 375px the three market figures restack as number rows with trailing middots before the source block."
+   ],
+   "defects": [
+    {
+     "section": "#top Stage",
+     "severity": "taste",
+     "finding": "The first viewport is still the template brokerage cover: tracked CENTRAL OREGON eyebrow, serif H1, one outlined Search homes rect on a Cascade landscape. Live inventory is a navy ticker under the photo, not homes carried inside the Stage.",
+     "primitive": "components/site/v3/V3Stage.tsx",
+     "replaceWith": "house-stage"
+    },
+    {
+     "section": "#homes Field",
+     "severity": "taste",
+     "finding": "The Field that breaks the fold is a crop of timber roofs and sky with no price, address, beds, or type chip, so a buyer sees scenery rather than a house they can open.",
+     "primitive": "app/_v3/HomeHomesField.tsx",
+     "replaceWith": "house-field"
+    },
+    {
+     "section": "inventory rail",
+     "severity": "taste",
+     "finding": "No carousel chrome is visible — no arrows, no card body, no title-under-photo — so inventory is a still photograph, not the shadcn rail the option list named.",
+     "primitive": "app/_v3/HomeHomesField.tsx",
+     "replaceWith": "shadcn-carousel"
+    },
+    {
+     "section": ".v3-stage-strip at 375",
+     "severity": "defect",
+     "finding": "At 375px the claimed one sentence becomes three figure rows with stranded middots, and four lines of source sit between the numbers and the house.",
+     "primitive": "components/site/v3/V3Stage.tsx",
+     "replaceWith": null
+    }
+   ],
+   "dullest": "The Cascade cover: a buyer page whose first object is a mountain and a Search homes outline, not a priced home.",
+   "beats": "Against Zillow Bend search (zillow.com/bend-or/) this fold wins provenance: 1,529 houses, $749,500, 30 days to an offer, live MLS through Oregon Data Share, as of Sep 12, 2026, plus how we calculate this. It loses the job: Zillow puts priced inventory beside search in the first screen; this page puts a mountain, then a roof.",
+   "verdict": "demoMatch is false: no *-open shot, Search homes is a cream-box house rect, and the Field is a photo crop rather than house-field or the shadcn carousel. The KPI-grid tell is back at 375. On-brand sourcing in the navy band is the only editorial move; the layout lock (Stage carrying live inventory, then a field of live homes) is not what a visitor sees. Leave in_progress.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "buy/desktop.png",
+    "mobile375": "buy/mobile375.png"
+   },
+   "shotsHash": "sha256:21aa0877cede7101ca20e6c780a6551675aa96243d575d3b1baae71c0f968cdd",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "about",
+   "url": "/about",
+   "route": "app/about/page.tsx",
+   "median": 53,
+   "scores": [
+    54,
+    52,
+    53
+   ],
+   "criteria": {
+    "designQuality": 18,
+    "originality": 14,
+    "interaction": 3,
+    "craft": 11,
+    "honestyFunction": 7
+   },
+   "tells": [
+    "Cream box. — desktop proof band: two stacked cream rectangles (E Oster; truncated Matt snippet) with ellipsized quotes, no Card chrome, no arrows, no rail — not the shadcn Card or Carousel object."
+   ],
+   "defects": [
+    {
+     "section": "#firm hero",
+     "severity": "taste",
+     "finding": "The O'Kane office exterior is the right opener, but a heavy navy wash turns the building into a tinted texture; the photograph of 115 NW Oregon Ave barely reads as a place.",
+     "primitive": "app/about/_v3/AboutFirm.tsx",
+     "replaceWith": "house-firm"
+    },
+    {
+     "section": "V3Proof — In their own words",
+     "severity": "taste",
+     "finding": "Display-scale 5.0 and one featured quote are in frame, but the adjacent reviews are truncated cream rectangles, there is no visible door to /reviews, and no catalog control (Avatar, ButtonGroup, Carousel, Input) appears in either first-viewport shot.",
+     "primitive": "components/site/v3/V3Proof.client.tsx",
+     "replaceWith": "house-proof"
+    },
+    {
+     "section": "V3Proof side cards",
+     "severity": "defect",
+     "finding": "The band says the newest four of 25 reviews are shown in full, exactly as they were written, while the desktop side cards cut mid-sentence (attention t…); that is a visible contradiction, not a crop.",
+     "primitive": "components/site/v3/V3Proof.client.tsx",
+     "replaceWith": null
+    },
+    {
+     "section": "#reach",
+     "severity": "taste",
+     "finding": "Neither shot shows Call at display scale with live hours, nor Text, Email, and Schedule on the same control; the header phone is site chrome, not the four-up reach object.",
+     "primitive": "components/site/v3/V3Doors.tsx",
+     "replaceWith": "shadcn-button-group"
+    },
+    {
+     "section": "#firm-sales",
+     "severity": "taste",
+     "finding": "No closings rail of photo, address, ClosePrice, and beds/baths/sqft Cards is visible in either viewport, so beat 3 cannot be verified from the pixels.",
+     "primitive": "app/about/_v3/FirmClosings.tsx",
+     "replaceWith": "shadcn-carousel"
+    },
+    {
+     "section": "#team-teaser",
+     "severity": "taste",
+     "finding": "No compact face row and no Meet the team door to /team appear in either viewport, so beat 8 cannot be verified from the shots.",
+     "primitive": "app/about/_v3/AboutTeamTeaser.tsx",
+     "replaceWith": "shadcn-avatar"
+    },
+    {
+     "section": "#write inquiry",
+     "severity": "taste",
+     "finding": "No one-line inquiry field GET-submitting to /contact is visible in either first viewport.",
+     "primitive": "app/about/_v3/AboutInquiry.tsx",
+     "replaceWith": "shadcn-input"
+    }
+   ],
+   "dullest": "The proof band after the hero: a static 5.0, five inert stars, and cream quote boxes with no hover, no rail, and no way to open a review or reach a broker from that fold.",
+   "beats": "Compass About (compass.com/about) — this first viewport wins on local firm identity (O'Kane exterior plus boutique / all of Central Oregon / buy-and-sell) rather than coast-to-coast scale or a faces-first staff grid; it does not win on reach or interaction.",
+   "verdict": "The opener is the locked AboutFirm: office exterior, boutique / all of Central Oregon / buy and sell, then V3Proof — not three broker Cards. demoMatch is false: no AvatarGroup, ButtonGroup, Card carousel, or Input is visible, and the side reviews are cream boxes. competitiveBriefPass is false because only beat 1 is fully in frame; beat 2 lacks a /reviews door, and beats 3–8 (closings, Call|Text|Email|Schedule, team teaser, inquiry) are not in these shots. Correct, on-brand, and still a static photo-plus-quotes fold.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "RyanRealty",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "about/desktop.png",
+    "mobile375": "about/mobile375.png"
+   },
+   "shotsHash": "sha256:dc3c3f464b79cd6217ee038bc2ea6d1035c236a85c9470287fba4e7ee7028fae",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "blog",
+   "url": "/blog/awbrey-glen-median-price-hoa-dues-2026",
+   "route": "app/blog/[slug]/page.tsx",
+   "median": 53,
+   "scores": [
+    52,
+    63,
+    53
+   ],
+   "criteria": {
+    "designQuality": 17,
+    "originality": 13,
+    "interaction": 4,
+    "craft": 11,
+    "honestyFunction": 8
+   },
+   "tells": [
+    "\"Walls of text.\" — the first-viewport article column is a dek plus two full paragraphs of Awbrey Glen prose with no figure, map, or control in that column.",
+    "\"Cream box.\" — THE NUMBERS IN THIS GUIDE is a cream sidebar with a typeset $1,349,000 and a hairline dash; the copy says open a number, but the visible object is not the beautifului-insight chart/scrubber."
+   ],
+   "defects": [
+    {
+     "section": "Intro body, left column under the masthead",
+     "severity": "taste",
+     "finding": "The first-viewport reading column is a dek plus two paragraphs of place copy with zero inline encoding, even though the H1 is built from two sourced figures. The article answer is not a Quiet claim then an island; it is filler prose in front of the number.",
+     "primitive": "app/blog/[slug]/page.tsx",
+     "replaceWith": "house-quiet"
+    },
+    {
+     "section": "THE NUMBERS IN THIS GUIDE rail",
+     "severity": "taste",
+     "finding": "The rail promises window, sample size, and open-to-read, but the fold shows one static serif price, a question, and a dash. That is not the beautifului-insight paged-scrubber chart, and no *-open shot shows the demo interaction.",
+     "primitive": "app/blog/[slug]/_v3/BlogArticleRail.client.tsx",
+     "replaceWith": "beautifului-insight"
+    },
+    {
+     "section": "Masthead H1 over the hero photograph",
+     "severity": "defect",
+     "finding": "The display line breaks $1,349,000 across two lines on both 1440 and 375, so the hero figure the rest of the page is selling is split in the first viewport.",
+     "primitive": "components/site/v3/V3Stage.tsx",
+     "replaceWith": null
+    }
+   ],
+   "dullest": "The two intro paragraphs under a strong photo masthead: the page has already named a median and an HOA, then asks the reader to sit through unbroken prose before any chart, scrub, or listing ledger.",
+   "beats": "Beats a typical Zillow or Redfin neighborhood write-up on putting a dated median and HOA dues in the display title and naming window plus sample in the rail copy. Loses to a Curbed or The Real Deal community feature, and to beautifului.dev insight cards, on inline data viz and anything a reader can scrub.",
+   "verdict": "This is an on-brand magazine shell with a real golf-course masthead and a claim-first H1, not a catalog page. demoMatch is false: there is no beautifului-insight control in the shots, only a cream numbers box and two paragraphs of prose. Walls of text plus that cream box are the tells; until the rail is the named insight chart and the opening claim is Quiet then island, this class stays in the 50s and is not Tip Ready.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "claude-opus-5",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "blog/desktop.png",
+    "mobile375": "blog/mobile375.png"
+   },
+   "shotsHash": "sha256:b5e9d1d9db4f8943dc64c8372db4278c8282081618d6fda34f4eea02b5cbb03a",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "invest",
+   "url": "/invest",
+   "route": "app/invest/page.tsx",
+   "median": 54,
+   "scores": [
+    52,
+    54,
+    55
+   ],
+   "criteria": {
+    "designQuality": 17,
+    "originality": 13,
+    "interaction": 5,
+    "craft": 11,
+    "honestyFunction": 8
+   },
+   "tells": [
+    "\"Cream box.\" — the opening is navy/cream ranked rows with 12px squares as bullets; house-pulse (a drawn part-to-whole you can light) is not the object on screen, and the beautifului-insight scrubber is absent.",
+    "\"The stacked-section page.\" — under the Pulse, the first viewport already shows the next section's small-caps eyebrow CENTRAL OREGON · BY PROPERTY TYPE, the same property types about to repeat as rows."
+   ],
+   "defects": [
+    {
+     "section": "#place readings (597 / 59 / 45 / 40)",
+     "severity": "taste",
+     "finding": "The four rules are independent hairlines, not a part-to-whole: 597 lots fills the track like a section divider, 59 commercial / 45 2-4 unit / 40 farms collapse to nubs, and neither the whole door count nor land's share is on the graphic.",
+     "primitive": "components/site/v3/V3Pulse.tsx",
+     "replaceWith": "house-pulse"
+    },
+    {
+     "section": "#place radio squares",
+     "severity": "taste",
+     "finding": "The native switch reads as list bullets (one filled square, three empty); the still shows no hover, focus, or that a tap will change the definition, so the control does not match a drawn composition you light one at a time.",
+     "primitive": "components/site/v3/V3Pulse.tsx",
+     "replaceWith": "house-pulse"
+    },
+    {
+     "section": "#place dated note",
+     "severity": "taste",
+     "finding": "The Sep 12 note is a static paragraph restating the H1; there is no paged insight and no scrubber, so beautifului-insight is not the visible control.",
+     "primitive": "app/invest/page.tsx",
+     "replaceWith": "beautifului-insight"
+    },
+    {
+     "section": "CENTRAL OREGON · BY PROPERTY TYPE (foot of first viewport)",
+     "severity": "taste",
+     "finding": "The Ledger eyebrow already leaks into the fold under the same four types the Pulse just ranked, so the page starts repeating the stacked-section shape before the visitor scrolls.",
+     "primitive": "components/site/v3/V3Ledger.tsx",
+     "replaceWith": "house-ledger"
+    },
+    {
+     "section": "#place definition column at 1440",
+     "severity": "defect",
+     "finding": "At 1440 the words column ends far above the last rule, leaving a cream void that the next section's eyebrow then occupies.",
+     "primitive": "components/site/v3/V3Pulse.tsx",
+     "replaceWith": null
+    },
+    {
+     "section": "See all 597 lots",
+     "severity": "defect",
+     "finding": "The only inventory door on the fold is an inline text link inside the definition, so the tap target at 375 sits under a 44px floor.",
+     "primitive": "components/site/v3/V3Pulse.tsx",
+     "replaceWith": null
+    }
+   ],
+   "dullest": "The three unselected rows — 59 commercial, 45 2-4 unit, 40 farms — whose fills are nubs and whose squares are empty bullets, so the advertised composition is four captions under a headline.",
+   "beats": "LoopNet Central Oregon investment search: this page wins the composition claim (597 lots vs 59 commercial, 45 two-to-four, 40 farms, sourced to regional MLS) and loses live inventory density, filters, photos, and a map in the first viewport.",
+   "verdict": "The fold is a claim-first H1 plus four live counts, not a cover memo, and the land-not-buildings sentence matches the sourced figures. demoMatch is false: there is no beautifului-insight scrubber, no shadcn table, and house-pulse is a ranked cream list with bullet-sized radios rather than a drawn part-to-whole. The stacked-section tell is already on screen via the Ledger eyebrow. SEO and listing inventory are not shown to have risen in these shots; the only door is a thin lots link. Leave the node in_progress.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "claude-opus-5",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "invest/desktop.png",
+    "mobile375": "invest/mobile375.png"
+   },
+   "shotsHash": "sha256:60ac6de8b482525193b14f5f54386e81fa10527bf36822407a997a37a63d85ab",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "search",
+   "url": "/search",
+   "route": "app/search/page.tsx",
+   "median": 55,
+   "scores": [
+    56,
+    55,
+    55
+   ],
+   "criteria": {
+    "designQuality": 16,
+    "originality": 12,
+    "interaction": 8,
+    "craft": 11,
+    "honestyFunction": 8
+   },
+   "tells": [
+    "Cream box. — the search field is a static labeled cream input with a placeholder, not the beui morphing-search object; the price control is two gray tracks with tick dots and Any price, not the navy-fill beui range-slider.",
+    "Cream box. — PLACES / FOR SALE / PRICE / BEDS / BATHS / HOME TYPE are house pill rectangles sitting beside ALL FILTERS, a second overlay language rather than one opened house sheet."
+   ],
+   "defects": [
+    {
+     "section": "omnibox search field",
+     "severity": "taste",
+     "finding": "First viewport shows a static cream field (City, community, zip, address…) plus an unlabeled F chip. Nothing morphs into results. No search-open shot. This is a labeled house input, not the beui morphing-search interaction.",
+     "primitive": "components/site/v3/V3MorphSearch.tsx",
+     "replaceWith": "beui-morphing-search"
+    },
+    {
+     "section": "PRICE dual tracks",
+     "severity": "taste",
+     "finding": "Desktop and mobile both show two stacked gray tracks with end caps and tick dots, labeled Any price. No navy fill between thumbs, no selected range, no reduce-bounce motion visible. That is not the beui range-slider demo.",
+     "primitive": "components/site/v3/V3Range.tsx",
+     "replaceWith": "beui-range-slider"
+    },
+    {
+     "section": "filter chip row / ALL FILTERS",
+     "severity": "taste",
+     "finding": "Desktop exposes six dropdown pills plus ALL FILTERS and SAVE THIS SEARCH. Mobile uses PLACES + FILTERS + SAVE SEARCH. Filters are not one opened house sheet; the chip row is a second language and the sheet never appears in these shots.",
+     "primitive": "components/site/v3/V3Filter.client.tsx",
+     "replaceWith": "house-sheet"
+    },
+    {
+     "section": "F control beside the field",
+     "severity": "taste",
+     "finding": "The round F next to the field has no visible command palette, no result list, and no opened state. If this was meant to be command search, the shot is a dead chip.",
+     "primitive": "app/search/page.tsx",
+     "replaceWith": "shadcn-command"
+    }
+   ],
+   "dullest": "The two empty gray Any-price tracks. They steal a full band on both 1440 and 375, encode no selected range, and sit above a Zillow-grade chip row — unused chrome, not a control.",
+   "beats": "Redfin/Zillow Central Oregon map search — this page wins on sourced local cartography: Oregon Data Share stamped on the 500-home count, plus navy count-clusters on a cream Atlas field instead of unexplained pins.",
+   "verdict": "This is a competent brokerage split-view, on-brand and inventory-honest, not the catalog search object. demoMatch is false: the field does not morph, the range is a gray cream box, and the house sheet never opens in these shots. Atlas clusters and the sourced 500 are the only parts that feel like this shop; the chip row and listing rail are portal default. Leave the node in_progress until morphing-search, navy-fill range, and one house sheet are the visible controls.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "claude-fable-5-1",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "search/desktop.png",
+    "mobile375": "search/mobile375.png"
+   },
+   "shotsHash": "sha256:fc3cba231b2b45ef4fbff1537c2889b67027e48062041fcf5a6f7baf23e1cdaf",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "sell",
+   "url": "/sell",
+   "route": "app/sell/page.tsx",
+   "median": 55,
+   "scores": [
+    54,
+    57,
+    55
+   ],
+   "criteria": {
+    "designQuality": 17,
+    "originality": 13,
+    "interaction": 6,
+    "craft": 11,
+    "honestyFunction": 8
+   },
+   "tells": [
+    "Cream box. — the Stage working surface is a cream overlay: labeled Home address field with placeholder Enter a location, a flat navy Value my home rectangle, and the MOS two-bar sharing that slab. That is not beui-input shake/check, not shadcn Sheet chrome, and not a catalog Button demo."
+   ],
+   "defects": [
+    {
+     "section": "sell:address",
+     "severity": "taste",
+     "finding": "At rest the control is a rounded labeled cream field (Enter a location) and a full-width navy Value my home rect. No error-shake, no success check, no input-group affix, no morph. There is no *-open shot of the beui-input demo.",
+     "primitive": "app/sell/_v3/SellValueForm.tsx",
+     "replaceWith": "beui-input"
+    },
+    {
+     "section": "stage capture slab",
+     "severity": "taste",
+     "finding": "Layout lock is Stage then the address sheet: address, sourced answer, then contact, one question at a time on 390. Both viewports put Bend stats and the ask on one cream overlay (split on 1440, stacked on 375). No sheet edge, overlay, or sheet chrome. Contact never appears.",
+     "primitive": "app/sell/_v3/SellCapture.tsx",
+     "replaceWith": "house-sheet"
+    },
+    {
+     "section": "post-address answer",
+     "severity": "taste",
+     "finding": "The 3.6-month two-bar and the 2,064-close / $760,000 median sentence are already painted beside an empty address. The sourced answer is supposed to reveal after a typed street, between address and contact. No *-open shot shows that panel.",
+     "primitive": "app/sell/_v3/SellAnswer.tsx",
+     "replaceWith": "transitions-panel"
+    },
+    {
+     "section": "sell hero / Stage",
+     "severity": "taste",
+     "finding": "Photograph and Amboqia H1 start as Stage, then the fold becomes a stacked memo: stats, labeled field, navy submit, THE RECORD chevron. On 375 the cream brick is the whole working surface.",
+     "primitive": "components/site/v3/V3Stage.tsx",
+     "replaceWith": "house-stage"
+    }
+   ],
+   "dullest": "The two navy bars labeled 633 and 175: Bend-wide months of supply printed next to an untyped address, so the page answers the city before it has a house.",
+   "beats": "Zillow seller hub (zillow.com/seller-advertise/): this fold wins on Bend-sourced depth — 2,064 closes, $760,000 median, and a 3.6-month two-bar (633 vs 175) beside the ask. It loses on sheet sequence, type-to-reframe, and composed product preview.",
+   "verdict": "demoMatch is false: the live control is a cream overlay with a labeled field and a house navy rect, not house-sheet, shadcn:sheet, or beui-input, and no open-state shot shows the demo interaction. The fold is a competent on-brand seller LP — real photo, Amboqia H1, internally consistent Bend figures, Value my home reachable — and a cream-box tell. It should be Stage, then an address sheet that reveals the sourced answer, then contact, one question on 390; what shipped prints the city answer first and asks second.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "sell/desktop.png",
+    "mobile375": "sell/mobile375.png"
+   },
+   "shotsHash": "sha256:89b6b9f568312493e5660498522775a7fd7a756ca6eb362168c0d43a4afae286",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "community",
+   "url": "/communities/tetherow",
+   "route": "app/communities/[slug]/page.tsx",
+   "median": 55,
+   "scores": [
+    56,
+    55,
+    53
+   ],
+   "criteria": {
+    "designQuality": 17,
+    "originality": 14,
+    "interaction": 6,
+    "craft": 10,
+    "honestyFunction": 8
+   },
+   "tells": [
+    "Cream box. — Houses/Land are flat navy/cream rectangles, not a catalog toggle or combobox; the recorded-boundary drawing sits in a cream void with +/− zoom chrome instead of the Atlas object; the new-listing row is a Spark-size thumb on a cream card, not beui:infinite-masonry."
+   ],
+   "defects": [
+    {
+     "section": "#atlas",
+     "severity": "taste",
+     "finding": "The recorded-boundary drawing is the fold's one original object and it reads as a timid plat in a cream void with +/− zoom chrome, not Atlas filling the column with live marks a visitor can scrub.",
+     "primitive": "components/site/v3/V3Atlas.client.tsx",
+     "replaceWith": "house-atlas"
+    },
+    {
+     "section": "New listings · Tetherow figure",
+     "severity": "taste",
+     "finding": "The claim \"1 house came on the market in Tetherow in the last 30 days\" is static display type. No digit-swap, no open-state shot, so it is not the beui-number demo.",
+     "primitive": "components/site/v3/V3AlertsStrip.client.tsx",
+     "replaceWith": "beui-number"
+    },
+    {
+     "section": "New listings listing card",
+     "severity": "taste",
+     "finding": "The one new house is a Spark-size ledger thumb beside $2.5M / address / beds — a portal search row, not a masonry field of houses.",
+     "primitive": "components/site/v3/V3AlertsStrip.client.tsx",
+     "replaceWith": "beui:infinite-masonry"
+    },
+    {
+     "section": "first viewport MOS",
+     "severity": "taste",
+     "finding": "Layout lock requires months of supply as two named bars beside the drawing. The fold shows a listing card and email ask instead; no MOS bars are visible at 1440 or 375.",
+     "primitive": "app/communities/[slug]/page.tsx",
+     "replaceWith": "house-mos"
+    },
+    {
+     "section": "New listings · Tetherow alerts",
+     "severity": "defect",
+     "finding": "Desktop puts the email field in the fold; at 375 the inputs and \"Email me each one\" sit below the first viewport, so the alert control is not the first-viewport house-alerts object on mobile.",
+     "primitive": "components/site/v3/V3AlertsStrip.client.tsx",
+     "replaceWith": "house-alerts"
+    },
+    {
+     "section": "Houses / Land tabs",
+     "severity": "taste",
+     "finding": "Houses and Land are filled navy and outline cream rectangles. That is a house button, not the beui combobox interaction.",
+     "primitive": "components/site/v3/V3AlertsStrip.client.tsx",
+     "replaceWith": "beui:combobox"
+    },
+    {
+     "section": "hero subtitle",
+     "severity": "defect",
+     "finding": "Visible copy restates the H1 as \"Bend real estate · Tetherow homes for sale\" with no new crawlable door in the shot.",
+     "primitive": "components/place/PlaceAreaHero.tsx",
+     "replaceWith": null
+    },
+    {
+     "section": "hero belonging caption",
+     "severity": "defect",
+     "finding": "The sourced HOA sentence ($2,052 a year, 3 membership tiers, 700 acres) is in the desktop hero and missing from the 375 first viewport.",
+     "primitive": "components/place/PlaceAreaHero.tsx",
+     "replaceWith": null
+    }
+   ],
+   "dullest": "The New listings column: a static \"1 house came on the market\" sentence, one Spark thumb, Houses/Land cream tabs, and an email form. It is a newsletter signup sitting in the second position of a resort page.",
+   "beats": "Tetherow official (tetherow.com) still wins amenity photography and the golf story. This fold wins on live MLS marks on the recorded boundary (28 for sale, 3 pending) plus a dated new-listing fact with price, address, beds, baths, and sqft.",
+   "verdict": "This is an on-brand place fold with a golf photo, a plat drawing, and sourced HOA and inventory figures — not a wall of text — and it is still a cream box: demoMatch is false because none of the named demos (beui-number, Atlas, MOS bars, masonry, combobox) is the object on screen. The tells are the cream tabs, the timid plat with zoom chrome, and the Spark thumb over an email ask. Until those controls match the catalog jobs, a score in the 50s is the honest mark and the node stays in_progress.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "community/desktop.png",
+    "mobile375": "community/mobile375.png"
+   },
+   "shotsHash": "sha256:8305338f5cea79caa51c287094458c6bb27ed77371e1ef2519ce00e81b1b3f41",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "listing-detail",
+   "url": "/listing/220222277",
+   "route": "app/listing/[listingKey]/page.tsx",
+   "median": 55,
+   "scores": [
+    55,
+    55,
+    54
+   ],
+   "criteria": {
+    "designQuality": 16,
+    "originality": 13,
+    "interaction": 8,
+    "craft": 11,
+    "honestyFunction": 7
+   },
+   "tells": [
+    "Cream box. — desktop media is a still plus a thumbnail strip with no carousel prev/next or card rail; mobile Tour / Call / Text are three leftover house rectangles, not shadcn-button-group or beui-action-swap.",
+    "KPI grids. — ACTIVE, 107 DAYS ON MARKET, and $693 /SQFT sit as boxed chips with no plain sentence for what 107 days or $693/sqft means for a buyer."
+   ],
+   "defects": [
+    {
+     "section": "listing-hero filmstrip",
+     "severity": "taste",
+     "finding": "Desktop first viewport is a wide still and a 1/35 thumbnail strip with no prev/next, no card body, and no title-under-photo. That is the named photo-strip cream box, not the shadcn carousel object. No *-open shot of the control exists to prove otherwise.",
+     "primitive": "components/site/listing-detail/ListingHero.tsx",
+     "replaceWith": "shadcn-carousel"
+    },
+    {
+     "section": "media tabs",
+     "severity": "taste",
+     "finding": "Photos / 3D / Floor / Street view / Map is a navy pill-and-label row; mobile collapses to 35 photos and More. A sliding beui-tabs indicator is not visible, and no tab-open shot was captured.",
+     "primitive": "components/site/listing-detail/ListingHero.tsx",
+     "replaceWith": "beui-tabs"
+    },
+    {
+     "section": "listing-ask",
+     "severity": "taste",
+     "finding": "Desktop fold has no Tour / Call / Text control — only a Talk to a broker card. Mobile shows three separate leftover buttons (filled TOUR, outline CALL, outline TEXT), not one grouped control and not an action-swap.",
+     "primitive": "components/site/listing-detail/ListingMobileContactBar.client.tsx",
+     "replaceWith": "shadcn-button-group"
+    },
+    {
+     "section": "listing-specs",
+     "severity": "taste",
+     "finding": "The fold shows 3 bd · 3 ba · 2,008 sqft and a $693/SQFT chip. Type, lot, year, and HOA — the facts the lock says a buyer came for — are not in either first viewport.",
+     "primitive": "components/site/listing-detail/PropertySpecs.tsx",
+     "replaceWith": "listing-specs"
+    },
+    {
+     "section": "price-cut line",
+     "severity": "taste",
+     "finding": "A real $50,000 / -3.4% cut on Sep 1, 2026 is one muted strikethrough line with no visual encoding and no scrub or hover affordance — the class reference's named dull display.",
+     "primitive": "components/site/listing-detail/PriceCtaStrip.tsx",
+     "replaceWith": "emphasis line with a scrubber"
+    },
+    {
+     "section": "price as H1",
+     "severity": "defect",
+     "finding": "The visual H1 is $1,399,900. The street (1671 NW Saginaw Avenue) sits in body weight under the beds line; the lock is Street as H1.",
+     "primitive": "components/site/listing-detail/PriceCtaStrip.tsx",
+     "replaceWith": null
+    },
+    {
+     "section": "breadcrumb at 375",
+     "severity": "defect",
+     "finding": "At 375 the trail wraps so / 1671 NW Saginaw Avenue sits orphaned on a second line under Bend / River West / West Hills.",
+     "primitive": "components/site/v3/V3Breadcrumb.tsx",
+     "replaceWith": null
+    }
+   ],
+   "dullest": "The price/facts block: a $50,000 cut is one muted line, beds/baths/sqft is a portal template row, and 107 DOM / $693/sqft are unlabeled chips. A visitor would not screenshot this.",
+   "beats": "Zillow Showcase — this fold puts a live principal broker's face, license, phone, and email in the desktop viewport without a lead-form wall. The gallery, specs, and ask control do not beat Showcase.",
+   "verdict": "demoMatch is false: the live controls are a thumbnail strip, house tab pills, and three leftover Tour/Call/Text rectangles, not shadcn-carousel, beui-tabs, or shadcn-button-group. The photograph is the only stop-scrolling object; under it this is an on-brand MLS fold with cream-box tells and a KPI chip row. Street is not the H1, type/lot/year/HOA are missing from the fold, and the $50k cut is still a static figure line. Leave the node in_progress.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "listing-detail/desktop.png",
+    "mobile375": "listing-detail/mobile375.png"
+   },
+   "shotsHash": "sha256:d135b60b1c1737cda436ea41a2f38f838c31cb726129e1d6a8f5483dc3f625c4",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "neighborhood",
+   "url": "/cities/bend/awbrey-butte",
+   "route": "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
+   "median": 55,
+   "scores": [
+    55,
+    57,
+    54
+   ],
+   "criteria": {
+    "designQuality": 17,
+    "originality": 14,
+    "interaction": 7,
+    "craft": 9,
+    "honestyFunction": 8
+   },
+   "tells": [
+    "\"Cream box.\" — Houses / Land are flat navy and cream rectangles; Email me each one is a house navy rect; the new-listings row is a photo strip of Spark thumbs, not a catalog rail, masonry, or number-morph.",
+    "\"KPI grids.\" — on the 375 shot the MOS overlay is two bars and counts (46 / 10) with the \"About 4.5 months of detached supply\" sentence gone, so the figure is numbers without the verdict the desktop card still prints."
+   ],
+   "defects": [
+    {
+     "section": "#alerts new-listings strip",
+     "severity": "taste",
+     "finding": "The 14-house claim is illustrated by three ~postage-stamp listing thumbs; the third desktop card truncates to \"3209 Fair Heights D\" and \"5 ba-\", and at 375 the second card is clipped. That is a Spark photo strip, not the catalog inventory object.",
+     "primitive": "components/site/v3/V3AlertsStrip.client.tsx",
+     "replaceWith": "beui:infinite-masonry"
+    },
+    {
+     "section": "first viewport / #atlas",
+     "severity": "taste",
+     "finding": "The fold is a landscape photo plus MOS plus an email form. No Atlas, no encoded map, no drawing a visitor can pan. Layout lock is a drawing and a figure beside the alerts sentence, not a portal search hero and not a photo that replaced the map.",
+     "primitive": "components/site/v3/V3Atlas.client.tsx",
+     "replaceWith": "house-atlas"
+    },
+    {
+     "section": "#place-mos (mobile 375)",
+     "severity": "defect",
+     "finding": "At 375 the cream MOS card covers the hillside and drops the months-of-supply sentence, so the page opens as a bar card on a sliver of photo instead of a drawing with a figure beside alerts.",
+     "primitive": "components/site/v3/V3MosBars.tsx",
+     "replaceWith": null
+    },
+    {
+     "section": "14 houses headline",
+     "severity": "taste",
+     "finding": "\"14\" and the MOS bar values read as typeset type in these rest shots. No digit-swap, no open-state shot, no beui number demo. A static integer with a catalog name is not the live count.",
+     "primitive": "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
+     "replaceWith": "beui-number"
+    },
+    {
+     "section": "#place-mos",
+     "severity": "taste",
+     "finding": "Supply is two named bars at rest and a \"how we calculate this\" disclosure. No paged insight, no scrubber, no live chart over the 46 vs 10 drawing.",
+     "primitive": "components/site/v3/V3MosBars.tsx",
+     "replaceWith": "beautifului-insight"
+    }
+   ],
+   "dullest": "The new-listings band: a correct sentence, a Houses/Land cream-box toggle, three tiny thumbs, and a newsletter field. That is a brokerage signup poster, not a market you can work.",
+   "beats": "Zillow's Awbrey Butte neighborhood page — this fold wins on months of supply as two named bars (46 detached for sale vs 10 a month of sales) with an Oregon Data Share date; it loses on listing-photo scale and on a map you can use before scrolling.",
+   "verdict": "Awbrey Butte's first screen is an on-brand hillside, a sourced MOS card, and a newsletter. demoMatch is false: no catalog object is on screen (no digit-swap, no insight scrubber, no masonry, no Atlas), and the visible controls are cream-box pills, a navy rect, and a Spark photo strip. House MOS and in-fold alerts are the right jobs; they are not the five-repo bar. Until the opened control matches a named demo and Atlas is in the drawing, this is not done.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "neighborhood/desktop.png",
+    "mobile375": "neighborhood/mobile375.png"
+   },
+   "shotsHash": "sha256:56faa1ae263dacbea9ddb20bd4cd34c246c4b2458153f1d43aefafb29b26804d",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "place-type",
+   "url": "/cities/bend/types/single-family",
+   "route": "app/cities/[slug]/types/[type]/page.tsx",
+   "median": 55,
+   "scores": [
+    55,
+    55,
+    56
+   ],
+   "criteria": {
+    "designQuality": 16,
+    "originality": 13,
+    "interaction": 10,
+    "craft": 10,
+    "honestyFunction": 6
+   },
+   "tells": [
+    "\"The stacked-section page.\" — three consecutive eyebrow→content blocks in the first viewport: LISTINGS INSIDE THE BEND CITY LIMITS, then ON THE MARKET, then ALL PHOTOGRAPHED LISTINGS.",
+    "\"Scrolling lists as the design.\" — ALL PHOTOGRAPHED LISTINGS opens under the rail with NEWEST / PRICE LOW / PRICE HIGH / MOST BEDS, the start of a thumbnail+address+price list of the same inventory."
+   ],
+   "defects": [
+    {
+     "section": "LISTINGS INSIDE THE BEND CITY LIMITS",
+     "severity": "taste",
+     "finding": "Atlas sits as a timid inset: Bend is a clustered polygon in a wide unused cream field, with +/- chrome at the edge. The fold's job is the map under one claim occupying the first viewport, not a dashboard widget parked above a listing rail.",
+     "primitive": "app/cities/[slug]/types/[type]/_v3/PlaceTypeAtlasSection.tsx",
+     "replaceWith": "house-atlas"
+    },
+    {
+     "section": "H1 claim vs Atlas key",
+     "severity": "defect",
+     "finding": "The claim reads 772 homes with a Bend address in the $397,000–$2,100,000 nine-in-ten band; the map key reads 499 for sale. Layout lock requires count and band from the same listing-tile read as the map marks. Two inventories in one fold is a trust nick even with the city-limits caption.",
+     "primitive": "app/cities/[slug]/types/[type]/page.tsx",
+     "replaceWith": "house-quiet"
+    },
+    {
+     "section": "ON THE MARKET",
+     "severity": "defect",
+     "finding": "At 375px the second slide is sheared through the price ($2,100,0), address (62773 San), and specs (3 bd · 3 ba ·). The rail shows shadcn prev/next and card bodies, but a clipped peek is not a composed next card.",
+     "primitive": "app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx",
+     "replaceWith": "shadcn-carousel"
+    },
+    {
+     "section": "ALL PHOTOGRAPHED LISTINGS",
+     "severity": "taste",
+     "finding": "The first viewport already has a photographed listing carousel, then a second inventory with NEWEST / PRICE LOW / PRICE HIGH / MOST BEDS. Two listing systems stacked is portal furniture; one shadcn carousel is the job.",
+     "primitive": "app/cities/[slug]/types/[type]/_v3/PlaceTypeField.client.tsx",
+     "replaceWith": "shadcn-carousel"
+    },
+    {
+     "section": "mobile chrome",
+     "severity": "defect",
+     "finding": "Desktop header shows 541.703.3095; the 375 shot shows only Sign in and a hamburger. The page job of reaching a broker is not one visible path on mobile. Title and JSON-LD are not in these first-viewport shots, so any SEO increment is unproven here.",
+     "primitive": "app/cities/[slug]/types/[type]/page.tsx",
+     "replaceWith": null
+    }
+   ],
+   "dullest": "ALL PHOTOGRAPHED LISTINGS repeating the same photographed inventory the carousel just showed, as sort chips plus a hairline row list — the scrolling-list tell sitting under a control that already did the job.",
+   "beats": "Zillow Bend single-family search (zillow.com/bend-or/): this page wins a sourced nine-in-ten asking band and a named MLS/Oregon Data Share read-time in one sentence; it loses map scale, listing density, and filter power, so it does not beat that page.",
+   "verdict": "This is a 55: on-brand navy/cream/Geist/Amboqia with the layout lock's skeleton — one H1, one sourced count-and-band sentence, Atlas, then a photographed rail — and demoMatch is true because the ON THE MARKET control is the shadcn carousel object (prev/next, photo, price+address+specs under the plate), not a cream-box photo strip. It is still the stacked-section page: Atlas as a widget, then a portal rail, then a second sortable list, with 772 disagreeing with 499 and the 375 rail clipping the next house. competitiveBriefPass is false — this route has no numbered brief whose beats are all visible — and a sourced sentence is not enough to call the class done.",
+   "demoMatch": true,
+   "demoMatchVotes": [
+    true,
+    true,
+    true
+   ],
+   "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "place-type/desktop.png",
+    "mobile375": "place-type/mobile375.png"
+   },
+   "shotsHash": "sha256:e97ab29763c919021ee59c77efd8ae177cb9dac9565491d27d67b2b8b0c7f784",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "homepage-v6",
+   "url": "/",
+   "route": "app/page.tsx",
+   "median": 55,
+   "scores": [
+    55,
+    57,
+    47
+   ],
+   "criteria": {
+    "designQuality": 17,
+    "originality": 12,
+    "interaction": 6,
+    "craft": 12,
+    "honestyFunction": 8
+   },
+   "tells": [
+    "\"Cream box.\" — #hero Find a home is a labeled static field (magnifying glass, placeholder, F chip) on the Old Mill still, not the beui morphing-search object; no *-open shot shows it morph into results.",
+    "\"Cream box.\" — Buy / Sell is a white rounded pill pair with Buy filled navy, not the beui tabs sliding-indicator object, and the Sell address field is not in these frames."
+   ],
+   "defects": [
+    {
+     "section": "#hero Find a home field",
+     "severity": "taste",
+     "finding": "The judged frames show a labeled cream/white input that never morphs into results. Importing a morphing-search name onto a static field is not the beui demo; a visitor cannot recognize the same interaction.",
+     "primitive": "components/site/v3/V3MorphSearch.tsx",
+     "replaceWith": "beui-morphing-search"
+    },
+    {
+     "section": "first viewport / live inventory",
+     "severity": "taste",
+     "finding": "The opening object is a flyover still plus counts. No photographed house, no carousel chrome, no Card with price, address, and beds/baths/sqft. The layout lock (live inventory in the first viewport) is not on screen.",
+     "primitive": "app/_v3/HomeHomesRails.tsx",
+     "replaceWith": "house-home-rails"
+    },
+    {
+     "section": "#hero Buy / Sell control",
+     "severity": "taste",
+     "finding": "Buy/Sell is a white pill cluster. No sliding indicator is visible, and the real Sell address field is not in the judged viewports, so the tab demo and the no-JS Sell ask are both unproven.",
+     "primitive": "app/_v3/HomeHeroSearch.client.tsx",
+     "replaceWith": "beui-tabs"
+    },
+    {
+     "section": "mobile 375 search chip",
+     "severity": "defect",
+     "finding": "The 375 viewport still paints an F keyboard shortcut on the search field, a desktop hint that reads as leftover chrome on a phone.",
+     "primitive": "components/site/v3/V3MorphSearch.tsx",
+     "replaceWith": null
+    }
+   ],
+   "dullest": "The hero search: a labeled white field on a full-bleed photo every competing brokerage already ships. Handsome, on-brand, and skippable — nothing a visitor would screenshot except the Old Mill itself.",
+   "beats": "Redfin.com and Zillow homepages: this fold wins on a source-stamped local MLS read (3,285 you can tour / 899 spoken for / 488 closed, as of Sep 12, 2026, plus the 1-in-5 under-contract claim). It loses the metric that stops a shopper — photographed listings in the first viewport.",
+   "verdict": "This is a branded portal door, not a catalog control and not an inventory page: Old Mill, Amboqia, navy pulse, then a cream claim whose beeswarm is cropped. demoMatch is false — the Find a home field is a cream box, Buy/Sell is a pill pair, and no open state shows a morph or a sliding indicator. The tells and defects are the same job: put beui-morphing-search and house-home-rails (Card-faced rails) in the first viewport, or the node stays in_progress. Correct, sourced, and still the kind of fold a shopper scrolls past.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "homepage-v6/desktop.png",
+    "mobile375": "homepage-v6/mobile375.png"
+   },
+   "shotsHash": "sha256:fb655956241ce8d89d59e333c55e4a04c7f984a41a21cede10e88a9a60b0bf60",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "subdivision",
+   "url": "/subdivisions/ridge-at-eagle-crest",
+   "route": "app/subdivisions/[slug]/page.tsx",
+   "median": 55,
+   "scores": [
+    56,
+    55,
+    53
+   ],
+   "criteria": {
+    "designQuality": 17,
+    "originality": 14,
+    "interaction": 7,
+    "craft": 10,
+    "honestyFunction": 7
+   },
+   "tells": [
+    "\"Cream box.\" — Email me each one, See every home for sale, and Talk to a broker are flat navy and outline rectangles, not a catalog Button object; at 375 the atlas is a cream map crop that hid the price scrubber, House filter, and zoom."
+   ],
+   "defects": [
+    {
+     "section": "#atlas at 375",
+     "severity": "taste",
+     "finding": "The 375 fold shows a cropped mute map labeled Ridge at Eagle Crest with no price scrubber, no House checkbox, and no zoom, so a phone visitor cannot do the desktop Atlas job.",
+     "primitive": "components/site/v3/V3Atlas.client.tsx",
+     "replaceWith": "house-atlas"
+    },
+    {
+     "section": "14-homes claim and 4-houses numeral",
+     "severity": "taste",
+     "finding": "The 14 in the atlas sentence and the 4 in the new-listings headline are static display type, not digit-swap slots a visitor would recognize from beui-number.",
+     "primitive": "app/subdivisions/[slug]/page.tsx",
+     "replaceWith": "beui-number"
+    },
+    {
+     "section": "new listings listing card",
+     "severity": "taste",
+     "finding": "The only new house is a Spark-size thumb beside price, address, and beds/baths/sqft, a portal stamp, not masonry of the four houses the headline claims.",
+     "primitive": "app/subdivisions/[slug]/page.tsx",
+     "replaceWith": "beui:infinite-masonry"
+    },
+    {
+     "section": "alerts / 375 first viewport",
+     "severity": "defect",
+     "finding": "The email field reaches the 375 first viewport but Email me each one and both conversion asks are clipped below the fold, so the phone job is an unfinished form.",
+     "primitive": "app/subdivisions/[slug]/page.tsx",
+     "replaceWith": "house-alerts"
+    },
+    {
+     "section": "atlas claim sentence",
+     "severity": "taste",
+     "finding": "The 14-homes sentence sits as prose over the map with no paged insight card or live chart, so the only data claim in the fold is a caption, not beautifului-insight.",
+     "primitive": "app/subdivisions/[slug]/page.tsx",
+     "replaceWith": "beautifului-insight"
+    },
+    {
+     "section": "SEO doors (homes for sale / Redmond / Map / Eagle Crest overview)",
+     "severity": "taste",
+     "finding": "Four crawlable doors render as a wrapped underlined link dump in both folds instead of a composed door row, so SEO is held as a list rather than risen as a control.",
+     "primitive": "app/subdivisions/[slug]/page.tsx",
+     "replaceWith": null
+    }
+   ],
+   "dullest": "The four underlined SEO doors sitting above a postage-stamp MLS thumb: a sitemap dump and a Spark card in the same viewport as the only object that actually had a job, the atlas.",
+   "beats": "Zillow subdivision / building pages — live plat-scoped Atlas with a price scrubber and a 30-day alert that names a priced listing (beds/baths/sqft) in the desktop fold; eagle-crest.com still wins photography and story.",
+   "verdict": "This is an on-brand place fold with a real desktop Atlas (scrubber, House filter, zoom) beside a 30-day listing and an email field, not a breathtaking subdivision page and not a catalog object. demoMatch is false: beui-number is static type, the new house is a Spark thumb not masonry, the asks are navy rectangles, and 375 hid the atlas interaction inside a cream map crop. The named Cream box tell and the 375 clipped alerts keep this in_progress, not Tip Ready.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "subdivision/desktop.png",
+    "mobile375": "subdivision/mobile375.png"
+   },
+   "shotsHash": "sha256:65ba3577637144aa6e97218c078281ccf90497de8d2e2e227f3034d8869893cc",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "team",
+   "url": "/team",
+   "route": "app/team/page.tsx",
+   "median": 55,
+   "scores": [
+    55,
+    54,
+    56
+   ],
+   "criteria": {
+    "designQuality": 17,
+    "originality": 13,
+    "interaction": 6,
+    "craft": 11,
+    "honestyFunction": 8
+   },
+   "tells": [
+    "\"Cream box.\" — desktop atlas is an empty cream geography with Terrebonne/Redmond labels and a 25-closings claim; Call is a flat navy rectangle, not the shadcn ButtonGroup demo; \"Where those closings were\" is a labeled cream native select, not a catalog control.",
+    "\"KPI grids.\" — Rebecca's \"3 in Bend\" is a number and a place with no sentence; Matt's \"7 closings in the last 12 months\" is a digit plus a label with no sparkline, scrub, or encoded places."
+   ],
+   "defects": [
+    {
+     "section": "WHERE THE BROKERS HAVE CLOSED / atlas",
+     "severity": "taste",
+     "finding": "Half the 1440 fold claims 25 closings on one field, but the map is empty cream with two city labels and marks too faint to read as a record. No hover affordance is visible. house-atlas is already on the page and lost.",
+     "primitive": "components/site/v3/V3Atlas.client.tsx",
+     "replaceWith": "map with data-encoded cells"
+    },
+    {
+     "section": "Matt / Where those closings were",
+     "severity": "taste",
+     "finding": "The only place-disclosure on the face is a native select labeled \"Where those closings were.\" It is not shadcn-carousel closing cards, not a drawing of the places, and no *-open shot shows a catalog interaction.",
+     "primitive": "app/about/_v3/AboutFaces.tsx",
+     "replaceWith": "shadcn-carousel"
+    },
+    {
+     "section": "Matt record figure",
+     "severity": "taste",
+     "finding": "\"7 closings in the last 12 months\" is a static display digit plus a label. The 12-month claim has no sparkline, scrub, or encoded places, so the figure does not move as the data.",
+     "primitive": "app/about/_v3/AboutFaces.tsx",
+     "replaceWith": "stat tile with sparkline"
+    },
+    {
+     "section": "Rebecca record figure",
+     "severity": "taste",
+     "finding": "\"3 in Bend\" does not match Matt's 12-month closing sentence, so the companion figure reads as a KPI chip and the two faces do not publish the same kind of record.",
+     "primitive": "app/about/_v3/AboutFaces.tsx",
+     "replaceWith": "stat tile with sparkline"
+    },
+    {
+     "section": "Matt reach row",
+     "severity": "taste",
+     "finding": "Call is a navy filled rectangle with a phone number, not the shadcn ButtonGroup object (Call|Text|Email|Schedule as one control). Text and Email sit as text links; Schedule drops onto its own row, so the live control is not the named demo.",
+     "primitive": "app/about/_v3/AboutFaces.tsx",
+     "replaceWith": "shadcn-button-group"
+    },
+    {
+     "section": "Matt Schedule",
+     "severity": "defect",
+     "finding": "On desktop, Schedule sits on its own line under Matt's Call button — an orphaned fourth action, beating competitive brief P2 (Schedule must stay on the reach row with Call/Text/Email).",
+     "primitive": "app/about/_v3/AboutFaces.tsx",
+     "replaceWith": null
+    },
+    {
+     "section": "375 first viewport",
+     "severity": "taste",
+     "finding": "At 375 the atlas is gone. The visitor gets three sentences and one broker card, so the page differentiator (the closing field) is not in the first viewport.",
+     "primitive": "app/team/page.tsx",
+     "replaceWith": "shadcn-carousel"
+    }
+   ],
+   "dullest": "The desktop atlas: half the fold is unused cream with Terrebonne and Redmond printed on it and a 25-closings claim you cannot see. That is the one thing a directory does not have, and it is blank.",
+   "beats": "Compass agent roster (compass.com) — this page wins on Oregon license numbers and sourced trailing-window closing counts on the faces; it loses on readable geography, a specialty line, and a single reach control a visitor would recognize.",
+   "verdict": "An on-brand editorial roster, not a firm story and not a catalog demo: Amboqia H1, principal at conversation scale, licenses as credentials, Call as the one navy chip. demoMatch is false — Avatar circles are not AvatarGroup, navy Call rects are not ButtonGroup, the place control is a native select, and the atlas is a cream box. Competitive brief fails P2 because Schedule is orphaned under Matt, and the KPI-grid / cream-box tells sit on the figures and the map. Until the reach row is the named ButtonGroup, closings are a readable rail or data-encoded map, and 375 carries that second section, leave the node in_progress.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "team/desktop.png",
+    "mobile375": "team/mobile375.png"
+   },
+   "shotsHash": "sha256:e9799f1951261680c662e55598341aee4be26df2454b5b4881b94e52c0d7806a",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "market-report-detail",
+   "url": "/housing-market/bend",
+   "route": "app/housing-market/[...slug]/page.tsx",
+   "median": 56,
    "scores": [
     58,
+    53,
+    56
+   ],
+   "criteria": {
+    "designQuality": 17,
+    "originality": 12,
+    "interaction": 8,
+    "craft": 12,
+    "honestyFunction": 7
+   },
+   "tells": [
+    "Cream box. — the four-stat opener ($949,000 / 633 / 291 / 25) is static navy numerals on cream with caption sentences, not the BeUI Number digit-swap and not the Instrument the layout lock says this class opens on."
+   ],
+   "defects": [
+    {
+     "section": "fold opener (median list / homes for sale / under contract / days to offer)",
+     "severity": "taste",
+     "finding": "The first viewport on both breakpoints opens on four identical number-plus-caption blocks. Layout lock is Instrument first: verdict with a trace, then the two MOS bars and the long-view chart. The H1 “a seller’s market” sits under the figure row on desktop and at the bottom of the 375 frame, so the market answer is not the first object a visitor gets.",
+     "primitive": "components/site/v3/V3Instrument.tsx",
+     "replaceWith": "house-instrument"
+    },
+    {
+     "section": "four live counts",
+     "severity": "taste",
+     "finding": "The four fold numerals do not swap, tick, or otherwise match the BeUI Number demo. They are still serif figures on cream. No *-open shot shows the catalog interaction, so a catalog name on disk does not make this the demo.",
+     "primitive": "app/housing-market/[...slug]/_v3/city-view.tsx",
+     "replaceWith": "beui-number"
+    },
+    {
+     "section": "mobile first viewport",
+     "severity": "taste",
+     "finding": "At 375 the first screen is only the four-stat stack plus the verdict headline. The two named MOS bars and the median-sale chart (the only hover tooltip in the desktop shot) are entirely below the fold, so a phone visitor never sees the layout-lock objects or the one real interaction before scrolling.",
+     "primitive": "app/housing-market/[...slug]/_v3/city-view.tsx",
+     "replaceWith": "house-chart"
+    },
+    {
+     "section": "on-page ask",
+     "severity": "defect",
+     "finding": "Neither first viewport shows the single market ask. Desktop has Sign in and 541.703.3095 in the chrome; the GeoInquirySheet door is not in the fold, so the page job is not one path from what is visible.",
+     "primitive": "app/housing-market/[...slug]/_v3/GeoInquirySheet.client.tsx",
+     "replaceWith": null
+    }
+   ],
+   "dullest": "The four-stat opener, especially at 375: four large serif numbers, four labels, four captions, same form four times, no motion and no control. It eats the whole phone fold and hides the MOS pair and the year-overlay tooltip that are the only designed objects on the page.",
+   "beats": "Redfin Bend housing-market: this page wins on months of supply as two named bars (633 homes for sale vs 175 a month of sales) with a dated Oregon Data Share MLS source and a three-year median overlay tooltip (Aug 2024/2025/2026). It does not win the first viewport — Redfin still leads on chart-first fold, and at 375 this page shows none of that chart.",
+   "verdict": "This is a correct, on-brand Bend market fold with a real MOS pair and a hovered three-year series, not a breathtaking Instrument. demoMatch is false: no catalog control is visible as its demo (no BeUI Number digit-swap, no BeautifulUI insight scrubber), and the live opener is a cream-box figure row. The tells and defects are the same object — four static counts stole the fold from house-instrument, house-mos, and house-chart, and the one ask is not in either first viewport. Leave the node in_progress.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "market-report-detail/desktop.png",
+    "mobile375": "market-report-detail/mobile375.png"
+   },
+   "shotsHash": "sha256:0681a3bc201d571ad8d8281edd190a15c8ef2687592f16ca5a7a979c23bcdc96",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "city",
+   "url": "/cities/bend",
+   "route": "app/cities/[slug]/page.tsx",
+   "median": 57,
+   "scores": [
+    55,
     57,
-    57
+    58
    ],
    "criteria": {
     "designQuality": 18,
@@ -866,570 +1740,324 @@
     "honestyFunction": 8
    },
    "tells": [
-    "\"Stacked-section page\" — the right column runs the MOS card and the New Listings card back to back, both built as eyebrow → bold headline → rows/bars → source → 'how we calculate this' dropdown, with zero variation in form, width, or density between them."
+    "\"The stacked-section page.\" — desktop right column and the 375 stack under the map run MOS, NEW LISTINGS · BEND, and the email ask as three consecutive eyebrow → heading → rows → source-or-field slabs of the same cream card width.",
+    "\"Cream box.\" — 633, 175, and 121 sit as finished numerals in cream panels, not beui-number digit swap; Houses/Condos/Land and Email me each one are flat navy rectangles, not a catalog Button or combobox demo; no *-open shot shows beautifului-insight, combobox, or masonry."
    ],
    "defects": [
     {
-     "section": "Right-column stat cards (MOS + New Listings)",
+     "section": "NEW LISTINGS · BEND",
      "severity": "taste",
-     "finding": "Two consecutive sidebar cards share the identical eyebrow-headline-bars-source shape with no variation in form; the bars are flat static fills with no hover/scrub reveal, so the page's most data-dense real estate reads as a template rather than a designed instrument.",
-     "primitive": "app/zip/[zip]/page.tsx",
+     "finding": "The class reference's named dull object: 121 houses came on the market in Bend in the last 30 days is a sourced sentence, Houses/Condos/Land chips, and one $549K Ladera Road row — nothing to scrub, page, or hover for the other 120 homes.",
+     "primitive": "components/site/v3/V3ListingRow.tsx",
+     "replaceWith": "beui:infinite-masonry"
+    },
+    {
+     "section": "HOMES FOR SALE VS A MONTH OF SALES / 121 figure",
+     "severity": "taste",
+     "finding": "633, 175, and 121 read as finished type with no visible digit-swap, scrubber, or paged-insight control; a still cannot show beui-number or beautifului-insight, and no affordance promises either.",
+     "primitive": "components/site/v3/V3MosBars.tsx",
+     "replaceWith": "beui-number"
+    },
+    {
+     "section": "Right column / first viewport stack",
+     "severity": "taste",
+     "finding": "MOS bars, the new-listings card, and the email slab share one cream card chrome with no change in width, density, or media — a stacked place opening, not paged insights with a scrubber over a live chart.",
+     "primitive": "app/cities/[slug]/page.tsx",
      "replaceWith": "beautifului-insight"
     },
     {
-     "section": "Mobile map zoom controls",
-     "severity": "defect",
-     "finding": "At 375px the +/- zoom buttons render in a separate white box that floats outside and to the right of the map's border, disconnected from the control it operates — reads as a layout bug, not an intentional affordance.",
-     "primitive": "app/zip/[zip]/page.tsx",
-     "replaceWith": null
-    },
-    {
-     "section": "Headline stat figures (203 / 69 / 34 / $760K)",
+     "section": "BEND RIGHT NOW / type filter",
      "severity": "taste",
-     "finding": "Every sourced number on the page is a static digit even though the page proudly cites live freshness ('as of Sep 12, 2026'); nothing signals the figure is live or just refreshed, so the honesty claim (freshness) isn't visually reinforced by any motion or state.",
-     "primitive": "app/zip/[zip]/page.tsx",
-     "replaceWith": "beui-number"
-    }
-   ],
-   "dullest": "The right-column stack — MOS bars, then the New Listings card — is two static panels with identical bones. Nothing there rewards a hover or a scrub; it would look the same lifted onto Zillow, Redfin, or any competitor's ZIP page.",
-   "beats": "Zillow's 97702 search page — this page's clipped-boundary dot-density Atlas map with house-type and price-scrubber filters shows real geographic precision Zillow's generic pin cluster doesn't attempt. But past the map, Zillow's list-and-map split view is more interactive than this page's static bars and single listing thumbnail, so the win doesn't extend down the page.",
-   "verdict": "This is a competent, on-brand data page — navy/cream held, sources cited per §0, the Atlas map is a genuine differentiator — but demoMatch is false: nothing on the page pulls from the catalog option list (no scrubbed insight, no live-swapping numbers, no combobox), it's built entirely from house forms. Past the map, the right column is the stacked-section tell verbatim: two identically-shaped static cards with a floating mobile zoom-control defect underneath. Correct and dull, not breathtaking.",
-   "builderModel": "unknown",
-   "shots": {
-    "desktop": "zip/desktop.png",
-    "mobile375": "zip/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "place-type",
-   "url": "/cities/bend/types/single-family",
-   "route": "app/cities/[slug]/types/[type]/page.tsx",
-   "median": 57,
-   "scores": [
-    57,
-    64,
-    52
-   ],
-   "criteria": {
-    "designQuality": 18,
-    "originality": 10,
-    "interaction": 10,
-    "craft": 11,
-    "honestyFunction": 8
-   },
-   "tells": [
-    "\"Scrolling lists as the design\" — the ALL PHOTOGRAPHED LISTINGS block below the carousel is a sortable list of thumbnail+address+price rows with no visual encoding beyond a tiny photo; on mobile it truncates to one row before the fold but the tab set (NEWEST/PRICE LOW/PRICE HIGH/MOST BEDS) signals it continues as a long list, which is a table wearing hairlines."
-   ],
-   "defects": [
-    {
-     "section": "ALL PHOTOGRAPHED LISTINGS list",
-     "severity": "taste",
-     "finding": "The sortable list rows repeat thumbnail+address+price with no data encoding (no price/sqft delta, no days-on-market, no bar or dot), which is the banned scrolling-list pattern sitting directly under a carousel that already shows the same 5 listings — redundant and undifferentiated.",
-     "primitive": "app/cities/[slug]/types/[type]/page.tsx",
-     "replaceWith": "table"
-    },
-    {
-     "section": "LISTINGS INSIDE THE BEND CITY LIMITS map",
-     "severity": "taste",
-     "finding": "Every dot on the Atlas map renders identical size and color regardless of price or recency — the map communicates only density, not the price band the headline sentence just promised, so the map and the copy above it don't reinforce each other.",
-     "primitive": "app/cities/[slug]/types/[type]/page.tsx",
-     "replaceWith": "map with data-encoded cells"
-    },
-    {
-     "section": "ON THE MARKET carousel cards",
-     "severity": "taste",
-     "finding": "Cards show photo, price, address, beds/baths/sqft — identical to a stock Zillow/Redfin card with no Ryan Realty-specific insight (no price/sqft, no days-on-market, no momentum badge) so a viewer can't tell this apart from a portal card even though the carousel mechanics themselves match the demo.",
-     "primitive": "app/cities/[slug]/types/[type]/page.tsx",
-     "replaceWith": null
-    }
-   ],
-   "dullest": "The ALL PHOTOGRAPHED LISTINGS list at the bottom — it repeats the same five listings already shown in the carousel above it, as a plain sortable row list with a thumbnail, which is exactly the 'wall of scrolling list' pattern Matt named as the standard to beat.",
-   "beats": "Zillow's Bend single-family search results page — this page names its source and pull time inline ('from the regional MLS through Oregon Data Share · read Sep 12, 2026, 4:44 PM'), which Zillow's equivalent page never states in the visible copy; that is the one concrete, verifiable win here.",
-   "verdict": "This is a functional, honestly-sourced place-type page with a working filter slider, a carousel that genuinely matches the shadcn demo interaction (visible arrows, visible card body, partial-cut cards on mobile), and a plain claim sentence instead of a KPI grid — demoMatch is true. But past the fold it collapses into the exact scrolling-list tell the rubric bans, the map dots carry no price encoding despite the page just promising a price band, and the listing cards are indistinguishable from a generic portal card. It is correct and on-brand but not breathtaking: a reader would not screenshot this to show someone.",
-   "builderModel": "unknown",
-   "shots": {
-    "desktop": "place-type/desktop.png",
-    "mobile375": "place-type/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "market-report-detail",
-   "url": "/housing-market/bend",
-   "route": "app/housing-market/[...slug]/page.tsx",
-   "median": 57,
-   "scores": [
-    59,
-    57,
-    55
-   ],
-   "criteria": {
-    "designQuality": 16,
-    "originality": 11,
-    "interaction": 9,
-    "craft": 13,
-    "honestyFunction": 8
-   },
-   "tells": [],
-   "defects": [
-    {
-     "section": "top stat row (median list price / homes for sale / under contract / days to offer)",
-     "severity": "taste",
-     "finding": "Four static big-serif numbers with a caption sentence each — the sentence saves it from the literal KPI-grid tell, but nothing moves, nothing responds to hover or scroll, and it is the first thing on the page on both breakpoints. On mobile it is the ONLY thing visible in the first viewport, so the page's single interactive element (the price-history chart tooltip) never gets a chance to be seen before scroll.",
-     "primitive": "app/housing-market/[...slug]/page.tsx",
-     "replaceWith": "beui-number"
-    },
-    {
-     "section": "Homes for sale vs a month of sales (two-bar mos panel)",
-     "severity": "taste",
-     "finding": "The two-bar months-of-supply comparison correctly avoids a KPI tile per the layout lock, but the bars themselves show no hover state, no value reveal on interaction, and no visual link to the adjacent chart's live tooltip behavior — it reads as a static illustration next to a genuinely interactive one.",
-     "primitive": "app/housing-market/[...slug]/page.tsx",
-     "replaceWith": null
-    },
-    {
-     "section": "mobile first viewport",
-     "severity": "defect",
-     "finding": "The headline ('Bend housing market: a seller's market') is clipped at the very bottom edge of the 812px viewport, and the price chart with its working hover tooltip — the page's only interaction — sits entirely below the fold. A mobile visitor sees four numbers and a half-cut headline before any scroll.",
-     "primitive": "app/housing-market/[...slug]/page.tsx",
-     "replaceWith": "beui-number"
-    }
-   ],
-   "dullest": "The top stat row: four large serif numbers over a one-line caption, repeated four times with identical form and no motion or interactive affordance — on mobile it's the entire first screen, so the page's one real piece of craft (the hoverable price-history chart with the Aug 2024/2025/2026 tooltip) is invisible until a visitor scrolls past it.",
-   "beats": "Redfin's Bend market-trends page — this page wins on sourced-figure transparency (an explicit 'SOURCE: Oregon Data Share MLS · as of Sep 12, 2026' line plus a 'how we calculate this' disclosure Redfin never shows), but it does not yet beat Redfin on data depth: no comparable-market filter, no multi-metric toggle, and only one interactive element on the whole visible page.",
-   "verdict": "This is a correct, honestly-sourced market page that follows the layout lock (two named mos bars, one hoverable long-view chart, one verdict with a trace) but stops short of breathtaking: demoMatch is false because no catalog control (beautifului-insight, beui-number) was actually installed — every number on the page is a static serif figure, not a live count or scrubbed insight. The stat row is dull by the rubric's own definition of dull — correct and on-brand, with no motion or interaction — and on mobile it eats the entire first viewport, burying the one section (the price chart tooltip) that actually rewards a hover. Fix the mobile fold order and animate the stat digits before calling this done.",
-   "builderModel": "unknown",
-   "shots": {
-    "desktop": "market-report-detail/desktop.png",
-    "mobile375": "market-report-detail/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "oregon-city",
-   "url": "/oregon/medford",
-   "route": "app/oregon/[city]/page.tsx",
-   "median": 59,
-   "scores": [
-    59,
-    51,
-    61
-   ],
-   "criteria": {
-    "designQuality": 22,
-    "originality": 15,
-    "interaction": 3,
-    "craft": 11,
-    "honestyFunction": 8
-   },
-   "tells": [
-    "The three closing stat tiles (725 / 342 / $467,000) read like a KPI grid softened only by a caption sentence — same type size, same weight, no visual mark distinguishing 'all listings' from 'single-family' from 'price,' and on mobile they fall entirely below the fold of the first viewport."
-   ],
-   "defects": [
-    {
-     "section": "honesty banner ('We don't work in Medford')",
-     "severity": "taste",
-     "finding": "The banner is a flat bordered rectangle with a left navy rule, a heading, a sentence, and a bordered button — it reads as a house callout box, not the shadcn Alert object (no icon, no rounded card, no visual distinction from a plain bordered div). The layout lock calls for adapting shadcn-alert into the house Quiet register, but what's on screen doesn't recognizably carry the demo's shape.",
-     "primitive": "app/oregon/[city]/page.tsx",
-     "replaceWith": "shadcn-alert"
-    },
-    {
-     "section": "newest-listings dot strip",
-     "severity": "taste",
-     "finding": "The dot-strip chart (address, bar, price) is the right form and beats a bare table, but the static shots show zero interactive affordance — no cursor, no hover state, no tap target styling, nothing signaling a visitor can scrub or tap a row for the listing photo/detail. As rendered it is a static illustration wearing a chart's clothes.",
-     "primitive": "app/oregon/[city]/page.tsx",
-     "replaceWith": null
-    },
-    {
-     "section": "stat tile row (725 / 342 / $467,000)",
-     "severity": "defect",
-     "finding": "On the 375px viewport the three closing stats are pushed entirely below the visible fold — a visitor on mobile sees the honesty banner, the headline, and the chart, but never the inventory counts or median price without scrolling, so the page's strongest honest numbers are invisible on first paint on the device most visitors use.",
-     "primitive": "app/oregon/[city]/page.tsx",
-     "replaceWith": null
-    }
-   ],
-   "dullest": "The stat-tile row at the bottom of desktop — three identical-weight number blocks with a caption line under each — is boilerplate MLS-stats-widget furniture. It avoids the literal KPI-grid tell only because a sentence sits under each number, but visually it's indistinguishable from any brokerage's stock 'market snapshot' component, and it doesn't even survive to the mobile fold.",
-   "beats": "Zillow's Medford, OR listings page — this page wins on honesty (it tells the visitor up front it's not the local market expert and offers a real handoff instead of pretending to be a Medford authority) and on showing the actual current asking-price spread as a single readable dot strip instead of burying it behind filters and a median-only banner. It does not win on interactivity, depth, or memorability — a portal's map and filter UI is more useful once a visitor is actually shopping Medford.",
-   "verdict": "This is a competent, honest out-of-market page: navy/cream identity holds, the dot-strip chart is a real step up from a bare table, and the copy doesn't overclaim expertise it doesn't have. But demoMatch is false — the honesty banner doesn't read as the shadcn Alert catalog object, just a bordered house callout — and nothing on the page rewards a hover, tap, or scrub, so interaction scores near zero. The mobile stat tiles falling below the fold and the flat, undifferentiated KPI-ish tile row keep this in 'correct and dull' territory rather than 'breathtaking.'",
-   "builderModel": "unknown",
-   "shots": {
-    "desktop": "oregon-city/desktop.png",
-    "mobile375": "oregon-city/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "city",
-   "url": "/cities/bend",
-   "route": "app/cities/[slug]/page.tsx",
-   "median": 61,
-   "scores": [
-    58,
-    63,
-    61
-   ],
-   "criteria": {
-    "designQuality": 20,
-    "originality": 14,
-    "interaction": 8,
-    "craft": 11,
-    "honestyFunction": 8
-   },
-   "tells": [
-    "\"The stacked-section page.\" — the right column runs BEND RIGHT NOW / HOMES FOR SALE VS A MONTH OF SALES / NEW LISTINGS as three consecutive eyebrow → heading → rows → SOURCE blocks with identical card width, hairline rule, and no variation in density or media between them."
-   ],
-   "defects": [
-    {
-     "section": "Right column stat/listing/email stack",
-     "severity": "taste",
-     "finding": "Three sections in a row (MOS bars, new-listings card, email capture) share the exact same eyebrow-caps-label + hairline-divider + SOURCE-footer shape with no change in width, density, or form — reads as one repeated card, not a designed sequence.",
+     "finding": "Houses/Condos/Land (and the House checkbox beside the price slider) are house navy rects and a labeled cream field, not the beui combobox object; no *-open shot records the demo interaction.",
      "primitive": "app/cities/[slug]/page.tsx",
-     "replaceWith": "beautifului:insight-cards"
+     "replaceWith": "beui:combobox"
     },
     {
-     "section": "Email alert signup (mobile)",
+     "section": "Email ask at 375",
      "severity": "defect",
-     "finding": "On the 375px shot the alert email form is cut mid-sentence at the very bottom of the first viewport (\"Every new listing in Bend, by… Price\" truncated) — the layout lock calls for alerts visible in the first viewport, not buried past the fold on mobile.",
-     "primitive": "app/cities/[slug]/page.tsx",
-     "replaceWith": null
+     "finding": "On 375 the alert copy is clipped mid-sentence at the fold (Every new listing in Bend, by email. Price) so house-alerts is not a complete first-viewport control on mobile.",
+     "primitive": "components/site/v3/V3AlertsStrip.client.tsx",
+     "replaceWith": "house-alerts"
     },
     {
-     "section": "Whole page",
-     "severity": "taste",
-     "finding": "No catalog demo interaction is visible anywhere on the page — only the locked house forms (MOS bars, Atlas map, alert form) plus a plain slider, zoom buttons, and status tabs. None of beautifului-insight, beui-number, combobox, scroll-animation, or infinite-masonry appears, so the figures (633, 175, 121) sit as static text with no motion promised by any visible affordance.",
-     "primitive": "app/cities/[slug]/page.tsx",
-     "replaceWith": "beui-number"
-    },
-    {
-     "section": "Homes for sale vs a month of sales bars",
-     "severity": "taste",
-     "finding": "The two horizontal bars (633 / 175) are static fills with no visible hover, tooltip, or scrub affordance — correct as a form under the house-mos lock, but as shipped there is nothing here that rewards a visitor's attention beyond reading two numbers once.",
+     "section": "Hero door row at 375",
+     "severity": "defect",
+     "finding": "Bend homes for sale · Bend housing market · Bend neighborhoods is cut after Bend, so a crawlable neighborhood door is not fully readable in the first mobile viewport.",
      "primitive": "app/cities/[slug]/page.tsx",
      "replaceWith": null
     }
    ],
-   "dullest": "The right column: MOS bars, a single new-listing card, and an email box stacked as three near-identical cream cards with hairline rules — no motion, no hover payoff, nothing that isn't fully legible in the first half-second.",
-   "beats": "Redfin's Bend, OR market-overview page wins on presence (embedded charts, saved-search prompts everywhere) but never dates or sources a figure; this page's explicit 'Oregon Data Share · as of Sep 12 2026' citation on every stat and named row count (121 houses, 188 sales) is a real win on honesty/function. On interaction and visual distinctiveness, though, Redfin's page currently reads about the same as this one — no clear win named there.",
-   "verdict": "This is a clean, correctly-sourced, on-brand data page that follows its layout lock (Atlas map instead of a Google embed, MOS as bars instead of a KPI tile, alerts near the top) but demoMatch is false: no catalog interaction (insight cards, live-count digits, combobox, scroll-animation) is anywhere on the page, so every figure is static text. The right column repeats the same card shape three times in a row, which is the stacked-section tell, and on mobile the alert form is cut off below the first viewport. It should read as an editorial data page that rewards a hover or scrub on every stat; right now it reads as a correct but inert brochure of numbers.",
+   "dullest": "NEW LISTINGS · BEND: a correctly sourced 121-houses sentence, three type chips, and one Ladera Road thumb — the reader has nothing to do but read it once.",
+   "beats": "Zillow Bend home-values (zillow.com/bend-or/home-values/) — this page wins on sourced months-of-supply as two named bars (633 vs 175, About 3.6 months, Oregon Data Share as of Sep 12, 2026) plus Atlas dots instead of a default Google embed; it does not win on interactive market-chart depth.",
+   "verdict": "This is a correct, on-brand Bend fold — photo hero, Atlas (not a Google default map), two named MOS bars, a desktop price scrub, and a desktop email ask — not a portal search hero, and 633÷175 matches the 3.6-month sentence. demoMatch is false: no catalog object is visible (no insight scrubber over charts, no digit swap, no combobox, no masonry, no *-open shot), and the navy Email me each one rect is a cream-box Button. The stacked-section tell is the right column; at 375 the ask and the neighborhood door are clipped. SEO and JSON-LD are not in these pixels; inventory in the fold is one listing against a 121 count, so information did not rise here. Leave the node in_progress.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
    "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
    "shots": {
     "desktop": "city/desktop.png",
     "mobile375": "city/mobile375.png"
    },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "team",
-   "url": "/team",
-   "route": "app/team/page.tsx",
-   "median": 62,
-   "scores": [
-    62,
-    63,
-    46
-   ],
-   "criteria": {
-    "designQuality": 18,
-    "originality": 16,
-    "interaction": 10,
-    "craft": 10,
-    "honestyFunction": 8
-   },
-   "tells": [],
-   "defects": [
-    {
-     "section": "closings display (per broker, right of hero map)",
-     "severity": "taste",
-     "finding": "Closings are shown only as a bare number ('7 closings in the last 12 months') plus a dot on the shared map. Brief 3 calls for past closings as house-row cards — photo, address, ClosePrice, beds/baths/sqft — in a carousel. None of that exists; the closing itself stays an abstraction, never a real sold property a visitor can look at.",
-     "primitive": "app/team/page.tsx",
-     "replaceWith": "shadcn-carousel"
-    },
-    {
-     "section": "reach control (Call/Text/Email/Schedule row under each broker)",
-     "severity": "taste",
-     "finding": "Call renders as a solid navy button while Text/Email/Schedule sit as bare underline-free text links of a different weight and size below it — four unrelated typographic objects, not one connected control. This is not the shadcn button-group demo (a single joined segmented control); it's a house rectangle plus loose links.",
-     "primitive": "app/team/page.tsx",
-     "replaceWith": "shadcn-button-group"
-    },
-    {
-     "section": "page opener ('The brokers' + one-line intro, straight into Matt Ryan's row)",
-     "severity": "taste",
-     "finding": "The fold goes from a two-line hero straight into the first broker's directory row (photo, title, license, stat, buttons) with no firm-story paragraph and no reviews section visible — brief 1 (firm story) and brief 2 (Google reviews door) are both absent from what a visitor sees before scrolling.",
-     "primitive": "app/team/page.tsx",
-     "replaceWith": "house-firm"
-    },
-    {
-     "section": "broker portrait circles (Matt, Rebecca, Paul thumbnails)",
-     "severity": "taste",
-     "finding": "Each broker gets one small static circular photo with no grouping, overlap, or hover affordance — a plain <img>, not the shadcn Avatar/AvatarGroup object with its visible interaction model.",
-     "primitive": "app/team/page.tsx",
-     "replaceWith": "shadcn-avatar"
-    }
-   ],
-   "dullest": "The broker-by-broker row (small circular photo, name, title, license, a bare closings number, a button, three text links) repeated three times down the page — this is the same shape a hundred brokerage 'meet the agents' pages use, and it's the least original thing on the page even though the map beside it is not.",
-   "beats": "Typical brokerage roster pages (e.g. a Compass or Windermere agent grid) show zero transaction evidence — this page wins on data depth by pairing each broker with a live, MLS-sourced closing count and a geocoded map of where those closings actually happened. But it does not beat a strong 'meet the team' page on interactivity or photography, and it fails its own competitive brief (no firm story, no reviews, no closings-as-cards) badly enough that the win is narrow.",
-   "verdict": "This is a clean, correctly-branded broker directory — navy/cream, Amboqia display, tabular closing counts, a real geocoded map instead of a stock embed — but it is not the catalog UX bar: demoMatch is false because the reach row is a house button plus loose links rather than the shadcn button-group object, and the portraits are plain images rather than an Avatar/AvatarGroup interaction. Against the injected competitive brief it also opens as a broker-first directory with no firm story and no reviews in the fold, and closings never surface as the photo/address/price cards the brief specifies. The map-with-closings idea is the one genuinely original beat; everything else is a well-executed but generic roster list.",
-   "builderModel": "unknown",
-   "shots": {
-    "desktop": "team/desktop.png",
-    "mobile375": "team/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "homepage-v6",
-   "url": "/",
-   "route": "app/page.tsx",
-   "median": 63,
-   "scores": [
-    60,
-    71,
-    63
-   ],
-   "criteria": {
-    "designQuality": 20,
-    "originality": 16,
-    "interaction": 7,
-    "craft": 12,
-    "honestyFunction": 8
-   },
-   "tells": [],
-   "defects": [
-    {
-     "section": "hero search field",
-     "severity": "taste",
-     "finding": "The address search is a plain static input with a placeholder and an 'F' shortcut chip. No open/expanded shot was captured, so there is no visible affordance that it morphs into results the way the beui-morphing-search demo does — as shipped it reads as a labeled cream field, which the rubric treats as demoMatch false by default.",
-     "primitive": "app/page.tsx",
-     "replaceWith": "beui-morphing-search"
-    },
-    {
-     "section": "first viewport below the stats band",
-     "severity": "defect",
-     "finding": "The layout lock requires live inventory visible in the first viewport, but the fold only shows three counted phrases (tour today / spoken for / closed) — no actual listing cards or rails are on screen before the scroll break into the 'one in five' narrative section.",
-     "primitive": "app/page.tsx",
-     "replaceWith": "house-home-rails"
-    },
-    {
-     "section": "dot cluster beside the 'one in five under contract' headline",
-     "severity": "defect",
-     "finding": "The scatter of navy dots next to the claim has no legend, axis, or label, so a visitor cannot tell what it encodes (geography? density? contract status?) — it reads as decoration standing in for data, which fails the honesty/function bar of every figure reading like it has a source.",
-     "primitive": "app/page.tsx",
-     "replaceWith": null
-    }
-   ],
-   "dullest": "The navy stats band under the hero — three plain-English counts separated by dots. It's honestly framed, but it's still a static one-line KPI strip with no hover, sparkline, or breakdown behind any of the three numbers.",
-   "beats": "Zillow's Central Oregon search homepage — this page wins on freshness framing ('as of Sep 12, 2026' plus a sourced live-MLS line) and on leading with an editorial claim ('more than one in five listings already under contract') instead of a bare search box, but it does not yet win on inventory depth in the fold since no cards are visible before scroll.",
-   "verdict": "This is a real hero with a sourced, timestamped stat band and an editorial claim-first headline into a chart — a meaningful step up from a wall of text, and demoMatch is false only because no open-state shot proves the search actually morphs rather than sits as a static labeled field. The dot-cluster visualization is unlabeled and the live-inventory cards the layout lock requires in the first viewport aren't visible yet, so what's shown is a strong stats-and-claim opener that hasn't yet earned the interaction and inventory-depth wins the brief asks for.",
-   "builderModel": "unknown",
-   "shots": {
-    "desktop": "homepage-v6/desktop.png",
-    "mobile375": "homepage-v6/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
+   "shotsHash": "sha256:155cc9d332bb3a264ff9baf26ba4191242d9ab5ecc4e7f51d14c105c6eee4656",
+   "evaluatorModel": "grok-4.6",
    "rubricVersion": "v1-2026-09-12"
   },
   {
    "key": "price-drops",
    "url": "/price-drops",
    "route": "app/price-drops/page.tsx",
-   "median": 65,
+   "median": 60,
    "scores": [
-    66,
     64,
-    65
+    60,
+    59
    ],
    "criteria": {
-    "designQuality": 20,
+    "designQuality": 18,
     "originality": 16,
-    "interaction": 9,
-    "craft": 12,
+    "interaction": 8,
+    "craft": 10,
     "honestyFunction": 8
    },
-   "tells": [],
+   "tells": [
+    "Cream box. — shadcn carousel chevrons are visible but both sit together under the first card, not flanking the rail as the ui.shadcn.com carousel demo does."
+   ],
    "defects": [
     {
-     "section": "price-drop underline bar under each card's price",
+     "section": "pd-card / photographed opening rail",
      "severity": "taste",
-     "finding": "The navy sliver under the price is meant to encode drop magnitude but reads as a decorative underline — no scale, no tick, no comparison anchor, so a viewer can't tell -13.0% from -10.3% by looking at the bar alone; the number does all the work and the mark does none.",
-     "primitive": "app/price-drops/page.tsx",
-     "replaceWith": "stat tile with sparkline"
+     "finding": "The fold is four vertical listing tiles (photo, percent badge, ask, was-line, address, beds/baths/sqft), not a field of cut houses. Drop size is a corner badge plus a hairline under the price that reads as an underline, so magnitudes do not compare across houses.",
+     "primitive": "app/price-drops/_v3/PriceDropPhotos.client.tsx",
+     "replaceWith": "house-field"
     },
     {
-     "section": "48-cut dot chart below the fold",
+     "section": "v3-carousel__nav",
      "severity": "taste",
-     "finding": "The caption promises 'smallest to deepest' ordering across 48 cuts but the chart is cut off at the fold with no visible axis label, tooltip, or hover-cursor state in either screenshot, so nothing in frame confirms it rewards a hover/scrub the way the copy implies.",
+     "finding": "Previous and Next are a paired circle row parked under the first card. The shadcn carousel object is chevron buttons on the left and right of the track you drag; a visitor would not recognize the same control.",
+     "primitive": "components/site/v3/V3Carousel.client.tsx",
+     "replaceWith": "shadcn-carousel"
+    },
+    {
+     "section": "week's cuts drawing, first viewport",
+     "severity": "defect",
+     "finding": "Desktop clips the drawing to unlabeled navy dots with no axis, no house marks, and no reading in-frame; mobile 375 shows only the caption and none of the drawing. The week's cut story arrives as leftover marks under the rail.",
      "primitive": "app/price-drops/page.tsx",
-     "replaceWith": "dot strip"
+     "replaceWith": "house-drawing"
     }
    ],
-   "dullest": "The four-up photo carousel — photo, dark price badge, price/was-price line, address, specs — is the exact card shape Zillow and Redfin already ship for a 'price cuts' filter. The drop-bar underline is the one attempt at differentiation and it's too faint to register as data.",
-   "beats": "Zillow/Redfin price-cut search results — this page wins on narrative framing (a plain sentence stating the median and deepest cut of the week) and on having a dedicated cross-listing severity chart at all, which portal price-drop grids don't show; neither competitor contextualizes the week's cuts as a distribution, they only badge each card in isolation.",
-   "verdict": "This is a real carousel with working prev/next controls and a card body that shows price, drop %, address and specs — not a cream box, so demoMatch holds. But the idea underneath is still a standard portal price-cut grid with one under-realized data mark (the drop bar) and a chart that's cut off before it can prove it's interactive. It clears the floor without beating it: correct, on-brand, competent, but the two things meant to carry originality and interaction — the bar and the dot chart — aren't legible enough in what's actually visible to earn their weight.",
+   "dullest": "The opening rail of portal listing cards — photo, -13.0% badge, price, was-line, address, specs — repeated four times. That is Redfin's price-reduced search results, not a field of cut houses, and it occupies the entire first viewport.",
+   "beats": "Redfin price-reduced search — this page wins on a standing photographed cut list with was-price, drop percent, and beds/baths/sqft on every card; it loses the card, where Redfin's drop amount is a first-class mark and this page's drawing of the week is cropped to unlabeled dots.",
+   "verdict": "This is a navy/cream listing carousel with the count correctly demoted to a caption, not a field of cut houses. demoMatch is false: the live control imported carousel chrome then parked both chevrons under the rail, which is the cream-box tell, not the shadcn flanking object. Inventory facts on the cards are real and complete; the original sentence (smallest-to-deepest beeswarm) is cropped out of the first viewport. Until the opening is a photographed field, the rail matches the demo, and the drawing is readable at 1440 and 375, this class is not done.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    true,
+    false,
+    false
+   ],
    "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
    "shots": {
     "desktop": "price-drops/desktop.png",
     "mobile375": "price-drops/mobile375.png"
    },
-   "evaluatorModel": "claude-sonnet-5",
-   "rubricVersion": "v1-2026-09-12"
-  },
-  {
-   "key": "market-report-region",
-   "url": "/housing-market/central-oregon",
-   "route": "app/housing-market/central-oregon/page.tsx",
-   "median": 65,
-   "scores": [
-    68,
-    65,
-    62
-   ],
-   "criteria": {
-    "designQuality": 20,
-    "originality": 15,
-    "interaction": 10,
-    "craft": 11,
-    "honestyFunction": 9
-   },
-   "tells": [
-    "\"The stacked-section page\" — hero (eyebrow/heading), then a two-card feature row (bars + chart, each eyebrow→figure→source), then a stat-pair row (number→label→sentence→source), then a CTA. Four blocks in a row with almost no variation in width, density, or media type."
-   ],
-   "defects": [
-    {
-     "section": "Median sale price chart panel",
-     "severity": "taste",
-     "finding": "The long-view price series is a house line chart with a manual year-pager and a bottom slider handle instead of the prescribed beautifului-insight paged-scrubber pattern — the option list calls for adapting that into V3Chart, and this looks like a from-scratch control instead, so there is no catalog interaction anywhere on the page (demoMatch: false).",
-     "primitive": "components/site/v3/V3Chart.tsx",
-     "replaceWith": "beautifului-insight"
-    },
-    {
-     "section": "Homes-for-sale vs month-of-sales bars",
-     "severity": "taste",
-     "finding": "The two-bar months-of-supply comparison is correct as a form (not a KPI tile) but reads static in the screenshot — no visible hover/tap affordance that would reveal the underlying counts or the threshold math behind '4.7 months' and the 'balanced' verdict.",
-     "primitive": "app/housing-market/central-oregon/page.tsx",
-     "replaceWith": null
-    },
-    {
-     "section": "Median list price / under-contract stat row",
-     "severity": "taste",
-     "finding": "Two static numbers with a one-sentence gloss underneath — functionally a KPI pair with prose bolted on. Both are sourced figures (list price, under-contract count) that would read as live data if they animated digits on load/update instead of sitting as flat text.",
-     "primitive": "app/housing-market/central-oregon/page.tsx",
-     "replaceWith": "beui-number"
-    }
-   ],
-   "dullest": "The bottom stat-pair row ($749,500 median list price / 545 under contract now) — two flat numbers with a sentence each, sitting in the same visual register as the hero and the chart panel above it. It's the one place on the page where nothing moves, nothing can be hovered, and nothing distinguishes it from a template's 'stats' section.",
-   "beats": "Redfin's Central Oregon market-trends page — this page wins on source transparency (a dated MLS trace plus an explicit 'how we calculate this' link on both the supply figure and the price series, which Redfin never surfaces) and on a verdict that actually matches its own number (4.7 months read against a stated 4–6 balanced band). It does not clearly beat Redfin on interaction depth or property-type granularity.",
-   "verdict": "This is a correct, on-brand, quiet page — navy/cream, Amboqia headline, sourced figures, a verdict that matches its own threshold math — but it is not a catalog page: demoMatch is false because nothing on it is a recognizable shadcn/beautifului control, just a house line chart with a home-grown slider standing in for the prescribed beautifului-insight scrubber. Structurally it is the banned stacked-section pattern (hero → feature-card row → stat-pair row → CTA) with too little variation in form between blocks, and the bottom stat pair is the dullest spot on the page — a KPI pair in a sentence's clothing with no interaction promised. It should be the paged, scrubbable instrument the option list calls for, with the stat pair animating in as live counts, not a second static row under an already-static one.",
-   "builderModel": "unknown",
-   "shots": {
-    "desktop": "market-report-region/desktop.png",
-    "mobile375": "market-report-region/mobile375.png"
-   },
-   "evaluatorModel": "claude-sonnet-5",
+   "shotsHash": "sha256:08cf866a7e62d1f7c993725da2de168373c2bcaec3515bf26d336ab5bdead3ee",
+   "evaluatorModel": "grok-4.6",
    "rubricVersion": "v1-2026-09-12"
   },
   {
    "key": "market-report-annual",
    "url": "/housing-market/annual-review",
    "route": "app/housing-market/annual-review/page.tsx",
-   "median": 70,
+   "median": 61,
    "scores": [
-    73,
     61,
-    70
+    57,
+    61
    ],
    "criteria": {
-    "designQuality": 22,
-    "originality": 16,
-    "interaction": 12,
-    "craft": 12,
-    "honestyFunction": 8
+    "designQuality": 19,
+    "originality": 15,
+    "interaction": 10,
+    "craft": 10,
+    "honestyFunction": 7
    },
-   "tells": [],
+   "tells": [
+    "\"Cream box.\" — the AUG 2026 $664K reading is a cream rectangle parked on the line, covering nearby marks, not the beautifului-insight pager object holding the figure.",
+    "\"KPI grids.\" — desktop fold bottom shows $750,000 and 30 with no label, unit, or plain sentence in the first viewport."
+   ],
    "defects": [
     {
-     "section": "below-the-fold stat row (\"$750,000\" / \"30\")",
+     "section": "#region-median year overlay / median sale price chart",
      "severity": "taste",
-     "finding": "At the bottom edge of the desktop fold, two large bare numbers appear with no visible label, unit context, or sentence explaining what they mean — reads as the start of a KPI-grid pattern rather than a continuation of the instrument's sourced, explained style set up above it.",
-     "primitive": "app/housing-market/annual-review/page.tsx",
-     "replaceWith": "stat tile with sparkline"
-    },
-    {
-     "section": "median-sale-price chart, year paging control",
-     "severity": "defect",
-     "finding": "The \"2026  3/3\" year pager and prev/next chevrons are small, low-contrast targets on both desktop and especially mobile (375px), with no visible affordance (no button outline, no hover/pressed state caught in frame) signaling they are tappable rather than a static label.",
+     "finding": "YEAR 2026 3/3 plus a bottom AUG track is a house line-chart pager, not the beautifului-insight control: the live reading sits in a cream callout on the dots instead of paging inside the insight card, so a visitor would not recognize the named demo.",
      "primitive": "components/site/v3/V3Chart.tsx",
-     "replaceWith": null
+     "replaceWith": "beautifului-insight"
     },
     {
-     "section": "hero + instrument block overall composition",
+     "section": "below-the-fold stat pair ($750,000 / 30)",
      "severity": "taste",
-     "finding": "The page reads as headline, then a bar-comparison card, then a line chart — a competent but fairly conventional editorial stack; nothing in the visible fold is a choice a market-report template wouldn't already make on its own.",
-     "primitive": "app/housing-market/annual-review/page.tsx",
-     "replaceWith": "small multiples"
+     "finding": "Desktop first screen ends on two unlabeled display figures that contradict the $664K August callout with no sentence, source, or digit-swap slot in view, which is a KPI strip rather than sourced live counts.",
+     "primitive": "components/site/v3/V3Instrument.tsx",
+     "replaceWith": "beui-number"
+    },
+    {
+     "section": "median sale price chart at 375",
+     "severity": "defect",
+     "finding": "At 375 the first viewport crops the monthly axis and the AUG scrubber, so the annual series is a line fragment under the callout until the reader scrolls.",
+     "primitive": "components/site/v3/V3Chart.tsx",
+     "replaceWith": "house-chart"
+    },
+    {
+     "section": "#market instrument fold",
+     "severity": "taste",
+     "finding": "Homes for sale 1,529 and a month of sales 326 are static bar fills with no visible hover, split, or digit motion, so the page's own answer does not reward a tap the way the chart tooltip does.",
+     "primitive": "components/site/v3/V3Instrument.tsx",
+     "replaceWith": "house-mos"
     }
    ],
-   "dullest": "The pair of unlabeled large numbers sitting at the very bottom of the desktop fold — no chart, no comparison, no sourcing visible in frame, just two big figures dropped in, which is the seed of a KPI-grid tell even though the rest of the page avoids that pattern.",
-   "beats": "A typical portal market page (Zillow/Redfin local market overview) ships a single static months-of-supply number tile with no history. This page wins on data depth and interactivity: the median-price chart carries a year pager, a hover tooltip resolving to an exact month/price, and a scrub slider, plus the months-of-supply verdict is shown as two named, sourced bars instead of one bare KPI number.",
-   "verdict": "This is a real instrument, not a KPI wall: the two named supply bars and the paged, hover-driven price chart are legitimate interaction and match the layout lock (demoMatch: true — nothing here is a catalog file cream-boxed into a navy rectangle). But the composition itself — headline, comparison card, line chart, then an unlabeled number pair trailing off the fold — is safe rather than distinctive, which is why originality lags design quality. Fix the small pager tap targets and give the trailing $750,000/30 figures a labeled home before they read as a KPI grid.",
+   "dullest": "The cropped $750,000 and 30 at the bottom of the desktop fold — two huge numerals with no label, no sentence, and no source in frame, after the page had just done the honest thing with two named bars.",
+   "beats": "NAR Housing Statistics annual (nar.realtor/research-and-statistics): this page wins a sourced two-bar months of supply (1,529 homes vs 326 a month of sales, Oregon Data Share as of Sep 12, 2026) instead of a first screen of tiles; it loses series density to Case-Shiller because years are serial and the 375 fold never shows the month scrubber.",
+   "verdict": "This is a real market instrument, not the old sixteen-tile wall: claim-first headline, two named MOS bars, and a hoverable monthly series with a year pager. demoMatch is false because neither catalog job is the object on screen — the reading is a cream box on the line, not beautifului-insight, and every count is a static figure rather than beui-number. The tells are that cream callout and the unlabeled $750,000 / 30 KPI pair that crops the desktop fold. Leave it in_progress until the insight scrubber is the control and the trailing figures are sourced live counts.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
    "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
    "shots": {
     "desktop": "market-report-annual/desktop.png",
     "mobile375": "market-report-annual/mobile375.png"
    },
-   "evaluatorModel": "claude-sonnet-5",
+   "shotsHash": "sha256:b206f78ce79f2246a5e1dacb0aecc882ecda65acd930c43d8d8b67dbf79f4baf",
+   "evaluatorModel": "grok-4.6",
+   "rubricVersion": "v1-2026-09-12"
+  },
+  {
+   "key": "market-report-region",
+   "url": "/housing-market/central-oregon",
+   "route": "app/housing-market/central-oregon/page.tsx",
+   "median": 63,
+   "scores": [
+    63,
+    65,
+    63
+   ],
+   "criteria": {
+    "designQuality": 19,
+    "originality": 15,
+    "interaction": 10,
+    "craft": 10,
+    "honestyFunction": 9
+   },
+   "tells": [
+    "Cream box. — YEAR 2026 3/3 plus the AUG 2026 $664K cream callout on the line is a house year-pager sitting on V3Chart, not the beautifului-insight paged-claim object with a scrubber a visitor would recognize from the demo."
+   ],
+   "defects": [
+    {
+     "section": "YEAR 2026 3/3 median sale price chart",
+     "severity": "taste",
+     "finding": "The arrows page 2024/2025/2026 of the same monthly median-sale series, and the live reading is a cream tooltip covering neighboring marks. That is not beautifului-insight: distinct claims advanced by a scrubber, adapted into V3Chart.",
+     "primitive": "components/site/v3/V3Chart.tsx",
+     "replaceWith": "beautifului-insight"
+    },
+    {
+     "section": "$749,500 / 545 two-up under the chart",
+     "severity": "taste",
+     "finding": "Median list $749,500 and 545 under contract sit as static navy numerals with a gloss sentence each. YEAR and the AUG scrubber do not change those digits, so they are not the beui-number live-count object.",
+     "primitive": "components/site/v3/V3Instrument.tsx",
+     "replaceWith": "beui-number"
+    },
+    {
+     "section": "mobile375 first viewport",
+     "severity": "defect",
+     "finding": "At 375 the first screen is the headline, the two MOS bars, and a chart cut through the month labels. The AUG scrubber, the two figures, and Ask about Central Oregon are below the fold, so the page's one ask is not in the opening path.",
+     "primitive": "app/housing-market/central-oregon/page.tsx",
+     "replaceWith": "house-chart"
+    }
+   ],
+   "dullest": "The $749,500 / 545 pair under the chart: two flat posters with a sentence each, in the same cream register as the instrument above, after the page had already done the interesting work with two named bars and a hovered series.",
+   "beats": "Redfin Data Center (https://www.redfin.com/news/data-center/) — this page wins on months of supply as two named bars (1,529 homes for sale vs 326 a month of sales → 4.7 months) with a dated Oregon Data Share MLS trace and a broker ask in the 1440 fold; it loses on paged insights and on live digit-swap counts.",
+   "verdict": "This is a correct, on-brand Instrument fold — claim-first Amboqia verdict, house-mos two bars that match the 4–6 balanced band, a hovered monthly series, one navy ask on desktop — not a catalog page. demoMatch is false: nothing on screen is the beautifului-insight scrubber or beui-number digit swap, and the cream $664K callout plus YEAR 3/3 pager is the cream-box tell. The defects are that year switcher, the static list-price / under-contract pair, and a 375 fold that crops the scrubber and the ask. Leave the node in_progress.",
+   "demoMatch": false,
+   "demoMatchVotes": [
+    false,
+    false,
+    false
+   ],
+   "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
+   "shots": {
+    "desktop": "market-report-region/desktop.png",
+    "mobile375": "market-report-region/mobile375.png"
+   },
+   "shotsHash": "sha256:d7486cec24ea4aef5cdc4ca91c434874152ddf6872704c8d314b6d16fbee7351",
+   "evaluatorModel": "grok-4.6",
    "rubricVersion": "v1-2026-09-12"
   },
   {
    "key": "reviews",
    "url": "/reviews",
    "route": "app/reviews/page.tsx",
-   "median": 78,
+   "median": 67,
    "scores": [
-    78,
-    78,
+    66,
+    70,
     67
    ],
    "criteria": {
-    "designQuality": 24,
-    "originality": 24,
-    "interaction": 10,
-    "craft": 12,
-    "honestyFunction": 8
+    "designQuality": 20,
+    "originality": 19,
+    "interaction": 9,
+    "craft": 10,
+    "honestyFunction": 9
    },
-   "tells": [
-    "\"Cream box.\" — the four reviewer circles (MJ, EO, AH, DG) sit in a flat, non-overlapping navy row with a caption under each, not the shadcn AvatarGroup stack. No overlap, no hover-reveal overflow badge — it's a tab bar wearing avatar shapes, not the catalog demo."
-   ],
+   "tells": [],
    "defects": [
     {
-     "section": "reviewer avatar selector row",
+     "section": "reviewer avatars",
      "severity": "taste",
-     "finding": "The avatar circles are laid out side-by-side with labels beneath rather than overlapping/stacked with a hover-expand interaction, so the control reads as a plain segmented tab bar instead of the shadcn AvatarGroup object the brief names.",
-     "primitive": "app/reviews/page.tsx",
+     "finding": "Under the quote the control is four overlapping navy letter-circles (MJ, EO, AH, DG) with names (MJB, E Oster, Audra, Douglas). That is the Avatar fallback, not reviewer portraits; it still reads as the Google-widget initial disc, not a face.",
+     "primitive": "components/site/v3/V3Proof.client.tsx",
      "replaceWith": "shadcn-avatar"
     },
     {
-     "section": "25-mark timeline",
-     "severity": "taste",
-     "finding": "The x-axis ticks (2019, 2023, 2024, 2025, 2026) skip 2020-2022 with no visual break or annotation, so a reader can't tell whether the axis is time-proportional or just year-buckets with data — the cadence of reviews over time, the one honest thing this chart could prove, is ambiguous.",
-     "primitive": "app/reviews/page.tsx",
+     "section": "year chips",
+     "severity": "defect",
+     "finding": "At 1440 the year chips are clipped off the bottom of the first viewport, so the beeswarm's filter is not operable before scroll. At 375 the chips wrap into a two-column keypad (All 25, 2026 4, 2025 8, 2024 6 / 2023 3, 2019 4) with leftover empty cells.",
+     "primitive": "components/site/v3/V3Proof.client.tsx",
      "replaceWith": null
+    },
+    {
+     "section": "review beeswarm",
+     "severity": "taste",
+     "finding": "Linear 2019–2026 axis leaves 2020–2022 as empty cream while 21 of 25 marks crush into 2023–2026; the opening data graphic spends its width on absence.",
+     "primitive": "components/site/v3/V3Proof.client.tsx",
+     "replaceWith": "beeswarm"
     }
    ],
-   "dullest": "The avatar row itself: four identical filled-navy circles with two-letter initials and a name underneath. It's the one element here that any competitor's review widget already has (a reviewer photo strip) and being avatar-shaped instead of a plain button adds nothing since there's no overlap, no stacking, no reveal.",
-   "beats": "A typical agent-profile reviews tab (Zillow/Realtor.com static review-card list): this page wins on data depth by plotting all 25 reviews on a real timeline with year filters instead of an infinite scroll of cards, letting a visitor see review velocity and freshness at a glance rather than reading five cards deep.",
-   "verdict": "This is closer to right than most of the site — a big sourced rating, a full-text quote instead of a truncated snippet, and a genuinely original timeline scatter of all 25 reviews with year filtering beat the flat review-card list every competitor runs. But demoMatch is false: the reviewer avatar row imports the idea of an avatar control without the AvatarGroup stack/hover interaction the catalog demo defines, so it lands as a labeled tab bar in avatar clothing (the 'Cream box' tell). The timeline's skipped-year axis also leaves the one interesting claim on the page — review cadence over time — impossible to verify from the chart alone.",
+   "dullest": "The 2020–2022 empty stretch on the timeline: twenty-one of twenty-five marks crush into 2023–2026 while the opening data graphic spends its width on absence.",
+   "beats": "Google Business Profile reviews UI — this page wins on first-read of the full quote in display type (not a truncated snippet) and on seeing all 25 reviews as a year-encoded strip instead of a paginated handful.",
+   "verdict": "The fold is house-proof: 5.0 as stars, the count, then one client's words in full, with Call and Book after the quote — not a Quiet list of reach rows. demoMatch is true: the reviewer row is the shadcn Avatar object (overlapping rounded-full fallbacks in navy/cream), not a cream-box card grid. What still fails is Google-widget residue and a half-working record: letter-circle initials instead of portraits, year chips clipped at 1440 and keypad-wrapped at 375, and a beeswarm whose empty 2020–2022 stretch is the dullest thing in the frame. Composed and on-brand, not breathtaking.",
+   "demoMatch": true,
+   "demoMatchVotes": [
+    true,
+    false,
+    true
+   ],
    "builderModel": "unknown",
+   "runDir": ".taste-table/2026-09-12T23-38-57-170Z",
    "shots": {
     "desktop": "reviews/desktop.png",
     "mobile375": "reviews/mobile375.png"
    },
-   "evaluatorModel": "claude-sonnet-5",
+   "shotsHash": "sha256:6a9b95818fcf9af5d2a7263c6c04eb689b8af960cb276e5e8335c6588f46d439",
+   "evaluatorModel": "grok-4.6",
    "rubricVersion": "v1-2026-09-12"
   }
  ]

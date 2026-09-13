@@ -50,11 +50,11 @@ resolution, and their video. The bar was always Matt's, not the rubric's. It is:
    <route-key> --builder <your model>`) starts at the judge that scored the current
    `taste-table.json` — one ruler per round; grok returns at the next FULL table run.
    With a grok table: grok-4.6 through the `grok` CLI or through the Cursor CLI
-   (`cursor-agent --model grok-4.6`, the same model on Matt's Cursor subscription;
+   (`cursor-agent --model cursor-grok-4.6-high`, the same model on Matt's Cursor plan;
    the table's own link first, the other when it is missing or out), and when both
    are out, the claude CLI (sonnet, or opus when the builder is a Sonnet). With a
    claude table: the claude CLI on that alias, or the other alias when it is your
-   own family. Median of three must rise **by at least 6** (the rise floor; less is
+   own family. Median of three must rise **by at least the rise floor, 3 on grok-4.6** (less is
    the judge's own noise, `taste-rule-freeze.json` `riseFloorBasis`) on the same
    instrument; `demoMatch: true`; `competitiveBriefPass: true` where a brief exists;
    finish line 70.
@@ -88,7 +88,7 @@ A lane that fails a step fixes the page or the tool. It does not write a rule.
   address + beds/baths/sqft; listing detail keeps and fills the 13-row
   contract; place pages keep sourced figures). Summary-only is a fail;
   (3) **UX improved** — catalog source installed, demo match, navy/cream.
-  The separate evaluator's score must rise by at least the rise floor (6) over
+  The separate evaluator's score must rise by at least the rise floor (3 on grok-4.6) over
   its previous mark **and** the live control must match the chosen catalog demo. A prettier page with
   no SEO increment and no inventory increment is not done. Rebaseline is not
   done.

@@ -5,42 +5,37 @@
   "rubricVersion": "v1-2026-09-12",
   "rubricPath": "design_system/public/taste-evaluator.v1-2026-09-12.md",
   "finishLine": 70,
-  "riseFloor": 6,
+  "riseFloor": 3,
   "riseFloorFrom": "2026-09-13",
   "riseFloorBasis": {
-    "method": "bootstrap: pooled (scoring - class median) residuals; difference of two medians-of-3 under no change; one-sided q95",
+    "method": "bootstrap: pooled (scoring - class median) residuals; difference of two medians-of-3 under no change; floor = smallest rise k with P(noise rise >= k) <= 5% (one-sided q95 on the lattice)",
     "command": "node scripts/taste-rise-floor.mjs --json",
     "table": "design_system/public/taste-table.json",
     "tableEvaluatedAt": "2026-09-13",
-    "evaluatorModel": "claude-sonnet-5",
+    "evaluatorModel": "grok-4.6",
     "rubricVersion": "v1-2026-09-12",
     "classes": 27,
     "residuals": 81,
-    "residualSd": 4.84,
+    "residualSd": 2.24,
     "draws": 200000,
     "seed": 20260912,
-    "q90": 4,
-    "q95": 6,
-    "q99": 10,
+    "q90": 3,
+    "q95": 3,
+    "q99": 5,
     "pNoiseRiseAtLeast": {
-      "1": 0.337825,
-      "3": 0.207345,
-      "6": 0.06625
+      "1": 0.30065,
+      "2": 0.12227,
+      "3": 0.04106
     },
-    "repeatCheck": {
-      "note": "Second scoring of the SAME shots (.taste-table/2026-09-12T23-38-57-170Z) by the same judge, 2026-09-13 UTC. The pass stopped after 4 of 27 classes when the claude CLI hit its weekly limit (grok CLI was 402 the same hour), so the partial table was not committed. Recorded here because one identical-shot pair moved by exactly the floor: the floor sits at the edge of the noise, not comfortably above it. When a full second pass exists, re-derive the floor from paired data: node scripts/taste-rise-floor.mjs --pair <previous-table.json> --json.",
-      "judge": "claude-sonnet-5",
-      "pairs": [
-        { "key": "buy", "pass1": 50, "pass2": 49, "delta": -1 },
-        { "key": "about", "pass1": 52, "pass2": 52, "delta": 0 },
-        { "key": "blog", "pass1": 56, "pass2": 54, "delta": -2 },
-        { "key": "cities", "pass1": 54, "pass2": 60, "delta": 6 }
-      ],
-      "n": 4,
-      "atOrAboveFloor": 1
+    "priorBasis": {
+      "evaluatorModel": "claude-sonnet-5",
+      "tableEvaluatedAt": "2026-09-12",
+      "riseFloor": 6,
+      "residualSd": 4.84,
+      "note": "Floor carried 2026-09-13 only, derived from the sonnet-judged table (81 residuals, sd 4.84, P(noise rise >= 6) = 6.6%). No receipt was evaluated under it. Superseded the same day when grok-4.6 became reachable through the Cursor CLI and the whole table was re-scored on it; the floor is re-derived from that table below. A partial same-shot repeat by sonnet (4 of 27 classes before the claude CLI weekly limit) moved one identical-shot pair by exactly the old floor — the reason the definition now takes the smallest rise with noise probability <= 5% rather than the 95th-percentile value."
     }
   },
-  "tableRowsBindFrom": "2026-09-14",
+  "tableRowsBindFrom": "2026-09-13",
   "primaryEvaluator": "grok-4.6",
   "allowedEvaluators": [
     "grok-4.6",

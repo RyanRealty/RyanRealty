@@ -187,65 +187,67 @@ This table is the only site backlog. Sessions pull the oldest open node (`npx ts
 Every public page class captured at 1440x900 and 375x812 (first viewport, `scripts/take-route-shots.mjs`, a dev server on main) and scored by a SEPARATE evaluator, claude-sonnet-5 on rubric v1-2026-09-08, three scorings, the median. Ranks classes against each other on one shot spec; not comparable to a route's receipt (different shotsHash). Nothing scored above 69. Round three (SITE-40 to SITE-53) fixes the primitives the evaluators named, bottom first.
 
 <!-- taste-table:start -->
-_Regenerated 2026-09-13 by `scripts/taste-table.mjs` — claude-sonnet-5, rubric v1-2026-09-12, 3 scorings, median. Source: `design_system/public/taste-table.json`._
+_Regenerated 2026-09-13 by `scripts/taste-table.mjs` — grok-4.6, rubric v1-2026-09-12, 3 scorings, median. Source: `design_system/public/taste-table.json`._
 
-| class | median | scores | DQ/30 | OR/30 | IN/15 | CR/15 | HF/10 | tells | primitive named most | verdict |
-|---|---|---|---|---|---|---|---|---|---|---|
-| subdivisions | **43** | 43 · 48 · 39 | 16 | 8 | 2 | 10 | 7 | 0 | `app/subdivisions/page.tsx` | This is a correct, on-brand list of subdivisions with real live counts and median prices, but it is not the shadcn-command A-Z directory the layout l… |
-| listing-detail | **44** | 44 · 50 · 44 | 15 | 6 | 5 | 10 | 8 | 1 | `app/listing/[listingKey]/page.tsx` | This is a correct, on-brand, and functional listing page — full-bleed hero restored, real price-cut data, a direct broker ask — but it is the generic… |
-| compare | **45** | 41 · 47 · 45 | 18 | 8 | 2 | 10 | 7 | 2 | `app/compare/page.tsx` | This is a correct, on-brand, static feature table dressed in the house serif and navy/cream palette — it avoids the empty-slots trap (good) and cites… |
-| buy | **50** | 55 · 50 · 45 | 18 | 10 | 3 | 11 | 8 | 1 | `app/buy/page.tsx` | This is a correct, on-brand hero (Amboqia headline, navy scrim on the right mountain photo, sourced stats) sitting on top of a page that has no inter… |
-| contact | **51** | 52 · 51 · 48 | 18 | 11 | 4 | 10 | 8 | 1 | `app/contact/page.tsx` | This is a correct, on-brand, functionally complete contact page — one clear ask, sourced trust stats, a working write path with SMS consent — but it… |
-| community | **51** | 51 · 62 · 44 | 17 | 14 | 5 | 8 | 7 | 1 | `app/communities/[slug]/page.tsx` | This is a correct, on-brand, quiet page — navy/cream, Amboqia headline, a genuinely useful custom boundary map instead of a generic Google embed — bu… |
-| neighborhood | **51** | 51 · 38 · 52 | 18 | 12 | 5 | 11 | 5 | 1 | `app/cities/[slug]/[neighborhoodSlug]/page.tsx` | This is a clean, correctly-branded, honestly-sourced neighborhood summary that is missing its required map and has no interactive layer anywhere abov… |
-| about | **52** | 45 · 56 · 52 | 17 | 12 | 3 | 12 | 8 | 0 | `app/about/page.tsx` | This is a correct, on-brand opener — AboutFirm hero with office exterior and one purpose line, followed by V3Proof reviews — which respects the layou… |
-| market-report | **52** | 38 · 52 · 54 | 16 | 10 | 6 | 12 | 8 | 0 | `app/housing-market/page.tsx` | This is a correct, on-brand stub, not a market report: the two-bar months-of-supply instrument follows the house-mos spec and the sourcing line is ho… |
-| search | **53** | 53 · 49 · 53 | 18 | 8 | 8 | 11 | 8 | 1 | `app/search/page.tsx` | This is a competent, on-brand implementation of the standard portal search pattern (list + map split, price slider, cluster map) but not a page that… |
-| sell | **53** | 50 · 60 · 53 | 20 | 10 | 3 | 12 | 8 | 0 | `app/sell/page.tsx` | This is a competent, on-brand seller landing page — clean type, real numbers, working hierarchy — but it is not the house-sheet the layout lock calls… |
-| place-type-community | **54** | 54 · 64 · 50 | 20 | 10 | 6 | 11 | 7 | 1 | `app/communities/[slug]/types/[type]/page.tsx` | This is a correct, on-brand utility page — H1, claim sentence with count and price band, sourced timestamp, and Atlas showing the true Tetherow bound… |
-| cities | **54** | 54 · 50 · 60 | 18 | 10 | 6 | 12 | 8 | 0 | `app/cities/page.tsx` | This is a clean, correctly-sourced, on-brand stat card, not yet a breathtaking place page — demoMatch is false because no catalog interaction (combob… |
-| invest | **56** | 56 · 50 · 56 | 20 | 14 | 2 | 12 | 8 | 0 | `app/invest/page.tsx` | This is a well-typeset claim-first headline over a static stat list, not the interactive data page the brief calls for. demoMatch is false — no catal… |
-| blog | **56** | 58 · 46 · 56 | 20 | 15 | 3 | 11 | 7 | 1 | `app/blog/[slug]/page.tsx` | This is a correct, on-brand article shell — strong hero, claim-first headline, an honest sourcing gesture in the sidebar — but nothing in the visible… |
-| subdivision | **56** | 61 · 56 · 55 | 19 | 14 | 8 | 8 | 7 | 1 | `app/subdivisions/[slug]/page.tsx` | This is a page with one genuinely original idea — a hand-drawn plat-boundary map with a price-drag scrubber — bolted onto an otherwise stock real-est… |
-| zip | **57** | 58 · 57 · 57 | 18 | 13 | 8 | 10 | 8 | 1 | `app/zip/[zip]/page.tsx` | This is a competent, on-brand data page — navy/cream held, sources cited per §0, the Atlas map is a genuine differentiator — but demoMatch is false:… |
-| place-type | **57** | 57 · 64 · 52 | 18 | 10 | 10 | 11 | 8 | 1 | `app/cities/[slug]/types/[type]/page.tsx` | This is a functional, honestly-sourced place-type page with a working filter slider, a carousel that genuinely matches the shadcn demo interaction (v… |
-| market-report-detail | **57** | 59 · 57 · 55 | 16 | 11 | 9 | 13 | 8 | 0 | `app/housing-market/[...slug]/page.tsx` | This is a correct, honestly-sourced market page that follows the layout lock (two named mos bars, one hoverable long-view chart, one verdict with a t… |
-| oregon-city | **59** | 59 · 51 · 61 | 22 | 15 | 3 | 11 | 8 | 1 | `app/oregon/[city]/page.tsx` | This is a competent, honest out-of-market page: navy/cream identity holds, the dot-strip chart is a real step up from a bare table, and the copy does… |
-| city | **61** | 58 · 63 · 61 | 20 | 14 | 8 | 11 | 8 | 1 | `app/cities/[slug]/page.tsx` | This is a clean, correctly-sourced, on-brand data page that follows its layout lock (Atlas map instead of a Google embed, MOS as bars instead of a KP… |
-| team | **62** | 62 · 63 · 46 | 18 | 16 | 10 | 10 | 8 | 0 | `app/team/page.tsx` | This is a clean, correctly-branded broker directory — navy/cream, Amboqia display, tabular closing counts, a real geocoded map instead of a stock emb… |
-| homepage-v6 | **63** | 60 · 71 · 63 | 20 | 16 | 7 | 12 | 8 | 0 | `app/page.tsx` | This is a real hero with a sourced, timestamped stat band and an editorial claim-first headline into a chart — a meaningful step up from a wall of te… |
-| price-drops | **65** | 66 · 64 · 65 | 20 | 16 | 9 | 12 | 8 | 0 | `app/price-drops/page.tsx` | This is a real carousel with working prev/next controls and a card body that shows price, drop %, address and specs — not a cream box, so demoMatch h… |
-| market-report-region | **65** | 68 · 65 · 62 | 20 | 15 | 10 | 11 | 9 | 1 | `app/housing-market/central-oregon/page.tsx` | This is a correct, on-brand, quiet page — navy/cream, Amboqia headline, sourced figures, a verdict that matches its own threshold math — but it is no… |
-| market-report-annual | **70** | 73 · 61 · 70 | 22 | 16 | 12 | 12 | 8 | 0 | `app/housing-market/annual-review/page.tsx` | This is a real instrument, not a KPI wall: the two named supply bars and the paged, hover-driven price chart are legitimate interaction and match the… |
-| reviews | **78** | 78 · 78 · 67 | 24 | 24 | 10 | 12 | 8 | 1 | `app/reviews/page.tsx` | This is closer to right than most of the site — a big sourced rating, a full-text quote instead of a truncated snippet, and a genuinely original time… |
+| class | median | scores | demo | DQ/30 | OR/30 | IN/15 | CR/15 | HF/10 | tells | primitive named most | verdict |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| cities | **42** | 47 · 42 · 41 | **NO** | 12 | 10 | 5 | 8 | 7 | 1 | `components/site/v3/V3MosCompare.client.tsx` | This is a navy-on-cream MOS lecture, not a city directory. house-mos is in the fold and the 1,529 / 326 / 4.7 Balanced reading is honest, but demoMat… |
+| subdivisions | **43** | 41 · 45 · 43 | **NO** | 15 | 10 | 2 | 10 | 6 | 0 | `components/site/v3/V3Ledger.tsx` | This is a correct, on-brand house ledger of Central Oregon subdivisions, not the shadcn Command A-Z directory the class was handed, so demoMatch is f… |
+| compare | **46** | 46 · 44 · 46 | **NO** | 16 | 10 | 4 | 8 | 8 | 2 | `components/site/v3/V3Slots.client.tsx` | The dashed empty tray is gone and the first screen is a labelled live sample, which is the job, but demoMatch is false: the photos are cream-box stam… |
+| contact | **50** | 50 · 46 · 52 | **NO** | 17 | 12 | 5 | 9 | 7 | 2 | `app/contact/_v3/ContactFold.tsx` | Desktop is a navy/cream telephone broadside beside one ask, which is the right job, but demoMatch is false: the fields are cream-box capsules, not be… |
+| market-report | **51** | 51 · 50 · 52 | **NO** | 15 | 10 | 6 | 12 | 8 | 1 | `components/site/v3/V3Instrument.tsx` | This is a correct, on-brand Instrument stub, not a finished market hub. demoMatch is false: house-mos two bars are on screen, but no catalog demo is… |
+| oregon-city | **51** | 47 · 58 · 51 | **NO** | 15 | 14 | 4 | 8 | 10 | 2 | `components/site/v3/V3Instrument.tsx` | A correct, on-brand, honesty-first Medford fold: navy/cream, Amboqia H1, no fake Central Oregon hero, one introduction ask. It is still a stacked doc… |
+| place-type-community | **52** | 53 · 52 · 52 | **NO** | 16 | 12 | 7 | 9 | 8 | 2 | `app/cities/[slug]/types/[type]/_v3/PlaceTypeAtlasSection.tsx` | This is an on-brand H1, one honest count-and-band sentence, and an Atlas — then a cream-box listing ledger. demoMatch is false: the catalog job was s… |
+| zip | **52** | 52 · 52 · 55 | **NO** | 16 | 13 | 7 | 8 | 8 | 2 | `app/zip/[zip]/_v3/ZipHomesField.tsx` | A navy/cream ZIP directory that keeps the house lock on 1440 (Atlas dots, MOS bars, alerts beside them, 203 agreeing with 203) and then throws the dr… |
+| buy | **53** | 55 · 52 · 53 | **NO** | 17 | 13 | 5 | 10 | 8 | 2 | `components/site/v3/V3Stage.tsx` | demoMatch is false: no *-open shot, Search homes is a cream-box house rect, and the Field is a photo crop rather than house-field or the shadcn carou… |
+| about | **53** | 54 · 52 · 53 | **NO** | 18 | 14 | 3 | 11 | 7 | 1 | `components/site/v3/V3Proof.client.tsx` | The opener is the locked AboutFirm: office exterior, boutique / all of Central Oregon / buy and sell, then V3Proof — not three broker Cards. demoMatc… |
+| blog | **53** | 52 · 63 · 53 | **NO** | 17 | 13 | 4 | 11 | 8 | 2 | `app/blog/[slug]/page.tsx` | This is an on-brand magazine shell with a real golf-course masthead and a claim-first H1, not a catalog page. demoMatch is false: there is no beautif… |
+| invest | **54** | 52 · 54 · 55 | **NO** | 17 | 13 | 5 | 11 | 8 | 2 | `components/site/v3/V3Pulse.tsx` | The fold is a claim-first H1 plus four live counts, not a cover memo, and the land-not-buildings sentence matches the sourced figures. demoMatch is f… |
+| search | **55** | 56 · 55 · 55 | **NO** | 16 | 12 | 8 | 11 | 8 | 2 | `components/site/v3/V3MorphSearch.tsx` | This is a competent brokerage split-view, on-brand and inventory-honest, not the catalog search object. demoMatch is false: the field does not morph,… |
+| sell | **55** | 54 · 57 · 55 | **NO** | 17 | 13 | 6 | 11 | 8 | 1 | `app/sell/_v3/SellValueForm.tsx` | demoMatch is false: the live control is a cream overlay with a labeled field and a house navy rect, not house-sheet, shadcn:sheet, or beui-input, and… |
+| community | **55** | 56 · 55 · 53 | **NO** | 17 | 14 | 6 | 10 | 8 | 1 | `components/site/v3/V3AlertsStrip.client.tsx` | This is an on-brand place fold with a golf photo, a plat drawing, and sourced HOA and inventory figures — not a wall of text — and it is still a crea… |
+| listing-detail | **55** | 55 · 55 · 54 | **NO** | 16 | 13 | 8 | 11 | 7 | 2 | `components/site/listing-detail/ListingHero.tsx` | demoMatch is false: the live controls are a thumbnail strip, house tab pills, and three leftover Tour/Call/Text rectangles, not shadcn-carousel, beui… |
+| neighborhood | **55** | 55 · 57 · 54 | **NO** | 17 | 14 | 7 | 9 | 8 | 2 | `components/site/v3/V3MosBars.tsx` | Awbrey Butte's first screen is an on-brand hillside, a sourced MOS card, and a newsletter. demoMatch is false: no catalog object is on screen (no dig… |
+| place-type | **55** | 55 · 55 · 56 | yes | 16 | 13 | 10 | 10 | 6 | 2 | `app/cities/[slug]/types/[type]/page.tsx` | This is a 55: on-brand navy/cream/Geist/Amboqia with the layout lock's skeleton — one H1, one sourced count-and-band sentence, Atlas, then a photogra… |
+| homepage-v6 | **55** | 55 · 57 · 47 | **NO** | 17 | 12 | 6 | 12 | 8 | 2 | `components/site/v3/V3MorphSearch.tsx` | This is a branded portal door, not a catalog control and not an inventory page: Old Mill, Amboqia, navy pulse, then a cream claim whose beeswarm is c… |
+| subdivision | **55** | 56 · 55 · 53 | **NO** | 17 | 14 | 7 | 10 | 7 | 1 | `app/subdivisions/[slug]/page.tsx` | This is an on-brand place fold with a real desktop Atlas (scrubber, House filter, zoom) beside a 30-day listing and an email field, not a breathtakin… |
+| team | **55** | 55 · 54 · 56 | **NO** | 17 | 13 | 6 | 11 | 8 | 2 | `app/about/_v3/AboutFaces.tsx` | An on-brand editorial roster, not a firm story and not a catalog demo: Amboqia H1, principal at conversation scale, licenses as credentials, Call as… |
+| market-report-detail | **56** | 58 · 53 · 56 | **NO** | 17 | 12 | 8 | 12 | 7 | 1 | `app/housing-market/[...slug]/_v3/city-view.tsx` | This is a correct, on-brand Bend market fold with a real MOS pair and a hovered three-year series, not a breathtaking Instrument. demoMatch is false:… |
+| city | **57** | 55 · 57 · 58 | **NO** | 18 | 13 | 8 | 10 | 8 | 2 | `app/cities/[slug]/page.tsx` | This is a correct, on-brand Bend fold — photo hero, Atlas (not a Google default map), two named MOS bars, a desktop price scrub, and a desktop email… |
+| price-drops | **60** | 64 · 60 · 59 | **NO** | 18 | 16 | 8 | 10 | 8 | 1 | `app/price-drops/_v3/PriceDropPhotos.client.tsx` | This is a navy/cream listing carousel with the count correctly demoted to a caption, not a field of cut houses. demoMatch is false: the live control… |
+| market-report-annual | **61** | 61 · 57 · 61 | **NO** | 19 | 15 | 10 | 10 | 7 | 2 | `components/site/v3/V3Chart.tsx` | This is a real market instrument, not the old sixteen-tile wall: claim-first headline, two named MOS bars, and a hoverable monthly series with a year… |
+| market-report-region | **63** | 63 · 65 · 63 | **NO** | 19 | 15 | 10 | 10 | 9 | 1 | `components/site/v3/V3Chart.tsx` | This is a correct, on-brand Instrument fold — claim-first Amboqia verdict, house-mos two bars that match the 4–6 balanced band, a hovered monthly ser… |
+| reviews | **67** | 66 · 70 · 67 | yes | 20 | 19 | 9 | 10 | 9 | 0 | `components/site/v3/V3Proof.client.tsx` | The fold is house-proof: 5.0 as stars, the count, then one client's words in full, with Call and Book after the quote — not a Quiet list of reach row… |
 
 **Under 70, bottom first:**
 
+- `cities` — **42**
 - `subdivisions` — **43**
-- `listing-detail` — **44**
-- `compare` — **45**
-- `buy` — **50**
-- `contact` — **51**
-- `community` — **51**
-- `neighborhood` — **51**
-- `about` — **52**
-- `market-report` — **52**
-- `search` — **53**
-- `sell` — **53**
-- `place-type-community` — **54**
-- `cities` — **54**
-- `invest` — **56**
-- `blog` — **56**
-- `subdivision` — **56**
-- `zip` — **57**
-- `place-type` — **57**
-- `market-report-detail` — **57**
-- `oregon-city` — **59**
-- `city` — **61**
-- `team` — **62**
-- `homepage-v6` — **63**
-- `price-drops` — **65**
-- `market-report-region` — **65**
+- `compare` — **46**
+- `contact` — **50**
+- `market-report` — **51**
+- `oregon-city` — **51**
+- `place-type-community` — **52**
+- `zip` — **52**
+- `buy` — **53**
+- `about` — **53**
+- `blog` — **53**
+- `invest` — **54**
+- `search` — **55**
+- `sell` — **55**
+- `community` — **55**
+- `listing-detail` — **55**
+- `neighborhood` — **55**
+- `place-type` — **55**
+- `homepage-v6` — **55**
+- `subdivision` — **55**
+- `team` — **55**
+- `market-report-detail` — **56**
+- `city` — **57**
+- `price-drops` — **60**
+- `market-report-annual` — **61**
+- `market-report-region` — **63**
+- `reviews` — **67**
 <!-- taste-table:end -->
 
 **Lane re-scores on the instrument (route receipts, not table rows; the table is replaced only by a full `npm run taste:table` pass).** 2026-09-09 SITE-52: cities **30 → 75** (75 · 71 · 80; three rounds: 71 cold, 72 after the navy monogram and the supply hover record, 75 after the reveal cue), no tell named; subdivisions **first mark 53** (53 · 55 · 53; 36 cold, 44 after the monogram, 53 after the row dropped its `when` and the caption said what a bar is). Receipts in `ui_kits/cities/parity.json` and `ui_kits/subdivisions/parity.json`; evaluator claude-sonnet-5, rubric v1-2026-09-08, the same first-viewport pair plus hover records. 2026-09-09 SITE-45: listing-detail **77 → 79** (80 · 78 · 79; table row 55) on the rebuilt opening — one frame and a filmstrip, the price cut as a hover mark, a read under the pills, Tour in the fold; the tell named is the breadcrumb's `EASTON COMMERCIAL` plat alias and the Medford sidebar CTA and calculator are carried as Matt's calls. Receipt in `ui_kits/listing-detail/parity.json`, ten shots (instrument pair, close, out-of-area, strip and drop hover records). 2026-09-09 SITE-40 (V3Quiet, the six classes that open on it): invest **25 → 60** (63·54·60), compare **29 → 42**, about **31 → 49** (three rounds), market-report **41 → 54**, reviews **48 → 50**, contact **49 → 62** (four rounds); all rebaselined, evaluator claude-sonnet-5, rubric v1-2026-09-08, first-viewport pair. Only market-report still carries tells, both the chooser's repeated card shape, which belongs to its composition node.

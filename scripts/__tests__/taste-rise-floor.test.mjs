@@ -10,13 +10,16 @@ describe('taste-rise-floor — the floor is measured, not typed', () => {
     const b = riseFloorBasis(table, { n: 20000 })
     expect(a.q95).toBe(b.q95)
     expect(a.residuals).toBe(81)
-    expect(a.pNoiseRiseAtLeast[a.q95]).toBeLessThanOrEqual(0.05 + 0.02)
+    // The floor is the SMALLEST rise with noise probability <= 5%: at the floor
+    // the rate is under 5%, one below it is not.
+    expect(a.pNoiseRiseAtLeast[a.q95]).toBeLessThanOrEqual(0.05)
+    expect(a.pNoiseRiseAtLeast[a.q95 - 1]).toBeGreaterThan(0.05)
   })
 
-  it('a noiseless judge needs no floor; a noisy one needs a bigger one', () => {
+  it('a noiseless judge can trust a rise of 1; a noisy one needs a bigger one', () => {
     const quiet = { rows: Array.from({ length: 10 }, (_, i) => ({ key: `q${i}`, median: 50, scores: [50, 50, 50] })) }
     const loud = { rows: Array.from({ length: 10 }, (_, i) => ({ key: `l${i}`, median: 50, scores: [35, 50, 65] })) }
-    expect(riseFloorBasis(quiet, { n: 5000 }).q95).toBe(0)
+    expect(riseFloorBasis(quiet, { n: 5000 }).q95).toBe(1)
     expect(riseFloorBasis(loud, { n: 5000 }).q95).toBeGreaterThan(6)
   })
 

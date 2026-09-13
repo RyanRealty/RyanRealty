@@ -47,8 +47,22 @@ function median3(a) {
   return [...a].sort((x, y) => x - y)[1]
 }
 
-function quantile(sorted, q) {
-  return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))]
+/**
+ * The floor at confidence q: the SMALLEST integer rise k with P(noise rise >= k)
+ * <= 1 - q. The receipt test is `rise >= floor`, so this — not the q-th
+ * percentile value — is what holds the false-pass rate under 1 - q. On a
+ * discrete lattice the two differ: the 2026-09-13 grok table has a 95th
+ * percentile value of 2 while P(rise >= 2) is 12%; the floor is 3 (4.1%).
+ */
+function floorAt(sorted, q) {
+  const n = sorted.length
+  let k = 1
+  for (;;) {
+    let i = sorted.length
+    while (i > 0 && sorted[i - 1] >= k) i -= 1
+    if ((n - i) / n <= 1 - q) return k
+    k += 1
+  }
 }
 
 export function riseFloorBasis(table, { n = N, seed = SEED } = {}) {
@@ -66,9 +80,10 @@ export function riseFloorBasis(table, { n = N, seed = SEED } = {}) {
   diffs.sort((a, b) => a - b)
   const sd = Math.sqrt(resid.reduce((a, b) => a + b * b, 0) / resid.length)
   const pNoiseRise = (f) => diffs.filter((d) => d >= f).length / n
-  const q95 = quantile(diffs, 0.95)
+  const q95 = floorAt(diffs, 0.95)
   return {
-    method: 'bootstrap: pooled (scoring - class median) residuals; difference of two medians-of-3 under no change; one-sided q95',
+    method:
+      'bootstrap: pooled (scoring - class median) residuals; difference of two medians-of-3 under no change; floor = smallest rise k with P(noise rise >= k) <= 5% (one-sided q95 on the lattice)',
     command: 'node scripts/taste-rise-floor.mjs --json',
     table: TABLE,
     tableEvaluatedAt: table.evaluatedAt ?? null,
@@ -79,10 +94,10 @@ export function riseFloorBasis(table, { n = N, seed = SEED } = {}) {
     residualSd: Number(sd.toFixed(2)),
     draws: n,
     seed,
-    q90: quantile(diffs, 0.9),
+    q90: floorAt(diffs, 0.9),
     q95,
-    q99: quantile(diffs, 0.99),
-    pNoiseRiseAtLeast: { 1: pNoiseRise(1), 3: pNoiseRise(3), [q95]: pNoiseRise(q95) },
+    q99: floorAt(diffs, 0.99),
+    pNoiseRiseAtLeast: { 1: pNoiseRise(1), [q95 - 1]: pNoiseRise(q95 - 1), [q95]: pNoiseRise(q95) },
   }
 }
 

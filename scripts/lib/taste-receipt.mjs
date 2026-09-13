@@ -39,17 +39,19 @@ export const FINISH_LINE = 70
 
 /**
  * The rise floor (Matt 2026-09-12: "there can be no gaps"). "Score must rise"
- * with no floor let pure judge noise count as done: on the 2026-09-12 table
- * (27 classes x 3 scorings, claude-sonnet-5, rubric v1-2026-09-12) two
- * medians-of-3 of the SAME page differ by >= 1 in 34% of bootstrap draws,
- * by >= 6 in 6.6%. A rise of RISE_FLOOR is the one-sided 95th percentile of
- * that no-change distribution — the smallest rise the instrument can tell
- * from itself. Basis and the reproduction command live in
+ * with no floor let pure judge noise count as done: on the 2026-09-13 table
+ * (27 classes x 3 scorings, grok-4.6 through the Cursor CLI, rubric
+ * v1-2026-09-12) two medians-of-3 of the SAME page differ by >= 1 in 30% of
+ * bootstrap draws, by >= 2 in 12%, by >= 3 in 4.1%. RISE_FLOOR is the
+ * smallest rise whose no-change probability is under 5% — the smallest rise
+ * the instrument can tell from itself. (The sonnet-judged table of 2026-09-12
+ * was noisier, sd 4.84 vs 2.24, and carried a floor of 6 for one day; no
+ * receipt was written under it.) Basis and the reproduction command live in
  * design_system/public/taste-rule-freeze.json (riseFloorBasis); ci:rubric-freeze
  * fails if this constant drifts from the manifest. Receipts evaluated before
  * RISE_FLOOR_FROM were accepted under the bare rise and stay valid.
  */
-export const RISE_FLOOR = 6
+export const RISE_FLOOR = 3
 export const RISE_FLOOR_FROM = '2026-09-13'
 
 /** The minimum rise a receipt evaluated on `evaluatedAt` owes over its prior mark. */
