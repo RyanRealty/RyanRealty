@@ -12,6 +12,15 @@ const MANIFEST = {
   rubricVersion: 'v1-2026-09-12',
   rubricPath: 'design_system/public/taste-evaluator.v1-2026-09-12.md',
   finishLine: 70,
+  riseFloor: 6,
+  riseFloorFrom: '2026-09-13',
+  riseFloorBasis: {
+    method: 'bootstrap: pooled residuals; difference of two medians-of-3 under no change; one-sided q95',
+    command: 'node scripts/taste-rise-floor.mjs --json',
+    table: 'design_system/public/taste-table.json',
+    q95: 6,
+  },
+  tableRowsBindFrom: '2026-09-13',
   primaryEvaluator: 'grok-4.6',
   allowedEvaluators: ['grok-4.6', 'claude-sonnet-5', 'claude-opus-5'],
   receiptV2From: '2026-09-08',
@@ -31,6 +40,8 @@ const LIVE = {
   demoMatchRuleFrom: '2026-09-12',
   demoMatchRubric: 'v1-2026-09-12',
   competitiveBriefRuleFrom: '2026-09-12',
+  riseFloor: 6,
+  riseFloorFrom: '2026-09-13',
 }
 
 const REGISTRY = [{ key: 'about' }, { key: 'team' }]
@@ -42,6 +53,12 @@ describe('rubric-freeze — manifest shape', () => {
   it('refuses a primary judge missing from the allowed list', () => {
     const p = manifestProblems({ ...MANIFEST, allowedEvaluators: ['claude-sonnet-5'] })
     expect(p.join('\n')).toMatch(/must include manifest.primaryEvaluator/)
+  })
+  it('a rise floor is a number: it needs a basis, and the basis must agree with it', () => {
+    expect(manifestProblems({ ...MANIFEST, riseFloorBasis: undefined }).join('\n')).toMatch(/riseFloorBasis must record/)
+    expect(manifestProblems({ ...MANIFEST, riseFloor: 8 }).join('\n')).toMatch(/riseFloor 8 does not equal riseFloorBasis.q95 6/)
+    expect(manifestProblems({ ...MANIFEST, riseFloor: 0 }).join('\n')).toMatch(/riseFloor must be an integer/)
+    expect(manifestProblems({ ...MANIFEST, riseFloorFrom: 'soon' }).join('\n')).toMatch(/riseFloorFrom must be a YYYY-MM-DD date/)
   })
 })
 
@@ -62,6 +79,11 @@ describe('rubric-freeze — drift', () => {
   it('names a judge added to the chain without the freeze', () => {
     const p = driftProblems(MANIFEST, { ...LIVE, allowedEvaluators: [...LIVE.allowedEvaluators, 'grok-4.5'] })
     expect(p.join('\n')).toMatch(/allowedEvaluators/)
+  })
+  it('names a rise floor moved in code without re-measuring', () => {
+    const p = driftProblems(MANIFEST, { ...LIVE, riseFloor: 1 })
+    expect(p).toHaveLength(1)
+    expect(p[0]).toMatch(/riseFloor .*RISE_FLOOR.* drifted: code says 1, the freeze says 6/)
   })
 })
 
@@ -116,6 +138,19 @@ describe('rubric-freeze — coverage', () => {
   it('honours a dated coverage exception with a reason', () => {
     const m = { ...MANIFEST, coverageExceptions: { team: '2026-09-12: /team capture fails on production, SITE-74 owner to fix' } }
     expect(coverageProblems(m, REGISTRY, { rows: [good('about')] })).toEqual([])
+  })
+  it('a table scored from tableRowsBindFrom owes demoMatch and shotsHash on every row', () => {
+    const hash = `sha256:${'a'.repeat(64)}`
+    const bound = (key, extra = {}) => good(key, { demoMatch: false, demoMatchVotes: [false, false, true], shotsHash: hash, ...extra })
+    expect(coverageProblems(MANIFEST, REGISTRY, { evaluatedAt: '2026-09-13', rows: [bound('about'), bound('team')] })).toEqual([])
+    const p = coverageProblems(MANIFEST, REGISTRY, { evaluatedAt: '2026-09-13', rows: [good('about'), bound('team', { demoMatch: null })] })
+    expect(p.join('\n')).toMatch(/about: no demoMatch verdict/)
+    expect(p.join('\n')).toMatch(/about: no shotsHash/)
+    expect(p.join('\n')).toMatch(/team: no demoMatch verdict on the row \(\[false,false,true\]\)/)
+    expect(p.join('\n')).not.toMatch(/team: no shotsHash/)
+  })
+  it('a table scored before tableRowsBindFrom is held to the older shape', () => {
+    expect(coverageProblems(MANIFEST, REGISTRY, { evaluatedAt: '2026-09-12', rows: [good('about'), good('team')] })).toEqual([])
   })
 })
 

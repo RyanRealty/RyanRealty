@@ -1,12 +1,52 @@
 {
-  "note": "THE RULE SET IS FROZEN (Matt 2026-09-12: 'fix it all'). Between 2026-09-08 and 2026-09-12 the accept test moved four times (rubric v1-2026-09-08 -> -10 -> -12, demoMatch required, competitiveBriefPass required, evaluatorModel pinned) and every move reset every class's baseline, so no page could ever be measured as better. This file names the rule set every SITE node is scored against for one full round. scripts/check-rubric-freeze.mjs (ci:rubric-freeze) fails the commit if the live constants drift from it, or if a class in taste-classes.json has no taste-table.json row on this rubric from an allowed judge. To change a rule: edit this file AND re-run the whole table (node scripts/taste-table.mjs <baseUrl>) in the SAME change. A rule bump without a full table is a reset with no measurement, and that is exactly what this stops.",
+  "note": "THE RULE SET IS FROZEN (Matt 2026-09-12: 'fix it all'). Between 2026-09-08 and 2026-09-12 the accept test moved four times (rubric v1-2026-09-08 -> -10 -> -12, demoMatch required, competitiveBriefPass required, evaluatorModel pinned) and every move reset every class's baseline, so no page could ever be measured as better. This file names the rule set every SITE node is scored against for one full round. scripts/check-rubric-freeze.mjs (ci:rubric-freeze) fails the commit if the live constants drift from it, or if a class in taste-classes.json has no taste-table.json row on this rubric from an allowed judge. To change a rule: edit this file AND re-run the whole table (node scripts/taste-table.mjs <baseUrl>) in the SAME change. A rule bump without a full table is a reset with no measurement, and that is exactly what this stops. ADDED 2026-09-13 (Matt: \"there can be no gaps\"): riseFloor — a route must rise by at least this many points over its prior mark on the same instrument; a smaller rise is inside the judge noise measured on this very table (riseFloorBasis, reproduce with riseFloorBasis.command). tableRowsBindFrom — every table evaluated on or after this date carries, on every row, the judge demoMatch verdict and a shotsHash of the pictures it was scored on, or ci:rubric-freeze reports the class. It is 2026-09-14, the first UTC date after the table on disk (evaluated 2026-09-13 UTC by code that did not yet write those fields); the re-run that would have bound that table stopped at 4/27 classes with both judges out (grok 402, claude weekly limit to Sep 15 12pm PT) and was not committed. Neither rule changes how a scoring is produced, so no row is rebaselined by them.",
   "frozenAt": "2026-09-12",
   "frozenBy": "Matt 2026-09-12",
   "rubricVersion": "v1-2026-09-12",
   "rubricPath": "design_system/public/taste-evaluator.v1-2026-09-12.md",
   "finishLine": 70,
+  "riseFloor": 6,
+  "riseFloorFrom": "2026-09-13",
+  "riseFloorBasis": {
+    "method": "bootstrap: pooled (scoring - class median) residuals; difference of two medians-of-3 under no change; one-sided q95",
+    "command": "node scripts/taste-rise-floor.mjs --json",
+    "table": "design_system/public/taste-table.json",
+    "tableEvaluatedAt": "2026-09-13",
+    "evaluatorModel": "claude-sonnet-5",
+    "rubricVersion": "v1-2026-09-12",
+    "classes": 27,
+    "residuals": 81,
+    "residualSd": 4.84,
+    "draws": 200000,
+    "seed": 20260912,
+    "q90": 4,
+    "q95": 6,
+    "q99": 10,
+    "pNoiseRiseAtLeast": {
+      "1": 0.337825,
+      "3": 0.207345,
+      "6": 0.06625
+    },
+    "repeatCheck": {
+      "note": "Second scoring of the SAME shots (.taste-table/2026-09-12T23-38-57-170Z) by the same judge, 2026-09-13 UTC. The pass stopped after 4 of 27 classes when the claude CLI hit its weekly limit (grok CLI was 402 the same hour), so the partial table was not committed. Recorded here because one identical-shot pair moved by exactly the floor: the floor sits at the edge of the noise, not comfortably above it. When a full second pass exists, re-derive the floor from paired data: node scripts/taste-rise-floor.mjs --pair <previous-table.json> --json.",
+      "judge": "claude-sonnet-5",
+      "pairs": [
+        { "key": "buy", "pass1": 50, "pass2": 49, "delta": -1 },
+        { "key": "about", "pass1": 52, "pass2": 52, "delta": 0 },
+        { "key": "blog", "pass1": 56, "pass2": 54, "delta": -2 },
+        { "key": "cities", "pass1": 54, "pass2": 60, "delta": 6 }
+      ],
+      "n": 4,
+      "atOrAboveFloor": 1
+    }
+  },
+  "tableRowsBindFrom": "2026-09-14",
   "primaryEvaluator": "grok-4.6",
-  "allowedEvaluators": ["grok-4.6", "claude-sonnet-5", "claude-opus-5"],
+  "allowedEvaluators": [
+    "grok-4.6",
+    "claude-sonnet-5",
+    "claude-opus-5"
+  ],
   "receiptV2From": "2026-09-08",
   "demoMatchRuleFrom": "2026-09-12",
   "competitiveBriefRuleFrom": "2026-09-12",

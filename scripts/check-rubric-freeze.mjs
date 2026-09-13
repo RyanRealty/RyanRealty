@@ -35,6 +35,8 @@ import {
   DEMO_MATCH_RULE_FROM,
   FINISH_LINE,
   RECEIPT_V2_FROM,
+  RISE_FLOOR,
+  RISE_FLOOR_FROM,
 } from './lib/taste-receipt.mjs'
 import { FINISH_LINE as TABLE_FINISH_LINE } from './lib/taste-table-core.mjs'
 import { rubricFreezeProblems } from './lib/rubric-freeze.mjs'
@@ -83,6 +85,8 @@ const { shape, drift, stray, coverage } = rubricFreezeProblems({
     demoMatchRuleFrom: DEMO_MATCH_RULE_FROM,
     demoMatchRubric: DEMO_MATCH_RUBRIC,
     competitiveBriefRuleFrom: COMPETITIVE_BRIEF_RULE_FROM,
+    riseFloor: RISE_FLOOR,
+    riseFloorFrom: RISE_FLOOR_FROM,
   },
   rubricFiles: existsSync(join(ROOT, PUBLIC_DIR)) ? readdirSync(join(ROOT, PUBLIC_DIR)) : [],
   registryClasses: registryRead.value?.classes ?? [],
@@ -109,7 +113,7 @@ if (stray.length) {
 if (coverage.length) {
   console.log(`\n  COVERAGE — classes not scored on ${manifest.rubricVersion} by a judge on the chain:`)
   for (const p of coverage) console.log(`    - ${p}`)
-  const keys = coverage.map((p) => p.split(':')[0]).join(',')
+  const keys = [...new Set(coverage.map((p) => p.split(':')[0]))].join(',')
   console.log(`\n  Re-run: node scripts/taste-table.mjs https://ryan-realty.com --classes ${keys}`)
 }
 console.log(

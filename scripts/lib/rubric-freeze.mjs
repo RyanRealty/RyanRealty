@@ -21,6 +21,10 @@ export function isPlainObject(v) {
   return !!v && typeof v === 'object' && !Array.isArray(v)
 }
 
+function isNonEmptyString(v) {
+  return typeof v === 'string' && v.trim().length > 0
+}
+
 /** Shape problems with the manifest itself. */
 export function manifestProblems(manifest) {
   if (!isPlainObject(manifest)) return ['taste-rule-freeze.json must be an object.']
@@ -42,8 +46,18 @@ export function manifestProblems(manifest) {
   } else if (!manifest.allowedEvaluators.includes(manifest.primaryEvaluator)) {
     p.push('manifest.allowedEvaluators must include manifest.primaryEvaluator.')
   }
-  for (const k of ['frozenAt', 'receiptV2From', 'demoMatchRuleFrom', 'competitiveBriefRuleFrom']) {
+  for (const k of ['frozenAt', 'receiptV2From', 'demoMatchRuleFrom', 'competitiveBriefRuleFrom', 'riseFloorFrom']) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(manifest[k] ?? ''))) p.push(`manifest.${k} must be a YYYY-MM-DD date.`)
+  }
+  // A rise floor is a NUMBER (CLAUDE.md §0): it ships with a named basis or not at all.
+  if (!Number.isInteger(manifest.riseFloor) || manifest.riseFloor < 1 || manifest.riseFloor > 30) {
+    p.push('manifest.riseFloor must be an integer 1-30 — the smallest rise the judge can tell from its own noise.')
+  }
+  const basis = manifest.riseFloorBasis
+  if (!isPlainObject(basis) || !isNonEmptyString(basis.method) || !isNonEmptyString(basis.command) || !isNonEmptyString(basis.table)) {
+    p.push('manifest.riseFloorBasis must record { method, command, table, ... } — a floor with no basis is an invented number.')
+  } else if (Number.isInteger(basis.q95) && basis.q95 !== manifest.riseFloor) {
+    p.push(`manifest.riseFloor ${manifest.riseFloor} does not equal riseFloorBasis.q95 ${basis.q95} — re-run riseFloorBasis.command and write what it prints.`)
   }
   if (manifest.coverageExceptions != null && !isPlainObject(manifest.coverageExceptions)) {
     p.push('manifest.coverageExceptions must be an object of class -> reason.')
@@ -79,6 +93,8 @@ export function driftProblems(manifest, live) {
   check('demoMatchRuleFrom (DEMO_MATCH_RULE_FROM)', live.demoMatchRuleFrom, manifest.demoMatchRuleFrom)
   check('demoMatchRubric (DEMO_MATCH_RUBRIC)', live.demoMatchRubric, manifest.rubricVersion)
   check('competitiveBriefRuleFrom (COMPETITIVE_BRIEF_RULE_FROM)', live.competitiveBriefRuleFrom, manifest.competitiveBriefRuleFrom)
+  check('riseFloor (scripts/lib/taste-receipt.mjs RISE_FLOOR)', live.riseFloor, manifest.riseFloor)
+  check('riseFloorFrom (RISE_FLOOR_FROM)', live.riseFloorFrom, manifest.riseFloorFrom)
   return p
 }
 
@@ -144,6 +160,21 @@ export function coverageProblems(manifest, registryClasses, table) {
     }
     if (typeof row.invalid === 'string' && row.invalid.trim()) {
       p.push(`${key}: row is invalid — ${row.invalid}`)
+      continue
+    }
+    // Rows scored from the tableRowsBindFrom date owe what a receipt owes: the
+    // judge's demoMatch verdict and a hash of the shots the median was given
+    // for (Matt 2026-09-12: the table dropped demoMatch; rows named shots
+    // nobody could find).
+    const bindFrom = String(manifest.tableRowsBindFrom ?? '')
+    const scoredOn = String(table?.evaluatedAt ?? '')
+    if (bindFrom && scoredOn >= bindFrom) {
+      if (typeof row.demoMatch !== 'boolean') {
+        p.push(`${key}: no demoMatch verdict on the row (${JSON.stringify(row.demoMatchVotes ?? null)}) — the rubric requires it on every scoring.`)
+      }
+      if (!/^sha256:[0-9a-f]{64}$/.test(String(row.shotsHash ?? ''))) {
+        p.push(`${key}: no shotsHash — the row does not bind to the shots it was scored on.`)
+      }
     }
   }
   return p

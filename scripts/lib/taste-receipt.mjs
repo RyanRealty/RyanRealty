@@ -37,6 +37,26 @@ export const DEMO_MATCH_RULE_FROM = '2026-09-12'
 export const DEMO_MATCH_RUBRIC = 'v1-2026-09-12'
 export const FINISH_LINE = 70
 
+/**
+ * The rise floor (Matt 2026-09-12: "there can be no gaps"). "Score must rise"
+ * with no floor let pure judge noise count as done: on the 2026-09-12 table
+ * (27 classes x 3 scorings, claude-sonnet-5, rubric v1-2026-09-12) two
+ * medians-of-3 of the SAME page differ by >= 1 in 34% of bootstrap draws,
+ * by >= 6 in 6.6%. A rise of RISE_FLOOR is the one-sided 95th percentile of
+ * that no-change distribution — the smallest rise the instrument can tell
+ * from itself. Basis and the reproduction command live in
+ * design_system/public/taste-rule-freeze.json (riseFloorBasis); ci:rubric-freeze
+ * fails if this constant drifts from the manifest. Receipts evaluated before
+ * RISE_FLOOR_FROM were accepted under the bare rise and stay valid.
+ */
+export const RISE_FLOOR = 6
+export const RISE_FLOOR_FROM = '2026-09-13'
+
+/** The minimum rise a receipt evaluated on `evaluatedAt` owes over its prior mark. */
+export function riseFloorFor(evaluatedAt) {
+  return String(evaluatedAt ?? '') >= RISE_FLOOR_FROM ? RISE_FLOOR : 1
+}
+
 /** The three identity keys that decide whether two marks are the same instrument. */
 export const IDENTITY_KEYS = ['evaluatorModel', 'rubricVersion', 'shotsHash']
 
@@ -222,8 +242,15 @@ export function receiptV2Problems(tr, { root, rubricText, headReceipt = null, co
           p.push(
             `comparedToPrior "rose" but the prior mark differs on ${drift.join(', ')} — a different instrument is NOT a baseline. Set comparedToPrior "rebaselined".`,
           )
-        } else if (!(Number.isInteger(tr.score) && tr.score > prior.score)) {
-          p.push(`score ${tr.score} did not rise above the prior mark ${prior.score}. The item is not done (TASTE.md).`)
+        } else {
+          const floor = riseFloorFor(tr.evaluatedAt)
+          if (!(Number.isInteger(tr.score) && tr.score >= prior.score + floor)) {
+            p.push(
+              floor > 1
+                ? `score ${tr.score} did not rise by the floor of ${floor} over the prior mark ${prior.score} (needs ${prior.score + floor}). A smaller rise is inside the judge's own noise — the item is not done (TASTE.md).`
+                : `score ${tr.score} did not rise above the prior mark ${prior.score}. The item is not done (TASTE.md).`,
+            )
+          }
         }
       } else {
         if (drift.length === 0) {
