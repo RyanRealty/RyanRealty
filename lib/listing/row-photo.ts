@@ -27,6 +27,44 @@
 const SPARK_RESIZE_HOST = 'cdn.resize.sparkplatform.com'
 
 /**
+ * Spark / MLS photo CDNs. These hosts already serve sized JPEG derivatives
+ * (cdn.resize buckets 320×240 / 800×600 / 1600×1200). Sending them through
+ * next/image → `/_next/image` (AVIF+WebP, often q=90) is a second pipeline
+ * and the Vercel Image Optimization bill. First-party, Unsplash, and
+ * Supabase storage stay on next/image.
+ */
+const SPARK_LISTING_PHOTO_HOST_RE = /(?:^|\.)(?:sparkplatform|sparkapi)\.com$/i
+
+/**
+ * Vendor hosts that already serve listing stills / video posters at a fixed
+ * size. Same rule as Spark photos: do not send them through `/_next/image`.
+ * YouTube `hqdefault` is 480px; Vercel upscaling that to a full-bleed poster
+ * is both a bill and a soft picture.
+ */
+const VENDOR_LISTING_MEDIA_HOST_RE =
+  /(?:^|\.)(?:sparkplatform|sparkapi|ytimg)\.com$|^(?:img\.youtube\.com|i\.vimeocdn\.com)$|(?:^|\.)(?:videodelivery\.net|cloudflarestream\.com)$/i
+
+/** True for Spark/MLS listing photo URLs that must skip Vercel Image Optimization. */
+export function isSparkListingPhotoUrl(raw: string | null | undefined): boolean {
+  if (!raw?.trim()) return false
+  try {
+    return SPARK_LISTING_PHOTO_HOST_RE.test(new URL(raw.trim()).hostname)
+  } catch {
+    return false
+  }
+}
+
+/** Spark photos plus YouTube / Vimeo posters — already sized by the vendor. */
+export function isVendorListingMediaUrl(raw: string | null | undefined): boolean {
+  if (!raw?.trim()) return false
+  try {
+    return VENDOR_LISTING_MEDIA_HOST_RE.test(new URL(raw.trim()).hostname)
+  } catch {
+    return false
+  }
+}
+
+/**
  * The render the 88x66 ledger thumb asks for. 320x240 is the smallest bucket
  * Spark answered distinctly (256x192 came back byte-identical to 320x240, so
  * the CDN snaps upward and asking smaller buys nothing), and it is still ~3.6x
@@ -84,6 +122,30 @@ export function listingRowPhotoSrc(
         : LISTING_ROW_PHOTO_SIZE
   url.pathname = `/${feed}/${render}/${crop}/${asset}`
   return url.toString()
+}
+
+/**
+ * Free sharpness: Spark already has three plates of the same asset. Tell the
+ * browser, so a card (`sizes=320px`) gets 800 on a 2x phone and a hero
+ * (`sizes=66vw`) gets 1600 — without Vercel minting AVIF. Non-Spark URLs
+ * return undefined and keep a single `src`.
+ */
+export function listingPhotoSrcSet(raw: string): string | undefined {
+  const src = raw.trim()
+  if (!src) return undefined
+  let url: URL
+  try {
+    url = new URL(src)
+  } catch {
+    return undefined
+  }
+  if (url.hostname !== SPARK_RESIZE_HOST) return undefined
+  if (!SPARK_RESIZE_PATH.test(url.pathname)) return undefined
+  return [
+    `${listingRowPhotoSrc(src, LISTING_ROW_PHOTO_SIZE)} 320w`,
+    `${listingRowPhotoSrc(src, LISTING_FIELD_LEAD_PHOTO_SIZE)} 800w`,
+    `${listingRowPhotoSrc(src, LISTING_MOSAIC_LEAD_PHOTO_SIZE)} 1600w`,
+  ].join(', ')
 }
 
 /** Compact Spark listing photos on a search/split row before it enters Flight. */

@@ -17,7 +17,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
+import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowRight01Icon,
@@ -116,7 +116,7 @@ function FeedSlide({
     >
       {/* Blurred fill of the poster so landscape tours look intentional, not letterboxed. */}
       {poster ? (
-        <Image
+        <SparkSafeImage
           src={poster}
           alt=""
           fill
@@ -159,7 +159,7 @@ function FeedSlide({
               className="absolute inset-0 h-full w-full object-cover"
             />
           ) : poster ? (
-            <Image src={poster} alt={item.addressLine} fill sizes="(min-width: 1024px) 1024px, 100vw" className="object-cover" />
+            <SparkSafeImage src={poster} alt={item.addressLine} fill sizes="(min-width: 1024px) 1024px, 100vw" className="object-cover" />
           ) : (
             <div className="absolute inset-0 bg-primary" />
           )}
@@ -207,7 +207,7 @@ function FeedSlide({
             </span>
             <span className="relative block h-20 w-32 overflow-hidden rounded-lg bg-primary-foreground/10">
               {nextItem.posterUrl ? (
-                <Image src={nextItem.posterUrl} alt="" fill sizes="128px" className="object-cover" />
+                <SparkSafeImage src={nextItem.posterUrl} alt="" fill sizes="128px" className="object-cover" />
               ) : null}
               <span className="absolute inset-0 flex items-center justify-center bg-primary/30">
                 <HugeiconsIcon icon={ArrowUp01Icon} className="h-6 w-6 text-primary-foreground" />

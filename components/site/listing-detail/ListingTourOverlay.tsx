@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
-import Image from 'next/image'
+import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useMediaOverlayHistory } from '@/lib/listing/use-media-overlay-history'
 import { isOffsiteTourHost } from '@/lib/listing/publish-listing-on-site-tour'
@@ -143,7 +143,7 @@ export function ListingTourOverlay({
           ) : null}
           {active === 'floor' && still ? (
             <div className="listing-gallery__frame">
-              <Image
+              <SparkSafeImage
                 src={still.url}
                 alt={still.caption ?? 'Floor plan'}
                 fill

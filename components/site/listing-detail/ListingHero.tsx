@@ -1,7 +1,7 @@
 'use client'
 
-import Image from 'next/image'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { cn } from '@/lib/utils'
 import type { ListingPhoto } from '@/lib/data/types/listing'
 import type { VideoEmbed } from '@/lib/data/types/video'
@@ -479,7 +479,7 @@ export function ListingHero({
                   aria-label={`Show photo ${i + 1} of ${total}`}
                   aria-current={i === frame ? 'true' : undefined}
                 >
-                  <Image
+                  <SparkSafeImage
                     src={listingRowPhotoSrc(photo.url)}
                     alt=""
                     fill
@@ -609,7 +609,7 @@ function MosaicStill({
   // here (Matt 2026-09-10). Always paint the 1600 mosaic derivative.
   const live = preferListingMosaicPhotoUrl(src)
   return (
-    <Image
+    <SparkSafeImage
       src={live}
       alt={alt}
       fill
@@ -716,8 +716,14 @@ function IframeHeroLayer({
   return (
     <>
       {posterUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={listingRowPhotoSrc(posterUrl)} alt={altBase} />
+        <SparkSafeImage
+          src={preferListingMosaicPhotoUrl(posterUrl)}
+          alt={altBase}
+          fill
+          sizes={LISTING_MOSAIC_LEAD_SIZES}
+          className="object-cover"
+          priority
+        />
       ) : null}
       {failed || !embedSrc ? null : (
         <iframe
