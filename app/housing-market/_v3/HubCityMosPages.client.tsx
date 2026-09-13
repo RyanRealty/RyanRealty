@@ -56,8 +56,14 @@ export function HubCityMosPages({ pages, className }: HubCityMosPagesProps) {
     series: page.series,
     door: { label: `${page.label} housing market`, href: page.href },
     // The door's own live count in the index row (beui-number), the same
-    // published active count the city's sentence reads.
-    indexFigure: { value: page.homesValue, label: page.homesLabel, unit: 'single-family homes for sale' },
+    // published active count the city's sentence reads, with the city's own
+    // median run as its spark when that run published.
+    indexFigure: {
+      value: page.homesValue,
+      label: page.homesLabel,
+      unit: 'single-family homes for sale',
+      spark: page.series ? page.series.points.map((point) => point.value) : null,
+    },
   }))
   return (
     <V3Insight

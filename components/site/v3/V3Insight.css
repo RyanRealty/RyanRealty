@@ -467,12 +467,33 @@
   text-decoration-color: var(--v3-ink);
 }
 
-/* The door's live count on the digit wheel. */
+/* The door's live count on the digit wheel, and its spark. */
 .v3-insight__index-figure {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
   font-family: var(--v3-font-num);
   font-weight: var(--v3-weight-num);
   font-size: var(--v3-size-body-sm);
   color: var(--v3-ink);
+}
+
+.v3-insight__index-spark {
+  width: 2.5rem;
+  height: 0.75rem;
+  overflow: visible;
+}
+
+.v3-insight__index-spark polyline {
+  fill: none;
+  stroke: var(--v3-ink-muted);
+  stroke-width: 1;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.v3-insight__index-link:hover .v3-insight__index-spark polyline {
+  stroke: var(--v3-ink);
 }
 
 .v3-insight__index-link:focus-visible {

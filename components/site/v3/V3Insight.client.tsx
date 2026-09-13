@@ -119,7 +119,29 @@ export type V3InsightPage = {
     label: string
     /** What the count counts, for the accessible name, e.g. "homes for sale". */
     unit: string
+    /**
+     * The door's own run as a spark (values only, geometry here) — the same
+     * sourced series the page's card scrubs, so the door shows its shape
+     * before it is opened. Omit when the page has no series; never invented.
+     */
+    spark?: readonly number[] | null
   } | null
+}
+
+const SPARK_W = 40
+const SPARK_H = 12
+
+/** Polyline points for a spark: values scaled into the box, straight segments. */
+export function sparkPoints(values: readonly number[]): string | null {
+  const finite = values.filter((v) => Number.isFinite(v))
+  if (finite.length < 2) return null
+  const min = Math.min(...finite)
+  const max = Math.max(...finite)
+  const span = max - min || 1
+  const step = SPARK_W / (finite.length - 1)
+  return finite
+    .map((v, i) => `${(i * step).toFixed(1)},${(SPARK_H - 1 - ((v - min) / span) * (SPARK_H - 2)).toFixed(1)}`)
+    .join(' ')
 }
 
 export type V3InsightProps = {
@@ -488,9 +510,23 @@ export function V3Insight({
                   <span className="v3-insight__index-name">{item.label}</span>
                   {item.indexFigure ? (
                     // Every door carries its own live count on the digit wheel
-                    // (beui-number), the way NAR and FT number their doors.
+                    // (beui-number) and, when the page has a run, its spark —
+                    // the way NAR and FT number their doors.
                     <span className="v3-insight__index-figure" aria-hidden="true">
                       <V3Number value={item.indexFigure.value} formatted={item.indexFigure.label} />
+                      {(() => {
+                        const points = item.indexFigure.spark ? sparkPoints(item.indexFigure.spark) : null
+                        return points ? (
+                          <svg
+                            className="v3-insight__index-spark"
+                            viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
+                            preserveAspectRatio="none"
+                            focusable="false"
+                          >
+                            <polyline points={points} vectorEffect="non-scaling-stroke" />
+                          </svg>
+                        ) : null
+                      })()}
                     </span>
                   ) : null}
                 </Link>
