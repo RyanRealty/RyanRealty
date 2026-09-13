@@ -336,9 +336,14 @@ a failed item, not a done one. Weights are deliberate: craft and function are wh
 does well; the bland-output problem lives in design quality and originality.
 
 **Two marks are comparable only when they came from the same instrument.**
-A prior `tasteReview` whose `evaluatorModel`, `rubricVersion` or `shotsHash`
-differs from the current one is NOT a baseline, and the rise rule does not
-apply to it. The item re-baselines: record `comparedToPrior: "rebaselined"`,
+A prior `tasteReview` whose `evaluatorModel` or `rubricVersion` differs from
+the current one is NOT a baseline, and the rise rule does not apply to it.
+`shotsHash` binds the prior the other way (fixed 2026-09-13): `priorMark.shotsHash`
+must equal the receipt committed at HEAD, proving the named prior is the mark on
+the shots that were actually scored — it is never compared to the NEW shots,
+because a page that changed has new pixels by definition, and reading it that
+way made every real rise a "rebaseline" and left a re-score of unchanged pixels
+as the only passable "rose". The item re-baselines: record `comparedToPrior: "rebaselined"`,
 keep the old mark in `priorMark`, and name the differing key(s) in
 `rebaselineReason`. The new mark is the first mark on the new instrument, and
 the next pass must rise by the floor over it. Nobody is asked to decide this —

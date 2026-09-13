@@ -123,10 +123,37 @@ export function isV2Receipt(tr) {
  * Which identity keys differ between this receipt and the prior mark it names.
  * A prior mark that differs on any of them was produced by a different
  * instrument and is not a valid baseline.
+ *
+ * evaluatorModel and rubricVersion are compared receipt-to-prior: the same
+ * judge on the same rubric. shotsHash is NOT — a page that changed has new
+ * shots by definition, so comparing the new hash to the prior's would make
+ * every real rise a "rebaseline" and the only passable "rose" a re-score of
+ * unchanged pixels (the noise case the rise floor exists to exclude). The
+ * prior's shotsHash instead binds the named prior to the receipt committed at
+ * HEAD (`headReceipt`): a priorMark whose hash is not the committed receipt's
+ * names a mark against shots that no longer exist (the SITE-M1 case) and
+ * drifts. When no HEAD receipt is given, shotsHash cannot drift.
  */
-export function identityDrift(tr, prior) {
+export const SHOTS_IDENTITY_FIX_FROM = '2026-09-13'
+
+export function identityDrift(tr, prior, headReceipt = null) {
   if (!isPlainObject(prior)) return [...IDENTITY_KEYS]
-  return IDENTITY_KEYS.filter((k) => String(prior[k] ?? '') !== String(tr[k] ?? ''))
+  // Receipts written before the fix compared the new hash to the prior's and
+  // recorded "shotsHash differs" as their rebaseline reason. They stay valid.
+  if (String(tr?.evaluatedAt ?? '') < SHOTS_IDENTITY_FIX_FROM) {
+    return IDENTITY_KEYS.filter((k) => String(prior[k] ?? '') !== String(tr[k] ?? ''))
+  }
+  const drift = IDENTITY_KEYS.filter(
+    (k) => k !== 'shotsHash' && String(prior[k] ?? '') !== String(tr[k] ?? ''),
+  )
+  if (
+    isPlainObject(headReceipt) &&
+    isNonEmptyString(headReceipt.shotsHash) &&
+    String(prior.shotsHash ?? '') !== String(headReceipt.shotsHash)
+  ) {
+    drift.push('shotsHash')
+  }
+  return drift
 }
 
 /**
@@ -238,7 +265,7 @@ export function receiptV2Problems(tr, { root, rubricText, headReceipt = null, co
     } else if (!Number.isInteger(prior.score)) {
       p.push('priorMark.score must be the integer mark it is being compared to.')
     } else {
-      const drift = identityDrift(tr, prior)
+      const drift = identityDrift(tr, prior, headScored)
       if (cmp === 'rose') {
         if (drift.length > 0) {
           p.push(
