@@ -8,6 +8,9 @@
  *
  *   npx tsx scripts/site-queue-status.ts            # the table
  *   npx tsx scripts/site-queue-status.ts --json     # the same as JSON
+ *   npx tsx scripts/site-queue-status.ts --claim SITE-XX,SITE-YY --owner <session>   # take work (the ONLY claim path)
+ *   npx tsx scripts/site-queue-status.ts --touch SITE-XX --owner <session>           # heartbeat
+ *   npx tsx scripts/site-queue-status.ts --note SITE-XX --text "…" --owner <session> # append a finding to evidence
  */
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'
@@ -168,6 +171,38 @@ async function claim(sb: ReturnType<typeof createClient>, gaps: string[], owner:
   return taken
 }
 
+/**
+ * `--note <SITE-XX> --text "<finding>" --owner <session>` appends one dated line
+ * to the node's evidence (2026-09-12). The skills say "findings append to a
+ * node" and, until now, the only way to do that was a hand-rolled client, which
+ * is the same shape as a hand-written claim. This writes `evidence` only — never
+ * state, owner, or heartbeat — so it cannot take, revive, or finish a node.
+ */
+async function note(sb: ReturnType<typeof createClient>, gap: string, owner: string, text: string): Promise<boolean> {
+  const { data: row, error } = await sb
+    .from('loop_work_nodes')
+    .select('id,evidence')
+    .eq('domain', 'public-ux')
+    .eq('version_gap', gap)
+    .maybeSingle()
+  if (error || !row) {
+    console.error(`${gap}: ${error?.message ?? 'no such node'}`)
+    return false
+  }
+  const line = `[${new Date().toISOString().slice(0, 16)}Z ${owner}] ${text.replace(/\s+/g, ' ').trim()}`
+  const prior = typeof (row as { evidence: string | null }).evidence === 'string' ? (row as { evidence: string }).evidence : ''
+  const { error: wErr } = await sb
+    .from('loop_work_nodes')
+    .update({ evidence: prior ? `${prior}\n${line}` : line })
+    .eq('id', (row as { id: string }).id)
+  if (wErr) {
+    console.error(`${gap}: ${wErr.message}`)
+    return false
+  }
+  console.log(`${gap}: noted`)
+  return true
+}
+
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -201,6 +236,21 @@ async function main() {
     }
     const ok = await touch(sb, gaps, owner)
     process.exit(ok === gaps.length ? 0 : 1)
+  }
+
+  const noteIdx = process.argv.indexOf('--note')
+  if (noteIdx > -1) {
+    const gap = (process.argv[noteIdx + 1] ?? '').trim()
+    const textIdx = process.argv.indexOf('--text')
+    const ownerIdx = process.argv.indexOf('--owner')
+    const text = process.argv[textIdx + 1] ?? ''
+    const owner = process.argv[ownerIdx + 1] ?? ''
+    if (!gap || textIdx === -1 || !text.trim() || ownerIdx === -1 || !owner) {
+      console.error('usage: --note SITE-02 --text "<finding>" --owner <session-id>')
+      process.exit(2)
+    }
+    const ok = await note(sb, gap, owner, text)
+    process.exit(ok ? 0 : 1)
   }
 
   const { data, error } = await sb
