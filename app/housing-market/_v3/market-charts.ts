@@ -31,7 +31,7 @@ import {
 } from '@/components/site/v3'
 import { volumeCompact, type CompositionPart } from './closed-kpis'
 
-const MONTH_TICK = [
+export const MONTH_TICK = [
   'Jan',
   'Feb',
   'Mar',

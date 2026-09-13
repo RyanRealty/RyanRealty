@@ -102,19 +102,21 @@ import {
   V3_ROOT_CLASS,
   v3Text,
   V3Breadcrumb,
+  V3Chart,
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
+  V3_INSIGHT_MIN_POINTS,
   type V3InstrumentFigure,
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { MarketInquirySheet } from './_v3/MarketInquirySheet.client'
-import { CITY_SLUG, CLOSED_SALES_YEAR, HISTORY_PATH } from './_v3/hub-constants'
+import { CITY_LABELS, CITY_SLUG, CLOSED_SALES_YEAR, HISTORY_PATH } from './_v3/hub-constants'
 import { buildCityLedger, buildHubLead, buildSfrFollowFigures } from './_v3/hub-sections'
 import { buildRegionMedianChart, dropInProgressMonth } from './_v3/market-charts'
 import { HubOpeningDrawings } from './_v3/HubCityMosPages.client'
@@ -194,6 +196,7 @@ export default async function HousingMarketHubPage() {
     leftoverMonthly,
     regionOverlays,
     marketReports,
+    cityMonthlyRows,
   ] = await Promise.all([
     getMarketPulseAllCitySnapshots(),
     getRecentBlogPosts({ limit: 3 }),
@@ -215,7 +218,26 @@ export default async function HousingMarketHubPage() {
     // The published reports list the /housing-market/reports door opens to
     // (SITE-40): the newest weekly snapshot's week is the figure on that door.
     listMarketReports(60),
+    // THE CITY INSIGHT'S RUN (SITE-100): each covered city's median sale price
+    // by complete month, the same leftover monthly its own report's chart
+    // draws (app/housing-market/[...slug]/page.tsx), so the card on the hub
+    // and the chart behind its door print the same months. One read per city,
+    // in the same parallel batch; a city that cannot plot gets no card, never
+    // a cache fill.
+    Promise.all(
+      CITY_LABELS.map(async (label) => {
+        const slug = CITY_SLUG[label]
+        if (!slug) return null
+        const leftover = await getPublicDetachedMonthly({
+          geoType: 'city',
+          geoSlug: slug,
+          currentMonthKey: todayKey.slice(0, 7),
+        })
+        return [slug, leftoverOrCacheMonthly(leftover, []).months] as const
+      }),
+    ),
   ])
+  const cityMonthlyBySlug = new Map(cityMonthlyRows.filter((row) => row != null))
   const regionMt = regionOverlays.get('region:central-oregon')
   const hud = leftoverHudKpis({
     grain: 'region',
@@ -362,7 +384,10 @@ export default async function HousingMarketHubPage() {
     mix: mixFigures,
   })
   const [firstSfrFigure, ...restSfrFigures] = leadFigures.length > 0 ? leadFigures : openingFigures
-  const cityMosPages = buildCityMosPages(citySnapshots)
+  const cityMosPages = buildCityMosPages(citySnapshots, {
+    monthlyBySlug: cityMonthlyBySlug,
+    minSeriesPoints: V3_INSIGHT_MIN_POINTS,
+  })
 
   // M1 AEO: the mart-backed size and composition questions, appended to the same FAQ
   // array that feeds the FAQPage JSON-LD. Both read the strings computed above.
@@ -607,13 +632,22 @@ export default async function HousingMarketHubPage() {
             sourceName={v3Text('Oregon Data Share')}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
             asOf={refreshedAt ?? undefined}
-            chart={seriesChart}
             drawing={
               regionMos || cityMosPages.length > 0 || extraPages.length > 0 ? (
                 <HubOpeningDrawings
                   regionMos={regionMos}
                   cityPages={cityMosPages}
                   extraPages={extraPages}
+                  /* The long view rides in the drawing's aside rather than the
+                     Instrument's chart slot so it can stack with the leftover
+                     insight in one column beside the verdict (hub-fold.css);
+                     the same V3Chart, the same id, the same hover. */
+                  series={seriesChart ? <V3Chart {...seriesChart} id="market-series" /> : null}
+                  /* The door to the page's ONE ask (MarketInquirySheet below,
+                     id="ask"), so the inquiry is reachable from the first
+                     viewport. A link, not a second form (invariant 5). */
+                  askHref="#ask"
+                  askLabel="Ask a broker about this market"
                 />
               ) : undefined
             }

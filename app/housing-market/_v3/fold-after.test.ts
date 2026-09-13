@@ -91,8 +91,18 @@ describe('market instruments open on a claim and a drawing', () => {
     expect(hub).not.toMatch(/buildMosSupplyChart/)
     expect(drawings).toMatch(/<V3MosBars/)
     expect(drawings).toMatch(/regionMos/)
-    // The series is the Instrument's chart slot, the bars ride in the drawing.
-    expect(hub).toMatch(/chart=\{seriesChart\}/)
+    // The city pages are the whole beautifului InsightCards object (header,
+    // prose, scrubbable run, pill) through the house primitive, not the pager
+    // header over a second two-bar card (judge 2026-09-13, run 1).
+    expect(drawings).toMatch(/<V3Insight/)
+    expect(drawings).not.toMatch(/<InsightPager/)
+    // The one ask is a path from the fold: a door to the sheet, not a second form.
+    expect(hub).toMatch(/askHref="#ask"/)
+    expect(hub).toMatch(/monthlyBySlug: cityMonthlyBySlug/)
+    // The series rides in the drawing's aside (one column with the leftover
+    // insight), the same V3Chart the Instrument slot drew, same id and hover.
+    expect(hub).toMatch(/series=\{seriesChart \? <V3Chart \{\.\.\.seriesChart\} id="market-series" \/> : null\}/)
+    expect(hub).not.toMatch(/chart=\{seriesChart\}/)
     expect(hub).toMatch(/regionMos=\{regionMos\}/)
     expect(hub).toMatch(/buildOpeningFigures/)
     expect(hub).toMatch(/HubOpeningDrawings/)

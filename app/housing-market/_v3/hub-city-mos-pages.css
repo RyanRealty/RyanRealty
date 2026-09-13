@@ -1,49 +1,6 @@
-/* Hub city MOS pager. Navy/cream through v3 tokens only. */
-
-.hub-city-mos {
-  display: grid;
-  gap: var(--v3-space-sm);
-  min-width: 0;
-}
-
-.hub-city-mos .insight-pager {
-  color: var(--v3-ink);
-}
-
-.hub-city-mos .insight-pager__title {
-  font-size: var(--v3-size-label);
-  font-weight: 600;
-  letter-spacing: var(--v3-track-label);
-  text-transform: uppercase;
-  color: var(--v3-ink-muted);
-}
-
-.hub-city-mos .insight-pager__current {
-  font-family: var(--v3-font-display);
-  font-size: var(--v3-size-body-lg);
-  color: var(--v3-ink);
-}
-
-.hub-city-mos .insight-pager__count {
-  font-size: var(--v3-size-label);
-  color: var(--v3-ink-muted);
-}
-
-.hub-city-mos .insight-pager__btn {
-  color: var(--v3-ink);
-  min-width: var(--v3-tap);
-  min-height: var(--v3-tap);
-}
-
-.hub-city-mos__door {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--v3-tap);
-  font-size: var(--v3-size-body);
-  color: var(--v3-ink);
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
-}
+/* Hub fold drawings: the leftover insight's figure rows and the ask door.
+   The insight objects themselves are painted by V3Insight.css. Navy/cream
+   through v3 tokens only. */
 
 .hub-opening-draw {
   display: grid;
@@ -51,44 +8,96 @@
   min-width: 0;
 }
 
-.hub-extra-pages__solo,
-.hub-extra-pages__claim {
-  margin: 0;
-  color: var(--v3-ink);
-  font-size: var(--v3-size-body);
-}
-
-.hub-extra-pages__solo {
-  font-family: var(--v3-font-display);
-  font-size: var(--v3-size-body-lg);
-}
-
-.hub-extra-pages__claim {
-  color: var(--v3-ink-muted);
-}
-
 .hub-extra-pages__items {
   display: grid;
-  gap: var(--v3-space-xs);
+  gap: var(--v3-space-2xs);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+.hub-extra-pages__item {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, auto) minmax(0, 1fr);
+  grid-template-areas:
+    'value label'
+    'track track';
+  align-items: baseline;
+  column-gap: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+}
+
+.hub-extra-pages__item:not(.hub-extra-pages__item--weighed) {
+  grid-template-areas: 'value label';
+}
+
 .hub-extra-pages__door {
   display: grid;
-  gap: var(--v3-space-2xs, 0.15rem);
+  grid-template-columns: inherit;
+  grid-template-areas: inherit;
+  grid-column: 1 / -1;
+  align-items: baseline;
+  column-gap: var(--v3-space-sm);
   min-height: var(--v3-tap);
   color: var(--v3-ink);
   text-decoration: none;
 }
 
+.hub-extra-pages__door:hover .hub-extra-pages__label {
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.hub-extra-pages__door:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
 .hub-extra-pages__value {
+  grid-area: value;
+  font-family: var(--v3-font-num);
   font-variant-numeric: tabular-nums;
+  font-weight: var(--v3-weight-num);
   color: var(--v3-ink);
 }
 
 .hub-extra-pages__label {
+  grid-area: label;
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-label);
+  line-height: var(--v3-leading-note);
+}
+
+/* The length behind the figure: the builder's proportion, one shared unit per
+   page. Hairline track, navy fill. */
+.hub-extra-pages__track {
+  grid-area: track;
+  display: block;
+  height: 0.375rem;
+  margin-top: var(--v3-space-3xs);
+  background: var(--v3-hairline);
+  overflow: hidden;
+}
+
+.hub-extra-pages__fill {
+  display: block;
+  height: 100%;
+  width: var(--hub-extra-pct, 0%);
+  background: var(--v3-ink);
+  transition: width var(--v3-dur-rise) var(--v3-ease-out);
+}
+
+.hub-fold-ask {
+  display: flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  /* Tighter to the series above it than the insight below: the door reads
+     as the chart's next step, not the pager's header. */
+  margin-top: calc(-1 * var(--v3-space-sm));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-extra-pages__fill {
+    transition: none;
+  }
 }

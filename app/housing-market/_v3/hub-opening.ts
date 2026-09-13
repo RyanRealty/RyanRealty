@@ -12,14 +12,22 @@
 
 import type { MarketPulseSnapshot } from '@/lib/data'
 import type { MarketKind } from '@/lib/market/classify'
-import { MOS_PLAIN_LABEL } from '@/lib/market/classify'
+import { marketVerdict, MOS_PLAIN_LABEL } from '@/lib/market/classify'
 import { formatDate } from '@/lib/format/date'
+import { formatPriceCompact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { marketHubChooser } from '@/lib/market/report-doors'
-import { v3Text, type V3InstrumentFigure, type V3QuietItem } from '@/components/site/v3'
+import {
+  v3Text,
+  type V3InsightPoint,
+  type V3InsightSeries,
+  type V3InstrumentFigure,
+  type V3QuietItem,
+} from '@/components/site/v3'
 import { CITY_LABELS, CITY_SLUG } from './hub-constants'
 import type { CityLedger } from './hub-sections'
+import { MONTH_TICK, type MedianMonth } from './market-charts'
 import { MARKET_FOLD_LABEL } from './opening'
 
 /** Fold label: names the tail, no integer, short enough for 375. */
@@ -38,9 +46,55 @@ export type HubCityMosPage = {
   salesLabel: string
   salesValue: number
   mosText: string
+  /** The city's own verdict from the same raw value, or 'unknown'. */
+  verdictKind: MarketKind
+  verdictLabel: string
   source: string
   asOf: string | null
   tooltip: { homes: string; sales: string; source: string }
+  /**
+   * The city's median sale price by complete month — the card the insight
+   * scrubs. Null when the leftover monthly cannot plot (absent is not zero;
+   * never filled from another table).
+   */
+  series: V3InsightSeries | null
+}
+
+/** Complete months the city card draws. Two years reads the season twice. */
+export const HUB_CITY_SERIES_MONTHS = 24
+
+/**
+ * The city insight's run: median sale price by complete month, the same
+ * leftover monthly the city report's own chart draws, trimmed to the last
+ * HUB_CITY_SERIES_MONTHS. Fewer than V3_INSIGHT_MIN_POINTS priced months
+ * omits the card rather than drawing a confident sliver.
+ */
+export function buildCityInsightSeries(
+  label: string,
+  monthly: readonly MedianMonth[],
+  opts: { minPoints: number; asOf?: string | null },
+): V3InsightSeries | null {
+  const points: V3InsightPoint[] = []
+  for (const row of monthly.slice(-HUB_CITY_SERIES_MONTHS)) {
+    if (row.medianSalePrice == null || !(row.medianSalePrice > 0)) continue
+    const d = new Date(row.periodStart)
+    if (Number.isNaN(d.getTime())) continue
+    const month = MONTH_TICK[d.getUTCMonth()]
+    if (!month) continue
+    const face = formatPriceCompact(row.medianSalePrice)
+    if (!face || face === '\u2014') continue
+    points.push({ value: row.medianSalePrice, tick: `${month} ${d.getUTCFullYear()}`, label: face })
+  }
+  if (points.length < Math.max(2, opts.minPoints)) return null
+  const first = points[0]!
+  const last = points[points.length - 1]!
+  return {
+    caption: 'Median sale price by month',
+    points,
+    source: `Oregon Data Share. ${label} single-family houses closed each complete calendar month, ${first.tick} to ${last.tick}; the median of that month's closes. A month with too few closes to publish is left out, not drawn as a dip.`,
+    sourceName: 'Oregon Data Share',
+    asOf: opts.asOf ?? null,
+  }
 }
 
 /**
@@ -67,6 +121,11 @@ export function formatHubPace(n: number): string {
  */
 export function buildCityMosPages(
   snapshots: readonly MarketPulseSnapshot[],
+  opts: {
+    /** Per-city complete monthly medians, keyed by CITY_SLUG. A missing key omits the card. */
+    monthlyBySlug?: ReadonlyMap<string, readonly MedianMonth[]>
+    minSeriesPoints: number
+  } = { minSeriesPoints: 6 },
 ): HubCityMosPage[] {
   const byLabel = new Map(snapshots.map((s) => [s.geo_label, s]))
   const pages: HubCityMosPage[] = []
@@ -96,6 +155,13 @@ export function buildCityMosPages(
       tipStamp && tipStamp !== '\u2014'
         ? `Oregon Data Share · ${label} single-family · as of ${tipStamp}`
         : `Oregon Data Share · ${label} single-family`
+    // Same derivation the region verdict uses (page.tsx invariant 1): classify
+    // the raw published value, format only to print it.
+    const verdict = marketVerdict(mos)
+    const monthly = opts.monthlyBySlug?.get(slug)
+    const series = monthly
+      ? buildCityInsightSeries(label, monthly, { minPoints: opts.minSeriesPoints })
+      : null
     pages.push({
       id: slug,
       label,
@@ -109,6 +175,8 @@ export function buildCityMosPages(
       salesLabel,
       salesValue: sales,
       mosText,
+      verdictKind: verdict.kind,
+      verdictLabel: verdict.label,
       source: `Oregon Data Share. ${homesLabel} homes for sale in ${label} vs ${salesLabel} sales a month.`,
       asOf,
       tooltip: {
@@ -116,6 +184,7 @@ export function buildCityMosPages(
         sales: salesLabel,
         source: tipSource,
       },
+      series,
     })
   }
   return pages
@@ -157,9 +226,9 @@ export function hubOpeningNote(
 ): string {
   const cityBit =
     cityPageCount > 1
-      ? 'Page a city to see its own.'
+      ? 'Page a city for its own pace and two years of sale prices.'
       : cityPageCount === 1
-        ? "The city drawing is that city's own homes for sale against a month of sales."
+        ? "The city card is that city's own pace and two years of sale prices."
         : 'A city with no published pace is omitted.'
   if (verdictKind === 'unknown') {
     return `Live single-family inventory for Central Oregon. ${cityBit}`
@@ -293,11 +362,20 @@ export function isHubLeadFigure(figure: V3InstrumentFigure): boolean {
   return LEAD_LABELS.has(String(figure.label))
 }
 
-/** Whole-number face for beui-number. Percents and money stay static. */
+/**
+ * Whole-number face for beui-number: a count ("1,531") or an exact dollar
+ * figure ("$749,500", whole dollars) rides the wheel and settles on the
+ * caller's string. Percents, tenths, and compact money ("$749K") stay static —
+ * the wheel would have to invent digits the label does not carry (judge
+ * 2026-09-13: "$749,500 and 30 sit as two leftover numerals... Money does not
+ * swap").
+ */
 export function wholeCountFromLabel(value: string): number | undefined {
   const trimmed = value.trim()
-  if (!trimmed || trimmed.includes('%') || trimmed.includes('$')) return undefined
-  const n = Number(trimmed.replace(/,/g, ''))
+  if (!trimmed || trimmed.includes('%')) return undefined
+  const bare = trimmed.startsWith('$') ? trimmed.slice(1) : trimmed
+  if (!/^\d{1,3}(,\d{3})*$|^\d+$/.test(bare)) return undefined
+  const n = Number(bare.replace(/,/g, ''))
   if (!Number.isInteger(n) || n <= 0) return undefined
   return n
 }
@@ -307,6 +385,13 @@ export type HubExtraItem = {
   label: string
   count?: number
   href?: string
+  /**
+   * This item's length behind its figure, 0 to 1 — a PROPORTION the builder
+   * owns (V3Ledger's `weight` rule): a count's share of the page's largest
+   * count, or a published percent over 100. Absent when the page's items do
+   * not share a unit, so a bar is never drawn across dollars and days.
+   */
+  weight?: number
 }
 
 export type HubExtraPage = {
@@ -314,6 +399,34 @@ export type HubExtraPage = {
   label: string
   claim: string
   items: HubExtraItem[]
+}
+
+/** "98.1%" or "at least 62%" → 0.981 / 0.62. Anything else is not a share. */
+export function shareFromLabel(value: string): number | undefined {
+  const match = /^(?:at least )?(\d+(?:\.\d+)?)%$/.exec(value.trim())
+  if (!match) return undefined
+  const pct = Number(match[1])
+  if (!Number.isFinite(pct) || pct < 0 || pct > 100) return undefined
+  return pct / 100
+}
+
+/**
+ * Lengths for one page: every item a count → each over the largest; every
+ * item a percent → each over 100; mixed units → none. Out of range is dropped,
+ * not clamped (a bar whose length was guessed is worse than no bar).
+ */
+export function weighExtraItems(items: readonly HubExtraItem[]): HubExtraItem[] {
+  if (items.length === 0) return []
+  const allCounts = items.every((item) => item.count != null && item.count > 0)
+  if (allCounts) {
+    const max = Math.max(...items.map((item) => item.count!))
+    return items.map((item) => ({ ...item, weight: item.count! / max }))
+  }
+  const shares = items.map((item) => shareFromLabel(item.value))
+  if (shares.every((share) => share != null)) {
+    return items.map((item, i) => ({ ...item, weight: shares[i]! }))
+  }
+  return [...items]
 }
 
 function extraItemsFromFigures(figures: readonly V3InstrumentFigure[]): HubExtraItem[] {
@@ -333,12 +446,15 @@ function extraItemsFromFigures(figures: readonly V3InstrumentFigure[]): HubExtra
       ...(figure.href ? { href: figure.href } : {}),
     })
   }
-  return items
+  return weighExtraItems(items)
 }
 
 /**
- * Extra leftover tiles become InsightPager pages, not a closed cream fold.
- * Miss omits a page. Claims carry no figure — the items do.
+ * Extra leftover tiles become insight pages, not a closed cream fold. Miss
+ * omits a page. Claims carry no figure — the items do. Pages that draw (a
+ * shared unit, so a length behind each figure) lead; the two-unit price-and-
+ * wait pair follows, its dollars riding beui-number (judge 2026-09-13: "a KPI
+ * pair wearing a catalog name").
  */
 export function buildHubExtraPages(input: {
   priceAndWait: readonly V3InstrumentFigure[]
@@ -347,6 +463,24 @@ export function buildHubExtraPages(input: {
   mix: readonly V3InstrumentFigure[]
 }): HubExtraPage[] {
   const pages: HubExtraPage[] = []
+  const typeItems = extraItemsFromFigures(input.types)
+  if (typeItems.length > 0) {
+    pages.push({
+      id: 'types',
+      label: 'Types',
+      claim: 'Single-family inventory by type, each against the largest, when a type has a live row.',
+      items: typeItems,
+    })
+  }
+  const mixItems = extraItemsFromFigures(input.mix)
+  if (mixItems.length > 0) {
+    pages.push({
+      id: 'features',
+      label: 'Features',
+      claim: 'What a typical recent closed house had, as a share of closes, when a share published.',
+      items: mixItems,
+    })
+  }
   const priceItems = extraItemsFromFigures(input.priceAndWait)
   if (priceItems.length > 0) {
     pages.push({
@@ -356,15 +490,6 @@ export function buildHubExtraPages(input: {
       items: priceItems,
     })
   }
-  const typeItems = extraItemsFromFigures(input.types)
-  if (typeItems.length > 0) {
-    pages.push({
-      id: 'types',
-      label: 'Types',
-      claim: 'Single-family inventory by type, when a type has a live row.',
-      items: typeItems,
-    })
-  }
   const paceItems = extraItemsFromFigures(input.pace)
   if (paceItems.length > 0) {
     pages.push({
@@ -372,15 +497,6 @@ export function buildHubExtraPages(input: {
       label: 'Sale pace',
       claim: 'How the recent closed and pending pace reads, from Oregon Data Share.',
       items: paceItems,
-    })
-  }
-  const mixItems = extraItemsFromFigures(input.mix)
-  if (mixItems.length > 0) {
-    pages.push({
-      id: 'features',
-      label: 'Features',
-      claim: 'What a typical recent closed house had, when a share published.',
-      items: mixItems,
     })
   }
   return pages

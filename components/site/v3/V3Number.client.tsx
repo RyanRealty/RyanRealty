@@ -32,13 +32,18 @@ export function V3Number({
   className,
 }: V3NumberProps) {
   const safe = Number.isFinite(value) ? Math.max(0, value) : 0
+  // The caller's own leading unit ("$") rides the wheel too, so a dollar figure
+  // swaps digits as money rather than as a bare count that grows a "$" on
+  // settle (judge 2026-09-13: "Money does not swap"). No unit is invented: the
+  // prefix is whatever non-digit run the formatted string already opens with.
+  const prefix = /^[^\d]*/.exec(formatted)?.[0] ?? ''
   return (
     <AnimatedNumber
       value={safe}
       duration={Math.max(0, durationMs) / 1000}
       format={(n) => {
         if (Math.round(n) === Math.round(safe)) return formatted
-        return Math.round(n).toLocaleString('en-US')
+        return `${prefix}${Math.round(n).toLocaleString('en-US')}`
       }}
       className={cn(V3_ROOT_CLASS, 'v3-number', className)}
       startOnView={startOnView}

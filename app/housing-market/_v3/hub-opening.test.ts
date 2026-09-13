@@ -3,6 +3,7 @@ import type { MarketPulseSnapshot } from '@/lib/data'
 import { MOS_PLAIN_LABEL } from '@/lib/market/classify'
 import { v3Text } from '@/components/site/v3'
 import {
+  buildCityInsightSeries,
   buildCityMosPages,
   buildHubChooserItems,
   buildHubExtraPages,
@@ -13,6 +14,8 @@ import {
   hubOpeningNote,
   isHubLeadFigure,
   monthlyPaceFromMos,
+  shareFromLabel,
+  weighExtraItems,
   wholeCountFromLabel,
 } from './hub-opening'
 import { buildSfrFollowFigures } from './hub-sections'
@@ -58,6 +61,43 @@ describe('buildCityMosPages — city grain, miss omits', () => {
     expect(pages[0]?.href).toBe('/housing-market/bend')
     expect(pages[0]?.source).toContain('Oregon Data Share')
     expect(pages[0]?.source).not.toMatch(/leftover|Market Truth|sample-gated/i)
+    // The verdict is classified from the raw value the caption formats.
+    expect(pages[0]?.verdictKind).toBe('balanced')
+    expect(pages[1]?.verdictKind).toBe('balanced')
+    // No monthly handed in: no card, never a cache fill.
+    expect(pages[0]?.series).toBeNull()
+  })
+
+  it('draws the city run from its own complete months and omits a thin one', () => {
+    const months = Array.from({ length: 30 }, (_, i) => {
+      const d = new Date(Date.UTC(2024, i, 1))
+      return { periodStart: d.toISOString().slice(0, 10), medianSalePrice: 600_000 + i * 2_500 }
+    })
+    const pages = buildCityMosPages(
+      [
+        snap({ geo_label: 'Bend', geo_slug: 'bend', active_count: 800, months_of_supply: 4.2 }),
+        snap({ geo_label: 'Redmond', geo_slug: 'redmond', active_count: 200, months_of_supply: 5.1 }),
+      ],
+      {
+        monthlyBySlug: new Map([
+          ['bend', months],
+          ['redmond', months.slice(0, 3)],
+        ]),
+        minSeriesPoints: 6,
+      },
+    )
+    const bend = pages[0]?.series
+    expect(bend).not.toBeNull()
+    // Trimmed to the last 24 complete months, oldest first, caller-formatted.
+    expect(bend?.points).toHaveLength(24)
+    expect(bend?.points[0]?.tick).toBe('Jul 2024')
+    expect(bend?.points.at(-1)?.tick).toBe('Jun 2026')
+    expect(bend?.points.at(-1)?.label).toBe('$673K')
+    expect(bend?.source).toMatch(/Oregon Data Share/)
+    expect(bend?.source).toMatch(/Jul 2024 to Jun 2026/)
+    // Three priced months cannot plot: the card is omitted, not thinned.
+    expect(pages[1]?.series).toBeNull()
+    expect(buildCityInsightSeries('Bend', [], { minPoints: 6 })).toBeNull()
   })
 
   it('omits a city whose displayed active disagrees with the pulse active', () => {
@@ -92,9 +132,10 @@ describe('hub live title and description', () => {
 })
 
 describe('extra leftover pages — pager, not a closed cream fold', () => {
-  it('takes only whole counts for beui-number', () => {
+  it('takes whole counts and exact dollars for beui-number, never compact money or tenths', () => {
     expect(wholeCountFromLabel('215')).toBe(215)
     expect(wholeCountFromLabel('1,531')).toBe(1531)
+    expect(wholeCountFromLabel('$749,500')).toBe(749500)
     expect(wholeCountFromLabel('$749K')).toBeUndefined()
     expect(wholeCountFromLabel('4.7')).toBeUndefined()
     expect(wholeCountFromLabel('98.1%')).toBeUndefined()
@@ -110,11 +151,35 @@ describe('extra leftover pages — pager, not a closed cream fold', () => {
       pace: [{ value: v3Text('6.2'), label: v3Text('months of supply') }],
       mix: [],
     })
-    expect(pages.map((page) => page.id)).toEqual(['price', 'types', 'pace'])
-    expect(pages[0]?.items[0]?.count).toBeUndefined()
-    expect(pages[1]?.items[0]?.count).toBe(1200)
+    // Pages that draw a length lead; the two-unit price pair follows.
+    expect(pages.map((page) => page.id)).toEqual(['types', 'price', 'pace'])
+    expect(pages[1]?.items[0]?.count).toBeUndefined()
+    expect(pages[1]?.items[0]?.weight).toBeUndefined()
+    expect(pages[0]?.items[0]?.count).toBe(1200)
+    // Counts share a unit: each over the largest (V3Ledger's weight rule).
+    expect(pages[0]?.items[0]?.weight).toBe(1)
+    expect(pages[0]?.items[1]?.weight).toBeCloseTo(180 / 1200)
+    // Tenths of a month are not a share of anything: no bar.
+    expect(pages[2]?.items[0]?.weight).toBeUndefined()
     expect(pages.every((page) => !/\d/.test(page.claim))).toBe(true)
     expect(pages.every((page) => !/leftover|Market Truth|sample-gated/i.test(page.claim))).toBe(true)
+  })
+
+  it('weighs published shares over 100 and never a mixed-unit page', () => {
+    expect(shareFromLabel('98.1%')).toBeCloseTo(0.981)
+    expect(shareFromLabel('at least 62%')).toBeCloseTo(0.62)
+    expect(shareFromLabel('$749,500')).toBeUndefined()
+    expect(shareFromLabel('130%')).toBeUndefined()
+    const shares = weighExtraItems([
+      { value: '98.1%', label: 'a' },
+      { value: 'at least 62%', label: 'b' },
+    ])
+    expect(shares.map((item) => item.weight)).toEqual([0.981, 0.62])
+    const mixed = weighExtraItems([
+      { value: '$749,500', label: 'median list price', count: 749500 },
+      { value: '30', label: 'days to an offer' },
+    ])
+    expect(mixed.every((item) => item.weight == null)).toBe(true)
   })
 
   it('keeps only homes and a month of sales as the opening tiles', () => {

@@ -1,0 +1,258 @@
+/* V3 Insight — the beautifului InsightCards object on house paint.
+   Tokens from ./tokens.css only. The installed insight-pager.css owns the
+   header's structure; this file paints it. */
+
+.v3.v3-insight {
+  display: grid;
+  gap: var(--v3-space-xs);
+  min-width: 0;
+  color: var(--v3-ink);
+}
+
+/* Header: the installed pager chrome, painted. */
+.v3.v3-insight .insight-pager {
+  color: var(--v3-ink);
+}
+
+.v3.v3-insight .insight-pager__title,
+.v3-insight__solo-title {
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3.v3-insight .insight-pager__current,
+.v3-insight__solo-label {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-body-lg);
+  color: var(--v3-ink);
+}
+
+.v3.v3-insight .insight-pager__count {
+  font-size: var(--v3-size-label);
+  color: var(--v3-ink-muted);
+}
+
+.v3.v3-insight .insight-pager__btn {
+  color: var(--v3-ink);
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3.v3-insight .insight-pager__btn:hover {
+  background: var(--v3-wash);
+}
+
+.v3.v3-insight .insight-pager__btn:active {
+  transform: scale(0.96);
+}
+
+.v3.v3-insight .insight-pager__btn:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-insight__solo {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--v3-space-xs);
+  margin: 0;
+  min-height: 2.75rem;
+}
+
+/* Page: the demo's blurred crossfade on every turn. */
+.v3-insight__page {
+  display: grid;
+  gap: var(--v3-space-xs);
+  min-width: 0;
+  animation: v3-insight-in var(--v3-dur-enter) var(--v3-ease-out) both;
+}
+
+@keyframes v3-insight-in {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.v3-insight__prose {
+  margin: 0;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+  text-wrap: pretty;
+}
+
+/* Card: the embedded visualisation. Hairline, cream, no shadow. */
+.v3-insight__card {
+  display: grid;
+  gap: var(--v3-space-xs);
+  min-width: 0;
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  background: var(--v3-surface);
+  border: var(--v3-rule-hairline);
+}
+
+.v3-insight__card:empty {
+  display: none;
+}
+
+.v3-insight__run {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+}
+
+.v3-insight__caption {
+  margin: 0;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3-insight__read {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3-insight__read-value {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-num);
+  color: var(--v3-ink);
+}
+
+.v3-insight__plot {
+  position: relative;
+  height: 5.5rem;
+  min-width: 0;
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.v3-insight__plot:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-insight__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.v3-insight__line {
+  fill: none;
+  stroke: var(--v3-ink);
+  stroke-width: var(--v3-chart-stroke-context);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.v3-insight__cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--v3-edge);
+  transform: translateX(-0.5px);
+  pointer-events: none;
+  transition: left var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-insight__plot--scrubbing .v3-insight__cursor {
+  background: var(--v3-ink-muted);
+}
+
+.v3-insight__dot {
+  position: absolute;
+  width: var(--v3-chart-mark-base);
+  height: var(--v3-chart-mark-base);
+  border-radius: 50%;
+  background: var(--v3-ink);
+  box-shadow: 0 0 0 2px var(--v3-surface);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition:
+    left var(--v3-dur-state) var(--v3-ease-out),
+    top var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-insight__ends {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  margin: 0;
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
+}
+
+.v3-insight__body {
+  min-width: 0;
+}
+
+.v3.v3-insight .v3-source {
+  max-inline-size: none;
+  margin-inline: 0;
+}
+
+/* Pill: one door out, the demo's rounded button on house paint. */
+.v3-insight__pill {
+  display: inline-flex;
+  align-items: center;
+  align-self: start;
+  justify-self: start;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-md);
+  border: var(--v3-rule-hairline);
+  border-radius: 999px;
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  text-decoration: none;
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    border-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-insight__pill:hover {
+  background: var(--v3-wash);
+  border-color: var(--v3-edge);
+}
+
+.v3-insight__pill:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-insight__page {
+    animation: none;
+  }
+
+  .v3-insight__cursor,
+  .v3-insight__dot,
+  .v3-insight__pill,
+  .v3.v3-insight .insight-pager__btn {
+    transition: none;
+  }
+}

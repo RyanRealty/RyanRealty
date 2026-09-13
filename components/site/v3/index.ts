@@ -142,6 +142,14 @@ export { V3MosBars } from './V3MosBars'
 export type { V3MosBarsProps } from './V3MosBars'
 
 /**
+ * The beautifului InsightCards object on house paint (SITE-100): the installed
+ * insight-pager header, one prose claim, a scrubbable caller-formatted run,
+ * one pill door. Wired on the /housing-market fold.
+ */
+export { V3Insight, V3_INSIGHT_MIN_POINTS } from './V3Insight.client'
+export type { V3InsightProps, V3InsightPage, V3InsightSeries, V3InsightPoint } from './V3Insight.client'
+
+/**
  * Region months-of-supply threshold scale with a searchable city overlay
  * (SITE-69). Pair with V3Drawing's two bars — never a KPI tile of the ratio.
  * Adapted from beui:combobox + beautifului:insight-cards into house paint.
