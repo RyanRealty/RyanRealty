@@ -43,37 +43,53 @@ import {
   EVALUATOR_MODEL,
   RUBRIC_PATH,
   RUBRIC_VERSION,
+  claudeCliFailure,
+  claudeModelFromWrapper,
   competitiveBriefBlocksDone,
+  demoMatchBlocksDone,
   evaluatorBlocksDone,
   evaluatorEnvelope,
   evaluatorResultProblems,
   grokCliFailure,
+  grokFailureFallsBack,
+  pickFallbackAlias,
 } from './lib/taste-evaluate-result.mjs'
 
 /**
- * THE ONE INSTRUMENT (Matt 2026-09-09: "default to always having Grok 4.6 do the
- * evaluation preferably always using the subscription tokens").
+ * THE RULER (Matt 2026-09-09: "default to always having Grok 4.6 do the
+ * evaluation preferably always using the subscription tokens") AND ITS
+ * FALLBACK (Matt 2026-09-12: "fix it all").
  *
  * The judge is a property of the REPO, not of whoever is building: every page
- * class is scored by grok-4.6 whether a Claude lane, a Grok lane or the table
- * tool asks, so two marks are always comparable and `ci:taste-canon`'s rise rule
- * means one thing. Before this, a Claude lane scored with claude-sonnet-5 and a
- * Grok lane with grok-4.5, so every page a Grok lane touched rebaselined and its
- * old mark stopped counting.
+ * class is scored by the same chain whether a Claude lane, a Grok lane or the
+ * table tool asks, so two marks are always comparable and `ci:taste-canon`'s
+ * rise rule means one thing.
  *
- * Transport is the `grok` CLI, not `xaiFetch`: the CLI spends Matt's Grok
- * subscription, the API path bills XAI_API_KEY per token. Verified 2026-09-09
- * that the CLI reads PNGs off disk and reports what is in them.
+ * Link 1: grok-4.6 through the `grok` CLI (spends the Grok subscription; the
+ * API path bills XAI_API_KEY per token, so that key is stripped). Link 2, taken
+ * ONLY when link 1 is missing or answers 402: claude through the `claude` CLI
+ * (Claude subscription), sonnet unless the builder was sonnet, then opus. The
+ * receipt records which link answered in `evaluatorModel`; a change of link
+ * rebaselines the class once through the identity keys. Both links down is
+ * the only honest fail — never invent a verdict.
+ *
+ * From 2026-09-11 10:17 to this change every fire got 402 from link 1 and the
+ * cloud lanes never had the CLI, so zero SITE nodes could finish. See
+ * scripts/lib/taste-evaluate-result.mjs.
  *
  * The builder must differ (ci:taste-canon refuses evaluatorModel ==
- * builderModel), so a Grok lane BUILDS with grok-4.5 and is judged by 4.6.
+ * builderModel), so a Grok lane BUILDS with grok-4.5; pass `--builder <model>`
+ * so the fallback can pick a claude model that is not the builder.
  *
  * Matt 2026-09-12: demoMatch is required. A false or omitted verdict prints
  * the JSON then exits 2 — do not invent true. When the route publishes a
- * competitiveBrief, competitiveBriefPass is the same rule. CLI missing / 402
- * is an honest fail; leave the node in_progress.
+ * competitiveBrief, competitiveBriefPass is the same rule.
+ *
+ *   --evaluator auto|grok|claude   (default auto = the chain above)
+ *   --builder <model>              (the model that built the page)
  */
 const GROK_CLI = process.env.GROK_CLI ?? `${process.env.HOME}/.grok/bin/grok`
+const CLAUDE_CLI = process.env.CLAUDE_CLI ?? 'claude'
 
 config({ path: '.env.local' })
 
@@ -86,8 +102,18 @@ function loadRubric(): string {
   return readFileSync(RUBRIC_PATH, 'utf8').trim()
 }
 
+type EvaluatorChoice = 'auto' | 'grok' | 'claude'
+
 function parseArgs(argv: string[]) {
-  const out: { routeKey?: string; shots?: string[]; url?: string; beat?: string; focus?: string } = {}
+  const out: {
+    routeKey?: string
+    shots?: string[]
+    url?: string
+    beat?: string
+    focus?: string
+    evaluator: EvaluatorChoice
+    builder?: string
+  } = { evaluator: 'auto' }
   const positional: string[] = []
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i]!
@@ -95,10 +121,74 @@ function parseArgs(argv: string[]) {
     else if (a === '--url') out.url = argv[++i]
     else if (a === '--beat') out.beat = argv[++i]
     else if (a === '--focus') out.focus = argv[++i]
-    else positional.push(a)
+    else if (a === '--builder') out.builder = argv[++i]
+    else if (a === '--evaluator') {
+      const v = String(argv[++i] ?? '').trim()
+      if (v !== 'auto' && v !== 'grok' && v !== 'claude') {
+        console.error(`taste-evaluate: --evaluator must be auto|grok|claude, got "${v}"`)
+        process.exit(2)
+      }
+      out.evaluator = v
+    } else positional.push(a)
   }
   out.routeKey = positional[0]
   return out
+}
+
+type JudgeAnswer = { content: string; evaluatorModel: string; transport: 'grok-cli' | 'claude-cli' }
+
+/** Link 1: grok-4.6 through the grok CLI, subscription only. */
+function askGrok(prompt: string): { answer?: JudgeAnswer; fail?: ReturnType<typeof grokCliFailure> } {
+  if (!existsSync(GROK_CLI)) {
+    return { fail: grokCliFailure(127, `no grok CLI at ${GROK_CLI}`, '', { cliMissing: true }) }
+  }
+  // Strip XAI_API_KEY so the grok CLI cannot fall back to console.x.ai pay-per-token.
+  // dotenv loaded .env.local; the CLI otherwise treats that key as API billing
+  // when the grok.com session is missing (launchd). Subscription is ~/.grok/auth.json.
+  const grokEnv = { ...process.env }
+  delete grokEnv.XAI_API_KEY
+  const res = spawnSync(
+    GROK_CLI,
+    ['-p', prompt, '-m', EVALUATOR_MODEL, '--permission-mode', 'bypassPermissions', '--output-format', 'plain'],
+    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 900_000, env: grokEnv },
+  )
+  const fail = grokCliFailure(res.status, res.stderr, res.stdout, {
+    cliMissing: Boolean(res.error && 'code' in res.error && res.error.code === 'ENOENT'),
+  })
+  if (fail) return { fail }
+  return { answer: { content: res.stdout ?? '', evaluatorModel: EVALUATOR_MODEL, transport: 'grok-cli' } }
+}
+
+/** Link 2: claude through the claude CLI (subscription). The alias keeps it off the builder. */
+function askClaude(prompt: string, alias: 'sonnet' | 'opus'): { answer?: JudgeAnswer; fail?: ReturnType<typeof claudeCliFailure> } {
+  // Same rule as the grok link: the judge spends the SUBSCRIPTION. dotenv loaded
+  // .env.local, and the claude CLI lets ANTHROPIC_API_KEY take precedence over the
+  // claude.ai login (per-token billing, and it exited 1 on 2026-09-12). Strip it.
+  const claudeEnv = { ...process.env }
+  delete claudeEnv.ANTHROPIC_API_KEY
+  delete claudeEnv.ANTHROPIC_AUTH_TOKEN
+  const res = spawnSync(
+    CLAUDE_CLI,
+    ['-p', prompt, '--model', alias, '--output-format', 'json', '--allowedTools', 'Read'],
+    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 900_000, env: claudeEnv },
+  )
+  const cliMissing = Boolean(res.error && 'code' in res.error && res.error.code === 'ENOENT')
+  let wrapper: Record<string, unknown> | null = null
+  try {
+    wrapper = res.stdout ? (JSON.parse(res.stdout) as Record<string, unknown>) : null
+  } catch {
+    wrapper = null
+  }
+  const fail = claudeCliFailure(res.status, res.stderr, wrapper, { cliMissing })
+  if (fail) return { fail }
+  const result = wrapper && typeof wrapper.result === 'string' ? wrapper.result : ''
+  return {
+    answer: {
+      content: result,
+      evaluatorModel: claudeModelFromWrapper(wrapper, alias),
+      transport: 'claude-cli',
+    },
+  }
 }
 
 async function main() {
@@ -203,11 +293,7 @@ async function main() {
     .filter(Boolean)
     .join('\n')
 
-  if (!existsSync(GROK_CLI)) {
-    console.error(grokCliFailure(127, `no grok CLI at ${GROK_CLI}`, '', { cliMissing: true })!.message)
-    process.exit(2)
-  }
-  // The CLI is an agent: it is told to open the files rather than handed base64,
+  // Either CLI is an agent: it is told to open the files rather than handed base64,
   // which is also why the shots must be absolute paths.
   const prompt = [
     'You are a design critic reviewing a page you did not build. You are hard to impress and you say why. You never praise a page for being clean; clean is the floor. You name what is dull. When the display is a banned data form, you name the house form that replaces it.',
@@ -220,24 +306,37 @@ async function main() {
     'Reply with the JSON object and nothing else — no preamble, no code fence.',
   ].join('\n')
 
-  // Strip XAI_API_KEY so the grok CLI cannot fall back to console.x.ai pay-per-token.
-  // dotenv loaded .env.local above; the CLI otherwise treats that key as API billing
-  // when the grok.com session is missing (launchd). Subscription is ~/.grok/auth.json.
-  const grokEnv = { ...process.env }
-  delete grokEnv.XAI_API_KEY
-  const res = spawnSync(
-    GROK_CLI,
-    ['-p', prompt, '-m', EVALUATOR_MODEL, '--permission-mode', 'bypassPermissions', '--output-format', 'plain'],
-    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 900_000, env: grokEnv },
-  )
-  const cliFail = grokCliFailure(res.status, res.stderr, res.stdout, {
-    cliMissing: Boolean(res.error && 'code' in res.error && res.error.code === 'ENOENT'),
-  })
-  if (cliFail) {
-    console.error(cliFail.message)
-    process.exit(2)
+  let answer: JudgeAnswer | undefined
+  if (args.evaluator !== 'claude') {
+    const grok = askGrok(prompt)
+    if (grok.answer) answer = grok.answer
+    else if (grok.fail) {
+      if (args.evaluator === 'grok' || !grokFailureFallsBack(grok.fail)) {
+        console.error(grok.fail.message)
+        process.exit(2)
+      }
+      console.error(
+        `taste-evaluate: link 1 (grok-4.6) unavailable — ${grok.fail.kind}. Falling back to the claude CLI; the receipt will record the model that answered and the class rebaselines once.`,
+      )
+    }
   }
-  const content = res.stdout ?? ''
+  if (!answer) {
+    const alias = pickFallbackAlias(args.builder)
+    const claude = askClaude(prompt, alias)
+    if (claude.fail) {
+      console.error(claude.fail.message)
+      process.exit(2)
+    }
+    answer = claude.answer!
+    const family = (m: string) => (/sonnet/i.test(m) ? 'sonnet' : /opus/i.test(m) ? 'opus' : m)
+    if (args.builder && family(args.builder) === family(answer.evaluatorModel)) {
+      console.error(
+        `taste-evaluate: fallback judge ${answer.evaluatorModel} is the builder (${args.builder}). ci:taste-canon refuses a model grading its own page. Pass a different --builder or wait for link 1.`,
+      )
+      process.exit(2)
+    }
+  }
+  const { content, evaluatorModel, transport } = answer
   const parsed = parseJsonLoose(content)
   const schemaProblems = evaluatorResultProblems(parsed, { competitiveBrief })
   const defects =
@@ -265,6 +364,8 @@ async function main() {
       evaluatorEnvelope({
         parsed,
         shots: images.map((i) => i.name),
+        evaluatorModel,
+        transport,
       }),
       null,
       2,

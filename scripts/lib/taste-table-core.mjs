@@ -21,6 +21,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { isNonEmptyString, isPlainObject, median3 } from './taste-receipt.mjs'
 import { builderCard, classForRoute } from './taste-catalog.mjs'
+import { RUBRIC_VERSION } from './taste-evaluate-result.mjs'
 
 export { isNonEmptyString, isPlainObject, median3 }
 
@@ -31,8 +32,14 @@ export const FINISH_LINE = 70
 export const PRODUCT_HOLD =
   'The loop is comprehensive: SEO, listing/page information, and UX all rise on the same pass. Name an SEO increment (title, JSON-LD, crawlable links, and/or payload/LCP better than HEAD). Name an information increment (listing cards carry price+address+beds/baths/sqft; listing detail keeps and fills the 13-row house contract; sourced figures stay). UX: catalog source installed, demo match. Product hold: honesty, sourced figures, requiredComponents, JSON-LD, titles, conversion asks, tap targets, and page payload must not fall. A prettier page that drops any of those, or that only restyles UX, is not done. ci:mockup-parity and ci:runtime-gates stay green. honestyFunction must not fall vs the prior mark (omitting it to skip the hold fails). requiredComponents cannot shrink vs HEAD; a JSON-LD or conversion-ask role present at HEAD must remain. Listing pages keep the 13-row house contract (bleed hero, PropertySpecs, MLS remarks, schools, payment, Tour/Call/Text).'
 
-/** The rubric this instrument scores against — TASTE.md's five-criterion table. */
-export const RUBRIC_VERSION = 'v1-2026-09-08'
+/**
+ * The rubric this instrument scores against — TASTE.md's five-criterion table.
+ * ONE ruler (Matt 2026-09-12): the table and the route receipts share the
+ * version in scripts/lib/taste-evaluate-result.mjs, so a table mark and a
+ * receipt mark are comparable. Bumping it is a whole-table re-run, held by
+ * ci:rubric-freeze.
+ */
+export { RUBRIC_VERSION }
 
 /** Criterion -> its point cap. TASTE.md: DQ 30 / OR 30 / IN 15 / CR 15 / HF 10. */
 export const CRITERIA_WEIGHTS = Object.freeze({

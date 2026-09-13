@@ -2,7 +2,8 @@
  * SITE-* Tip Ready / node-complete gate (Matt 2026-09-12).
  *
  * A cream-box receipt (Avatar import, score rise, files on disk) is not done.
- * Evidence must record grok-4.6 `demoMatch: true`. When the route publishes
+ * Evidence must record `demoMatch: true` from the judge chain (grok-4.6, or
+ * the claude CLI fallback when grok is missing / 402). When the route publishes
  * a competitiveBrief (About first, then any kit that carries the field),
  * `parity.json` tasteReview.competitiveBriefPass must be the boolean true.
  * A hand-typed `competitiveBriefPass: true` string is refuse.
@@ -13,8 +14,22 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-const TIP_READY_EVALUATOR = 'grok-4.6'
+/**
+ * The judge chain (scripts/lib/taste-evaluate-result.mjs): grok-4.6 first,
+ * the claude CLI (sonnet, or opus when the builder was sonnet) when grok is
+ * missing or answers 402. Keep this list equal to ALLOWED_EVALUATORS there.
+ */
+const TIP_READY_EVALUATORS = ['grok-4.6', 'claude-sonnet-5', 'claude-opus-5'] as const
 const HASH_RE = /^sha256:[0-9a-f]{64}$/
+const JUDGE_UNREACHABLE_RE =
+  /\b402\b|payment required|balance exhausted|no grok CLI|grok CLI missing|GROK_CLI|claude CLI missing|both judges/i
+
+function isTipReadyEvaluator(model: unknown): boolean {
+  const m = String(model ?? '').trim()
+  if (!m) return false
+  if ((TIP_READY_EVALUATORS as readonly string[]).includes(m)) return true
+  return /^claude-(sonnet|opus)-\d/.test(m)
+}
 
 export type SiteQueueTasteReview = {
   competitiveBriefPass?: unknown
@@ -79,9 +94,9 @@ function tipReadyReceiptProblems(
     return ['tasteReview is required to mark a SITE node done. Bare evidence prose is refuse.']
   }
   const p: string[] = []
-  if (String(tr.evaluatorModel ?? '').trim() !== TIP_READY_EVALUATOR) {
+  if (!isTipReadyEvaluator(tr.evaluatorModel)) {
     p.push(
-      'evaluatorModel must be grok-4.6 — the same instrument as demoMatch. Leave the node in_progress.',
+      `evaluatorModel must be one of the judge chain (${TIP_READY_EVALUATORS.join(', ')}) — the same instrument as demoMatch. Leave the node in_progress.`,
     )
   }
   if (typeof tr.demoMatch !== 'boolean') {
@@ -118,18 +133,22 @@ export function siteQueueDoneEvidenceProblems(
   if (gap && !/^SITE-\d+/.test(gap)) return []
   const text = String(evidence ?? '')
   if (!text.trim()) return ['evidence is required — a node is done when the environment says so']
-  if (/\b402\b/.test(text) && /grok|taste-evaluate|quota|payment required/i.test(text)) {
-    return ['grok CLI 402 — do not invent demoMatch. Leave the node in_progress.']
-  }
-  if (/no grok CLI|grok CLI missing|GROK_CLI/i.test(text)) {
-    return ['grok CLI missing — do not invent demoMatch. Leave the node in_progress.']
-  }
+  const judgeUnreachable = JUDGE_UNREACHABLE_RE.test(text)
+  const claimsDemoMatch = /\bdemoMatch\b\s*[:=]\s*true\b/i.test(text)
   if (/\bdemoMatch\b\s*[:=]\s*false\b/i.test(text)) {
     return ['evidence records demoMatch false — not done. Leave the node in_progress.']
   }
-  if (!/\bdemoMatch\b\s*[:=]\s*true\b/i.test(text)) {
+  if (!claimsDemoMatch) {
+    if (/\b402\b|payment required|balance exhausted/i.test(text)) {
+      return [
+        'grok CLI 402 and no fallback verdict — do not invent demoMatch. Run taste-evaluate again (the claude CLI is link 2). Leave the node in_progress.',
+      ]
+    }
+    if (judgeUnreachable) {
+      return ['judge CLI missing and no fallback verdict — do not invent demoMatch. Leave the node in_progress.']
+    }
     return [
-      'SITE done evidence must include demoMatch: true from grok-4.6. Score rise without a demo match is not Tip Ready.',
+      `SITE done evidence must include demoMatch: true from the judge chain (${TIP_READY_EVALUATORS.join(', ')}). Score rise without a demo match is not Tip Ready.`,
     ]
   }
   if (/\bcompetitiveBriefPass\b\s*[:=]\s*false\b/i.test(text)) {
@@ -157,6 +176,13 @@ export function siteQueueDoneEvidenceProblems(
   }
   if (needsBrief || claimsBriefPass) {
     return tipReadyReceiptProblems(tr, { competitiveBrief: brief, requireBrief: true })
+  }
+  if (judgeUnreachable) {
+    // The prose says link 1 failed and then claims a verdict: only the receipt can back that.
+    const p = tipReadyReceiptProblems(tr, { competitiveBrief: brief })
+    return p.length
+      ? [`evidence records a judge failure; the fallback verdict must be on the route's parity.json tasteReview. ${p[0]}`]
+      : []
   }
   return []
 }

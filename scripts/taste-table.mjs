@@ -17,9 +17,10 @@
  *      default) — never `design_system/ryan-realty/ui_kits/`, so no route's
  *      committed receipt is ever disturbed by this tool.
  *   2. Run ONE separate evaluator per class, on the instrument the route
- *      receipts use (`claude-sonnet-5`, rubric `v1-2026-09-08`,
- *      `design_system/public/taste-evaluator.v1-2026-09-08.md`), three
- *      independent scorings, the median.
+ *      receipts use (the judge chain and rubric in
+ *      `scripts/lib/taste-evaluate-result.mjs` — grok-4.6, falling back to
+ *      the claude CLI when grok is missing or 402), three independent
+ *      scorings, the median. Each row records the model that answered.
  *   3. Write `design_system/public/taste-table.json` (sorted median
  *      ascending) and regenerate the "Taste table" markdown block in
  *      `docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md` from it.
@@ -34,13 +35,15 @@
  *       # Supabase. A person edits scripts/seed-site-queue.ts then runs
  *       # `npx tsx scripts/seed-site-queue.ts`.
  *
- * Transport: the Anthropic SDK directly (`@anthropic-ai/sdk` — the repo's own
+ * Transport: default is the grok CLI (subscription) with the claude CLI as
+ * the fallback link; `--claude` skips straight to the claude CLI; `--api`
+ * uses the Anthropic SDK directly (`@anthropic-ai/sdk` — the repo's own
  * `createAnthropic()` in lib/ai/anthropic.ts is TypeScript and cannot be
- * imported from a plain .mjs script) when `ANTHROPIC_API_KEY` is set;
- * otherwise the `claude` CLI on PATH, told to Read the two screenshots.
- * Both use model `claude-sonnet-5` — a different model from whatever built
- * the page classes (recorded per-row as `builderModel`, read off each route
- * file's last commit's `Co-Authored-By:` trailer).
+ * imported from a plain .mjs script) and bills per token. The judge is
+ * always a different model from whatever built the page classes (recorded
+ * per-row as `builderModel`, read off each route file's last commit's
+ * `Co-Authored-By:` trailer); when any selected class was built by sonnet
+ * the claude link uses opus.
  *
  * Exit codes: 0 clean; 1 usage/registry/IO error; 2 at least one row could
  * not be validated (recorded with `row.invalid`, per-class, run continues).
@@ -55,13 +58,24 @@ import {
   loadTasteCatalog,
 } from './lib/taste-catalog.mjs'
 import {
-  FINISH_LINE,
+  EVALUATOR_MODEL,
+  FALLBACK_EVALUATORS,
+  RUBRIC_PATH,
   RUBRIC_VERSION,
+  claudeCliFailure,
+  claudeModelFromWrapper,
+  grokCliFailure,
+  grokFailureFallsBack,
+  pickFallbackAlias,
+} from './lib/taste-evaluate-result.mjs'
+import {
+  FINISH_LINE,
   buildRow,
   buildSeedDrafts,
   builderModelFromCommitBody,
   collectUsedVersionGaps,
   computeDiff,
+  criteriaProblems,
   droppedClasses,
   filterClasses,
   formatSeedDrafts,
@@ -77,17 +91,22 @@ const REPO_ROOT = process.cwd()
 const CLASS_REGISTRY_PATH = 'design_system/public/taste-classes.json'
 const TABLE_PATH = 'design_system/public/taste-table.json'
 const E2E_DOC_PATH = 'docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md'
-const PROMPT_PATH = 'design_system/public/taste-evaluator.v1-2026-09-08.md'
+// ONE RULER: the prompt file and rubric version come from taste-evaluate-result.mjs,
+// the same module scripts/taste-evaluate.ts reads, so a table mark and a route
+// receipt are the same instrument.
+const PROMPT_PATH = RUBRIC_PATH
 const TAKE_ROUTE_SHOTS = 'scripts/take-route-shots.mjs'
-// THE ONE INSTRUMENT (Matt 2026-09-09: "default to always having Grok 4.6 do the
-// evaluation preferably always using the subscription tokens"). The judge belongs to
-// the repo, not to whoever built the page: scripts/taste-evaluate.ts uses this same
-// model and transport, so a table mark and a route receipt come off one ruler. The
-// grok CLI spends Matt's Grok subscription; the SDK path bills per token. A Grok lane
-// BUILDS with grok-4.5 so ci:taste-canon's evaluatorModel != builderModel still holds.
-// Switching from claude-sonnet-5 rebaselines every class once.
-const EVALUATOR_MODEL = 'grok-4.6'
+// THE RULER AND ITS FALLBACK (Matt 2026-09-09: "default to always having Grok 4.6 do
+// the evaluation preferably always using the subscription tokens"; Matt 2026-09-12:
+// "fix it all"). The judge belongs to the repo, not to whoever built the page. Link 1
+// is grok-4.6 through the grok CLI (subscription; XAI_API_KEY stripped). When that
+// CLI is missing or answers 402 — as it did for every fire from 2026-09-11 10:17 —
+// link 2 is the claude CLI (subscription), sonnet unless the builder was sonnet.
+// The table records the model that actually answered in instrument.evaluatorModel
+// and per row, so a switch of link rebaselines once through the identity keys. A
+// Grok lane BUILDS with grok-4.5 so evaluatorModel != builderModel still holds.
 const GROK_CLI = process.env.GROK_CLI ?? `${process.env.HOME}/.grok/bin/grok`
+const CLAUDE_CLI = process.env.CLAUDE_CLI ?? 'claude'
 const SCORINGS_PER_CLASS = 3
 
 // ---------------------------------------------------------------------------
@@ -280,12 +299,12 @@ function buildPrompt({ key, route, url }, instrumentText) {
   )
 }
 
-async function scoreWithSdk(prompt, shots, apiKey) {
+async function scoreWithSdk(prompt, shots, apiKey, model) {
   const client = new Anthropic({ apiKey })
   const desktop = readFileSync(shots.desktopPath).toString('base64')
   const mobile = readFileSync(shots.mobilePath).toString('base64')
   const resp = await client.messages.create({
-    model: EVALUATOR_MODEL,
+    model,
     max_tokens: 2000,
     messages: [
       {
@@ -307,35 +326,58 @@ async function scoreWithSdk(prompt, shots, apiKey) {
     .join('\n')
 }
 
-function scoreWithCli(prompt, shots) {
+/**
+ * Link 2: the claude CLI. `alias` is sonnet|opus (never the builder). Returns
+ * `{ text, model }` — the model the CLI actually answered with, off its wrapper.
+ * Throws an Error carrying `.kind` ('missing' | '402' | 'error') on failure.
+ */
+function scoreWithCli(prompt, shots, alias) {
   const fullPrompt =
     `${prompt}\n\nRead these two files before scoring — do not guess from their names:\n` +
     `Desktop (1440x900): ${shots.desktopPath}\nMobile (375x812): ${shots.mobilePath}\n\n` +
     'Reply with the JSON object only, per the contract above.'
+  // The judge spends the subscription: an ambient ANTHROPIC_API_KEY makes the claude
+  // CLI bill per token and (2026-09-12) exit 1. Strip it, as the grok link strips XAI_API_KEY.
+  const claudeEnv = { ...process.env }
+  delete claudeEnv.ANTHROPIC_API_KEY
+  delete claudeEnv.ANTHROPIC_AUTH_TOKEN
   const res = spawnSync(
-    'claude',
-    ['-p', fullPrompt, '--model', EVALUATOR_MODEL, '--output-format', 'json', '--allowedTools', 'Read'],
-    { cwd: REPO_ROOT, encoding: 'utf8', maxBuffer: 40 * 1024 * 1024, timeout: 240000 },
+    CLAUDE_CLI,
+    ['-p', fullPrompt, '--model', alias, '--output-format', 'json', '--allowedTools', 'Read'],
+    { cwd: REPO_ROOT, encoding: 'utf8', maxBuffer: 40 * 1024 * 1024, timeout: 600000, env: claudeEnv },
   )
-  if (res.error) throw res.error
-  if (res.status !== 0) {
-    throw new Error(`claude CLI exited ${res.status}: ${(res.stderr || '').slice(0, 500)}`)
-  }
-  let wrapper
+  let wrapper = null
   try {
-    wrapper = JSON.parse(res.stdout)
+    wrapper = res.stdout ? JSON.parse(res.stdout) : null
   } catch {
-    throw new Error(`claude CLI did not return its --output-format json wrapper: ${res.stdout.slice(0, 300)}`)
+    wrapper = null
   }
-  if (wrapper.is_error) throw new Error(`claude CLI reported an error: ${JSON.stringify(wrapper).slice(0, 500)}`)
-  return String(wrapper.result ?? '')
+  const fail = claudeCliFailure(res.status, res.stderr, wrapper, {
+    cliMissing: Boolean(res.error && res.error.code === 'ENOENT'),
+  })
+  if (fail) {
+    const err = new Error(fail.message)
+    err.kind = fail.kind
+    throw err
+  }
+  return { text: String(wrapper.result ?? ''), model: claudeModelFromWrapper(wrapper, alias) }
 }
 
+/**
+ * Link 1: grok-4.6 through the grok CLI. Throws an Error carrying `.kind`
+ * ('missing' | '402' | 'error'); the caller falls back on the first two only.
+ */
 function scoreWithGrok(prompt, shots) {
   const fullPrompt =
     `${prompt}\n\nRead these two image files with your file tool and judge what is IN them — do not guess from their names:\n` +
     `Desktop (1440x900): ${shots.desktopPath}\nMobile (375x812): ${shots.mobilePath}\n\n` +
     'Reply with the JSON object only, no preamble and no code fence.'
+  if (!existsSync(GROK_CLI)) {
+    const fail = grokCliFailure(127, `no grok CLI at ${GROK_CLI}`, '', { cliMissing: true })
+    const err = new Error(fail.message)
+    err.kind = fail.kind
+    throw err
+  }
   const grokEnv = { ...process.env }
   delete grokEnv.XAI_API_KEY
   const res = spawnSync(
@@ -343,29 +385,79 @@ function scoreWithGrok(prompt, shots) {
     ['-p', fullPrompt, '-m', EVALUATOR_MODEL, '--permission-mode', 'bypassPermissions', '--output-format', 'plain'],
     { cwd: REPO_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 900000, env: grokEnv },
   )
-  if (res.error) throw res.error
-  if (res.status !== 0) throw new Error(`grok CLI exited ${res.status}: ${(res.stderr || '').slice(0, 500)}`)
-  return String(res.stdout ?? '')
+  const fail = grokCliFailure(res.status, res.stderr, res.stdout, {
+    cliMissing: Boolean(res.error && res.error.code === 'ENOENT'),
+  })
+  if (fail) {
+    const err = new Error(fail.message)
+    err.kind = fail.kind
+    throw err
+  }
+  return { text: String(res.stdout ?? ''), model: EVALUATOR_MODEL }
 }
 
-async function evaluateClass(cls, shots, { transport, apiKey, instrumentText }) {
-  const scorings = []
-  for (let i = 0; i < SCORINGS_PER_CLASS; i += 1) {
-    const prompt = buildPrompt(cls, instrumentText)
-    let text = ''
-    try {
-      text =
-        transport === 'sdk'
-          ? await scoreWithSdk(prompt, shots, apiKey)
-          : transport === 'claude'
-            ? scoreWithCli(prompt, shots)
-            : scoreWithGrok(prompt, shots)
-    } catch (err) {
-      console.error(`  ${cls.key}: scoring ${i + 1}/${SCORINGS_PER_CLASS} failed — ${err.message}`)
-    }
-    scorings.push(normalizeScoring(parseEvaluatorJson(text)))
+/**
+ * Run the judge chain once. `state.link` remembers which link is answering so
+ * a 402 on the first scoring does not get re-tried 77 more times in one run.
+ * Returns { text, model, transport }.
+ */
+async function askJudge(prompt, shots, { transport, apiKey, alias, state }) {
+  if (transport === 'sdk') {
+    // --api is explicit and bills per token; it is a claude model, never grok.
+    const model = FALLBACK_EVALUATORS[alias]
+    return { text: await scoreWithSdk(prompt, shots, apiKey, model), model, transport: 'sdk' }
   }
-  return scorings
+  if (transport === 'grok' && state.link !== 'claude') {
+    try {
+      const r = scoreWithGrok(prompt, shots)
+      state.link = 'grok'
+      return { ...r, transport: 'grok' }
+    } catch (err) {
+      if (!grokFailureFallsBack({ kind: err.kind })) throw err
+      console.error(`  link 1 (grok-4.6) unavailable — ${err.kind}. Falling back to the claude CLI (${alias}) for the rest of this run; the table rebaselines once.`)
+      state.link = 'claude'
+    }
+  }
+  const r = scoreWithCli(prompt, shots, alias)
+  return { ...r, transport: 'claude' }
+}
+
+/** A scoring the row builder will accept: integer score, five criteria that sum to it. */
+function scoringWellFormed(s) {
+  return isPlainObject(s) && Number.isInteger(s.score) && criteriaProblems(s.criteria, s.score).length === 0
+}
+
+// One malformed answer out of three used to void the class, and a voided class with a
+// prior mark voided the whole table write (2026-09-12: `compare` lost a 27-class run to one
+// missing criteria field). A judge that drops a field is retried once on the same shots
+// before the scoring is recorded as-is.
+const SCORING_RETRIES = 1
+
+async function evaluateClass(cls, shots, { transport, apiKey, instrumentText, alias, state }) {
+  const scorings = []
+  const models = new Set()
+  for (let i = 0; i < SCORINGS_PER_CLASS; i += 1) {
+    let scoring = null
+    for (let attempt = 0; attempt <= SCORING_RETRIES; attempt += 1) {
+      const prompt = buildPrompt(cls, instrumentText)
+      let text = ''
+      try {
+        const r = await askJudge(prompt, shots, { transport, apiKey, alias, state })
+        text = r.text
+        models.add(r.model)
+      } catch (err) {
+        console.error(`  ${cls.key}: scoring ${i + 1}/${SCORINGS_PER_CLASS} failed — ${err.message}`)
+      }
+      scoring = normalizeScoring(parseEvaluatorJson(text))
+      if (scoringWellFormed(scoring)) break
+      if (attempt < SCORING_RETRIES) {
+        const why = isPlainObject(scoring) ? criteriaProblems(scoring.criteria, scoring.score).join(' ') || 'no integer score' : 'unparseable answer'
+        console.error(`  ${cls.key}: scoring ${i + 1}/${SCORINGS_PER_CLASS} malformed (${why}) — asking once more`)
+      }
+    }
+    scorings.push(scoring)
+  }
+  return { scorings, evaluatorModel: models.size === 1 ? [...models][0] : models.size > 1 ? 'mixed' : null }
 }
 
 // ---------------------------------------------------------------------------
@@ -563,7 +655,15 @@ async function main() {
     console.log(`  classes (${selected.length}): ${selected.map((c) => c.key).join(', ')}`)
     console.log(`  runDir: ${runDir}${opts.evaluateOnlyDir ? ' (existing — --evaluate-only)' : ' (would be created)'}`)
     if (!opts.evaluateOnlyDir) console.log(`  baseUrl: ${opts.baseUrl ?? '(missing — required unless --evaluate-only)'}`)
-    console.log(`  transport: ${transport} (${transport === 'sdk' ? 'ANTHROPIC_API_KEY is set' : 'ANTHROPIC_API_KEY is unset — falls back to the claude CLI'})`)
+    console.log(
+      `  transport: ${transport} (${
+        transport === 'sdk'
+          ? '--api with ANTHROPIC_API_KEY — bills per token'
+          : transport === 'claude'
+            ? '--claude: the claude CLI only'
+            : `grok CLI (${EVALUATOR_MODEL}) first; the claude CLI when grok is missing or 402`
+      })`,
+    )
     console.log(`  shotsOnly: ${opts.shotsOnly}`)
     console.log(`  repeat: ${opts.repeat}`)
     console.log(`  diff: ${opts.diff}${opts.diffPath ? ` (against ${opts.diffPath})` : opts.diff ? ' (against HEAD)' : ''}`)
@@ -612,14 +712,22 @@ async function main() {
   }
   const baseUrlForTable = runMeta.baseUrl ?? opts.baseUrl ?? 'unknown'
 
-  console.log(`\ntaste-table — evaluating ${selected.length} class(es) via the ${transport} transport (${EVALUATOR_MODEL})\n`)
+  // The fallback alias must not be any selected class's builder. Most classes were
+  // built by claude-fable / opus lanes; if any was built by sonnet the chain uses opus.
+  const builderModels = selected.map((cls) => builderModelForRoute(cls.route))
+  const alias = builderModels.some((m) => /sonnet/i.test(String(m))) ? 'opus' : pickFallbackAlias(null)
+  const judgeState = { link: transport === 'claude' ? 'claude' : null }
+  const judgeLabel =
+    transport === 'grok' ? `${EVALUATOR_MODEL}, falling back to claude ${alias}` : transport === 'claude' ? `claude ${alias}` : FALLBACK_EVALUATORS[alias]
+  console.log(`\ntaste-table — evaluating ${selected.length} class(es) via the ${transport} transport (${judgeLabel})\n`)
 
   const firstPassMedianByKey = new Map()
   const newRows = []
+  const modelsUsed = new Set()
   let anyInvalid = false
   let anySameModel = false
 
-  for (const cls of selected) {
+  for (const [idx, cls] of selected.entries()) {
     const shots = shotPathsFor(runDir, cls.key)
     if (!existsSync(shots.desktopPath) || !existsSync(shots.mobilePath)) {
       console.error(`  ${cls.key}: shots not found under ${runDir}/${cls.key}/ — skipping`)
@@ -628,8 +736,14 @@ async function main() {
       continue
     }
     console.log(`  ${cls.key} (${cls.url})`)
-    const scorings = await evaluateClass(cls, shots, { transport, apiKey, instrumentText })
-    const builderModel = builderModelForRoute(cls.route)
+    const { scorings, evaluatorModel } = await evaluateClass(cls, shots, {
+      transport,
+      apiKey,
+      instrumentText,
+      alias,
+      state: judgeState,
+    })
+    const builderModel = builderModels[idx]
     const { row, problems } = buildRow({
       key: cls.key,
       url: cls.url,
@@ -639,13 +753,20 @@ async function main() {
       shots: { desktop: shots.desktopRel, mobile375: shots.mobileRel },
       root: REPO_ROOT,
     })
+    row.evaluatorModel = evaluatorModel
+    row.rubricVersion = RUBRIC_VERSION
+    if (evaluatorModel) modelsUsed.add(evaluatorModel)
+    if (evaluatorModel === 'mixed') {
+      problems.push('the three scorings came from two different judges — one class, one ruler. Re-run this class.')
+      row.invalid = [row.invalid, problems[problems.length - 1]].filter(Boolean).join(' ')
+    }
     if (problems.length) {
       anyInvalid = true
       console.error(`  ${cls.key}: INVALID — ${row.invalid}`)
     } else {
-      console.log(`    median ${row.median} (${row.scores.join(' · ')})`)
+      console.log(`    median ${row.median} (${row.scores.join(' · ')}) — ${evaluatorModel}`)
     }
-    const warning = sameModelWarning(row, EVALUATOR_MODEL)
+    const warning = evaluatorModel ? sameModelWarning(row, evaluatorModel) : null
     if (warning) {
       anySameModel = true
       console.error(`  WARNING: ${warning}`)
@@ -662,7 +783,7 @@ async function main() {
     for (const cls of selected) {
       const shots = shotPathsFor(runDir, cls.key)
       if (!existsSync(shots.desktopPath) || !existsSync(shots.mobilePath)) continue
-      const scorings = await evaluateClass(cls, shots, { transport, apiKey, instrumentText })
+      const { scorings } = await evaluateClass(cls, shots, { transport, apiKey, instrumentText, alias, state: judgeState })
       const { median } = (() => {
         const scores = scorings.map((s) => s.score)
         const sorted = scores.every((n) => Number.isInteger(n)) ? [...scores].sort((a, b) => a - b) : null
@@ -691,8 +812,18 @@ async function main() {
     return am - bm
   })
 
+  // The model that ACTUALLY answered, not the one we hoped for. When this run scored
+  // nothing new, keep the previous instrument's model so the table stays honest.
+  const answered = [...modelsUsed].filter((m) => m !== 'mixed')
+  const evaluatorModelUsed =
+    answered.length === 1 ? answered[0] : answered.length > 1 ? 'mixed' : current.instrument?.evaluatorModel ?? EVALUATOR_MODEL
+  if (evaluatorModelUsed === 'mixed') {
+    console.error('\ntaste-table: this run mixed two judges across classes. Every class on one ruler — re-run the classes scored by the other link.')
+  }
   const instrument = {
-    evaluatorModel: EVALUATOR_MODEL,
+    evaluatorModel: evaluatorModelUsed,
+    primaryEvaluator: EVALUATOR_MODEL,
+    fallbackEvaluator: FALLBACK_EVALUATORS[alias],
     rubricVersion: RUBRIC_VERSION,
     scorings: SCORINGS_PER_CLASS,
     aggregate: 'median',
@@ -717,24 +848,36 @@ async function main() {
     console.error('  Fix capture first (is the dev server actually serving baseUrl?), then re-run.')
     process.exit(2)
   }
-  let lost = []
+  // A class that had a mark and did not score this run keeps its PRIOR row (the mark the
+  // rise rule compares against, on the rubric it was scored on) instead of voiding the
+  // write for every class that did score. The carried row is marked, the run still exits
+  // non-zero, and `ci:rubric-freeze` keeps reporting the class until it is re-run.
+  const carried = []
   try {
     const priorRows = loadPreviousTable(null).rows ?? []
     const priorByKey = new Map(priorRows.map((r) => [r.key, r]))
-    lost = allRows
-      .filter((r) => !Number.isInteger(r.median) && Number.isInteger(priorByKey.get(r.key)?.median))
-      .map((r) => `${r.key} (had ${priorByKey.get(r.key).median})`)
+    for (let i = 0; i < allRows.length; i += 1) {
+      const r = allRows[i]
+      const prior = priorByKey.get(r.key)
+      if (Number.isInteger(r.median) || !Number.isInteger(prior?.median)) continue
+      allRows[i] = { ...prior, carriedForward: { on: today(), because: r.invalid ?? 'did not score' } }
+      carried.push(`${r.key} (keeps ${prior.median} on ${prior.rubricVersion ?? 'its prior rubric'})`)
+    }
+    allRows.sort((a, b) => {
+      const am = Number.isInteger(a.median) ? a.median : Infinity
+      const bm = Number.isInteger(b.median) ? b.median : Infinity
+      return am - bm
+    })
   } catch {
     /* no previous table to protect */
   }
-  if (lost.length) {
-    console.error(`\ntaste-table: NOT writing ${TABLE_PATH} — these classes had a mark and did not score:`)
-    for (const r of lost) console.error(`  ${r}`)
+  if (carried.length) {
+    console.error(`\ntaste-table: these classes had a mark and did not score — prior row carried forward, NOT rescored:`)
+    for (const r of carried) console.error(`  ${r}`)
     console.error('  Re-run them with --classes, or --evaluate-only a run that has their shots.')
-    process.exit(2)
   }
   writeFileSync(join(REPO_ROOT, TABLE_PATH), `${JSON.stringify(table, null, 1)}\n`)
-  console.log(`\nwrote ${TABLE_PATH} (${allRows.length} rows, ${scored.length} scored)`)
+  console.log(`\nwrote ${TABLE_PATH} (${allRows.length} rows, ${scored.length} scored${carried.length ? `, ${carried.length} carried forward` : ''})`)
 
   const block = renderMarkdownTable(allRows, { evaluatedAt: table.evaluatedAt, instrument })
   const docPath = join(REPO_ROOT, E2E_DOC_PATH)
