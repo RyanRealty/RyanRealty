@@ -52,7 +52,8 @@ import {
   evaluatorResultProblems,
   grokCliFailure,
   grokFailureFallsBack,
-  pickFallbackAlias,
+  judgeOrder,
+  roundJudge,
 } from './lib/taste-evaluate-result.mjs'
 
 /**
@@ -306,28 +307,43 @@ async function main() {
     'Reply with the JSON object and nothing else — no preamble, no code fence.',
   ].join('\n')
 
+  // The round's ruler is the judge that scored the current table; the chain
+  // starts there so a route mark stays comparable to its table row.
+  const order = judgeOrder({ round: roundJudge(process.cwd()), builderModel: args.builder ?? null, requested: args.evaluator })
   let answer: JudgeAnswer | undefined
-  if (args.evaluator !== 'claude') {
-    const grok = askGrok(prompt)
-    if (grok.answer) answer = grok.answer
-    else if (grok.fail) {
-      if (args.evaluator === 'grok' || !grokFailureFallsBack(grok.fail)) {
-        console.error(grok.fail.message)
-        process.exit(2)
+  for (const [i, step] of order.entries()) {
+    const last = i === order.length - 1
+    if (step.link === 'grok') {
+      const grok = askGrok(prompt)
+      if (grok.answer) {
+        answer = grok.answer
+        break
       }
-      console.error(
-        `taste-evaluate: link 1 (grok-4.6) unavailable — ${grok.fail.kind}. Falling back to the claude CLI; the receipt will record the model that answered and the class rebaselines once.`,
-      )
+      if (grok.fail) {
+        if (last || !grokFailureFallsBack(grok.fail)) {
+          console.error(grok.fail.message)
+          process.exit(2)
+        }
+        console.error(
+          `taste-evaluate: link 1 (grok-4.6) unavailable — ${grok.fail.kind}. Falling back to the claude CLI; the receipt will record the model that answered and the class rebaselines once.`,
+        )
+      }
+      continue
     }
-  }
-  if (!answer) {
-    const alias = pickFallbackAlias(args.builder)
-    const claude = askClaude(prompt, alias)
+    console.error(`taste-evaluate: judge = claude CLI (${step.alias}) — ${step.reason}.`)
+    const claude = askClaude(prompt, step.alias!)
     if (claude.fail) {
       console.error(claude.fail.message)
       process.exit(2)
     }
     answer = claude.answer!
+    break
+  }
+  if (!answer) {
+    console.error('taste-evaluate: no judge answered. Leave the node in_progress.')
+    process.exit(2)
+  }
+  if (answer.transport === 'claude-cli') {
     const family = (m: string) => (/sonnet/i.test(m) ? 'sonnet' : /opus/i.test(m) ? 'opus' : m)
     if (args.builder && family(args.builder) === family(answer.evaluatorModel)) {
       console.error(

@@ -13,7 +13,10 @@ import {
   grokCliFailure,
   grokFailureFallsBack,
   isAllowedEvaluator,
+  judgeFamily,
+  judgeOrder,
   pickFallbackAlias,
+  roundJudge,
 } from '../lib/taste-evaluate-result.mjs'
 
 const ABOUT_BRIEF = {
@@ -158,5 +161,55 @@ describe('taste-evaluate-result — competitiveBriefPass schema', () => {
   it('does not require the field on routes without a brief', () => {
     expect(evaluatorResultProblems({ demoMatch: true })).toEqual([])
     expect(competitiveBriefBlocksDone({ demoMatch: true })).toBe(false)
+  })
+})
+
+describe('taste-evaluate-result — the round judge (one ruler per table)', () => {
+  const table = (evaluatorModel) => JSON.stringify({ instrument: { evaluatorModel }, rows: [] })
+
+  it('reads the judge that scored the current table', () => {
+    expect(roundJudge('/repo', { readFile: () => table('claude-sonnet-5') })).toEqual({ model: 'claude-sonnet-5', family: 'sonnet' })
+    expect(roundJudge('/repo', { readFile: () => table('grok-4.6') })).toEqual({ model: 'grok-4.6', family: 'grok' })
+  })
+
+  it('no table, or a mixed table, is no round judge', () => {
+    expect(roundJudge('/repo', { readFile: () => { throw new Error('ENOENT') } })).toEqual({ model: null, family: null })
+    expect(roundJudge('/repo', { readFile: () => table('mixed') })).toEqual({ model: null, family: null })
+  })
+
+  it('judgeFamily buckets grok / sonnet / opus and nothing else', () => {
+    expect(judgeFamily('grok-4.5')).toBe('grok')
+    expect(judgeFamily('claude-sonnet-5-20260901')).toBe('sonnet')
+    expect(judgeFamily('claude-opus-5')).toBe('opus')
+    expect(judgeFamily('claude-fable-5-1')).toBeNull()
+  })
+
+  it('a sonnet-scored table keeps the chain on sonnet; grok waits for the next full run', () => {
+    const order = judgeOrder({ round: { model: 'claude-sonnet-5', family: 'sonnet' }, builderModel: 'grok-4.5' })
+    expect(order).toHaveLength(1)
+    expect(order[0]).toMatchObject({ link: 'claude', alias: 'sonnet' })
+    expect(order[0].reason).toMatch(/next full table run/)
+  })
+
+  it('a sonnet builder under a sonnet round judge is graded by opus and told it rebaselines', () => {
+    const order = judgeOrder({ round: { model: 'claude-sonnet-5', family: 'sonnet' }, builderModel: 'claude-sonnet-5' })
+    expect(order).toEqual([expect.objectContaining({ link: 'claude', alias: 'opus' })])
+    expect(order[0].reason).toMatch(/rebaselines/)
+  })
+
+  it('a grok-scored table, or no table, runs the default chain: grok then claude by builder', () => {
+    const grokRound = judgeOrder({ round: { model: 'grok-4.6', family: 'grok' }, builderModel: 'claude-sonnet-5' })
+    expect(grokRound.map((s) => s.link)).toEqual(['grok', 'claude'])
+    expect(grokRound[1].alias).toBe('opus')
+    const noRound = judgeOrder({ builderModel: 'claude-fable-5-1' })
+    expect(noRound.map((s) => s.link)).toEqual(['grok', 'claude'])
+    expect(noRound[1].alias).toBe('sonnet')
+  })
+
+  it('an explicit --evaluator wins over the round judge', () => {
+    expect(judgeOrder({ round: { model: 'claude-sonnet-5', family: 'sonnet' }, requested: 'grok' })).toEqual([expect.objectContaining({ link: 'grok' })])
+    expect(judgeOrder({ round: { model: 'grok-4.6', family: 'grok' }, requested: 'claude', builderModel: 'grok-4.5' })).toEqual([
+      expect.objectContaining({ link: 'claude', alias: 'sonnet' }),
+    ])
   })
 })

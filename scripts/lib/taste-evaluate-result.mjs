@@ -22,6 +22,8 @@
  * the JSON, then exit non-zero so the node stays in_progress. When the route
  * publishes a competitiveBrief, competitiveBriefPass is the same rule.
  */
+import { readFileSync } from 'node:fs'
+
 export const EVALUATOR_MODEL = 'grok-4.6'
 export const RUBRIC_VERSION = 'v1-2026-09-12'
 export const RUBRIC_PATH = 'design_system/public/taste-evaluator.v1-2026-09-12.md'
@@ -53,6 +55,64 @@ export function isAllowedEvaluator(model) {
  */
 export function pickFallbackAlias(builderModel) {
   return /sonnet/i.test(String(builderModel ?? '')) ? 'opus' : 'sonnet'
+}
+
+/** grok | sonnet | opus | null — the ruler family a model id belongs to. */
+export function judgeFamily(model) {
+  const m = String(model ?? '')
+  if (/grok/i.test(m)) return 'grok'
+  if (/sonnet/i.test(m)) return 'sonnet'
+  if (/opus/i.test(m)) return 'opus'
+  return null
+}
+
+/**
+ * THE ROUND'S RULER (Matt 2026-09-12). The judge that scored the current
+ * taste-table.json is the judge every route receipt in the round is compared
+ * against. grok reads ~20 points under sonnet on the same page (about: 31 vs
+ * 52), so a link flip mid-round turns every route's next pass into a
+ * rebaseline instead of progress. The chain therefore starts at the table's
+ * judge; grok gets the chair back at the next FULL table run, not on a route.
+ * Returns { model, family } or { model: null, family: null } when no table.
+ */
+export function roundJudge(root, { readFile } = {}) {
+  const read = readFile ?? ((p) => readFileSync(p, 'utf8'))
+  try {
+    const raw = read(`${root.replace(/\/$/, '')}/design_system/public/taste-table.json`)
+    const model = JSON.parse(raw)?.instrument?.evaluatorModel
+    const m = typeof model === 'string' && model.trim() && model !== 'mixed' ? model.trim() : null
+    return { model: m, family: judgeFamily(m) }
+  } catch {
+    return { model: null, family: null }
+  }
+}
+
+/**
+ * The links to try, in order, for one route receipt.
+ *   requested 'grok' | 'claude'  -> that link only (an explicit --evaluator).
+ *   round judge sonnet/opus      -> the claude CLI on that alias; the OTHER
+ *                                   alias when the builder is that family
+ *                                   (a model never grades its own page).
+ *   round judge grok, or no table -> grok first, then claude by builder.
+ * Each entry: { link: 'grok' } | { link: 'claude', alias: 'sonnet'|'opus', reason }.
+ */
+export function judgeOrder({ round = { model: null, family: null }, builderModel = null, requested = 'auto' } = {}) {
+  const byBuilder = pickFallbackAlias(builderModel)
+  if (requested === 'grok') return [{ link: 'grok', reason: '--evaluator grok' }]
+  if (requested === 'claude') return [{ link: 'claude', alias: byBuilder, reason: '--evaluator claude' }]
+  if (round.family === 'sonnet' || round.family === 'opus') {
+    const builderFamily = judgeFamily(builderModel)
+    const alias = builderFamily === round.family ? (round.family === 'sonnet' ? 'opus' : 'sonnet') : round.family
+    const reason =
+      alias === round.family
+        ? `round judge ${round.model} scored the current table; grok returns at the next full table run`
+        : `round judge ${round.model} is the builder's family (${builderModel}); the other claude alias grades, and this route rebaselines`
+    return [{ link: 'claude', alias, reason }]
+  }
+  return [
+    { link: 'grok', reason: round.model ? `round judge ${round.model}` : 'no table judge on record; chain default' },
+    { link: 'claude', alias: byBuilder, reason: 'link 1 missing or 402' },
+  ]
 }
 
 export function grokCliFailure(status, stderr, stdout, { cliMissing = false } = {}) {

@@ -66,7 +66,9 @@ import {
   claudeModelFromWrapper,
   grokCliFailure,
   grokFailureFallsBack,
+  judgeFamily,
   pickFallbackAlias,
+  roundJudge,
 } from './lib/taste-evaluate-result.mjs'
 import {
   FINISH_LINE,
@@ -654,7 +656,20 @@ async function main() {
 
   // Default is the grok CLI on Matt's subscription. An ambient ANTHROPIC_API_KEY must
   // never silently flip billing or the ruler, so both alternatives are explicit flags.
-  const transport = opts.api && process.env.ANTHROPIC_API_KEY ? 'sdk' : opts.claude ? 'claude' : 'grok'
+  // Matt 2026-09-12: no APIs. The SDK path bills per token and is refused unless
+  // RR_ALLOW_PAID_API=1 is set on purpose for that one run.
+  if (opts.api && process.env.RR_ALLOW_PAID_API !== '1') {
+    console.error('taste-table: --api bills the Anthropic API per token. Matt 2026-09-12: subscriptions only. Set RR_ALLOW_PAID_API=1 to override for this run.')
+    process.exit(2)
+  }
+  // A SUBSET re-run (--classes) stays on the judge that scored the rest of the table,
+  // so one table never mixes rulers. grok gets the chair back on a FULL run.
+  const round = roundJudge(REPO_ROOT)
+  const subsetOnRoundJudge = Boolean(opts.classesCsv) && !opts.api && (round.family === 'sonnet' || round.family === 'opus')
+  const transport = opts.api && process.env.ANTHROPIC_API_KEY ? 'sdk' : opts.claude || subsetOnRoundJudge ? 'claude' : 'grok'
+  if (subsetOnRoundJudge && !opts.claude) {
+    console.log(`taste-table: --classes re-run stays on the round judge (${round.model}); grok returns at the next full table run.`)
+  }
   const runDir = opts.evaluateOnlyDir ?? join('.taste-table', isoTimestamp())
 
   if (opts.dryRun) {
@@ -722,7 +737,16 @@ async function main() {
   // The fallback alias must not be any selected class's builder. Most classes were
   // built by claude-fable / opus lanes; if any was built by sonnet the chain uses opus.
   const builderModels = selected.map((cls) => builderModelForRoute(cls.route))
-  const alias = builderModels.some((m) => /sonnet/i.test(String(m))) ? 'opus' : pickFallbackAlias(null)
+  const builderFamilies = new Set(builderModels.map((m) => judgeFamily(m)).filter(Boolean))
+  const alias = subsetOnRoundJudge
+    ? builderFamilies.has(round.family)
+      ? round.family === 'sonnet'
+        ? 'opus'
+        : 'sonnet'
+      : round.family
+    : builderFamilies.has('sonnet')
+      ? 'opus'
+      : pickFallbackAlias(null)
   const judgeState = { link: transport === 'claude' ? 'claude' : null }
   const judgeLabel =
     transport === 'grok' ? `${EVALUATOR_MODEL}, falling back to claude ${alias}` : transport === 'claude' ? `claude ${alias}` : FALLBACK_EVALUATORS[alias]
