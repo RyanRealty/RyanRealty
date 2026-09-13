@@ -12,6 +12,7 @@ import {
   evaluatorResultProblems,
   CURSOR_JUDGE_MODEL,
   cursorCliFailure,
+  cursorModelListText,
   cursorModelListed,
   grokCliFailure,
   grokFailureFallsBack,
@@ -58,9 +59,52 @@ describe('taste-evaluate-result — grok CLI honest fail', () => {
 })
 
 describe('taste-evaluate-result — grok-4.6 through the Cursor CLI', () => {
-  it('is the same judge as the grok CLI', () => {
-    expect(CURSOR_JUDGE_MODEL).toBe('grok-4.6')
-    expect(isAllowedEvaluator(CURSOR_JUDGE_MODEL)).toBe(true)
+  it('is the same judge as the grok CLI, under the id the CLI actually lists', () => {
+    // cursor-agent 2026.09.10 lists cursor-grok-4.6-{low,medium,high,xhigh}; a bare
+    // grok-4.6 is answered without being refused, on a model the CLI never names.
+    expect(CURSOR_JUDGE_MODEL).toBe('cursor-grok-4.6-high')
+    expect(CURSOR_JUDGE_MODEL).toMatch(/grok-4\.6/)
+    expect(isAllowedEvaluator(EVALUATOR_MODEL)).toBe(true)
+  })
+
+  it('reads the list from --list-models, or from the refusal of a model that does not exist', () => {
+    const calls = []
+    const spawn = (cli, args) => {
+      calls.push(args[0])
+      if (args[0] === '--list-models') return { status: 0, stdout: 'No models available for this account.\n', stderr: '' }
+      return {
+        status: 1,
+        stdout: '',
+        stderr: 'Cannot use this model: __rr-model-probe__. Available models: auto, cursor-grok-4.6-high, cursor-grok-4.6-xhigh, gpt-5.4-nano-low',
+      }
+    }
+    const r = cursorModelListText({ cli: 'cursor-agent', env: {}, spawn })
+    expect(r.fail).toBeNull()
+    expect(cursorModelListed(r.text)).toBe(true)
+    expect(cursorModelListed(r.text, 'grok-4.6')).toBe(false)
+    expect(calls).toEqual(['--list-models', '-p'])
+  })
+
+  it('a --list-models that names models is taken as-is', () => {
+    const spawn = () => ({ status: 0, stdout: 'cursor-grok-4.6-high\nclaude-4.5-sonnet\n', stderr: '' })
+    const r = cursorModelListText({ spawn })
+    expect(r.fail).toBeNull()
+    expect(cursorModelListed(r.text)).toBe(true)
+  })
+
+  it('logged out: the probe is refused for auth, and that is a missing link', () => {
+    const spawn = (cli, args) =>
+      args[0] === '--list-models'
+        ? { status: 0, stdout: 'No models available for this account.\n', stderr: '' }
+        : { status: 1, stdout: '', stderr: "Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable." }
+    const r = cursorModelListText({ spawn })
+    expect(r.text).toBe('')
+    expect(r.fail?.kind).toBe('missing')
+  })
+
+  it('a missing binary is missing before any probe', () => {
+    const spawn = () => ({ status: null, stdout: '', stderr: '', error: { code: 'ENOENT' } })
+    expect(cursorModelListText({ spawn }).fail?.kind).toBe('missing')
   })
 
   it('not logged in is a missing link that hands the shots on, never a verdict', () => {
@@ -95,10 +139,10 @@ describe('taste-evaluate-result — grok-4.6 through the Cursor CLI', () => {
   })
 
   it('the judge id must be on the account model list — a lookalike or an empty list is not', () => {
-    expect(cursorModelListed('Available models:\n  grok-4.6\n  claude-sonnet-5\n')).toBe(true)
-    expect(cursorModelListed('- grok-4.6 (default)')).toBe(true)
-    expect(cursorModelListed('grok-4.6-fast\ngrok-4.5\n')).toBe(false)
-    expect(cursorModelListed('grok-4.61\n')).toBe(false)
+    expect(cursorModelListed('Available models:\n  cursor-grok-4.6-high\n  claude-sonnet-5\n')).toBe(true)
+    expect(cursorModelListed('auto, cursor-grok-4.6-high, cursor-grok-4.6-xhigh')).toBe(true)
+    expect(cursorModelListed('cursor-grok-4.6-high-fast\ncursor-grok-4.6-low\ngrok-4.6\n')).toBe(false)
+    expect(cursorModelListed('cursor-grok-4.6-highx\n')).toBe(false)
     expect(cursorModelListed('No models available for this account.')).toBe(false)
     expect(cursorModelListed('')).toBe(false)
   })
@@ -278,7 +322,7 @@ describe('taste-evaluate-result — the round judge (one ruler per table)', () =
   it('an explicit --evaluator wins over the round judge', () => {
     expect(judgeOrder({ round: { model: 'claude-sonnet-5', family: 'sonnet' }, requested: 'grok' })).toEqual([expect.objectContaining({ link: 'grok' })])
     expect(judgeOrder({ round: { model: 'claude-sonnet-5', family: 'sonnet' }, requested: 'cursor' })).toEqual([
-      expect.objectContaining({ link: 'cursor', model: 'grok-4.6' }),
+      expect.objectContaining({ link: 'cursor', model: CURSOR_JUDGE_MODEL }),
     ])
     expect(judgeOrder({ round: { model: 'grok-4.6', family: 'grok' }, requested: 'claude', builderModel: 'grok-4.5' })).toEqual([
       expect.objectContaining({ link: 'claude', alias: 'sonnet' }),

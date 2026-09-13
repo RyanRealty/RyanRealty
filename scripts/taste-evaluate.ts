@@ -48,6 +48,7 @@ import {
   claudeModelFromWrapper,
   competitiveBriefBlocksDone,
   cursorCliFailure,
+  cursorModelListText,
   cursorModelListed,
   demoMatchBlocksDone,
   evaluatorBlocksDone,
@@ -151,23 +152,23 @@ type JudgeAnswer = { content: string; evaluatorModel: string; transport: 'grok-c
 /**
  * Link 1b: the same grok-4.6 through the Cursor CLI, on the Cursor subscription.
  * `--mode ask` is read-only (the judge reads the shots, edits nothing);
- * CURSOR_API_KEY is stripped so the login, not a key, is what answers.
+ * Auth is the login or CURSOR_API_KEY (both are the Cursor plan; see askCursor).
  */
 function askCursor(prompt: string): { answer?: JudgeAnswer; fail?: ReturnType<typeof cursorCliFailure> } {
+  // Auth is `cursor-agent login`, or CURSOR_API_KEY. Unlike XAI_API_KEY (xAI console, per
+  // token) and ANTHROPIC_API_KEY (Anthropic console), a Cursor key draws on the Cursor
+  // plan itself — the same pool as the IDE — so it is the subscription, not a paid API.
   const cursorEnv = { ...process.env }
-  delete cursorEnv.CURSOR_API_KEY
-  // `--model` is a request. The id must be on the account's list, or an unknown id
-  // would quietly become "Auto" and sign the receipt as grok-4.6.
-  const listed = spawnSync(CURSOR_CLI, ['--list-models'], { encoding: 'utf8', timeout: 60_000, env: cursorEnv })
-  const listFail = cursorCliFailure(listed.status, listed.stderr, listed.stdout, {
-    cliMissing: Boolean(listed.error && 'code' in listed.error && listed.error.code === 'ENOENT'),
-  })
-  if (listFail) return { fail: listFail }
-  if (!cursorModelListed(`${listed.stdout ?? ''}\n${listed.stderr ?? ''}`)) {
+  console.error(`taste-evaluate: cursor-agent auth = ${cursorEnv.CURSOR_API_KEY ? 'CURSOR_API_KEY (Cursor plan)' : 'cursor-agent login'}`)
+  // `--model` is a request the CLI does not always refuse: a bare `grok-4.6` answers on
+  // a model it never names. The id must be on the account's list before it signs.
+  const listed = cursorModelListText({ cli: CURSOR_CLI, env: cursorEnv })
+  if (listed.fail) return { fail: listed.fail }
+  if (!cursorModelListed(listed.text)) {
     return {
       fail: {
         kind: '402',
-        message: `taste-evaluate: cursor-agent --list-models does not offer ${CURSOR_JUDGE_MODEL} on this account. Do not invent demoMatch. Next link.`,
+        message: `taste-evaluate: cursor-agent does not offer ${CURSOR_JUDGE_MODEL} on this account. Do not invent demoMatch. Next link.`,
       },
     }
   }
@@ -180,7 +181,8 @@ function askCursor(prompt: string): { answer?: JudgeAnswer; fail?: ReturnType<ty
     cliMissing: Boolean(res.error && 'code' in res.error && res.error.code === 'ENOENT'),
   })
   if (fail) return { fail }
-  return { answer: { content: res.stdout ?? '', evaluatorModel: CURSOR_JUDGE_MODEL, transport: 'cursor-cli' } }
+  // The ruler's name, not the CLI's id: cursor-grok-4.6-high IS grok-4.6.
+  return { answer: { content: res.stdout ?? '', evaluatorModel: EVALUATOR_MODEL, transport: 'cursor-cli' } }
 }
 
 /** Link 1: grok-4.6 through the grok CLI, subscription only. */

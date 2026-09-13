@@ -68,6 +68,7 @@ import {
   claudeCliFailure,
   claudeModelFromWrapper,
   cursorCliFailure,
+  cursorModelListText,
   cursorModelListed,
   grokCliFailure,
   grokFailureFallsBack,
@@ -456,8 +457,8 @@ function scoreWithGrok(prompt, shots) {
 
 /**
  * Link 1b: the same grok-4.6 through the Cursor CLI (`cursor-agent -p --model
- * grok-4.6`, read-only ask mode, Cursor subscription; CURSOR_API_KEY stripped so
- * the login answers, not a key). Throws an Error carrying `.kind`.
+ * grok-4.6`, read-only ask mode, Cursor subscription; login or CURSOR_API_KEY, both the Cursor plan;
+ * the CLI reads the shots and edits nothing). Throws an Error carrying `.kind`.
  */
 let cursorModelChecked = false
 function scoreWithCursor(prompt, shots) {
@@ -465,26 +466,26 @@ function scoreWithCursor(prompt, shots) {
     `${prompt}\n\nRead these two image files with your file tool and judge what is IN them — do not guess from their names:\n` +
     `Desktop (1440x900): ${shots.desktopPath}\nMobile (375x812): ${shots.mobilePath}\n\n` +
     'Reply with the JSON object only, no preamble and no code fence.'
+  // Auth is `cursor-agent login`, or CURSOR_API_KEY: a Cursor key draws on the Cursor
+  // plan itself (the same pool as the IDE), unlike the xAI / Anthropic keys the other
+  // links strip, which bill their consoles per token.
   const cursorEnv = { ...process.env }
-  delete cursorEnv.CURSOR_API_KEY
-  // `--model` is a request. Once per run, the id must be on the account's list, or an
-  // unknown id would quietly become "Auto" and stamp the table as grok-4.6.
+  // `--model` is a request the CLI does not always refuse (a bare `grok-4.6` answers on
+  // a model it never names). Once per run, the id must be on the account's list.
   if (!cursorModelChecked) {
-    const listed = spawnSync(CURSOR_CLI, ['--list-models'], { cwd: REPO_ROOT, encoding: 'utf8', timeout: 60000, env: cursorEnv })
-    const listFail = cursorCliFailure(listed.status, listed.stderr, listed.stdout, {
-      cliMissing: Boolean(listed.error && listed.error.code === 'ENOENT'),
-    })
-    if (listFail) {
-      const err = new Error(listFail.message)
-      err.kind = listFail.kind
+    const listed = cursorModelListText({ cli: CURSOR_CLI, env: cursorEnv, cwd: REPO_ROOT })
+    if (listed.fail) {
+      const err = new Error(listed.fail.message)
+      err.kind = listed.fail.kind
       throw err
     }
-    if (!cursorModelListed(`${listed.stdout ?? ''}\n${listed.stderr ?? ''}`)) {
-      const err = new Error(`cursor-agent --list-models does not offer ${CURSOR_JUDGE_MODEL} on this account`)
+    if (!cursorModelListed(listed.text)) {
+      const err = new Error(`cursor-agent does not offer ${CURSOR_JUDGE_MODEL} on this account`)
       err.kind = '402'
       throw err
     }
     cursorModelChecked = true
+    console.error(`  cursor-agent auth = ${cursorEnv.CURSOR_API_KEY ? 'CURSOR_API_KEY (Cursor plan)' : 'cursor-agent login'}; model ${CURSOR_JUDGE_MODEL} is on the account list`)
   }
   const res = spawnSync(
     CURSOR_CLI,
@@ -499,7 +500,8 @@ function scoreWithCursor(prompt, shots) {
     err.kind = fail.kind
     throw err
   }
-  return { text: String(res.stdout ?? ''), model: CURSOR_JUDGE_MODEL }
+  // The ruler's name, not the CLI's id: cursor-grok-4.6-high IS grok-4.6.
+  return { text: String(res.stdout ?? ''), model: EVALUATOR_MODEL }
 }
 
 /** The grok-4.6 links in the order a run tries them: the round's link first. */
@@ -812,15 +814,23 @@ async function main() {
   // A SUBSET re-run (--classes) stays on the judge that scored the rest of the table,
   // so one table never mixes rulers. grok gets the chair back on a FULL run.
   const round = roundJudge(REPO_ROOT)
-  const subsetOnRoundJudge = Boolean(opts.classesCsv) && !opts.api && (round.family === 'sonnet' || round.family === 'opus')
   if (opts.cursor && opts.claude) {
     console.error('taste-table: --cursor and --claude name different judges; pass one.')
     process.exit(1)
   }
+  // An explicit --cursor is a full-table decision made by a person, so parallel
+  // `--classes` lanes of that full run may each name it; the table reads `mixed`
+  // until the last lane lands (see the instrument stamp below).
+  const subsetOnRoundJudge = Boolean(opts.classesCsv) && !opts.api && !opts.cursor && (round.family === 'sonnet' || round.family === 'opus')
   const transport =
     opts.api && process.env.ANTHROPIC_API_KEY ? 'sdk' : opts.claude || subsetOnRoundJudge ? 'claude' : opts.cursor ? 'cursor' : 'grok'
   if (subsetOnRoundJudge && !opts.claude) {
     console.log(`taste-table: --classes re-run stays on the round judge (${round.model}); grok returns at the next full table run.`)
+  }
+  if (opts.cursor && opts.classesCsv && (round.family === 'sonnet' || round.family === 'opus')) {
+    console.log(
+      `taste-table: --cursor --classes on a ${round.model} table — this lane is one part of a FULL grok-4.6 re-score. The table reads "mixed" until every class has landed.`,
+    )
   }
   const grokLinks = grokLinkOrder({ transport, roundLink: round.link })
   const grokChainLabel = `${grokLinks.map((l) => (l === 'cursor' ? `Cursor CLI (${CURSOR_JUDGE_MODEL})` : `grok CLI (${EVALUATOR_MODEL})`)).join(', then ')}; the claude CLI when both are missing or out`
@@ -1031,13 +1041,29 @@ async function main() {
     return am - bm
   })
 
-  // The model that ACTUALLY answered, not the one we hoped for. When this run scored
-  // nothing new, keep the previous instrument's model so the table stays honest.
+  // The model that ACTUALLY answered, over the rows the file will hold — this run's plus
+  // the rows it carries from the current table. A `--classes` lane that re-scores 9 of
+  // 27 on grok while 18 sonnet rows remain writes `mixed`, and the next lane's
+  // roundJudge sees no single judge, until the last lane lands and every row agrees.
+  // When this run scored nothing new, keep the previous instrument's model.
   const answered = [...modelsUsed].filter((m) => m !== 'mixed')
+  const rowModels = new Set(
+    allRows.map((r) => (isNonEmptyString(r.evaluatorModel) ? r.evaluatorModel : null)).filter((m) => m && m !== 'mixed'),
+  )
   const evaluatorModelUsed =
-    answered.length === 1 ? answered[0] : answered.length > 1 ? 'mixed' : current.instrument?.evaluatorModel ?? EVALUATOR_MODEL
+    answered.length === 0
+      ? current.instrument?.evaluatorModel ?? EVALUATOR_MODEL
+      : rowModels.size === 1
+        ? [...rowModels][0]
+        : rowModels.size > 1
+          ? 'mixed'
+          : answered.length === 1
+            ? answered[0]
+            : 'mixed'
   if (evaluatorModelUsed === 'mixed') {
-    console.error('\ntaste-table: this run mixed two judges across classes. Every class on one ruler — re-run the classes scored by the other link.')
+    console.error(
+      `\ntaste-table: the table now holds rows from more than one judge (${[...rowModels].join(', ')}). Every class on one ruler — re-score the rows still on the other judge before any receipt is compared to this table.`,
+    )
   }
   const instrument = {
     evaluatorModel: evaluatorModelUsed,

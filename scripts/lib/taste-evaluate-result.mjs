@@ -22,17 +22,25 @@
  * the JSON, then exit non-zero so the node stays in_progress. When the route
  * publishes a competitiveBrief, competitiveBriefPass is the same rule.
  */
+import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 
 export const EVALUATOR_MODEL = 'grok-4.6'
 /**
  * The SAME judge through the Cursor CLI (Matt 2026-09-12: "I now have grok 4.6
  * in cursor, can we use it there"). `cursor-agent --model <id>` on the Cursor
- * subscription (CURSOR_API_KEY stripped, `cursor-agent login` is the auth). It
- * is grok-4.6 either way, so a receipt signed through this link compares to a
- * grok-CLI mark; the link that answered is recorded as `transport`.
+ * subscription. It is grok-4.6 either way, so a receipt signed through this
+ * link compares to a grok-CLI mark; the link that answered is recorded as
+ * `transport`, and the receipt's `evaluatorModel` stays the ruler's name
+ * (`grok-4.6`), not the CLI's id.
+ *
+ * The id is the CLI's own (`cursor-agent` 2026.09.10 lists cursor-grok-4.6-low
+ * / -medium / -high / -xhigh, each with a -fast twin). A bare `grok-4.6` is NOT
+ * refused by the CLI — it answers anyway, on a model it does not name — so the
+ * id here must be one the CLI lists, and `cursorModelListed` checks it against
+ * the list every run. "high" is the reasoning effort the judge runs at.
  */
-export const CURSOR_JUDGE_MODEL = 'grok-4.6'
+export const CURSOR_JUDGE_MODEL = 'cursor-grok-4.6-high'
 export const RUBRIC_VERSION = 'v1-2026-09-12'
 export const RUBRIC_PATH = 'design_system/public/taste-evaluator.v1-2026-09-12.md'
 
@@ -173,6 +181,36 @@ export function cursorModelListed(listOutput, model = CURSOR_JUDGE_MODEL) {
   if (!text.trim()) return false
   const id = model.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   return new RegExp(`(^|[^\\w.-])${id}(?![\\w.-])`, 'm').test(text)
+}
+
+/**
+ * The account's model list as text. `cursor-agent --list-models` is the front
+ * door; on 2026.09.10 it prints nothing (or "No models available") even when
+ * `-p` works, so when it names no model the CLI is asked for a model that does
+ * not exist and its refusal — "Cannot use this model: … Available models: a, b,
+ * c" — is the list. That probe fails before any model runs and costs nothing.
+ * Returns { text, fail } where `fail` is a cursorCliFailure for a missing or
+ * logged-out CLI.
+ */
+export function cursorModelListText({ cli = 'cursor-agent', env = process.env, spawn = spawnSync, cwd = process.cwd() } = {}) {
+  const listed = spawn(cli, ['--list-models'], { cwd, encoding: 'utf8', timeout: 60000, env })
+  const listBlob = `${listed.stdout ?? ''}\n${listed.stderr ?? ''}`
+  const cliMissing = Boolean(listed.error && listed.error.code === 'ENOENT')
+  if (cliMissing || listed.status === 127) return { text: '', fail: cursorCliFailure(127, listBlob, '', { cliMissing: true }) }
+  if (/[\w-]+-[\w.-]*\d[\w.-]*/.test(listBlob.replace(/no models available for this account\.?/i, ''))) {
+    return { text: listBlob, fail: null }
+  }
+  const probe = spawn(cli, ['-p', '--trust', '--mode', 'ask', '--output-format', 'text', '--model', '__rr-model-probe__', 'x'], {
+    cwd,
+    encoding: 'utf8',
+    timeout: 120000,
+    env,
+  })
+  const probeBlob = `${probe.stdout ?? ''}\n${probe.stderr ?? ''}`
+  const m = probeBlob.match(/Available models:\s*([\s\S]+)$/i)
+  if (m) return { text: m[1], fail: null }
+  const fail = cursorCliFailure(probe.status, probe.stderr, probe.stdout, { cliMissing: Boolean(probe.error && probe.error.code === 'ENOENT') })
+  return { text: '', fail: fail ?? cursorCliFailure(1, 'not logged in — the CLI named no model and refused no model', '') }
 }
 
 /**
