@@ -30,6 +30,8 @@ import { PUBLIC_MARKET_PULSE_SOURCE } from "@/lib/market/publish-public-methodol
 
 const defaultOgImage = `${siteUrl}/api/og?type=default`
 
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: "Central Oregon sales and weekly reports",
   description:

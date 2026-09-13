@@ -35,6 +35,8 @@ import {
   ROUTE_PATH,
 } from '../_v3/sell-constants'
 
+export const revalidate = 3600
+
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
     title: 'Home Valuation in Central Oregon',

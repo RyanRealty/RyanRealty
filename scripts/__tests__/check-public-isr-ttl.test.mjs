@@ -68,12 +68,12 @@ describe('ci:public-isr-ttl', () => {
 
   it('fails when a leftover unlisted public page still exports 60', () => {
     reset()
-    const extra = join(SANDBOX, 'app/buy/page.tsx')
+    const extra = join(SANDBOX, 'app/privacy/page.tsx')
     mkdirSync(dirname(extra), { recursive: true })
     writeFileSync(extra, 'export const revalidate = 60\nexport default function Page() { return null }\n')
     const r = run()
     expect(r.code).toBe(1)
-    expect(r.out).toContain('app/buy/page.tsx')
+    expect(r.out).toContain('app/privacy/page.tsx')
     expect(r.out).toContain('leftover')
   })
 
@@ -85,5 +85,25 @@ describe('ci:public-isr-ttl', () => {
     expect(r.code).toBe(1)
     expect(r.out).toContain('app/team/[slug]/page.tsx')
     expect(r.out).toContain('1800')
+  })
+
+  it('fails when a cold marketing page drops from 3600 to 300', () => {
+    reset()
+    const file = join(SANDBOX, 'app/sell/page.tsx')
+    writeFileSync(file, readFileSync(file, 'utf8').replace('export const revalidate = 3600', 'export const revalidate = 300'))
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('app/sell/page.tsx')
+    expect(r.out).toContain('3600')
+  })
+
+  it('fails when a blog post is not 86400', () => {
+    reset()
+    const file = join(SANDBOX, 'app/blog/[slug]/page.tsx')
+    writeFileSync(file, readFileSync(file, 'utf8').replace('export const revalidate = 86400', 'export const revalidate = 3600'))
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('app/blog/[slug]/page.tsx')
+    expect(r.out).toContain('86400')
   })
 })

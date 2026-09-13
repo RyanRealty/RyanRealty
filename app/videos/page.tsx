@@ -46,7 +46,7 @@ import { VideosOpening } from './_v3/VideosOpening'
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
 
-export const revalidate = 300
+export const revalidate = 3600
 
 type SearchParams = { city?: string | string[]; view?: string | string[]; start?: string | string[] }
 

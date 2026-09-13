@@ -52,7 +52,7 @@ import {
 } from '@/app/central-oregon/_v3/nearby-field-items'
 
 export const dynamicParams = false
-export const revalidate = 300
+export const revalidate = 3600
 
 const SCHEMA_TYPE: Record<CoVenue['kind'], 'MusicVenue' | 'PerformingArtsTheater' | 'EventVenue'> = {
   music: 'MusicVenue',

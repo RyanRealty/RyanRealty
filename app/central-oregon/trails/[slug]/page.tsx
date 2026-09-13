@@ -58,7 +58,7 @@ import {
 } from '@/app/central-oregon/_v3/nearby-field-items'
 
 export const dynamicParams = false
-export const revalidate = 300
+export const revalidate = 3600
 
 type Props = { params: Promise<{ slug: string }> }
 

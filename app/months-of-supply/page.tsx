@@ -206,7 +206,7 @@ import {
 } from './_v3/mos-constants'
 import { buildMosSupplyChart } from './_v3/mos-chart'
 
-export const revalidate = 300
+export const revalidate = 3600
 
 // Metadata - unchanged from the pre-v3 page, field for field.
 export const metadata: Metadata = pageMetadata({

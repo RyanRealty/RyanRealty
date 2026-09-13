@@ -7,9 +7,14 @@
  * the buyer can see. Matt 2026-09-13: raise the window; use TTLs already
  * used elsewhere in this repo (do not invent new ones).
  *
- *   300  — search / listing-index / city / community / subdivision / zip /
- *          compare / open houses / root layout
- *   1800 — team broker pages
+ *   300   — search / listing detail / homepage / city+community+subdivision
+ *           detail / zip / compare / open houses / live market hub + geo
+ *           reports / root layout
+ *   1800  — team broker pages / price-drop inventory
+ *   3600  — marketing (sell/buy/valuation/invest) / About / Contact / Team
+ *           index / blog indexes / place indexes / POI details / MoS explainer
+ *           / weekly report archive hub
+ *   86400 — blog posts / FAQ / annual review / decade city archives
  *
  * Admin / CRM / CMA / auth / API mutation routes stay `0` / `force-dynamic`
  * and are not listed here.
@@ -31,9 +36,12 @@ const ROOT = resolve(new URL('.', import.meta.url).pathname, '..')
 const REPORT = process.argv.slice(2).includes('--report')
 
 export const PUBLIC_ISR_TTLS = [
+  // Hot inventory / search / browse — buyer-facing freshness
   ['app/layout.tsx', 300],
+  ['app/page.tsx', 300],
   ['app/search/page.tsx', 300],
   ['app/search/[...slug]/page.tsx', 300],
+  ['app/listing/[listingKey]/page.tsx', 300],
   ['app/cities/[slug]/page.tsx', 300],
   ['app/cities/[slug]/[neighborhoodSlug]/page.tsx', 300],
   ['app/cities/[slug]/types/[type]/page.tsx', 300],
@@ -44,7 +52,52 @@ export const PUBLIC_ISR_TTLS = [
   ['app/open-houses/page.tsx', 300],
   ['app/open-houses/[city]/page.tsx', 300],
   ['app/compare/page.tsx', 300],
+  ['app/housing-market/page.tsx', 300],
+  ['app/housing-market/[...slug]/page.tsx', 300],
+  ['app/housing-market/central-oregon/page.tsx', 300],
+
+  // Inventory-adjacent, already longer than search
   ['app/team/[slug]/page.tsx', 1800],
+  ['app/price-drops/page.tsx', 1800],
+  ['app/price-drops/[city]/page.tsx', 1800],
+
+  // Cold marketing / indexes / POI / explainer
+  ['app/about/page.tsx', 3600],
+  ['app/contact/page.tsx', 3600],
+  ['app/team/page.tsx', 3600],
+  ['app/sell/page.tsx', 3600],
+  ['app/sell/valuation/page.tsx', 3600],
+  ['app/sell/expired-listings/page.tsx', 3600],
+  ['app/sell/for-sale-by-owner/page.tsx', 3600],
+  ['app/buy/page.tsx', 3600],
+  ['app/buy/[intent]/page.tsx', 3600],
+  ['app/invest/page.tsx', 3600],
+  ['app/cities/page.tsx', 3600],
+  ['app/communities/page.tsx', 3600],
+  ['app/subdivisions/page.tsx', 3600],
+  ['app/neighborhoods/page.tsx', 3600],
+  ['app/blog/page.tsx', 3600],
+  ['app/blog/page/[n]/page.tsx', 3600],
+  ['app/blog/category/[category]/page.tsx', 3600],
+  ['app/blog/category/[category]/page/[n]/page.tsx', 3600],
+  ['app/videos/page.tsx', 3600],
+  ['app/months-of-supply/page.tsx', 3600],
+  ['app/housing-market/reports/page.tsx', 3600],
+  ['app/housing-market/reports/[slug]/page.tsx', 3600],
+  ['app/parks/[slug]/page.tsx', 3600],
+  ['app/central-oregon/golf/[slug]/page.tsx', 3600],
+  ['app/central-oregon/events/[slug]/page.tsx', 3600],
+  ['app/central-oregon/trails/[slug]/page.tsx', 3600],
+  ['app/central-oregon/venues/[slug]/page.tsx', 3600],
+  ['app/schools/[slug]/page.tsx', 3600],
+
+  // Static / archive
+  ['app/blog/[slug]/page.tsx', 86400],
+  ['app/faq/page.tsx', 86400],
+  ['app/faq/[slug]/page.tsx', 86400],
+  ['app/housing-market/annual-review/page.tsx', 86400],
+  ['app/housing-market/reports/archive/[city]/page.tsx', 86400],
+  ['app/how-we-get-our-numbers/page.tsx', 86400],
 ]
 
 const REVALIDATE_EXPORT = /export\s+const\s+revalidate\s*=\s*(-?\d+)/

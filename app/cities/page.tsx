@@ -72,7 +72,7 @@ import {
 import { restingCityDetail } from '@/app/cities/_v3/cities-index-resting'
 import type { SchemaInput } from '@/lib/site/json-ld'
 
-export const revalidate = 1800
+export const revalidate = 3600
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 

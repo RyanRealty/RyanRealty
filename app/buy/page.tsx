@@ -56,7 +56,7 @@ import {
   OLD_MILL_HERO,
 } from './_v3/buy-constants'
 
-export const revalidate = 300
+export const revalidate = 3600
 
 export const metadata = pageMetadata({
   title: 'Buy a home in Central Oregon · Ryan Realty',

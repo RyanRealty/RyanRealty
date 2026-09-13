@@ -50,6 +50,7 @@ export function generateStaticParams(): Array<{ slug: string }> {
 }
 
 export const dynamicParams = false
+export const revalidate = 86400
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params

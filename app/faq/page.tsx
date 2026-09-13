@@ -42,6 +42,8 @@ import { FaqInquirySheet } from './_v3/FaqInquirySheet.client'
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const faqOgImage = `${siteUrl}/api/og?type=default`
 
+export const revalidate = 86400
+
 export const metadata: Metadata = {
   title: 'FAQ · Real estate in Bend, Oregon',
   description:

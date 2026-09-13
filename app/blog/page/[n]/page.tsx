@@ -23,7 +23,7 @@ import {
 
 type PageProps = { params: Promise<{ n: string }> }
 
-export const revalidate = 300
+export const revalidate = 3600
 export const dynamicParams = true
 // On-demand ISR, zero build-time fan-out (ci:ssg-budget, SITE-29): the first
 // hit renders and caches, later hits are served for 300s. A segment with no

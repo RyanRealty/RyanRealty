@@ -19,7 +19,7 @@ import { BLOG_PAGE_SIZE, blogIndexTrail, decodeBlogCategorySegment } from '@/app
 
 type PageProps = { params: Promise<{ category: string }> }
 
-export const revalidate = 300
+export const revalidate = 3600
 export const dynamicParams = true
 // On-demand ISR, zero build-time fan-out (ci:ssg-budget, SITE-29): the first
 // hit renders and caches, later hits are served for 300s. A segment with no
