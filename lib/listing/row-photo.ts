@@ -29,9 +29,10 @@ const SPARK_RESIZE_HOST = 'cdn.resize.sparkplatform.com'
 /**
  * Spark / MLS photo CDNs. These hosts already serve sized JPEG derivatives
  * (cdn.resize buckets 320×240 / 800×600 / 1600×1200). Sending them through
- * next/image → `/_next/image` (AVIF+WebP, often q=90) is a second pipeline
- * and the Vercel Image Optimization bill. First-party, Unsplash, and
- * Supabase storage stay on next/image.
+ * next/image → `/_next/image` used to be a second pipeline and the Vercel
+ * Image Optimization bill. Site-wide `images.unoptimized: true` now
+ * passthroughs every next/image; this helper still identifies Spark plates
+ * for SparkSafeImage.
  */
 const SPARK_LISTING_PHOTO_HOST_RE = /(?:^|\.)(?:sparkplatform|sparkapi)\.com$/i
 
