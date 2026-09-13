@@ -134,7 +134,7 @@ export async function generateStaticParams(): Promise<Array<{ slug: string; neig
   return BEND_NEIGHBORHOOD_DISTRICTS.map((n) => ({ slug: 'bend', neighborhoodSlug: n.slug }))
 }
 export const dynamicParams = true
-export const revalidate = 60
+export const revalidate = 300
 
 type Props = {
   params: Promise<{ slug: string; neighborhoodSlug: string }>

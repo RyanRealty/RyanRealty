@@ -115,14 +115,14 @@ describe('ci:search-perf-budget', { timeout: 30_000 }, () => {
   it('R2 — fails when a search page raises ISR revalidate', () => {
     expectCaught('R2 revalidate', () =>
       edit('app/search/page.tsx', (s) =>
-        s.replace('export const revalidate = 60', 'export const revalidate = 3600'),
+        s.replace('export const revalidate = 300', 'export const revalidate = 3600'),
       ),
     )
   })
 
   it('R2 — fails when a search page drops its revalidate export', () => {
     expectCaught('R2 revalidate', () =>
-      edit('app/search/page.tsx', (s) => s.replace('export const revalidate = 60', '')),
+      edit('app/search/page.tsx', (s) => s.replace('export const revalidate = 300', '')),
     )
   })
 
