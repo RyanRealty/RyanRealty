@@ -2,7 +2,7 @@
   "route": "app/housing-market/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat Zillow / Redfin / Windermere regional market entry pages. The answer in the first viewport (verdict, four live figures, one source trace, one stamp), every city a row that is a door to its own report, last-full-year closed-sales size with its own population and trace, and a single low-pressure ask. No aggregator publishes the trace under the number.",
-  "note": "Migrated off the KB register onto the v3 barrel 2026-08-12 (P9). Rhythm: no two adjacent sections share a pattern. There is NO cap on how many patterns a page uses (the four-pattern cap was killed 2026-08-27) and the pattern set is OPEN, chrome exempt. Order is Breadcrumb, Instrument level 1, Ledger (cities), Instrument level 2 (closed sales), Ledger (guides), Quiet (FAQ), Sheet (inquiry), Quiet (edges), Footer. THE VERDICT IS DERIVED ONCE and it classifies the RAW months-of-supply value; display goes through formatMonthsOfSupply (lib/format/months-of-supply.ts), never Math.round, so the printed digits never cross a threshold the raw value did not. Classifying the rounded value walks the verdict across a canonical threshold in both directions (4.02 rounds to 4.0 and prints seller's, 5.97 rounds to 6.0 and prints buyer's), which is the CLAUDE.md section 0 defect the repair of 2026-08-12 closed and the 2026-08-13 display-formatter repair closed from the other end. The page's guard is buildMarketFaq's own (months of supply above 0), so the H1 cannot assert a verdict the shared builder declined to answer. D9: the region monthly median series mounts as Instrument.chart, not as a seventh pattern. The city Ledger stays type (each city is a door; a line through cities invents a sequence). Closed-sales dollars publish as whole dollars, not formatPrice, because formatPrice rounds to the nearest $1,000 and the same string goes into the FAQPage JSON-LD. A covered city with no live market row is dropped from the Ledger and linked from the closing Quiet block instead of being synthesized as zero under a live-MLS source line. The KB-era deletions this migration made: KbHero's property search and voice-search button, KbSell's address prefill field, RegionalSfrAlertsBand, CoMarketSizeStrip, CoMarketComposition, KbArticles thumbnails, MarketSources, SmoothScrollProvider. 2026-08-19 (Unit HUB): the long-view section landed \u2014 a third Instrument (level 2, id long-view) between the guides Ledger and the FAQ Quiet, carrying the approved chart-room forms as V3ChartCard entries under one KPI row: the YoY rate clock with its 1Y/3Y/5Y/ALL/YoY segmented control, the price and homes-sold switch, real-vs-nominal (CPI), Central-Oregon-vs-nation indexed to 1998, concessions by quarter, and the mortgage-Treasury spread against its full-history norm. Every card title is a finding computed from the same rows its chart draws; every trace lives in a collapsed Source disclosure (Matt 2026-08-19), never a visible paragraph.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-12 (P9). Rhythm: no two adjacent sections share a pattern. There is NO cap on how many patterns a page uses (the four-pattern cap was killed 2026-08-27) and the pattern set is OPEN, chrome exempt. Order is Breadcrumb, Instrument level 1, Ledger (cities), Instrument level 2 (closed sales), Ledger (guides), Quiet (FAQ), Sheet (inquiry), Quiet (edges), Footer. THE VERDICT IS DERIVED ONCE and it classifies the RAW months-of-supply value; display goes through formatMonthsOfSupply (lib/format/months-of-supply.ts), never Math.round, so the printed digits never cross a threshold the raw value did not. Classifying the rounded value walks the verdict across a canonical threshold in both directions (4.02 rounds to 4.0 and prints seller's, 5.97 rounds to 6.0 and prints buyer's), which is the CLAUDE.md section 0 defect the repair of 2026-08-12 closed and the 2026-08-13 display-formatter repair closed from the other end. The page's guard is buildMarketFaq's own (months of supply above 0), so the H1 cannot assert a verdict the shared builder declined to answer. D9: the region monthly median series mounts as Instrument.chart, not as a seventh pattern. The city Ledger stays type (each city is a door; a line through cities invents a sequence). Closed-sales dollars publish as whole dollars, not formatPrice, because formatPrice rounds to the nearest $1,000 and the same string goes into the FAQPage JSON-LD. A covered city with no live market row is dropped from the Ledger and linked from the closing Quiet block instead of being synthesized as zero under a live-MLS source line. The KB-era deletions this migration made: KbHero's property search and voice-search button, KbSell's address prefill field, RegionalSfrAlertsBand, CoMarketSizeStrip, CoMarketComposition, KbArticles thumbnails, MarketSources, SmoothScrollProvider. 2026-08-19 (Unit HUB): the long-view section landed — a third Instrument (level 2, id long-view) between the guides Ledger and the FAQ Quiet, carrying the approved chart-room forms as V3ChartCard entries under one KPI row: the YoY rate clock with its 1Y/3Y/5Y/ALL/YoY segmented control, the price and homes-sold switch, real-vs-nominal (CPI), Central-Oregon-vs-nation indexed to 1998, concessions by quarter, and the mortgage-Treasury spread against its full-history norm. Every card title is a finding computed from the same rows its chart draws; every trace lives in a collapsed Source disclosure (Matt 2026-08-19), never a visible paragraph.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -114,11 +114,12 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts market-report \u2014 grok-4.6 via grok CLI, three scorings of the SITE-75 worktree first-viewport shots, separate from the grok-4.5 builder",
+    "evaluatedAt": "2026-09-13",
+    "rubricVersion": "v1-2026-09-12",
     "evaluatorModel": "grok-4.6",
+    "transport": "cursor-cli",
     "builderModel": "grok-4.5",
+    "evaluator": "grok-4.6 through the Cursor CLI, taste-table.mjs run .taste-table/2026-09-12T23-38-57-170Z, transcribed by cursor-claude-fable-5.1-2026-09-13 as the same-instrument baseline for SITE-100",
     "shotSpec": {
       "routes": [
         "/housing-market"
@@ -130,92 +131,88 @@
       "states": [
         "default"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, http://localhost:4375/housing-market on wt/site-75-77-20260910"
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, production https://ryan-realty.com/housing-market at HEAD of main on 2026-09-12 (table run)"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/market-report/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/market-report/shots/mobile375.png"
     },
-    "shotsHash": "sha256:c3a343dca30cf3c2200bb87e9ac8413679124807284637df893ec97d0a41e552",
+    "shotsHash": "sha256:0adf91ee4eff12222ba7c148900c15aea49c654bcd6b3781c97c9deabf5abf95",
     "scores": [
-      57,
-      63,
-      67
+      51,
+      50,
+      52
     ],
-    "score": 63,
+    "score": 51,
     "criteria": {
-      "designQuality": 20,
-      "originality": 18,
-      "interaction": 7,
-      "craft": 10,
+      "designQuality": 15,
+      "originality": 10,
+      "interaction": 6,
+      "craft": 12,
       "honestyFunction": 8
     },
-    "beats": "Zillow's regional market entry (a median-price tile plus a 12-month chart) \u2014 we win on months of supply as two named bars with a source and as-of; we lose on first-viewport density and on any series a reader can scrub.",
+    "perCriterion": {
+      "designQuality": 15,
+      "originality": 10,
+      "interaction": 6,
+      "craft": 12,
+      "honestyFunction": 8
+    },
+    "tells": [
+      "Cream box. — the fold's live counts (1,529 and 326.5) sit as static navy numerals on cream, not the beui-number digit-swap demo; the rest of the instrument is a closed '+' accordion labeled 'Supply by property type, sale pace, and what the houses have,' not a paged insight with a scrubber."
+    ],
+    "defects": [
+      {
+        "section": "Supply by property type accordion",
+        "severity": "taste",
+        "finding": "After the two months-of-supply bars the rest of the market answer is a single collapsed '+' trigger; no paged insight, scrubber, or opened breakdown is visible on desktop or 375, so property type, sale pace, and mix never appear in the first viewport.",
+        "primitive": "components/site/v3/V3Instrument.tsx",
+        "replaceWith": "beautifului-insight"
+      },
+      {
+        "section": "first-viewport instrument",
+        "severity": "taste",
+        "finding": "The only drawing in either shot is a snapshot two-bar comparison (1,529 homes for sale vs 326.5 sales a month). There is no long-view series, hover mark, or trend, so a visitor cannot see whether 4.7 months of supply is rising, falling, or seasonal.",
+        "primitive": "components/site/v3/V3Chart.tsx",
+        "replaceWith": "house-chart"
+      },
+      {
+        "section": "More reports / Live market",
+        "severity": "taste",
+        "finding": "The hub chooser under More reports is a single Live market text row with a chevron and arrow and no figure, spark, or live count on the door, so the first viewport below the instrument is a blank cream field plus one unlabeled link.",
+        "primitive": "components/site/v3/V3Ledger.tsx",
+        "replaceWith": "beui-number"
+      }
+    ],
+    "dullest": "The cream void under the two hairline bars: a closed accordion, a source line, then More reports / Live market. That is a stub fold, not a market report a visitor would stop for.",
+    "beats": "Redfin Data Center (https://www.redfin.com/news/data-center/) — this page wins the first-viewport market answer: a balanced-market verdict, two named months-of-supply bars (1,529 vs 326.5 → 4.7 months), and a dated Oregon Data Share via MarketPulse trace. Redfin's hub still opens as a report chooser without that live instrument.",
+    "verdict": "This is a correct, on-brand Instrument stub, not a finished market hub. demoMatch is false: house-mos two bars are on screen, but no catalog demo is — no beui-number digit swap, no beautifului-insight scrubber, no house-chart hover, and no *-open shot of the accordion. The cream-box tell is the closed supply disclosure plus static numerals; the defects are that hidden breakdown, the missing long view, and a More reports row with no figure. Craft and the sourced 4.7-month balanced verdict hold; the fold is still mostly empty cream.",
+    "demoMatch": false,
+    "demoMatchVotes": [
+      false,
+      false,
+      false
+    ],
     "adaptedFrom": [
       {
         "id": "house-instrument"
       },
       {
         "id": "house-mos"
-      },
-      {
-        "id": "beautifului-insight"
-      },
-      {
-        "id": "beui-number"
-      }
-    ],
-    "defects": [
-      {
-        "section": "#chooser",
-        "severity": "taste",
-        "finding": "The 1440 fold still ends on More reports, and the Live market row restates 1,550 homes and points at the instrument already on screen \u2014 the old directory occupying the first viewport instead of a second drawing.",
-        "replaceWith": "house-chart"
-      },
-      {
-        "section": ".v3-instrument__fold",
-        "severity": "taste",
-        "finding": "Supply by property type, sale pace, and what the houses have sits as a closed all-caps disclosure over empty cream; first read is a plus and no encoding, not paged insights.",
-        "replaceWith": "beautifului-insight"
-      },
-      {
-        "section": ".v3-instrument__eyebrow",
-        "severity": "craft",
-        "finding": "CENTRAL OREGON, OREGON prints the region as a city-state slug, a template leftover a visitor reads as a bug.",
-        "replaceWith": null
-      },
-      {
-        "section": ".v3-chart",
-        "severity": "craft",
-        "finding": "A month of sales prints 322.0 beside integer 1,550 homes for sale; the trailing tenth makes a count look like a lab reading.",
-        "replaceWith": null
-      },
-      {
-        "section": ".v3-instrument__fold-summary",
-        "severity": "craft",
-        "finding": "At 375 the fold label wraps to three lines of tracked caps plus a plus, so the only extra-data control on the phone is the ugliest line in the viewport.",
-        "replaceWith": null
-      },
-      {
-        "section": ".v3-chart",
-        "severity": "taste",
-        "finding": "The two lollipops already print 1,550 and 322.0 on the marks, so a hover restates the claim; no type toggle, no scrub, and the live count is a frozen end-label rather than sourced digits that swap.",
-        "replaceWith": "beui-number"
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 54,
-      "evaluatorModel": "claude-sonnet-5",
+      "evaluatedAt": "2026-09-10",
+      "score": 63,
+      "evaluatorModel": "grok-4.6",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:eb7f52062d31892a753d8c8cca7a63095773ef6bd16cfa63870a1ba60998ae8b",
+      "shotsHash": "sha256:c3a343dca30cf3c2200bb87e9ac8413679124807284637df893ec97d0a41e552",
       "criteria": {
         "honestyFunction": 8
       }
     },
-    "rebaselineReason": "evaluatorModel and shotsHash differ: SITE-40's 54 was claude-sonnet-5 on the Five-products chooser fold; this mark is grok-4.6 on new first-viewport shots after SITE-75 opened the hub on Instrument. Same rubricVersion v1-2026-09-08.",
-    "verdict": "Better than a 54 directory: the first viewport is now a verdict in display serif and months of supply as two named bars, which is this shop and not a template. What is dull is the closed fold as a labeled hole and More reports crawling into the same 900px, so the page still spends its fold on a sitemap instead of another drawing."
+    "rebaselineReason": "rubricVersion v1-2026-09-08 → v1-2026-09-12 (frozen rubric; table re-scored 2026-09-13 on grok-4.6 through Cursor)"
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
