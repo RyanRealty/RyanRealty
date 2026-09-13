@@ -52,8 +52,10 @@ resolution, and their video. The bar was always Matt's, not the rubric's. It is:
    With a grok table: grok-4.6 through the `grok` CLI, and when that CLI is missing
    or 402, the claude CLI (sonnet, or opus when the builder is a Sonnet). With a
    claude table: the claude CLI on that alias, or the other alias when it is your
-   own family. Median of three must rise on the same instrument; `demoMatch: true`;
-   `competitiveBriefPass: true` where a brief exists; finish line 70.
+   own family. Median of three must rise **by at least 6** (the rise floor; less is
+   the judge's own noise, `taste-rule-freeze.json` `riseFloorBasis`) on the same
+   instrument; `demoMatch: true`; `competitiveBriefPass: true` where a brief exists;
+   finish line 70.
 
 **Who builds is also a chain (Matt 2026-09-12, "avoid APIs").** The headless grinder
 on Matt's Mac, `scripts/site-queue-routine.sh` (LaunchAgent `com.ryanrealty.site-queue`,
@@ -84,8 +86,8 @@ A lane that fails a step fixes the page or the tool. It does not write a rule.
   address + beds/baths/sqft; listing detail keeps and fills the 13-row
   contract; place pages keep sourced figures). Summary-only is a fail;
   (3) **UX improved** — catalog source installed, demo match, navy/cream.
-  The separate evaluator's score must rise above its previous mark **and**
-  the live control must match the chosen catalog demo. A prettier page with
+  The separate evaluator's score must rise by at least the rise floor (6) over
+  its previous mark **and** the live control must match the chosen catalog demo. A prettier page with
   no SEO increment and no inventory increment is not done. Rebaseline is not
   done.
 - **Product hold (Matt 2026-09-10, tightened: improve, do not merely hold).**
@@ -100,10 +102,11 @@ A lane that fails a step fixes the page or the tool. It does not write a rule.
   (bleed hero, PropertySpecs, MLS remarks, schools, payment, Tour/Call/Text).
   Summarizing those away is SITE-45 and is not a taste pass. Cards and rails
   that show a house photo without the house facts are an inventory miss.
-- The mark a taste score must rise above is the previous mark **from the same
-  instrument** — same `evaluatorModel`, same `rubricVersion`, same `shotsHash`.
-  If any of the three differs, the item re-baselines itself (`comparedToPrior:
-  "rebaselined"`) and the next pass rises above the new mark. Nobody is asked to
+- The mark a taste score must rise by the floor over is the previous mark **from
+  the same instrument** — same `evaluatorModel`, same `rubricVersion`, same
+  `shotsHash`. If any of the three differs, the item re-baselines itself
+  (`comparedToPrior: "rebaselined"`) and the next pass rises by the floor over
+  the new mark. Nobody is asked to
   accept a lower number than an incomparable one; `ci:taste-canon` computes the
   drift.
 - A commit touching `app/**` or `components/site/**` carries `Node: <id>` (G72). A

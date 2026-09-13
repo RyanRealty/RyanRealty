@@ -33,7 +33,9 @@ routine reads. Nothing in the queue depends on which model builds.
 - **The taste ritual**: shots at 1440 and 375 through `scripts/take-route-shots.mjs`, a
   SEPARATE evaluator that is a DIFFERENT model from the builder, three scorings in one
   call, the receipt in the route's `parity.json` (`scripts/lib/taste-receipt.mjs`), and
-  the score must rise **and** `demoMatch` must be `true`. Score rise on a cream-box
+  the score must rise **by at least 6** (the rise floor — less is the judge's own
+  measured noise, `taste-rule-freeze.json` `riseFloorBasis`) **and** `demoMatch`
+  must be `true`. Score rise on a cream-box
   Avatar/Button/Sheet import is not Tip Ready (Matt 2026-09-12, rubric
   `v1-2026-09-12`). The finish line is 70 on the table instrument (Matt 2026-09-09).
   **Before building:** `node scripts/lib/taste-catalog.mjs <class>` — fetch

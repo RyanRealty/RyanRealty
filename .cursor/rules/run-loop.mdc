@@ -44,7 +44,8 @@ catalog source installed and imported by the route's v3 primitive (`ci:catalog-i
 on the built page; (4) only then a **separate evaluator** — a different
 model from the builder — scores the page class from shots at 1440 and 375
 (`scripts/take-route-shots.mjs`), three scorings in one call, median, and the score must
-rise. Receipt in the route's `parity.json` per `design_system/public/TASTE.md`, shape
+rise **by at least 6** (the rise floor: a smaller rise is inside the judge's measured noise,
+`taste-rule-freeze.json` `riseFloorBasis`). Receipt in the route's `parity.json` per `design_system/public/TASTE.md`, shape
 checked by `scripts/lib/taste-receipt.mjs`. The instrument is the judge chain, and it
 starts at the **round judge**: whatever model scored the current table
 (`taste-table.json` `instrument.evaluatorModel`, `claude-sonnet-5` since 2026-09-12)

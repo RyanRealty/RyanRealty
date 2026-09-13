@@ -219,9 +219,9 @@ step means the evaluator is not asked:
    video has failed before anyone looks at a screenshot. Lowering a floor is a
    hand edit in the same commit with the reason, never implicit.
 4. **Then the score.** Shots at 1440 and 375, the judge chain below, three scorings
-   in one call, median must rise above the previous mark from the same instrument,
-   `demoMatch: true`, `competitiveBriefPass: true` where a brief exists. Finish
-   line 70.
+   in one call, median must rise by at least the rise floor (6) over the previous
+   mark from the same instrument, `demoMatch: true`, `competitiveBriefPass: true`
+   where a brief exists. Finish line 70.
 
 **THE JUDGE CHAIN (Matt 2026-09-09, chained 2026-09-12, one ruler per table).**
 The chain starts at the **round judge**: the model recorded in
@@ -290,8 +290,25 @@ what happens to a page that has already risen.
 **The score must rise AND the live control must match the catalog demo
 (Matt 2026-09-07 + 2026-09-12).** A site queue item (`loop_work_nodes`,
 domain public-ux, version_gap SITE-*) is not done until the separate
-evaluator's score for its page class rises above the previous mark in that
-route's `tasteReview` **and** `demoMatch` is `true`. Score rise /
+evaluator's score for its page class rises **by at least the rise floor**
+over the previous mark in that route's `tasteReview` **and** `demoMatch` is
+`true`. **The rise floor is 6** (`taste-rule-freeze.json` `riseFloor`, from
+2026-09-13, Matt: "there can be no gaps"). It is not a taste: on the
+2026-09-12 table two medians-of-3 of the SAME page differ by 1 or more in
+34% of no-change draws and by 6 or more in 6.6%, so a rise under 6 is the
+judge disagreeing with itself, and the old "rise by 1" rule let noise ship as
+progress one time in three. The floor is the one-sided 95th percentile of that
+no-change distribution, computed from the table's own 81 scorings by
+`node scripts/taste-rise-floor.mjs` (bootstrap, seeded, reproducible);
+`riseFloorBasis` in the freeze manifest holds the numbers and
+`ci:rubric-freeze` fails if `RISE_FLOOR` in `taste-receipt.mjs` drifts from
+it. Receipts dated before 2026-09-13 were accepted under the bare rise and
+stay valid. The floor sits at the edge of the noise, not above it: a second
+scoring of the same 2026-09-12 shots (4 classes before both judges went out)
+moved `cities` by exactly 6 on identical pictures (`riseFloorBasis.repeatCheck`).
+When a full second pass of one table exists, re-derive the floor from paired
+data (`node scripts/taste-rise-floor.mjs --pair <previous-table.json>`) and
+write it into the manifest in the same change. Score rise /
 `adaptedFrom` non-empty / file-on-disk is not Tip Ready on a cream box.
 `ci:taste-canon` fails a post-`v1-2026-09-12` catalog receipt that claims
 `comparedToPrior: "rose"` or score ≥ 70 without `demoMatch: true`.
@@ -310,8 +327,8 @@ differs from the current one is NOT a baseline, and the rise rule does not
 apply to it. The item re-baselines: record `comparedToPrior: "rebaselined"`,
 keep the old mark in `priorMark`, and name the differing key(s) in
 `rebaselineReason`. The new mark is the first mark on the new instrument, and
-the next pass must rise above it. Nobody is asked to decide this — the gate
-computes the drift from the three keys. This is the SITE-M1 case, where an 88
+the next pass must rise by the floor over it. Nobody is asked to decide this —
+the gate computes the drift from the three keys. This is the SITE-M1 case, where an 88
 "from a different evaluator against shots that no longer exist" blocked a 77
 until Matt personally accepted it. Same instrument, no rise, no ship.
 
@@ -446,6 +463,21 @@ the finding is craft, honesty, or SEO, not form. A catalog load error fails
 the evaluator out loud — it does not swallow and score "clean." Score still
 exists; it cannot override a failed demo match, a dropped required section,
 or a fallen `honestyFunction`.
+
+**A table row owes what a receipt owes (2026-09-13).** Every row in a
+`taste-table.json` evaluated on or after `tableRowsBindFrom` (2026-09-14, the
+first UTC date after the table on disk) carries the judge's `demoMatch`
+verdict (majority of the three scorings, `demoMatchVotes` beside it), the
+`runDir` its shots live in, and a `shotsHash` over those two files, so the
+`demo` column in `SITE_PAGES_E2E.md` is the judge's word and the median can be
+traced to the pictures it was given for. Before this the table silently
+dropped `demoMatch` from an answer the rubric required, and rows named shots
+under a run directory they did not record. `ci:rubric-freeze` reports a class
+whose row lacks either. A run whose judge goes out mid-table (grok 402, claude
+weekly limit) stops at that class, merges only what it scored, exits 3, and
+prints the `--evaluate-only <runDir> --classes …` command that finishes the
+same shots later; a table in that state is not a round baseline and the gate
+says so.
 
 Before composing a page class, write down three to five references and *what
 specifically works in each*, and design against those sentences. Two stronger
