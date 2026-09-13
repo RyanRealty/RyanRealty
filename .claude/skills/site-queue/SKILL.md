@@ -49,8 +49,10 @@ resolution, and their video. The bar was always Matt's, not the rubric's. It is:
 4. **Only then, the score.** The judge chain (`npx tsx scripts/taste-evaluate.ts
    <route-key> --builder <your model>`) starts at the judge that scored the current
    `taste-table.json` — one ruler per round; grok returns at the next FULL table run.
-   With a grok table: grok-4.6 through the `grok` CLI, and when that CLI is missing
-   or 402, the claude CLI (sonnet, or opus when the builder is a Sonnet). With a
+   With a grok table: grok-4.6 through the `grok` CLI or through the Cursor CLI
+   (`cursor-agent --model grok-4.6`, the same model on Matt's Cursor subscription;
+   the table's own link first, the other when it is missing or out), and when both
+   are out, the claude CLI (sonnet, or opus when the builder is a Sonnet). With a
    claude table: the claude CLI on that alias, or the other alias when it is your
    own family. Median of three must rise **by at least 6** (the rise floor; less is
    the judge's own noise, `taste-rule-freeze.json` `riseFloorBasis`) on the same
@@ -390,7 +392,8 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
    (optional `--url` of the lane's dev server). It loads the frozen rubric,
    the builder card option list (id + demo URL), and the shots; it starts at
    the round judge (the model on the current table's `instrument`), then
-   grok-4.6 through the `grok` CLI, then the claude CLI when a link is
+   grok-4.6 through the `grok` CLI and through the Cursor CLI (`cursor-agent`,
+   same model), then the claude CLI when every grok link is
    missing or 402. It scores the same shots THREE times in the one call and
    prints the receipt envelope with the judge that actually answered. It
    refuses to grade a page built by its own model family.

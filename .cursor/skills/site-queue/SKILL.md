@@ -78,13 +78,16 @@ link by hand; `SITE_QUEUE_BUILDERS=cursor,claude` reorders. The fire prints a
 - **The evaluator — the judge chain (Matt 2026-09-09, chained 2026-09-12).** The chain
   **starts at the judge that scored the current `taste-table.json`** (one ruler per round;
   grok gets the chair back at the next full table run, never mid-round on a route). With a
-  grok table: link 1 is **grok-4.6** through the `grok` CLI (Matt's Grok subscription,
-  `XAI_API_KEY` stripped); link 2, when that CLI is missing or answers 402, is the **claude
+  grok table: link 1 is **grok-4.6**, through the `grok` CLI (Matt's Grok subscription,
+  `XAI_API_KEY` stripped) or through the **Cursor CLI** (`cursor-agent --model grok-4.6`,
+  Matt's Cursor subscription, `CURSOR_API_KEY` stripped) — the same model, the same ruler,
+  the table's own link first (`instrument.judgeLink`) and the other when it is missing or
+  out; the last link, when both grok-4.6 links are out, is the **claude
   CLI** on the subscription (`claude-sonnet-5`, or `claude-opus-5` when the builder is a
   Sonnet). With a claude table: the claude CLI on that alias, or the other alias when it is
   your own family (then that route rebaselines). Run
   `npx tsx scripts/taste-evaluate.ts <route-key> --builder <your model>` (shots already in
-  `ui_kits/<route>/shots/`, optional `--url` of your dev server, `--evaluator grok|claude`
+  `ui_kits/<route>/shots/`, optional `--url` of your dev server, `--evaluator grok|cursor|claude`
   to pin a link): three scorings in one call, the frozen rubric, JSON on stdout with the
   judge that actually answered in `evaluatorModel` and its `transport`. Copy that
   `evaluatorModel` into the receipt — never write `grok-4.6` by hand when claude answered.

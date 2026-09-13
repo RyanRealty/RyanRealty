@@ -231,14 +231,21 @@ the table every route is measured against. While that is a claude alias (it is
 **claude CLI** (`claude -p`, subscription auth, `ANTHROPIC_API_KEY` and
 `ANTHROPIC_AUTH_TOKEN` stripped) on that alias; a builder of the same family gets the
 other alias (`claude-opus-5` for a Sonnet builder) and that route rebaselines once,
-because the gate refuses a model grading its own family. **grok-4.6** through the `grok`
-CLI (Grok subscription, `XAI_API_KEY` stripped) returns as link 1 only at the next FULL
-table run, never mid-round: a judge flip between routes would turn every route into a
-"rebaseline" and the rise test would mean nothing. When grok is the round judge and the
-CLI is missing or 402, link 2 is the claude CLI as above. `scripts/taste-evaluate.ts`
-(`--evaluator auto|grok|claude`, `--builder <model>`) and `scripts/taste-table.mjs` both
+because the gate refuses a model grading its own family. **grok-4.6** returns as link 1
+only at the next FULL table run, never mid-round: a judge flip between routes would turn
+every route into a "rebaseline" and the rise test would mean nothing. **grok-4.6 has two
+links (Matt 2026-09-12: "I now have grok 4.6 in cursor, can we use it there"):** the
+`grok` CLI (Grok subscription, `XAI_API_KEY` stripped) and the **Cursor CLI**
+(`cursor-agent -p --mode ask --model grok-4.6`, Cursor subscription, `CURSOR_API_KEY`
+stripped, `cursor-agent login` once). Same model, same ruler — a mark through either
+compares to the other; the receipt and the table record which in `transport` /
+`instrument.judgeLink`, and a round keeps the link its table used first, the other link
+when that one is missing or out. When both grok-4.6 links are out, the last link is the
+claude CLI as above. `scripts/taste-evaluate.ts`
+(`--evaluator auto|grok|cursor|claude`, `--builder <model>`) and `scripts/taste-table.mjs`
+(`--cursor` starts at the Cursor CLI) both
 walk the chain and print which judge answered and why; the receipt records it in
-`evaluatorModel` and `transport`. **No APIs (Matt 2026-09-12):** both links are
+`evaluatorModel` and `transport`. **No APIs (Matt 2026-09-12):** all links are
 subscription CLIs; `taste-table.mjs --api` is refused unless `RR_ALLOW_PAID_API=1`, and
 no lane sets an API key to get past a 402. Any other failure of a link (timeout,
 malformed JSON after one retry) is an honest fail, not a fallback. A class rebaselines
@@ -274,8 +281,9 @@ forms (hero figure · stat tile with sparkline · emphasis line with a
 scrubber · horizontal bar · dot strip · slope · small multiples · beeswarm ·
 map with data-encoded cells · table) only when no catalog job fits.
 Craft/honesty/SEO defects use `null`. Diagnosis alone is incomplete. A grok
-CLI miss or 402 hands the call to the claude CLI (the judge chain above); when
-both links fail it is an honest fail — do not invent `demoMatch` or
+CLI miss or 402 hands the call to grok-4.6 through the Cursor CLI, then to the
+claude CLI (the judge chain above); when
+every link fails it is an honest fail — do not invent `demoMatch` or
 `competitiveBriefPass` true; leave the node `in_progress` and say which link
 failed and why.
 

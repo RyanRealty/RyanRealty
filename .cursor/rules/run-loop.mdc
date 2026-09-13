@@ -50,10 +50,11 @@ checked by `scripts/lib/taste-receipt.mjs`. The instrument is the judge chain, a
 starts at the **round judge**: whatever model scored the current table
 (`taste-table.json` `instrument.evaluatorModel`, `claude-sonnet-5` since 2026-09-12)
 grades every route this round through the **claude CLI**; a builder of that family gets
-the other claude alias and the route rebaselines once. **grok-4.6** through the `grok`
-CLI returns only at the next full table run, and when it is the round judge and the CLI
-is missing or 402, the claude CLI is link 2. Both links are subscription CLIs: **no API
-keys, ever** (Matt 2026-09-12). Run it with
+the other claude alias and the route rebaselines once. **grok-4.6** returns only at the
+next full table run, through the `grok` CLI or through the Cursor CLI (`cursor-agent
+--model grok-4.6`, Matt's Cursor subscription; same model, same ruler, the table's own
+link first), and when both grok-4.6 links are missing or out, the claude CLI is the last
+link. Every link is a subscription CLI: **no API keys, ever** (Matt 2026-09-12). Run it with
 `npx tsx scripts/taste-evaluate.ts <route-key> --builder <model>` and copy the
 `evaluatorModel` it prints. A Grok lane builds with **grok-4.5**, because the gate refuses
 a model grading its own page. **Who builds is also a chain** (Matt 2026-09-12):
