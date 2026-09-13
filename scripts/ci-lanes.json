@@ -50,6 +50,7 @@
     "ci:page-purpose",
     "ci:taste-canon",
     "ci:catalog-install",
+    "ci:rubric-freeze",
     "ci:public-v3",
     "ci:publish-blog-index-list",
     "ci:publish-blog-mos-verdicts",
@@ -1298,6 +1299,17 @@
       "lib/listing/publish-listing-mosaic.ts",
       "lib/listing/row-photo.ts",
       "lib/data/listings/getListingDetail.ts"
+    ],
+    "ci:rubric-freeze": [
+      "design_system/public/taste-rule-freeze.json",
+      "design_system/public/taste-classes.json",
+      "design_system/public/taste-table.json",
+      "design_system/public/taste-evaluator.*.md",
+      "scripts/check-rubric-freeze.mjs",
+      "scripts/lib/rubric-freeze.mjs",
+      "scripts/lib/taste-evaluate-result.mjs",
+      "scripts/lib/taste-receipt.mjs",
+      "scripts/lib/taste-table-core.mjs"
     ]
   },
   "nightly": [

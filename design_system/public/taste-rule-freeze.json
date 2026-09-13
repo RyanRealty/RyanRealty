@@ -1,0 +1,16 @@
+{
+  "note": "THE RULE SET IS FROZEN (Matt 2026-09-12: 'fix it all'). Between 2026-09-08 and 2026-09-12 the accept test moved four times (rubric v1-2026-09-08 -> -10 -> -12, demoMatch required, competitiveBriefPass required, evaluatorModel pinned) and every move reset every class's baseline, so no page could ever be measured as better. This file names the rule set every SITE node is scored against for one full round. scripts/check-rubric-freeze.mjs (ci:rubric-freeze) fails the commit if the live constants drift from it, or if a class in taste-classes.json has no taste-table.json row on this rubric from an allowed judge. To change a rule: edit this file AND re-run the whole table (node scripts/taste-table.mjs <baseUrl>) in the SAME change. A rule bump without a full table is a reset with no measurement, and that is exactly what this stops.",
+  "frozenAt": "2026-09-12",
+  "frozenBy": "Matt 2026-09-12",
+  "rubricVersion": "v1-2026-09-12",
+  "rubricPath": "design_system/public/taste-evaluator.v1-2026-09-12.md",
+  "finishLine": 70,
+  "primaryEvaluator": "grok-4.6",
+  "allowedEvaluators": ["grok-4.6", "claude-sonnet-5", "claude-opus-5"],
+  "receiptV2From": "2026-09-08",
+  "demoMatchRuleFrom": "2026-09-12",
+  "competitiveBriefRuleFrom": "2026-09-12",
+  "classRegistry": "design_system/public/taste-classes.json",
+  "table": "design_system/public/taste-table.json",
+  "coverageExceptions": {}
+}
