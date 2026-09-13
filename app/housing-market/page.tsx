@@ -129,7 +129,7 @@ import {
   isHubLeadFigure,
   monthlyPaceFromMos,
 } from './_v3/hub-opening'
-import { buildMosSupplyChart } from '@/app/months-of-supply/_v3/mos-chart'
+import { buildRegionPlaceMos } from '@/app/housing-market/central-oregon/_v3/region-figures'
 import {
   marketReportDoorLinks,
   marketReportHereBody,
@@ -138,6 +138,7 @@ import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { publicMarketPulseSource } from '@/lib/market/publish-public-methodology'
 import { buildLongViewSection } from './_v3/region-charts'
 import './_v3/tremor-density.css'
+import './_v3/hub-fold.css'
 
 export const revalidate = 300
 
@@ -234,18 +235,24 @@ export default async function HousingMarketHubPage() {
     dropInProgressMonth(priceHistory, todayKey.slice(0, 7)),
   )
   const regionChart = buildRegionMedianChart(chartMonths.months, chartMonths.leftoverUsed)
-  // MOS two-bar is the hub drawing (DATA_GRAPHICS / TASTE). Same rearrangement
-  // as /months-of-supply. Miss omits — never invent a monthly pace.
+  // THE LONG VIEW IN THE FOLD (SITE-100, table defect "first-viewport
+  // instrument" → house-chart). The region monthly median as the year overlay
+  // — three calendar years on one Jan–Dec axis, marks on every month, the
+  // crosshair reading, the newest month resting open — so a reader can see
+  // whether the market is rising, falling, or seasonal without leaving the
+  // first viewport. The overlay (not the one-year isolate the deep dive pages
+  // through) because the fold's job is the trend: three years read against
+  // each other at one glance, with the YoY claim sentence above the plot the
+  // way the city reports draw it. Fewer than two finite points omits the
+  // chart rather than drawing a confident blank.
+  const seriesChart = regionChart ? { ...regionChart, id: 'market-series' } : undefined
+  // MOS two-bar is the hub drawing (DATA_GRAPHICS / TASTE): V3MosBars, the
+  // same builder and primitive as the region deep dive's fold, so the region
+  // and its hub draw the answer the same way — and its whole counts render
+  // through V3Number (beui-number), not as static SVG end-labels. Miss omits —
+  // never invent a monthly pace.
   const activeCount = hud.active != null && hud.active > 0 ? hud.active : null
   const monthOfSales = monthlyPaceFromMos(activeCount, mosRaw)
-  const mosChart =
-    activeCount != null && monthOfSales != null && mosText
-      ? buildMosSupplyChart({
-          homesForSale: activeCount,
-          monthOfSales,
-          mosText,
-        })
-      : undefined
 
   // The long view: the approved chart-room forms wired live. A fourth
   // population set (national FRED series, the mart's SFR cube, the seller-net
@@ -291,6 +298,9 @@ export default async function HousingMarketHubPage() {
   )
   const { datasetVariables, asOfIso, asOfLabel } = marketFaq
   const refreshedAt = leftoverStamp
+  // The region's two bars, under the same clock as the verdict. Null when the
+  // raw value, the active count, or a counted monthly pace is missing.
+  const regionMos = buildRegionPlaceMos(hud, mosText, refreshedAt)
 
   // ALL-TYPE closed year from the mart. source === 'missing' is empty, not a
   // printed zero. 2026-08-27 hero-reorder fix (parity.json market-report
@@ -339,7 +349,7 @@ export default async function HousingMarketHubPage() {
   }))
   const openingFigures = buildOpeningFigures({
     follow: sfrFollow,
-    monthOfSales: mosChart ? monthOfSales : null,
+    monthOfSales: regionMos ? monthOfSales : null,
   })
   const leadFigures = openingFigures.filter(isHubLeadFigure)
   const extraPages = buildHubExtraPages({
@@ -568,15 +578,21 @@ export default async function HousingMarketHubPage() {
           <V3Instrument
             id="market"
             level={1}
-            className="hm-tremor"
+            /* hm-fold (hub-fold.css): at 64rem the section is one grid — the
+               verdict, the region bars, and the year overlay in the answer
+               column; the city and leftover pagers beside them from the H1
+               down, so the first viewport is dense with the instrument and
+               no cream field sits to the right of the headline. */
+            className="hm-tremor hm-fold"
             eyebrow={v3Text('Live market')}
             headline={v3Text(
               `Central Oregon housing market${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
             )}
             note={v3Text(hubOpeningNote(verdict.kind, cityMosPages.length))}
             figures={[firstSfrFigure, ...restSfrFigures]}
-            /* First viewport is the verdict + MOS drawing + InsightPager.
-               Extra leftover tiles page; there is no closed cream fold. */
+            /* First viewport is the verdict + MOS two bars + the year overlay
+               + InsightPager. Extra leftover tiles page; there is no closed
+               cream fold. */
             chartFirst
             source={v3Text(
               publicMarketPulseSource(
@@ -591,10 +607,14 @@ export default async function HousingMarketHubPage() {
             sourceName={v3Text('Oregon Data Share')}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
             asOf={refreshedAt ?? undefined}
-            chart={mosChart ?? regionChart}
+            chart={seriesChart}
             drawing={
-              cityMosPages.length > 0 || extraPages.length > 0 ? (
-                <HubOpeningDrawings cityPages={cityMosPages} extraPages={extraPages} />
+              regionMos || cityMosPages.length > 0 || extraPages.length > 0 ? (
+                <HubOpeningDrawings
+                  regionMos={regionMos}
+                  cityPages={cityMosPages}
+                  extraPages={extraPages}
+                />
               ) : undefined
             }
           />

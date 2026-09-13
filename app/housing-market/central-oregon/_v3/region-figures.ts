@@ -41,6 +41,7 @@ import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPriceExact } from '@/lib/format/money'
+import { formatDate } from '@/lib/format/date'
 import { listingsBrowsePath } from '@/lib/slug'
 import { v3Text, type V3ChartProps, type V3InstrumentFigure } from '@/components/site/v3'
 import { buildMosSupplyChart } from '@/app/months-of-supply/_v3/mos-chart'
@@ -131,9 +132,14 @@ export function buildRegionPlaceMos(
   if (active == null || monthOfSales == null || !mosText) return null
   const homesLabel = active.toLocaleString('en-US')
   const salesLabel = formatMonthlyPace(monthOfSales)
-  const tipSource = asOf
-    ? `Oregon Data Share · single-family · as of ${asOf}`
-    : 'Oregon Data Share · single-family'
+  // `asOf` is the RAW stamp (V3SourceLine runs it through formatDate). The
+  // tooltip is visitor copy, so it formats here too — a raw ISO string with a
+  // clock and an offset is an internal label in a reader's sentence.
+  const tipStamp = asOf ? formatDate(asOf) : null
+  const tipSource =
+    tipStamp && tipStamp !== '\u2014'
+      ? `Oregon Data Share · single-family · as of ${tipStamp}`
+      : 'Oregon Data Share · single-family'
   return {
     caption: `About ${mosText} months of homes on the market.`,
     plainLabel: 'Homes for sale vs a month of sales',

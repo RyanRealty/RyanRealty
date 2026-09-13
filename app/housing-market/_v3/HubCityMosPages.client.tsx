@@ -6,7 +6,9 @@
  * beautifului InsightPager (title + count + prev/next) over V3MosBars.
  * Each page is one city's homes for sale vs a month of sales. Miss omits
  * at the builder. Navy/cream through v3 tokens. Interaction stays: page,
- * then hover a bar for the ratio and the dated source.
+ * then hover a bar for the ratio and the dated source. The region's own
+ * bars (the verdict's evidence) lead the drawing; whole counts swap digits
+ * through V3Number (beui-number) inside V3MosBars.
  */
 
 import { useState } from 'react'
@@ -15,6 +17,7 @@ import { InsightPager } from '@/components/motion/insight-pager'
 import { V3MosBars } from '@/components/site/v3/V3MosBars'
 import { V3Number } from '@/components/site/v3/V3Number.client'
 import { cn } from '@/lib/utils'
+import type { RegionPlaceMos } from '@/app/housing-market/central-oregon/_v3/region-figures'
 import type { HubCityMosPage, HubExtraPage } from './hub-opening'
 import './hub-city-mos-pages.css'
 
@@ -123,16 +126,53 @@ export function HubExtraPages({ pages, className }: HubExtraPagesProps) {
 }
 
 export type HubOpeningDrawingsProps = {
+  /**
+   * The region's own two bars — the page's answer (house-mos), same builder
+   * and same primitive as the region deep dive's fold. Null omits: absent is
+   * not zero.
+   */
+  regionMos?: RegionPlaceMos | null
   cityPages: readonly HubCityMosPage[]
   extraPages: readonly HubExtraPage[]
 }
 
-export function HubOpeningDrawings({ cityPages, extraPages }: HubOpeningDrawingsProps) {
-  if (cityPages.length === 0 && extraPages.length === 0) return null
+/**
+ * The fold's drawings. The wrapper and the aside render `display: contents`
+ * on the desktop grid (hub-fold.css), so the region bars land in the answer
+ * column under the verdict and the pagers take the column beside it. Order
+ * on a phone: region bars, city pager, the series (Instrument.chart), then
+ * the leftover pager.
+ */
+export function HubOpeningDrawings({ regionMos, cityPages, extraPages }: HubOpeningDrawingsProps) {
+  if (!regionMos && cityPages.length === 0 && extraPages.length === 0) return null
   return (
     <div className="hub-opening-draw">
-      {cityPages.length > 0 ? <HubCityMosPages pages={cityPages} /> : null}
-      {extraPages.length > 0 ? <HubExtraPages pages={extraPages} /> : null}
+      {regionMos ? (
+        <div className="hub-fold-answer">
+          <V3MosBars
+            id="hub-region-mos"
+            className="hub-region-mos"
+            caption={regionMos.caption}
+            plainLabel={regionMos.plainLabel}
+            homesName={regionMos.homesName}
+            homesLabel={regionMos.homesLabel}
+            homesValue={regionMos.homesValue}
+            salesName={regionMos.salesName}
+            salesLabel={regionMos.salesLabel}
+            salesValue={regionMos.salesValue}
+            source={regionMos.source}
+            asOf={regionMos.asOf}
+            sourceName="Oregon Data Share"
+            tooltip={regionMos.tooltip}
+          />
+        </div>
+      ) : null}
+      {cityPages.length > 0 || extraPages.length > 0 ? (
+        <div className="hub-fold-aside">
+          {cityPages.length > 0 ? <HubCityMosPages pages={cityPages} /> : null}
+          {extraPages.length > 0 ? <HubExtraPages pages={extraPages} /> : null}
+        </div>
+      ) : null}
     </div>
   )
 }

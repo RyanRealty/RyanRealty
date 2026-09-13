@@ -71,17 +71,33 @@ describe('market instruments open on a claim and a drawing', () => {
   it('SITE-88/101 year isolate is the region and annual year overlays', () => {
     expect(region).toMatch(/yearPages:\s*true/)
     expect(annual).toMatch(/yearPages:\s*true/)
+    // SITE-100: the hub fold draws the region year overlay as its long-view
+    // series (table defect "first-viewport instrument" → house-chart) the way
+    // the city reports do — three years against each other with the YoY
+    // claim above the plot, not the one-year isolate.
     expect(hub).not.toMatch(/yearPages/)
+    expect(hub).toMatch(/seriesChart = regionChart \? \{ \.\.\.regionChart, id: 'market-series' \}/)
     expect(city).not.toMatch(/yearPages/)
   })
 
-  it('draws MOS on the hub opening instrument, not two leftover tiles above the chart', () => {
+  it('draws MOS on the hub opening instrument as the region two bars, with the series beside it', () => {
     const opening = code('app/housing-market/_v3/hub-opening.ts')
-    expect(hub).toMatch(/buildMosSupplyChart/)
-    expect(hub).toMatch(/chart=\{mosChart \?\? regionChart\}/)
+    const drawings = code('app/housing-market/_v3/HubCityMosPages.client.tsx')
+    // The hub and the region deep dive draw the answer with the same builder
+    // and the same primitive (V3MosBars, whole counts through V3Number), so
+    // the fold's live counts are not static SVG end-labels (table tell,
+    // 2026-09-13: "Cream box — static navy numerals").
+    expect(hub).toMatch(/buildRegionPlaceMos\(hud, mosText, refreshedAt\)/)
+    expect(hub).not.toMatch(/buildMosSupplyChart/)
+    expect(drawings).toMatch(/<V3MosBars/)
+    expect(drawings).toMatch(/regionMos/)
+    // The series is the Instrument's chart slot, the bars ride in the drawing.
+    expect(hub).toMatch(/chart=\{seriesChart\}/)
+    expect(hub).toMatch(/regionMos=\{regionMos\}/)
     expect(hub).toMatch(/buildOpeningFigures/)
     expect(hub).toMatch(/HubOpeningDrawings/)
     expect(hub).toMatch(/chartFirst/)
+    expect(hub).toMatch(/hm-fold/)
     expect(opening).toMatch(/label: v3Text\('a month of sales'\)/)
   })
 

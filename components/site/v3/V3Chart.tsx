@@ -683,7 +683,7 @@ export function V3Chart({
            client island, which composes the same frame around its pressed state. */
         const yAxis =
           ticks.y.length >= 2 ? (
-            <div className="v3-chart__y v3-chart__y--ticks" aria-hidden="true">
+            <div key="axis" className="v3-chart__y v3-chart__y--ticks" aria-hidden="true">
               {ticks.y.map((tk) => (
                 <span key={tk.label} className="v3-chart__ytick" style={{ top: `${bandTopPct(tk.frac)}%` }}>
                   {tk.label}
@@ -691,13 +691,14 @@ export function V3Chart({
               ))}
             </div>
           ) : (
-            <div className="v3-chart__y v3-chart__y--ends" aria-hidden="true">
+            <div key="axis" className="v3-chart__y v3-chart__y--ends" aria-hidden="true">
               <span style={{ top: `${bandTopPct(0)}%` }}>{plot.yMaxLabel}</span>
               <span style={{ top: `${bandTopPct(1)}%` }}>{plot.yMinLabel}</span>
             </div>
           )
         const svg = (
           <svg
+              key="plot"
               className="v3-chart__svg"
               viewBox={`0 0 ${plot.vbW} ${plot.vbH}`}
               preserveAspectRatio="none"
@@ -773,6 +774,7 @@ export function V3Chart({
         const xAxis =
           ticks.x.length >= 2 ? (
             <div
+              key="xticks"
               className={cn(
                 'v3-chart__x v3-chart__x--ticks',
                 // "Q1 2024" is nearly twice the width of "2024": a row of five
@@ -790,7 +792,7 @@ export function V3Chart({
               ))}
             </div>
           ) : (
-            <div className="v3-chart__x" aria-hidden="true">
+            <div key="xticks" className="v3-chart__x" aria-hidden="true">
               <span>{plot.xStart}</span>
               <span>{plot.xEnd}</span>
             </div>

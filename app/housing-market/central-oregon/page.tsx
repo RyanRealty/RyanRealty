@@ -259,11 +259,11 @@ export default async function CentralOregonRegionPage() {
     regionMt?.headlines?.computedAt,
     regionMt?.inventory?.computedAt,
   ])
-  const regionMos = buildRegionPlaceMos(
-    hud,
-    mosText,
-    leftoverStamp ? formatDate(leftoverStamp) : null,
-  )
+  // RAW stamp: V3SourceLine and the builder's tooltip both format it through
+  // formatDate. Pre-formatting it here re-parsed "Sep 13, 2026" as server-local
+  // midnight, which in Pacific is the evening before (a stamp one day early
+  // on a UTC host).
+  const regionMos = buildRegionPlaceMos(hud, mosText, leftoverStamp)
   const openingChart = regionChart ? { ...regionChart, yearPages: true } : regionChart
 
   // buildMarketFaq - the single source for the visible FAQ, the FAQPage JSON-LD, and

@@ -91,6 +91,7 @@ import {
   V3_ROOT_CLASS,
 } from './atoms'
 import { QUIET_MARK_ICON, V3Icon } from './V3Icon'
+import { V3Number } from './V3Number.client'
 import './tokens.css'
 import './V3Quiet.css'
 
@@ -138,6 +139,14 @@ export type V3QuietFigure = {
    * door's number carries an encoding and not only a numeral.
    */
   ratio?: number
+  /**
+   * The same figure as a whole number, when it is a live count. A door's value
+   * then rides the installed beui-number wheel (V3Number) and settles on
+   * `value` exactly, so the animated face and the trace never disagree
+   * (SITE-100: the market hub's chooser had a count and no motion). Omit for a
+   * ratio, a price, or anything with a unit inside the string.
+   */
+  live?: number
 }
 
 /**
@@ -414,6 +423,9 @@ function figureOf(figure: V3QuietFigure | undefined): V3QuietFigure | undefined 
     ...(figure.updatedAt == null ? {} : { updatedAt: figure.updatedAt }),
     ...(typeof figure.ratio === 'number' && Number.isFinite(figure.ratio)
       ? { ratio: Math.min(1, Math.max(0, figure.ratio)) }
+      : {}),
+    ...(typeof figure.live === 'number' && Number.isFinite(figure.live) && figure.live >= 0
+      ? { live: Math.round(figure.live) }
       : {}),
   }
 }
@@ -708,7 +720,17 @@ function DoorCell({ door }: { door: RenderableLink }) {
               </span>
               {door.figure ? (
                 <span className="v3-quiet__doorfigure">
-                  <span className="v3-quiet__doorvalue">{door.figure.value}</span>
+                  <span className="v3-quiet__doorvalue">
+                    {door.figure.live != null ? (
+                      <V3Number
+                        value={door.figure.live}
+                        formatted={door.figure.value}
+                        startOnView={false}
+                      />
+                    ) : (
+                      door.figure.value
+                    )}
+                  </span>
                   {door.figure.unit ? (
                     <span className="v3-quiet__doorunit">{door.figure.unit}</span>
                   ) : null}

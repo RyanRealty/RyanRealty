@@ -42,7 +42,7 @@ export const MARKET_REPORT_DOORS: readonly MarketReportDoor[] = [
 ] as const
 
 const HERE_COPY: Record<MarketReportDoorId, string> = {
-  hub: 'You are on the live Central Oregon market. City pulse rows open each city’s live report. Sales and weekly reports, months of supply, and the region deep dive are separate pages.',
+  hub: 'You are on the live Central Oregon market. Each city row opens that city’s own live report. Sales and weekly reports, months of supply, and the region deep dive are separate pages.',
   region:
     'You are on the Central Oregon region deep dive (charts and closed-sales detail). Live inventory by city lives on the housing market hub.',
   mos: 'You are on the months of supply definition page. Live figures still live on the housing market hub and city pulse pages.',
@@ -70,7 +70,7 @@ export function marketReportDoorLinks(
     .map((door) => ({ label: door.label, href: door.href }))
 }
 
-/** Hub entry chooser: Live · By city · Explore · Sales/weekly · MOS. */
+/** Hub entry chooser: Live market · By city · Every closed sale · Weekly snapshots · Months of supply. */
 export function marketHubChooser(): ReadonlyArray<{ label: string; href: string }> {
   return [
     { label: 'Live market', href: '/housing-market' },

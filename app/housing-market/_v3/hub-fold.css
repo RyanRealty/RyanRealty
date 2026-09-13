@@ -1,0 +1,182 @@
+/* ===========================================================================
+   SITE-100 — the hub fold as ONE composed object, not a stack.
+
+   The 2026-09-13 table (grok-4.6, 51) named the fold's dullest part as "the
+   cream void under the two hairline bars" and asked for a long-view series
+   with a hover mark beside the months-of-supply answer. V3Instrument renders
+   eyebrow → headline → note → stage(chart, drawing) → figures → source in
+   flow, which leaves the right half of the measure empty beside a two-line
+   display headline. This file turns that one section into a grid:
+
+     answer column (1.4fr)                  aside column (0.9fr)
+     ─────────────────────────────────      ────────────────────────────
+     LIVE MARKET                            CITY  Bend  1/7        ‹ ›
+     Central Oregon housing market:         [homes for sale ▇▇▇▇▇  632]
+       a balanced market                    [a month of sales ▇▇   174]
+     note                                   Bend housing market →
+     [homes for sale ▇▇▇▇▇▇▇▇▇▇▇ 1,528]     ALSO  Price and wait 1/4  ‹ ›
+     [a month of sales ▇▇▇         325]     …
+     ── median sale price, three years ──
+     [year overlay · marks · crosshair]
+     ─────────────────────────────────────────────────────────────────────
+     figures (1,528 · 325, each with its sentence)
+     source
+
+   The stage, the drawing wrapper, the drawing root and the aside become
+   `display: contents`, so their children are the grid items; `order` puts
+   the region bars before the series in the answer column, and the aside is
+   placed by hand in column 2 from row 1. Below 64rem the section is one
+   column in this order: verdict, region bars, city pager, series, leftover
+   pager, figures — the H1, both bars, and the top of the city pager clear a
+   375×812 viewport.
+
+   Every value is a components/site/v3/tokens.css custom property. Scoped to
+   .hm-fold on the level-1 Instrument only; the closed-year and long-view
+   Instruments keep the component's own flow.
+   =========================================================================== */
+
+.v3.v3-instrument.hm-fold {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+.v3.v3-instrument.hm-fold > *,
+.v3.v3-instrument.hm-fold .v3-instrument__chart,
+.v3.v3-instrument.hm-fold .hub-fold-answer,
+.v3.v3-instrument.hm-fold .hub-city-mos {
+  min-width: 0;
+}
+
+/* Wrappers dissolve so the drawings sit in the section's grid directly. */
+.v3.v3-instrument.hm-fold .v3-instrument__stage,
+.v3.v3-instrument.hm-fold .v3-instrument__drawing,
+.v3.v3-instrument.hm-fold .hub-opening-draw,
+.v3.v3-instrument.hm-fold .hub-fold-aside {
+  display: contents;
+}
+
+/* Phone order (order-modified document order; the section's other children
+   keep 0 and precede these in the DOM). */
+.v3.v3-instrument.hm-fold .hub-fold-answer {
+  order: 1;
+}
+
+.v3.v3-instrument.hm-fold .hub-city-mos {
+  order: 2;
+  margin-top: var(--v3-space-lg);
+}
+
+.v3.v3-instrument.hm-fold .v3-instrument__chart {
+  order: 3;
+}
+
+.v3.v3-instrument.hm-fold .hub-extra-pages {
+  order: 4;
+  margin-top: var(--v3-space-lg);
+}
+
+.v3.v3-instrument.hm-fold .v3-instrument__figures,
+.v3.v3-instrument.hm-fold .v3-instrument__fold,
+.v3.v3-instrument.hm-fold .v3-instrument__source,
+.v3.v3-instrument.hm-fold .v3-instrument__action {
+  order: 5;
+}
+
+/* The region bars sit flat on the cream under the verdict — the answer is
+   not a card. Same treatment the region deep dive gives its fold bars. */
+.v3.v3-instrument.hm-fold .v3.v3-mos.hub-region-mos {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-inline: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.v3.v3-instrument.hm-fold .hub-fold-answer {
+  margin-top: var(--v3-space-xs);
+}
+
+/* The series under the answer: the component's hairline and padding stand,
+   the tremor margin tightens the seam. */
+.v3.v3-instrument.hm-fold .v3-instrument__chart {
+  margin-top: var(--v3-space-md);
+  padding-top: var(--v3-space-md);
+}
+
+@media (min-width: 64rem) {
+  .v3.v3-instrument.hm-fold {
+    grid-template-columns: minmax(0, 1.5fr) minmax(18rem, 0.85fr);
+    column-gap: var(--v3-space-xl);
+  }
+
+  .v3.v3-instrument.hm-fold > *,
+  .v3.v3-instrument.hm-fold .hub-fold-answer,
+  .v3.v3-instrument.hm-fold .v3-instrument__chart {
+    grid-column: 1;
+  }
+
+  /* The verdict at the hero display size (the token the Stage H1 wears), so
+     it sets in two lines inside the answer column and the bars and the
+     series both clear a 900px viewport. text-wrap: balance on the heading
+     does the rest. */
+  .v3.v3-instrument.hm-fold .v3-instrument__headline {
+    font-size: var(--v3-size-display-hero);
+    max-width: none;
+  }
+
+  .v3.v3-instrument.hm-fold .v3-instrument__note {
+    max-width: none;
+    /* The note's xl bottom margin was the rhythm for a fold that had nothing
+       under it; here the bars follow, so it steps to lg and the series
+       plot gains that line inside a 900px viewport. */
+    margin-bottom: var(--v3-space-lg);
+  }
+
+  .v3.v3-instrument.hm-fold .v3-instrument__chart {
+    margin-top: var(--v3-space-sm);
+    padding-top: var(--v3-space-sm);
+  }
+
+  /* On the wide grid the aside is a block again, placed by hand beside the
+     verdict: column 2 from the first row through the series. */
+  .v3.v3-instrument.hm-fold .hub-fold-aside {
+    display: grid;
+    gap: var(--v3-space-lg);
+    align-content: start;
+    min-width: 0;
+    grid-column: 2;
+    grid-row: 1 / span 5;
+    order: 0;
+  }
+
+  .v3.v3-instrument.hm-fold .hub-fold-aside .hub-city-mos,
+  .v3.v3-instrument.hm-fold .hub-fold-aside .hub-extra-pages {
+    margin-top: 0;
+    order: 0;
+  }
+
+  .v3.v3-instrument.hm-fold .v3-instrument__figures,
+  .v3.v3-instrument.hm-fold .v3-instrument__fold,
+  .v3.v3-instrument.hm-fold .v3-instrument__source,
+  .v3.v3-instrument.hm-fold .v3-instrument__action {
+    grid-column: 1 / -1;
+  }
+
+  .v3.v3-instrument.hm-fold .v3-instrument__figures {
+    margin-top: var(--v3-space-lg);
+  }
+}
+
+@media (max-width: 63.99rem) {
+  /* The city card carries the hairline box; the region bars above it do not,
+     so the phone reads verdict → bars → card, not card → card. Series plot
+     height is capped so the overlay does not push the leftover pager a full
+     screen down. */
+  .v3.v3-instrument.hm-fold #market-series .v3-chart__plot,
+  .v3.v3-instrument.hm-fold #market-series .v3-chart__svg {
+    max-height: 11rem;
+  }
+}

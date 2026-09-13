@@ -13,6 +13,7 @@
 import type { MarketPulseSnapshot } from '@/lib/data'
 import type { MarketKind } from '@/lib/market/classify'
 import { MOS_PLAIN_LABEL } from '@/lib/market/classify'
+import { formatDate } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { marketHubChooser } from '@/lib/market/report-doors'
@@ -88,9 +89,13 @@ export function buildCityMosPages(
     const mosText = formatMonthsOfSupply(mos)
     const href = `/housing-market/${slug}`
     const asOf = snapshot.updated_at
-    const tipSource = asOf
-      ? `Oregon Data Share · ${label} single-family · as of ${asOf}`
-      : `Oregon Data Share · ${label} single-family`
+    // Visitor copy: the stamp through the canonical formatter, never the raw
+    // ISO string with its clock and offset.
+    const tipStamp = asOf ? formatDate(asOf) : null
+    const tipSource =
+      tipStamp && tipStamp !== '\u2014'
+        ? `Oregon Data Share · ${label} single-family · as of ${tipStamp}`
+        : `Oregon Data Share · ${label} single-family`
     pages.push({
       id: slug,
       label,
@@ -152,7 +157,7 @@ export function hubOpeningNote(
 ): string {
   const cityBit =
     cityPageCount > 1
-      ? 'Page a city to see its own homes for sale against a month of sales.'
+      ? 'Page a city to see its own.'
       : cityPageCount === 1
         ? "The city drawing is that city's own homes for sale against a month of sales."
         : 'A city with no published pace is omitted.'
@@ -194,6 +199,7 @@ export function buildHubChooserItems(input: HubChooserInput): V3QuietItem[] {
           ? {
               figure: {
                 value: input.active.toLocaleString('en-US'),
+                live: input.active,
                 unit: 'single-family homes for sale',
                 source: CHOOSER_SOURCE_NAME,
                 sourceName: CHOOSER_SOURCE_NAME,
@@ -212,6 +218,7 @@ export function buildHubChooserItems(input: HubChooserInput): V3QuietItem[] {
           ? {
               figure: {
                 value: String(input.cityRowCount),
+                live: input.cityRowCount,
                 unit: 'cities with a live row',
                 source: CHOOSER_SOURCE_NAME,
                 sourceName: CHOOSER_SOURCE_NAME,
@@ -232,6 +239,7 @@ export function buildHubChooserItems(input: HubChooserInput): V3QuietItem[] {
           ? {
               figure: {
                 value: input.closedSoldCount.toLocaleString('en-US'),
+                live: input.closedSoldCount,
                 unit: `closed sales in ${input.closedYear}, all types`,
                 source: `Oregon Data Share closed sales, ${input.closedYear}`,
                 sourceName: `Central Oregon MLS closed sales, ${input.closedYear}`,
