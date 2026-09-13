@@ -16,12 +16,12 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, level 1, id='top'. The place answer: active listings across all property types, active single-family listings, and the median single-family list price, all three from ONE geo snapshot row, under one trace that names the population and the filter, stamped with that row's own refreshedAt. The active count is a door into /homes-for-sale/<city>; the other two have no node of their own and carry no href rather than a fake one. Its ask is PRIMARY pointing at #referral. At 390 the chrome CTA sits in the closed menu, so this node carries its own primary. Value my home is the wrong ask here: this city is outside our market.",
+      "section": "Pattern 1, level 1, id='top'. Live inventory AFTER the compact honesty Quiet: H1 'Homes for sale in {city}, Oregon', active listings across all property types, active single-family listings, and the median single-family list price, all three from ONE geo snapshot row, under one trace that names the population and the filter, stamped with that row's own refreshedAt, plus the newest-listings ask strip (chartFirst so the strip shares the fold). The active count is a door into /homes-for-sale/<city>; the other two have no node of their own and carry no href rather than a fake one. Its ask is PRIMARY pointing at #referral. At 390 the chrome CTA sits in the closed menu, so this node carries its own primary. Value my home is the wrong ask here: this city is outside our market.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6, id='about'. The honest block: the three paragraphs the KB KbAbout carried, verbatim, saying this is outside our market and what we do instead. It also carries the five home-market towns the prose names as real links, because pattern 6 is defined as the block that carries the graph's outbound edges and a paragraph naming Bend, Redmond, Sisters, Sunriver and La Pine while linking nowhere is the dead-text defect. The same component is the level-1 fallback when the snapshot row does not return, so the page states the absence instead of asserting a figure.",
+      "section": "Pattern 6, id='about', FIRST content section (SITE-76 layout lock: honesty first). Headless Quiet — catalog shadcn-alert installed as the optional banner prop (role=alert, navy/cream mast rule — not a yellow callout) that states we do not work here, plus secondary home-market town links on one inline line. Compact so Instrument inventory shares the first viewport. A second Quiet is the id='top' fallback when the snapshot row does not return, so the page states the absence instead of asserting a figure.",
       "blocking": true
     },
     {
@@ -120,8 +120,8 @@
     "MetadataBlock",
     "V3SectionTracker",
     "V3Breadcrumb",
-    "V3Instrument (level 1, id=top, the place answer)",
-    "V3Quiet (id=about, the honest block + home-market edges)",
+    "V3Quiet (id=about, compact Alert honesty banner + home-market edges — first viewport)",
+    "V3Instrument (level 1, id=top, H1 + live inventory + ask strip)",
     "V3Ledger (id=listings, live active listings)",
     "OutOfAreaReferralSheet (V3Sheet, id=referral)",
     "V3Ledger (id=other-markets, other Oregon cities)",

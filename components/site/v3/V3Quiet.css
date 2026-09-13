@@ -593,3 +593,102 @@
 .v3-quiet__fold[open] > .v3-quiet__foldsummary::after {
   transform: rotate(90deg);
 }
+
+/* Banner Quiet opens a page (oregon-city honesty first). Full section pad
+   under a short Alert + inline doors left a blank cream band before the
+   inventory Instrument; tighten so live inventory shares the fold. */
+.v3.v3-quiet--banner {
+  padding-top: var(--v3-space-lg);
+  padding-bottom: var(--v3-space-md);
+}
+
+.v3.v3-quiet--banner.v3-quiet--headless {
+  padding-top: var(--v3-space-md);
+}
+
+.v3.v3-quiet--banner .v3-quiet__head {
+  margin-bottom: var(--v3-space-sm);
+}
+
+.v3.v3-quiet--banner .v3-quiet__list {
+  margin-top: var(--v3-space-sm);
+}
+
+/* Catalog Alert (SITE-76 / shadcn-alert). Installed into Quiet, painted with
+   house tokens — navy ink on cream, mast rule, no yellow callout. role=alert
+   stays on the Alert root. Omitted when the banner prop is absent. */
+.v3.v3-quiet .v3-quiet__alert {
+  display: grid;
+  gap: var(--v3-space-2xs, 0.25rem);
+  margin: 0 0 var(--v3-space-sm);
+  padding: var(--v3-space-sm) var(--v3-space-md) var(--v3-space-sm) var(--v3-space-lg);
+  border: none;
+  border-top: var(--v3-rule-hairline);
+  border-bottom: var(--v3-rule-hairline);
+  border-left: var(--v3-rule-mast);
+  border-radius: 0;
+  background: transparent;
+  color: var(--v3-ink);
+  box-shadow: none;
+}
+
+.v3.v3-quiet .v3-quiet__alert-action {
+  position: static;
+  margin-top: var(--v3-space-xs);
+  justify-self: start;
+}
+
+.v3.v3-quiet .v3-quiet__alert-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-md);
+  border: var(--v3-rule-section);
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+  font-size: var(--v3-size-body-sm);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3.v3-quiet .v3-quiet__alert-link:hover,
+.v3.v3-quiet .v3-quiet__alert-link:focus-visible {
+  background: var(--v3-pressed);
+  outline: none;
+}
+
+.v3.v3-quiet .v3-quiet__alert-title {
+  margin: 0;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-body-lg);
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.v3.v3-quiet .v3-quiet__alert-body {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.v3.v3-quiet .v3-quiet__alert-body p {
+  margin: 0;
+}
+
+.v3.v3-quiet .v3-quiet__alert-body p + p {
+  margin-top: var(--v3-space-xs);
+}
+
+/* On a phone the home-market inline doors under the Alert steal the fold from
+   the Instrument figures; keep them in the DOM for crawl, hide in the first
+   read so inventory and the introduction ask can land. */
+@media (max-width: 480px) {
+  .v3.v3-quiet--banner .v3-quiet__item--doors {
+    display: none;
+  }
+}

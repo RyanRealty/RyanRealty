@@ -56,9 +56,10 @@
  * get this primitive's crash.
  *
  * Barrel law honored here:
- *  - Imports only ./atoms, ./tokens.css, next/link, and @/lib/utils. Nothing
- *    from the deleted KB register, components/site (flat), components/site/primitives,
- *    components/site/explore, or components/ui.
+ *  - Imports ./atoms, ./tokens.css, next/link, @/lib/utils, and (SITE-76) the
+ *    catalog Alert from @/components/ui/alert — restyled navy/cream in
+ *    V3Quiet.css, role=alert kept. Nothing from the deleted KB register,
+ *    components/site (flat), components/site/primitives, or components/site/explore.
  *  - The region's name is required in the type AND it can only be given once:
  *    the props are a union of `heading` (a visible title, which becomes the
  *    name) or `ariaLabel` (no visible title). Passing both is a compile error,
@@ -74,6 +75,7 @@
  */
 import { Fragment } from 'react'
 import Link from 'next/link'
+import { Alert, AlertTitle, AlertDescription, AlertAction } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
 import {
   V3Eyebrow,
@@ -320,6 +322,20 @@ type V3QuietNaming =
       ariaLabel: string
     }
 
+/**
+ * Optional honesty / status banner (SITE-76, catalog shadcn-alert).
+ *
+ * Renders the installed shadcn Alert with role=alert, painted navy-on-cream
+ * by `.v3-quiet__alert`. Default Quiet look is unchanged when this prop is
+ * omitted — oregon-city is the first caller.
+ */
+export type V3QuietBanner = {
+  title: string
+  description: string | readonly string[]
+  /** Optional in-banner door (oregon-city referral). Keeps role=alert. */
+  action?: { label: string; href: string }
+}
+
 export type V3QuietProps = {
   /**
    * The rows, in reading order: doors, questions, definitions, passages. A
@@ -350,6 +366,11 @@ export type V3QuietProps = {
    * holding only doors and prose passes none and renders exactly as before.
    */
   source?: string
+  /**
+   * Catalog Alert banner. Optional — without it Quiet renders exactly as
+   * before. With it, the Alert sits under the head and keeps role=alert.
+   */
+  banner?: V3QuietBanner
   /**
    * The visible uppercase context line above the block. A label, never the
    * region's name.
@@ -729,6 +750,7 @@ export function V3Quiet({
   ariaLabel,
   note,
   source,
+  banner,
   eyebrow,
   id,
   className,
@@ -739,6 +761,9 @@ export function V3Quiet({
   const sourceLine = text(source)
   const contextLine = text(eyebrow)
   const name = title ?? text(ariaLabel)
+  const bannerTitle = text(banner?.title)
+  const bannerBody = banner ? paragraphs(banner.description) : []
+  const hasBanner = Boolean(bannerTitle && bannerBody.length > 0)
 
   if (process.env.NODE_ENV !== 'production') {
     const dropped = items.length - rendered.length
@@ -747,7 +772,7 @@ export function V3Quiet({
         `V3Quiet${name ? ` (${name})` : ''}: dropped ${dropped} item(s) with no text or no destination.`,
       )
     }
-    if (rendered.length === 0 && !trailingNote) {
+    if (rendered.length === 0 && !trailingNote && !hasBanner) {
       console.warn(
         `V3Quiet${name ? ` (${name})` : ''}: nothing to render, so the section was omitted. A node closing on Quiet needs at least one exit.`,
       )
@@ -757,7 +782,7 @@ export function V3Quiet({
   // Nothing to say: render nothing. A bare rule under a title is the visual
   // equivalent of a dead end, and this primitive will not invent the content
   // that would fill it.
-  if (rendered.length === 0 && !trailingNote) return null
+  if (rendered.length === 0 && !trailingNote && !hasBanner) return null
 
   // No hooks in a server component, so the heading id comes from the caller's
   // id. Without one the region falls back to naming itself with the same text.
@@ -789,6 +814,7 @@ export function V3Quiet({
         V3_ROOT_CLASS,
         'v3-quiet',
         !contextLine && !title && 'v3-quiet--headless',
+        hasBanner && 'v3-quiet--banner',
         className,
       )}
       aria-labelledby={headingId}
@@ -807,6 +833,24 @@ export function V3Quiet({
             </V3Heading>
           ) : null}
         </div>
+      ) : null}
+
+      {hasBanner ? (
+        <Alert className="v3-quiet__alert">
+          <AlertTitle className="v3-quiet__alert-title">{bannerTitle}</AlertTitle>
+          <AlertDescription className="v3-quiet__alert-body">
+            {bannerBody.map((line, lineIndex) => (
+              <p key={lineIndex}>{line}</p>
+            ))}
+          </AlertDescription>
+          {banner?.action && text(banner.action.label) && text(banner.action.href) ? (
+            <AlertAction className="v3-quiet__alert-action">
+              <Link href={text(banner.action.href)!} className="v3-quiet__alert-link">
+                {text(banner.action.label)}
+              </Link>
+            </AlertAction>
+          ) : null}
+        </Alert>
       ) : null}
 
       {rendered.length > 0 ? (

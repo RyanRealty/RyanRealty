@@ -7,12 +7,12 @@
  * (Medford, Grants Pass, Klamath Falls, ...): honest copy that says this is not our
  * market, the live inventory the feed reports, and a referral capture.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. A place node
- * opens on Instrument. FOUR of the six patterns, no two adjacent alike, chrome exempt:
- * Breadcrumb, Instrument (the place answer), Quiet (the honest block), Ledger (live
- * listings), Sheet (the referral), Ledger (other Oregon markets), Footer. The section
- * order, the KB sections this migration deleted, and the per-section reasoning are the
- * parity contract, not this comment:
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. SITE-76
+ * layout lock: honesty first. FOUR of the six patterns, no two adjacent alike,
+ * chrome exempt: Breadcrumb, Quiet (Alert honesty banner in the first viewport),
+ * Instrument (live inventory + ask strip), Ledger (listings), Sheet (referral),
+ * Ledger (other Oregon markets), Footer. Section ids top/about/listings/referral/
+ * other-markets survive. The parity contract:
  * design_system/ryan-realty/ui_kits/oregon-city/parity.json.
  *
  * THE PAGE CONTRACT, CARRIED ACROSS UNCHANGED. Route and params; `revalidate = 3600`;
@@ -131,13 +131,15 @@ function normalizeSlug(raw: string): string {
 /** The home-market towns the honest block names. Dead text naming a linkable
  *  thing is a defect (PUBLIC-PRODUCT-OS), and pattern 6 is the block that carries
  *  the graph's outbound edges, so each town named in the prose is a door. Every
- *  slug here has a real /cities page (lib/central-oregon.ts SITE_CITY_SLUGS). */
+ *  slug here has a real /cities page (lib/central-oregon.ts SITE_CITY_SLUGS).
+ *  Secondary weight keeps them on one inline line so the Alert + live inventory
+ *  share the first viewport (SITE-76 layout lock). */
 const HOME_MARKET_EDGES: readonly V3QuietItem[] = [
-  { label: 'Bend', href: '/cities/bend' },
-  { label: 'Redmond', href: '/cities/redmond' },
-  { label: 'Sisters', href: '/cities/sisters' },
-  { label: 'Sunriver', href: '/cities/sunriver' },
-  { label: 'La Pine', href: '/cities/la-pine' },
+  { label: 'Bend', href: '/cities/bend', weight: 'secondary' },
+  { label: 'Redmond', href: '/cities/redmond', weight: 'secondary' },
+  { label: 'Sisters', href: '/cities/sisters', weight: 'secondary' },
+  { label: 'Sunriver', href: '/cities/sunriver', weight: 'secondary' },
+  { label: 'La Pine', href: '/cities/la-pine', weight: 'secondary' },
 ]
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
@@ -153,12 +155,30 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     })
   }
   const indexable = await isIndexableOutOfAreaCity(slug)
-  return pageMetadata({
+  // Absolute title: the layout template appends " | Ryan Realty — Central Oregon",
+  // which undercuts the page's honesty claim for an out-of-area city. Brand once
+  // as Ryan Realty; keep the head term people search.
+  const absoluteTitle = `Homes for sale in ${city.name}, Oregon | Ryan Realty`
+  const base = pageMetadata({
     title: `Homes for sale in ${city.name}, Oregon`,
     description: `${city.activeAllCount} live listings in ${city.name} from the statewide MLS. Outside our Central Oregon market. We introduce you to a local broker we would use ourselves.`,
     path: `/oregon/${city.slug}`,
     noindex: !indexable,
+    keywords: [
+      `homes for sale in ${city.name}`,
+      city.name,
+      'Oregon real estate',
+      'broker referral',
+      'Ryan Realty',
+      'statewide MLS',
+    ],
   })
+  return {
+    ...base,
+    title: { absolute: absoluteTitle },
+    openGraph: { ...base.openGraph, title: absoluteTitle },
+    twitter: { ...base.twitter, title: absoluteTitle },
+  }
 }
 
 export default async function OutOfAreaCityPage({ params }: { params: Promise<Params> }) {
@@ -310,7 +330,9 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   // and the trace says so. No median rule is drawn across it: the snapshot's median
   // covers single-family listings only and these rows are every property type, and
   // one scale carrying two populations is a comparison that is not true.
-  const STRIP_ROWS = 8
+  // Six newest keeps the ask strip inside a 900px fold with the three figures
+  // and the honesty Alert (SITE-76); eight pushed the labeled figures off-screen.
+  const STRIP_ROWS = 6
   const stripRows: V3ChartRangeRow[] = listingRows.slice(0, STRIP_ROWS).flatMap((row) => {
     const tile = tiles.find((t) => t.listingKey === row.id)
     const price = tile?.listPrice
@@ -434,14 +456,14 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
     {
       type: 'place',
       name: `${city.name}, Oregon`,
-      description: `Live MLS inventory for ${city.name}, Oregon, with a broker referral service from Ryan Realty.`,
+      description: `Live MLS inventory for ${city.name}, Oregon. Ryan Realty does not work this market; we introduce you to a local broker and surface the statewide feed's current listings.`,
       url: pagePath,
       address: { state: 'OR', country: 'US' },
     },
     {
       type: 'dataset',
       name: `Active listing snapshot for ${city.name}, Oregon`,
-      description: `Live counts for active MLS listings in ${city.name}, Oregon. Sourced from the statewide Oregon MLS feed via Ryan Realty.`,
+      description: `Live counts for active MLS listings in ${city.name}, Oregon. Sourced from the statewide Oregon MLS feed via Ryan Realty. Out-of-area referral tier — not Central Oregon inventory.`,
       url: pagePath,
       spatialCoverageName: `${city.name} · Oregon`,
       variableMeasured: datasetStats,
@@ -463,20 +485,39 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
           ]}
         />
 
+        {/* Honesty first (layout lock): compact Alert-in-Quiet, then inventory.
+            H1 stays on Instrument so sourced figures share the first viewport. */}
+        <V3Quiet
+          id="about"
+          ariaLabel={`We don't work in ${city.name}`}
+          banner={{
+            title: `We don't work in ${city.name}`,
+            description: `Ryan Realty works Central Oregon from Bend — not ${city.name}. Live MLS inventory below is real; a local broker introduction is free.`,
+            action: { label: 'Get a broker introduction', href: '#referral' },
+          }}
+          items={HOME_MARKET_EDGES}
+        />
+
         {firstFigure ? (
           <V3Instrument
             id="top"
             level={1}
-            eyebrow={v3Text(`${city.name} · Oregon`)}
+            eyebrow={v3Text(`${city.name} · Oregon · outside our market`)}
             headline={v3Text(headline)}
             figures={[firstFigure, ...restFigures]}
+            /* Lead figure + ask strip share the fold; SFR count and median
+               stay one disclosure tap away so the place-specific strip is not
+               pushed below 900px (SITE-76 fold defect). */
+            foldAfter={1}
+            foldLabel={v3Text('Single-family count and median')}
             chart={askStrip}
+            chartFirst
             source={v3Text(askStrip ? `${snapshotTrace} ${stripTrace}` : snapshotTrace)}
             sourceName={v3Text('Oregon Data Share MLS')}
             asOf={city.refreshedAt ?? undefined}
             updated={city.refreshedAt ? v3Text(formatDate(city.refreshedAt)) : undefined}
-            // PRIMARY at 390: the chrome CTA sits in the menu. The ask this
-            // node earns is the referral, not a Central Oregon valuation.
+            // PRIMARY also sits on the honesty Alert so 390 reaches the ask
+            // without scrolling past the inventory strip.
             action={{
               label: v3Text('Get a broker introduction'),
               href: '#referral',
@@ -496,24 +537,6 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
             ]}
           />
         )}
-
-        {/* The honest block: this is not our market, here is what we do instead. */}
-        <V3Quiet
-          id="about"
-          eyebrow="Outside our home market"
-          heading={`We don't work in ${city.name}`}
-          items={[
-            {
-              kind: 'prose',
-              body: [
-                `Ryan Realty works Central Oregon. Our brokers live in Bend and cover the towns around it, from Redmond and Sisters to Sunriver and La Pine. ${city.name} is outside that area.`,
-                `Our MLS feed is statewide, so the ${city.name} listings on this page are live and current.`,
-                `If you are buying or selling in ${city.name}, a broker who works that market every day will know it better than we do. Tell us what you need and we will introduce you to one we would use ourselves. No cost, no obligation.`,
-              ],
-            },
-            ...HOME_MARKET_EDGES,
-          ]}
-        />
 
         {firstListingRow ? (
           <V3Ledger

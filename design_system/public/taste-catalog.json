@@ -2601,5 +2601,13 @@
     "place-type": "place-type",
     "place-type-community": "place-type",
     "subdivisions": "subdivisions"
+  },
+  "installById": {
+    "shadcn-alert": {
+      "add": "alert",
+      "file": "components/ui/alert.tsx",
+      "import": "@/components/ui/alert",
+      "house": "components/site/v3/V3Quiet.tsx"
+    }
   }
 }

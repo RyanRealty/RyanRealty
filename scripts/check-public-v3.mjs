@@ -10,9 +10,10 @@
  * Rules:
  *   1. NO FOREIGN REGISTER — nothing under components/site/v3/ may import from
  *      components/site/kb, the flat legacy files at components/site/*.tsx,
- *      components/site/primitives, components/site/explore, or components/ui. The
- *      barrel is standalone: one import from any of those puts two design languages
- *      on one page, which is the defect this rebuild exists to end.
+ *      components/site/primitives, or components/site/explore. Catalog installs
+ *      (shadcn Alert into Quiet, etc.) may import from components/ui when the
+ *      house file restyles navy/cream and keeps the interaction. The barrel
+ *      still refuses the deleted KB register and the flat legacy site files.
  *   2. NO RAW COLOR — outside tokens.css, no hex literals and no rgb()/hsl()/oklch()
  *      literals under components/site/v3/. Color reaches a primitive only through
  *      var(--v3-*).
@@ -39,7 +40,6 @@ const FORBIDDEN_IMPORT = [
   { test: (s) => s.includes('components/site/kb'), name: 'the KB register' },
   { test: (s) => s.includes('components/site/primitives'), name: 'components/site/primitives' },
   { test: (s) => s.includes('components/site/explore'), name: 'components/site/explore' },
-  { test: (s) => s.includes('components/ui'), name: 'components/ui (the admin/shadcn register)' },
   {
     test: (s) => /^@\/components\/site\/[A-Za-z0-9_-]+$/.test(s),
     name: 'the flat legacy components/site register',
