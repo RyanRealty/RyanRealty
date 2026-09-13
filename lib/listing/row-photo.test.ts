@@ -17,7 +17,7 @@ describe('isSparkListingPhotoUrl', () => {
     )
   })
 
-  it('leaves first-party, Unsplash, and Supabase storage on the optimizer', () => {
+  it('does not treat first-party, Unsplash, or Supabase storage as Spark listing photos', () => {
     expect(isSparkListingPhotoUrl('/images/brokers/ryan-matt.png')).toBe(false)
     expect(isSparkListingPhotoUrl('https://images.unsplash.com/photo-1')).toBe(false)
     expect(

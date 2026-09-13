@@ -103,10 +103,14 @@ const nextConfig: NextConfig = {
       { protocol: 'http', hostname: 'localhost', pathname: '/**' },
     ],
     formats: ['image/avif', 'image/webp'],
-    // Spark/MLS listing photos bypass the optimizer (isSparkListingPhotoUrl).
-    // Remaining first-party images use Next 16's default quality 75. Cache
-    // transforms for 31 days so a remaining optimized image is not
-    // re-encoded on the default 60s TTL.
+    // Matt 2026-09-13 (locked): we are not using Vercel to optimize any images.
+    // Every next/image is a passthrough — the browser fetches src directly
+    // (Spark CDN, Unsplash, brokers, logos, mosaics, first-party). No
+    // `/_next/image` billing. remotePatterns stay for typecheck; they no
+    // longer drive transforms. SparkSafeImage is belt-and-suspenders.
+    unoptimized: true,
+    // Cache TTL is unused while unoptimized; left so a future re-enable
+    // does not silently revert to the default 60s transform TTL.
     minimumCacheTTL: 2_678_400,
   },
   // Per-page prerender ceiling, in seconds.
