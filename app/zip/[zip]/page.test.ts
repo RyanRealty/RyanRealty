@@ -122,7 +122,7 @@ describe('ZIP page is on the v3 barrel', () => {
 
   it('carries the page contract across unchanged', () => {
     expect(PAGE).toMatch(/export const dynamicParams = false/)
-    expect(PAGE).toMatch(/export const revalidate = 60/)
+    expect(PAGE).toMatch(/export const revalidate = 300/)
     expect(PAGE).toMatch(/export async function generateStaticParams/)
     expect(PAGE).toMatch(/CANONICAL_ZIPS/)
     expect(PAGE).toMatch(/title: 'ZIP not found · Ryan Realty'/)

@@ -43,6 +43,7 @@
     "ci:prerender-db-safety",
     "ci:private-key-parity",
     "ci:private-phone",
+    "ci:public-isr-ttl",
     "ci:public-listing-status",
     "ci:public-ui",
     "ci:chrome-single-source",

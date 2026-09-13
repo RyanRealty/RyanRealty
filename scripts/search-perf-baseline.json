@@ -111,7 +111,7 @@
   "static": {
     "minBudgetHeadroom": 1.25,
     "postgrestMaxRows": 1000,
-    "pageRevalidateMaxSeconds": 60,
+    "pageRevalidateMaxSeconds": 300,
     "pages": [
       "app/search/page.tsx",
       "app/search/[...slug]/page.tsx"
