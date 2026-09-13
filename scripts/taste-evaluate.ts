@@ -40,12 +40,15 @@ import {
 } from './lib/taste-catalog.mjs'
 import { parseCompetitiveBrief } from './lib/taste-receipt.mjs'
 import {
+  CURSOR_JUDGE_MODEL,
   EVALUATOR_MODEL,
   RUBRIC_PATH,
   RUBRIC_VERSION,
   claudeCliFailure,
   claudeModelFromWrapper,
   competitiveBriefBlocksDone,
+  cursorCliFailure,
+  cursorModelListed,
   demoMatchBlocksDone,
   evaluatorBlocksDone,
   evaluatorEnvelope,
@@ -86,11 +89,18 @@ import {
  * the JSON then exits 2 — do not invent true. When the route publishes a
  * competitiveBrief, competitiveBriefPass is the same rule.
  *
- *   --evaluator auto|grok|claude   (default auto = the chain above)
- *   --builder <model>              (the model that built the page)
+ * Link 1b (Matt 2026-09-12, "I now have grok 4.6 in cursor, can we use it
+ * there"): the SAME grok-4.6 through `cursor-agent -p --model grok-4.6` on the
+ * Cursor subscription, tried when the grok CLI is missing or 402 (or first, when
+ * the current table was scored through it). Same model, same ruler; the receipt
+ * records `transport: cursor-cli`.
+ *
+ *   --evaluator auto|grok|cursor|claude   (default auto = the chain above)
+ *   --builder <model>                     (the model that built the page)
  */
 const GROK_CLI = process.env.GROK_CLI ?? `${process.env.HOME}/.grok/bin/grok`
 const CLAUDE_CLI = process.env.CLAUDE_CLI ?? 'claude'
+const CURSOR_CLI = process.env.CURSOR_CLI ?? 'cursor-agent'
 
 config({ path: '.env.local' })
 
@@ -103,7 +113,7 @@ function loadRubric(): string {
   return readFileSync(RUBRIC_PATH, 'utf8').trim()
 }
 
-type EvaluatorChoice = 'auto' | 'grok' | 'claude'
+type EvaluatorChoice = 'auto' | 'grok' | 'cursor' | 'claude'
 
 function parseArgs(argv: string[]) {
   const out: {
@@ -125,8 +135,8 @@ function parseArgs(argv: string[]) {
     else if (a === '--builder') out.builder = argv[++i]
     else if (a === '--evaluator') {
       const v = String(argv[++i] ?? '').trim()
-      if (v !== 'auto' && v !== 'grok' && v !== 'claude') {
-        console.error(`taste-evaluate: --evaluator must be auto|grok|claude, got "${v}"`)
+      if (v !== 'auto' && v !== 'grok' && v !== 'cursor' && v !== 'claude') {
+        console.error(`taste-evaluate: --evaluator must be auto|grok|cursor|claude, got "${v}"`)
         process.exit(2)
       }
       out.evaluator = v
@@ -136,7 +146,42 @@ function parseArgs(argv: string[]) {
   return out
 }
 
-type JudgeAnswer = { content: string; evaluatorModel: string; transport: 'grok-cli' | 'claude-cli' }
+type JudgeAnswer = { content: string; evaluatorModel: string; transport: 'grok-cli' | 'cursor-cli' | 'claude-cli' }
+
+/**
+ * Link 1b: the same grok-4.6 through the Cursor CLI, on the Cursor subscription.
+ * `--mode ask` is read-only (the judge reads the shots, edits nothing);
+ * CURSOR_API_KEY is stripped so the login, not a key, is what answers.
+ */
+function askCursor(prompt: string): { answer?: JudgeAnswer; fail?: ReturnType<typeof cursorCliFailure> } {
+  const cursorEnv = { ...process.env }
+  delete cursorEnv.CURSOR_API_KEY
+  // `--model` is a request. The id must be on the account's list, or an unknown id
+  // would quietly become "Auto" and sign the receipt as grok-4.6.
+  const listed = spawnSync(CURSOR_CLI, ['--list-models'], { encoding: 'utf8', timeout: 60_000, env: cursorEnv })
+  const listFail = cursorCliFailure(listed.status, listed.stderr, listed.stdout, {
+    cliMissing: Boolean(listed.error && 'code' in listed.error && listed.error.code === 'ENOENT'),
+  })
+  if (listFail) return { fail: listFail }
+  if (!cursorModelListed(`${listed.stdout ?? ''}\n${listed.stderr ?? ''}`)) {
+    return {
+      fail: {
+        kind: '402',
+        message: `taste-evaluate: cursor-agent --list-models does not offer ${CURSOR_JUDGE_MODEL} on this account. Do not invent demoMatch. Next link.`,
+      },
+    }
+  }
+  const res = spawnSync(
+    CURSOR_CLI,
+    ['-p', '--trust', '--mode', 'ask', '--output-format', 'text', '--model', CURSOR_JUDGE_MODEL, prompt],
+    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 900_000, env: cursorEnv },
+  )
+  const fail = cursorCliFailure(res.status, res.stderr, res.stdout, {
+    cliMissing: Boolean(res.error && 'code' in res.error && res.error.code === 'ENOENT'),
+  })
+  if (fail) return { fail }
+  return { answer: { content: res.stdout ?? '', evaluatorModel: CURSOR_JUDGE_MODEL, transport: 'cursor-cli' } }
+}
 
 /** Link 1: grok-4.6 through the grok CLI, subscription only. */
 function askGrok(prompt: string): { answer?: JudgeAnswer; fail?: ReturnType<typeof grokCliFailure> } {
@@ -324,9 +369,23 @@ async function main() {
           console.error(grok.fail.message)
           process.exit(2)
         }
-        console.error(
-          `taste-evaluate: link 1 (grok-4.6) unavailable — ${grok.fail.kind}. Falling back to the claude CLI; the receipt will record the model that answered and the class rebaselines once.`,
-        )
+        console.error(`taste-evaluate: grok CLI link unavailable — ${grok.fail.kind}. Next link: ${order[i + 1]?.link}.`)
+      }
+      continue
+    }
+    if (step.link === 'cursor') {
+      console.error(`taste-evaluate: judge = cursor-agent (${step.model}) — ${step.reason}.`)
+      const cursor = askCursor(prompt)
+      if (cursor.answer) {
+        answer = cursor.answer
+        break
+      }
+      if (cursor.fail) {
+        if (last || !grokFailureFallsBack(cursor.fail)) {
+          console.error(cursor.fail.message)
+          process.exit(2)
+        }
+        console.error(`taste-evaluate: Cursor CLI link unavailable — ${cursor.fail.kind}. Next link: ${order[i + 1]?.link}.`)
       }
       continue
     }

@@ -35,8 +35,10 @@
  *       # Supabase. A person edits scripts/seed-site-queue.ts then runs
  *       # `npx tsx scripts/seed-site-queue.ts`.
  *
- * Transport: default is the grok CLI (subscription) with the claude CLI as
- * the fallback link; `--claude` skips straight to the claude CLI; `--api`
+ * Transport: default is grok-4.6 — the grok CLI, then the same model through
+ * the Cursor CLI (`cursor-agent`, both subscriptions; the round's link first)
+ * — with the claude CLI as the last link; `--cursor` starts at the Cursor CLI;
+ * `--claude` skips straight to the claude CLI; `--api`
  * uses the Anthropic SDK directly (`@anthropic-ai/sdk` — the repo's own
  * `createAnthropic()` in lib/ai/anthropic.ts is TypeScript and cannot be
  * imported from a plain .mjs script) and bills per token. The judge is
@@ -58,12 +60,15 @@ import {
   loadTasteCatalog,
 } from './lib/taste-catalog.mjs'
 import {
+  CURSOR_JUDGE_MODEL,
   EVALUATOR_MODEL,
   FALLBACK_EVALUATORS,
   RUBRIC_PATH,
   RUBRIC_VERSION,
   claudeCliFailure,
   claudeModelFromWrapper,
+  cursorCliFailure,
+  cursorModelListed,
   grokCliFailure,
   grokFailureFallsBack,
   judgeFamily,
@@ -109,6 +114,10 @@ const TAKE_ROUTE_SHOTS = 'scripts/take-route-shots.mjs'
 // Grok lane BUILDS with grok-4.5 so evaluatorModel != builderModel still holds.
 const GROK_CLI = process.env.GROK_CLI ?? `${process.env.HOME}/.grok/bin/grok`
 const CLAUDE_CLI = process.env.CLAUDE_CLI ?? 'claude'
+// Link 1b (Matt 2026-09-12: "I now have grok 4.6 in cursor, can we use it there"):
+// the same grok-4.6 through `cursor-agent` on the Cursor subscription. Tried when the
+// grok CLI is missing or 402, or first when the current table was scored through it.
+const CURSOR_CLI = process.env.CURSOR_CLI ?? 'cursor-agent'
 const SCORINGS_PER_CLASS = 3
 
 // ---------------------------------------------------------------------------
@@ -127,6 +136,7 @@ export function parseArgv(argv) {
     diffPath: null,
     api: false,
     claude: false,
+    cursor: false,
     seedDraft: false,
     seedDraftPath: null,
   }
@@ -134,6 +144,7 @@ export function parseArgv(argv) {
     const a = argv[i]
     if (a === '--api') opts.api = true
     else if (a === '--claude') opts.claude = true
+    else if (a === '--cursor') opts.cursor = true
     else if (a === '--classes') opts.classesCsv = argv[++i] ?? null
     else if (a.startsWith('--classes=')) opts.classesCsv = a.slice('--classes='.length)
     else if (a === '--shots-only') opts.shotsOnly = true
@@ -444,8 +455,64 @@ function scoreWithGrok(prompt, shots) {
 }
 
 /**
+ * Link 1b: the same grok-4.6 through the Cursor CLI (`cursor-agent -p --model
+ * grok-4.6`, read-only ask mode, Cursor subscription; CURSOR_API_KEY stripped so
+ * the login answers, not a key). Throws an Error carrying `.kind`.
+ */
+let cursorModelChecked = false
+function scoreWithCursor(prompt, shots) {
+  const fullPrompt =
+    `${prompt}\n\nRead these two image files with your file tool and judge what is IN them — do not guess from their names:\n` +
+    `Desktop (1440x900): ${shots.desktopPath}\nMobile (375x812): ${shots.mobilePath}\n\n` +
+    'Reply with the JSON object only, no preamble and no code fence.'
+  const cursorEnv = { ...process.env }
+  delete cursorEnv.CURSOR_API_KEY
+  // `--model` is a request. Once per run, the id must be on the account's list, or an
+  // unknown id would quietly become "Auto" and stamp the table as grok-4.6.
+  if (!cursorModelChecked) {
+    const listed = spawnSync(CURSOR_CLI, ['--list-models'], { cwd: REPO_ROOT, encoding: 'utf8', timeout: 60000, env: cursorEnv })
+    const listFail = cursorCliFailure(listed.status, listed.stderr, listed.stdout, {
+      cliMissing: Boolean(listed.error && listed.error.code === 'ENOENT'),
+    })
+    if (listFail) {
+      const err = new Error(listFail.message)
+      err.kind = listFail.kind
+      throw err
+    }
+    if (!cursorModelListed(`${listed.stdout ?? ''}\n${listed.stderr ?? ''}`)) {
+      const err = new Error(`cursor-agent --list-models does not offer ${CURSOR_JUDGE_MODEL} on this account`)
+      err.kind = '402'
+      throw err
+    }
+    cursorModelChecked = true
+  }
+  const res = spawnSync(
+    CURSOR_CLI,
+    ['-p', '--trust', '--mode', 'ask', '--output-format', 'text', '--model', CURSOR_JUDGE_MODEL, fullPrompt],
+    { cwd: REPO_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 900000, env: cursorEnv },
+  )
+  const fail = cursorCliFailure(res.status, res.stderr, res.stdout, {
+    cliMissing: Boolean(res.error && res.error.code === 'ENOENT'),
+  })
+  if (fail) {
+    const err = new Error(fail.message)
+    err.kind = fail.kind
+    throw err
+  }
+  return { text: String(res.stdout ?? ''), model: CURSOR_JUDGE_MODEL }
+}
+
+/** The grok-4.6 links in the order a run tries them: the round's link first. */
+export function grokLinkOrder({ transport, roundLink = null }) {
+  if (transport === 'cursor') return ['cursor', 'grok']
+  return roundLink === 'cursor' ? ['cursor', 'grok'] : ['grok', 'cursor']
+}
+
+/**
  * Run the judge chain once. `state.link` remembers which link is answering so
  * a 402 on the first scoring does not get re-tried 77 more times in one run.
+ * grok-4.6 has two links (grok CLI, Cursor CLI) that share one ruler; the claude
+ * CLI is the last link and rebaselines the table once.
  * Returns { text, model, transport }.
  */
 async function askJudge(prompt, shots, { transport, apiKey, alias, state }) {
@@ -454,16 +521,23 @@ async function askJudge(prompt, shots, { transport, apiKey, alias, state }) {
     const model = FALLBACK_EVALUATORS[alias]
     return { text: await scoreWithSdk(prompt, shots, apiKey, model), model, transport: 'sdk' }
   }
-  if (transport === 'grok' && state.link !== 'claude') {
-    try {
-      const r = scoreWithGrok(prompt, shots)
-      state.link = 'grok'
-      return { ...r, transport: 'grok' }
-    } catch (err) {
-      if (!grokFailureFallsBack({ kind: err.kind })) throw err
-      console.error(`  link 1 (grok-4.6) unavailable — ${err.kind}. Falling back to the claude CLI (${alias}) for the rest of this run; the table rebaselines once.`)
-      state.link = 'claude'
+  if ((transport === 'grok' || transport === 'cursor') && state.link !== 'claude') {
+    const links = grokLinkOrder({ transport, roundLink: state.roundLink })
+    const start = state.link ? Math.max(0, links.indexOf(state.link)) : 0
+    for (let i = start; i < links.length; i += 1) {
+      const link = links[i]
+      try {
+        const r = link === 'cursor' ? scoreWithCursor(prompt, shots) : scoreWithGrok(prompt, shots)
+        state.link = link
+        return { ...r, transport: link }
+      } catch (err) {
+        if (!grokFailureFallsBack({ kind: err.kind })) throw err
+        const next = links[i + 1] ?? `claude CLI (${alias})`
+        console.error(`  grok-4.6 via the ${link === 'cursor' ? 'Cursor' : 'grok'} CLI unavailable — ${err.kind}. Next: ${next}.`)
+      }
     }
+    console.error(`  both grok-4.6 links are out. The claude CLI (${alias}) scores the rest of this run; the table rebaselines once.`)
+    state.link = 'claude'
   }
   const r = scoreWithCli(prompt, shots, alias)
   return { ...r, transport: 'claude' }
@@ -739,10 +813,17 @@ async function main() {
   // so one table never mixes rulers. grok gets the chair back on a FULL run.
   const round = roundJudge(REPO_ROOT)
   const subsetOnRoundJudge = Boolean(opts.classesCsv) && !opts.api && (round.family === 'sonnet' || round.family === 'opus')
-  const transport = opts.api && process.env.ANTHROPIC_API_KEY ? 'sdk' : opts.claude || subsetOnRoundJudge ? 'claude' : 'grok'
+  if (opts.cursor && opts.claude) {
+    console.error('taste-table: --cursor and --claude name different judges; pass one.')
+    process.exit(1)
+  }
+  const transport =
+    opts.api && process.env.ANTHROPIC_API_KEY ? 'sdk' : opts.claude || subsetOnRoundJudge ? 'claude' : opts.cursor ? 'cursor' : 'grok'
   if (subsetOnRoundJudge && !opts.claude) {
     console.log(`taste-table: --classes re-run stays on the round judge (${round.model}); grok returns at the next full table run.`)
   }
+  const grokLinks = grokLinkOrder({ transport, roundLink: round.link })
+  const grokChainLabel = `${grokLinks.map((l) => (l === 'cursor' ? `Cursor CLI (${CURSOR_JUDGE_MODEL})` : `grok CLI (${EVALUATOR_MODEL})`)).join(', then ')}; the claude CLI when both are missing or out`
   const runDir = opts.evaluateOnlyDir ?? join('.taste-table', isoTimestamp())
 
   if (opts.dryRun) {
@@ -756,7 +837,7 @@ async function main() {
           ? '--api with ANTHROPIC_API_KEY — bills per token'
           : transport === 'claude'
             ? '--claude: the claude CLI only'
-            : `grok CLI (${EVALUATOR_MODEL}) first; the claude CLI when grok is missing or 402`
+            : grokChainLabel
       })`,
     )
     console.log(`  shotsOnly: ${opts.shotsOnly}`)
@@ -820,9 +901,13 @@ async function main() {
     : builderFamilies.has('sonnet')
       ? 'opus'
       : pickFallbackAlias(null)
-  const judgeState = { link: transport === 'claude' ? 'claude' : null }
+  const judgeState = { link: transport === 'claude' ? 'claude' : transport === 'sdk' ? 'sdk' : null, roundLink: round.link }
   const judgeLabel =
-    transport === 'grok' ? `${EVALUATOR_MODEL}, falling back to claude ${alias}` : transport === 'claude' ? `claude ${alias}` : FALLBACK_EVALUATORS[alias]
+    transport === 'grok' || transport === 'cursor'
+      ? `${EVALUATOR_MODEL} via ${grokLinks.map((l) => (l === 'cursor' ? 'the Cursor CLI' : 'the grok CLI')).join(' then ')}, falling back to claude ${alias}`
+      : transport === 'claude'
+        ? `claude ${alias}`
+        : FALLBACK_EVALUATORS[alias]
   console.log(`\ntaste-table — evaluating ${selected.length} class(es) via the ${transport} transport (${judgeLabel})\n`)
 
   const firstPassMedianByKey = new Map()
@@ -968,6 +1053,9 @@ async function main() {
     },
     promptFile: PROMPT_PATH,
     transport,
+    // The link that answered (grok | cursor | claude | sdk). A route receipt in this
+    // round starts its chain here so one round keeps one transport of one judge.
+    judgeLink: judgeState.link ?? current.instrument?.judgeLink ?? null,
     variance,
   }
 

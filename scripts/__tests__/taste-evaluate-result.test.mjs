@@ -10,6 +10,9 @@ import {
   demoMatchBlocksDone,
   evaluatorEnvelope,
   evaluatorResultProblems,
+  CURSOR_JUDGE_MODEL,
+  cursorCliFailure,
+  cursorModelListed,
   grokCliFailure,
   grokFailureFallsBack,
   isAllowedEvaluator,
@@ -51,6 +54,53 @@ describe('taste-evaluate-result — grok CLI honest fail', () => {
   it('reads the real Grok Build balance message as a 402', () => {
     const fail = grokCliFailure(1, '', 'Error: 402 Payment Required: Grok Build usage balance exhausted')
     expect(fail?.kind).toBe('402')
+  })
+})
+
+describe('taste-evaluate-result — grok-4.6 through the Cursor CLI', () => {
+  it('is the same judge as the grok CLI', () => {
+    expect(CURSOR_JUDGE_MODEL).toBe('grok-4.6')
+    expect(isAllowedEvaluator(CURSOR_JUDGE_MODEL)).toBe(true)
+  })
+
+  it('not logged in is a missing link that hands the shots on, never a verdict', () => {
+    const fail = cursorCliFailure(1, "Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.", '')
+    expect(fail?.kind).toBe('missing')
+    expect(fail?.message).toMatch(/cursor-agent login/)
+    expect(fail?.message).toMatch(/Do not invent demoMatch/)
+    expect(grokFailureFallsBack(fail)).toBe(true)
+  })
+
+  it('a missing binary is missing', () => {
+    expect(cursorCliFailure(null, '', '', { cliMissing: true })?.kind).toBe('missing')
+    expect(cursorCliFailure(127, 'zsh: command not found: cursor-agent', '')?.kind).toBe('missing')
+  })
+
+  it('a usage cap or an unavailable model is a 402 that hands the shots on', () => {
+    expect(cursorCliFailure(1, 'Error: You have hit your usage limit for this billing cycle', '')?.kind).toBe('402')
+    expect(cursorCliFailure(1, 'Error: model grok-4.6 is not available for your plan', '')?.kind).toBe('402')
+    // --list-models while logged out
+    expect(cursorCliFailure(0, '', 'No models available for this account.')?.kind).toBe('missing')
+    expect(grokFailureFallsBack(cursorCliFailure(1, '429 rate limit', ''))).toBe(true)
+  })
+
+  it('any other non-zero exit is a real error the caller must see', () => {
+    const fail = cursorCliFailure(1, 'TypeError: cannot read properties of undefined', '')
+    expect(fail?.kind).toBe('error')
+    expect(grokFailureFallsBack(fail)).toBe(false)
+  })
+
+  it('is silent on a clean exit', () => {
+    expect(cursorCliFailure(0, '', '{"demoMatch":true}')).toBeNull()
+  })
+
+  it('the judge id must be on the account model list — a lookalike or an empty list is not', () => {
+    expect(cursorModelListed('Available models:\n  grok-4.6\n  claude-sonnet-5\n')).toBe(true)
+    expect(cursorModelListed('- grok-4.6 (default)')).toBe(true)
+    expect(cursorModelListed('grok-4.6-fast\ngrok-4.5\n')).toBe(false)
+    expect(cursorModelListed('grok-4.61\n')).toBe(false)
+    expect(cursorModelListed('No models available for this account.')).toBe(false)
+    expect(cursorModelListed('')).toBe(false)
   })
 })
 
@@ -176,16 +226,17 @@ describe('taste-evaluate-result — competitiveBriefPass schema', () => {
 })
 
 describe('taste-evaluate-result — the round judge (one ruler per table)', () => {
-  const table = (evaluatorModel) => JSON.stringify({ instrument: { evaluatorModel }, rows: [] })
+  const table = (evaluatorModel, judgeLink) => JSON.stringify({ instrument: { evaluatorModel, ...(judgeLink ? { judgeLink } : {}) }, rows: [] })
 
-  it('reads the judge that scored the current table', () => {
-    expect(roundJudge('/repo', { readFile: () => table('claude-sonnet-5') })).toEqual({ model: 'claude-sonnet-5', family: 'sonnet' })
-    expect(roundJudge('/repo', { readFile: () => table('grok-4.6') })).toEqual({ model: 'grok-4.6', family: 'grok' })
+  it('reads the judge that scored the current table, and the link it answered through', () => {
+    expect(roundJudge('/repo', { readFile: () => table('claude-sonnet-5') })).toEqual({ model: 'claude-sonnet-5', family: 'sonnet', link: null })
+    expect(roundJudge('/repo', { readFile: () => table('grok-4.6') })).toEqual({ model: 'grok-4.6', family: 'grok', link: null })
+    expect(roundJudge('/repo', { readFile: () => table('grok-4.6', 'cursor') })).toEqual({ model: 'grok-4.6', family: 'grok', link: 'cursor' })
   })
 
   it('no table, or a mixed table, is no round judge', () => {
-    expect(roundJudge('/repo', { readFile: () => { throw new Error('ENOENT') } })).toEqual({ model: null, family: null })
-    expect(roundJudge('/repo', { readFile: () => table('mixed') })).toEqual({ model: null, family: null })
+    expect(roundJudge('/repo', { readFile: () => { throw new Error('ENOENT') } })).toEqual({ model: null, family: null, link: null })
+    expect(roundJudge('/repo', { readFile: () => table('mixed') })).toEqual({ model: null, family: null, link: null })
   })
 
   it('judgeFamily buckets grok / sonnet / opus and nothing else', () => {
@@ -208,17 +259,27 @@ describe('taste-evaluate-result — the round judge (one ruler per table)', () =
     expect(order[0].reason).toMatch(/rebaselines/)
   })
 
-  it('a grok-scored table, or no table, runs the default chain: grok then claude by builder', () => {
+  it('a grok-scored table, or no table, runs the default chain: grok-4.6 through both CLIs, then claude by builder', () => {
     const grokRound = judgeOrder({ round: { model: 'grok-4.6', family: 'grok' }, builderModel: 'claude-sonnet-5' })
-    expect(grokRound.map((s) => s.link)).toEqual(['grok', 'claude'])
-    expect(grokRound[1].alias).toBe('opus')
+    expect(grokRound.map((s) => s.link)).toEqual(['grok', 'cursor', 'claude'])
+    expect(grokRound[1].model).toBe(CURSOR_JUDGE_MODEL)
+    expect(grokRound[2].alias).toBe('opus')
     const noRound = judgeOrder({ builderModel: 'claude-fable-5-1' })
-    expect(noRound.map((s) => s.link)).toEqual(['grok', 'claude'])
-    expect(noRound[1].alias).toBe('sonnet')
+    expect(noRound.map((s) => s.link)).toEqual(['grok', 'cursor', 'claude'])
+    expect(noRound[2].alias).toBe('sonnet')
+  })
+
+  it('a table scored through the Cursor CLI keeps that link first for the round', () => {
+    const order = judgeOrder({ round: { model: 'grok-4.6', family: 'grok', link: 'cursor' }, builderModel: 'grok-4.5' })
+    expect(order.map((s) => s.link)).toEqual(['cursor', 'grok', 'claude'])
+    expect(order[0].reason).toMatch(/Cursor CLI/)
   })
 
   it('an explicit --evaluator wins over the round judge', () => {
     expect(judgeOrder({ round: { model: 'claude-sonnet-5', family: 'sonnet' }, requested: 'grok' })).toEqual([expect.objectContaining({ link: 'grok' })])
+    expect(judgeOrder({ round: { model: 'claude-sonnet-5', family: 'sonnet' }, requested: 'cursor' })).toEqual([
+      expect.objectContaining({ link: 'cursor', model: 'grok-4.6' }),
+    ])
     expect(judgeOrder({ round: { model: 'grok-4.6', family: 'grok' }, requested: 'claude', builderModel: 'grok-4.5' })).toEqual([
       expect.objectContaining({ link: 'claude', alias: 'sonnet' }),
     ])

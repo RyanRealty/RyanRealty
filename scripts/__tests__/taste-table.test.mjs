@@ -23,7 +23,7 @@ import {
   TASTE_TABLE_END,
   TASTE_TABLE_START,
 } from '../lib/taste-table-core.mjs'
-import { JudgeOutError, judgeIsOut, parseArgv, parseEvaluatorJson } from '../taste-table.mjs'
+import { JudgeOutError, grokLinkOrder, judgeIsOut, parseArgv, parseEvaluatorJson } from '../taste-table.mjs'
 
 describe('judgeIsOut — a judge that is out is not a malformed answer', () => {
   it('402 (quota, weekly limit) and a missing CLI stop the run', () => {
@@ -605,6 +605,24 @@ describe('parseArgv', () => {
       seedDraft: true,
       seedDraftPath: 'tmp/table.json',
     })
+  })
+
+  it('--cursor starts the run at grok-4.6 through the Cursor CLI', () => {
+    expect(parseArgv(['--cursor', '--evaluate-only', '.taste-table/run1'])).toMatchObject({ cursor: true, claude: false })
+  })
+})
+
+describe('grokLinkOrder — two links, one ruler', () => {
+  it('defaults to the grok CLI, then the Cursor CLI', () => {
+    expect(grokLinkOrder({ transport: 'grok' })).toEqual(['grok', 'cursor'])
+  })
+
+  it('a table scored through the Cursor CLI keeps that link first for the round', () => {
+    expect(grokLinkOrder({ transport: 'grok', roundLink: 'cursor' })).toEqual(['cursor', 'grok'])
+  })
+
+  it('--cursor puts the Cursor CLI first whatever the round says', () => {
+    expect(grokLinkOrder({ transport: 'cursor', roundLink: 'grok' })).toEqual(['cursor', 'grok'])
   })
 })
 

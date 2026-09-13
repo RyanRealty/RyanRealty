@@ -25,6 +25,14 @@
 import { readFileSync } from 'node:fs'
 
 export const EVALUATOR_MODEL = 'grok-4.6'
+/**
+ * The SAME judge through the Cursor CLI (Matt 2026-09-12: "I now have grok 4.6
+ * in cursor, can we use it there"). `cursor-agent --model <id>` on the Cursor
+ * subscription (CURSOR_API_KEY stripped, `cursor-agent login` is the auth). It
+ * is grok-4.6 either way, so a receipt signed through this link compares to a
+ * grok-CLI mark; the link that answered is recorded as `transport`.
+ */
+export const CURSOR_JUDGE_MODEL = 'grok-4.6'
 export const RUBRIC_VERSION = 'v1-2026-09-12'
 export const RUBRIC_PATH = 'design_system/public/taste-evaluator.v1-2026-09-12.md'
 
@@ -79,26 +87,33 @@ export function roundJudge(root, { readFile } = {}) {
   const read = readFile ?? ((p) => readFileSync(p, 'utf8'))
   try {
     const raw = read(`${root.replace(/\/$/, '')}/design_system/public/taste-table.json`)
-    const model = JSON.parse(raw)?.instrument?.evaluatorModel
+    const instrument = JSON.parse(raw)?.instrument ?? {}
+    const model = instrument.evaluatorModel
     const m = typeof model === 'string' && model.trim() && model !== 'mixed' ? model.trim() : null
-    return { model: m, family: judgeFamily(m) }
+    // The link that answered for the table (grok | cursor | claude), so a grok
+    // round keeps ONE transport of grok-4.6 unless that transport is out.
+    const link = typeof instrument.judgeLink === 'string' ? instrument.judgeLink : null
+    return { model: m, family: judgeFamily(m), link }
   } catch {
-    return { model: null, family: null }
+    return { model: null, family: null, link: null }
   }
 }
 
 /**
  * The links to try, in order, for one route receipt.
- *   requested 'grok' | 'claude'  -> that link only (an explicit --evaluator).
+ *   requested 'grok' | 'cursor' | 'claude' -> that link only (an explicit --evaluator).
  *   round judge sonnet/opus      -> the claude CLI on that alias; the OTHER
  *                                   alias when the builder is that family
  *                                   (a model never grades its own page).
- *   round judge grok, or no table -> grok first, then claude by builder.
- * Each entry: { link: 'grok' } | { link: 'claude', alias: 'sonnet'|'opus', reason }.
+ *   round judge grok, or no table -> grok-4.6 through the grok CLI and through
+ *                                   the Cursor CLI (the round's link first),
+ *                                   then claude by builder.
+ * Each entry: { link: 'grok' } | { link: 'cursor', model } | { link: 'claude', alias, reason }.
  */
-export function judgeOrder({ round = { model: null, family: null }, builderModel = null, requested = 'auto' } = {}) {
+export function judgeOrder({ round = { model: null, family: null, link: null }, builderModel = null, requested = 'auto' } = {}) {
   const byBuilder = pickFallbackAlias(builderModel)
   if (requested === 'grok') return [{ link: 'grok', reason: '--evaluator grok' }]
+  if (requested === 'cursor') return [{ link: 'cursor', model: CURSOR_JUDGE_MODEL, reason: '--evaluator cursor' }]
   if (requested === 'claude') return [{ link: 'claude', alias: byBuilder, reason: '--evaluator claude' }]
   if (round.family === 'sonnet' || round.family === 'opus') {
     const builderFamily = judgeFamily(builderModel)
@@ -109,9 +124,12 @@ export function judgeOrder({ round = { model: null, family: null }, builderModel
         : `round judge ${round.model} is the builder's family (${builderModel}); the other claude alias grades, and this route rebaselines`
     return [{ link: 'claude', alias, reason }]
   }
+  const why = round.model ? `round judge ${round.model}` : 'no table judge on record; chain default'
+  const grokCli = { link: 'grok', reason: `${why} — grok CLI` }
+  const cursorCli = { link: 'cursor', model: CURSOR_JUDGE_MODEL, reason: `${why} — the same grok-4.6 through the Cursor CLI` }
   return [
-    { link: 'grok', reason: round.model ? `round judge ${round.model}` : 'no table judge on record; chain default' },
-    { link: 'claude', alias: byBuilder, reason: 'link 1 missing or 402' },
+    ...(round.link === 'cursor' ? [cursorCli, grokCli] : [grokCli, cursorCli]),
+    { link: 'claude', alias: byBuilder, reason: 'both grok-4.6 links missing or out' },
   ]
 }
 
@@ -143,6 +161,56 @@ export function grokCliFailure(status, stderr, stdout, { cliMissing = false } = 
 /** The two grok failures that hand the shots to the next link in the chain. */
 export function grokFailureFallsBack(fail) {
   return Boolean(fail && (fail.kind === 'missing' || fail.kind === '402'))
+}
+
+/**
+ * Does `cursor-agent --list-models` name the judge? The CLI's `--model` is a
+ * request; an id the account cannot serve must not quietly become "Auto" and
+ * sign a receipt as grok-4.6. The id has to appear as its own token on a line.
+ */
+export function cursorModelListed(listOutput, model = CURSOR_JUDGE_MODEL) {
+  const text = String(listOutput ?? '')
+  if (!text.trim()) return false
+  const id = model.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(^|[^\\w.-])${id}(?![\\w.-])`, 'm').test(text)
+}
+
+/**
+ * Classify a `cursor-agent -p` run. Not logged in is 'missing' (the link is
+ * not there until `cursor-agent login`), a usage cap or an unavailable model is
+ * '402', anything else is a real error the caller must see. Both of the first
+ * two hand the shots to the next link; neither invents a verdict.
+ */
+export function cursorCliFailure(status, stderr, stdout, { cliMissing = false } = {}) {
+  const blob = `${stderr ?? ''}\n${stdout ?? ''}`
+  if (cliMissing || status === 127 || /ENOENT|command not found|No such file or directory/i.test(blob)) {
+    return {
+      kind: 'missing',
+      message: 'taste-evaluate: cursor-agent CLI missing. Do not invent demoMatch. Next link.',
+    }
+  }
+  // `--list-models` prints "No models available for this account." when logged out.
+  if (/authentication required|not logged in|please run .agent login|unauthori[sz]ed|\b401\b|no models available for this account/i.test(blob)) {
+    return {
+      kind: 'missing',
+      message:
+        'taste-evaluate: cursor-agent is not logged in (run `cursor-agent login` once, browser OAuth). Do not invent demoMatch. Next link.',
+    }
+  }
+  if (
+    /\b402\b|\b429\b|usage limit|rate.?limit|quota|out of (requests|credits)|payment required|billing|model (is )?not available|not available for (this|your) (account|plan)/i.test(
+      blob,
+    )
+  ) {
+    return {
+      kind: '402',
+      message: `taste-evaluate: cursor-agent limit/model unavailable: ${blob.trim().slice(0, 300)}. Do not invent demoMatch. Next link.`,
+    }
+  }
+  if (status !== 0 && status != null) {
+    return { kind: 'error', message: `taste-evaluate: cursor-agent exited ${status}: ${blob.trim().slice(0, 400)}` }
+  }
+  return null
 }
 
 /**
