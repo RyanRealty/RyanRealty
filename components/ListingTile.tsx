@@ -32,8 +32,9 @@ const IFRAME_ALLOW_POLICY = 'accelerometer; autoplay; clipboard-write; encrypted
 
 function daysOnMarket(
   onMarketDate: string | null | undefined,
-  closeDate?: string | null | undefined,
-  status?: string | null | undefined
+  closeDate: string | null | undefined,
+  status: string | null | undefined,
+  nowMs: number,
 ): number | null {
   if (!onMarketDate) return null
   const listed = new Date(onMarketDate)
@@ -41,7 +42,7 @@ function daysOnMarket(
   const closed = /closed/i.test(String(status ?? ''))
     ? new Date(String(closeDate ?? ''))
     : null
-  const endMs = closed && !Number.isNaN(closed.getTime()) ? closed.getTime() : Date.now()
+  const endMs = closed && !Number.isNaN(closed.getTime()) ? closed.getTime() : nowMs
   const days = Math.floor((endMs - listed.getTime()) / (24 * 60 * 60 * 1000))
   return days >= 0 ? days : null
 }
@@ -226,6 +227,7 @@ function ListingTile({
         listing.OnMarketDate ?? undefined,
         listing.CloseDate ?? null,
         listing.StandardStatus ?? null,
+        Date.now(),
       ),
     )
   }, [listing.OnMarketDate, listing.CloseDate, listing.StandardStatus])
