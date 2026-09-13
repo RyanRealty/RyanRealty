@@ -44,6 +44,7 @@
     "ci:private-key-parity",
     "ci:private-phone",
     "ci:public-isr-ttl",
+    "ci:images-unoptimized",
     "ci:public-listing-status",
     "ci:public-ui",
     "ci:chrome-single-source",

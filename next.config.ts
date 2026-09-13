@@ -88,6 +88,10 @@ const nextConfig: NextConfig = {
     }),
   },
   images: {
+    // Matt 2026-09-13 hard lock: do NOT use Vercel Image Optimization for any
+    // image. next/image becomes a passthrough; browsers fetch src URLs direct.
+    // Stops /_next/image billing (Spark MLS + everything else).
+    unoptimized: true,
     remotePatterns: [
       { protocol: 'https', hostname: '*.supabase.co', pathname: '/storage/v1/object/public/**' },
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
@@ -103,10 +107,7 @@ const nextConfig: NextConfig = {
       { protocol: 'http', hostname: 'localhost', pathname: '/**' },
     ],
     formats: ['image/avif', 'image/webp'],
-    // Spark/MLS listing photos bypass the optimizer (isSparkListingPhotoUrl).
-    // Remaining first-party images use Next 16's default quality 75. Cache
-    // transforms for 31 days so a remaining optimized image is not
-    // re-encoded on the default 60s TTL.
+    // unoptimized: true above — these only matter if someone flips it off.
     minimumCacheTTL: 2_678_400,
   },
   // Per-page prerender ceiling, in seconds.
