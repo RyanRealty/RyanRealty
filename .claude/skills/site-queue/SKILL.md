@@ -28,6 +28,35 @@ for everything reversible; per-action approval only for outbound messages to rea
 people, publishing posts, ad spend, and OAuth grants), §2 (VOICE.md), §3 (one design
 system, TASTE.md), and `docs/DEVELOPMENT_PROCESS.md`.
 
+## The accept test — Matt's bar, in this order (2026-09-12, "fix it all")
+
+Three rounds of this queue optimized for their own rule set: every builder miss was
+answered with a new gate or a new receipt field, the single judge went unreachable
+(grok CLI 402 from 2026-09-11 10:17) and lanes wrote the 402 into node evidence as if
+it were a finding, and pages "rose" while losing their full-width hero, their photo
+resolution, and their video. The bar was always Matt's, not the rubric's. It is:
+
+1. **The catalog is installed and imported.** The class's builder card names the
+   jobs; the source lives in `components/ui` / `components/motion` and the route's v3
+   primitive imports it. `ci:catalog-install`.
+2. **Navy, cream, Geist, Amboqia stay.** One kit, tokens only. `ci:one-design-system`,
+   `ci:design-tokens`.
+3. **Nothing the page carried is gone.** `ci:route-content-floor` holds the route's
+   `contentFloor` on a running server (hero width and resolution, images at
+   resolution, video, sections, words, links, JSON-LD); `requiredComponents` did not
+   shrink; `ci:runtime-gates` green. Lower a floor only by hand, in the same commit,
+   with the reason.
+4. **Only then, the score.** The judge chain (`npx tsx scripts/taste-evaluate.ts
+   <route-key> --builder <your model>`): grok-4.6 through the `grok` CLI, and when
+   that CLI is missing or 402, the claude CLI (sonnet, or opus when the builder is a
+   Sonnet). Median of three must rise on the same instrument; `demoMatch: true`;
+   `competitiveBriefPass: true` where a brief exists; finish line 70.
+
+**The rule set is frozen** at rubric `v1-2026-09-12` until every class has a table
+row on it (`design_system/public/taste-rule-freeze.json`, `ci:rubric-freeze`). Do
+not add a rubric version, a required receipt field, or a taste-path gate this round.
+A lane that fails a step fixes the page or the tool. It does not write a rule.
+
 ## Where the queue lives
 
 - `loop_work_nodes`, domain `public-ux`, version_gap `SITE-*`. The table with ids is in
@@ -263,8 +292,9 @@ There is now. After the build, from the lane's own worktree:
 npx next build && PORT=<free port> npm run ci:runtime-gates
 ```
 
-`ci:runtime-gates` starts the production server once and runs the three gates CI
-runs against it — `ci:route-smoke`, `ci:page-payload`, `ci:tap-targets` — in the
+`ci:runtime-gates` starts the production server once and runs the four gates CI
+runs against it — `ci:route-smoke`, `ci:page-payload`, `ci:tap-targets`,
+`ci:route-content-floor` — in the
 same order and with the same one-server shape as `.github/workflows/ci.yml`. Its
 first cut wrapped them in `start-server-and-test` and could never start, because
 that wrapper's waiter sends `User-Agent: axios/1.x` and the middleware bot screen
@@ -333,14 +363,21 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
    primitive that already lost.
 1. Builds, and runs the builder ritual in `design_system/public/TASTE.md` with
    its own eyes on the screenshots.
+1b. **Holds the floor before it captures.** `npx next build && PORT=<free port>
+   npm run ci:runtime-gates` — this now ends with `ci:route-content-floor`,
+   which measures the built page against the route's `contentFloor`. A page
+   under its floor is fixed here; it is never sent to the evaluator, and a
+   score on it counts for nothing.
 2. Captures the shots from its own `next dev` into `ui_kits/<route>/shots/`,
    at 375 and a desktop width, in every state the section has.
-3. Spawns the evaluator: a SEPARATE `Agent` on a DIFFERENT model from the
-   builder, given the shots, the local URL, **and the builder card option
-   list (id + demo URL)**. It diagnoses the job from our shots, picks
-   `replaceWith` from that list, and scores the same shots THREE times in
-   the one call per the rubric in TASTE.md. It does not browse 200
-   components from memory.
+3. Runs the judge chain, not an in-session Agent:
+   `npx tsx scripts/taste-evaluate.ts <route-key> --builder <your model>`
+   (optional `--url` of the lane's dev server). It loads the frozen rubric,
+   the builder card option list (id + demo URL), and the shots; link 1 is
+   grok-4.6 through the `grok` CLI, link 2 the claude CLI when link 1 is
+   missing or 402. It scores the same shots THREE times in the one call and
+   prints the receipt envelope with the judge that actually answered. It
+   refuses to grade a page built by its own model family.
 4. Acts on the named defects by installing the picked item, re-captures,
    and re-scores. Repeat until the median rises above the previous mark
    from the same instrument **and** the live control matches the demo.
@@ -358,7 +395,8 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
    claims rise / ≥70 without `competitiveBriefPass: true`. `completeWorkNode`
    refuses SITE-* evidence that omits `demoMatch: true` or
    `competitiveBriefPass: true` on a briefed class (About / SITE-90), or
-   records grok CLI missing / 402. Score rise on a cream box or past the
+   records a judge failure (grok CLI missing / 402) with no fallback verdict on
+   the route's `tasteReview`. Score rise on a cream box or past the
    Researchy checklist is not Tip Ready.
 6. Only then: `npm run gates:stamp`, commit with the `Node: <id>` trailer, push
    its own branch, and report. The evaluator's remaining findings append to the
@@ -410,8 +448,9 @@ skill has.
    eligible: every node is done, blocked on a dated measurement window, or blocked on a
    decision only Matt can make with the question written in `blocked_reason`. And every
    public page class scores **70 or above on the table instrument** (Matt 2026-09-09;
-   `design_system/public/taste-table.json`, first-viewport shots, claude-sonnet-5, rubric
-   v1-2026-09-08, three scorings, median). A class that lands its node and is still under
+   `design_system/public/taste-table.json`, first-viewport shots, the judge chain
+   (grok-4.6, else the claude CLI), frozen rubric v1-2026-09-12, three scorings,
+   median). A class that lands its node and is still under
    70 gets a node from the next table, never a lower bar. The best class on 2026-09-08
    was 69, so the line means every page beats that day's best page. Write the handoff, then stop the loop
    (`ScheduleWakeup` with `stop: true`) and say so in one line.

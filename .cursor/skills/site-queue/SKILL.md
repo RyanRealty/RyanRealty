@@ -22,7 +22,15 @@ routine reads. Nothing in the queue depends on which model builds.
   whose heartbeat is older than three hours is released by the next claim or brief.
 - **The gates** (`npm run ci:gates`), the `Node: <id>` commit trailer (G72), `npm run push`
   from the main checkout, the deploy verify, the live check, the evidence on the node.
--   **The taste ritual**: shots at 1440 and 375 through `scripts/take-route-shots.mjs`, a
+- **The accept test, in order (Matt 2026-09-12):** (1) catalog source installed and
+  imported by the route's v3 primitive (`ci:catalog-install`); (2) navy / cream /
+  Geist / Amboqia intact (`ci:one-design-system`); (3) no regression —
+  `ci:route-content-floor` holds the route's `contentFloor` (hero width and
+  resolution, images, video, sections, words, links, JSON-LD) on a running server,
+  `requiredComponents` did not shrink; (4) only then the score. The rule set is
+  frozen at rubric `v1-2026-09-12` until every class has a table row on it
+  (`ci:rubric-freeze`): no new rubric, receipt field, or taste gate this round.
+- **The taste ritual**: shots at 1440 and 375 through `scripts/take-route-shots.mjs`, a
   SEPARATE evaluator that is a DIFFERENT model from the builder, three scorings in one
   call, the receipt in the route's `parity.json` (`scripts/lib/taste-receipt.mjs`), and
   the score must rise **and** `demoMatch` must be `true`. Score rise on a cream-box
@@ -45,15 +53,20 @@ routine reads. Nothing in the queue depends on which model builds.
 
 - **Owner name:** `grok-<model>-<YYYY-MM-DD>` (for example `grok-4.6-2026-09-09`) so `loop
   status` says who holds what and the cap counts you.
-- **The evaluator — one instrument, always (Matt 2026-09-09).** The judge is **grok-4.6**
-  through the `grok` CLI, which spends Matt's Grok subscription rather than API credit, and
-  it is the judge whatever built the page. Run `npx tsx scripts/taste-evaluate.ts <route-key>`
-  (shots already in `ui_kits/<route>/shots/`, optional `--url` of your dev server): three
-  scorings in one call, TASTE.md rubric, JSON on stdout. Write `evaluatorModel: "grok-4.6"`.
-  Because `ci:taste-canon` refuses evaluatorModel == builderModel, **build with grok-4.5**
-  and record `builderModel: "grok-4.5"`. Never point the evaluator at your own model to make
-  it convenient — one ruler is the whole point, and a class whose prior mark came from
-  claude-sonnet-5 rebaselines once on this instrument (`comparedToPrior: "rebaselined"`).
+- **The evaluator — the judge chain (Matt 2026-09-09, chained 2026-09-12).** Link 1 is
+  **grok-4.6** through the `grok` CLI (Matt's Grok subscription, `XAI_API_KEY` stripped);
+  link 2, when that CLI is missing or answers 402, is the **claude CLI** on the
+  subscription (`claude-sonnet-5`, or `claude-opus-5` when the builder is a Sonnet). Run
+  `npx tsx scripts/taste-evaluate.ts <route-key> --builder <your model>` (shots already in
+  `ui_kits/<route>/shots/`, optional `--url` of your dev server, `--evaluator grok|claude`
+  to pin a link): three scorings in one call, the frozen rubric, JSON on stdout with the
+  judge that actually answered in `evaluatorModel` and its `transport`. Copy that
+  `evaluatorModel` into the receipt — never write `grok-4.6` by hand when claude answered.
+  Because `ci:taste-canon` refuses evaluatorModel == builderModel, **a Grok lane builds with
+  grok-4.5** and records `builderModel: "grok-4.5"`. Never point the evaluator at your own
+  model to make it convenient — one ruler is the whole point, and a class rebaselines once
+  when the link changes (`comparedToPrior: "rebaselined"`). When both links fail, the
+  item stays `in_progress` with the failure named; a 402 is not a finding and not a done.
 - **The machine.** On Matt's Mac `.env.local` is present; run `npm ci` and
   `npm run setup:browsers` once; the git hooks are installed. The canonical skill's
   "If you are a cloud session" section (no browser pane, the sandbox, the
@@ -70,8 +83,10 @@ routine reads. Nothing in the queue depends on which model builds.
 > names. Run `npx tsx scripts/site-queue-status.ts --json`; if `liveWorkers` is at or above
 > `maxWorkers`, stop and say so. Otherwise claim the first two eligible items in the JSON's
 > order with `--claim SITE-XX,SITE-YY --owner grok-4.6-<date>`, heartbeat hourly with
-> `--touch`, build per the canonical skill in a worktree, score with
-> `npx tsx scripts/taste-evaluate.ts <route-key>` (`grok-4.5`) before the push, get the
+> `--touch`, build per the canonical skill in a worktree, hold the accept order (catalog
+> installed and imported → brand intact → `ci:runtime-gates` incl. `ci:route-content-floor`
+> → then score with `npx tsx scripts/taste-evaluate.ts <route-key> --builder grok-4.5`)
+> before the push, get the
 > gates green, `npm run push` from the main checkout, verify the deploy and the live page,
 > write the evidence on the node, then take the next two until nothing is eligible.
 > Empty of eligible is not a stop: keep the scheduled wake so a newly entered node

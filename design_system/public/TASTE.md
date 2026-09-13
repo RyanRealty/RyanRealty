@@ -149,7 +149,10 @@ form-prescription rule and the version changes with it. Versions:
 set `replaceWith` — see `design_system/public/taste-evaluator.v1-2026-09-10.md`);
 `v1-2026-09-12` (`demoMatch` required; cream-box examples; catalog
 option-list ids preferred; `competitiveBriefPass` when a brief exists —
-see `design_system/public/taste-evaluator.v1-2026-09-12.md`).
+see `design_system/public/taste-evaluator.v1-2026-09-12.md`). **Frozen
+there** (Matt 2026-09-12): `ci:rubric-freeze` refuses a newer rubric file, a
+drifted constant, or a class with no table row on this version until the
+whole table has been scored on it once.
 
 Each field is checked, not decorative (`scripts/check-taste-canon.mjs`, contract
 in `scripts/lib/taste-receipt.mjs`):
@@ -198,15 +201,50 @@ and the Atlas "pinch to zoom" sentence are mechanical tells: a score of 86
 cannot outvote them (`scripts/taste-tells-baseline.json`, shrink-only). X
 research: `docs/research/taste-on-x-2026-09-05.md`.
 
-**THE ONE INSTRUMENT (Matt 2026-09-09).** The judge is **grok-4.6**, run through the
-`grok` CLI so it spends the Grok subscription rather than API credit, and it is the judge
-whatever built the page — `scripts/taste-evaluate.ts` for a route's receipt,
-`scripts/taste-table.mjs` for the site table. Before this the judge followed the builder
-(Claude lanes scored with claude-sonnet-5, Grok lanes with grok-4.5), so every page a Grok
-lane touched rebaselined and its previous mark stopped counting; a rise rule needs one
-ruler. Because the gate below refuses `evaluatorModel == builderModel`, a **Grok lane
-builds with grok-4.5**. Every class rebaselines ONCE on the switch: the first mark on this
-instrument is the new baseline, and the 70 finish line applies to those numbers.
+**THE ACCEPT TEST, IN ORDER (Matt 2026-09-12, "fix it all").** The score is the LAST
+question, not the first. A SITE lane passes these in this order, and a fail at any
+step means the evaluator is not asked:
+
+1. **Catalog installed and imported.** The class's builder card
+   (`node scripts/lib/taste-catalog.mjs <class> --preflight`) names the jobs; the
+   source is installed into `components/ui` or `components/motion` and the route's
+   v3 primitive imports that file. `ci:catalog-install`.
+2. **Brand intact.** Navy, cream, Geist, Amboqia through `components/site/v3/tokens.css`;
+   no second kit, no literal hex, no Inter/purple. `ci:one-design-system`, `ci:design-tokens`.
+3. **No regression.** The page still carries what it carried: `ci:route-content-floor`
+   holds the route's `contentFloor` (h1, words, headings, sections, internal links,
+   images at resolution, hero image width and resolution, video, JSON-LD) against a
+   running server; `requiredComponents` did not shrink; `ci:runtime-gates` green.
+   A page that lost its full-width hero, its office photo's resolution, or its
+   video has failed before anyone looks at a screenshot. Lowering a floor is a
+   hand edit in the same commit with the reason, never implicit.
+4. **Then the score.** Shots at 1440 and 375, the judge chain below, three scorings
+   in one call, median must rise above the previous mark from the same instrument,
+   `demoMatch: true`, `competitiveBriefPass: true` where a brief exists. Finish
+   line 70.
+
+**THE JUDGE CHAIN (Matt 2026-09-09, chained 2026-09-12).** Link 1 is **grok-4.6**
+through the `grok` CLI (spends the Grok subscription, `XAI_API_KEY` stripped so it
+never bills API credit), the judge whatever built the page. When that CLI is missing
+or answers 402 — as it did from 2026-09-11 10:17 — link 2 is the **claude CLI**
+(`claude -p`, subscription auth, `ANTHROPIC_API_KEY` stripped): `claude-sonnet-5`,
+or `claude-opus-5` when the builder is a Sonnet, because the gate refuses a model
+grading its own family. `scripts/taste-evaluate.ts` (`--evaluator auto|grok|claude`,
+`--builder <model>`) and `scripts/taste-table.mjs` both walk the chain; the receipt
+records the judge that actually answered in `evaluatorModel` and the `transport`.
+Any other failure of a link (timeout, malformed JSON) is an honest fail, not a
+fallback. A class rebaselines ONCE when the link changes (`comparedToPrior:
+"rebaselined"`, the differing key named); the 70 finish line applies to the new mark.
+Before the chain existed, every lane dead-ended on one unreachable judge and wrote
+"402" into node evidence as if it were a finding.
+
+**THE RULE FREEZE (Matt 2026-09-12).** The rubric is frozen at `v1-2026-09-12`
+until every class in `design_system/public/taste-classes.json` has a table row on
+that rubric from a judge in the chain (`design_system/public/taste-rule-freeze.json`,
+`ci:rubric-freeze`). Until then: no new rubric version, no new required receipt
+field, no new gate on the taste path. A builder failure is answered by fixing the
+page or the tool, not by a new rule — three rounds of answering every miss with a
+gate produced a loop that optimized for its own rule set instead of the site.
 
 The critique pass is a SEPARATE agent (mandatory since 2026-09-01)
 
@@ -227,8 +265,10 @@ forms (hero figure · stat tile with sparkline · emphasis line with a
 scrubber · horizontal bar · dot strip · slope · small multiples · beeswarm ·
 map with data-encoded cells · table) only when no catalog job fits.
 Craft/honesty/SEO defects use `null`. Diagnosis alone is incomplete. A grok
-CLI miss or 402 is an honest fail — do not invent `demoMatch` or
-`competitiveBriefPass` true; leave the node `in_progress`.
+CLI miss or 402 hands the call to the claude CLI (the judge chain above); when
+both links fail it is an honest fail — do not invent `demoMatch` or
+`competitiveBriefPass` true; leave the node `in_progress` and say which link
+failed and why.
 
 **The pass runs against the lane's own dev server, BEFORE the branch is
 pushed** (2026-09-08). A defect found before the push costs a fix. The same
@@ -246,8 +286,9 @@ route's `tasteReview` **and** `demoMatch` is `true`. Score rise /
 `adaptedFrom` non-empty / file-on-disk is not Tip Ready on a cream box.
 `ci:taste-canon` fails a post-`v1-2026-09-12` catalog receipt that claims
 `comparedToPrior: "rose"` or score ≥ 70 without `demoMatch: true`.
-`completeWorkNode` refuses SITE-* evidence that omits `demoMatch: true`
-or records CLI missing / 402. The shrink-only ratchet (`ci:taste-canon`)
+`completeWorkNode` refuses SITE-* evidence that omits `demoMatch: true`,
+or that records a judge failure (CLI missing / 402) without a fallback
+verdict on the route's `tasteReview`. The shrink-only ratchet (`ci:taste-canon`)
 stops a fall; this rule demands a rise plus a real demo match.
 It is written into every open SITE node's accept test and into
 `docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md`. A page that still looks bad is
