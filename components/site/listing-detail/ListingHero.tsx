@@ -716,8 +716,14 @@ function IframeHeroLayer({
   return (
     <>
       {posterUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={listingRowPhotoSrc(posterUrl)} alt={altBase} />
+        <SparkSafeImage
+          src={preferListingMosaicPhotoUrl(posterUrl)}
+          alt={altBase}
+          fill
+          sizes={LISTING_MOSAIC_LEAD_SIZES}
+          className="object-cover"
+          priority
+        />
       ) : null}
       {failed || !embedSrc ? null : (
         <iframe

@@ -48,4 +48,18 @@ describe('Spark listing photos bypass Vercel Image Optimization', () => {
       if (bareImage) expect(bareImageHasUnoptimized).toBe(true)
     },
   )
+
+  it('hero video posters use the mosaic plate, not the 320 row thumb', () => {
+    const src = read('components/site/listing-detail/ListingHero.tsx')
+    expect(src).toMatch(/posterUrl=\{photos\[0\]\?\.url\}/)
+    expect(src).toMatch(/preferListingMosaicPhotoUrl\(posterUrl\)/)
+    expect(src).not.toMatch(/listingRowPhotoSrc\(posterUrl\)/)
+  })
+
+  it('video tile YouTube posters go through SparkSafeImage, not a billed Image', () => {
+    const src = read('components/ListingTile.tsx')
+    expect(src).toMatch(/tileVideoEmbed\.posterUrl/)
+    expect(src).toMatch(/SparkSafeImage/)
+    expect(src).not.toMatch(/<Image[\s\S]{0,200}tileVideoEmbed\.posterUrl/)
+  })
 })

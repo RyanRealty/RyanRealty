@@ -398,11 +398,10 @@ function ListingTile({
                 onError={() => setPhotoBroken(true)}
               />
             ) : tileVideoEmbed.posterUrl ? (
-              <Image
+              <SparkSafeImage
                 src={tileVideoEmbed.posterUrl}
                 alt={address || 'Video thumbnail'}
                 fill
-                unoptimized
                 className="object-cover object-top"
                 sizes="(max-width: 640px) 85vw, 320px"
                 priority={priority}

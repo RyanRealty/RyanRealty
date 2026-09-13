@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { isSparkListingPhotoUrl, listingRowPhotoSrc } from './row-photo'
+import {
+  isSparkListingPhotoUrl,
+  isVendorListingMediaUrl,
+  listingPhotoSrcSet,
+  listingRowPhotoSrc,
+} from './row-photo'
 
 describe('isSparkListingPhotoUrl', () => {
   it('matches Spark resize, photos, and API hosts', () => {
@@ -39,5 +44,46 @@ describe('listingRowPhotoSrc', () => {
         'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/abc-o.jpg',
       ),
     ).toBe('https://cdn.resize.sparkplatform.com/ore/320x240/true/abc-o.jpg')
+  })
+})
+
+describe('listingPhotoSrcSet', () => {
+  it('names the three verified Spark buckets so a hero can pick 1600', () => {
+    const src = 'https://cdn.resize.sparkplatform.com/ore/320x240/true/abc-o.jpg'
+    expect(listingPhotoSrcSet(src)).toBe(
+      [
+        'https://cdn.resize.sparkplatform.com/ore/320x240/true/abc-o.jpg 320w',
+        'https://cdn.resize.sparkplatform.com/ore/800x600/true/abc-o.jpg 800w',
+        'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/abc-o.jpg 1600w',
+      ].join(', '),
+    )
+  })
+
+  it('does not invent a srcset on YouTube or first-party URLs', () => {
+    expect(listingPhotoSrcSet('https://img.youtube.com/vi/abcdefghijk/hqdefault.jpg')).toBe(
+      undefined,
+    )
+    expect(listingPhotoSrcSet('/images/brokers/ryan-matt.png')).toBe(undefined)
+  })
+})
+
+describe('isVendorListingMediaUrl', () => {
+  it('covers Spark photos and YouTube / Vimeo posters', () => {
+    expect(
+      isVendorListingMediaUrl(
+        'https://cdn.resize.sparkplatform.com/ore/800x600/true/abc-o.jpg',
+      ),
+    ).toBe(true)
+    expect(isVendorListingMediaUrl('https://img.youtube.com/vi/abcdefghijk/hqdefault.jpg')).toBe(
+      true,
+    )
+    expect(isVendorListingMediaUrl('https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg')).toBe(
+      true,
+    )
+    expect(isVendorListingMediaUrl('https://i.vimeocdn.com/video/123.jpg')).toBe(true)
+    expect(
+      isVendorListingMediaUrl('https://customer-x.cloudflarestream.com/abc/thumbnails/thumb.jpg'),
+    ).toBe(true)
+    expect(isVendorListingMediaUrl('https://images.unsplash.com/photo-1')).toBe(false)
   })
 })
