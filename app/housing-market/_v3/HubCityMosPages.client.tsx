@@ -56,7 +56,15 @@ export function HubCityMosPages({ pages, className }: HubCityMosPagesProps) {
     series: page.series,
     door: { label: `${page.label} housing market`, href: page.href },
   }))
-  return <V3Insight id="hub-city-insight" title="City" pages={insightPages} className={cn('hub-city-mos', className)} />
+  return (
+    <V3Insight
+      id="hub-city-insight"
+      title="City"
+      pages={insightPages}
+      indexLabel="Other cities"
+      className={cn('hub-city-mos', className)}
+    />
+  )
 }
 
 export type HubExtraPagesProps = {

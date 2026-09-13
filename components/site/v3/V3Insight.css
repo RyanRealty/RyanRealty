@@ -121,27 +121,44 @@
   color: var(--v3-ink-muted);
 }
 
-.v3-insight__read {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--v3-space-sm);
-  margin: 0;
-  font-size: var(--v3-size-body-sm);
-  line-height: var(--v3-leading-note);
-  color: var(--v3-ink-muted);
+/* Panel: the demo's inset chart stage — a strip naming the run and the month
+   under the cursor, then the stage. Hairline, wash, no shadow. */
+.v3-insight__panel {
+  display: grid;
+  min-width: 0;
+  overflow: hidden;
+  border: var(--v3-rule-hairline);
+  background: var(--v3-surface-raised);
 }
 
-.v3-insight__read-value {
-  font-family: var(--v3-font-num);
-  font-size: var(--v3-size-body-lg);
-  font-weight: var(--v3-weight-num);
+.v3-insight__strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  padding: var(--v3-space-2xs) var(--v3-space-sm);
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.v3-insight__chip {
+  flex: none;
+  padding: 0.05rem var(--v3-space-xs);
+  border-radius: var(--v3-radius-mark);
+  background: var(--v3-wash);
+  font-size: var(--v3-size-source);
+  font-weight: var(--v3-weight-medium);
   color: var(--v3-ink);
+}
+
+/* Room above the line for the tooltip, below it for the end ticks. */
+.v3-insight__stage {
+  padding: 2.4rem var(--v3-space-sm) 1.5rem;
+  min-width: 0;
 }
 
 .v3-insight__plot {
   position: relative;
-  height: 5.5rem;
+  height: 6rem;
   min-width: 0;
   cursor: crosshair;
   touch-action: pan-y;
@@ -196,17 +213,128 @@
     top var(--v3-dur-state) var(--v3-ease-out);
 }
 
+/* Tooltip: the demo's reading riding the cursor — a dot, the month, the
+   figure — on the raised surface with a hairline. */
+.v3-insight__tip {
+  position: absolute;
+  bottom: calc(100% + var(--v3-space-xs));
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--v3-space-2xs);
+  padding: 0.15rem var(--v3-space-xs);
+  border: var(--v3-rule-hairline);
+  background: var(--v3-surface-raised);
+  font-size: var(--v3-size-source);
+  line-height: 1.3;
+  color: var(--v3-ink-muted);
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition: left var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-insight__tip-dot {
+  align-self: center;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: var(--v3-radius-mark);
+  background: var(--v3-ink);
+}
+
+.v3-insight__tip-value {
+  font-family: var(--v3-font-num);
+  font-weight: var(--v3-weight-num);
+  color: var(--v3-ink);
+}
+
 .v3-insight__ends {
+  position: absolute;
+  top: calc(100% + var(--v3-space-2xs));
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: space-between;
   gap: var(--v3-space-sm);
   margin: 0;
   font-size: var(--v3-size-source);
   color: var(--v3-ink-muted);
+  pointer-events: none;
+}
+
+/* Figure line: the demo's big number with its mono comparison. */
+.v3-insight__figure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--v3-space-2xs) var(--v3-space-sm);
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3-insight__figure-value {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  font-weight: var(--v3-weight-num);
+  line-height: 1;
+  color: var(--v3-ink);
+}
+
+.v3-insight__figure-note {
+  font-family: var(--v3-font-mono, var(--v3-font-num));
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink);
 }
 
 .v3-insight__body {
   min-width: 0;
+}
+
+/* Index: every other page's door, crawlable and one tap away. */
+.v3-insight__index {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--v3-space-2xs) var(--v3-space-xs);
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
+}
+
+.v3-insight__index-label {
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  font-size: var(--v3-size-eyebrow);
+}
+
+.v3-insight__index-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--v3-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-insight__index-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  color: var(--v3-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--v3-edge);
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-insight__index-link:hover {
+  text-decoration-color: var(--v3-ink);
+}
+
+.v3-insight__index-link:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
 }
 
 .v3.v3-insight .v3-source {
@@ -251,6 +379,8 @@
 
   .v3-insight__cursor,
   .v3-insight__dot,
+  .v3-insight__tip,
+  .v3-insight__index-link,
   .v3-insight__pill,
   .v3.v3-insight .insight-pager__btn {
     transition: none;

@@ -63,8 +63,7 @@ import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulse
 import {
   getPublicPlaceSegments,
   publicSegmentBrowseHref,
-  publicSegmentDisplayBits,
-  publicSegmentNoun,
+  publicSegmentRowSentence,
 } from '@/lib/data/market-truth/public-segments'
 import {
   getPublicDetachedPace,
@@ -346,16 +345,21 @@ export default async function HousingMarketHubPage() {
     if (row.activeCount == null || row.activeCount <= 0) continue
     // Mobile audit 2026-08-27 (group-c): the full bit list (up to 9 stats)
     // ran on as one gray run-on paragraph under each tile at 390px — a wall
-    // of text with no hierarchy. The first 3 bits are price, months of
-    // supply, and the buyer's/seller's verdict — the segment's headline
-    // read. The rest (pending, closed, days to contract, sale-to-original,
-    // YoY, price-cut share) stay one tap away behind the tile's existing
-    // href rather than crammed inline; nothing is removed from the site.
-    const bits = publicSegmentDisplayBits(row).slice(0, 3)
+    // of text with no hierarchy. Judge 2026-09-13: the dotted bit list still
+    // read as "a count, a market-jargon verdict, and a sold-count" packed on
+    // two lines. One plain sentence per row instead: what is for sale, how
+    // many sold in a year, and what that makes the market. Price, pending,
+    // days to contract, sale-to-original, YoY and price-cut share stay one
+    // tap away behind the row's href; nothing is removed from the site.
     typeFigures.push({
       value: v3Text(row.activeCount.toLocaleString('en-US')),
       label: v3Text(
-        [`${publicSegmentNoun(row.segment, row.activeCount)} for sale`, ...bits].join(' · '),
+        publicSegmentRowSentence({
+          segment: row.segment,
+          activeCount: row.activeCount,
+          closedCount: row.closedCount,
+          verdict: row.verdict,
+        }),
       ),
       href: publicSegmentBrowseHref(null, row.segment),
       count: row.activeCount,

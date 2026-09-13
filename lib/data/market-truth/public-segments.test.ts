@@ -376,7 +376,8 @@ describe('public place pages', () => {
     expect(figures).toMatch(/publicSegmentBrowseHref/)
     const zip = readFileSync(resolve('app/zip/[zip]/page.tsx'), 'utf8')
     expect(hub).toMatch(/getPublicPlaceSegments/)
-    expect(hub).toMatch(/publicSegmentDisplayBits/)
+    // Hub Types rows read as one sentence each (SITE-100), from the same wording source.
+    expect(hub).toMatch(/publicSegmentRowSentence/)
     expect(zip).toMatch(/getPublicPlaceSegments/)
     const annual = readFileSync(resolve('app/housing-market/annual-review/page.tsx'), 'utf8')
     const region = readFileSync(resolve('app/housing-market/central-oregon/page.tsx'), 'utf8')

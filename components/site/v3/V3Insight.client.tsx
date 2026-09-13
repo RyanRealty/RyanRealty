@@ -39,6 +39,7 @@ import { InsightPager } from '@/components/motion/insight-pager'
 import { buildLinePlot, VB_H, VB_W } from '@/lib/charts/plot'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3SourceLine } from './atoms'
+import { V3Number } from './V3Number.client'
 import './tokens.css'
 import './V3Insight.css'
 
@@ -49,6 +50,12 @@ export type V3InsightPoint = {
   tick: string
   /** The formatted figure the reading prints, e.g. "$664K". */
   label: string
+  /**
+   * Caller-formatted comparison for this point, e.g. "+3.2% against Aug 2025"
+   * — the demo's mono delta beside the big figure. Omit when there is nothing
+   * sourced to compare against; the line then shows the figure alone.
+   */
+  note?: string
 }
 
 export type V3InsightSeries = {
@@ -81,6 +88,13 @@ export type V3InsightProps = {
   pages: readonly V3InsightPage[]
   /** Fewer published points than this and the card shows no line. */
   minPoints?: number
+  /**
+   * Label for the row of the OTHER pages' doors under the pill, e.g. "Other
+   * cities". The pager shows one page at a time, so without this row six of
+   * seven city-report links would never be in the HTML; with it every door is
+   * crawlable and one tap away. Omit to render no row.
+   */
+  indexLabel?: string
   id?: string
   className?: string
 }
@@ -148,65 +162,105 @@ function InsightRun({ series, minPoints, uid }: { series: V3InsightSeries; minPo
   const readId = `${uid}-read`
   const first = drawn[0]!
   const last = drawn[drawn.length - 1]!
+  // The plotted point carries geometry and faces; the caller's point carries
+  // the value the digit wheel needs and the comparison note. Same tick, same
+  // face — buildLinePlot keeps both verbatim.
+  const readPoint = series.points.find((p) => p.tick === read.tick && p.label === read.label)
+  const cursorLeft = (read.x / VB_W) * 100
+  // The demo anchors its tooltip inside the stage (clamped 28–72%); ours may
+  // sit closer to the edges because the reading is one figure, not a legend.
+  const tipLeft = Math.min(Math.max(cursorLeft, 14), 86)
 
   return (
     <div className="v3-insight__run">
-      <p className="v3-insight__caption">{series.caption}</p>
-      <p className="v3-insight__read" id={readId} role="status" aria-live="polite">
-        <span className="v3-insight__read-tick">{read.tick}</span>
-        <span className="v3-insight__read-value tabular-nums">{read.label}</span>
-      </p>
-      <div
-        className={cn('v3-insight__plot', hover != null && 'v3-insight__plot--scrubbing')}
-        role="group"
-        aria-label={`${series.caption}, ${drawn.length} points from ${first.tick} to ${last.tick}. Arrow keys move the reading.`}
-        aria-describedby={readId}
-        tabIndex={0}
-        onPointerMove={scrub}
-        onPointerDown={scrub}
-        onPointerLeave={rest}
-        onBlur={rest}
-        onKeyDown={keys}
-      >
-        <svg
-          className="v3-insight__svg"
-          viewBox={`0 0 ${VB_W} ${VB_H}`}
-          preserveAspectRatio="none"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <path className="v3-insight__line" d={line.d} vectorEffect="non-scaling-stroke" />
-        </svg>
-        <span
-          className="v3-insight__cursor"
-          style={{ left: `${((read.x / VB_W) * 100).toFixed(2)}%` }}
-          aria-hidden="true"
-        />
-        <span
-          className="v3-insight__dot"
-          style={{
-            left: `${((read.x / VB_W) * 100).toFixed(2)}%`,
-            top: `${((read.y / VB_H) * 100).toFixed(2)}%`,
-          }}
-          aria-hidden="true"
-        />
+      {/* The demo's inset chart panel: a strip naming the run and the month
+          under the cursor, then the stage the pointer scrubs. */}
+      <div className="v3-insight__panel">
+        <div className="v3-insight__strip">
+          <span className="v3-insight__caption">{series.caption}</span>
+          <span className="v3-insight__chip tabular-nums" aria-hidden="true">
+            {read.tick}
+          </span>
+        </div>
+        {/* The stage carries the padding; the plot inside it is the geometry
+            box the pointer math and every percent position refer to. */}
+        <div className="v3-insight__stage">
+          <div
+            className={cn('v3-insight__plot', hover != null && 'v3-insight__plot--scrubbing')}
+            role="group"
+            aria-label={`${series.caption}, ${drawn.length} points from ${first.tick} to ${last.tick}. Arrow keys move the reading.`}
+            aria-describedby={readId}
+            tabIndex={0}
+            onPointerMove={scrub}
+            onPointerDown={scrub}
+            onPointerLeave={rest}
+            onBlur={rest}
+            onKeyDown={keys}
+          >
+            <svg
+              className="v3-insight__svg"
+              viewBox={`0 0 ${VB_W} ${VB_H}`}
+              preserveAspectRatio="none"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path className="v3-insight__line" d={line.d} vectorEffect="non-scaling-stroke" />
+            </svg>
+            <span className="v3-insight__cursor" style={{ left: `${cursorLeft.toFixed(2)}%` }} aria-hidden="true" />
+            <span
+              className="v3-insight__dot"
+              style={{
+                left: `${cursorLeft.toFixed(2)}%`,
+                top: `${((read.y / VB_H) * 100).toFixed(2)}%`,
+              }}
+              aria-hidden="true"
+            />
+            <span className="v3-insight__tip" style={{ left: `${tipLeft.toFixed(2)}%` }} aria-hidden="true">
+              <span className="v3-insight__tip-dot" />
+              <span className="v3-insight__tip-tick">{read.tick}</span>
+              <span className="v3-insight__tip-value tabular-nums">{read.label}</span>
+            </span>
+            <span className="v3-insight__ends" aria-hidden="true">
+              <span>{first.tick}</span>
+              <span>{last.tick}</span>
+            </span>
+          </div>
+        </div>
       </div>
-      <p className="v3-insight__ends" aria-hidden="true">
-        <span>{first.tick}</span>
-        <span>{last.tick}</span>
+      {/* The demo's figure line under the panel: the reading as the big
+          number (beui digit swap follows the scrub), its comparison, and what
+          it is against. Screen readers get this line; the tooltip is a picture. */}
+      <p className="v3-insight__figure" id={readId} role="status" aria-live="polite">
+        <span className="v3-insight__figure-value">
+          {readPoint ? (
+            <V3Number value={readPoint.value} formatted={read.label} durationMs={300} startOnView={false} />
+          ) : (
+            <span className="tabular-nums">{read.label}</span>
+          )}
+        </span>
+        <span className="v3-insight__figure-tick">{read.tick}</span>
+        {readPoint?.note ? <span className="v3-insight__figure-note tabular-nums">{readPoint.note}</span> : null}
       </p>
       <V3SourceLine source={series.source} sourceName={series.sourceName} asOf={series.asOf} />
     </div>
   )
 }
 
-export function V3Insight({ title, pages, minPoints = V3_INSIGHT_MIN_POINTS, id, className }: V3InsightProps) {
+export function V3Insight({
+  title,
+  pages,
+  minPoints = V3_INSIGHT_MIN_POINTS,
+  indexLabel,
+  id,
+  className,
+}: V3InsightProps) {
   const uid = useId()
   const [page, setPage] = useState(0)
   if (pages.length === 0) return null
   const safe = Math.max(0, Math.min(pages.length - 1, page))
   const current = pages[safe]
   if (!current) return null
+  const others = indexLabel ? pages.filter((item, i) => i !== safe && item.door) : []
 
   return (
     <div id={id} className={cn(V3_ROOT_CLASS, 'v3-insight', className)}>
@@ -233,6 +287,20 @@ export function V3Insight({ title, pages, minPoints = V3_INSIGHT_MIN_POINTS, id,
           </Link>
         ) : null}
       </div>
+      {others.length > 0 ? (
+        <nav className="v3-insight__index" aria-label={indexLabel}>
+          <span className="v3-insight__index-label">{indexLabel}</span>
+          <ul className="v3-insight__index-list">
+            {others.map((item) => (
+              <li key={item.id}>
+                <Link href={item.door!.href} className="v3-insight__index-link">
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ) : null}
     </div>
   )
 }

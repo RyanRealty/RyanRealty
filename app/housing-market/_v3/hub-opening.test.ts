@@ -18,6 +18,7 @@ import {
   weighExtraItems,
   wholeCountFromLabel,
 } from './hub-opening'
+import { publicSegmentRowSentence } from '@/lib/data/market-truth/public-segments'
 import { buildSfrFollowFigures } from './hub-sections'
 import { HUB_FOLD_LABEL } from './hub-opening'
 
@@ -98,6 +99,32 @@ describe('buildCityMosPages — city grain, miss omits', () => {
     // Three priced months cannot plot: the card is omitted, not thinned.
     expect(pages[1]?.series).toBeNull()
     expect(buildCityInsightSeries('Bend', [], { minPoints: 6 })).toBeNull()
+  })
+
+  it('notes each month against the same month a year earlier, from the run itself', () => {
+    const months = Array.from({ length: 30 }, (_, i) => {
+      const d = new Date(Date.UTC(2024, i, 1))
+      return { periodStart: d.toISOString().slice(0, 10), medianSalePrice: 600_000 + i * 2_500 }
+    })
+    const series = buildCityInsightSeries('Bend', months, { minPoints: 6 })
+    // Jun 2026 = 600,000 + 29 × 2,500 = 672,500; Jun 2025 = 600,000 + 17 × 2,500 = 642,500 → +4.7%.
+    expect(series?.points.at(-1)?.note).toBe('+4.7% against Jun 2025')
+    // The first twelve drawn months have no year-ago point inside the run: they read alone.
+    expect(series?.points[0]?.note).toBeUndefined()
+    expect(series?.points[11]?.note).toBeUndefined()
+    expect(series?.points[12]?.note).toMatch(/^\+\d+\.\d% against Jul 2024$/)
+  })
+
+  it('writes a Types row as one plain sentence and leaves a missing piece out', () => {
+    expect(
+      publicSegmentRowSentence({ segment: 'condo', activeCount: 107, closedCount: 105, verdict: 'buyer' }),
+    ).toBe("condos for sale, 105 sold in the last 12 months: a buyer's market.")
+    expect(publicSegmentRowSentence({ segment: 'farm', activeCount: 40, closedCount: 8, verdict: null })).toBe(
+      'farms for sale, 8 sold in the last 12 months.',
+    )
+    expect(
+      publicSegmentRowSentence({ segment: 'land', activeCount: 596, closedCount: null, verdict: 'balanced' }),
+    ).toBe('lots for sale: a balanced market.')
   })
 
   it('omits a city whose displayed active disagrees with the pulse active', () => {

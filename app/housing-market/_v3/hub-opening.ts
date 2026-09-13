@@ -16,6 +16,7 @@ import { marketVerdict, MOS_PLAIN_LABEL } from '@/lib/market/classify'
 import { formatDate } from '@/lib/format/date'
 import { formatPriceCompact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { formatPaceDelta } from '@/lib/data/market-truth/public-pace'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { marketHubChooser } from '@/lib/market/report-doors'
 import {
@@ -86,6 +87,17 @@ export function buildCityInsightSeries(
     points.push({ value: row.medianSalePrice, tick: `${month} ${d.getUTCFullYear()}`, label: face })
   }
   if (points.length < Math.max(2, opts.minPoints)) return null
+  // The reading's comparison: this month against the same month a year
+  // earlier, both from the run itself (§0: two published medians, one
+  // division). A month with no published year-ago point reads alone.
+  const byTick = new Map(points.map((p) => [p.tick, p.value]))
+  for (const point of points) {
+    const [month, year] = point.tick.split(' ')
+    const priorTick = `${month} ${Number(year) - 1}`
+    const prior = byTick.get(priorTick)
+    if (prior == null || !(prior > 0)) continue
+    point.note = `${formatPaceDelta((point.value - prior) / prior)} against ${priorTick}`
+  }
   const first = points[0]!
   const last = points[points.length - 1]!
   return {
@@ -468,7 +480,7 @@ export function buildHubExtraPages(input: {
     pages.push({
       id: 'types',
       label: 'Types',
-      claim: 'Single-family inventory by type, each against the largest, when a type has a live row.',
+      claim: 'What is for sale across Central Oregon by property type. Each bar is that count against the largest.',
       items: typeItems,
     })
   }

@@ -62,6 +62,32 @@ function hyphenSlug(raw: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
+/**
+ * One plain sentence for a segment row (the hub's Types pager): what is for
+ * sale, how many sold in a year, what that makes the market. "condos for
+ * sale, 105 sold in the last 12 months: a buyer's market." A missing piece is
+ * left out, never zeroed. Same wording source as publicSegmentDisplayBits;
+ * price, pending, days to contract and the leftover pace stay behind the
+ * row's browse href.
+ */
+export function publicSegmentRowSentence(row: {
+  segment: PublicPlaceSegment
+  activeCount: number
+  closedCount?: number | null
+  verdict: string | null
+}): string {
+  const noun = publicSegmentNoun(row.segment, row.activeCount)
+  const sold =
+    row.closedCount != null && row.closedCount >= 1
+      ? `${row.closedCount.toLocaleString('en-US')} sold in the last 12 months`
+      : null
+  const verdict = publicSegmentVerdictLabel(row.verdict)
+  let sentence = `${noun} for sale`
+  if (sold) sentence += `, ${sold}`
+  if (verdict) sentence += `: a ${verdict}`
+  return `${sentence}.`
+}
+
 export function publicSegmentDisplayBits(row: {
   medianList: number | null
   monthsOfSupply: number | null
