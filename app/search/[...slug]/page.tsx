@@ -80,7 +80,7 @@ export async function generateMetadata(props: {
   return { ...metadata, alternates: { canonical: canonicalUrl } }
 }
 
-export const revalidate = 60
+export const revalidate = 300
 
 export default async function SearchPage({
   params,

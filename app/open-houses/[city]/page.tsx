@@ -53,7 +53,7 @@ import { openHouseFieldItems } from '../_v3/oh-field-items'
 import { openHouseEventSchemas } from '../_v3/oh-jsonld'
 
 export const dynamicParams = true
-export const revalidate = 60
+export const revalidate = 300
 
 export function generateStaticParams(): Array<{ city: string }> {
   return OH_CITY_SLUGS.map((slug) => ({ city: slug }))

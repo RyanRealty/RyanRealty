@@ -235,7 +235,7 @@ export async function generateMetadata({
   }
 }
 
-export const revalidate = 60
+export const revalidate = 300
 
 export default async function SearchPage({
   searchParams,

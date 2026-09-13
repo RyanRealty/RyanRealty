@@ -164,7 +164,7 @@ import {
 type Params = { zip: string }
 
 export const dynamicParams = false
-export const revalidate = 60
+export const revalidate = 300
 
 export async function generateStaticParams(): Promise<Array<{ zip: string }>> {
   return Array.from(CANONICAL_ZIPS).map((zip) => ({ zip }))
