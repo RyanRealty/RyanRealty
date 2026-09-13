@@ -47,10 +47,22 @@ resolution, and their video. The bar was always Matt's, not the rubric's. It is:
    shrink; `ci:runtime-gates` green. Lower a floor only by hand, in the same commit,
    with the reason.
 4. **Only then, the score.** The judge chain (`npx tsx scripts/taste-evaluate.ts
-   <route-key> --builder <your model>`): grok-4.6 through the `grok` CLI, and when
-   that CLI is missing or 402, the claude CLI (sonnet, or opus when the builder is a
-   Sonnet). Median of three must rise on the same instrument; `demoMatch: true`;
+   <route-key> --builder <your model>`) starts at the judge that scored the current
+   `taste-table.json` — one ruler per round; grok returns at the next FULL table run.
+   With a grok table: grok-4.6 through the `grok` CLI, and when that CLI is missing
+   or 402, the claude CLI (sonnet, or opus when the builder is a Sonnet). With a
+   claude table: the claude CLI on that alias, or the other alias when it is your
+   own family. Median of three must rise on the same instrument; `demoMatch: true`;
    `competitiveBriefPass: true` where a brief exists; finish line 70.
+
+**Who builds is also a chain (Matt 2026-09-12, "avoid APIs").** The headless grinder
+on Matt's Mac, `scripts/site-queue-routine.sh` (LaunchAgent `com.ryanrealty.site-queue`,
+six fires a day), tries Grok Build (`grok -p`, builds as grok-4.5), then Cursor
+(`cursor-agent -p`, after Matt's one-time `cursor-agent login`), then Claude
+(`claude -p --model opus`) — moving on only when a CLI cannot run at all. Every API
+key is stripped first; subscriptions only. The Claude cloud routine and any
+interactive Cursor or Claude session are the same builders by hand; the claim tool is
+the only coordination between all of them.
 
 **The rule set is frozen** at rubric `v1-2026-09-12` until every class has a table
 row on it (`design_system/public/taste-rule-freeze.json`, `ci:rubric-freeze`). Do
@@ -373,8 +385,9 @@ re-capture of the whole page, and the 869-file unit suite. So the lane, in order
 3. Runs the judge chain, not an in-session Agent:
    `npx tsx scripts/taste-evaluate.ts <route-key> --builder <your model>`
    (optional `--url` of the lane's dev server). It loads the frozen rubric,
-   the builder card option list (id + demo URL), and the shots; link 1 is
-   grok-4.6 through the `grok` CLI, link 2 the claude CLI when link 1 is
+   the builder card option list (id + demo URL), and the shots; it starts at
+   the round judge (the model on the current table's `instrument`), then
+   grok-4.6 through the `grok` CLI, then the claude CLI when a link is
    missing or 402. It scores the same shots THREE times in the one call and
    prints the receipt envelope with the judge that actually answered. It
    refuses to grade a page built by its own model family.

@@ -223,20 +223,29 @@ step means the evaluator is not asked:
    `demoMatch: true`, `competitiveBriefPass: true` where a brief exists. Finish
    line 70.
 
-**THE JUDGE CHAIN (Matt 2026-09-09, chained 2026-09-12).** Link 1 is **grok-4.6**
-through the `grok` CLI (spends the Grok subscription, `XAI_API_KEY` stripped so it
-never bills API credit), the judge whatever built the page. When that CLI is missing
-or answers 402 — as it did from 2026-09-11 10:17 — link 2 is the **claude CLI**
-(`claude -p`, subscription auth, `ANTHROPIC_API_KEY` stripped): `claude-sonnet-5`,
-or `claude-opus-5` when the builder is a Sonnet, because the gate refuses a model
-grading its own family. `scripts/taste-evaluate.ts` (`--evaluator auto|grok|claude`,
-`--builder <model>`) and `scripts/taste-table.mjs` both walk the chain; the receipt
-records the judge that actually answered in `evaluatorModel` and the `transport`.
-Any other failure of a link (timeout, malformed JSON) is an honest fail, not a
-fallback. A class rebaselines ONCE when the link changes (`comparedToPrior:
-"rebaselined"`, the differing key named); the 70 finish line applies to the new mark.
-Before the chain existed, every lane dead-ended on one unreachable judge and wrote
-"402" into node evidence as if it were a finding.
+**THE JUDGE CHAIN (Matt 2026-09-09, chained 2026-09-12, one ruler per table).**
+The chain starts at the **round judge**: the model recorded in
+`design_system/public/taste-table.json` `instrument.evaluatorModel`, the one that scored
+the table every route is measured against. While that is a claude alias (it is
+`claude-sonnet-5` since the 2026-09-12 rebaseline), every route evaluation goes to the
+**claude CLI** (`claude -p`, subscription auth, `ANTHROPIC_API_KEY` and
+`ANTHROPIC_AUTH_TOKEN` stripped) on that alias; a builder of the same family gets the
+other alias (`claude-opus-5` for a Sonnet builder) and that route rebaselines once,
+because the gate refuses a model grading its own family. **grok-4.6** through the `grok`
+CLI (Grok subscription, `XAI_API_KEY` stripped) returns as link 1 only at the next FULL
+table run, never mid-round: a judge flip between routes would turn every route into a
+"rebaseline" and the rise test would mean nothing. When grok is the round judge and the
+CLI is missing or 402, link 2 is the claude CLI as above. `scripts/taste-evaluate.ts`
+(`--evaluator auto|grok|claude`, `--builder <model>`) and `scripts/taste-table.mjs` both
+walk the chain and print which judge answered and why; the receipt records it in
+`evaluatorModel` and `transport`. **No APIs (Matt 2026-09-12):** both links are
+subscription CLIs; `taste-table.mjs --api` is refused unless `RR_ALLOW_PAID_API=1`, and
+no lane sets an API key to get past a 402. Any other failure of a link (timeout,
+malformed JSON after one retry) is an honest fail, not a fallback. A class rebaselines
+ONCE when the judge changes (`comparedToPrior: "rebaselined"`, the differing key named);
+the 70 finish line applies to the new mark. Before the chain existed, every lane
+dead-ended on one unreachable judge and wrote "402" into node evidence as if it were a
+finding.
 
 **THE RULE FREEZE (Matt 2026-09-12).** The rubric is frozen at `v1-2026-09-12`
 until every class in `design_system/public/taste-classes.json` has a table row on

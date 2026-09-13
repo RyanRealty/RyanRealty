@@ -45,12 +45,21 @@ on the built page; (4) only then a **separate evaluator** — a different
 model from the builder — scores the page class from shots at 1440 and 375
 (`scripts/take-route-shots.mjs`), three scorings in one call, median, and the score must
 rise. Receipt in the route's `parity.json` per `design_system/public/TASTE.md`, shape
-checked by `scripts/lib/taste-receipt.mjs`. The instrument is the judge chain: **grok-4.6**
-through the `grok` CLI (Matt's Grok subscription, not API credit), and when that CLI is
-missing or 402, the **claude CLI** (`claude-sonnet-5`, or `claude-opus-5` for a Sonnet
-builder). Run it with `npx tsx scripts/taste-evaluate.ts <route-key> --builder <model>`
-and copy the `evaluatorModel` it prints. A Grok lane
-builds with **grok-4.5**, because the gate refuses a model grading its own page. The
+checked by `scripts/lib/taste-receipt.mjs`. The instrument is the judge chain, and it
+starts at the **round judge**: whatever model scored the current table
+(`taste-table.json` `instrument.evaluatorModel`, `claude-sonnet-5` since 2026-09-12)
+grades every route this round through the **claude CLI**; a builder of that family gets
+the other claude alias and the route rebaselines once. **grok-4.6** through the `grok`
+CLI returns only at the next full table run, and when it is the round judge and the CLI
+is missing or 402, the claude CLI is link 2. Both links are subscription CLIs: **no API
+keys, ever** (Matt 2026-09-12). Run it with
+`npx tsx scripts/taste-evaluate.ts <route-key> --builder <model>` and copy the
+`evaluatorModel` it prints. A Grok lane builds with **grok-4.5**, because the gate refuses
+a model grading its own page. **Who builds is also a chain** (Matt 2026-09-12):
+`scripts/site-queue-routine.sh` tries the `grok` CLI, then `cursor-agent`, then the
+`claude` CLI (Opus, so Sonnet stays the judge), skipping a link only on 402, not
+logged in, or missing; the LaunchAgent `com.ryanrealty.site-queue` fires it six times
+a day. The
 rubric is frozen at `v1-2026-09-12` until every class has a table row on it
 (`ci:rubric-freeze`) — fix the page or the tool, never add a rule. **Finish line: every public
 page class at 70 or above on that table** (Matt 2026-09-09). Before composing a

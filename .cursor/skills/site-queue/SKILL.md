@@ -49,14 +49,38 @@ routine reads. Nothing in the queue depends on which model builds.
   off full-bleed. Navy/cream/Geist/Amboqia stay. The evaluator injects this
   catalog so a stacked-section page that ignored it is a defect.
 
+## Who builds — the builder chain (Matt 2026-09-12, no APIs)
+
+The headless grinder on Matt's Mac is `scripts/site-queue-routine.sh` (LaunchAgent
+`com.ryanrealty.site-queue`, 02/06/10/14/18/22 local). One fire tries, in order, each
+builder that runs on a **subscription CLI already logged in on that machine**, and moves
+on only when the CLI itself cannot run (missing, not logged in, 402 / quota):
+
+1. **Grok Build** — `grok -p`, builds as **grok-4.5**;
+2. **Cursor** — `cursor-agent -p` on the Cursor subscription. Skipped until Matt runs
+   `cursor-agent login` once (a browser step); an interactive Cursor session ("run loop")
+   is the same builder by hand;
+3. **Claude** — `claude -p --model opus`, builds as **claude-opus-5** so sonnet stays the
+   round judge.
+
+Every API key (`XAI_API_KEY`, `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`,
+`CURSOR_API_KEY`) is stripped before a CLI starts: a fire can never bill an API by falling
+back, and neither may you. `bash scripts/site-queue-routine.sh --builders claude` runs one
+link by hand; `SITE_QUEUE_BUILDERS=cursor,claude` reorders. The fire prints a
+`THIS FIRE'S BUILDER` line above the prompt; that is your owner name and your `--builder`.
+
 ## What changes when the builder is Grok
 
-- **Owner name:** `grok-<model>-<YYYY-MM-DD>` (for example `grok-4.6-2026-09-09`) so `loop
+- **Owner name:** `grok-<model>-<YYYY-MM-DD>` (for example `grok-4.5-2026-09-09`) so `loop
   status` says who holds what and the cap counts you.
-- **The evaluator — the judge chain (Matt 2026-09-09, chained 2026-09-12).** Link 1 is
-  **grok-4.6** through the `grok` CLI (Matt's Grok subscription, `XAI_API_KEY` stripped);
-  link 2, when that CLI is missing or answers 402, is the **claude CLI** on the
-  subscription (`claude-sonnet-5`, or `claude-opus-5` when the builder is a Sonnet). Run
+- **The evaluator — the judge chain (Matt 2026-09-09, chained 2026-09-12).** The chain
+  **starts at the judge that scored the current `taste-table.json`** (one ruler per round;
+  grok gets the chair back at the next full table run, never mid-round on a route). With a
+  grok table: link 1 is **grok-4.6** through the `grok` CLI (Matt's Grok subscription,
+  `XAI_API_KEY` stripped); link 2, when that CLI is missing or answers 402, is the **claude
+  CLI** on the subscription (`claude-sonnet-5`, or `claude-opus-5` when the builder is a
+  Sonnet). With a claude table: the claude CLI on that alias, or the other alias when it is
+  your own family (then that route rebaselines). Run
   `npx tsx scripts/taste-evaluate.ts <route-key> --builder <your model>` (shots already in
   `ui_kits/<route>/shots/`, optional `--url` of your dev server, `--evaluator grok|claude`
   to pin a link): three scorings in one call, the frozen rubric, JSON on stdout with the
