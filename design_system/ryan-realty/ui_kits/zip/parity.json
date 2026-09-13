@@ -224,5 +224,35 @@
       "shotsHash": "sha256:11d908c3912136cc61033ef7693fc04832cc43eb906dc43e55adadd2c6edf21b"
     },
     "rebaselineReason": "New first-viewport shots after fold densify + AnimatedNumber in-view fix (amount 0.15) + alert types/proof + SEO doors. Same grok-4.6 / v1-2026-09-10 instrument family as the prior 53, but shotsHash changed so the mark rebaselines at median 57. Finish line 70 and demoMatch true not met; honestyFunction held at 8."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 1153,
+      "headings": 14,
+      "sections": 15,
+      "internalLinks": 212,
+      "images": 5,
+      "heroImageWidth": 1072,
+      "heroImageNatural": 640,
+      "video": 0,
+      "jsonLd": 5
+    },
+    "floors": {
+      "h1": 1,
+      "words": 807,
+      "headings": 9,
+      "sections": 12,
+      "internalLinks": 148,
+      "images": 3,
+      "heroImageWidth": 964,
+      "heroImageNatural": 576,
+      "video": 0,
+      "jsonLd": 5
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

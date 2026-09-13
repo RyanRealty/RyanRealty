@@ -327,5 +327,35 @@
       "shotsHash": "sha256:3ee91b734665ccf0780c18e31dbb5779a2b48423bf1abc1cdd6c60120ffbb89b"
     },
     "rebaselineReason": "evaluatorModel and shotsHash differ from the SITE-12 sonnet-5 / 24-file instrument (claude-sonnet-5 \u2192 grok-4.6; new first-viewport shot set after SITE-83 catalog adaptation). Numerically 59 is below the old 80 on a different instrument; the table instrument to beat was 56."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 1169,
+      "headings": 8,
+      "sections": 12,
+      "internalLinks": 232,
+      "images": 9,
+      "heroImageWidth": 1440,
+      "heroImageNatural": 1536,
+      "video": 1,
+      "jsonLd": 2
+    },
+    "floors": {
+      "h1": 1,
+      "words": 818,
+      "headings": 5,
+      "sections": 9,
+      "internalLinks": 162,
+      "images": 6,
+      "heroImageWidth": 1296,
+      "heroImageNatural": 1382,
+      "video": 1,
+      "jsonLd": 2
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

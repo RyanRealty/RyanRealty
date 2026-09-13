@@ -153,5 +153,35 @@
     },
     "rebaselineReason": "evaluatorModel and shotsHash differ: SITE-50's 53 was claude-sonnet-5 on shots that still led with four dashed empty slots (shotsHash sha256:f541dd6d); this mark is grok-4.6 on new first-viewport shots after SITE-65 made the live sample the opening. Same rubricVersion v1-2026-09-08. Mechanical accept holds: four listing photographs and prices in the 1440 fold, no dashed empty Add-a-home tray.",
     "verdict": "Better than a 53: the dashed empty tray is gone and the first screen is the comparison itself, which is the job. It is still a spreadsheet under a display heading — stamp photos, hairline bars you have to hunt, a 375 crop that hides two of the four homes, and four identical outline buttons, so it is not yet a page anyone would screenshot."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 203,
+      "headings": 0,
+      "sections": 2,
+      "internalLinks": 167,
+      "images": 8,
+      "heroImageWidth": 260,
+      "heroImageNatural": 1536,
+      "video": 0,
+      "jsonLd": 3
+    },
+    "floors": {
+      "h1": 1,
+      "words": 142,
+      "headings": 0,
+      "sections": 1,
+      "internalLinks": 116,
+      "images": 5,
+      "heroImageWidth": 234,
+      "heroImageNatural": 1382,
+      "video": 0,
+      "jsonLd": 3
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

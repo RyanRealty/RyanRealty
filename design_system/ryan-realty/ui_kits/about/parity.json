@@ -227,5 +227,35 @@
     "verdict": "Looking/taste cannot pass a Meet-the-Team About. The contract opens on AboutFirm. demoMatch is false. Cos scores the shots.",
     "contactListIsFirstContent": false,
     "contactListAnswer": "H1 and one purpose line (boutique · Central Oregon · buy and sell) on the Bend office exterior, Google reviews as primary proof, dated local closings, Call/Text/Email/Schedule, a Who you work with teaser that only doors to /team, and a one-line inquiry to /contact. No three equal broker Cards as the opener. No methodology disclosure."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 1101,
+      "headings": 6,
+      "sections": 8,
+      "internalLinks": 196,
+      "images": 29,
+      "heroImageWidth": 1440,
+      "heroImageNatural": 640,
+      "video": 0,
+      "jsonLd": 8
+    },
+    "floors": {
+      "h1": 1,
+      "words": 770,
+      "headings": 4,
+      "sections": 6,
+      "internalLinks": 137,
+      "images": 20,
+      "heroImageWidth": 1296,
+      "heroImageNatural": 576,
+      "video": 0,
+      "jsonLd": 8
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

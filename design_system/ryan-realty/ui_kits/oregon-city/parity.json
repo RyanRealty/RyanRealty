@@ -237,5 +237,35 @@
       "shotsHash": "sha256:8673b567f6ea325da5d9234140b5a6f053f8e89b4e8f949ba610d6b75d51600b"
     },
     "rebaselineReason": "SITE-76 rebaseline onto grok-4.6 / v1-2026-09-10 with a new honesty-first instrument: shadcn Alert adapted into Quiet, chartFirst ask strip, ItemList JSON-LD, and retaken default/source/listings shots. The prior 81 was claude-sonnet-5 on v1-2026-09-08 against a different shotsHash."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 640,
+      "headings": 3,
+      "sections": 6,
+      "internalLinks": 190,
+      "images": 4,
+      "heroImageWidth": 120,
+      "heroImageNatural": 2271,
+      "video": 0,
+      "jsonLd": 6
+    },
+    "floors": {
+      "h1": 1,
+      "words": 448,
+      "headings": 2,
+      "sections": 4,
+      "internalLinks": 133,
+      "images": 2,
+      "heroImageWidth": 108,
+      "heroImageNatural": 2043,
+      "video": 0,
+      "jsonLd": 6
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

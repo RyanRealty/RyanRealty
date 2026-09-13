@@ -225,5 +225,35 @@
       "shotsHash": "sha256:a46152de1e46188a149a4fd4779feb457d3961e8511a1c40a6eba430617f05cf"
     },
     "rebaselineReason": "shotsHash differs — new SITE-88 fold shots (MOS + year pages + source + year-page states) vs prior sha256:a46152de…; evaluatorModel grok-4.6 and rubricVersion v1-2026-09-10 match. Median 63 > prior 61 on the same model/rubric."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 1575,
+      "headings": 9,
+      "sections": 10,
+      "internalLinks": 240,
+      "images": 4,
+      "heroImageWidth": 120,
+      "heroImageNatural": 2271,
+      "video": 0,
+      "jsonLd": 6
+    },
+    "floors": {
+      "h1": 1,
+      "words": 1102,
+      "headings": 6,
+      "sections": 8,
+      "internalLinks": 168,
+      "images": 2,
+      "heroImageWidth": 108,
+      "heroImageNatural": 2043,
+      "video": 0,
+      "jsonLd": 6
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

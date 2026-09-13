@@ -125,6 +125,13 @@ jobs:
           # scripts/tap-targets-baseline.json; the list may only shrink.
           npm run ci:tap-targets
 
+          # No-regression floor (Matt 2026-09-12). Every public class keeps the
+          # hero width, image resolution, video, sections, words, links and
+          # JSON-LD it carried when its contentFloor was seeded on parity.json.
+          # A "score rose" pass that lost content fails here before any
+          # evaluator is asked. Lower a floor only by hand, in the same commit.
+          npm run ci:route-content-floor
+
       # Lighthouse CI — gates PRs on perf/a11y/BP/SEO regression against
       # lighthouserc.cjs thresholds. Uses start-server-and-test under the hood.
       # Skipped on push events (already run nightly via quality.yml).

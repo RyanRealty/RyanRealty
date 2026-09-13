@@ -102,5 +102,6 @@ fi
 npm run ci:route-smoke
 npm run ci:page-payload
 npm run ci:tap-targets
+npm run ci:route-content-floor
 
-echo "runtime-gates OK — route-smoke, page-payload and tap-targets all measured against $BASE"
+echo "runtime-gates OK — route-smoke, page-payload, tap-targets and route-content-floor all measured against $BASE"

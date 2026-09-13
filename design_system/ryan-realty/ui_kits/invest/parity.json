@@ -177,5 +177,35 @@
     "rebaselineReason": "evaluatorModel and shotsHash differ: SITE-50 scored 61 with claude-sonnet-5 on shotsHash sha256:042578c7951d396797f04544da36398bf94d2dd43aeb791cadf372482e50bb60; this SITE-68 mark is grok-4.6 on new production first-viewport shots after re-measure. Same rubricVersion v1-2026-09-08. The standing table instrument still shows median 25 for the pre-Pulse memo; live fold is a finding plus live counts, and this receipt scores 57 on the table rubric.",
     "verdict": "This is better than a 25 because the first viewport is a finding and four live counts, not two memo blocks headed What this page is. It is still dull: a ranked hairline list and a caption, with no map, no share of the whole, and no scrubber, so land-not-buildings is a headline sitting on the house's default Pulse instead of a drawing anyone would send.",
     "notes": "SITE-68 builder lane re-measured live https://ryan-realty.com/invest. The memo defects from the 2026-09-08 table are already gone (SITE-50 Pulse). No page rebuild this lane — recapture + separate grok-4.6 evaluate + catalog-shaped receipt. honestyFunction holds at 8 vs the prior route mark."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 261,
+      "headings": 3,
+      "sections": 4,
+      "internalLinks": 174,
+      "images": 4,
+      "heroImageWidth": 120,
+      "heroImageNatural": 2271,
+      "video": 0,
+      "jsonLd": 3
+    },
+    "floors": {
+      "h1": 1,
+      "words": 182,
+      "headings": 2,
+      "sections": 3,
+      "internalLinks": 121,
+      "images": 2,
+      "heroImageWidth": 108,
+      "heroImageNatural": 2043,
+      "video": 0,
+      "jsonLd": 3
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

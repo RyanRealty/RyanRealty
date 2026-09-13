@@ -162,5 +162,35 @@
     "verdict": "The opening is house-proof: 5.0 as stars, the count, then one client's words in full, with Call and Book after the quote \u2014 not a Quiet list of reach rows. What still fails is Google-widget residue and a half-working record: letter-circle avatars instead of shadcn-avatar portraits, year chips clipped at 1440 and keypad-wrapped at 375, and a beeswarm whose empty 2020\u20132022 stretch is the dullest thing in the frame. Doors correctly stay off this viewport. Composed and on-brand, not breathtaking.",
     "contactListIsFirstContent": false,
     "contactListAnswer": "The fold opens on 5.0 as stars, the count, and one client quote in full; Call and Book sit after the quote. V3Doors closes the page."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 146,
+      "headings": 0,
+      "sections": 2,
+      "internalLinks": 163,
+      "images": 4,
+      "heroImageWidth": 120,
+      "heroImageNatural": 2271,
+      "video": 0,
+      "jsonLd": 3
+    },
+    "floors": {
+      "h1": 1,
+      "words": 102,
+      "headings": 0,
+      "sections": 1,
+      "internalLinks": 114,
+      "images": 2,
+      "heroImageWidth": 108,
+      "heroImageNatural": 2043,
+      "video": 0,
+      "jsonLd": 3
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

@@ -215,5 +215,35 @@
     },
     "rebaselineReason": "evaluatorModel grok-4.6 vs claude-sonnet-5; rubricVersion v1-2026-09-10 vs v1-2026-09-08; shotsHash differs after MOS bars, chart scrubber, visitor-English source, and first-viewport ask door.",
     "honestyFunction": 8
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 855,
+      "headings": 5,
+      "sections": 6,
+      "internalLinks": 188,
+      "images": 4,
+      "heroImageWidth": 120,
+      "heroImageNatural": 2271,
+      "video": 0,
+      "jsonLd": 6
+    },
+    "floors": {
+      "h1": 1,
+      "words": 598,
+      "headings": 3,
+      "sections": 4,
+      "internalLinks": 131,
+      "images": 2,
+      "heroImageWidth": 108,
+      "heroImageNatural": 2043,
+      "video": 0,
+      "jsonLd": 6
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

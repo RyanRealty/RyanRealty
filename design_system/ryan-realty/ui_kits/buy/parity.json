@@ -161,5 +161,35 @@
     },
     "rebaselineReason": "evaluatorModel and shotsHash differ: SITE-46's 60 was claude-sonnet-5 on the three-tile inventory band; this mark is grok-4.6 on new first-viewport shots after SITE-77 made the band one sourced sentence. Same rubricVersion v1-2026-09-08.",
     "verdict": "This is not better than a 60. Killing the three-tile grid left the same cover with a sourced ticker, and at 375 that ticker is three KPI rows again. The Field still arrives as an unlabeled roof, so a buyer gets provenance without a house."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 864,
+      "headings": 4,
+      "sections": 6,
+      "internalLinks": 179,
+      "images": 5,
+      "heroImageWidth": 1440,
+      "heroImageNatural": 1080,
+      "video": 0,
+      "jsonLd": 5
+    },
+    "floors": {
+      "h1": 1,
+      "words": 604,
+      "headings": 2,
+      "sections": 4,
+      "internalLinks": 125,
+      "images": 3,
+      "heroImageWidth": 1296,
+      "heroImageNatural": 972,
+      "video": 0,
+      "jsonLd": 5
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

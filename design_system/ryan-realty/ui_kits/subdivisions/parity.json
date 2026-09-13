@@ -160,5 +160,35 @@
       }
     ],
     "comparedToPrior": "first"
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 392,
+      "headings": 2,
+      "sections": 3,
+      "internalLinks": 222,
+      "images": 12,
+      "heroImageWidth": 120,
+      "heroImageNatural": 2271,
+      "video": 0,
+      "jsonLd": 4
+    },
+    "floors": {
+      "h1": 1,
+      "words": 274,
+      "headings": 1,
+      "sections": 2,
+      "internalLinks": 155,
+      "images": 8,
+      "heroImageWidth": 108,
+      "heroImageNatural": 2043,
+      "video": 0,
+      "jsonLd": 4
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

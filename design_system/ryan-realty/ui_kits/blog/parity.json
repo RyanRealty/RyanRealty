@@ -180,5 +180,35 @@
       "shotsHash": "sha256:b2e6678467aeabfdf0f5e4e3564c57556b00fd9482c8cbade10861b99132e1af"
     },
     "rebaselineReason": "shotsHash is the key that differs: the prior mark's four PNGs were the pre-SITE-31 template rendered on /blog/sunriver-year-round-living-vs-vacation, and these four are the rebuilt class rendered on /blog/awbrey-glen-median-price-hoa-dues-2026, one of the eleven guides published 2026-09-09. evaluatorModel (claude-sonnet-5) and rubricVersion (v1-2026-09-08) are unchanged, so the two numbers are from the same instrument on different pixels. Stated plainly: the median ROSE, 52 to 74, on the same evaluatorModel and the same rubricVersion, over a rebuilt page and a new capture set."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 2090,
+      "headings": 13,
+      "sections": 6,
+      "internalLinks": 197,
+      "images": 14,
+      "heroImageWidth": 1440,
+      "heroImageNatural": 1600,
+      "video": 0,
+      "jsonLd": 5
+    },
+    "floors": {
+      "h1": 1,
+      "words": 1463,
+      "headings": 9,
+      "sections": 4,
+      "internalLinks": 137,
+      "images": 9,
+      "heroImageWidth": 1296,
+      "heroImageNatural": 1440,
+      "video": 0,
+      "jsonLd": 5
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

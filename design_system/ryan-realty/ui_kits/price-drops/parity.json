@@ -201,5 +201,35 @@
       }
     },
     "rebaselineReason": "evaluatorModel (claude-sonnet-5 → grok-4.6), rubricVersion (v1-2026-09-08 → v1-2026-09-10), and shotsHash all differ from the prior SITE-49 receipt; first grok-4.6 mark on rubric v1-2026-09-10 for this route."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 1810,
+      "headings": 2,
+      "sections": 3,
+      "internalLinks": 268,
+      "images": 6,
+      "heroImageWidth": 334,
+      "heroImageNatural": 720,
+      "video": 0,
+      "jsonLd": 6
+    },
+    "floors": {
+      "h1": 1,
+      "words": 1267,
+      "headings": 1,
+      "sections": 2,
+      "internalLinks": 187,
+      "images": 4,
+      "heroImageWidth": 300,
+      "heroImageNatural": 648,
+      "video": 0,
+      "jsonLd": 6
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

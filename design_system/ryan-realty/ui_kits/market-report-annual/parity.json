@@ -275,5 +275,35 @@
     },
     "rebaselineReason": "rubricVersion and shotsHash differ: SITE-71's 64 was grok-4.6 on rubric v1-2026-09-08 with shotsHash sha256:307e3cdd\u2026; this SITE-101 mark is grok-4.6 on rubric v1-2026-09-10 against new first-viewport shots after composing one claim, inventory bars by active count, yearPages InsightPager, whole-home MOS pace, and V3MosBars hover reveal. New median 70 still clears the \u226570 accept line.",
     "verdict": "The fold is finally an instrument: a verdict headline, two named MOS bars, and a year you page, not the sixteen-tile wall this class used to be. InsightPager actually pages 2026\u21922025 and MOS hover prints 1,547 \u00f7 325 plus the Oregon Data Share stamp, so the catalog interaction is in the pixels. It is still not a year you would send: the 2025 series is clipped by a $680K ceiling, the month callout sits on the marks, and at 375 the annual chart loses its axis in the first screen. Information in the fold rose; SEO cannot be judged from these shots."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 1223,
+      "headings": 6,
+      "sections": 7,
+      "internalLinks": 199,
+      "images": 4,
+      "heroImageWidth": 120,
+      "heroImageNatural": 2271,
+      "video": 0,
+      "jsonLd": 7
+    },
+    "floors": {
+      "h1": 1,
+      "words": 856,
+      "headings": 4,
+      "sections": 5,
+      "internalLinks": 139,
+      "images": 2,
+      "heroImageWidth": 108,
+      "heroImageNatural": 2043,
+      "video": 0,
+      "jsonLd": 7
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

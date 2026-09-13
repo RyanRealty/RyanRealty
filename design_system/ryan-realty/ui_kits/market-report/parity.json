@@ -210,5 +210,35 @@
     },
     "rebaselineReason": "evaluatorModel and shotsHash differ: SITE-40's 54 was claude-sonnet-5 on the Five-products chooser fold; this mark is grok-4.6 on new first-viewport shots after SITE-75 opened the hub on Instrument. Same rubricVersion v1-2026-09-08.",
     "verdict": "Better than a 54 directory: the first viewport is now a verdict in display serif and months of supply as two named bars, which is this shop and not a template. What is dull is the closed fold as a labeled hole and More reports crawling into the same 900px, so the page still spends its fold on a sitemap instead of another drawing."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 6667,
+      "headings": 8,
+      "sections": 9,
+      "internalLinks": 217,
+      "images": 4,
+      "heroImageWidth": 120,
+      "heroImageNatural": 2271,
+      "video": 0,
+      "jsonLd": 6
+    },
+    "floors": {
+      "h1": 1,
+      "words": 4666,
+      "headings": 5,
+      "sections": 7,
+      "internalLinks": 151,
+      "images": 2,
+      "heroImageWidth": 108,
+      "heroImageNatural": 2043,
+      "video": 0,
+      "jsonLd": 6
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

@@ -303,5 +303,35 @@
       "evaluator": "separate Sonnet evaluator agent, SITE-48 pass three, team page class — one call, three independent scorings of the same two shots, run against the rubric table in design_system/public/TASTE.md and asked explicitly whether a contact list is the first content of the page",
       "note": "SITE-48 receipt at HEAD, different instrument. Kept so the history is readable."
     }
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 187,
+      "headings": 1,
+      "sections": 2,
+      "internalLinks": 168,
+      "images": 7,
+      "heroImageWidth": 120,
+      "heroImageNatural": 2271,
+      "video": 0,
+      "jsonLd": 4
+    },
+    "floors": {
+      "h1": 1,
+      "words": 130,
+      "headings": 0,
+      "sections": 1,
+      "internalLinks": 117,
+      "images": 4,
+      "heroImageWidth": 108,
+      "heroImageNatural": 2043,
+      "video": 0,
+      "jsonLd": 4
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

@@ -228,5 +228,35 @@
       "shotsHash": "sha256:5fd77ec5df2a71681749f0247452dfa2333f21111c7d1f301aeeb18dda0e6abb"
     },
     "rebaselineReason": "evaluatorModel (grok-4.6, not grok-4.5), builderModel (grok-4.5, not grok-4.6), rubricVersion (v1-2026-09-10, not v1-2026-09-08), and shotsHash all differ: SITE-85 rebuilt the first viewport as proof + MOS beside the ask and re-captured the default pair under the table instrument (beat 59). Not a fall from the HEAD 70 — a first mark on a different instrument."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 1176,
+      "headings": 6,
+      "sections": 7,
+      "internalLinks": 200,
+      "images": 5,
+      "heroImageWidth": 1440,
+      "heroImageNatural": 4200,
+      "video": 0,
+      "jsonLd": 6
+    },
+    "floors": {
+      "h1": 1,
+      "words": 823,
+      "headings": 4,
+      "sections": 5,
+      "internalLinks": 140,
+      "images": 3,
+      "heroImageWidth": 1296,
+      "heroImageNatural": 3780,
+      "video": 0,
+      "jsonLd": 6
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

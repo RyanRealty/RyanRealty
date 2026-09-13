@@ -416,5 +416,35 @@
       "shotsHash": "sha256:fb117fb484026aa7a63cabb32bcb3d6e8d878d0b232ea3e7f9623baef7ca6e1c"
     },
     "rebaselineReason": "shotsHash: new first-viewport captures of the rebuilt opening (hero in the main column, filmstrip, price-cut mark, pill read) plus four hover records the prior set did not have; same routes, same evaluator model, same rubric"
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 1192,
+      "headings": 13,
+      "sections": 14,
+      "internalLinks": 189,
+      "images": 5,
+      "heroImageWidth": 1440,
+      "heroImageNatural": 360,
+      "video": 0,
+      "jsonLd": 4
+    },
+    "floors": {
+      "h1": 1,
+      "words": 834,
+      "headings": 9,
+      "sections": 11,
+      "internalLinks": 132,
+      "images": 3,
+      "heroImageWidth": 1296,
+      "heroImageNatural": 324,
+      "video": 0,
+      "jsonLd": 4
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

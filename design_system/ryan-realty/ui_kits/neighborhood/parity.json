@@ -330,5 +330,35 @@
     },
     "shotsHash": "sha256:87bddff3cda2588deeb161199e103d94d8fde270d02655993fe6e2486114b052",
     "notes": "SITE-84 comprehensive pass: SEO title prefers live inventory count ('Awbrey Butte homes for sale · Bend, Oregon') plus crawlable city/homes doors in the opening caption; information adds price + address + beds/baths/sqft on 800×600 alert thumbs; UX installs V3Number (beui-number / rareui / transitions) on the 30-day count and MOS bar values, keeps V3MosBars drawing, and packs MOS + alerts figure + email into the first viewport at 1440 and 375 via place-opening--neighborhood. Do not mark the node done — remaining defects (Land source slug, MOS hover form, thumb scale) stay on the node."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 2701,
+      "headings": 13,
+      "sections": 14,
+      "internalLinks": 314,
+      "images": 27,
+      "heroImageWidth": 1440,
+      "heroImageNatural": 1536,
+      "video": 0,
+      "jsonLd": 7
+    },
+    "floors": {
+      "h1": 1,
+      "words": 1890,
+      "headings": 9,
+      "sections": 11,
+      "internalLinks": 219,
+      "images": 18,
+      "heroImageWidth": 1296,
+      "heroImageNatural": 1382,
+      "video": 0,
+      "jsonLd": 7
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }

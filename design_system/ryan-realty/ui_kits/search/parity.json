@@ -175,5 +175,35 @@
       "note": "HEAD receipt before SITE-72: sonnet / v1-2026-09-08 / 75. Different instrument from grok-4.6 / v1-2026-09-10."
     },
     "rebaselineReason": "Instrument changed on three identity keys: evaluatorModel (sonnet \u2192 grok-4.6), rubricVersion (v1-2026-09-08 \u2192 v1-2026-09-10), and shotsHash (recaptured first viewport after V3Range + V3MorphSearch + MapChrome fold work). Median 59 is the first mark on this instrument; the next pass must rise above it. Accept bar for SITE-72 seed was above 32."
+  },
+  "contentFloor": {
+    "seededAt": "2026-09-12",
+    "seededFrom": "https://ryan-realty.com",
+    "viewport": 1440,
+    "observed": {
+      "h1": 1,
+      "words": 1171,
+      "headings": 0,
+      "sections": 0,
+      "internalLinks": 254,
+      "images": 4,
+      "heroImageWidth": 256,
+      "heroImageNatural": 256,
+      "video": 0,
+      "jsonLd": 4
+    },
+    "floors": {
+      "h1": 1,
+      "words": 819,
+      "headings": 0,
+      "sections": 0,
+      "internalLinks": 177,
+      "images": 2,
+      "heroImageWidth": 230,
+      "heroImageNatural": 230,
+      "video": 0,
+      "jsonLd": 4
+    },
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
   }
 }
