@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   alternates: { canonical: BLOG_INDEX_CANONICAL },
 }
 
-export const revalidate = 300
+export const revalidate = 3600
 
 export default async function BlogIndexPage() {
   const [{ posts, total }, popularSlugs] = await Promise.all([

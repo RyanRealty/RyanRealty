@@ -25,7 +25,7 @@ import {
   SELL_POSTER,
 } from '../_v3/sell-constants'
 
-export const revalidate = 300
+export const revalidate = 3600
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({

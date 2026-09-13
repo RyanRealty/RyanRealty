@@ -7,6 +7,8 @@ import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
+export const revalidate = 3600
+
 type Props = {
   params: Promise<{ intent: string }>
 }

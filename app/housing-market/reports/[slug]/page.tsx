@@ -37,6 +37,8 @@ import { ReportsInquirySheet } from '../_v3/ReportsInquirySheet.client'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
+export const revalidate = 3600
+
 type Props = { params: Promise<{ slug: string }> }
 
 /**

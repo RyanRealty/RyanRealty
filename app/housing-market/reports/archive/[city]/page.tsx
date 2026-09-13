@@ -103,6 +103,8 @@ function archiveSpan(archive: CityArchive): string | null {
   return null
 }
 
+export const revalidate = 86400
+
 export function generateStaticParams(): Array<{ city: string }> {
   return REPORT_CITY_SLUGS.map((city) => ({ city }))
 }

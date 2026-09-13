@@ -73,6 +73,8 @@ function resolveContactVariant(raw: string | undefined): ContactVariant {
   return 'quiet-doors'
 }
 
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: 'Contact · Call, text, or write',
   description:

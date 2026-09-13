@@ -65,7 +65,7 @@ import {
 import { composeInvestPulse } from './_v3/invest-pulse'
 import { InvestAlertSheet } from './_v3/InvestAlertSheet.client'
 
-export const revalidate = 1800
+export const revalidate = 3600
 
 const TITLE = 'Investment Property in Central Oregon | Multi-Family, Commercial, Land'
 const DESCRIPTION =

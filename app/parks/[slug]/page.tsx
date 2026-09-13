@@ -46,7 +46,7 @@ import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
 import { nearbyFieldItems, fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 
 export const dynamicParams = false
-export const revalidate = 300
+export const revalidate = 3600
 
 const TYPE_LABEL: Record<ParkType, string> = {
   state: 'State park',

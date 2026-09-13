@@ -37,7 +37,7 @@ import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { 
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
-export const revalidate = 1800
+export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: 'Communities in Central Oregon | Bend, Redmond, Sisters',

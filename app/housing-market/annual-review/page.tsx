@@ -187,7 +187,7 @@ import {
   type MissingCity,
 } from './_v3/annual-sections'
 
-export const revalidate = 300
+export const revalidate = 86400
 
 /** Report cities with a real, queryable MLS City. Tumalo is named separately below. */
 // THE GRID IS THE REPORT SET, NOT ONLY THE CORE (2026-08-27 audit: Prineville

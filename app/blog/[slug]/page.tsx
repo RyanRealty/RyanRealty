@@ -141,10 +141,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 // ci:ssg-budget prescribes for /subdivisions: nothing prerenders at build (a
 // fan-out over every post chains getBlogRelatedHomes → getCityListings and
 // getDetachedMarket and cost 11.2 of 14 build minutes), the first hit renders
-// and caches, and later hits are served for 300s. The months-of-supply guard
-// below then re-runs at most every 300s, inside its intent.
+// and caches, and later hits are served for 86400s. The months-of-supply guard
+// below then re-runs at most every 86400s, inside its intent.
 export const dynamicParams = true
-export const revalidate = 300
+export const revalidate = 86400
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   return []
 }
