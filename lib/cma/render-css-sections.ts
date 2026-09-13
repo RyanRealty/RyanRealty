@@ -644,6 +644,14 @@ export function cmaSectionStyles(): string {
   }
   /* Only figures hold the line. Free text wraps rather than widening a column. */
   table.comp-matrix td.n { white-space: nowrap; }
+  /* The column HEAD is the address, and an address is neither a label nor a
+     number: under nowrap + overflow hidden a long one ("401 Comparable Street
+     Northwest" in a five-column table) was clipped mid-word on the sheet, and
+     the clipped glyphs still sat in the PDF past the right margin
+     (page-safety: "+2.3pt SIDE right" on every matrix sheet). The head wraps;
+     the figure line under it stays on one line. */
+  table.comp-matrix thead th.v { white-space: normal; overflow-wrap: anywhere; }
+  table.comp-matrix thead th.v .matrix-sub { white-space: nowrap; }
   table.comp-matrix td.is-note { text-align: left; font-size: 9.5px; line-height: 1.35; }
   table.comp-matrix th[hidden], table.comp-matrix td[hidden] { display: none; }
   table.comp-matrix thead th:first-child, table.comp-matrix tbody th { text-align: left; }
