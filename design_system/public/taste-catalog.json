@@ -474,6 +474,14 @@
       }
     ]
   },
+  "installById": {
+    "shadcn-avatar": {
+      "add": "avatar",
+      "file": "components/ui/avatar.tsx",
+      "import": "@/components/ui/avatar",
+      "house": "components/site/v3/V3Proof.client.tsx"
+    }
+  },
   "lists": {
     "beautifului": {
       "url": "https://beautifului.dev",
