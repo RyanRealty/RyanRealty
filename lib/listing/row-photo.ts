@@ -27,6 +27,25 @@
 const SPARK_RESIZE_HOST = 'cdn.resize.sparkplatform.com'
 
 /**
+ * Spark / MLS photo CDNs. These hosts already serve sized JPEG derivatives
+ * (cdn.resize buckets 320×240 / 800×600 / 1600×1200). Sending them through
+ * next/image → `/_next/image` (AVIF+WebP, often q=90) is a second pipeline
+ * and the Vercel Image Optimization bill. First-party, Unsplash, and
+ * Supabase storage stay on next/image.
+ */
+const SPARK_LISTING_PHOTO_HOST_RE = /(?:^|\.)(?:sparkplatform|sparkapi)\.com$/i
+
+/** True for Spark/MLS listing photo URLs that must skip Vercel Image Optimization. */
+export function isSparkListingPhotoUrl(raw: string | null | undefined): boolean {
+  if (!raw?.trim()) return false
+  try {
+    return SPARK_LISTING_PHOTO_HOST_RE.test(new URL(raw.trim()).hostname)
+  } catch {
+    return false
+  }
+}
+
+/**
  * The render the 88x66 ledger thumb asks for. 320x240 is the smallest bucket
  * Spark answered distinctly (256x192 came back byte-identical to 320x240, so
  * the CDN snaps upward and asking smaller buys nothing), and it is still ~3.6x

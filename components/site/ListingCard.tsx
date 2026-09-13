@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import Image from 'next/image'
+import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
 import {
   publishListingShareKind,
@@ -158,7 +158,7 @@ export default function ListingCard({
     >
       <div className="relative aspect-[4/3] bg-muted">
         {listing.photoUrl ? (
-          <Image
+          <SparkSafeImage
             src={listing.photoUrl}
             alt={listing.addressLine}
             fill

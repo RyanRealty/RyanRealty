@@ -7,7 +7,7 @@
  * (publishListingMosaicTiles) went with the mosaic.
  */
 
-export const LISTING_MOSAIC_PHOTO_QUALITY = 90
+export const LISTING_MOSAIC_PHOTO_QUALITY = 75
 /** The desktop frame fills the 62fr main column beside the broker card. */
 export const LISTING_MOSAIC_LEAD_SIZES = '(max-width: 63.99rem) 100vw, 66vw'
 export const LISTING_MOSAIC_CAROUSEL_SIZES = '100vw'

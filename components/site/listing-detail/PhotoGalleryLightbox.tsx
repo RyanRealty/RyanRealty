@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { useCallback, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -280,7 +280,7 @@ export function PhotoGalleryLightbox({
             </button>
             {current ? (
               <div className="listing-gallery__frame">
-                <Image
+                <SparkSafeImage
                   src={preferListingMosaicPhotoUrl(current.url)}
                   alt={altText}
                   fill
@@ -322,7 +322,7 @@ export function PhotoGalleryLightbox({
                 aria-label={`Jump to photo ${i + 1} of ${count}`}
                 aria-current={i === openIndex ? 'true' : undefined}
               >
-                <Image
+                <SparkSafeImage
                   src={listingRowPhotoSrc(p.url)}
                   alt={p.caption ?? `${altBase} thumbnail ${i + 1}`}
                   fill

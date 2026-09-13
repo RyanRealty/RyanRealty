@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Image from 'next/image'
+import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useComparison } from '@/contexts/ComparisonContext'
@@ -270,7 +270,7 @@ export default function CompareClient({
         {listings.map((l) => (
           <div key={l.listingKey} className="relative rounded-lg overflow-hidden bg-muted aspect-[4/3]">
             {l.photoUrl ? (
-              <Image src={l.photoUrl} alt={l.address} fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
+              <SparkSafeImage src={l.photoUrl} alt={l.address} fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
             ) : (
               <div className="flex h-full items-center justify-center text-muted-foreground text-sm">No Photo</div>
             )}
