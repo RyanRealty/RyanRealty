@@ -49,7 +49,7 @@
  * not be validated (recorded with `row.invalid`, per-class, run continues).
  */
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import Anthropic from '@anthropic-ai/sdk'
 import {
@@ -447,6 +447,13 @@ async function evaluateClass(cls, shots, { transport, apiKey, instrumentText, al
         models.add(r.model)
       } catch (err) {
         console.error(`  ${cls.key}: scoring ${i + 1}/${SCORINGS_PER_CLASS} failed — ${err.message}`)
+      }
+      // The raw answer sits beside the shots it judged, so an INVALID row can be read
+      // back (which primitive did the judge name?) without paying for another call.
+      try {
+        writeFileSync(join(dirname(shots.desktopPath), `judge-${i + 1}${attempt ? `-retry${attempt}` : ''}.txt`), text)
+      } catch {
+        /* scratch only */
       }
       scoring = normalizeScoring(parseEvaluatorJson(text))
       if (scoringWellFormed(scoring)) break

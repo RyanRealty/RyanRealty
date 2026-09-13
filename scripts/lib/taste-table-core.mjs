@@ -168,6 +168,19 @@ export function selectMedianScoring(scorings) {
 
 const DEFECT_SEVERITIES = new Set(['taste', 'defect'])
 
+/**
+ * Repo-relative and no `..` SEGMENT. A substring test rejected every Next.js
+ * catch-all route (`app/housing-market/[...slug]/page.tsx`), so a judge that
+ * named the exact route file was scored INVALID three runs straight
+ * (market-report-detail, 2026-09-13). Traversal is a segment, not a substring.
+ */
+export function escapesRepo(p) {
+  if (!isNonEmptyString(p)) return true
+  const s = p.trim()
+  if (s.startsWith('/') || s.startsWith('\\') || /^[A-Za-z]:/.test(s)) return true
+  return s.split(/[\\/]+/).some((seg) => seg === '..')
+}
+
 /** A single defect is well-formed AND names a primitive that exists at `root`. */
 export function defectExists(defect, root) {
   return (
@@ -176,7 +189,7 @@ export function defectExists(defect, root) {
     DEFECT_SEVERITIES.has(defect.severity) &&
     isNonEmptyString(defect.finding, 10) &&
     isNonEmptyString(defect.primitive) &&
-    !defect.primitive.includes('..') &&
+    !escapesRepo(defect.primitive) &&
     existsSync(join(root, defect.primitive))
   )
 }
@@ -505,7 +518,7 @@ function sortUnderFinishLine(rows) {
   })
 }
 
-const FILE_PATH_IN_PRIMITIVE = '[A-Za-z0-9_./-]+\\.(?:tsx|ts|jsx|js|mjs|css)'
+const FILE_PATH_IN_PRIMITIVE = '[A-Za-z0-9_.\\[\\]/-]+\\.(?:tsx|ts|jsx|js|mjs|css)'
 
 /**
  * The table's evaluator often annotates `primitive` ("V3Quiet.tsx (shared)").
@@ -514,9 +527,9 @@ const FILE_PATH_IN_PRIMITIVE = '[A-Za-z0-9_./-]+\\.(?:tsx|ts|jsx|js|mjs|css)'
  * that is already in the field and on disk.
  */
 export function resolvePrimitivePath(primitive, root) {
-  if (!isNonEmptyString(primitive) || primitive.includes('..')) return null
+  if (!isNonEmptyString(primitive) || escapesRepo(primitive)) return null
   const raw = primitive.trim()
-  const tryPath = (p) => Boolean(p) && !p.includes('..') && existsSync(join(root, p))
+  const tryPath = (p) => Boolean(p) && !escapesRepo(p) && existsSync(join(root, p))
   if (tryPath(raw)) return raw
   const beforeParen = raw.split(/\s+\(/)[0].trim()
   if (beforeParen !== raw && tryPath(beforeParen)) return beforeParen

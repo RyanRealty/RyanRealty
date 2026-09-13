@@ -7,7 +7,9 @@ import {
   builderModelFromCommitBody,
   computeDiff,
   criteriaProblems,
+  defectExists,
   droppedClasses,
+  escapesRepo,
   filterClasses,
   loadClassRegistry,
   median3,
@@ -34,6 +36,25 @@ function write(rel, contents = 'x') {
 
 write('components/site/v3/V3Ledger.tsx')
 write('app/cities/page.tsx')
+write('app/housing-market/[...slug]/page.tsx')
+
+describe('escapesRepo + defectExists', () => {
+  it('a Next.js catch-all segment is a path, not a traversal', () => {
+    expect(escapesRepo('app/housing-market/[...slug]/page.tsx')).toBe(false)
+    expect(defectExists({ ...goodDefect, primitive: 'app/housing-market/[...slug]/page.tsx' }, SANDBOX)).toBe(true)
+  })
+  it('a .. segment, an absolute path, or a drive letter escapes the repo', () => {
+    expect(escapesRepo('../etc/passwd')).toBe(true)
+    expect(escapesRepo('app/../../x.tsx')).toBe(true)
+    expect(escapesRepo('/etc/passwd')).toBe(true)
+    expect(escapesRepo('C:\\x\\y.tsx')).toBe(true)
+    expect(defectExists({ ...goodDefect, primitive: 'app/cities/../cities/page.tsx' }, SANDBOX)).toBe(false)
+  })
+  it('a dotted file name is fine; a missing file is not', () => {
+    expect(escapesRepo('components/site/v3/V3Ledger.client.tsx')).toBe(false)
+    expect(defectExists({ ...goodDefect, primitive: 'components/site/v3/Missing.tsx' }, SANDBOX)).toBe(false)
+  })
+})
 
 const goodDefect = {
   section: '#featured-cities',
