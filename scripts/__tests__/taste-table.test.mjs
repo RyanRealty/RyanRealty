@@ -8,6 +8,8 @@ import {
   computeDiff,
   criteriaProblems,
   defectExists,
+  demoMatchCell,
+  demoMatchVerdict,
   droppedClasses,
   escapesRepo,
   filterClasses,
@@ -21,7 +23,26 @@ import {
   TASTE_TABLE_END,
   TASTE_TABLE_START,
 } from '../lib/taste-table-core.mjs'
-import { parseArgv, parseEvaluatorJson } from '../taste-table.mjs'
+import { JudgeOutError, judgeIsOut, parseArgv, parseEvaluatorJson } from '../taste-table.mjs'
+
+describe('judgeIsOut — a judge that is out is not a malformed answer', () => {
+  it('402 (quota, weekly limit) and a missing CLI stop the run', () => {
+    expect(judgeIsOut(Object.assign(new Error('weekly limit'), { kind: '402' }))).toBe(true)
+    expect(judgeIsOut(Object.assign(new Error('no grok CLI'), { kind: 'missing' }))).toBe(true)
+  })
+  it('a real error (bad JSON, token limit, exit 1) is retried per class as before', () => {
+    expect(judgeIsOut(Object.assign(new Error('exited 1'), { kind: 'error' }))).toBe(false)
+    expect(judgeIsOut(new Error('no kind'))).toBe(false)
+    expect(judgeIsOut(null)).toBe(false)
+  })
+  it('JudgeOutError carries the kind the resume message prints', () => {
+    const err = new JudgeOutError("You've hit your weekly limit", '402')
+    expect(err).toBeInstanceOf(Error)
+    expect(err.name).toBe('JudgeOutError')
+    expect(err.kind).toBe('402')
+    expect(err.message).toMatch(/weekly limit/)
+  })
+})
 
 // A disposable sandbox so "does this primitive exist on disk" tests do not
 // depend on the real repo tree (and never touch it).
@@ -71,6 +92,7 @@ const goodScoring = (score, criteria = goodCriteria) => ({
   dullest: 'the whole list',
   beats: 'No win named',
   verdict: 'A table wearing hairlines.',
+  demoMatch: false,
 })
 
 // ---------------------------------------------------------------------------
@@ -194,6 +216,94 @@ describe('buildRow', () => {
     })
     expect(problems.length).toBeGreaterThan(0)
     expect(row.invalid).toBeTruthy()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// demoMatch on the row + shotsHash binding (Matt 2026-09-12: "no gaps")
+// ---------------------------------------------------------------------------
+
+describe('demoMatchVerdict — the table keeps what the rubric required', () => {
+  it('is the majority of three verdicts, votes kept beside it', () => {
+    expect(demoMatchVerdict([{ demoMatch: true }, { demoMatch: false }, { demoMatch: true }])).toEqual({ verdict: true, votes: [true, false, true] })
+    expect(demoMatchVerdict([{ demoMatch: false }, { demoMatch: false }, { demoMatch: true }])).toEqual({ verdict: false, votes: [false, false, true] })
+  })
+  it('is null when fewer than two scorings answered, or two split', () => {
+    expect(demoMatchVerdict([{ demoMatch: true }, {}, { score: 1 }]).verdict).toBeNull()
+    expect(demoMatchVerdict([{ demoMatch: true }, { demoMatch: false }, {}]).verdict).toBeNull()
+    expect(demoMatchVerdict([{ demoMatch: true }, { demoMatch: true }, {}]).verdict).toBe(true)
+  })
+  it('never invents a verdict from a non-boolean', () => {
+    expect(demoMatchVerdict([{ demoMatch: 'true' }, { demoMatch: 1 }, { demoMatch: null }])).toEqual({ verdict: null, votes: [null, null, null] })
+  })
+})
+
+describe('buildRow — demoMatch and shotsHash on the row', () => {
+  const RUN = 'run-a'
+  mkdirSync(join(SANDBOX, RUN, 'cities'), { recursive: true })
+  writeFileSync(join(SANDBOX, RUN, 'cities', 'desktop.png'), 'desktop-bytes')
+  writeFileSync(join(SANDBOX, RUN, 'cities', 'mobile375.png'), 'mobile-bytes')
+  const base = {
+    key: 'cities',
+    url: '/cities',
+    route: 'app/cities/page.tsx',
+    builderModel: 'claude-fable-5-1',
+    shots: { desktop: 'cities/desktop.png', mobile375: 'cities/mobile375.png' },
+    root: SANDBOX,
+  }
+
+  it('records the majority demoMatch, the votes, the runDir and a sha256 over the two shots', () => {
+    const scorings = [{ ...goodScoring(33), demoMatch: true }, goodScoring(29), { ...goodScoring(30), demoMatch: true }]
+    const { row, problems } = buildRow({ ...base, scorings, runDir: RUN })
+    expect(problems).toEqual([])
+    expect(row.demoMatch).toBe(true)
+    expect(row.demoMatchVotes).toEqual([true, false, true])
+    expect(row.runDir).toBe(RUN)
+    expect(row.shotsHash).toMatch(/^sha256:[0-9a-f]{64}$/)
+  })
+  it('the hash changes when a shot changes — the old median stops being that picture', () => {
+    const scorings = [goodScoring(33), goodScoring(29), goodScoring(30)]
+    const a = buildRow({ ...base, scorings, runDir: RUN }).row.shotsHash
+    writeFileSync(join(SANDBOX, RUN, 'cities', 'mobile375.png'), 'mobile-bytes-v2')
+    const b = buildRow({ ...base, scorings, runDir: RUN }).row.shotsHash
+    expect(a).not.toBe(b)
+  })
+  it('is invalid when a scoring left demoMatch out — the rubric requires it on every one', () => {
+    const scorings = [{ ...goodScoring(33), demoMatch: undefined }, { ...goodScoring(29), demoMatch: undefined }, goodScoring(30)]
+    const { row, problems } = buildRow({ ...base, scorings, runDir: RUN })
+    expect(row.demoMatch).toBeNull()
+    expect(problems.join(' ')).toMatch(/demoMatch was answered on 1\/3/)
+    expect(row.invalid).toMatch(/demoMatch/)
+  })
+  it('is invalid when the shots under runDir are not on disk', () => {
+    const scorings = [goodScoring(33), goodScoring(29), goodScoring(30)]
+    const { row, problems } = buildRow({ ...base, scorings, runDir: 'run-that-never-existed' })
+    expect(row.shotsHash).toBeNull()
+    expect(problems.join(' ')).toMatch(/not on disk/)
+  })
+  it('without a runDir (legacy caller) records no hash and does not complain about it', () => {
+    const scorings = [goodScoring(33), goodScoring(29), goodScoring(30)]
+    const { row, problems } = buildRow({ ...base, scorings })
+    expect(row.runDir).toBeNull()
+    expect(row.shotsHash).toBeNull()
+    expect(problems).toEqual([])
+  })
+})
+
+describe('renderMarkdownTable — the demo column', () => {
+  it('shows yes / NO / split / not recorded from the row', () => {
+    expect(demoMatchCell({ demoMatch: true })).toBe('yes')
+    expect(demoMatchCell({ demoMatch: false })).toBe('**NO**')
+    expect(demoMatchCell({ demoMatch: null, demoMatchVotes: [true, false, null] })).toBe('split')
+    expect(demoMatchCell({ median: 50 })).toBe('not recorded')
+  })
+  it('puts the column between scores and DQ', () => {
+    const block = renderMarkdownTable([{ key: 'cities', median: 50, scores: [49, 50, 51], demoMatch: false, criteria: goodCriteria, tells: [], defects: [], verdict: 'x' }], {
+      evaluatedAt: '2026-09-13',
+      instrument: { evaluatorModel: 'claude-sonnet-5', rubricVersion: 'v1-2026-09-12' },
+    })
+    expect(block).toContain('| class | median | scores | demo | DQ/30 |')
+    expect(block).toContain('| cities | **50** | 49 · 50 · 51 | **NO** | ')
   })
 })
 

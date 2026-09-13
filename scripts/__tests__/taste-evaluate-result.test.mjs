@@ -91,6 +91,17 @@ describe('taste-evaluate-result — the judge chain', () => {
   it('classifies claude CLI failures without inventing a verdict', () => {
     expect(claudeCliFailure(127, 'zsh: command not found: claude', null, { cliMissing: true })?.kind).toBe('missing')
     expect(claudeCliFailure(1, 'You have hit your usage limit', null)?.kind).toBe('402')
+    // 2026-09-13: the exact wrapper the CLI returned at the weekly cap. It was read as
+    // a plain error and retried per class; it is the judge being out.
+    const weekly = {
+      is_error: true,
+      api_error_status: 429,
+      result: "You've hit your weekly limit · resets Sep 15 at 12pm (America/Los_Angeles)",
+    }
+    expect(claudeCliFailure(1, '', weekly)?.kind).toBe('402')
+    expect(claudeCliFailure(1, '', { is_error: true, result: "You've hit your weekly limit" })?.kind).toBe('402')
+    expect(claudeCliFailure(1, '', { is_error: true, api_error_status: 429, result: '' })?.kind).toBe('402')
+    expect(claudeCliFailure(1, '', { is_error: true, result: 'exceeded the output token limit' })?.kind).toBe('error')
     expect(claudeCliFailure(0, '', { is_error: true, result: 'boom' })?.kind).toBe('error')
     expect(claudeCliFailure(0, '', null)?.kind).toBe('error')
     expect(claudeCliFailure(0, '', { is_error: false, result: '{}' })).toBeNull()

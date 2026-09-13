@@ -19,7 +19,7 @@
  */
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { isNonEmptyString, isPlainObject, median3 } from './taste-receipt.mjs'
+import { isNonEmptyString, isPlainObject, median3, shotsHashFor } from './taste-receipt.mjs'
 import { builderCard, classForRoute } from './taste-catalog.mjs'
 import { RUBRIC_VERSION } from './taste-evaluate-result.mjs'
 
@@ -214,9 +214,13 @@ export function survivingDefects(defects, root) {
  * carries an `invalid` field in that case so the run can record the class
  * rather than silently drop it (ACCEPT: "Exit non-zero on any invalid row").
  */
-export function buildRow({ key, url, route, scorings, builderModel, shots, root }) {
+export function buildRow({ key, url, route, scorings, builderModel, shots, root, runDir = null }) {
   const problems = []
   const { median, picked, scores } = selectMedianScoring(scorings)
+  const demo = demoMatchVerdict(scorings)
+  // The row binds to the exact files it was scored on, like a receipt does. A
+  // row whose shots cannot be found is a number with no picture behind it.
+  const shotsHash = runDir && isPlainObject(shots) ? shotsHashFor(root, Object.fromEntries(Object.entries(shots).map(([k, rel]) => [k, join(runDir, rel)]))) : null
 
   if (median === null) {
     problems.push('scores must be three integers 0-100 (three independent scorings of the same shots).')
@@ -233,8 +237,12 @@ export function buildRow({ key, url, route, scorings, builderModel, shots, root 
         dullest: '',
         beats: '',
         verdict: '',
+        demoMatch: demo.verdict,
+        demoMatchVotes: demo.votes,
         builderModel,
+        runDir,
         shots,
+        shotsHash,
         invalid: problems.join(' '),
       },
       problems,
@@ -247,6 +255,12 @@ export function buildRow({ key, url, route, scorings, builderModel, shots, root 
   const kept = picked ? survivingDefects(picked.defects, root) : []
   if (kept.length === 0) {
     problems.push('no defect names a primitive that exists on disk.')
+  }
+  if (demo.verdict === null) {
+    problems.push(`demoMatch was answered on ${demo.votes.filter((v) => typeof v === 'boolean').length}/3 scorings — the rubric requires it on every one.`)
+  }
+  if (runDir && shotsHash === null) {
+    problems.push(`shots under ${runDir} are not on disk — a row cannot bind to pictures that are not there.`)
   }
 
   const row = {
@@ -261,11 +275,32 @@ export function buildRow({ key, url, route, scorings, builderModel, shots, root 
     dullest: picked?.dullest ?? '',
     beats: picked?.beats ?? '',
     verdict: picked?.verdict ?? '',
+    demoMatch: demo.verdict,
+    demoMatchVotes: demo.votes,
     builderModel,
+    runDir,
     shots,
+    shotsHash,
   }
   if (problems.length > 0) row.invalid = problems.join(' ')
   return { row, problems }
+}
+
+/**
+ * The table's demoMatch: the majority of the three scorings' verdicts (the
+ * boolean analogue of the median). Null when fewer than two scorings answered
+ * it — the rubric requires the field, so that is a malformed run, not a "no".
+ * Matt 2026-09-12: receipts enforced demoMatch, the table dropped it; a table
+ * that cannot say whether the live control is the catalog demo has a gap.
+ */
+export function demoMatchVerdict(scorings) {
+  const votes = (Array.isArray(scorings) ? scorings : []).map((s) => (isPlainObject(s) && typeof s.demoMatch === 'boolean' ? s.demoMatch : null))
+  const answered = votes.filter((v) => typeof v === 'boolean')
+  if (answered.length < 2) return { verdict: null, votes }
+  const yes = answered.filter(Boolean).length
+  const no = answered.length - yes
+  // A 1-1 split with the third scoring silent is not a verdict either way.
+  return { verdict: yes > no ? true : no > yes ? false : null, votes }
 }
 
 /** builderModel === evaluatorModel is allowed (recorded + warned), never silently dropped. */
@@ -356,6 +391,13 @@ export function primitiveNamedMost(defects) {
   return best
 }
 
+/** The `demo` column: the judge's majority demoMatch, or the reason there is none. */
+export function demoMatchCell(row) {
+  if (row?.demoMatch === true) return 'yes'
+  if (row?.demoMatch === false) return '**NO**'
+  return Array.isArray(row?.demoMatchVotes) ? 'split' : 'not recorded'
+}
+
 /** Escape a literal string for use inside a `new RegExp(...)`. */
 function escapeRegExp(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -367,15 +409,15 @@ function escapeRegExp(s) {
  */
 export function renderMarkdownTable(rows, { evaluatedAt, instrument, finishLine = FINISH_LINE } = {}) {
   const header = [
-    '| class | median | scores | DQ/30 | OR/30 | IN/15 | CR/15 | HF/10 | tells | primitive named most | verdict |',
-    '|---|---|---|---|---|---|---|---|---|---|---|',
+    '| class | median | scores | demo | DQ/30 | OR/30 | IN/15 | CR/15 | HF/10 | tells | primitive named most | verdict |',
+    '|---|---|---|---|---|---|---|---|---|---|---|---|',
   ]
   const body = (rows ?? []).map((r) => {
     const c = r.criteria ?? {}
     const primitive = primitiveNamedMost(r.defects)
     const scores = Array.isArray(r.scores) ? r.scores.join(' · ') : ''
     return (
-      `| ${r.key} | **${r.median}** | ${scores} | ${c.designQuality ?? ''} | ${c.originality ?? ''} | ` +
+      `| ${r.key} | **${r.median}** | ${scores} | ${demoMatchCell(r)} | ${c.designQuality ?? ''} | ${c.originality ?? ''} | ` +
       `${c.interaction ?? ''} | ${c.craft ?? ''} | ${c.honestyFunction ?? ''} | ${(r.tells ?? []).length} | ` +
       `${primitive ? `\`${primitive}\`` : '—'} | ${truncate(r.verdict)} |`
     )

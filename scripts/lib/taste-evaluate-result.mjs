@@ -159,9 +159,14 @@ export function claudeCliFailure(status, stderr, wrapper, { cliMissing = false }
   }
   // Only an explicit account/usage message is a quota fail. A bare "limit" is not:
   // "exceeded the output token limit" is a real error the caller must see.
-  const QUOTA_RE = /rate.?limit|\b429\b|usage limit|hit your limit|quota|payment required|\b402\b|billing|insufficient credits/i
+  // 2026-09-13: the CLI said "You've hit your weekly limit · resets Sep 15" with
+  // api_error_status 429 and this regex ("hit your limit") missed it, so 23 classes
+  // were retried as "malformed". Match the wrapper's status code and the phrasing.
+  const QUOTA_RE =
+    /rate.?limit|\b429\b|usage limit|hit your (?:\w+ )?limit|(?:weekly|daily|session) limit|quota|payment required|\b402\b|billing|insufficient credits/i
   const wrapperText = wrapper && wrapper.is_error ? String(wrapper.result ?? JSON.stringify(wrapper)) : ''
-  if (QUOTA_RE.test(blob) || QUOTA_RE.test(wrapperText)) {
+  const apiStatus = wrapper && typeof wrapper === 'object' ? Number(wrapper.api_error_status) : NaN
+  if (apiStatus === 429 || apiStatus === 402 || QUOTA_RE.test(blob) || QUOTA_RE.test(wrapperText)) {
     return {
       kind: '402',
       message: `taste-evaluate: claude CLI limit/quota: ${(wrapperText || blob).trim().slice(0, 300)}. Both judges unreachable. Do not invent demoMatch. Leave the node in_progress.`,

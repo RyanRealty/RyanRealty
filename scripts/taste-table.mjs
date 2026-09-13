@@ -48,7 +48,7 @@
  * Exit codes: 0 clean; 1 usage/registry/IO error; 2 at least one row could
  * not be validated (recorded with `row.invalid`, per-class, run continues).
  */
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmdirSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import Anthropic from '@anthropic-ai/sdk'
@@ -202,6 +202,49 @@ function loadCurrentTable() {
   }
 }
 
+/**
+ * Directory lock around the table's read-merge-write. `mkdir` is atomic on
+ * every filesystem we run on; a lock older than LOCK_STALE_MS belongs to a
+ * process that died mid-write and is taken over. Returns the release function.
+ */
+const TABLE_LOCK = `${TABLE_PATH}.lock`
+const LOCK_STALE_MS = 60_000
+async function acquireTableLock() {
+  const lockPath = join(REPO_ROOT, TABLE_LOCK)
+  const started = Date.now()
+  for (;;) {
+    try {
+      mkdirSync(lockPath)
+      return () => {
+        try {
+          rmdirSync(lockPath)
+        } catch {
+          /* already gone */
+        }
+      }
+    } catch (err) {
+      if (err?.code !== 'EEXIST') throw err
+      let age = 0
+      try {
+        age = Date.now() - statSync(lockPath).mtimeMs
+      } catch {
+        continue
+      }
+      if (age > LOCK_STALE_MS) {
+        console.error(`  table lock ${TABLE_LOCK} is ${Math.round(age / 1000)}s old — taking over a dead writer's lock`)
+        try {
+          rmdirSync(lockPath)
+        } catch {
+          /* raced another taker */
+        }
+        continue
+      }
+      if (Date.now() - started > LOCK_STALE_MS * 2) throw new Error(`taste-table: could not take ${TABLE_LOCK} in ${LOCK_STALE_MS * 2}ms`)
+      await new Promise((r) => setTimeout(r, 250))
+    }
+  }
+}
+
 /** Default: `git show HEAD:design_system/public/taste-table.json`. */
 function loadPreviousTable(explicitPath) {
   if (explicitPath) {
@@ -276,6 +319,8 @@ function normalizeScoring(parsed) {
     dullest: typeof parsed.dullest === 'string' ? parsed.dullest : '',
     beats: typeof parsed.beats === 'string' ? parsed.beats : '',
     verdict: typeof parsed.verdict === 'string' ? parsed.verdict : '',
+    // The rubric requires it; the table used to drop it on the floor.
+    demoMatch: typeof parsed.demoMatch === 'boolean' ? parsed.demoMatch : undefined,
   }
 }
 
@@ -424,9 +469,18 @@ async function askJudge(prompt, shots, { transport, apiKey, alias, state }) {
   return { ...r, transport: 'claude' }
 }
 
-/** A scoring the row builder will accept: integer score, five criteria that sum to it. */
+/** A scoring the row builder will accept: integer score, five criteria that sum to it, a demoMatch verdict. */
 function scoringWellFormed(s) {
-  return isPlainObject(s) && Number.isInteger(s.score) && criteriaProblems(s.criteria, s.score).length === 0
+  return isPlainObject(s) && Number.isInteger(s.score) && criteriaProblems(s.criteria, s.score).length === 0 && typeof s.demoMatch === 'boolean'
+}
+
+function malformedWhy(scoring) {
+  if (!isPlainObject(scoring)) return 'unparseable answer'
+  if (!Number.isInteger(scoring.score)) return 'no integer score'
+  const crit = criteriaProblems(scoring.criteria, scoring.score)
+  if (crit.length) return crit.join(' ')
+  if (typeof scoring.demoMatch !== 'boolean') return 'no demoMatch verdict (the rubric requires true or false)'
+  return 'malformed'
 }
 
 // One malformed answer out of three used to void the class, and a voided class with a
@@ -434,6 +488,25 @@ function scoringWellFormed(s) {
 // missing criteria field). A judge that drops a field is retried once on the same shots
 // before the scoring is recorded as-is.
 const SCORING_RETRIES = 1
+
+/**
+ * The judge chain has nothing left to answer with (last link missing or out of
+ * subscription). 2026-09-13: the claude CLI hit its weekly limit mid-run and the
+ * loop kept going — 23 classes × 3 scorings × 2 attempts of "malformed (no integer
+ * score)", each one a 429 — then merged 23 carried rows and printed INVALID for
+ * all of them. A judge that is out is not a malformed answer; the run stops here.
+ */
+export class JudgeOutError extends Error {
+  constructor(message, kind) {
+    super(message)
+    this.name = 'JudgeOutError'
+    this.kind = kind
+  }
+}
+
+export function judgeIsOut(err) {
+  return Boolean(err) && (err.kind === '402' || err.kind === 'missing')
+}
 
 async function evaluateClass(cls, shots, { transport, apiKey, instrumentText, alias, state }) {
   const scorings = []
@@ -448,6 +521,7 @@ async function evaluateClass(cls, shots, { transport, apiKey, instrumentText, al
         text = r.text
         models.add(r.model)
       } catch (err) {
+        if (judgeIsOut(err)) throw new JudgeOutError(err.message, err.kind)
         console.error(`  ${cls.key}: scoring ${i + 1}/${SCORINGS_PER_CLASS} failed — ${err.message}`)
       }
       // The raw answer sits beside the shots it judged, so an INVALID row can be read
@@ -460,8 +534,7 @@ async function evaluateClass(cls, shots, { transport, apiKey, instrumentText, al
       scoring = normalizeScoring(parseEvaluatorJson(text))
       if (scoringWellFormed(scoring)) break
       if (attempt < SCORING_RETRIES) {
-        const why = isPlainObject(scoring) ? criteriaProblems(scoring.criteria, scoring.score).join(' ') || 'no integer score' : 'unparseable answer'
-        console.error(`  ${cls.key}: scoring ${i + 1}/${SCORINGS_PER_CLASS} malformed (${why}) — asking once more`)
+        console.error(`  ${cls.key}: scoring ${i + 1}/${SCORINGS_PER_CLASS} malformed (${malformedWhy(scoring)}) — asking once more`)
       }
     }
     scorings.push(scoring)
@@ -757,6 +830,9 @@ async function main() {
   const modelsUsed = new Set()
   let anyInvalid = false
   let anySameModel = false
+  // Set when the judge chain ran out mid-run; the classes it never reached are
+  // listed so the run can be resumed on the SAME shots without paying twice.
+  let judgeOut = null
 
   for (const [idx, cls] of selected.entries()) {
     const shots = shotPathsFor(runDir, cls.key)
@@ -767,13 +843,27 @@ async function main() {
       continue
     }
     console.log(`  ${cls.key} (${cls.url})`)
-    const { scorings, evaluatorModel } = await evaluateClass(cls, shots, {
-      transport,
-      apiKey,
-      instrumentText,
-      alias,
-      state: judgeState,
-    })
+    let evaluated
+    try {
+      evaluated = await evaluateClass(cls, shots, {
+        transport,
+        apiKey,
+        instrumentText,
+        alias,
+        state: judgeState,
+      })
+    } catch (err) {
+      if (!(err instanceof JudgeOutError)) throw err
+      judgeOut = { message: err.message, kind: err.kind, at: cls.key, unscored: selected.slice(idx).map((c) => c.key) }
+      console.error(`\n  JUDGE OUT at ${cls.key} — ${err.message}`)
+      console.error(`  ${judgeOut.unscored.length} class(es) not scored this run: ${judgeOut.unscored.join(', ')}`)
+      for (const c of selected.slice(idx)) {
+        newRows.push({ key: c.key, url: c.url, route: c.route, median: null, invalid: `judge out (${err.kind}) — not scored this run` })
+      }
+      anyInvalid = true
+      break
+    }
+    const { scorings, evaluatorModel } = evaluated
     const builderModel = builderModels[idx]
     const { row, problems } = buildRow({
       key: cls.key,
@@ -783,6 +873,7 @@ async function main() {
       builderModel,
       shots: { desktop: shots.desktopRel, mobile375: shots.mobileRel },
       root: REPO_ROOT,
+      runDir,
     })
     row.evaluatorModel = evaluatorModel
     row.rubricVersion = RUBRIC_VERSION
@@ -795,7 +886,7 @@ async function main() {
       anyInvalid = true
       console.error(`  ${cls.key}: INVALID — ${row.invalid}`)
     } else {
-      console.log(`    median ${row.median} (${row.scores.join(' · ')}) — ${evaluatorModel}`)
+      console.log(`    median ${row.median} (${row.scores.join(' · ')}) · demoMatch ${row.demoMatch} ${JSON.stringify(row.demoMatchVotes)} — ${evaluatorModel}`)
     }
     const warning = evaluatorModel ? sameModelWarning(row, evaluatorModel) : null
     if (warning) {
@@ -808,13 +899,21 @@ async function main() {
 
   // ---- --repeat: a second evaluation pass on the SAME shots, for variance ----
   let variance = null
-  if (opts.repeat) {
+  if (opts.repeat && !judgeOut) {
     console.log(`\ntaste-table --repeat — scoring the same shots a second time\n`)
     const deltas = []
     for (const cls of selected) {
       const shots = shotPathsFor(runDir, cls.key)
       if (!existsSync(shots.desktopPath) || !existsSync(shots.mobilePath)) continue
-      const { scorings } = await evaluateClass(cls, shots, { transport, apiKey, instrumentText, alias, state: judgeState })
+      let scorings
+      try {
+        ;({ scorings } = await evaluateClass(cls, shots, { transport, apiKey, instrumentText, alias, state: judgeState }))
+      } catch (err) {
+        if (!(err instanceof JudgeOutError)) throw err
+        judgeOut = { message: err.message, kind: err.kind, at: cls.key, unscored: [] }
+        console.error(`\n  JUDGE OUT during --repeat at ${cls.key} — ${err.message}; the first pass stands, variance stays unmeasured.`)
+        break
+      }
       const { median } = (() => {
         const scores = scorings.map((s) => s.score)
         const sorted = scores.every((n) => Number.isInteger(n)) ? [...scores].sort((a, b) => a - b) : null
@@ -834,6 +933,10 @@ async function main() {
   }
 
   // ---- merge into the full table, sort ascending ----
+  // Parallel `--classes` runs each read-merge-write the same file. The merge
+  // happens under a directory lock so the last writer cannot drop the rows the
+  // first writer just scored.
+  const releaseLock = await acquireTableLock()
   const current = loadCurrentTable()
   const byKey = new Map(current.rows.map((r) => [r.key, r]))
   for (const row of newRows) byKey.set(row.key, row)
@@ -875,6 +978,7 @@ async function main() {
   // silently loses the mark the rise rule compares against.
   const scored = allRows.filter((r) => Number.isInteger(r.median))
   if (scored.length === 0) {
+    releaseLock()
     console.error(`\ntaste-table: NOT writing ${TABLE_PATH} — no class scored; the previous table is intact.`)
     console.error('  Fix capture first (is the dev server actually serving baseUrl?), then re-run.')
     process.exit(2)
@@ -920,6 +1024,7 @@ async function main() {
   } else {
     console.log(`${E2E_DOC_PATH} already matches (no change)`)
   }
+  releaseLock()
 
   console.log(`\n${block}`)
 
@@ -942,6 +1047,15 @@ async function main() {
 
   if (anySameModel) {
     console.error('\ntaste-table: evaluatorModel matched builderModel for at least one class (see WARNING lines above).')
+  }
+  if (judgeOut) {
+    console.error(`\ntaste-table: JUDGE OUT (${judgeOut.kind}) — ${judgeOut.message}`)
+    console.error(`  ${newRows.filter((r) => Number.isInteger(r.median)).length} class(es) scored and merged; the rest keep their prior row (carried forward).`)
+    console.error('  This table is NOT round-complete: do not commit it as the round baseline. ci:rubric-freeze reports the carried classes.')
+    if (judgeOut.unscored.length) {
+      console.error(`  Resume on the SAME shots once a judge answers:\n    node scripts/taste-table.mjs --evaluate-only ${runDir} --classes ${judgeOut.unscored.join(',')}`)
+    }
+    process.exit(3)
   }
   if (anyInvalid) {
     console.error('\ntaste-table: at least one row is invalid — see INVALID lines above.')

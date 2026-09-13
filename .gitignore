@@ -224,5 +224,7 @@ data/basemap/central-oregon-detail.ndjson
 # taste-table.mjs scratch captures (SITE-51) — never ui_kits/, never committed.
 # One run dir per invocation; regenerable via `npm run taste:table`.
 .taste-table/
+# taste-table.mjs write lock (directory) — parallel --classes runs merge under it.
+design_system/public/taste-table.json.lock/
 !.claude/skills/site-queue/
 !.claude/skills/loop-status/
