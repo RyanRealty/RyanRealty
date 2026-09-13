@@ -2,8 +2,8 @@
 
 import { useRef, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { cn } from '@/lib/utils'
+import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import type { V3ListingRowBadge } from './V3ListingRow'
 import { listingPhotoAlt } from './listing-photo-alt'
@@ -85,7 +85,7 @@ export function SplitCardMedia({
             className="v3-lrow__photo-link"
             aria-label={`Open ${addressLine}`}
           >
-            <Image
+            <SparkSafeImage
               src={src}
               alt={listingPhotoAlt({ addressLine })}
               fill
@@ -94,7 +94,7 @@ export function SplitCardMedia({
             />
           </Link>
         ) : (
-          <Image
+          <SparkSafeImage
             src={src}
             alt={listingPhotoAlt({ addressLine })}
             fill

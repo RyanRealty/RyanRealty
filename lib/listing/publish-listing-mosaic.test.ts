@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { preferListingMosaicPhotoUrl } from './publish-listing-mosaic'
+import {
+  LISTING_MOSAIC_PHOTO_QUALITY,
+  preferListingMosaicPhotoUrl,
+} from './publish-listing-mosaic'
 
 describe('preferListingMosaicPhotoUrl', () => {
   it('bumps a Spark resize path that already names a small derivative', () => {
@@ -29,4 +32,9 @@ describe('preferListingMosaicPhotoUrl', () => {
     const src = 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/abc-o.jpg'
     expect(preferListingMosaicPhotoUrl(src)).toBe(src)
   })
+
+  it('asks the optimizer for quality 75 when a non-Spark still is optimized', () => {
+    expect(LISTING_MOSAIC_PHOTO_QUALITY).toBe(75)
+  })
 })
+

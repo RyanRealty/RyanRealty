@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { useRouter } from 'next/navigation'
 import { useState, useMemo, useEffect, memo } from 'react'
 import type { HomeTileRow, ListingTileRow } from '@/app/actions/listings'
@@ -387,7 +388,7 @@ function ListingTile({
         {hasVideo && embeddableTile && tileVideoEmbed ? (
           <>
             {primaryPhoto ? (
-              <Image
+              <SparkSafeImage
                 src={primaryPhoto}
                 alt={address || 'Property photo'}
                 fill
@@ -434,7 +435,7 @@ function ListingTile({
         ) : hasVideo && directMp4Tile && firstVideoUrl ? (
           <>
             {primaryPhoto ? (
-              <Image
+              <SparkSafeImage
                 src={primaryPhoto}
                 alt={address || 'Property photo'}
                 fill
@@ -478,7 +479,7 @@ function ListingTile({
         ) : (
           <>
             {primaryPhoto ? (
-              <Image
+              <SparkSafeImage
                 src={primaryPhoto}
                 alt={address || 'Property photo'}
                 fill

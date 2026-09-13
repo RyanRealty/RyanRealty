@@ -103,9 +103,11 @@ const nextConfig: NextConfig = {
       { protocol: 'http', hostname: 'localhost', pathname: '/**' },
     ],
     formats: ['image/avif', 'image/webp'],
-    // Listing mosaic asks for quality={90}. Next 16 defaults qualities to [75]
-    // and silently serves 75 unless 90 is allowlisted.
-    qualities: [75, 90],
+    // Spark/MLS listing photos bypass the optimizer (isSparkListingPhotoUrl).
+    // Remaining first-party images use Next 16's default quality 75. Cache
+    // transforms for 31 days so a remaining optimized image is not
+    // re-encoded on the default 60s TTL.
+    minimumCacheTTL: 2_678_400,
   },
   // Per-page prerender ceiling, in seconds.
   //
