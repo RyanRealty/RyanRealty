@@ -7,8 +7,10 @@ import {
   buildCityMosPages,
   buildHubChooserItems,
   buildHubExtraPages,
+  buildHubTypeSegments,
   buildOpeningFigures,
   formatHubPace,
+  hubInstrumentFigures,
   hubLiveDescription,
   hubLiveTitle,
   hubOpeningNote,
@@ -170,26 +172,68 @@ describe('extra leftover pages — pager, not a closed cream fold', () => {
 
   it('pages leftover types, pace, and mix and drops empty groups', () => {
     const pages = buildHubExtraPages({
-      priceAndWait: [{ value: v3Text('$749K'), label: v3Text('typical sale, last 12 months') }],
       types: [
-        { value: v3Text('1,200'), label: v3Text('houses for sale'), count: 1200 },
-        { value: v3Text('180'), label: v3Text('condos and townhomes'), count: 180 },
+        { segment: 'condo', noun: 'condos', count: 180, sentence: '180 condos for sale.', href: '/homes-for-sale/condos' },
+        { segment: 'land', noun: 'lots', count: 1200, sentence: '1,200 lots for sale.' },
       ],
+      typesSource: { source: 'Oregon Data Share, the metrics.', sourceName: 'Oregon Data Share' },
       pace: [{ value: v3Text('6.2'), label: v3Text('months of supply') }],
       mix: [],
     })
-    // Pages that draw a length lead; the two-unit price pair follows.
-    expect(pages.map((page) => page.id)).toEqual(['types', 'price', 'pace'])
-    expect(pages[1]?.items[0]?.count).toBeUndefined()
-    expect(pages[1]?.items[0]?.weight).toBeUndefined()
-    expect(pages[0]?.items[0]?.count).toBe(1200)
-    // Counts share a unit: each over the largest (V3Ledger's weight rule).
-    expect(pages[0]?.items[0]?.weight).toBe(1)
-    expect(pages[0]?.items[1]?.weight).toBeCloseTo(180 / 1200)
+    // The allocation card leads; the plain pace pair follows. The price pair
+    // is the Instrument's own row now, so no page repeats it.
+    expect(pages.map((page) => page.id)).toEqual(['types', 'pace'])
+    const types = pages[0]!
+    expect(types.items).toEqual([])
+    expect(types.segments?.map((s) => s.id)).toEqual(['land', 'condo'])
+    expect(types.segments?.[0]).toMatchObject({
+      label: 'Lots',
+      value: 1200,
+      valueLabel: '1,200',
+      shareLabel: '87%',
+      note: '1,200 lots for sale.',
+    })
+    expect(buildHubTypeSegments([{ segment: 'c', noun: 'condos', count: 9, sentence: 'condos for sale.' }])[0]?.note).toBe(
+      'Condos for sale.',
+    )
+    expect(types.segments?.[0]?.share).toBeCloseTo(1200 / 1380)
+    expect(types.segments?.[1]).toMatchObject({ label: 'Condos', shareLabel: '13%', href: '/homes-for-sale/condos' })
+    expect(types.segmentsSource?.sourceName).toBe('Oregon Data Share')
     // Tenths of a month are not a share of anything: no bar.
-    expect(pages[2]?.items[0]?.weight).toBeUndefined()
+    expect(pages[1]?.items[0]?.weight).toBeUndefined()
     expect(pages.every((page) => !/\d/.test(page.claim))).toBe(true)
     expect(pages.every((page) => !/leftover|Market Truth|sample-gated/i.test(page.claim))).toBe(true)
+  })
+
+  it('builds type segments as parts of one whole and omits a zero or unnamed type', () => {
+    expect(buildHubTypeSegments([])).toEqual([])
+    const segments = buildHubTypeSegments([
+      { segment: 'a', noun: 'condos', count: 995, sentence: 'x' },
+      { segment: 'b', noun: 'farms', count: 5, sentence: 'y' },
+      { segment: 'c', noun: 'lots', count: 0, sentence: 'z' },
+      { segment: 'd', noun: ' ', count: 40, sentence: 'w' },
+    ])
+    expect(segments.map((s) => s.id)).toEqual(['a', 'b'])
+    expect(segments.reduce((sum, s) => sum + s.share, 0)).toBeCloseTo(1)
+    // A sliver is said as under one percent, never rounded to a zero.
+    expect(segments[1]?.shareLabel).toBe('under 1%')
+  })
+
+  it('keeps the price and the wait as the Instrument row when the bars draw', () => {
+    const opening = [
+      { value: v3Text('$749,500'), label: v3Text('median list price, single-family') },
+      { value: v3Text('1,531'), label: v3Text('homes for sale, single-family'), count: 1531 },
+      { value: v3Text('325'), label: v3Text('a month of sales'), count: 325 },
+      { value: v3Text('30'), label: v3Text('days to an offer, last 90 days, single-family'), count: 30 },
+    ]
+    expect(hubInstrumentFigures(opening, true).map((f) => String(f.label))).toEqual([
+      'median list price, single-family',
+      'days to an offer, last 90 days, single-family',
+    ])
+    // No bars: every opening figure stands, the two counts included.
+    expect(hubInstrumentFigures(opening, false)).toHaveLength(4)
+    // Neither price nor wait published: the Instrument keeps its first figure.
+    expect(hubInstrumentFigures(opening.slice(1, 3), true)).toHaveLength(2)
   })
 
   it('weighs published shares over 100 and never a mixed-unit page', () => {
@@ -246,7 +290,11 @@ describe('opening figures', () => {
     expect(String(homes?.sentence)).not.toMatch(/\d/)
     const median = follow.find((f) => String(f.label).includes('median list'))
     expect(median?.sentence).toBeTruthy()
-    expect(median?.count).toBeUndefined()
+    // Whole dollars ride beui-number and settle on the exact face.
+    expect(median?.count).toBe(729875)
+    expect(String(median?.value)).toBe('$729,875')
+    const fractional = buildSfrFollowFigures({ medianList: 729875.5, active: 1550, daysToPending: 24 }, '4.8')
+    expect(fractional.find((f) => String(f.label).includes('median list'))?.count).toBeUndefined()
   })
 })
 

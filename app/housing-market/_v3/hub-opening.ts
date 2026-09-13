@@ -375,6 +375,25 @@ export function isHubLeadFigure(figure: V3InstrumentFigure): boolean {
 }
 
 /**
+ * The Instrument's figure row when the two bars draw: median list and days
+ * to an offer — the price and the wait, the two things the bars do not say.
+ * The two counts the bars already draw never come back as tiles (layout
+ * lock: two bars, never a KPI tile). Falls back to every opening figure when
+ * neither publishes, so the Instrument keeps its required first figure.
+ */
+export function hubInstrumentFigures(
+  opening: readonly V3InstrumentFigure[],
+  barsDrawn: boolean,
+): V3InstrumentFigure[] {
+  if (!barsDrawn) return [...opening]
+  const priceAndWait = opening.filter((figure) => {
+    const label = String(figure.label)
+    return label.includes('median list') || label.includes('days to an offer')
+  })
+  return priceAndWait.length > 0 ? priceAndWait : [...opening]
+}
+
+/**
  * Whole-number face for beui-number: a count ("1,531") or an exact dollar
  * figure ("$749,500", whole dollars) rides the wheel and settles on the
  * caller's string. Percents, tenths, and compact money ("$749K") stay static —
@@ -406,11 +425,76 @@ export type HubExtraItem = {
   weight?: number
 }
 
+/**
+ * One property type as a part of the whole — the allocation card's segment.
+ * Every string is formatted here; V3Insight computes only positions.
+ */
+export type HubTypeSegment = {
+  id: string
+  /** Legend face, e.g. "Condos". */
+  label: string
+  /** Published active count. */
+  value: number
+  valueLabel: string
+  /** This type's count over the sum of every listed type, 0 to 1. */
+  share: number
+  shareLabel: string
+  /** One plain sentence for the type (publicSegmentRowSentence). */
+  note: string
+  href?: string
+}
+
+export type HubTypeRow = {
+  segment: string
+  /** The plural noun for the legend, e.g. "condos". */
+  noun: string
+  count: number
+  sentence: string
+  href?: string
+}
+
 export type HubExtraPage = {
   id: string
   label: string
   claim: string
   items: HubExtraItem[]
+  /** The allocation card, when the page is parts of one whole. */
+  segments?: HubTypeSegment[]
+  segmentsCaption?: string
+  segmentsSource?: { source: string; sourceName?: string; asOf?: string | null }
+}
+
+function capitalise(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+/**
+ * Parts of one whole: each published type count over the sum of every type
+ * listed (§0: published counts, one addition, one division each). A row with
+ * no positive count is left out; an empty set returns none.
+ */
+export function buildHubTypeSegments(rows: readonly HubTypeRow[]): HubTypeSegment[] {
+  const kept = rows.filter((row) => Number.isFinite(row.count) && row.count > 0 && row.noun.trim())
+  const total = kept.reduce((sum, row) => sum + row.count, 0)
+  if (kept.length === 0 || total <= 0) return []
+  return kept
+    .slice()
+    .sort((a, b) => b.count - a.count)
+    .map((row) => {
+      const share = row.count / total
+      return {
+        id: row.segment,
+        label: capitalise(row.noun.trim()),
+        value: row.count,
+        valueLabel: row.count.toLocaleString('en-US'),
+        share,
+        shareLabel: share * 100 < 1 ? 'under 1%' : `${Math.round(share * 100)}%`,
+        // The row sentence starts with its noun (it used to follow a count);
+        // as a sentence of its own it starts with a capital.
+        note: capitalise(row.sentence.trim()),
+        ...(row.href ? { href: row.href } : {}),
+      }
+    })
 }
 
 /** "98.1%" or "at least 62%" → 0.981 / 0.62. Anything else is not a share. */
@@ -463,25 +547,31 @@ function extraItemsFromFigures(figures: readonly V3InstrumentFigure[]): HubExtra
 
 /**
  * Extra leftover tiles become insight pages, not a closed cream fold. Miss
- * omits a page. Claims carry no figure — the items do. Pages that draw (a
- * shared unit, so a length behind each figure) lead; the two-unit price-and-
- * wait pair follows, its dollars riding beui-number (judge 2026-09-13: "a KPI
- * pair wearing a catalog name").
+ * omits a page. Claims carry no figure — the items do. The Types page is the
+ * demo's allocation card (one bar of every type, the selected type's count
+ * and share, its sentence, the legend as doors); Features draws a length per
+ * share; Sale pace is the plain pair. Median list and days to an offer are
+ * the Instrument's own figures now, so no page repeats them (judge
+ * 2026-09-13: the fold-after tiles restated what a bar already drew).
  */
 export function buildHubExtraPages(input: {
-  priceAndWait: readonly V3InstrumentFigure[]
-  types: readonly V3InstrumentFigure[]
+  types: readonly HubTypeRow[]
+  typesSource?: { source: string; sourceName?: string; asOf?: string | null }
   pace: readonly V3InstrumentFigure[]
   mix: readonly V3InstrumentFigure[]
 }): HubExtraPage[] {
   const pages: HubExtraPage[] = []
-  const typeItems = extraItemsFromFigures(input.types)
-  if (typeItems.length > 0) {
+  const segments = buildHubTypeSegments(input.types)
+  if (segments.length > 0) {
     pages.push({
       id: 'types',
       label: 'Types',
-      claim: 'What is for sale across Central Oregon by property type. Each bar is that count against the largest.',
-      items: typeItems,
+      claim:
+        'What is for sale across Central Oregon besides single-family houses, each type as a share of that whole. Hover a type to read it; tap it to browse those listings.',
+      items: [],
+      segments,
+      segmentsCaption: 'For sale by type',
+      ...(input.typesSource ? { segmentsSource: input.typesSource } : {}),
     })
   }
   const mixItems = extraItemsFromFigures(input.mix)
@@ -491,15 +581,6 @@ export function buildHubExtraPages(input: {
       label: 'Features',
       claim: 'What a typical recent closed house had, as a share of closes, when a share published.',
       items: mixItems,
-    })
-  }
-  const priceItems = extraItemsFromFigures(input.priceAndWait)
-  if (priceItems.length > 0) {
-    pages.push({
-      id: 'price',
-      label: 'Price and wait',
-      claim: 'Median list and days to an offer, from Oregon Data Share.',
-      items: priceItems,
     })
   }
   const paceItems = extraItemsFromFigures(input.pace)

@@ -55,13 +55,16 @@ export function HubCityMosPages({ pages, className }: HubCityMosPagesProps) {
     prose: cityProse(page),
     series: page.series,
     door: { label: `${page.label} housing market`, href: page.href },
+    // The door's own live count in the index row (beui-number), the same
+    // published active count the city's sentence reads.
+    indexFigure: { value: page.homesValue, label: page.homesLabel, unit: 'single-family homes for sale' },
   }))
   return (
     <V3Insight
       id="hub-city-insight"
       title="City"
       pages={insightPages}
-      indexLabel="Other cities"
+      indexLabel="Other cities, homes for sale"
       className={cn('hub-city-mos', className)}
     />
   )
@@ -80,12 +83,19 @@ export type HubExtraPagesProps = {
 export function HubExtraPages({ pages, className }: HubExtraPagesProps) {
   if (pages.length === 0) return null
   const insightPages: V3InsightPage[] = pages
-    .filter((page) => page.items.length > 0)
+    .filter((page) => page.items.length > 0 || (page.segments?.length ?? 0) > 0)
     .map((page) => ({
       id: page.id,
       label: page.label,
       prose: page.claim,
-      body: (
+      ...(page.segments && page.segments.length > 0
+        ? {
+            segments: page.segments,
+            segmentsCaption: page.segmentsCaption,
+            segmentsSource: page.segmentsSource ?? null,
+          }
+        : {}),
+      body: page.items.length === 0 ? undefined : (
         <ul className="hub-extra-pages__items">
           {page.items.map((item) => {
             const face =

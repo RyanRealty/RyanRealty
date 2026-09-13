@@ -150,9 +150,9 @@
   color: var(--v3-ink);
 }
 
-/* Room above the line for the tooltip, below it for the end ticks. */
+/* Room above the line for the tooltip; the scrubber row below carries the ends. */
 .v3-insight__stage {
-  padding: 2.4rem var(--v3-space-sm) 1.5rem;
+  padding: 2.4rem var(--v3-space-sm) var(--v3-space-xs);
   min-width: 0;
 }
 
@@ -233,6 +233,15 @@
   transition: left var(--v3-dur-state) var(--v3-ease-out);
 }
 
+/* Three anchors so the reading never runs past the frame at 375. */
+.v3-insight__tip--start {
+  transform: translateX(-0.75rem);
+}
+
+.v3-insight__tip--end {
+  transform: translateX(calc(-100% + 0.75rem));
+}
+
 .v3-insight__tip-dot {
   align-self: center;
   width: 0.4rem;
@@ -247,18 +256,139 @@
   color: var(--v3-ink);
 }
 
-.v3-insight__ends {
-  position: absolute;
-  top: calc(100% + var(--v3-space-2xs));
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-between;
-  gap: var(--v3-space-sm);
-  margin: 0;
+/* Scrubber: the demo's slider under the chart, the first and last month as
+   its ends. The same control V3Chart draws under its year (v3-chart__scrub):
+   a native range on house paint, a 44px row. */
+.v3-insight__scrub {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--v3-space-xs);
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3-insight__scrub-end {
   font-size: var(--v3-size-source);
   color: var(--v3-ink-muted);
-  pointer-events: none;
+  white-space: nowrap;
+}
+
+.v3-insight__scrub-input {
+  width: 100%;
+  height: var(--v3-tap);
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--v3-navy);
+  background: transparent;
+}
+
+.v3-insight__scrub-input:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+/* Allocation: one bar of every part (the demo's third card). */
+.v3-insight__alloc {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+}
+
+.v3-insight__alloc-stage {
+  padding: var(--v3-space-sm);
+}
+
+.v3-insight__bar {
+  display: flex;
+  gap: 2px;
+  height: 1.5rem;
+  min-width: 0;
+}
+
+.v3-insight__seg {
+  flex-basis: 0;
+  min-width: 0.25rem;
+  background: var(--v3-ink-muted);
+  opacity: 0.45;
+  transition:
+    opacity var(--v3-dur-state) var(--v3-ease-out),
+    background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-insight__seg--on {
+  background: var(--v3-ink);
+  opacity: 1;
+}
+
+.v3-insight__alloc-note {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
+  text-wrap: pretty;
+}
+
+/* Legend: the parts as chips; each is the door to that part's listings. */
+.v3-insight__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs) var(--v3-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-insight__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-xs);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color var(--v3-dur-state) var(--v3-ease-out),
+    border-color var(--v3-dur-state) var(--v3-ease-out),
+    background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-insight__legend-item:hover,
+.v3-insight__legend-item--on {
+  color: var(--v3-ink);
+  border-color: var(--v3-edge);
+  background: var(--v3-wash);
+}
+
+.v3-insight__legend-item:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-insight__swatch {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--v3-radius-mark);
+  background: var(--v3-ink-muted);
+  opacity: 0.45;
+}
+
+.v3-insight__swatch--on {
+  background: var(--v3-ink);
+  opacity: 1;
+}
+
+.v3-insight__legend-value {
+  font-family: var(--v3-font-num);
+  font-weight: var(--v3-weight-num);
+  color: var(--v3-ink);
 }
 
 /* Figure line: the demo's big number with its mono comparison. */
@@ -319,17 +449,30 @@
 
 .v3-insight__index-link {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
+  gap: var(--v3-space-2xs);
   min-height: var(--v3-tap);
   color: var(--v3-ink);
+  text-decoration: none;
+}
+
+.v3-insight__index-name {
   text-decoration: underline;
   text-decoration-color: var(--v3-edge);
   text-underline-offset: 0.2em;
   transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
 }
 
-.v3-insight__index-link:hover {
+.v3-insight__index-link:hover .v3-insight__index-name {
   text-decoration-color: var(--v3-ink);
+}
+
+/* The door's live count on the digit wheel. */
+.v3-insight__index-figure {
+  font-family: var(--v3-font-num);
+  font-weight: var(--v3-weight-num);
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink);
 }
 
 .v3-insight__index-link:focus-visible {
@@ -380,7 +523,9 @@
   .v3-insight__cursor,
   .v3-insight__dot,
   .v3-insight__tip,
-  .v3-insight__index-link,
+  .v3-insight__seg,
+  .v3-insight__legend-item,
+  .v3-insight__index-name,
   .v3-insight__pill,
   .v3.v3-insight .insight-pager__btn {
     transition: none;

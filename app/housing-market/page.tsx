@@ -63,6 +63,7 @@ import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulse
 import {
   getPublicPlaceSegments,
   publicSegmentBrowseHref,
+  publicSegmentNoun,
   publicSegmentRowSentence,
 } from '@/lib/data/market-truth/public-segments'
 import {
@@ -125,10 +126,11 @@ import {
   buildHubCityItemList,
   buildHubExtraPages,
   buildOpeningFigures,
+  hubInstrumentFigures,
   hubLiveDescription,
   hubOpeningNote,
-  isHubLeadFigure,
   monthlyPaceFromMos,
+  type HubTypeRow,
 } from './_v3/hub-opening'
 import { buildRegionPlaceMos } from '@/app/housing-market/central-oregon/_v3/region-figures'
 import {
@@ -340,29 +342,30 @@ export default async function HousingMarketHubPage() {
   // page through InsightPager — not a closed cream fold. One population,
   // one clock (refreshedAt).
   const sfrFollow = buildSfrFollowFigures(hud, mosText)
-  const typeFigures: V3InstrumentFigure[] = []
+  const typeRows: HubTypeRow[] = []
   for (const row of publicSegments) {
     if (row.activeCount == null || row.activeCount <= 0) continue
     // Mobile audit 2026-08-27 (group-c): the full bit list (up to 9 stats)
     // ran on as one gray run-on paragraph under each tile at 390px — a wall
     // of text with no hierarchy. Judge 2026-09-13: the dotted bit list still
     // read as "a count, a market-jargon verdict, and a sold-count" packed on
-    // two lines. One plain sentence per row instead: what is for sale, how
-    // many sold in a year, and what that makes the market. Price, pending,
-    // days to contract, sale-to-original, YoY and price-cut share stay one
-    // tap away behind the row's href; nothing is removed from the site.
-    typeFigures.push({
-      value: v3Text(row.activeCount.toLocaleString('en-US')),
-      label: v3Text(
-        publicSegmentRowSentence({
-          segment: row.segment,
-          activeCount: row.activeCount,
-          closedCount: row.closedCount,
-          verdict: row.verdict,
-        }),
-      ),
-      href: publicSegmentBrowseHref(null, row.segment),
+    // two lines, and the row list after it "a spreadsheet in a cream card".
+    // Each type is now one part of the allocation card: its count, its share
+    // of every listed type, and one plain sentence (what is for sale, how
+    // many sold in a year, what that makes the market). Price, pending, days
+    // to contract, sale-to-original, YoY and price-cut share stay one tap
+    // away behind the type's door; nothing is removed from the site.
+    typeRows.push({
+      segment: row.segment,
+      noun: publicSegmentNoun(row.segment, row.activeCount),
       count: row.activeCount,
+      sentence: publicSegmentRowSentence({
+        segment: row.segment,
+        activeCount: row.activeCount,
+        closedCount: row.closedCount,
+        verdict: row.verdict,
+      }),
+      href: publicSegmentBrowseHref(null, row.segment),
     })
   }
   const paceFigures = publicPaceItems(publicPace).map((item) => ({
@@ -377,17 +380,21 @@ export default async function HousingMarketHubPage() {
     follow: sfrFollow,
     monthOfSales: regionMos ? monthOfSales : null,
   })
-  const leadFigures = openingFigures.filter(isHubLeadFigure)
   const extraPages = buildHubExtraPages({
-    priceAndWait: openingFigures.filter(
-      (figure) =>
-        String(figure.label).includes('median list') || String(figure.label).includes('days to an offer'),
-    ),
-    types: typeFigures,
+    types: typeRows,
+    typesSource: {
+      source:
+        'Oregon Data Share, through the market-truth metrics for the Central Oregon region: listings for sale by property type, other than single-family houses. Each share is that type over the sum of the types listed; a type with no published count is left out.',
+      sourceName: 'Oregon Data Share',
+    },
     pace: paceFigures,
     mix: mixFigures,
   })
-  const [firstSfrFigure, ...restSfrFigures] = leadFigures.length > 0 ? leadFigures : openingFigures
+  // When the two bars draw, the figure row is the price and the wait (median
+  // list, days to an offer) — the bars already say homes for sale and a month
+  // of sales, and a tile repeating a bar is the KPI-grid tell.
+  const instrumentFigures = hubInstrumentFigures(openingFigures, regionMos != null)
+  const [firstSfrFigure, ...restSfrFigures] = instrumentFigures
   const cityMosPages = buildCityMosPages(citySnapshots, {
     monthlyBySlug: cityMonthlyBySlug,
     minSeriesPoints: V3_INSIGHT_MIN_POINTS,

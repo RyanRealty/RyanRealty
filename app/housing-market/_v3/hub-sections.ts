@@ -229,6 +229,9 @@ export function buildSfrFollowFigures(hud: {
       value: v3Text(formatPriceExact(hud.medianList)),
       label: v3Text('median list price, single-family'),
       href: '/housing-market/central-oregon',
+      // Whole dollars ride beui-number and settle on the exact face; a
+      // fractional median stays a static string rather than inventing cents.
+      ...(Number.isInteger(hud.medianList) ? { count: hud.medianList } : {}),
       sentence: v3Text(
         'Half the listed single-family houses sit above this price, half sit below.',
       ),
