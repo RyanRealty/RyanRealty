@@ -351,11 +351,16 @@
         "share-open",
         "gallery-open"
       ],
-      "capture": "scripts/take-route-shots.mjs default first viewport for the instrument pair, then one fresh page per demoState: `save-open=[aria-label^=\"Save \"]!click` (guest Sheet), `share-open=[aria-label^=\"Share \"]!click` (Share Dialog), `gallery-open=.listing-frame__stage[aria-label^=\"Open photo\"]!click` (photo Dialog). demoMatch is written only from taste-evaluate."
+      "capture": "scripts/take-route-shots.mjs default first viewport for the instrument pair, then one fresh page per demoState: `save-open=button[aria-label^=\"Save \"]!click` (guest Sheet — button, not the keep group's aria-label), `share-open=button[aria-label^=\"Share \"]!click` (Share Dialog), `gallery-open=.listing-frame__stage[aria-label^=\"Open photo\"]!click` (photo Dialog). demoMatch is written only from taste-evaluate."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/mobile375.png",
+      "saveOpenDesktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/save-open-desktop.png",
+      "saveOpenMobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/save-open-mobile375.png",
+      "shareOpenDesktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/share-open-desktop.png",
+      "shareOpenMobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/share-open-mobile375.png",
+      "galleryOpenDesktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/gallery-open-desktop.png",
       "closeDesktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/close-desktop.png",
       "closeMobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/close-mobile375.png",
       "outOfAreaDesktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/outofarea-desktop.png",
@@ -365,7 +370,7 @@
       "dropDesktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/drop-desktop.png",
       "dropMobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/drop-mobile375.png"
     },
-    "shotsHash": "sha256:cf333b150afc06061998a6dc1aa87fd91af7748e5e391168ad16117d62013d88",
+    "shotsHash": "sha256:fb084bb994e24297d1400be6b460b920813c200a2c5cba4c16147a9b8952d30c",
     "scores": [
       80,
       78,
