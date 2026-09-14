@@ -308,12 +308,14 @@ describe('listing mosaic lead and empty thumbs', () => {
     expect(hero).not.toMatch(/publishListingFaceMapSrc/)
     expect(hero).toMatch(/ListingStreetViewOverlay/)
     expect(hero).toMatch(/hasStreetView/)
-    // SITE-45: one frame and a filmstrip, no 2x2 mosaic and no pill row on the
-    // photograph. The strip indexes every photo and carries the media tools.
+    // SITE-99: one bleed photograph in the shadcn Carousel. No 2x2 mosaic.
+    // beUI pill tabs sit on the photograph; the cream strip indexes thumbs.
     expect(hero).not.toMatch(/publishListingMosaicTiles/)
     expect(hero).toMatch(/listing-strip__thumb/)
     expect(hero).toMatch(/listing-strip__tools/)
-    expect(hero).toMatch(/listing-frame__stage/)
+    expect(hero).toMatch(/listing-hero-carousel/)
+    expect(hero).toMatch(/listing-frame__tabs/)
+    expect(hero).not.toMatch(/listing-frame__stage/)
     expect(css).not.toMatch(/grid-template-columns: 2fr 1fr/)
     expect(css).toMatch(/\.listing-strip\[data-open='true'\]/)
     expect(hero).toMatch(/autoPlay/)

@@ -32,7 +32,16 @@ describe('listing remainder composition', () => {
     )
     expect(SAVE_SHEET).toMatch(/from '@\/components\/ui\/sheet'/)
     expect(SAVE_SHEET).toContain('SheetContent')
+    expect(SAVE_SHEET).toContain('side="right"')
     expect(SAVE_SHEET).not.toContain('surface="drawer"')
+    expect(SAVE_SHEET).not.toContain('top-16')
+    const MOBILE_BAR = readFileSync(
+      resolve('components/site/listing-detail/ListingMobileContactBar.client.tsx'),
+      'utf8',
+    )
+    expect(MOBILE_BAR).toMatch(/from '@\/components\/ui\/button-group'/)
+    expect(MOBILE_BAR).toMatch(/from '@\/components\/ui\/button'/)
+    expect(MOBILE_BAR).not.toMatch(/className="lmc-/)
     expect(HERO).toMatch(/from '@\/components\/motion\/tabs'/)
     expect(HERO).toMatch(/from '@\/components\/ui\/carousel'/)
     expect(HERO).not.toContain('V3Tabs')
@@ -108,6 +117,8 @@ describe('listing remainder composition', () => {
     expect(LIGHTBOX).not.toContain('showCloseButton={false}')
     expect(LIGHTBOX).not.toContain('h-dvh')
     expect(HERO).toContain('listing-hero-bleed')
+    expect(HERO).toContain('listing-frame__tabs')
+    expect(HERO).not.toMatch(/listing-hero-bleed listing-frame listing-mosaic/)
     const SHARE_BTN = readFileSync(resolve('components/site/listing-detail/ListingShareButton.tsx'), 'utf8')
     expect(SHARE_BTN).toMatch(/from '@\/components\/ui\/dialog'/)
     expect(LIGHTBOX).toMatch(/from '@\/components\/motion\/transitions-modal'/)
