@@ -16,6 +16,8 @@
  * the same whole count (1 and 1.5 both floor to 1).
  */
 
+import { POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
+
 export type AppleStrictness = 'strict' | 'utilities' | 'product_lot'
 
 export type PricingTier = {
@@ -42,6 +44,11 @@ export type PricingTier = {
   sameCommunity?: boolean
   /** Only sales on the subject's own street, at close to its size. Runs first. */
   sameStreetOnly?: boolean
+  /**
+   * Mapped tracts inside 0.35 mi when MLS SubdivisionName was blank.
+   * Skipped when pocketSubdivisionNorms is empty.
+   */
+  samePocket?: boolean
   /**
    * When the community itself is exhausted at two years, another community of
    * the same kind (Matt 2026-09-09: "a Tetherow home's substitute is a Broken
@@ -127,6 +134,22 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     bathSlop: apples === 'strict' ? 1 : 2,
     disclosure:
       'These sales are in the subdivisions that touch yours, inside the same neighborhood, walked before any distance ring.',
+  })
+  const pocket = (months: number, apples: AppleStrictness): PricingTier => ({
+    name: `pocket-${months}mo`,
+    monthsBack: months,
+    maxMiles: POCKET_RADIUS_MILES,
+    sameSubdivision: false,
+    similarSubdivision: false,
+    samePocket: true,
+    apples,
+    sqftBand: 0.2,
+    ageYears: apples === 'strict' ? 15 : 25,
+    sameStory: apples === 'strict',
+    bedSlop: apples === 'strict' ? 1 : 2,
+    bathSlop: apples === 'strict' ? 1 : 2,
+    disclosure:
+      'These sales are in the mapped pockets next to this home, inside a third of a mile, walked before any mile ring.',
   })
   // The exit. Only after the subdivision, its neighbours and every ring inside
   // the boundary have run, and only when they supplied fewer than the minimum.
@@ -248,6 +271,11 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     adjacent(12, 'utilities'),
     adjacent(18, 'utilities'),
     adjacent(24, 'utilities'),
+    // Blank MLS tract: the mapped names inside 0.35 mi, before any mile ring.
+    pocket(3, 'strict'),
+    pocket(6, 'strict'),
+    pocket(9, 'utilities'),
+    pocket(12, 'utilities'),
     // The community the plat sits inside, before any ring or polygon rung.
     community(6, 'strict'),
     community(12, 'utilities'),

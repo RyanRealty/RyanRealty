@@ -1340,6 +1340,8 @@ describe('your own street comes first', () => {
         address: `${i} Tanglewood`,
         subdivision: 'Tanglewood',
         subdivisionNorm: 'tanglewood',
+        latitude: 44.12,
+        longitude: -121.3,
         sqft: 1900,
         closeDate: '2026-07-01',
       }),
@@ -1355,5 +1357,61 @@ describe('your own street comes first', () => {
     const subj = subject({ streetAddress: '23 Benaiah', sqft: 2080, subdivision: null, subdivisionNorm: null })
     const out = walkPricingLadder(subj, [big], { asOf })
     expect(out.comps.map((c) => c.listingKey)).not.toContain('BIG')
+  })
+})
+
+describe('blank SubdivisionName infers the pocket before mile rings', () => {
+  const SISTERS = { latitude: 44.2908, longitude: -121.5493, city: 'Sisters', citySlug: 'sisters' }
+
+  it('takes Rolling Horse Meadow on subdivision rungs and SaddleStone on pocket rungs before Crossroads', () => {
+    const rhm = (i: number) =>
+      sale({
+        ...SISTERS,
+        latitude: 44.2908 + 0.04 / 69,
+        longitude: -121.5493,
+        listingKey: `RHM${i}`,
+        address: `${200 + i} Rolling Horse Dr`,
+        subdivision: 'Rolling Horse Meadow',
+        subdivisionNorm: 'rolling horse meadow',
+        closeDate: '2026-06-01',
+      })
+    const saddle = sale({
+      ...SISTERS,
+      latitude: 44.2908 + 0.2 / 69,
+      listingKey: 'SAD1',
+      address: '1 SaddleStone Ln',
+      subdivision: 'SaddleStone',
+      subdivisionNorm: 'saddlestone',
+      closeDate: '2026-06-01',
+    })
+    const far = sale({
+      ...SISTERS,
+      latitude: 44.2908 + 3.7 / 69,
+      listingKey: 'FAR1',
+      address: '1 Crossroads Loop',
+      subdivision: 'Crossroads',
+      subdivisionNorm: 'crossroads',
+      closeDate: '2026-06-15',
+    })
+    const subj = subject({
+      ...SISTERS,
+      streetAddress: '1121 Canter Ct',
+      subdivision: null,
+      subdivisionNorm: null,
+    })
+    const out = walkPricingLadder(subj, [far, saddle, rhm(1), rhm(2), rhm(3)], { asOf })
+    expect(out.inferredPocket?.inferred).toBe(true)
+    expect(out.inferredPocket?.subdivision).toBe('Rolling Horse Meadow')
+    expect(out.tiersUsed.some((t) => t.startsWith('subdivision-'))).toBe(true)
+    expect(out.tiersUsed.find((t) => t.startsWith('subdivision-'))).toBeTruthy()
+    expect(out.comps.filter((c) => c.listingKey.startsWith('RHM')).every((c) => c.selectionTier.startsWith('subdivision-')))
+      .toBe(true)
+    const saddleComp = out.comps.find((c) => c.listingKey === 'SAD1')
+    expect(saddleComp?.selectionTier.startsWith('pocket-')).toBe(true)
+    expect(out.tiersUsed[0]).toMatch(/^subdivision-/)
+    const farComp = out.comps.find((c) => c.listingKey === 'FAR1')
+    if (farComp) {
+      expect(farComp.selectionTier).not.toMatch(/^nearby-/)
+    }
   })
 })
