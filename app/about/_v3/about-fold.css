@@ -283,6 +283,8 @@
   overflow: hidden;
   background: var(--v3-cream);
   color: var(--v3-navy);
+  box-shadow: none;
+  outline: 1px solid color-mix(in srgb, var(--v3-navy) 18%, var(--v3-cream));
 }
 
 .about-closings__photo {

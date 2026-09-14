@@ -102,6 +102,7 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(FOLD).toContain("flex: 0 0 min(22rem, 82vw)")
     expect(FOLD).toContain('about-closings__when')
     expect(FOLD).toContain('about-closings__specs')
+    expect(FOLD).toContain('.about-closings__card')
   })
 
   it('uses the office exterior as the mood hero, never the sofa', () => {
