@@ -1,14 +1,14 @@
 /**
  * SITE-105 fold helpers for /oregon/[city].
  *
- * Honesty first (layout lock), then a two-bar Instrument drawing + the live
- * ledger — not a three-tile KPI grid and not a static asking-price lollipop.
- * Every number here is a snapshot or tile field the page already fetched.
+ * Honesty first, then an interactive two-bar drawing (homes for sale vs a
+ * month of sales when the city pulse publishes MOS; otherwise the snapshot
+ * pair with hover). Listing rows use buyer language and a tap/hover reveal.
+ * Every number is a snapshot, pulse, or tile field the page already fetched.
  */
-import { v3Text, type V3ChartProps } from '@/components/site/v3'
-
-/** Fold every figure when a chart is carrying the answer (SITE-24). */
-export const OREGON_CITY_FIGURE_FOLD_AFTER = 0 as const
+import type { V3DrawingFigure } from '@/components/site/v3'
+import { displaySubdivision } from '@/lib/slug'
+import { formatPriceExact } from '@/lib/format/money'
 
 export function buildOregonCityTitle(input: {
   name: string
@@ -47,37 +47,94 @@ export function buildOregonCityHonestyDescription(input: {
   return `We work Central Oregon, not ${name}. Ask for a local broker introduction.`
 }
 
-export function buildOregonCityMixChart(input: {
+/** MLS plat tails a buyer does not say. */
+const PLAT_TAIL =
+  /\s+(?:subdivision|addition|estates?|plat|unit\s+no\.?\s*\d+|phase\s+\d+)\s*$/i
+
+function titleCasePlace(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/(^|[\s'/.-])([a-z])/g, (_, edge: string, letter: string) => edge + letter.toUpperCase())
+}
+
+/**
+ * Buyer-facing place line. Drops ALL-CAPS plat suffixes and title-cases
+ * what remains. Falls back to the city, never a raw MLS slug.
+ */
+export function buildOregonCityBuyerPlace(input: {
+  subdivisionName: string | null | undefined
+  city: string
+}): string {
+  const city = input.city.trim()
+  let place = displaySubdivision(input.subdivisionName) ?? ''
+  if (!place) return city
+  let next = place.trim()
+  for (let i = 0; i < 4; i += 1) {
+    const stripped = next.replace(PLAT_TAIL, '').trim()
+    if (stripped === next) break
+    next = stripped
+  }
+  const labeled = titleCasePlace(next)
+  return labeled || city
+}
+
+export function buildOregonCityListingReveal(input: {
+  yearBuilt: number | null
+  lotSizeAcres: number | null
+  garageSpaces: number | null
+  pricePerSqft: number | null
+  city: string
+}): string | null {
+  if (input.yearBuilt != null && input.yearBuilt > 1800 && input.yearBuilt < 2100) {
+    return `Built in ${input.yearBuilt}`
+  }
+  if (input.lotSizeAcres != null && Number.isFinite(input.lotSizeAcres) && input.lotSizeAcres > 0) {
+    return `${input.lotSizeAcres.toFixed(2)} acres`
+  }
+  if (input.garageSpaces != null && Number.isFinite(input.garageSpaces) && input.garageSpaces >= 1) {
+    return `${Math.round(input.garageSpaces)}-car garage`
+  }
+  if (input.pricePerSqft != null && Number.isFinite(input.pricePerSqft) && input.pricePerSqft >= 1) {
+    return `${formatPriceExact(Math.round(input.pricePerSqft))} / sqft`
+  }
+  const city = input.city.trim()
+  return city ? `In ${city}` : null
+}
+
+/**
+ * Snapshot pair when the city has no pulse MOS. Same two counts the page
+ * already prints — hover deepens each bar. Do not label this month-of-sales.
+ */
+export function buildOregonCitySupplyDrawing(input: {
   name: string
   activeAllCount: number
   activeSfrCount: number
-}): V3ChartProps | null {
+  source: string
+}): V3DrawingFigure | null {
   if (input.activeAllCount <= 0 || input.activeSfrCount <= 0) return null
   const name = input.name.trim()
   const all = input.activeAllCount
   const houses = input.activeSfrCount
+  const allLabel = all.toLocaleString('en-US')
+  const housesLabel = houses.toLocaleString('en-US')
   return {
-    caption: v3Text(`${name} listings, houses vs the whole market`),
-    claim: v3Text(
-      `${all.toLocaleString('en-US')} listings are on the market. ${houses.toLocaleString('en-US')} of them are houses.`,
-    ),
-    kind: 'bars',
-    barLabels: 'all',
-    series: [
+    key: 'oregon-city-supply',
+    draw: 'pair',
+    claim: `${allLabel} listings are on the market in ${name}. ${housesLabel} of them are houses.`,
+    caption: 'On the market vs houses',
+    source: input.source,
+    bars: [
       {
-        name: v3Text('Listings'),
-        points: [
-          {
-            value: all,
-            tick: v3Text('On the market'),
-            label: v3Text(all.toLocaleString('en-US')),
-          },
-          {
-            value: houses,
-            tick: v3Text('Houses'),
-            label: v3Text(houses.toLocaleString('en-US')),
-          },
-        ],
+        name: 'On the market',
+        value: all,
+        label: allLabel,
+        note: `${allLabel} live listings of every type in ${name}, from the statewide snapshot.`,
+      },
+      {
+        name: 'Houses',
+        value: houses,
+        label: housesLabel,
+        note: `${housesLabel} of those ${allLabel} are a house on its own lot.`,
       },
     ],
   }

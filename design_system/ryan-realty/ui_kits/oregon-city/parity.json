@@ -16,12 +16,12 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, level 1, id='top'. The place answer from ONE geo snapshot row: a two-bar drawing (on the market vs houses) with chartFirst, figures folded behind 'The counts behind the bars' so the first viewport is not a KPI grid. Labels stay plain (on the market / houses / typical ask) — no SFR jargon. A claim sentence restates the same snapshot numbers. No asking-price lollipop — photographed listings live on the Ledger immediately after this band. Its ask is PRIMARY pointing at #referral. Value my home is the wrong ask here: this city is outside our market.",
+      "section": "Pattern 1, level 1, id='top'. The place answer is an interactive two-bar drawing (V3MosBars when city pulse publishes homes-for-sale vs a month of sales; otherwise V3Drawing of the snapshot pair with hover). One supporting figure at most — never a three-tile KPI grid and never a fold that unhides tiles. Labels stay plain — no SFR jargon. A claim sentence restates the same snapshot numbers. Photographed listings live on the Ledger immediately after this band. Its ask is PRIMARY pointing at #referral. Value my home is the wrong ask here: this city is outside our market.",
       "blocking": true
     },
     {
       "name": "OregonCityHonesty",
-      "section": "SITE-105 catalog Alert on the route (app/oregon/[city]/_v3/OregonCityHonesty.tsx). id='about'. Imports and renders @/components/ui/alert as the stacked shadcn demo (icon, title, description, AlertAction outline Button) inside a rounded bordered navy/cream card — not a V3Quiet hairline strip. Title 'We don't work in <city>', description carrying the live active count from the same geo snapshot the Instrument prints, door to #referral.",
+      "section": "SITE-105 catalog Alert on the route (app/oregon/[city]/_v3/OregonCityHonesty.tsx). id='about'. Imports and renders @/components/ui/alert as the compact stacked shadcn demo (icon, title, description, AlertAction outline Button) from the installed GitHub source — not a cream Quiet-width banner, not a 375 restack of AlertAction into a slab. Title 'We don't work in <city>', description carrying the live active count from the same geo snapshot the Instrument prints, door to #referral.",
       "blocking": true
     },
     {
@@ -31,7 +31,7 @@
     },
     {
       "name": "V3Ledger",
-      "section": "Pattern 3, twice. id='listings': one figure row per live active listing, value column = list price, every row a door into the listing detail page, with the listing feed's own trace and no borrowed stamp. A row needs both a price and a street address, because the value column is a figure and formatPrice answers a missing price with an em dash that would read as one under a live-MLS trace; rows are deduped on street address, which the KB rail did too. id='other-markets': plain rows for the other top out-of-area cities, each carrying its active count and, when the snapshot published one, its median; a city with no published median says so in its own row and keeps its link either way. Its stamp is the newest refreshedAt among the rows actually rendered.",
+      "section": "Pattern 3, twice. id='listings': magazine photo cards, buyer-language place lines (not MLS plat slugs), and a hover/tap reveal with a sourced extra fact. Value column = list price, every row a door into the listing detail page, with the listing feed's own trace and no borrowed stamp. A row needs both a price and a street address; rows are deduped on street address. id='other-markets': plain rows for the other top out-of-area cities, each carrying its active count and, when the snapshot published one, its median; a city with no published median says so in its own row and keeps its link either way. Its stamp is the newest refreshedAt among the rows actually rendered.",
       "blocking": true
     },
     {
@@ -116,10 +116,11 @@
   "dataLayer": {
     "getOutOfAreaCity": "lib/data/geo/getOutOfAreaCities.ts. One row of the cached geo snapshot index (geo_snapshot_mv, geo_type='city', active_all_count >= 1, minus the Central Oregon service area and feed noise). Called in generateMetadata and again as the page's FIRST await, where a miss is notFound() before anything streams — the middleware's 308 boundary depends on that 404.",
     "getListingTiles": "lib/data/listings/. listing_tile_mv, city = <city name>, status active, limit 12, sort newest. Feeds the listings Ledger. Wrapped in withTimeoutFallback(5000) exactly as before.",
+    "getMarketPulse": "lib/data/market/getMarketPulse.ts. City pulse row for homes-for-sale vs a month of sales (docs/DATABASE_FOR_AI_AGENTS.md §0). Out-of-area cities have no pulse row today; a miss withholds MOS rather than inventing a sold pace from the snapshot.",
     "getIndexableOutOfAreaCities": "lib/data/geo/getOutOfAreaCities.ts. The indexable top set (>= 5 active, top 25 by count). Feeds generateStaticParams AND the other-markets Ledger. Wrapped in withTimeoutFallback(4000) exactly as before.",
     "isIndexableOutOfAreaCity": "lib/data/geo/getOutOfAreaCities.ts. Decides noindex in generateMetadata. The indexability policy lives in lib/out-of-area-cities.ts and this route does not restate it.",
     "submitOutOfAreaReferral": "app/actions/out-of-area-referral.ts. Bound to OutOfAreaReferralSheet. Same action, same payload keys, same tags, same non-enrolling behaviour.",
-    "note": "Every read is a DAL function (G8), each resilient-cached with its own documented fallback, so a catch here would hide a real outage behind a confident empty page. Two reads, both rendered: nothing is fetched that the page does not show. Nothing aggregates raw listings at request time."
+    "note": "Every read is a DAL function (G8), each resilient-cached with its own documented fallback, so a catch here would hide a real outage behind a confident empty page. Three reads: snapshot city, listing tiles, and city pulse for MOS. A pulse miss withholds month-of-sales and draws the snapshot pair instead. Nothing aggregates raw listings at request time."
   },
   "sectionOrder": [
     "MetadataBlock",
