@@ -10,15 +10,9 @@
   color: var(--v3-ink);
 }
 
-/* Homepage search + inventory band — keep the pulse claim in the first viewport. */
-.v3.v3-stage--inventory:has(.home-hero-search) {
-  min-height: max(60vh, 28rem);
-}
-
-@media (max-width: 40rem) {
-  .v3.v3-stage--inventory:has(.home-hero-search) {
-    min-height: max(72vh, 32rem);
-  }
+/* Compact inventory Stage: rails, not the flyover, own the first viewport. */
+.v3.v3-stage--inventory.v3-stage--compact:has(.home-hero-search) {
+  min-height: 0;
 }
 
 .v3 .home-hero-search__mode {

@@ -7,6 +7,11 @@
   padding: var(--v3-space-xl) 0 var(--v3-space-md);
 }
 
+/* First rail sits in the fold under the compact Stage. */
+.home-rails > .home-rail:first-child {
+  padding-top: var(--v3-space-sm);
+}
+
 * + .v3.home-rail,
 * + .home-rails {
   border-top: var(--v3-rule-section);
