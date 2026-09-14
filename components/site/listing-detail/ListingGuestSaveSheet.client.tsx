@@ -82,7 +82,7 @@ export function ListingGuestSaveSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="top-16">
+      <SheetContent side="right">
         <SheetHeader>
           <SheetTitle>Save this home</SheetTitle>
           <SheetDescription>

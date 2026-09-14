@@ -411,6 +411,49 @@ export function PriceCtaStrip({
         />
       </ButtonGroup>
       </div>
+      {/* SITE-21: THE ASK A BROKER CAN FULFIL.
+          Off market, Tour / Call / Text are three requests nobody can act
+          on. Connected shadcn ButtonGroup + outline Buttons; Tour label is
+          beUI action-swap. Not leftover navy/ghost rects. */}
+      <ButtonGroup
+        aria-label={offMarket ? 'Homes like this' : 'Contact about this listing'}
+        className="listing-ask-row listing-face__ask"
+      >
+        {offMarket ? (
+          <>
+            <Button variant="outline" asChild>
+              <a href={similarHref}>
+                <ActionSwapText value="homes">Homes for sale</ActionSwapText>
+              </a>
+            </Button>
+            <Button variant="outline" asChild>
+              <a href={alertsHref}>Get alerts</a>
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="outline" asChild>
+              <a href={tourHref}>
+                <ActionSwapText value="tour">Tour</ActionSwapText>
+              </a>
+            </Button>
+            {callHref ? (
+              <Button variant="outline" asChild>
+                <a href={callHref}>Call</a>
+              </Button>
+            ) : (
+              <Button variant="outline" asChild>
+                <a href={askHrefResolved}>Ask a question</a>
+              </Button>
+            )}
+            {textHref ? (
+              <Button variant="outline" asChild>
+                <a href={textHref}>Text</a>
+              </Button>
+            ) : null}
+          </>
+        )}
+      </ButtonGroup>
       </div>
 
       <div className="mt-3.5 flex flex-nowrap gap-2 overflow-x-auto no-scrollbar">
@@ -459,50 +502,6 @@ export function PriceCtaStrip({
           was a second visual language for the same house — plus a paid static
           map request per view (evaluator round five, LISTING-NOBOUNDARY-6). */}
       <div className="listing-face__actions">
-      <ButtonGroup
-        aria-label={offMarket ? 'Homes like this' : 'Contact about this listing'}
-        className="listing-ask-row listing-face__ask mt-5 w-full"
-      >
-        {/* SITE-21: THE ASK A BROKER CAN FULFIL.
-            Off market, Tour / Call / Text are three requests nobody can act
-            on. Save and Share stay — they are the next group, not this one.
-            Connected shadcn ButtonGroup + outline Buttons; Tour label is
-            beUI action-swap. Not a lone navy fill plus ghosts. */}
-        {offMarket ? (
-          <>
-            <Button variant="outline" asChild>
-              <a href={similarHref}>
-                <ActionSwapText value="homes">Homes for sale</ActionSwapText>
-              </a>
-            </Button>
-            <Button variant="outline" asChild>
-              <a href={alertsHref}>Get alerts</a>
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button variant="outline" asChild>
-              <a href={tourHref}>
-                <ActionSwapText value="tour">Tour</ActionSwapText>
-              </a>
-            </Button>
-            {callHref ? (
-              <Button variant="outline" asChild>
-                <a href={callHref}>Call</a>
-              </Button>
-            ) : (
-              <Button variant="outline" asChild>
-                <a href={askHrefResolved}>Ask a question</a>
-              </Button>
-            )}
-            {textHref ? (
-              <Button variant="outline" asChild>
-                <a href={textHref}>Text</a>
-              </Button>
-            ) : null}
-          </>
-        )}
-      </ButtonGroup>
       {showAlerts ? (
         <>
       <a

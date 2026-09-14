@@ -1,10 +1,16 @@
 'use client'
 
+import { ActionSwapText } from '@/components/motion/action-swap'
+import { Button } from '@/components/ui/button'
+import { ButtonGroup } from '@/components/ui/button-group'
 import type { Broker } from '@/lib/data/types/broker'
 
 /**
  * Mobile sticky contact bar — always visible at 390. Tour | Call | Text.
  * Cookies must not hide this (PAGE_INVENTORY ask). Desktop uses the sidebar.
+ *
+ * SITE-99: this is the installed shadcn ButtonGroup demo (connected outline
+ * Buttons, shared edges). Not leftover filled Tour chips.
  *
  * SITE-21 — WHY THE OFF-MARKET BRANCH IS HERE AND NOT IN THE PAGE.
  * This component builds its `tel:` and `sms:` hrefs in the BROWSER, from a
@@ -40,14 +46,16 @@ export default function ListingMobileContactBar({
     return (
       <div className="listing-mobile-cta" data-shown="true" data-off-market="true">
         <div className="listing-mobile-cta-inner">
-          <div className="listing-mobile-cta-actions">
-            <a href={similarHref} className="lmc-tour">
-              Homes for sale
-            </a>
-            <a href={alertsHref} className="lmc-icon" aria-label="Email me new listings like this">
-              Get alerts
-            </a>
-          </div>
+          <ButtonGroup aria-label="Homes like this" className="w-full">
+            <Button variant="outline" asChild>
+              <a href={similarHref}>
+                <ActionSwapText value="homes">Homes for sale</ActionSwapText>
+              </a>
+            </Button>
+            <Button variant="outline" asChild>
+              <a href={alertsHref}>Get alerts</a>
+            </Button>
+          </ButtonGroup>
         </div>
       </div>
     )
@@ -60,21 +68,27 @@ export default function ListingMobileContactBar({
   return (
     <div className="listing-mobile-cta" data-shown="true">
       <div className="listing-mobile-cta-inner">
-        <div className="listing-mobile-cta-actions">
-          <a href={tourHref} className="lmc-tour">
-            Tour
-          </a>
-          {tel ? (
-            <a href={`tel:${tel}`} className="lmc-icon" aria-label={`Call ${firstName}`}>
-              Call
+        <ButtonGroup aria-label="Contact about this listing" className="w-full">
+          <Button variant="outline" asChild>
+            <a href={tourHref}>
+              <ActionSwapText value="tour">Tour</ActionSwapText>
             </a>
+          </Button>
+          {tel ? (
+            <Button variant="outline" asChild>
+              <a href={`tel:${tel}`} aria-label={`Call ${firstName}`}>
+                Call
+              </a>
+            </Button>
           ) : null}
           {tel ? (
-            <a href={`sms:${tel}`} className="lmc-icon" aria-label={`Text ${firstName}`}>
-              Text
-            </a>
+            <Button variant="outline" asChild>
+              <a href={`sms:${tel}`} aria-label={`Text ${firstName}`}>
+                Text
+              </a>
+            </Button>
           ) : null}
-        </div>
+        </ButtonGroup>
       </div>
     </div>
   )

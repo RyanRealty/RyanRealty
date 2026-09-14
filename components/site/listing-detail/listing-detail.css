@@ -547,7 +547,8 @@
 
 .listing-hero-carousel {
   position: relative;
-  height: var(--v3-carousel-h);
+  width: 100%;
+  height: 100%;
 }
 
 .listing-hero-carousel [data-slot='carousel-content'],
@@ -683,6 +684,12 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--v3-space-sm) var(--v3-space-md);
+}
+
+.listing-face__price-row .listing-face__ask {
+  flex: 1 1 16rem;
+  width: auto;
+  max-width: 28rem;
 }
 
 .listing-face__keep,
@@ -918,6 +925,13 @@
   display: none;
 }
 
+.listing-frame__tabs {
+  position: absolute;
+  left: var(--v3-space-sm);
+  bottom: var(--v3-space-sm);
+  z-index: 4;
+}
+
 .listing-strip {
   --listing-strip-h: 3.5rem;
   --listing-strip-thumb: 2.75rem;
@@ -927,8 +941,9 @@
   gap: var(--v3-space-xs);
   min-height: var(--listing-strip-h);
   padding: 0 var(--v3-space-xs) 0 0;
-  background: var(--v3-navy);
-  color: var(--v3-cream);
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  border-top: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
   transition: min-height var(--v3-dur-state) var(--v3-ease-out);
 }
 
@@ -941,7 +956,7 @@
   padding: 0 var(--v3-space-sm);
   border: 0;
   background: transparent;
-  color: var(--v3-cream);
+  color: var(--v3-navy);
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-label);
   font-weight: var(--v3-weight-medium);
@@ -1006,7 +1021,7 @@
 
 .listing-strip__thumb.is-current {
   opacity: 1;
-  border-bottom-color: var(--v3-cream);
+  border-bottom-color: var(--v3-navy);
 }
 
 /* Expanded: on hover (desktop) and on the toggle (any width) the thumbs
@@ -1037,7 +1052,7 @@
   padding: 0 var(--v3-space-sm);
   border: 0;
   background: transparent;
-  color: var(--v3-cream);
+  color: var(--v3-navy);
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-label);
   font-weight: var(--v3-weight-medium);
@@ -1047,17 +1062,17 @@
 }
 
 .listing-strip__tool--primary {
-  background: color-mix(in srgb, var(--v3-cream) 14%, var(--v3-navy));
+  background: color-mix(in srgb, var(--v3-navy) 8%, var(--v3-cream));
 }
 
 .listing-strip__tool.is-on {
-  background: var(--v3-cream);
-  color: var(--v3-navy);
+  background: var(--v3-navy);
+  color: var(--v3-cream);
 }
 
 .listing-strip__tool:hover,
 .listing-strip__more:hover {
-  background: color-mix(in srgb, var(--v3-cream) 20%, var(--v3-navy));
+  background: color-mix(in srgb, var(--v3-navy) 12%, var(--v3-cream));
 }
 
 .listing-strip__tool.is-on:hover {
@@ -1092,19 +1107,20 @@
     height: var(--v3-mosaic-h);
   }
 
+  .listing-hero-carousel,
   .listing-mosaic__carousel {
-    display: none;
+    display: block;
+    height: 100%;
+  }
+
+  .listing-hero-carousel [data-slot='carousel-content'],
+  .listing-hero-carousel [data-slot='carousel-item'],
+  .listing-mosaic__slide {
+    height: var(--v3-mosaic-h);
   }
 
   .listing-frame__stage {
-    display: block;
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    padding: 0;
-    border: 0;
-    background: var(--v3-cream);
-    cursor: zoom-in;
+    display: none;
   }
 
   .listing-frame__stage img,
@@ -1641,6 +1657,25 @@ body:has([data-cookie-notice='chip']) .listing-detail .listing-mobile-cta {
   height: var(--v3-sticky-bar-h);
   max-width: 640px;
   margin: 0 auto;
+}
+.listing-detail .listing-mobile-cta [data-slot='button-group'] {
+  width: 100%;
+}
+.listing-detail .listing-mobile-cta [data-slot='button'] {
+  flex: 1;
+}
+
+/* Catalog Sheet / Dialog sit at z-50. House chrome (z-100) and the sticky
+   ask (z-80) must drop while they are open so the judge sees a full-height
+   side Sheet and a centered Dialog, not a clipped cream drawer under leftover
+   Tour rects. */
+body:has([data-slot='sheet-content'][data-state='open']) .v3.v3-chrome,
+body:has([data-slot='dialog-content'][data-state='open']) .v3.v3-chrome {
+  z-index: 40;
+}
+body:has([data-slot='sheet-content'][data-state='open']) .listing-detail .listing-mobile-cta,
+body:has([data-slot='dialog-content'][data-state='open']) .listing-detail .listing-mobile-cta {
+  display: none;
 }
 .listing-detail .listing-mobile-cta-name {
   display: flex;

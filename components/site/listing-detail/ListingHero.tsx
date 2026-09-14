@@ -134,7 +134,6 @@ export function ListingHero({
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [galleryPane, setGalleryPane] = useState<'photos' | 'floor'>('photos')
   const [carouselApi, setCarouselApi] = useState<CarouselApi>()
-  const [wide, setWide] = useState(false)
   const [embed, setEmbed] = useState<VideoEmbed | null>(null)
   const [tourOpen, setTourOpen] = useState(false)
   const [streetOpen, setStreetOpen] = useState(false)
@@ -171,10 +170,6 @@ export function ListingHero({
     hasStreetView,
   })
   const leadOpenLabel = lead?.kind === 'video' ? 'Open video' : null
-  /* The frame shows the video lead at index 0 when there is one; photos index
-     from 0 either way, and the strip's thumbs are the photos. */
-  const frameIsVideo = heroVideo != null && frame === 0
-  const framePhoto = frameIsVideo ? null : photos[frame] ?? photos[0] ?? null
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -189,14 +184,6 @@ export function ListingHero({
     if (typeof window === 'undefined') return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     setAllowAutoplay(true)
-  }, [])
-
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 64rem)')
-    const sync = () => setWide(mq.matches)
-    sync()
-    mq.addEventListener('change', sync)
-    return () => mq.removeEventListener('change', sync)
   }, [])
 
   useEffect(() => {
@@ -323,7 +310,7 @@ export function ListingHero({
   return (
     <div
       id="listing-hero-visual"
-      className={cn('listing-hero-bleed listing-frame listing-mosaic', stripOpen && 'is-strip-open', className)}
+      className={cn('listing-hero-bleed listing-frame', stripOpen && 'is-strip-open', className)}
     >
       <div className="listing-frame__media">
         {showTour ? (
@@ -342,156 +329,103 @@ export function ListingHero({
           </div>
         ) : null}
         {showMap || showTour ? null : (
-          <>
-            {wide ? null : (
-            <Carousel
-              className="listing-hero-carousel listing-mosaic__carousel"
-              opts={{ align: 'start', loop: false }}
-              setApi={setCarouselApi}
-              aria-label={addressLine ? `Photos of ${addressLine}` : 'Listing photos'}
-            >
-              <CarouselContent className="ml-0">
-                {heroVideo ? (
-                  <CarouselItem className="pl-0">
-                    <div className="listing-mosaic__slide">
-                      <VideoLayer
-                        video={heroVideo}
-                        posterUrl={photos[0]?.url}
-                        altBase={altBase}
-                        videoRef={videoRef}
-                        onTap={openLead}
-                        openLabel={leadOpenLabel ?? 'Open video'}
-                        allowAutoplay={allowAutoplay}
-                      />
-                    </div>
-                  </CarouselItem>
-                ) : null}
-                {photos.length === 0 && !heroVideo ? (
-                  <CarouselItem className="pl-0">
-                    <div
-                      className="listing-mosaic__slide listing-mosaic__slide--empty"
-                      role="img"
-                      aria-label="Photos not available yet"
-                    >
-                      <p className="listing-mosaic__empty-label">Photos not available yet</p>
-                    </div>
-                  </CarouselItem>
-                ) : null}
-                {photos.map((photo, i) => (
-                  <CarouselItem key={`${i}-${photo.url}`} className="pl-0">
-                    <button
-                      type="button"
-                      className="listing-mosaic__slide"
-                      onClick={() => openGallery(i)}
-                      aria-label={`View photo ${i + 1} of ${total}`}
-                    >
-                      <MosaicStill
-                        src={photo.url}
-                        alt={photo.caption ?? `${altBase} ${i + 1} of ${total}`}
-                        sizes={LISTING_MOSAIC_CAROUSEL_SIZES}
-                        priority={lcpPriority && i === 0}
-                      />
-                    </button>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="listing-hero-carousel__prev left-2" />
-              <CarouselNext className="listing-hero-carousel__next right-2" />
-            </Carousel>
-            )}
-
-            {wide ? (
-            <>
-            {frameIsVideo && heroVideo ? (
-              heroVideo.embedType === 'iframe' ? (
-                <div className="listing-frame__stage">
-                  <VideoLayer
-                    video={heroVideo}
-                    posterUrl={photos[0]?.url}
-                    altBase={altBase}
-                    videoRef={videoRef}
-                    onTap={openLead}
-                    openLabel={leadOpenLabel ?? 'Open video'}
-                    allowAutoplay={allowAutoplay}
-                  />
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className="listing-frame__stage"
-                  onClick={openLead}
-                  aria-label={
-                    canUnmute ? (isMuted ? 'Unmute video' : 'Mute video') : (leadOpenLabel ?? 'Open video')
-                  }
-                >
-                  <VideoLayer
-                    video={heroVideo}
-                    posterUrl={photos[0]?.url}
-                    altBase={altBase}
-                    videoRef={videoRef}
-                    onTap={openLead}
-                    openLabel={leadOpenLabel ?? 'Open video'}
-                    allowAutoplay={allowAutoplay}
-                  />
-                </button>
-              )
-            ) : framePhoto ? (
-              <button
-                type="button"
-                className="listing-frame__stage"
-                onClick={() => openGallery(frame)}
-                aria-label={`Open photo ${frame + 1} of ${total}`}
-              >
-                <MosaicStill
-                  src={framePhoto.url}
-                  alt={framePhoto.caption ?? `${altBase} ${frame + 1} of ${total}`}
-                  sizes={LISTING_MOSAIC_LEAD_SIZES}
-                  priority={lcpPriority && frame === 0}
-                />
-              </button>
-            ) : (
-              <div
-                className="listing-frame__stage listing-mosaic__lead--empty"
-                role="img"
-                aria-label="Photos not available yet"
-              >
-                <p className="listing-mosaic__empty-label">Photos not available yet</p>
-              </div>
-            )}
-            {total > 1 ? (
-              <>
-                <button
-                  type="button"
-                  className="listing-frame__step listing-frame__step--prev"
-                  onClick={() => goTo(frame - 1)}
-                  disabled={frame <= 0}
-                  aria-label="Previous photo"
-                >
-                  <span aria-hidden="true">‹</span>
-                </button>
-                <button
-                  type="button"
-                  className="listing-frame__step listing-frame__step--next"
-                  onClick={() => goTo(frame + 1)}
-                  disabled={frame >= total - 1}
-                  aria-label="Next photo"
-                >
-                  <span aria-hidden="true">›</span>
-                </button>
-              </>
-            ) : null}
-            </>
-            ) : null}
-          </>
+          <Carousel
+            className="listing-hero-carousel listing-mosaic__carousel"
+            opts={{ align: 'start', loop: false }}
+            setApi={setCarouselApi}
+            aria-label={addressLine ? `Photos of ${addressLine}` : 'Listing photos'}
+          >
+            <CarouselContent className="ml-0">
+              {heroVideo ? (
+                <CarouselItem className="pl-0">
+                  <div className="listing-mosaic__slide">
+                    <VideoLayer
+                      video={heroVideo}
+                      posterUrl={photos[0]?.url}
+                      altBase={altBase}
+                      videoRef={videoRef}
+                      onTap={openLead}
+                      openLabel={leadOpenLabel ?? 'Open video'}
+                      allowAutoplay={allowAutoplay}
+                    />
+                  </div>
+                </CarouselItem>
+              ) : null}
+              {photos.length === 0 && !heroVideo ? (
+                <CarouselItem className="pl-0">
+                  <div
+                    className="listing-mosaic__slide listing-mosaic__slide--empty"
+                    role="img"
+                    aria-label="Photos not available yet"
+                  >
+                    <p className="listing-mosaic__empty-label">Photos not available yet</p>
+                  </div>
+                </CarouselItem>
+              ) : null}
+              {photos.map((photo, i) => (
+                <CarouselItem key={`${i}-${photo.url}`} className="pl-0">
+                  <button
+                    type="button"
+                    className="listing-mosaic__slide"
+                    onClick={() => openGallery(i)}
+                    aria-label={`View photo ${i + 1} of ${total}`}
+                  >
+                    <MosaicStill
+                      src={photo.url}
+                      alt={photo.caption ?? `${altBase} ${i + 1} of ${total}`}
+                      sizes={i === 0 ? LISTING_MOSAIC_LEAD_SIZES : LISTING_MOSAIC_CAROUSEL_SIZES}
+                      priority={lcpPriority && i === 0}
+                    />
+                  </button>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="listing-hero-carousel__prev left-2" />
+            <CarouselNext className="listing-hero-carousel__next right-2" />
+          </Carousel>
         )}
 
         {openHouseLabel ? (
           <div className="listing-mosaic__open-house">{openHouseLabel}</div>
         ) : null}
+        {mediaTabItems.length > 1 ? (
+          <Tabs
+            value={mediaTab}
+            onValueChange={(next) => {
+              if (next === 'tour') {
+                const tour = otherPills.find((pill) => pill.action === 'tour')
+                if (tour) {
+                  openCaption(tour)
+                  return
+                }
+              }
+              if (next === 'floor') {
+                const floor = otherPills.find((pill) => pill.action === 'floor')
+                if (floor) {
+                  openCaption(floor)
+                  return
+                }
+              }
+              if (next === 'photos' || next === 'map' || next === 'tour' || next === 'floor') {
+                setMediaTab(next)
+              }
+            }}
+            variant="pill"
+            className="listing-frame__tabs"
+          >
+            <TabsList>
+              {mediaTabItems.map((item) => (
+                <TabsTrigger key={item.value} value={item.value}>
+                  {item.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        ) : null}
       </div>
 
-      {/* THE FILMSTRIP. A navy index of every photo under the frame; the
-          media controls ride it instead of floating on the picture. */}
+      {/* Cream index under the bleed photograph. beUI pill tabs sit on the
+          photograph (bg-card track), not on a navy filmstrip. */}
       {total > 0 || mediaTabItems.length > 0 ? (
         <div className="listing-strip" data-open={stripOpen ? 'true' : 'false'}>
           {total > 0 ? (
@@ -551,40 +485,7 @@ export function ListingHero({
                 Open
               </button>
             ) : null}
-            {mediaTabItems.length > 1 ? (
-              <Tabs
-                value={mediaTab}
-                onValueChange={(next) => {
-                  if (next === 'tour') {
-                    const tour = otherPills.find((pill) => pill.action === 'tour')
-                    if (tour) {
-                      openCaption(tour)
-                      return
-                    }
-                  }
-                  if (next === 'floor') {
-                    const floor = otherPills.find((pill) => pill.action === 'floor')
-                    if (floor) {
-                      openCaption(floor)
-                      return
-                    }
-                  }
-                  if (next === 'photos' || next === 'map' || next === 'tour' || next === 'floor') {
-                    setMediaTab(next)
-                  }
-                }}
-                variant="pill"
-                className="listing-strip__tabs"
-              >
-                <TabsList>
-                  {mediaTabItems.map((item) => (
-                    <TabsTrigger key={item.value} value={item.value}>
-                      {item.label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            ) : primaryPill ? (
+            {mediaTabItems.length > 1 ? null : primaryPill ? (
               <button
                 type="button"
                 className="listing-strip__tool listing-strip__tool--primary"
