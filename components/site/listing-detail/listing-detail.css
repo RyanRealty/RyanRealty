@@ -526,12 +526,7 @@
 }
 
 .listing-mosaic__carousel {
-  display: flex;
-  height: var(--v3-carousel-h);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
+  height: 100%;
 }
 
 .listing-mosaic .v3-carousel.listing-mosaic__carousel {
@@ -553,7 +548,13 @@
 
 .listing-hero-carousel [data-slot='carousel-content'],
 .listing-hero-carousel [data-slot='carousel-item'] {
-  height: var(--v3-carousel-h);
+  height: 100%;
+}
+
+.listing-hero-carousel [data-slot='carousel-item'],
+.listing-mosaic__slide {
+  width: 100%;
+  min-width: 100%;
 }
 
 .listing-hero-carousel__prev {
@@ -1109,7 +1110,6 @@
 
   .listing-hero-carousel,
   .listing-mosaic__carousel {
-    display: block;
     height: 100%;
   }
 
@@ -1117,6 +1117,8 @@
   .listing-hero-carousel [data-slot='carousel-item'],
   .listing-mosaic__slide {
     height: var(--v3-mosaic-h);
+    width: 100%;
+    min-width: 100%;
   }
 
   .listing-frame__stage {

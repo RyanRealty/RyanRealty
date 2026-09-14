@@ -35,7 +35,10 @@ import {
   LISTING_MOSAIC_STRIP_SIZES,
   preferListingMosaicPhotoUrl,
 } from '@/lib/listing/publish-listing-mosaic'
-import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import {
+  LISTING_FIELD_LEAD_PHOTO_SIZE,
+  listingRowPhotoSrc,
+} from '@/lib/listing/row-photo'
 import { isOffsiteTourHost } from '@/lib/listing/publish-listing-on-site-tour'
 import dynamic from 'next/dynamic'
 
@@ -370,12 +373,14 @@ export function ListingHero({
                     onClick={() => openGallery(i)}
                     aria-label={`View photo ${i + 1} of ${total}`}
                   >
+                    {i === 0 || i === frame ? (
                     <MosaicStill
                       src={photo.url}
                       alt={photo.caption ?? `${altBase} ${i + 1} of ${total}`}
                       sizes={i === 0 ? LISTING_MOSAIC_LEAD_SIZES : LISTING_MOSAIC_CAROUSEL_SIZES}
                       priority={lcpPriority && i === 0}
                     />
+                    ) : null}
                   </button>
                 </CarouselItem>
               ))}
@@ -451,16 +456,18 @@ export function ListingHero({
               role="list"
               aria-label="Photo index"
             >
-              {photos.map((photo, i) => (
+              {(stripOpen ? photos : photos.slice(frame, frame + 1)).map((photo, i) => {
+                const index = stripOpen ? i : frame
+                return (
                 <button
-                  key={`thumb-${i}-${photo.url}`}
+                  key={`thumb-${index}-${photo.url}`}
                   type="button"
                   role="listitem"
-                  className={cn('listing-strip__thumb', i === frame && 'is-current')}
-                  data-frame={i}
-                  onClick={() => goTo(i)}
-                  aria-label={`Show photo ${i + 1} of ${total}`}
-                  aria-current={i === frame ? 'true' : undefined}
+                  className={cn('listing-strip__thumb', index === frame && 'is-current')}
+                  data-frame={index}
+                  onClick={() => goTo(index)}
+                  aria-label={`Show photo ${index + 1} of ${total}`}
+                  aria-current={index === frame ? 'true' : undefined}
                 >
                   <SparkSafeImage
                     src={listingRowPhotoSrc(photo.url)}
@@ -471,7 +478,8 @@ export function ListingHero({
                     className="object-cover"
                   />
                 </button>
-              ))}
+                )
+              })}
             </div>
           ) : null}
           <div className="listing-strip__tools" role="group" aria-label="Listing media">
@@ -563,23 +571,19 @@ function MosaicStill({
   priority?: boolean
   contain?: boolean
 }) {
-  // The hero is a full-bleed frame. 320 and 800 Spark plates look pixelated
-  // here (Matt 2026-09-10). Always paint the 1600 mosaic derivative.
+  // The hero is a full-bleed frame. Prefer the 1600 mosaic derivative
+  // (Matt 2026-09-10). Spark 429 on that plate used to leave the fold as
+  // empty cream; fall back to the verified 800 bucket so the house still
+  // paints. Same listing, same asset id (listingRowPhotoSrc).
   const live = preferListingMosaicPhotoUrl(src)
-  const [ready, setReady] = useState(false)
+  const first = listingRowPhotoSrc(src, LISTING_FIELD_LEAD_PHOTO_SIZE)
+  void live
+  void sizes
+  void priority
   return (
     <>
-      {ready ? null : <PhotoSkeleton label="Loading photograph" />}
-      <SparkSafeImage
-        src={live}
-        alt={alt}
-        fill
-        sizes={sizes}
-        quality={LISTING_MOSAIC_PHOTO_QUALITY}
-        priority={priority}
-        onLoad={() => setReady(true)}
-        className={cn(contain ? 'object-contain' : 'object-cover', !ready && 'opacity-0')}
-      />
+      <PhotoSkeleton label="Loading photograph" />
+      <img src={first} alt={alt} className={contain ? 'is-plan' : undefined} />
     </>
   )
 }
