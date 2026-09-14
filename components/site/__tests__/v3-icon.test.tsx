@@ -35,6 +35,7 @@ describe('V3Icon', () => {
       'ArrowRight',
       'Home',
       'HomeSale',
+      'InfoCircle',
       'Building',
       'Instagram',
       'Facebook',

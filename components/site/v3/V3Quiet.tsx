@@ -82,6 +82,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 import {
   V3Eyebrow,
   V3Figure,
@@ -328,10 +329,10 @@ type V3QuietNaming =
     }
 
 /**
- * Honesty banner adapted from shadcn Alert (SITE-76 / oregon-city). Title +
- * description keep the catalog composition; the optional action is AlertAction
- * (a real door, usually the referral). Painted navy/cream in V3Quiet.css — not
- * a yellow callout.
+ * Honesty banner from the installed shadcn Alert (SITE-76 / SITE-105). The
+ * catalog object stays: icon, rounded bordered container, title, description,
+ * AlertAction. House CSS paints navy/cream only — not a yellow callout, and
+ * not a flattened Quiet hairline strip.
  */
 export type V3QuietAlert = {
   title: string
@@ -845,6 +846,7 @@ export function V3Quiet({
 
       {alertRenderable ? (
         <Alert className="v3-quiet__alert">
+          <V3Icon name="InfoCircle" size={16} className="v3-quiet__alert-icon" />
           <AlertTitle className="v3-quiet__alert-title">{alertTitle}</AlertTitle>
           <AlertDescription className="v3-quiet__alert-body">
             {alertBody.map((line, lineIndex) => (
@@ -853,9 +855,11 @@ export function V3Quiet({
           </AlertDescription>
           {alertActionLabel && alertActionHref ? (
             <AlertAction className="v3-quiet__alert-action">
-              <Link href={alertActionHref} className="v3-quiet__alert-link">
-                {alertActionLabel}
-              </Link>
+              <Button asChild variant="outline" size="sm">
+                <Link href={alertActionHref} className="v3-quiet__alert-link">
+                  {alertActionLabel}
+                </Link>
+              </Button>
             </AlertAction>
           ) : null}
         </Alert>

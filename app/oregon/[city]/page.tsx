@@ -7,13 +7,13 @@
  * (Medford, Grants Pass, Klamath Falls, ...): honest copy that says this is not our
  * market, the live inventory the feed reports, and a referral capture.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. SITE-76
- * honesty-first fold: Quiet (Alert honesty banner + home-market doors), then
- * Instrument (live counts + ask strip), Ledger (listings), Sheet (referral),
- * Ledger (other Oregon markets), Footer. FOUR of the six patterns, no two adjacent
- * alike, chrome exempt. Section ids stay: about, top, listings, referral,
- * other-markets. The parity contract is
- * design_system/ryan-realty/ui_kits/oregon-city/parity.json.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. SITE-105
+ * honesty-first fold: catalog Alert (compact stacked shadcn, not a cream banner), then
+ * Instrument (interactive two-bar drawing, no KPI grid, no fold-unhide),
+ * Ledger (magazine listings), Sheet (referral), Ledger (other Oregon markets),
+ * Footer. FOUR of the six patterns, no two adjacent alike, chrome exempt.
+ * Section ids stay: about, top, listings, referral, other-markets. The parity
+ * contract is design_system/ryan-realty/ui_kits/oregon-city/parity.json.
  *
  * THE PAGE CONTRACT, CARRIED ACROSS UNCHANGED. Route and params; `revalidate = 3600`;
  * `dynamicParams = true`; `generateStaticParams` seeding the indexable top set;
@@ -70,10 +70,13 @@
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getListingTiles } from '@/lib/data'
+import { getListingTiles, getMarketPulse } from '@/lib/data'
 import { classifyInventoryPropertyType } from '@/lib/inventory-filters'
 import { publishCardAddress } from '@/lib/listing/publish-street-line'
-import { displaySubdivision, homesForSalePath, listingTileHref } from '@/lib/slug'
+import { homesForSalePath, listingTileHref } from '@/lib/slug'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { buildPlaceMosView } from '@/lib/site/place-mos'
 import {
   getOutOfAreaCity,
   getIndexableOutOfAreaCities,
@@ -90,19 +93,28 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
+  V3Drawing,
   V3Instrument,
   V3Ledger,
+  V3MosBars,
   V3Quiet,
   V3SectionTracker,
-  type V3ChartProps,
-  type V3ChartRangeRow,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { OregonCityHonesty } from './_v3/OregonCityHonesty'
 import { OutOfAreaReferralSheet } from './_v3/OutOfAreaReferralSheet.client'
 import { listingRowPhotoSrc } from './_v3/listing-row-photo'
+import {
+  buildOregonCityBuyerPlace,
+  buildOregonCityClaim,
+  buildOregonCityItemListName,
+  buildOregonCityListingReveal,
+  buildOregonCitySupplyDrawing,
+  buildOregonCityTitle,
+} from './_v3/oregon-city-fold'
 import './oregon-city.css'
 
 type Params = { city: string }
@@ -155,7 +167,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   }
   const indexable = await isIndexableOutOfAreaCity(slug)
   return pageMetadata({
-    title: `${city.name} homes for sale — outside our market`,
+    title: buildOregonCityTitle({ name: city.name, activeAllCount: city.activeAllCount }),
     description: `${city.activeAllCount} live ${city.name} listings from the statewide MLS. Ryan Realty works Central Oregon, not ${city.name}. Browse the inventory, then ask for a local broker introduction.`,
     path: `/oregon/${city.slug}`,
     noindex: !indexable,
@@ -174,7 +186,9 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   const pagePath = `/oregon/${city.slug}`
   const browsePath = homesForSalePath(city.name)
 
-  const [tiles, indexableCities] = await Promise.all([
+  const cacheSlug = canonicalCityCacheSlug(city.name)
+
+  const [tiles, indexableCities, pulse] = await Promise.all([
     // Live inventory via the existing browse machinery (listing_tile_mv). The
     // explicit city predicate exempts the service-area allowlist by design.
     withTimeoutFallback(
@@ -189,6 +203,15 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
       4000,
       'oregon-city:index',
     ),
+    // Second-shaped MOS read (docs/DATABASE_FOR_AI_AGENTS.md §0). Snapshot
+    // has no sold pace. Pulse is Central Oregon only today; a miss stays a
+    // miss — do not invent month-of-sales from actives alone.
+    withTimeoutFallback(
+      getMarketPulse({ geoType: 'city', geoSlug: cacheSlug }),
+      null,
+      4000,
+      'oregon-city:pulse',
+    ),
   ])
 
   // ── The place answer. All three figures are one snapshot row, which is exactly
@@ -198,29 +221,56 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   // nothing else was the banned KPI grid, and it made ~360 city pages read as one
   // template with the noun swapped. Section 0: every sentence explains the figure it
   // sits under and introduces no number of its own.
+  const snapshotTrace =
+    `live listings from the statewide Oregon MLS feed, pre-aggregated as one snapshot row for ${city.name}. ` +
+    'The count covers all property types. The median covers active single-family listings only.'
+
+  const publishedMos =
+    pulse != null
+      ? publishMonthsOfSupply({
+          grain: 'city',
+          pulseMos: pulse.monthsOfSupply,
+          pulseActiveCount: pulse.activeCount,
+          displayedActiveCount: pulse.activeCount,
+        })
+      : null
+  const placeMos =
+    publishedMos != null && pulse != null
+      ? buildPlaceMosView({
+          active: pulse.activeCount,
+          monthsSupply: publishedMos,
+          grain: 'city',
+          geoSlug: cacheSlug,
+          asOf: pulse.refreshedAt ?? null,
+        })
+      : null
+  const supplyDrawing = placeMos
+    ? null
+    : buildOregonCitySupplyDrawing({
+        name: city.name,
+        activeAllCount: city.activeAllCount,
+        activeSfrCount: city.activeSfrCount,
+        source: snapshotTrace,
+      })
+
+  // One supporting figure only. A three-tile KPI grid is the banned open
+  // state. Counts live on the bars; typical ask is the leftover snapshot
+  // figure the drawing does not carry.
   const figures: V3InstrumentFigure[] = []
-  if (city.activeAllCount > 0) {
+  if (city.medianListPrice != null) {
+    figures.push({
+      value: v3Text(formatPrice(city.medianListPrice)),
+      label: v3Text('typical ask'),
+      sentence: v3Text('Half of the houses on the market ask more than this, half ask less.'),
+    })
+  } else if (city.activeAllCount > 0) {
     figures.push({
       value: v3Text(city.activeAllCount.toLocaleString('en-US')),
-      label: v3Text('active listings, all property types'),
+      label: v3Text('on the market'),
       href: browsePath,
       sentence: v3Text(
         `Everything on the market in ${city.name} right now, houses and condos and bare land together.`,
       ),
-    })
-  }
-  if (city.activeSfrCount > 0) {
-    figures.push({
-      value: v3Text(city.activeSfrCount.toLocaleString('en-US')),
-      label: v3Text('active single-family listings'),
-      sentence: v3Text('Of those, the ones that are a house on its own lot.'),
-    })
-  }
-  if (city.medianListPrice != null) {
-    figures.push({
-      value: v3Text(formatPrice(city.medianListPrice)),
-      label: v3Text('median single-family list price'),
-      sentence: v3Text('Half of those houses ask more than this, half ask less.'),
     })
   }
   const [firstFigure, ...restFigures] = figures
@@ -228,9 +278,6 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   // H1 stays the search phrase. Honesty lives in the Alert above (SITE-76), so
   // this band does not restate "we don't work here" as a second display title.
   const headline = `Homes for sale in ${city.name}, Oregon`
-  const snapshotTrace =
-    `live listings from the statewide Oregon MLS feed, pre-aggregated as one snapshot row for ${city.name}. ` +
-    'The count covers all property types. The median covers active single-family listings only.'
 
   // ── Live listings. A row needs a price and an address, because the value column
   // is a figure and the row text is its name: formatPrice answers a missing price
@@ -285,91 +332,34 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
         ]
           .filter(Boolean)
           .join(' · ')
+    const revealLine = buildOregonCityListingReveal({
+      yearBuilt: tile.yearBuilt,
+      lotSizeAcres: isLand ? null : tile.lotSizeAcres,
+      garageSpaces: tile.garageSpaces,
+      pricePerSqft: tile.pricePerSqft,
+      city: tile.city ?? city.name,
+    })
     listingRows.push({
       href: listingTileHref(tile),
-      when: v3Text(displaySubdivision(tile.subdivisionName) ?? tile.city ?? city.name),
+      when: v3Text(buildOregonCityBuyerPlace({ subdivisionName: tile.subdivisionName, city: city.name })),
       what: v3Text(address),
       detail: meta ? v3Text(meta) : undefined,
       value: v3Text(formatPrice(price)),
       id: tile.listingKey,
-      // The listing's own photograph, at the size this row draws it. See
-      // ./_v3/listing-row-photo.ts: same asset, one path token, 30 KB instead
-      // of 331 KB. A row whose listing has no photo passes no media at all and
-      // takes the glyph tile, which is the designed empty state, not a blank.
-      ...(tile.photoUrl?.trim() ? { media: { src: listingRowPhotoSrc(tile.photoUrl) } } : {}),
+      // Magazine cards draw hundreds of CSS pixels. 320x240 is the hairline
+      // thumb; 800x600 is the verified card plate (lib/listing/row-photo.ts).
+      ...(tile.photoUrl?.trim()
+        ? { media: { src: listingRowPhotoSrc(tile.photoUrl, '800x600') } }
+        : {}),
+      ...(revealLine ? { reveal: { line: v3Text(revealLine) } } : {}),
     })
   }
   const [firstListingRow, ...restListingRows] = listingRows
 
-  // ── THE PLACE MARK (SITE-41). ────────────────────────────────────────────────
-  // Three numbers under a heading is the same screen for Medford, Salem and the
-  // ~360 other cities this one file renders: nothing on it belongs to the place it
-  // names. This is the one drawing that does. Every row is a real street in this
-  // city at the price it is actually asking, so the shape of the strip, the names
-  // down its side and the spread across it are all this town's and nobody else's.
-  //
-  // Section 0: the rows ARE the population — the same live tiles the Ledger below
-  // prints, same dedupe, newest first, capped at eight so the strip stays readable
-  // and the trace says so. No median rule is drawn across it: the snapshot's median
-  // covers single-family listings only and these rows are every property type, and
-  // one scale carrying two populations is a comparison that is not true.
-  const STRIP_ROWS = 8
-  const stripRows: V3ChartRangeRow[] = listingRows.slice(0, STRIP_ROWS).flatMap((row) => {
-    const tile = tiles.find((t) => t.listingKey === row.id)
-    const price = tile?.listPrice
-    // §0: formatPrice rounds to the nearest $1,000, so a genuine but tiny raw price
-    // (a $200 land-listing typo, a placeholder value from the statewide feed) would
-    // print "$0" on this strip — a rounding that changes the narrative from "priced
-    // low" to "free," which section 0 forbids outright. 500 is the floor below which
-    // formatPrice's rounding can reach zero; anything under it is withheld here the
-    // same way a missing price already is, never printed as a false $0.
-    if (!tile || price == null || !Number.isFinite(price) || price < 500) return []
-    // The tick drops the street SUFFIX on purpose (TASTE.md's named 375 failure: the
-    // full address — "2905 El Dorado Drive" — truncated to an ellipsis inside the
-    // fixed-width tick column at 375). Number plus street name still names a real,
-    // distinct street; the full address (suffix included) stays in the Ledger below.
-    const street = [tile.streetNumber, tile.streetName].filter(Boolean).join(' ').trim()
-    if (!street) return []
-    return [
-      {
-        tick: v3Text(street),
-        value: price,
-        label: v3Text(formatPrice(price)),
-        ...(row.detail ? { note: row.detail } : {}),
-      },
-    ]
-  })
-  // Ordered by price, not by age. The population is the newest listings; the ORDER
-  // is what the strip is for. Left as the feed's newest-first order the rows read as
-  // noise, and a set of named things on one scale is a ranking or it is nothing
-  // (the dataviz skill's form-from-the-job rule).
-  stripRows.sort((a, b) => b.value - a.value)
-  const stripPrices = stripRows.map((r) => r.value).sort((a, b) => a - b)
-  const stripLow = stripPrices[0]
-  const stripHigh = stripPrices[stripPrices.length - 1]
-  const askStrip: V3ChartProps | undefined =
-    stripRows.length >= 3 && stripLow != null && stripHigh != null
-      ? {
-          caption: v3Text(`What the newest listings in ${city.name} are asking`),
-          kind: 'range',
-          claim: v3Text(
-            stripLow === stripHigh
-              ? `The newest listings here all ask ${formatPrice(stripLow)}.`
-              : `Asking prices on the newest listings run from ${formatPrice(stripLow)} to ${formatPrice(stripHigh)}.`,
-          ),
-          rows: stripRows,
-          id: 'top-asks',
-        }
-      : undefined
-  // The strip's own clause, appended to the snapshot trace only when the strip
-  // draws: the figures and the rows are two different reads of one feed, and the
-  // trace has to cover both or it covers the wrong one.
-  const stripTrace = askStrip
-    ? `The strip beside them is a separate live read: the ${stripRows.length} newest active listings in ${city.name} with both a price and a street address, every property type, at their asking price as listed.`
-    : ''
-  // "listing," not "home": a bare parcel can reach this set (see the
-  // isLand branch above), and the trace must not claim a population it does
-  // not print.
+  // SITE-105: live inventory belongs on the Ledger (photographs + price +
+  // address + beds/baths/sqft), not as a static asking-price lollipop that
+  // hides the houses. The Instrument keeps the snapshot figures; foldAfter
+  // leaves one lead count on screen so the first viewport is not a KPI grid.
   const listingTrace = `live MLS listing feed, active listings in ${city.name}, newest first, one row per listing`
   // §0: this Ledger and the Instrument's "active listings" figure above are
   // two different reads of the same live feed — the Instrument is the
@@ -457,7 +447,11 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
       type: 'itemList',
       name: `Newest ${city.name} listings`,
       items: listingRows.slice(0, 12).map((row) => ({
-        name: String(row.what),
+        name: buildOregonCityItemListName({
+          address: String(row.what),
+          price: String(row.value),
+          detail: row.detail ? String(row.detail) : undefined,
+        }),
         url: row.href,
       })),
     })
@@ -478,25 +472,10 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
           ]}
         />
 
-        {/* Honesty first (SITE-76): Alert-only Quiet so live inventory can share
-            the first viewport at 375. Live count traces to the same snapshot row
+        {/* Honesty first (SITE-105): catalog Alert on the route (_v3), not a
+            house-only Quiet import. Live count traces to the same snapshot row
             the Instrument prints. Home-market doors follow the place answer. */}
-        <V3Quiet
-          id="about"
-          ariaLabel={`We don't work in ${city.name}`}
-          alert={{
-            title: `We don't work in ${city.name}`,
-            description:
-              city.activeAllCount > 0
-                ? `${city.activeAllCount.toLocaleString('en-US')} live listings below are from the statewide MLS. We work Central Oregon, not ${city.name}. Ask for a local broker introduction.`
-                : `We work Central Oregon, not ${city.name}. Ask for a local broker introduction.`,
-            action: {
-              label: 'Get a broker introduction',
-              href: '#referral',
-            },
-          }}
-          items={[]}
-        />
+        <OregonCityHonesty id="about" cityName={city.name} liveCount={city.activeAllCount} />
 
         {firstFigure ? (
           <V3Instrument
@@ -504,12 +483,17 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
             level={1}
             eyebrow={v3Text(`${city.name} · Oregon`)}
             headline={v3Text(headline)}
+            note={v3Text(
+              buildOregonCityClaim({
+                name: city.name,
+                activeAllCount: city.activeAllCount,
+                activeSfrCount: city.activeSfrCount,
+                medianAsk: city.medianListPrice != null ? formatPrice(city.medianListPrice) : null,
+              }),
+            )}
             figures={[firstFigure, ...restFigures]}
-            chart={askStrip}
-            // SITE-76: put the named asking-price strip in the first viewport at
-            // 375 so mobile is not three static tiles under the honesty Alert.
-            chartFirst={Boolean(askStrip)}
-            source={v3Text(askStrip ? `${snapshotTrace} ${stripTrace}` : snapshotTrace)}
+            chartFirst={placeMos != null || supplyDrawing != null}
+            source={v3Text(snapshotTrace)}
             sourceName={v3Text('Oregon Data Share MLS')}
             asOf={city.refreshedAt ?? undefined}
             updated={city.refreshedAt ? v3Text(formatDate(city.refreshedAt)) : undefined}
@@ -519,6 +503,27 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
               label: v3Text('Get a broker introduction'),
               href: '#referral',
             }}
+            drawing={
+              placeMos ? (
+                <V3MosBars
+                  id="oregon-city-mos"
+                  caption={placeMos.caption}
+                  plainLabel={placeMos.plainLabel}
+                  homesName={placeMos.homesName}
+                  homesLabel={placeMos.homesLabel}
+                  homesValue={placeMos.homesValue}
+                  salesName={placeMos.salesName}
+                  salesLabel={placeMos.salesLabel}
+                  salesValue={placeMos.salesValue}
+                  source={placeMos.source}
+                  asOf={placeMos.asOf}
+                  sourceName="Oregon Data Share MLS"
+                  tooltip={placeMos.tooltip}
+                />
+              ) : supplyDrawing ? (
+                <V3Drawing id="oregon-city-supply" figures={[supplyDrawing]} label={`${city.name} listings`} />
+              ) : null
+            }
           />
         ) : (
           <V3Quiet
@@ -535,13 +540,6 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
           />
         )}
 
-        {/* Home-market doors stay crawlable; parked under the place answer so
-            the Alert + Instrument can share the first viewport at 375. */}
-        <V3Quiet
-          ariaLabel={`Our Central Oregon home market from ${city.name}`}
-          items={[...HOME_MARKET_EDGES]}
-        />
-
         {firstListingRow ? (
           <V3Ledger
             id="listings"
@@ -552,6 +550,7 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
                At the pattern's default 44px it was a grey smudge that an
                evaluator read as a broken image on ten of twelve Medford rows,
                and it was pixel-for-pixel the box a photo-less row draws. */
+            layout="magazine"
             media="photo"
             note={listingsNote ? v3Text(listingsNote) : undefined}
             source={v3Text(listingTrace)}
@@ -575,6 +574,13 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
             }}
           />
         )}
+
+        {/* Home-market doors stay crawlable; after live inventory so the
+            first viewport can show photographed listings, not a door grid. */}
+        <V3Quiet
+          ariaLabel={`Our Central Oregon home market from ${city.name}`}
+          items={[...HOME_MARKET_EDGES]}
+        />
 
         {/* Referral capture — geo:out-of-area, nothing auto-sends. */}
         <OutOfAreaReferralSheet citySlug={city.slug} cityName={city.name} />

@@ -2795,6 +2795,10 @@
     },
     "oregon-city": {
       "layoutLock": "Honesty first: this is not our market. Live inventory the feed reports, then a referral. Do not paint a Central Oregon place page onto Medford. A city stand-in for a school or a tour CTA that contradicts we-don't-work-here is a fail.",
+      "demoStates": [
+        "figures-open=#top .v3-instrument__drawing button!hover",
+        "listings=#listings"
+      ],
       "modules": [
         {
           "id": "house-instrument",
