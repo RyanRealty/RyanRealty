@@ -155,7 +155,7 @@ export function TextMattCTA({
 
         <ButtonGroup
           aria-label={offMarket ? 'Ask about this listing' : 'Contact about this listing'}
-          className="w-full pt-1"
+          className="w-full gap-0 pt-1"
         >
           <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
             <a href={tourHref}>

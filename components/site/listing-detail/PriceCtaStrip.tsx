@@ -390,7 +390,7 @@ export function PriceCtaStrip({
         </div>
       ) : null}
       <div className="listing-face__price-row">
-      <ButtonGroup aria-label="Save or share this listing" className="listing-face__keep">
+      <ButtonGroup aria-label="Save or share this listing" className="listing-face__keep gap-0">
         <ListingSaveButton saveState={saveState} onSave={handleSave} ariaLabel={saveAriaLabel} />
         <ListingShareButton
           onShare={handleShare}
@@ -403,7 +403,7 @@ export function PriceCtaStrip({
           beUI action-swap. Hidden under 64rem — the sticky bar is that ask. */}
       <ButtonGroup
         aria-label={offMarket ? 'Homes like this' : 'Contact about this listing'}
-        className="listing-ask-row listing-face__ask"
+        className="listing-ask-row listing-face__ask gap-0"
       >
         {offMarket ? (
           <>

@@ -1,11 +1,11 @@
-# Current — 2026-09-14 (SITE-99 open pixels; do not merge)
+# Current — 2026-09-14 (SITE-99 dim Sheet/Dialog; do not merge)
 
 Surface: Cursor cloud, `cursor/site-99-listing-save-share-a8e8`. PR #227. Do not merge.
 
-- **Done:** Full-height Sheet (no top-16), sticky Tour/Call/Text is ButtonGroup, carousel slide width fixed so the bleed house paints, beUI pills on the photo. Open shots hashed `sha256:e85e3da6cf471278e39cacf7d1a22e55e80361274f7ffedcc58b6d3379bc95eb`.
-- **Next:** A reachable Mini Cursor judge must write `demoMatch`. Do not invent it. Leave SITE-99 in_progress until `--ship` exits 0.
+- **Done:** Catalog overlay is `bg-foreground/50` with no frost. Save is a full-height right Sheet. Share/gallery are centered Dialogs. Fold ask is a compact ButtonGroup. Shots hashed `sha256:9d60b274744beaf2caaf19df3158cce10aadce64b86d0f68b62ae9b70497a7e9`.
+- **Next:** Mini Cursor judge must write `demoMatch`. This VM: cursor-agent not logged in; grok and claude CLIs missing. Do not invent. Leave SITE-99 in_progress until `--ship` exits 0.
 - **Node:** SITE-99 `207ffae3-5242-4446-9e3b-1728dd7220f2` owner `cursor-cloud-site99-20260914`.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, walkthrough-artifacts.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, walkthrough-artifacts.
 
 # Prior
 
