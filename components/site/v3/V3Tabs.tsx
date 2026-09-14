@@ -86,10 +86,13 @@ export function V3Tabs({
       >
         <TabsList className="v3-tabs__list">
           {fromItems.map((row) => (
-            <div
+            <label
               key={row.value}
               className="v3-tabs__hit"
               data-demo={`${row.value}-tab`}
+              id={row.value === 'sell' ? 'home-hero-sell-tab' : undefined}
+              htmlFor={row.htmlFor}
+              onClick={() => checkRadio(row.htmlFor)}
             >
               <TabsTrigger
                 value={row.value}
@@ -98,16 +101,7 @@ export function V3Tabs({
               >
                 {row.label}
               </TabsTrigger>
-              {row.htmlFor ? (
-                <label
-                  htmlFor={row.htmlFor}
-                  className="v3-tabs__native"
-                  onClick={() => checkRadio(row.htmlFor)}
-                >
-                  <span className="v3-tabs__native-text">{row.label}</span>
-                </label>
-              ) : null}
-            </div>
+            </label>
           ))}
         </TabsList>
       </Tabs>
