@@ -109,10 +109,13 @@ checks.push({
 })
 
 checks.push({
+  // SITE-99 moved the title into listingDocumentTitle (beds/baths + street) but
+  // statusWord still leads for off-market rows — the old inline ternary is gone.
   label: 'SITE-20 generateMetadata prefixes the status word on the title and the description',
   ok:
     /publishListingStatusWord\(listing\.status\)/.test(page) &&
-    /statusWord \? `\$\{statusWord\} · \$\{addressTitle\}` : addressTitle/.test(page) &&
+    /listingDocumentTitle\(\{[^}]*statusWord/s.test(page) &&
+    /listingShareSummary\(\{[\s\S]*?statusWord,/s.test(page) &&
     /statusWord,/.test(page),
 })
 
