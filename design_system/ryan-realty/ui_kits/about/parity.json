@@ -147,11 +147,21 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-12",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "Mini 2026-09-14: npx tsx scripts/taste-evaluate.ts about with Cursor grok-4.6. Exit 2. Tip Ready refused. Craft fixes applied on this PR. Cos re-runs evaluate on Mini. Do not invent demoMatch or competitiveBriefPass.",
+    "evaluator": "Mini 2026-09-14 re-eval cursor-grok-4.6: competitiveBriefPass true, demoMatch false, score 55 on shotsHash sha256:f95a3b74. Craft after that fire (office Card demo, catalog Input+Button, OnDuty clip, house-firm claim). Cos re-runs. Do not invent demoMatch.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
     "demoMatch": false,
-    "competitiveBriefPass": false,
+    "competitiveBriefPass": true,
+    "competitiveBriefEvidence": {
+      "1": "Ryan Realty is a boutique brokerage in Central Oregon that helps clients buy and sell their properties.",
+      "2": "The brokers are on /team. No broker roster on About.",
+      "3": "V3Proof reviews and the FirmClosings carousel of recorded sales.",
+      "4": "Call / Text / Email / Schedule on one equal four-up.",
+      "5": "Bend office 115 NW Oregon Ave #2.",
+      "6": "Firm OREA license. Inquiry GET /contact.",
+      "7": "Navy and cream only. Redfin is the layout reference.",
+      "8": "Real shadcn carousel + Card and inquiry input, not a cream-box Avatar."
+    },
     "shotSpec": {
       "routes": [
         "/about"
@@ -180,7 +190,7 @@
       57
     ],
     "score": 52,
-    "beats": "Lock under test: firm-story hero, V3Proof Google reviews as the first proof band, dated local closings carousel, Contact four-up, office 115 NW Oregon Ave #2 + firm OREA. A faces-first / Meet-the-Team About fails this class. Cos still owns the score. demoMatch is false. competitiveBriefPass is false.",
+    "beats": "Mini re-eval: competitiveBriefPass true. demoMatch false. Lock under test: house-firm claim opener, V3Proof, Card closings rail, equal four-up, office Card photo/facts, catalog Input. Cos still owns the next score.",
     "adaptedFrom": [
       { "id": "house-firm" },
       { "id": "house-proof" },
@@ -190,25 +200,31 @@
       { "id": "shadcn-carousel" },
       { "id": "shadcn-input" }
     ],
-    "evaluatorBlocked": "Mini 2026-09-14 Cursor grok-4.6 taste-evaluate exited 2 (Tip Ready refused). Three defects recorded below. Craft on this PR: FirmClosings Card slides, AboutInquiry shadcn Input, AboutOffice OREA once. Cos re-runs evaluate on Mini. Do not invent demoMatch or competitiveBriefPass. --ship stays 1. Scores 52/47/57 are the prior instrument, not this fire.",
+    "evaluatorBlocked": "Mini 2026-09-14 re-eval cursor-grok-4.6: competitiveBriefPass true, demoMatch false, score 55. Tip Ready refused on demoMatch. Craft on this PR for the four demoMatch blockers. Cos re-runs evaluate. Do not invent demoMatch. --ship stays 1. Scores 52/47/57 are the prior 3-scoring instrument; Mini's 55 was a later fire on sha256:f95a3b74.",
     "defects": [
       {
-        "section": "#firm-sales",
+        "section": "#office",
         "severity": "taste",
-        "finding": "FirmClosings must be a real shadcn carousel (prev/next, peek) with Card slides showing photo, address, ClosePrice, close date, beds/baths/sqft — not a photo-only thumbnail strip. Mini 2026-09-14 Cursor grok-4.6 exit 2.",
-        "replaceWith": "shadcn-carousel"
+        "finding": "AboutOffice must be a real shadcn Card demo (photo, body, facts chrome) — not a cream title stack restating the hero address. Mini 2026-09-14 re-eval cursor-grok-4.6.",
+        "replaceWith": "shadcn-card"
       },
       {
         "section": "#write",
         "severity": "taste",
-        "finding": "AboutInquiry must be a real shadcn Input (GET /contact), navy/cream paint — not a cream pill plus navy rect / house V3 button. Mini 2026-09-14 Cursor grok-4.6 exit 2.",
+        "finding": "AboutInquiry must be a real shadcn Input as the control plus catalog Button submit — not a labeled cream field and house outline Send rectangle. Mini 2026-09-14 re-eval cursor-grok-4.6.",
         "replaceWith": "shadcn-input"
       },
       {
-        "section": "#office",
+        "section": "#reach",
         "severity": "taste",
-        "finding": "AboutOffice must print firm OREA once. A duplicate license line fails this lock. Mini 2026-09-14 Cursor grok-4.6 exit 2.",
-        "replaceWith": "house-office"
+        "finding": "V3OnDuty on #reach clips left (stray mark before Closed). The live hours line must read whole. Mini 2026-09-14 re-eval cursor-grok-4.6.",
+        "replaceWith": "house-doors"
+      },
+      {
+        "section": "#firm",
+        "severity": "taste",
+        "finding": "AboutFirm H1 and purpose must read as the opening firm claim, not a caption under a navy postcard. Mini 2026-09-14 re-eval cursor-grok-4.6.",
+        "replaceWith": "house-firm"
       }
     ],
     "comparedToPrior": "rebaselined",
@@ -219,8 +235,8 @@
       "rubricVersion": "v1-2026-09-08",
       "shotsHash": "sha256:79ad786fe5d34960b88199dd066b0ab6ab91edc0a23cee56fe3aa148b19a9c10"
     },
-    "rebaselineReason": "Mini 2026-09-14 evaluate exit 2. Craft: Card closings, shadcn Input, OREA once. Recaptured proof/reach/office/firm-sales. Named desktop/mobile375 shotsHash still sha256:f95a3b74. Cos re-runs. Do not invent true.",
-    "verdict": "Looking/taste cannot pass a Meet-the-Team About. The contract opens on AboutFirm. demoMatch is false. Cos scores the shots.",
+    "rebaselineReason": "Mini 2026-09-14 re-eval: competitiveBriefPass true, demoMatch false, score 55 on sha256:f95a3b74. Craft after that fire. Cos re-runs on new shots. Do not invent demoMatch.",
+    "verdict": "Brief holds. demoMatch is false until Cos re-runs. The opener is the firm claim, not a Meet-the-Team dump.",
     "contactListIsFirstContent": false,
     "contactListAnswer": "H1 and one purpose line (boutique · Central Oregon · buy and sell) on the Bend office exterior, Google reviews as primary proof, dated local closings, Call/Text/Email/Schedule, office 115 NW Oregon Ave #2 + firm OREA, and a one-line inquiry to /contact. No three equal broker Cards. No Meet-the-Team dump. Brokers belong on /team."
   },

@@ -1,10 +1,9 @@
 /**
- * /about hero — firm story on the office exterior, not Meet the Team.
+ * /about opener — firm claim first, office exterior as supporting media.
  *
- * Compass/SIR brief: full-bleed mood photo + one purpose line.
- * Matt 2026-09-12: boutique · Central Oregon · buy and sell.
- * Client reviews live on V3Proof immediately after this hero — not a thin
- * score link on the firm story. Never the sofa interior. No broker Cards.
+ * Mini 2026-09-14: H1 and purpose must read as the opening firm claim
+ * (house-firm), not a caption under a navy postcard. Client reviews live
+ * on V3Proof immediately after. Never the sofa interior. No broker Cards.
  */
 
 import { cn } from '@/lib/utils'
@@ -30,17 +29,17 @@ export function AboutFirm({
       className={cn(V3_ROOT_CLASS, 'about-firm')}
       aria-labelledby="firm-heading"
     >
+      <div className="about-firm__claim">
+        <V3Eyebrow>Ryan Realty · Central Oregon</V3Eyebrow>
+        <V3Heading level={1} id="firm-heading" className="about-firm__heading">
+          {heading}
+        </V3Heading>
+        <p className="about-firm__purpose">{ABOUT_FIRM_STORY}</p>
+      </div>
       <figure className="about-firm__hero">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={officeSrc} alt={officeAlt} width={1600} height={1067} />
         <figcaption className="about-firm__caption">{officeCaption}</figcaption>
-        <div className="about-firm__mission">
-          <V3Eyebrow onMedia>Ryan Realty · Central Oregon</V3Eyebrow>
-          <V3Heading level={1} id="firm-heading" onMedia className="about-firm__heading">
-            {heading}
-          </V3Heading>
-          <p className="about-firm__purpose">{ABOUT_FIRM_STORY}</p>
-        </div>
       </figure>
     </section>
   )

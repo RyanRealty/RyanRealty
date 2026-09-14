@@ -213,12 +213,12 @@ describe('siteQueueDoneEvidenceProblems — About / SITE-90 brief', () => {
     expect(p.join('\n')).toMatch(/Bare evidence prose/)
   })
 
-  it('refuses a hand-typed pass against the live About receipt (pass is false)', () => {
+  it('refuses a hand-typed Tip Ready against the live About receipt (demoMatch is false)', () => {
     const p = siteQueueDoneEvidenceProblems(
       'npx tsx scripts/taste-evaluate.ts about — grok-4.6 demoMatch: true, competitiveBriefPass: true, median 71',
       { versionGap: 'SITE-90' },
     )
-    expect(p.join('\n')).toMatch(/competitiveBriefPass must be the boolean true/)
+    expect(p.join('\n')).toMatch(/demoMatch is false/)
   })
 
   it('passes only when the receipt boolean is true on grok-4.6', () => {

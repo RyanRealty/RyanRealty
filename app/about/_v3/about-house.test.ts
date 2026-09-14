@@ -21,7 +21,7 @@ describe('SITE-90 /about brokerage fold', () => {
       competitiveBrief: { id: string; beats: { id: string; text: string }[] }
       requiredComponents: { name: string; section: string }[]
       removedComponents: string[]
-      tasteReview: { competitiveBriefPass: boolean }
+      tasteReview: { competitiveBriefPass: boolean; demoMatch: boolean }
     }
     const names = parity.requiredComponents.map((c) => c.name)
     expect(names).toContain('AboutFirm')
@@ -38,7 +38,8 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(parity.competitiveBrief.beats.map((b) => b.id)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8'])
     expect(parity.competitiveBrief.beats[0]?.text).toMatch(/boutique/)
     expect(parity.competitiveBrief.beats[1]?.text).toMatch(/belong on \/team/)
-    expect(parity.tasteReview.competitiveBriefPass).toBe(false)
+    expect(parity.tasteReview.competitiveBriefPass).toBe(true)
+    expect(parity.tasteReview.demoMatch).toBe(false)
     const opener = parity.requiredComponents.find((c) => c.name === 'AboutFirm')
     expect(opener?.section).toMatch(/OPENS THE PAGE/)
     expect(opener?.section).toMatch(/NOT three broker Cards/)
@@ -76,6 +77,11 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(PAGE).not.toContain('firmBeat')
     expect(FOLD).toContain('about-fold__proof')
     expect(FOLD).toContain('--v3-size-num-lead')
+    expect(FIRM).toContain('about-firm__claim')
+    expect(FIRM).not.toContain('about-firm__mission')
+    expect(FIRM).not.toContain('onMedia')
+    expect(FOLD).toContain('about-firm__claim')
+    expect(FOLD).not.toContain('v3-scrim-strong')
   })
 
   it('loads the firm closing set, not a one-row tease', () => {
@@ -116,11 +122,15 @@ describe('SITE-90 /about brokerage fold', () => {
   it('prints the Bend office and firm OREA, not a broker roster', () => {
     expect(PAGE).toContain('<AboutOffice')
     expect(OFFICE).toContain("from '@/components/ui/card'")
+    expect(OFFICE).toContain('CardFooter')
+    expect(OFFICE).toContain('about-office__photo')
+    expect(OFFICE).toContain('about-office__facts')
     expect(OFFICE).toContain('BRAND.address.street')
     expect(OFFICE).toContain('FIRM_LICENSE')
     expect(OFFICE).toContain('The brokers are on /team')
     expect((OFFICE.match(/Firm OREA/g) ?? []).length).toBe(1)
     expect(OFFICE).not.toContain('about-office__license')
+    expect(OFFICE).not.toContain('Bend office 115 NW Oregon Ave #2')
     expect(OFFICE).not.toContain('Avatar')
     expect(OFFICE).not.toContain('Meet the team')
     expect(FOLD).toContain('about-office')
@@ -134,12 +144,14 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(INQUIRY).toContain('name="inquiry"')
     expect(INQUIRY).toContain('Send a message')
     expect(INQUIRY).toContain("from '@/components/ui/input'")
-    expect(INQUIRY).toContain("from '@/components/ui/label'")
-    expect(INQUIRY).toContain('variant="outline"')
+    expect(INQUIRY).toContain('aria-label="How can we help"')
+    expect(INQUIRY).not.toContain("from '@/components/ui/label'")
+    expect(INQUIRY).not.toContain('variant="outline"')
     expect(INQUIRY).not.toContain('V3Input')
     expect(INQUIRY).not.toContain('v3-input')
     expect(INQUIRY).not.toContain('submitContactForm')
     expect(FOLD).not.toContain('.about-inquiry__row .v3-input')
+    expect(FOLD).not.toContain('.about-inquiry__field [data-slot=')
   })
 
   it('adds crawlable team, closing, and review lists to JSON-LD', () => {
