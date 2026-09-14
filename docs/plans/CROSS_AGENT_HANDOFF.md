@@ -1,4 +1,4 @@
-# Current — 2026-09-14 (SITE-105 oregon-city tip `062c9a9cc`)
+# Current — 2026-09-14 (SITE-105 oregon-city tip `91223a846`)
 
 Surface: Cursor cloud `cursor-cloud-site105-20260914` on `cursor/oregon-city-site105-1e22` (PR #234). Do not merge.
 
