@@ -94,6 +94,7 @@ import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/component
 import { ListingSaveButton as _ListingSaveButtonImport } from '@/components/site/listing-detail/ListingSaveButton'
 import { ListingShareButton as _ListingShareButtonImport } from '@/components/site/listing-detail/ListingShareButton'
 import { listingDocumentTitle } from '@/lib/listing/listing-document-title'
+import { getSession } from '@/app/actions/auth'
 import { TextMattCTA as _TextMattCTAImport } from '@/components/site/listing-detail/TextMattCTA'
 import ListingMobileContactBar from '@/components/site/listing-detail/ListingMobileContactBar.client'
 import ListingTracker from '@/components/listing/ListingTracker'
@@ -528,7 +529,10 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   }).catch(() => null)
 
   const { isListingSaved } = await import('@/app/actions/saved-listings')
-  const initialSaved = await isListingSaved(listing.listingKey).catch(() => false)
+  const [initialSaved, session] = await Promise.all([
+    isListingSaved(listing.listingKey).catch(() => false),
+    getSession(),
+  ])
   const matt =
     brokers.find((b) => b.isPrincipal) ??
     brokers.find((b) => b.slug === 'matthew-ryan' || b.slug === 'matt-ryan') ??
@@ -749,6 +753,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
         history={history}
         onSave={saveListingFromStrip}
         initialSaved={initialSaved}
+        signedIn={Boolean(session)}
         ratePct={calcDefaults?.mortgageRate ?? null}
         showEstPayment={false}
         showAlerts={false}

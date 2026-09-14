@@ -346,9 +346,12 @@
         "close",
         "out-of-area",
         "strip",
-        "drop"
+        "drop",
+        "save-open",
+        "share-open",
+        "gallery-open"
       ],
-      "capture": "scripts/take-route-shots.mjs default first viewport for the instrument pair; `close` for the close section; `outofarea=#out-of-area` on the Medford route; `strip=#listing-hero-visual .listing-strip@#listing-hero-visual!hover` and `drop=.listing-drop!hover` for the hover records"
+      "capture": "scripts/take-route-shots.mjs default first viewport for the instrument pair, then one fresh page per demoState: `save-open=[aria-label^=\"Save \"]!click` (guest Sheet), `share-open=[aria-label^=\"Share \"]!click` (Share Dialog), `gallery-open=.listing-frame__stage[aria-label^=\"Open photo\"]!click` (photo Dialog). demoMatch is written only from taste-evaluate."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/desktop.png",

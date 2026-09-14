@@ -100,7 +100,12 @@ type Props = {
   onSave?: (listingKey: string) => Promise<{ saved: boolean; needsAuth?: boolean }>
   /** Initial saved state, hydrated by the server. */
   initialSaved?: boolean
-  /** Share handler — caller wires to Web Share API or fallback toast. */
+  /**
+   * Guest save must open the Sheet without waiting on a server action
+   * (SITE-99 demo match). Signed-in visitors still hit onSave.
+   */
+  signedIn?: boolean
+  /** Share handler — optional extra after the Dialog opens. */
   onShare?: (listingKey: string) => void
   /** Override the default contact-tour href. */
   scheduleHref?: string
@@ -161,6 +166,7 @@ export function PriceCtaStrip({
   history,
   onSave,
   initialSaved = false,
+  signedIn = false,
   onShare,
   scheduleHref,
   askHref,
@@ -311,14 +317,18 @@ export function PriceCtaStrip({
     askHref ?? listingContactHref(contactKey, 'question') ?? `/contact?intent=question`
 
   async function handleSave() {
-    if (!onSave || saveState === 'saving') return
+    if (saveState === 'saving') return
+    if (!signedIn) {
+      // Guest Sheet is the catalog demo. Do not wait on toggleSavedListing
+      // or the save-open shot records a closed button.
+      setGuestSaveOpen(true)
+      return
+    }
+    if (!onSave) return
     setSaveState('saving')
     try {
       const res = await onSave(listing.listingKey)
       if (res.needsAuth) {
-        // Signed-out: email-first (funnel audit 2026-09-01). The guest sheet
-        // captures the lead with one field; "Save with Google instead" inside
-        // it keeps the OAuth + pending-save resume path exactly as before.
         setSaveState('idle')
         setGuestSaveOpen(true)
         return
@@ -330,30 +340,16 @@ export function PriceCtaStrip({
   }
 
   function handleShare() {
-    if (onShare) {
-      onShare(listing.listingKey)
-      return
-    }
-    // Default: Web Share API with same-origin fallback to copy.
-    const url = typeof window !== 'undefined' ? window.location.href : ''
-    const title = street || `Listing ${listing.listingKey}`
-    const nav = typeof navigator !== 'undefined' ? (navigator as Navigator & { share?: Navigator['share'] }) : null
-    if (nav?.share) {
-      nav.share({ title, url }).catch(() => {
-        if (nav.clipboard) {
-          nav.clipboard.writeText(url).catch(() => {})
-        }
-      })
-      return
-    }
-    if (nav?.clipboard) {
-      nav.clipboard.writeText(url).catch(() => {})
-    }
+    onShare?.(listing.listingKey)
   }
+
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
+  const shareTitle = street || `Listing ${listing.listNumber ?? listing.listingKey}`
 
   return (
     <div className={cn('listing-face', className)}>
       <div>
+      <div className="listing-face__price-row">
       <div
         className="listing-ask"
         style={{ color: 'var(--navy)', display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '0.55rem 1rem' }}
@@ -367,6 +363,16 @@ export function PriceCtaStrip({
             {estPayment}
           </span>
         ) : null}
+      </div>
+      <V3ButtonGroup label="Save or share this listing" className="listing-face__keep">
+        <ListingSaveButton saveState={saveState} onSave={handleSave} ariaLabel={saveAriaLabel} />
+        <ListingShareButton
+          onShare={handleShare}
+          ariaLabel={`Share ${propertyName}`}
+          shareUrl={shareUrl}
+          shareTitle={shareTitle}
+        />
+      </V3ButtonGroup>
       </div>
       {dropMark && !offMarket ? (
         /* The cut as two prices at rest, not a 22px slope (Matt 2026-09-10). */
@@ -486,15 +492,6 @@ export function PriceCtaStrip({
           </>
         )}
       </V3ButtonGroup>
-      {/* SITE-99. Save and Share are their own grouped control so a desktop
-          rule that hides Tour / Call / Text (sidebar already has that ask)
-          cannot take the keep actions with it. Always mounted, on and off
-          market. Adapted from shadcn-button-group. */}
-      <V3ButtonGroup label="Save or share this listing" className="listing-face__keep">
-        <ListingSaveButton saveState={saveState} onSave={handleSave} ariaLabel={saveAriaLabel} />
-        <ListingShareButton onShare={handleShare} ariaLabel={`Share ${propertyName}`} />
-      </V3ButtonGroup>
-
       {showAlerts ? (
         <>
       <a

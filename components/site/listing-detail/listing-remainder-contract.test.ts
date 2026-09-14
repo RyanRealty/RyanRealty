@@ -37,6 +37,25 @@ describe('listing remainder composition', () => {
     expect(SHEET).toMatch(/from '@\/components\/ui\/sheet'/)
     expect(PARITY).toContain('"name": "ListingSaveButton"')
     expect(PARITY).toContain('"name": "ListingShareButton"')
+    const receipt = JSON.parse(PARITY) as {
+      tasteReview?: { shotSpec?: { states?: string[] }; demoMatch?: unknown }
+    }
+    const states = receipt.tasteReview?.shotSpec?.states ?? []
+    expect(states.some((s) => /save-open/.test(s))).toBe(true)
+    expect(states.some((s) => /share-open/.test(s))).toBe(true)
+    expect(states.some((s) => /gallery-open/.test(s))).toBe(true)
+    expect(receipt.tasteReview?.demoMatch).not.toBe(true)
+    const catalog = JSON.parse(
+      readFileSync(resolve('design_system/public/taste-catalog.json'), 'utf8'),
+    ) as { classes?: { 'listing-detail'?: { demoStates?: string[] } } }
+    const demoStates = catalog.classes?.['listing-detail']?.demoStates ?? []
+    expect(demoStates.some((s) => /save-open/.test(s) && /click/.test(s))).toBe(true)
+    expect(demoStates.some((s) => /share-open/.test(s) && /click/.test(s))).toBe(true)
+    expect(demoStates.some((s) => /gallery-open/.test(s) && /click/.test(s))).toBe(true)
+    const SHARE = readFileSync(resolve('components/site/listing-detail/ListingShareButton.tsx'), 'utf8')
+    expect(SHARE).toMatch(/from '@\/components\/ui\/dialog'/)
+    expect(STRIP).toContain('signedIn')
+    expect(STRIP).toContain('listing-face__price-row')
     expect(CSS).toMatch(/\.listing-face__keep[\s\S]*display:\s*grid/)
     const rules = CSS.replace(/\/\*[\s\S]*?\*\//g, '')
     expect(rules).not.toMatch(/\.listing-face__keep[^{]*\{[^}]*display:\s*none/)
@@ -78,6 +97,8 @@ describe('listing remainder composition', () => {
     expect(GROUP).toMatch(/from '@\/components\/ui\/button-group'/)
     expect(SHEET).toMatch(/from '@\/components\/ui\/sheet'/)
     expect(LIGHTBOX).toMatch(/from '@\/components\/ui\/dialog'/)
+    const SHARE_BTN = readFileSync(resolve('components/site/listing-detail/ListingShareButton.tsx'), 'utf8')
+    expect(SHARE_BTN).toMatch(/from '@\/components\/ui\/dialog'/)
     expect(LIGHTBOX).toMatch(/from '@\/components\/motion\/transitions-modal'/)
     expect(TABS).toMatch(/from '@\/components\/motion\/tabs'/)
     expect(SWAP).toMatch(/from '@\/components\/motion\/action-swap'/)
