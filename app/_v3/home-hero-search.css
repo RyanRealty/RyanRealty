@@ -114,15 +114,8 @@
 }
 
 .v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__panel-form--buy,
-.v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__panel-form--sell,
-.v3 .home-hero-search[data-mode='buy'] .home-hero-search__panel-form--buy,
-.v3 .home-hero-search[data-mode='sell'] .home-hero-search__panel-form--sell {
+.v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__panel-form--sell {
   display: block;
-}
-
-.v3 .home-hero-search[data-mode='sell'] .home-hero-search__panel-form--buy,
-.v3 .home-hero-search[data-mode='buy'] .home-hero-search__panel-form--sell {
-  display: none;
 }
 
 .v3 .home-hero-search__label {

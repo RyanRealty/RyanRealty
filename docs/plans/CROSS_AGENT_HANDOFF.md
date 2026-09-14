@@ -2,10 +2,10 @@
 
 Surface: Cursor cloud, `cursor/homepage-v6-site97-d7fe` → PR #229. Do not merge. Cos cherry-picks Tip Readys.
 
-- **Done:** SITE-97 claimed (`cursor-cloud-site97-20260914`). MorphingSearch live on first paint; Sell tab is catalog `[role=tab]`; rails import `@/components/ui/carousel` + `@/components/motion/number`; live count carries TRACE source; 4-up desktop cards + visible arrows.
-- **Tip Ready:** `--ship` still exit 1 until a judge writes `demoMatch: true`. Do not invent it.
-- **Next:** `npx tsx scripts/taste-evaluate.ts homepage-v6 --builder grok-4.5` then `--ship`.
-- Skills read: `.claude/skills/site-queue/SKILL.md`.
+- **Done:** Catalog sell-tab is `SEL@ANCHOR!click` (`#home-hero-sell-tab [role=tab]@.home-hero-search!click`). Fresh shots: MorphingSearch open + Sell street address. `--ship` exit 1. Do not invent demoMatch.
+- **Tip Ready refuse:** `demoMatch must be true or false — do not invent it.` + adaptedFrom without demoMatch true. `taste-evaluate` exit 2: cursor-agent / grok / claude missing.
+- **Next:** On a machine with a judge CLI: `npx tsx scripts/taste-evaluate.ts homepage-v6 --builder grok-4.5` then write the real receipt and `--ship`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`.
 
 # Prior
 

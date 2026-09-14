@@ -245,12 +245,14 @@
       "railsMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/rails-mobile375.png",
       "rightNowDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/right-now-desktop.png",
       "rightNowMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/right-now-mobile375.png",
+      "searchOpenDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/search-open-desktop.png",
+      "searchOpenMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/search-open-mobile375.png",
       "sellTabDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sell-tab-desktop.png",
       "sellTabMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sell-tab-mobile375.png",
       "soldDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-desktop.png",
       "soldMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-mobile375.png"
     },
-    "shotsHash": "sha256:94dd08d0c75b849e66cfb1dd7ab063e2cd43991f876e4bd8075c5ba622dbc4b1",
+    "shotsHash": "sha256:0d2182d18aa6b7e5b8ae9348579d9224dbc4dc50613d5f4086e886e30366b0f3",
     "scores": [
       50,
       59,
@@ -266,14 +268,30 @@
     },
     "beats": "Zillow's homepage puts photographed listings in the first scroll; this fold still loses that metric, with no house on screen. We win a source-traced 1-in-5 under-contract claim Zillow will not print, then hide it under a KPI band that repeats the same inventory count.",
     "adaptedFrom": [
-      { "id": "beui-morphing-search" },
-      { "id": "beui-tabs" },
-      { "id": "beui:shared-layout-bg" },
-      { "id": "shadcn-carousel" },
-      { "id": "shadcn-card" },
-      { "id": "rareui:animatedcounter" },
-      { "id": "beui:number" },
-      { "id": "house-home-rails" }
+      {
+        "id": "beui-morphing-search"
+      },
+      {
+        "id": "beui-tabs"
+      },
+      {
+        "id": "beui:shared-layout-bg"
+      },
+      {
+        "id": "shadcn-carousel"
+      },
+      {
+        "id": "shadcn-card"
+      },
+      {
+        "id": "rareui:animatedcounter"
+      },
+      {
+        "id": "beui:number"
+      },
+      {
+        "id": "house-home-rails"
+      }
     ],
     "defects": [
       {

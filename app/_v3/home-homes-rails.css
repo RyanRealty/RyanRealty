@@ -110,8 +110,9 @@
    compact Stage (evaluator cropped through the photograph otherwise). */
 .home-rail__carousel.v3-carousel--rail .v3-carousel__slide,
 .home-rail__carousel.v3-carousel--rail [data-slot='carousel-item'] {
-  flex-basis: min(17.5rem, 78vw);
-  overflow: visible;
+  flex: 0 0 min(17.5rem, 78vw);
+  max-width: min(17.5rem, 78vw);
+  overflow: hidden;
   height: auto;
   min-height: auto;
 }
@@ -119,8 +120,13 @@
 @media (min-width: 64rem) {
   .home-rail__carousel.v3-carousel--rail .v3-carousel__slide,
   .home-rail__carousel.v3-carousel--rail [data-slot='carousel-item'] {
-    flex-basis: calc((100% - (2 * var(--v3-gutter))) / 4);
+    flex: 0 0 25%;
+    max-width: 25%;
   }
+}
+
+.home-rail__carousel [data-slot='carousel-content'] {
+  overflow: hidden;
 }
 
 .home-rail__card[data-slot='card'] {
