@@ -134,6 +134,7 @@ export function ListingHero({
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [galleryPane, setGalleryPane] = useState<'photos' | 'floor'>('photos')
   const [carouselApi, setCarouselApi] = useState<CarouselApi>()
+  const [wide, setWide] = useState(false)
   const [embed, setEmbed] = useState<VideoEmbed | null>(null)
   const [tourOpen, setTourOpen] = useState(false)
   const [streetOpen, setStreetOpen] = useState(false)
@@ -188,6 +189,14 @@ export function ListingHero({
     if (typeof window === 'undefined') return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     setAllowAutoplay(true)
+  }, [])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 64rem)')
+    const sync = () => setWide(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
   }, [])
 
   useEffect(() => {
@@ -334,6 +343,7 @@ export function ListingHero({
         ) : null}
         {showMap || showTour ? null : (
           <>
+            {wide ? null : (
             <Carousel
               className="listing-hero-carousel listing-mosaic__carousel"
               opts={{ align: 'start', loop: false }}
@@ -373,7 +383,7 @@ export function ListingHero({
                       type="button"
                       className="listing-mosaic__slide"
                       onClick={() => openGallery(i)}
-                      aria-label={`Open photo ${i + 1} of ${total}`}
+                      aria-label={`View photo ${i + 1} of ${total}`}
                     >
                       <MosaicStill
                         src={photo.url}
@@ -388,8 +398,10 @@ export function ListingHero({
               <CarouselPrevious className="listing-hero-carousel__prev left-2" />
               <CarouselNext className="listing-hero-carousel__next right-2" />
             </Carousel>
+            )}
 
-            {/* Desktop: ONE frame, the photo the strip points at. */}
+            {wide ? (
+            <>
             {frameIsVideo && heroVideo ? (
               heroVideo.embedType === 'iframe' ? (
                 <div className="listing-frame__stage">
@@ -468,6 +480,8 @@ export function ListingHero({
                 </button>
               </>
             ) : null}
+            </>
+            ) : null}
           </>
         )}
 
@@ -527,6 +541,16 @@ export function ListingHero({
             </div>
           ) : null}
           <div className="listing-strip__tools" role="group" aria-label="Listing media">
+            {total > 0 ? (
+              <button
+                type="button"
+                className="listing-strip__tool listing-strip__tool--primary"
+                onClick={() => openGallery(frame)}
+                aria-label={`Open photo ${frame + 1} of ${total}`}
+              >
+                Open
+              </button>
+            ) : null}
             {mediaTabItems.length > 1 ? (
               <Tabs
                 value={mediaTab}
