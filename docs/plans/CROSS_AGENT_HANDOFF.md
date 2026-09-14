@@ -1,11 +1,11 @@
-# Current — 2026-09-14 (CMA blank-subdivision pocket + CompArea extras; PR only)
+# Current — 2026-09-14 (SITE-97 homepage-v6 Tip Ready landed on main)
 
-Surface: Cursor cloud, `cursor/cma-blank-subdivision-pocket-5c80`. Craft PR. Do not merge.
+Surface: Mini Cos land of PR #229 tip `0440ecbd0` → main @ `5b17821c`.
 
-- **Done:** Blank `SubdivisionName` infers pocket (plat / nearest mapped neighbor ≤0.35 mi) before mile rings. Extras band uses CompArea + shared ±10% inventory; city-wide `getCmaBandInventory` only when CompArea is absent.
-- **Next:** Review PR. Do not merge.
-- **Node:** none (Tip Ready geo; not a queue claim).
-- Skills read: tdd, git-commit, database-canonical-reference (CMA extras).
+- **Done:** Re-ran `node scripts/lib/taste-receipt.mjs --ship design_system/ryan-realty/ui_kits/homepage-v6/parity.json` on Mini at tip and on main after cherry-pick — exit 0 (`ship OK — demoMatch true · competitiveBriefPass true · open-state · catalog-install`). Score median 52 ignored per Cos north star (Tip Ready = --ship exit 0 only). Cherry-picked 11 commits onto main.
+- **Next:** `npm run push` / deploy verify. Mark SITE-97 done with Tip Ready evidence.
+- **Node:** SITE-97 Tip Ready → done after push.
+- Skills read: `.claude/skills/site-queue/SKILL.md`.
 
 # Prior
 
