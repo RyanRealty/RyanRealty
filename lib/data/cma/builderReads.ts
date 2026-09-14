@@ -44,6 +44,9 @@ const LISTING_CMA_COLUMNS = [
   'CloseDate',
   'OnMarketDate',
   'ListDate',
+  // First-list timestamps survive a relist reset of OnMarketDate (MARKET_TRUTH §3.2).
+  'original_entry_timestamp',
+  'original_on_market_timestamp',
   'ModificationTimestamp',
   'PhotoURL',
   'BedroomsTotal',

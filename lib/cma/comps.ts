@@ -35,8 +35,10 @@ import { selectCmaCompsPool, selectCmaCompsByKeys, getSubdivisionRing, assignSub
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
   closedSaleDomTotal,
+  earliestClosedCompListDate,
   listingHistoryLine as buildListingHistoryLine,
 } from '@/lib/cma/listing-history-line'
+import { hydrateClosedCompDaysOnMarket } from '@/lib/cma/hydrate-closed-comp-dom'
 import type { CmaListingRow } from '@/lib/data'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
 import { saneYearBuilt } from '@/lib/cma/subject'
@@ -157,14 +159,27 @@ function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | nu
     amount: num(row['concessions_amount']),
     closeDate,
   })
-  const onMarketDate = (str(row['OnMarketDate']) ?? str(row['ListDate']))?.slice(0, 10) ?? null
+  const rowOnMarket = str(row['OnMarketDate']) ?? str(row['ListDate'])
+  const originalEntry = str(row['original_entry_timestamp'])
+  const originalOnMarket = str(row['original_on_market_timestamp'])
+  const listDate = str(row['ListDate'])
+  const onMarketDate =
+    earliestClosedCompListDate({
+      onMarketDate: rowOnMarket,
+      listDate,
+      originalEntryTimestamp: originalEntry,
+      originalOnMarketTimestamp: originalOnMarket,
+    }) ?? rowOnMarket?.slice(0, 10) ?? null
   const closeDay = closeDate.slice(0, 10)
   const mlsDom = num(row['CumulativeDaysOnMarket']) ?? num(row['DaysOnMarket'])
-  // Prefer list→close calendar days when MLS cdom understates the run (Clearpine).
+  // Prefer first-list→close calendar days when MLS / current on_market understates the run.
   const domTotal = closedSaleDomTotal({
     daysOnMarket: mlsDom,
-    onMarketDate,
+    onMarketDate: rowOnMarket,
     closeDate: closeDay,
+    listDate,
+    originalEntryTimestamp: originalEntry,
+    originalOnMarketTimestamp: originalOnMarket,
   })
   return {
     listingKey,
@@ -1075,6 +1090,7 @@ export async function selectComps(
   }
   diagnostics.starved_reason = diagnoseStarvation(diagnostics)
   if (diagnostics.starved_reason && comps.length < MIN_COMPS) trace.push(diagnostics.starved_reason)
+  comps = await hydrateClosedCompDaysOnMarket(comps)
   return { comps, excludedOutliers, tiersUsed, trace, diagnostics, pricingSource: 'listings' }
 }
 
@@ -1157,7 +1173,13 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
     final_count: comps.length,
     final_tier_counts: countByTier(comps),
   }
-  return { comps, excludedOutliers: [], tiersUsed: ['broker-selected'], trace: [note], diagnostics }
+  return {
+    comps: await hydrateClosedCompDaysOnMarket(comps),
+    excludedOutliers: [],
+    tiersUsed: ['broker-selected'],
+    trace: [note],
+    diagnostics,
+  }
 }
 
 /**

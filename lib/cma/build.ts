@@ -42,6 +42,7 @@ import { judgeComps, repairNarrativeAgainstAudit } from '@/lib/cma/judge'
 import { alignNarrativeToPricedSet, honestComparabilityLine } from '@/lib/cma/judge-consistency'
 import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
+import { hydrateClosedCompDaysOnMarket } from '@/lib/cma/hydrate-closed-comp-dom'
 import { resolveCmaSiteData } from '@/lib/cma/county'
 import { resolveCmaParcels } from '@/lib/cma/parcel-shapes'
 import { buildCmaExtras } from '@/lib/cma/extras'
@@ -415,6 +416,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           .join(', ')}) and were dropped so no home is counted twice.`,
       )
     }
+
+    // Relists reset OnMarketDate. Calendar DOM from that date undercounts
+    // when listing/price history still holds the first list (Clearpine / Linda).
+    selection.comps = await hydrateClosedCompDaysOnMarket(selection.comps)
 
     if (selection.comps.length < MIN_COMPS) {
       // ONE broker-readable sentence on the row. Until 2026-09-07 this stored

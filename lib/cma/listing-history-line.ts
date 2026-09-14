@@ -43,6 +43,15 @@ function parseUtcDay(iso: string | null | undefined): Date | null {
   return Number.isNaN(then.getTime()) ? null : then
 }
 
+/** YYYY-MM-DD of a listing/history timestamp. Bare dates stay as written. */
+export function closedCompCivilDay(iso: string | null | undefined): string | null {
+  const raw = iso?.trim()
+  if (!raw) return null
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw
+  const then = parseUtcDay(raw)
+  return then ? then.toISOString().slice(0, 10) : null
+}
+
 /** Whole calendar days between two dates (noon-UTC day stamps). Never invents. */
 export function calendarDaysBetween(
   fromIso: string | null | undefined,
@@ -55,24 +64,100 @@ export function calendarDaysBetween(
   return days >= 0 ? days : null
 }
 
+const LIST_START_EVENTS = new Set(['newlisting', 'backonmarket', 'originalentry'])
+
+/**
+ * Spark listing/price history rows that mark a list (original entry / first
+ * list / a later back-on-market). Close and photo events do not.
+ */
+export function isClosedCompListStartEvent(
+  event: string | null | undefined,
+  description?: string | null,
+): boolean {
+  const e = (event ?? '').trim().toLowerCase().replace(/[\s_-]/g, '')
+  if (LIST_START_EVENTS.has(e)) return true
+  if (e === 'fieldchange' && /listprice/i.test(description ?? '')) return true
+  return false
+}
+
+export type ClosedCompHistoryEvent = {
+  event?: string | null
+  date?: string | null
+  description?: string | null
+  /** price_history rows are always a list/ask date. */
+  source?: 'price_history' | 'listing_history' | string | null
+}
+
+/** Civil days that count as a list start from listing_history + price_history. */
+export function listStartDatesFromHistory(
+  events: readonly ClosedCompHistoryEvent[] | null | undefined,
+): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const ev of events ?? []) {
+    const fromPrice = (ev.source ?? '').toLowerCase() === 'price_history'
+    if (!fromPrice && !isClosedCompListStartEvent(ev.event, ev.description)) continue
+    const day = closedCompCivilDay(ev.date)
+    if (!day || seen.has(day)) continue
+    seen.add(day)
+    out.push(day)
+  }
+  return out.sort((a, b) => a.localeCompare(b))
+}
+
+export type ClosedCompListStartFacts = {
+  onMarketDate?: string | null
+  listDate?: string | null
+  originalEntryTimestamp?: string | null
+  originalOnMarketTimestamp?: string | null
+  historyListDates?: readonly (string | null | undefined)[]
+}
+
+/**
+ * First list for a closed comp: earliest of current on-market, ListDate,
+ * original entry / original-on-market, and listing/price history list starts.
+ *
+ * Relists reset MLS OnMarketDate to the back-on-market day (MARKET_TRUTH §3.2).
+ * Calendar DOM from that date undercounts when history still holds the first list.
+ */
+export function earliestClosedCompListDate(facts: ClosedCompListStartFacts): string | null {
+  const dates = [
+    facts.onMarketDate,
+    facts.listDate,
+    facts.originalEntryTimestamp,
+    facts.originalOnMarketTimestamp,
+    ...(facts.historyListDates ?? []),
+  ]
+    .map((d) => closedCompCivilDay(d))
+    .filter((d): d is string => Boolean(d))
+    .sort((a, b) => a.localeCompare(b))
+  return dates[0] ?? null
+}
+
 /**
  * Honest DOM for a closed sale (Matt HARD LOCK: DOM on every home).
  *
- * When onMarketDate + closeDate both exist, use whole calendar days between
- * them whenever MLS cdom/DaysOnMarket is missing OR shorter than that span
- * (Clearpine-class: last-cycle DaysOnMarket understates first-list → close).
- * Otherwise keep the MLS figure. Never invents dates.
+ * Calendar days from the earliest list date (history / original entry when
+ * that is earlier than the current on-market date) to close, whenever MLS
+ * cdom/DaysOnMarket is missing OR shorter than that span (Clearpine/Linda:
+ * last-cycle OnMarketDate understates first-list → close). Otherwise keep
+ * the MLS figure. Never invents dates.
  */
 export function closedSaleDomTotal(facts: {
   daysOnMarket?: number | null
   onMarketDate?: string | null
   closeDate?: string | null
+  listDate?: string | null
+  originalEntryTimestamp?: string | null
+  originalOnMarketTimestamp?: string | null
+  historyListDates?: readonly (string | null | undefined)[]
 }): number | null {
   const mls =
     facts.daysOnMarket != null && Number.isFinite(facts.daysOnMarket) && facts.daysOnMarket >= 0
       ? Math.round(facts.daysOnMarket)
       : null
-  const calendar = calendarDaysBetween(facts.onMarketDate, facts.closeDate)
+  const start = earliestClosedCompListDate(facts) ?? facts.onMarketDate
+  const calendar = calendarDaysBetween(start, facts.closeDate)
   if (calendar != null && (mls == null || mls < calendar)) return calendar
   if (mls != null) return mls
   return calendar

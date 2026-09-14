@@ -517,7 +517,8 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     closeDate: sale.closeDate,
   })
   const onMarketDate = sale.onMarketDate?.slice(0, 10) || null
-  // Prefer list→close calendar days when MLS cdom understates the run (Clearpine).
+  // Prefer first-list→close calendar days when MLS / current on_market understates the run.
+  // History / original entry is stamped after selection (hydrateClosedCompDaysOnMarket).
   const domTotal = closedSaleDomTotal({
     daysOnMarket: sale.cdom,
     onMarketDate,
