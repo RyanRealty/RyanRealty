@@ -2425,6 +2425,12 @@
           "job": "Bend office 115 NW Oregon Ave #2 and firm OREA. Door to /team. Not a broker roster."
         },
         {
+          "id": "house-faces",
+          "catalog": "house-v3",
+          "url": "app/about/_v3/AboutFaces.tsx",
+          "job": "Team page faces only — brokers on /team. Never the About opener. About forbids AboutTeamTeaser."
+        },
+        {
           "id": "house-proof",
           "catalog": "house-v3",
           "url": "components/site/v3/V3Proof.client.tsx",

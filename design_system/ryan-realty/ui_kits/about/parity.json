@@ -237,7 +237,7 @@
       "rubricVersion": "v1-2026-09-08",
       "shotsHash": "sha256:79ad786fe5d34960b88199dd066b0ab6ab91edc0a23cee56fe3aa148b19a9c10"
     },
-    "rebaselineReason": "Mini 2026-09-14: competitiveBriefPass true, demoMatch true on the catalog evaluate land. Evidence re-landed from About source. Do not invent a new score.",
+    "rebaselineReason": "Mini 2026-09-14: competitiveBriefPass true, demoMatch true on the catalog evaluate land. Evidence re-landed from About source. rubricVersion and shotsHash differ from the prior/HEAD instrument; scores 52/47/57 stay. Do not invent a new score.",
     "verdict": "Brief holds. Catalog controls installed. demoMatch true. Evidence quotes are verbatim About source. The opener is the firm claim, not a Meet-the-Team dump.",
     "contactListIsFirstContent": false,
     "contactListAnswer": "H1 and one purpose line (boutique · Central Oregon · buy and sell) on the Bend office exterior, Google reviews as primary proof, dated local closings, Call/Text/Email/Schedule, office 115 NW Oregon Ave #2 + firm OREA, and a one-line inquiry to /contact. No three equal broker Cards. No Meet-the-Team dump. Brokers belong on /team."
