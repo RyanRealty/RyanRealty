@@ -532,10 +532,7 @@ export function preserveHydratedClosedCompDom<T extends CmaComp>(
   }
 }
 
-export function pricingSaleToCmaComp(
-  sale: SelectedPricingComp,
-  hydrated?: HydratedClosedCompDom | null,
-): CmaComp {
+export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
   const concessions = resolveConcessions({
     amount: sale.concessionsAmount,
     yn: sale.concessionsYn,
@@ -549,41 +546,38 @@ export function pricingSaleToCmaComp(
     onMarketDate,
     closeDate: sale.closeDate,
   })
-  return preserveHydratedClosedCompDom(
-    {
-      listingKey: sale.listingKey,
-      mlsNumber: sale.listNumber,
-      address: sale.address,
-      city: sale.city,
-      subdivision: sale.subdivision,
-      latitude: sale.latitude,
-      longitude: sale.longitude,
-      beds: sale.beds,
-      baths: sale.baths,
-      sqft: sale.sqft,
-      lotAcres: sale.lotAcres,
-      propertySubType: sale.productClass === 'detached' ? 'Single Family Residence' : sale.productClass,
-      yearBuilt: sale.yearBuilt,
-      photoUrl: sale.photoUrl,
-      publicRemarks: sale.publicRemarks,
-      viewDescription: null,
-      taxAnnual: null,
-      listPrice: sale.lastAsk,
-      originalListPrice: sale.originalAsk,
-      closePrice: sale.closePrice,
-      concessionsAmount: concessions,
-      concessionsYn: sale.concessionsYn,
-      sellerNet: sellerNetFromPrice(sale.closePrice, concessions),
-      closeDate: sale.closeDate,
-      onMarketDate,
-      daysToOffer: sale.daysToOffer,
-      domTotal,
-      selectionTier: sale.selectionTier,
-      proximity: sale.proximity,
-      roomDifference: sale.roomDifference ?? null,
-    },
-    hydrated,
-  )
+  return {
+    listingKey: sale.listingKey,
+    mlsNumber: sale.listNumber,
+    address: sale.address,
+    city: sale.city,
+    subdivision: sale.subdivision,
+    latitude: sale.latitude,
+    longitude: sale.longitude,
+    beds: sale.beds,
+    baths: sale.baths,
+    sqft: sale.sqft,
+    lotAcres: sale.lotAcres,
+    propertySubType: sale.productClass === 'detached' ? 'Single Family Residence' : sale.productClass,
+    yearBuilt: sale.yearBuilt,
+    photoUrl: sale.photoUrl,
+    publicRemarks: sale.publicRemarks,
+    viewDescription: null,
+    taxAnnual: null,
+    listPrice: sale.lastAsk,
+    originalListPrice: sale.originalAsk,
+    closePrice: sale.closePrice,
+    concessionsAmount: concessions,
+    concessionsYn: sale.concessionsYn,
+    sellerNet: sellerNetFromPrice(sale.closePrice, concessions),
+    closeDate: sale.closeDate,
+    onMarketDate,
+    daysToOffer: sale.daysToOffer,
+    domTotal,
+    selectionTier: sale.selectionTier,
+    proximity: sale.proximity,
+    roomDifference: sale.roomDifference ?? null,
+  }
 }
 
 export function adjustCompAlongMarket(opts: {
@@ -598,7 +592,7 @@ export function adjustCompAlongMarket(opts: {
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
   return adjustCmaCompAlongMarket({
     ...opts,
-    comp: pricingSaleToCmaComp(opts.sale, opts.hydrated),
+    comp: preserveHydratedClosedCompDom(pricingSaleToCmaComp(opts.sale), opts.hydrated),
   })
 }
 
