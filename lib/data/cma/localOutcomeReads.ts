@@ -306,10 +306,17 @@ export async function getClosedCompListStarts(
   listingKeys: string[],
 ): Promise<Map<string, ClosedCompListStartRow>> {
   const out = new Map<string, ClosedCompListStartRow>()
-  const keys = Array.from(new Set(listingKeys.map((k) => k.trim()).filter(Boolean)))
-  if (keys.length === 0) return out
+  const raw = Array.from(new Set(listingKeys.map((k) => k.trim()).filter(Boolean)))
+  if (raw.length === 0) return out
   const sb = client()
   if (!sb) return out
+
+  // listing_history / price_history are keyed by RETS ListingKey. Callers pass
+  // CmaComp.listingKey (already ListingKey from listings), but resolve first so
+  // a ListNumber cannot silently miss — same discipline as getCmaListingPriceEvents.
+  const resolved = await Promise.all(raw.map((k) => resolveCanonicalListingKey(k)))
+  const keys = Array.from(new Set(resolved.map((k) => k.trim()).filter(Boolean)))
+  if (keys.length === 0) return out
 
   const [listingRes, historyRes, priceRes] = await Promise.all([
     sb
