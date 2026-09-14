@@ -42,6 +42,7 @@ import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 import { listStartDatesFromHistory } from '@/lib/cma/listing-history-line'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -318,33 +319,48 @@ export async function getClosedCompListStarts(
   const keys = Array.from(new Set(resolved.map((k) => k.trim()).filter(Boolean)))
   if (keys.length === 0) return out
 
-  const [listingRes, historyRes, priceRes] = await Promise.all([
+  // History/price batches can exceed PostgREST's 1,000-row response cap across
+  // a closed-comp set — page with a stable order (G48). Cap stays 2,000 so a
+  // huge set still finishes; earliest list dates live near the front of the order.
+  const [listingRes, historyPage, pricePage] = await Promise.all([
     sb
       .from('listings')
       .select('ListingKey, OnMarketDate, ListDate, original_entry_timestamp, original_on_market_timestamp')
       .in('ListingKey', keys),
-    sb
-      .from('listing_history')
-      .select('listing_key, event, event_date, description')
-      .in('listing_key', keys)
-      .order('event_date', { ascending: true })
-      .limit(2000),
-    sb
-      .from('price_history')
-      .select('listing_key, changed_at')
-      .in('listing_key', keys)
-      .order('changed_at', { ascending: true })
-      .limit(2000),
+    fetchPagedRows<Record<string, unknown>>(
+      (from, to) =>
+        sb
+          .from('listing_history')
+          .select('listing_key, event, event_date, description')
+          .in('listing_key', keys)
+          .order('event_date', { ascending: true })
+          .order('listing_key', { ascending: true })
+          .range(from, to),
+      2000,
+    ),
+    fetchPagedRows<Record<string, unknown>>(
+      (from, to) =>
+        sb
+          .from('price_history')
+          .select('listing_key, changed_at')
+          .in('listing_key', keys)
+          .order('changed_at', { ascending: true })
+          .order('listing_key', { ascending: true })
+          .range(from, to),
+      2000,
+    ),
   ])
   if (listingRes.error) {
     console.error('[getClosedCompListStarts] listings', listingRes.error.message)
   }
-  if (historyRes.error) {
-    console.error('[getClosedCompListStarts] listing_history', historyRes.error.message)
+  if (historyPage.error) {
+    console.error('[getClosedCompListStarts] listing_history', historyPage.error.message)
   }
-  if (priceRes.error) {
-    console.error('[getClosedCompListStarts] price_history', priceRes.error.message)
+  if (pricePage.error) {
+    console.error('[getClosedCompListStarts] price_history', pricePage.error.message)
   }
+  const historyRes = { data: historyPage.rows }
+  const priceRes = { data: pricePage.rows }
 
   for (const key of keys) {
     out.set(key, {
