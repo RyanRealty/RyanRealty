@@ -2,15 +2,16 @@
  * SITE-105 honesty banner — catalog Alert on the route.
  *
  * Tip Ready `requireRouteImport` needs `app/oregon/[city]` page/_v3 to import
- * `@/components/ui/alert`. This file is that import. Composition matches the
- * shadcn Alert demo: Icon, AlertTitle, AlertDescription, AlertAction + outline
- * Button, stacked inside a rounded bordered card. Navy/cream paint only.
- * Wrapping this in V3Quiet is the cream-strip miss the Mini judge named.
+ * `@/components/ui/alert`. Composition matches the shadcn Alert demo
+ * (ui.shadcn.com/docs/components/alert): Icon, AlertTitle, AlertDescription,
+ * AlertAction + outline Button. No cream box around it. AlertAction stays
+ * `absolute top-2 right-2` from the installed GitHub source.
  */
 import Link from 'next/link'
+import { InfoIcon } from 'lucide-react'
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { V3_ROOT_CLASS, V3Icon } from '@/components/site/v3'
+import { V3_ROOT_CLASS } from '@/components/site/v3'
 import { cn } from '@/lib/utils'
 import { buildOregonCityHonestyDescription } from './oregon-city-fold'
 import './OregonCityHonesty.css'
@@ -33,8 +34,8 @@ export function OregonCityHonesty(props: {
       className={cn(V3_ROOT_CLASS, 'oregon-city-honesty')}
       aria-label={title}
     >
-      <Alert className="oregon-city-honesty__alert">
-        <V3Icon name="InfoCircle" size={20} />
+      <Alert>
+        <InfoIcon />
         <AlertTitle>{title}</AlertTitle>
         <AlertDescription>
           <p>{description}</p>

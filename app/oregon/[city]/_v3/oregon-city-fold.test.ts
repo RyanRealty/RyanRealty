@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
-  OREGON_CITY_FIGURE_FOLD_AFTER,
+  buildOregonCityBuyerPlace,
   buildOregonCityClaim,
   buildOregonCityHonestyDescription,
   buildOregonCityItemListName,
-  buildOregonCityMixChart,
+  buildOregonCityListingReveal,
+  buildOregonCitySupplyDrawing,
   buildOregonCityTitle,
 } from './oregon-city-fold'
 
@@ -44,17 +45,69 @@ describe('oregon-city fold helpers', () => {
     )
   })
 
-  it('draws two bars for on-the-market vs houses', () => {
-    const chart = buildOregonCityMixChart({
+  it('draws two hoverable bars for the snapshot pair', () => {
+    const drawing = buildOregonCitySupplyDrawing({
       name: 'Medford',
       activeAllCount: 718,
       activeSfrCount: 339,
+      source: 'snapshot',
     })
-    expect(chart?.kind).toBe('bars')
-    expect(chart?.series?.[0]?.points).toHaveLength(2)
-    expect(chart?.series?.[0]?.points?.[0]?.value).toBe(718)
-    expect(chart?.series?.[0]?.points?.[1]?.value).toBe(339)
-    expect(buildOregonCityMixChart({ name: 'Medford', activeAllCount: 0, activeSfrCount: 0 })).toBeNull()
+    expect(drawing?.draw).toBe('pair')
+    expect(drawing?.bars).toHaveLength(2)
+    expect(drawing?.bars?.[0]?.value).toBe(718)
+    expect(drawing?.bars?.[1]?.value).toBe(339)
+    expect(drawing?.bars?.[0]?.note).toMatch(/statewide snapshot/)
+    expect(
+      buildOregonCitySupplyDrawing({
+        name: 'Medford',
+        activeAllCount: 0,
+        activeSfrCount: 0,
+        source: 'snapshot',
+      }),
+    ).toBeNull()
+  })
+
+  it('turns MLS plat slugs into buyer language', () => {
+    expect(
+      buildOregonCityBuyerPlace({ subdivisionName: 'EARHART PARK SUBDIVISION', city: 'Medford' }),
+    ).toBe('Earhart Park')
+    expect(
+      buildOregonCityBuyerPlace({ subdivisionName: "D'ANJOU VILLAGE UNIT NO 1", city: 'Medford' }),
+    ).toBe("D'Anjou Village")
+    expect(
+      buildOregonCityBuyerPlace({ subdivisionName: 'KERRISDALE RIDGE SUBDIVISION', city: 'Medford' }),
+    ).toBe('Kerrisdale Ridge')
+    expect(buildOregonCityBuyerPlace({ subdivisionName: null, city: 'Medford' })).toBe('Medford')
+  })
+
+  it('reveals a sourced extra fact the resting row does not already say', () => {
+    expect(
+      buildOregonCityListingReveal({
+        yearBuilt: 1998,
+        lotSizeAcres: 0.24,
+        garageSpaces: 2,
+        pricePerSqft: 245,
+        city: 'Medford',
+      }),
+    ).toBe('Built in 1998')
+    expect(
+      buildOregonCityListingReveal({
+        yearBuilt: null,
+        lotSizeAcres: 0.24,
+        garageSpaces: 2,
+        pricePerSqft: 245,
+        city: 'Medford',
+      }),
+    ).toBe('0.24 acres')
+    expect(
+      buildOregonCityListingReveal({
+        yearBuilt: null,
+        lotSizeAcres: null,
+        garageSpaces: null,
+        pricePerSqft: null,
+        city: 'Medford',
+      }),
+    ).toBe('In Medford')
   })
 
   it('puts price and beds/baths/sqft on the ItemList name', () => {
@@ -69,36 +122,46 @@ describe('oregon-city fold helpers', () => {
 })
 
 describe('oregon-city page holds the SITE-105 catalog object', () => {
-  it('puts a two-bar drawing first and folds the KPI tiles', () => {
-    expect(OREGON_CITY_FIGURE_FOLD_AFTER).toBe(0)
-    expect(PAGE).toContain('foldAfter={mixChart ? OREGON_CITY_FIGURE_FOLD_AFTER : undefined}')
-    expect(PAGE).toContain('chartFirst={mixChart != null}')
-    expect(PAGE).toContain('buildOregonCityMixChart')
+  it('puts an interactive drawing first and does not fold a KPI grid', () => {
+    expect(PAGE).toContain('chartFirst={placeMos != null || supplyDrawing != null}')
+    expect(PAGE).toContain('V3MosBars')
+    expect(PAGE).toContain('V3Drawing')
+    expect(PAGE).toContain('getMarketPulse')
+    expect(PAGE).toContain('buildPlaceMosView')
+    expect(PAGE).toContain('buildOregonCitySupplyDrawing')
+    expect(PAGE).not.toMatch(/foldAfter=/)
+    expect(PAGE).not.toMatch(/v3-instrument__fold-summary/)
     expect(PAGE).not.toMatch(/kind:\s*'range'/)
     expect(PAGE).toContain('buildOregonCityItemListName')
     expect(PAGE).toContain('buildOregonCityTitle')
     expect(PAGE).toContain('OregonCityHonesty')
     expect(PAGE).toContain('id="about"')
     expect(PAGE).toContain('id="listings"')
+    expect(PAGE).toContain('layout="magazine"')
+    expect(PAGE).toContain('buildOregonCityBuyerPlace')
+    expect(PAGE).toContain('buildOregonCityListingReveal')
     expect(PAGE.indexOf('id="listings"')).toBeLessThan(PAGE.indexOf('HOME_MARKET_EDGES]}'))
   })
 
-  it('keeps the installed Alert as a stacked card, not a Quiet strip', () => {
+  it('keeps the installed Alert compact and unwrapped', () => {
     expect(HONESTY).toContain("from '@/components/ui/alert'")
     expect(HONESTY).toContain("from '@/components/ui/button'")
-    expect(HONESTY).toContain('name="InfoCircle"')
+    expect(HONESTY).toContain("from 'lucide-react'")
     expect(HONESTY).toContain('<AlertAction')
     expect(HONESTY).toContain('variant="outline"')
     expect(HONESTY).toContain('oregon-city-honesty')
     expect(HONESTY).not.toContain('v3-quiet')
     expect(HONESTY).not.toContain('V3Quiet.css')
-    expect(HONESTY_CSS).toContain('[data-slot=\'alert-title\']')
-    expect(HONESTY_CSS).not.toMatch(/border-radius:\s*0/)
-    expect(HONESTY_CSS).not.toMatch(/width:\s*100%/)
+    expect(HONESTY_CSS).not.toMatch(/background:\s*var\(--v3-cream\)/)
+    expect(HONESTY_CSS).not.toMatch(/position:\s*static/)
+    expect(HONESTY_CSS).not.toMatch(/grid-column:\s*2/)
+    expect(HONESTY_CSS).not.toMatch(/padding:\s*var\(--v3-space-md\)/)
+    expect(HONESTY_CSS).toContain('max-width: 32rem')
   })
 
-  it('asks the judge to shoot listings as well as the figure fold', () => {
-    expect(CATALOG).toContain('figures-open=#top .v3-instrument__fold-summary!click')
+  it('asks the judge to hover the bars and shoot listings', () => {
+    expect(CATALOG).toContain('figures-open=#top .v3-instrument__drawing button!hover')
     expect(CATALOG).toContain('listings=#listings')
+    expect(CATALOG).not.toContain('v3-instrument__fold-summary!click')
   })
 })
