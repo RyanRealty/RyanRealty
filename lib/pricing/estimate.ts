@@ -510,7 +510,32 @@ export function reconcileAskAndComps(opts: {
   return { close: askClose, source: 'ask', offMarketAsk }
 }
 
-export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
+/** First-list DOM hydrate stamps these; market-path rebuild must not drop them. */
+export type HydratedClosedCompDom = Pick<CmaComp, 'onMarketDate' | 'domTotal' | 'listingHistoryLine'>
+
+/**
+ * Overlay earliest-list DOM onto a CmaComp rebuilt from a pricing sale.
+ *
+ * `pricingSaleToCmaComp` only sees late `onMarketDate` + MLS `cdom`. Hydrate
+ * already computed first-list DOM (Linda 167, Clearpine 307). Do not recompute.
+ */
+export function preserveHydratedClosedCompDom<T extends CmaComp>(
+  rebuilt: T,
+  hydrated?: HydratedClosedCompDom | null,
+): T {
+  if (!hydrated) return rebuilt
+  return {
+    ...rebuilt,
+    onMarketDate: hydrated.onMarketDate ?? rebuilt.onMarketDate,
+    domTotal: hydrated.domTotal ?? rebuilt.domTotal,
+    listingHistoryLine: hydrated.listingHistoryLine ?? rebuilt.listingHistoryLine,
+  }
+}
+
+export function pricingSaleToCmaComp(
+  sale: SelectedPricingComp,
+  hydrated?: HydratedClosedCompDom | null,
+): CmaComp {
   const concessions = resolveConcessions({
     amount: sale.concessionsAmount,
     yn: sale.concessionsYn,
@@ -524,38 +549,41 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     onMarketDate,
     closeDate: sale.closeDate,
   })
-  return {
-    listingKey: sale.listingKey,
-    mlsNumber: sale.listNumber,
-    address: sale.address,
-    city: sale.city,
-    subdivision: sale.subdivision,
-    latitude: sale.latitude,
-    longitude: sale.longitude,
-    beds: sale.beds,
-    baths: sale.baths,
-    sqft: sale.sqft,
-    lotAcres: sale.lotAcres,
-    propertySubType: sale.productClass === 'detached' ? 'Single Family Residence' : sale.productClass,
-    yearBuilt: sale.yearBuilt,
-    photoUrl: sale.photoUrl,
-    publicRemarks: sale.publicRemarks,
-    viewDescription: null,
-    taxAnnual: null,
-    listPrice: sale.lastAsk,
-    originalListPrice: sale.originalAsk,
-    closePrice: sale.closePrice,
-    concessionsAmount: concessions,
-    concessionsYn: sale.concessionsYn,
-    sellerNet: sellerNetFromPrice(sale.closePrice, concessions),
-    closeDate: sale.closeDate,
-    onMarketDate,
-    daysToOffer: sale.daysToOffer,
-    domTotal,
-    selectionTier: sale.selectionTier,
-    proximity: sale.proximity,
-    roomDifference: sale.roomDifference ?? null,
-  }
+  return preserveHydratedClosedCompDom(
+    {
+      listingKey: sale.listingKey,
+      mlsNumber: sale.listNumber,
+      address: sale.address,
+      city: sale.city,
+      subdivision: sale.subdivision,
+      latitude: sale.latitude,
+      longitude: sale.longitude,
+      beds: sale.beds,
+      baths: sale.baths,
+      sqft: sale.sqft,
+      lotAcres: sale.lotAcres,
+      propertySubType: sale.productClass === 'detached' ? 'Single Family Residence' : sale.productClass,
+      yearBuilt: sale.yearBuilt,
+      photoUrl: sale.photoUrl,
+      publicRemarks: sale.publicRemarks,
+      viewDescription: null,
+      taxAnnual: null,
+      listPrice: sale.lastAsk,
+      originalListPrice: sale.originalAsk,
+      closePrice: sale.closePrice,
+      concessionsAmount: concessions,
+      concessionsYn: sale.concessionsYn,
+      sellerNet: sellerNetFromPrice(sale.closePrice, concessions),
+      closeDate: sale.closeDate,
+      onMarketDate,
+      daysToOffer: sale.daysToOffer,
+      domTotal,
+      selectionTier: sale.selectionTier,
+      proximity: sale.proximity,
+      roomDifference: sale.roomDifference ?? null,
+    },
+    hydrated,
+  )
 }
 
 export function adjustCompAlongMarket(opts: {
@@ -565,8 +593,13 @@ export function adjustCompAlongMarket(opts: {
   saleStory: StoryClass
   points: MarketIndexPoint[]
   asOf: string
+  /** Hydrated first-list DOM from `selection.comps`. Overlay after sale rebuild. */
+  hydrated?: HydratedClosedCompDom | null
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
-  return adjustCmaCompAlongMarket({ ...opts, comp: pricingSaleToCmaComp(opts.sale) })
+  return adjustCmaCompAlongMarket({
+    ...opts,
+    comp: pricingSaleToCmaComp(opts.sale, opts.hydrated),
+  })
 }
 
 /**
