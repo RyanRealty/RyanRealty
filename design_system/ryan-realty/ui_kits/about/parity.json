@@ -172,7 +172,7 @@
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png"
     },
-    "shotsHash": "sha256:712930e0fbbb1eb2c73aaab003ecf20203e2ab010cf8b186d8c0eb90c6e96d87",
+    "shotsHash": "sha256:f95a3b7477d397c5d63c1e8a3776169a1516e1eca8ef06b962c97c41f7872e1a",
     "scores": [
       52,
       47,
@@ -189,7 +189,7 @@
       { "id": "shadcn-carousel" },
       { "id": "shadcn-input" }
     ],
-    "evaluatorBlocked": "2026-09-14 recapture: first viewport + proof + reach + office. grok CLI missing in this cloud lane. Do not invent demoMatch or competitiveBriefPass. shotsHash sha256:712930e0 (desktop/mobile375 unchanged). Scores 52/47/57 stay the prior instrument. Tip Ready for Cos, not done.",
+    "evaluatorBlocked": "2026-09-14 audit-fix recapture: first viewport + proof + reach + office. grok CLI missing in this cloud lane. Do not invent demoMatch or competitiveBriefPass. shotsHash sha256:f95a3b74. Scores 52/47/57 stay the prior instrument. Tip Ready for Cos, not done.",
     "defects": [
       {
         "section": "#firm",
@@ -224,7 +224,7 @@
       "rubricVersion": "v1-2026-09-08",
       "shotsHash": "sha256:79ad786fe5d34960b88199dd066b0ab6ab91edc0a23cee56fe3aa148b19a9c10"
     },
-    "rebaselineReason": "Craft pass 2026-09-14: V3Proof is the first proof band after AboutFirm. AboutTeamTeaser deleted. AboutOffice (115 NW Oregon Ave #2 + OREA) and V3Doors four-up sit on the fold. desktop/mobile375 shotsHash sha256:712930e0 unchanged. Prior SITE-64 scores are not a Looking pass.",
+    "rebaselineReason": "Audit-fix 2026-09-14: no #team-teaser, one boutique sentence, equal four-up (no v3-doors--lead), Redfin-clean reviews, firm OREA on AboutOffice. desktop/mobile375 shotsHash sha256:f95a3b74. Prior SITE-64 scores are not a Looking pass.",
     "verdict": "Looking/taste cannot pass a Meet-the-Team About. The contract opens on AboutFirm. demoMatch is false. Cos scores the shots.",
     "contactListIsFirstContent": false,
     "contactListAnswer": "H1 and one purpose line (boutique · Central Oregon · buy and sell) on the Bend office exterior, Google reviews as primary proof, dated local closings, Call/Text/Email/Schedule, office 115 NW Oregon Ave #2 + firm OREA, and a one-line inquiry to /contact. No three equal broker Cards. No Meet-the-Team dump. Brokers belong on /team."
