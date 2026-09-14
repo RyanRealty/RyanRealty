@@ -1,6 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { stampClosedCompDom } from './closed-comp-dom-stamp'
+import { hydrateClosedCompDaysOnMarket } from './hydrate-closed-comp-dom'
 import type { CmaComp } from '@/lib/cma/types'
+
+vi.mock('@/lib/data/cma/localOutcomeReads', () => ({
+  getClosedCompListStarts: async () => {
+    throw new Error('Invariant: incrementalCache missing')
+  },
+}))
 
 function comp(over: Partial<CmaComp> = {}): CmaComp {
   return {
@@ -82,5 +89,16 @@ describe('stampClosedCompDom', () => {
     })
     expect(stamped.onMarketDate).toBe('2025-11-11')
     expect(stamped.domTotal).toBe(41)
+  })
+})
+
+describe('hydrateClosedCompDaysOnMarket', () => {
+  it('fail-opens when history lookup throws — does not wipe or crash', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const before = comp()
+    const out = await hydrateClosedCompDaysOnMarket([before])
+    expect(out).toHaveLength(1)
+    expect(out[0]).toEqual(before)
+    spy.mockRestore()
   })
 })

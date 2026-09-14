@@ -315,8 +315,16 @@ export async function getClosedCompListStarts(
   // listing_history / price_history are keyed by RETS ListingKey. Callers pass
   // CmaComp.listingKey (already ListingKey from listings), but resolve first so
   // a ListNumber cannot silently miss — same discipline as getCmaListingPriceEvents.
-  const resolved = await Promise.all(raw.map((k) => resolveCanonicalListingKey(k)))
-  const keys = Array.from(new Set(resolved.map((k) => k.trim()).filter(Boolean)))
+  // Resolve uses Next unstable_cache. Outside a request (unit tests, scripts)
+  // it throws; fall back to the keys we already have (usually ListingKey).
+  let keys: string[]
+  try {
+    const resolved = await Promise.all(raw.map((k) => resolveCanonicalListingKey(k)))
+    keys = Array.from(new Set(resolved.map((k) => k.trim()).filter(Boolean)))
+  } catch (err) {
+    console.error('[getClosedCompListStarts] resolveCanonicalListingKey', err)
+    keys = raw
+  }
   if (keys.length === 0) return out
 
   // History/price batches can exceed PostgREST's 1,000-row response cap across

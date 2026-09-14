@@ -17,6 +17,10 @@ vi.mock('@/lib/data', () => ({
   selectCmaCompsByKeys,
 }))
 
+vi.mock('@/lib/cma/hydrate-closed-comp-dom', () => ({
+  hydrateClosedCompDaysOnMarket: async <T,>(comps: T) => comps,
+}))
+
 const divideSpy = vi.hoisted(() => vi.fn(() => false))
 vi.mock('@/lib/pricing/divides', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/pricing/divides')>()
