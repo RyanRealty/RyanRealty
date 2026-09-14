@@ -16,17 +16,17 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, level 1, id='top'. The place answer: active listings across all property types, active single-family listings, and the median single-family list price, all three from ONE geo snapshot row, under one trace that names the population and the filter, stamped with that row's own refreshedAt. SITE-105: one lead figure (active count, a door into /homes-for-sale/<city>) stays on screen; SFR count and median fold behind a named disclosure so the first viewport is not a three-tile KPI grid. A claim sentence restates the same three snapshot numbers. No asking-price lollipop — photographed listings live on the Ledger. The other two figures have no node of their own and carry no href rather than a fake one. Its ask is PRIMARY pointing at #referral. At 390 the chrome CTA sits in the closed menu, so this node carries its own primary. Value my home is the wrong ask here: this city is outside our market.",
+      "section": "Pattern 1, level 1, id='top'. The place answer from ONE geo snapshot row: a two-bar drawing (on the market vs houses) with chartFirst, figures folded behind 'The counts behind the bars' so the first viewport is not a KPI grid. Labels stay plain (on the market / houses / typical ask) — no SFR jargon. A claim sentence restates the same snapshot numbers. No asking-price lollipop — photographed listings live on the Ledger immediately after this band. Its ask is PRIMARY pointing at #referral. Value my home is the wrong ask here: this city is outside our market.",
       "blocking": true
     },
     {
       "name": "OregonCityHonesty",
-      "section": "SITE-105 catalog Alert on the route (app/oregon/[city]/_v3/OregonCityHonesty.tsx). id='about'. Imports and renders @/components/ui/alert — icon, rounded bordered navy/cream container, title, description, AlertAction as outline Button. Title 'We don't work in <city>', description carrying the live active count from the same geo snapshot the Instrument prints, door to #referral. House-only V3Quiet import is not Tip Ready.",
+      "section": "SITE-105 catalog Alert on the route (app/oregon/[city]/_v3/OregonCityHonesty.tsx). id='about'. Imports and renders @/components/ui/alert as the stacked shadcn demo (icon, title, description, AlertAction outline Button) inside a rounded bordered navy/cream card — not a V3Quiet hairline strip. Title 'We don't work in <city>', description carrying the live active count from the same geo snapshot the Instrument prints, door to #referral.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6 after the place answer: home-market towns as real doors (Bend, Redmond, Sisters, Sunriver, La Pine). The same component is the level-1 fallback when the snapshot row does not return (id='top'). Honesty itself lives on OregonCityHonesty, not a Quiet hairline strip.",
+      "section": "Pattern 6 after live listings: home-market towns as real doors (Bend, Redmond, Sisters, Sunriver, La Pine). The same component is the level-1 fallback when the snapshot row does not return (id='top'). Honesty itself lives on OregonCityHonesty, not a Quiet hairline strip.",
       "blocking": true
     },
     {
@@ -127,8 +127,8 @@
     "V3Breadcrumb",
     "OregonCityHonesty (id=about, catalog Alert honesty banner)",
     "V3Instrument (level 1, id=top, the place answer)",
-    "V3Quiet (home-market doors after the place answer)",
     "V3Ledger (id=listings, live active listings)",
+    "V3Quiet (home-market doors after live listings)",
     "OutOfAreaReferralSheet (V3Sheet, id=referral)",
     "V3Ledger (id=other-markets, other Oregon cities)",
     "V3Footer"

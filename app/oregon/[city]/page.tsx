@@ -106,6 +106,7 @@ import {
   OREGON_CITY_FIGURE_FOLD_AFTER,
   buildOregonCityClaim,
   buildOregonCityItemListName,
+  buildOregonCityMixChart,
   buildOregonCityTitle,
 } from './_v3/oregon-city-fold'
 import './oregon-city.css'
@@ -207,7 +208,7 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   if (city.activeAllCount > 0) {
     figures.push({
       value: v3Text(city.activeAllCount.toLocaleString('en-US')),
-      label: v3Text('active listings, all property types'),
+      label: v3Text('on the market'),
       href: browsePath,
       sentence: v3Text(
         `Everything on the market in ${city.name} right now, houses and condos and bare land together.`,
@@ -217,18 +218,23 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   if (city.activeSfrCount > 0) {
     figures.push({
       value: v3Text(city.activeSfrCount.toLocaleString('en-US')),
-      label: v3Text('active single-family listings'),
+      label: v3Text('houses'),
       sentence: v3Text('Of those, the ones that are a house on its own lot.'),
     })
   }
   if (city.medianListPrice != null) {
     figures.push({
       value: v3Text(formatPrice(city.medianListPrice)),
-      label: v3Text('median single-family list price'),
+      label: v3Text('typical ask'),
       sentence: v3Text('Half of those houses ask more than this, half ask less.'),
     })
   }
   const [firstFigure, ...restFigures] = figures
+  const mixChart = buildOregonCityMixChart({
+    name: city.name,
+    activeAllCount: city.activeAllCount,
+    activeSfrCount: city.activeSfrCount,
+  })
 
   // H1 stays the search phrase. Honesty lives in the Alert above (SITE-76), so
   // this band does not restate "we don't work here" as a second display title.
@@ -442,8 +448,10 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
               }),
             )}
             figures={[firstFigure, ...restFigures]}
-            foldAfter={OREGON_CITY_FIGURE_FOLD_AFTER}
-            foldLabel={v3Text('SFR count and median ask')}
+            chartFirst={mixChart != null}
+            {...(mixChart ? { chart: mixChart } : {})}
+            foldAfter={mixChart ? OREGON_CITY_FIGURE_FOLD_AFTER : undefined}
+            foldLabel={v3Text('The counts behind the bars')}
             source={v3Text(snapshotTrace)}
             sourceName={v3Text('Oregon Data Share MLS')}
             asOf={city.refreshedAt ?? undefined}
@@ -469,13 +477,6 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
             ]}
           />
         )}
-
-        {/* Home-market doors stay crawlable; parked under the place answer so
-            the Alert + Instrument can share the first viewport at 375. */}
-        <V3Quiet
-          ariaLabel={`Our Central Oregon home market from ${city.name}`}
-          items={[...HOME_MARKET_EDGES]}
-        />
 
         {firstListingRow ? (
           <V3Ledger
@@ -510,6 +511,13 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
             }}
           />
         )}
+
+        {/* Home-market doors stay crawlable; after live inventory so the
+            first viewport can show photographed listings, not a door grid. */}
+        <V3Quiet
+          ariaLabel={`Our Central Oregon home market from ${city.name}`}
+          items={[...HOME_MARKET_EDGES]}
+        />
 
         {/* Referral capture — geo:out-of-area, nothing auto-sends. */}
         <OutOfAreaReferralSheet citySlug={city.slug} cityName={city.name} />
