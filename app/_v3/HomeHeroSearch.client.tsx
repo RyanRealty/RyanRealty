@@ -8,7 +8,7 @@
  * a digit wheel — AnimatedNumber paints cream tiles that read as a white hole.
  */
 
-import { useCallback, useId, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { flattenSuggestions, useSearchSuggest } from '@/components/search/SearchSuggest'
 import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
@@ -122,6 +122,18 @@ export function HomeHeroSearch({
   const sellFieldId = `${uid}-sell`
   const buyModeId = `${uid}-mode-buy`
   const sellModeId = `${uid}-mode-sell`
+  const [mode, setMode] = useState('buy')
+  useEffect(() => {
+    const buy = document.getElementById(buyModeId)
+    const sell = document.getElementById(sellModeId)
+    const sync = () => setMode(sell instanceof HTMLInputElement && sell.checked ? 'sell' : 'buy')
+    buy?.addEventListener('change', sync)
+    sell?.addEventListener('change', sync)
+    return () => {
+      buy?.removeEventListener('change', sync)
+      sell?.removeEventListener('change', sync)
+    }
+  }, [buyModeId, sellModeId])
 
   return (
     <div className="home-hero-search">
@@ -151,6 +163,8 @@ export function HomeHeroSearch({
       <V3Tabs
         label="Buy or sell"
         count={2}
+        value={mode}
+        onValueChange={setMode}
         className="home-hero-search__tabs"
         items={[
           { value: 'buy', label: 'Buy', htmlFor: buyModeId },

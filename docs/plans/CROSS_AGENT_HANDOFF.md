@@ -1,11 +1,11 @@
-# Current — 2026-09-14 (SITE-97 homepage-v6 craft; do not merge)
+# Current — 2026-09-14 (SITE-97 homepage-v6; PR only; do not merge)
 
-Surface: Cursor cloud, `cursor/homepage-v6-site97-d7fe`. Craft PR. Do not merge. Cos cherry-picks.
+Surface: Cursor cloud, `cursor/homepage-v6-site97-d7fe` → PR #229. Do not merge. Cos cherry-picks Tip Readys.
 
-- **Done:** SITE-97 claimed (`cursor-cloud-site97-20260914`). Compact Stage, catalog MorphingSearch + beUI tabs on the route, Card rails in the first viewport, sourced ItemList JSON-LD + live count in generateMetadata. Taste receipt not written yet.
-- **Next:** Shots + judge chain, then Tip Ready `--ship`. Do not merge this PR to main.
-- **Node:** SITE-97 in_progress.
-- Skills read: site-queue, TASTE.md, VOICE.md.
+- **Done:** SITE-97 claimed (`cursor-cloud-site97-20260914`). Compact Stage, rails in the 375 fold, catalog MorphingSearch + beUI tabs on the route, ItemList JSON-LD with share-kind, live count in generateMetadata, no-glass paint on the morph portal, Sell radio/tabs synced.
+- **Blocked on taste:** no `grok` CLI, no `cursor-agent`, no `claude` CLI in this cloud VM. Judge chain not run. Receipt not written. Node stays in_progress.
+- **Next:** `npx tsx scripts/taste-evaluate.ts homepage-v6 --builder grok-4.5` on a machine with the grok or cursor-agent CLI. Do not invent demoMatch.
+- Skills read: `.claude/skills/site-queue/SKILL.md`, `.cursor/skills/site-queue/SKILL.md`.
 
 # Prior
 
