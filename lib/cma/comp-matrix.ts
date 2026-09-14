@@ -39,6 +39,7 @@ import {
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { closedEntries, remodelCell, subjectEntry, type MatrixEntry } from '@/lib/cma/matrix-entry'
+import { statusPpsfCaptionHtml } from '@/lib/cma/status-ppsf'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
@@ -823,6 +824,7 @@ export function renderMatrixHtml(input: {
   return `
   <h3 class="subhead">${esc(input.heading)}</h3>
   ${input.lead ?? ''}
+  ${statusPpsfCaptionHtml(input.family, rest)}
   ${folded.sentence ? `<p>${esc(folded.sentence)}</p>` : ''}
   ${tables}
   ${matrixStack({

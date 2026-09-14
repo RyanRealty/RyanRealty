@@ -17,10 +17,10 @@ import { buildCma } from '@/lib/cma/build'
 import { sendCmaToLead, prepareCmaSendPreview, type CmaSendOverride } from '@/lib/cma/send'
 import { saveCmaFirstContactOverride } from '@/lib/cma/first-contact-override'
 import { resolveCmaSubject } from '@/lib/cma/subject'
-import { slugifyAddress } from '@/lib/cma-request'
+import { createCmaRequest } from '@/lib/cma-request'
 import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
-import { resolveWritableCmaSlot } from '@/lib/cma/versions'
-import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
+import { parseContactAddress } from '@/lib/crm/contact-cma-address'
+import { isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
 import { parsePositiveInt, parsePositiveNumber, resolveCmaClientName } from '@/lib/cma/client-link'
 import {
   attachCmaToPerson,
@@ -62,7 +62,7 @@ export type BuildCmaAdminInput = {
 
 export async function buildCmaAdminAction(
   input: BuildCmaAdminInput,
-): Promise<{ data: { slug: string } | null; error: string | null }> {
+): Promise<{ data: { slug: string; queued: true } | null; error: string | null }> {
   try {
     if (!(await requireAdmin())) return { data: null, error: 'Unauthorized' }
     const address = input.address?.trim() || null
@@ -71,62 +71,70 @@ export async function buildCmaAdminAction(
       return { data: null, error: 'Enter a property address or an MLS number.' }
     }
 
-    // Canonical slug: derived once from the subject address (G47 one property,
-    // one slug). MLS-only builds resolve the subject first to get the address.
-    let slug: string
+    // Fast path only: resolve an address, land a draft + content:cma row, kick
+    // the worker. Do NOT await buildCma here — the action has no maxDuration
+    // and a 30–60s build trips app/admin/error.tsx while the work continues
+    // (Canter Ct / Admin Engineer dig). Same kick as seller-LP intake.
     let rawAddress = address
+    let parsedCity: string | null = null
+    let parsedState: string | null = null
+    let parsedPostalCode: string | null = null
+    let parsedStreet: string | null = null
     if (address) {
-      slug = slugifyAddress(address)
+      const parsed = parseContactAddress(address)
+      rawAddress = parsed?.rawAddress ?? address
+      parsedStreet = parsed?.parsedStreet ?? null
+      parsedCity = parsed?.parsedCity ?? null
+      parsedState = parsed?.parsedState ?? null
+      parsedPostalCode = parsed?.parsedPostalCode ?? null
     } else {
       const resolved = await resolveCmaSubject({ mlsNumber: mls })
       if (!resolved.subject) {
         return { data: null, error: `No listing found for MLS ${mls}.` }
       }
       rawAddress = `${resolved.subject.streetAddress}, ${resolved.subject.city}, OR ${resolved.subject.postalCode ?? ''}`.trim()
-      slug = slugifyAddress(rawAddress)
+      parsedStreet = resolved.subject.streetAddress
+      parsedCity = resolved.subject.city
+      parsedState = 'OR'
+      parsedPostalCode = resolved.subject.postalCode ?? null
     }
-
-    // Land the build on a writable slot: rebuild the open draft in place, or
-    // open a new --vN document after a finalized/delivered CMA — never clobber
-    // a protected document back to draft (lib/cma/versions.ts). In-place
-    // rebuilds of a specific document stay on rebuildCmaAction (explicit slug).
-    const slot = await resolveWritableCmaSlot(slug)
-    if (!slot.ok) return { data: null, error: slot.error }
-    slug = slot.slug
 
     const personId = parsePositiveInt(input.personId ?? null)
     const linked = personId ? await getPersonForCmaKickoff(personId) : null
     const intent = isCmaClientIntent(input.intent) ? input.intent : null
-    const result = await buildCma({
-      slug,
-      mlsNumber: mls,
+    const created = await createCmaRequest({
       rawAddress,
-      client: {
-        name: resolveCmaClientName({
-          enteredName: input.clientName,
-          linkedPersonName: linked?.name,
-        }),
-        email: input.clientEmail?.trim().toLowerCase() || linked?.primaryEmail || null,
-        phone: input.clientPhone?.trim() || linked?.primaryPhone || null,
-        notes: applyCmaClientIntent(null, intent),
-      },
-      brokerSlug: input.brokerSlug?.trim() || null,
+      parsedStreet,
+      parsedCity,
+      parsedState,
+      parsedPostalCode,
+      leadEmail: input.clientEmail?.trim().toLowerCase() || linked?.primaryEmail || null,
+      leadName: resolveCmaClientName({
+        enteredName: input.clientName,
+        linkedPersonName: linked?.name,
+      }),
+      leadPhone: input.clientPhone?.trim() || linked?.primaryPhone || null,
+      crmPersonId: personId,
       requestSource: 'admin-manual',
-      personId,
-      subjectFacts: {
-        beds: parsePositiveInt(input.beds ?? null),
-        baths: parsePositiveNumber(input.baths ?? null),
-        sqft: parsePositiveInt(input.sqft ?? null),
+      notifyLead: false,
+      notifyBroker: false,
+      brokerSlug: input.brokerSlug?.trim() || null,
+      mlsNumber: mls,
+      sellerHomeDetails: {
+        bedrooms: input.beds != null && String(input.beds).trim() ? String(input.beds) : undefined,
+        bathrooms: input.baths != null && String(input.baths).trim() ? String(input.baths) : undefined,
+        squareFeet: input.sqft != null && String(input.sqft).trim() ? String(input.sqft) : undefined,
+        intent: intent ?? undefined,
       },
-      clientIntent: intent,
     })
-    if (!result.ok) return { data: null, error: result.error ?? 'Build failed' }
+    if (!created.ok) return { data: null, error: created.error }
+    const slug = created.slug
     if (personId) {
       await attachCmaToPerson(slug, personId, { replace: true })
       revalidatePerson(personId)
     }
     refresh(slug)
-    return { data: { slug }, error: null }
+    return { data: { slug, queued: true }, error: null }
   } catch (e) {
     console.error('[buildCmaAdminAction]', e)
     return { data: null, error: 'Build failed unexpectedly' }

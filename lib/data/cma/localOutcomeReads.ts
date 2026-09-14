@@ -41,6 +41,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
+import { listStartDatesFromHistory } from '@/lib/cma/listing-history-line'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -286,6 +288,151 @@ export const getCmaListingPriceEvents = makeResilientCached(
   { revalidate: CACHE_WINDOWS.marketStats, tags: [cacheTag.listings] },
   [] as CmaListingPriceEvent[],
 )
+
+export type ClosedCompListStartRow = {
+  listingKey: string
+  onMarketDate: string | null
+  listDate: string | null
+  originalEntryTimestamp: string | null
+  originalOnMarketTimestamp: string | null
+  historyListDates: string[]
+}
+
+/**
+ * First-list dates for a closed-comp set. Relists reset listings.OnMarketDate
+ * to the back-on-market day; original entry + listing/price history still hold
+ * the first list (MARKET_TRUTH §3.2). Batch-read for the selected keys only.
+ */
+export async function getClosedCompListStarts(
+  listingKeys: string[],
+): Promise<Map<string, ClosedCompListStartRow>> {
+  const out = new Map<string, ClosedCompListStartRow>()
+  const raw = Array.from(new Set(listingKeys.map((k) => k.trim()).filter(Boolean)))
+  if (raw.length === 0) return out
+  const sb = client()
+  if (!sb) return out
+
+  // listing_history / price_history are keyed by RETS ListingKey. Callers pass
+  // CmaComp.listingKey (already ListingKey from listings), but resolve first so
+  // a ListNumber cannot silently miss — same discipline as getCmaListingPriceEvents.
+  // Resolve uses Next unstable_cache. Outside a request (unit tests, scripts)
+  // it throws; fall back to the keys we already have (usually ListingKey).
+  let keys: string[]
+  try {
+    const resolved = await Promise.all(raw.map((k) => resolveCanonicalListingKey(k)))
+    keys = Array.from(new Set(resolved.map((k) => k.trim()).filter(Boolean)))
+  } catch (err) {
+    console.error('[getClosedCompListStarts] resolveCanonicalListingKey', err)
+    keys = raw
+  }
+  if (keys.length === 0) return out
+
+  // History/price batches can exceed PostgREST's 1,000-row response cap across
+  // a closed-comp set — page with a stable order (G48). Cap stays 2,000 so a
+  // huge set still finishes; earliest list dates live near the front of the order.
+  const [listingRes, historyPage, pricePage] = await Promise.all([
+    sb
+      .from('listings')
+      .select('ListingKey, OnMarketDate, ListDate, original_entry_timestamp, original_on_market_timestamp')
+      .in('ListingKey', keys),
+    fetchPagedRows<Record<string, unknown>>(
+      (from, to) =>
+        sb
+          .from('listing_history')
+          .select('listing_key, event, event_date, description')
+          .in('listing_key', keys)
+          .order('event_date', { ascending: true })
+          .order('listing_key', { ascending: true })
+          .range(from, to),
+      2000,
+    ),
+    fetchPagedRows<Record<string, unknown>>(
+      (from, to) =>
+        sb
+          .from('price_history')
+          .select('listing_key, changed_at')
+          .in('listing_key', keys)
+          .order('changed_at', { ascending: true })
+          .order('listing_key', { ascending: true })
+          .range(from, to),
+      2000,
+    ),
+  ])
+  if (listingRes.error) {
+    console.error('[getClosedCompListStarts] listings', listingRes.error.message)
+  }
+  if (historyPage.error) {
+    console.error('[getClosedCompListStarts] listing_history', historyPage.error.message)
+  }
+  if (pricePage.error) {
+    console.error('[getClosedCompListStarts] price_history', pricePage.error.message)
+  }
+  const historyRes = { data: historyPage.rows }
+  const priceRes = { data: pricePage.rows }
+
+  for (const key of keys) {
+    out.set(key, {
+      listingKey: key,
+      onMarketDate: null,
+      listDate: null,
+      originalEntryTimestamp: null,
+      originalOnMarketTimestamp: null,
+      historyListDates: [],
+    })
+  }
+
+  for (const row of (listingRes.data ?? []) as Array<Record<string, unknown>>) {
+    const key = typeof row.ListingKey === 'string' ? row.ListingKey : null
+    if (!key) continue
+    const cur = out.get(key) ?? {
+      listingKey: key,
+      onMarketDate: null,
+      listDate: null,
+      originalEntryTimestamp: null,
+      originalOnMarketTimestamp: null,
+      historyListDates: [],
+    }
+    cur.onMarketDate = typeof row.OnMarketDate === 'string' ? row.OnMarketDate : null
+    cur.listDate = typeof row.ListDate === 'string' ? row.ListDate : null
+    cur.originalEntryTimestamp =
+      typeof row.original_entry_timestamp === 'string' ? row.original_entry_timestamp : null
+    cur.originalOnMarketTimestamp =
+      typeof row.original_on_market_timestamp === 'string' ? row.original_on_market_timestamp : null
+    out.set(key, cur)
+  }
+
+  const historyByKey = new Map<string, Array<{ event?: string | null; date?: string | null; description?: string | null; source: 'listing_history' | 'price_history' }>>()
+  for (const row of (historyRes.data ?? []) as Array<Record<string, unknown>>) {
+    const key = typeof row.listing_key === 'string' ? row.listing_key : null
+    if (!key) continue
+    const list = historyByKey.get(key) ?? []
+    list.push({
+      event: typeof row.event === 'string' ? row.event : null,
+      date: typeof row.event_date === 'string' ? row.event_date : null,
+      description: typeof row.description === 'string' ? row.description : null,
+      source: 'listing_history',
+    })
+    historyByKey.set(key, list)
+  }
+  for (const row of (priceRes.data ?? []) as Array<Record<string, unknown>>) {
+    const key = typeof row.listing_key === 'string' ? row.listing_key : null
+    if (!key) continue
+    const list = historyByKey.get(key) ?? []
+    list.push({
+      date: typeof row.changed_at === 'string' ? row.changed_at : null,
+      source: 'price_history',
+    })
+    historyByKey.set(key, list)
+  }
+
+  for (const [key, events] of historyByKey) {
+    const cur = out.get(key)
+    if (!cur) continue
+    cur.historyListDates = listStartDatesFromHistory(events)
+  }
+
+  return out
+}
 
 /**
  * ── the failed-then-sold pair reads ────────────────────────────────────────

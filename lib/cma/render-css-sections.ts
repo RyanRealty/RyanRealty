@@ -681,6 +681,14 @@ export function cmaSectionStyles(): string {
   .stat2 .st-l { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
   table.kv.is-wide td.b, table.kv.is-wide th.b { color: var(--muted); font-size: 9px; }
   table.kv thead th { font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid var(--navy); }
+  .ppsf-status { margin: 8px 0 16px; }
+  .ppsf-status .subhead { margin: 0 0 6px; }
+  .ppsf-status-table th.n, .ppsf-status-table td.n {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .ppsf-status-caption { margin: 4px 0 10px; }
 
   table.comps .sub-cell { font-size: 8px; color: var(--muted); margin-top: 1px; }
   table.comps-adjust td.num, table.comps-adjust th.v {

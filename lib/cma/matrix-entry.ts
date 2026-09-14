@@ -28,6 +28,7 @@ import {
   pricePathFromFinalCycle,
   pricePathFromListing,
   pricePathFromSale,
+  shortOrExactUsd,
   shortUsd,
   type PricePath,
 } from '@/lib/cma/price-path'
@@ -209,7 +210,7 @@ export function closedEntries(
     const toOffer = days(c.daysToOffer)
     const ran = days(c.domTotal)
     const outcome = [
-      c.closePrice > 0 ? `sold ${shortUsd(c.closePrice)}` : 'sold',
+      c.closePrice > 0 ? `sold ${shortOrExactUsd(c.closePrice)}` : 'sold',
       toOffer != null
         ? `offer in ${int(toOffer)} ${toOffer === 1 ? 'day' : 'days'}`
         : ran != null
@@ -263,7 +264,7 @@ export function closedEntries(
         const v = c.concessions ?? c.concessionsAmount ?? null
         return v != null && Number.isFinite(v) ? Number(v) : null
       })(),
-      endLabel: c.closePrice > 0 ? `sold ${shortUsd(c.closePrice)}` : 'sold',
+      endLabel: c.closePrice > 0 ? `sold ${shortOrExactUsd(c.closePrice)}` : 'sold',
       latitude: c.latitude ?? null,
       longitude: c.longitude ?? null,
       sort: sortAttrs([

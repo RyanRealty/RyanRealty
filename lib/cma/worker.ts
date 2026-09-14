@@ -135,6 +135,7 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
   const linkedPersonId = num(payload['crm_person_id']) ?? notifyEntries(payload)[0]?.personId ?? null
   const result = await buildCma({
     slug,
+    mlsNumber: str(payload['mls_number']),
     rawAddress: str(payload['subject_address']),
     city: str(payload['subject_city']),
     postalCode: str(payload['subject_postal_code']),

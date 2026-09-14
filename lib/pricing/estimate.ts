@@ -17,6 +17,7 @@ import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject
 import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
+import { closedSaleDomTotal } from '@/lib/cma/listing-history-line'
 import {
   describeIndexShape,
   describePath,
@@ -509,10 +510,40 @@ export function reconcileAskAndComps(opts: {
   return { close: askClose, source: 'ask', offMarketAsk }
 }
 
+/** First-list DOM hydrate stamps these; market-path rebuild must not drop them. */
+export type HydratedClosedCompDom = Pick<CmaComp, 'onMarketDate' | 'domTotal' | 'listingHistoryLine'>
+
+/**
+ * Overlay earliest-list DOM onto a CmaComp rebuilt from a pricing sale.
+ *
+ * `pricingSaleToCmaComp` only sees late `onMarketDate` + MLS `cdom`. Hydrate
+ * already computed first-list DOM (Linda 167, Clearpine 307). Do not recompute.
+ */
+export function preserveHydratedClosedCompDom<T extends CmaComp>(
+  rebuilt: T,
+  hydrated?: HydratedClosedCompDom | null,
+): T {
+  if (!hydrated) return rebuilt
+  return {
+    ...rebuilt,
+    onMarketDate: hydrated.onMarketDate ?? rebuilt.onMarketDate,
+    domTotal: hydrated.domTotal ?? rebuilt.domTotal,
+    listingHistoryLine: hydrated.listingHistoryLine ?? rebuilt.listingHistoryLine,
+  }
+}
+
 export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
   const concessions = resolveConcessions({
     amount: sale.concessionsAmount,
     yn: sale.concessionsYn,
+    closeDate: sale.closeDate,
+  })
+  const onMarketDate = sale.onMarketDate?.slice(0, 10) || null
+  // Prefer first-list→close calendar days when MLS / current on_market understates the run.
+  // History / original entry is stamped after selection (hydrateClosedCompDaysOnMarket).
+  const domTotal = closedSaleDomTotal({
+    daysOnMarket: sale.cdom,
+    onMarketDate,
     closeDate: sale.closeDate,
   })
   return {
@@ -534,13 +565,15 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     viewDescription: null,
     taxAnnual: null,
     listPrice: sale.lastAsk,
+    originalListPrice: sale.originalAsk,
     closePrice: sale.closePrice,
     concessionsAmount: concessions,
     concessionsYn: sale.concessionsYn,
     sellerNet: sellerNetFromPrice(sale.closePrice, concessions),
     closeDate: sale.closeDate,
+    onMarketDate,
     daysToOffer: sale.daysToOffer,
-    domTotal: sale.cdom,
+    domTotal,
     selectionTier: sale.selectionTier,
     proximity: sale.proximity,
     roomDifference: sale.roomDifference ?? null,
@@ -554,8 +587,13 @@ export function adjustCompAlongMarket(opts: {
   saleStory: StoryClass
   points: MarketIndexPoint[]
   asOf: string
+  /** Hydrated first-list DOM from `selection.comps`. Overlay after sale rebuild. */
+  hydrated?: HydratedClosedCompDom | null
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
-  return adjustCmaCompAlongMarket({ ...opts, comp: pricingSaleToCmaComp(opts.sale) })
+  return adjustCmaCompAlongMarket({
+    ...opts,
+    comp: preserveHydratedClosedCompDom(pricingSaleToCmaComp(opts.sale), opts.hydrated),
+  })
 }
 
 /**

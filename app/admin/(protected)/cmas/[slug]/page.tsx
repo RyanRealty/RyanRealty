@@ -24,6 +24,7 @@ import { formatDate } from '@/lib/format/date'
 import { brokerCmaViewHref, canOpenCmaDocument } from '@/lib/cma/draft-access'
 import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
 import { CmaReviewDocumentButton } from '@/app/admin/(protected)/cmas/_components/CmaReviewDocumentButton'
+import { CmaBuildWatch } from '@/app/admin/(protected)/cmas/_components/CmaBuildWatch'
 import { CmaOutcomeCell } from '@/components/admin/cma/CmaOutcomeCell'
 import { getCmaOutcomes } from '@/lib/data/cma/outcomes'
 import { classifyCmaOrigin, CMA_ORIGIN_INTENT, sendModeForOrigin, theirPriceLabelFor } from '@/lib/cma/origin'
@@ -83,6 +84,8 @@ export default async function AdminCmaReviewPage({
   const hasDocument = hasStoredHtml || isLegacyFile || Boolean(row.built_at)
   const canOpenDocument = canOpenCmaDocument(row)
   const buildError = (row.build_error as string | null) ?? null
+  const isBuilding =
+    !hasDocument && !buildError && String(row.html_path ?? '').startsWith('pending:')
   const summary = (row.build_summary as Record<string, unknown> | null) ?? null
   const listingKey = String(row.subject_listing_key ?? '').trim()
   const blockers = cmaPublishRefusals(row)
@@ -213,6 +216,7 @@ export default async function AdminCmaReviewPage({
         {row.broker_slug ? ` · signed by ${String(row.broker_slug)}` : ''}
         {` · built ${formatDate((row.built_at as string | null) ?? (row.created_at as string | null))}`}
       </p>
+      <CmaBuildWatch building={isBuilding} />
 
       {canOpenDocument || hasDocument ? (
         <p style={{ margin: '12px 0 0', display: 'flex', flexWrap: 'wrap', gap: 8 }}>

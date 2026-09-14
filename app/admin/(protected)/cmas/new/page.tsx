@@ -9,7 +9,7 @@
 // /admin/access-denied redirects (no role, and the report_viewer role), the
 // listActiveBrokersForCma() read and the { slug, displayName } mapping fed to
 // the form — which is the signing-broker choice, resolved exactly as before —
-// the BuildCmaForm mount (which still runs the deterministic builder on submit
+// the BuildCmaForm mount (which queues the cma-build-worker on submit
 // and lands on the new draft's review page), the /admin/cmas href, the
 // "Subject and client" section heading, and the description of what the
 // builder does.
@@ -49,8 +49,9 @@ export default async function AdminCmaNewPage() {
       </nav>
 
       <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 4px' }}>
-        The builder pulls the subject from the MLS record, selects closed comps, prices with three
-        methods, and renders the full report. It lands as a draft for your review. Nothing sends.
+        Queues the same builder as seller-LP intake: subject from the MLS record, closed comps,
+        three-method price, full report. The draft opens immediately and builds in the background.
+        Nothing sends.
       </p>
 
       <SectionHead>Subject and client</SectionHead>

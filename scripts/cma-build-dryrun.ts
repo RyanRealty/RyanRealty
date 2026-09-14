@@ -440,6 +440,7 @@ async function dryRun(slug: string): Promise<DryRun> {
         return sale
           ? adjustCompAlongMarket({
               subject, subjectStory, sale, saleStory: sale.storyClass, points: marketIndex, asOf,
+              hydrated: c,
             }).adjusted
           : adjustCmaCompAlongMarket({
               subject, subjectStory, comp: c, saleStory: 'unknown', points: marketIndex, asOf,

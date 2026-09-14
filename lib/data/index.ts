@@ -608,6 +608,8 @@ export {
   getCmaPriorSaleAtAddress,
 } from '@/lib/data/cma/builderReads'
 export type { CmaListingRow, CmaMarketStatsRow, CmaMarketPulseRow, CmaClosedSkinnyRow, CmaBandInventory, CmaSubdivisionSaleRow, CmaSubdivisionHistoryRow, CmaPriorSaleRow } from '@/lib/data/cma/builderReads'
+export { getClosedCompListStarts } from '@/lib/data/cma/localOutcomeReads'
+export type { ClosedCompListStartRow } from '@/lib/data/cma/localOutcomeReads'
 export {
   countSalePricingFacts,
   selectPricingFactsNear,

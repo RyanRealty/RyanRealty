@@ -44,6 +44,26 @@ describe('slugifyAddress keeps street directionals', () => {
   })
 })
 
+describe('slugifyAddress strips country tokens', () => {
+  const withoutCountry = '1130 Canter Ct, Sisters, OR'
+  const expected = 'cma-1130-canter-sisters'
+
+  it('matches the form without USA for 1130 Canter Ct, Sisters', () => {
+    expect(slugifyAddress(withoutCountry)).toBe(expected)
+    expect(slugifyAddress('1130 Canter Ct, Sisters, OR, USA')).toBe(expected)
+    expect(slugifyAddress('1130 Canter Ct, Sisters, OR, usa')).toBe(expected)
+    expect(slugifyAddress('1130 Canter Ct, Sisters, OR, United States')).toBe(expected)
+    expect(slugifyAddress('1130 Canter Ct, Sisters, OR, united-states')).toBe(expected)
+  })
+
+  it('does not leave a trailing -usa or -united-states alias', () => {
+    expect(slugifyAddress('1130 Canter Ct, Sisters, OR, USA')).not.toBe('cma-1130-canter-sisters-usa')
+    expect(slugifyAddress('1130 Canter Ct, Sisters, OR, USA')).toBe(
+      slugifyAddress('1130 Canter Ct, Sisters, OR'),
+    )
+  })
+})
+
 describe('CMA slug version helpers', () => {
   it('version 1 is the bare base slug; later versions append -vN', () => {
     expect(cmaSlugForVersion('cma-123-main', 1)).toBe('cma-123-main')

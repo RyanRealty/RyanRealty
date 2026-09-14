@@ -10,6 +10,7 @@
  */
 
 import type { CmaSubject } from '@/lib/cma/types'
+import { POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
 
 export type CompTier = {
   name: string
@@ -55,6 +56,11 @@ export type CompTier = {
    * so." The guard is untouched everywhere else.
    */
   relaxResort?: boolean
+  /**
+   * Mapped tracts inside 0.35 mi when MLS SubdivisionName was blank.
+   * Skipped when no pocket cluster was inferred.
+   */
+  samePocket?: boolean
 }
 
 // TRADE TIME BEFORE YOU TRADE LOCATION (Matt 2026-07-30). The ladder used to
@@ -125,6 +131,28 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
     // 2026-09-09: exhaust the boundary before leaving it).
     { name: 'subdivision-24mo', subdivisionIlike, monthsBack: 24, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
     { name: 'adjacent-subdivision-24mo', monthsBack: 24, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
+    {
+      name: 'pocket-6mo',
+      monthsBack: 6,
+      sqftBand: 0.25,
+      sameArea: false,
+      competing: false,
+      maxMiles: POCKET_RADIUS_MILES,
+      samePocket: true,
+      disclosure:
+        'These sales are in the mapped pockets next to this home, inside a third of a mile, walked before any mile ring.',
+    },
+    {
+      name: 'pocket-12mo',
+      monthsBack: 12,
+      sqftBand: 0.25,
+      sameArea: false,
+      competing: false,
+      maxMiles: POCKET_RADIUS_MILES,
+      samePocket: true,
+      disclosure:
+        'These sales are in the mapped pockets next to this home, inside a third of a mile, walked before any mile ring.',
+    },
     // 2d. THE COMMUNITY THE PLAT SITS INSIDE, before any ring or polygon rung.
     { name: 'community-6mo', monthsBack: 6, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
     { name: 'community-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },

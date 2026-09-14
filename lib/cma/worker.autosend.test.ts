@@ -122,4 +122,15 @@ describe('runCmaBuildWorker → one run per row', () => {
     expect(listOpenCmaActions).not.toHaveBeenCalled()
     expect(res.built).toBe(1)
   })
+
+  it('forwards payload mls_number so admin MLS-only queues resolve the same subject', async () => {
+    listOpenCmaActions.mockResolvedValue([
+      action({ payload: { subject_address: '1130 Canter Ct, Sisters, OR', mls_number: '220213342' } }),
+    ])
+    buildCma.mockResolvedValue({ ok: true, pricing: { recommended: 1 }, comps: [], pageCount: 1 })
+    await runCmaBuildWorker(1)
+    expect(buildCma).toHaveBeenCalledWith(
+      expect.objectContaining({ mlsNumber: '220213342', rawAddress: '1130 Canter Ct, Sisters, OR' }),
+    )
+  })
 })

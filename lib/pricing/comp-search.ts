@@ -89,7 +89,7 @@ export function usableSubdivision(name: string | null | undefined): string | nul
 }
 
 function isSubdivisionTier(tier: string): boolean {
-  return tier.startsWith('subdivision-')
+  return tier.startsWith('subdivision-') || tier.startsWith('pocket-')
 }
 
 function milesPhrase(miles: number): string {
@@ -99,6 +99,7 @@ function milesPhrase(miles: number): string {
 /** The rung in seller language. Never the tier name, never a map legend. */
 export function rungLabel(tier: string, subdivision: string | null): string {
   if (tier === BROKER_TIER) return 'chosen by your broker'
+  if (tier.startsWith('pocket-')) return 'mapped pockets next to your home'
   if (isSubdivisionTier(tier)) {
     const where = subdivision ? `inside ${subdivision}` : 'inside your subdivision'
     return tier.endsWith('-wide') ? `${where}, any floorplan` : where

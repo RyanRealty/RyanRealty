@@ -137,6 +137,35 @@ describe('computeBandPosition', () => {
     expect(b!.activeCount).toBe(212)
     expect(b!.pendingCount).toBe(18)
     expect(b!.source).toContain('all 212 active listings in the band')
+    expect(b!.source).toContain("City='Bend'")
+  })
+
+  it('names the CompArea, not the city, when the band is area-scoped', () => {
+    const b = computeBandPosition(
+      {
+        activeAsks: [490000],
+        activeDaysOnMarket: [12],
+        activeCount: 12,
+        pendingCount: 2,
+        truncated: false,
+      },
+      'Sisters',
+      450000,
+      550000,
+      null,
+      {
+        kind: 'subdivisions',
+        names: ['Rolling Horse Meadow', 'SaddleStone'],
+        radiusMiles: null,
+        centre: { lat: 44.29, lng: -121.55 },
+        source: 'test',
+        sentence: 'Rolling Horse Meadow and the one subdivision next to it.',
+      },
+    )
+    expect(b!.activeCount).toBe(12)
+    expect(b!.source).toContain('CompArea subdivisions')
+    expect(b!.source).toContain('Rolling Horse Meadow')
+    expect(b!.source).not.toContain("City='Sisters'")
   })
 
   it('says so in the source line when the band exceeded the read ceiling', () => {

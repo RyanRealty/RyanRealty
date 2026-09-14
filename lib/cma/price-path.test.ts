@@ -16,6 +16,8 @@ import {
   pricePathFromFinalCycle,
   pricePathFromListing,
   pricePathFromSale,
+  shortOrExactUsd,
+  shortUsd,
   type PricePath,
 } from '@/lib/cma/price-path'
 
@@ -229,5 +231,54 @@ describe('the drawing', () => {
   it('draws nothing from a path with no usable dates', () => {
     expect(priceHistoryLineSvg({ ...path, startDate: 'nope', endDate: 'nope' })).toBe('')
     expect(priceHistoryLineHtml(null)).toBe('')
+  })
+})
+
+describe('shortOrExactUsd', () => {
+  it('keeps short form for round thousands (Diamond Peak class)', () => {
+    expect(shortUsd(950_000)).toBe('$950K')
+    expect(shortUsd(935_000)).toBe('$935K')
+    expect(shortOrExactUsd(950_000)).toBe('$950K')
+    expect(shortOrExactUsd(935_000)).toBe('$935K')
+    expect(shortOrExactUsd(780_000)).toBe('$780K')
+  })
+
+  it('prints exact MLS closes that are not whole thousands', () => {
+    expect(shortOrExactUsd(609_950)).toBe('$609,950')
+    expect(shortOrExactUsd(957_250)).toBe('$957,250')
+  })
+
+  it('sold end labels use exact dollars when the close is not round', () => {
+    const linda = pricePathFromSale({
+      address: '1027 Linda',
+      listPrice: 609_950,
+      closePrice: 609_950,
+      closeDate: '2026-07-02',
+      domTotal: 167,
+      daysToOffer: 54,
+    })!
+    expect(priceHistoryEndLabel(linda)).toContain('sold $609,950')
+    expect(priceHistoryEndLabel(linda)).not.toContain('$610K')
+
+    const clearpine = pricePathFromSale({
+      address: '191 Clearpine',
+      listPrice: 974_500,
+      closePrice: 957_250,
+      closeDate: '2025-12-22',
+      domTotal: 307,
+      daysToOffer: 0,
+    })!
+    expect(priceHistoryEndLabel(clearpine)).toContain('sold $957,250')
+    expect(priceHistoryEndLabel(clearpine)).not.toContain('$957K')
+
+    const diamond = pricePathFromSale({
+      address: '490 Diamond Peak',
+      listPrice: 950_000,
+      closePrice: 935_000,
+      closeDate: '2026-07-23',
+      domTotal: 64,
+      daysToOffer: 7,
+    })!
+    expect(priceHistoryEndLabel(diamond)).toContain('sold $935K')
   })
 })

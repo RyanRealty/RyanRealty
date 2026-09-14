@@ -74,7 +74,21 @@ export type CreateCmaRequestInput = {
    */
   leadBookHref?: string | null
   /** Where the request came from. Default 'seller-lp'. */
-  requestSource?: 'seller-lp' | 'expired-listing-cron' | 'fsbo-lp' | 'fsbo-cron' | 'crm-kickoff' | 'place-page'
+  requestSource?:
+    | 'seller-lp'
+    | 'expired-listing-cron'
+    | 'fsbo-lp'
+    | 'fsbo-cron'
+    | 'crm-kickoff'
+    | 'place-page'
+    | 'admin-manual'
+  /**
+   * Full web slug of the signing broker (admin Build CMA select). When set,
+   * this broker signs — not the lead's assigned broker.
+   */
+  brokerSlug?: string | null
+  /** MLS number hint for the worker's subject resolve (admin MLS-only builds). */
+  mlsNumber?: string | null
   /** Doc-type LABEL for the cmas row. Since 2026-08-05 (Matt: one CMA) the
    *  content no longer varies by this — the last-listing review section is
    *  driven by listing history inside buildCma. 'expired-audit' remains a
@@ -120,7 +134,39 @@ export { slugifyAddress }
 async function resolveSigningBroker(input: {
   crmPersonId?: number | null
   fubPersonId?: number | null
+  brokerSlug?: string | null
 }) {
+  const override = input.brokerSlug?.trim()
+  if (override) {
+    const sb = createServiceClient()
+    const { data: rows } = await sb
+      .from('brokers')
+      .select('slug, crm_slug, display_name, email, twilio_number, phone')
+      .eq('slug', override)
+      .eq('is_active', true)
+      .limit(1)
+    const row = (
+      rows as Array<{
+        slug: string | null
+        crm_slug: string | null
+        display_name: string | null
+        email: string | null
+        twilio_number: string | null
+        phone: string | null
+      }> | null
+    )?.[0]
+    if (row?.slug) {
+      return {
+        slug: row.slug,
+        crmSlug: row.crm_slug,
+        displayName: row.display_name,
+        email: row.email,
+        phone: row.twilio_number,
+        notifyPhone: row.phone,
+        source: 'assigned' as const,
+      }
+    }
+  }
   return resolveSigningBrokerForPerson(input.crmPersonId ?? input.fubPersonId ?? null)
 }
 
@@ -142,9 +188,11 @@ export async function createCmaRequest(
           ? 'FSBO LP submission'
           : requestSource === 'crm-kickoff'
             ? 'Broker kick-off (CRM)'
-            : requestSource === 'place-page'
-              ? 'Place page valuation request'
-              : 'Seller LP submission'
+            : requestSource === 'admin-manual'
+              ? 'Admin manual build'
+              : requestSource === 'place-page'
+                ? 'Place page valuation request'
+                : 'Seller LP submission'
     const broker = await resolveSigningBroker(input)
 
     // Resolve broker uuid so the cmas row has a valid FK if the cmas.broker_id
@@ -335,6 +383,7 @@ export async function createCmaRequest(
           home_details: homeDetails,
           crm_person_id: linkedPersonId,
           client_intent: isCmaClientIntent(hd?.intent) ? hd.intent : null,
+          ...(input.mlsNumber?.trim() ? { mls_number: input.mlsNumber.trim() } : {}),
           // SITE-05 attribution. Absent, not null, when there is no stamp, so a
           // query for the sticky control's share reads a present key only.
           ...(input.askSource ? { ask_source: input.askSource } : {}),
@@ -359,7 +408,9 @@ export async function createCmaRequest(
               ? 'expired-listing-cron'
               : requestSource === 'crm-kickoff'
                 ? 'crm-kickoff'
-                : 'lead-form',
+                : requestSource === 'admin-manual'
+                  ? 'admin-manual'
+                  : 'lead-form',
           client_relationship: 'cold-lead',
           fub_person_id: input.fubPersonId ?? null,
         },
@@ -368,7 +419,9 @@ export async function createCmaRequest(
             ? `Expired-listing detection — CMA for ${rawAddress} to open outreach to ${leadName ?? 'the owner'}`
             : requestSource === 'place-page'
               ? `Place page valuation request — ${leadName ?? leadEmail} asked what ${rawAddress} would sell for`
-              : `Seller LP submission — ${leadName ?? leadEmail} requested a CMA for ${rawAddress}`,
+              : requestSource === 'admin-manual'
+                ? `Admin manual build — CMA for ${rawAddress}`
+                : `Seller LP submission — ${leadName ?? leadEmail} requested a CMA for ${rawAddress}`,
         status: 'pending',
         // Legacy NOT-NULL fields inherited from the content_briefs view shape.
         // For CMA action rows these are best-effort descriptive labels — the

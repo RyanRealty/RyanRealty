@@ -432,6 +432,11 @@ export type PricingPageInput = {
   askCtx?: SubjectAskContext
   /** The seller's own failed listing, for their column's price path. */
   finalCycle?: import('@/lib/cma/expired-audit').ExpiredFinalCycle | null
+  /**
+   * List $/sf and sold $/sf by status, from the homes on this letter.
+   * Built in salesThatSetItArgs so letter and immersive cannot drift.
+   */
+  statusPpsfBoard?: string
 }
 
 /**
@@ -521,6 +526,7 @@ export function salesThatSetItPage(input: PricingPageInput): CmaPageDef | null {
     toc: 'The sales that set this price',
     body: `
   <h2 class="section">${esc(SALES_THAT_SET_IT_HEADING)}</h2>
+  ${input.statusPpsfBoard ?? ''}
   ${matrix}
   ${renderSetAsideHtml(p, input.comps)}
   ${renderRejectedSalesHtml(p, input.comps)}
