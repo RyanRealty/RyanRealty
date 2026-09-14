@@ -52,4 +52,27 @@ describe('homeRailItemList', () => {
   it('withholds when no rail cards exist', () => {
     expect(homeRailItemList([])).toBeNull()
   })
+
+  it('labels a fractional share ask in the ItemList name', () => {
+    const rows: HomeRailRow[] = [
+      {
+        id: 'homes-local',
+        heading: 'Homes in Bend and nearby',
+        seeAll: { href: '/homes-for-sale/bend', label: 'See all homes' },
+        cards: [
+          card({
+            listingKey: 'share',
+            href: '/homes-for-sale/redmond/1-eagle-crest-220190868',
+            addressLine: '1 Eagle Crest',
+            propertySubType: 'Tenancy in Common',
+            city: 'Redmond',
+            listNumber: '220190868',
+          }),
+        ],
+      },
+    ]
+    const ld = homeRailItemList(rows)
+    const elements = ld?.itemListElement as Array<{ name: string }>
+    expect(elements[0]?.name).toMatch(/Tenancy in common/i)
+  })
 })
