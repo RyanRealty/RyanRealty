@@ -997,12 +997,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       suppressedReason: staleCycleReason,
     })
 
-    // 4.75. Report extras (Matt 2026-08-05): seasonality, price-band
-    // competition, subdivision pulse, financing profile, photo bench. Runs
-    // AFTER the failed-ask cap so the band centers on the final recommended
-    // price. Each block is independently nullable (§0: cut, don't guess).
+    // 4.75. Photo count now; extras (and the listing plan that reads the band)
+    // wait until CompArea + area inventory exist so extras never call the
+    // city-wide band when a CompArea is set.
     const subjectPhotosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
-    const extras = await buildCmaExtras({ subject, comps: adjusted, pricing, subjectPhotosCount })
 
     // 4.755. Chapter 2 — "Priced right sells. Priced high sits", in the
     // reader's own city. The cumulative offer-timing curve and the three
@@ -1051,20 +1049,6 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // 4.9. What we would do about it, derived only from this home's own
     // measured gaps. Every line cites a figure computed above.
     const thisHomePlan = buildServicesList(subject)
-
-    const rawPlan = buildListingPlan({ subject, pricing, extras, expiredAudit, market })
-    // Plan lines cite source strings computed elsewhere, so they inherit that
-    // punctuation. Sanitize at the boundary rather than trusting every source.
-    const listingPlan = rawPlan
-      ? {
-          source: sanitizeClientProse(rawPlan.source),
-          items: rawPlan.items.map((i) => ({
-            trigger: sanitizeClientProse(i.trigger),
-            action: sanitizeClientProse(i.action),
-            basis: sanitizeClientProse(i.basis),
-          })),
-        }
-      : null
 
     // 5. Map (best effort — the report ships without it if the key is absent).
     // C9: build the comps map only. Subject-only map is not stamped into the letter.
@@ -1192,6 +1176,31 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           }).catch(() => null)
         : Promise.resolve(null),
     ])
+
+    // Extras + listing plan AFTER CompArea. When CompArea is set, pass the
+    // same ±10% area inventory the competition chapter uses — never city-wide
+    // getCmaBandInventory (Matt lock: same pocket/area/time for closed +
+    // active + expired).
+    const extras = await buildCmaExtras({
+      subject,
+      comps: adjusted,
+      pricing,
+      subjectPhotosCount,
+      compArea,
+      areaInventory: widestAreaInventory,
+      band: rivalBand,
+    })
+    const rawPlan = buildListingPlan({ subject, pricing, extras, expiredAudit, market })
+    const listingPlan = rawPlan
+      ? {
+          source: sanitizeClientProse(rawPlan.source),
+          items: rawPlan.items.map((i) => ({
+            trigger: sanitizeClientProse(i.trigger),
+            action: sanitizeClientProse(i.action),
+            basis: sanitizeClientProse(i.basis),
+          })),
+        }
+      : null
 
     // Same lookback as the closed sales that set the price — no older expireds
     // from a longer window than the solds (Matt ADD 2026-09-12).

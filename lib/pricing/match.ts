@@ -51,6 +51,7 @@ import {
   BOUNDARY_EXIT_BELOW,
 } from '@/lib/pricing/ladder'
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible, type RuralSplitCounts } from '@/lib/pricing/rural'
+import { applyInferredPocket, inferSubdivisionPocket, type InferredPocket } from '@/lib/pricing/infer-pocket'
 
 export type PricingSubject = {
   listingKey: string | null
@@ -91,6 +92,13 @@ export type PricingSubject = {
   publicRemarks?: string | null
   /** Subject irrigation from remarks and/or OWRD. Sales use remarks only. */
   irrigationClass?: IrrigationClass | null
+  /**
+   * Mapped tract names inside 0.35 mi when MLS SubdivisionName was blank.
+   * The pocket-* rungs match these; the inferred home name uses subdivision-*.
+   */
+  pocketSubdivisionNorms?: string[]
+  /** Set when a blank MLS tract was filled from a plat or nearest neighbor. */
+  inferredPocket?: InferredPocket | null
 }
 
 export type PricingSale = {
@@ -193,6 +201,8 @@ export type PricingMatchResult = {
    * reason). Absent for in-town subjects.
    */
   ruralSplits?: RuralSplitCounts
+  /** Present when a blank SubdivisionName was filled before the mile rings. */
+  inferredPocket?: InferredPocket | null
 }
 
 function monthsBetween(laterIso: string, earlierIso: string): number {
@@ -427,6 +437,10 @@ function passesTier(
   if (tier.adjacentSubdivision) {
     const ring = subject.adjacentSubdivisionSlugs ?? []
     if (!sale.subdivisionSlug || !ring.includes(sale.subdivisionSlug)) return { ok: false, miles: null }
+  }
+  if (tier.samePocket) {
+    const norms = subject.pocketSubdivisionNorms ?? []
+    if (!sale.subdivisionNorm || !norms.includes(sale.subdivisionNorm)) return { ok: false, miles: null }
   }
   const sqftLo = subject.sqft * (1 - tier.sqftBand)
   const sqftHi = subject.sqft * (1 + tier.sqftBand)
@@ -806,7 +820,7 @@ function similarity(subject: PricingSubject, sale: PricingSale, asOf: string): n
 }
 
 export function walkPricingLadder(
-  subject: PricingSubject,
+  rawSubject: PricingSubject,
   pool: PricingSale[],
   opts: {
     asOf: string
@@ -814,6 +828,15 @@ export function walkPricingLadder(
     tiers?: PricingTier[]
   },
 ): PricingMatchResult {
+  const inferred = inferSubdivisionPocket({
+    subdivision: rawSubject.subdivision,
+    subdivisionNorm: rawSubject.subdivisionNorm,
+    subdivisionSlug: rawSubject.subdivisionSlug,
+    latitude: rawSubject.latitude,
+    longitude: rawSubject.longitude,
+    neighbors: pool,
+  })
+  const subject = applyInferredPocket({ ...rawSubject }, inferred)
   const asOf = opts.asOf.slice(0, 10)
   const cells = opts.cells ?? new Map()
   // The subject's price tier, resolved once. Only consulted where its own plat
@@ -839,6 +862,11 @@ export function walkPricingLadder(
   const trace: string[] = [
     `As-of ${asOf}. Same subdivision first (3, 6, 9, then 12 months, and a wider GLA band on the same street), then the plats next to it inside the same neighborhood or community (3 to 12 months), then distance inside that boundary, then similar-performing subdivisions; the boundary is crossed only when it supplied fewer than ${BOUNDARY_EXIT_BELOW} sales. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, and on acreage the zoning class (farm or forest against rural residential), outbuildings, and usable land, zoning when both sides have a zone in town, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
   ]
+  if (subject.inferredPocket?.inferred && subject.inferredPocket.subdivision) {
+    trace.push(
+      `MLS SubdivisionName was blank, so the search inferred ${subject.inferredPocket.subdivision} (${subject.inferredPocket.source}) before any mile ring.`,
+    )
+  }
 
   if (!subject.sqft || subject.sqft < 300) {
     const note = 'Subject has no usable living area, so there is nothing to compare.'
@@ -882,6 +910,8 @@ export function walkPricingLadder(
         ? 'the community supplied the minimum, so no peer community was needed'
         : tier.sameSubdivision && !subject.subdivisionSlug && !subject.subdivisionNorm
         ? 'no recorded plat holds the subject, and its MLS row names none either'
+        : tier.samePocket && !(subject.pocketSubdivisionNorms?.length)
+          ? 'no nearby mapped pocket was inferred for a blank subdivision'
         : tier.adjacentSubdivision && !(subject.adjacentSubdivisionSlugs?.length)
           ? 'no plat next to the subject\'s is known'
           : tier.crossBoundary && !subject.marketArea
@@ -968,6 +998,7 @@ export function walkPricingLadder(
     starved: !reachedTarget,
     rungs,
     priceAnchor,
+    inferredPocket: subject.inferredPocket ?? null,
     ...(ruralSplits ? { ruralSplits } : {}),
   }
 }

@@ -15,7 +15,9 @@ import {
   type CmaClosedSkinnyRow,
   type CmaSubdivisionSaleRow,
 } from '@/lib/data/cma/builderReads'
-import { pickBandRivals, rivalAddress, type CmaBandRival } from '@/lib/cma/band-rivals'
+import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
+import { bandAroundList, pickBandRivals, rivalAddress, type CmaBandRival } from '@/lib/cma/band-rivals'
+import { compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import { bathCountCompatible, keepSameProductType } from '@/lib/cma/market-area'
 import { realSubdivision } from '@/lib/cma/comp-tiers'
@@ -279,6 +281,7 @@ export function computeBandPosition(
   lo: number,
   hi: number,
   subject?: { latitude: number | null; longitude: number | null; propertySubType?: string | null } | null,
+  area?: CompArea | null,
 ): CmaBandPosition | null {
   if (!inv) return null
   const sameType = (row: CmaBandListingRow) =>
@@ -312,7 +315,11 @@ export function computeBandPosition(
     activeMedianAsk: median(asks),
     activeMedianDom: median(doms),
     rivals: pickBandRivals(raw, subject),
-    source: `Supabase listings, City='${city}', same property type${subject?.propertySubType ? ` (${subject.propertySubType})` : ''}, Active + Pending, ListPrice ${lo}..${hi}, pulled at build time — ${
+    source: `Supabase listings, ${
+      area
+        ? `CompArea ${area.kind} ${compAreaPhrase(area)}`
+        : `City='${city}'`
+    }, same property type${subject?.propertySubType ? ` (${subject.propertySubType})` : ''}, Active + Pending, ListPrice ${lo}..${hi}, pulled at build time — ${
       inv.truncated
         ? `band exceeded the read ceiling, so these figures cover the first ${activeRows.length} of ${inv.activeCount} active listings`
         : `all ${inv.activeCount} active listings in the band${typeFiltered ? `, ${activeRows.length} after the same-product-type filter` : ''}`
@@ -406,7 +413,6 @@ export function computePhotoBench(subjectPhotos: number | null, comps: CmaAdjust
 
 const SEASONALITY_MONTHS = 36
 const SUBDIVISION_MONTHS = 12
-const BAND_HALF_WIDTH_PCT = 0.1
 
 function monthsAgoIso(months: number, asOf: Date): string {
   return new Date(asOf.getTime() - months * 30.44 * 24 * 3600e3).toISOString().slice(0, 10)
@@ -415,6 +421,10 @@ function monthsAgoIso(months: number, asOf: Date): string {
 /**
  * Orchestrator: pulls the three DAL reads in parallel and computes every
  * block. Never throws — a failed block is a null block (§0: cut, don't guess).
+ *
+ * When CompArea is set, the live band is the CompArea read (or a prefetched
+ * area inventory). City-wide `getCmaBandInventory` runs only when no CompArea
+ * exists (Matt lock: same pocket/area/time for closed + active + expired).
  */
 export async function buildCmaExtras(args: {
   subject: CmaSubject
@@ -422,17 +432,39 @@ export async function buildCmaExtras(args: {
   pricing: CmaPricing
   subjectPhotosCount: number | null
   asOf?: Date
+  compArea?: CompArea | null
+  areaInventory?: {
+    activeAsks: number[]
+    activeDaysOnMarket: number[]
+    activeCount: number
+    pendingCount: number
+    truncated: boolean
+    activeRows?: CmaBandListingRow[]
+    pendingRows?: CmaBandListingRow[]
+  } | null
+  band?: { lo: number; hi: number } | null
 }): Promise<CmaExtras> {
   const asOf = args.asOf ?? new Date()
   const since36 = monthsAgoIso(SEASONALITY_MONTHS, asOf)
   const since12 = monthsAgoIso(SUBDIVISION_MONTHS, asOf)
-  const lo = Math.round((args.pricing.recommended * (1 - BAND_HALF_WIDTH_PCT)) / 1000) * 1000
-  const hi = Math.round((args.pricing.recommended * (1 + BAND_HALF_WIDTH_PCT)) / 1000) * 1000
+  const computedBand = bandAroundList(args.pricing.recommended)
+  const lo = args.band?.lo ?? computedBand?.lo ?? 0
+  const hi = args.band?.hi ?? computedBand?.hi ?? 0
   const subdivision = args.subject.subdivision?.trim() ?? ''
 
   const [skinny, bandInv, subRows, areaRows] = await Promise.all([
     getCmaCityClosedSkinny(args.subject.city, since36).catch(() => []),
-    getCmaBandInventory(args.subject.city, lo, hi, args.subject.propertySubType).catch(() => null),
+    args.areaInventory
+      ? Promise.resolve(args.areaInventory)
+      : args.compArea
+        ? getCmaAreaBandInventory({
+            area: args.compArea,
+            city: args.subject.city,
+            lo,
+            hi,
+            propertySubType: args.subject.propertySubType,
+          }).catch(() => null)
+        : getCmaBandInventory(args.subject.city, lo, hi, args.subject.propertySubType).catch(() => null),
     subdivision ? getCmaSubdivisionClosed(subdivision, since12).catch(() => []) : Promise.resolve([]),
     getCmaMarketAreaRows(args.subject.city, since12).catch(() => []),
   ])
@@ -440,7 +472,7 @@ export async function buildCmaExtras(args: {
   const photoUrl = args.subject.photoUrl?.trim() ?? ''
   return {
     seasonality: computeSeasonality(skinny, args.subject.city, since36),
-    band: computeBandPosition(bandInv, args.subject.city, lo, hi, args.subject),
+    band: computeBandPosition(bandInv, args.subject.city, lo, hi, args.subject, args.compArea ?? null),
     subdivisionPulse: subdivision ? computeSubdivisionPulse(subRows, subdivision, SUBDIVISION_MONTHS, since12) : null,
     financing: computeFinancing(skinny, args.subject.city, since12),
     photoBench: computePhotoBench(args.subjectPhotosCount, args.comps),

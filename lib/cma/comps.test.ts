@@ -74,6 +74,8 @@ describe('compTierLadder', () => {
       // (Matt 2026-09-09: go up a parent level, and never leave it early).
       'subdivision-24mo',
       'adjacent-subdivision-24mo',
+      'pocket-6mo',
+      'pocket-12mo',
       'community-6mo',
       'community-12mo',
       'community-24mo',
@@ -104,7 +106,10 @@ describe('compTierLadder', () => {
       // A disclosure marks a rung that traded something the reader must be
       // told about: the rural widening, and the starved widening in town.
       expect(!!t.disclosure).toBe(
-        t.name.startsWith('rural-') || t.name.includes('widened-disclosed') || t.name.startsWith('like-community-'),
+        t.name.startsWith('rural-') ||
+          t.name.includes('widened-disclosed') ||
+          t.name.startsWith('like-community-') ||
+          t.name.startsWith('pocket-'),
       )
     }
   })

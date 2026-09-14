@@ -134,7 +134,7 @@ export function rungRadiusMiles(key: string): number | null {
 
 /** Rungs whose membership test IS a subdivision. */
 function isSubdivisionRung(key: string): boolean {
-  return key.startsWith('subdivision-') || key.startsWith('similar-sub')
+  return key.startsWith('subdivision-') || key.startsWith('similar-sub') || key.startsWith('pocket-')
 }
 
 /**

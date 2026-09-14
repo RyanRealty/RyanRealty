@@ -73,7 +73,8 @@ import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import { communitySlugForSubdivision, isResortCommunity, resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { ANCHOR_MIN_N, ANCHOR_RADIUS_MILES, ANCHOR_RURAL_RADII_MILES, sameStreetPeer } from '@/lib/pricing/price-anchor'
 import { roomCountsUsable } from '@/lib/pricing/room-counts'
-import { SAME_NEIGHBORHOOD_TIER_RATIO, STARVED_TIER_WIDEN, SUBDIVISION_TIER_RATIO } from '@/lib/pricing/classes'
+import { SAME_NEIGHBORHOOD_TIER_RATIO, STARVED_TIER_WIDEN, SUBDIVISION_TIER_RATIO, normSubdivision } from '@/lib/pricing/classes'
+import { inferSubdivisionPocket, POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -373,7 +374,9 @@ export async function selectComps(
   const segment = land ? 'D' : 'A'
 
   // Null when the MLS holds a placeholder rather than a real subdivision.
-  const subdivisionIlike = realSubdivision(subject.subdivision)
+  // Filled from a plat or nearest mapped neighbor before the mile rings.
+  let subdivisionIlike = realSubdivision(subject.subdivision)
+  let pocketNeighborNorms: string[] = []
 
   // The subject's GIS market area, when it sits inside one. Null is a legitimate
   // answer (rural, or a city with no mesh) — those subjects fall back to distance.
@@ -390,8 +393,6 @@ export async function selectComps(
         'The neighborhood mesh covers the City of Bend. This property sits outside it, so comps are chosen by distance from the subject.',
   )
 
-
-  const tiers = compTierLadder(subdivisionIlike)
   const ruralAcreage = isRuralAcreage(subject, subjectArea)
   // Containment (Matt 2026-09-08): the plats next to the subject's, inside its
   // neighborhood polygon when it has one. Fail-open: no ring, no adjacent rung.
@@ -439,6 +440,47 @@ export async function selectComps(
 
   const sqlSubType = compPoolPropertySubType(subject.propertySubType)
   const subTypeSql = sqlSubType ? ` AND property_sub_type='${sqlSubType}'` : ''
+
+  if (!subdivisionIlike) {
+    const nearby = await selectCmaCompsPool({
+      cityIlike: subject.city,
+      closeDateGte: isoMonthsAgo(24),
+      sqftMin: land ? null : Math.round(sqft * 0.6),
+      sqftMax: land ? null : Math.round(sqft * 1.4),
+      lotMin,
+      lotMax: landLotMax,
+      bounds:
+        subject.latitude != null && subject.longitude != null
+          ? radiusBounds(subjectPoint, POCKET_RADIUS_MILES)
+          : null,
+      limit: 200,
+      propertySubType: sqlSubType,
+      propertyType: segment,
+    }).catch(() => [])
+    const pocket = inferSubdivisionPocket({
+      subdivision: subject.subdivision,
+      platLabel: ring?.homeLabel ?? null,
+      subdivisionSlug: ring?.homeSlug ?? null,
+      latitude: subject.latitude,
+      longitude: subject.longitude,
+      neighbors: nearby.map((r) => ({
+        subdivision: typeof r['SubdivisionName'] === 'string' ? (r['SubdivisionName'] as string) : null,
+        subdivisionNorm: normSubdivision(
+          typeof r['SubdivisionName'] === 'string' ? (r['SubdivisionName'] as string) : null,
+        ),
+        latitude: num(r['Latitude']),
+        longitude: num(r['Longitude']),
+      })),
+    })
+    if (pocket.inferred && pocket.subdivision) {
+      subdivisionIlike = pocket.subdivision
+      pocketNeighborNorms = pocket.neighborNorms
+      trace.push(
+        `MLS SubdivisionName was blank, so the search inferred ${pocket.subdivision} (${pocket.source}) before any mile ring.`,
+      )
+    }
+  }
+  const tiers = compTierLadder(subdivisionIlike)
 
   // How many sales the widening rung crossed the resort-membership rule for.
   // Counted so the disclosure can name it rather than imply it.
@@ -549,6 +591,8 @@ export async function selectComps(
         ? 'the community supplied the minimum, so no peer community was needed'
         : tier.name.startsWith('subdivision') && !tier.subdivisionIlike
         ? 'the subject has no usable SubdivisionName on its MLS record'
+        : tier.samePocket && pocketNeighborNorms.length === 0
+        ? 'no nearby mapped pocket was inferred for a blank subdivision'
         : tier.sameArea && !subjectArea
           ? 'the subject sits outside every mapped neighborhood polygon'
           : tier.adjacentSubdivisions && adjacentSlugs.size === 0
@@ -647,6 +691,13 @@ export async function selectComps(
       if (rowPlats) {
         const plat = rowPlats[rowIndex]
         if (!plat || !adjacentSlugs.has(plat)) {
+          rung.excluded.market_area++
+          continue
+        }
+      }
+      if (tier.samePocket) {
+        const norm = normSubdivision(comp.subdivision)
+        if (!norm || !pocketNeighborNorms.includes(norm)) {
           rung.excluded.market_area++
           continue
         }
