@@ -36,7 +36,17 @@
     },
     {
       "name": "PriceCtaStrip",
-      "section": "H1 is the street. One ask: Tour / Call / Text. Face Est. $/mo is off.",
+      "section": "H1 is the street. On-market ask: Tour / Call / Text. Save and Share stay on Active, Pending, and off-market (SITE-21 / SITE-99). Face Est. $/mo is off.",
+      "blocking": true
+    },
+    {
+      "name": "ListingSaveButton",
+      "section": "SITE-99. Save this home from the PriceCtaStrip keep group. Required on Active and Pending; also stays on off-market. Search tiles stay no-heart.",
+      "blocking": true
+    },
+    {
+      "name": "ListingShareButton",
+      "section": "SITE-99. Share this home from the PriceCtaStrip keep group. Required on Active and Pending; also stays on off-market.",
       "blocking": true
     },
     {
@@ -274,7 +284,7 @@
   "sectionOrder": [
     "ListingHero (price, beds, baths, sqft, street on the media)",
     "V3Atlas #location with lot figure",
-    "PriceCtaStrip Tour / Call / Text on market; homes-for-sale + alerts off market",
+    "PriceCtaStrip Tour / Call / Text on market; Save and Share stay; homes-for-sale + alerts off market",
     "ListingOffMarketFacts the sold facts, off market only, first thing under the price",
     "ListingSimilarStrip off market: the homes a reader CAN buy, promoted to just under the sold facts",
     "ListingLikeThisAlerts off market: the saved search that replaces the tour",
@@ -304,6 +314,21 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-09",
     "rubricVersion": "v1-2026-09-08",
+    "adaptedFrom": [
+      { "id": "listing-hero-bleed" },
+      { "id": "listing-specs" },
+      { "id": "listing-ask" },
+      { "id": "components/site/v3/V3Carousel.client.tsx" },
+      { "id": "components/site/v3/V3ButtonGroup.tsx" },
+      { "id": "shadcn-carousel" },
+      { "id": "shadcn-button-group" },
+      { "id": "shadcn-sheet" },
+      { "id": "shadcn-dialog" },
+      { "id": "beui-tabs" },
+      { "id": "beui-action-swap" },
+      { "id": "transitions-modal" },
+      { "id": "beautifului-loading" }
+    ],
     "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-45 listing-opening pass, session 019RdEm6 — the table instrument (first viewport at 1440x900 and 375x812, scripts/take-route-shots.mjs, scale 1, palette-quantized) on the lane's own dev server (localhost:3198) for the Bend route at the top of the page and at its close section, the Medford route at its out-of-area notice, plus two hover records per viewport (the pointer on the filmstrip, the pointer on the price-cut mark) read only for the Interaction criterion; three independent scorings of one capture run, the median; no page code read, no live page opened. The builder ran on Opus and did not grade its own page. The prior mark is this file's committed receipt (77: 77·78·76, 2026-09-09, the SITE-33 out-of-area pass on the mosaic build).",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
@@ -364,7 +389,8 @@
         "finding": "Breadcrumb shows the raw plat/subdivision alias 'EASTON COMMERCIAL' in all caps ahead of the address on a residential listing — reads as an internal slug, not a place a buyer would recognize.",
         "primitive": "listing breadcrumb / place-hierarchy component",
         "fix": "Suppress or humanize the subdivision alias before render; drop 'COMMERCIAL' segments on residential listings.",
-        "viewport": "both"
+        "viewport": "both",
+        "replaceWith": null
       },
       {
         "section": "#out-of-area sidebar",
@@ -372,7 +398,8 @@
         "finding": "The broker card still offers Tour / Call / Text for the Medford lot directly beside copy stating 'We don't work in Medford' — the CTA contradicts the disclaimer in the same viewport.",
         "primitive": "broker contact card (shared sidebar component)",
         "fix": "On out-of-area listings, replace Tour/Call/Text with the 'introduce me to a Medford broker' action; do not show the generic tour CTA.",
-        "viewport": "both"
+        "viewport": "both",
+        "replaceWith": null
       },
       {
         "section": "#out-of-area Payment",
@@ -380,7 +407,8 @@
         "finding": "The mortgage calculator still renders a precise $2,315/month, line-item breakdown for the Medford lot in the same block that admits Ryan Realty has no local knowledge of Medford — a specific number implies authority the copy just disclaimed.",
         "primitive": "payment/mortgage calculator component",
         "fix": "Hide or generic-ize the calculator on out-of-area listings, or caveat it explicitly as a statewide-rate estimate carrying no local knowledge.",
-        "viewport": "both"
+        "viewport": "both",
+        "replaceWith": null
       },
       {
         "section": "breadcrumb (mobile)",
@@ -388,7 +416,8 @@
         "finding": "At 375, the breadcrumb wraps into an orphaned second line ('/ 60936 SE Apollo Place') separated from 'Bend / Easton / EASTON COMMERCIAL' above it.",
         "primitive": "breadcrumb component, mobile wrap behavior",
         "fix": "Truncate to the last one or two segments at 375, or collapse to a back-chevron, instead of wrapping the full trail.",
-        "viewport": "mobile"
+        "viewport": "mobile",
+        "replaceWith": null
       },
       {
         "section": "#out-of-area",
@@ -396,7 +425,8 @@
         "finding": "The explanation is two paragraphs of prose plus one text link and nothing else visual — the one section on the route with no figure, chart, or map, even though it stays under the two-paragraph banned-tell line.",
         "primitive": "out-of-area notice section",
         "fix": "Replace one paragraph with a simple service-area map or a labeled distance stat ('Medford is X miles outside our 14-community coverage').",
-        "viewport": "both"
+        "viewport": "both",
+        "replaceWith": null
       },
       {
         "section": "#facts",
@@ -404,7 +434,8 @@
         "finding": "The Facts block (lot size / year built / HOA) is plain static text with no hover, tap, or expand — the one clearly non-interactive data block on the route.",
         "primitive": "Facts list component",
         "fix": "Add a lightweight interaction, e.g. tap-to-expand each fact with its source, or link acreage to a map overlay.",
-        "viewport": "both"
+        "viewport": "both",
+        "replaceWith": null
       }
     ],
     "comparedToPrior": "rebaselined",

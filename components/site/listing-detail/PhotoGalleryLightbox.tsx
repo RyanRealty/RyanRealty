@@ -3,6 +3,7 @@
 import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { useCallback, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
+import { TRANSITIONS_MODAL_SURFACE } from '@/components/motion/transitions-modal'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useMediaOverlayHistory } from '@/lib/listing/use-media-overlay-history'
 import {
@@ -178,7 +179,10 @@ export function PhotoGalleryLightbox({
         showCloseButton={false}
         aria-label="Photo gallery"
         overlayClassName="listing-gallery__overlay z-[110]"
-        className="listing-gallery z-[110] inset-0 top-0 left-0 flex h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none p-0 ring-0 sm:max-w-none"
+        className={cn(
+          'listing-gallery z-[110] inset-0 top-0 left-0 flex h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none p-0 ring-0 sm:max-w-none',
+          TRANSITIONS_MODAL_SURFACE,
+        )}
       >
           <DialogTitle className="sr-only">Photo gallery</DialogTitle>
           <div className="listing-gallery__bar">

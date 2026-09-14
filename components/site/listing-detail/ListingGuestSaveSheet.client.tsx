@@ -11,11 +11,12 @@
  * pending-save resume exactly as before.
  *
  * Same V3Sheet idiom as ListingLikeThisSheet so the two listing-page asks
- * read as one system (TASTE.md consistency rule).
+ * read as one system (TASTE.md consistency rule). SITE-99: Save opens the
+ * installed shadcn Sheet drawer, not an inline cream box.
  */
 
 import { useCallback, useRef, useState } from 'react'
-import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
+import { V3Button, V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
 import { submitListingSaveCapture } from '@/app/actions/search-alert-capture'
 import { readRrSessionId } from '@/lib/tracking'
 
@@ -26,6 +27,8 @@ export function ListingGuestSaveSheet({
   addressLine,
   onUseGoogle,
   onDone,
+  open = true,
+  onOpenChange,
 }: {
   listingKey: string
   addressLine: string | null
@@ -33,6 +36,8 @@ export function ListingGuestSaveSheet({
   onUseGoogle: () => void
   /** Called after a successful capture so the caller can reflect saved state. */
   onDone?: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
   const [status, setStatus] = useState<Status>('asking')
   const [problem, setProblem] = useState<string>('')
@@ -111,30 +116,29 @@ export function ListingGuestSaveSheet({
     status === 'sent' ? 'sent' : status === 'sending' ? 'sending' : status === 'failed' ? 'failed' : 'email'
 
   return (
-    <div>
-      <V3Sheet
-        id="guest-save"
-        eyebrow="Save this home"
-        heading={`Watch ${home} by email`}
-        steps={steps}
-        trap={{ name: 'company', label: 'Company' }}
-        currentStepId={currentStepId}
-        showProgress={false}
-        showEcho={false}
-        onStepChange={(id) => {
-          if (id === 'email') setStatus('asking')
-        }}
-        onAdvance={onAdvance}
-      />
-      {status !== 'sent' ? (
-        <button
-          type="button"
-          onClick={onUseGoogle}
-          className="mt-2 text-sm underline underline-offset-2 text-muted-foreground hover:text-foreground"
-        >
-          Save with Google instead
-        </button>
-      ) : null}
-    </div>
+    <V3Sheet
+      id="guest-save"
+      eyebrow="Save this home"
+      heading={`Watch ${home} by email`}
+      steps={steps}
+      trap={{ name: 'company', label: 'Company' }}
+      currentStepId={currentStepId}
+      showProgress={false}
+      showEcho={false}
+      surface="drawer"
+      open={open}
+      onOpenChange={onOpenChange}
+      onStepChange={(id) => {
+        if (id === 'email') setStatus('asking')
+      }}
+      onAdvance={onAdvance}
+      footer={
+        status !== 'sent' ? (
+          <V3Button type="button" variant="text" onClick={onUseGoogle}>
+            Save with Google instead
+          </V3Button>
+        ) : null
+      }
+    />
   )
 }

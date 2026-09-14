@@ -197,15 +197,10 @@ describe('ci:offmarket-listing-cta', () => {
     reset()
     const p = join(SANDBOX, STRIP)
     const src = readFileSync(p, 'utf8')
-    const start = src.indexOf('        {offMarket ? (')
-    const end = src.indexOf('        <V3Button\n          type="button"', start)
-    expect(start).toBeGreaterThan(-1)
-    expect(end).toBeGreaterThan(start)
-    const onMarketArm = `        <V3Button href={tourHref}>Tour</V3Button>
-        <V3Button href={callHref!} variant="ghost">Call</V3Button>
-        <V3Button href={textHref!} variant="ghost">Text</V3Button>
-`
-    writeFileSync(p, src.slice(0, start) + onMarketArm + src.slice(end))
+    expect(src).toContain('{offMarket ? (')
+    // SITE-99 moved Save/Share out of this ternary. Flip the flag so the
+    // on-market Tour / Call / Text arm always paints.
+    writeFileSync(p, src.replace('{offMarket ? (', '{false ? ('))
     const r = run()
     expect(r.code).toBe(1)
     expect(r.out).toContain('the Tour / Call / Text ask is NOT guarded')
