@@ -120,4 +120,13 @@ describe('siteQueueDoneEvidenceProblems', () => {
       ),
     ).toEqual([])
   })
+
+  it('refuses Tip Ready language without --ship exit 0', () => {
+    const p = siteQueueDoneEvidenceProblems(
+      'npx tsx scripts/taste-evaluate.ts about — grok-4.6 demoMatch: true, competitiveBriefPass: true, median 71. Tip Ready.',
+      { versionGap: 'SITE-90', tasteReview: PASSING_RECEIPT },
+    )
+    expect(p.join('\n')).toMatch(/--ship/)
+    expect(p.join('\n')).toMatch(/Cos prose is not Tip Ready/)
+  })
 })

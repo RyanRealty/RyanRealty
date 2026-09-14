@@ -37,8 +37,11 @@ const PASSING_TR = {
   competitiveBriefPass: true,
   competitiveBriefEvidence: { ...ABOUT_LOCK_QUOTES },
   adaptedFrom: [{ id: 'shadcn-carousel' }, { id: 'house-firm' }],
+  shotSpec: { states: ['default', 'firm-sales-open'] },
   defects: [{ section: '#office', severity: 'taste', finding: 'Keep office + OREA visible.', replaceWith: 'house-office' }],
 }
+
+const LIVE_CATALOG = JSON.parse(readFileSync('design_system/public/taste-catalog.json', 'utf8'))
 
 describe('aboutLockSourceProblems — live tree', () => {
   it('passes the locked About source', () => {
@@ -162,7 +165,14 @@ describe('aboutTipReadyProblems + tasteDoneProblems', () => {
 
   it('passes Tip Ready only with evidence, demoMatch, and the live source lock', () => {
     expect(aboutTipReadyProblems(PASSING_TR, ABOUT_BRIEF, { kit: 'about' })).toEqual([])
-    expect(tasteDoneProblems(PASSING_TR, { competitiveBrief: ABOUT_BRIEF, kit: 'about' })).toEqual([])
+    expect(
+      tasteDoneProblems(PASSING_TR, {
+        competitiveBrief: ABOUT_BRIEF,
+        kit: 'about',
+        catalog: LIVE_CATALOG,
+        route: 'app/about/page.tsx',
+      }),
+    ).toEqual([])
   })
 })
 

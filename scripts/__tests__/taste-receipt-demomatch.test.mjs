@@ -87,13 +87,37 @@ describe('tasteDoneProblems — Tip Ready / node-complete', () => {
     )
   })
 
-  it('passes demoMatch true on the grok-4.6 instrument', () => {
+  it('passes demoMatch true on the grok-4.6 instrument when open-state + route import hold', () => {
     expect(
-      tasteDoneProblems({
-        demoMatch: true,
-        evaluatorModel: 'grok-4.6',
-        adaptedFrom: catalogAdapted,
-      }),
+      tasteDoneProblems(
+        {
+          demoMatch: true,
+          evaluatorModel: 'grok-4.6',
+          adaptedFrom: catalogAdapted,
+          shots: { 'desktop-search-open': 'shots/search-open.png' },
+          shotSpec: { states: ['search-open'] },
+        },
+        {
+          catalog: {
+            installById: {
+              'shadcn-avatar': {
+                file: 'components/ui/avatar.tsx',
+                import: '@/components/ui/avatar',
+                add: 'avatar',
+              },
+            },
+          },
+          route: 'app/about/page.tsx',
+          catalogIo: {
+            existsSync: (p) => p === 'components/ui/avatar.tsx' || p === 'app/about/page.tsx',
+            readFileSync: (p) =>
+              p === 'app/about/page.tsx'
+                ? "import { Avatar } from '@/components/ui/avatar'\nexport const Page = Avatar\n"
+                : 'export function Avatar() { return null }\n',
+            scanFiles: ['app/about/page.tsx'],
+          },
+        },
+      ),
     ).toEqual([])
   })
 })

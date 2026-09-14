@@ -1,3 +1,5 @@
+HARD TIP READY (Matt 2026-09-14). Demos install BEFORE house paint. Tip Ready = `node scripts/lib/taste-receipt.mjs --ship <parity.json>` exit 0 only. House patch after `demoMatch: false` is FORBIDDEN — install the named `replaceWith` catalog source. Cos prose, score rise, and house chrome (V3Doors, cream pills, custom stacks) are not Tip Ready.
+
 You are the site queue grinder, running headless on Matt's Mac in /Users/matthewryan/RyanRealty on the `main` checkout. The site queue runs until it is empty, with no downtime and no waiting on a person. You have nobody to answer a prompt.
 
 STEP 1 — CHEAPEST CHECK FIRST, BEFORE READING ANYTHING. A fire that cannot work must cost seconds, not a full boot. Run:

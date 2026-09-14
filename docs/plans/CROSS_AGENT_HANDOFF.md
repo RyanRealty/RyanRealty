@@ -1,11 +1,11 @@
-# Current — 2026-09-14 (PR #223 catalog install; Tip Ready still refused)
+# Current — 2026-09-14 (PR #223 Tip Ready evidence; do not merge)
 
-Surface: Cursor cloud, `cursor/about-firm-story-20f0`, PR https://github.com/RyanRealty/RyanRealty/pull/223. Do not merge. Do not invent `demoMatch`.
+Surface: Cursor cloud, `cursor/about-firm-story-20f0`, PR https://github.com/RyanRealty/RyanRealty/pull/223. Do not merge. Cos cherry-picks after `--ship` 0.
 
-- **Done:** Catalog install on About. Button Group, Input+Button, Carousel+Card, Card office. House V3Doors / V3Carousel rail / cream inquiry / office dl removed. Default + `firm-sales-open` + `write-open` shots captured. `--about-lock` 0. `--ship` 1. `demoMatch` false. Named pair hash unchanged `sha256:4653719a…`.
-- **Next:** Cos re-runs `npx tsx scripts/taste-evaluate.ts about` on Mini.
+- **Done:** Merging process tip `54bb8acf`. Catalog demos stay. Re-landing `competitiveBriefEvidence` from About source.
+- **Next:** `--ship` 0 on About parity, then Cos Mini cherry-pick. Do not invent quotes.
 - **Node:** `edabba8e-f8aa-4271-909d-c258914f75ef` (SITE-90).
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, walkthrough-artifacts, about-lock.
+- Skills read: about-lock, taste-receipt, site-queue.
 
 # Prior
 
