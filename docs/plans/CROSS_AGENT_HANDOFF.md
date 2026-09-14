@@ -1,11 +1,11 @@
-# Current — 2026-09-14 (team map/copy + Tip Ready mannered refuse; do not merge)
+# Current — 2026-09-14 (SITE-99 catalog demos on the live fold; do not merge)
 
-Surface: Cursor cloud, `cursor/team-map-copy-150b`. Craft PR. Do not merge. Cos cherry-picks.
+Surface: Cursor cloud, `cursor/site-99-listing-save-share-a8e8`. PR #227. Do not merge.
 
-- **Done:** Killed /team atlas `claimText` lecture. Editorial doors are quiet Call | Text | Email | Schedule (number on `tel:` / aria-label). `tasteDoneProblems` / `--ship` refuse mannered meta-explainer + CALL-phone billboards. Team `--ship` still exit 1 (no demoMatch). About `--ship` still 0.
-- **Next:** Cos lands the copy + refuse. Do not merge this PR to main.
-- **Node:** none (craft; not a queue claim).
-- Skills read: site-queue, VOICE.md, taste-receipt.
+- **Done:** Live fold now mounts shadcn Sheet (right), Dialog (share + gallery), ButtonGroup Tour/Call/Text, Carousel, beui Tabs/ActionSwap. Street is H1. Share URL is ryan-realty.com. Fresh open shots hashed `sha256:6f75c46f319a583e97c47faa6526f7b6c522ac8a354277599e6559bc94a5085a`.
+- **Next:** A reachable separate judge must write `demoMatch`. `--ship` exit 1 (verbatim refuse). Leave node in_progress.
+- **Node:** SITE-99 `207ffae3-5242-4446-9e3b-1728dd7220f2` owner `cursor-cloud-site99-20260914`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, walkthrough-artifacts.
 
 # Prior
 
