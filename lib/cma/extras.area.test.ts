@@ -8,18 +8,19 @@ const getCmaCityClosedSkinny = vi.fn(async () => [])
 const getCmaSubdivisionClosed = vi.fn(async () => [])
 const getCmaMarketAreaRows = vi.fn(async () => [])
 
+type AnyFn = (...args: unknown[]) => unknown
 vi.mock('@/lib/data/cma/builderReads', () => ({
-  getCmaBandInventory: (...args: never[]) => getCmaBandInventory(...args),
-  getCmaCityClosedSkinny: (...args: never[]) => getCmaCityClosedSkinny(...args),
-  getCmaSubdivisionClosed: (...args: never[]) => getCmaSubdivisionClosed(...args),
+  getCmaBandInventory: (...args: unknown[]) => (getCmaBandInventory as AnyFn)(...args),
+  getCmaCityClosedSkinny: (...args: unknown[]) => (getCmaCityClosedSkinny as AnyFn)(...args),
+  getCmaSubdivisionClosed: (...args: unknown[]) => (getCmaSubdivisionClosed as AnyFn)(...args),
 }))
 
 vi.mock('@/lib/data/cma/bandInventory', () => ({
-  getCmaAreaBandInventory: (...args: never[]) => getCmaAreaBandInventory(...args),
+  getCmaAreaBandInventory: (...args: unknown[]) => (getCmaAreaBandInventory as AnyFn)(...args),
 }))
 
 vi.mock('@/lib/data/cma/marketAreaReads', () => ({
-  getCmaMarketAreaRows: (...args: never[]) => getCmaMarketAreaRows(...args),
+  getCmaMarketAreaRows: (...args: unknown[]) => (getCmaMarketAreaRows as AnyFn)(...args),
 }))
 
 import { buildCmaExtras } from '@/lib/cma/extras'
