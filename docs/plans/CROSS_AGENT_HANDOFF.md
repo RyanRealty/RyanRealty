@@ -1,11 +1,10 @@
 # Current — 2026-09-14 (SITE-97 homepage-v6; PR only; do not merge)
 
-Surface: Cursor cloud, `cursor/homepage-v6-site97-d7fe` → PR #229. Do not merge. Cos cherry-picks Tip Readys.
+Surface: Cursor cloud, `cursor/homepage-v6-site97-d7fe` @ `25c2319f8` + shots hash commit → PR #229. Do not merge.
 
-- **Done:** Catalog sell-tab is `SEL@ANCHOR!click` (`#home-hero-sell-tab [role=tab]@.home-hero-search!click`). Fresh shots: MorphingSearch open + Sell street address. `--ship` exit 1. Do not invent demoMatch.
-- **Tip Ready refuse:** `demoMatch must be true or false — do not invent it.` + adaptedFrom without demoMatch true. `taste-evaluate` exit 2: cursor-agent / grok / claude missing.
-- **Next:** On a machine with a judge CLI: `npx tsx scripts/taste-evaluate.ts homepage-v6 --builder grok-4.5` then write the real receipt and `--ship`.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`.
+- **Done:** Featured = shadcn Carousel+Card+AnimatedNumber. Places = catalog Card + live town counts. Researchy 1–8 baked as visible claims. Open shots: MorphingSearch results + Sell street address. `--ship` still exit 1 until Mini writes demoMatch true + competitiveBriefPass true.
+- **Next:** Mini Cursor `npx tsx scripts/taste-evaluate.ts homepage-v6 --builder grok-4.5`, copy evaluatorModel, write real receipt, then `--ship`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `TASTE.md`.
 
 # Prior
 
