@@ -668,11 +668,12 @@
 .listing-ask-row,
 .listing-ask-row.v3-btn-group,
 .v3.listing-ask-row.v3-btn-group {
-  width: 100%;
+  width: auto;
+  max-width: none;
 }
 
 .listing-ask-row [data-slot='button'] {
-  flex: 1;
+  flex: 0 0 auto;
 }
 
 /* SITE-99. Save / Share stay visible at every width. Desktop used to
@@ -688,9 +689,9 @@
 }
 
 .listing-face__price-row .listing-face__ask {
-  flex: 1 1 16rem;
+  flex: 0 0 auto;
   width: auto;
-  max-width: 28rem;
+  max-width: none;
 }
 
 .listing-face__keep,
@@ -706,24 +707,38 @@
   flex: 0 0 auto;
 }
 
+.listing-face__keep[data-slot='button-group'],
+.listing-face__ask[data-slot='button-group'],
+.listing-detail .listing-mobile-cta [data-slot='button-group'] {
+  gap: 0 !important;
+}
+
 .listing-face__keep > [data-slot='button'],
 .listing-face__ask > [data-slot='button'],
 .listing-detail .listing-mobile-cta [data-slot='button-group'] > [data-slot='button'] {
-  border-radius: 0;
+  margin: 0 !important;
+  border-radius: 0 !important;
 }
 
 .listing-face__keep > [data-slot='button']:first-child,
 .listing-face__ask > [data-slot='button']:first-child,
 .listing-detail .listing-mobile-cta [data-slot='button-group'] > [data-slot='button']:first-child {
-  border-top-left-radius: var(--radius-lg);
-  border-bottom-left-radius: var(--radius-lg);
+  border-top-left-radius: var(--radius-lg, 0.5rem) !important;
+  border-bottom-left-radius: var(--radius-lg, 0.5rem) !important;
 }
 
 .listing-face__keep > [data-slot='button']:last-child,
 .listing-face__ask > [data-slot='button']:last-child,
 .listing-detail .listing-mobile-cta [data-slot='button-group'] > [data-slot='button']:last-child {
-  border-top-right-radius: var(--radius-lg);
-  border-bottom-right-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg, 0.5rem) !important;
+  border-bottom-right-radius: var(--radius-lg, 0.5rem) !important;
+}
+
+.listing-face__keep > [data-slot='button'] + [data-slot='button'],
+.listing-face__ask > [data-slot='button'] + [data-slot='button'],
+.listing-detail .listing-mobile-cta [data-slot='button-group'] > [data-slot='button'] + [data-slot='button'] {
+  margin-left: -1px !important;
+  border-left-width: 0 !important;
 }
 
 @media (max-width: 63.99rem) {
@@ -750,7 +765,7 @@
   }
   .listing-ask-row,
   .listing-ask-row.v3-btn-group {
-    width: 100%;
+    width: auto;
   }
 }
 
@@ -1661,7 +1676,7 @@
   height: calc(var(--v3-sticky-bar-h) + env(safe-area-inset-bottom, 0px));
   background: var(--cream);
   border-top: var(--v3-chrome-rule);
-  padding: 0 var(--v3-space-sm) env(safe-area-inset-bottom, 0px);
+  padding: 0 0 env(safe-area-inset-bottom, 0px);
   transform: none;
 }
 /* PAGE_INVENTORY: Tour/Call/Text cannot be covered or removed by cookies. */
@@ -1683,16 +1698,30 @@ body:has([data-cookie-notice='chip']) .listing-detail .listing-mobile-cta {
 }
 .listing-detail .listing-mobile-cta-inner {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   height: var(--v3-sticky-bar-h);
-  max-width: 640px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
 }
 .listing-detail .listing-mobile-cta [data-slot='button-group'] {
   width: 100%;
+  height: 100%;
+  gap: 0 !important;
 }
 .listing-detail .listing-mobile-cta [data-slot='button'] {
   flex: 1;
+  height: 100%;
+  min-height: var(--v3-sticky-bar-h);
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+.listing-detail .listing-mobile-cta [data-slot='button'] + [data-slot='button'] {
+  margin-left: -1px !important;
+  border-left-width: 0 !important;
+}
+.listing-detail .listing-mobile-cta [data-slot='button']:first-child,
+.listing-detail .listing-mobile-cta [data-slot='button']:last-child {
+  border-radius: 0 !important;
 }
 
 /* Catalog Sheet / Dialog sit at z-50. House chrome (z-100) and the sticky

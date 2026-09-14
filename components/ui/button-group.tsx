@@ -7,14 +7,14 @@ import { cn } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
 
 const buttonGroupVariants = cva(
-  "group/button-group flex w-fit items-stretch *:focus-visible:relative *:focus-visible:z-10 has-[>[data-slot=button-group]]:gap-2 has-[select[aria-hidden=true]:last-child]:[&>[data-slot=select-trigger]:last-of-type]:rounded-r-lg [&>[data-slot=select-trigger]:not([class*='w-'])]:w-fit [&>input]:flex-1",
+  "group/button-group flex w-fit items-stretch gap-0 *:focus-visible:relative *:focus-visible:z-10 has-[>[data-slot=button-group]]:gap-2 has-[select[aria-hidden=true]:last-child]:[&>[data-slot=select-trigger]:last-of-type]:rounded-r-lg [&>[data-slot=select-trigger]:not([class*='w-'])]:w-fit [&>input]:flex-1 [&>[data-slot=button]]:rounded-none [&>[data-slot=button]:first-child]:rounded-l-lg [&>[data-slot=button]:last-child]:rounded-r-lg [&>[data-slot=button]:not(:first-child)]:-ml-px",
   {
     variants: {
       orientation: {
         horizontal:
-          "[&>*:not(:first-child)]:rounded-l-none [&>*:not(:first-child)]:border-l-0 [&>*:not(:last-child)]:rounded-r-none [&>[data-slot]:not(:has(~[data-slot]))]:rounded-r-lg!",
+          "[&>*:not(:first-child)]:rounded-l-none! [&>*:not(:first-child)]:border-l-0 [&>*:not(:last-child)]:rounded-r-none! [&>[data-slot]:not(:has(~[data-slot]))]:rounded-r-lg!",
         vertical:
-          "flex-col [&>*:not(:first-child)]:rounded-t-none [&>*:not(:first-child)]:border-t-0 [&>*:not(:last-child)]:rounded-b-none [&>[data-slot]:not(:has(~[data-slot]))]:rounded-b-lg!",
+          "flex-col [&>*:not(:first-child)]:rounded-t-none! [&>*:not(:first-child)]:border-t-0 [&>*:not(:last-child)]:rounded-b-none! [&>[data-slot]:not(:has(~[data-slot]))]:rounded-b-lg!",
       },
     },
     defaultVariants: {

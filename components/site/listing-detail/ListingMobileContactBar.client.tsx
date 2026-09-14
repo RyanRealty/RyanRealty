@@ -46,7 +46,7 @@ export default function ListingMobileContactBar({
     return (
       <div className="listing-mobile-cta" data-shown="true" data-off-market="true">
         <div className="listing-mobile-cta-inner">
-          <ButtonGroup aria-label="Homes like this" className="w-full">
+          <ButtonGroup aria-label="Homes like this" className="w-full gap-0">
             <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
               <a href={similarHref}>
                 <ActionSwapText value="homes">Homes for sale</ActionSwapText>
@@ -68,7 +68,7 @@ export default function ListingMobileContactBar({
   return (
     <div className="listing-mobile-cta" data-shown="true">
       <div className="listing-mobile-cta-inner">
-        <ButtonGroup aria-label="Contact about this listing" className="w-full">
+        <ButtonGroup aria-label="Contact about this listing" className="w-full gap-0">
           <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
             <a href={tourHref}>
               <ActionSwapText value="tour">Tour</ActionSwapText>
