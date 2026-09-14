@@ -55,7 +55,7 @@ export function ListingGuestSaveSheet({
           listingKey,
           addressLine: addressLine ?? undefined,
           company,
-          sessionId: readRrSessionId(),
+          sessionId: readRrSessionId(), // hydration-safe
         })
         if (result.ok) {
           setStatus('sent')
