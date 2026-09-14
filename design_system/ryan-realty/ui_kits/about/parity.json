@@ -147,7 +147,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-12",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts about --builder grok-4.5 (2026-09-14). Chain ran. cursor-agent missing (auth=login, CURSOR_API_KEY unset). grok CLI missing. claude CLI missing. Exit 2. Do not invent demoMatch or competitiveBriefPass.",
+    "evaluator": "Mini 2026-09-14: npx tsx scripts/taste-evaluate.ts about with Cursor grok-4.6. Exit 2. Tip Ready refused. Craft fixes applied on this PR. Cos re-runs evaluate on Mini. Do not invent demoMatch or competitiveBriefPass.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
     "demoMatch": false,
@@ -164,9 +164,10 @@
         "default",
         "proof",
         "reach",
-        "office"
+        "office",
+        "firm-sales"
       ],
-      "capture": "first viewport + proof=#proof + reach=#reach + office=#office, scripts/take-route-shots.mjs, scale 1, palette-quantized. Lock: AboutFirm firm-story hero, V3Proof reviews band as first proof, FirmClosings carousel, V3Doors Call/Text/Email/Schedule, AboutOffice address + OREA, AboutInquiry. Not three broker Cards. Not a Meet-the-Team dump."
+      "capture": "first viewport + proof=#proof + reach=#reach + office=#office + firm-sales=#firm-sales, scripts/take-route-shots.mjs, scale 1, palette-quantized. Lock: AboutFirm firm-story hero, V3Proof reviews band as first proof, FirmClosings Card carousel (photo, address, ClosePrice, close date, beds/baths/sqft), V3Doors Call/Text/Email/Schedule, AboutOffice address + OREA once, AboutInquiry shadcn Input GET /contact. Not three broker Cards. Not a Meet-the-Team dump."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
@@ -189,30 +190,24 @@
       { "id": "shadcn-carousel" },
       { "id": "shadcn-input" }
     ],
-    "evaluatorBlocked": "2026-09-14 real chain: npx tsx scripts/taste-evaluate.ts about --builder grok-4.5 exited 2. Links: (1) cursor-agent cursor-grok-4.6-high missing — auth=cursor-agent login, CURSOR_API_KEY unset; (2) grok CLI missing at ~/.grok/bin/grok; (3) claude CLI sonnet missing. Both judges unreachable. Do not invent demoMatch. --ship stays 1. shotsHash sha256:f95a3b74. Scores 52/47/57 are the prior instrument, not this fire.",
+    "evaluatorBlocked": "Mini 2026-09-14 Cursor grok-4.6 taste-evaluate exited 2 (Tip Ready refused). Three defects recorded below. Craft on this PR: FirmClosings Card slides, AboutInquiry shadcn Input, AboutOffice OREA once. Cos re-runs evaluate on Mini. Do not invent demoMatch or competitiveBriefPass. --ship stays 1. Scores 52/47/57 are the prior instrument, not this fire.",
     "defects": [
-      {
-        "section": "#firm",
-        "severity": "taste",
-        "finding": "The opener must be the firm story on the office exterior, not three equal broker Cards. If a shot still shows a staff-directory About, the page fails this lock.",
-        "replaceWith": "house-proof"
-      },
-      {
-        "section": "#proof",
-        "severity": "taste",
-        "finding": "Client reviews are the primary proof band after the firm hero. Google score at display scale plus the client's words. Do not replace them with press, a thin hero score link, or a national scale count.",
-        "replaceWith": "house-proof"
-      },
       {
         "section": "#firm-sales",
         "severity": "taste",
-        "finding": "Dated local closings must be visible as a carousel of recorded sales. Do not invent MOS.",
+        "finding": "FirmClosings must be a real shadcn carousel (prev/next, peek) with Card slides showing photo, address, ClosePrice, close date, beds/baths/sqft — not a photo-only thumbnail strip. Mini 2026-09-14 Cursor grok-4.6 exit 2.",
         "replaceWith": "shadcn-carousel"
+      },
+      {
+        "section": "#write",
+        "severity": "taste",
+        "finding": "AboutInquiry must be a real shadcn Input (GET /contact), navy/cream paint — not a cream pill plus navy rect / house V3 button. Mini 2026-09-14 Cursor grok-4.6 exit 2.",
+        "replaceWith": "shadcn-input"
       },
       {
         "section": "#office",
         "severity": "taste",
-        "finding": "Office 115 NW Oregon Ave #2 and firm OREA must be visible. Brokers belong on /team. A face-row teaser fails this lock.",
+        "finding": "AboutOffice must print firm OREA once. A duplicate license line fails this lock. Mini 2026-09-14 Cursor grok-4.6 exit 2.",
         "replaceWith": "house-office"
       }
     ],

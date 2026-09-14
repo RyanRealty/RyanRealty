@@ -27,7 +27,6 @@ export function AboutOffice({ id = 'office' }: { id?: string } = {}) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="about-office__license">Firm OREA license {FIRM_LICENSE}.</p>
           <Button asChild variant="link">
             <Link href={teamPath()}>The brokers are on /team</Link>
           </Button>

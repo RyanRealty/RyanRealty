@@ -5,7 +5,8 @@
  * Lives beside the page so about/page.tsx never mounts a city-stats Ledger.
  *
  * Catalog: V3Carousel → ui/carousel (prev/next, rail peek). Each slide is a
- * Card: photo, address, recorded ClosePrice, beds/baths/sqft, listing door.
+ * Card: photo, address, recorded ClosePrice, close date, beds/baths/sqft,
+ * listing door. Mini 2026-09-14: not a photo-only thumbnail strip.
  * As many real closings as the firm record returned — no invented rows.
  */
 
@@ -36,25 +37,25 @@ export function FirmClosings({
       <V3Carousel label="Ryan Realty closings" mode="rail" className="about-closings__carousel">
         {rows.map((row, index) => {
           const key = String(row.id ?? row.href ?? `closing-${index}`)
-          const facts = [row.when, row.detail].filter(Boolean).join(' · ')
           return (
             <Card key={key} className="about-closings__card">
               {row.media?.src ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={row.media.src} alt="" width={800} height={534} />
+                <div className="about-closings__photo">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={row.media.src} alt="" width={800} height={600} />
+                </div>
               ) : null}
               <CardHeader>
                 <CardTitle>{row.what}</CardTitle>
                 <CardDescription>{row.value}</CardDescription>
               </CardHeader>
-              {facts || row.href ? (
-                <CardContent>
-                  {facts ? <p className="about-closings__facts">{facts}</p> : null}
-                  <Button asChild variant="link">
-                    <Link href={row.href}>See this closing</Link>
-                  </Button>
-                </CardContent>
-              ) : null}
+              <CardContent>
+                {row.when ? <p className="about-closings__when">{row.when}</p> : null}
+                {row.detail ? <p className="about-closings__specs">{row.detail}</p> : null}
+                <Button asChild variant="link">
+                  <Link href={row.href}>See this closing</Link>
+                </Button>
+              </CardContent>
             </Card>
           )
         })}

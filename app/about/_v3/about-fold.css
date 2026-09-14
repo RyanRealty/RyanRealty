@@ -183,8 +183,41 @@
   --card: var(--v3-cream);
 }
 
-.about-office__license {
-  margin: 0 0 var(--v3-space-xs);
+.about-inquiry {
+  max-width: none;
+}
+
+.about-inquiry__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--v3-space-xs);
+}
+
+.about-inquiry__field {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.about-inquiry__field [data-slot='label'] {
+  color: var(--v3-navy);
+}
+
+.about-inquiry__field [data-slot='input'] {
+  min-height: var(--v3-tap);
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  border-color: var(--v3-navy);
+  border-radius: 0.375rem;
+}
+
+.about-inquiry__row [data-slot='button'] {
+  min-height: var(--v3-tap);
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  border: 1px solid var(--v3-navy);
 }
 
 .about-fold__reach {
@@ -207,26 +240,6 @@
   grid-area: write;
   min-width: 0;
   padding: 0 var(--v3-gutter);
-}
-
-.about-inquiry {
-  max-width: none;
-}
-
-.about-inquiry__row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--v3-space-xs);
-}
-
-.about-inquiry__row .v3-input {
-  flex: 1 1 16rem;
-  min-width: 0;
-}
-
-.about-inquiry__row [data-slot='button'] {
-  min-height: var(--v3-tap);
 }
 
 .about-fold__sales {
@@ -259,19 +272,59 @@
   min-width: 0;
 }
 
+.about-closings .v3.v3-carousel--rail [data-slot='carousel-item'] {
+  flex: 0 0 min(22rem, 82vw);
+}
+
 .about-closings__card {
+  --card: var(--v3-cream);
+  --card-foreground: var(--v3-navy);
   min-width: 0;
+  overflow: hidden;
+  background: var(--v3-cream);
+  color: var(--v3-navy);
 }
 
-.about-closings__facts {
-  margin: 0 0 var(--v3-space-2xs);
+.about-closings__photo {
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: color-mix(in srgb, var(--v3-navy) 8%, var(--v3-cream));
 }
 
-.about-closings img {
+.about-closings__photo img {
   display: block;
   width: 100%;
-  aspect-ratio: 3 / 2;
+  height: 100%;
   object-fit: cover;
+}
+
+.about-closings__card [data-slot='card-header'] {
+  padding-bottom: 0;
+}
+
+.about-closings__card [data-slot='card-title'] {
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+
+.about-closings__card [data-slot='card-description'] {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--v3-navy);
+}
+
+.about-closings__when,
+.about-closings__specs {
+  margin: 0 0 var(--v3-space-2xs);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--v3-navy) 72%, var(--v3-cream));
+}
+
+.about-closings__card [data-slot='card-content'] a {
+  font-weight: 600;
+  color: var(--v3-navy);
 }
 
 @media (max-width: 47.99rem) {
