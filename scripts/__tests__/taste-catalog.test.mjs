@@ -136,8 +136,9 @@ describe('the full EXM7777 inventories', () => {
       expect.arrayContaining(['listing-detail', 'homepage-v6', 'search', 'sell', 'city']),
     )
     expect(loaded.classes['listing-detail'].primitivesToAdd).toEqual(
-      expect.arrayContaining(['V3Carousel', 'V3ButtonGroup']),
+      expect.arrayContaining(['V3Carousel']),
     )
+    expect(loaded.classes['listing-detail'].primitivesToAdd).not.toContain('V3ButtonGroup')
   })
 })
 
@@ -176,7 +177,7 @@ describe('evaluatorBrief', () => {
 
   it('accepts a new house primitive as adaptedFrom', () => {
     expect(adaptedFromProblems(loaded, 'listing-detail', [{ id: 'V3Carousel' }])).toEqual([])
-    expect(adaptedFromProblems(loaded, 'listing-detail', [{ id: 'V3ButtonGroup' }])).toEqual([])
+    expect(adaptedFromProblems(loaded, 'listing-detail', [{ id: 'listing-button-group' }])).toEqual([])
   })
 })
 
@@ -188,7 +189,7 @@ describe('builderCard', () => {
       expect.arrayContaining([
         'components/site/listing-detail/ListingHero.tsx',
         'components/site/v3/V3Carousel.client.tsx',
-        'components/site/v3/V3ButtonGroup.tsx',
+        'components/site/listing-detail/PriceCtaStrip.tsx',
       ]),
     )
     expect(card.add).toEqual([])

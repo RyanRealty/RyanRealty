@@ -121,7 +121,7 @@
       "add": "button-group",
       "file": "components/ui/button-group.tsx",
       "import": "@/components/ui/button-group",
-      "house": "components/site/v3/V3ButtonGroup.tsx"
+      "house": "components/site/listing-detail/PriceCtaStrip.tsx"
     },
     "shadcn-accordion": {
       "add": "accordion",
@@ -156,7 +156,7 @@
       "add": "https://beui.dev/r/action-swap.json",
       "file": "components/motion/action-swap.tsx",
       "import": "@/components/motion/action-swap",
-      "house": "components/site/v3/V3ActionSwap.tsx",
+      "house": "components/site/listing-detail/PriceCtaStrip.tsx",
       "repo": "https://github.com/starc007/ui-components",
       "mustContain": ["ActionSwapText", "SPRING_SWAP"]
     },
@@ -2178,10 +2178,10 @@
           "job": "Swipeable media with prev/next, adapted from shadcn carousel into the full-bleed hero filmstrip."
         },
         {
-          "id": "v3-button-group",
-          "catalog": "house-v3",
-          "url": "components/site/v3/V3ButtonGroup.tsx",
-          "job": "Tour / Call / Text as one grouped control, not three leftover ghost buttons."
+          "id": "listing-button-group",
+          "catalog": "house-listing",
+          "url": "components/site/listing-detail/PriceCtaStrip.tsx",
+          "job": "Tour / Call / Text as one grouped control via catalog ButtonGroup + ActionSwapText, not a V3 wrapper."
         },
         {
           "id": "shadcn-carousel",
@@ -2239,8 +2239,7 @@
         }
       ],
       "primitivesToAdd": [
-        "V3Carousel",
-        "V3ButtonGroup"
+        "V3Carousel"
       ],
       "demoStates": [
         "save-open=button[aria-label^=\"Save \"]!click",
@@ -2353,7 +2352,6 @@
     "sell": {
       "layoutLock": "Sell opens Stage then the address sheet. The sourced answer sits between the address and the contact step. Do not demote the ask to a ghost because the header carries Value my home.",
       "primitivesToAdd": [
-        "V3ButtonGroup"
       ],
       "modules": [
         {

@@ -448,15 +448,12 @@ export type { V3SegmentedProps, V3SegmentedOption } from './V3Segmented.client'
 
 /**
  * Catalog jobs that had no house primitive (Matt 2026-09-10): add them HERE.
- * Carousel = shadcn carousel / listing filmstrip. Button group = Tour/Call/Text.
+ * Carousel = shadcn carousel / listing filmstrip.
+ * Button-group / action-swap Tip Ready installs catalog @/components/ui|motion directly — no V3 wrapper.
  * Growing this barrel is the OPEN pattern set. Installing a second kit is not.
  */
 export { V3Carousel } from './V3Carousel.client'
 export type { V3CarouselProps } from './V3Carousel.client'
-export { V3ButtonGroup } from './V3ButtonGroup'
-export type { V3ButtonGroupProps } from './V3ButtonGroup'
-export { V3ActionSwapText } from './V3ActionSwap'
-export type { V3ActionSwapTextProps } from './V3ActionSwap'
 /** Iconoir, house stroke set. Marks a door or a control; not a card grid. */
 export { V3Icon, QUIET_MARK_ICON, V3_ICON_NAMES } from './V3Icon'
 export type { V3IconName, V3IconProps, V3IconSize } from './V3Icon'

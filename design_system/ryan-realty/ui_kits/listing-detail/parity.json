@@ -368,7 +368,7 @@
         "id": "components/site/v3/V3Carousel.client.tsx"
       },
       {
-        "id": "components/site/v3/V3ButtonGroup.tsx"
+        "id": "components/site/listing-detail/PriceCtaStrip.tsx"
       },
       {
         "id": "shadcn-carousel"

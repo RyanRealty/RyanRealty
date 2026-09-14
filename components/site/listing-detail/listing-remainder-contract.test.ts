@@ -120,11 +120,11 @@ describe('listing remainder composition', () => {
       expect(defect).toHaveProperty('replaceWith')
     }
     const CAROUSEL = readFileSync(resolve('components/site/v3/V3Carousel.client.tsx'), 'utf8')
-    const GROUP = readFileSync(resolve('components/site/v3/V3ButtonGroup.tsx'), 'utf8')
+    const GROUP = readFileSync(resolve('components/site/listing-detail/PriceCtaStrip.tsx'), 'utf8')
     const SHEET = readFileSync(resolve('components/site/v3/V3Sheet.tsx'), 'utf8')
     const LIGHTBOX = readFileSync(resolve('components/site/listing-detail/PhotoGalleryLightbox.tsx'), 'utf8')
     const TABS = readFileSync(resolve('components/site/v3/V3Tabs.tsx'), 'utf8')
-    const SWAP = readFileSync(resolve('components/site/v3/V3ActionSwap.tsx'), 'utf8')
+    const SWAP = readFileSync(resolve('components/site/listing-detail/ListingSaveButton.tsx'), 'utf8')
     expect(CAROUSEL).toMatch(/from '@\/components\/ui\/carousel'/)
     expect(GROUP).toMatch(/from '@\/components\/ui\/button-group'/)
     expect(SHEET).toMatch(/from '@\/components\/ui\/sheet'/)
@@ -140,7 +140,7 @@ describe('listing remainder composition', () => {
     expect(TABS).toMatch(/from '@\/components\/motion\/tabs'/)
     expect(SWAP).toMatch(/from '@\/components\/motion\/action-swap'/)
     expect(HERO).toMatch(/from '@\/components\/motion\/photo-skeleton'/)
-    expect(GROUP).not.toMatch(/from '@\/components\/motion\/action-swap'/)
+    // Tip Ready: ButtonGroup + ActionSwapText both catalog-direct on PriceCtaStrip; no V3 wrapper.
   })
 
   it('keeps beds, baths, and living sqft on the Facts sheet (SITE-115)', () => {
