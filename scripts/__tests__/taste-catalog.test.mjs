@@ -339,15 +339,12 @@ describe('layoutLockProblems', () => {
     expect(problems.some((p) => /size=\\"proof\\"/.test(p) || /size="proof"/.test(p))).toBe(true)
   })
 
-  it('fails About when the team teaser reintroduces a Card roster', () => {
+  it('fails About when a Meet-the-Team teaser returns', () => {
     const problems = layoutLockProblems(loaded, {
       existsSync: () => true,
       readFileSync: (p) => {
-        if (String(p).endsWith('AboutTeamTeaser.tsx')) {
-          return "import { Card } from '@/components/ui/card'\n"
-        }
         if (String(p).endsWith('about/page.tsx')) {
-          return 'export default function Page() { return <AboutFirm /> }'
+          return 'export default function Page() { return <AboutFirm /><AboutTeamTeaser people={[]} /> }'
         }
         if (String(p).endsWith('about/parity.json')) {
           return JSON.stringify({
@@ -357,7 +354,7 @@ describe('layoutLockProblems', () => {
         return ''
       },
     })
-    expect(problems.some((p) => /card/i.test(p))).toBe(true)
+    expect(problems.some((p) => /AboutTeamTeaser/.test(p))).toBe(true)
   })
 })
 

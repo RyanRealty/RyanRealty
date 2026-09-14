@@ -1,8 +1,8 @@
 /**
- * /about first viewport — Compass/SIR structure + Matt 2026-09-12 lock.
+ * /about first viewport — Redfin structure. Navy and cream only.
  * Hero (office exterior + purpose), V3Proof as first proof, closings,
- * Contact four-up, short team teaser → /team, one-line inquiry.
- * Never the sofa. Never a Card roster.
+ * Contact four-up, office + OREA, one-line inquiry.
+ * Never the sofa. Never a broker roster.
  */
 
 .about-fold {
@@ -12,7 +12,7 @@
     "proof"
     "sales"
     "reach"
-    "teaser"
+    "office"
     "write";
   gap: var(--v3-space-md);
   padding-bottom: var(--v3-space-md);
@@ -142,79 +142,19 @@
   line-height: var(--v3-leading-heading);
 }
 
-.about-teaser {
-  grid-area: teaser;
+.about-office {
+  grid-area: office;
   max-width: none;
-  padding: var(--v3-space-sm) var(--v3-gutter);
+  padding: 0 var(--v3-gutter);
 }
 
-.about-teaser__heading {
+.about-office__card {
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+}
+
+.about-office__license {
   margin: 0 0 var(--v3-space-xs);
-  font-size: var(--v3-size-body);
-}
-
-.about-teaser__door {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--v3-space-sm) var(--v3-space-md);
-  min-height: var(--v3-tap);
-  color: inherit;
-  text-decoration: none;
-}
-
-.about-teaser__door:focus-visible {
-  outline: var(--v3-focus-ring);
-  outline-offset: 4px;
-}
-
-.about-teaser__faces {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--v3-space-xs);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.about-teaser__face {
-  display: grid;
-  justify-items: center;
-  gap: var(--v3-space-3xs);
-}
-
-.about-teaser__avatar {
-  width: 3.25rem !important;
-  height: 3.25rem !important;
-  background: var(--v3-navy) !important;
-  color: var(--v3-cream) !important;
-}
-
-.about-teaser__avatar::after {
-  display: none !important;
-}
-
-.about-teaser__name {
-  max-width: 5.5rem;
-  overflow: hidden;
-  color: var(--v3-ink-muted);
-  font-size: var(--v3-size-label);
-  letter-spacing: var(--v3-track-label);
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.about-teaser__cta {
-  min-height: var(--v3-tap);
-  display: inline-flex;
-  align-items: center;
-  color: var(--v3-ink);
-  font-size: var(--v3-size-body);
-  font-weight: var(--v3-weight-medium);
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
 }
 
 .about-fold__reach {
@@ -329,9 +269,6 @@
     display: none;
   }
 
-  .about-teaser__name {
-    display: none;
-  }
 }
 
 @media (min-width: 64rem) {
@@ -342,7 +279,7 @@
       "proof proof"
       "sales sales"
       "reach reach"
-      "teaser write";
+      "office write";
     align-items: start;
     column-gap: var(--v3-space-lg);
   }

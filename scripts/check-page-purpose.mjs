@@ -46,6 +46,7 @@ import {
   competitiveBriefPurposeProblems,
   competitiveBriefShapeProblems,
 } from './lib/taste-receipt.mjs'
+import { aboutLockSourceProblems } from './lib/about-lock.mjs'
 
 const ROOT = process.cwd()
 const KITS = 'design_system/ryan-realty/ui_kits'
@@ -85,6 +86,11 @@ for (const rel of contracts) {
   }
   for (const problem of aboutOpenerProblems(kit, d)) {
     failures.push(`${rel}: ${problem}`)
+  }
+  if (kit === 'about' && existsSync(join(ROOT, 'app/about/_v3/about-constants.ts'))) {
+    for (const problem of aboutLockSourceProblems({ root: ROOT })) {
+      failures.push(`${rel}: ${problem}`)
+    }
   }
   if (d.perBrokerPage && Object.prototype.hasOwnProperty.call(d.perBrokerPage, 'competitiveBrief')) {
     for (const problem of competitiveBriefShapeProblems(d.perBrokerPage.competitiveBrief, {

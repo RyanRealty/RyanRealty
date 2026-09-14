@@ -165,7 +165,7 @@ describe('tasteDoneProblems — Tip Ready refuse', () => {
     expect(
       tasteDoneProblems(
         { demoMatch: true, competitiveBriefPass: true, evaluatorModel: 'grok-4.6' },
-        { competitiveBrief: ABOUT_BRIEF },
+        { competitiveBrief: { ...ABOUT_BRIEF, id: 'contact-looking-1-8' } },
       ),
     ).toEqual([])
   })
@@ -232,6 +232,16 @@ describe('siteQueueDoneEvidenceProblems — About / SITE-90 brief', () => {
             demoMatch: true,
             evaluatorModel: 'grok-4.6',
             shotsHash: `sha256:${'a'.repeat(64)}`,
+            competitiveBriefEvidence: {
+              '1': 'We are a small boutique brokerage. We work all of Central Oregon. We help clients buy and sell their properties.',
+              '2': 'The brokers are on /team. No broker roster on About.',
+              '3': 'V3Proof reviews and the FirmClosings carousel of recorded sales.',
+              '4': 'Call / Text / Email / Schedule on one reach control.',
+              '5': 'Bend office 115 NW Oregon Ave #2.',
+              '6': 'Firm OREA license. Inquiry GET /contact.',
+              '7': 'Navy and cream only. Redfin is the layout reference.',
+              '8': 'Real shadcn carousel + Card and inquiry input, not a cream-box Avatar.',
+            },
           },
         },
       ),
@@ -247,21 +257,21 @@ describe('aboutOpenerProblems — AboutFirm, not AboutFaces', () => {
         { name: 'AboutFaces', section: 'OPENS THE PAGE, three broker Cards' },
       ],
     })
-    expect(p.join('\n')).toMatch(/AboutFirm/)
-    expect(p.join('\n')).toMatch(/AboutFaces as opener/)
+    expect(p.join('\n')).toMatch(/AboutFaces/)
+    expect(p.join('\n')).toMatch(/\/team/)
   })
 
-  it('fails AboutFaces kept as a required teaser', () => {
+  it('fails AboutTeamTeaser kept as a required teaser', () => {
     const p = aboutOpenerProblems('about', {
       requiredComponents: [
         { name: 'AboutFirm', section: 'OPENS THE PAGE' },
-        { name: 'AboutFaces', section: 'team teaser after the fold' },
+        { name: 'AboutTeamTeaser', section: 'team teaser after the fold' },
       ],
     })
     expect(p.join('\n')).toMatch(/AboutTeamTeaser/)
   })
 
-  it('passes the live About kit (AboutFirm opener, no AboutFaces)', () => {
+  it('passes the live About kit (AboutFirm opener, AboutOffice, no roster)', () => {
     const parsed = JSON.parse(readFileSync('design_system/ryan-realty/ui_kits/about/parity.json', 'utf8'))
     expect(aboutOpenerProblems('about', parsed)).toEqual([])
   })

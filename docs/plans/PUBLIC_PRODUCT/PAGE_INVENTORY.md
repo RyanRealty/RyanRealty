@@ -259,22 +259,22 @@ That is the conversion failure: poster photo, empty fold, form, footer.
 
 ### `/about`
 
-**Beat:** a brokerage you would actually hire. Call/text first. Firm proof before biography.
+**Beat:** a brokerage you would actually hire. Firm story first. Brokers belong on `/team` only.
 
 | # | Section | Notes |
 |---|---|---|
-| 1 | Who we are + Call / Text | One line. Phone is the conversion. Faces are doors, not a poster that eats the fold. |
-| 2 | Firm proof | The 25 Google reviews (V3Proof). Brokerage social proof, not three empty personal ledgers. |
-| 3 | Firm sales | Recent **Ryan Realty** closings / our listings. Same house row. |
-| 4 | The brokers | Three people as doors to `/team/[slug]`. Call/Text on the row. |
-| 5 | Where we work | Atlas of the service area. No how-to caption. Field is the spectacle. |
-| 6 | How it started | Short Quiet. Not the fold. |
-| 7 | Licenses | One sourced line (firm + PB). Not a KPI hero. |
-| 8 | Questions | V3Answers. |
+| 1 | Firm story | Boutique, all of Central Oregon, help buy and sell. Optional office exterior of `115 NW Oregon Ave #2`. |
+| 2 | Firm proof | Google reviews (V3Proof). Brokerage social proof, not three empty personal ledgers. |
+| 3 | Firm sales | Recent **Ryan Realty** closings as a carousel. Same house row. Never invent MOS. |
+| 4 | Reach | Call / Text / Email / Schedule on one control (Sotheby's Contact shape). |
+| 5 | Office + OREA + write | `115 NW Oregon Ave #2`, firm OREA, one-line inquiry GET `/contact`. No broker roster. |
+| 6 | Where we work | Atlas of the service area. No how-to caption. Field is the spectacle. |
+| 7 | How it started | Short Quiet. Not the fold. Licenses as sourced facts. |
+| 8 | Questions | V3Answers. Door to `/team`. |
 
 ### `/team`
 
-Roster only. Same house of faces as About’s broker row — not a second About. Call/Text. Door to each `/team/[slug]`.
+Roster only. Brokers live here, not on `/about`. Call/Text. Door to each `/team/[slug]`.
 
 ### `/team/[slug]`
 

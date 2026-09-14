@@ -6,6 +6,16 @@ const PASSING_RECEIPT = {
   demoMatch: true,
   evaluatorModel: 'grok-4.6',
   shotsHash: `sha256:${'a'.repeat(64)}`,
+  competitiveBriefEvidence: {
+    '1': 'We are a small boutique brokerage. We work all of Central Oregon. We help clients buy and sell their properties.',
+    '2': 'The brokers are on /team. No broker roster on About.',
+    '3': 'V3Proof reviews and the FirmClosings carousel of recorded sales.',
+    '4': 'Call / Text / Email / Schedule on one reach control.',
+    '5': 'Bend office 115 NW Oregon Ave #2.',
+    '6': 'Firm OREA license. Inquiry GET /contact.',
+    '7': 'Navy and cream only. Redfin is the layout reference.',
+    '8': 'Real shadcn carousel + Card and inquiry input, not a cream-box Avatar.',
+  },
 } as const
 
 describe('siteQueueDoneEvidenceProblems', () => {

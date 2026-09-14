@@ -78,9 +78,11 @@ describe('one name per broker on /about', () => {
     }
   })
 
-  it('answers "Who are the brokers?" from that one roster', () => {
+  it('answers "Who are the brokers?" by sending the reader to /team', () => {
     const answer = ABOUT_FAQ_ITEMS.find((i) => i.question === 'Who are the brokers?')?.answer
-    expect(answer).toBe(ABOUT_BROKER_ROSTER)
+    expect(answer).toMatch(/\/team/)
+    expect(answer).not.toBe(ABOUT_BROKER_ROSTER)
+    expect(answer).not.toMatch(/OR #/)
   })
 
   it('resolves the door label and the face to the same name', () => {

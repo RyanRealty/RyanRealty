@@ -103,6 +103,7 @@ describe('check-page-purpose — competitiveBrief contract', () => {
   it('loads the live About brief as a complete checklist', () => {
     const parsed = JSON.parse(readFileSync(ABOUT_PARITY, 'utf8'))
     expect(competitiveBriefPurposeProblems('about', parsed)).toEqual([])
+    expect(parsed.competitiveBrief.id).toBe('about-matt-2026-09-12')
     expect(parsed.competitiveBrief.beats).toHaveLength(8)
   })
 
@@ -167,8 +168,8 @@ describe('check-page-purpose — competitiveBrief contract', () => {
     const p = aboutOpenerProblems('about', {
       requiredComponents: [{ name: 'AboutFaces', section: 'OPENS THE PAGE, three broker Cards' }],
     })
-    expect(p.join('\n')).toMatch(/AboutFirm/)
-    expect(p.join('\n')).toMatch(/AboutFaces as opener/)
+    expect(p.join('\n')).toMatch(/AboutFaces/)
+    expect(p.join('\n')).toMatch(/\/team/)
 
     scaffold(
       aboutParity({

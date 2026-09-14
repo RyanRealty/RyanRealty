@@ -1,24 +1,24 @@
 {
   "route": "app/about/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat Compass/Redfin/SIR About on STRUCTURE, not scale. OPEN on the firm story (small boutique brokerage · all of Central Oregon · help clients buy and sell) plus an optional Bend office exterior / mission band. Then client reviews as the primary proof (Google score + featured quote — never press). Then dated local closings. Then Contact four-up Call|Text|Email|Schedule. Then a short Who you work with teaser that only doors to /team. Then a compact inquiry that GET-submits to Contact. FAIL if the page opens on brokers' faces or three equal broker Cards. About is the brokerage, not Meet the Team. Skip coast-to-coast, Redfin fee, and Rocket copy. Never invent MOS, prices, or licenses.",
+  "competitiveTarget": "Beat Compass/Redfin/SIR About on STRUCTURE, not scale. OPEN on the firm story (small boutique brokerage · all of Central Oregon · help clients buy and sell) plus an optional Bend office exterior / mission band. Then client reviews as the primary proof (Google score + featured quote — never press). Then dated local closings. Then Contact four-up Call|Text|Email|Schedule. Then office 115 NW Oregon Ave #2 + firm OREA. Then a compact inquiry that GET-submits to Contact. FAIL if the page opens on brokers' faces, three equal broker Cards, or a Meet-the-Team dump. Brokers belong on /team only. About is the brokerage, not Meet the Team. Skip coast-to-coast, Redfin fee, and Rocket copy. Never invent MOS, prices, or licenses.",
   "competitiveBrief": {
-    "id": "about-researchy-1-8",
-    "source": "Researchy About 2026-09-12 beats 1–8; docs/plans/PUBLIC_PRODUCT/PAGE_INVENTORY.md §6. Synced with cursor/competitive-brief-taste-gate-b093 (PR 214) — they own ci:taste-canon; this file owns requiredComponents.",
-    "productLock": "firm story + reviews + closings + Call|Text|Email|Schedule + team teaser→/team + inquiry→/contact",
-    "refuse": "AboutFaces three broker Cards as the opener. Poster-sized three-headshot fold. Looking that invents past this checklist.",
+    "id": "about-matt-2026-09-12",
+    "source": "Matt 2026-09-12 / 2026-09-14 lock. About is the brokerage story. Brokers belong on /team. Evidence quotes required — a lone competitiveBriefPass boolean is refuse.",
+    "productLock": "firm story + reviews + closings + Call|Text|Email|Schedule + office 115 NW Oregon Ave #2 + firm OREA + inquiry→/contact. No broker roster on About.",
+    "refuse": "AboutFaces, AboutTeamTeaser, Meet-the-Team dump, broker Cards, AvatarGroup. Looking that invents past this checklist. Lone boolean competitiveBriefPass without competitiveBriefEvidence.",
     "beats": [
       { "id": "1", "text": "Firm story opens the page: small boutique brokerage, all of Central Oregon, help clients buy and sell. Not a staff-directory fold." },
-      { "id": "2", "text": "Firm reviews: brokerage Google record as words (V3Proof), with a door to /reviews." },
-      { "id": "3", "text": "Firm closings: recent Ryan Realty sales as house-row cards (photo, address, ClosePrice, beds/baths/sqft). Never invent MOS." },
-      { "id": "4", "text": "Call is the primary conversion on the reach control, carrying live hours." },
-      { "id": "5", "text": "Text sits on the same reach control as Call, not a seven-row phone book." },
-      { "id": "6", "text": "Email sits on the same reach control as Call, Text, and Schedule." },
-      { "id": "7", "text": "Schedule sits on the same reach control as Call, Text, and Email." },
-      { "id": "8", "text": "Team teaser doors only to /team; compact inquiry GET /contact. No /team/[slug] on About. Brokers are not the opener." }
+      { "id": "2", "text": "Brokers are not on About. No broker Cards, roster dump, Meet-the-Team band, or AboutTeamTeaser. Brokers belong on /team only." },
+      { "id": "3", "text": "Firm reviews as words (V3Proof) plus dated local closings as a carousel of recorded sales. Never invent MOS." },
+      { "id": "4", "text": "Four-up reach on one control: Call, Text, Email, Schedule. Call is primary and carries live hours." },
+      { "id": "5", "text": "Office 115 NW Oregon Ave #2 is on the page. Optional exterior hero of that office." },
+      { "id": "6", "text": "Firm OREA license is on the page. One-line inquiry GET-submits to /contact." },
+      { "id": "7", "text": "Navy and cream only. Redfin is the layout and interaction reference, not a second palette." },
+      { "id": "8", "text": "Catalog interactions are real: closings carousel (shadcn carousel + Card) and inquiry input. Avatar-import plus cream CSS is not a demo match." }
     ]
   },
-  "note": "SITE-90 2026-09-12 Matt lock + Researchy 1–8. About = brokerage, not Meet the Team. Synced with PR 214 competitiveBrief (about-researchy-1-8). requiredComponents opener is AboutFirm, not AboutFaces. Order: AboutFirm hero, V3Proof reviews PRIMARY, FirmClosings, V3Doors Call/Text/Email/Schedule, AboutTeamTeaser → /team only, AboutInquiry GET /contact, Atlas, Quiet #about, V3Answers, Footer. No deep bios or licenses on the fold. No V3Instrument. No V3SourceLine on the fold.",
+  "note": "SITE-90 2026-09-14 Matt lock. About = brokerage, not Meet the Team. Brokers belong on /team only. requiredComponents opener is AboutFirm, not AboutFaces, not AboutTeamTeaser. Order: AboutFirm hero, V3Proof reviews PRIMARY, FirmClosings, V3Doors Call/Text/Email/Schedule, AboutOffice (address + OREA), AboutInquiry GET /contact, Atlas, Quiet #about, V3Answers, Footer. Tip Ready needs competitiveBriefEvidence quotes in source — a lone boolean is refuse.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -51,8 +51,8 @@
       "blocking": true
     },
     {
-      "name": "AboutTeamTeaser",
-      "section": "Short Who you work with teaser AFTER the reach control. Face row + Meet the team door to /team only. No Card roster, no per-broker CTAs, licenses, bios, or /team/[slug] doors. Licenses live on Team / broker heroes.",
+      "name": "AboutOffice",
+      "section": "Bend office 115 NW Oregon Ave #2 and firm OREA on the fold. shadcn Card. One door to /team. No faces, no roster, no per-broker CTAs.",
       "blocking": true
     },
     {
@@ -113,6 +113,7 @@
   ],
   "removedComponents": [
     "AboutFaces as opener / three equal broker Cards — Matt 2026-09-12 lock: About is the brokerage, not Meet the Team. Looking/taste must not pass a faces-first About. Deep bios and licenses stay on /team.",
+    "AboutTeamTeaser — Matt 2026-09-14: brokers belong on /team only. No face row, no Meet-the-Team dump on About.",
     "KbHero — brand eyebrow, poetry H1, Central Oregon photo, property search.",
     "KbAbout — origin story and facts, rebuilt as the opening V3Quiet plus the Instrument.",
     "KbExploreTowns — city ledger, rebuilt as V3Ledger from getMarketPulseCitySnapshots.",
@@ -132,7 +133,7 @@
     "V3Proof #proof — PRIMARY client reviews (Google + featured quote). Not press.",
     "FirmClosings #firm-sales — dated local closings carousel. Never invented MOS.",
     "V3Doors #reach — Call | Text | Email | Schedule, Contact match, live hours",
-    "AboutTeamTeaser #team-teaser — face row + Meet the team → /team only. No Card roster.",
+    "AboutOffice #office — 115 NW Oregon Ave #2 + firm OREA. Door to /team. No roster.",
     "AboutInquiry #write — compact Send a message GET /contact",
     "V3Atlas #service-area -- where we work",
     "V3Quiet #about -- how it started plus licenses as one sourced line",
@@ -162,9 +163,9 @@
       "states": [
         "default",
         "proof",
-        "team-teaser"
+        "office"
       ],
-      "capture": "first viewport + proof=#proof + team-teaser=#team-teaser, scripts/take-route-shots.mjs, scale 1, palette-quantized. Lock: AboutFirm firm-story hero, V3Proof reviews band as first proof, FirmClosings, V3Doors four-up, AboutTeamTeaser face row → /team, AboutInquiry. Not three broker Cards. Not a Card roster teaser."
+      "capture": "first viewport + proof=#proof + office=#office, scripts/take-route-shots.mjs, scale 1, palette-quantized. Lock: AboutFirm firm-story hero, V3Proof reviews band as first proof, FirmClosings, V3Doors four-up, AboutOffice address + OREA, AboutInquiry. Not three broker Cards. Not a Meet-the-Team dump."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
@@ -177,13 +178,12 @@
       57
     ],
     "score": 52,
-    "beats": "Lock under test: firm-story hero, V3Proof Google reviews as the first proof band (display-scale score + words), dated local closings, Contact four-up, short face-row teaser → /team. A faces-first / Card-roster About fails this class. Cos still owns the score. demoMatch is false. competitiveBriefPass is false.",
+    "beats": "Lock under test: firm-story hero, V3Proof Google reviews as the first proof band, dated local closings carousel, Contact four-up, office 115 NW Oregon Ave #2 + firm OREA. A faces-first / Meet-the-Team About fails this class. Cos still owns the score. demoMatch is false. competitiveBriefPass is false.",
     "adaptedFrom": [
       { "id": "house-firm" },
       { "id": "house-proof" },
-      { "id": "house-faces" },
+      { "id": "house-office" },
       { "id": "house-doors" },
-      { "id": "shadcn-avatar" },
       { "id": "shadcn-card" },
       { "id": "shadcn-carousel" },
       { "id": "shadcn-input" }
@@ -209,10 +209,10 @@
         "replaceWith": "shadcn-carousel"
       },
       {
-        "section": "#team-teaser",
+        "section": "#office",
         "severity": "taste",
-        "finding": "Who you work with is a short face row and one Meet the team door to /team. A Card roster or per-broker CTAs fail Researchy 4.",
-        "replaceWith": "house-faces"
+        "finding": "Office 115 NW Oregon Ave #2 and firm OREA must be visible. Brokers belong on /team. A face-row teaser fails this lock.",
+        "replaceWith": "house-office"
       }
     ],
     "comparedToPrior": "rebaselined",
@@ -226,7 +226,7 @@
     "rebaselineReason": "Craft pass 2026-09-12: V3Proof is the first proof band after AboutFirm; AboutTeamTeaser is a face row not a Card roster. New shotsHash sha256:712930e0. Prior SITE-64 scores are not a Looking pass.",
     "verdict": "Looking/taste cannot pass a Meet-the-Team About. The contract opens on AboutFirm. demoMatch is false. Cos scores the shots.",
     "contactListIsFirstContent": false,
-    "contactListAnswer": "H1 and one purpose line (boutique · Central Oregon · buy and sell) on the Bend office exterior, Google reviews as primary proof, dated local closings, Call/Text/Email/Schedule, a Who you work with teaser that only doors to /team, and a one-line inquiry to /contact. No three equal broker Cards as the opener. No methodology disclosure."
+    "contactListAnswer": "H1 and one purpose line (boutique · Central Oregon · buy and sell) on the Bend office exterior, Google reviews as primary proof, dated local closings, Call/Text/Email/Schedule, office 115 NW Oregon Ave #2 + firm OREA, and a one-line inquiry to /contact. No three equal broker Cards. No Meet-the-Team dump. Brokers belong on /team."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",

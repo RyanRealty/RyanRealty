@@ -23,6 +23,13 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ALLOWED_EVALUATORS, EVALUATOR_MODEL, isAllowedEvaluator } from './taste-evaluate-result.mjs'
+import {
+  ABOUT_LOCK_ID,
+  aboutLockSourceProblems,
+  aboutRequiredComponentProblems,
+  aboutTipReadyProblems,
+  isAboutLockBrief,
+} from './about-lock.mjs'
 
 /** Receipts evaluated on or after this date must carry the v2 fields. */
 export const RECEIPT_V2_FROM = '2026-09-08'
@@ -506,21 +513,12 @@ export const TIP_READY_EVALUATORS = ALLOWED_EVALUATORS
 export const isTipReadyEvaluator = isAllowedEvaluator
 
 /**
- * About opener contract (Matt 2026-09-12 / PR 213). AboutFaces as the
- * required opener or teaser is refuse. Team teaser is AboutTeamTeaser → /team.
+ * About opener contract (Matt 2026-09-12 / 2026-09-14). AboutFaces or
+ * AboutTeamTeaser as a required About section is refuse. Brokers belong
+ * on /team. AboutFirm opens. AboutOffice carries address + OREA.
  */
 export function aboutOpenerProblems(kit, parsed) {
-  if (kit !== 'about') return []
-  const list = Array.isArray(parsed?.requiredComponents) ? parsed.requiredComponents : []
-  if (list.length === 0) return []
-  const names = componentNames(list)
-  if (!names.includes('AboutFaces')) return []
-  const faces = list.find((c) => (typeof c === 'string' ? c : c?.name) === 'AboutFaces')
-  const section = isPlainObject(faces) ? String(faces.section ?? '') : ''
-  if (/OPENS THE PAGE|opens the page/i.test(section)) {
-    return ['About opener must be AboutFirm (firm story). AboutFaces as opener is refuse.']
-  }
-  return ['AboutFaces must not stay as a requiredComponent teaser. Team teaser is AboutTeamTeaser → /team.']
+  return aboutRequiredComponentProblems(kit, parsed)
 }
 
 /**
@@ -528,7 +526,29 @@ export function aboutOpenerProblems(kit, parsed) {
  * competitiveBriefPass must be the boolean true on tasteReview. A hand-typed
  * "competitiveBriefPass: true" string is not a pass.
  */
-export function tipReadyReceiptProblems(tr, { competitiveBrief = null, requireBrief = false } = {}) {
+export function defectReplaceWithProblems(tr) {
+  if (!isPlainObject(tr) || !Array.isArray(tr.defects)) return []
+  const p = []
+  for (const [i, d] of tr.defects.entries()) {
+    if (!isPlainObject(d)) continue
+    if (!('replaceWith' in d)) {
+      p.push(`defects[${i}] is missing replaceWith. Empty replaceWith fails Tip Ready.`)
+      continue
+    }
+    if (d.replaceWith == null) continue
+    if (typeof d.replaceWith === 'string' && !d.replaceWith.trim()) {
+      p.push(
+        `defects[${i}] has empty replaceWith. Name a catalog id from the builder card, or null for craft/honesty/SEO.`,
+      )
+    }
+  }
+  return p
+}
+
+export function tipReadyReceiptProblems(
+  tr,
+  { competitiveBrief = null, requireBrief = false, kit = null, root = process.cwd(), sourceText } = {},
+) {
   if (!isPlainObject(tr)) {
     return ['tasteReview is required to mark a SITE node done. Bare evidence prose is refuse.']
   }
@@ -549,18 +569,21 @@ export function tipReadyReceiptProblems(tr, { competitiveBrief = null, requireBr
       p.push(
         'parity tasteReview.competitiveBriefPass must be the boolean true. Bare evidence prose is refuse. Leave the node in_progress.',
       )
+    } else if (isAboutLockBrief(parsed, kit)) {
+      p.push(...aboutTipReadyProblems(tr, parsed, { root, sourceText, kit }))
     }
   }
+  p.push(...defectReplaceWithProblems(tr))
   if (tr.shotsHash != null && !HASH_RE.test(String(tr.shotsHash).trim())) {
     p.push('tasteReview.shotsHash must be sha256:<64 hex> like a v2 receipt.')
   }
   return p
 }
 
-export function tasteDoneProblems(tr, { competitiveBrief = null } = {}) {
+export function tasteDoneProblems(tr, { competitiveBrief = null, kit = null, root = process.cwd(), sourceText } = {}) {
   if (!isPlainObject(tr)) return ['tasteReview is required to mark a SITE node done.']
   const catalogIds = adaptedFromCatalogIds(tr.adaptedFrom)
-  const p = tipReadyReceiptProblems(tr, { competitiveBrief })
+  const p = tipReadyReceiptProblems(tr, { competitiveBrief, kit, root, sourceText })
   if (catalogIds.length && tr.demoMatch !== true) {
     p.push(
       `adaptedFrom names catalog modules (${catalogIds.join(', ')}) but demoMatch is not true. File-on-disk / score rise is not a demo match.`,
@@ -650,7 +673,12 @@ export function siteQueueDoneEvidenceProblems(
     ]
   }
   if (needsBrief || claimsBriefPass) {
-    return tipReadyReceiptProblems(tr, { competitiveBrief: brief, requireBrief: true })
+    return tipReadyReceiptProblems(tr, {
+      competitiveBrief: brief,
+      requireBrief: true,
+      kit,
+      root: root ?? process.cwd(),
+    })
   }
   if (judgeUnreachable) {
     // The prose says link 1 failed and then claims a verdict: only the receipt can back that.
@@ -748,21 +776,38 @@ export function requiredComponentsHoldProblems(currentList, headList) {
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const root = process.cwd()
   const args = process.argv.slice(2)
+  if (args[0] === '--about-lock') {
+    const problems = aboutLockSourceProblems({ root })
+    if (problems.length) {
+      console.error(problems.join('\n'))
+      process.exit(1)
+    }
+    console.log(`about lock OK — ${ABOUT_LOCK_ID}`)
+    process.exit(0)
+  }
   if (args[0] === '--ship') {
     const rel = args[1]
     if (!rel) {
-      console.error('usage: node scripts/lib/taste-receipt.mjs --ship <parity.json>')
+      console.error('usage: node scripts/lib/taste-receipt.mjs --ship <parity.json> | --about-lock')
       process.exit(2)
     }
     const d = JSON.parse(readFileSync(join(root, rel), 'utf8'))
-    const problems = tasteDoneProblems(d?.tasteReview, { competitiveBrief: d?.competitiveBrief ?? null })
+    const kit = /ui_kits\/about\//.test(rel.replace(/\\/g, '/')) ? 'about' : null
+    const problems = tasteDoneProblems(d?.tasteReview, {
+      competitiveBrief: d?.competitiveBrief ?? null,
+      kit,
+      root,
+    })
+    if (kit === 'about' && d?.tasteReview?.competitiveBriefPass !== true) {
+      problems.push(...aboutLockSourceProblems({ root }))
+    }
     if (problems.length) {
       console.error(problems.join('\n'))
       process.exit(1)
     }
     console.log(
       parseCompetitiveBrief(d?.competitiveBrief)
-        ? 'ship OK — demoMatch true · competitiveBriefPass true'
+        ? 'ship OK — demoMatch true · competitiveBriefPass true · evidence'
         : 'ship OK — demoMatch true',
     )
     process.exit(0)

@@ -44,6 +44,21 @@ export const ABOUT_FIRM_STORY = [
 ] as const
 
 /**
+ * Tip Ready evidence quotes. Cos / the judge copies these; the gate
+ * requires each string to stay in this file. A lone boolean is refuse.
+ */
+export const ABOUT_LOCK_QUOTES = {
+  '1': 'We are a small boutique brokerage. We work all of Central Oregon. We help clients buy and sell their properties.',
+  '2': 'The brokers are on /team. No broker roster on About.',
+  '3': 'V3Proof reviews and the FirmClosings carousel of recorded sales.',
+  '4': 'Call / Text / Email / Schedule on one reach control.',
+  '5': 'Bend office 115 NW Oregon Ave #2.',
+  '6': 'Firm OREA license. Inquiry GET /contact.',
+  '7': 'Navy and cream only. Redfin is the layout reference.',
+  '8': 'Real shadcn carousel + Card and inquiry input, not a cream-box Avatar.',
+} as const
+
+/**
  * Service-area cities that earn a Ledger row, in row order. Presentation, not
  * a geo registry. Prineville added 2026-08-27: market_metric carries live,
  * publishable active_count + median_list_active rows for geo_slug=prineville
@@ -100,7 +115,8 @@ export const ABOUT_BROKER_ROSTER = `${ABOUT_ROSTER.map(rosterLine).join('. ')}.`
 export const ABOUT_FAQ_ITEMS = [
   {
     question: 'Who are the brokers?',
-    answer: ABOUT_BROKER_ROSTER,
+    answer:
+      'The brokers are on /team. The person you talk to first is the person who works with you through closing.',
   },
   {
     // The sentence the origin prose already carries — "the broker you first

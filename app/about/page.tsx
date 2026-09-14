@@ -7,7 +7,7 @@
  * 2. V3Proof — client reviews PRIMARY (Google + featured quote). Not press.
  * 3. FirmClosings — dated local sold homes. Never invented MOS.
  * 4. V3Doors four-up matching Contact (Call / Text / Email / Schedule)
- * 5. AboutTeamTeaser — face row + Meet the team → /team only. No Card roster.
+ * 5. AboutOffice — 115 NW Oregon Ave #2 + firm OREA. Brokers on /team only.
  * 6. AboutInquiry GET to /contact. Full form stays on Contact.
  * Then Atlas, How it started + OREA, V3Answers.
  * Never the sofa interior. No coast-to-coast / fee copy.
@@ -53,7 +53,7 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { ABOUT_FAQ_ITEMS, FIRM_LICENSE } from './_v3/about-constants'
 import { AboutFirm } from './_v3/AboutFirm'
 import { AboutInquiry } from './_v3/AboutInquiry'
-import { AboutTeamTeaser } from './_v3/AboutTeamTeaser'
+import { AboutOffice } from './_v3/AboutOffice'
 import { FirmClosings } from './_v3/FirmClosings'
 import { loadAboutProof } from './_v3/load-about-faces'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
@@ -97,7 +97,6 @@ export default async function AboutPage() {
   const reviewCount = reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : quotes.length
   const reviewAverage = reviewSummary && reviewSummary.count > 0 ? reviewSummary.averageRating : 5
   const firmRows = proof.closings
-  const teamTeaser = proof.faces.map((face) => ({ name: face.name, src: face.src }))
   const newestReviewDate = reviewSummary?.reviews.find((r) => r.reviewDate)?.reviewDate ?? undefined
 
   const hoursBlocks = companySettings?.booking_hours ?? []
@@ -129,7 +128,7 @@ export default async function AboutPage() {
   }))
 
   const faqDoors: V3AnswersDoor[] = [
-    { label: 'Meet the team', href: '/team' },
+    { label: 'The brokers', href: '/team' },
     { label: 'Client reviews', href: '/reviews' },
     { label: 'Call, text, or write', href: '/contact' },
     { label: 'Value my home', href: valuationHref(ROUTE_PATH) },
@@ -160,7 +159,7 @@ export default async function AboutPage() {
     },
     {
       type: 'itemList',
-      name: 'Meet the Ryan Realty team',
+      name: 'Ryan Realty brokers',
       items: [{ name: 'The brokers', url: '/team' }],
     },
     ...(firmRows.length > 0
@@ -263,7 +262,7 @@ export default async function AboutPage() {
               ]}
             />
           </div>
-          <AboutTeamTeaser id="team-teaser" people={teamTeaser} />
+          <AboutOffice id="office" />
           <div className="about-fold__write">
             <AboutInquiry id="write" />
           </div>
