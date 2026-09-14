@@ -53,6 +53,13 @@
   color: var(--v3-ink-on-navy);
 }
 
+.v3 .home-hero-search__live-src {
+  flex-basis: 100%;
+  color: var(--v3-ink-on-navy);
+  font-size: var(--v3-size-body-sm);
+  opacity: 0.85;
+}
+
 @media (max-width: 40rem) {
   .v3 .home-hero-search__live {
     display: none;

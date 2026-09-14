@@ -46,9 +46,11 @@ const PLACE_SEEDS: MorphingSearchItem[] = [
 export function HomeHeroSearch({
   valuationHref,
   live,
+  homes,
 }: {
   valuationHref: string
   live?: HomeHeroLive
+  homes?: readonly MorphingSearchItem[]
 }) {
   const router = useRouter()
   const uid = useId()
@@ -68,13 +70,15 @@ export function HomeHeroSearch({
     [suggestions],
   )
   const morphItems = useMemo<V3MorphSearchItem[]>(() => {
-    const live = items.map((item) => ({
+    const typed = items.map((item) => ({
       id: item.href,
       title: item.label,
       description: item.sublabel,
     }))
-    return live.length > 0 ? live : PLACE_SEEDS
-  }, [items])
+    if (typed.length > 0) return typed
+    const listed = homes?.length ? [...homes, ...PLACE_SEEDS] : PLACE_SEEDS
+    return listed
+  }, [items, homes])
 
   const go = useCallback(
     (href: string) => {
@@ -120,9 +124,19 @@ export function HomeHeroSearch({
 
   const buyFieldId = `${uid}-q`
   const sellFieldId = `${uid}-sell`
-  const buyModeId = `${uid}-mode-buy`
-  const sellModeId = `${uid}-mode-sell`
+  const buyModeId = 'home-hero-mode-buy'
+  const sellModeId = 'home-hero-mode-sell'
   const [mode, setMode] = useState('buy')
+  const setModeAndRadio = useCallback((next: string) => {
+    setMode(next)
+    const sell = document.getElementById(sellModeId)
+    const buy = document.getElementById(buyModeId)
+    if (next === 'sell' && sell instanceof HTMLInputElement) {
+      sell.checked = true
+    } else if (buy instanceof HTMLInputElement) {
+      buy.checked = true
+    }
+  }, [])
   useEffect(() => {
     const buy = document.getElementById(buyModeId)
     const sell = document.getElementById(sellModeId)
@@ -133,7 +147,7 @@ export function HomeHeroSearch({
       buy?.removeEventListener('change', sync)
       sell?.removeEventListener('change', sync)
     }
-  }, [buyModeId, sellModeId])
+  }, [])
 
   return (
     <div className="home-hero-search">
@@ -157,6 +171,7 @@ export function HomeHeroSearch({
         <p className="home-hero-search__live">
           <span className="home-hero-search__live-n">{live.forSaleLabel}</span>
           <span className="home-hero-search__live-label"> homes for sale</span>
+          <span className="home-hero-search__live-src">{live.source}</span>
         </p>
       ) : null}
 
@@ -164,7 +179,7 @@ export function HomeHeroSearch({
         label="Buy or sell"
         count={2}
         value={mode}
-        onValueChange={setMode}
+        onValueChange={setModeAndRadio}
         className="home-hero-search__tabs"
         items={[
           { value: 'buy', label: 'Buy', htmlFor: buyModeId },

@@ -5,6 +5,7 @@
  */
 import { formatCount } from '@/lib/format/count'
 import { HomeListingRail } from './HomeListingRail.client'
+import { TRACE } from './home-hero-inventory'
 import type { HomeRailRow } from './home-rail-items'
 
 export function HomeHomesRails({
@@ -27,7 +28,7 @@ export function HomeHomesRails({
 
   const live =
     forSaleCount != null && Number.isFinite(forSaleCount) && forSaleCount > 0
-      ? { forSale: forSaleCount, forSaleLabel: formatCount(forSaleCount) }
+      ? { forSale: forSaleCount, forSaleLabel: formatCount(forSaleCount), source: TRACE }
       : undefined
 
   return (

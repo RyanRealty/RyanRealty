@@ -25,6 +25,7 @@ describe('homeHeroLive', () => {
     expect(homeHeroLive({ forSale: 3281, pending: 1, sold: 1 })).toEqual({
       forSale: 3281,
       forSaleLabel: '3,281',
+      source: 'live MLS through Oregon Data Share · Central Oregon',
     })
     expect(homeHeroLive({ forSale: 0, pending: 1, sold: 1 })).toBeUndefined()
   })

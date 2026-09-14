@@ -254,12 +254,21 @@ export default async function Home() {
           videoSrc={HERO_VIDEO}
           inventory={heroInventory}
         >
-          <HomeHeroSearch valuationHref={valuationHref('/')} live={heroLive} />
+          <HomeHeroSearch
+            valuationHref={valuationHref('/')}
+            live={heroLive}
+            homes={railRows[0]?.cards.slice(0, 5).map((card) => ({
+              id: card.href,
+              title: card.addressLine,
+              description: card.cityLine,
+            }))}
+          />
         </V3Stage>
 
         <HomeHomesRails
           rows={railRows}
           emptyMessage="No active homes with a photo and list price right now."
+          forSaleCount={pulseBundle?.counts.forSale}
         />
 
         {/* The live read after the first rail so houses, not the beeswarm,

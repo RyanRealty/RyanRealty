@@ -2,10 +2,10 @@
 
 Surface: Cursor cloud, `cursor/homepage-v6-site97-d7fe` → PR #229. Do not merge. Cos cherry-picks Tip Readys.
 
-- **Done:** SITE-97 claimed (`cursor-cloud-site97-20260914`). Compact Stage, rails in the 375 fold, catalog MorphingSearch + beUI tabs on the route, ItemList JSON-LD with share-kind, live count in generateMetadata, no-glass paint on the morph portal, Sell radio/tabs synced.
-- **Blocked on taste:** no `grok` CLI, no `cursor-agent`, no `claude` CLI in this cloud VM. Judge chain not run. Receipt not written. Node stays in_progress.
-- **Next:** `npx tsx scripts/taste-evaluate.ts homepage-v6 --builder grok-4.5` on a machine with the grok or cursor-agent CLI. Do not invent demoMatch.
-- Skills read: `.claude/skills/site-queue/SKILL.md`, `.cursor/skills/site-queue/SKILL.md`.
+- **Done:** SITE-97 claimed (`cursor-cloud-site97-20260914`). MorphingSearch live on first paint; Sell tab is catalog `[role=tab]`; rails import `@/components/ui/carousel` + `@/components/motion/number`; live count carries TRACE source; 4-up desktop cards + visible arrows.
+- **Tip Ready:** `--ship` still exit 1 until a judge writes `demoMatch: true`. Do not invent it.
+- **Next:** `npx tsx scripts/taste-evaluate.ts homepage-v6 --builder grok-4.5` then `--ship`.
+- Skills read: `.claude/skills/site-queue/SKILL.md`.
 
 # Prior
 

@@ -34,14 +34,22 @@
   min-height: var(--v3-tap);
 }
 
-/* Native label sits on the tab so Buy/Sell works before hydration and in
-   take-route-shots. The radio is the CSS switch (SITE-12). */
+/* No-JS: the label checks the radio. With JS the catalog TabsTrigger is the
+   hit — an overlay here stole take-route-shots clicks and left Sell on Buy. */
 .v3 .v3-tabs__native {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 0;
   margin: 0;
+  pointer-events: none;
   cursor: pointer;
+}
+
+@media (scripting: none) {
+  .v3 .v3-tabs__native {
+    z-index: 2;
+    pointer-events: auto;
+  }
 }
 
 .v3 .v3-tabs__native-text {

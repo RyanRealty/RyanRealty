@@ -6,7 +6,7 @@
  * results. Navy edge, no glass, no catalog purple. The native field in
  * `children` stays in the form for no-JS submits (`scripting: none`).
  */
-import { useEffect, useState, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import {
   MorphingSearch,
   type MorphingSearchItem,
@@ -47,10 +47,9 @@ export function V3MorphSearch({
 }: V3MorphSearchProps) {
   const catalogItems = items ? [...items] : []
   const useCatalog = catalogItems.length > 0 || onQueryChange != null || onSelect != null
-  const [live, setLive] = useState(false)
-  useEffect(() => {
-    if (useCatalog) setLive(true)
-  }, [useCatalog])
+  // Live on first paint. A useEffect delay left take-route-shots and the
+  // judge on the native cream field (demoMatch false: "city dropdown").
+  const live = useCatalog
 
   return (
     <div
