@@ -147,7 +147,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-12",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts about — grok CLI missing in this cloud lane. Cos scores the attached 1440/375 shots against the Researchy lock (firm story first). A Meet-the-Team / three-broker-Card fold is a fail, not a pass.",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts about --builder grok-4.5 (2026-09-14). Chain ran. cursor-agent missing (auth=login, CURSOR_API_KEY unset). grok CLI missing. claude CLI missing. Exit 2. Do not invent demoMatch or competitiveBriefPass.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
     "demoMatch": false,
@@ -189,7 +189,7 @@
       { "id": "shadcn-carousel" },
       { "id": "shadcn-input" }
     ],
-    "evaluatorBlocked": "2026-09-14 audit-fix recapture: first viewport + proof + reach + office. grok CLI missing in this cloud lane. Do not invent demoMatch or competitiveBriefPass. shotsHash sha256:f95a3b74. Scores 52/47/57 stay the prior instrument. Tip Ready for Cos, not done.",
+    "evaluatorBlocked": "2026-09-14 real chain: npx tsx scripts/taste-evaluate.ts about --builder grok-4.5 exited 2. Links: (1) cursor-agent cursor-grok-4.6-high missing — auth=cursor-agent login, CURSOR_API_KEY unset; (2) grok CLI missing at ~/.grok/bin/grok; (3) claude CLI sonnet missing. Both judges unreachable. Do not invent demoMatch. --ship stays 1. shotsHash sha256:f95a3b74. Scores 52/47/57 are the prior instrument, not this fire.",
     "defects": [
       {
         "section": "#firm",
