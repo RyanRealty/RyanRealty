@@ -23,8 +23,8 @@ describe('/about section order', () => {
 
   it('groups the four Contact channels into one reach control with a live state', () => {
     expect(at('id="proof"')).toBeLessThan(at('id="reach"'))
-    expect(PAGE).toContain('primary: true')
-    expect(PAGE).toContain('live: hoursLive')
+    expect(PAGE).not.toContain('primary: true')
+    expect(PAGE).not.toContain('live: hoursLive')
     expect(PAGE).toContain('<V3OnDuty')
     expect(PAGE).toContain('tel:${CONTACT.phoneDirectTel}')
     expect(PAGE).toContain('sms:${CONTACT.phoneDirectTel}')

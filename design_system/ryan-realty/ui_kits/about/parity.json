@@ -8,10 +8,10 @@
     "productLock": "firm story + reviews + closings + Call|Text|Email|Schedule + office 115 NW Oregon Ave #2 + firm OREA + inquiry→/contact. No broker roster on About.",
     "refuse": "AboutFaces, AboutTeamTeaser, Meet-the-Team dump, broker Cards, AvatarGroup. Looking that invents past this checklist. Lone boolean competitiveBriefPass without competitiveBriefEvidence.",
     "beats": [
-      { "id": "1", "text": "Firm story opens the page: small boutique brokerage, all of Central Oregon, help clients buy and sell. Not a staff-directory fold." },
+      { "id": "1", "text": "Firm story opens the page: one plain boutique Central Oregon buy-and-sell sentence. Not a staccato three-liner. Not a staff-directory fold." },
       { "id": "2", "text": "Brokers are not on About. No broker Cards, roster dump, Meet-the-Team band, or AboutTeamTeaser. Brokers belong on /team only." },
       { "id": "3", "text": "Firm reviews as words (V3Proof) plus dated local closings as a carousel of recorded sales. Never invent MOS." },
-      { "id": "4", "text": "Four-up reach on one control: Call, Text, Email, Schedule. Call is primary and carries live hours." },
+      { "id": "4", "text": "Equal four-up reach: Call, Text, Email, Schedule. No Call-dominant lead." },
       { "id": "5", "text": "Office 115 NW Oregon Ave #2 is on the page. Optional exterior hero of that office." },
       { "id": "6", "text": "Firm OREA license is on the page. One-line inquiry GET-submits to /contact." },
       { "id": "7", "text": "Navy and cream only. Redfin is the layout and interaction reference, not a second palette." },
@@ -47,7 +47,7 @@
     },
     {
       "name": "V3Doors",
-      "section": "#reach four-up matching Contact: Call | Text | Email | Schedule. `primary` on the call door (display scale) with V3OnDuty live hours; text, email and Schedule as the lighter alternatives. Replaces the seven-row contact list SITE-48 removed.",
+      "section": "#reach equal four-up: Call | Text | Email | Schedule (Sotheby G1). No v3-doors--lead. V3OnDuty hours sit above the four doors. Replaces the seven-row contact list SITE-48 removed.",
       "blocking": true
     },
     {

@@ -82,7 +82,11 @@
   grid-area: proof;
   min-width: 0;
   padding-block: var(--v3-space-lg);
-  background: var(--v3-wash);
+  /* Redfin-clean reviews. Leave cream-box theater. Navy and cream only. */
+  --v3-surface-raised: var(--v3-cream);
+  --v3-white: var(--v3-cream);
+  --v3-panel-bg: var(--v3-cream);
+  background: var(--v3-cream);
   border-block: var(--v3-rule-section);
 }
 
@@ -142,6 +146,30 @@
   line-height: var(--v3-leading-heading);
 }
 
+/* Leave cream-box .v3-proof__card theater. Redfin-clean: navy on cream, no white. */
+.about-fold__proof .v3-proof__card,
+.about-fold__proof .v3-proof__reading {
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  border: 0;
+  box-shadow: none;
+}
+
+.about-fold__proof .v3-proof__pick {
+  text-align: left;
+  padding: var(--v3-space-xs) 0;
+  border: 0;
+  border-top: var(--v3-rule-hairline);
+  background: transparent;
+  box-shadow: none;
+}
+
+.about-fold__proof .v3-proof__pick.is-on {
+  background: transparent;
+  box-shadow: none;
+  color: var(--v3-navy);
+}
+
 .about-office {
   grid-area: office;
   max-width: none;
@@ -151,6 +179,8 @@
 .about-office__card {
   background: var(--v3-cream);
   color: var(--v3-navy);
+  box-shadow: none;
+  --card: var(--v3-cream);
 }
 
 .about-office__license {
@@ -164,6 +194,13 @@
 
 .about-fold__reach .v3.v3-doors {
   max-width: none;
+}
+
+/* Equal four-up. No Call-dominant lead. Sotheby G1. */
+@media (min-width: 48rem) {
+  .about-fold__reach .v3-doors__list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .about-fold__write {

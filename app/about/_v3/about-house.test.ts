@@ -55,11 +55,12 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(PAGE).not.toContain('size="editorial"')
     expect(PAGE).not.toContain('openingFigures')
     expect(FIRM).toContain('ABOUT_FIRM_STORY')
-    expect(ABOUT_FIRM_STORY).toEqual([
-      'We are a small boutique brokerage.',
-      'We work all of Central Oregon.',
-      'We help clients buy and sell their properties.',
-    ])
+    expect(ABOUT_FIRM_STORY).toBe(
+      'Ryan Realty is a boutique brokerage in Central Oregon that helps clients buy and sell their properties.',
+    )
+    expect(PAGE).not.toContain('primary: true')
+    expect(PAGE).not.toContain('id="team-teaser"')
+    expect(PAGE).not.toContain('Who you work with')
   })
 
   it('puts Google reviews on V3Proof as the first proof band, not a hero score link', () => {

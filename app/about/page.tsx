@@ -229,6 +229,7 @@ export default async function AboutPage() {
             <FirmClosings id="firm-sales" rows={firmRows} />
           </div>
           <div className="about-fold__reach">
+            {hoursLive}
             <V3Doors
               id="reach"
               name={v3Text('Reach a broker')}
@@ -238,8 +239,6 @@ export default async function AboutPage() {
                   label: v3Text(CONTACT.phoneDirect),
                   fact: v3Text('One number for the whole brokerage'),
                   href: `tel:${CONTACT.phoneDirectTel}`,
-                  primary: true,
-                  live: hoursLive,
                 },
                 {
                   kicker: v3Text('Text'),

@@ -39,7 +39,7 @@ export function AboutFirm({
           <V3Heading level={1} id="firm-heading" onMedia className="about-firm__heading">
             {heading}
           </V3Heading>
-          <p className="about-firm__purpose">{ABOUT_FIRM_STORY.join(' ')}</p>
+          <p className="about-firm__purpose">{ABOUT_FIRM_STORY}</p>
         </div>
       </figure>
     </section>

@@ -21,13 +21,13 @@ export function AboutOffice({ id = 'office' }: { id?: string } = {}) {
     <section id={id} className={cn(V3_ROOT_CLASS, 'about-office')} aria-labelledby="office-heading">
       <Card className="about-office__card">
         <CardHeader>
-          <CardTitle id="office-heading">Bend office</CardTitle>
+          <CardTitle id="office-heading">Bend office 115 NW Oregon Ave #2.</CardTitle>
           <CardDescription>
-            {street}, {cityLine}
+            {street}, {cityLine}. Firm OREA license {FIRM_LICENSE}.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="about-office__license">Firm license {FIRM_LICENSE}.</p>
+          <p className="about-office__license">Firm OREA license {FIRM_LICENSE}.</p>
           <Button asChild variant="link">
             <Link href={teamPath()}>The brokers are on /team</Link>
           </Button>

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { BROKERS } from '@/lib/brand/contact'
 import { aboutDisplayName, aboutFaceFromBroker, aboutPhoneE164 } from '@/app/about/_v3/about-faces'
-import { ABOUT_BROKER_ROSTER, ABOUT_FAQ_ITEMS } from '@/app/about/_v3/about-constants'
+import { ABOUT_FAQ_ITEMS } from '@/app/about/_v3/about-constants'
 
 describe('about faces fold', () => {
   it('names the photo door so pa11y does not see an empty link', () => {
@@ -65,24 +65,14 @@ describe('about page copy', () => {
 describe('one name per broker on /about', () => {
   const rebecca = BROKERS.rebecca
 
-  it('states the licensed name once, on the license', () => {
-    expect(ABOUT_BROKER_ROSTER).toContain(
-      `${rebecca.nameShort}, ${rebecca.titleShort}, OR #${rebecca.license}, licensed as ${rebecca.name}`,
-    )
-    expect(ABOUT_BROKER_ROSTER.split(rebecca.name)).toHaveLength(2)
-  })
-
-  it('names every broker by the display name the faces use', () => {
-    for (const key of ['matt', 'paul', 'rebecca'] as const) {
-      expect(ABOUT_BROKER_ROSTER).toContain(`${BROKERS[key].nameShort}, ${BROKERS[key].titleShort}`)
-    }
-  })
-
   it('answers "Who are the brokers?" by sending the reader to /team', () => {
     const answer = ABOUT_FAQ_ITEMS.find((i) => i.question === 'Who are the brokers?')?.answer
     expect(answer).toMatch(/\/team/)
-    expect(answer).not.toBe(ABOUT_BROKER_ROSTER)
     expect(answer).not.toMatch(/OR #/)
+    expect(answer).not.toContain(rebecca.name)
+    expect(answer).not.toContain(rebecca.nameShort)
+    expect(answer).not.toContain(BROKERS.matt.nameShort)
+    expect(answer).not.toContain(BROKERS.paul.nameShort)
   })
 
   it('resolves the door label and the face to the same name', () => {

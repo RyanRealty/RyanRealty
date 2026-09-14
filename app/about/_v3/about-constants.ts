@@ -4,10 +4,10 @@
  * Split out of page.tsx so the page stays under the file-size floor. Nothing
  * here fetches or formats.
  *
- * THE FIRM STORY LIVES ON THE FOLD (Matt 2026-09-12). Three plain sentences:
- * small boutique brokerage, all of Central Oregon, help buy and sell. That
- * lock is ABOUT_FIRM_STORY. "How it started" stays origin + OREA licenses —
- * it does not restate the fold.
+ * THE FIRM STORY LIVES ON THE FOLD (Matt 2026-09-14). One plain sentence:
+ * boutique brokerage in Central Oregon that helps clients buy and sell.
+ * That lock is ABOUT_FIRM_STORY. Not a staccato three-liner. "How it started"
+ * stays origin — it does not restate the fold. Firm OREA sits on AboutOffice.
  *
  * THE FAQ IS FOUR QUESTIONS, NOT SIX (2026-09-02). The set is what /about can
  * answer that /about has not already said. "When did Ryan Realty start?" went:
@@ -21,37 +21,28 @@
  * question cut from the structured data too — which is the point: the page and
  * its JSON-LD answer the same four things.
  *
- * NO BROKER NAME IS TYPED IN THIS FILE (2026-09-02). The roster answer below
- * is built from lib/brand/contact.ts, because the hand-typed one had drifted:
- * the faces row renders `BROKERS.rebecca.nameShort` while this file's FAQ
- * answer carried `BROKERS.rebecca.name`, so /about published two spellings of
- * one broker as if they were two people. Display is `nameShort` on every
- * surface; the licensed name is a fact about the license and appears once,
- * attached to it. Held by components/site/__tests__/about-faces.test.ts, which
- * reads this file as text — do not spell a broker's name in a comment either.
+ * NO BROKER NAME IS TYPED IN THIS FILE. Brokers belong on /team. The FAQ
+ * answers "Who are the brokers?" with a door, not a roster. Held by
+ * components/site/__tests__/about-faces.test.ts — do not spell a broker's
+ * name in a comment either.
  */
-
-import { BROKERS, type BrokerKey } from '@/lib/brand/contact'
 
 /** Firm license as published on the pre-v3 about page (OREA 201253677). */
 export const FIRM_LICENSE = 'OREA 201253677'
 
-/** Matt 2026-09-12 lock. Fold copy only — not How it started, not Team. */
-export const ABOUT_FIRM_STORY = [
-  'We are a small boutique brokerage.',
-  'We work all of Central Oregon.',
-  'We help clients buy and sell their properties.',
-] as const
+/** Matt 2026-09-14 lock. One plain purpose line — not How it started, not Team. */
+export const ABOUT_FIRM_STORY =
+  'Ryan Realty is a boutique brokerage in Central Oregon that helps clients buy and sell their properties.'
 
 /**
  * Tip Ready evidence quotes. Cos / the judge copies these; the gate
  * requires each string to stay in this file. A lone boolean is refuse.
  */
 export const ABOUT_LOCK_QUOTES = {
-  '1': 'We are a small boutique brokerage. We work all of Central Oregon. We help clients buy and sell their properties.',
+  '1': 'Ryan Realty is a boutique brokerage in Central Oregon that helps clients buy and sell their properties.',
   '2': 'The brokers are on /team. No broker roster on About.',
   '3': 'V3Proof reviews and the FirmClosings carousel of recorded sales.',
-  '4': 'Call / Text / Email / Schedule on one reach control.',
+  '4': 'Call / Text / Email / Schedule on one equal four-up.',
   '5': 'Bend office 115 NW Oregon Ave #2.',
   '6': 'Firm OREA license. Inquiry GET /contact.',
   '7': 'Navy and cream only. Redfin is the layout reference.',
@@ -88,29 +79,6 @@ export const ABOUT_CITY_SLUG: Record<(typeof ABOUT_CITY_LABELS)[number], string>
   Terrebonne: 'terrebonne',
   Prineville: 'prineville',
 }
-
-/**
- * Roster order, matching the faces above it: TEAM_RANK (matt 0, rebecca 1,
- * paul 2) in app/team/_v3/team-constants.ts. One page, one order.
- */
-const ABOUT_ROSTER: readonly BrokerKey[] = ['matt', 'rebecca', 'paul']
-
-/**
- * One broker, one line: the name a visitor sees, the title, the Oregon license
- * that name holds. When the license is issued to a longer legal name the line
- * says so where it belongs — on the license — rather than the page printing a
- * second name somewhere else. Every value reads from BROKERS, the single
- * source for every rendered broker name, title, and license number; the
- * numbers match the Oregon Real Estate Agency licensee records.
- */
-function rosterLine(key: BrokerKey): string {
-  const b = BROKERS[key]
-  const licensedAs = b.name === b.nameShort ? '' : `, licensed as ${b.name}`
-  return `${b.nameShort}, ${b.titleShort}, OR #${b.license}${licensedAs}`
-}
-
-/** "Name, Title, OR #license." per broker, in page order. */
-export const ABOUT_BROKER_ROSTER = `${ABOUT_ROSTER.map(rosterLine).join('. ')}.`
 
 export const ABOUT_FAQ_ITEMS = [
   {

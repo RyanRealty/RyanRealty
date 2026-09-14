@@ -11,10 +11,10 @@ import {
 import { defectReplaceWithProblems, tasteDoneProblems } from '../lib/taste-receipt.mjs'
 
 const ABOUT_LOCK_QUOTES = {
-  '1': 'We are a small boutique brokerage. We work all of Central Oregon. We help clients buy and sell their properties.',
+  '1': 'Ryan Realty is a boutique brokerage in Central Oregon that helps clients buy and sell their properties.',
   '2': 'The brokers are on /team. No broker roster on About.',
   '3': 'V3Proof reviews and the FirmClosings carousel of recorded sales.',
-  '4': 'Call / Text / Email / Schedule on one reach control.',
+  '4': 'Call / Text / Email / Schedule on one equal four-up.',
   '5': 'Bend office 115 NW Oregon Ave #2.',
   '6': 'Firm OREA license. Inquiry GET /contact.',
   '7': 'Navy and cream only. Redfin is the layout reference.',
@@ -60,6 +60,35 @@ describe('aboutLockSourceProblems — live tree', () => {
       sourceText: `${ABOUT_LOCK_QUOTES[1]}\n<AboutFirm />\nMeet the team\n`,
     })
     expect(p.join('\n')).toMatch(/Meet the team/)
+  })
+
+  it('fails a fixture that keeps #team-teaser or a broker roster dump', () => {
+    const p = aboutLockSourceProblems({
+      sourceText: '<section id="team-teaser">Who you work with</section>\nexport const ABOUT_BROKER_ROSTER = "Matt Ryan"',
+    })
+    expect(p.join('\n')).toMatch(/team-teaser|Who you work with|ABOUT_BROKER_ROSTER/)
+  })
+
+  it('fails a fixture that keeps Call-dominant primary lead', () => {
+    const p = aboutLockSourceProblems({
+      sourceText: "kicker: v3Text('Call')\nprimary: true\nclassName=\"v3-doors--lead\"",
+    })
+    expect(p.join('\n')).toMatch(/primary|v3-doors--lead/)
+  })
+
+  it('fails the staccato three-liner purpose', () => {
+    const p = aboutLockSourceProblems({
+      sourceText:
+        'We are a small boutique brokerage. We work all of Central Oregon. We help clients buy and sell their properties.',
+    })
+    expect(p.join('\n')).toMatch(/staccato|small boutique brokerage|beat 1/)
+  })
+
+  it('fails a FAQ that dumps broker license numbers', () => {
+    const p = aboutLockSourceProblems({
+      sourceText: 'Who are the brokers?\nMatt Ryan OR #201217889, Rebecca Peterson OR #201239012.',
+    })
+    expect(p.join('\n')).toMatch(/OR #|Who are the brokers/)
   })
 })
 
