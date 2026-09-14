@@ -234,11 +234,13 @@
       ],
       "states": [
         "default",
+        "search-open",
         "sell-tab",
-        "search-open"
+        "featured",
+        "places"
       ],
       "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized",
-      "baseUrl": "http://localhost:3183/"
+      "baseUrl": "http://127.0.0.1:3183/"
     },
     "shots": {
       "brokers390Before": "design_system/ryan-realty/ui_kits/homepage-v6/shots/brokers-390-before.png",
@@ -268,7 +270,7 @@
       "soldDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-desktop.png",
       "soldMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-mobile375.png"
     },
-    "shotsHash": "sha256:0d2182d18aa6b7e5b8ae9348579d9224dbc4dc50613d5f4086e886e30366b0f3",
+    "shotsHash": "sha256:86bbc890839a022ec0405e7d990a718c900470d2c7680d456d24b77e2c2ec7fc",
     "scores": [
       50,
       59,
