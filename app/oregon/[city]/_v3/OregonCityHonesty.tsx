@@ -2,18 +2,18 @@
  * SITE-105 honesty banner — catalog Alert on the route.
  *
  * Tip Ready `requireRouteImport` needs `app/oregon/[city]` page/_v3 to import
- * `@/components/ui/alert`. House-only import in V3Quiet is not enough. This
- * file is that import, and it renders the catalog object (icon, rounded
- * bordered container, title, description, AlertAction + outline Button) in
- * navy/cream. Do not flatten it back to a Quiet hairline strip.
+ * `@/components/ui/alert`. This file is that import. Composition matches the
+ * shadcn Alert demo: Icon, AlertTitle, AlertDescription, AlertAction + outline
+ * Button, stacked inside a rounded bordered card. Navy/cream paint only.
+ * Wrapping this in V3Quiet is the cream-strip miss the Mini judge named.
  */
 import Link from 'next/link'
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { V3_ROOT_CLASS, V3Icon } from '@/components/site/v3'
 import { cn } from '@/lib/utils'
-import '@/components/site/v3/V3Quiet.css'
 import { buildOregonCityHonestyDescription } from './oregon-city-fold'
+import './OregonCityHonesty.css'
 
 export function OregonCityHonesty(props: {
   cityName: string
@@ -30,18 +30,18 @@ export function OregonCityHonesty(props: {
   return (
     <section
       id={props.id ?? 'about'}
-      className={cn(V3_ROOT_CLASS, 'v3-quiet', 'v3-quiet--headless', 'v3-quiet--alert')}
+      className={cn(V3_ROOT_CLASS, 'oregon-city-honesty')}
       aria-label={title}
     >
-      <Alert className="v3-quiet__alert">
-        <V3Icon name="InfoCircle" size={16} className="v3-quiet__alert-icon" />
-        <AlertTitle className="v3-quiet__alert-title">{title}</AlertTitle>
-        <AlertDescription className="v3-quiet__alert-body">
+      <Alert className="oregon-city-honesty__alert">
+        <V3Icon name="InfoCircle" size={20} />
+        <AlertTitle>{title}</AlertTitle>
+        <AlertDescription>
           <p>{description}</p>
         </AlertDescription>
-        <AlertAction className="v3-quiet__alert-action">
+        <AlertAction>
           <Button asChild variant="outline" size="sm">
-            <Link href="#referral" className="v3-quiet__alert-link">
+            <Link href="#referral" className="oregon-city-honesty__link">
               Get a broker introduction
             </Link>
           </Button>

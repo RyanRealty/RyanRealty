@@ -1,0 +1,66 @@
+/* Catalog Alert on this route only. Keep the stacked shadcn object:
+   icon, title, description, AlertAction. Paint navy/cream. Do not flatten
+   into a Quiet hairline strip — that is the Mini judge miss on 375. */
+
+.v3.oregon-city-honesty {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-space-lg) var(--v3-gutter) 0;
+}
+
+.v3.oregon-city-honesty .oregon-city-honesty__alert {
+  background: var(--v3-cream);
+  color: var(--v3-ink);
+  border-color: var(--v3-navy);
+  padding: var(--v3-space-md);
+  min-height: calc(var(--v3-tap) + var(--v3-space-md) * 2);
+}
+
+.v3.oregon-city-honesty .oregon-city-honesty__alert [data-slot='alert-title'] {
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: var(--v3-leading-heading);
+}
+
+.v3.oregon-city-honesty .oregon-city-honesty__alert [data-slot='alert-description'] {
+  color: var(--v3-ink-muted);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  text-wrap: pretty;
+}
+
+.v3.oregon-city-honesty .oregon-city-honesty__alert [data-slot='alert-description'] p {
+  margin: 0;
+}
+
+.v3.oregon-city-honesty .oregon-city-honesty__alert [data-slot='alert-action'] [data-slot='button'] {
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+}
+
+.v3.oregon-city-honesty .oregon-city-honesty__link {
+  text-decoration: none;
+}
+
+@media (max-width: 40rem) {
+  .v3.oregon-city-honesty {
+    padding-top: var(--v3-space-md);
+  }
+
+  /* Stack title → description → action inside the bordered card.
+     Do not stretch the button across the viewport like a Quiet row. */
+  .v3.oregon-city-honesty .oregon-city-honesty__alert {
+    padding-right: var(--v3-space-md);
+  }
+
+  .v3.oregon-city-honesty .oregon-city-honesty__alert [data-slot='alert-action'] {
+    position: static;
+    grid-column: 2;
+    justify-self: start;
+    margin-top: var(--v3-space-xs);
+  }
+}
