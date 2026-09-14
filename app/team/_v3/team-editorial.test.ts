@@ -33,6 +33,20 @@ describe('SITE-74 editorial /team fold', () => {
     expect(editorial).toContain('about-faces__reach-text')
     expect(editorial).toContain('Schedule')
     expect(editorial).not.toContain('IconPhone')
+    expect(editorial).not.toContain('phoneDisplay')
+    expect(editorial).not.toContain('about-faces__reach-num')
+  })
+
+  it('does not lecture how the map or the MLS feed works', () => {
+    expect(PAGE).not.toContain('this map is the full record')
+    expect(PAGE).not.toContain('trailing window of that same feed')
+    expect(PAGE).not.toContain('claimText=')
+  })
+
+  it('keeps editorial Call quiet — no uppercase billboard, no number on the chip', () => {
+    expect(CSS).toMatch(
+      /\.about-faces--editorial \.about-faces__reach,[\s\S]*?text-transform: none/,
+    )
   })
 
   it('prints the Oregon license as a credential row, not a caption under a pill', () => {

@@ -181,12 +181,7 @@ function editorialReach(person: AboutFace) {
           className={cn("about-faces__reach", "about-faces__reach--call")}
           aria-label={`Call ${person.name}`}
         >
-          <span className="about-faces__reach-label">
-            Call
-            {person.phoneDisplay ? (
-              <span className="about-faces__reach-num">{person.phoneDisplay}</span>
-            ) : null}
-          </span>
+          <span className="about-faces__reach-label">Call</span>
         </a>
       ) : null}
       {person.tel ? (

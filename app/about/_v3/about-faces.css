@@ -961,6 +961,17 @@
   line-height: var(--v3-leading-note);
 }
 
+.about-faces--editorial .about-faces__reach,
+.about-faces--editorial .about-faces__reach-label {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--v3-size-body-sm);
+}
+
+.about-faces--editorial .about-faces__reach-num {
+  display: none;
+}
+
 .about-faces--editorial .about-faces__lead .about-faces__reach--call {
   min-height: calc(var(--v3-tap) + var(--v3-space-2xs));
   padding-inline: var(--v3-space-sm);

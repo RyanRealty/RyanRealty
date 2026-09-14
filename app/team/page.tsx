@@ -193,7 +193,6 @@ export default async function TeamPage() {
               headlineTone="eyebrow"
               keyPlacement="head"
               headline={v3Text('Where the brokers have closed')}
-              claimText="Every closing a Ryan Realty broker recorded on the MLS that carries a coordinate. The 12-month counts on the faces are a trailing window of that same feed; this map is the full record."
               dots={dots}
               regions={regionAtlas?.regions ?? []}
               basemap={basemapForRegions(regionAtlas?.regions ?? [], { dots, fit: 'dots' })}

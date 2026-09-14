@@ -31,6 +31,9 @@ import {
   aboutTipReadyProblems,
   isAboutLockBrief,
 } from './about-lock.mjs'
+import { manneredPublicCopyProblems, resolveCopySourceForTaste } from './mannered-public-copy.mjs'
+
+export { manneredPublicCopyProblems, resolveCopySourceForTaste } from './mannered-public-copy.mjs'
 
 /** Receipts evaluated on or after this date must carry the v2 fields. */
 export const RECEIPT_V2_FROM = '2026-09-08'
@@ -624,6 +627,7 @@ export function tasteDoneProblems(tr, { competitiveBrief = null, catalog = null,
   if (!isPlainObject(tr)) return ['tasteReview is required to mark a SITE node done.']
   const catalogIds = adaptedFromCatalogIds(tr.adaptedFrom)
   const p = tipReadyReceiptProblems(tr, { competitiveBrief, kit, root, sourceText })
+  p.push(...manneredPublicCopyProblems(resolveCopySourceForTaste({ sourceText, route, kit, root })))
   if (catalogIds.length && tr.demoMatch !== true) {
     p.push(
       `adaptedFrom names catalog modules (${catalogIds.join(', ')}) but demoMatch is not true. File-on-disk / score rise is not a demo match.`,
@@ -714,17 +718,23 @@ export function siteQueueDoneEvidenceProblems(
       'SITE done evidence must include competitiveBriefPass: true. Score rise without the Researchy brief is not Tip Ready.',
     ]
   }
+  const copyRoot = root ?? process.cwd()
   const receiptProblems =
     needsBrief || claimsBriefPass
       ? tipReadyReceiptProblems(tr, {
           competitiveBrief: brief,
           requireBrief: true,
           kit,
-          root: root ?? process.cwd(),
+          root: copyRoot,
         })
       : judgeUnreachable
-        ? tipReadyReceiptProblems(tr, { competitiveBrief: brief, kit, root: root ?? process.cwd() })
+        ? tipReadyReceiptProblems(tr, { competitiveBrief: brief, kit, root: copyRoot })
         : []
+  if (isPlainObject(tr)) {
+    receiptProblems.push(
+      ...manneredPublicCopyProblems(resolveCopySourceForTaste({ route: loaded?.route, kit, root: copyRoot })),
+    )
+  }
   if (judgeUnreachable && receiptProblems.length && !(needsBrief || claimsBriefPass)) {
     return [`evidence records a judge failure; the fallback verdict must be on the route's parity.json tasteReview. ${receiptProblems[0]}`]
   }
