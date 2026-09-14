@@ -224,6 +224,7 @@ const eslintConfig = defineConfig([
     // this checkout's source and shouldn't be lint-gated.
     ".claude/worktrees/**",
     ".worktrees/**",
+    "worktrees/**",
     // Gitignored agent scratch dirs — one-off probe scripts that never
     // reach the committed tree. CI clones the repo, so CI's lint never
     // sees them; ignoring locally keeps the pre-push lint step (added
