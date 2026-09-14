@@ -3,6 +3,10 @@ name: site-queue
 description: Run the site queue until it is empty. Pull every eligible SITE node from the work graph, build them in parallel lanes across their page classes. Each lane is comprehensive: SEO must improve, listing/page information must improve, and UX must install real catalog source (shadcn/beUI/etc.) restyled navy/cream with the demo interaction. A separate evaluator whose score must rise AND whose live control must match the chosen demo. Gates, one push and one deploy verify per round, a live check, evidence on each node, then the next round without stopping. Use when Matt says "run loop", "run the loop", "/site-queue", "go", "run the site queue", "keep going until the site is done", "continue as new nodes get entered", or when a /loop firing carries this protocol. "run loop" always means this skill (Matt 2026-09-09); when the queue runs dry it runs the measurer (/growth-loop's ingest half) and seeds the next round from the bottom of the table, and stops only when every public page class clears the finish line. Empty of eligible is not a stop (Matt 2026-09-10).
 ---
 
+## HARD TIP READY (Matt 2026-09-14)
+
+Demos install BEFORE house paint. Tip Ready = `node scripts/lib/taste-receipt.mjs --ship <parity.json>` exit 0 only. House patch after `demoMatch: false` is FORBIDDEN — install the named `replaceWith` catalog source. Cos prose, score rise, and house chrome (V3Doors, cream pills, custom stacks) are not Tip Ready.
+
 # /site-queue — the site is done when this queue is empty
 
 Matt, 2026-09-07: "I want the go to run until done, not do a loop and stop." This

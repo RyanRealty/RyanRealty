@@ -15,6 +15,37 @@ import { execSync } from 'node:child_process'
 export const AUDIT_ARM_PATTERN = /(AUDIT|PUNCH|E2E|audit-|punch)/i
 export const NODES_LINE_PATTERN = /^Nodes?:\s*[0-9a-f-]{36}/m
 
+/** Cos / site-queue land path: Tip Ready is only --ship exit 0 (Matt 2026-09-14). */
+export const TIP_READY_LAND_PATHS = Object.freeze([
+  '.claude/skills/site-queue/SKILL.md',
+  '.cursor/skills/site-queue/SKILL.md',
+  'scripts/site-queue-routine-prompt.md',
+])
+
+/**
+ * Executable refuse: Cos may not label Tip Ready unless the land path names
+ * `node scripts/lib/taste-receipt.mjs --ship` and forbids house paint after
+ * demoMatch false.
+ *
+ * @param {Array<{ path: string, content: string }>} files
+ * @returns {string[]}
+ */
+export function checkTipReadyLandPath(files) {
+  const fails = []
+  for (const { path, content } of files) {
+    const src = String(content ?? '')
+    if (!src.includes('node scripts/lib/taste-receipt.mjs --ship')) {
+      fails.push(
+        `${path}: Tip Ready land path must name \`node scripts/lib/taste-receipt.mjs --ship\` — Cos may not label Tip Ready without --ship exit 0`,
+      )
+    }
+    if (!/house patch after[\s\S]{0,40}demoMatch[\s\S]{0,20}false[\s\S]{0,20}FORBIDDEN/i.test(src)) {
+      fails.push(`${path}: must say house patch after demoMatch false is FORBIDDEN`)
+    }
+  }
+  return fails
+}
+
 /**
  * Pure predicate: given NEW (added) docs/plans markdown files as
  * { path, content } pairs, return one failure message per file that matches

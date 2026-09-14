@@ -191,7 +191,14 @@ in `scripts/lib/taste-receipt.mjs`):
   rebaseline stays valid. `ci:page-purpose` (`scripts/check-page-purpose.mjs`)
   refuses a missing or incomplete `competitiveBrief` on About, and on any
   kit that already carries the field. Tip Ready refuse stays on
-  `taste-receipt --ship` + site-queue-done (`demoMatch` twin).
+  `node scripts/lib/taste-receipt.mjs --ship` exit 0 + site-queue-done
+  (`demoMatch` twin). Cos may not label Tip Ready without that exit 0.
+- **`--ship` open-state + route import (Matt 2026-09-14).** Catalog
+  `adaptedFrom` without a `*-open` / `search-open` shot (or `shotSpec.states`
+  including open) is refuse. A catalog id whose route page/_v3 files do not
+  import the real `components/ui` demo is refuse — same check as
+  `ci:catalog-install`, plus `requireRouteImport`. House-only import is not
+  Tip Ready.
 
 Both PNGs must exist in the repo. `ci:taste-canon` fails a new review without
 them. Receipts written before this shape landed stay valid; ones already dated

@@ -37,6 +37,9 @@ export type SiteQueueTasteReview = {
   evaluatorModel?: unknown
   shotsHash?: unknown
   competitiveBrief?: unknown
+  adaptedFrom?: unknown
+  shots?: unknown
+  shotSpec?: unknown
 }
 
 export type SiteQueueDoneOpts = {
@@ -84,6 +87,47 @@ function hasStructuredBrief(raw: unknown): boolean {
     if (!isPlainObject(b)) return false
     return String(b.id ?? '').trim() !== '' && String(b.text ?? '').trim().length >= 20
   })
+}
+
+function isHouseAdaptedId(id: unknown): boolean {
+  const s = String(id ?? '')
+  return /^(house-|listing-|V3)/.test(s) || s.startsWith('components/')
+}
+
+function adaptedFromCatalogIds(adaptedFrom: unknown): string[] {
+  if (!Array.isArray(adaptedFrom)) return []
+  return adaptedFrom
+    .map((hit) => (isPlainObject(hit) ? hit.id : hit))
+    .filter((id): id is string => typeof id === 'string' && id.trim().length > 0 && !isHouseAdaptedId(id))
+}
+
+function isOpenStateToken(s: unknown): boolean {
+  const t = String(s ?? '').trim()
+  if (!t) return false
+  if (/(?:^|[-_/.])search-open(?:[-_.]|\.[a-z0-9]+|$)/i.test(t)) return true
+  if (/(?:^|[-_/.])[a-z0-9]+-open(?:[-_.]|\.[a-z0-9]+|$)/i.test(t)) return true
+  if (/^open$/i.test(t)) return true
+  return false
+}
+
+function hasOpenStateEvidence(tr: SiteQueueTasteReview): boolean {
+  const shots = isPlainObject(tr.shots) ? tr.shots : {}
+  for (const [k, v] of Object.entries(shots)) {
+    if (isOpenStateToken(k) || isOpenStateToken(v)) return true
+  }
+  const spec = isPlainObject(tr.shotSpec) ? tr.shotSpec : null
+  const states = Array.isArray(spec?.states) ? spec.states : []
+  return states.some((s) => isOpenStateToken(s))
+}
+
+function openStateEvidenceProblems(tr: SiteQueueTasteReview | null | undefined): string[] {
+  if (!isPlainObject(tr)) return []
+  const catalogIds = adaptedFromCatalogIds(tr.adaptedFrom)
+  if (catalogIds.length === 0) return []
+  if (hasOpenStateEvidence(tr)) return []
+  return [
+    `catalog adaptedFrom / catalog-class (${catalogIds.join(', ')}) requires open-state evidence: a tasteReview.shots path matching *-open / search-open, or shotSpec.states including open. Empty open evidence is refuse.`,
+  ]
 }
 
 function tipReadyReceiptProblems(
@@ -174,15 +218,26 @@ export function siteQueueDoneEvidenceProblems(
       'SITE done evidence must include competitiveBriefPass: true. Score rise without the Researchy brief is not Tip Ready.',
     ]
   }
-  if (needsBrief || claimsBriefPass) {
-    return tipReadyReceiptProblems(tr, { competitiveBrief: brief, requireBrief: true })
+  const receiptProblems =
+    needsBrief || claimsBriefPass
+      ? tipReadyReceiptProblems(tr, { competitiveBrief: brief, requireBrief: true })
+      : judgeUnreachable
+        ? tipReadyReceiptProblems(tr, { competitiveBrief: brief })
+        : []
+  if (judgeUnreachable && receiptProblems.length && !(needsBrief || claimsBriefPass)) {
+    return [
+      `evidence records a judge failure; the fallback verdict must be on the route's parity.json tasteReview. ${receiptProblems[0]}`,
+    ]
   }
-  if (judgeUnreachable) {
-    // The prose says link 1 failed and then claims a verdict: only the receipt can back that.
-    const p = tipReadyReceiptProblems(tr, { competitiveBrief: brief })
-    return p.length
-      ? [`evidence records a judge failure; the fallback verdict must be on the route's parity.json tasteReview. ${p[0]}`]
-      : []
+  if (receiptProblems.length) return receiptProblems
+  if (isPlainObject(tr)) {
+    const open = openStateEvidenceProblems(tr)
+    if (open.length) return open
+  }
+  if (/\bTip Ready\b/i.test(text) && !/--ship\b/.test(text) && !/\bship OK\b/i.test(text)) {
+    return [
+      'Tip Ready language without `node scripts/lib/taste-receipt.mjs --ship` exit 0 is refuse. Cos prose is not Tip Ready.',
+    ]
   }
   return []
 }

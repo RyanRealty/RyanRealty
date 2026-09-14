@@ -22,6 +22,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { tipReadyCatalogInstallProblems } from './catalog-install.mjs'
 import { ALLOWED_EVALUATORS, EVALUATOR_MODEL, isAllowedEvaluator } from './taste-evaluate-result.mjs'
 
 /** Receipts evaluated on or after this date must carry the v2 fields. */
@@ -557,7 +558,46 @@ export function tipReadyReceiptProblems(tr, { competitiveBrief = null, requireBr
   return p
 }
 
-export function tasteDoneProblems(tr, { competitiveBrief = null } = {}) {
+/**
+ * Open-state evidence: a shot key/path matching *-open / search-open, or a
+ * shotSpec state that names open. Empty open evidence is refuse when the
+ * receipt is a catalog class (adaptedFrom catalog ids, or opts.catalogClass).
+ */
+export function isOpenStateToken(s) {
+  const t = String(s ?? '').trim()
+  if (!t) return false
+  if (/(?:^|[-_/.])search-open(?:[-_.]|\.[a-z0-9]+|$)/i.test(t)) return true
+  if (/(?:^|[-_/.])[a-z0-9]+-open(?:[-_.]|\.[a-z0-9]+|$)/i.test(t)) return true
+  if (/^open$/i.test(t)) return true
+  return false
+}
+
+export function hasOpenStateEvidence(tr) {
+  if (!isPlainObject(tr)) return false
+  const shots = isPlainObject(tr.shots) ? tr.shots : {}
+  for (const [k, v] of Object.entries(shots)) {
+    if (isOpenStateToken(k) || isOpenStateToken(String(v))) return true
+  }
+  const states = Array.isArray(tr.shotSpec?.states) ? tr.shotSpec.states : []
+  return states.some((s) => isOpenStateToken(s))
+}
+
+export function needsOpenStateEvidence(tr, { catalogClass = false } = {}) {
+  if (catalogClass === true) return true
+  return adaptedFromCatalogIds(tr?.adaptedFrom).length > 0
+}
+
+export function openStateEvidenceProblems(tr, opts = {}) {
+  if (!isPlainObject(tr)) return []
+  if (!needsOpenStateEvidence(tr, opts)) return []
+  if (hasOpenStateEvidence(tr)) return []
+  const named = adaptedFromCatalogIds(tr.adaptedFrom).join(', ') || 'catalog class'
+  return [
+    `catalog adaptedFrom / catalog-class (${named}) requires open-state evidence: a tasteReview.shots path matching *-open / search-open, or shotSpec.states including open. Empty open evidence is refuse.`,
+  ]
+}
+
+export function tasteDoneProblems(tr, { competitiveBrief = null, catalog = null, route = null, root = process.cwd(), catalogIo = null, catalogClass = false } = {}) {
   if (!isPlainObject(tr)) return ['tasteReview is required to mark a SITE node done.']
   const catalogIds = adaptedFromCatalogIds(tr.adaptedFrom)
   const p = tipReadyReceiptProblems(tr, { competitiveBrief })
@@ -566,6 +606,8 @@ export function tasteDoneProblems(tr, { competitiveBrief = null } = {}) {
       `adaptedFrom names catalog modules (${catalogIds.join(', ')}) but demoMatch is not true. File-on-disk / score rise is not a demo match.`,
     )
   }
+  p.push(...openStateEvidenceProblems(tr, { catalogClass }))
+  p.push(...tipReadyCatalogInstallProblems(tr.adaptedFrom, { catalog, route, root, catalogIo }))
   return p
 }
 
@@ -649,13 +691,24 @@ export function siteQueueDoneEvidenceProblems(
       'SITE done evidence must include competitiveBriefPass: true. Score rise without the Researchy brief is not Tip Ready.',
     ]
   }
-  if (needsBrief || claimsBriefPass) {
-    return tipReadyReceiptProblems(tr, { competitiveBrief: brief, requireBrief: true })
+  const receiptProblems =
+    needsBrief || claimsBriefPass
+      ? tipReadyReceiptProblems(tr, { competitiveBrief: brief, requireBrief: true })
+      : judgeUnreachable
+        ? tipReadyReceiptProblems(tr, { competitiveBrief: brief })
+        : []
+  if (judgeUnreachable && receiptProblems.length && !(needsBrief || claimsBriefPass)) {
+    return [`evidence records a judge failure; the fallback verdict must be on the route's parity.json tasteReview. ${receiptProblems[0]}`]
   }
-  if (judgeUnreachable) {
-    // The prose says link 1 failed and then claims a verdict: only the receipt can back that.
-    const p = tipReadyReceiptProblems(tr, { competitiveBrief: brief })
-    return p.length ? [`evidence records a judge failure; the fallback verdict must be on the route's parity.json tasteReview. ${p[0]}`] : []
+  if (receiptProblems.length) return receiptProblems
+  if (isPlainObject(tr)) {
+    const open = openStateEvidenceProblems(tr)
+    if (open.length) return open
+  }
+  if (/\bTip Ready\b/i.test(text) && !/--ship\b/.test(text) && !/\bship OK\b/i.test(text)) {
+    return [
+      'Tip Ready language without `node scripts/lib/taste-receipt.mjs --ship` exit 0 is refuse. Cos prose is not Tip Ready.',
+    ]
   }
   return []
 }
@@ -755,15 +808,34 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
       process.exit(2)
     }
     const d = JSON.parse(readFileSync(join(root, rel), 'utf8'))
-    const problems = tasteDoneProblems(d?.tasteReview, { competitiveBrief: d?.competitiveBrief ?? null })
+    let catalog = null
+    let catalogClass = false
+    try {
+      const raw = JSON.parse(readFileSync(join(root, 'design_system/public/taste-catalog.json'), 'utf8'))
+      catalog = { installById: raw.installById, classes: raw.classes, routeClasses: raw.routeClasses }
+      const kit = rel.includes('ui_kits/') ? rel.split('/').filter(Boolean).at(-2) : null
+      catalogClass = Boolean(
+        (kit && (raw.classes?.[kit] || raw.routeClasses?.[kit])) ||
+          adaptedFromCatalogIds(d?.tasteReview?.adaptedFrom).length,
+      )
+    } catch {
+      catalog = null
+    }
+    const problems = tasteDoneProblems(d?.tasteReview, {
+      competitiveBrief: d?.competitiveBrief ?? null,
+      catalog,
+      route: typeof d?.route === 'string' ? d.route : null,
+      root,
+      catalogClass,
+    })
     if (problems.length) {
       console.error(problems.join('\n'))
       process.exit(1)
     }
     console.log(
       parseCompetitiveBrief(d?.competitiveBrief)
-        ? 'ship OK — demoMatch true · competitiveBriefPass true'
-        : 'ship OK — demoMatch true',
+        ? 'ship OK — demoMatch true · competitiveBriefPass true · open-state · catalog-install'
+        : 'ship OK — demoMatch true · open-state · catalog-install',
     )
     process.exit(0)
   }
