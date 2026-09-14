@@ -69,7 +69,10 @@ if [ -n "$HOLDERS" ]; then
   exit 1
 fi
 
-npm run start:ci > "$LOG" 2>&1 &
+# `start:ci` hardcodes -p 3000, so `PORT=4391 npm run ci:runtime-gates` used
+# to start on 3000 and wait on 4391 until the waiter gave up (SITE-90,
+# 2026-09-13). The server binds the port the gates measure.
+npx next start -p "$PORT" > "$LOG" 2>&1 &
 SERVER_PID=$!
 
 # And it must actually be OUR server that came up. Without this, a race that
@@ -98,6 +101,13 @@ if ! node scripts/wait-for-server.mjs "$BASE" "${RUNTIME_GATES_WAIT:-180}"; then
   cat "$LOG" >&2 || true
   exit 1
 fi
+
+# Each gate defaults to :3000 on its own; hand every one the server this
+# script actually started, or a non-default PORT measures nothing.
+export SMOKE_BASE_URL="$BASE"
+export PAGE_PAYLOAD_BASE_URL="$BASE"
+export TAP_TARGETS_BASE_URL="$BASE"
+export CONTENT_FLOOR_BASE_URL="$BASE"
 
 npm run ci:route-smoke
 npm run ci:page-payload

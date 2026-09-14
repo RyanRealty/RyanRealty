@@ -33,6 +33,22 @@
   min-width: 0;
 }
 
+/* beui's Input is root > pill > <input>. The house control is the <input>
+   (see V3Input.tsx), so both wrappers are flattened to nothing: the root
+   contributes no box, the pill drops its 44px height, its own border, its
+   pill radius, its focus ring, and the overflow clip that hid the check. */
+.v3-input__beui {
+  display: contents;
+}
+
+.v3-input__beui-field {
+  height: auto;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .v3-input__control {
   width: 100%;
   min-height: var(--v3-tap);

@@ -9,6 +9,14 @@
  * Validity is the browser's (`:user-invalid` / `:user-valid`), which is also
  * the accessible one. Motion reads --v3-travel and --v3-dur-*, so reduced
  * motion collapses the shake to nothing.
+ *
+ * The beui Input is a root div > pill div > <input>, and its `className`
+ * lands on the ROOT. Until 2026-09-13 the control class went there, so the
+ * page drew a bordered box around beui's own 44px pill, the native <input>
+ * inside measured 42px (tap-target gate, /contact), and every native-validity
+ * selector above addressed a div and never fired. `classNames.input` puts the
+ * control class on the <input> itself; the two wrappers are flattened in
+ * V3Input.css.
  */
 import { Input } from '@/components/ui/input'
 import { Input as BeuiInput } from '@/components/motion/input'
@@ -96,7 +104,11 @@ export function V3Input({
             id={id}
             name={name}
             type={kind}
-            className={controlClass}
+            classNames={{
+              root: 'v3-input__beui',
+              field: 'v3-input__beui-field',
+              input: controlClass,
+            }}
             required={required}
             autoComplete={autoComplete}
             placeholder={placeholder}

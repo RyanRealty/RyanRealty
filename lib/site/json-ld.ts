@@ -41,6 +41,23 @@ export type SchemaInput =
   | ItemListInput
   | ServiceInput
   | VideoInput
+  | OrganizationRatingInput
+
+/**
+ * The brokerage's review record as schema.org AggregateRating, attached to the
+ * sitewide Organization node by `@id` (a second node with the same `@id`
+ * merges into `#organization` in the JSON-LD graph, so the layout's
+ * Organization is not edited and no page but the one that reads reviews
+ * emits a rating). ratingValue and reviewCount come from the same getReviews
+ * read the page prints — never a typed constant (CLAUDE.md §0).
+ */
+export type OrganizationRatingInput = {
+  type: 'organizationRating'
+  ratingValue: number
+  reviewCount: number
+  /** Where the reviews are read whole on this site, e.g. /reviews. */
+  url?: string
+}
 
 /**
  * A published video the page is about or embeds: the place area guides on the
@@ -112,6 +129,12 @@ export type WebPageInput = {
   pageType?: 'AboutPage' | 'CollectionPage' | 'ContactPage'
   /** Set true to point mainEntity at the sitewide Organization (#organization) — the brand-entity anchor AI engines attribute citations to. */
   aboutOrganization?: boolean
+  /**
+   * schema.org WebPage.significantLink: the page's most important internal
+   * doors (site-relative paths, made absolute here), e.g. /reviews, /team,
+   * /contact on About. Only paths the page actually links to.
+   */
+  significantLink?: ReadonlyArray<string>
 }
 
 export type FaqPageInput = {
@@ -328,6 +351,10 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
         description: input.description,
         url: absoluteUrl(input.url),
         mainEntity: input.aboutOrganization ? { '@id': `${site}#organization` } : undefined,
+        significantLink:
+          input.significantLink && input.significantLink.length > 0
+            ? input.significantLink.map((path) => absoluteUrl(path))
+            : undefined,
       })
 
     case 'faqPage':
@@ -496,6 +523,20 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
         areaServed: input.areaServed
           ? { '@type': 'Place', name: input.areaServed }
           : undefined,
+      })
+    case 'organizationRating':
+      return prune({
+        '@context': 'https://schema.org',
+        '@type': ['RealEstateAgent', 'LocalBusiness'],
+        '@id': `${site}#organization`,
+        aggregateRating: prune({
+          '@type': 'AggregateRating',
+          ratingValue: Math.round(input.ratingValue * 10) / 10,
+          reviewCount: input.reviewCount,
+          bestRating: 5,
+          worstRating: 1,
+          url: absoluteUrl(input.url),
+        }),
       })
   }
 }

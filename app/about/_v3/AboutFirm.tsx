@@ -32,7 +32,17 @@ export function AboutFirm({
     >
       <figure className="about-firm__hero">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={officeSrc} alt={officeAlt} width={1600} height={1067} />
+        {/* The LCP element: eager, high priority, so the office reads before the
+            type does (SEO/LCP increment, SITE-90 2026-09-13). */}
+        <img
+          src={officeSrc}
+          alt={officeAlt}
+          width={1600}
+          height={1067}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+        />
         <figcaption className="about-firm__caption">{officeCaption}</figcaption>
         <div className="about-firm__mission">
           <V3Eyebrow onMedia>Ryan Realty · Central Oregon</V3Eyebrow>

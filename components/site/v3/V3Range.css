@@ -140,8 +140,46 @@
 }
 
 .v3 .v3-range__beui {
+  height: var(--v3-tap);
   background: var(--v3-edge);
   border-radius: var(--v3-radius-control);
+}
+
+/* The beui thumb is the 4x24 bar itself, which is the hit area a finger gets
+   (tap-target gate, /homes-for-sale and /cities/bend). Same treatment as
+   .v3-range__thumb above: the handle is a tap-sized transparent square and
+   the bar is drawn on it, centred where the 4px bar's centre was (the beui
+   `x` transform places the LEFT edge, so the wider box shifts back by the
+   difference in half-widths). The position math reads the track rect, never
+   the thumb, so nothing else moves. */
+.v3 .v3-range__beui > [role='slider'] {
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  margin-left: calc(2px - var(--v3-tap) / 2);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.v3 .v3-range__beui > [role='slider']::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 24px;
+  margin: -12px 0 0 -2px;
+  border-radius: 9999px;
+  background: var(--v3-navy);
+}
+
+.v3 .v3-range__beui > [role='slider']:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.v3 .v3-range__beui > [role='slider']:focus-visible::after {
+  box-shadow: 0 0 0 3px var(--v3-ring, color-mix(in srgb, var(--v3-navy) 22%, transparent));
 }
 
 @media (prefers-reduced-motion: reduce) {

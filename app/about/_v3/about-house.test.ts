@@ -110,7 +110,13 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(TEASER).not.toContain('person.license')
     expect(TEASER).not.toContain('tel:')
     expect(TEASER).not.toContain('teamPath(person')
-    expect(TEASER).not.toContain('AvatarGroup')
+    // SITE-90 2026-09-13: the face row IS the shadcn AvatarGroup demo
+    // (overlapping Avatars, one door), imported from ui/avatar — not a
+    // hand-rolled overlap and not one Avatar per Card.
+    expect(TEASER).toContain('<AvatarGroup')
+    expect(TEASER).toContain('<AvatarImage')
+    expect(TEASER).toContain('<AvatarFallback')
+    expect((TEASER.match(/<Link\b/g) ?? []).length).toBe(1)
     expect(FOLD).toContain('about-teaser__faces')
     expect(FOLD).not.toContain('about-teaser__card')
     expect(FOLD).not.toContain('about-teaser__list')

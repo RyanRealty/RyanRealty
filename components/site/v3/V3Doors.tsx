@@ -21,7 +21,8 @@ import type { CSSProperties, ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, type V3Text } from './atoms'
-import { V3Icon } from './V3Icon'
+import { V3Icon, type V3IconName } from './V3Icon'
+import { V3ButtonGroup } from './V3ButtonGroup'
 import './tokens.css'
 import './V3Doors.css'
 
@@ -55,6 +56,13 @@ export type V3Door = {
    * states has no hierarchy again.
    */
   live?: ReactNode
+  /**
+   * Channel mark on a `control="group"` segment (Phone, ChatBubble, Mail,
+   * Calendar — the Iconoir set V3Icon carries). The shadcn button-group demo
+   * pairs each segment's word with its icon; without one the row reads as
+   * four labelled rectangles. Ignored by the door-band renderings.
+   */
+  icon?: V3IconName
 }
 
 export type V3DoorsProps = {
@@ -63,6 +71,20 @@ export type V3DoorsProps = {
   name: V3Text
   /** Two to four doors. One door is a button, five is a nav. */
   doors: readonly [V3Door, V3Door, ...V3Door[]]
+  /**
+   * `doors` (default) is the hairline band every existing caller renders.
+   * `group` (SITE-90, 2026-09-13) is the same four intents as ONE shadcn
+   * button group — the demo at ui.shadcn.com/docs/components/button-group,
+   * through V3ButtonGroup → components/ui/button-group: one row of joined
+   * segments with shared hairlines, the `primary` door filled navy, the rest
+   * outline — the demo's silhouette. The primary door's label (the number)
+   * sits above the control at display scale with its live state beside it,
+   * so the beat "Call at display scale with live hours" and the beat "one
+   * catalog control" are both true from the pixels. Built for a fold where
+   * the reach control shares a column with other objects and a four-cell
+   * band would be a card grid again.
+   */
+  control?: 'doors' | 'group'
   className?: string
 }
 
@@ -80,7 +102,7 @@ function DoorPictogram({ kind }: { kind: V3DoorPictogram }) {
   return <V3Icon name={DOOR_PICTOGRAM[kind]} size={40} />
 }
 
-export function V3Doors({ id, name, doors, className }: V3DoorsProps) {
+export function V3Doors({ id, name, doors, control = 'doors', className }: V3DoorsProps) {
   const shown = doors.slice(0, 4)
   // The primary door leads the band in the DOM as well as on the page: the
   // reader who tabs and the reader who looks meet the same first thing, and
@@ -89,6 +111,52 @@ export function V3Doors({ id, name, doors, className }: V3DoorsProps) {
   const leadIndex = shown.findIndex((d) => d.primary)
   const ordered = leadIndex > 0 ? [shown[leadIndex]!, ...shown.filter((_, i) => i !== leadIndex)] : shown
   const hasLead = leadIndex >= 0
+
+  if (control === 'group') {
+    const lead = hasLead ? ordered[0]! : null
+    return (
+      <section
+        id={id}
+        aria-label={name}
+        className={cn(V3_ROOT_CLASS, 'v3-doors', 'v3-doors--group', className)}
+      >
+        {/* The lead at display scale, above the control: kicker, the number
+            as its own tel: door, the live state read beside it. The group
+            under it is then exactly the catalog object — one row of joined
+            segments, the primary filled, the rest outline. */}
+        {lead ? (
+          <div className="v3-doors__lead">
+            <span className="v3-doors__kicker">{lead.kicker}</span>
+            <Link href={lead.href} className="v3-doors__lead-label">
+              {lead.label}
+            </Link>
+            {lead.live ? <div className="v3-doors__lead-live">{lead.live}</div> : null}
+          </div>
+        ) : null}
+        <V3ButtonGroup label={name} className="v3-doors__group">
+          {ordered.map((door, index) => {
+            const isLead = hasLead && index === 0
+            return (
+              <Link
+                key={door.href}
+                href={door.href}
+                title={door.fact ? String(door.fact) : undefined}
+                className={cn(
+                  'v3-btn',
+                  isLead ? 'v3-btn--primary' : 'v3-btn--ghost',
+                  'v3-doors__segment',
+                  isLead && 'v3-doors__segment--lead',
+                )}
+              >
+                {door.icon ? <V3Icon name={door.icon} size={18} className="v3-doors__segment-icon" /> : null}
+                <span className="v3-doors__segment-label">{door.kicker}</span>
+              </Link>
+            )
+          })}
+        </V3ButtonGroup>
+      </section>
+    )
+  }
 
   return (
     <section

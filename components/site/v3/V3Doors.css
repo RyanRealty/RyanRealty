@@ -241,3 +241,139 @@
 .v3-doors__pictogram svg {
   display: block;
 }
+
+/* ---------------------------------------------------------------------------
+   THE REACH CONTROL AS ONE BUTTON GROUP (`--group`, SITE-90 2026-09-13).
+
+   The shadcn button-group object: one row of joined segments, shared
+   hairlines, one outer border, the whole thing one control. The `primary`
+   door is the filled navy segment; Text, Email and Schedule are outline
+   segments on the same control. Above it the lead's label — the number — at
+   display scale as its own tel: door, with the live hours read beside it.
+   Tokens only; radius is the house radius.
+   --------------------------------------------------------------------------- */
+.v3.v3-doors--group {
+  padding-inline: var(--v3-gutter);
+}
+
+.v3-doors__lead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "kicker live"
+    "label live";
+  align-items: center;
+  column-gap: var(--v3-space-md);
+  margin-bottom: var(--v3-space-xs);
+}
+
+.v3-doors__lead > .v3-doors__kicker {
+  grid-area: kicker;
+}
+
+.v3-doors__lead-label {
+  grid-area: label;
+  justify-self: start;
+  min-height: var(--v3-tap);
+  display: inline-flex;
+  align-items: center;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-heading);
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+
+.v3-doors__lead-label:hover,
+.v3-doors__lead-label:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+  text-decoration-thickness: 1px;
+}
+
+.v3-doors__lead-label:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-doors__lead-live {
+  grid-area: live;
+  justify-self: end;
+  max-width: 11rem;
+  text-align: right;
+}
+
+/* The on-duty line is narrow here, so the label wraps as text with the dot
+   held on its first line — never the dot alone on a line of its own. */
+.v3-doors__lead-live .v3-onduty {
+  display: block;
+  text-align: right;
+}
+
+.v3-doors__lead-live .v3-onduty__dot {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 0.35em;
+}
+
+.v3-doors__lead-live .v3-onduty__label,
+.v3-doors__lead-live .v3-onduty__note {
+  display: inline;
+}
+
+.v3.v3-btn-group.v3-doors__group {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+
+/* Each segment: the demo's outline button — icon beside the word, a raised
+   (white) face so the control sits ON the cream page instead of dissolving
+   into it, the primary filled navy. Joins are drawn once per segment on its
+   leading edge; on the first segment that lands on the group's own border. */
+.v3.v3-btn-group.v3-doors__group > .v3-doors__segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--v3-space-2xs);
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-xs);
+  border: 0;
+  border-radius: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: normal;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: -1px 0 0 0 var(--v3-navy);
+}
+
+.v3.v3-btn-group.v3-doors__group > .v3-doors__segment.v3-btn--ghost {
+  background: var(--v3-surface-raised);
+  color: var(--v3-navy);
+}
+
+.v3-doors__segment-icon {
+  flex-shrink: 0;
+}
+
+.v3.v3-btn-group.v3-doors__group > .v3-doors__segment.v3-btn--ghost:hover,
+.v3.v3-btn-group.v3-doors__group > .v3-doors__segment.v3-btn--ghost:focus-visible {
+  background: var(--v3-wash);
+}
+
+/* At 375 four words with icons do not fit one row at body size, so each
+   segment stacks its mark over its word: still one row, one control, 44px+
+   taps, nothing cramped. */
+@media (max-width: 47.99rem) {
+  .v3.v3-btn-group.v3-doors__group > .v3-doors__segment {
+    flex-direction: column;
+    gap: var(--v3-space-3xs);
+    min-height: 3.5rem;
+    padding: var(--v3-space-2xs) var(--v3-space-3xs);
+    font-size: var(--v3-size-body-sm);
+  }
+}

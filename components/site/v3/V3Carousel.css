@@ -52,6 +52,18 @@
   padding-left: 0;
 }
 
+/* About closings: two whole Cards and the edge of a third — the demo's rail
+   silhouette, so the object reads as a carousel before anyone finds the
+   arrows. Lives here so it wins the later-loaded rail rule that sizes
+   slides to 17.5rem. */
+.v3.v3-carousel--rail.about-closings__carousel .v3-carousel__slide,
+.v3.v3-carousel--rail.about-closings__carousel [data-slot='carousel-item'] {
+  flex: 0 0 45%;
+  max-width: 45%;
+  overflow: hidden;
+  padding-right: var(--v3-space-xs);
+}
+
 .v3 .v3-carousel [data-slot='carousel-content'] {
   overflow: hidden;
   width: 100%;

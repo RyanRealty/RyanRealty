@@ -146,6 +146,8 @@ export default async function AboutPage() {
       description:
         'Ryan Realty is a small boutique brokerage in Bend, Oregon. We cover all of Central Oregon and help clients buy and sell their properties.',
       url: '/about',
+      // The fold's doors, as the page states them: reviews, the team, contact, booking.
+      significantLink: ['/reviews', '/team', '/contact', '/book'],
     },
     {
       type: 'breadcrumb',
@@ -177,6 +179,14 @@ export default async function AboutPage() {
       : []),
     ...(reviewSummary && reviewSummary.count > 0
       ? [
+          // The 5.0 · 25 the fold prints, as AggregateRating on #organization —
+          // same getReviews read, so the pixels and the graph cannot disagree.
+          {
+            type: 'organizationRating' as const,
+            ratingValue: reviewAverage,
+            reviewCount: reviewCount,
+            url: '/reviews',
+          },
           {
             type: 'dataset' as const,
             name: 'Ryan Realty Google reviews',
@@ -215,14 +225,15 @@ export default async function AboutPage() {
                 eyebrow="Ryan Realty · Google"
                 headline="In their own words"
                 headingLevel={2}
-                claim={`The newest four of ${reviewCount} verified Google reviews, in full, exactly as they were written.`}
+                claim={`The newest ${quotes.length === 4 ? 'four' : quotes.length} of ${reviewCount} verified Google reviews, exactly as written. Open any one to read it whole.`}
                 figures={[
                   { value: reviewAverage.toFixed(1), label: 'Average rating' },
                   { value: String(reviewCount), label: 'Google reviews' },
                 ]}
                 quotes={quotes}
-                source={{ label: 'Every review', href: '/reviews' }}
+                source={{ label: `Every review`, href: '/reviews' }}
                 record={false}
+                pickCards
               />
             </div>
           ) : null}
@@ -230,9 +241,14 @@ export default async function AboutPage() {
             <FirmClosings id="firm-sales" rows={firmRows} />
           </div>
           <div className="about-fold__reach">
+            {/* ONE reach control: the shadcn button group (V3Doors control="group"
+                → V3ButtonGroup → ui/button-group). Call is the filled segment
+                at display scale with the live hours; Text, Email, Schedule are
+                the outline segments on the same control. */}
             <V3Doors
               id="reach"
               name={v3Text('Reach a broker')}
+              control="group"
               doors={[
                 {
                   kicker: v3Text('Call'),
@@ -241,24 +257,28 @@ export default async function AboutPage() {
                   href: `tel:${CONTACT.phoneDirectTel}`,
                   primary: true,
                   live: hoursLive,
+                  icon: 'Phone',
                 },
                 {
                   kicker: v3Text('Text'),
                   label: v3Text('Send a text'),
-                  fact: v3Text('Same line as the call'),
+                  fact: v3Text('Same number'),
                   href: `sms:${CONTACT.phoneDirectTel}`,
+                  icon: 'ChatBubble',
                 },
                 {
                   kicker: v3Text('Email'),
                   label: v3Text('Send an email'),
-                  fact: v3Text("Straight to Matt's inbox"),
+                  fact: v3Text("Matt's inbox"),
                   href: `mailto:${CONTACT.email.primary}`,
+                  icon: 'Mail',
                 },
                 {
                   kicker: v3Text('Schedule'),
                   label: v3Text('Book a time'),
-                  fact: v3Text('Open slots on the calendar'),
+                  fact: v3Text('Open calendar slots'),
                   href: '/book',
+                  icon: 'Calendar',
                 },
               ]}
             />

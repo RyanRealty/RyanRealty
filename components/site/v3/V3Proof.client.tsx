@@ -21,9 +21,11 @@
  */
 import { useCallback, useId, useMemo, useRef, useState } from 'react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { reviewerInitials, uniqueReviewerInitials } from '@/lib/reviews/reviewer-initials'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from './atoms'
+import { V3Icon } from './V3Icon'
 import './tokens.css'
 import './V3Proof.css'
 
@@ -86,6 +88,15 @@ export type V3ProofProps = {
    * number.
    */
   actions?: readonly { label: string; href: string }[]
+  /**
+   * Compact bands only (SITE-90, 2026-09-13). The reviews beside the reading
+   * pane render as the shadcn Card object (components/ui/card: header with
+   * the reviewer and the date, the live stars as the card action, the first
+   * sentence whole in the body, never ellipsized) with one "Read the whole
+   * review" control that swaps the review into the pane beside them. The
+   * default picks stay for the homepage and team bands.
+   */
+  pickCards?: boolean
   className?: string
 }
 
@@ -244,6 +255,7 @@ export function V3Proof({
   archive = false,
   face = false,
   actions,
+  pickCards = false,
   className,
 }: V3ProofProps) {
   const uid = useId()
@@ -726,34 +738,92 @@ export function V3Proof({
         </ul>
       ) : (
         <div className="v3-proof__reader">
-          <div id={`${uid}-read`} className="v3-proof__reading v3-proof__card">
+          <div id={`${uid}-read`} className="v3-proof__reading v3-proof__card" tabIndex={pickCards ? -1 : undefined}>
             {compactReading ? <QuoteFigure q={compactReading} displayPull showMarks={showMarks} /> : null}
           </div>
-          <ul className="v3-proof__picks">
-            {quotes
-              .filter((q) => q.id !== compactReading?.id)
-              .map((q) => (
-              <li key={q.id}>
-                <button
-                  type="button"
-                  className={cn('v3-proof__pick', 'v3-proof__card', focus === q.id && 'is-on')}
-                  aria-pressed={focus === q.id}
-                  onClick={() => setFocus(q.id)}
-                >
-                  <Marks rating={q.rating} />
-                  <span className="v3-proof__pick-pull">{q.pull}</span>
-                  <span className="v3-proof__pick-who">{q.author}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          {pickCards ? (
+            <ul className="v3-proof__picks v3-proof__picks--cards" aria-label="More reviews">
+              {quotes
+                .filter((q) => q.id !== compactReading?.id)
+                .map((q) => (
+                  <li key={q.id}>
+                    <Card size="sm" className="v3-proof__pick-card">
+                      <CardHeader className="v3-proof__pick-card-head">
+                        <CardTitle className="v3-proof__pick-card-title">
+                          <span className="v3-proof__avatar-wrap" title={q.author}>
+                            <Avatar
+                              size="sm"
+                              className="v3-proof__avatar v3-proof__avatar--quote"
+                              data-initials={reviewerInitials(q.author)}
+                            >
+                              <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0}>
+                                {reviewerInitials(q.author)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="v3-proof__avatar-ink" aria-hidden="true">
+                              {reviewerInitials(q.author)}
+                            </span>
+                          </span>
+                          {q.author}
+                        </CardTitle>
+                        <CardDescription className="v3-proof__pick-card-meta">{q.attribution}</CardDescription>
+                        <CardAction>
+                          <Marks rating={q.rating} />
+                        </CardAction>
+                      </CardHeader>
+                      <CardContent className="v3-proof__pick-card-body">
+                        <p className="v3-proof__pick-card-pull">{q.pull}</p>
+                        <button
+                          type="button"
+                          className="v3-proof__pick-card-read"
+                          onClick={() => {
+                            setFocus(q.id)
+                            document.getElementById(`${uid}-read`)?.focus({ preventScroll: true })
+                          }}
+                        >
+                          Read the whole review
+                        </button>
+                      </CardContent>
+                    </Card>
+                  </li>
+                ))}
+            </ul>
+          ) : (
+            <ul className="v3-proof__picks">
+              {quotes
+                .filter((q) => q.id !== compactReading?.id)
+                .map((q) => (
+                <li key={q.id}>
+                  <button
+                    type="button"
+                    className={cn('v3-proof__pick', 'v3-proof__card', focus === q.id && 'is-on')}
+                    aria-pressed={focus === q.id}
+                    onClick={() => setFocus(q.id)}
+                  >
+                    <Marks rating={q.rating} />
+                    <span className="v3-proof__pick-pull">{q.pull}</span>
+                    <span className="v3-proof__pick-who">{q.author}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
+      {/* An internal door (/reviews) stays in this tab; only the record's own
+          page on another site opens a new one. */}
       <p className="v3-proof__source">
-        <a href={source.href} target="_blank" rel="noopener noreferrer">
-          {source.label}
-        </a>
+        {source.href.startsWith('/') ? (
+          <a href={source.href} className="v3-proof__source-door">
+            {source.label}
+            <V3Icon name="ArrowRight" size={16} />
+          </a>
+        ) : (
+          <a href={source.href} target="_blank" rel="noopener noreferrer">
+            {source.label}
+          </a>
+        )}
       </p>
     </section>
   )

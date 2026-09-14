@@ -960,6 +960,90 @@
   font-size: var(--v3-size-body-sm);
 }
 
+/* The shadcn Card object for the picks (SITE-90): header, action, content,
+   painted with house tokens — the ring is the hairline, the radius the house
+   radius, the surface cream. The first sentence prints whole and wraps; there
+   is no ellipsis anywhere in a review. */
+.v3-proof__picks--cards {
+  gap: var(--v3-space-xs);
+}
+
+.v3 .v3-proof__pick-card {
+  --tw-ring-color: var(--v3-edge);
+  border-radius: var(--v3-radius-card);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  font-family: inherit;
+}
+
+.v3 .v3-proof__pick-card [data-slot='card-header'] {
+  padding: var(--v3-space-sm) var(--v3-space-sm) 0;
+  border-radius: 0;
+}
+
+.v3 .v3-proof__pick-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-xs);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-proof__pick-card-title .v3-proof__avatar {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+}
+
+.v3 .v3-proof__pick-card-meta {
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-proof__pick-card [data-slot='card-action'] .v3-proof__star {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.v3 .v3-proof__pick-card-body {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  padding: var(--v3-space-xs) var(--v3-space-sm) var(--v3-space-2xs);
+}
+
+.v3 .v3-proof__pick-card-pull {
+  margin: 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}
+
+.v3 .v3-proof__pick-card-read {
+  justify-self: start;
+  min-height: var(--v3-tap);
+  margin: 0 calc(-1 * var(--v3-space-xs));
+  padding: 0 var(--v3-space-xs);
+  border: 0;
+  background: transparent;
+  color: var(--v3-ink);
+  font: inherit;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.v3 .v3-proof__pick-card-read:hover {
+  background: var(--v3-wash);
+}
+
+.v3 .v3-proof__pick-card-read:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: 2px;
+}
+
 .v3-proof__source {
   margin: var(--v3-space-lg) 0 0;
   font-size: var(--v3-size-source);
@@ -971,6 +1055,22 @@
   display: inline-flex;
   align-items: center;
   min-height: var(--v3-tap);
+}
+
+.v3-proof__source-door {
+  gap: var(--v3-space-2xs);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+}
+
+.v3-proof__source-door svg {
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-proof__source-door:hover svg,
+.v3-proof__source-door:focus-visible svg {
+  transform: translateX(calc(var(--v3-travel) * 0.4));
 }
 
 /* G71: the source line was a 17px-tall text link. The box is the target. */
