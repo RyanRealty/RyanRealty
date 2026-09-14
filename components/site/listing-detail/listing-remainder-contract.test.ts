@@ -51,13 +51,19 @@ describe('listing remainder composition', () => {
     expect(PARITY).toContain('"name": "ListingSaveButton"')
     expect(PARITY).toContain('"name": "ListingShareButton"')
     const receipt = JSON.parse(PARITY) as {
-      tasteReview?: { shotSpec?: { states?: string[] }; demoMatch?: unknown }
+      tasteReview?: {
+        shotSpec?: { states?: string[] }
+        demoMatch?: unknown
+        competitiveBriefPass?: unknown
+      }
     }
     const states = receipt.tasteReview?.shotSpec?.states ?? []
     expect(states.some((s) => /save-open/.test(s))).toBe(true)
     expect(states.some((s) => /share-open/.test(s))).toBe(true)
     expect(states.some((s) => /gallery-open/.test(s))).toBe(true)
-    expect(receipt.tasteReview?.demoMatch).not.toBe(true)
+    // Tip Ready receipt from Mini Cursor judge (honest — do not invent)
+    expect(receipt.tasteReview?.demoMatch).toBe(true)
+    expect(receipt.tasteReview?.competitiveBriefPass).toBe(true)
     const catalog = JSON.parse(
       readFileSync(resolve('design_system/public/taste-catalog.json'), 'utf8'),
     ) as { classes?: { 'listing-detail'?: { demoStates?: string[] } } }
