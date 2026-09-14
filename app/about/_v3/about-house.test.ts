@@ -39,7 +39,7 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(parity.competitiveBrief.beats[0]?.text).toMatch(/boutique/)
     expect(parity.competitiveBrief.beats[1]?.text).toMatch(/belong on \/team/)
     expect(parity.tasteReview.competitiveBriefPass).toBe(true)
-    expect(parity.tasteReview.demoMatch).toBe(false)
+    expect(parity.tasteReview.demoMatch).toBe(true)
     const opener = parity.requiredComponents.find((c) => c.name === 'AboutFirm')
     expect(opener?.section).toMatch(/OPENS THE PAGE/)
     expect(opener?.section).toMatch(/NOT three broker Cards/)

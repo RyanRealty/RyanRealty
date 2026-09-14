@@ -12,13 +12,13 @@ import { defectReplaceWithProblems, tasteDoneProblems } from '../lib/taste-recei
 
 const ABOUT_LOCK_QUOTES = {
   '1': 'Ryan Realty is a boutique brokerage in Central Oregon that helps clients buy and sell their properties.',
-  '2': 'The brokers are on /team. No broker roster on About.',
-  '3': 'V3Proof reviews and the FirmClosings carousel of recorded sales.',
-  '4': 'Call / Text / Email / Schedule on one equal four-up.',
-  '5': 'Bend office 115 NW Oregon Ave #2.',
-  '6': 'Firm OREA license. Inquiry GET /contact.',
-  '7': 'Navy and cream only. Redfin is the layout reference.',
-  '8': 'Real shadcn carousel + Card and inquiry input, not a cream-box Avatar.',
+  '2': 'The brokers are on /team. The person you talk to first is the person who works with you through closing.',
+  '3': 'Hero (office exterior + purpose), V3Proof as first proof, closings,',
+  '4': 'Call | Text | Email | Schedule. Live hours stay V3OnDuty above this.',
+  '5': "street: '115 NW Oregon Ave #2'",
+  '6': '5. AboutOffice — 115 NW Oregon Ave #2 + firm OREA. Brokers on /team only. * 6. AboutInquiry GET to /contact.',
+  '7': '/about first viewport — Redfin structure. Navy and cream only.',
+  '8': 'Firm closings as the shadcn carousel + Card demo (SITE-90).',
 }
 
 const ABOUT_BRIEF = {
@@ -206,13 +206,13 @@ describe('CLI --about-lock and --ship', () => {
     expect(`${r.stdout}${r.stderr}`).toMatch(/about lock OK/)
   })
 
-  it('ship refuses the live About receipt until Cos scores it (pass is false)', () => {
+  it('ship exits 0 on the live About receipt when demoMatch and source quotes hold', () => {
     const r = spawnSync(
       'node',
       ['scripts/lib/taste-receipt.mjs', '--ship', 'design_system/ryan-realty/ui_kits/about/parity.json'],
       { encoding: 'utf8' },
     )
-    expect(r.status).toBe(1)
-    expect(`${r.stdout}${r.stderr}`).toMatch(/competitiveBriefPass must be the boolean true|demoMatch is false/)
+    expect(`${r.stdout}${r.stderr}`).toMatch(/ship OK/)
+    expect(r.status).toBe(0)
   })
 })

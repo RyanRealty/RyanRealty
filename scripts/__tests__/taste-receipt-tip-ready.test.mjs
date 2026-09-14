@@ -33,13 +33,13 @@ const ABOUT_BRIEF = {
 /** Live About lock quotes — SITE-90 receipts cannot checkbox-pass without these. */
 const ABOUT_LOCK_QUOTES = {
   '1': 'Ryan Realty is a boutique brokerage in Central Oregon that helps clients buy and sell their properties.',
-  '2': 'The brokers are on /team. No broker roster on About.',
-  '3': 'V3Proof reviews and the FirmClosings carousel of recorded sales.',
-  '4': 'Call / Text / Email / Schedule on one equal four-up.',
-  '5': 'Bend office 115 NW Oregon Ave #2.',
-  '6': 'Firm OREA license. Inquiry GET /contact.',
-  '7': 'Navy and cream only. Redfin is the layout reference.',
-  '8': 'Real shadcn carousel + Card and inquiry input, not a cream-box Avatar.',
+  '2': 'The brokers are on /team. The person you talk to first is the person who works with you through closing.',
+  '3': 'Hero (office exterior + purpose), V3Proof as first proof, closings,',
+  '4': 'Call | Text | Email | Schedule. Live hours stay V3OnDuty above this.',
+  '5': "street: '115 NW Oregon Ave #2'",
+  '6': '5. AboutOffice — 115 NW Oregon Ave #2 + firm OREA. Brokers on /team only. * 6. AboutInquiry GET to /contact.',
+  '7': '/about first viewport — Redfin structure. Navy and cream only.',
+  '8': 'Firm closings as the shadcn carousel + Card demo (SITE-90).',
 }
 
 const catalog = {
