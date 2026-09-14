@@ -34,6 +34,17 @@ export function buildOregonCityClaim(input: {
   return `${live} live listings in ${name}. ${sfr} are single-family.`
 }
 
+export function buildOregonCityHonestyDescription(input: {
+  name: string
+  activeAllCount: number
+}): string {
+  const name = input.name.trim()
+  if (input.activeAllCount > 0) {
+    return `${input.activeAllCount.toLocaleString('en-US')} live listings below are from the statewide MLS. We work Central Oregon, not ${name}. Ask for a local broker introduction.`
+  }
+  return `We work Central Oregon, not ${name}. Ask for a local broker introduction.`
+}
+
 export function buildOregonCityItemListName(input: {
   address: string
   price: string

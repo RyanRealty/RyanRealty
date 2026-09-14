@@ -99,6 +99,7 @@ import {
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { OregonCityHonesty } from './_v3/OregonCityHonesty'
 import { OutOfAreaReferralSheet } from './_v3/OutOfAreaReferralSheet.client'
 import { listingRowPhotoSrc } from './_v3/listing-row-photo'
 import {
@@ -208,7 +209,6 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
       value: v3Text(city.activeAllCount.toLocaleString('en-US')),
       label: v3Text('active listings, all property types'),
       href: browsePath,
-      count: city.activeAllCount,
       sentence: v3Text(
         `Everything on the market in ${city.name} right now, houses and condos and bare land together.`,
       ),
@@ -218,7 +218,6 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
     figures.push({
       value: v3Text(city.activeSfrCount.toLocaleString('en-US')),
       label: v3Text('active single-family listings'),
-      count: city.activeSfrCount,
       sentence: v3Text('Of those, the ones that are a house on its own lot.'),
     })
   }
@@ -423,25 +422,10 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
           ]}
         />
 
-        {/* Honesty first (SITE-76): Alert-only Quiet so live inventory can share
-            the first viewport at 375. Live count traces to the same snapshot row
+        {/* Honesty first (SITE-105): catalog Alert on the route (_v3), not a
+            house-only Quiet import. Live count traces to the same snapshot row
             the Instrument prints. Home-market doors follow the place answer. */}
-        <V3Quiet
-          id="about"
-          ariaLabel={`We don't work in ${city.name}`}
-          alert={{
-            title: `We don't work in ${city.name}`,
-            description:
-              city.activeAllCount > 0
-                ? `${city.activeAllCount.toLocaleString('en-US')} live listings below are from the statewide MLS. We work Central Oregon, not ${city.name}. Ask for a local broker introduction.`
-                : `We work Central Oregon, not ${city.name}. Ask for a local broker introduction.`,
-            action: {
-              label: 'Get a broker introduction',
-              href: '#referral',
-            },
-          }}
-          items={[]}
-        />
+        <OregonCityHonesty id="about" cityName={city.name} liveCount={city.activeAllCount} />
 
         {firstFigure ? (
           <V3Instrument
