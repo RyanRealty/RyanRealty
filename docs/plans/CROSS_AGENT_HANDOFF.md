@@ -1,9 +1,9 @@
-# Current — 2026-09-14 (SITE-99 catalog demos on the live fold; do not merge)
+# Current — 2026-09-14 (SITE-99 open pixels; do not merge)
 
 Surface: Cursor cloud, `cursor/site-99-listing-save-share-a8e8`. PR #227. Do not merge.
 
-- **Done:** Live fold now mounts shadcn Sheet (right), Dialog (share + gallery), ButtonGroup Tour/Call/Text, Carousel, beui Tabs/ActionSwap. Street is H1. Share URL is ryan-realty.com. Fresh open shots hashed `sha256:6f75c46f319a583e97c47faa6526f7b6c522ac8a354277599e6559bc94a5085a`.
-- **Next:** A reachable separate judge must write `demoMatch`. `--ship` exit 1 (verbatim refuse). Leave node in_progress.
+- **Done:** Full-height Sheet (no top-16), sticky Tour/Call/Text is ButtonGroup, carousel slide width fixed so the bleed house paints, beUI pills on the photo. Open shots hashed `sha256:e85e3da6cf471278e39cacf7d1a22e55e80361274f7ffedcc58b6d3379bc95eb`.
+- **Next:** A reachable Mini Cursor judge must write `demoMatch`. Do not invent it. Leave SITE-99 in_progress until `--ship` exits 0.
 - **Node:** SITE-99 `207ffae3-5242-4446-9e3b-1728dd7220f2` owner `cursor-cloud-site99-20260914`.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, walkthrough-artifacts.
 
