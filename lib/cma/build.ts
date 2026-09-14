@@ -536,6 +536,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
                   saleStory: sale.storyClass,
                   points: marketIndex,
                   asOf,
+                  // Sale rebuild drops original_entry / history. Keep hydrate.
+                  hydrated: c,
                 }).adjusted
               : adjustCmaCompAlongMarket({
                   subject,

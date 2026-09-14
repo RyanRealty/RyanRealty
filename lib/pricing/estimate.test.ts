@@ -11,6 +11,7 @@ import {
   listPriceFromEngine,
   predictedCloseFromAdjusted,
   priceCmaSet,
+  preserveHydratedClosedCompDom,
   pricingSaleToCmaComp,
   reconcileAskAndComps,
   roundPriceDown,
@@ -20,6 +21,7 @@ import {
   TIME_ADJUSTMENT_MEASURE_INDEX,
   TIME_ADJUSTMENT_MEASURE_YOY,
 } from '@/lib/pricing/estimate'
+import { stampClosedCompDom } from '@/lib/cma/closed-comp-dom-stamp'
 import { CMA_MARKET_TREND_MEASURE } from '@/lib/data/cma/builderReads'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CmaSubject } from '@/lib/cma/types'
@@ -138,6 +140,101 @@ describe('adjustCompAlongMarket', () => {
     expect(path.regime).toBe('flat')
     expect(adjusted.timeAdjustedPrice).toBeGreaterThan(590_000)
     expect(adjusted.timeAdjustedPrice).toBeLessThan(610_000)
+  })
+
+  const sistersMonthly = [
+    { month: '2025-11-01', ppsf: 400, n: 20 },
+    { month: '2025-12-01', ppsf: 398, n: 20 },
+    { month: '2026-01-01', ppsf: 396, n: 20 },
+    { month: '2026-04-01', ppsf: 394, n: 20 },
+    { month: '2026-06-01', ppsf: 392, n: 20 },
+    { month: '2026-07-01', ppsf: 390, n: 20 },
+    { month: '2026-08-01', ppsf: 388, n: 20 },
+  ]
+
+  it('keeps Linda first-list DOM (167) through Sisters monthly market-path adjust', () => {
+    const lindaSale = sale({
+      listingKey: 'K-LINDA',
+      address: '1027 Linda',
+      city: 'Sisters',
+      cdom: 79,
+      onMarketDate: '2026-04-14',
+      closeDate: '2026-07-02',
+      originalAsk: 609_950,
+      lastAsk: 609_950,
+      closePrice: 609_950,
+    })
+    const wiped = pricingSaleToCmaComp(lindaSale)
+    expect(wiped.domTotal).toBe(79)
+    expect(wiped.onMarketDate).toBe('2026-04-14')
+
+    const hydrated = stampClosedCompDom(wiped, {
+      onMarketDate: '2026-04-14',
+      listDate: '2026-04-14',
+      originalEntryTimestamp: '2026-01-16T15:00:00+00:00',
+      originalOnMarketTimestamp: null,
+      historyListDates: [],
+    })
+    expect(hydrated.domTotal).toBe(167)
+    expect(hydrated.onMarketDate).toBe('2026-01-16')
+
+    const { adjusted } = adjustCompAlongMarket({
+      subject,
+      subjectStory: 'one',
+      sale: lindaSale,
+      saleStory: 'one',
+      points: sistersMonthly,
+      asOf: '2026-09-14',
+      hydrated,
+    })
+    expect(adjusted.domTotal).toBe(167)
+    expect(adjusted.onMarketDate).toBe('2026-01-16')
+    expect(adjusted.listingHistoryLine).toBe(hydrated.listingHistoryLine)
+    expect(adjusted.listingHistoryLine).toContain('167 days on market')
+    expect(adjusted.closePrice).toBe(609_950)
+    expect(adjusted.timeAdjustedPrice).toBeGreaterThan(0)
+  })
+
+  it('keeps Clearpine first-list DOM (307) through Sisters monthly market-path adjust', () => {
+    const clearpineSale = sale({
+      listingKey: 'K-CLEAR',
+      address: '191 Clearpine',
+      city: 'Sisters',
+      cdom: 41,
+      onMarketDate: '2025-11-11',
+      closeDate: '2025-12-22',
+      originalAsk: 1_029_900,
+      lastAsk: 974_500,
+      closePrice: 957_250,
+    })
+    const wiped = pricingSaleToCmaComp(clearpineSale)
+    expect(wiped.domTotal).toBe(41)
+    expect(wiped.onMarketDate).toBe('2025-11-11')
+
+    const hydrated = stampClosedCompDom(wiped, {
+      onMarketDate: '2025-11-11',
+      listDate: '2025-11-11',
+      originalEntryTimestamp: null,
+      originalOnMarketTimestamp: null,
+      historyListDates: ['2025-02-18', '2025-11-11'],
+    })
+    expect(hydrated.domTotal).toBe(307)
+    expect(hydrated.onMarketDate).toBe('2025-02-18')
+
+    const { adjusted } = adjustCompAlongMarket({
+      subject,
+      subjectStory: 'one',
+      sale: clearpineSale,
+      saleStory: 'one',
+      points: sistersMonthly,
+      asOf: '2026-09-14',
+      hydrated,
+    })
+    expect(adjusted.domTotal).toBe(307)
+    expect(adjusted.onMarketDate).toBe('2025-02-18')
+    expect(adjusted.listingHistoryLine).toBe(hydrated.listingHistoryLine)
+    expect(adjusted.listingHistoryLine).toContain('307 days on market')
+    expect(adjusted.closePrice).toBe(957_250)
   })
 })
 
@@ -1179,5 +1276,40 @@ describe('pricingSaleToCmaComp', () => {
     expect(comp.onMarketDate).toBe('2026-06-15')
     expect(comp.originalListPrice).toBe(774_900)
     expect(comp.domTotal).toBe(42)
+  })
+
+  it('overlays hydrated first-list DOM instead of late MLS cdom', () => {
+    const rebuilt = pricingSaleToCmaComp(
+      sale({
+        cdom: 79,
+        onMarketDate: '2026-04-14',
+        closeDate: '2026-07-02',
+      }),
+      {
+        onMarketDate: '2026-01-16',
+        domTotal: 167,
+        listingHistoryLine: 'Listed Jan 16, 2026 at $609,950, sold Jul 2, 2026 at $609,950 · 167 days on market',
+      },
+    )
+    expect(rebuilt.onMarketDate).toBe('2026-01-16')
+    expect(rebuilt.domTotal).toBe(167)
+    expect(rebuilt.listingHistoryLine).toContain('167 days on market')
+  })
+})
+
+describe('preserveHydratedClosedCompDom', () => {
+  it('does not invent DOM — copies hydrate stamps onto the rebuilt sale', () => {
+    const rebuilt = pricingSaleToCmaComp(
+      sale({ cdom: 41, onMarketDate: '2025-11-11', closeDate: '2025-12-22' }),
+    )
+    const kept = preserveHydratedClosedCompDom(rebuilt, {
+      onMarketDate: '2025-02-18',
+      domTotal: 307,
+      listingHistoryLine: 'Listed Feb 18, 2025 · 307 days on market',
+    })
+    expect(kept.domTotal).toBe(307)
+    expect(kept.onMarketDate).toBe('2025-02-18')
+    expect(kept.listingHistoryLine).toContain('307 days on market')
+    expect(rebuilt.domTotal).toBe(41)
   })
 })
