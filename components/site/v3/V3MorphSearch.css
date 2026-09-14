@@ -105,6 +105,13 @@
 
 /* Keep field + ask on one row at 375. Stacking them is the "stacked memo"
    the homepage layout lock forbids (SITE-83 evaluator). */
+/* Desktop-only shortcut chip. The F hint is leftover chrome at 375. */
+@media (max-width: 40rem) {
+  .v3 .v3-morph-search kbd {
+    display: none;
+  }
+}
+
 @media (max-width: 26rem) {
   .v3 .v3-morph-search__row {
     flex-wrap: nowrap;

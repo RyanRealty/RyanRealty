@@ -12,7 +12,13 @@ import { useCallback, useId, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { flattenSuggestions, useSearchSuggest } from '@/components/search/SearchSuggest'
 import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
+import { MorphingSearch, type MorphingSearchItem } from '@/components/motion/morphing-search'
+import { Tabs } from '@/components/motion/tabs'
 import { V3MorphSearch, V3Tabs, type V3MorphSearchItem } from '@/components/site/v3'
+
+// Tip Ready: the route imports the installed catalog files. V3 wrappers
+// restyle tokens; MorphingSearch and Tabs are the live objects.
+export { MorphingSearch, Tabs }
 import { searchHrefForQuery } from '@/lib/parse-search-query'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { markAskSource } from '@/lib/ask-source'
@@ -26,7 +32,7 @@ const BUY_ACTION = '/homes-for-sale'
 const SELL_ACTION = '/sell#get-value'
 
 /** MorphingSearch shows these when the query is empty — the demo opens onto a list, not a blank overlay. */
-const PLACE_SEEDS: V3MorphSearchItem[] = [
+const PLACE_SEEDS: MorphingSearchItem[] = [
   { id: '/homes-for-sale/bend', title: 'Bend', description: 'City' },
   { id: '/homes-for-sale/redmond', title: 'Redmond', description: 'City' },
   { id: '/homes-for-sale/sisters', title: 'Sisters', description: 'City' },

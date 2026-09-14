@@ -137,7 +137,7 @@ describe('the band is mounted on the homepage, under the hero search', () => {
   const PAGE = readFileSync(resolve('app/page.tsx'), 'utf8')
   const CHROME_LIVE = readFileSync(resolve('lib/site/chrome-live.ts'), 'utf8')
 
-  it('renders V3Pulse between the Stage and the house rails', () => {
+  it('renders V3Pulse after the first house rails so inventory opens the page', () => {
     expect(PAGE).toContain('<V3Pulse')
     expect(PAGE).toContain('id="right-now"')
     expect(HOME_PULSE_ID).toBe('right-now')
@@ -145,9 +145,9 @@ describe('the band is mounted on the homepage, under the hero search', () => {
     const searchAt = PAGE.indexOf('<HomeHeroSearch')
     const pulseAt = PAGE.indexOf('<V3Pulse')
     const railsAt = PAGE.indexOf('<HomeHomesRails')
-    expect(pulseAt).toBeGreaterThan(searchAt)
-    expect(pulseAt).toBeGreaterThan(stageAt)
-    expect(railsAt).toBeGreaterThan(pulseAt)
+    expect(railsAt).toBeGreaterThan(searchAt)
+    expect(railsAt).toBeGreaterThan(stageAt)
+    expect(pulseAt).toBeGreaterThan(railsAt)
   })
 
   it('leaves the band out rather than printing a zero it cannot vouch for', () => {

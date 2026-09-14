@@ -89,7 +89,7 @@ export function V3Tabs({
             <TabsTrigger
               key={row.value}
               value={row.value}
-              className="v3-tabs__tab"
+              className={cn('v3-tabs__tab', `v3-tabs__tab--${row.value}`)}
               indicatorClassName="v3-tabs__indicator"
             >
               {row.label}

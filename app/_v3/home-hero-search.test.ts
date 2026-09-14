@@ -24,8 +24,8 @@ describe('homepage hero search uses the public search stack', () => {
 
   it('mounts HomeHeroSearch on the Stage; house rails before doors (expanded Home lock)', () => {
     expect(PAGE).toMatch(/<V3Stage/)
-    // SITE-83: inventory Stage so the pulse claim breaks the fold.
-    expect(PAGE).toMatch(/height=\{heroInventory \? 'standard' : 'tall'\}/)
+    // SITE-97: compact Stage so photographed rails clear the first viewport.
+    expect(PAGE).toMatch(/height=\{heroInventory \? 'compact' : 'tall'\}/)
     expect(PAGE).toMatch(/inventory=\{heroInventory\}/)
     expect(PAGE).toMatch(/videoSrc=\{HERO_VIDEO\}/)
     expect(PAGE).toMatch(/preferPlaceHero\(cityBySlug\.get\('bend'\)\?\.heroImageUrl, HERO_POSTER\)/)
@@ -42,9 +42,9 @@ describe('homepage hero search uses the public search stack', () => {
     const doorsAt = PAGE.indexOf('<V3Doors')
     expect(stageAt).toBeGreaterThan(-1)
     expect(searchAt).toBeGreaterThan(stageAt)
-    expect(pulseAt).toBeGreaterThan(searchAt)
-    expect(railsAt).toBeGreaterThan(pulseAt)
-    expect(doorsAt).toBeGreaterThan(railsAt)
+    expect(railsAt).toBeGreaterThan(searchAt)
+    expect(pulseAt).toBeGreaterThan(railsAt)
+    expect(doorsAt).toBeGreaterThan(pulseAt)
   })
 
   it('homepage MorphingSearch is the catalog morph, not an inline house field', () => {
@@ -61,6 +61,8 @@ describe('homepage hero search uses the public search stack', () => {
   })
 
   it('adapts catalog modules into house primitives on the hero and rails', () => {
+    expect(SEARCH).toContain("from '@/components/motion/morphing-search'")
+    expect(SEARCH).toContain("from '@/components/motion/tabs'")
     expect(SEARCH).toContain('V3Tabs')
     expect(SEARCH).toContain('V3MorphSearch')
     expect(readFileSync(resolve('components/site/v3/V3MorphSearch.tsx'), 'utf8')).toContain(
@@ -91,6 +93,7 @@ describe('homepage hero search uses the public search stack', () => {
     expect(css).toMatch(/v3-morph-search--live \.v3-morph-search__native/)
     expect(css).toMatch(/clip:\s*rect\(0,\s*0,\s*0,\s*0\)/)
     expect(css).toContain('@media (scripting: none)')
+    expect(css).toContain('.v3 .v3-morph-search kbd')
   })
 
   it('prints the ask on the Card header, not on the photograph and not via v3-lrow', () => {
@@ -135,6 +138,8 @@ describe('homepage hero search uses the public search stack', () => {
     expect(css).toContain('.v3 .home-hero-search__tabs')
     expect(css).toContain('.v3 .home-hero-search__mode--buy:checked')
     expect(css).toContain('.v3 .home-hero-search__mode--sell:checked')
+    expect(css).toContain('.v3.v3-stage--inventory.v3-stage--compact:has(.home-hero-search)')
+    expect(readFileSync(resolve('components/site/v3/V3Tabs.tsx'), 'utf8')).toContain('v3-tabs__tab--${row.value}')
   })
 
   // SITE-12. The hard accept test for this node: `curl /` finds the seller
@@ -319,6 +324,9 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PAGE).not.toMatch(/id="market"/)
     expect(PAGE).toMatch(/<V3Proof/)
     expect(PAGE).toMatch(/id="proof"/)
+    expect(PAGE).toContain('homeRailItemList')
+    expect(PAGE).toContain('application/ld+json')
+    expect(PAGE).toContain('generateMetadata')
     expect(PAGE).toMatch(/<HomeBrowsePlaces/)
     expect(PAGE).not.toMatch(/<V3Quiet/)
     expect(PAGE).toMatch(/id="places"/)
