@@ -259,7 +259,7 @@ describe('ci:offmarket-listing-cta', () => {
 
   it('FAILS when only the button pair loses its guard, the phone line keeping one', () => {
     reset()
-    edit(CARD, '          {offMarket ? (\n            <a href={valuationHref', '          {false ? (\n            <a href={valuationHref')
+    edit(CARD, '          {offMarket ? (\n            <Button variant="outline" asChild>', '          {false ? (\n            <Button variant="outline" asChild>')
     const r = run()
     expect(r.code).toBe(1)
     expect(r.out).toContain('a tel:/sms: contact URI is NOT guarded')

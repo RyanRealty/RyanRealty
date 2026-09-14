@@ -2245,7 +2245,7 @@
       "demoStates": [
         "save-open=button[aria-label^=\"Save \"]!click",
         "share-open=button[aria-label^=\"Share \"]!click",
-        "gallery-open=.listing-frame__stage[aria-label^=\"Open photo\"]!click"
+        "gallery-open=button[aria-label^=\"Open photo\"]!click"
       ]
     },
     "homepage-v6": {

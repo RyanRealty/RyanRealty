@@ -5,6 +5,9 @@ import {
   H3,
   Stack,
 } from '@/components/site/primitives'
+import { ActionSwapText } from '@/components/motion/action-swap'
+import { Button } from '@/components/ui/button'
+import { ButtonGroup } from '@/components/ui/button-group'
 import { valuationHref } from '@/lib/site/valuation-href'
 import type { Broker } from '@/lib/data/types/broker'
 import type { ReviewsSummary } from '@/lib/data/reviews/getReviews'
@@ -150,30 +153,34 @@ export function TextMattCTA({
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-col gap-2.5 pt-1">
-          <a href={tourHref} className="btn alt" style={{ justifyContent: 'center' }}>
-            {tourLabel}
-          </a>
-          {offMarket ? (
-            <a href={valuationHref('/listing')} className="btn" style={OUTLINE_BTN}>
-              What is my home worth?
+        <ButtonGroup
+          aria-label={offMarket ? 'Ask about this listing' : 'Contact about this listing'}
+          className="w-full pt-1"
+        >
+          <Button variant="outline" asChild>
+            <a href={tourHref}>
+              <ActionSwapText value="tour">{tourLabel}</ActionSwapText>
             </a>
+          </Button>
+          {offMarket ? (
+            <Button variant="outline" asChild>
+              <a href={valuationHref('/listing')}>What is my home worth?</a>
+            </Button>
           ) : (
-            <div className="grid grid-cols-2 gap-2.5">
+            <>
               {phone ? (
-                <a href={`tel:${digits(phone)}`} className="btn" style={OUTLINE_BTN}>
-                  Call
-                </a>
+                <Button variant="outline" asChild>
+                  <a href={`tel:${digits(phone)}`}>Call</a>
+                </Button>
               ) : null}
               {phone ? (
-                <a href={`sms:${digits(phone)}`} className="btn" style={OUTLINE_BTN}>
-                  Text
-                </a>
+                <Button variant="outline" asChild>
+                  <a href={`sms:${digits(phone)}`}>Text</a>
+                </Button>
               ) : null}
-            </div>
+            </>
           )}
-        </div>
+        </ButtonGroup>
 
         {/* Social proof — large screens only (verified Google reviews) */}
         {showProof ? (
@@ -210,13 +217,6 @@ export function TextMattCTA({
       </Stack>
     </div>
   )
-}
-
-const OUTLINE_BTN: React.CSSProperties = {
-  background: 'transparent',
-  color: 'var(--navy)',
-  borderColor: 'var(--navy)',
-  justifyContent: 'center',
 }
 
 /** Trim to the last word boundary under `max` and add an ellipsis. */
