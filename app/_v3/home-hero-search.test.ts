@@ -10,6 +10,7 @@ const RAIL_CLIENT = readFileSync(resolve('app/_v3/HomeListingRail.client.tsx'), 
 const RAIL_ITEMS = readFileSync(resolve('app/_v3/home-rail-items.ts'), 'utf8')
 const ATLAS = readFileSync(resolve('components/site/v3/V3Atlas.client.tsx'), 'utf8')
 const PLACES = readFileSync(resolve('app/_v3/HomeBrowsePlaces.tsx'), 'utf8')
+const FEATURED = readFileSync(resolve('app/_v3/HomeFeaturedCommunity.client.tsx'), 'utf8')
 
 describe('homepage hero search uses the public search stack', () => {
   it('Stage H1 is buyer job line; brand stays in metadata (ci:seo-shell)', () => {
@@ -358,8 +359,10 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PLACES).toMatch(/id = 'places'/)
     expect(PLACES).toMatch(/id=\{id\}/)
     expect(PLACES).toMatch(/Browse places/)
-    expect(PLACES).toMatch(/home-browse-places__chips/)
-    expect(PLACES).toMatch(/home-browse-places__chip/)
+    expect(PLACES).toMatch(/home-browse-places__cards/)
+    expect(PLACES).toMatch(/home-browse-places__card/)
+    expect(PLACES).toMatch(/from '@\/components\/ui\/card'/)
+    expect(PLACES).toMatch(/from '@\/components\/motion\/number'/)
     expect(PLACES).not.toMatch(/markSrc/)
     expect(PLACES).not.toMatch(/home-browse-places__mark/)
     expect(PAGE).not.toMatch(/markSrc/)
@@ -380,6 +383,9 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PAGE).not.toMatch(/<SellCapture/)
     expect(PAGE).not.toMatch(/id="communities"/)
     expect(PAGE).toMatch(/HomeFeaturedCommunity/)
+    expect(FEATURED).toMatch(/from '@\/components\/ui\/carousel'/)
+    expect(FEATURED).toMatch(/from '@\/components\/ui\/card'/)
+    expect(FEATURED).toMatch(/from '@\/components\/motion\/number'/)
     expect(PAGE).toMatch(/loadHomeFeaturedCommunitySlides/)
         expect(PAGE).toMatch(/featured-community/)
     // Always mount — never omit #featured-community when slides miss.

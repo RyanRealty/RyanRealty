@@ -67,7 +67,9 @@ describe('homeFeaturedSalesFigures', () => {
       'days to an offer',
     ])
     expect(figures[0]?.value).toBe('35')
+    expect(figures[0]?.n).toBe(35)
     expect(figures[1]?.value).toContain('1,250,000')
+    expect(figures[1]?.n).toBe(1_250_000)
   })
 
   it('withholds zeros and missing overlay figures', () => {
@@ -133,7 +135,7 @@ describe('buildHomeFeaturedCommunitySlide', () => {
       photoSrc: '/lp/tetherow/img/tetherow-aerial-course.jpg',
       blurb: 'Tetherow sits west of Bend.',
     })
-    expect(slide?.figures[0]).toEqual({ value: '35', label: 'homes for sale' })
+    expect(slide?.figures[0]).toEqual({ value: '35', label: 'homes for sale', n: 35 })
   })
 
   it('builds only slides that resolve', () => {

@@ -24,6 +24,7 @@ import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-
 import { markAskSource } from '@/lib/ask-source'
 import { trackEvent } from '@/lib/tracking'
 import type { HomeHeroLive } from './home-hero-inventory'
+import { homeBriefText } from './home-competitive-brief'
 import './home-hero-search.css'
 
 /** Where a no-JS Buy submit lands: the regional inventory page. */
@@ -174,6 +175,9 @@ export function HomeHeroSearch({
           <span className="home-hero-search__live-src">{live.source}</span>
         </p>
       ) : null}
+      <p className="home-hero-search__brief">
+        {homeBriefText('2')} {homeBriefText('3')} {homeBriefText('4')} {homeBriefText('6')}
+      </p>
 
       <V3Tabs
         label="Buy or sell"

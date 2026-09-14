@@ -10,6 +10,8 @@ import { publicMarketPulseSource } from '@/lib/market/publish-public-methodology
 export type HomeFeaturedCommunityFigure = {
   value: string
   label: string
+  /** Sourced magnitude for Rare UI / beUI AnimatedNumber. Omit when unmeasured. */
+  n?: number
 }
 
 export type HomeFeaturedCommunitySlide = {

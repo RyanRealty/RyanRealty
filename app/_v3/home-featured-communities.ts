@@ -70,6 +70,7 @@ export function homeFeaturedSalesFigures(input: {
     out.push({
       value: formatCount(active),
       label: active === 1 ? 'home for sale' : 'homes for sale',
+      n: active,
     })
   }
   const median = input.figures?.medianListPrice
@@ -77,6 +78,7 @@ export function homeFeaturedSalesFigures(input: {
     out.push({
       value: formatPriceExact(median),
       label: 'median list price',
+      n: median,
     })
   }
   const closed = input.pulse?.closedLast30Days
@@ -84,6 +86,7 @@ export function homeFeaturedSalesFigures(input: {
     out.push({
       value: formatCount(closed),
       label: closed === 1 ? 'home sold, last 30 days' : 'homes sold, last 30 days',
+      n: closed,
     })
   }
   const fresh = input.pulse?.newThisWeek
@@ -91,13 +94,16 @@ export function homeFeaturedSalesFigures(input: {
     out.push({
       value: formatCount(fresh),
       label: 'new this week',
+      n: fresh,
     })
   }
-  const days = publishDaysFigure(input.pulse?.medianDaysToPending ?? null)
-  if (days) {
+  const daysRaw = input.pulse?.medianDaysToPending
+  const days = publishDaysFigure(daysRaw ?? null)
+  if (days && daysRaw != null && Number.isFinite(daysRaw) && daysRaw > 0) {
     out.push({
       value: days,
       label: 'days to an offer',
+      n: Math.round(daysRaw * 10) / 10,
     })
   }
   return out

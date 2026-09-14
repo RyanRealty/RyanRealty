@@ -45,8 +45,8 @@ const D11_HOMEPAGE_LEAD =
 /**
  * Homepage. Expanded Home lock 2026-09-06 (Matt): full-bleed search hero with
  * Buy/Sell tabs, buyer H1, stacked house carousels with Field badges,
- * featured community carousel (photo, sales, blurb, prev/next), Buy/Sell/Work-with-us
- * doors with line pictograms, brokers, places, proof. No Atlas, map block, town ledger,
+ * featured community carousel (shadcn Card slides), Buy/Sell/Work-with-us
+ * doors with line pictograms, brokers, place Cards, proof. No Atlas, map block, town ledger,
  * market essay, or Invest door on home. Brand stays in
  * metadata title/OG only, as the tail of the keyword title Matt picked
  * 2026-09-07. absolute title skips the layout suffix.
@@ -205,8 +205,8 @@ export default async function Home() {
         return {
           label: live?.name ?? TOWN_LABEL[slug],
           href: `/cities/${slug}`,
-          ...(typeof active === 'number' && Number.isFinite(active)
-            ? { count: active.toLocaleString('en-US') }
+          ...(typeof active === 'number' && Number.isFinite(active) && active > 0
+            ? { count: active }
             : {}),
         }
       }),

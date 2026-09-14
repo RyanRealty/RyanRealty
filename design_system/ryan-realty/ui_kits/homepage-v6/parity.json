@@ -104,7 +104,7 @@
     },
     {
       "name": "HomeFeaturedCommunity",
-      "section": "#featured-community -- one resort or community at a time with its live pulse figures and a source line",
+      "section": "#featured-community -- shadcn carousel + Card slides with sourced pulse figures (AnimatedNumber) and a source line",
       "blocking": true
     },
     {
@@ -119,7 +119,7 @@
     },
     {
       "name": "HomeBrowsePlaces",
-      "section": "#places -- Browse places city/resort chip doors (not V3Quiet rows, not a KPI grid)",
+      "section": "#places -- Browse places city/resort catalog Cards with live town counts (not V3Quiet rows, not house chips)",
       "blocking": true
     },
     {
@@ -189,16 +189,32 @@
       "OPEN: three consecutive rails share one form (eyebrow, heading, cards, see-all)."
     ]
   },
-  "competitiveTarget": "Beat Zillow and Redfin on a clean local brokerage door: brand H1, working search, stacked photographed house carousels with real card face, illustrated Buy/Sell/Invest, brokers, place chips, proof.",
+  "competitiveTarget": "Beat Zillow and Redfin on a clean local brokerage door: brand H1, working search, stacked photographed house carousels with real card face, illustrated Buy/Sell/Invest, brokers, place Cards, proof.",
+  "competitiveBrief": {
+    "id": "homepage-v6-researchy-1-8",
+    "source": "design_system/public/references/homepage-v6.md + taste-catalog homepage-v6 layoutLock (Researchy / Redfin + Stripe + Stage).",
+    "productLock": "live inventory in first viewport + MorphingSearch + Sell address without JS + house Card rails + featured carousel Card + place Cards with live town counts + sourced MLS line",
+    "refuse": "Stock search-hero with no house photo. Cream-box search. House featured pager. Identical empty place chips. Lone competitiveBriefPass boolean without the beats visible in shots.",
+    "beats": [
+      { "id": "1", "text": "The homepage opens with live inventory in the first viewport." },
+      { "id": "2", "text": "Search field that morphs into results. Navy on cream, no glass." },
+      { "id": "3", "text": "Buy / Sell as tabs with a sliding indicator on the house control." },
+      { "id": "4", "text": "A real Sell address field without waiting on JS." },
+      { "id": "5", "text": "House cards on the rail: price, address, beds/baths/sqft on the installed Card." },
+      { "id": "6", "text": "Search hero carries a live market or inventory signal, not only a photo bar." },
+      { "id": "7", "text": "Featured community cards carry sourced pulse figures." },
+      { "id": "8", "text": "Browse places with live town counts, not identical empty chips." }
+    ]
+  },
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
     "V3Stage #hero -- compact inventory Stage: flyover, H1, V3Tabs Buy/Sell, catalog MorphingSearch, live count chip",
     "HomeHomesRails -- V3Carousel house rails in the first viewport (Card price + address + beds/baths/sqft)",
     "V3Pulse #right-now -- Central Oregon right now: live counts, constellation, read stamp",
-    "HomeFeaturedCommunity #featured-community -- featured resort / community slides with live figures",
+    "HomeFeaturedCommunity #featured-community -- shadcn carousel + Card featured resort / community slides with live figures",
     "V3Doors #doors -- illustrated Buy / Sell / Work with us, Sell = Sell a home",
     "AboutFaces -- Talk to a broker (compact table on every width, one 390 screen)",
-    "HomeBrowsePlaces #places -- Browse places city/resort chip doors",
+    "HomeBrowsePlaces #places -- Browse places city/resort catalog Cards",
     "V3Proof #proof -- Google reviews",
     "V3Footer -- Markets / Company / Contact"
   ],
