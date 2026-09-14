@@ -1,50 +1,44 @@
+'use client'
+
 /**
- * Browse places on Home `/`: city and resort chip doors.
- * PAGE_INVENTORY §5. Equal text chips in a multi-column grid.
- * No uneven mark thumbnails.
- *
- * TWO LABELLED RUNS, NOT TWELVE IDENTICAL BOXES (2026-09-08 evaluator). The
- * section used to be one grid of twelve chips with nothing to tell a town from
- * a resort and no data in any of them — the "identical empty boxes" TASTE.md
- * names. A town and a resort community are different kinds of place, so they
- * are different runs, each with its own name and its own index door; and a town
- * chip carries the live count of what is for sale there, which is the whole
- * reason to tap it.
- *
- * SECTION 0. `count` arrives PREFORMATTED from the caller's live read and is
- * simply absent when that read has no measured figure for a place — a chip with
- * no count is a chip with no count, never a zero, never an estimate. The run's
- * `unit` says in plain words what those figures count, once, above them, so the
- * chip can carry the bare numeral and still not be the "figure with no sentence
- * beside it" TASTE.md bans. The resort run carries neither because this page
- * holds no per-resort inventory read; those figures live on /communities.
+ * Browse places on Home `/`: catalog Card doors, not house chips.
+ * Town Cards carry a live AnimatedNumber (beUI / Rare UI). Resort Cards
+ * carry the name only — this page holds no per-resort inventory read.
  */
 import Link from 'next/link'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { AnimatedNumber } from '@/components/motion/number'
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from '@/components/site/v3'
+import { homeBriefText } from './home-competitive-brief'
 import './home-browse-places.css'
 
 export type HomePlaceDoor = {
   label: string
   href: string
   /**
-   * The figure for this place, formatted by the caller: "671". What it counts is
-   * the run's `unit`, printed once above the run. Omit when the read has no
-   * measured figure for this place (section 0) — never send a zero for a miss.
+   * Sourced houses-for-sale count. Number animates. Formatted string is a
+   * published figure with no separate magnitude. Omit when unmeasured —
+   * never send a zero for a miss.
    */
-  count?: string
+  count?: number | string
 }
 
 export type HomePlaceRun = {
-  /** The run's name, in plain words a visitor reads. Never a slug. */
   name: string
-  /**
-   * What every `count` in this run counts, in plain words: "houses for sale".
-   * Required whenever any door carries a count, so no numeral ships unlabelled.
-   */
   unit?: string
   doors: readonly HomePlaceDoor[]
-  /** The run's index door, at the end of its own row of names. */
   seeAll?: { label: string; href: string }
+}
+
+function doorCount(count: HomePlaceDoor['count']): { n: number; label: string } | null {
+  if (typeof count === 'number' && Number.isFinite(count) && count > 0) {
+    return { n: count, label: count.toLocaleString('en-US') }
+  }
+  if (typeof count === 'string' && count.trim()) {
+    const n = Number(count.replace(/[^0-9.]/g, ''))
+    if (Number.isFinite(n) && n > 0) return { n, label: count.trim() }
+  }
+  return null
 }
 
 export function HomeBrowsePlaces({
@@ -54,7 +48,6 @@ export function HomeBrowsePlaces({
   heading = 'Browse places',
 }: {
   runs: readonly HomePlaceRun[]
-  /** Bound in app/page.tsx for ci:page-purpose (id must appear in the page source). */
   id?: string
   eyebrow?: string
   heading?: string
@@ -78,6 +71,7 @@ export function HomeBrowsePlaces({
         <V3Heading level={2} id="places-heading" className="home-browse-places__heading">
           {heading}
         </V3Heading>
+        <p className="home-browse-places__brief">{homeBriefText('8')}</p>
       </div>
 
       {shown.map((run) => {
@@ -98,17 +92,38 @@ export function HomeBrowsePlaces({
               ) : null}
             </div>
 
-            <ul className="home-browse-places__chips">
-              {run.doors.map((door) => (
-                <li key={door.href} className="home-browse-places__item">
-                  <Link href={door.href} className="home-browse-places__chip">
-                    <span className="home-browse-places__label">{door.label}</span>
-                    {door.count ? (
-                      <span className="home-browse-places__count">{door.count}</span>
-                    ) : null}
-                  </Link>
-                </li>
-              ))}
+            <ul className="home-browse-places__cards">
+              {run.doors.map((door) => {
+                const live = doorCount(door.count)
+                return (
+                  <li key={door.href} className="home-browse-places__item">
+                    <Link href={door.href} className="home-browse-places__link">
+                      <Card size="sm" className="home-browse-places__card">
+                        <CardHeader>
+                          <CardTitle>{door.label}</CardTitle>
+                          {run.unit?.trim() && live ? (
+                            <CardDescription>{run.unit}</CardDescription>
+                          ) : null}
+                        </CardHeader>
+                        {live ? (
+                          <CardContent>
+                            <AnimatedNumber
+                              value={live.n}
+                              format={(n) =>
+                                Math.round(n) === Math.round(live.n)
+                                  ? live.label
+                                  : Math.round(n).toLocaleString('en-US')
+                              }
+                              startOnView
+                              className="home-browse-places__count"
+                            />
+                          </CardContent>
+                        ) : null}
+                      </Card>
+                    </Link>
+                  </li>
+                )
+              })}
             </ul>
           </section>
         )

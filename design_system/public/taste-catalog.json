@@ -2205,7 +2205,7 @@
       ]
     },
     "homepage-v6": {
-      "layoutLock": "The homepage opens with live inventory in the first viewport and a real Sell address field without waiting on JS. Do not replace the hero search with a stacked memo. Rails stay house carousels — adapt V3Carousel into them rather than inventing a second rail look.",
+      "layoutLock": "The homepage opens with live inventory in the first viewport and a real Sell address field without waiting on JS. Do not replace the hero search with a stacked memo. Rails stay house carousels — adapt V3Carousel into them rather than inventing a second rail look. Featured community and Browse places are catalog Card / carousel / number — not house chips or a house pager.",
       "primitivesToAdd": [
         "V3Carousel"
       ],
@@ -2213,6 +2213,22 @@
         "search-open=.v3-morph-search--live [aria-haspopup=dialog]!click",
         "sell-tab=#home-hero-sell-tab [role=tab]@.home-hero-search!click"
       ],
+      "competitiveBrief": {
+        "id": "homepage-v6-researchy-1-8",
+        "source": "design_system/public/references/homepage-v6.md + taste-catalog homepage-v6 layoutLock (Researchy / Redfin + Stripe + Stage).",
+        "productLock": "live inventory in first viewport + MorphingSearch + Sell address without JS + house Card rails + featured carousel Card + place Cards with live town counts + sourced MLS line",
+        "refuse": "Stock search-hero with no house photo. Cream-box search. House featured pager. Identical empty place chips. Lone competitiveBriefPass boolean without the beats visible in shots.",
+        "beats": [
+          { "id": "1", "text": "The homepage opens with live inventory in the first viewport." },
+          { "id": "2", "text": "Search field that morphs into results. Navy on cream, no glass." },
+          { "id": "3", "text": "Buy / Sell as tabs with a sliding indicator on the house control." },
+          { "id": "4", "text": "A real Sell address field without waiting on JS." },
+          { "id": "5", "text": "House cards on the rail: price, address, beds/baths/sqft on the installed Card." },
+          { "id": "6", "text": "Search hero carries a live market or inventory signal, not only a photo bar." },
+          { "id": "7", "text": "Featured community cards carry sourced pulse figures." },
+          { "id": "8", "text": "Browse places with live town counts, not identical empty chips." }
+        ]
+      },
       "modules": [
         {
           "id": "house-home-rails",
@@ -2236,13 +2252,19 @@
           "id": "shadcn-carousel",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/carousel",
-          "job": "Inventory rails. Adapt into V3Carousel, do not paste a second kit."
+          "job": "Inventory rails and featured community. Adapt into the installed Carousel, do not paste a second kit."
         },
         {
           "id": "shadcn-card",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/card",
-          "job": "House cards on the rail: price, address, beds/baths/sqft on the installed Card, not a photo with a heart."
+          "job": "House cards on the rail, featured community, and Browse places: price/address/specs or sourced counts on the installed Card, not a photo with a heart and not house chips."
+        },
+        {
+          "id": "beui-number",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/number",
+          "job": "Live counts that swap digits. Only sourced figures. Reduced-motion shows the finished number."
         }
       ]
     },
