@@ -135,6 +135,12 @@ describe('homepage hero search uses the public search stack', () => {
   it('wires Buy | Sell tabs on the hero (Buy = search, Sell = Value my home)', () => {
     expect(SEARCH).toMatch(/label:\s*'Buy'/)
     expect(SEARCH).toMatch(/label:\s*'Sell'/)
+    expect(readFileSync(resolve('components/site/v3/V3Tabs.tsx'), 'utf8')).toContain(
+      "id={row.value === 'sell' ? 'home-hero-sell-tab' : undefined}",
+    )
+    expect(readFileSync(resolve('design_system/public/taste-catalog.json'), 'utf8')).toContain(
+      'sell-tab=#home-hero-sell-tab!click@.home-hero-search',
+    )
     expect(SEARCH).toContain('Value my home')
     expect(SEARCH).toContain('valuationHref')
     expect(SEARCH).toContain('Value your home')

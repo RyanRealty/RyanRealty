@@ -27,37 +27,16 @@
 /* Catalog TabsTrigger already positions the pill on the active tab
    (`absolute inset-0`). Do not reuse the old house sliding-bar math
    (50% width + translateX) — that paints a navy circle over "Buy". */
-.v3 .v3-tabs__list > div,
+/* The hit IS the radio label. Playwright clicks #home-hero-sell-tab and the
+   native radio checks even when the catalog tab handler misses. */
+.v3 .v3-tabs__list > label,
 .v3 .v3-tabs__hit {
   position: relative;
+  display: block;
   width: 100%;
   min-height: var(--v3-tap);
-}
-
-/* No-JS: the label checks the radio. With JS the catalog TabsTrigger is the
-   hit — an overlay here stole take-route-shots clicks and left Sell on Buy. */
-.v3 .v3-tabs__native {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
   margin: 0;
-  pointer-events: none;
   cursor: pointer;
-}
-
-@media (scripting: none) {
-  .v3 .v3-tabs__native {
-    z-index: 2;
-    pointer-events: auto;
-  }
-}
-
-.v3 .v3-tabs__native-text {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
 }
 
 .v3 .v3-tabs__indicator {
@@ -72,9 +51,15 @@
   z-index: 0;
 }
 
+.v3 .v3-tabs__hit > .relative {
+  width: 100%;
+  height: 100%;
+}
+
 .v3 .v3-tabs__tab {
   position: relative;
   z-index: 1;
+  width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
