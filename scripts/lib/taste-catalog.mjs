@@ -17,12 +17,15 @@
  * matches the demo. Submoduling a catalog's demo app is refused.
  */
 import { existsSync, readFileSync } from 'node:fs'
+import { resolveInstallSpec } from './catalog-install.mjs'
 import {
   competitiveBriefShapeProblems,
   isNonEmptyString,
   isPlainObject,
   parseCompetitiveBrief,
 } from './taste-receipt.mjs'
+
+export { catalogInstallProblems, isHouseAdaptedId, resolveInstallSpec } from './catalog-install.mjs'
 
 /** Remote catalog URLs a lane fetches for one class. The rest of the inventory stays in the JSON. */
 export const BUILDER_FETCH_CAP = 8
@@ -265,98 +268,6 @@ export function loadTasteCatalog(raw) {
     installById,
     problems,
   }
-}
-
-/** House ids are files we already own. Catalog ids must resolve through installById. */
-export function isHouseAdaptedId(id) {
-  const s = String(id ?? '')
-  return /^(house-|listing-|V3)/.test(s) || s.startsWith('components/')
-}
-
-export function resolveInstallSpec(installById, id, seen = new Set()) {
-  if (!isNonEmptyString(id) || !isPlainObject(installById)) return null
-  if (seen.has(id)) return null
-  const spec = installById[id]
-  if (!isPlainObject(spec)) return null
-  if (isNonEmptyString(spec.aliasOf)) {
-    seen.add(id)
-    return resolveInstallSpec(installById, spec.aliasOf, seen)
-  }
-  if (!isNonEmptyString(spec.file) || !isNonEmptyString(spec.import)) return null
-  return spec
-}
-
-function fileImportsSpecifier(src, specifier) {
-  const needle = String(specifier ?? '')
-  if (!needle || !src) return false
-  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return new RegExp(`(?:^|\\n)\\s*import(?:[\\s\\S]{0,400}?)from\\s+['"]${escaped}['"]`).test(src)
-}
-
-/**
- * A catalog adaptedFrom id is only real when the installed file exists and
- * the house primitive (or the scanned route files) imports it. A comment is
- * not an import. motion/react on a wrapper is not the catalog component.
- */
-export function catalogInstallProblems(catalog, adaptedFrom, io = {}) {
-  const exists = io.existsSync ?? existsSync
-  const read = io.readFileSync ?? readFileSync
-  const extraFiles = Array.isArray(io.scanFiles) ? io.scanFiles : []
-  const problems = []
-  if (!Array.isArray(adaptedFrom)) return ['adaptedFrom is missing']
-  for (const [i, hit] of adaptedFrom.entries()) {
-    const id = isPlainObject(hit) ? hit.id : hit
-    if (!isNonEmptyString(id) || isHouseAdaptedId(id)) continue
-    const spec = resolveInstallSpec(catalog?.installById, id)
-    if (!spec) {
-      problems.push(
-        `adaptedFrom[${i}] "${id}" has no install spec — npx shadcn add the registry item, record it in installById, and import the file. Do not keep the catalog name on a cream box.`,
-      )
-      continue
-    }
-    if (!exists(spec.file)) {
-      problems.push(`adaptedFrom[${i}] "${id}": ${spec.file} is missing. Run: npx shadcn add ${spec.add}`)
-      continue
-    }
-    const files = spec.house ? [spec.house, ...extraFiles] : extraFiles
-    let found = false
-    for (const rel of files) {
-      if (!exists(rel)) continue
-      let src = ''
-      try {
-        src = String(read(rel, 'utf8') ?? '')
-      } catch {
-        continue
-      }
-      if (fileImportsSpecifier(src, spec.import)) {
-        found = true
-        break
-      }
-    }
-    if (!found) {
-      const where = spec.house || 'the route'
-      problems.push(
-        `adaptedFrom[${i}] "${id}": ${where} must import ${spec.import} from the installed source. A comment is not an import. motion/react on a house wrapper is not the component.`,
-      )
-    }
-    const needles = Array.isArray(spec.mustContain) ? spec.mustContain.filter((s) => isNonEmptyString(s)) : []
-    if (needles.length && exists(spec.file)) {
-      let src = ''
-      try {
-        src = String(read(spec.file, 'utf8') ?? '')
-      } catch {
-        src = ''
-      }
-      for (const needle of needles) {
-        if (!src.includes(needle)) {
-          problems.push(
-            `adaptedFrom[${i}] "${id}": ${spec.file} is not the catalog source (missing ${JSON.stringify(needle)}). Copy from ${spec.repo || spec.add}, do not fork the demo out.`,
-          )
-        }
-      }
-    }
-  }
-  return problems
 }
 
 export function modulesForClass(catalog, classKey) {

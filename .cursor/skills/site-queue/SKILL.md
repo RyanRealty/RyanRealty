@@ -3,6 +3,10 @@ name: site-queue
 description: Run the site queue from Cursor or a Grok agent. Same queue, same claim tool, same protocol as Claude Code; this file is the pointer plus the rules that differ when the builder is not Claude. Use when Matt says "run loop", "run the site queue", "go", or "continue as new nodes get entered" in Cursor or in a Grok session.
 ---
 
+## HARD TIP READY (Matt 2026-09-14)
+
+Demos install BEFORE house paint. Tip Ready = `node scripts/lib/taste-receipt.mjs --ship <parity.json>` exit 0 only. House patch after `demoMatch: false` is FORBIDDEN — install the named `replaceWith` catalog source. Cos prose, score rise, and house chrome (V3Doors, cream pills, custom stacks) are not Tip Ready.
+
 # /site-queue for Cursor and Grok — the same loop, a different builder
 
 The canonical protocol is `.claude/skills/site-queue/SKILL.md`. Read it in full; this

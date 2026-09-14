@@ -21,7 +21,7 @@
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import { checkNewAuditDocsNameNodes, newPlanDocPaths } from './lib/process-canon-audit-arm.mjs'
+import { checkNewAuditDocsNameNodes, checkTipReadyLandPath, newPlanDocPaths, TIP_READY_LAND_PATHS } from './lib/process-canon-audit-arm.mjs'
 
 const CANON = 'docs/DEVELOPMENT_PROCESS.md'
 
@@ -228,6 +228,15 @@ const newDocsWithContent = newPlanDocPaths()
   .filter((p) => p.endsWith('.md') && existsSync(p))
   .map((p) => ({ path: p, content: readFileSync(p, 'utf8') }))
 for (const f of checkNewAuditDocsNameNodes(newDocsWithContent)) fails.push(f)
+
+const tipReadyFiles = TIP_READY_LAND_PATHS.filter((p) => existsSync(p)).map((p) => ({
+  path: p,
+  content: readFileSync(p, 'utf8'),
+}))
+for (const missing of TIP_READY_LAND_PATHS.filter((p) => !existsSync(p))) {
+  fails.push(`${missing}: Tip Ready land path is missing`)
+}
+for (const f of checkTipReadyLandPath(tipReadyFiles)) fails.push(f)
 
 console.log('Process-canon sync check (G44)')
 console.log('==============================')
