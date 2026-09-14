@@ -3,11 +3,13 @@ import { describe, expect, it } from 'vitest'
 import {
   OREGON_CITY_FIGURE_FOLD_AFTER,
   buildOregonCityClaim,
+  buildOregonCityHonestyDescription,
   buildOregonCityItemListName,
   buildOregonCityTitle,
 } from './oregon-city-fold'
 
 const PAGE = readFileSync(new URL('../page.tsx', import.meta.url), 'utf8')
+const HONESTY = readFileSync(new URL('./OregonCityHonesty.tsx', import.meta.url), 'utf8')
 const QUIET = readFileSync(new URL('../../../../components/site/v3/V3Quiet.tsx', import.meta.url), 'utf8')
 const QUIET_CSS = readFileSync(new URL('../../../../components/site/v3/V3Quiet.css', import.meta.url), 'utf8')
 
@@ -32,6 +34,15 @@ describe('oregon-city fold helpers', () => {
     ).toBe('725 live listings in Medford. 342 are single-family. Median ask $467,000.')
   })
 
+  it('states the live count in the honesty description', () => {
+    expect(buildOregonCityHonestyDescription({ name: 'Medford', activeAllCount: 718 })).toBe(
+      '718 live listings below are from the statewide MLS. We work Central Oregon, not Medford. Ask for a local broker introduction.',
+    )
+    expect(buildOregonCityHonestyDescription({ name: 'Medford', activeAllCount: 0 })).toBe(
+      'We work Central Oregon, not Medford. Ask for a local broker introduction.',
+    )
+  })
+
   it('puts price and beds/baths/sqft on the ItemList name', () => {
     expect(
       buildOregonCityItemListName({
@@ -51,14 +62,18 @@ describe('oregon-city page holds the SITE-105 catalog object', () => {
     expect(PAGE).not.toContain('chartFirst')
     expect(PAGE).toContain('buildOregonCityItemListName')
     expect(PAGE).toContain('buildOregonCityTitle')
+    expect(PAGE).toContain('OregonCityHonesty')
+    expect(PAGE).toContain('id="about"')
   })
 
   it('keeps the installed Alert icon, title, description, and AlertAction button', () => {
+    expect(HONESTY).toContain("from '@/components/ui/alert'")
+    expect(HONESTY).toContain("from '@/components/ui/button'")
+    expect(HONESTY).toContain('name="InfoCircle"')
+    expect(HONESTY).toContain('<AlertAction')
+    expect(HONESTY).toContain('variant="outline"')
     expect(QUIET).toContain("from '@/components/ui/alert'")
     expect(QUIET).toContain("from '@/components/ui/button'")
-    expect(QUIET).toContain('name="InfoCircle"')
-    expect(QUIET).toContain('<AlertAction')
-    expect(QUIET).toContain('variant="outline"')
     expect(QUIET_CSS).not.toMatch(/border-left:\s*var\(--v3-rule-weight-section\)/)
     expect(QUIET_CSS).not.toMatch(/border-radius:\s*0/)
   })
