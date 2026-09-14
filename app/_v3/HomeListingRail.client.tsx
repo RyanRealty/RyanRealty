@@ -202,7 +202,7 @@ export function HomeListingRail({
           {row.cards.map((card, index) => (
             <CarouselItem
               key={card.listingKey}
-              className="v3-carousel__slide v3-carousel__slide--rail pl-0 !basis-[min(17.5rem,78vw)] min-[64rem]:!basis-1/4 min-[64rem]:!max-w-[25%]"
+              className="v3-carousel__slide v3-carousel__slide--rail pl-0 !basis-[min(17.5rem,78vw)] min-[64rem]:!basis-1/4"
             >
               <HomeRailCardFace
                 card={card}
