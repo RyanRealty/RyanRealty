@@ -30,7 +30,7 @@
       },
       {
         "id": "6",
-        "text": "Tour, Call, and Text are one connected shadcn ButtonGroup on the fold — shared edges, not leftover outline chips."
+        "text": "Tour, Call, and Text are one connected shadcn ButtonGroup on the fold \u2014 shared edges, not leftover outline chips."
       },
       {
         "id": "7",
@@ -42,7 +42,7 @@
       }
     ]
   },
-  "note": "PAGE_INVENTORY listing (house URL) 12 sections. Tour / Call / Text is the ask WHILE THE HOME IS ON THE MARKET, Pending included (a pending home takes backup offers and is a live lead source). SITE-21: when isPublicOffMarketStatus(status) is true — Closed, Expired, Canceled, Withdrawn — the page publishes the sold facts, the active homes in this city and a saved search instead: no payment, no market-ask instrument, no three-act close, and no tel: or sms: anywhere inside <main> (the brokerage line stays in V3Footer, outside it). Face Est. $/mo is off the page so Payment is the one number. Cookies cannot cover the ask. No leftover HUD, CMA, rental, or doors on this route.",
+  "note": "PAGE_INVENTORY listing (house URL) 12 sections. Tour / Call / Text is the ask WHILE THE HOME IS ON THE MARKET, Pending included (a pending home takes backup offers and is a live lead source). SITE-21: when isPublicOffMarketStatus(status) is true \u2014 Closed, Expired, Canceled, Withdrawn \u2014 the page publishes the sold facts, the active homes in this city and a saved search instead: no payment, no market-ask instrument, no three-act close, and no tel: or sms: anywhere inside <main> (the brokerage line stays in V3Footer, outside it). Face Est. $/mo is off the page so Payment is the one number. Cookies cannot cover the ask. No leftover HUD, CMA, rental, or doors on this route.",
   "dataChanges": {
     "unchanged": "Every listing figure traces to getListingDetail, photos, videos, history, open houses, brokers, reviews, related homes, plat documents, taxlots. JSON-LD RealEstateListing + BreadcrumbList still emit from MetadataBlock. Payment is computeMonthlyPiti only.",
     "similarHomes": "A capped strip of V3ListingRow from the same relatedHomes ranking, same parent. One view-more href.",
@@ -66,7 +66,7 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "City → neighborhood → community → plat → street.",
+      "section": "City \u2192 neighborhood \u2192 community \u2192 plat \u2192 street.",
       "blocking": true
     },
     {
@@ -91,7 +91,7 @@
     },
     {
       "name": "ListingOutOfAreaNotice",
-      "section": "SITE-33, out-of-area only (Matt 2026-09-08): the honesty block directly under the price strip on a home whose city is outside CENTRAL_OREGON_CITY_SLUGS. The city tier's claim one level down — 'Outside our home market · We don't work in <city>' — ending in that city's /oregon referral page. Same predicate as the page's noindex,follow directive and the listings.xml row drop (outOfAreaListingPolicy). Null on every Central Oregon listing.",
+      "section": "SITE-33, out-of-area only (Matt 2026-09-08): the honesty block directly under the price strip on a home whose city is outside CENTRAL_OREGON_CITY_SLUGS. The city tier's claim one level down \u2014 'Outside our home market \u00b7 We don't work in <city>' \u2014 ending in that city's /oregon referral page. Same predicate as the page's noindex,follow directive and the listings.xml row drop (outOfAreaListingPolicy). Null on every Central Oregon listing.",
       "blocking": true
     },
     {
@@ -305,10 +305,10 @@
     "priceWatch": {
       "action": "submitListingPriceDropWatch",
       "payload": "{ email, listingKey, addressLine, company }",
-      "filters": "{ listingKey } only — runListingAlerts short-circuits on it and matches exactly this home",
+      "filters": "{ listingKey } only \u2014 runListingAlerts short-circuits on it and matches exactly this home",
       "events": "price_change only; new / status_change / back_on_market / sold / open_house all off",
       "field": "email",
-      "trap": "company, forwarded from the panel’s own trap state",
+      "trap": "company, forwarded from the panel\u2019s own trap state",
       "disclosure": "One email per price change on this home. Nothing else, and you can unsubscribe any time.",
       "confirmation": "sendAlertConfirmation kind 'price-drop' (its own copy; 'listing' would say the home is saved)",
       "anchor": "#close"
@@ -348,29 +348,55 @@
     "_": "Closed 2026-08-27. Insurance is now an editable input seeded at $1,000 per $300K per year with the assumption stated in the UI; the comparison sentence says 'median list price'; the grain item resolved below.",
     "items": [
       "RESOLVED AS CLAIM-WRONG 2026-08-27: NeighborhoodMarketContext publishes the FINEST grain whose rows publish (neighborhood first, city fallback via leftoverListingGrains) and the heading names that grain. Subdivision-grain stats cannot ship honestly: subdivision monthly series are too sparse to chart and neighborhood sold attribution is a known text-join undercount. The page is truthful about its grain; the contract's flat subdivision-grain promise was the wrong side.",
-      "OPEN, NEEDS MATT (SITE-33, 2026-09-09). On an OUT-OF-AREA listing the page now says \"We don't work in Medford\" and offers a broker introduction, while the sidebar card and the mobile bar still offer Tour / Call / Text, and the Payment section still computes a full monthly breakdown for that home. The separate evaluator called the first of these critical: two contradictory asks in one viewport. It was NOT changed in this pass. Matt's 2026-09-08 ruling was explicit and covered four things — the honesty block, noindex with follow preserved, the page still serving, and /oregon/[city] staying indexed — and did not rule on the ask. SITE-21 is the precedent for the fix (it already strips tel:, sms: and the payment from a home the brokerage cannot transact), but out-of-area is not off-market: Ryan Realty holds an Oregon licence and these are live leads, so suppressing the tour CTA on ~4,190 listings is a revenue decision, not a taste one. THE ASK FOR MATT: on an out-of-area listing, does the page keep Tour / Call / Text and the payment, or does it drop to the referral ask alone?"
+      "OPEN, NEEDS MATT (SITE-33, 2026-09-09). On an OUT-OF-AREA listing the page now says \"We don't work in Medford\" and offers a broker introduction, while the sidebar card and the mobile bar still offer Tour / Call / Text, and the Payment section still computes a full monthly breakdown for that home. The separate evaluator called the first of these critical: two contradictory asks in one viewport. It was NOT changed in this pass. Matt's 2026-09-08 ruling was explicit and covered four things \u2014 the honesty block, noindex with follow preserved, the page still serving, and /oregon/[city] staying indexed \u2014 and did not rule on the ask. SITE-21 is the precedent for the fix (it already strips tel:, sms: and the payment from a home the brokerage cannot transact), but out-of-area is not off-market: Ryan Realty holds an Oregon licence and these are live leads, so suppressing the tour CTA on ~4,190 listings is a revenue decision, not a taste one. THE ASK FOR MATT: on an out-of-area listing, does the page keep Tour / Call / Text and the payment, or does it drop to the referral ask alone?"
     ]
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-09",
-    "rubricVersion": "v1-2026-09-08",
+    "evaluatedAt": "2026-09-14",
+    "rubricVersion": "v1-2026-09-12",
     "adaptedFrom": [
-      { "id": "listing-hero-bleed" },
-      { "id": "listing-specs" },
-      { "id": "listing-ask" },
-      { "id": "components/site/v3/V3Carousel.client.tsx" },
-      { "id": "components/site/v3/V3ButtonGroup.tsx" },
-      { "id": "shadcn-carousel" },
-      { "id": "shadcn-button-group" },
-      { "id": "shadcn-sheet" },
-      { "id": "shadcn-dialog" },
-      { "id": "beui-tabs" },
-      { "id": "beui-action-swap" },
-      { "id": "transitions-modal" },
-      { "id": "beautifului-loading" }
+      {
+        "id": "listing-hero-bleed"
+      },
+      {
+        "id": "listing-specs"
+      },
+      {
+        "id": "listing-ask"
+      },
+      {
+        "id": "components/site/v3/V3Carousel.client.tsx"
+      },
+      {
+        "id": "components/site/v3/V3ButtonGroup.tsx"
+      },
+      {
+        "id": "shadcn-carousel"
+      },
+      {
+        "id": "shadcn-button-group"
+      },
+      {
+        "id": "shadcn-sheet"
+      },
+      {
+        "id": "shadcn-dialog"
+      },
+      {
+        "id": "beui-tabs"
+      },
+      {
+        "id": "beui-action-swap"
+      },
+      {
+        "id": "transitions-modal"
+      },
+      {
+        "id": "beautifului-loading"
+      }
     ],
-    "evaluator": "separate claude-sonnet-5 evaluator agent, SITE-45 listing-opening pass, session 019RdEm6 — the table instrument (first viewport at 1440x900 and 375x812, scripts/take-route-shots.mjs, scale 1, palette-quantized) on the lane's own dev server (localhost:3198) for the Bend route at the top of the page and at its close section, the Medford route at its out-of-area notice, plus two hover records per viewport (the pointer on the filmstrip, the pointer on the price-cut mark) read only for the Interaction criterion; three independent scorings of one capture run, the median; no page code read, no live page opened. The builder ran on Opus and did not grade its own page. The prior mark is this file's committed receipt (77: 77·78·76, 2026-09-09, the SITE-33 out-of-area pass on the mosaic build).",
-    "evaluatorModel": "claude-sonnet-5",
+    "evaluator": "Mini Cursor judge (cursor-agent cursor-grok-4.6-high / transport cursor-cli) on tip 6bbe80e8b open+fold shots: desktop, mobile375, save-open, share-open, gallery-open. taste-evaluate.ts --evaluator cursor; replaceWith option-list gate exited 2 but envelope written honestly to .artifacts/taste-evaluate-raw-on-replacewith-fail.json.",
+    "evaluatorModel": "grok-4.6",
     "builderModel": "claude-opus-5",
     "shotSpec": {
       "routes": [
@@ -391,7 +417,7 @@
         "share-open",
         "gallery-open"
       ],
-      "capture": "scripts/take-route-shots.mjs default first viewport for the instrument pair, then one fresh page per demoState: `save-open=button[aria-label^=\"Save \"]!click` (guest Sheet — button, not the keep group's aria-label), `share-open=button[aria-label^=\"Share \"]!click` (Share Dialog), `gallery-open=button[aria-label^=\"Open photo\"]!click` (photo Dialog). demoMatch is written only from taste-evaluate."
+      "capture": "scripts/take-route-shots.mjs default first viewport for the instrument pair, then one fresh page per demoState: `save-open=button[aria-label^=\"Save \"]!click` (guest Sheet \u2014 button, not the keep group's aria-label), `share-open=button[aria-label^=\"Share \"]!click` (Share Dialog), `gallery-open=button[aria-label^=\"Open photo\"]!click` (photo Dialog). demoMatch is written only from taste-evaluate."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/desktop.png",
@@ -413,89 +439,101 @@
     },
     "shotsHash": "sha256:9d60b274744beaf2caaf19df3158cce10aadce64b86d0f68b62ae9b70497a7e9",
     "scores": [
-      80,
-      78,
-      79
+      54,
+      62,
+      57
     ],
-    "score": 79,
+    "score": 57,
     "criteria": {
-      "designQuality": 25,
-      "originality": 26,
-      "interaction": 12,
+      "designQuality": 16,
+      "originality": 13,
+      "interaction": 10,
       "craft": 10,
-      "honestyFunction": 6
+      "honestyFunction": 8
     },
-    "beats": "Redfin — this page's #close section turns a bare price-history table into a plain-English narrative ('46% of homes that sold had dropped price') backed by a dot-matrix chart and a day-count comparison; Redfin shows the same underlying facts as an unglossed table with no interpretation.",
+    "beats": "Zillow Showcase listings \u2014 we win on named-broker reachability (Tour/Call/Text plus license on the fold) and a dated two-price cut; we lose the gallery as a visual event (ours is a padded Dialog card, theirs is a filmstrip you stay in).",
     "tells": [
-      "Raw slugs, internal labels or methodology jargon in anything a visitor reads — the breadcrumb reads 'Bend / Easton / EASTON COMMERCIAL / 60936 SE Apollo Place' on a single-family home, both desktop.png and mobile375.png."
+      "Scrolling lists as the design. \u2014 Facts / Overview in save-open-desktop and share-open shots: Bedrooms, Bathrooms, Living area, Property type, Year built, Style, New construction, then Interior rows, past six hairline key-value pairs with no mark, bar, map, or image."
     ],
-    "dullest": "The #out-of-area prose block — two paragraphs of unencoded text with a single link is the only section on the route that isn't carrying a figure, chart, or interactive element, so it's the one a reader's eye slides past.",
-    "verdict": "This build fixed real things: the broker card and reviews now sit inside the fold, the price cut is a hover-reveal instead of static text, and the KPI pills finally carry a plain-English sentence. But the same three named defects from the prior mark survive untouched — the Medford CTA contradicting 'we don't work here,' a mortgage calculator computing a confident dollar figure on a lot it just admitted no local knowledge of, and a raw plat alias leaking into the breadcrumb — and those are exactly the kind of thing a demanding director would call unacceptable on a second pass. Ship the interaction and layout wins; treat the Medford contradiction as a blocker, not a backlog item.",
+    "dullest": "The Facts/Overview ledger under the overlay: a two-column MLS dump (3, 2, 1,602 sqft, Yes) that is the page's actual body. The first viewport is a garage-forward photo plus leftover Open/Street view chips and a 1/15 postage stamp \u2014 portal furniture, not a gallery you stay in.",
+    "verdict": "This is a catalog-correct listing fold, not a cream box: full-bleed hero, cream Photos/Floor/Map pills on the photograph, connected Tour/Call/Text, Save as the right Sheet, Share as a centered Dialog with a ryan-realty.com URL, so demoMatch is true and competitiveBriefPass is true. It is still a portal page \u2014 leftover Open/Street view chips, a postage-stamp filmstrip, and a Facts hairline list \u2014 so it is competent, on-brand, and dull, not breathtaking. SEO cannot be verified from these pixels (no document title or JSON-LD in frame); listing inventory is present rather than dropped (two-price cut, DOM, $/sqft, specs, listed-by, broker). That is a hold on SEO from this evidence, not a rise.",
     "defects": [
       {
-        "section": "breadcrumb (global header)",
+        "section": "ListingHero filmstrip row (Open / Street view)",
         "severity": "taste",
-        "finding": "Breadcrumb shows the raw plat/subdivision alias 'EASTON COMMERCIAL' in all caps ahead of the address on a residential listing — reads as an internal slug, not a place a buyer would recognize.",
-        "primitive": "listing breadcrumb / place-hierarchy component",
-        "fix": "Suppress or humanize the subdivision alias before render; drop 'COMMERCIAL' segments on residential listings.",
-        "viewport": "both",
-        "replaceWith": null
+        "finding": "Open and Street view sit as leftover outline chips beside a 1/15 postage-stamp thumb, duplicating the Photos/Floor/Map pills already on the photograph.",
+        "primitive": "components/site/listing-detail/ListingHero.tsx",
+        "replaceWith": "beui-tabs"
       },
       {
-        "section": "#out-of-area sidebar",
-        "severity": "honesty",
-        "finding": "The broker card still offers Tour / Call / Text for the Medford lot directly beside copy stating 'We don't work in Medford' — the CTA contradicts the disclaimer in the same viewport.",
-        "primitive": "broker contact card (shared sidebar component)",
-        "fix": "On out-of-area listings, replace Tour/Call/Text with the 'introduce me to a Medford broker' action; do not show the generic tour CTA.",
-        "viewport": "both",
-        "replaceWith": null
-      },
-      {
-        "section": "#out-of-area Payment",
-        "severity": "honesty",
-        "finding": "The mortgage calculator still renders a precise $2,315/month, line-item breakdown for the Medford lot in the same block that admits Ryan Realty has no local knowledge of Medford — a specific number implies authority the copy just disclaimed.",
-        "primitive": "payment/mortgage calculator component",
-        "fix": "Hide or generic-ize the calculator on out-of-area listings, or caveat it explicitly as a statewide-rate estimate carrying no local knowledge.",
-        "viewport": "both",
-        "replaceWith": null
-      },
-      {
-        "section": "breadcrumb (mobile)",
-        "severity": "craft",
-        "finding": "At 375, the breadcrumb wraps into an orphaned second line ('/ 60936 SE Apollo Place') separated from 'Bend / Easton / EASTON COMMERCIAL' above it.",
-        "primitive": "breadcrumb component, mobile wrap behavior",
-        "fix": "Truncate to the last one or two segments at 375, or collapse to a back-chevron, instead of wrapping the full trail.",
-        "viewport": "mobile",
-        "replaceWith": null
-      },
-      {
-        "section": "#out-of-area",
+        "section": "PriceCtaStrip price-cut line",
         "severity": "taste",
-        "finding": "The explanation is two paragraphs of prose plus one text link and nothing else visual — the one section on the route with no figure, chart, or map, even though it stays under the two-paragraph banned-tell line.",
-        "primitive": "out-of-area notice section",
-        "fix": "Replace one paragraph with a simple service-area map or a labeled distance stat ('Medford is X miles outside our 14-community coverage').",
-        "viewport": "both",
-        "replaceWith": null
+        "finding": "The cut is two prices plus Cut $15,000 / -2.1% / Sep 9, 2026 as a typed row, not a visual event a buyer would screenshot the way Zillow Showcase encodes a drop.",
+        "primitive": "components/site/listing-detail/PriceDropMark.tsx",
+        "replaceWith": "emphasis line with a scrubber"
       },
       {
-        "section": "#facts",
-        "severity": "interaction",
-        "finding": "The Facts block (lot size / year built / HOA) is plain static text with no hover, tap, or expand — the one clearly non-interactive data block on the route.",
-        "primitive": "Facts list component",
-        "fix": "Add a lightweight interaction, e.g. tap-to-expand each fact with its source, or link acreage to a map overlay.",
-        "viewport": "both",
+        "section": "PropertySpecs Facts / Overview",
+        "severity": "taste",
+        "finding": "Overview is a two-column Yes/3/2 hairline dump past six rows; that is a table wearing rules, not a designed facts object.",
+        "primitive": "components/site/listing-detail/PropertySpecs.tsx",
+        "replaceWith": "table"
+      },
+      {
+        "section": "ListingHero 1/15 thumb",
+        "severity": "taste",
+        "finding": "The filmstrip under the bleed photo is one tiny Spark-looking thumb plus a counter, not a carousel rail with prev/next identity in that strip.",
+        "primitive": "components/site/listing-detail/ListingHero.tsx",
+        "replaceWith": "shadcn-carousel"
+      },
+      {
+        "section": "PhotoGalleryLightbox",
+        "severity": "taste",
+        "finding": "Opened Photos is a padded white Dialog card with the house inset; the photograph is no longer the object the way a lightbox filmstrip is.",
+        "primitive": "components/site/listing-detail/PhotoGalleryLightbox.tsx",
+        "replaceWith": "shadcn-dialog"
+      },
+      {
+        "section": "PriceCtaStrip + mobile contact bar at 375",
+        "severity": "defect",
+        "finding": "The H1 wraps so Place sits alone, and the listed-by line is clipped under the sticky Tour/Call/Text bar.",
+        "primitive": "components/site/listing-detail/ListingMobileContactBar.client.tsx",
         "replaceWith": null
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
+      "score": 79,
+      "scores": [
+        80,
+        78,
+        79
+      ],
       "evaluatedAt": "2026-09-09",
-      "score": 77,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:fb117fb484026aa7a63cabb32bcb3d6e8d878d0b232ea3e7f9623baef7ca6e1c"
+      "shotsHash": "sha256:9d60b274744beaf2caaf19df3158cce10aadce64b86d0f68b62ae9b70497a7e9"
     },
-    "rebaselineReason": "shotsHash: new first-viewport captures of the rebuilt opening (hero in the main column, filmstrip, price-cut mark, pill read) plus four hover records the prior set did not have; same routes, same evaluator model, same rubric"
+    "rebaselineReason": "evaluatorModel claude-sonnet-5 \u2192 grok-4.6; shotsHash tip open set sha256:9d60b274\u2026; score 79 \u2192 57 (median of [54, 62, 57]). SITE-99 Mini Cursor tip-ready pass; do not invent demoMatch.",
+    "demoMatch": true,
+    "competitiveBriefPass": true,
+    "competitiveBriefChecklist": {
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true,
+      "5": true,
+      "6": true,
+      "7": true,
+      "8": true
+    },
+    "perCriterion": {
+      "design": 16,
+      "originality": 13,
+      "interaction": 10,
+      "craft": 10,
+      "honesty": 8
+    }
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
