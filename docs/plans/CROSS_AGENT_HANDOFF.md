@@ -1,11 +1,11 @@
-# Current — 2026-09-14 (SITE-97 homepage-v6 Tip Ready landed on main)
+# Current — 2026-09-14 (SITE-105 oregon-city tip `062c9a9cc`)
 
-Surface: Mini Cos land of PR #229 tip `0440ecbd0` → main @ `5b17821c`.
+Surface: Cursor cloud `cursor-cloud-site105-20260914` on `cursor/oregon-city-site105-1e22` (PR #234). Do not merge.
 
-- **Done:** Re-ran `node scripts/lib/taste-receipt.mjs --ship design_system/ryan-realty/ui_kits/homepage-v6/parity.json` on Mini at tip and on main after cherry-pick — exit 0 (`ship OK — demoMatch true · competitiveBriefPass true · open-state · catalog-install`). Score median 52 ignored per Cos north star (Tip Ready = --ship exit 0 only). Cherry-picked 11 commits onto main.
-- **Next:** `npm run push` / deploy verify. Mark SITE-97 done with Tip Ready evidence.
-- **Node:** SITE-97 Tip Ready → done after push.
-- Skills read: `.claude/skills/site-queue/SKILL.md`.
+- **Done:** Mini tells on `286b00476` (score 50, demoMatch false): compact GitHub Alert (no cream wrap / 375 slab); hoverable two-bar drawing (no KPI fold); magazine listings with buyer-language places + reveal. MOS only if city pulse publishes it — Medford has no pulse/cache row (second-shaped check). Tip `062c9a9cc` + CSS hide of leftover typical-ask tile.
+- **Next:** Cos / Mini Cursor judge. `--ship` stays exit 1 until Mini writes `demoMatch: true`. Leave SITE-105 `in_progress`.
+- **Node:** `0e402cf5-3e29-419d-9e14-3f7896687b53` SITE-105
+- Skills read: `.claude/skills/site-queue/SKILL.md`, `docs/DATABASE_FOR_AI_AGENTS.md` §0
 
 # Prior
 

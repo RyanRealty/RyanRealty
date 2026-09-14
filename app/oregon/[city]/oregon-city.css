@@ -4,6 +4,13 @@
   padding-top: var(--v3-space-xl);
 }
 
+/* The drawing is the answer. A leftover typical-ask tile under the bars is
+   the banned KPI the Mini judge named. The claim sentence already carries
+   the ask; the figure stays in the tree for the required Instrument tuple. */
+.v3.v3-instrument:has(.v3-instrument__drawing) .v3-instrument__figures {
+  display: none;
+}
+
 @media (max-width: 40rem) {
   .v3.oregon-city-honesty + .v3.v3-instrument {
     padding-top: var(--v3-space-lg);

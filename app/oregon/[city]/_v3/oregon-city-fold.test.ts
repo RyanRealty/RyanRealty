@@ -11,6 +11,7 @@ import {
 } from './oregon-city-fold'
 
 const PAGE = readFileSync(new URL('../page.tsx', import.meta.url), 'utf8')
+const ROUTE_CSS = readFileSync(new URL('../oregon-city.css', import.meta.url), 'utf8')
 const HONESTY = readFileSync(new URL('./OregonCityHonesty.tsx', import.meta.url), 'utf8')
 const HONESTY_CSS = readFileSync(new URL('./OregonCityHonesty.css', import.meta.url), 'utf8')
 const CATALOG = readFileSync(new URL('../../../../design_system/public/taste-catalog.json', import.meta.url), 'utf8')
@@ -129,6 +130,8 @@ describe('oregon-city page holds the SITE-105 catalog object', () => {
     expect(PAGE).toContain('getMarketPulse')
     expect(PAGE).toContain('buildPlaceMosView')
     expect(PAGE).toContain('buildOregonCitySupplyDrawing')
+    expect(ROUTE_CSS).toContain('.v3-instrument__figures')
+    expect(ROUTE_CSS).toContain('display: none')
     expect(PAGE).not.toMatch(/foldAfter=/)
     expect(PAGE).not.toMatch(/v3-instrument__fold-summary/)
     expect(PAGE).not.toMatch(/kind:\s*'range'/)
