@@ -163,7 +163,10 @@ export type PocketSubjectFields = {
 }
 
 /** Fill subdivision + pocket cluster only when a pocket was inferred. */
-export function applyInferredPocket<T extends PocketSubjectFields>(subject: T, pocket: InferredPocket): T {
+export function applyInferredPocket<T extends PocketSubjectFields>(
+  subject: T,
+  pocket: InferredPocket,
+): T & Pick<PocketSubjectFields, 'pocketSubdivisionNorms' | 'inferredPocket'> {
   if (!pocket.inferred) return subject
   return {
     ...subject,

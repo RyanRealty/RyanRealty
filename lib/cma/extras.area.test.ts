@@ -9,17 +9,17 @@ const getCmaSubdivisionClosed = vi.fn(async () => [])
 const getCmaMarketAreaRows = vi.fn(async () => [])
 
 vi.mock('@/lib/data/cma/builderReads', () => ({
-  getCmaBandInventory: (...args: unknown[]) => getCmaBandInventory(...args),
-  getCmaCityClosedSkinny: (...args: unknown[]) => getCmaCityClosedSkinny(...args),
-  getCmaSubdivisionClosed: (...args: unknown[]) => getCmaSubdivisionClosed(...args),
+  getCmaBandInventory: (...args: never[]) => getCmaBandInventory(...args),
+  getCmaCityClosedSkinny: (...args: never[]) => getCmaCityClosedSkinny(...args),
+  getCmaSubdivisionClosed: (...args: never[]) => getCmaSubdivisionClosed(...args),
 }))
 
 vi.mock('@/lib/data/cma/bandInventory', () => ({
-  getCmaAreaBandInventory: (...args: unknown[]) => getCmaAreaBandInventory(...args),
+  getCmaAreaBandInventory: (...args: never[]) => getCmaAreaBandInventory(...args),
 }))
 
 vi.mock('@/lib/data/cma/marketAreaReads', () => ({
-  getCmaMarketAreaRows: (...args: unknown[]) => getCmaMarketAreaRows(...args),
+  getCmaMarketAreaRows: (...args: never[]) => getCmaMarketAreaRows(...args),
 }))
 
 import { buildCmaExtras } from '@/lib/cma/extras'
