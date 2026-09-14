@@ -11,6 +11,7 @@ import {
   listPriceFromEngine,
   predictedCloseFromAdjusted,
   priceCmaSet,
+  pricingSaleToCmaComp,
   reconcileAskAndComps,
   roundPriceDown,
   roundPriceUp,
@@ -1143,5 +1144,40 @@ describe('the time-adjustment basis says exactly what is applied (R2d)', () => {
     expect(out.source.filter).toContain('322.08')
     expect(out.source.filter).not.toContain('294.44')
     expect(out.n).toBe(854)
+  })
+})
+
+describe('pricingSaleToCmaComp', () => {
+  it('carries onMarketDate + originalListPrice and prefers calendar DOM (Clearpine)', () => {
+    const comp = pricingSaleToCmaComp(
+      sale({
+        cdom: 40,
+        onMarketDate: '2025-02-18',
+        closeDate: '2025-12-22',
+        originalAsk: 1_029_900,
+        lastAsk: 974_500,
+        closePrice: 957_250,
+      }),
+    )
+    expect(comp.onMarketDate).toBe('2025-02-18')
+    expect(comp.originalListPrice).toBe(1_029_900)
+    expect(comp.domTotal).toBe(307)
+    expect(comp.closePrice).toBe(957_250)
+  })
+
+  it('does not drop originalListPrice / onMarketDate when MLS cdom matches calendar', () => {
+    const comp = pricingSaleToCmaComp(
+      sale({
+        cdom: 42,
+        onMarketDate: '2026-06-15',
+        closeDate: '2026-07-27',
+        originalAsk: 774_900,
+        lastAsk: 774_900,
+        closePrice: 780_000,
+      }),
+    )
+    expect(comp.onMarketDate).toBe('2026-06-15')
+    expect(comp.originalListPrice).toBe(774_900)
+    expect(comp.domTotal).toBe(42)
   })
 })

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  calendarDaysBetween,
+  closedSaleDomTotal,
   daysOnMarketFrom,
   daysOnMarketLabel,
   listingHistoryLine,
@@ -86,5 +88,70 @@ describe('daysOnMarketLabel', () => {
     expect(daysOnMarketLabel(1)).toBe('1 day on market')
     expect(daysOnMarketLabel(12)).toBe('12 days on market')
     expect(daysOnMarketLabel(null)).toBeNull()
+  })
+})
+
+describe('closedSaleDomTotal', () => {
+  it('Clearpine-style: prefers calendar when MLS cdom understates list→close', () => {
+    // First list 2025-02-18 → close 2025-12-22 ≈ 307d; MLS last-cycle cdom=40.
+    expect(
+      closedSaleDomTotal({
+        daysOnMarket: 40,
+        onMarketDate: '2025-02-18',
+        closeDate: '2025-12-22',
+      }),
+    ).toBe(307)
+  })
+
+  it('Linda-style: calendar when MLS is shorter', () => {
+    // List 2026-01-16 → close 2026-07-02 = 167d; draft MLS was 78.
+    expect(
+      closedSaleDomTotal({
+        daysOnMarket: 78,
+        onMarketDate: '2026-01-16',
+        closeDate: '2026-07-02',
+      }),
+    ).toBe(167)
+  })
+
+  it('mild Forest Edge: calendar when MLS is a few days short', () => {
+    expect(
+      closedSaleDomTotal({
+        daysOnMarket: 30,
+        onMarketDate: '2026-05-21',
+        closeDate: '2026-06-29',
+      }),
+    ).toBe(39)
+  })
+
+  it('keeps MLS when it is not shorter than calendar', () => {
+    expect(
+      closedSaleDomTotal({
+        daysOnMarket: 42,
+        onMarketDate: '2026-06-15',
+        closeDate: '2026-07-27',
+      }),
+    ).toBe(42)
+  })
+
+  it('uses calendar when MLS is missing', () => {
+    expect(
+      closedSaleDomTotal({
+        daysOnMarket: null,
+        onMarketDate: '2026-06-15',
+        closeDate: '2026-07-27',
+      }),
+    ).toBe(42)
+  })
+
+  it('never invents dates — falls back to MLS alone', () => {
+    expect(closedSaleDomTotal({ daysOnMarket: 40, onMarketDate: null, closeDate: '2025-12-22' })).toBe(40)
+    expect(closedSaleDomTotal({ daysOnMarket: null, onMarketDate: null, closeDate: null })).toBeNull()
+  })
+})
+
+describe('calendarDaysBetween', () => {
+  it('counts whole days noon-to-noon', () => {
+    expect(calendarDaysBetween('2025-02-18', '2025-12-22')).toBe(307)
   })
 })

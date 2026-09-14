@@ -33,7 +33,10 @@
 
 import { selectCmaCompsPool, selectCmaCompsByKeys, getSubdivisionRing, assignSubdivisionSlugs } from '@/lib/data'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
-import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import {
+  closedSaleDomTotal,
+  listingHistoryLine as buildListingHistoryLine,
+} from '@/lib/cma/listing-history-line'
 import type { CmaListingRow } from '@/lib/data'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
 import { saneYearBuilt } from '@/lib/cma/subject'
@@ -154,6 +157,15 @@ function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | nu
     amount: num(row['concessions_amount']),
     closeDate,
   })
+  const onMarketDate = (str(row['OnMarketDate']) ?? str(row['ListDate']))?.slice(0, 10) ?? null
+  const closeDay = closeDate.slice(0, 10)
+  const mlsDom = num(row['CumulativeDaysOnMarket']) ?? num(row['DaysOnMarket'])
+  // Prefer list→close calendar days when MLS cdom understates the run (Clearpine).
+  const domTotal = closedSaleDomTotal({
+    daysOnMarket: mlsDom,
+    onMarketDate,
+    closeDate: closeDay,
+  })
   return {
     listingKey,
     mlsNumber: str(row['ListNumber']),
@@ -179,18 +191,18 @@ function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | nu
     closePrice,
     concessionsAmount: concessions,
     sellerNet: sellerNetFromPrice(closePrice, concessions),
-    closeDate: closeDate.slice(0, 10),
-    onMarketDate: (str(row['OnMarketDate']) ?? str(row['ListDate']))?.slice(0, 10) ?? null,
+    closeDate: closeDay,
+    onMarketDate,
     daysToOffer,
-    domTotal: num(row['CumulativeDaysOnMarket']) ?? num(row['DaysOnMarket']),
+    domTotal,
     listingHistoryLine: buildListingHistoryLine({
       listPrice: num(row['ListPrice']),
       originalListPrice: num(row['OriginalListPrice']),
       closePrice,
       status: 'Closed',
-      onMarketDate: str(row['OnMarketDate']) ?? str(row['ListDate']),
-      closeDate: closeDate.slice(0, 10),
-      daysOnMarket: num(row['CumulativeDaysOnMarket']) ?? num(row['DaysOnMarket']),
+      onMarketDate,
+      closeDate: closeDay,
+      daysOnMarket: domTotal,
     }),
     selectionTier: tier,
     photosCount: num(row['photos_count']),

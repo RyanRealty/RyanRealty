@@ -36,6 +36,7 @@
  * needs is hidden behind an interaction.
  */
 
+import { formatPriceExact } from '@/lib/format/money'
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
 
 const esc = escapeHtml
@@ -124,6 +125,17 @@ export function shortUsd(n: number): string {
     return `$${m >= 10 || n % 1_000_000 === 0 ? m.toFixed(0) : m.toFixed(2)}M`
   }
   return `$${Math.round(n / 1000)}K`
+}
+
+/**
+ * Closed-sale dollars for outcome / end labels.
+ * Round thousands stay short ($780,000 → $780K; Diamond Peak $935K).
+ * Non-round closes print exact ($609,950 / $957,250) so the letter matches MLS.
+ */
+export function shortOrExactUsd(n: number): string {
+  if (!Number.isFinite(n)) return shortUsd(n)
+  if (Math.round(n) % 1000 !== 0) return formatPriceExact(Math.round(n))
+  return shortUsd(n)
 }
 
 function monthDay(iso: string): string {
@@ -597,7 +609,10 @@ export function priceHistoryLinePhoneSvg(
 export function priceHistoryEndLabel(path: PricePath): string {
   const value = path.closePrice ?? finalAskOf(path)
   const word = OUTCOME_WORD[path.outcome]
-  return `${word} ${shortUsd(value)}${priceHistoryDaysClause(path, ' · ')}`
+  const money = path.outcome === 'sold' && path.closePrice != null
+    ? shortOrExactUsd(path.closePrice)
+    : shortUsd(value)
+  return `${word} ${money}${priceHistoryDaysClause(path, ' · ')}`
 }
 
 /**
@@ -626,7 +641,7 @@ export function priceHistoryReading(path: PricePath, range?: PricePathRange | nu
   const value = path.closePrice ?? finalAskOf(path)
   const end =
     path.outcome === 'sold'
-      ? `sold ${shortUsd(value)} on ${monthDay(path.endDate)}`
+      ? `sold ${path.closePrice != null ? shortOrExactUsd(path.closePrice) : shortUsd(value)} on ${monthDay(path.endDate)}`
       : path.outcome === 'off-market'
         ? `came off ${monthDay(path.endDate)}`
         : path.outcome === 'under-contract'

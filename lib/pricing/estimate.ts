@@ -17,6 +17,7 @@ import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject
 import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
+import { closedSaleDomTotal } from '@/lib/cma/listing-history-line'
 import {
   describeIndexShape,
   describePath,
@@ -515,6 +516,13 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     yn: sale.concessionsYn,
     closeDate: sale.closeDate,
   })
+  const onMarketDate = sale.onMarketDate?.slice(0, 10) || null
+  // Prefer list→close calendar days when MLS cdom understates the run (Clearpine).
+  const domTotal = closedSaleDomTotal({
+    daysOnMarket: sale.cdom,
+    onMarketDate,
+    closeDate: sale.closeDate,
+  })
   return {
     listingKey: sale.listingKey,
     mlsNumber: sale.listNumber,
@@ -534,13 +542,15 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     viewDescription: null,
     taxAnnual: null,
     listPrice: sale.lastAsk,
+    originalListPrice: sale.originalAsk,
     closePrice: sale.closePrice,
     concessionsAmount: concessions,
     concessionsYn: sale.concessionsYn,
     sellerNet: sellerNetFromPrice(sale.closePrice, concessions),
     closeDate: sale.closeDate,
+    onMarketDate,
     daysToOffer: sale.daysToOffer,
-    domTotal: sale.cdom,
+    domTotal,
     selectionTier: sale.selectionTier,
     proximity: sale.proximity,
     roomDifference: sale.roomDifference ?? null,

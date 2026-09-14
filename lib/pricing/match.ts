@@ -122,6 +122,8 @@ export type PricingSale = {
   lastAsk: number | null
   daysToOffer: number | null
   cdom: number | null
+  /** First on-market / list date when known — enables calendar DOM for closed comps. */
+  onMarketDate?: string | null
   dropCount: number
   closePpsf: number
   photoUrl: string | null

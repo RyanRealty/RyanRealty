@@ -36,6 +36,48 @@ function dayWhen(iso: string | null | undefined): string | null {
   return s === '—' ? null : s
 }
 
+function parseUtcDay(iso: string | null | undefined): Date | null {
+  const raw = iso?.trim()
+  if (!raw) return null
+  const then = new Date(raw.length <= 10 ? `${raw}T12:00:00.000Z` : raw)
+  return Number.isNaN(then.getTime()) ? null : then
+}
+
+/** Whole calendar days between two dates (noon-UTC day stamps). Never invents. */
+export function calendarDaysBetween(
+  fromIso: string | null | undefined,
+  toIso: string | null | undefined,
+): number | null {
+  const start = parseUtcDay(fromIso)
+  const end = parseUtcDay(toIso)
+  if (start == null || end == null) return null
+  const days = Math.floor((end.getTime() - start.getTime()) / 86_400_000)
+  return days >= 0 ? days : null
+}
+
+/**
+ * Honest DOM for a closed sale (Matt HARD LOCK: DOM on every home).
+ *
+ * When onMarketDate + closeDate both exist, use whole calendar days between
+ * them whenever MLS cdom/DaysOnMarket is missing OR shorter than that span
+ * (Clearpine-class: last-cycle DaysOnMarket understates first-list → close).
+ * Otherwise keep the MLS figure. Never invents dates.
+ */
+export function closedSaleDomTotal(facts: {
+  daysOnMarket?: number | null
+  onMarketDate?: string | null
+  closeDate?: string | null
+}): number | null {
+  const mls =
+    facts.daysOnMarket != null && Number.isFinite(facts.daysOnMarket) && facts.daysOnMarket >= 0
+      ? Math.round(facts.daysOnMarket)
+      : null
+  const calendar = calendarDaysBetween(facts.onMarketDate, facts.closeDate)
+  if (calendar != null && (mls == null || mls < calendar)) return calendar
+  if (mls != null) return mls
+  return calendar
+}
+
 /** Whole days on market. Prefer the measured count; else derive from on-market date. */
 export function daysOnMarketFrom(facts: {
   daysOnMarket?: number | null
@@ -45,10 +87,8 @@ export function daysOnMarketFrom(facts: {
   if (facts.daysOnMarket != null && Number.isFinite(facts.daysOnMarket) && facts.daysOnMarket >= 0) {
     return Math.round(facts.daysOnMarket)
   }
-  const raw = facts.onMarketDate?.trim()
-  if (!raw) return null
-  const then = new Date(raw.length <= 10 ? `${raw}T12:00:00.000Z` : raw)
-  if (Number.isNaN(then.getTime())) return null
+  const then = parseUtcDay(facts.onMarketDate)
+  if (then == null) return null
   const asOf = facts.asOf ?? new Date()
   const days = Math.floor((asOf.getTime() - then.getTime()) / 86_400_000)
   return days >= 0 ? days : null
