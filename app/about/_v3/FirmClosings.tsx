@@ -6,8 +6,9 @@
  *
  * Catalog: ui/carousel prev/next + peek (md:basis-1/2 lg:basis-1/3). Each
  * slide is a Card: photo, address, recorded ClosePrice, close date,
- * beds/baths/sqft, listing door. As many real closings as the firm record
- * returned — no invented rows.
+ * beds/baths/sqft, listing door. The Card (photo included) is one Link to
+ * the row's existing listing href — never an invented path. As many real
+ * closings as the firm record returned — no invented rows.
  */
 
 import Link from 'next/link'
@@ -45,28 +46,38 @@ export function FirmClosings({
         <CarouselContent>
           {rows.map((row, index) => {
             const key = String(row.id ?? row.href ?? `closing-${index}`)
+            const href = row.href.trim()
+            const card = (
+              <Card>
+                {row.media?.src ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={row.media.src} alt="" width={800} height={600} />
+                ) : null}
+                <CardHeader>
+                  <CardTitle>{row.what}</CardTitle>
+                  <CardDescription>{row.value}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {row.when ? <p>{row.when}</p> : null}
+                  {row.detail ? <p>{row.detail}</p> : null}
+                </CardContent>
+                <CardFooter>
+                  <Button asChild variant="link">
+                    <span>See this closing</span>
+                  </Button>
+                </CardFooter>
+              </Card>
+            )
             return (
               <CarouselItem key={key} className="md:basis-1/2 lg:basis-1/3">
                 <div className="p-1">
-                  <Card>
-                    {row.media?.src ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={row.media.src} alt="" width={800} height={600} />
-                    ) : null}
-                    <CardHeader>
-                      <CardTitle>{row.what}</CardTitle>
-                      <CardDescription>{row.value}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {row.when ? <p>{row.when}</p> : null}
-                      {row.detail ? <p>{row.detail}</p> : null}
-                    </CardContent>
-                    <CardFooter>
-                      <Button asChild variant="link">
-                        <Link href={row.href}>See this closing</Link>
-                      </Button>
-                    </CardFooter>
-                  </Card>
+                  {href ? (
+                    <Link href={href} className="about-closings__card-link">
+                      {card}
+                    </Link>
+                  ) : (
+                    card
+                  )}
                 </div>
               </CarouselItem>
             )
