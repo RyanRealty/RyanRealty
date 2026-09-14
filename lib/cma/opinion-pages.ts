@@ -62,6 +62,7 @@ import {
 import { renderMatrixHtml, subjectListingFailed, subjectPrintableAsk } from '@/lib/cma/comp-matrix'
 import { compAreaSentence } from '@/lib/cma/matrix-sets'
 import { setAsideCompIndexes } from '@/lib/cma/set-aside'
+import { statusPpsfBoardHtml, statusPpsfSummaries } from '@/lib/cma/status-ppsf'
 import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import type { CmaBroker, CmaClient } from '@/lib/cma/types'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
@@ -242,6 +243,7 @@ export function mapArgs(a: OpinionPageArgs) {
 
 /** Chapter 3a. Matrix 1, and the working under it. */
 export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
+  const sets = matrixEntriesFor(a)
   return {
     subject: a.subject,
     comps: a.comps,
@@ -253,6 +255,13 @@ export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
     compTrace: a.compTrace,
     askCtx: subjectAskContext(a),
     finalCycle: a.expiredAudit?.finalCycle ?? null,
+    statusPpsfBoard: statusPpsfBoardHtml(
+      statusPpsfSummaries({
+        closed: sets.closed,
+        unsold: sets.unsold,
+        active: sets.active,
+      }),
+    ),
   }
 }
 

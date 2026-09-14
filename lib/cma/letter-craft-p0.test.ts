@@ -260,5 +260,79 @@ describe('letter craft Matt ADD 2026-09-12', () => {
     expect(html).toContain('Seller concessions')
     expect(html).toContain('Lot size')
   })
+
+  it('prints list $/sf and sold $/sf summaries by status from the selected homes', () => {
+    const extras = {
+      marketArea: {
+        expiredPeers: [
+          {
+            listingKey: 'E1',
+            address: '88 Cedar',
+            listPrice: 540000,
+            originalListPrice: 540000,
+            status: 'Expired',
+            daysOnMarket: 90,
+            onMarketDate: '2025-12-01',
+            photoUrl: null,
+            listingHistoryLine: null,
+            beds: 3,
+            baths: 2,
+            sqft: 1500,
+            yearBuilt: 1997,
+            lotAcres: 0.2,
+            propertySubType: 'Single Family Residence',
+            latitude: 43.72,
+            longitude: -121.52,
+          },
+        ],
+      },
+      band: {
+        lo: 470000,
+        hi: 530000,
+        activeCount: 1,
+        pendingCount: 0,
+        activeMedianAsk: 520000,
+        activeMedianDom: 12,
+        source: 'test',
+        rivals: [
+          {
+            listingKey: 'A1',
+            address: '22 Fir',
+            listPrice: 520000,
+            status: 'Active' as const,
+            daysOnMarket: 12,
+            photoUrl: null,
+            latitude: 43.705,
+            longitude: -121.505,
+            beds: 3,
+            baths: 2,
+            sqft: 1600,
+            yearBuilt: 2001,
+            lotAcres: 0.21,
+            originalListPrice: 520000,
+          },
+        ],
+      },
+    }
+    const a = args({ extras: extras as never })
+    const { html } = renderCmaHtml(a)
+    const immersive = renderImmersiveCmaHtml({ ...a, broker }, 'https://ryan-realty.com')
+    for (const doc of [html, immersive]) {
+      expect(doc).toContain('data-ppsf-status="board"')
+      expect(doc).toContain('Dollars a square foot')
+      expect(doc).toContain('List $/sf')
+      expect(doc).toContain('Sold $/sf')
+      expect(doc).toContain('>Sold<')
+      expect(doc).toContain('>Active<')
+      expect(doc).toContain('>Expired<')
+      // 510000/1580 list and 500000/1580 sold on the five closed sales.
+      expect(doc).toContain('$323')
+      expect(doc).toContain('$316')
+      // Active 520000/1600 = 325; expired 540000/1500 = 360.
+      expect(doc).toContain('$325')
+      expect(doc).toContain('$360')
+      expect(doc).not.toMatch(/data-ppsf-status="board"[\s\S]{0,800}months of supply/i)
+    }
+  })
 })
 
