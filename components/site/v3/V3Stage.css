@@ -89,16 +89,16 @@
   min-height: 0;
 }
 
-/* Compact inventory Stage: the KPI band repeats V3Pulse. Hide it at 375 so
+/* Compact inventory Stage: the KPI band repeats V3Pulse. Hide it so
    photographed house rails enter the first viewport (homepage-v6 layout lock). */
+.v3.v3-stage--inventory.v3-stage--compact .v3-stage-band {
+  display: none;
+}
+
 @media (max-width: 40rem) {
   .v3.v3-stage--inventory.v3-stage--compact .v3-stage-copy {
     padding-top: 4.25rem;
     padding-bottom: var(--v3-space-sm);
-  }
-
-  .v3.v3-stage--inventory.v3-stage--compact .v3-stage-band {
-    display: none;
   }
 }
 

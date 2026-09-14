@@ -27,9 +27,29 @@
 /* Catalog TabsTrigger already positions the pill on the active tab
    (`absolute inset-0`). Do not reuse the old house sliding-bar math
    (50% width + translateX) — that paints a navy circle over "Buy". */
-.v3 .v3-tabs__list > div {
+.v3 .v3-tabs__list > div,
+.v3 .v3-tabs__hit {
+  position: relative;
   width: 100%;
   min-height: var(--v3-tap);
+}
+
+/* Native label sits on the tab so Buy/Sell works before hydration and in
+   take-route-shots. The radio is the CSS switch (SITE-12). */
+.v3 .v3-tabs__native {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  margin: 0;
+  cursor: pointer;
+}
+
+.v3 .v3-tabs__native-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
 }
 
 .v3 .v3-tabs__indicator {

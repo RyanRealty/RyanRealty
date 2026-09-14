@@ -54,6 +54,8 @@ describe('homepage hero search uses the public search stack', () => {
     expect(morph).toContain('layoutId')
     expect(morph).toContain('<kbd')
     expect(morph).toContain('backdrop-blur-xl')
+    expect(morph).toContain('data-v3-morph="trigger"')
+    expect(morph).toContain('data-v3-morph="panel"')
     expect(wrap).not.toMatch(/\binline\b/)
     expect(wrap).toContain('shortcut="f"')
     expect(SEARCH).not.toMatch(/open=\{open\}/)
@@ -142,7 +144,9 @@ describe('homepage hero search uses the public search stack', () => {
     expect(readFileSync(resolve('components/site/v3/V3Tabs.tsx'), 'utf8')).toContain('v3-tabs__tab--${row.value}')
     const stageCss = readFileSync(resolve('components/site/v3/V3Stage.css'), 'utf8')
     expect(stageCss).toContain('.v3.v3-stage--inventory.v3-stage--compact .v3-stage-band')
-    expect(stageCss).toMatch(/max-width:\s*40rem[\s\S]*v3-stage-band \{\s*display:\s*none/)
+    expect(stageCss).toMatch(
+      /\.v3\.v3-stage--inventory\.v3-stage--compact \.v3-stage-band \{\s*display:\s*none/,
+    )
   })
 
   // SITE-12. The hard accept test for this node: `curl /` finds the seller
@@ -242,6 +246,8 @@ describe('homepage hero search uses the public search stack', () => {
     expect(morph).toContain('.v3 .v3-morph-search__go')
     expect(morph).toContain('background: var(--v3-ink)')
     expect(morph).toContain('color: var(--v3-ink-on-navy)')
+    expect(morph).toContain("[data-v3-morph='trigger']")
+    expect(morph).toContain('backdrop-filter: none')
   })
 })
 

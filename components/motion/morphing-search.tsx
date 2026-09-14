@@ -392,6 +392,7 @@ export function MorphingSearch({
 								<motion.div
 									layoutId={shellLayoutId}
 									aria-hidden="true"
+									data-v3-morph="panel"
 									className="fixed z-10 rounded-xl bg-background/90 backdrop-blur-xl"
 									style={{
 										top: anchorRect.top,
@@ -433,6 +434,7 @@ export function MorphingSearch({
 													opacity: SEARCH_MORPH,
 												}
 									}
+									data-v3-morph="dialog"
 									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl"
 									style={{
 										top: anchorRect.top,
@@ -592,6 +594,7 @@ export function MorphingSearch({
 						aria-haspopup="dialog"
 						aria-expanded="false"
 						aria-label={placeholder}
+						data-v3-morph="trigger"
 						onClick={openSearch}
 						transition={morphTransition}
 						style={{

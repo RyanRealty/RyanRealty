@@ -59,6 +59,11 @@
   }
 }
 
+/* Sell mode is a valuation ask. The for-sale chip is a buyer figure. */
+.v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__live {
+  display: none;
+}
+
 /* Sliding indicator index from the radios (no React state). */
 .v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__tabs {
   --v3-tabs-index: 0;
