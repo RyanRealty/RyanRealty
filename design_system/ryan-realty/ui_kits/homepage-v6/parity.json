@@ -119,7 +119,7 @@
     },
     {
       "name": "HomeBrowsePlaces",
-      "section": "#places -- Browse places city/resort catalog Cards with live town counts (not V3Quiet rows, not house chips)",
+      "section": "#places -- Browse places city catalog Cards with live town counts + resort Card carousel (not V3Quiet rows, not house chips)",
       "blocking": true
     },
     {
@@ -185,7 +185,7 @@
       "RESOLVED 2026-09-08 (SITE-12 round 2): #places was twelve identical empty boxes with towns and resorts undifferentiated. Two labelled runs now \u2014 TOWNS - HOUSES FOR SALE with the live active_sfr_count per town (the same figure /cities publishes) and RESORTS AND COMMUNITIES with names only, because this page holds no per-resort read \u2014 each with its own index door.",
       "OPEN: #doors are line pictograms, not the illustrations the 2026-09-06 lock names.",
       "OPEN: V3Footer's skyline band (object-fit cover in a fixed 10rem band) over-scales at 1440, and the Markets column runs long beside empty width. Shared footer on 118 pages; not touched from a homepage lane.",
-      "OPEN: #featured-community shows eleven unnamed dots as its pager.",
+      "RESOLVED 2026-09-14 (SITE-97): #featured-community is the installed shadcn carousel + Card (FirmClosings form: photo, title, sourced lead figure, footer). Browse places towns are catalog Cards with live counts; resorts are a Card carousel, not empty chips.",
       "OPEN: three consecutive rails share one form (eyebrow, heading, cards, see-all)."
     ]
   },
@@ -237,9 +237,10 @@
         "search-open",
         "sell-tab",
         "featured",
-        "places"
+        "places",
+        "places-resorts"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized",
+      "capture": "first viewport + search-open=SEL@morph!click + sell-tab=SEL@ANCHOR!click + featured=#featured-community + places=#places + places-resorts=#places-resorts-and-communities, scripts/take-route-shots.mjs, scale 1, palette-quantized",
       "baseUrl": "http://127.0.0.1:3183/"
     },
     "shots": {
@@ -257,6 +258,8 @@
       "mobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/mobile375.png",
       "placesDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/places-desktop.png",
       "placesMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/places-mobile375.png",
+      "placesResortsDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/places-resorts-desktop.png",
+      "placesResortsMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/places-resorts-mobile375.png",
       "proofDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/proof-desktop.png",
       "proofMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/proof-mobile375.png",
       "railsDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/rails-desktop.png",
@@ -270,7 +273,7 @@
       "soldDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-desktop.png",
       "soldMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-mobile375.png"
     },
-    "shotsHash": "sha256:86bbc890839a022ec0405e7d990a718c900470d2c7680d456d24b77e2c2ec7fc",
+    "shotsHash": "sha256:891b6ed8210650683a5d18e058dbf4c3263f10a3c2d6d97d5143a1a0b55a222c",
     "scores": [
       50,
       59,

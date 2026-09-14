@@ -362,6 +362,8 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PLACES).toMatch(/home-browse-places__cards/)
     expect(PLACES).toMatch(/home-browse-places__card/)
     expect(PLACES).toMatch(/from '@\/components\/ui\/card'/)
+    expect(PLACES).toMatch(/from '@\/components\/ui\/carousel'/)
+    expect(PLACES).toMatch(/from '@\/components\/ui\/button'/)
     expect(PLACES).toMatch(/from '@\/components\/motion\/number'/)
     expect(PLACES).not.toMatch(/markSrc/)
     expect(PLACES).not.toMatch(/home-browse-places__mark/)
@@ -432,8 +434,13 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PLACES).toMatch(/home-browse-places__runname/)
     expect(PLACES).toMatch(/home-browse-places__unit/)
     expect(PLACES).toMatch(/home-browse-places__count/)
-    // The resorts run ships no figure at all — this page holds no per-resort read.
-    expect(PAGE).toMatch(/RESORT_DOORS\.map\(\(r\) => \(\{ label: r\.label, href: r\.href \}\)\)/)
+    // The resorts run ships no inventory figure — this page holds no per-resort read.
+    expect(PAGE).toMatch(/RESORT_DOORS\.flatMap\(\(r\) =>/)
+    expect(PAGE).toContain("layout: 'carousel' as const")
+    expect(PAGE).toContain('communityImage(r.slug)')
+    expect(FEATURED).toMatch(/home-featured-community__stage/)
+    expect(FEATURED).toContain('CarouselPrevious')
+    expect(FEATURED).toContain('CarouselNext')
   })
 
   it('does not print the regional remainder paragraph', () => {

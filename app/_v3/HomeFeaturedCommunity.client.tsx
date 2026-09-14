@@ -3,7 +3,7 @@
 /**
  * Featured communities as the shadcn carousel + Card demo (SITE-97).
  * Same catalog object as About FirmClosings: prev/next + peek, each slide a
- * Card (photo, name, sourced pulse figures via AnimatedNumber, door).
+ * Card (photo, name, sourced pulse figure via AnimatedNumber, door).
  * Empty slides still mount #featured-community so Home smoke never misses it.
  */
 import Link from 'next/link'
@@ -34,6 +34,24 @@ function figureFormat(figure: HomeFeaturedCommunityFigure) {
     return (x: number) => (Math.abs(x - n) < 0.05 ? published : (Math.round(x * 10) / 10).toFixed(1))
   }
   return (x: number) => (Math.round(x) === Math.round(n) ? published : Math.round(x).toLocaleString('en-US'))
+}
+
+function FigureLine({ figure }: { figure: HomeFeaturedCommunityFigure }) {
+  return (
+    <p className="home-featured-community__figure">
+      {figure.n != null && Number.isFinite(figure.n) ? (
+        <AnimatedNumber
+          value={figure.n}
+          format={figureFormat(figure)}
+          startOnView
+          className="home-featured-community__figure-value"
+        />
+      ) : (
+        <span className="home-featured-community__figure-value">{figure.value}</span>
+      )}{' '}
+      <span className="home-featured-community__figure-label">{figure.label}</span>
+    </p>
+  )
 }
 
 export function HomeFeaturedCommunity({
@@ -85,72 +103,76 @@ export function HomeFeaturedCommunity({
         <p className="home-featured-community__brief">{homeBriefText('7')}</p>
       </div>
 
-      <Carousel
-        opts={{ align: 'start', containScroll: 'trimSnaps' }}
-        className="home-featured-community__carousel w-full"
-        aria-label={heading}
-      >
-        <CarouselContent>
-          {slides.map((slide) => {
-            const card = (
-              <Card className="home-featured-community__card">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={slide.photoSrc} alt={`${slide.name} photo`} width={800} height={600} decoding="async" />
-                <CardHeader>
-                  <CardDescription>{slide.city}</CardDescription>
-                  <CardTitle>{slide.name}</CardTitle>
-                </CardHeader>
-                {slide.figures.length > 0 ? (
-                  <CardContent>
-                    <ul className="home-featured-community__figures">
-                      {slide.figures.map((figure) => (
-                        <li key={`${slide.slug}-${figure.label}`} className="home-featured-community__figure">
-                          {figure.n != null && Number.isFinite(figure.n) ? (
+      <div className="home-featured-community__stage">
+        <Carousel
+          opts={{ align: 'start', loop: false }}
+          className="home-featured-community__carousel w-full"
+          aria-label={heading}
+        >
+          <CarouselContent>
+            {slides.map((slide) => {
+              const lead = slide.figures[0]
+              const rest = slide.figures.slice(1)
+              const card = (
+                <Card>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={slide.photoSrc} alt={`${slide.name} photo`} width={800} height={600} decoding="async" />
+                  <CardHeader>
+                    <CardTitle>{slide.name}</CardTitle>
+                    <CardDescription>
+                      {slide.city}
+                      {lead ? (
+                        <>
+                          {' · '}
+                          {lead.n != null && Number.isFinite(lead.n) ? (
                             <AnimatedNumber
-                              value={figure.n}
-                              format={figureFormat(figure)}
+                              value={lead.n}
+                              format={figureFormat(lead)}
                               startOnView
-                              className="home-featured-community__figure-value"
+                              className="home-featured-community__lead"
                             />
                           ) : (
-                            <span className="home-featured-community__figure-value">{figure.value}</span>
-                          )}
-                          <span className="home-featured-community__figure-label">{figure.label}</span>
-                        </li>
+                            lead.value
+                          )}{' '}
+                          {lead.label}
+                        </>
+                      ) : null}
+                    </CardDescription>
+                  </CardHeader>
+                  {rest.length > 0 || slide.blurb ? (
+                    <CardContent>
+                      {rest.map((figure) => (
+                        <FigureLine key={`${slide.slug}-${figure.label}`} figure={figure} />
                       ))}
-                    </ul>
-                    {slide.blurb ? <p className="home-featured-community__blurb">{slide.blurb}</p> : null}
-                  </CardContent>
-                ) : slide.blurb ? (
-                  <CardContent>
-                    <p className="home-featured-community__blurb">{slide.blurb}</p>
-                  </CardContent>
-                ) : null}
-                <CardFooter>
-                  <Button asChild>
-                    <span>{`Explore ${slide.name}`}</span>
-                  </Button>
-                </CardFooter>
-              </Card>
-            )
-            return (
-              <CarouselItem key={slide.slug} className="md:basis-1/2 lg:basis-1/3">
-                <div className="p-1">
-                  <Link href={slide.href} className="home-featured-community__card-link">
-                    {card}
-                  </Link>
-                </div>
-              </CarouselItem>
-            )
-          })}
-        </CarouselContent>
-        {slides.length > 1 ? (
-          <div className="home-featured-community__arrows">
-            <CarouselPrevious className="static size-auto translate-x-0 translate-y-0" />
-            <CarouselNext className="static size-auto translate-x-0 translate-y-0" />
-          </div>
-        ) : null}
-      </Carousel>
+                      {slide.blurb ? <p className="home-featured-community__blurb">{slide.blurb}</p> : null}
+                    </CardContent>
+                  ) : null}
+                  <CardFooter>
+                    <Button asChild variant="link">
+                      <span>{`Explore ${slide.name}`}</span>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              )
+              return (
+                <CarouselItem key={slide.slug} className="md:basis-1/2 lg:basis-1/3">
+                  <div className="p-1">
+                    <Link href={slide.href} className="home-featured-community__card-link">
+                      {card}
+                    </Link>
+                  </div>
+                </CarouselItem>
+              )
+            })}
+          </CarouselContent>
+          {slides.length > 1 ? (
+            <>
+              <CarouselPrevious />
+              <CarouselNext />
+            </>
+          ) : null}
+        </Carousel>
+      </div>
 
       <p className="home-featured-community__nav">
         <Link href="/communities" className="home-featured-community__more">

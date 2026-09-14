@@ -1,4 +1,4 @@
-/* Homepage Browse places: catalog Card doors with live town counts. */
+/* Homepage Browse places: catalog Card doors + resort Carousel. Tokens only. */
 
 .v3.home-browse-places {
   max-width: var(--v3-measure);
@@ -44,9 +44,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--v3-space-xs);
-  margin-bottom: var(--v3-space-xs);
-  padding-bottom: var(--v3-space-2xs);
-  border-bottom: var(--v3-rule-hairline);
+  margin-bottom: var(--v3-space-sm);
 }
 
 .home-browse-places__runname {
@@ -73,8 +71,8 @@
 
 .home-browse-places__cards {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--v3-space-sm);
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-md);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -82,13 +80,13 @@
 
 @media (min-width: 40rem) {
   .home-browse-places__cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 64rem) {
   .home-browse-places__cards {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -107,13 +105,32 @@
 }
 
 .home-browse-places__link:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--v3-focus);
-  border-radius: var(--v3-radius-card, 0.75rem);
+  outline: 2px solid var(--v3-navy);
+  outline-offset: 2px;
 }
 
-.home-browse-places__card {
+.home-browse-places [data-slot='card'] {
+  --card: var(--v3-cream);
+  --card-foreground: var(--v3-navy);
   height: 100%;
+}
+
+.home-browse-places [data-slot='card'] img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.home-browse-places__stage {
+  min-width: 0;
+  padding-inline: 3rem;
+  overflow: visible;
+}
+
+.home-browse-places__carousel {
+  min-width: 0;
 }
 
 .home-browse-places__count {
