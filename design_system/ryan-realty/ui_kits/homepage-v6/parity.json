@@ -218,7 +218,8 @@
       ],
       "states": [
         "default",
-        "sell-tab"
+        "sell-tab",
+        "search-open"
       ],
       "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized",
       "baseUrl": "http://localhost:3183/"

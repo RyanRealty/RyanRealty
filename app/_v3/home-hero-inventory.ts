@@ -9,11 +9,12 @@ import type { V3StageInventory } from '@/components/site/v3'
 import type { HomePulseCounts } from './home-pulse'
 import { HOME_PULSE_ID } from './home-pulse'
 
-const TRACE = 'live MLS through Oregon Data Share · Central Oregon'
+export const TRACE = 'live MLS through Oregon Data Share · Central Oregon'
 
 export type HomeHeroLive = {
   forSale: number
   forSaleLabel: string
+  source: string
 }
 
 /**
@@ -66,5 +67,6 @@ export function homeHeroLive(
   return {
     forSale: counts.forSale,
     forSaleLabel: formatCount(counts.forSale),
+    source: TRACE,
   }
 }

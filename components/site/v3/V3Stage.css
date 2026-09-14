@@ -97,8 +97,9 @@
 
 @media (max-width: 40rem) {
   .v3.v3-stage--inventory.v3-stage--compact .v3-stage-copy {
-    padding-top: 4.25rem;
-    padding-bottom: var(--v3-space-sm);
+    padding-top: 3.5rem;
+    padding-bottom: var(--v3-space-2xs);
+    gap: var(--v3-space-2xs);
   }
 }
 

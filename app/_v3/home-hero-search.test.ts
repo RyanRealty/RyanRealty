@@ -79,9 +79,11 @@ describe('homepage hero search uses the public search stack', () => {
     expect(readFileSync(resolve('components/site/v3/V3Number.client.tsx'), 'utf8')).toContain(
       "from '@/components/motion/number'",
     )
-    expect(RAIL_CLIENT).toContain('V3Carousel')
-    expect(RAIL_CLIENT).toContain('mode="rail"')
-    expect(RAIL_CLIENT).toContain('V3Number')
+    expect(RAIL_CLIENT).toContain("from '@/components/ui/carousel'")
+    expect(RAIL_CLIENT).toContain('CarouselPrevious')
+    expect(RAIL_CLIENT).toContain('CarouselNext')
+    expect(RAIL_CLIENT).toContain("from '@/components/motion/number'")
+    expect(RAIL_CLIENT).toContain('AnimatedNumber')
     expect(RAIL_CLIENT).toContain("from '@/components/ui/card'")
     expect(RAIL_CLIENT).toContain('CardHeader')
     expect(RAIL_CLIENT).toContain('CardContent')
@@ -109,6 +111,7 @@ describe('homepage hero search uses the public search stack', () => {
 
   it('prints the live count as type, not a digit wheel on navy', () => {
     expect(SEARCH).toContain('live.forSaleLabel')
+    expect(SEARCH).toContain('live.source')
     expect(SEARCH).not.toMatch(/<V3Number/)
   })
 
