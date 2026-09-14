@@ -2,6 +2,46 @@
   "route": "app/listing/[listingKey]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Zillow Showcase. Photos plus 3D / floor plan / map tabs, one monthly payment with P&I tax HOA, nearby schools, tax history, lot size. We add place climb, assessor lot lines, published CC&Rs, a live broker, and one payment formula (computeMonthlyPiti).",
+  "competitiveBrief": {
+    "id": "listing-detail-site99-2026-09-14",
+    "source": "design_system/public/references/listing-detail.md + taste-catalog listing-detail modules. Beats must be visible in the judged shots.",
+    "productLock": "Full-bleed hero + catalog Carousel/Tabs on the photograph. Fold ask is one shadcn ButtonGroup (Tour/Call/Text). Save is the right Sheet. Share is the centered Dialog. Navy/cream/Geist/Amboqia.",
+    "refuse": "Frost overlay, cream-box Save/Share, leftover Tour/Call/Text chips, house drawer, localhost share URL, inventing demoMatch or competitiveBriefPass.",
+    "beats": [
+      {
+        "id": "1",
+        "text": "The listing photograph is full-bleed (listing-hero-bleed) in the first viewport, not a column frame."
+      },
+      {
+        "id": "2",
+        "text": "shadcn Carousel prev/next sits on that photograph and the house still fills the first viewport."
+      },
+      {
+        "id": "3",
+        "text": "beUI pill tabs (Photos / Floor / Map) sit on the photograph on a cream track, not a navy filmstrip."
+      },
+      {
+        "id": "4",
+        "text": "Street is the H1 and the list price sits under it on the fold, before the long listed-by line."
+      },
+      {
+        "id": "5",
+        "text": "A price cut reads as two prices (from, drop, date) on the fold, not one muted fifty-thousand line."
+      },
+      {
+        "id": "6",
+        "text": "Tour, Call, and Text are one connected shadcn ButtonGroup on the fold — shared edges, not leftover outline chips."
+      },
+      {
+        "id": "7",
+        "text": "Save opens the catalog right Sheet: title, description, email Label and Input, footer, default close, dim overlay with no frost."
+      },
+      {
+        "id": "8",
+        "text": "Share opens a centered shadcn Dialog with the ryan-realty.com listing URL and Copy link, dim overlay with no frost."
+      }
+    ]
+  },
   "note": "PAGE_INVENTORY listing (house URL) 12 sections. Tour / Call / Text is the ask WHILE THE HOME IS ON THE MARKET, Pending included (a pending home takes backup offers and is a live lead source). SITE-21: when isPublicOffMarketStatus(status) is true — Closed, Expired, Canceled, Withdrawn — the page publishes the sold facts, the active homes in this city and a saved search instead: no payment, no market-ask instrument, no three-act close, and no tel: or sms: anywhere inside <main> (the brokerage line stays in V3Footer, outside it). Face Est. $/mo is off the page so Payment is the one number. Cookies cannot cover the ask. No leftover HUD, CMA, rental, or doors on this route.",
   "dataChanges": {
     "unchanged": "Every listing figure traces to getListingDetail, photos, videos, history, open houses, brokers, reviews, related homes, plat documents, taxlots. JSON-LD RealEstateListing + BreadcrumbList still emit from MetadataBlock. Payment is computeMonthlyPiti only.",

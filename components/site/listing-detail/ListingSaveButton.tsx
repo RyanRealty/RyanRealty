@@ -24,6 +24,8 @@ export function ListingSaveButton({
     <Button
       type="button"
       variant="outline"
+      size="lg"
+      className="rounded-none first:rounded-l-lg last:rounded-r-lg"
       onClick={onSave}
       disabled={saveState === 'saving'}
       aria-pressed={saveState === 'saved'}

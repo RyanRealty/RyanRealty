@@ -47,12 +47,12 @@ export default function ListingMobileContactBar({
       <div className="listing-mobile-cta" data-shown="true" data-off-market="true">
         <div className="listing-mobile-cta-inner">
           <ButtonGroup aria-label="Homes like this" className="w-full">
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
               <a href={similarHref}>
                 <ActionSwapText value="homes">Homes for sale</ActionSwapText>
               </a>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
               <a href={alertsHref}>Get alerts</a>
             </Button>
           </ButtonGroup>
@@ -69,20 +69,20 @@ export default function ListingMobileContactBar({
     <div className="listing-mobile-cta" data-shown="true">
       <div className="listing-mobile-cta-inner">
         <ButtonGroup aria-label="Contact about this listing" className="w-full">
-          <Button variant="outline" asChild>
+          <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
             <a href={tourHref}>
               <ActionSwapText value="tour">Tour</ActionSwapText>
             </a>
           </Button>
           {tel ? (
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
               <a href={`tel:${tel}`} aria-label={`Call ${firstName}`}>
                 Call
               </a>
             </Button>
           ) : null}
           {tel ? (
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
               <a href={`sms:${tel}`} aria-label={`Text ${firstName}`}>
                 Text
               </a>
