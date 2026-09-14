@@ -1279,12 +1279,14 @@ describe('pricingSaleToCmaComp', () => {
   })
 
   it('overlays hydrated first-list DOM instead of late MLS cdom', () => {
-    const rebuilt = pricingSaleToCmaComp(
-      sale({
-        cdom: 79,
-        onMarketDate: '2026-04-14',
-        closeDate: '2026-07-02',
-      }),
+    const rebuilt = preserveHydratedClosedCompDom(
+      pricingSaleToCmaComp(
+        sale({
+          cdom: 79,
+          onMarketDate: '2026-04-14',
+          closeDate: '2026-07-02',
+        }),
+      ),
       {
         onMarketDate: '2026-01-16',
         domTotal: 167,
