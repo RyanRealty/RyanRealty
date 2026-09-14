@@ -1,11 +1,11 @@
-# Current — 2026-09-14 04:30Z (PR #223 About craft; Tip Ready still refused)
+# Current — 2026-09-14 04:55Z (PR #223 demoMatch craft; Tip Ready still refused)
 
-Surface: Cursor cloud, branch `cursor/about-firm-story-20f0`, PR https://github.com/RyanRealty/RyanRealty/pull/223. Do not merge. Do not invent `demoMatch`.
+Surface: Cursor cloud, `cursor/about-firm-story-20f0`, PR https://github.com/RyanRealty/RyanRealty/pull/223. Do not merge. Do not invent `demoMatch`.
 
-- **Done:** Mini Cursor grok-4.6 `taste-evaluate` exit 2. Craft on this PR: FirmClosings shadcn Card rail (photo, address, ClosePrice, date, specs, prev/next, peek); AboutInquiry shadcn Input GET `/contact`; AboutOffice prints firm OREA once. `--about-lock` 0. `--ship` 1. Named shotsHash still `sha256:f95a3b74…`. Scores 52/47/57 prior instrument.
-- **Next:** Cos re-runs `npx tsx scripts/taste-evaluate.ts about` on Mini. Leave Tip Ready refused until `--ship` exits 0.
+- **Done:** Mini re-eval cursor-grok-4.6: competitiveBriefPass true, demoMatch false, score 55. Craft: office Card photo/facts, catalog Input+Button, OnDuty no stray mark, house-firm claim on cream. `--about-lock` 0. `--ship` 1. shotsHash `sha256:4653719a…`.
+- **Next:** Cos re-runs `npx tsx scripts/taste-evaluate.ts about` on Mini.
 - **Node:** `edabba8e-f8aa-4271-909d-c258914f75ef` (SITE-90).
-- Skills read: `design_system/public/TASTE.md`, walkthrough-artifacts, about-lock / taste-receipt.
+- Skills read: `design_system/public/TASTE.md`, walkthrough-artifacts, about-lock.
 
 # Prior
 

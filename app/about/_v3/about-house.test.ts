@@ -135,6 +135,8 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(OFFICE).not.toContain('Meet the team')
     expect(FOLD).toContain('about-office')
     expect(FOLD).toContain('Navy and cream only')
+    expect(FOLD).toContain('.about-office__photo')
+    expect(FOLD).toContain('.about-fold__reach > .v3-onduty .v3-onduty__dot')
   })
 
   it('sends the one-line inquiry to Contact, not a second form', () => {

@@ -175,9 +175,11 @@
 .about-office__photo {
   display: block;
   width: 100%;
-  aspect-ratio: 3 / 2;
+  height: auto;
+  max-height: 13rem;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
-  object-position: center top;
+  object-position: center 42%;
 }
 
 .about-office__facts {
@@ -230,7 +232,11 @@
 .about-fold__reach > .v3-onduty {
   overflow: visible;
   margin: 0 0 var(--v3-space-xs);
-  padding-inline: 0.15rem;
+  padding-inline: 0;
+}
+
+.about-fold__reach > .v3-onduty .v3-onduty__dot {
+  display: none;
 }
 
 .about-fold__reach .v3.v3-doors {
@@ -373,7 +379,7 @@
 
 @media (min-width: 64rem) {
   .about-fold {
-    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 1fr);
     grid-template-areas:
       "hero hero"
       "proof proof"

@@ -183,7 +183,7 @@
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png"
     },
-    "shotsHash": "sha256:f95a3b7477d397c5d63c1e8a3776169a1516e1eca8ef06b962c97c41f7872e1a",
+    "shotsHash": "sha256:4653719af77eabce94993ecca059128c906471588319ec759ea0cf9e8f4d5309",
     "scores": [
       52,
       47,
@@ -200,7 +200,7 @@
       { "id": "shadcn-carousel" },
       { "id": "shadcn-input" }
     ],
-    "evaluatorBlocked": "Mini 2026-09-14 re-eval cursor-grok-4.6: competitiveBriefPass true, demoMatch false, score 55. Tip Ready refused on demoMatch. Craft on this PR for the four demoMatch blockers. Cos re-runs evaluate. Do not invent demoMatch. --ship stays 1. Scores 52/47/57 are the prior 3-scoring instrument; Mini's 55 was a later fire on sha256:f95a3b74.",
+    "evaluatorBlocked": "Mini 2026-09-14 re-eval cursor-grok-4.6: competitiveBriefPass true, demoMatch false, score 55 on sha256:f95a3b74. Craft after that fire. New named shotsHash sha256:4653719a. Cos re-runs. Do not invent demoMatch. --ship stays 1. Scores 52/47/57 are the prior 3-scoring instrument.",
     "defects": [
       {
         "section": "#office",
