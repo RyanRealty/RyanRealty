@@ -1,14 +1,14 @@
 'use client'
 
-import { V3Button } from '@/components/site/v3'
-import { V3ActionSwapText } from '@/components/site/v3/V3ActionSwap'
+import { ActionSwapText } from '@/components/motion/action-swap'
+import { Button } from '@/components/ui/button'
 
 export type ListingSaveState = 'idle' | 'saving' | 'saved'
 
 /**
  * Save on the listing-detail PriceCtaStrip. Named so ci:mockup-parity can
  * fail if the control disappears (SITE-99 / Matt 2026-09-12). Search tiles
- * stay no-heart (Matt 2026-06-03). Label swap is beUI action-swap.
+ * stay no-heart (Matt 2026-06-03). Label swap is the installed beUI action-swap.
  */
 export function ListingSaveButton({
   saveState,
@@ -21,15 +21,15 @@ export function ListingSaveButton({
 }) {
   const label = saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving...' : 'Save'
   return (
-    <V3Button
+    <Button
       type="button"
-      variant="ghost"
+      variant="outline"
       onClick={onSave}
       disabled={saveState === 'saving'}
-      ariaPressed={saveState === 'saved'}
-      ariaLabel={ariaLabel}
+      aria-pressed={saveState === 'saved'}
+      aria-label={ariaLabel}
     >
-      <V3ActionSwapText value={saveState}>{label}</V3ActionSwapText>
-    </V3Button>
+      <ActionSwapText value={saveState}>{label}</ActionSwapText>
+    </Button>
   )
 }

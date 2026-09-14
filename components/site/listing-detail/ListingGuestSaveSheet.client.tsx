@@ -3,20 +3,23 @@
 /**
  * Guest save capture — the email-first branch of the listing Save button.
  *
- * A signed-out Save used to bounce straight to the Google sheet, and the
- * visitor who declined left no trace (funnel audit 2026-09-01: the one
- * high-intent action with no guest path). This sheet asks for an email only,
- * routes through the hardened submitListingSaveCapture action, and keeps the
- * account path one tap away — "Save with Google instead" preserves the
- * pending-save resume exactly as before.
- *
- * Same V3Sheet idiom as ListingLikeThisSheet so the two listing-page asks
- * read as one system (TASTE.md consistency rule). SITE-99: Save opens the
- * installed shadcn Sheet drawer, not an inline cream box.
+ * SITE-99: this is the installed shadcn Sheet demo (right-side panel, visible
+ * SheetTitle / SheetDescription / SheetFooter, default close). Not a cream
+ * bottom drawer and not a V3Sheet.
  */
 
-import { useCallback, useRef, useState } from 'react'
-import { V3Button, V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
+import { useCallback, useState, type FormEvent } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { submitListingSaveCapture } from '@/app/actions/search-alert-capture'
 import { readRrSessionId } from '@/lib/tracking'
 
@@ -41,19 +44,18 @@ export function ListingGuestSaveSheet({
 }) {
   const [status, setStatus] = useState<Status>('asking')
   const [problem, setProblem] = useState<string>('')
-  const answersRef = useRef<Record<string, string>>({})
   const home = addressLine?.trim() || 'this home'
 
   const send = useCallback(
-    async (answers: Readonly<Record<string, string>>) => {
+    async (email: string, company: string) => {
       setStatus('sending')
       try {
         const result = await submitListingSaveCapture({
-          email: answers.email ?? '',
+          email,
           listingKey,
           addressLine: addressLine ?? undefined,
-          company: answers.company ?? '',
-          sessionId: readRrSessionId(), // hydration-safe
+          company,
+          sessionId: readRrSessionId(),
         })
         if (result.ok) {
           setStatus('sent')
@@ -70,75 +72,66 @@ export function ListingGuestSaveSheet({
     [listingKey, addressLine, onDone],
   )
 
-  const onAdvance = useCallback(
-    (event: V3SheetAdvance) => {
-      answersRef.current = { ...event.answers }
-      if (event.toStepId !== null) return
-      void send(answersRef.current)
-    },
-    [send],
-  )
-
-  const askStep: V3SheetStep = {
-    id: 'email',
-    label: `Where should updates on ${home} go?`,
-    children: 'Price changes and status updates for this home. Unsubscribe any time.',
-    field: {
-      kind: 'email',
-      name: 'email',
-      label: 'Email',
-      required: true,
-      autoComplete: 'email',
-      maxLength: 254,
-      placeholder: 'you@email.com',
-      requiredMessage: 'An email is required so the updates have somewhere to land.',
-      invalidMessage: 'That address does not look complete.',
-    },
-    advanceLabel: 'Save this home',
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const data = new FormData(event.currentTarget)
+    const email = String(data.get('email') ?? '')
+    const company = String(data.get('company') ?? '')
+    void send(email, company)
   }
 
-  const steps: readonly V3SheetStep[] =
-    status === 'sent'
-      ? [
-          {
-            id: 'sent',
-            label: `Saved. Updates on ${home} land by email.`,
-            children: 'Sign in with Google any time to see every home you have saved in one place.',
-          },
-        ]
-      : status === 'sending'
-        ? [{ id: 'sending', label: 'Saving this home.' }]
-        : status === 'failed'
-          ? [askStep, { id: 'failed', label: problem, advanceLabel: 'Try again' }]
-          : [askStep]
-
-  const currentStepId =
-    status === 'sent' ? 'sent' : status === 'sending' ? 'sending' : status === 'failed' ? 'failed' : 'email'
-
   return (
-    <V3Sheet
-      id="guest-save"
-      eyebrow="Save this home"
-      heading={`Watch ${home} by email`}
-      steps={steps}
-      trap={{ name: 'company', label: 'Company' }}
-      currentStepId={currentStepId}
-      showProgress={false}
-      showEcho={false}
-      surface="drawer"
-      open={open}
-      onOpenChange={onOpenChange}
-      onStepChange={(id) => {
-        if (id === 'email') setStatus('asking')
-      }}
-      onAdvance={onAdvance}
-      footer={
-        status !== 'sent' ? (
-          <V3Button type="button" variant="text" onClick={onUseGoogle}>
-            Save with Google instead
-          </V3Button>
-        ) : null
-      }
-    />
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right">
+        <SheetHeader>
+          <SheetTitle>Save this home</SheetTitle>
+          <SheetDescription>
+            {status === 'sent'
+              ? `Saved. Updates on ${home} land by email.`
+              : `Watch ${home} by email. Price changes and status updates. Unsubscribe any time.`}
+          </SheetDescription>
+        </SheetHeader>
+        {status === 'sent' ? (
+          <p className="px-4 text-sm text-muted-foreground">
+            Sign in with Google any time to see every home you have saved in one place.
+          </p>
+        ) : (
+          <form onSubmit={onSubmit} className="flex flex-col gap-3 px-4">
+            <div className="sr-only" aria-hidden>
+              <Label htmlFor="guest-save-company">Company</Label>
+              <Input
+                id="guest-save-company"
+                name="company"
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="guest-save-email">Email</Label>
+              <Input
+                id="guest-save-email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                maxLength={254}
+                placeholder="you@email.com"
+              />
+            </div>
+            {status === 'failed' ? (
+              <p className="text-sm text-destructive">{problem}</p>
+            ) : null}
+            <SheetFooter>
+              <Button type="submit" disabled={status === 'sending'}>
+                {status === 'sending' ? 'Saving this home.' : 'Save this home'}
+              </Button>
+              <Button type="button" variant="outline" onClick={onUseGoogle}>
+                Save with Google instead
+              </Button>
+            </SheetFooter>
+          </form>
+        )}
+      </SheetContent>
+    </Sheet>
   )
 }

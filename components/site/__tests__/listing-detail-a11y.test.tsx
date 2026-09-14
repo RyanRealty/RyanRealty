@@ -249,32 +249,34 @@ describe('gallery, tour, and street view occupy history so Back stays on the lis
     expect(street).toMatch(/radius:\s*120/)
   })
 
-  it('labels the control Back at 44px', () => {
-    expect(gallery).toMatch(/aria-label="Back"/)
-    expect(gallery).toMatch(/aria-label="Close"/)
-    expect(gallery).toMatch(/listing-gallery__back/)
+  it('opens the gallery as the installed shadcn Dialog, not a custom lightbox', () => {
+    expect(gallery).toMatch(/<DialogTitle>Photos<\/DialogTitle>/)
+    expect(gallery).toMatch(/from '@\/components\/ui\/dialog'/)
+    expect(gallery).not.toContain('showCloseButton={false}')
+    expect(gallery).not.toContain('listing-gallery__back')
+    expect(gallery).not.toMatch(/aria-label="Back"/)
+    expect(gallery).not.toMatch(/Close gallery/)
     expect(tour).toMatch(/aria-label="Back"/)
     expect(tour).toMatch(/listing-gallery__back/)
     expect(tour).toMatch(/listing-gallery__close/)
     expect(street).toMatch(/aria-label="Back"/)
     expect(street).toMatch(/listing-gallery__back/)
-    expect(gallery).not.toMatch(/Close gallery/)
   })
 
   it('sits above chrome via overlayClassName z-110', () => {
-    expect(gallery).toMatch(/overlayClassName="listing-gallery__overlay z-\[110\]"/)
     expect(tour).toMatch(/overlayClassName="listing-gallery__overlay z-\[110\]"/)
     expect(street).toMatch(/overlayClassName="listing-gallery__overlay z-\[110\]"/)
-    expect(gallery).toMatch(/listing-gallery z-\[110\]/)
     expect(tour).toMatch(/listing-gallery z-\[110\]/)
     expect(street).toMatch(/listing-gallery z-\[110\]/)
+    expect(gallery).not.toMatch(/overlayClassName="listing-gallery__overlay z-\[110\]"/)
+    expect(gallery).not.toMatch(/listing-gallery z-\[110\]/)
   })
 
-  it('pins the gallery to the viewport instead of the dialog center translate', () => {
-    expect(gallery).toMatch(/translate-x-0/)
-    expect(gallery).toMatch(/translate-y-0/)
-    expect(gallery).toMatch(/max-w-none/)
-    expect(gallery).toMatch(/sm:max-w-none/)
+  it('keeps the gallery as a centered Dialog, not a fullscreen overlay', () => {
+    expect(gallery).toMatch(/sm:max-w-3xl/)
+    expect(gallery).not.toMatch(/translate-x-0/)
+    expect(gallery).not.toMatch(/h-dvh/)
+    expect(gallery).not.toMatch(/sm:max-w-none/)
     expect(tour).toMatch(/translate-x-0/)
     expect(tour).toMatch(/translate-y-0/)
     expect(street).toMatch(/translate-x-0/)

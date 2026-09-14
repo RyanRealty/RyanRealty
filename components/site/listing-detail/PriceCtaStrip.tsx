@@ -7,7 +7,8 @@ import {
   TabularNumber,
 } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
-import { displaySubdivision } from '@/lib/slug'
+import { displaySubdivision, listingCanonicalHref } from '@/lib/slug'
+import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { daysLiveOnMarket } from '@/lib/listing/days-live'
 import { isPublicOffMarketStatus } from '@/lib/listing-status-public'
 import { redirectToLoginForSave } from '@/lib/pending-save'
@@ -31,7 +32,9 @@ import { publishListingListedBy } from '@/lib/listing/publish-listing-listed-by'
 import { formatPriceCompact } from '@/lib/format/money'
 import type { PublishedListingDropMark } from '@/lib/listing/publish-listing-drop-mark'
 import type { PublishedListingPillRead } from '@/lib/listing/publish-listing-pill-read'
-import { V3Button, V3ButtonGroup } from '@/components/site/v3'
+import { ActionSwapText } from '@/components/motion/action-swap'
+import { Button } from '@/components/ui/button'
+import { ButtonGroup } from '@/components/ui/button-group'
 import { PriceDropMark } from './PriceDropMark'
 
 /**
@@ -343,37 +346,26 @@ export function PriceCtaStrip({
     onShare?.(listing.listingKey)
   }
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
+  const shareUrl = `${getCanonicalSiteUrl()}${listingCanonicalHref({
+    listingKey: listing.listingKey,
+    listNumber: listing.listNumber,
+    streetNumber: listing.streetNumber,
+    streetName: listing.streetName,
+    city: listing.city,
+    subdivisionName: listing.subdivisionName,
+  })}`
   const shareTitle = street || `Listing ${listing.listNumber ?? listing.listingKey}`
 
   return (
     <div className={cn('listing-face', className)}>
       <div>
-      <div className="listing-face__price-row">
-      <div
-        className="listing-ask"
-        style={{ color: 'var(--navy)', display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '0.55rem 1rem' }}
-      >
+      <h1 className="listing-ask">
+        {street || `Listing ${listing.listNumber ?? listing.listingKey}`}
+      </h1>
+      <p className="listing-ask__price">
         <Price value={headlinePrice} exact />
-        {estPayment ? (
-          <span
-            className="text-base font-medium sm:text-lg"
-            style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}
-          >
-            {estPayment}
-          </span>
-        ) : null}
-      </div>
-      <V3ButtonGroup label="Save or share this listing" className="listing-face__keep">
-        <ListingSaveButton saveState={saveState} onSave={handleSave} ariaLabel={saveAriaLabel} />
-        <ListingShareButton
-          onShare={handleShare}
-          ariaLabel={`Share ${propertyName}`}
-          shareUrl={shareUrl}
-          shareTitle={shareTitle}
-        />
-      </V3ButtonGroup>
-      </div>
+        {estPayment ? <span className="listing-ask__est">{estPayment}</span> : null}
+      </p>
       {dropMark && !offMarket ? (
         /* The cut as two prices at rest, not a 22px slope (Matt 2026-09-10). */
         <div className="mt-1.5">
@@ -397,9 +389,6 @@ export function PriceCtaStrip({
           {factsLine}
         </div>
       ) : null}
-      <h1 className="listing-address mt-1">
-        {street || `Listing ${listing.listNumber ?? listing.listingKey}`}
-      </h1>
       {cityWithCommunity ? (
         <div className="mt-0.5 text-sm" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
           {cityWithCommunity}
@@ -410,6 +399,19 @@ export function PriceCtaStrip({
           {listedBy}
         </div>
       ) : null}
+      <div className="listing-face__price-row">
+      <div className="listing-face__keep">
+      <ButtonGroup aria-label="Save or share this listing">
+        <ListingSaveButton saveState={saveState} onSave={handleSave} ariaLabel={saveAriaLabel} />
+        <ListingShareButton
+          onShare={handleShare}
+          ariaLabel={`Share ${propertyName}`}
+          shareUrl={shareUrl}
+          shareTitle={shareTitle}
+        />
+      </ButtonGroup>
+      </div>
+      </div>
 
       <div className="mt-3.5 flex flex-nowrap gap-2 overflow-x-auto no-scrollbar">
         <Pill kind={listing.status}>
@@ -457,41 +459,50 @@ export function PriceCtaStrip({
           was a second visual language for the same house — plus a paid static
           map request per view (evaluator round five, LISTING-NOBOUNDARY-6). */}
       <div className="listing-face__actions">
-      {/* CTA hierarchy: primary full-width on mobile, secondaries even 3-col.
-          Desktop keeps the inline wrap. */}
-      <V3ButtonGroup label={offMarket ? 'Homes like this' : 'Contact about this listing'} className="listing-ask-row listing-face__ask mt-5">
+      <ButtonGroup
+        aria-label={offMarket ? 'Homes like this' : 'Contact about this listing'}
+        className="listing-ask-row listing-face__ask mt-5 w-full"
+      >
         {/* SITE-21: THE ASK A BROKER CAN FULFIL.
             Off market, Tour / Call / Text are three requests nobody can act
             on. Save and Share stay — they are the next group, not this one.
-            Adapted from shadcn button-group into V3ButtonGroup. Save / Share
-            use V3ActionSwap (beUI action-swap), not this group. */}
+            Connected shadcn ButtonGroup + outline Buttons; Tour label is
+            beUI action-swap. Not a lone navy fill plus ghosts. */}
         {offMarket ? (
           <>
-            <V3Button href={similarHref}>Homes for sale</V3Button>
-            <V3Button href={alertsHref} variant="ghost">
-              Get alerts
-            </V3Button>
+            <Button variant="outline" asChild>
+              <a href={similarHref}>
+                <ActionSwapText value="homes">Homes for sale</ActionSwapText>
+              </a>
+            </Button>
+            <Button variant="outline" asChild>
+              <a href={alertsHref}>Get alerts</a>
+            </Button>
           </>
         ) : (
           <>
-            <V3Button href={tourHref}>Tour</V3Button>
+            <Button variant="outline" asChild>
+              <a href={tourHref}>
+                <ActionSwapText value="tour">Tour</ActionSwapText>
+              </a>
+            </Button>
             {callHref ? (
-              <V3Button href={callHref} variant="ghost">
-                Call
-              </V3Button>
+              <Button variant="outline" asChild>
+                <a href={callHref}>Call</a>
+              </Button>
             ) : (
-              <V3Button href={askHrefResolved} variant="ghost">
-                Ask a question
-              </V3Button>
+              <Button variant="outline" asChild>
+                <a href={askHrefResolved}>Ask a question</a>
+              </Button>
             )}
             {textHref ? (
-              <V3Button href={textHref} variant="ghost">
-                Text
-              </V3Button>
+              <Button variant="outline" asChild>
+                <a href={textHref}>Text</a>
+              </Button>
             ) : null}
           </>
         )}
-      </V3ButtonGroup>
+      </ButtonGroup>
       {showAlerts ? (
         <>
       <a
