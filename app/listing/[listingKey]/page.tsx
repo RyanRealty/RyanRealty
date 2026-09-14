@@ -91,6 +91,10 @@ import { publishOpenHouseBadgeLabel } from '@/lib/listing/publish-listing-card-b
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
 import ListingBrokerBar from '@/components/site/listing-detail/ListingBrokerBar.client'
 import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/components/site/listing-detail/PhotoGalleryLightbox'
+import { ListingSaveButton as _ListingSaveButtonImport } from '@/components/site/listing-detail/ListingSaveButton'
+import { ListingShareButton as _ListingShareButtonImport } from '@/components/site/listing-detail/ListingShareButton'
+import { listingDocumentTitle } from '@/lib/listing/listing-document-title'
+import { getSession } from '@/app/actions/auth'
 import { TextMattCTA as _TextMattCTAImport } from '@/components/site/listing-detail/TextMattCTA'
 import ListingMobileContactBar from '@/components/site/listing-detail/ListingMobileContactBar.client'
 import ListingTracker from '@/components/listing/ListingTracker'
@@ -114,6 +118,8 @@ import {
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 
 void _PhotoGalleryLightboxImport
+void _ListingSaveButtonImport
+void _ListingShareButtonImport
 void _TextMattCTAImport
 void ListingMobileContactBar
 void ListingVideoEmbed
@@ -183,7 +189,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     city: addressFull ? undefined : (listing.city ?? undefined),
   })
   const addressTitle = addressFull ? addressFull : `Listing ${listing.listingKey}`
-  const title = statusWord ? `${statusWord} · ${addressTitle}` : addressTitle
+  const title = listingDocumentTitle({
+    statusWord,
+    addressTitle,
+    beds: listing.beds,
+    baths: listing.baths,
+  })
 
   // SITE-22: ONE builder for the canonical, the JSON-LD url, the sitemap row
   // and every internal href. The by-address route no longer overrides this with
@@ -518,7 +529,10 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   }).catch(() => null)
 
   const { isListingSaved } = await import('@/app/actions/saved-listings')
-  const initialSaved = await isListingSaved(listing.listingKey).catch(() => false)
+  const [initialSaved, session] = await Promise.all([
+    isListingSaved(listing.listingKey).catch(() => false),
+    getSession(),
+  ])
   const matt =
     brokers.find((b) => b.isPrincipal) ??
     brokers.find((b) => b.slug === 'matthew-ryan' || b.slug === 'matt-ryan') ??
@@ -739,6 +753,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
         history={history}
         onSave={saveListingFromStrip}
         initialSaved={initialSaved}
+        signedIn={Boolean(session)}
         ratePct={calcDefaults?.mortgageRate ?? null}
         showEstPayment={false}
         showAlerts={false}

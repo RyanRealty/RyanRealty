@@ -3,7 +3,16 @@
 import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { useCallback, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { TRANSITIONS_MODAL_SURFACE } from '@/components/motion/transitions-modal'
+import { Tabs, TabsList, TabsTrigger } from '@/components/motion/tabs'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useMediaOverlayHistory } from '@/lib/listing/use-media-overlay-history'
 import {
   publishListingGalleryMobilePills,
@@ -175,150 +184,99 @@ export function PhotoGalleryLightbox({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) dismiss() }}>
       <DialogContent
-        showCloseButton={false}
-        aria-label="Photo gallery"
-        overlayClassName="listing-gallery__overlay z-[110]"
-        className="listing-gallery z-[110] inset-0 top-0 left-0 flex h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none p-0 ring-0 sm:max-w-none"
+        className={cn('sm:max-w-3xl', TRANSITIONS_MODAL_SURFACE)}
       >
-          <DialogTitle className="sr-only">Photo gallery</DialogTitle>
-          <div className="listing-gallery__bar">
-            <div className="listing-gallery__exit">
-              <button
-                type="button"
-                onClick={dismiss}
-                className="listing-gallery__back"
-                aria-label="Back"
-              >
-                ← Back
-              </button>
-              <button
-                type="button"
-                onClick={dismiss}
-                className="listing-gallery__close"
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
-            {tabs.length > 1 ? (
-              <div className="listing-gallery__tabs" role="tablist" aria-label="Listing media">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={
-                      tab.id === 'floor' ? pane === 'floor' : tab.id === 'photos' ? pane === 'photos' : false
-                    }
-                    className={cn(
-                      'listing-gallery__tab',
-                      (tab.id === 'floor' && pane === 'floor') ||
-                        (tab.id === 'photos' && pane === 'photos')
-                        ? 'is-on'
-                        : null,
-                    )}
-                    onClick={() => onTab(tab.id)}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-            <div className="listing-gallery__count">
-              {stills.length > 0 ? <>{openIndex! + 1} of {count}</> : null}
-            </div>
-          </div>
-
-          {mobilePills.length > 1 ? (
-            <div className="listing-gallery__pills">
-              {mobilePills.map((pill) => (
-                <button
-                  key={pill.id}
-                  type="button"
-                  className={cn(
-                    'listing-gallery__pill',
-                    (pill.id === 'floor' && pane === 'floor') ||
-                      (pill.id === 'all' && pane === 'photos')
-                      ? 'is-on'
-                      : null,
-                  )}
-                  onClick={() => onTab(pill.id)}
-                >
-                  {pill.label}
-                </button>
-              ))}
-            </div>
-          ) : null}
-
-          <div className="listing-gallery__stack">
-            {stills.map((p, i) => (
-              <button
-                key={`stack-${i}-${p.url}`}
-                type="button"
-                className="listing-gallery__stack-item"
-                onClick={() => onChange(i)}
-                aria-label={`${altBase} ${i + 1} of ${stills.length}`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={preferListingMosaicPhotoUrl(p.url)} alt={p.caption ?? `${altBase} ${i + 1}`} />
-              </button>
-            ))}
-          </div>
-
-          <div
-            className="listing-gallery__stage"
-            onTouchStart={onTouchStart}
-            onTouchEnd={onTouchEnd}
+        <DialogHeader>
+          <DialogTitle>Photos</DialogTitle>
+          <DialogDescription>
+            {stills.length > 0 ? (
+              <>
+                {openIndex! + 1} of {count}
+              </>
+            ) : (
+              altBase
+            )}
+          </DialogDescription>
+        </DialogHeader>
+        {tabs.length > 1 ? (
+          <Tabs
+            value={pane === 'floor' ? 'floor' : 'photos'}
+            onValueChange={onTab}
+            variant="pill"
           >
-            <button
-              type="button"
-              onClick={goPrev}
-              className="listing-gallery__arrow listing-gallery__arrow--prev"
-              aria-label="Previous photo"
-            >
-              ‹
-            </button>
-            {current ? (
-              <div className="listing-gallery__frame">
-                <SparkSafeImage
-                  src={preferListingMosaicPhotoUrl(current.url)}
-                  alt={altText}
-                  fill
-                  sizes="100vw"
-                  priority
-                  className="object-contain"
-                />
-              </div>
-            ) : null}
-            <button
-              type="button"
-              onClick={goNext}
-              className="listing-gallery__arrow listing-gallery__arrow--next"
-              aria-label="Next photo"
-            >
-              ›
-            </button>
-          </div>
-
-          {count <= 20 && stills.length > 1 ? (
-            <div className="listing-gallery__dots" aria-hidden>
-              {Array.from({ length: count }, (_, i) => (
-                <span
-                  key={i}
-                  className={cn('listing-gallery__dot', i === openIndex && 'is-on')}
-                />
+            <TabsList>
+              {tabs.map((tab) => (
+                <TabsTrigger key={tab.id} value={tab.id}>
+                  {tab.label}
+                </TabsTrigger>
               ))}
+            </TabsList>
+          </Tabs>
+        ) : mobilePills.length > 1 ? (
+          <Tabs
+            value={pane === 'floor' ? 'floor' : 'photos'}
+            onValueChange={onTab}
+            variant="pill"
+          >
+            <TabsList>
+              {mobilePills.map((pill) => (
+                <TabsTrigger key={pill.id} value={pill.id === 'all' ? 'photos' : pill.id}>
+                  {pill.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        ) : null}
+        <div
+          className="relative"
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+        >
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="absolute top-1/2 left-2 z-10 -translate-y-1/2"
+            onClick={goPrev}
+            aria-label="Previous photo"
+          >
+            ‹
+          </Button>
+          {current ? (
+            <div className="relative aspect-[4/3] w-full bg-background">
+              <SparkSafeImage
+                src={preferListingMosaicPhotoUrl(current.url)}
+                alt={altText}
+                fill
+                sizes="100vw"
+                priority
+                className="object-contain"
+              />
             </div>
           ) : null}
-
-          <div ref={stripRef} className="listing-gallery__thumbs">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="absolute top-1/2 right-2 z-10 -translate-y-1/2"
+            onClick={goNext}
+            aria-label="Next photo"
+          >
+            ›
+          </Button>
+        </div>
+        {stills.length > 1 ? (
+          <div ref={stripRef} className="flex gap-1 overflow-x-auto no-scrollbar">
             {stills.map((p, i) => (
               <button
                 key={`${i}-${p.url}`}
                 type="button"
                 data-thumb-index={i}
                 onClick={() => onChange(i)}
-                className={cn('listing-gallery__thumb', i === openIndex && 'is-on')}
+                className={cn(
+                  'relative h-16 w-24 shrink-0 overflow-hidden border border-border',
+                  i === openIndex && 'ring-2 ring-primary',
+                )}
                 aria-label={`Jump to photo ${i + 1} of ${count}`}
                 aria-current={i === openIndex ? 'true' : undefined}
               >
@@ -332,7 +290,8 @@ export function PhotoGalleryLightbox({
               </button>
             ))}
           </div>
-        </DialogContent>
+        ) : null}
+      </DialogContent>
     </Dialog>
   )
 }

@@ -14,6 +14,13 @@ describe('buildJsonLd', () => {
       expect(buildJsonLd(base)['@type']).toBe('RealEstateListing')
     })
 
+    it('names bedrooms on the machine node so a bed-count query can match (SITE-99)', () => {
+      const node = buildJsonLd({ ...base, beds: 4, baths: 3 })
+      expect(node.numberOfBedrooms).toBe(4)
+      expect(node.numberOfRooms).toBe(4)
+      expect(node.numberOfBathroomsTotal).toBe(3)
+    })
+
     it('Active -> InStock offer at the list price', () => {
       const offer = rec(buildJsonLd({ ...base, availability: 'Active' }).offers)
       expect(offer).toMatchObject({

@@ -5,7 +5,16 @@ import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { cn } from '@/lib/utils'
 import type { ListingPhoto } from '@/lib/data/types/listing'
 import type { VideoEmbed } from '@/lib/data/types/video'
-import { V3Carousel } from '@/components/site/v3'
+import { PhotoSkeleton } from '@/components/motion/photo-skeleton'
+import { Tabs, TabsList, TabsTrigger } from '@/components/motion/tabs'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from '@/components/ui/carousel'
 import { PhotoGalleryLightbox } from './PhotoGalleryLightbox'
 import { ListingTourOverlay } from './ListingTourOverlay'
 import { ListingStreetViewOverlay } from './ListingStreetViewOverlay'
@@ -124,6 +133,7 @@ export function ListingHero({
 }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [galleryPane, setGalleryPane] = useState<'photos' | 'floor'>('photos')
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>()
   const [embed, setEmbed] = useState<VideoEmbed | null>(null)
   const [tourOpen, setTourOpen] = useState(false)
   const [streetOpen, setStreetOpen] = useState(false)
@@ -133,8 +143,6 @@ export function ListingHero({
   const [frame, setFrame] = useState(0)
   /** The filmstrip's expanded state; hover expands it too (CSS). */
   const [stripOpen, setStripOpen] = useState(false)
-  /** The phone's overflow: the media controls past "N photos". */
-  const [moreOpen, setMoreOpen] = useState(false)
   const [mediaTab, setMediaTab] = useState<MediaTab>(() => {
     if (photos.length > 0) return 'photos'
     if (floorPlans.length > 0) return 'floor'
@@ -206,9 +214,22 @@ export function ListingHero({
       const next = Math.max(0, Math.min(i, Math.max(0, total - 1)))
       setFrame(next)
       setMediaTab('photos')
+      carouselApi?.scrollTo(heroVideo ? next : next)
     },
-    [total],
+    [total, carouselApi, heroVideo],
   )
+
+  useEffect(() => {
+    if (!carouselApi) return
+    const sync = () => {
+      setFrame(carouselApi.selectedScrollSnap())
+      setMediaTab('photos')
+    }
+    carouselApi.on('select', sync)
+    return () => {
+      carouselApi.off('select', sync)
+    }
+  }, [carouselApi])
 
   if (!hasLeadMedia) return null
 
@@ -250,7 +271,6 @@ export function ListingHero({
   }
 
   function openCaption(pill: ListingMosaicPill) {
-    setMoreOpen(false)
     if (pill.action === 'gallery') {
       setMediaTab('photos')
       openGallery(frame)
@@ -279,12 +299,22 @@ export function ListingHero({
      the rest are the overflow there and inline on desktop. */
   const primaryPill = mosaicPills.find((pill) => pill.action === 'gallery') ?? null
   const otherPills = mosaicPills.filter((pill) => pill.action !== 'gallery')
-  const overflowCount = otherPills.length + (hasMap ? 1 : 0)
+  const streetPill = otherPills.find((pill) => pill.action === 'street') ?? null
+  const mediaTabItems = [
+    { value: 'photos' as const, label: primaryPill?.label ?? 'Photos' },
+    ...otherPills
+      .filter((pill) => pill.action === 'floor' || pill.action === 'tour')
+      .map((pill) => ({
+        value: (pill.action === 'floor' ? 'floor' : 'tour') as MediaTab,
+        label: pill.label,
+      })),
+    hasMap ? { value: 'map' as const, label: 'Map' } : null,
+  ].filter((row): row is { value: MediaTab; label: string } => row != null)
 
   return (
     <div
       id="listing-hero-visual"
-      className={cn('listing-mosaic listing-frame', stripOpen && 'is-strip-open', className)}
+      className={cn('listing-hero-bleed listing-frame listing-mosaic', stripOpen && 'is-strip-open', className)}
     >
       <div className="listing-frame__media">
         {showTour ? (
@@ -304,55 +334,60 @@ export function ListingHero({
         ) : null}
         {showMap || showTour ? null : (
           <>
-            {/* The phone: swipeable track. Adapted from shadcn carousel into V3Carousel. */}
-            <V3Carousel
-              label={addressLine ? `Photos of ${addressLine}` : 'Listing photos'}
-              index={frame}
-              onIndexChange={(i) => {
-                setFrame(i)
-                setMediaTab('photos')
-              }}
-              className="listing-mosaic__carousel"
+            <Carousel
+              className="listing-hero-carousel listing-mosaic__carousel"
+              opts={{ align: 'start', loop: false }}
+              setApi={setCarouselApi}
+              aria-label={addressLine ? `Photos of ${addressLine}` : 'Listing photos'}
             >
-              {heroVideo ? (
-                <div className="listing-mosaic__slide">
-                  <VideoLayer
-                    video={heroVideo}
-                    posterUrl={photos[0]?.url}
-                    altBase={altBase}
-                    videoRef={videoRef}
-                    onTap={openLead}
-                    openLabel={leadOpenLabel ?? 'Open video'}
-                    allowAutoplay={allowAutoplay}
-                  />
-                </div>
-              ) : null}
-              {photos.length === 0 && !heroVideo ? (
-                <div
-                  className="listing-mosaic__slide listing-mosaic__slide--empty"
-                  role="img"
-                  aria-label="Photos not available yet"
-                >
-                  <p className="listing-mosaic__empty-label">Photos not available yet</p>
-                </div>
-              ) : null}
-              {photos.map((photo, i) => (
-                <button
-                  key={`${i}-${photo.url}`}
-                  type="button"
-                  className="listing-mosaic__slide"
-                  onClick={() => openGallery(i)}
-                  aria-label={`Open photo ${i + 1} of ${total}`}
-                >
-                  <MosaicStill
-                    src={photo.url}
-                    alt={photo.caption ?? `${altBase} ${i + 1} of ${total}`}
-                    sizes={LISTING_MOSAIC_CAROUSEL_SIZES}
-                    priority={lcpPriority && i === 0}
-                  />
-                </button>
-              ))}
-            </V3Carousel>
+              <CarouselContent className="ml-0">
+                {heroVideo ? (
+                  <CarouselItem className="pl-0">
+                    <div className="listing-mosaic__slide">
+                      <VideoLayer
+                        video={heroVideo}
+                        posterUrl={photos[0]?.url}
+                        altBase={altBase}
+                        videoRef={videoRef}
+                        onTap={openLead}
+                        openLabel={leadOpenLabel ?? 'Open video'}
+                        allowAutoplay={allowAutoplay}
+                      />
+                    </div>
+                  </CarouselItem>
+                ) : null}
+                {photos.length === 0 && !heroVideo ? (
+                  <CarouselItem className="pl-0">
+                    <div
+                      className="listing-mosaic__slide listing-mosaic__slide--empty"
+                      role="img"
+                      aria-label="Photos not available yet"
+                    >
+                      <p className="listing-mosaic__empty-label">Photos not available yet</p>
+                    </div>
+                  </CarouselItem>
+                ) : null}
+                {photos.map((photo, i) => (
+                  <CarouselItem key={`${i}-${photo.url}`} className="pl-0">
+                    <button
+                      type="button"
+                      className="listing-mosaic__slide"
+                      onClick={() => openGallery(i)}
+                      aria-label={`Open photo ${i + 1} of ${total}`}
+                    >
+                      <MosaicStill
+                        src={photo.url}
+                        alt={photo.caption ?? `${altBase} ${i + 1} of ${total}`}
+                        sizes={LISTING_MOSAIC_CAROUSEL_SIZES}
+                        priority={lcpPriority && i === 0}
+                      />
+                    </button>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="listing-hero-carousel__prev left-2" />
+              <CarouselNext className="listing-hero-carousel__next right-2" />
+            </Carousel>
 
             {/* Desktop: ONE frame, the photo the strip points at. */}
             {frameIsVideo && heroVideo ? (
@@ -443,7 +478,7 @@ export function ListingHero({
 
       {/* THE FILMSTRIP. A navy index of every photo under the frame; the
           media controls ride it instead of floating on the picture. */}
-      {total > 0 || overflowCount > 0 ? (
+      {total > 0 || mediaTabItems.length > 0 ? (
         <div className="listing-strip" data-open={stripOpen ? 'true' : 'false'}>
           {total > 0 ? (
             <button
@@ -492,7 +527,40 @@ export function ListingHero({
             </div>
           ) : null}
           <div className="listing-strip__tools" role="group" aria-label="Listing media">
-            {primaryPill ? (
+            {mediaTabItems.length > 1 ? (
+              <Tabs
+                value={mediaTab}
+                onValueChange={(next) => {
+                  if (next === 'tour') {
+                    const tour = otherPills.find((pill) => pill.action === 'tour')
+                    if (tour) {
+                      openCaption(tour)
+                      return
+                    }
+                  }
+                  if (next === 'floor') {
+                    const floor = otherPills.find((pill) => pill.action === 'floor')
+                    if (floor) {
+                      openCaption(floor)
+                      return
+                    }
+                  }
+                  if (next === 'photos' || next === 'map' || next === 'tour' || next === 'floor') {
+                    setMediaTab(next)
+                  }
+                }}
+                variant="pill"
+                className="listing-strip__tabs"
+              >
+                <TabsList>
+                  {mediaTabItems.map((item) => (
+                    <TabsTrigger key={item.value} value={item.value}>
+                      {item.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            ) : primaryPill ? (
               <button
                 type="button"
                 className="listing-strip__tool listing-strip__tool--primary"
@@ -501,50 +569,15 @@ export function ListingHero({
                 {primaryPill.label}
               </button>
             ) : null}
-            {overflowCount > 0 ? (
+            {streetPill ? (
               <button
                 type="button"
-                className="listing-strip__more"
-                onClick={() => setMoreOpen((open) => !open)}
-                aria-expanded={moreOpen}
-                aria-controls="listing-strip-overflow"
+                className="listing-strip__tool"
+                onClick={() => openCaption(streetPill)}
               >
-                More
+                {streetPill.label}
               </button>
             ) : null}
-            <div
-              id="listing-strip-overflow"
-              className={cn('listing-strip__overflow', moreOpen && 'is-open')}
-            >
-              {otherPills.map((pill) => (
-                <button
-                  key={pill.id}
-                  type="button"
-                  className={cn(
-                    'listing-strip__tool',
-                    ((pill.action === 'floor' && mediaTab === 'floor') ||
-                      (pill.action === 'tour' && mediaTab === 'tour')) &&
-                      'is-on',
-                  )}
-                  onClick={() => openCaption(pill)}
-                >
-                  {pill.label}
-                </button>
-              ))}
-              {hasMap ? (
-                <button
-                  type="button"
-                  className={cn('listing-strip__tool', mediaTab === 'map' && 'is-on')}
-                  onClick={() => {
-                    setMoreOpen(false)
-                    setMediaTab((tab) => (tab === 'map' ? 'photos' : 'map'))
-                  }}
-                  aria-pressed={mediaTab === 'map'}
-                >
-                  Map
-                </button>
-              ) : null}
-            </div>
           </div>
         </div>
       ) : null}
@@ -608,16 +641,21 @@ function MosaicStill({
   // The hero is a full-bleed frame. 320 and 800 Spark plates look pixelated
   // here (Matt 2026-09-10). Always paint the 1600 mosaic derivative.
   const live = preferListingMosaicPhotoUrl(src)
+  const [ready, setReady] = useState(false)
   return (
-    <SparkSafeImage
-      src={live}
-      alt={alt}
-      fill
-      sizes={sizes}
-      quality={LISTING_MOSAIC_PHOTO_QUALITY}
-      priority={priority}
-      className={contain ? 'object-contain' : 'object-cover'}
-    />
+    <>
+      {ready ? null : <PhotoSkeleton label="Loading photograph" />}
+      <SparkSafeImage
+        src={live}
+        alt={alt}
+        fill
+        sizes={sizes}
+        quality={LISTING_MOSAIC_PHOTO_QUALITY}
+        priority={priority}
+        onLoad={() => setReady(true)}
+        className={cn(contain ? 'object-contain' : 'object-cover', !ready && 'opacity-0')}
+      />
+    </>
   )
 }
 

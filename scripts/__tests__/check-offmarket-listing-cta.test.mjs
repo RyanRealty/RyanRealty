@@ -197,15 +197,10 @@ describe('ci:offmarket-listing-cta', () => {
     reset()
     const p = join(SANDBOX, STRIP)
     const src = readFileSync(p, 'utf8')
-    const start = src.indexOf('        {offMarket ? (')
-    const end = src.indexOf('        <V3Button\n          type="button"', start)
-    expect(start).toBeGreaterThan(-1)
-    expect(end).toBeGreaterThan(start)
-    const onMarketArm = `        <V3Button href={tourHref}>Tour</V3Button>
-        <V3Button href={callHref!} variant="ghost">Call</V3Button>
-        <V3Button href={textHref!} variant="ghost">Text</V3Button>
-`
-    writeFileSync(p, src.slice(0, start) + onMarketArm + src.slice(end))
+    expect(src).toContain('{offMarket ? (')
+    // SITE-99 moved Save/Share out of this ternary. Flip the flag so the
+    // on-market Tour / Call / Text arm always paints.
+    writeFileSync(p, src.replace('{offMarket ? (', '{false ? ('))
     const r = run()
     expect(r.code).toBe(1)
     expect(r.out).toContain('the Tour / Call / Text ask is NOT guarded')
@@ -264,7 +259,7 @@ describe('ci:offmarket-listing-cta', () => {
 
   it('FAILS when only the button pair loses its guard, the phone line keeping one', () => {
     reset()
-    edit(CARD, '          {offMarket ? (\n            <a href={valuationHref', '          {false ? (\n            <a href={valuationHref')
+    edit(CARD, '          {offMarket ? (\n            <Button variant="outline" asChild>', '          {false ? (\n            <Button variant="outline" asChild>')
     const r = run()
     expect(r.code).toBe(1)
     expect(r.out).toContain('a tel:/sms: contact URI is NOT guarded')

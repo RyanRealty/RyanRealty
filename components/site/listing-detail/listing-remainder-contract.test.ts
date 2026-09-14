@@ -13,6 +13,110 @@ describe('listing remainder composition', () => {
     expect(PAGE).toContain('LISTING_MOSAIC_LEAD_PHOTO_SIZE')
   })
 
+  it('locks Save and Share on the listing page so they cannot silently vanish', () => {
+    const STRIP = readFileSync(resolve('components/site/listing-detail/PriceCtaStrip.tsx'), 'utf8')
+    const CSS = readFileSync(resolve('components/site/listing-detail/listing-detail.css'), 'utf8')
+    const PARITY = readFileSync(
+      resolve('design_system/ryan-realty/ui_kits/listing-detail/parity.json'),
+      'utf8',
+    )
+    expect(PAGE).toMatch(/import \{ ListingSaveButton/)
+    expect(PAGE).toMatch(/import \{ ListingShareButton/)
+    expect(PAGE).toContain('listingDocumentTitle')
+    expect(STRIP).toContain('<ListingSaveButton')
+    expect(STRIP).toContain('<ListingShareButton')
+    expect(STRIP).toContain('listing-face__keep')
+    const SAVE_SHEET = readFileSync(
+      resolve('components/site/listing-detail/ListingGuestSaveSheet.client.tsx'),
+      'utf8',
+    )
+    expect(SAVE_SHEET).toMatch(/from '@\/components\/ui\/sheet'/)
+    expect(SAVE_SHEET).toContain('SheetContent')
+    expect(SAVE_SHEET).not.toContain('surface="drawer"')
+    expect(HERO).toMatch(/from '@\/components\/motion\/tabs'/)
+    expect(HERO).toMatch(/from '@\/components\/ui\/carousel'/)
+    expect(HERO).not.toContain('V3Tabs')
+    expect(HERO).toContain('PhotoSkeleton')
+    const SHEET = readFileSync(resolve('components/site/v3/V3Sheet.tsx'), 'utf8')
+    expect(SHEET).toMatch(/from '@\/components\/ui\/sheet'/)
+    expect(PARITY).toContain('"name": "ListingSaveButton"')
+    expect(PARITY).toContain('"name": "ListingShareButton"')
+    const receipt = JSON.parse(PARITY) as {
+      tasteReview?: { shotSpec?: { states?: string[] }; demoMatch?: unknown }
+    }
+    const states = receipt.tasteReview?.shotSpec?.states ?? []
+    expect(states.some((s) => /save-open/.test(s))).toBe(true)
+    expect(states.some((s) => /share-open/.test(s))).toBe(true)
+    expect(states.some((s) => /gallery-open/.test(s))).toBe(true)
+    expect(receipt.tasteReview?.demoMatch).not.toBe(true)
+    const catalog = JSON.parse(
+      readFileSync(resolve('design_system/public/taste-catalog.json'), 'utf8'),
+    ) as { classes?: { 'listing-detail'?: { demoStates?: string[] } } }
+    const demoStates = catalog.classes?.['listing-detail']?.demoStates ?? []
+    expect(demoStates.some((s) => /save-open/.test(s) && /click/.test(s))).toBe(true)
+    expect(demoStates.some((s) => /share-open/.test(s) && /click/.test(s))).toBe(true)
+    expect(demoStates.some((s) => /gallery-open/.test(s) && /click/.test(s))).toBe(true)
+    const SHARE = readFileSync(resolve('components/site/listing-detail/ListingShareButton.tsx'), 'utf8')
+    expect(SHARE).toMatch(/from '@\/components\/ui\/dialog'/)
+    expect(SHARE).toMatch(/from '@\/components\/ui\/input'/)
+    expect(STRIP).not.toContain('window.location.href')
+    expect(STRIP).toContain('getCanonicalSiteUrl')
+    expect(STRIP).toMatch(/from '@\/components\/ui\/button-group'/)
+    expect(STRIP).toContain('signedIn')
+    expect(STRIP).toContain('listing-face__price-row')
+    expect(CSS).toMatch(/\.listing-face__keep[\s\S]*display:\s*grid/)
+    const rules = CSS.replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(rules).not.toMatch(/\.listing-face__keep[^{]*\{[^}]*display:\s*none/)
+    expect(rules).not.toMatch(/\.listing-face__actions\s*\{\s*display:\s*none/)
+  })
+
+  it('names installed catalog jobs on the receipt and imports the source (SITE-99)', () => {
+    const PARITY = JSON.parse(
+      readFileSync(resolve('design_system/ryan-realty/ui_kits/listing-detail/parity.json'), 'utf8'),
+    ) as {
+      tasteReview?: { adaptedFrom?: Array<string | { id?: string }>; defects?: Array<{ replaceWith?: unknown }> }
+    }
+    const adapted = (PARITY.tasteReview?.adaptedFrom ?? []).map((hit) =>
+      typeof hit === 'string' ? hit : hit.id,
+    )
+    expect(adapted.length).toBeGreaterThan(0)
+    for (const id of [
+      'shadcn-carousel',
+      'shadcn-button-group',
+      'shadcn-sheet',
+      'shadcn-dialog',
+      'beui-tabs',
+      'beui-action-swap',
+      'transitions-modal',
+      'beautifului-loading',
+    ]) {
+      expect(adapted).toContain(id)
+    }
+    for (const defect of PARITY.tasteReview?.defects ?? []) {
+      expect(defect).toHaveProperty('replaceWith')
+    }
+    const CAROUSEL = readFileSync(resolve('components/site/v3/V3Carousel.client.tsx'), 'utf8')
+    const GROUP = readFileSync(resolve('components/site/v3/V3ButtonGroup.tsx'), 'utf8')
+    const SHEET = readFileSync(resolve('components/site/v3/V3Sheet.tsx'), 'utf8')
+    const LIGHTBOX = readFileSync(resolve('components/site/listing-detail/PhotoGalleryLightbox.tsx'), 'utf8')
+    const TABS = readFileSync(resolve('components/site/v3/V3Tabs.tsx'), 'utf8')
+    const SWAP = readFileSync(resolve('components/site/v3/V3ActionSwap.tsx'), 'utf8')
+    expect(CAROUSEL).toMatch(/from '@\/components\/ui\/carousel'/)
+    expect(GROUP).toMatch(/from '@\/components\/ui\/button-group'/)
+    expect(SHEET).toMatch(/from '@\/components\/ui\/sheet'/)
+    expect(LIGHTBOX).toMatch(/from '@\/components\/ui\/dialog'/)
+    expect(LIGHTBOX).not.toContain('showCloseButton={false}')
+    expect(LIGHTBOX).not.toContain('h-dvh')
+    expect(HERO).toContain('listing-hero-bleed')
+    const SHARE_BTN = readFileSync(resolve('components/site/listing-detail/ListingShareButton.tsx'), 'utf8')
+    expect(SHARE_BTN).toMatch(/from '@\/components\/ui\/dialog'/)
+    expect(LIGHTBOX).toMatch(/from '@\/components\/motion\/transitions-modal'/)
+    expect(TABS).toMatch(/from '@\/components\/motion\/tabs'/)
+    expect(SWAP).toMatch(/from '@\/components\/motion\/action-swap'/)
+    expect(HERO).toMatch(/from '@\/components\/motion\/photo-skeleton'/)
+    expect(GROUP).not.toMatch(/from '@\/components\/motion\/action-swap'/)
+  })
+
   it('keeps beds, baths, and living sqft on the Facts sheet (SITE-115)', () => {
     const SPECS = readFileSync(resolve('components/site/listing-detail/PropertySpecs.tsx'), 'utf8')
     expect(SPECS).toContain('listing.beds')

@@ -7,11 +7,14 @@ import {
   TabularNumber,
 } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
-import { displaySubdivision } from '@/lib/slug'
+import { displaySubdivision, listingCanonicalHref } from '@/lib/slug'
+import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { daysLiveOnMarket } from '@/lib/listing/days-live'
 import { isPublicOffMarketStatus } from '@/lib/listing-status-public'
 import { redirectToLoginForSave } from '@/lib/pending-save'
 import { ListingGuestSaveSheet } from '@/components/site/listing-detail/ListingGuestSaveSheet.client'
+import { ListingSaveButton, type ListingSaveState } from '@/components/site/listing-detail/ListingSaveButton'
+import { ListingShareButton } from '@/components/site/listing-detail/ListingShareButton'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { publishListingDrop, publishListingEstPayment } from '@/lib/listing/publish-listing-ask'
@@ -29,7 +32,9 @@ import { publishListingListedBy } from '@/lib/listing/publish-listing-listed-by'
 import { formatPriceCompact } from '@/lib/format/money'
 import type { PublishedListingDropMark } from '@/lib/listing/publish-listing-drop-mark'
 import type { PublishedListingPillRead } from '@/lib/listing/publish-listing-pill-read'
-import { V3Button, V3ButtonGroup } from '@/components/site/v3'
+import { ActionSwapText } from '@/components/motion/action-swap'
+import { Button } from '@/components/ui/button'
+import { ButtonGroup } from '@/components/ui/button-group'
 import { PriceDropMark } from './PriceDropMark'
 
 /**
@@ -38,15 +43,15 @@ import { PriceDropMark } from './PriceDropMark'
  * Hierarchy (E4 craft):
  *   1. Price (Layer A H1, address in sr-only + visible lines) — honest MLS numbers only
  *   2. Primary: Schedule a tour (navy-filled, full-width on mobile)
- *   3. Secondary: Ask / Save / Share (outlined, 44px hit targets)
+ *   3. Secondary: Save / Share — always mounted (SITE-21 / SITE-99). Tour /
+ *      Call / Text is the on-market ask; desktop hides that ask because the
+ *      sidebar already carries it. Save and Share stay in the live control.
  *   4. Tertiary: Get alerts for homes like this → #listing-like-alerts
  *
  * Spec source:
  *   design_system/ryan-realty/ui_kits/listing-detail/index.html §ld-price-block
  *   design_system/ryan-realty/ui_kits/listing-detail/parity.json "PriceCtaStrip"
  */
-
-type SaveState = 'idle' | 'saving' | 'saved'
 
 type Props = {
   listing: Pick<
@@ -98,7 +103,12 @@ type Props = {
   onSave?: (listingKey: string) => Promise<{ saved: boolean; needsAuth?: boolean }>
   /** Initial saved state, hydrated by the server. */
   initialSaved?: boolean
-  /** Share handler — caller wires to Web Share API or fallback toast. */
+  /**
+   * Guest save must open the Sheet without waiting on a server action
+   * (SITE-99 demo match). Signed-in visitors still hit onSave.
+   */
+  signedIn?: boolean
+  /** Share handler — optional extra after the Dialog opens. */
   onShare?: (listingKey: string) => void
   /** Override the default contact-tour href. */
   scheduleHref?: string
@@ -159,6 +169,7 @@ export function PriceCtaStrip({
   history,
   onSave,
   initialSaved = false,
+  signedIn = false,
   onShare,
   scheduleHref,
   askHref,
@@ -186,7 +197,7 @@ export function PriceCtaStrip({
   // the close (lib/listing/days-live.ts daysOnMarketToClose), and this strip
   // publishes none.
   const daysLive = offMarket ? null : daysLiveOnMarket(listing.onMarketDate ?? null)
-  const [saveState, setSaveState] = useState<SaveState>(initialSaved ? 'saved' : 'idle')
+  const [saveState, setSaveState] = useState<ListingSaveState>(initialSaved ? 'saved' : 'idle')
   const [guestSaveOpen, setGuestSaveOpen] = useState(false)
 
   // RC7 resume: complete a save this listing was bounced to login for (the hook
@@ -309,14 +320,18 @@ export function PriceCtaStrip({
     askHref ?? listingContactHref(contactKey, 'question') ?? `/contact?intent=question`
 
   async function handleSave() {
-    if (!onSave || saveState === 'saving') return
+    if (saveState === 'saving') return
+    if (!signedIn) {
+      // Guest Sheet is the catalog demo. Do not wait on toggleSavedListing
+      // or the save-open shot records a closed button.
+      setGuestSaveOpen(true)
+      return
+    }
+    if (!onSave) return
     setSaveState('saving')
     try {
       const res = await onSave(listing.listingKey)
       if (res.needsAuth) {
-        // Signed-out: email-first (funnel audit 2026-09-01). The guest sheet
-        // captures the lead with one field; "Save with Google instead" inside
-        // it keeps the OAuth + pending-save resume path exactly as before.
         setSaveState('idle')
         setGuestSaveOpen(true)
         return
@@ -328,44 +343,29 @@ export function PriceCtaStrip({
   }
 
   function handleShare() {
-    if (onShare) {
-      onShare(listing.listingKey)
-      return
-    }
-    // Default: Web Share API with same-origin fallback to copy.
-    const url = typeof window !== 'undefined' ? window.location.href : ''
-    const title = street || `Listing ${listing.listingKey}`
-    const nav = typeof navigator !== 'undefined' ? (navigator as Navigator & { share?: Navigator['share'] }) : null
-    if (nav?.share) {
-      nav.share({ title, url }).catch(() => {
-        if (nav.clipboard) {
-          nav.clipboard.writeText(url).catch(() => {})
-        }
-      })
-      return
-    }
-    if (nav?.clipboard) {
-      nav.clipboard.writeText(url).catch(() => {})
-    }
+    onShare?.(listing.listingKey)
   }
+
+  const shareUrl = `${getCanonicalSiteUrl()}${listingCanonicalHref({
+    listingKey: listing.listingKey,
+    listNumber: listing.listNumber,
+    streetNumber: listing.streetNumber,
+    streetName: listing.streetName,
+    city: listing.city,
+    subdivisionName: listing.subdivisionName,
+  })}`
+  const shareTitle = street || `Listing ${listing.listNumber ?? listing.listingKey}`
 
   return (
     <div className={cn('listing-face', className)}>
       <div>
-      <div
-        className="listing-ask"
-        style={{ color: 'var(--navy)', display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '0.55rem 1rem' }}
-      >
+      <h1 className="listing-ask">
+        {street || `Listing ${listing.listNumber ?? listing.listingKey}`}
+      </h1>
+      <p className="listing-ask__price">
         <Price value={headlinePrice} exact />
-        {estPayment ? (
-          <span
-            className="text-base font-medium sm:text-lg"
-            style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}
-          >
-            {estPayment}
-          </span>
-        ) : null}
-      </div>
+        {estPayment ? <span className="listing-ask__est">{estPayment}</span> : null}
+      </p>
       {dropMark && !offMarket ? (
         /* The cut as two prices at rest, not a 22px slope (Matt 2026-09-10). */
         <div className="mt-1.5">
@@ -389,9 +389,6 @@ export function PriceCtaStrip({
           {factsLine}
         </div>
       ) : null}
-      <h1 className="listing-address mt-1">
-        {street || `Listing ${listing.listNumber ?? listing.listingKey}`}
-      </h1>
       {cityWithCommunity ? (
         <div className="mt-0.5 text-sm" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
           {cityWithCommunity}
@@ -402,8 +399,21 @@ export function PriceCtaStrip({
           {listedBy}
         </div>
       ) : null}
+      <div className="listing-face__price-row">
+      <div className="listing-face__keep">
+      <ButtonGroup aria-label="Save or share this listing">
+        <ListingSaveButton saveState={saveState} onSave={handleSave} ariaLabel={saveAriaLabel} />
+        <ListingShareButton
+          onShare={handleShare}
+          ariaLabel={`Share ${propertyName}`}
+          shareUrl={shareUrl}
+          shareTitle={shareTitle}
+        />
+      </ButtonGroup>
+      </div>
+      </div>
 
-      <div className="mt-3.5 flex flex-wrap gap-2">
+      <div className="mt-3.5 flex flex-nowrap gap-2 overflow-x-auto no-scrollbar">
         <Pill kind={listing.status}>
           <span aria-hidden>●</span>{' '}
           {isClosed && listing.closeDate
@@ -449,54 +459,50 @@ export function PriceCtaStrip({
           was a second visual language for the same house — plus a paid static
           map request per view (evaluator round five, LISTING-NOBOUNDARY-6). */}
       <div className="listing-face__actions">
-      {/* CTA hierarchy: primary full-width on mobile, secondaries even 3-col.
-          Desktop keeps the inline wrap. */}
-      <V3ButtonGroup label={offMarket ? 'Homes like this' : 'Contact about this listing'} className="listing-ask-row mt-5">
+      <ButtonGroup
+        aria-label={offMarket ? 'Homes like this' : 'Contact about this listing'}
+        className="listing-ask-row listing-face__ask mt-5 w-full"
+      >
         {/* SITE-21: THE ASK A BROKER CAN FULFIL.
             Off market, Tour / Call / Text are three requests nobody can act
-            on. Save and Share stay. Adapted from shadcn button-group + beUI
-            action-swap into V3ButtonGroup. */}
+            on. Save and Share stay — they are the next group, not this one.
+            Connected shadcn ButtonGroup + outline Buttons; Tour label is
+            beUI action-swap. Not a lone navy fill plus ghosts. */}
         {offMarket ? (
           <>
-            <V3Button href={similarHref}>Homes for sale</V3Button>
-            <V3Button href={alertsHref} variant="ghost">
-              Get alerts
-            </V3Button>
+            <Button variant="outline" asChild>
+              <a href={similarHref}>
+                <ActionSwapText value="homes">Homes for sale</ActionSwapText>
+              </a>
+            </Button>
+            <Button variant="outline" asChild>
+              <a href={alertsHref}>Get alerts</a>
+            </Button>
           </>
         ) : (
           <>
-            <V3Button href={tourHref}>Tour</V3Button>
+            <Button variant="outline" asChild>
+              <a href={tourHref}>
+                <ActionSwapText value="tour">Tour</ActionSwapText>
+              </a>
+            </Button>
             {callHref ? (
-              <V3Button href={callHref} variant="ghost">
-                Call
-              </V3Button>
+              <Button variant="outline" asChild>
+                <a href={callHref}>Call</a>
+              </Button>
             ) : (
-              <V3Button href={askHrefResolved} variant="ghost">
-                Ask a question
-              </V3Button>
+              <Button variant="outline" asChild>
+                <a href={askHrefResolved}>Ask a question</a>
+              </Button>
             )}
             {textHref ? (
-              <V3Button href={textHref} variant="ghost">
-                Text
-              </V3Button>
+              <Button variant="outline" asChild>
+                <a href={textHref}>Text</a>
+              </Button>
             ) : null}
           </>
         )}
-        <V3Button
-          type="button"
-          variant="ghost"
-          onClick={handleSave}
-          disabled={saveState === 'saving'}
-          ariaPressed={saveState === 'saved'}
-          ariaLabel={saveAriaLabel}
-        >
-          {saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving...' : 'Save'}
-        </V3Button>
-        <V3Button type="button" variant="ghost" onClick={handleShare} ariaLabel={`Share ${propertyName}`}>
-          Share
-        </V3Button>
-      </V3ButtonGroup>
-
+      </ButtonGroup>
       {showAlerts ? (
         <>
       <a
@@ -515,15 +521,17 @@ export function PriceCtaStrip({
         </>
       ) : null}
       </div>
-      {guestSaveOpen && saveState !== 'saved' ? (
-        <div style={{ marginTop: '0.75rem' }}>
-          <ListingGuestSaveSheet
-            listingKey={listing.listingKey}
-            addressLine={street || null}
-            onUseGoogle={() => redirectToLoginForSave(listing.listingKey)} // hydration-safe: click callback, never runs during render
-          />
-        </div>
-      ) : null}
+      <ListingGuestSaveSheet
+        listingKey={listing.listingKey}
+        addressLine={street || null}
+        open={guestSaveOpen && saveState !== 'saved'}
+        onOpenChange={setGuestSaveOpen}
+        onUseGoogle={() => redirectToLoginForSave(listing.listingKey)} // hydration-safe: click callback, never runs during render
+        onDone={() => {
+          setGuestSaveOpen(false)
+          setSaveState('saved')
+        }}
+      />
     </div>
   )
 }
