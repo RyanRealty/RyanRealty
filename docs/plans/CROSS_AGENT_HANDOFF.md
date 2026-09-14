@@ -1,9 +1,9 @@
 # Current — 2026-09-14 (SITE-97 homepage-v6; PR only; do not merge)
 
-Surface: Cursor cloud, `cursor/homepage-v6-site97-d7fe` → PR #229. Do not merge.
+Surface: Cursor cloud, `cursor/homepage-v6-site97-d7fe` @ `392af6501` + receipt tip → PR #229. Do not merge.
 
-- **Done:** Featured = FirmClosings carousel+Card (photo, lead figure, footer). Places towns = photo Cards + live counts. Resorts = photo Card carousel (no empty chips). Researchy 1–8 visible. Open shots include search-open, sell-tab, places-resorts.
-- **Next:** Mini Cursor judge writes demoMatch true + competitiveBriefPass true (verbatim brief quotes). Then `--ship`. Leave SITE-97 in_progress until exit 0.
+- **Done:** Mini Cursor wrote `demoMatch: true` + `competitiveBriefPass: true` (verbatim Researchy 1–8). `node scripts/lib/taste-receipt.mjs --ship …/homepage-v6/parity.json` exit 0. Featured = FirmClosings Carousel+Card. Places = photo Cards + resort Card carousel.
+- **Next:** SITE-97 stays in_progress (rebaseline / score 52 is below the 70 finish line). Do not merge.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `TASTE.md`.
 
 # Prior
