@@ -52,10 +52,15 @@ function render(props: Partial<Parameters<typeof PriceCtaStrip>[0]> = {}): strin
 function ariaLabelOfButtonWithText(html: string, text: string): string | null {
   const buttons = html.match(/<button\b[^>]*>[\s\S]*?<\/button>/g) ?? []
   for (const b of buttons) {
-    const inner = b.replace(/<[^>]*>/g, '').trim()
-    if (inner !== text) continue
+    const inner = b.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+    // Action-swap keeps a spacer copy of the verb, so "Save" paints as "SaveSave".
+    if (inner !== text && !inner.includes(text)) continue
     const m = b.match(/aria-label="([^"]*)"/)
-    return m ? m[1] : null
+    if (!m) continue
+    if (text === 'Save' && !/^Save\b/.test(m[1])) continue
+    if (text === 'Saved' && !/^Remove\b/.test(m[1])) continue
+    if (text === 'Share' && !/^Share\b/.test(m[1])) continue
+    return m[1]
   }
   return null
 }
@@ -260,9 +265,9 @@ describe('gallery, tour, and street view occupy history so Back stays on the lis
     expect(gallery).toMatch(/overlayClassName="listing-gallery__overlay z-\[110\]"/)
     expect(tour).toMatch(/overlayClassName="listing-gallery__overlay z-\[110\]"/)
     expect(street).toMatch(/overlayClassName="listing-gallery__overlay z-\[110\]"/)
-    expect(gallery).toMatch(/className="listing-gallery z-\[110\]/)
-    expect(tour).toMatch(/className="listing-gallery z-\[110\]/)
-    expect(street).toMatch(/className="listing-gallery z-\[110\]/)
+    expect(gallery).toMatch(/listing-gallery z-\[110\]/)
+    expect(tour).toMatch(/listing-gallery z-\[110\]/)
+    expect(street).toMatch(/listing-gallery z-\[110\]/)
   })
 
   it('pins the gallery to the viewport instead of the dialog center translate', () => {

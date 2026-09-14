@@ -98,6 +98,7 @@
  */
 import type { CSSProperties, ComponentPropsWithRef, ReactElement, ReactNode } from 'react'
 import { createElement, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading, V3SourceLine } from './atoms'
 import './tokens.css'
@@ -364,6 +365,12 @@ export type V3SheetProps = {
   unknownStepActionLabel?: string
   id?: string
   className?: string
+  /** Catalog job shadcn-sheet: listing asks open as a drawer, not an inline cream box. */
+  surface?: 'inline' | 'drawer'
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  /** Extra control under the step, e.g. "Save with Google instead". */
+  footer?: ReactNode
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1039,11 +1046,26 @@ export function V3Sheet({
   unknownStepActionLabel,
   id,
   className,
+  surface = 'inline',
+  open,
+  onOpenChange,
+  footer,
 }: V3SheetProps) {
   const uid = useId()
   const title = text(heading)
   const headingId = title ? `${uid}-heading` : undefined
   const contextLine = text(eyebrow)
+  const wrapSurface = (node: ReactNode) => {
+    if (surface !== 'drawer') return node
+    return (
+      <Sheet open={open ?? true} onOpenChange={onOpenChange}>
+        <SheetContent side="bottom" className={cn(V3_ROOT_CLASS, 'v3-sheet-drawer')}>
+          <SheetTitle className="sr-only">{title ?? heading}</SheetTitle>
+          {node}
+        </SheetContent>
+      </Sheet>
+    )
+  }
 
   const ready = useMemo(() => normalizeSteps(steps), [steps])
   const bait = useMemo(() => normalizeTrap(trap, ready), [trap, ready])
@@ -1276,7 +1298,7 @@ export function V3Sheet({
       }
     : null
 
-  return (
+  return wrapSurface(
     <section
       id={id}
       className={cn(V3_ROOT_CLASS, 'v3-sheet', className)}
@@ -1497,9 +1519,11 @@ export function V3Sheet({
         {step.source ? <V3SourceLine source={step.source} /> : null}
       </form>
 
+      {footer}
+
       {trace ? (
         <V3SourceLine className="v3-sheet-foot" source={trace} updatedAt={freshness} />
       ) : null}
-    </section>
+    </section>,
   )
 }
