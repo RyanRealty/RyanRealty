@@ -2210,8 +2210,8 @@
         "V3Carousel"
       ],
       "demoStates": [
-        "sell-tab=#home-hero-sell-tab!click@.home-hero-search",
-        "search-open=.v3-morph-search--live [aria-haspopup=dialog]!click"
+        "search-open=.v3-morph-search--live [aria-haspopup=dialog]!click",
+        "sell-tab=#home-hero-sell-tab [role=tab]@.home-hero-search!click"
       ],
       "modules": [
         {

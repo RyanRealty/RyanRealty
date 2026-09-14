@@ -138,8 +138,15 @@ describe('homepage hero search uses the public search stack', () => {
     expect(readFileSync(resolve('components/site/v3/V3Tabs.tsx'), 'utf8')).toContain(
       "id={row.value === 'sell' ? 'home-hero-sell-tab' : undefined}",
     )
-    expect(readFileSync(resolve('design_system/public/taste-catalog.json'), 'utf8')).toContain(
-      'sell-tab=#home-hero-sell-tab!click@.home-hero-search',
+    const catalog = readFileSync(resolve('design_system/public/taste-catalog.json'), 'utf8')
+    expect(catalog).toContain(
+      'sell-tab=#home-hero-sell-tab [role=tab]@.home-hero-search!click',
+    )
+    expect(catalog).toContain(
+      'search-open=.v3-morph-search--live [aria-haspopup=dialog]!click',
+    )
+    expect(catalog.indexOf('search-open=.v3-morph-search--live')).toBeLessThan(
+      catalog.indexOf('sell-tab=#home-hero-sell-tab'),
     )
     expect(SEARCH).toContain('Value my home')
     expect(SEARCH).toContain('valuationHref')

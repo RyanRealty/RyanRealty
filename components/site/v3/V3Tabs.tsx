@@ -92,7 +92,10 @@ export function V3Tabs({
               data-demo={`${row.value}-tab`}
               id={row.value === 'sell' ? 'home-hero-sell-tab' : undefined}
               htmlFor={row.htmlFor}
-              onClick={() => checkRadio(row.htmlFor)}
+              onClick={() => {
+                checkRadio(row.htmlFor)
+                onValueChange?.(row.value)
+              }}
             >
               <TabsTrigger
                 value={row.value}

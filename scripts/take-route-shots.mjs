@@ -1145,6 +1145,11 @@ async function main() {
         const file = naming.fileFor(state.name, viewport.key)
         const result = await writeShot(page, join(outDir, file), opts)
         written.push({ file, ...result })
+        // Independent catalog demos share one page. Close a morph/dialog so the
+        // next state's click is not aimed at a hidden Buy field (homepage Sell
+        // then search-open) or at a leftover overlay.
+        await page.keyboard.press('Escape').catch(() => {})
+        await page.waitForTimeout(200)
         await wheelTo(page, 0)
       }
 
