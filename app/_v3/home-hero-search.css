@@ -10,15 +10,9 @@
   color: var(--v3-ink);
 }
 
-/* Homepage search + inventory band — keep the pulse claim in the first viewport. */
-.v3.v3-stage--inventory:has(.home-hero-search) {
-  min-height: max(60vh, 28rem);
-}
-
-@media (max-width: 40rem) {
-  .v3.v3-stage--inventory:has(.home-hero-search) {
-    min-height: max(72vh, 32rem);
-  }
+/* Compact inventory Stage: rails, not the flyover, own the first viewport. */
+.v3.v3-stage--inventory.v3-stage--compact:has(.home-hero-search) {
+  min-height: 0;
 }
 
 .v3 .home-hero-search__mode {
@@ -59,10 +53,22 @@
   color: var(--v3-ink-on-navy);
 }
 
+.v3 .home-hero-search__live-src {
+  flex-basis: 100%;
+  color: var(--v3-ink-on-navy);
+  font-size: var(--v3-size-body-sm);
+  opacity: 0.85;
+}
+
 @media (max-width: 40rem) {
   .v3 .home-hero-search__live {
     display: none;
   }
+}
+
+/* Sell mode is a valuation ask. The for-sale chip is a buyer figure. */
+.v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__live {
+  display: none;
 }
 
 /* Sliding indicator index from the radios (no React state). */
@@ -108,8 +114,15 @@
 }
 
 .v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__panel-form--buy,
-.v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__panel-form--sell {
+.v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__panel-form--sell,
+.v3 .home-hero-search[data-mode='buy'] .home-hero-search__panel-form--buy,
+.v3 .home-hero-search[data-mode='sell'] .home-hero-search__panel-form--sell {
   display: block;
+}
+
+.v3 .home-hero-search[data-mode='sell'] .home-hero-search__panel-form--buy,
+.v3 .home-hero-search[data-mode='buy'] .home-hero-search__panel-form--sell {
+  display: none;
 }
 
 .v3 .home-hero-search__label {

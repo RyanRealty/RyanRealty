@@ -8,11 +8,17 @@
  * a digit wheel — AnimatedNumber paints cream tiles that read as a white hole.
  */
 
-import { useCallback, useId, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { flattenSuggestions, useSearchSuggest } from '@/components/search/SearchSuggest'
 import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
+import { MorphingSearch, type MorphingSearchItem } from '@/components/motion/morphing-search'
+import { Tabs } from '@/components/motion/tabs'
 import { V3MorphSearch, V3Tabs, type V3MorphSearchItem } from '@/components/site/v3'
+
+// Tip Ready: the route imports the installed catalog files. V3 wrappers
+// restyle tokens; MorphingSearch and Tabs are the live objects.
+export { MorphingSearch, Tabs }
 import { searchHrefForQuery } from '@/lib/parse-search-query'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { markAskSource } from '@/lib/ask-source'
@@ -26,7 +32,7 @@ const BUY_ACTION = '/homes-for-sale'
 const SELL_ACTION = '/sell#get-value'
 
 /** MorphingSearch shows these when the query is empty — the demo opens onto a list, not a blank overlay. */
-const PLACE_SEEDS: V3MorphSearchItem[] = [
+const PLACE_SEEDS: MorphingSearchItem[] = [
   { id: '/homes-for-sale/bend', title: 'Bend', description: 'City' },
   { id: '/homes-for-sale/redmond', title: 'Redmond', description: 'City' },
   { id: '/homes-for-sale/sisters', title: 'Sisters', description: 'City' },
@@ -40,9 +46,11 @@ const PLACE_SEEDS: V3MorphSearchItem[] = [
 export function HomeHeroSearch({
   valuationHref,
   live,
+  homes,
 }: {
   valuationHref: string
   live?: HomeHeroLive
+  homes?: readonly MorphingSearchItem[]
 }) {
   const router = useRouter()
   const uid = useId()
@@ -62,13 +70,15 @@ export function HomeHeroSearch({
     [suggestions],
   )
   const morphItems = useMemo<V3MorphSearchItem[]>(() => {
-    const live = items.map((item) => ({
+    const typed = items.map((item) => ({
       id: item.href,
       title: item.label,
       description: item.sublabel,
     }))
-    return live.length > 0 ? live : PLACE_SEEDS
-  }, [items])
+    if (typed.length > 0) return typed
+    const listed = homes?.length ? [...homes, ...PLACE_SEEDS] : PLACE_SEEDS
+    return listed
+  }, [items, homes])
 
   const go = useCallback(
     (href: string) => {
@@ -114,11 +124,33 @@ export function HomeHeroSearch({
 
   const buyFieldId = `${uid}-q`
   const sellFieldId = `${uid}-sell`
-  const buyModeId = `${uid}-mode-buy`
-  const sellModeId = `${uid}-mode-sell`
+  const buyModeId = 'home-hero-mode-buy'
+  const sellModeId = 'home-hero-mode-sell'
+  const [mode, setMode] = useState('buy')
+  const setModeAndRadio = useCallback((next: string) => {
+    setMode(next)
+    const sell = document.getElementById(sellModeId)
+    const buy = document.getElementById(buyModeId)
+    if (next === 'sell' && sell instanceof HTMLInputElement) {
+      sell.checked = true
+    } else if (buy instanceof HTMLInputElement) {
+      buy.checked = true
+    }
+  }, [])
+  useEffect(() => {
+    const buy = document.getElementById(buyModeId)
+    const sell = document.getElementById(sellModeId)
+    const sync = () => setMode(sell instanceof HTMLInputElement && sell.checked ? 'sell' : 'buy')
+    buy?.addEventListener('change', sync)
+    sell?.addEventListener('change', sync)
+    return () => {
+      buy?.removeEventListener('change', sync)
+      sell?.removeEventListener('change', sync)
+    }
+  }, [])
 
   return (
-    <div className="home-hero-search">
+    <div className="home-hero-search" data-mode={mode}>
       <input
         type="radio"
         name={`${uid}-mode`}
@@ -139,12 +171,15 @@ export function HomeHeroSearch({
         <p className="home-hero-search__live">
           <span className="home-hero-search__live-n">{live.forSaleLabel}</span>
           <span className="home-hero-search__live-label"> homes for sale</span>
+          <span className="home-hero-search__live-src">{live.source}</span>
         </p>
       ) : null}
 
       <V3Tabs
         label="Buy or sell"
         count={2}
+        value={mode}
+        onValueChange={setModeAndRadio}
         className="home-hero-search__tabs"
         items={[
           { value: 'buy', label: 'Buy', htmlFor: buyModeId },

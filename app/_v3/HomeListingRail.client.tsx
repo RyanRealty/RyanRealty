@@ -16,7 +16,15 @@ import {
 import { publishTourEmbedFromUrl } from '@/lib/listing/publish-listing-hero-video'
 import type { VideoEmbed } from '@/lib/data/types/video'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { V3_ROOT_CLASS, V3Button, V3Carousel, V3Number } from '@/components/site/v3'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel'
+import { AnimatedNumber } from '@/components/motion/number'
+import { V3_ROOT_CLASS, V3Button } from '@/components/site/v3'
 import type { HomeHeroLive } from './home-hero-inventory'
 import {
   SplitCardMedia,
@@ -29,6 +37,7 @@ import { getViewerListingState } from '@/app/actions/viewer-listing-state'
 import { redirectToLoginForSave } from '@/lib/pending-save'
 import type { HomeRailCard, HomeRailRow } from './home-rail-items'
 import '@/components/site/v3/V3ListingRow.css'
+import '@/components/site/v3/V3Carousel.css'
 import './home-homes-rails.css'
 
 function HomeRailCardFace({
@@ -165,8 +174,18 @@ export function HomeListingRail({
           </h2>
           {live ? (
             <p className="home-rail__live">
-              <V3Number value={live.forSale} formatted={live.forSaleLabel} />
+              <AnimatedNumber
+                value={live.forSale}
+                format={(n) =>
+                  Math.round(n) === Math.round(live.forSale)
+                    ? live.forSaleLabel
+                    : Math.round(n).toLocaleString('en-US')
+                }
+                startOnView={false}
+                className="home-rail__live-n"
+              />
               <span> homes for sale across Central Oregon</span>
+              <span className="home-rail__live-src">{live.source}</span>
             </p>
           ) : null}
         </div>
@@ -174,37 +193,53 @@ export function HomeListingRail({
           {row.seeAll.label}
         </V3Button>
       </div>
-      <V3Carousel label={row.heading} mode="rail" className="home-rail__carousel">
-        {row.cards.map((card, index) => (
-          <HomeRailCardFace
-            key={card.listingKey}
-            card={card}
-            saved={saved.has(card.listingKey)}
-            signedIn={signedIn}
-            priority={index < 2}
-            onOpenTour={
-              card.tourUrl || card.hasTour
-                ? () => {
-                    const embed = publishTourEmbedFromUrl(
-                      card.tourUrl,
-                      card.photoUrls[0] ?? null,
-                    )
-                    if (embed) setTour(embed)
-                    else if (card.href) window.location.assign(`${card.href}#tour`)
-                  }
-                : undefined
-            }
-            onSavedChange={(key, next) => {
-              setSaved((prev) => {
-                const copy = new Set(prev)
-                if (next) copy.add(key)
-                else copy.delete(key)
-                return copy
-              })
-            }}
-          />
-        ))}
-      </V3Carousel>
+      <Carousel
+        opts={{ align: 'start', containScroll: 'trimSnaps' }}
+        className={cn(V3_ROOT_CLASS, 'v3-carousel', 'v3-carousel--rail', 'home-rail__carousel')}
+        aria-label={row.heading}
+      >
+        <CarouselContent className="v3-carousel__track ml-0">
+          {row.cards.map((card, index) => (
+            <CarouselItem
+              key={card.listingKey}
+              className="v3-carousel__slide v3-carousel__slide--rail pl-0 basis-[min(17.5rem,78vw)] min-[64rem]:basis-1/4"
+            >
+              <HomeRailCardFace
+                card={card}
+                saved={saved.has(card.listingKey)}
+                signedIn={signedIn}
+                priority={index < 2}
+                onOpenTour={
+                  card.tourUrl || card.hasTour
+                    ? () => {
+                        const embed = publishTourEmbedFromUrl(
+                          card.tourUrl,
+                          card.photoUrls[0] ?? null,
+                        )
+                        if (embed) setTour(embed)
+                        else if (card.href) window.location.assign(`${card.href}#tour`)
+                      }
+                    : undefined
+                }
+                onSavedChange={(key, next) => {
+                  setSaved((prev) => {
+                    const copy = new Set(prev)
+                    if (next) copy.add(key)
+                    else copy.delete(key)
+                    return copy
+                  })
+                }}
+              />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        {row.cards.length > 1 ? (
+          <div className="v3-carousel__nav home-rail__arrows">
+            <CarouselPrevious className="v3-carousel__step static size-auto translate-x-0 translate-y-0" />
+            <CarouselNext className="v3-carousel__step static size-auto translate-x-0 translate-y-0" />
+          </div>
+        ) : null}
+      </Carousel>
       <ListingTourOverlay
         open={tour != null}
         video={tour}

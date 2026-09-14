@@ -25,6 +25,7 @@ import { HomeBrowsePlaces } from './_v3/HomeBrowsePlaces'
 import { HomeFeaturedCommunity } from './_v3/HomeFeaturedCommunity.client'
 import { loadHomeFeaturedCommunitySlides } from './_v3/home-featured-communities'
 import { homeRailRows, enrichHomeRailRows } from './_v3/home-rail-items'
+import { homeRailItemList } from './_v3/home-jsonld'
 import {
   HERO_VIDEO,
   HERO_POSTER,
@@ -52,25 +53,33 @@ const D11_HOMEPAGE_LEAD =
  */
 export const revalidate = 300
 
-export const metadata: Metadata = {
-  title: { absolute: 'Homes for Sale in Central Oregon | Ryan Realty, Bend' },
-  description:
-    `Active homes for sale in ${D11_HOMEPAGE_LEAD} Closed comps from the regional MLS.`,
-  alternates: { canonical: siteUrl },
-  openGraph: {
-    title: 'Homes for Sale in Central Oregon | Ryan Realty, Bend',
-    description:
-      'Active homes for sale in Bend, Redmond, Sisters, and Sunriver. Live list prices, days on market, and closed comps.',
-    url: siteUrl,
-    siteName: 'Ryan Realty',
-    type: 'website',
-    images: [{ url: ogImage, width: 1200, height: 630, alt: 'Homes for Sale in Central Oregon | Ryan Realty, Bend' }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Homes for Sale in Central Oregon | Ryan Realty, Bend',
-    description: 'Active Central Oregon homes for sale. List prices and days on market, town by town.',
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const pulseBundle = await loadHomePulseBundle().catch(() => null)
+  const forSale = pulseBundle?.counts.forSale
+  const liveLead =
+    typeof forSale === 'number' && Number.isFinite(forSale) && forSale > 0
+      ? `${forSale.toLocaleString('en-US')} active homes for sale in `
+      : 'Active homes for sale in '
+  const description = `${liveLead}${D11_HOMEPAGE_LEAD} Closed comps from the regional MLS.`
+  return {
+    title: { absolute: 'Homes for Sale in Central Oregon | Ryan Realty, Bend' },
+    description,
+    alternates: { canonical: siteUrl },
+    openGraph: {
+      title: 'Homes for Sale in Central Oregon | Ryan Realty, Bend',
+      description:
+        'Active homes for sale in Bend, Redmond, Sisters, and Sunriver. Live list prices, days on market, and closed comps.',
+      url: siteUrl,
+      siteName: 'Ryan Realty',
+      type: 'website',
+      images: [{ url: ogImage, width: 1200, height: 630, alt: 'Homes for Sale in Central Oregon | Ryan Realty, Bend' }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Homes for Sale in Central Oregon | Ryan Realty, Bend',
+      description: 'Active Central Oregon homes for sale. List prices and days on market, town by town.',
+    },
+  }
 }
 
 const TOWN_ORDER = ['bend', 'la-pine', 'redmond', 'sunriver', 'sisters', 'terrebonne'] as const
@@ -135,6 +144,7 @@ export default async function Home() {
     () => new Map(),
   )
   const railRows = enrichHomeRailRows(railRowsRaw, railExtras)
+  const railListLd = homeRailItemList(railRows)
 
   const townCount = TOWN_ORDER.filter((slug) => cityBySlug.has(slug)).length || TOWN_ORDER.length
 
@@ -219,14 +229,20 @@ export default async function Home() {
 
   return (
     <>
+      {railListLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(railListLd) }}
+        />
+      ) : null}
       <main className={V3_ROOT_CLASS}>
         <V3SectionTracker />
 
         <V3Stage
           id="hero"
           headingLevel={1}
-          // Inventory shortens the frame so the pulse claim breaks the fold.
-          height={heroInventory ? 'standard' : 'tall'}
+          // Compact so photographed rails clear the first 1440×900 viewport.
+          height={heroInventory ? 'compact' : 'tall'}
           eyebrow="Central Oregon"
           headline={v3Text('Homes for sale in Central Oregon')}
           // Sell mode swaps the copy with the panel, so the line over the
@@ -238,17 +254,27 @@ export default async function Home() {
           videoSrc={HERO_VIDEO}
           inventory={heroInventory}
         >
-          <HomeHeroSearch valuationHref={valuationHref('/')} live={heroLive} />
+          <HomeHeroSearch
+            valuationHref={valuationHref('/')}
+            live={heroLive}
+            homes={railRows[0]?.cards.slice(0, 5).map((card) => ({
+              id: card.href,
+              title: card.addressLine,
+              description: card.cityLine,
+            }))}
+          />
         </V3Stage>
-
-        {/* The live read under the search. Absent — never zeroed — when the
-            listing read gives nothing (section 0). */}
-        {pulse ? <V3Pulse {...pulse} id="right-now" /> : null}
 
         <HomeHomesRails
           rows={railRows}
           emptyMessage="No active homes with a photo and list price right now."
+          forSaleCount={pulseBundle?.counts.forSale}
         />
+
+        {/* The live read after the first rail so houses, not the beeswarm,
+            open the page. Absent — never zeroed — when the listing read
+            gives nothing (section 0). */}
+        {pulse ? <V3Pulse {...pulse} id="right-now" /> : null}
 
         <HomeFeaturedCommunity id="featured-community" slides={featuredCommunitySlides} />
 

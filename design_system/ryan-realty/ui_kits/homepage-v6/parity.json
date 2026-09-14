@@ -192,9 +192,9 @@
   "competitiveTarget": "Beat Zillow and Redfin on a clean local brokerage door: brand H1, working search, stacked photographed house carousels with real card face, illustrated Buy/Sell/Invest, brokers, place chips, proof.",
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
-    "V3Stage #hero -- inventory Stage: flyover, H1, V3Tabs Buy/Sell, V3MorphSearch, live count chip, inventory band",
+    "V3Stage #hero -- compact inventory Stage: flyover, H1, V3Tabs Buy/Sell, catalog MorphingSearch, live count chip",
+    "HomeHomesRails -- V3Carousel house rails in the first viewport (Card price + address + beds/baths/sqft)",
     "V3Pulse #right-now -- Central Oregon right now: live counts, constellation, read stamp",
-    "HomeHomesRails -- V3Carousel house rails (local actives + honest price-cut / new rows)",
     "HomeFeaturedCommunity #featured-community -- featured resort / community slides with live figures",
     "V3Doors #doors -- illustrated Buy / Sell / Work with us, Sell = Sell a home",
     "AboutFaces -- Talk to a broker (compact table on every width, one 390 screen)",
@@ -218,7 +218,8 @@
       ],
       "states": [
         "default",
-        "sell-tab"
+        "sell-tab",
+        "search-open"
       ],
       "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized",
       "baseUrl": "http://localhost:3183/"

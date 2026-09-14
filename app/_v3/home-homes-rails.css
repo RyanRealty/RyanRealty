@@ -7,6 +7,22 @@
   padding: var(--v3-space-xl) 0 var(--v3-space-md);
 }
 
+/* First rail sits in the fold under the compact Stage. */
+.home-rails > .home-rail:first-child {
+  padding-top: var(--v3-space-sm);
+}
+
+@media (max-width: 40rem) {
+  .home-rails > .home-rail:first-child {
+    padding-top: var(--v3-space-2xs);
+  }
+
+  .home-rail__carousel .home-rail__media,
+  .home-rail__carousel .v3-lrow__media {
+    aspect-ratio: 16 / 10;
+  }
+}
+
 * + .v3.home-rail,
 * + .home-rails {
   border-top: var(--v3-rule-section);
@@ -52,11 +68,33 @@
   line-height: var(--v3-leading-control);
 }
 
+.home-rail__live-n,
 .home-rail__live .v3-number {
   color: var(--v3-ink);
   font-family: var(--v3-font-display);
   font-size: var(--v3-size-body);
   font-weight: var(--v3-weight-display);
+}
+
+.home-rail__live-src {
+  display: block;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+.home-rail__arrows {
+  display: flex;
+  gap: var(--v3-space-xs);
+  margin: var(--v3-space-xs) var(--v3-gutter) 0;
+}
+
+.home-rail__arrows [data-slot='carousel-previous'],
+.home-rail__arrows [data-slot='carousel-next'] {
+  position: static;
+  inset: auto;
+  display: inline-flex;
+  opacity: 1;
+  transform: none;
 }
 
 /* Inventory rails ride V3Carousel (shadcn carousel job → house primitive). */
@@ -76,6 +114,13 @@
   overflow: visible;
   height: auto;
   min-height: auto;
+}
+
+@media (min-width: 64rem) {
+  .home-rail__carousel.v3-carousel--rail .v3-carousel__slide,
+  .home-rail__carousel.v3-carousel--rail [data-slot='carousel-item'] {
+    flex-basis: calc((100% - (2 * var(--v3-gutter))) / 4);
+  }
 }
 
 .home-rail__card[data-slot='card'] {

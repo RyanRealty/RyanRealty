@@ -1,11 +1,11 @@
-# Current — 2026-09-14 (team map/copy + Tip Ready mannered refuse; do not merge)
+# Current — 2026-09-14 (SITE-97 homepage-v6; PR only; do not merge)
 
-Surface: Cursor cloud, `cursor/team-map-copy-150b`. Craft PR. Do not merge. Cos cherry-picks.
+Surface: Cursor cloud, `cursor/homepage-v6-site97-d7fe` → PR #229. Do not merge. Cos cherry-picks Tip Readys.
 
-- **Done:** Killed /team atlas `claimText` lecture. Editorial doors are quiet Call | Text | Email | Schedule (number on `tel:` / aria-label). `tasteDoneProblems` / `--ship` refuse mannered meta-explainer + CALL-phone billboards. Team `--ship` still exit 1 (no demoMatch). About `--ship` still 0.
-- **Next:** Cos lands the copy + refuse. Do not merge this PR to main.
-- **Node:** none (craft; not a queue claim).
-- Skills read: site-queue, VOICE.md, taste-receipt.
+- **Done:** SITE-97 claimed (`cursor-cloud-site97-20260914`). MorphingSearch live on first paint; Sell tab is catalog `[role=tab]`; rails import `@/components/ui/carousel` + `@/components/motion/number`; live count carries TRACE source; 4-up desktop cards + visible arrows.
+- **Tip Ready:** `--ship` still exit 1 until a judge writes `demoMatch: true`. Do not invent it.
+- **Next:** `npx tsx scripts/taste-evaluate.ts homepage-v6 --builder grok-4.5` then `--ship`.
+- Skills read: `.claude/skills/site-queue/SKILL.md`.
 
 # Prior
 

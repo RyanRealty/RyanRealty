@@ -2210,6 +2210,7 @@
         "V3Carousel"
       ],
       "demoStates": [
+        "sell-tab=#home-hero-sell-tab!click@.home-hero-search",
         "search-open=.v3-morph-search--live [aria-haspopup=dialog]!click"
       ],
       "modules": [

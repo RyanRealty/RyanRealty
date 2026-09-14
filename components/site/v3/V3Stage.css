@@ -85,6 +85,24 @@
   padding-top: 5.5rem;
 }
 
+.v3.v3-stage--inventory.v3-stage--compact {
+  min-height: 0;
+}
+
+/* Compact inventory Stage: the KPI band repeats V3Pulse. Hide it so
+   photographed house rails enter the first viewport (homepage-v6 layout lock). */
+.v3.v3-stage--inventory.v3-stage--compact .v3-stage-band {
+  display: none;
+}
+
+@media (max-width: 40rem) {
+  .v3.v3-stage--inventory.v3-stage--compact .v3-stage-copy {
+    padding-top: 3.5rem;
+    padding-bottom: var(--v3-space-2xs);
+    gap: var(--v3-space-2xs);
+  }
+}
+
 /* A slot (search) opens a dropdown that must escape the frame. Media and
    scrim stay clipped so the poster never spills. */
 .v3.v3-stage--with-slot {
