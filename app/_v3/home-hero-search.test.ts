@@ -140,6 +140,9 @@ describe('homepage hero search uses the public search stack', () => {
     expect(css).toContain('.v3 .home-hero-search__mode--sell:checked')
     expect(css).toContain('.v3.v3-stage--inventory.v3-stage--compact:has(.home-hero-search)')
     expect(readFileSync(resolve('components/site/v3/V3Tabs.tsx'), 'utf8')).toContain('v3-tabs__tab--${row.value}')
+    const stageCss = readFileSync(resolve('components/site/v3/V3Stage.css'), 'utf8')
+    expect(stageCss).toContain('.v3.v3-stage--inventory.v3-stage--compact .v3-stage-band')
+    expect(stageCss).toMatch(/max-width:\s*40rem[\s\S]*v3-stage-band \{\s*display:\s*none/)
   })
 
   // SITE-12. The hard accept test for this node: `curl /` finds the seller
