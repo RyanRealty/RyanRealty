@@ -94,7 +94,7 @@ import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/component
 import { ListingSaveButton as _ListingSaveButtonImport } from '@/components/site/listing-detail/ListingSaveButton'
 import { ListingShareButton as _ListingShareButtonImport } from '@/components/site/listing-detail/ListingShareButton'
 import { listingDocumentTitle } from '@/lib/listing/listing-document-title'
-import { getSession } from '@/app/actions/auth'
+import { getSession } from '@/lib/data/auth/getSession'
 import { TextMattCTA as _TextMattCTAImport } from '@/components/site/listing-detail/TextMattCTA'
 import ListingMobileContactBar from '@/components/site/listing-detail/ListingMobileContactBar.client'
 import ListingTracker from '@/components/listing/ListingTracker'
