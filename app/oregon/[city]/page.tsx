@@ -7,13 +7,13 @@
  * (Medford, Grants Pass, Klamath Falls, ...): honest copy that says this is not our
  * market, the live inventory the feed reports, and a referral capture.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. SITE-76
- * honesty-first fold: Quiet (Alert honesty banner + home-market doors), then
- * Instrument (live counts + ask strip), Ledger (listings), Sheet (referral),
- * Ledger (other Oregon markets), Footer. FOUR of the six patterns, no two adjacent
- * alike, chrome exempt. Section ids stay: about, top, listings, referral,
- * other-markets. The parity contract is
- * design_system/ryan-realty/ui_kits/oregon-city/parity.json.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. SITE-105
+ * honesty-first fold: Quiet (installed shadcn Alert, not a hairline strip), then
+ * Instrument (one lead figure + folded SFR/median, no KPI grid, no lollipop),
+ * Ledger (photographed listings), Sheet (referral), Ledger (other Oregon markets),
+ * Footer. FOUR of the six patterns, no two adjacent alike, chrome exempt.
+ * Section ids stay: about, top, listings, referral, other-markets. The parity
+ * contract is design_system/ryan-realty/ui_kits/oregon-city/parity.json.
  *
  * THE PAGE CONTRACT, CARRIED ACROSS UNCHANGED. Route and params; `revalidate = 3600`;
  * `dynamicParams = true`; `generateStaticParams` seeding the indexable top set;
@@ -94,8 +94,6 @@ import {
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
-  type V3ChartProps,
-  type V3ChartRangeRow,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
   type V3QuietItem,
@@ -103,6 +101,12 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { OutOfAreaReferralSheet } from './_v3/OutOfAreaReferralSheet.client'
 import { listingRowPhotoSrc } from './_v3/listing-row-photo'
+import {
+  OREGON_CITY_FIGURE_FOLD_AFTER,
+  buildOregonCityClaim,
+  buildOregonCityItemListName,
+  buildOregonCityTitle,
+} from './_v3/oregon-city-fold'
 import './oregon-city.css'
 
 type Params = { city: string }
@@ -155,7 +159,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   }
   const indexable = await isIndexableOutOfAreaCity(slug)
   return pageMetadata({
-    title: `${city.name} homes for sale — outside our market`,
+    title: buildOregonCityTitle({ name: city.name, activeAllCount: city.activeAllCount }),
     description: `${city.activeAllCount} live ${city.name} listings from the statewide MLS. Ryan Realty works Central Oregon, not ${city.name}. Browse the inventory, then ask for a local broker introduction.`,
     path: `/oregon/${city.slug}`,
     noindex: !indexable,
@@ -204,6 +208,7 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
       value: v3Text(city.activeAllCount.toLocaleString('en-US')),
       label: v3Text('active listings, all property types'),
       href: browsePath,
+      count: city.activeAllCount,
       sentence: v3Text(
         `Everything on the market in ${city.name} right now, houses and condos and bare land together.`,
       ),
@@ -213,6 +218,7 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
     figures.push({
       value: v3Text(city.activeSfrCount.toLocaleString('en-US')),
       label: v3Text('active single-family listings'),
+      count: city.activeSfrCount,
       sentence: v3Text('Of those, the ones that are a house on its own lot.'),
     })
   }
@@ -301,75 +307,10 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   }
   const [firstListingRow, ...restListingRows] = listingRows
 
-  // ── THE PLACE MARK (SITE-41). ────────────────────────────────────────────────
-  // Three numbers under a heading is the same screen for Medford, Salem and the
-  // ~360 other cities this one file renders: nothing on it belongs to the place it
-  // names. This is the one drawing that does. Every row is a real street in this
-  // city at the price it is actually asking, so the shape of the strip, the names
-  // down its side and the spread across it are all this town's and nobody else's.
-  //
-  // Section 0: the rows ARE the population — the same live tiles the Ledger below
-  // prints, same dedupe, newest first, capped at eight so the strip stays readable
-  // and the trace says so. No median rule is drawn across it: the snapshot's median
-  // covers single-family listings only and these rows are every property type, and
-  // one scale carrying two populations is a comparison that is not true.
-  const STRIP_ROWS = 8
-  const stripRows: V3ChartRangeRow[] = listingRows.slice(0, STRIP_ROWS).flatMap((row) => {
-    const tile = tiles.find((t) => t.listingKey === row.id)
-    const price = tile?.listPrice
-    // §0: formatPrice rounds to the nearest $1,000, so a genuine but tiny raw price
-    // (a $200 land-listing typo, a placeholder value from the statewide feed) would
-    // print "$0" on this strip — a rounding that changes the narrative from "priced
-    // low" to "free," which section 0 forbids outright. 500 is the floor below which
-    // formatPrice's rounding can reach zero; anything under it is withheld here the
-    // same way a missing price already is, never printed as a false $0.
-    if (!tile || price == null || !Number.isFinite(price) || price < 500) return []
-    // The tick drops the street SUFFIX on purpose (TASTE.md's named 375 failure: the
-    // full address — "2905 El Dorado Drive" — truncated to an ellipsis inside the
-    // fixed-width tick column at 375). Number plus street name still names a real,
-    // distinct street; the full address (suffix included) stays in the Ledger below.
-    const street = [tile.streetNumber, tile.streetName].filter(Boolean).join(' ').trim()
-    if (!street) return []
-    return [
-      {
-        tick: v3Text(street),
-        value: price,
-        label: v3Text(formatPrice(price)),
-        ...(row.detail ? { note: row.detail } : {}),
-      },
-    ]
-  })
-  // Ordered by price, not by age. The population is the newest listings; the ORDER
-  // is what the strip is for. Left as the feed's newest-first order the rows read as
-  // noise, and a set of named things on one scale is a ranking or it is nothing
-  // (the dataviz skill's form-from-the-job rule).
-  stripRows.sort((a, b) => b.value - a.value)
-  const stripPrices = stripRows.map((r) => r.value).sort((a, b) => a - b)
-  const stripLow = stripPrices[0]
-  const stripHigh = stripPrices[stripPrices.length - 1]
-  const askStrip: V3ChartProps | undefined =
-    stripRows.length >= 3 && stripLow != null && stripHigh != null
-      ? {
-          caption: v3Text(`What the newest listings in ${city.name} are asking`),
-          kind: 'range',
-          claim: v3Text(
-            stripLow === stripHigh
-              ? `The newest listings here all ask ${formatPrice(stripLow)}.`
-              : `Asking prices on the newest listings run from ${formatPrice(stripLow)} to ${formatPrice(stripHigh)}.`,
-          ),
-          rows: stripRows,
-          id: 'top-asks',
-        }
-      : undefined
-  // The strip's own clause, appended to the snapshot trace only when the strip
-  // draws: the figures and the rows are two different reads of one feed, and the
-  // trace has to cover both or it covers the wrong one.
-  const stripTrace = askStrip
-    ? `The strip beside them is a separate live read: the ${stripRows.length} newest active listings in ${city.name} with both a price and a street address, every property type, at their asking price as listed.`
-    : ''
-  // "listing," not "home": a bare parcel can reach this set (see the
-  // isLand branch above), and the trace must not claim a population it does
-  // not print.
+  // SITE-105: live inventory belongs on the Ledger (photographs + price +
+  // address + beds/baths/sqft), not as a static asking-price lollipop that
+  // hides the houses. The Instrument keeps the snapshot figures; foldAfter
+  // leaves one lead count on screen so the first viewport is not a KPI grid.
   const listingTrace = `live MLS listing feed, active listings in ${city.name}, newest first, one row per listing`
   // §0: this Ledger and the Instrument's "active listings" figure above are
   // two different reads of the same live feed — the Instrument is the
@@ -457,7 +398,11 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
       type: 'itemList',
       name: `Newest ${city.name} listings`,
       items: listingRows.slice(0, 12).map((row) => ({
-        name: String(row.what),
+        name: buildOregonCityItemListName({
+          address: String(row.what),
+          price: String(row.value),
+          detail: row.detail ? String(row.detail) : undefined,
+        }),
         url: row.href,
       })),
     })
@@ -504,12 +449,18 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
             level={1}
             eyebrow={v3Text(`${city.name} · Oregon`)}
             headline={v3Text(headline)}
+            note={v3Text(
+              buildOregonCityClaim({
+                name: city.name,
+                activeAllCount: city.activeAllCount,
+                activeSfrCount: city.activeSfrCount,
+                medianAsk: city.medianListPrice != null ? formatPrice(city.medianListPrice) : null,
+              }),
+            )}
             figures={[firstFigure, ...restFigures]}
-            chart={askStrip}
-            // SITE-76: put the named asking-price strip in the first viewport at
-            // 375 so mobile is not three static tiles under the honesty Alert.
-            chartFirst={Boolean(askStrip)}
-            source={v3Text(askStrip ? `${snapshotTrace} ${stripTrace}` : snapshotTrace)}
+            foldAfter={OREGON_CITY_FIGURE_FOLD_AFTER}
+            foldLabel={v3Text('SFR count and median ask')}
+            source={v3Text(snapshotTrace)}
             sourceName={v3Text('Oregon Data Share MLS')}
             asOf={city.refreshedAt ?? undefined}
             updated={city.refreshedAt ? v3Text(formatDate(city.refreshedAt)) : undefined}
