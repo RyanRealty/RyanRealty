@@ -6,7 +6,7 @@
  *    (boutique · Central Oregon · buy and sell). Not broker Cards.
  * 2. V3Proof — client reviews PRIMARY (Google + featured quote). Not press.
  * 3. FirmClosings — dated local sold homes. Never invented MOS.
- * 4. V3Doors four-up matching Contact (Call / Text / Email / Schedule)
+ * 4. AboutReach — catalog Button Group Call | Text | Email | Schedule
  * 5. AboutOffice — 115 NW Oregon Ave #2 + firm OREA. Brokers on /team only.
  * 6. AboutInquiry GET to /contact. Full form stays on Contact.
  * Then Atlas, How it started + OREA, V3Answers.
@@ -30,7 +30,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { listingsBrowsePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
-import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
+import { BRAND, BROKERS } from '@/lib/brand/contact'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -45,7 +45,6 @@ import {
   type V3AnswersDoor,
   V3Atlas,
   V3Proof,
-  V3Doors,
   V3OnDuty,
 } from '@/components/site/v3'
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
@@ -54,6 +53,7 @@ import { ABOUT_FAQ_ITEMS, FIRM_LICENSE } from './_v3/about-constants'
 import { AboutFirm } from './_v3/AboutFirm'
 import { AboutInquiry } from './_v3/AboutInquiry'
 import { AboutOffice } from './_v3/AboutOffice'
+import { AboutReach } from './_v3/AboutReach'
 import { FirmClosings } from './_v3/FirmClosings'
 import { loadAboutProof } from './_v3/load-about-faces'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
@@ -230,36 +230,7 @@ export default async function AboutPage() {
           </div>
           <div className="about-fold__reach">
             {hoursLive}
-            <V3Doors
-              id="reach"
-              name={v3Text('Reach a broker')}
-              doors={[
-                {
-                  kicker: v3Text('Call'),
-                  label: v3Text(CONTACT.phoneDirect),
-                  fact: v3Text('One number for the whole brokerage'),
-                  href: `tel:${CONTACT.phoneDirectTel}`,
-                },
-                {
-                  kicker: v3Text('Text'),
-                  label: v3Text('Send a text'),
-                  fact: v3Text('Same line as the call'),
-                  href: `sms:${CONTACT.phoneDirectTel}`,
-                },
-                {
-                  kicker: v3Text('Email'),
-                  label: v3Text('Send an email'),
-                  fact: v3Text("Straight to Matt's inbox"),
-                  href: `mailto:${CONTACT.email.primary}`,
-                },
-                {
-                  kicker: v3Text('Schedule'),
-                  label: v3Text('Book a time'),
-                  fact: v3Text('Open slots on the calendar'),
-                  href: '/book',
-                },
-              ]}
-            />
+            <AboutReach id="reach" />
           </div>
           <AboutOffice id="office" />
           <div className="about-fold__write">

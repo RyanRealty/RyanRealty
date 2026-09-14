@@ -169,10 +169,9 @@
 .about-office__card {
   --card: var(--v3-cream);
   --card-foreground: var(--v3-navy);
-  overflow: hidden;
 }
 
-.about-office__photo {
+.about-office__card img {
   display: block;
   width: 100%;
   height: auto;
@@ -182,39 +181,8 @@
   object-position: center 42%;
 }
 
-.about-office__facts {
-  display: grid;
-  gap: var(--v3-space-2xs);
-  margin: 0;
-}
-
-.about-office__facts > div {
-  display: grid;
-  grid-template-columns: 6.5rem minmax(0, 1fr);
-  gap: var(--v3-space-xs);
-  align-items: baseline;
-}
-
-.about-office__facts dt {
-  margin: 0;
-  color: color-mix(in srgb, var(--v3-navy) 62%, var(--v3-cream));
-  font-size: 0.82rem;
-}
-
-.about-office__facts dd {
-  margin: 0;
-  color: var(--v3-navy);
-}
-
 .about-inquiry {
   max-width: none;
-}
-
-.about-inquiry__row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--v3-space-xs);
 }
 
 .about-inquiry [data-slot='input'] {
@@ -239,15 +207,8 @@
   display: none;
 }
 
-.about-fold__reach .v3.v3-doors {
-  max-width: none;
-}
-
-/* Equal four-up. No Call-dominant lead. Sotheby G1. */
-@media (min-width: 48rem) {
-  .about-fold__reach .v3-doors__list {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+.about-reach [data-slot='button-group'] {
+  width: 100%;
 }
 
 .about-fold__write {
@@ -284,63 +245,20 @@
 
 .about-closings__carousel {
   min-width: 0;
+  padding-inline: 3rem;
 }
 
-.about-closings .v3.v3-carousel--rail [data-slot='carousel-item'] {
-  flex: 0 0 min(22rem, 82vw);
-}
-
-.about-closings__card {
+.about-closings [data-slot='card'] {
   --card: var(--v3-cream);
   --card-foreground: var(--v3-navy);
-  min-width: 0;
-  overflow: hidden;
-  background: var(--v3-cream);
-  color: var(--v3-navy);
-  box-shadow: none;
-  outline: 1px solid color-mix(in srgb, var(--v3-navy) 18%, var(--v3-cream));
 }
 
-.about-closings__photo {
-  display: block;
-  overflow: hidden;
-  aspect-ratio: 4 / 3;
-  background: color-mix(in srgb, var(--v3-navy) 8%, var(--v3-cream));
-}
-
-.about-closings__photo img {
+.about-closings [data-slot='card'] img {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
-}
-
-.about-closings__card [data-slot='card-header'] {
-  padding-bottom: 0;
-}
-
-.about-closings__card [data-slot='card-title'] {
-  font-size: 1.05rem;
-  line-height: 1.3;
-}
-
-.about-closings__card [data-slot='card-description'] {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--v3-navy);
-}
-
-.about-closings__when,
-.about-closings__specs {
-  margin: 0 0 var(--v3-space-2xs);
-  font-size: 0.92rem;
-  line-height: 1.45;
-  color: color-mix(in srgb, var(--v3-navy) 72%, var(--v3-cream));
-}
-
-.about-closings__card [data-slot='card-content'] a {
-  font-weight: 600;
-  color: var(--v3-navy);
 }
 
 @media (max-width: 47.99rem) {

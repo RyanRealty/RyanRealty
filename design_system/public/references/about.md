@@ -20,8 +20,9 @@ A Meet-the-Team dump, three broker Cards, or a face-row teaser on About. About i
 - `app/about/_v3/AboutFirm.tsx` — open the file; the About opener is the firm story, not AboutFaces.
 - `components/site/v3/V3Proof.client.tsx` — open the file; client reviews are the primary proof.
 - `app/about/_v3/FirmClosings.tsx` — shadcn carousel + Card of recorded sales.
-- `app/about/_v3/AboutOffice.tsx` — 115 NW Oregon Ave #2 + firm OREA. Brokers belong on `/team`.
-- `components/site/v3/V3Doors.tsx` — Call | Text | Email | Schedule, Contact match.
+- `app/about/_v3/AboutOffice.tsx` — catalog Card: photo, body, Firm OREA. Brokers belong on `/team`.
+- `app/about/_v3/AboutReach.tsx` — catalog Button Group Call | Text | Email | Schedule.
+- `app/about/_v3/AboutInquiry.tsx` — catalog Input + Button GET `/contact`.
 
 ## House form to reach for
 

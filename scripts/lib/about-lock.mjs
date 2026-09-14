@@ -29,12 +29,11 @@ export const ABOUT_LOCK_FILES = Object.freeze([
   'app/about/_v3/AboutFirm.tsx',
   'app/about/_v3/AboutOffice.tsx',
   'app/about/_v3/AboutInquiry.tsx',
+  'app/about/_v3/AboutReach.tsx',
   'app/about/_v3/FirmClosings.tsx',
   'app/about/_v3/about-constants.ts',
   'app/about/_v3/about-fold.css',
   'lib/brand/contact.ts',
-  'components/site/v3/V3Carousel.client.tsx',
-  'components/site/v3/V3Input.tsx',
 ])
 
 /**
@@ -73,7 +72,14 @@ export const ABOUT_LOCK_BEATS = Object.freeze([
     id: '3',
     text: 'Firm reviews as words (V3Proof) plus dated local closings as a carousel of recorded sales. Never invent MOS.',
     tokens: [/V3Proof|reviews/i, /closings|carousel/i],
-    sourceRequire: [/<V3Proof\b/, /<FirmClosings\b/, /V3Carousel/, /mode="rail"/, /Redfin-clean/],
+    sourceRequire: [
+      /<V3Proof\b/,
+      /<FirmClosings\b/,
+      /from '@\/components\/ui\/carousel'/,
+      /CarouselPrevious/,
+      /CarouselNext/,
+      /Redfin-clean/,
+    ],
     sourceForbid: [/months of supply/i],
   },
   {
@@ -81,14 +87,16 @@ export const ABOUT_LOCK_BEATS = Object.freeze([
     text: 'Equal four-up reach: Call, Text, Email, Schedule. No Call-dominant lead.',
     tokens: [/\bCall\b/, /\bText\b/, /\bEmail\b/, /\bSchedule\b/],
     sourceRequire: [
-      /kicker: v3Text\('Call'\)/,
-      /kicker: v3Text\('Text'\)/,
-      /kicker: v3Text\('Email'\)/,
-      /kicker: v3Text\('Schedule'\)/,
+      /from '@\/components\/ui\/button-group'/,
+      /<ButtonGroup\b/,
+      />Call</,
+      />Text</,
+      />Email</,
+      />Schedule</,
       /<V3OnDuty\b/,
-      /repeat\(4, minmax\(0, 1fr\)\)/,
+      /className="flex-1"/,
     ],
-    sourceForbid: [/primary:\s*true/, /v3-doors--lead/],
+    sourceForbid: [/primary:\s*true/, /v3-doors--lead/, /<V3Doors\b/],
   },
   {
     id: '5',
@@ -118,6 +126,7 @@ export const ABOUT_LOCK_BEATS = Object.freeze([
       /from '@\/components\/ui\/carousel'/,
       /from '@\/components\/ui\/card'/,
       /from '@\/components\/ui\/input'|from '@\/components\/motion\/input'/,
+      /from '@\/components\/ui\/button-group'/,
     ],
   },
 ])

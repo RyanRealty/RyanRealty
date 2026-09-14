@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const PAGE = readFileSync('app/about/page.tsx', 'utf8')
+const REACH = readFileSync('app/about/_v3/AboutReach.tsx', 'utf8')
 const BODY = PAGE.slice(PAGE.indexOf('return ('))
 
 function at(marker: string): number {
@@ -26,14 +27,18 @@ describe('/about section order', () => {
     expect(PAGE).not.toContain('primary: true')
     expect(PAGE).not.toContain('live: hoursLive')
     expect(PAGE).toContain('<V3OnDuty')
-    expect(PAGE).toContain('tel:${CONTACT.phoneDirectTel}')
-    expect(PAGE).toContain('sms:${CONTACT.phoneDirectTel}')
-    expect(PAGE).toContain('mailto:${CONTACT.email.primary}')
-    expect(PAGE).toContain("href: '/book'")
-    expect(PAGE).toContain("kicker: v3Text('Call')")
-    expect(PAGE).toContain("kicker: v3Text('Text')")
-    expect(PAGE).toContain("kicker: v3Text('Email')")
-    expect(PAGE).toContain("kicker: v3Text('Schedule')")
+    expect(PAGE).toContain('<AboutReach')
+    expect(PAGE).not.toContain('<V3Doors')
+    expect(REACH).toContain("from '@/components/ui/button-group'")
+    expect(REACH).toContain('<ButtonGroup')
+    expect(REACH).toContain('>Call<')
+    expect(REACH).toContain('>Text<')
+    expect(REACH).toContain('>Email<')
+    expect(REACH).toContain('>Schedule<')
+    expect(REACH).toContain('tel:${CONTACT.phoneDirectTel}')
+    expect(REACH).toContain('sms:${CONTACT.phoneDirectTel}')
+    expect(REACH).toContain('mailto:${CONTACT.email.primary}')
+    expect(REACH).toContain('href="/book"')
   })
 
   it('prints reviews as primary proof, then dated local closings', () => {

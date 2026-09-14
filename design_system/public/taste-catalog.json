@@ -2354,7 +2354,7 @@
       ]
     },
     "about": {
-      "layoutLock": "About is the brokerage, not Meet the Team. FAIL if the page opens on AboutFaces or three equal broker Cards. FAIL if AboutTeamTeaser or a Meet-the-Team dump is on About. Hero is AboutFirm: office exterior + one purpose line (boutique · all of Central Oregon · buy and sell). V3Proof is primary client reviews. FirmClosings is dated local sold homes — never invented MOS. Then V3Doors Call|Text|Email|Schedule, then AboutOffice (115 NW Oregon Ave #2 + firm OREA), then AboutInquiry GET /contact. Brokers belong on /team only. Do not mount AboutFaces or size=\"proof\". No V3SourceLine. Never the sofa, coast-to-coast, or fee copy.",
+      "layoutLock": "About is the brokerage, not Meet the Team. FAIL if the page opens on AboutFaces or three equal broker Cards. FAIL if AboutTeamTeaser or a Meet-the-Team dump is on About. Hero is AboutFirm: office exterior + one purpose line (boutique · all of Central Oregon · buy and sell). V3Proof is primary client reviews. FirmClosings is dated local sold homes — never invented MOS. Then shadcn Button Group Call|Text|Email|Schedule, then AboutOffice Card (115 NW Oregon Ave #2 + firm OREA), then AboutInquiry Input+Button GET /contact. Brokers belong on /team only. Do not mount AboutFaces or size=\"proof\". No V3SourceLine. Never the sofa, coast-to-coast, or fee copy.",
       "layoutLockChecks": [
         {
           "path": "app/about/page.tsx",
@@ -2434,7 +2434,7 @@
           "id": "house-doors",
           "catalog": "house-v3",
           "url": "components/site/v3/V3Doors.tsx",
-          "job": "Call at display scale with live hours; Text Email Schedule lighter."
+          "job": "Equal four-up Call|Text|Email|Schedule via catalog Button Group. Live hours sit above. Not a Call-dominant lead."
         },
         {
           "id": "house-atlas",
@@ -2452,7 +2452,7 @@
           "id": "shadcn-input",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/input",
-          "job": "One-line inquiry on About. GET to /contact. Adapt into V3Input. Full form stays on Contact."
+          "job": "One-line inquiry on About. Catalog Input + Button. GET to /contact. Full form stays on Contact."
         },
         {
           "id": "shadcn-card",
@@ -2464,7 +2464,7 @@
           "id": "shadcn-carousel",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/carousel",
-          "job": "Past brokerage closings as a rail carousel of Cards. Photo, address, ClosePrice, beds/baths/sqft. Adapt into V3Carousel."
+          "job": "Past brokerage closings as a catalog carousel of Cards. Photo, address, ClosePrice, beds/baths/sqft. Prev/next + peek. Not a house rail wrapper."
         }
       ]
     },

@@ -18,7 +18,7 @@
       { "id": "8", "text": "Catalog interactions are real: closings carousel (shadcn carousel + Card) and inquiry input. Avatar-import plus cream CSS is not a demo match." }
     ]
   },
-  "note": "SITE-90 2026-09-14 Matt lock. About = brokerage, not Meet the Team. Brokers belong on /team only. requiredComponents opener is AboutFirm, not AboutFaces, not AboutTeamTeaser. Order: AboutFirm hero, V3Proof reviews PRIMARY, FirmClosings, V3Doors Call/Text/Email/Schedule, AboutOffice (address + OREA), AboutInquiry GET /contact, Atlas, Quiet #about, V3Answers, Footer. Tip Ready needs competitiveBriefEvidence quotes in source — a lone boolean is refuse.",
+  "note": "SITE-90 2026-09-14 Matt lock. About = brokerage, not Meet the Team. Brokers belong on /team only. requiredComponents opener is AboutFirm, not AboutFaces, not AboutTeamTeaser. Order: AboutFirm hero, V3Proof reviews PRIMARY, FirmClosings catalog carousel+Card, AboutReach Button Group Call/Text/Email/Schedule, AboutOffice Card, AboutInquiry Input+Button GET /contact, Atlas, Quiet #about, V3Answers, Footer. Tip Ready needs competitiveBriefEvidence quotes in source — a lone boolean is refuse.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -42,27 +42,27 @@
     },
     {
       "name": "FirmClosings",
-      "section": "SALES PROOF. Recent local closings as V3Carousel / shadcn carousel (Card slides: photo, address, recorded ClosePrice, close date, beds/baths/sqft, listing door). Dated sold homes from the firm record. Not national scale counts. Never invent MOS or prices. Child of the page so about/page.tsx never mounts a city-stats Ledger.",
+      "section": "SALES PROOF. Recent local closings as shadcn carousel + Card (photo, address, recorded ClosePrice, close date, beds/baths/sqft, listing door). Dated sold homes from the firm record. Not national scale counts. Never invent MOS or prices. Child of the page so about/page.tsx never mounts a city-stats Ledger.",
       "blocking": true
     },
     {
-      "name": "V3Doors",
-      "section": "#reach equal four-up: Call | Text | Email | Schedule (Sotheby G1). No v3-doors--lead. V3OnDuty hours sit above the four doors. Replaces the seven-row contact list SITE-48 removed.",
+      "name": "AboutReach",
+      "section": "#reach equal four-up: catalog Button Group Call | Text | Email | Schedule. V3OnDuty hours sit above. Replaces the seven-row contact list SITE-48 removed.",
       "blocking": true
     },
     {
       "name": "AboutOffice",
-      "section": "Bend office 115 NW Oregon Ave #2 and firm OREA on the fold. shadcn Card. One door to /team. No faces, no roster, no per-broker CTAs.",
+      "section": "Bend office 115 NW Oregon Ave #2 and firm OREA on the fold. Catalog Card demo (photo, body, facts). One door to /team. No faces, no roster, no per-broker CTAs.",
       "blocking": true
     },
     {
       "name": "AboutInquiry",
-      "section": "One short inquiry on About. Native GET to /contact?inquiry=. Label Send a message. Not a second ContactAsk. Full form stays on Contact.",
+      "section": "One short inquiry on About. Catalog Input + Button. Native GET to /contact?inquiry=. Label Send a message. Not a second ContactAsk. Full form stays on Contact.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
-      "section": "Once: #about, late — a short origin plus the firm and principal-broker licences as sourced facts, never a KPI Instrument. The second instance (#who, seven contact rows as the fold) was deleted by SITE-48; the reach it carried is the V3Doors reach control.",
+      "section": "Once: #about, late — a short origin plus the firm and principal-broker licences as sourced facts, never a KPI Instrument. The second instance (#who, seven contact rows as the fold) was deleted by SITE-48; the reach it carried is the AboutReach Button Group.",
       "blocking": true
     },
     {
@@ -114,6 +114,7 @@
   "removedComponents": [
     "AboutFaces as opener / three equal broker Cards — Matt 2026-09-12 lock: About is the brokerage, not Meet the Team. Looking/taste must not pass a faces-first About. Deep bios and licenses stay on /team.",
     "AboutTeamTeaser — Matt 2026-09-14: brokers belong on /team only. No face row, no Meet-the-Team dump on About.",
+    "V3Doors on About #reach — catalog Button Group is the four-up. V3Doors stays on Contact and other routes.",
     "KbHero — brand eyebrow, poetry H1, Central Oregon photo, property search.",
     "KbAbout — origin story and facts, rebuilt as the opening V3Quiet plus the Instrument.",
     "KbExploreTowns — city ledger, rebuilt as V3Ledger from getMarketPulseCitySnapshots.",
@@ -131,10 +132,10 @@
     "V3Breadcrumb",
     "AboutFirm #firm — OPENS. Firm story (boutique · Central Oregon · buy+sell) on the office exterior. Never broker Cards. Never the sofa.",
     "V3Proof #proof — PRIMARY client reviews (Google + featured quote). Not press.",
-    "FirmClosings #firm-sales — dated local closings carousel. Never invented MOS.",
-    "V3Doors #reach — Call | Text | Email | Schedule, Contact match, live hours",
-    "AboutOffice #office — 115 NW Oregon Ave #2 + firm OREA. Door to /team. No roster.",
-    "AboutInquiry #write — compact Send a message GET /contact",
+    "FirmClosings #firm-sales — catalog carousel + Card of dated local closings. Never invented MOS.",
+    "AboutReach #reach — Button Group Call | Text | Email | Schedule, live hours",
+    "AboutOffice #office — catalog Card, 115 NW Oregon Ave #2 + firm OREA. Door to /team. No roster.",
+    "AboutInquiry #write — catalog Input + Button GET /contact",
     "V3Atlas #service-area -- where we work",
     "V3Quiet #about -- how it started plus licenses as one sourced line",
     "V3Answers #faq -- working with Ryan Realty",
@@ -147,7 +148,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-12",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "Mini 2026-09-14 re-eval cursor-grok-4.6: competitiveBriefPass true, demoMatch false, score 55 on shotsHash sha256:f95a3b74. Craft after that fire (office Card demo, catalog Input+Button, OnDuty clip, house-firm claim). Cos re-runs. Do not invent demoMatch.",
+    "evaluator": "Mini 2026-09-14 re-eval cursor-grok-4.6: competitiveBriefPass true, demoMatch false. Catalog install after that fire (Button Group, Input+Button, Carousel+Card, Card). Cos re-runs. Do not invent demoMatch.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
     "demoMatch": false,
@@ -175,9 +176,11 @@
         "proof",
         "reach",
         "office",
-        "firm-sales"
+        "firm-sales",
+        "firm-sales-open",
+        "write-open"
       ],
-      "capture": "first viewport + proof=#proof + reach=#reach + office=#office + firm-sales=#firm-sales, scripts/take-route-shots.mjs, scale 1, palette-quantized. Lock: AboutFirm firm-story hero, V3Proof reviews band as first proof, FirmClosings Card carousel (photo, address, ClosePrice, close date, beds/baths/sqft), V3Doors Call/Text/Email/Schedule, AboutOffice address + OREA once, AboutInquiry shadcn Input GET /contact. Not three broker Cards. Not a Meet-the-Team dump."
+      "capture": "first viewport + proof=#proof + reach=#reach + office=#office + firm-sales=#firm-sales + firm-sales-open=next click + write-open=input click, scripts/take-route-shots.mjs, scale 1, palette-quantized. Lock: AboutFirm firm-story hero, V3Proof reviews band as first proof, catalog carousel+Card closings (photo, address, ClosePrice, close date, beds/baths/sqft), Button Group Call/Text/Email/Schedule, AboutOffice Card photo/body, AboutInquiry Input+Button GET /contact. Not three broker Cards. Not a Meet-the-Team dump."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
@@ -190,41 +193,40 @@
       57
     ],
     "score": 52,
-    "beats": "Mini re-eval: competitiveBriefPass true. demoMatch false. Lock under test: house-firm claim opener, V3Proof, Card closings rail, equal four-up, office Card photo/facts, catalog Input. Cos still owns the next score.",
+    "beats": "Mini re-eval: competitiveBriefPass true. demoMatch false. Catalog install under test: Button Group reach, Input+Button inquiry, carousel+Card closings, Card office. Cos still owns the next score.",
     "adaptedFrom": [
       { "id": "house-firm" },
       { "id": "house-proof" },
-      { "id": "house-office" },
-      { "id": "house-doors" },
+      { "id": "shadcn-button-group" },
       { "id": "shadcn-card" },
       { "id": "shadcn-carousel" },
       { "id": "shadcn-input" }
     ],
-    "evaluatorBlocked": "Mini 2026-09-14 re-eval cursor-grok-4.6: competitiveBriefPass true, demoMatch false, score 55 on sha256:f95a3b74. Craft after that fire. New named shotsHash sha256:4653719a. Cos re-runs. Do not invent demoMatch. --ship stays 1. Scores 52/47/57 are the prior 3-scoring instrument.",
+    "evaluatorBlocked": "Mini 2026-09-14: competitiveBriefPass true, demoMatch false. Catalog install after that fire. Cos re-runs. Do not invent demoMatch. --ship stays 1. Scores 52/47/57 are the prior 3-scoring instrument.",
     "defects": [
       {
-        "section": "#office",
+        "section": "#reach",
         "severity": "taste",
-        "finding": "AboutOffice must be a real shadcn Card demo (photo, body, facts chrome) — not a cream title stack restating the hero address. Mini 2026-09-14 re-eval cursor-grok-4.6.",
-        "replaceWith": "shadcn-card"
+        "finding": "Reach must photograph as the catalog Button Group four-up, not house editorial columns. Cos re-runs after catalog install.",
+        "replaceWith": "shadcn-button-group"
+      },
+      {
+        "section": "#firm-sales",
+        "severity": "taste",
+        "finding": "Closings must photograph as catalog carousel prev/next + Card peek, not a house rail wrapper. Cos re-runs after catalog install.",
+        "replaceWith": "shadcn-carousel"
       },
       {
         "section": "#write",
         "severity": "taste",
-        "finding": "AboutInquiry must be a real shadcn Input as the control plus catalog Button submit — not a labeled cream field and house outline Send rectangle. Mini 2026-09-14 re-eval cursor-grok-4.6.",
+        "finding": "Inquiry must photograph as catalog Input + Button. Cos re-runs after catalog install.",
         "replaceWith": "shadcn-input"
       },
       {
-        "section": "#reach",
+        "section": "#office",
         "severity": "taste",
-        "finding": "V3OnDuty on #reach clips left (stray mark before Closed). The live hours line must read whole. Mini 2026-09-14 re-eval cursor-grok-4.6.",
-        "replaceWith": "house-doors"
-      },
-      {
-        "section": "#firm",
-        "severity": "taste",
-        "finding": "AboutFirm H1 and purpose must read as the opening firm claim, not a caption under a navy postcard. Mini 2026-09-14 re-eval cursor-grok-4.6.",
-        "replaceWith": "house-firm"
+        "finding": "Office must photograph as a catalog Card (photo, body, footer), not a definition-list reprint. Cos re-runs after catalog install.",
+        "replaceWith": "shadcn-card"
       }
     ],
     "comparedToPrior": "rebaselined",
@@ -235,8 +237,8 @@
       "rubricVersion": "v1-2026-09-08",
       "shotsHash": "sha256:79ad786fe5d34960b88199dd066b0ab6ab91edc0a23cee56fe3aa148b19a9c10"
     },
-    "rebaselineReason": "Mini 2026-09-14 re-eval: competitiveBriefPass true, demoMatch false, score 55 on sha256:f95a3b74. Craft after that fire. Cos re-runs on new shots. Do not invent demoMatch.",
-    "verdict": "Brief holds. demoMatch is false until Cos re-runs. The opener is the firm claim, not a Meet-the-Team dump.",
+    "rebaselineReason": "Mini 2026-09-14: competitiveBriefPass true, demoMatch false. Catalog install after that fire. Cos re-runs on new shots. Do not invent demoMatch.",
+    "verdict": "Brief holds. Catalog controls installed. demoMatch is false until Cos re-runs. The opener is the firm claim, not a Meet-the-Team dump.",
     "contactListIsFirstContent": false,
     "contactListAnswer": "H1 and one purpose line (boutique · Central Oregon · buy and sell) on the Bend office exterior, Google reviews as primary proof, dated local closings, Call/Text/Email/Schedule, office 115 NW Oregon Ave #2 + firm OREA, and a one-line inquiry to /contact. No three equal broker Cards. No Meet-the-Team dump. Brokers belong on /team."
   },
