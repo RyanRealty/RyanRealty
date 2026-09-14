@@ -78,6 +78,14 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
 
   it('holds a plat to its community before any ring, and reaches two years inside first', () => {
     expect(names.indexOf('subdivision-24mo')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
+    expect(names.indexOf('adjacent-sub-24mo')).toBeLessThan(names.indexOf('pocket-3mo'))
+    expect(names.filter((n) => n.startsWith('pocket-'))).toEqual([
+      'pocket-3mo',
+      'pocket-6mo',
+      'pocket-9mo',
+      'pocket-12mo',
+    ])
+    expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('community-6mo'))
     expect(names.indexOf('adjacent-sub-24mo')).toBeLessThan(names.indexOf('community-6mo'))
     expect(names.filter((n) => n.startsWith('community-'))).toEqual(['community-6mo', 'community-12mo', 'community-24mo'])
     expect(names.indexOf('community-24mo')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
@@ -104,6 +112,7 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
     for (const t of pricingTierLadder()) {
       expect(!!t.sameCommunity).toBe(t.name.startsWith('community-'))
       expect(!!t.likeCommunity).toBe(t.name.startsWith('like-community-'))
+      expect(!!t.samePocket).toBe(t.name.startsWith('pocket-'))
     }
   })
 })

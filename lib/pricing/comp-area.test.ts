@@ -88,6 +88,24 @@ describe('buildCompArea — every kept sale came from a subdivision rung', () =>
     expect(area!.sentence).toBe('Diamond Bar Ranch and the two subdivisions next to it.')
   })
 
+  it('keeps pocket rungs as named subdivisions, not a radius', () => {
+    const sisters = { latitude: 44.2908, longitude: -121.5493 }
+    const area = buildCompArea({
+      subject: { ...sisters, subdivision: 'Rolling Horse Meadow', city: 'Sisters' },
+      rungs: [rung('subdivision-3mo', 3), rung('pocket-6mo', 1)],
+      keptComps: [
+        comp('Rolling Horse Meadow', 'subdivision-3mo', sisters),
+        comp('Rolling Horse Meadow', 'subdivision-3mo', sisters),
+        comp('Rolling Horse Meadow', 'subdivision-3mo', sisters),
+        comp('SaddleStone', 'pocket-6mo', sisters),
+      ],
+    })
+    expect(area).not.toBeNull()
+    expect(area!.kind).toBe('subdivisions')
+    expect(area!.names).toEqual(['Rolling Horse Meadow', 'SaddleStone'])
+    expect(area!.radiusMiles).toBeNull()
+  })
+
   it('does not let an MLS placeholder become a place', () => {
     const area = buildCompArea({
       subject: { ...REDMOND, subdivision: 'N/A', city: 'Redmond' },

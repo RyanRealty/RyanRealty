@@ -34,6 +34,7 @@ import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CompSelection } from '@/lib/cma/comps'
 import { emptyExclusions } from '@/lib/cma/comp-trace'
 import { FACTS_STANDALONE_MIN, LOCAL_POOL_RADIUS_MILES, PRICING_MIN_COMPS, PRICING_TARGET_COMPS } from '@/lib/pricing/ladder'
+import { applyInferredPocket, inferSubdivisionPocket } from '@/lib/pricing/infer-pocket'
 import { walkPricingLadder, type PricingMatchResult, type PricingSubject } from '@/lib/pricing/match'
 import type { CmaMarketContext, CmaPricing } from '@/lib/cma/types'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
@@ -201,6 +202,21 @@ export async function selectPricingComps(
       s.subdivisionSlug = slugs[i]
     })
   }
+  Object.assign(
+    pricingSubject,
+    applyInferredPocket(
+      pricingSubject,
+      inferSubdivisionPocket({
+        subdivision: pricingSubject.subdivision,
+        subdivisionNorm: pricingSubject.subdivisionNorm,
+        subdivisionSlug: pricingSubject.subdivisionSlug,
+        platLabel: ring?.homeLabel ?? null,
+        latitude: pricingSubject.latitude,
+        longitude: pricingSubject.longitude,
+        neighbors: sales,
+      }),
+    ),
+  )
   // Delta 4 (Matt 2026-09-09): a rural sale's zoning class is a hard split,
   // and the facts table carries no zone. Nearest rural sales first, county
   // GIS through the cache, at most MAX_ZONE_LOOKUPS live queries a build.
@@ -278,6 +294,9 @@ function ladderGeography(tier: string, subject: CmaSubject): string {
   if (tier.startsWith('subdivision-')) {
     return sub ? `subdivision ${sub}${city ? `, ${city}` : ''}` : 'the subject subdivision'
   }
+  if (tier.startsWith('pocket-')) {
+    return `mapped pockets within a third of a mile${city ? `, ${city}` : ''}`
+  }
   const miles = tier.match(/(\d+(?:\.\d+)?)mi/)?.[1] ?? null
   if (tier.startsWith('rural-')) {
     return miles ? `within ${miles} miles, any mailing city` : 'rural, any mailing city'
@@ -326,7 +345,7 @@ export function matchToCompSelection(
       subject: {
         sqft: subject.sqft ?? null,
         lot_acres: subject.lotAcres ?? null,
-        subdivision: subject.subdivision ?? null,
+        subdivision: match.inferredPocket?.subdivision ?? subject.subdivision ?? null,
         subdivision_raw: subject.subdivision ?? null,
         product_sub_type: subject.propertySubType ?? null,
       },

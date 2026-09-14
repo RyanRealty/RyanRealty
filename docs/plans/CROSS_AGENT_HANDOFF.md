@@ -1,11 +1,11 @@
-# Current — 2026-09-14 (team map/copy + Tip Ready mannered refuse; do not merge)
+# Current — 2026-09-14 (CMA blank-subdivision pocket + CompArea extras; PR only)
 
-Surface: Cursor cloud, `cursor/team-map-copy-150b`. Craft PR. Do not merge. Cos cherry-picks.
+Surface: Cursor cloud, `cursor/cma-blank-subdivision-pocket-5c80`. Craft PR. Do not merge.
 
-- **Done:** Killed /team atlas `claimText` lecture. Editorial doors are quiet Call | Text | Email | Schedule (number on `tel:` / aria-label). `tasteDoneProblems` / `--ship` refuse mannered meta-explainer + CALL-phone billboards. Team `--ship` still exit 1 (no demoMatch). About `--ship` still 0.
-- **Next:** Cos lands the copy + refuse. Do not merge this PR to main.
-- **Node:** none (craft; not a queue claim).
-- Skills read: site-queue, VOICE.md, taste-receipt.
+- **Done:** Blank `SubdivisionName` infers pocket (plat / nearest mapped neighbor ≤0.35 mi) before mile rings. Extras band uses CompArea + shared ±10% inventory; city-wide `getCmaBandInventory` only when CompArea is absent.
+- **Next:** Review PR. Do not merge.
+- **Node:** none (Tip Ready geo; not a queue claim).
+- Skills read: tdd, git-commit, database-canonical-reference (CMA extras).
 
 # Prior
 
