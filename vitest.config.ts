@@ -104,6 +104,7 @@ export default defineConfig({
       'components/search/__tests__/**/*.test.tsx',
       'components/CookieConsentBanner.test.tsx',
       'app/**/_v3/**/*.test.ts',
+      'app/**/_v3/**/*.test.tsx',
       // Tabbed core-chart module logic (MarketCoreCharts).
       'components/market/**/*.test.ts',
       'components/site/v3/**/*.test.ts',

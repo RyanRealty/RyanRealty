@@ -1,11 +1,11 @@
-# Current — 2026-09-14 (PR #223 Tip Ready evidence; do not merge)
+# Current — 2026-09-14 (PR #225 About closings photo link; do not merge)
 
-Surface: Cursor cloud, `cursor/about-firm-story-20f0`, PR https://github.com/RyanRealty/RyanRealty/pull/223. Do not merge. Cos cherry-picks after `--ship` 0.
+Surface: Cursor cloud, `cursor/about-closings-listing-link-59a9`, PR https://github.com/RyanRealty/RyanRealty/pull/225. Do not merge. Cos lands on Mini.
 
-- **Done:** Process tip `54bb8acf` merged. `competitiveBriefEvidence` re-landed from About source. `--ship` 0, `demoMatch` true.
-- **Next:** Cos Mini cherry-pick onto Mini after `--ship` 0. Do not merge this PR to main.
+- **Done:** FirmClosings Card (photo included) is one Link to the row's existing listing href. `--ship` 0, `demoMatch` true, not invented.
+- **Next:** Cos Mini cherry-pick. Do not merge this PR (or #223) to main.
 - **Node:** `edabba8e-f8aa-4271-909d-c258914f75ef` (SITE-90).
-- Skills read: about-lock, taste-receipt, site-queue.
+- Skills read: site-queue, TASTE.md, taste-receipt.
 
 # Prior
 
