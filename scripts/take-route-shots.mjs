@@ -1005,6 +1005,16 @@ async function main() {
       written.push({ file: baseFile, ...baseResult })
 
       for (const state of opts.states) {
+        // A prior !click (lightbox, sheet) must not hide the next control.
+        // Reload the listing so each demoState is a fresh first viewport.
+        if (state.click || state.hover || state.type != null) {
+          const reloaded = await loadPage(page, url)
+          if (reloaded.status >= 400 || reloaded.status === 0) {
+            console.error(`  ${viewport.key}: state "${state.name}" — reload HTTP ${reloaded.status}`)
+            failed = true
+            continue
+          }
+        }
         // TRAP 11 — the sticky chrome. Parking the target at y=24 puts its
         // first line UNDER a 66px header, so a state shot shows a section whose
         // heading is sliced and the evaluator reads a live defect the page does

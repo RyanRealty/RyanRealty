@@ -667,15 +667,24 @@
    hide the whole actions row at 64rem because the sidebar already
    carries Tour / Call / Text — and that rule took Save and Share
    with it. The keep group is the live control. */
+.listing-face__price-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v3-space-sm) var(--v3-space-md);
+}
+
 .listing-face__keep,
 .listing-face__keep.v3-btn-group,
 .v3.listing-face__keep.v3-btn-group {
   display: grid;
-  grid-template-columns: repeat(2, minmax(8rem, 1fr));
+  grid-template-columns: repeat(2, minmax(6.5rem, 1fr));
   gap: 0;
   width: 100%;
-  max-width: 24rem;
-  margin-top: var(--v3-space-sm);
+  max-width: 16rem;
+  margin-top: 0;
+  flex: 0 0 auto;
 }
 
 .listing-face__keep .v3-btn {

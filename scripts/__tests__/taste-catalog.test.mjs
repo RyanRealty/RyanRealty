@@ -282,6 +282,13 @@ describe('demoStates are the capture the evaluator can actually see', () => {
     const specs = demoStateSpecs(loaded, 'homepage-v6')
     expect(specs.some((s) => /search-open/.test(s) && /click/.test(s))).toBe(true)
   })
+
+  it('prints save-open, share-open, and gallery-open specs for listing-detail', () => {
+    const specs = demoStateSpecs(loaded, 'listing-detail')
+    expect(specs.some((s) => /save-open/.test(s) && /Save /.test(s) && /click/.test(s))).toBe(true)
+    expect(specs.some((s) => /share-open/.test(s) && /Share /.test(s) && /click/.test(s))).toBe(true)
+    expect(specs.some((s) => /gallery-open/.test(s) && /Open photo/.test(s) && /click/.test(s))).toBe(true)
+  })
 })
 
 describe('layoutLockProblems', () => {
