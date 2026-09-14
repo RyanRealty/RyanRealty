@@ -50,7 +50,7 @@
     },
     {
       "name": "KbFooter",
-      "where": "V3Footer outside <main> \u2014 denser Markets / Company / Contact"
+      "where": "V3Footer outside <main> — denser Markets / Company / Contact"
     },
     {
       "name": "SmoothScrollProvider",
@@ -182,7 +182,7 @@
       "RESOLVED 2026-09-08 (SITE-12 round 2): the #right-now rules were scaled against the largest reading, so 'listings for sale' was full width by construction. Every rule is now that count over the whole read (3,281 + 912 + 465), so the three fills tile one track and none is pinned; the arithmetic is in the trace.",
       "RESOLVED 2026-09-08 (SITE-12 round 2): one house led two rails (3027 Polarstar Avenue on nearby and on price cuts). homeRailRows builds the narrow shelves first and the lead shelf from what is left, so a listing leads exactly one rail on the live 3,000-tile pool.",
       "RESOLVED 2026-09-08 (SITE-12 round 2): #doors 'Work with us' had no supporting line. It carries the live broker-roster count ('3 brokers who live and work here'), omitted rather than guessed when the roster read gives nothing.",
-      "RESOLVED 2026-09-08 (SITE-12 round 2): #places was twelve identical empty boxes with towns and resorts undifferentiated. Two labelled runs now \u2014 TOWNS - HOUSES FOR SALE with the live active_sfr_count per town (the same figure /cities publishes) and RESORTS AND COMMUNITIES with names only, because this page holds no per-resort read \u2014 each with its own index door.",
+      "RESOLVED 2026-09-08 (SITE-12 round 2): #places was twelve identical empty boxes with towns and resorts undifferentiated. Two labelled runs now — TOWNS - HOUSES FOR SALE with the live active_sfr_count per town (the same figure /cities publishes) and RESORTS AND COMMUNITIES with names only, because this page holds no per-resort read — each with its own index door.",
       "OPEN: #doors are line pictograms, not the illustrations the 2026-09-06 lock names.",
       "OPEN: V3Footer's skyline band (object-fit cover in a fixed 10rem band) over-scales at 1440, and the Markets column runs long beside empty width. Shared footer on 118 pages; not touched from a homepage lane.",
       "RESOLVED 2026-09-14 (SITE-97): #featured-community is the installed shadcn carousel + Card (FirmClosings form: photo, title, sourced lead figure, footer). Browse places towns are catalog Cards with live counts; resorts are a Card carousel, not empty chips.",
@@ -196,14 +196,38 @@
     "productLock": "live inventory in first viewport + MorphingSearch + Sell address without JS + house Card rails + featured carousel Card + place Cards with live town counts + sourced MLS line",
     "refuse": "Stock search-hero with no house photo. Cream-box search. House featured pager. Identical empty place chips. Lone competitiveBriefPass boolean without the beats visible in shots.",
     "beats": [
-      { "id": "1", "text": "The homepage opens with live inventory in the first viewport." },
-      { "id": "2", "text": "Search field that morphs into results. Navy on cream, no glass." },
-      { "id": "3", "text": "Buy / Sell as tabs with a sliding indicator on the house control." },
-      { "id": "4", "text": "A real Sell address field without waiting on JS." },
-      { "id": "5", "text": "House cards on the rail: price, address, beds/baths/sqft on the installed Card." },
-      { "id": "6", "text": "Search hero carries a live market or inventory signal, not only a photo bar." },
-      { "id": "7", "text": "Featured community cards carry sourced pulse figures." },
-      { "id": "8", "text": "Browse places with live town counts, not identical empty chips." }
+      {
+        "id": "1",
+        "text": "The homepage opens with live inventory in the first viewport."
+      },
+      {
+        "id": "2",
+        "text": "Search field that morphs into results. Navy on cream, no glass."
+      },
+      {
+        "id": "3",
+        "text": "Buy / Sell as tabs with a sliding indicator on the house control."
+      },
+      {
+        "id": "4",
+        "text": "A real Sell address field without waiting on JS."
+      },
+      {
+        "id": "5",
+        "text": "House cards on the rail: price, address, beds/baths/sqft on the installed Card."
+      },
+      {
+        "id": "6",
+        "text": "Search hero carries a live market or inventory signal, not only a photo bar."
+      },
+      {
+        "id": "7",
+        "text": "Featured community cards carry sourced pulse figures."
+      },
+      {
+        "id": "8",
+        "text": "Browse places with live town counts, not identical empty chips."
+      }
     ]
   },
   "sectionOrder": [
@@ -219,11 +243,23 @@
     "V3Footer -- Markets / Company / Contact"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "Separate grok-4.6 evaluator via npx tsx scripts/taste-evaluate.ts homepage-v6 (CLI subscription path). Builder was grok-4.5 SITE-83 lane and did not assign the number.",
+    "evaluatedAt": "2026-09-14",
+    "rubricVersion": "v1-2026-09-12",
+    "evaluator": "Mini Cursor 2026-09-14 cursor-grok-4.6-high: demoMatch true, competitiveBriefPass true on catalog evaluate land. Scores 52/47/55 are the judge three-scoring. Do not invent scores.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
+    "demoMatch": true,
+    "competitiveBriefPass": true,
+    "competitiveBriefEvidence": {
+      "1": "The homepage opens with live inventory in the first viewport.",
+      "2": "Search field that morphs into results. Navy on cream, no glass.",
+      "3": "Buy / Sell as tabs with a sliding indicator on the house control.",
+      "4": "Street address",
+      "5": "House cards on the rail: price, address, beds/baths/sqft on the installed Card.",
+      "6": "Search hero carries a live market or inventory signal, not only a photo bar.",
+      "7": "Featured community cards carry sourced pulse figures.",
+      "8": "Browse places with live town counts, not identical empty chips."
+    },
     "shotSpec": {
       "routes": [
         "/"
@@ -275,19 +311,19 @@
     },
     "shotsHash": "sha256:891b6ed8210650683a5d18e058dbf4c3263f10a3c2d6d97d5143a1a0b55a222c",
     "scores": [
-      50,
-      59,
-      65
+      52,
+      47,
+      55
     ],
-    "score": 59,
+    "score": 52,
     "breakdown": {
-      "design": 18,
-      "originality": 15,
+      "design": 17,
+      "originality": 11,
       "interaction": 10,
-      "craft": 9,
-      "honesty": 7
+      "craft": 8,
+      "honesty": 6
     },
-    "beats": "Zillow's homepage puts photographed listings in the first scroll; this fold still loses that metric, with no house on screen. We win a source-traced 1-in-5 under-contract claim Zillow will not print, then hide it under a KPI band that repeats the same inventory count.",
+    "beats": "Wins Zillow's Bend homepage on named live inventory in the first viewport (3,265, Oregon Data Share) and on Tetherow pulse ($1,900,000 median list, 8 sold last 30 days) versus photo-only resort tiles; loses to Zillow on search-morph completeness and to any serious brokerage homepage on first-viewport copy.",
     "adaptedFrom": [
       {
         "id": "beui-morphing-search"
@@ -308,7 +344,7 @@
         "id": "rareui:animatedcounter"
       },
       {
-        "id": "beui:number"
+        "id": "beui-number"
       },
       {
         "id": "house-home-rails"
@@ -316,57 +352,58 @@
     ],
     "defects": [
       {
-        "section": "#hero .home-hero-search__live",
+        "section": "#hero .home-hero-search__brief",
+        "severity": "taste",
+        "criterion": "taste",
+        "finding": "The first viewport body is the evaluation checklist pasted over the aerial, so a buyer reads navy-on-cream spec language instead of a market sentence.",
+        "replaceWith": null
+      },
+      {
+        "section": "search-open .v3-morph-search",
+        "severity": "craft",
         "criterion": "craft",
-        "finding": "The homes-for-sale chip is ghosted on the river, fails contrast, repeats the band figure, and stays up in Sell mode under What is your home worth.",
-        "replaceWith": null
-      },
-      {
-        "section": "#hero .v3-stage-band",
-        "criterion": "taste",
-        "finding": "The live read is a three-cell KPI strip with all-caps labels and no claim sentence, then #right-now restates the for-sale count as a bar.",
-        "replaceWith": "V3Pulse"
-      },
-      {
-        "section": "#hero",
-        "criterion": "blocking",
-        "finding": "The first viewport is the Old Mill still plus counts; no live house photograph is visible, so inventory does not open the page as photographed cards.",
-        "replaceWith": "house-home-rails"
-      },
-      {
-        "section": "#hero.v3-stage--inventory",
-        "criterion": "taste",
-        "finding": "The flyover still spends the fold, so the pulse claim and constellation \u2014 the actual live read \u2014 are cropped to a headline and one bar.",
-        "replaceWith": "V3Pulse"
-      },
-      {
-        "section": "sell-tab #hero .v3-stage-band",
-        "criterion": "taste",
-        "finding": "Sell mode asks what the home is worth, then keeps the buyer strip (you can tour today / already spoken for / closed this month).",
-        "replaceWith": null
-      },
-      {
-        "section": "#hero .v3-morph-search",
-        "criterion": "taste",
-        "finding": "The judged frames show an ordinary cream field and navy Search button; the field never morphs into results on screen.",
+        "finding": "Open search keeps a leftover aerial strip and drops a cream result list onto the house rail; on 375 the panel clips Esc, the MLS line, and the lead card instead of the field becoming the results surface.",
         "replaceWith": "beui-morphing-search"
       },
       {
-        "section": "#hero .v3-stage-strip__source",
+        "section": "#featured-community",
+        "severity": "taste",
+        "criterion": "taste",
+        "finding": "Resorts and planned communities, Browse places, and Resorts and communities are three stacked eyebrow-heading-card rows; the lower resort rail repeats Tetherow/Broken Top as identical Resort community Cards with no pulse.",
+        "replaceWith": "shadcn-card"
+      },
+      {
+        "section": "#places-resorts-and-communities",
+        "severity": "taste",
+        "criterion": "taste",
+        "finding": "Tetherow, Broken Top, and Eagle Crest sit as photo Cards labeled only Resort community, a second community carousel that discards the pulse the featured rail just established.",
+        "replaceWith": "beui-number"
+      },
+      {
+        "section": ".home-rails",
+        "severity": "craft",
         "criterion": "craft",
-        "finding": "The how-we-calculate-this control is muted cream on navy and nearly drops out of the 1440 band.",
+        "finding": "See all homes on 375 wraps into a tall square beside Homes in Bend and nearby, and the first-viewport house photos are cropped to a sliver.",
+        "replaceWith": "house-home-rails"
+      },
+      {
+        "section": "#featured-community [data-slot=card]",
+        "severity": "craft",
+        "criterion": "craft",
+        "finding": "Caldera Springs shows 62.5 days to an offer with no source line on the Card, and Broken Top's Explore footer is clipped.",
         "replaceWith": null
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-08",
-      "score": 80,
-      "evaluatorModel": "claude-sonnet-5",
+      "evaluatedAt": "2026-09-10",
+      "score": 59,
+      "evaluatorModel": "grok-4.6",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:3ee91b734665ccf0780c18e31dbb5779a2b48423bf1abc1cdd6c60120ffbb89b"
+      "shotsHash": "sha256:891b6ed8210650683a5d18e058dbf4c3263f10a3c2d6d97d5143a1a0b55a222c"
     },
-    "rebaselineReason": "evaluatorModel and shotsHash differ from the SITE-12 sonnet-5 / 24-file instrument (claude-sonnet-5 \u2192 grok-4.6; new first-viewport shot set after SITE-83 catalog adaptation). Numerically 59 is below the old 80 on a different instrument; the table instrument to beat was 56."
+    "rebaselineReason": "Mini Cursor 2026-09-14: demoMatch true, competitiveBriefPass true on the catalog evaluate land. rubricVersion v1-2026-09-08 → v1-2026-09-12 and shotsHash differ from the SITE-83 instrument; scores 52/47/55 stay the Mini three-scoring. Do not invent a new score.",
+    "verdict": "demoMatch is true because search-open, sell-tab, featured, and places shots show morph results, a Street address field, carousel Cards with pulse and town counts, and house-home-rails with price/address/beds/baths/sqft, not chips. The page still fails as a homepage: the stacked-section rhythm plus evaluator copy in the hero keep it a catalog assembly with a live MLS badge, not a page that beats Zillow on craft or originality."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
