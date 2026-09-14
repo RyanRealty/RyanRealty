@@ -1,8 +1,9 @@
 'use client'
 
 /**
- * Manual "Build CMA" form — address or MLS lookup + client + broker, then the
- * deterministic builder runs and the browser lands on the review page.
+ * Manual "Build CMA" form — address or MLS lookup + client + broker. Submit
+ * queues the same worker as seller-LP intake (does not await the full build
+ * in the server action) and the browser lands on the draft review page.
  *
  * 11F: on the LOCKED admin v2 language (mirrors the BPO family's
  * BuildBpoForm.tsx). Label+Input+Select -> TextField/SelectField, pattern 6
@@ -59,10 +60,10 @@ export function BuildCmaForm({ brokers }: { brokers: BrokerOption[] }) {
         intent: intent || null,
       })
       if (error || !data) {
-        toast.error(error ?? 'Build failed')
+        toast.error(error ?? 'Could not queue the CMA')
         return
       }
-      toast.success('CMA built. Review it before sending.')
+      toast.success('CMA queued. Opening the draft — it builds in the background.')
       router.push(`/admin/cmas/${data.slug}`)
     })
   }
@@ -167,7 +168,7 @@ export function BuildCmaForm({ brokers }: { brokers: BrokerOption[] }) {
       </div>
 
       <Button onClick={submit} disabled={isPending} touch>
-        {isPending ? 'Building (30 to 60 seconds)…' : 'Build CMA'}
+        {isPending ? 'Queuing…' : 'Build CMA'}
       </Button>
     </div>
   )

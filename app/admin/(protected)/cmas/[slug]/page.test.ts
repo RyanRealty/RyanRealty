@@ -26,5 +26,6 @@ describe('admin CMA entity page', () => {
     expect(page).toContain('getCmaProspectAsk')
     expect(page).toContain('resolveTheirPrice')
     expect(page).toContain("from '@/lib/cma/draft-access'")
+    expect(page).toContain('<CmaBuildWatch')
   })
 })
