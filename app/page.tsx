@@ -24,6 +24,7 @@ import { homeHeroInventory, homeHeroLive } from './_v3/home-hero-inventory'
 import { HomeBrowsePlaces } from './_v3/HomeBrowsePlaces'
 import { HomeFeaturedCommunity } from './_v3/HomeFeaturedCommunity.client'
 import { loadHomeFeaturedCommunitySlides } from './_v3/home-featured-communities'
+import { communityImage } from '@/lib/geo-images'
 import { homeRailRows, enrichHomeRailRows } from './_v3/home-rail-items'
 import { homeRailItemList } from './_v3/home-jsonld'
 import {
@@ -93,12 +94,12 @@ const TOWN_LABEL: Record<(typeof TOWN_ORDER)[number], string> = {
   terrebonne: 'Terrebonne',
 }
 
-/** Resort doors on home. Names only. Counts live on /communities. */
+/** Resort doors on home. Photos from communityImage; counts live on /communities. */
 const RESORT_DOORS = [
-  { label: 'Tetherow', href: '/communities/tetherow' },
-  { label: 'Broken Top', href: '/communities/broken-top' },
-  { label: 'Black Butte Ranch', href: '/communities/black-butte-ranch' },
-  { label: 'Eagle Crest', href: '/communities/eagle-crest' },
+  { label: 'Tetherow', slug: 'tetherow', href: '/communities/tetherow' },
+  { label: 'Broken Top', slug: 'broken-top', href: '/communities/broken-top' },
+  { label: 'Black Butte Ranch', slug: 'black-butte-ranch', href: '/communities/black-butte-ranch' },
+  { label: 'Eagle Crest', slug: 'eagle-crest', href: '/communities/eagle-crest' },
 ] as const
 
 export default async function Home() {
@@ -205,6 +206,7 @@ export default async function Home() {
         return {
           label: live?.name ?? TOWN_LABEL[slug],
           href: `/cities/${slug}`,
+          ...(live?.heroImageUrl?.trim() ? { photoSrc: live.heroImageUrl } : {}),
           ...(typeof active === 'number' && Number.isFinite(active) && active > 0
             ? { count: active }
             : {}),
@@ -213,8 +215,21 @@ export default async function Home() {
     },
     {
       name: 'Resorts and communities',
+      layout: 'carousel' as const,
       seeAll: { label: 'Every community', href: '/communities' },
-      doors: RESORT_DOORS.map((r) => ({ label: r.label, href: r.href })),
+      doors: RESORT_DOORS.flatMap((r) => {
+        const photoSrc = communityImage(r.slug)
+        // Catalog Card carousel: photo is required. Misses stay on /communities.
+        if (!photoSrc) return []
+        return [
+          {
+            label: r.label,
+            href: r.href,
+            description: 'Resort community',
+            photoSrc,
+          },
+        ]
+      }),
     },
   ]
 

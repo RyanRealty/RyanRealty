@@ -1,9 +1,9 @@
 # Current — 2026-09-14 (SITE-97 homepage-v6; PR only; do not merge)
 
-Surface: Cursor cloud, `cursor/homepage-v6-site97-d7fe` @ `25c2319f8` + shots hash commit → PR #229. Do not merge.
+Surface: Cursor cloud, `cursor/homepage-v6-site97-d7fe` → PR #229. Do not merge.
 
-- **Done:** Featured = shadcn Carousel+Card+AnimatedNumber. Places = catalog Card + live town counts. Researchy 1–8 baked as visible claims. Open shots: MorphingSearch results + Sell street address. `--ship` still exit 1 until Mini writes demoMatch true + competitiveBriefPass true.
-- **Next:** Mini Cursor `npx tsx scripts/taste-evaluate.ts homepage-v6 --builder grok-4.5`, copy evaluatorModel, write real receipt, then `--ship`.
+- **Done:** Featured = FirmClosings carousel+Card (photo, lead figure, footer). Places towns = photo Cards + live counts. Resorts = photo Card carousel (no empty chips). Researchy 1–8 visible. Open shots include search-open, sell-tab, places-resorts.
+- **Next:** Mini Cursor judge writes demoMatch true + competitiveBriefPass true (verbatim brief quotes). Then `--ship`. Leave SITE-97 in_progress until exit 0.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `TASTE.md`.
 
 # Prior

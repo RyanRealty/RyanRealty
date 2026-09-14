@@ -1,12 +1,21 @@
 'use client'
 
 /**
- * Browse places on Home `/`: catalog Card doors, not house chips.
- * Town Cards carry a live AnimatedNumber (beUI / Rare UI). Resort Cards
- * carry the name only — this page holds no per-resort inventory read.
+ * Browse places on Home `/`: catalog Card (and resort Carousel) demos.
+ * Town Cards: photo when the city index has one, live AnimatedNumber,
+ * CardFooter door. Resort Cards: photo when communityImage published one,
+ * name + city line, CardFooter — never identical empty chips.
  */
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel'
 import { AnimatedNumber } from '@/components/motion/number'
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from '@/components/site/v3'
 import { homeBriefText } from './home-competitive-brief'
@@ -21,6 +30,9 @@ export type HomePlaceDoor = {
    * never send a zero for a miss.
    */
   count?: number | string
+  /** City-index or communityImage photo. Omit when none. */
+  photoSrc?: string
+  description?: string
 }
 
 export type HomePlaceRun = {
@@ -28,6 +40,8 @@ export type HomePlaceRun = {
   unit?: string
   doors: readonly HomePlaceDoor[]
   seeAll?: { label: string; href: string }
+  /** Resort run uses the installed Carousel (peek + prev/next), not a chip row. */
+  layout?: 'cards' | 'carousel'
 }
 
 function doorCount(count: HomePlaceDoor['count']): { n: number; label: string } | null {
@@ -39,6 +53,48 @@ function doorCount(count: HomePlaceDoor['count']): { n: number; label: string } 
     if (Number.isFinite(n) && n > 0) return { n, label: count.trim() }
   }
   return null
+}
+
+function PlaceCard({
+  door,
+  unit,
+  cta,
+}: {
+  door: HomePlaceDoor
+  unit?: string
+  cta: string
+}) {
+  const live = doorCount(door.count)
+  const description = door.description?.trim() || (live && unit?.trim() ? unit : undefined)
+  return (
+    <Card className="home-browse-places__card">
+      {door.photoSrc?.trim() ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={door.photoSrc} alt="" width={800} height={600} decoding="async" />
+      ) : null}
+      <CardHeader>
+        <CardTitle>{door.label}</CardTitle>
+        {description ? <CardDescription>{description}</CardDescription> : null}
+      </CardHeader>
+      {live ? (
+        <CardContent>
+          <AnimatedNumber
+            value={live.n}
+            format={(n) =>
+              Math.round(n) === Math.round(live.n) ? live.label : Math.round(n).toLocaleString('en-US')
+            }
+            startOnView
+            className="home-browse-places__count"
+          />
+        </CardContent>
+      ) : null}
+      <CardFooter>
+        <Button asChild variant="link">
+          <span>{cta}</span>
+        </Button>
+      </CardFooter>
+    </Card>
+  )
 }
 
 export function HomeBrowsePlaces({
@@ -76,6 +132,8 @@ export function HomeBrowsePlaces({
 
       {shown.map((run) => {
         const runId = `${id}-${run.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
+        const cta = run.layout === 'carousel' ? 'Explore' : 'See homes'
+        const carousel = run.layout === 'carousel' && run.doors.length > 1
         return (
           <section key={runId} className="home-browse-places__run" aria-labelledby={runId}>
             <div className="home-browse-places__runhead">
@@ -92,39 +150,39 @@ export function HomeBrowsePlaces({
               ) : null}
             </div>
 
-            <ul className="home-browse-places__cards">
-              {run.doors.map((door) => {
-                const live = doorCount(door.count)
-                return (
+            {carousel ? (
+              <div className="home-browse-places__stage">
+                <Carousel
+                  opts={{ align: 'start', containScroll: 'trimSnaps' }}
+                  className="home-browse-places__carousel w-full"
+                  aria-label={run.name}
+                >
+                  <CarouselContent>
+                    {run.doors.map((door) => (
+                      <CarouselItem key={door.href} className="md:basis-1/2 lg:basis-1/3">
+                        <div className="p-1">
+                          <Link href={door.href} className="home-browse-places__link">
+                            <PlaceCard door={door} unit={run.unit} cta={cta} />
+                          </Link>
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious />
+                  <CarouselNext />
+                </Carousel>
+              </div>
+            ) : (
+              <ul className="home-browse-places__cards">
+                {run.doors.map((door) => (
                   <li key={door.href} className="home-browse-places__item">
                     <Link href={door.href} className="home-browse-places__link">
-                      <Card size="sm" className="home-browse-places__card">
-                        <CardHeader>
-                          <CardTitle>{door.label}</CardTitle>
-                          {run.unit?.trim() && live ? (
-                            <CardDescription>{run.unit}</CardDescription>
-                          ) : null}
-                        </CardHeader>
-                        {live ? (
-                          <CardContent>
-                            <AnimatedNumber
-                              value={live.n}
-                              format={(n) =>
-                                Math.round(n) === Math.round(live.n)
-                                  ? live.label
-                                  : Math.round(n).toLocaleString('en-US')
-                              }
-                              startOnView
-                              className="home-browse-places__count"
-                            />
-                          </CardContent>
-                        ) : null}
-                      </Card>
+                      <PlaceCard door={door} unit={run.unit} cta={cta} />
                     </Link>
                   </li>
-                )
-              })}
-            </ul>
+                ))}
+              </ul>
+            )}
           </section>
         )
       })}
