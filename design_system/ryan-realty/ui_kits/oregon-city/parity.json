@@ -16,12 +16,12 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, level 1, id='top'. The place answer: active listings across all property types, active single-family listings, and the median single-family list price, all three from ONE geo snapshot row, under one trace that names the population and the filter, stamped with that row's own refreshedAt. The active count is a door into /homes-for-sale/<city>; the other two have no node of their own and carry no href rather than a fake one. Its ask is PRIMARY pointing at #referral. At 390 the chrome CTA sits in the closed menu, so this node carries its own primary. Value my home is the wrong ask here: this city is outside our market.",
+      "section": "Pattern 1, level 1, id='top'. The place answer: active listings across all property types, active single-family listings, and the median single-family list price, all three from ONE geo snapshot row, under one trace that names the population and the filter, stamped with that row's own refreshedAt. SITE-105: one lead figure (active count, a door into /homes-for-sale/<city>) stays on screen; SFR count and median fold behind a named disclosure so the first viewport is not a three-tile KPI grid. A claim sentence restates the same three snapshot numbers. No asking-price lollipop — photographed listings live on the Ledger. The other two figures have no node of their own and carry no href rather than a fake one. Its ask is PRIMARY pointing at #referral. At 390 the chrome CTA sits in the closed menu, so this node carries its own primary. Value my home is the wrong ask here: this city is outside our market.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6, id='about', honesty-first (SITE-76). Opens the fold with shadcn Alert adapted into Quiet (navy/cream, not a yellow callout): title 'We don't work in <city>', description carrying the live active count from the same geo snapshot the Instrument prints, AlertAction door to #referral. Home-market towns remain real doors (Bend, Redmond, Sisters, Sunriver, La Pine). The same component is the level-1 fallback when the snapshot row does not return.",
+      "section": "Pattern 6, id='about', honesty-first (SITE-105). Opens the fold with the installed shadcn Alert object (icon, rounded bordered navy/cream container, title, description, AlertAction as outline Button) — not a Quiet hairline strip. Title 'We don't work in <city>', description carrying the live active count from the same geo snapshot the Instrument prints, AlertAction door to #referral. Home-market towns remain real doors (Bend, Redmond, Sisters, Sunriver, La Pine). The same component is the level-1 fallback when the snapshot row does not return.",
       "blocking": true
     },
     {
