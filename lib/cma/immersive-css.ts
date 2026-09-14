@@ -369,6 +369,10 @@ table.comp-matrix .matrix-addr{display:block}
 .addr-row.is-card .comp-stack-addr{margin:0;flex:1 1 auto;min-width:0}
 .small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
 .chart-read{font-size:16px;line-height:1.5;margin-top:18px;max-width:720px}
+.ppsf-status{margin:8px 0 28px}
+.ppsf-status .subhead{margin:0 0 10px}
+.ppsf-status-table th.n,.ppsf-status-table td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ppsf-status-caption{margin:4px 0 14px}
 /* NO PAN BOX: every chart ships a 360-unit phone layout. */
 .median-phone{display:none}
 @media screen and (max-width:700px){.median-wide{display:none}.median-phone{display:block}}
