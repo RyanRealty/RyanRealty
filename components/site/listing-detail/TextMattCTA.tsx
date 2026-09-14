@@ -157,24 +157,24 @@ export function TextMattCTA({
           aria-label={offMarket ? 'Ask about this listing' : 'Contact about this listing'}
           className="w-full pt-1"
         >
-          <Button variant="outline" asChild>
+          <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
             <a href={tourHref}>
               <ActionSwapText value="tour">{tourLabel}</ActionSwapText>
             </a>
           </Button>
           {offMarket ? (
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
               <a href={valuationHref('/listing')}>What is my home worth?</a>
             </Button>
           ) : (
             <>
               {phone ? (
-                <Button variant="outline" asChild>
+                <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
                   <a href={`tel:${digits(phone)}`}>Call</a>
                 </Button>
               ) : null}
               {phone ? (
-                <Button variant="outline" asChild>
+                <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
                   <a href={`sms:${digits(phone)}`}>Text</a>
                 </Button>
               ) : null}

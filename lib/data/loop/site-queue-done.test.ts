@@ -46,10 +46,15 @@ describe('siteQueueDoneEvidenceProblems', () => {
   it('accepts a 402 followed by the claude fallback when the receipt backs it', () => {
     expect(
       siteQueueDoneEvidenceProblems(
-        'grok 402 → fell back to claude-sonnet-5 via taste-evaluate.ts listing-detail — demoMatch: true, median 72',
+        'grok 402 → fell back to claude-sonnet-5 via taste-evaluate.ts listing-detail — demoMatch: true, competitiveBriefPass: true, median 72',
         {
           versionGap: 'SITE-99',
-          tasteReview: { demoMatch: true, evaluatorModel: 'claude-sonnet-5', shotsHash: PASSING_RECEIPT.shotsHash },
+          tasteReview: {
+            demoMatch: true,
+            competitiveBriefPass: true,
+            evaluatorModel: 'claude-sonnet-5',
+            shotsHash: PASSING_RECEIPT.shotsHash,
+          },
         },
       ),
     ).toEqual([])

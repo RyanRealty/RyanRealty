@@ -185,6 +185,7 @@ export function PhotoGalleryLightbox({
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) dismiss() }}>
       <DialogContent
         className={cn('sm:max-w-3xl', TRANSITIONS_MODAL_SURFACE)}
+        overlayClassName="bg-foreground/50"
       >
         <DialogHeader>
           <DialogTitle>Photos</DialogTitle>

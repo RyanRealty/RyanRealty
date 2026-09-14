@@ -14,7 +14,10 @@ import { isPublicOffMarketStatus } from '@/lib/listing-status-public'
 import { redirectToLoginForSave } from '@/lib/pending-save'
 import { ListingGuestSaveSheet } from '@/components/site/listing-detail/ListingGuestSaveSheet.client'
 import { ListingSaveButton, type ListingSaveState } from '@/components/site/listing-detail/ListingSaveButton'
-import { ListingShareButton } from '@/components/site/listing-detail/ListingShareButton'
+import {
+  ListingShareButton,
+  ListingShareDialog,
+} from '@/components/site/listing-detail/ListingShareButton'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { publishListingDrop, publishListingEstPayment } from '@/lib/listing/publish-listing-ask'
@@ -199,6 +202,7 @@ export function PriceCtaStrip({
   const daysLive = offMarket ? null : daysLiveOnMarket(listing.onMarketDate ?? null)
   const [saveState, setSaveState] = useState<ListingSaveState>(initialSaved ? 'saved' : 'idle')
   const [guestSaveOpen, setGuestSaveOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
 
   // RC7 resume: complete a save this listing was bounced to login for (the hook
   // owns the idempotent save + re-stash; this is the detail page's real save CTA).
@@ -343,6 +347,7 @@ export function PriceCtaStrip({
   }
 
   function handleShare() {
+    setShareOpen(true)
     onShare?.(listing.listingKey)
   }
 
@@ -384,6 +389,58 @@ export function PriceCtaStrip({
           {lastDrop.label}
         </div>
       ) : null}
+      <div className="listing-face__price-row">
+      <ButtonGroup aria-label="Save or share this listing" className="listing-face__keep">
+        <ListingSaveButton saveState={saveState} onSave={handleSave} ariaLabel={saveAriaLabel} />
+        <ListingShareButton
+          onShare={handleShare}
+          ariaLabel={`Share ${propertyName}`}
+        />
+      </ButtonGroup>
+      {/* SITE-21: THE ASK A BROKER CAN FULFIL.
+          Off market, Tour / Call / Text are three requests nobody can act
+          on. Connected shadcn ButtonGroup + outline Buttons; Tour label is
+          beUI action-swap. Hidden under 64rem — the sticky bar is that ask. */}
+      <ButtonGroup
+        aria-label={offMarket ? 'Homes like this' : 'Contact about this listing'}
+        className="listing-ask-row listing-face__ask"
+      >
+        {offMarket ? (
+          <>
+            <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
+              <a href={similarHref}>
+                <ActionSwapText value="homes">Homes for sale</ActionSwapText>
+              </a>
+            </Button>
+            <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
+              <a href={alertsHref}>Get alerts</a>
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
+              <a href={tourHref}>
+                <ActionSwapText value="tour">Tour</ActionSwapText>
+              </a>
+            </Button>
+            {callHref ? (
+              <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
+                <a href={callHref}>Call</a>
+              </Button>
+            ) : (
+              <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
+                <a href={askHrefResolved}>Ask a question</a>
+              </Button>
+            )}
+            {textHref ? (
+              <Button variant="outline" size="lg" className="rounded-none first:rounded-l-lg last:rounded-r-lg" asChild>
+                <a href={textHref}>Text</a>
+              </Button>
+            ) : null}
+          </>
+        )}
+      </ButtonGroup>
+      </div>
       {factsLine ? (
         <div className="mt-1.5 text-lg font-medium sm:text-xl" style={{ color: 'var(--navy)' }}>
           {factsLine}
@@ -399,62 +456,6 @@ export function PriceCtaStrip({
           {listedBy}
         </div>
       ) : null}
-      <div className="listing-face__price-row">
-      <div className="listing-face__keep">
-      <ButtonGroup aria-label="Save or share this listing">
-        <ListingSaveButton saveState={saveState} onSave={handleSave} ariaLabel={saveAriaLabel} />
-        <ListingShareButton
-          onShare={handleShare}
-          ariaLabel={`Share ${propertyName}`}
-          shareUrl={shareUrl}
-          shareTitle={shareTitle}
-        />
-      </ButtonGroup>
-      </div>
-      {/* SITE-21: THE ASK A BROKER CAN FULFIL.
-          Off market, Tour / Call / Text are three requests nobody can act
-          on. Connected shadcn ButtonGroup + outline Buttons; Tour label is
-          beUI action-swap. Not leftover navy/ghost rects. */}
-      <ButtonGroup
-        aria-label={offMarket ? 'Homes like this' : 'Contact about this listing'}
-        className="listing-ask-row listing-face__ask"
-      >
-        {offMarket ? (
-          <>
-            <Button variant="outline" asChild>
-              <a href={similarHref}>
-                <ActionSwapText value="homes">Homes for sale</ActionSwapText>
-              </a>
-            </Button>
-            <Button variant="outline" asChild>
-              <a href={alertsHref}>Get alerts</a>
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button variant="outline" asChild>
-              <a href={tourHref}>
-                <ActionSwapText value="tour">Tour</ActionSwapText>
-              </a>
-            </Button>
-            {callHref ? (
-              <Button variant="outline" asChild>
-                <a href={callHref}>Call</a>
-              </Button>
-            ) : (
-              <Button variant="outline" asChild>
-                <a href={askHrefResolved}>Ask a question</a>
-              </Button>
-            )}
-            {textHref ? (
-              <Button variant="outline" asChild>
-                <a href={textHref}>Text</a>
-              </Button>
-            ) : null}
-          </>
-        )}
-      </ButtonGroup>
-      </div>
 
       <div className="mt-3.5 flex flex-nowrap gap-2 overflow-x-auto no-scrollbar">
         <Pill kind={listing.status}>
@@ -520,6 +521,12 @@ export function PriceCtaStrip({
         </>
       ) : null}
       </div>
+      <ListingShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        shareUrl={shareUrl}
+        shareTitle={shareTitle}
+      />
       <ListingGuestSaveSheet
         listingKey={listing.listingKey}
         addressLine={street || null}
