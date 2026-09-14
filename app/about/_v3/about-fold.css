@@ -258,6 +258,17 @@
   --card-foreground: var(--v3-navy);
 }
 
+.about-closings__card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.about-closings__card-link:focus-visible {
+  outline: 2px solid var(--v3-navy);
+  outline-offset: 2px;
+}
+
 .about-closings [data-slot='card'] img {
   display: block;
   width: 100%;
