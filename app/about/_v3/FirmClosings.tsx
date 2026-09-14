@@ -36,6 +36,7 @@ export function FirmClosings({
       <h2 id="firm-sales-heading" className="about-closings__heading">
         Recent brokerage closings
       </h2>
+      <div className="about-closings__stage">
       <Carousel
         opts={{ align: 'start', loop: false }}
         className="about-closings__carousel w-full"
@@ -78,6 +79,7 @@ export function FirmClosings({
           </>
         ) : null}
       </Carousel>
+      </div>
     </section>
   )
 }

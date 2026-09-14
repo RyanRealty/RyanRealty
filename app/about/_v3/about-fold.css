@@ -243,9 +243,14 @@
   line-height: var(--v3-leading-heading);
 }
 
-.about-closings__carousel {
+.about-closings__stage {
   min-width: 0;
   padding-inline: 3rem;
+  overflow: visible;
+}
+
+.about-closings__carousel {
+  min-width: 0;
 }
 
 .about-closings [data-slot='card'] {
