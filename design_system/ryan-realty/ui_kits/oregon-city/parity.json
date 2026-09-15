@@ -154,7 +154,7 @@
       ],
       "states": [
         "default",
-        "source",
+        "figures-open",
         "listings"
       ]
     },
