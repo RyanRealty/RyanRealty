@@ -9,6 +9,7 @@ describe('V3MosCompare catalog install', () => {
     expect(SRC).toMatch(/from ['"]@\/components\/motion\/combobox['"]/)
     expect(SRC).toMatch(/ComboboxTrigger/)
     expect(SRC).toMatch(/ComboboxList/)
+    expect(SRC).toMatch(/<ComboboxContent align="start" side="top">/)
     expect(SRC).not.toMatch(/ComboboxTrigger className=/)
     expect(SRC).not.toMatch(/ComboboxList[^>]*className=/)
     expect(SRC).not.toMatch(/v3-mos-compare__trigger/)

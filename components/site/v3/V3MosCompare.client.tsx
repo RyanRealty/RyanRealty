@@ -199,7 +199,7 @@ export function V3MosCompare({
                 Clear
               </button>
             ) : null}
-            <ComboboxContent align="start">
+            <ComboboxContent align="start" side="top">
               <ComboboxList ariaLabel="Cities with months of supply">
                 {overlayable.map((city) => (
                   <ComboboxItem

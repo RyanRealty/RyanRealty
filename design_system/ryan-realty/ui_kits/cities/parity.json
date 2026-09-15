@@ -139,7 +139,9 @@
       { "id": "house-atlas" },
       { "id": "house-alerts" },
       { "id": "beautifului-insight" },
-      { "id": "beui-number" }
+      { "id": "beui-number" },
+      { "id": "beui:combobox" },
+      { "id": "beui:infinite-masonry" }
     ],
     "tells": [],
     "dullest": "After the MOS pair the page is still an A\u2013Z directory; the fold has no Atlas and no alerts sentence.",

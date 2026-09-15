@@ -131,6 +131,21 @@
     "transitions:number-pop-in": {
       "aliasOf": "beui-number"
     },
+    "beui-infinite-masonry": {
+      "add": "@beui/infinite-masonry",
+      "file": "components/motion/infinite-masonry.tsx",
+      "import": "@/components/motion/infinite-masonry",
+      "house": "app/cities/_v3/CitiesMasonry.client.tsx",
+      "repo": "https://github.com/starc007/ui-components",
+      "mustContain": [
+        "InfiniteMasonry",
+        "useVirtualizer",
+        "onLoadMore"
+      ]
+    },
+    "beui:infinite-masonry": {
+      "aliasOf": "beui-infinite-masonry"
+    },
     "beautifului-insight": {
       "add": "https://www.beautifului.dev/r/insight-cards.json",
       "file": "components/motion/insight-cards.tsx",

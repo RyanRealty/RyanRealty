@@ -19,9 +19,10 @@
  * the region (beui:combobox); no-photo rows carry a resting supply reading
  * when Market Truth publishes one.
  *
- * SITE-92: catalog sources installed — beui-combobox on V3MosCompare,
- * beautifului-insight on the year of closes, beui-number on the region
- * count. Atlas + alerts sit in the first viewport beside the figure.
+ * SITE-92: catalog sources installed — beui-combobox on V3MosCompare
+ * (list opens up, off the H1), beautifului-insight year scrubber,
+ * beui-number on the region count, beui-infinite-masonry on featured
+ * city photographs. Atlas + MOS/alerts sit in the first viewport.
  *
  * Parity contract: design_system/ryan-realty/ui_kits/cities/parity.json
  */
@@ -79,6 +80,7 @@ import { cityLeftoverActive, restingCityDetail } from '@/app/cities/_v3/cities-i
 import { cityAtlasRegions } from '@/app/cities/_v3/cities-index-atlas'
 import { citiesInsightBoard } from '@/app/cities/_v3/cities-index-insight'
 import { CitiesInsight } from '@/app/cities/_v3/CitiesInsight.client'
+import { CitiesMasonry } from '@/app/cities/_v3/CitiesMasonry.client'
 import { CitiesAlertStrip } from '@/app/cities/_v3/CitiesAlertStrip.client'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { newestFirstHref } from '@/lib/site/place-alerts'
@@ -492,6 +494,15 @@ export default async function CitiesPage() {
     </>
   )
   const insight = insightBoard ? <CitiesInsight id="cities-insight" board={insightBoard} /> : null
+  const masonryItems = featured
+    .filter((city) => city.hero.verified && Boolean(city.hero.src?.trim()))
+    .map((city) => ({
+      slug: city.slug,
+      name: city.name,
+      src: city.hero.src,
+      countLabel: city.activeCount != null ? liveForSaleLabel(city.activeCount) : null,
+    }))
+  const masonry = masonryItems.length >= 2 ? <CitiesMasonry id="cities-masonry" items={masonryItems} /> : null
 
   const regionDrawing =
     atlasRegions.length > 0 ? (
@@ -518,11 +529,13 @@ export default async function CitiesPage() {
           </div>
           <aside className="cities-fold__figure">{regionFigure}</aside>
         </div>
+        {masonry}
         {insight}
       </div>
-    ) : regionFigures.length > 0 || insightBoard ? (
+    ) : regionFigures.length > 0 || insightBoard || masonry ? (
       <div className="cities-fold" id="cities-fold">
         <div className="cities-fold__figure">{regionFigure}</div>
+        {masonry}
         {insight}
       </div>
     ) : null

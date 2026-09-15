@@ -49,20 +49,20 @@
 }
 
 .cities-fold__drawing .v3-atlas__frame {
-  max-height: min(32vh, 16rem);
+  max-height: min(56vh, 28rem);
   overflow: hidden;
 }
 
 .cities-fold__drawing .v3-atlas__stage {
   min-height: 0;
   max-height: 100%;
-  height: min(32vh, 16rem);
+  height: min(56vh, 28rem);
 }
 
 @media (max-width: 63.99rem) {
-  /* Atlas, Insights, then MOS/combo. display:contents lets order pull
-     InsightCards between the map and the combobox so the open list cannot
-     cover the pager. MOS bars stay off the map (house-mos is the scale). */
+  /* Atlas + MOS/alerts share the first viewport. Masonry then Insights
+     follow. display:contents lets order pull the figure under the map
+     so house-alerts is not below the fold. MOS bars stay off the map. */
   .cities-fold {
     display: flex;
     flex-direction: column;
@@ -77,21 +77,25 @@
     order: 1;
   }
 
-  .cities-insight {
+  .cities-fold__figure {
     order: 2;
   }
 
-  .cities-fold__figure {
+  .cities-masonry {
     order: 3;
   }
 
+  .cities-insight {
+    order: 4;
+  }
+
   .cities-fold__drawing .v3-atlas__frame {
-    max-height: min(28vh, 8.5rem);
+    max-height: min(42vh, 16rem);
     overflow: hidden;
   }
 
   .cities-fold__drawing .v3-atlas__stage {
-    height: min(28vh, 8.5rem);
+    height: min(42vh, 16rem);
   }
 
   .cities-fold__drawing .v3-atlas__claim {
@@ -193,6 +197,59 @@
 .cities-fold__count .v3-number {
   font-family: var(--v3-font-num);
   font-variant-numeric: tabular-nums;
+}
+
+.cities-masonry {
+  min-width: 0;
+}
+
+.cities-masonry__feed {
+  height: min(36vh, 20rem);
+  max-height: min(36vh, 20rem);
+  background: var(--v3-cream);
+  border-color: color-mix(in srgb, var(--v3-navy) 16%, var(--v3-cream));
+  color: var(--v3-navy);
+}
+
+.cities-masonry__card {
+  display: block;
+  overflow: hidden;
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  text-decoration: none;
+  border: 1px solid color-mix(in srgb, var(--v3-navy) 16%, var(--v3-cream));
+}
+
+.cities-masonry__photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.cities-masonry__meta {
+  display: grid;
+  gap: 0.15rem;
+  padding: var(--v3-space-xs);
+}
+
+.cities-masonry__name {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-tight);
+}
+
+.cities-masonry__count {
+  font-size: var(--v3-size-note);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
+}
+
+@media (max-width: 63.99rem) {
+  .cities-masonry__feed {
+    height: min(28vh, 14rem);
+    max-height: min(28vh, 14rem);
+  }
 }
 
 .cities-insight {

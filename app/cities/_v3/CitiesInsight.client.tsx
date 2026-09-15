@@ -3,7 +3,8 @@
 /**
  * beautifului-insight on /cities — catalog InsightCards pages, one card each
  * (AllocationCard, then CompareCard). Navy/cream paint only. Do not stack
- * cards or wrap this in a house pager.
+ * cards or wrap this in a house pager. CompareCard is a year scrubber
+ * (month/year axis), not a liveline clock.
  */
 import InsightCards, {
   AllocationCard,
@@ -15,6 +16,9 @@ import { useMemo } from 'react'
 import { citiesCatalogReady } from './cities-catalog'
 
 void citiesCatalogReady
+
+/** Twelve months of closes, in seconds. Liveline windows around now. */
+export const YEAR_WINDOW_SECS = 365 * 24 * 60 * 60
 
 export type CitiesInsightSegment = {
   name: string
@@ -48,6 +52,14 @@ export function CitiesInsight({ id, board }: { id: string; board: CitiesInsightB
       <InsightCards pages={pages} labels={{ title: 'Insights' }} />
     </section>
   )
+}
+
+/** Month + year of the close, never a liveline clock axis. */
+export function formatCloseYear(t: number) {
+  return new Date(t * 1000).toLocaleDateString('en-US', {
+    month: 'short',
+    year: 'numeric',
+  })
 }
 
 function livelineSeries(series: CitiesInsightSeries[]) {
@@ -84,7 +96,13 @@ function pagesFromBoard(board: CitiesInsightBoard): InsightPage[] {
       key: 'closes',
       prose: <>{board.compareProse}</>,
       Card: function CityCloses() {
-        return <CompareCard series={series} />
+        return (
+          <CompareCard
+            series={series}
+            windowSecs={YEAR_WINDOW_SECS}
+            formatTime={formatCloseYear}
+          />
+        )
       },
       pill: 'Scrub the year of closes',
     },

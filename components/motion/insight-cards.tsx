@@ -142,10 +142,12 @@ export function CompareCard({
   series = COMPARE_SERIES,
   formatTime,
   hideLegend = false,
+  windowSecs = 42,
 }: {
   series?: CompareSeries[]
   formatTime?: (t: number) => string
   hideLegend?: boolean
+  windowSecs?: number
 }) {
   const stroke = useInkStroke()
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
@@ -164,8 +166,8 @@ export function CompareCard({
     // outside that window and paint "No data to display" — the cream pager.
     // Clock reads stay in useEffect (ci:hydration-safety).
     const end = Date.now() / 1000
-    setPoints(painted.map((s) => pointsInWindow(s.values, 42, end)))
-  }, [painted])
+    setPoints(painted.map((s) => pointsInWindow(s.values, windowSecs, end)))
+  }, [painted, windowSecs])
   const pointCount = points[0]?.length ?? 0
   const chartSeries: LivelineSeries[] = useMemo(
     () =>
@@ -212,7 +214,7 @@ export function CompareCard({
           theme="light"
           grid={false}
           pulse={false}
-          window={42}
+          window={windowSecs}
           paused
           scrub={false}
           cursor="default"
