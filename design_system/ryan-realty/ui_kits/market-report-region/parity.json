@@ -137,7 +137,7 @@
         "source-open",
         "year-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3221/housing-market/central-oregon. year-open = official Insight year scrub on insight-chart-stage (Compare claims, not house-chart hover). source-open = live DigitSwap on sourced MOS counts + quoteable source line. Aliases year-page←year-open, source←source-open."
+      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3221/housing-market/central-oregon. year-open = click Next to Anomaly (paged closings claim + fill house series, official insight-cards pointer-scrub, no V3Chart ChartTooltip). source-open = click Animate (DigitSwap masked↔revealed mid-swap) + open V3SourceLine. Aliases year-page←year-open, source←source-open."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/desktop.png",
@@ -151,7 +151,7 @@
       "sourceOpenDesktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/source-open-desktop.png",
       "sourceOpenMobile375": "design_system/ryan-realty/ui_kits/market-report-region/shots/source-open-mobile375.png"
     },
-    "shotsHash": "sha256:cc2a3c50d44b05b0353cb384416ac86130280e2e28805c2cd0aed40e1d7dee59",
+    "shotsHash": "sha256:11a4d612a5bf14953dd66e75db623f1717f8143f3574c31a49cba1beb51a5700",
     "scores": [
       64,
       58,
