@@ -2,7 +2,7 @@
   "route": "app/cities/[slug]/types/[type]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. Built from components/site/v3. No mockup in this directory: the place-type class is the city/community type-card landing, not a Tetherow one-off.",
   "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker type-filtered city results. Those surfaces dump the visitor into a search grid. This page is a place-type node: leftover count and median that already back the type card, a living atlas of the parent city with the type stated in the claim, and a photographed list of that type. Unique title, canonical, ItemList when listings exist. Breadcrumb is City then type, no Home.",
-  "note": "H1 is `{Type} in {Place}` and it is the page's only display-scale line: the Atlas opens under the claim wearing an eyebrow (V3Atlas headlineTone='eyebrow', subject softened to Listings). One section-0 sourced claim sentence sits under the H1 — count and ~p90 price band from ONE listing_tile_mv read, worded as the address census with the map marking for-sale homes inside city limits (pending key hidden on this page). A V3Carousel mode=rail of photographed listings (PlaceTypeFilm; shadcn-carousel adapted with side prev/next) follows Atlas in the fold with price+address+beds/baths/sqft on 800x600 plates. The Atlas section is UNCONDITIONAL via PlaceTypeAtlasSection + PlaceTypeAtlasStandin. Rows and marks share one hovered key. Unknown type notFound(). Do not collide with app/cities/[slug]/[neighborhoodSlug].",
+  "note": "H1 is `{Type} in {Place}` and it is the page's only display-scale line: the Atlas opens under the claim wearing an eyebrow (V3Atlas headlineTone='eyebrow', subject softened to Listings). One section-0 sourced claim sentence sits under the H1 \u2014 count and ~p90 price band from ONE listing_tile_mv read, worded as the address census with the map marking for-sale homes inside city limits (pending key hidden on this page). A V3Carousel mode=rail of photographed listings (PlaceTypeFilm; shadcn-carousel adapted with side prev/next) follows Atlas in the fold with price+address+beds/baths/sqft on 800x600 plates. The Atlas section is UNCONDITIONAL via PlaceTypeAtlasSection + PlaceTypeAtlasStandin. Rows and marks share one hovered key. Unknown type notFound(). Do not collide with app/cities/[slug]/[neighborhoodSlug].",
   "requiredComponents": [
     {
       "name": "PlaceTypeFilm",
@@ -26,7 +26,7 @@
     },
     {
       "name": "V3Heading",
-      "section": "H1 `{Type} in {Place}` — the page's ONE display line.",
+      "section": "H1 `{Type} in {Place}` \u2014 the page's ONE display line.",
       "blocking": true
     },
     {
@@ -41,7 +41,7 @@
     },
     {
       "name": "PlaceTypeAtlasStandin",
-      "section": "The Suspense fallback and the miss branch. The map section is never absent — that absence was the 2026-09-08 taste defect.",
+      "section": "The Suspense fallback and the miss branch. The map section is never absent \u2014 that absence was the 2026-09-08 taste defect.",
       "blocking": true
     },
     {
@@ -63,7 +63,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-15",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type --builder cursor-agent — grok-4.6 via cursor-cli (cursor-grok-4.6-high); grok CLI binary missing on Mini so link 1 skipped. Builder cursor-agent (tip 16b805141) did not grade the page.",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type --builder cursor-agent \u2014 grok-4.6 via cursor-cli (cursor-grok-4.6-high); grok CLI binary missing on Mini so link 1 skipped. Builder cursor-agent (tip 16b805141) did not grade the page.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "cursor-agent",
     "transport": "cursor-cli",
@@ -110,7 +110,7 @@
     },
     "demoMatch": true,
     "tells": [
-      "Carousel import ≠ photo strip — the rest-fold ON THE MARKET strip hides arrows, card body, and title-under-photo; only sheared photo tops remain until the carousel-open shots."
+      "Carousel import \u2260 photo strip \u2014 the rest-fold ON THE MARKET strip hides arrows, card body, and title-under-photo; only sheared photo tops remain until the carousel-open shots."
     ],
     "defects": [
       {
@@ -159,19 +159,15 @@
         "id": "house-quiet"
       }
     ],
-    "comparedToPrior": "same instrument, new carousel-open shots + tip craft — prior 55 on v1-2026-09-10; this is first v1-2026-09-12 mark on open-state evidence (score 57); demoMatch true from judge",
+    "comparedToPrior": "rebaselined",
     "priorMark": {
-      "score": 55,
-      "scores": [
-        55,
-        59,
-        49
-      ],
       "evaluatedAt": "2026-09-11",
-      "shotsHash": "sha256:004dddc996bcbce1a3e506ab6df1e633e2b04483cf591c5a4c4b04039532d67b",
+      "score": 55,
       "evaluatorModel": "grok-4.6",
-      "demoMatch": true
-    }
+      "rubricVersion": "v1-2026-09-10",
+      "shotsHash": "sha256:004dddc996bcbce1a3e506ab6df1e633e2b04483cf591c5a4c4b04039532d67b"
+    },
+    "rebaselineReason": "rubricVersion v1-2026-09-10 \u2192 v1-2026-09-12; shotsHash added carousel-open desktop/mobile evidence for Tip Ready open-state. Judge (grok-4.6) scored 57 with demoMatch true \u2014 do not invent demoMatch."
   },
   "sectionOrder": [
     "V3SectionTracker",
