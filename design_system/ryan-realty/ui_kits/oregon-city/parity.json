@@ -21,7 +21,7 @@
     },
     {
       "name": "OregonCityHonesty",
-      "section": "SITE-105 catalog Alert on the route (app/oregon/[city]/_v3/OregonCityHonesty.tsx). id='about'. Imports and renders @/components/ui/alert as the stacked shadcn demo (icon, title, description, then AlertAction outline Button in flow) from the installed GitHub source — left-aligned in the page measure, not a centered cream island, not an absolute top-right chip that clips the title at 375. Title 'We don't work in <city>', description carrying the live active count from the same geo snapshot the Instrument prints, door to #referral.",
+      "section": "SITE-105 catalog Alert on the route (app/oregon/[city]/_v3/OregonCityHonesty.tsx). id='about'. Official shadcn composition: relative Alert, InfoIcon, AlertTitle, AlertDescription, AlertAction with the installed outline Button (short Introduce, like the docs Enable). No Quiet wrap, no Action restack, no extra className on Alert or AlertAction. Title 'We don't work in <city>', description carrying the live active count from the same geo snapshot the Instrument prints.",
       "blocking": true
     },
     {
@@ -31,7 +31,12 @@
     },
     {
       "name": "V3Ledger",
-      "section": "Pattern 3, twice. id='listings': equal magazine photo cards (no first-child 21:9 garage plate), buyer-language place lines only when they are not the city itself, and a hover/tap reveal with a sourced extra fact captured in the listings demoState. Value column = list price, every row a door into the listing detail page, with the listing feed's own trace and no borrowed stamp. A row needs both a price and a street address; rows are deduped on street address. id='other-markets': plain rows for the other top out-of-area cities, each carrying its active count and, when the snapshot published one, its median; a city with no published median says so in its own row and keeps its link either way. Its stamp is the newest refreshedAt among the rows actually rendered.",
+      "section": "Pattern 3, once. id='other-markets': plain rows for the other top out-of-area cities, each carrying its active count and, when the snapshot published one, its median; a city with no published median says so in its own row and keeps its link either way. Its stamp is the newest refreshedAt among the rows actually rendered. Photographed inventory is OregonCityListings, not this Ledger.",
+      "blocking": true
+    },
+    {
+      "name": "OregonCityListings",
+      "section": "SITE-105 catalog Card magazine on the route (app/oregon/[city]/_v3/OregonCityListings.tsx). id='listings'. Image + CardHeader (title address, description beds/baths, CardAction price) + CardContent reveal on hover. Lead card is default size and spans the measure; remaining cards are size=sm. No MLS plat / DELTA when line. Every card is a door. Source line is the listing feed's own trace.",
       "blocking": true
     },
     {
@@ -128,7 +133,7 @@
     "V3Breadcrumb",
     "OregonCityHonesty (id=about, catalog Alert honesty banner)",
     "V3Instrument (level 1, id=top, the place answer)",
-    "V3Ledger (id=listings, live active listings)",
+    "OregonCityListings (id=listings, catalog Card magazine)",
     "V3Quiet (home-market doors after live listings)",
     "OutOfAreaReferralSheet (V3Sheet, id=referral)",
     "V3Ledger (id=other-markets, other Oregon cities)",

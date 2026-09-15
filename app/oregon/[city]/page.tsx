@@ -105,10 +105,13 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { OregonCityHonesty } from './_v3/OregonCityHonesty'
+import {
+  OregonCityListings,
+  type OregonCityListingCard,
+} from './_v3/OregonCityListings'
 import { OutOfAreaReferralSheet } from './_v3/OutOfAreaReferralSheet.client'
 import { listingRowPhotoSrc } from './_v3/listing-row-photo'
 import {
-  buildOregonCityBuyerPlace,
   buildOregonCityClaim,
   buildOregonCityItemListName,
   buildOregonCityListingReveal,
@@ -287,7 +290,7 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   // deduped on the street address, which the KB rail did too — one physical home
   // carrying two MLS entries otherwise renders twice. ─────────────────────────
   const seenAddress = new Set<string>()
-  const listingRows: V3LedgerFigureRow[] = []
+  const listingCards: OregonCityListingCard[] = []
   for (const tile of tiles) {
     const price = tile.listPrice
     // §0: same guard as the ask-strip below — formatPrice rounds to the nearest
@@ -341,26 +344,19 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
       pricePerSqft: tile.pricePerSqft,
       city: tile.city ?? city.name,
     })
-    const buyerPlace = buildOregonCityBuyerPlace({
-      subdivisionName: tile.subdivisionName,
-      city: city.name,
-    })
-    listingRows.push({
+    listingCards.push({
       href: listingTileHref(tile),
-      ...(buyerPlace ? { when: v3Text(buyerPlace) } : {}),
-      what: v3Text(address),
-      detail: meta ? v3Text(meta) : undefined,
-      value: v3Text(formatPrice(price)),
+      address,
+      ...(meta ? { detail: meta } : {}),
+      price: formatPrice(price),
       id: tile.listingKey,
-      // Magazine cards draw hundreds of CSS pixels. 320x240 is the hairline
-      // thumb; 800x600 is the verified card plate (lib/listing/row-photo.ts).
       ...(tile.photoUrl?.trim()
-        ? { media: { src: listingRowPhotoSrc(tile.photoUrl, '800x600') } }
+        ? { photoSrc: listingRowPhotoSrc(tile.photoUrl, '800x600') }
         : {}),
-      ...(revealLine ? { reveal: { line: v3Text(revealLine) } } : {}),
+      ...(revealLine ? { reveal: revealLine } : {}),
     })
   }
-  const [firstListingRow, ...restListingRows] = listingRows
+  const [firstListingCard] = listingCards
 
   // SITE-105: live inventory belongs on the Ledger (photographs + price +
   // address + beds/baths/sqft), not as a static asking-price lollipop that
@@ -374,7 +370,7 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   // shared street address. One sentence connects the two counts whenever
   // they disagree, using the real numbers both queries returned.
   const listingsNote =
-    listingRows.length > 0
+    listingCards.length > 0
       ? 'Hover a card for a sourced extra fact the resting plate does not carry. This spread is the newest priced, addressed homes, not the whole live book.'
       : undefined
 
@@ -448,17 +444,17 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   ]
   // SEO increment (SITE-76): crawlable ItemList of the same newest priced,
   // addressed listings the Ledger renders — not a second population.
-  if (listingRows.length > 0) {
+  if (listingCards.length > 0) {
     schemas.push({
       type: 'itemList',
       name: `Newest ${city.name} listings`,
-      items: listingRows.slice(0, 12).map((row) => ({
+      items: listingCards.slice(0, 12).map((card) => ({
         name: buildOregonCityItemListName({
-          address: String(row.what),
-          price: String(row.value),
-          detail: row.detail ? String(row.detail) : undefined,
+          address: card.address,
+          price: card.price,
+          detail: card.detail,
         }),
-        url: row.href,
+        url: card.href,
       })),
     })
   }
@@ -533,40 +529,21 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
           />
         )}
 
-        {firstListingRow ? (
-          <V3Ledger
-            id="listings"
-            eyebrow={v3Text(`${city.name} · For sale`)}
-            heading={v3Text(`The newest ${city.name} listings`)}
-            rows={[firstListingRow, ...restListingRows]}
-            /* SITE-59: the picture on a listing row is content, not a stamp.
-               At the pattern's default 44px it was a grey smudge that an
-               evaluator read as a broken image on ten of twelve Medford rows,
-               and it was pixel-for-pixel the box a photo-less row draws. */
-            layout="magazine"
-            media="photo"
-            note={listingsNote ? v3Text(listingsNote) : undefined}
-            source={v3Text(listingTrace)}
-            action={{
-              label: v3Text(`See every ${city.name} home for sale`),
-              href: browsePath,
-            }}
-          />
-        ) : (
-          <V3Ledger
-            id="listings"
-            eyebrow={v3Text(`${city.name} · For sale`)}
-            heading={v3Text(`The newest ${city.name} listings`)}
-            rows={[]}
-            emptyMessage={v3Text(
-              `No ${city.name} listing came back with both a price and a street address on this refresh.`,
-            )}
-            action={{
-              label: v3Text(`See every ${city.name} home for sale`),
-              href: browsePath,
-            }}
-          />
-        )}
+        <OregonCityListings
+          id="listings"
+          eyebrow={`${city.name} · For sale`}
+          heading={`The newest ${city.name} listings`}
+          items={firstListingCard ? listingCards : []}
+          emptyMessage={
+            firstListingCard
+              ? undefined
+              : `No ${city.name} listing came back with both a price and a street address on this refresh.`
+          }
+          note={listingsNote}
+          source={listingTrace}
+          actionLabel={`See every ${city.name} home for sale`}
+          actionHref={browsePath}
+        />
 
         {/* Home-market doors stay crawlable; after live inventory so the
             first viewport can show photographed listings, not a door grid. */}

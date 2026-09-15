@@ -1,4 +1,4 @@
-/* SITE-105: stacked catalog Alert hands to the place answer.
+/* SITE-105: catalog Alert hands to the place answer.
    Do not restyle V3Instrument globally — only the seam on this route. */
 .v3.oregon-city-honesty + .v3.v3-instrument {
   padding-top: var(--v3-space-xl);
@@ -14,26 +14,6 @@
 
 .v3.v3-instrument:has(.v3-instrument__drawing) .v3-instrument__source {
   display: none;
-}
-
-/* Magazine cards stay equal 3:2 plates. The barrel's first-child 21:9 span
-   is the garage-led banner Mini named. */
-@media (min-width: 40rem) {
-  #listings.v3-ledger--magazine .v3-ledger__item:first-child {
-    grid-column: auto;
-  }
-
-  #listings.v3-ledger--magazine .v3-ledger__item:first-child .v3-ledger__thumb {
-    aspect-ratio: 3 / 2;
-    max-height: none;
-  }
-
-  #listings.v3-ledger--magazine .v3-ledger__item:first-child .v3-ledger__label {
-    font-family: inherit;
-    font-size: inherit;
-    font-weight: inherit;
-    line-height: inherit;
-  }
 }
 
 @media (max-width: 40rem) {

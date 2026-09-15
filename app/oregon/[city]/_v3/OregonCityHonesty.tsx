@@ -1,11 +1,10 @@
 /**
- * SITE-105 honesty banner — catalog Alert on the route.
+ * SITE-105 honesty banner — catalog Alert pixels, not house paint.
  *
- * Tip Ready `requireRouteImport` needs `app/oregon/[city]` page/_v3 to import
- * `@/components/ui/alert`. Composition matches the shadcn Alert demo
- * (ui.shadcn.com/docs/components/alert): Icon, AlertTitle, AlertDescription,
- * then AlertAction + outline Button stacked in flow. Not a centered cream
- * island. Not an absolute top-right chip (that clips the title at 375).
+ * Composition is the shadcn Alert demo (ui.shadcn.com/docs/components/alert):
+ * relative Alert, Icon, AlertTitle, AlertDescription, AlertAction with the
+ * installed outline Button. No Quiet wrap. No Action restack. No extra
+ * className on Alert or AlertAction.
  */
 import Link from 'next/link'
 import { InfoIcon } from 'lucide-react'
@@ -34,17 +33,15 @@ export function OregonCityHonesty(props: {
       className={cn(V3_ROOT_CLASS, 'oregon-city-honesty')}
       aria-label={title}
     >
-      <Alert className="has-data-[slot=alert-action]:pr-2.5">
+      <Alert>
         <InfoIcon />
         <AlertTitle>{title}</AlertTitle>
         <AlertDescription>
           <p>{description}</p>
         </AlertDescription>
-        <AlertAction className="static top-auto right-auto col-start-2 mt-1 w-max">
-          <Button asChild variant="outline" size="sm">
-            <Link href="#referral" className="oregon-city-honesty__link">
-              Get a broker introduction
-            </Link>
+        <AlertAction>
+          <Button asChild variant="outline">
+            <Link href="#referral">Introduce</Link>
           </Button>
         </AlertAction>
       </Alert>
