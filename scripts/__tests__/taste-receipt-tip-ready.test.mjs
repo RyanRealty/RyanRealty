@@ -266,4 +266,17 @@ describe('taste-receipt --ship CLI', () => {
     expect(r.status).toBe(1)
     expect(`${r.stderr}${r.stdout}`).toMatch(/open-state evidence|demoMatch|catalog/)
   })
+
+  it('SITE-94 community parity --ship exits 0', () => {
+    const r = spawnSync(
+      process.execPath,
+      [SHIP, '--ship', 'design_system/ryan-realty/ui_kits/community/parity.json'],
+      { cwd: REPO, encoding: 'utf8', env: process.env },
+    )
+    expect(r.status).toBe(0)
+    expect(`${r.stdout}${r.stderr}`).toMatch(/ship OK/)
+    expect(`${r.stdout}${r.stderr}`).toMatch(/demoMatch true/)
+    expect(`${r.stdout}${r.stderr}`).toMatch(/open-state/)
+    expect(`${r.stdout}${r.stderr}`).toMatch(/catalog-install/)
+  })
 })

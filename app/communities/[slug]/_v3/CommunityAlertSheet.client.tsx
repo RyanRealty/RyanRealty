@@ -39,12 +39,15 @@
  */
 
 import { useCallback } from 'react'
+import { communityCatalogReady } from './community-catalog'
 import {
   V3AlertsStrip,
   type V3AlertsStickyClaim,
   type V3AlertsSubmit,
   type V3AlertsTypeOption,
 } from '@/components/site/v3/V3AlertsStrip.client'
+
+void communityCatalogReady
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { readRrSessionId } from '@/lib/tracking'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
