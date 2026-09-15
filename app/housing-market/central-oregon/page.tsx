@@ -498,6 +498,7 @@ export default async function CentralOregonRegionPage() {
                     asOf={leftoverStamp}
                     sourceName="Oregon Data Share MLS"
                     tooltip={regionMos.tooltip}
+                    replay
                   />
                 ) : null}
                 {insightPages.length >= 2 ? (

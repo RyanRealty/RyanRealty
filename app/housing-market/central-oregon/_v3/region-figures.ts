@@ -59,11 +59,22 @@ import {
 import { CLOSED_SALES_TO_YEAR, HISTORY_PATH } from './region-constants'
 
 /** One InsightCards page. Distinct claim + figure; chart only when that page owns a series. */
+export type RegionInsightSegment = {
+  key: string
+  label: string
+  figure: string
+}
+
 export type RegionInsightPage = {
   key: string
   claim: string
   figure: string
   figureLabel: string
+  /** CompareCard second series face (beautifului compare page). */
+  secondFigure?: string
+  secondLabel?: string
+  /** AllocationCard segments (beautifului ask page). */
+  segments?: readonly RegionInsightSegment[]
   /** Series name the chart hover should write into the hero. */
   readName?: string
   pill: string
@@ -80,6 +91,8 @@ export type InsightFace = {
   claim: string
   figure: string
   figureLabel: string
+  secondFigure?: string
+  secondLabel?: string
 }
 
 /**
@@ -91,7 +104,13 @@ export function insightFaceForRead(
   read: InsightChartRead | null,
 ): InsightFace {
   if (!read) {
-    return { claim: page.claim, figure: page.figure, figureLabel: page.figureLabel }
+    return {
+      claim: page.claim,
+      figure: page.figure,
+      figureLabel: page.figureLabel,
+      secondFigure: page.secondFigure,
+      secondLabel: page.secondLabel,
+    }
   }
   const named = page.readName
     ? read.readings.find((row) => row.name === page.readName)
@@ -111,7 +130,15 @@ export function insightFaceForRead(
     const claim = other
       ? `${read.tick} ${other.name} median sale ${other.label}; ${row?.name ?? page.readName} was ${figure}`
       : `${page.figureLabel} ${figure} in ${read.tick}`
-    return { claim, figure, figureLabel }
+    return {
+      claim,
+      figure,
+      figureLabel,
+      secondFigure: other?.label || page.secondFigure,
+      secondLabel: other
+        ? `${other.name} median sale in ${read.tick}`
+        : page.secondLabel,
+    }
   }
   return { claim: page.claim, figure, figureLabel }
 }
@@ -139,7 +166,7 @@ export function buildRegionInsightPages(
     const year = String(newest.name)
     pages.push({
       key: `sale-${year}`,
-      claim: `${year} median sale ${String(newestLast.label)} in ${String(newestLast.tick)}`,
+      claim: `${year} median sale by month`,
       figure: String(newestLast.label),
       figureLabel: `${year} median sale`,
       readName: String(newest.name),
@@ -164,9 +191,11 @@ export function buildRegionInsightPages(
     if (priorSame) {
       pages.push({
         key: `compare-${String(newest.name)}-${String(prior.name)}`,
-        claim: `${tick} ${String(newest.name)} median sale ${String(newestLast.label)}; ${String(prior.name)} was ${String(priorSame.label)}`,
+        claim: `${tick} median sale, ${String(newest.name)} and ${String(prior.name)}`,
         figure: String(priorSame.label),
         figureLabel: `${String(prior.name)} same month`,
+        secondFigure: String(newestLast.label),
+        secondLabel: `${String(newest.name)} same month`,
         readName: String(prior.name),
         pill: 'See homes for sale',
         pillHref: listingsBrowsePath(),
@@ -196,6 +225,22 @@ export function buildRegionInsightPages(
           : 'What sellers are asking right now across Central Oregon single-family listings.',
       figure: formatPriceExact(medianList),
       figureLabel: 'median list price',
+      segments: [
+        {
+          key: 'ask',
+          label: 'median list price',
+          figure: formatPriceExact(medianList),
+        },
+        ...(pending != null
+          ? [
+              {
+                key: 'pending',
+                label: 'under contract now',
+                figure: pending.toLocaleString('en-US'),
+              } satisfies RegionInsightSegment,
+            ]
+          : []),
+      ],
       pill: 'See homes for sale',
       pillHref: listingsBrowsePath(),
     })

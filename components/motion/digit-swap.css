@@ -7,6 +7,13 @@
   gap: 0.5rem;
 }
 
+.digit-swap-replay__label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .digit-swap-replay__face {
   letter-spacing: 0.08em;
 }

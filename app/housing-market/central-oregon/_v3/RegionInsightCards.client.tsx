@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * Region fold InsightCards. Pointer-scrub on the house chart updates the
- * DigitSwap hero and the claim (beautifului-insight + beui-number). Animate
- * masks the same sourced face, same as the beUI number preview.
+ * Region fold InsightCards. Three distinct cards (sale / compare / ask),
+ * pointer-scrub on the house chart updates DigitSwap (beautifului-insight +
+ * house-chart hover). Animate lives on the number, not on the plot.
  */
 
 import Link from 'next/link'
@@ -12,6 +12,7 @@ import { DigitSwapReplay } from '@/components/motion/digit-swap'
 import { InsightCards } from '@/components/motion/insight-cards'
 import { V3Chart, type V3ChartRead } from '@/components/site/v3/V3Chart'
 import { V3_ROOT_CLASS } from '@/components/site/v3'
+import { cn } from '@/lib/utils'
 import { insightFaceForRead, type RegionInsightPage } from './region-figures'
 
 export type RegionInsightCardsProps = {
@@ -36,6 +37,7 @@ function sameRead(left: V3ChartRead | null, right: V3ChartRead | null): boolean 
 export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
   const [page, setPage] = useState(0)
   const [read, setRead] = useState<V3ChartRead | null>(null)
+  const [segment, setSegment] = useState(0)
   const onRead = useCallback((next: V3ChartRead | null) => {
     setRead((current) => (sameRead(current, next) ? current : next))
   }, [])
@@ -46,6 +48,12 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
   if (!current) return null
 
   const face = insightFaceForRead(current, read)
+  const segments = current.segments ?? []
+  const safeSegment = Math.max(0, Math.min(Math.max(segments.length - 1, 0), segment))
+  const chosen = segments[safeSegment]
+  const heroValue = chosen?.figure ?? face.figure
+  const heroLabel = chosen?.label ?? face.figureLabel
+  const scrubbing = read != null
   const pill = current.pillHref ? (
     <Link href={current.pillHref} className="insight-cards__pill-link">
       {current.pill}
@@ -53,6 +61,26 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
   ) : (
     <span>{current.pill}</span>
   )
+
+  const allocation =
+    segments.length >= 2 ? (
+      <div className="insight-cards__segments" role="group" aria-label="Ask snapshot">
+        {segments.map((item, index) => (
+          <button
+            key={item.key}
+            type="button"
+            className={cn(
+              'insight-cards__segment',
+              index === safeSegment && 'insight-cards__segment--on',
+            )}
+            aria-pressed={index === safeSegment}
+            onClick={() => setSegment(index)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+    ) : undefined
 
   return (
     <InsightCards
@@ -63,22 +91,38 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
       pageCount={pages.length}
       onPage={(index) => {
         setRead(null)
+        setSegment(0)
         setPage(index)
       }}
       claim={face.claim}
       figure={
         <DigitSwapReplay
-          key={`${current.key}-${face.figure}`}
-          value={face.figure}
-          animationKey={`${current.key}-${face.figure}`}
+          key={`${current.key}-${heroValue}`}
+          value={heroValue}
+          label={heroLabel}
+          reveal={scrubbing}
+          animationKey={`${current.key}-${heroValue}`}
           className="insight-cards__swap"
         />
       }
-      figureLabel={face.figureLabel}
+      secondFigure={
+        face.secondFigure ? (
+          <DigitSwapReplay
+            key={`${current.key}-b-${face.secondFigure}`}
+            value={face.secondFigure}
+            label={face.secondLabel}
+            reveal={scrubbing}
+            animationKey={`${current.key}-b-${face.secondFigure}`}
+            className="insight-cards__swap"
+          />
+        ) : undefined
+      }
       visual={
         current.chart ? (
           <V3Chart {...current.chart} yearPages={false} onRead={onRead} />
-        ) : undefined
+        ) : (
+          allocation
+        )
       }
       pill={pill}
     />

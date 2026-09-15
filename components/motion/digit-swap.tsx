@@ -132,37 +132,44 @@ export function maskDigits(value: string | number): string {
 }
 
 /**
- * beUI Digit Swap preview — fixed slots plus Animate toggling the same
- * sourced face between revealed digits and a • mask. Navy/cream paint is
- * the house wrapper; the interaction is the demo.
+ * beUI DigitSwapPreview — rest is the masked face; Animate reveals the
+ * sourced number. `reveal` lets a parent (chart scrub) open the live face
+ * the same way the preview's Animate does.
  * Source: https://beui.dev/components/motion/number
  */
 export function DigitSwapReplay({
   value,
+  label,
+  reveal = false,
   animationKey,
   className,
 }: {
   value: string | number
+  /** Preview "Card number" label above the slots. */
+  label?: string
+  /** Parent opened the live face (pointer-scrub). */
+  reveal?: boolean
   animationKey?: string | number
   className?: string
 }) {
-  const [play, setPlay] = useState(0)
-  const revealed = play % 2 === 0
+  const [toggled, setToggled] = useState(false)
+  const revealed = reveal ? !toggled : toggled
   const face = revealed ? String(value) : maskDigits(value)
   return (
     <span className={cn("digit-swap-replay", className)}>
+      {label ? <span className="digit-swap-replay__label">{label}</span> : null}
       <DigitSwap
         value={face}
-        animationKey={`${animationKey ?? value}-${play}-${face}`}
+        animationKey={`${animationKey ?? value}-${revealed ? "revealed" : "masked"}-${face}`}
         direction={revealed ? "up" : "down"}
         className="digit-swap-replay__face font-mono tabular-nums"
       />
       <button
         type="button"
         className="digit-swap-replay__btn"
-        aria-label={revealed ? "Mask the number" : "Reveal the number"}
-        aria-pressed={!revealed}
-        onClick={() => setPlay((current) => current + 1)}
+        aria-label={revealed ? "Animate masked number" : "Animate the number"}
+        aria-pressed={revealed}
+        onClick={() => setToggled((current) => !current)}
       >
         Animate
       </button>

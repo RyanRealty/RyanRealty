@@ -95,6 +95,23 @@
   color: var(--v3-ink);
 }
 
+.v3-mos__barrow--replay {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto;
+}
+
+.v3-mos__barrow--replay .v3-mos__barname {
+  display: none;
+}
+
+.v3-mos__barvalue--replay {
+  grid-column: 1 / -1;
+}
+
+.v3-mos__swap {
+  width: 100%;
+}
+
 .v3-mos__tip {
   display: grid;
   gap: var(--v3-space-3xs);

@@ -91,8 +91,13 @@
   font-weight: 600;
 }
 
-#market-insights .insight-cards__pager-btn {
+#market-insights .insight-cards__pager-btn,
+#market-insights .insight-cards__segment {
   color: var(--v3-ink);
+}
+
+#market-insights .digit-swap-replay__label {
+  color: var(--v3-ink-muted);
 }
 
 #market-insights .insight-cards__pill-link,

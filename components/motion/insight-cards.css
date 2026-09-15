@@ -82,3 +82,23 @@
 .insight-cards__pill {
   margin: 0;
 }
+
+.insight-cards__segments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.insight-cards__segment {
+  min-height: 44px;
+  padding-inline: 0.75rem;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.insight-cards__segment--on {
+  font-weight: 600;
+}

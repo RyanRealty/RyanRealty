@@ -14,6 +14,7 @@ import { useCallback, useId, useMemo, useState } from 'react'
 import { buildPairPlot } from '@/lib/charts/plot'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3SourceLine } from './atoms'
+import { DigitSwapReplay } from '@/components/motion/digit-swap'
 import { V3Number } from './V3Number.client'
 import './tokens.css'
 import './V3MosBars.css'
@@ -33,6 +34,11 @@ export type V3MosBarsProps = {
   tooltip: { homes: string; sales: string; source: string }
   id?: string
   className?: string
+  /**
+   * beUI DigitSwapPreview on the two sourced counts (rest masked, Animate
+   * reveals). Opt-in — other MOS mounts keep the count-up face.
+   */
+  replay?: boolean
 }
 
 export function V3MosBars({
@@ -50,6 +56,7 @@ export function V3MosBars({
   tooltip,
   id = 'place-mos',
   className,
+  replay = false,
 }: V3MosBarsProps) {
   const uid = useId()
   const tipId = `${uid}-tip`
@@ -69,7 +76,18 @@ export function V3MosBars({
   if (!plot) return null
 
   // Whole-number faces count up (beui-number / rareui); fractional sales stay static.
-  const valueFace = (label: string, value: number) => {
+  // `replay` is the DigitSwapPreview: masked rest + Animate, not a mount count-up.
+  const valueFace = (label: string, value: number, name: string) => {
+    if (replay) {
+      return (
+        <DigitSwapReplay
+          value={label}
+          label={name}
+          animationKey={`${id}-${label}`}
+          className="v3-mos__swap"
+        />
+      )
+    }
     const whole = Number.isFinite(value) && Math.abs(value - Math.round(value)) < 1e-9
     if (!whole) return label
     const n = Math.round(value)
@@ -92,28 +110,42 @@ export function V3MosBars({
         {caption}
       </p>
       <div className="v3-mos__pair">
-        {plot.bars.map((bar) => (
-          <button
-            key={bar.index}
-            type="button"
-            className="v3-mos__barrow"
-            aria-describedby={open ? tipId : undefined}
-            onFocus={show}
-            onClick={show}
-          >
-            <span className="v3-mos__barname">{bar.name}</span>
-            <span className="v3-mos__bartrack">
-              <span
-                className="v3-mos__barfill"
-                style={{ ['--v3-mos-pct' as string]: `${bar.pct.toFixed(2)}%` }}
-                aria-hidden="true"
-              />
-            </span>
-            <span className="v3-mos__barvalue">
-              {valueFace(bar.label, bar.index === 0 ? homesValue : salesValue)}
-            </span>
-          </button>
-        ))}
+        {plot.bars.map((bar) => {
+          const value = bar.index === 0 ? homesValue : salesValue
+          const rowClass = cn('v3-mos__barrow', replay && 'v3-mos__barrow--replay')
+          const face = valueFace(bar.label, value, bar.name)
+          const rowProps = {
+            className: rowClass,
+            'aria-describedby': open ? tipId : undefined,
+            onFocus: show,
+            onClick: show,
+          }
+          return replay ? (
+            <div key={bar.index} role="button" tabIndex={0} {...rowProps}>
+              <span className="v3-mos__barname">{bar.name}</span>
+              <span className="v3-mos__bartrack">
+                <span
+                  className="v3-mos__barfill"
+                  style={{ ['--v3-mos-pct' as string]: `${bar.pct.toFixed(2)}%` }}
+                  aria-hidden="true"
+                />
+              </span>
+              <span className="v3-mos__barvalue v3-mos__barvalue--replay">{face}</span>
+            </div>
+          ) : (
+            <button key={bar.index} type="button" {...rowProps}>
+              <span className="v3-mos__barname">{bar.name}</span>
+              <span className="v3-mos__bartrack">
+                <span
+                  className="v3-mos__barfill"
+                  style={{ ['--v3-mos-pct' as string]: `${bar.pct.toFixed(2)}%` }}
+                  aria-hidden="true"
+                />
+              </span>
+              <span className="v3-mos__barvalue">{face}</span>
+            </button>
+          )
+        })}
       </div>
       {open ? (
         <div className="v3-mos__tip" id={tipId} role="status">
