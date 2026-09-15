@@ -26,7 +26,7 @@
     },
     {
       "name": "V3Heading",
-      "section": "H1 `{Type} in {Place}` — the page's ONE display line.",
+      "section": "H1 `{Type} in {Place}` \u2014 the page's ONE display line.",
       "blocking": true
     },
     {
@@ -41,7 +41,7 @@
     },
     {
       "name": "PlaceTypeAtlasStandin",
-      "section": "The Suspense fallback and the miss branch. The map section is never absent — that absence was the 2026-09-08 taste defect.",
+      "section": "The Suspense fallback and the miss branch. The map section is never absent \u2014 that absence was the 2026-09-08 taste defect.",
       "blocking": true
     },
     {
@@ -61,11 +61,11 @@
     }
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-10",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type-community — grok-4.6 via grok CLI, three scorings of live first-viewport shots at /communities/tetherow/types/single-family; separate from the grok-4.5 builder. SITE-78 yielded code edits on lib/place/place-type-page.ts and cities/_v3 to SITE-89 (place-type holder); live fold already had H1 + claim count/band + Atlas.",
+    "evaluatedAt": "2026-09-15",
+    "rubricVersion": "v1-2026-09-12",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type-community --builder cursor-agent \u2014 grok-4.6 via cursor-cli, three scorings of tip shots at /communities/tetherow/types/single-family including carousel-open; Mini Tip Ready judge on Matthews Mini.",
     "evaluatorModel": "grok-4.6",
-    "builderModel": "grok-4.5",
+    "builderModel": "cursor-agent",
     "shotSpec": {
       "routes": [
         "/communities/tetherow/types/single-family"
@@ -78,27 +78,29 @@
         "default",
         "carousel-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, https://ryan-realty.com/communities/tetherow/types/single-family (live; claim+Atlas already shipped)"
+      "capture": "first viewport + carousel-open via scripts/take-route-shots.mjs against tip c2b2de83a next dev :3027; scale 1, palette-quantized"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/place-type-community/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/mobile375.png",
+      "carouselOpenDesktop": "design_system/ryan-realty/ui_kits/place-type-community/shots/carousel-open-desktop.png",
+      "carouselOpenMobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/carousel-open-mobile375.png"
     },
-    "shotsHash": "sha256:33505f7d2a4b6413a9852791a9b6d2d7ebc6a63e4b92c1d6f0decb48f53c65e2",
+    "shotsHash": "sha256:41d8e1c0485ee4cf004997bf3f30f0141d899fb934810c0e18284f846d12c211",
     "scores": [
-      57,
-      63,
+      52,
+      58,
       55
     ],
-    "score": 57,
+    "score": 55,
     "criteria": {
       "designQuality": 16,
-      "originality": 15,
+      "originality": 14,
       "interaction": 9,
-      "craft": 9,
+      "craft": 8,
       "honestyFunction": 8
     },
-    "beats": "Tetherow.com — we win on live MLS count, asking-price band, and 90-day sales density with a named Oregon Data Share timestamp; we lose on photography and place character, and Zillow community pages beat this fold on photographed listings.",
+    "beats": "Tetherow.com (https://tetherow.com/) \u2014 this page wins on a live MLS count, asking-price band, and a named Oregon Data Share timestamp; it loses photography and place character. Zillow community pages still beat the first viewport on photographed listings.",
     "adaptedFrom": [
       {
         "id": "shadcn-carousel"
@@ -112,51 +114,64 @@
     ],
     "defects": [
       {
-        "section": "SINGLE-FAMILY ON THE MAP canvas",
+        "section": "LISTINGS ON THE MAP",
         "severity": "taste",
-        "finding": "Sales-density cells and listing dots are the same gray-on-cream, so the 17 for-sale marks and the 90-day volume story do not separate at a glance on 1440 or 375.",
-        "replaceWith": "map with data-encoded cells"
+        "finding": "The canvas is a pale gray plat: boundary, streets, and listing dots are the same cream-on-gray, so 18 for-sale marks do not read as a price story at 1440 or 375.",
+        "primitive": "components/site/v3/V3Atlas.client.tsx",
+        "replaceWith": "house-atlas"
       },
       {
-        "section": "Up to any price slider",
+        "section": "Up to any price",
         "severity": "taste",
-        "finding": "The $1,350,000–$4,250,000 band lives only in the claim sentence; the slider sits at any price with no distribution, so scrubbing is chrome instead of the data.",
-        "replaceWith": "emphasis line with a scrubber"
+        "finding": "The $1,350,000\u2013$3,999,995 band lives only in the claim sentence; the slider sits at the ceiling with no histogram, so scrubbing is chrome instead of the data.",
+        "primitive": "components/site/v3/V3Atlas.client.tsx",
+        "replaceWith": "house-atlas"
       },
       {
-        "section": "atlas activity list (Just listed / Went pending / Sold)",
+        "section": "ON THE MARKET / carousel-open",
         "severity": "taste",
-        "finding": "Three price bullets with no photo, bar, or mark; the catalog photographed-listing rail never appears in the first viewport, so a house is never visible.",
-        "replaceWith": "V3Carousel"
+        "finding": "Rest fold clips the rail to photo fragments; the open shots are two (desktop) or one (375) listing cards then a cream void, with no peek of the next plate and no 1 of N, so the shadcn rail never fills the viewport the demo occupies.",
+        "primitive": "app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx",
+        "replaceWith": "shadcn-carousel"
       },
       {
-        "section": "mobile first viewport",
-        "severity": "blocking",
-        "finding": "At 375 the legend, price scrubber, zoom, See the 17, and Talk to a broker are all gone, so contact and the listing path are not reachable from what is visible.",
+        "section": "18 homes ask \u2026 for nine in ten",
+        "severity": "taste",
+        "finding": "Nine in ten is unexplained next to a count of 18; a visitor cannot tell whether that is a percentile, a close rate, or leftover methodology.",
+        "primitive": "app/communities/[slug]/types/[type]/page.tsx",
+        "replaceWith": "house-quiet"
+      },
+      {
+        "section": "mobile 375 header / first viewport",
+        "severity": "defect",
+        "finding": "Desktop exposes 541.703.3095; at 375 the fold has Sign in and a menu only, so call is not a one-path job from what is visible.",
+        "primitive": "app/communities/[slug]/types/[type]/page.tsx",
         "replaceWith": null
       },
       {
-        "section": "House checkbox",
-        "severity": "taste",
-        "finding": "A House toggle on a single-family type page is leftover filter chrome that adds a row of admin UI without revealing more data.",
-        "replaceWith": null
-      },
-      {
-        "section": "SINGLE-FAMILY ON THE MAP eyebrow",
-        "severity": "craft",
-        "finding": "The map label restates single-family as a second display line with no fact after the H1 already named the type.",
+        "section": "SEO and JSON-LD",
+        "severity": "defect",
+        "finding": "Title, canonical, and ItemList are not in these pixels, so SEO cannot be credited as improved; a prettier fold that only holds crawlables is not a rise.",
+        "primitive": "app/communities/[slug]/types/[type]/page.tsx",
         "replaceWith": null
       }
     ],
-    "comparedToPrior": "rebaselined",
+    "demoMatch": true,
+    "tells": [
+      "Missing states. \u2014 the LISTINGS ON THE MAP price scrubber is parked at Up to any price with no distribution, ticks, or filtered remainder, so the only visible state is the unfiltered set.",
+      "The stacked-section page. \u2014 first viewport is still claim block, then atlas block, then a clipped ON THE MARKET strip, three stacked regions with no change in density once the map eats the fold."
+    ],
+    "dullest": "LISTINGS ON THE MAP: most of the first viewport is a washed-out plat whose dots you have to hunt for, while the actual houses are a clipped sliver under ON THE MARKET. That is choosing a faint GIS outline over the inventory.",
+    "verdict": "demoMatch is true: carousel-open shows the shadcn prev/next rail with photographed cards, price, address, and specs, not a cream box that hid the control. The rest fold is still a pale Atlas occupying the screen, a ceiling-parked scrubber, and a clipped ON THE MARKET strip, which is why the tells are missing states and a stacked page. SEO is not evidenced in the shots so it is held, not risen; inventory facts exist on the open rail and in the claim but the first viewport still hides most listing plates.",
     "priorMark": {
-      "evaluatedAt": "2026-09-08",
-      "score": 44,
-      "evaluatorModel": "claude-sonnet-5",
-      "rubricVersion": "v1-2026-09-08",
-      "note": "Taste-table instrument mark SITE-78 must beat. Prior committed receipt (2026-09-09, claude-sonnet-5, score 70, rubric v1-2026-09-08) differs on evaluatorModel, rubricVersion, and shotsHash from this grok-4.6 / v1-2026-09-10 pass."
+      "evaluatedAt": "2026-09-10",
+      "score": 57,
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "v1-2026-09-10",
+      "shotsHash": "sha256:33505f7d2a4b6413a9852791a9b6d2d7ebc6a63e4b92c1d6f0decb48f53c65e2"
     },
-    "rebaselineReason": "Instrument changed: evaluatorModel claude-sonnet-5 → grok-4.6, rubricVersion v1-2026-09-08 → v1-2026-09-10, and shotsHash after live recapture. Median 57 is above the table mark 44 on the new instrument; honestyFunction recorded at 8 (prior mark had none)."
+    "comparedToPrior": "rebaselined",
+    "rebaselineReason": "rubricVersion differs (v1-2026-09-10 \u2192 v1-2026-09-12) and shotsHash differs (new carousel-open tip shots on SITE-107 tip c2b2de83a). First v1-2026-09-12 mark on open-state evidence; demoMatch true from judge."
   },
   "sectionOrder": [
     "V3SectionTracker",
