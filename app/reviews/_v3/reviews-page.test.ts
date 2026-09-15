@@ -43,7 +43,9 @@ describe('reviews page composition', () => {
     expect(avatars).toContain('AvatarGroup')
     expect(group).toContain('AvatarGroup')
     expect(group).toContain('AvatarImage')
-    expect(group).toContain('DropdownMenu')
+    expect(group).toContain('DropdownMenuGroup')
+    expect(group).toContain('Account')
+    expect(group).not.toMatch(/<p className=/)
   })
 
   it('leads with the score face rather than a bare figure row', () => {

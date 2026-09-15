@@ -115,7 +115,8 @@ function Marks({ rating }: { rating: number }) {
 /**
  * Score as a hero figure: average at display scale, stars, and the count.
  * Reviewer faces after the lead quote are the shadcn AvatarGroup demo
- * (`ReviewsAvatarGroup`). public.reviews has no photo column — never invent a face.
+ * (`ReviewsAvatarGroup`). public.reviews has no photo column — AvatarImage
+ * loads the official catalog portraits, not invented reviewer faces.
  */
 function ScoreFace({ average, count }: { average: string; count: string }) {
   const n = Number(average)
@@ -351,8 +352,8 @@ export function V3Proof({
     figures.find((f) => /review/i.test(f.label)) ??
     figures.find((f) => f !== averageFigure)
   const showFace = (face || !record) && averageFigure != null && countFigure != null
-  // Newest distinct authors for the score face — initials only. quotes arrive
-  // newest-first from getReviews.
+  // Newest distinct authors for the AvatarGroup (catalog is three portraits
+  // + AvatarGroupCount). quotes arrive newest-first from getReviews.
   const faceAvatars = useMemo(() => {
     const seen = new Set<string>()
     const out: V3ProofQuote[] = []
@@ -361,7 +362,7 @@ export function V3Proof({
       if (!key || seen.has(key)) continue
       seen.add(key)
       out.push(q)
-      if (out.length >= 4) break
+      if (out.length >= 3) break
     }
     return out
   }, [quotes])

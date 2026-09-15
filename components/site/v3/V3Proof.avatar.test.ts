@@ -13,7 +13,7 @@ describe('V3Proof shadcn-avatar install (SITE-109)', () => {
 })
 
 describe('ReviewsAvatarGroup catalog composition', () => {
-  it('is the shadcn AvatarGroup demo: Image, Fallback, Badge, Count, Dropdown', () => {
+  it('is the shadcn AvatarGroup demo: Image, Fallback, Badge, Count, catalog dropdown', () => {
     expect(GROUP).toContain("from '@/components/ui/avatar'")
     expect(GROUP).toContain('AvatarGroup')
     expect(GROUP).toContain('AvatarImage')
@@ -21,8 +21,19 @@ describe('ReviewsAvatarGroup catalog composition', () => {
     expect(GROUP).toContain('AvatarBadge')
     expect(GROUP).toContain('AvatarGroupCount')
     expect(GROUP).toContain('DropdownMenu')
+    expect(GROUP).toContain('DropdownMenuGroup')
+    expect(GROUP).toContain('DropdownMenuItem')
+    expect(GROUP).toContain('DropdownMenuSeparator')
     expect(GROUP).toContain('v3-proof__avatar-btn')
+    expect(GROUP).toContain("variant=\"ghost\"")
+    expect(GROUP).toContain('Account')
+    expect(GROUP).toContain('Billing')
+    expect(GROUP).toContain('Notifications')
+    expect(GROUP).toContain('Sign Out')
+    expect(GROUP).toContain('https://github.com/shadcn.png')
+    expect(GROUP).toContain('/images/catalog/shadcn-avatar/')
     expect(GROUP).not.toContain('v3-proof__avatar-ink')
-    expect(GROUP).not.toMatch(/github\.com\/shadcn/)
+    expect(GROUP).not.toMatch(/<p className=/)
+    expect(GROUP).not.toContain('face.pull')
   })
 })
