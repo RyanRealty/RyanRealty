@@ -306,10 +306,9 @@ export default async function CentralOregonRegionPage() {
     ...buildSegmentTailFigures(publicSegments, null),
     ...buildPaceTailFigures(publicPace),
   ]
-  // SITE-88: MOS + year chart own the fold. Lead figures stay median + under
-  // contract (beui-number); property-type/pace extras move to the pace band so
-  // the opening is not a collapsed "all N figures" row.
-  const [firstLiveFigure, ...restLiveFigures] = region.live.figures
+  // SITE-103: live list / under-contract sit on the ask InsightCards page as
+  // DigitSwap. The opening instrument is MOS + insights, not a two-up poster.
+  const firstLiveFigure = region.live.figures[0]
   const [firstExtraFigure, ...restExtraFigures] = extraLive
   const liveTrace =
     composeRegionLiveTrace(regionMos ? REGION_LIVE_CITATION : region.live.trace, false) +
@@ -458,7 +457,7 @@ export default async function CentralOregonRegionPage() {
             id="closed-year" below, right after the cities Ledger, where this section
             used to sit as id="sfr-pulse". No action (invariant 5, single-ask
             consolidation): RegionInquirySheet is the page's one ask. */}
-        {firstLiveFigure ? (
+        {regionMos || insightPages.length >= 2 || firstLiveFigure ? (
           <V3Instrument
             id="market"
             level={1}
@@ -469,10 +468,10 @@ export default async function CentralOregonRegionPage() {
                 ? 'Central Oregon housing market'
                 : `A ${verdict.label}`,
             )}
-            figures={[firstLiveFigure, ...restLiveFigures]}
+            figures={[]}
             /* THE OPENING IS A CLAIM AND A DRAWING (SITE-103). MOS + InsightCards.
-               Live list / under-contract DigitSwap on the instrument and on the
-               ask insight page — never "All 42 figures". */
+               Live list / under-contract are DigitSwap on the ask insight page —
+               never a two-up poster under the chart. */
             chartFirst
             foldAfter={REGION_LEAD_FIGURES}
             foldLabel={v3Text(REGION_MARKET_FOLD_LABEL)}
@@ -496,7 +495,7 @@ export default async function CentralOregonRegionPage() {
                     salesLabel={regionMos.salesLabel}
                     salesValue={regionMos.salesValue}
                     source={regionMos.source}
-                    asOf={regionMos.asOf}
+                    asOf={leftoverStamp}
                     sourceName="Oregon Data Share MLS"
                     tooltip={regionMos.tooltip}
                   />

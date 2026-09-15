@@ -7,7 +7,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { DigitSwap } from '@/components/motion/digit-swap'
+import { DigitSwapReplay } from '@/components/motion/digit-swap'
 import { InsightCards } from '@/components/motion/insight-cards'
 import { V3Chart } from '@/components/site/v3/V3Chart'
 import { V3_ROOT_CLASS } from '@/components/site/v3'
@@ -42,7 +42,7 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
       onPage={setPage}
       claim={current.claim}
       figure={
-        <DigitSwap
+        <DigitSwapReplay
           value={current.figure}
           animationKey={current.key}
           className="insight-cards__swap"
@@ -51,7 +51,7 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
       figureLabel={current.figureLabel}
       secondFigure={
         current.secondFigure ? (
-          <DigitSwap
+          <DigitSwapReplay
             value={current.secondFigure}
             animationKey={`${current.key}-2`}
             className="insight-cards__swap"

@@ -115,8 +115,12 @@
 
 @media (max-width: 63.99rem) {
   #market.v3-instrument {
-    padding-top: var(--v3-space-sm);
-    padding-bottom: var(--v3-space-sm);
+    padding-top: var(--v3-space-xs);
+    padding-bottom: var(--v3-space-xs);
+  }
+
+  #market .v3-instrument__eyebrow {
+    display: none;
   }
 
   #market .v3-instrument__headline {
@@ -145,8 +149,12 @@
 
   #market-insights .v3-chart__plot,
   #market-insights .v3-chart__svg {
-    max-height: 9.5rem;
-    height: 9.5rem;
+    max-height: 7.25rem;
+    height: 7.25rem;
+  }
+
+  #market-insights .digit-swap-replay__btn {
+    min-height: 44px;
   }
 
   #market-insights .insight-cards__hero-value {

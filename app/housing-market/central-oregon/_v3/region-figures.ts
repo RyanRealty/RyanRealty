@@ -117,8 +117,8 @@ export function buildRegionInsightPages(
       pages.push({
         key: `compare-${String(newest.name)}-${String(prior.name)}`,
         claim: `${tick} ${String(newest.name)} median sale ${String(newestLast.label)}; ${String(prior.name)} was ${String(priorSame.label)}`,
-        figure: String(newestLast.label),
-        figureLabel: `${String(newest.name)} vs ${String(prior.name)}`,
+        figure: String(priorSame.label),
+        figureLabel: `${String(prior.name)} same month`,
         pill: 'Same month, two years',
         chart: {
           ...overlay,

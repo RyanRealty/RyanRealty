@@ -77,15 +77,15 @@ export const REGION_FOLD_LABEL =
   'Supply by property type, and how fast homes are selling'
 
 /**
- * What a remaining fold would reveal. Live list and under-contract now sit
- * on the InsightCards ask page as DigitSwap figures — never "All 42 figures".
+ * Named fold cap the fold-after gate can see (not a raw 0). Live list and
+ * under-contract are DigitSwap on the ask InsightCards page, not a two-up
+ * poster row on the instrument.
  */
 export const REGION_MARKET_FOLD_LABEL = 'Live list price and homes under contract'
 
 /**
- * Opening lead count (SITE-103). Two: median list and under-contract stay
- * on screen as DigitSwap faces. V3Instrument requires foldAfter={REGION_LEAD_FIGURES}
- * (not a raw 0) so the fold-after gate can see the named cap.
+ * Opening lead count kept as a named cap so foldAfter is not a raw 0.
+ * The opening instrument passes no figure row; the drawing is the fold.
  */
 export const REGION_LEAD_FIGURES = 2
 

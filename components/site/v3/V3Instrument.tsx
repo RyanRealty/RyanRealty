@@ -146,7 +146,7 @@ export type V3InstrumentFigure = {
  * )
  * ```
  */
-export type V3InstrumentFigures = readonly [V3InstrumentFigure, ...V3InstrumentFigure[]]
+export type V3InstrumentFigures = readonly V3InstrumentFigure[]
 
 /* -------------------------------------------------------------------------- */
 /* Props                                                                       */
@@ -205,8 +205,12 @@ export type V3InstrumentProps = {
    * Market hub / MOS definition: the drawing IS the number.
    */
   chartFirst?: boolean
-  /** The supporting figures, left to right in the order the caller passes them. */
-  figures: V3InstrumentFigures
+  /**
+   * The supporting figures, left to right in the order the caller passes them.
+   * Empty when the drawing (InsightCards, MOS bars) is the fold — a two-up
+   * poster row is not the beui-number product.
+   */
+  figures?: V3InstrumentFigures
   /**
    * The section 0 trace for those figures, without the word "Source" (the source line
    * renders that): what they came from, the filter, the population.
@@ -311,7 +315,7 @@ export function V3Instrument({
   foldAfter,
   foldLabel,
   chartFirst = false,
-  figures,
+  figures = [],
   source,
   updated,
   sourceName,

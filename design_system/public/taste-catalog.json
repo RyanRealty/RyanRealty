@@ -2943,7 +2943,7 @@
         }
       ],
       "demoStates": [
-        "year-open=#market-insights .insight-pager__btn[aria-label^=\"Next\"]!click",
+        "year-open=#market-insights .v3-chart__hover!hover",
         "source-open=#central-oregon-mos .v3-mos__barrow!hover"
       ]
     },

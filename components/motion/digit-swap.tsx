@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { EASE_OUT } from "@/lib/ease";
 import { cn } from "@/lib/utils";
+import "./digit-swap.css";
 
 export type DigitSwapDirection = "up" | "down";
 
@@ -122,4 +124,41 @@ export function DigitSwap({
       </span>
     </span>
   );
+}
+
+/**
+ * beUI Digit Swap preview — slots plus the Animate control that replays the
+ * roll. Navy/cream paint is the house wrapper; the interaction is the demo.
+ * Source: https://beui.dev/components/motion/number
+ */
+export function DigitSwapReplay({
+  value,
+  animationKey,
+  className,
+}: {
+  value: string | number
+  animationKey?: string | number
+  className?: string
+}) {
+  const [play, setPlay] = useState(0)
+  const revealed = play % 2 === 1
+  return (
+    <span className={cn("digit-swap-replay", className)}>
+      <DigitSwap
+        value={value}
+        animationKey={`${animationKey ?? value}-${play}`}
+        direction={revealed ? "down" : "up"}
+        className="digit-swap-replay__face font-mono tabular-nums"
+      />
+      <button
+        type="button"
+        className="digit-swap-replay__btn"
+        aria-label={revealed ? "Animate the number again" : "Animate the number"}
+        aria-pressed={revealed}
+        onClick={() => setPlay((current) => current + 1)}
+      >
+        Animate
+      </button>
+    </span>
+  )
 }

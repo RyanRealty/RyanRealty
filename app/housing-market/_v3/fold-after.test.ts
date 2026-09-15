@@ -65,6 +65,7 @@ describe('market instruments open on a claim and a drawing', () => {
   it('SITE-88/101 year isolate is the annual overlay; region uses InsightCards', () => {
     expect(region).toMatch(/RegionInsightCards/)
     expect(region).toMatch(/buildRegionInsightPages/)
+    expect(region).toMatch(/figures=\{\[\]\}/)
     expect(region).not.toMatch(/yearPages:\s*true/)
     expect(annual).toMatch(/yearPages:\s*true/)
     expect(hub).not.toMatch(/yearPages/)

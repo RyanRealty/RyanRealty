@@ -81,6 +81,7 @@ describe('SITE-88 visitor-facing region traces', () => {
     const catalog = readFileSync(resolve(__dirname, 'region-catalog.ts'), 'utf8')
     expect(catalog).toContain("from '@/components/motion/insight-cards'")
     expect(catalog).toContain("from '@/components/motion/digit-swap'")
+    expect(catalog).toContain('DigitSwapReplay')
   })
 
   it('insight pages are distinct jobs, not a year switcher of one series', () => {
@@ -107,6 +108,7 @@ describe('SITE-88 visitor-facing region traces', () => {
     expect(pages.map((page) => page.key)).toEqual(['sale-2026', 'compare-2026-2024', 'ask'])
     expect(pages[0]?.claim).toContain('2026 median sale')
     expect(pages[1]?.claim).toContain('2024')
+    expect(pages[1]?.figure).toContain('602')
     expect(pages[1]?.chart?.series).toHaveLength(2)
     expect(pages[2]?.figure).toContain('939')
     expect(pages[2]?.secondFigure).toBe('293')
