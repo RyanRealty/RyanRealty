@@ -8,6 +8,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { animate } from 'motion/react'
 import { BeuiInput } from './contact-catalog'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { BROKERS, CONTACT } from '@/lib/brand/contact'
 import type { V3InputProps } from '@/components/site/v3/V3Input'
@@ -100,17 +102,17 @@ export function ContactField({
     const errorMessage = typeof error === 'string' ? error : null
     return (
       <div className={cn('contact-field', className)}>
-        <label htmlFor={fieldId} className="contact-field__label">
+        <Label htmlFor={fieldId} className="contact-field__label">
           {label}
           {required ? null : <span className="contact-field__optional"> optional</span>}
-        </label>
+        </Label>
         {hint ? <span className="contact-field__hint">{hint}</span> : null}
         <div
           ref={shakeRef}
           data-state={error ? 'error' : success ? 'success' : 'idle'}
           className="contact-field__shell contact-field__shell--area"
         >
-          <textarea
+          <Textarea
             ref={(node) => {
               inputRef.current = node
             }}
