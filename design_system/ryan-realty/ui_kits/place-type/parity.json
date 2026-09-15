@@ -2,7 +2,7 @@
   "route": "app/cities/[slug]/types/[type]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. Built from components/site/v3. No mockup in this directory: the place-type class is the city/community type-card landing, not a Tetherow one-off.",
   "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker type-filtered city results. Those surfaces dump the visitor into a search grid. This page is a place-type node: leftover count and median that already back the type card, a living atlas of the parent city with the type stated in the claim, and a photographed list of that type. Unique title, canonical, ItemList when listings exist. Breadcrumb is City then type, no Home.",
-  "note": "H1 is `{Type} in {Place}` and it is the page's only display-scale line: the Atlas opens under the claim wearing an eyebrow (V3Atlas headlineTone='eyebrow', subject softened to Listings). One section-0 sourced claim sentence sits under the H1 \u2014 count and ~p90 price band from ONE listing_tile_mv read, worded as the address census with the map marking for-sale homes inside city limits (pending key hidden on this page). A V3Carousel mode=rail of photographed listings (PlaceTypeFilm; shadcn-carousel adapted with side prev/next) follows Atlas in the fold with price+address+beds/baths/sqft on 800x600 plates. The Atlas section is UNCONDITIONAL via PlaceTypeAtlasSection + PlaceTypeAtlasStandin. Rows and marks share one hovered key. Unknown type notFound(). Do not collide with app/cities/[slug]/[neighborhoodSlug].",
+  "note": "H1 is `{Type} in {Place}` and it is the page's only display-scale line: the Atlas opens under the claim wearing an eyebrow (V3Atlas headlineTone='eyebrow', subject softened to Listings). One section-0 sourced claim sentence sits under the H1 — count and ~p90 price band from ONE listing_tile_mv read, worded as the address census with the map marking for-sale homes inside city limits (pending key hidden on this page). A V3Carousel mode=rail of photographed listings (PlaceTypeFilm; shadcn-carousel adapted with side prev/next) follows Atlas in the fold with price+address+beds/baths/sqft on 800x600 plates. The Atlas section is UNCONDITIONAL via PlaceTypeAtlasSection + PlaceTypeAtlasStandin. Rows and marks share one hovered key. Unknown type notFound(). Do not collide with app/cities/[slug]/[neighborhoodSlug].",
   "requiredComponents": [
     {
       "name": "PlaceTypeFilm",
@@ -26,7 +26,7 @@
     },
     {
       "name": "V3Heading",
-      "section": "H1 `{Type} in {Place}` \u2014 the page's ONE display line.",
+      "section": "H1 `{Type} in {Place}` — the page's ONE display line.",
       "blocking": true
     },
     {
@@ -41,7 +41,7 @@
     },
     {
       "name": "PlaceTypeAtlasStandin",
-      "section": "The Suspense fallback and the miss branch. The map section is never absent \u2014 that absence was the 2026-09-08 taste defect.",
+      "section": "The Suspense fallback and the miss branch. The map section is never absent — that absence was the 2026-09-08 taste defect.",
       "blocking": true
     },
     {
@@ -61,11 +61,12 @@
     }
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-11",
-    "rubricVersion": "v1-2026-09-10",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type --shots desktop.png,mobile375.png --url http://127.0.0.1:3221/cities/bend/types/single-family --beat 54; separate grok-4.6 judge, builder did not score",
+    "evaluatedAt": "2026-09-15",
+    "rubricVersion": "v1-2026-09-12",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type --builder cursor-agent — grok-4.6 via cursor-cli (cursor-grok-4.6-high); grok CLI binary missing on Mini so link 1 skipped. Builder cursor-agent (tip 16b805141) did not grade the page.",
     "evaluatorModel": "grok-4.6",
-    "builderModel": "grok-4.5",
+    "builderModel": "cursor-agent",
+    "transport": "cursor-cli",
     "shotSpec": {
       "routes": [
         "/cities/bend/types/single-family"
@@ -75,63 +76,75 @@
         375
       ],
       "states": [
-        "default"
+        "default",
+        "carousel-open"
       ],
-      "capture": "first viewport, palette-quantized, next dev :3221; wait for .place-type-film__body + shadcn prev/next before shoot"
+      "capture": "first viewport + carousel-open shots already in kit (tip 16b805141); evaluate read every PNG in shots/"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/place-type/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/place-type/shots/mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/place-type/shots/mobile375.png",
+      "carouselOpenDesktop": "design_system/ryan-realty/ui_kits/place-type/shots/carousel-open-desktop.png",
+      "carouselOpenMobile375": "design_system/ryan-realty/ui_kits/place-type/shots/carousel-open-mobile375.png"
     },
-    "shotsHash": "sha256:004dddc996bcbce1a3e506ab6df1e633e2b04483cf591c5a4c4b04039532d67b",
+    "shotsHash": "sha256:308ac8cb7c957fae51bc01dd4e980b8fd787956f7067441a7511b82d152cf334",
     "scores": [
-      55,
-      59,
-      49
+      54,
+      61,
+      57
     ],
-    "score": 55,
+    "score": 57,
+    "criteria": {
+      "designQuality": 16,
+      "originality": 14,
+      "interaction": 9,
+      "craft": 11,
+      "honestyFunction": 7
+    },
     "perCriterion": {
       "design": 16,
       "originality": 14,
-      "interaction": 8,
-      "craft": 10,
+      "interaction": 9,
+      "craft": 11,
       "honesty": 7
     },
     "demoMatch": true,
-    "beats": "Zillow Bend single-family search (zillow.com/bend-or/): we win the sourced nine-in-ten asking band in one sentence and navy Atlas marks instead of Google tiles; we lose map scale, listing density, and filter power, so this is not a beat of that page. Better than a 54 because the twin Amboqia titles are gone; not a leap.",
+    "tells": [
+      "Carousel import ≠ photo strip — the rest-fold ON THE MARKET strip hides arrows, card body, and title-under-photo; only sheared photo tops remain until the carousel-open shots."
+    ],
     "defects": [
       {
-        "section": "LISTINGS INSIDE THE BEND CITY LIMITS",
+        "section": "LISTINGS ON THE MAP",
         "severity": "taste",
-        "finding": "Atlas is a timid inset: Bend sits as a postage-stamp polygon in a wide unused cream field, with zoom chrome at the edge. The job of this fold is the map under one claim, occupying the first viewport, not a dashboard widget above a portal rail.",
+        "finding": "Desktop Atlas is still a pale inset: Bend sits in a modest rectangle beside a deserted cream column whose only job is a skinny Up to any price slider. The fold's job is the map under one claim occupying the first viewport, not a dashboard widget with leftover chrome.",
+        "primitive": "app/cities/[slug]/types/[type]/_v3/PlaceTypeAtlasSection.tsx",
         "replaceWith": "house-atlas"
       },
       {
-        "section": "H1 claim",
-        "severity": "blocking",
-        "finding": "The sentence says 777 homes with a Bend address; the map reads 502 for sale. Layout lock requires count and band from the same listing-tile as the map marks. Two inventories in one fold is a trust nick even with the city-limits caption.",
-        "replaceWith": "house-quiet"
-      },
-      {
         "section": "ON THE MARKET",
-        "severity": "craft",
-        "finding": "At 375px the second slide is sheared through the price ($1,985,0), address (3422 Jacks), and specs (4 bd \u00b7 4 ba \u00b7). The rail is a shadcn carousel with arrows, but a clipped peek is not a composed next card.",
+        "severity": "taste",
+        "finding": "In the rest fold the photographed rail is a 40-pixel crop of two rooftops. A visitor cannot read price, address, or specs without scrolling, so the first viewport does not carry the shadcn rail the open shots prove exists.",
+        "primitive": "app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx",
         "replaceWith": "shadcn-carousel"
       },
       {
-        "section": "ALL PHOTOGRAPHED LISTINGS",
+        "section": "carousel-open desktop",
         "severity": "taste",
-        "finding": "The first viewport already has a photographed listing carousel, then a second inventory with NEWEST / PRICE LOW / PRICE HIGH / MOST BEDS. Two listing systems stacked is portal furniture; one shadcn carousel is the job.",
+        "finding": "The opened control matches shadcn carousel (side prev/next, photo, title-under-photo, card body) but only two cards float in unused cream. The rail should fill the track the way the catalog demo fills a row, not park two Cards in a void.",
+        "primitive": "app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx",
         "replaceWith": "shadcn-carousel"
       },
       {
         "section": "first viewport",
-        "severity": "blocking",
-        "finding": "SEO increment is not visible in these shots (no title or JSON-LD proof), so SEO is at best held. The page job of reaching a broker is only a header phone on desktop and missing on mobile. Inventory facts on the cards (price, address, beds, baths, sqft) are present; a held SEO line is a defect on this pass.",
+        "severity": "defect",
+        "finding": "SEO increment is not visible in these shots (no title or JSON-LD proof), so SEO is held. Broker reach is a header phone on desktop and missing at 375. Inventory facts on the open cards (price, address, beds, baths, sqft) are present; a held SEO line is a defect on this pass.",
+        "primitive": "app/cities/[slug]/types/[type]/page.tsx",
         "replaceWith": null
       }
     ],
-    "verdict": "This is a 55: slightly better than a 54 because the stacked twin headlines are gone and the fold is H1, then a sourced count-and-band sentence, then Atlas, then a photo rail with listing facts \u2014 but Atlas is still a widget, 777 disagrees with 502, and the 375 rail clips the next house. Inventory improved on the cards; SEO is not shown to have improved, which this pass treats as a defect, and the page still does not beat Zillow Bend on map scale or listing density.",
+    "dullest": "The desktop Atlas column: LISTINGS ON THE MAP and a hairline slider stranded in cream beside a washed-out density field, while the houses that would make this a place to shop are cropped into a photo sliver at the bottom.",
+    "beats": "Zillow Bend single-family search (zillow.com/bend-or/): we win the sourced nine-in-ten asking band in one sentence and navy Atlas marks instead of Google tiles; we lose map scale, listing density, and the ability to shop inventory from the first viewport. Not a beat of that page.",
+    "verdict": "This is a 57 on first v1-2026-09-12 mark: demoMatch is true because carousel-open shows the shadcn object (arrows, card body, title-under-photo, navy on cream), and the rest fold finally does H1 then one claim then Atlas instead of twin Amboqia titles. It is still a timid map widget over a cropped photo strip, so it does not beat Zillow Bend on the metrics that make a type page worth staying on. SEO is held, not improved; listing facts on the open cards are present, which is inventory held, not an increment the shots can prove.",
     "adaptedFrom": [
       {
         "id": "shadcn-carousel"
@@ -146,16 +159,19 @@
         "id": "house-quiet"
       }
     ],
-    "comparedToPrior": "rebaselined",
+    "comparedToPrior": "same instrument, new carousel-open shots + tip craft — prior 55 on v1-2026-09-10; this is first v1-2026-09-12 mark on open-state evidence (score 57); demoMatch true from judge",
     "priorMark": {
-      "evaluatedAt": "2026-09-10",
-      "score": 71,
+      "score": 55,
+      "scores": [
+        55,
+        59,
+        49
+      ],
+      "evaluatedAt": "2026-09-11",
+      "shotsHash": "sha256:004dddc996bcbce1a3e506ab6df1e633e2b04483cf591c5a4c4b04039532d67b",
       "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-10",
-      "shotsHash": "sha256:91303425b43eb9ba9f2d9ae6a9779187362313276682b60e05114ca024f6968d",
-      "note": "Prior receipt shotsHash differs after fold rebuild (claim band, shadcn side arrows, for-sale key). Node evidence bar to beat remains 54; this pass median 55 with demoMatch true."
-    },
-    "rebaselineReason": "shotsHash changed after SITE-89 fold rebuild (H1\u2192claim\u2192Atlas\u2192shadcn rail with card bodies). Same evaluatorModel+rubricVersion (grok-4.6 / v1-2026-09-10). Finish line 70 not met; do not mark node done. Median 55 > beat 54 on the live re-measure."
+      "demoMatch": true
+    }
   },
   "sectionOrder": [
     "V3SectionTracker",
