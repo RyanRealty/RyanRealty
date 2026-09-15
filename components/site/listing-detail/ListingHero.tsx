@@ -35,10 +35,7 @@ import {
   LISTING_MOSAIC_STRIP_SIZES,
   preferListingMosaicPhotoUrl,
 } from '@/lib/listing/publish-listing-mosaic'
-import {
-  LISTING_FIELD_LEAD_PHOTO_SIZE,
-  listingRowPhotoSrc,
-} from '@/lib/listing/row-photo'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { isOffsiteTourHost } from '@/lib/listing/publish-listing-on-site-tour'
 import dynamic from 'next/dynamic'
 
@@ -144,8 +141,7 @@ export function ListingHero({
   const [allowAutoplay, setAllowAutoplay] = useState(false)
   /** The photo in the frame (desktop) and the slide in view (phone). */
   const [frame, setFrame] = useState(0)
-  /** The filmstrip's expanded state; hover expands it too (CSS). */
-  const [stripOpen, setStripOpen] = useState(false)
+  /** Filmstrip is always open — every thumb stays in the reel (Matt 2026-09-15). */
   const [mediaTab, setMediaTab] = useState<MediaTab>(() => {
     if (photos.length > 0) return 'photos'
     if (floorPlans.length > 0) return 'floor'
@@ -313,7 +309,7 @@ export function ListingHero({
   return (
     <div
       id="listing-hero-visual"
-      className={cn('listing-hero-bleed listing-frame', stripOpen && 'is-strip-open', className)}
+      className={cn('listing-hero-bleed listing-frame', className)}
     >
       <div className="listing-frame__media">
         {showTour ? (
@@ -432,21 +428,9 @@ export function ListingHero({
       {/* Cream index under the bleed photograph. beUI pill tabs sit on the
           photograph (bg-card track), not on a navy filmstrip. */}
       {total > 0 || mediaTabItems.length > 0 ? (
-        <div className="listing-strip" data-open={stripOpen ? 'true' : 'false'}>
+        <div className="listing-strip" data-open="true">
           {total > 0 ? (
-            <button
-              type="button"
-              className="listing-strip__toggle"
-              onClick={() => setStripOpen((open) => !open)}
-              aria-expanded={stripOpen}
-              aria-controls="listing-strip-reel"
-              aria-label={stripOpen ? 'Collapse the photo index' : 'Expand the photo index'}
-            >
-              <span className="listing-strip__counter">{counter}</span>
-              <span className="listing-strip__chevron" aria-hidden="true">
-                ▴
-              </span>
-            </button>
+            <span className="listing-strip__counter">{counter}</span>
           ) : null}
           {total > 0 ? (
             <div
@@ -456,8 +440,7 @@ export function ListingHero({
               role="list"
               aria-label="Photo index"
             >
-              {(stripOpen ? photos : photos.slice(frame, frame + 1)).map((photo, i) => {
-                const index = stripOpen ? i : frame
+              {photos.map((photo, index) => {
                 return (
                 <button
                   key={`thumb-${index}-${photo.url}`}
@@ -571,19 +554,15 @@ function MosaicStill({
   priority?: boolean
   contain?: boolean
 }) {
-  // The hero is a full-bleed frame. Prefer the 1600 mosaic derivative
-  // (Matt 2026-09-10). Spark 429 on that plate used to leave the fold as
-  // empty cream; fall back to the verified 800 bucket so the house still
-  // paints. Same listing, same asset id (listingRowPhotoSrc).
+  // The hero is a full-bleed frame. Always the 1600 mosaic derivative
+  // (Matt 2026-09-15) — never the 320 thumb or the 800 field-lead bucket.
   const live = preferListingMosaicPhotoUrl(src)
-  const first = listingRowPhotoSrc(src, LISTING_FIELD_LEAD_PHOTO_SIZE)
-  void live
   void sizes
   void priority
   return (
     <>
       <PhotoSkeleton label="Loading photograph" />
-      <img src={first} alt={alt} className={contain ? 'is-plan' : undefined} />
+      <img src={live} alt={alt} className={contain ? 'is-plan' : undefined} />
     </>
   )
 }

@@ -6,6 +6,11 @@
 import { getPlaceLinks } from '@/lib/place-links'
 import { getResortCommunityBySlug } from '@/lib/data/communities/registry'
 import { cityHref, cityNeighborhoodHref, subdivisionHref } from '@/lib/site/place-href'
+import {
+  isPermitGluedPlatSlug,
+  isVisitorPlaceNoiseLabel,
+  isVisitorPlaceNoiseSlug,
+} from '@/lib/site/visitor-place-noise'
 
 export type PlaceCrumb = {
   label: string
@@ -29,9 +34,15 @@ export function communityHref(slug: string | null | undefined): string | null {
   return getPlaceLinks({ type: 'community', slug: s }).placeUrl
 }
 
+function visitorPlaceNode(node: PlaceTrailNode | null | undefined): PlaceTrailNode | null {
+  if (!node) return null
+  if (isVisitorPlaceNoiseLabel(node.label) || isVisitorPlaceNoiseSlug(node.slug)) return null
+  return node
+}
+
 function pushUnique(trail: PlaceCrumb[], label: string, href?: string | null): void {
   const name = label.trim()
-  if (!name) return
+  if (!name || isVisitorPlaceNoiseLabel(name)) return
   const door = href?.trim() || undefined
   const last = trail[trail.length - 1]
   if (last && last.label.trim().toLowerCase() === name.toLowerCase() && last.href === door) {
@@ -123,11 +134,12 @@ export function listingPlaceTrail(input: {
   const cityUrl = city ? cityHref(city.slug) : null
   if (city && cityUrl) pushUnique(trail, city.label, cityUrl)
 
-  const community = input.community
+  const community = visitorPlaceNode(input.community)
+  const neighborhoodRaw = visitorPlaceNode(input.neighborhood)
   const neighborhood =
-    input.neighborhood && community && samePlace(input.neighborhood, community)
+    neighborhoodRaw && community && samePlace(neighborhoodRaw, community)
       ? null
-      : input.neighborhood
+      : neighborhoodRaw
   if (neighborhood && !(city && samePlace(city, neighborhood))) {
     const href = city
       ? cityNeighborhoodHref(city.slug, neighborhood.slug)
@@ -144,10 +156,13 @@ export function listingPlaceTrail(input: {
     if (href) pushUnique(trail, community.label, href)
   }
 
+  const subdivisionRaw = visitorPlaceNode(input.subdivision)
   const subdivision =
-    input.subdivision && community && samePlace(input.subdivision, community)
-      ? null
-      : input.subdivision
+    subdivisionRaw &&
+    !isPermitGluedPlatSlug(subdivisionRaw.slug) &&
+    !(community && samePlace(subdivisionRaw, community))
+      ? subdivisionRaw
+      : null
   if (subdivision && !(city && samePlace(city, subdivision))) {
     const href = subdivisionHref(subdivision.slug)
     if (href) pushUnique(trail, subdivision.label, href)

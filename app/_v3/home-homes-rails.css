@@ -7,15 +7,6 @@
   padding: var(--v3-space-xl) 0 var(--v3-space-md);
 }
 
-.home-rails__brief {
-  margin: 0;
-  padding: 0 var(--v3-gutter) var(--v3-space-sm);
-  max-width: var(--v3-measure-text);
-  color: var(--v3-ink);
-  font-size: var(--v3-size-body);
-  line-height: var(--v3-leading-body);
-}
-
 /* First rail sits in the fold under the compact Stage. */
 .home-rails > .home-rail:first-child {
   padding-top: var(--v3-space-sm);

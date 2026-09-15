@@ -6,7 +6,6 @@
 import { formatCount } from '@/lib/format/count'
 import { HomeListingRail } from './HomeListingRail.client'
 import { TRACE } from './home-hero-inventory'
-import { homeBriefText } from './home-competitive-brief'
 import type { HomeRailRow } from './home-rail-items'
 
 export function HomeHomesRails({
@@ -34,9 +33,6 @@ export function HomeHomesRails({
 
   return (
     <div className="home-rails">
-      <p className="home-rails__brief">
-        {homeBriefText('1')} {homeBriefText('5')}
-      </p>
       {rows.map((row, index) => (
         <HomeListingRail key={row.id} row={row} live={index === 0 ? live : undefined} />
       ))}

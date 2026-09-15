@@ -14,16 +14,14 @@ import { getPlaceLinks } from '@/lib/place-links'
 import { getResortCommunityBySubdivisionName } from '@/lib/data/communities/registry'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { slugify } from '@/lib/slug'
+import {
+  isPermitGluedPlatSlug,
+  isVisitorPlaceNoiseLabel,
+  isVisitorPlaceNoiseSlug,
+  PLACE_NOISE_SLUGS,
+} from '@/lib/site/visitor-place-noise'
 
-/** MLS / GIS noise that must never become a place node. */
-export const PLACE_NOISE_SLUGS = new Set([
-  'na',
-  'n-a',
-  'none',
-  'unknown',
-  'outside-city-limits',
-  'not-applicable',
-])
+export { PLACE_NOISE_SLUGS }
 
 export type PlaceNodeType = 'city' | 'neighborhood' | 'community' | 'subdivision'
 
@@ -67,7 +65,7 @@ export type PlaceContextListingInput = {
 
 function cleanSlug(raw: string | null | undefined): string | null {
   const s = (raw ?? '').trim().toLowerCase()
-  if (!s || PLACE_NOISE_SLUGS.has(s)) return null
+  if (!s || isVisitorPlaceNoiseSlug(s) || isVisitorPlaceNoiseLabel(raw)) return null
   return s
 }
 
@@ -122,7 +120,7 @@ export function resolvePlaceContextFromListing(input: PlaceContextListingInput):
     ? cleanSlug(input.subdivisionSlug) ?? cleanSlug(slugify(publishedSub))
     : null
   const subdivision: PlaceNode | null =
-    publishedSub && subSlug
+    publishedSub && subSlug && !isPermitGluedPlatSlug(subSlug)
       ? {
           type: 'subdivision',
           slug: subSlug,

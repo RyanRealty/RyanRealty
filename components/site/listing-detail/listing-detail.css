@@ -603,7 +603,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   border: 0;
 }
 
@@ -978,7 +978,7 @@
 
 .listing-strip {
   --listing-strip-h: 3.5rem;
-  --listing-strip-thumb: 2.75rem;
+  --listing-strip-thumb: 5.5rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -991,31 +991,17 @@
   transition: min-height var(--v3-dur-state) var(--v3-ease-out);
 }
 
-.listing-strip__toggle {
+.listing-strip__counter {
   display: inline-flex;
   align-items: center;
-  gap: var(--v3-space-2xs);
   min-height: var(--v3-tap);
-  min-width: var(--v3-tap);
   padding: 0 var(--v3-space-sm);
-  border: 0;
-  background: transparent;
   color: var(--v3-navy);
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-label);
   font-weight: var(--v3-weight-medium);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--v3-track-label);
-  cursor: pointer;
-}
-
-.listing-strip__chevron {
-  display: inline-block;
-  transition: transform var(--v3-dur-state) var(--v3-ease-out);
-}
-
-.listing-strip[data-open='true'] .listing-strip__chevron {
-  transform: rotate(180deg);
 }
 
 .listing-strip__reel {
@@ -1068,16 +1054,8 @@
   border-bottom-color: var(--v3-navy);
 }
 
-/* Expanded: on hover (desktop) and on the toggle (any width) the thumbs
-   double, so the index becomes a contact sheet without leaving the fold. */
 .listing-strip[data-open='true'] {
   --listing-strip-thumb: 5.5rem;
-}
-
-@media (hover: hover) and (min-width: 64rem) {
-  .listing-strip:hover {
-    --listing-strip-thumb: 5.5rem;
-  }
 }
 
 .listing-strip__tools {
@@ -1175,7 +1153,7 @@
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     border: 0;
   }
 

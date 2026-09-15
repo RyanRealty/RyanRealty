@@ -1,7 +1,8 @@
 /**
  * Homepage Researchy 1–8. Same object lives on homepage-v6 parity +
- * taste-catalog so Mini can quote beats verbatim. Every beat string is
- * rendered on the page (section claims) — a boolean is not evidence.
+ * taste-catalog so Mini can quote beats verbatim. Beats are demonstrated
+ * by the live page (inventory, tabs, rails, place counts) — not narrated
+ * as visitor copy. homeBriefText stays for tests and the gate.
  *
  * Source: design_system/public/references/homepage-v6.md (Redfin live
  * signal · Stripe composed object · Stage + Pulse) and the homepage-v6

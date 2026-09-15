@@ -19,14 +19,6 @@
 
 .home-featured-community__heading { margin: 0; }
 
-.home-featured-community__brief {
-  margin: 0;
-  max-width: var(--v3-measure-text);
-  color: var(--v3-ink);
-  font-size: var(--v3-size-body);
-  line-height: var(--v3-leading-body);
-}
-
 .home-featured-community__empty {
   margin: 0;
   color: var(--v3-ink);
