@@ -8,12 +8,18 @@
  */
 import type { ListingTile } from '@/lib/data/types/listing'
 import { REPORT_CITY_LABELS } from '@/lib/data/geo/report-cities'
-import { publishListingCardBadges } from '@/lib/listing/publish-listing-card-badges'
+import {
+  publishListingCardBadges,
+  publishListingDropBadge,
+} from '@/lib/listing/publish-listing-card-badges'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingTileHref } from '@/lib/slug'
 import type { V3ListingRowBadge } from '@/components/site/v3'
-import type { ListingCardExtras } from '@/lib/data/listings/attachListingCardExtras'
+import type {
+  ListingCardExtras,
+  ListingCardPriceDrop,
+} from '@/lib/data/listings/attachListingCardExtras'
 
 export type HomeRailCard = {
   listingKey: string
@@ -63,10 +69,21 @@ function statusLabel(status: ListingTile['status']): string | null {
   return null
 }
 
+function currentDrop(
+  tile: ListingTile,
+  drops: ReadonlyMap<string, ListingCardPriceDrop>,
+): ListingCardPriceDrop | null {
+  const drop = drops.get(tile.listingKey)
+  if (!drop || tile.listPrice == null || !Number.isFinite(tile.listPrice)) return null
+  if (drop.previousPrice <= tile.listPrice) return null
+  return drop
+}
+
 function toCard(
   tile: ListingTile,
   nowMs: number,
   openHouseLabels: Record<string, string>,
+  priceDrops: ReadonlyMap<string, ListingCardPriceDrop>,
 ): HomeRailCard | null {
   if (!isPhotographedPriced(tile)) return null
   const street = publishStreetLine({
@@ -76,11 +93,15 @@ function toCard(
   })
   if (!street) return null
 
+  const drop = currentDrop(tile, priceDrops)
   const badges = publishListingCardBadges({
     nowMs,
     standardStatus: tile.status,
     onMarketDate: tile.onMarketDate,
-    priceDropCount: tile.priceDropCount,
+    listPrice: tile.listPrice,
+    originalListPrice: drop?.previousPrice ?? null,
+    priceDropAmount: drop ? drop.previousPrice - tile.listPrice! : null,
+    lastPriceChangeTimestamp: drop?.at ?? null,
     hasVirtualTour: tile.hasVirtualTour,
     hasTourUrl: Boolean(tile.tourUrl),
     openHouseLabel: openHouseLabels[tile.listingKey] ?? null,
@@ -123,6 +144,7 @@ function takeCards(
   tiles: readonly ListingTile[],
   nowMs: number,
   openHouseLabels: Record<string, string>,
+  priceDrops: ReadonlyMap<string, ListingCardPriceDrop>,
   limit = RAIL_CARD_CAP,
   /** Keys a more specific shelf already claimed. A house leads one shelf. */
   taken: ReadonlySet<string> = new Set(),
@@ -133,7 +155,7 @@ function takeCards(
     if (out.length >= limit) break
     if (seen.has(tile.listingKey)) continue
     if (taken.has(tile.listingKey)) continue
-    const card = toCard(tile, nowMs, openHouseLabels)
+    const card = toCard(tile, nowMs, openHouseLabels, priceDrops)
     if (!card) continue
     seen.add(tile.listingKey)
     out.push(card)
@@ -161,9 +183,12 @@ export function homeRailRows(
     priceCutsHref: string
     newHref: string
     openHouseLabels?: Record<string, string>
+    /** Latest current activity_events price drops. Stale tile.priceDropCount is not a drop. */
+    priceDrops?: ReadonlyMap<string, ListingCardPriceDrop>
   },
 ): HomeRailRow[] {
   const openHouseLabels = opts.openHouseLabels ?? {}
+  const priceDrops = opts.priceDrops ?? new Map()
 
   // ONE HOUSE, ONE SHELF (2026-09-08 evaluator: 3027 Polarstar Avenue led both
   // the nearby rail and the price-cuts rail, so the page opened with the same
@@ -172,9 +197,10 @@ export function homeRailRows(
   // shelves are built first and the local shelf is built from what is left —
   // it draws from the whole active pool and loses nothing but the repeats.
   const cuts = takeCards(
-    tiles.filter((t) => (t.priceDropCount ?? 0) > 0),
+    tiles.filter((t) => currentDrop(t, priceDrops) != null),
     opts.nowMs,
     openHouseLabels,
+    priceDrops,
   )
   const cutKeys = new Set(cuts.map((c) => c.listingKey))
 
@@ -186,6 +212,7 @@ export function homeRailRows(
     }),
     opts.nowMs,
     openHouseLabels,
+    priceDrops,
     RAIL_CARD_CAP,
     cutKeys,
   )
@@ -193,13 +220,16 @@ export function homeRailRows(
   const claimed = new Set([...cutKeys, ...fresh.map((c) => c.listingKey)])
   const bendArea = tiles.filter((t) => BEND_AREA.has((t.city ?? '').trim().toLowerCase()))
   const localPool = bendArea.length >= 3 ? bendArea : tiles
-  const deduped = takeCards(localPool, opts.nowMs, openHouseLabels, RAIL_CARD_CAP, claimed)
+  const deduped = takeCards(localPool, opts.nowMs, openHouseLabels, priceDrops, RAIL_CARD_CAP, claimed)
   // The lead shelf is the one that may not go missing. The live pool is 3,000
   // tiles (HOME_TILE_FETCH) against at most 24 claimed keys, so the exclusion
   // never bites there; on a pool small enough that it does, a repeated house
   // beats no shelf at all, and the page says so by having one rail instead of
   // three.
-  const local = deduped.length >= 3 ? deduped : takeCards(localPool, opts.nowMs, openHouseLabels)
+  const local =
+    deduped.length >= 3
+      ? deduped
+      : takeCards(localPool, opts.nowMs, openHouseLabels, priceDrops)
 
   const rows: HomeRailRow[] = []
   if (local.length >= 3) {
@@ -254,7 +284,7 @@ export function enrichHomeRailRows(
   extras: Map<string, ListingCardExtras>,
 ): HomeRailRow[] {
   if (extras.size === 0) return rows
-  return rows.map((row) => ({
+  const mapped = rows.map((row) => ({
     ...row,
     cards: row.cards.map((card) => {
       const extra = extras.get(card.listingKey)
@@ -270,7 +300,43 @@ export function enrichHomeRailRows(
           tourLabel = 'Video tour'
         }
       }
-      return { ...card, photoUrls, tourUrl, hasTour, tourLabel }
+      const drop =
+        extra.priceDrop &&
+        card.price != null &&
+        Number.isFinite(card.price) &&
+        extra.priceDrop.previousPrice > card.price
+          ? extra.priceDrop
+          : null
+      const dropLabel = drop
+        ? publishListingDropBadge({
+            lastPriceChangeTimestamp: drop.at,
+            priceDropAmount: drop.previousPrice - card.price!,
+            listPrice: card.price,
+            originalListPrice: drop.previousPrice,
+          })
+        : null
+      const badges = card.badges.filter((b) => b.kind !== 'drop')
+      if (dropLabel) {
+        const videoIdx = badges.findIndex((b) => b.kind === 'video')
+        const next = { kind: 'drop' as const, label: dropLabel }
+        if (videoIdx >= 0) badges.splice(videoIdx, 0, next)
+        else badges.push(next)
+      }
+      return {
+        ...card,
+        photoUrls,
+        tourUrl,
+        hasTour,
+        tourLabel,
+        badges: badges.slice(0, 3),
+      }
     }),
   }))
+  return mapped
+    .map((row) =>
+      row.id === 'homes-price-cuts'
+        ? { ...row, cards: row.cards.filter((c) => c.badges.some((b) => b.kind === 'drop')) }
+        : row,
+    )
+    .filter((row) => row.id !== 'homes-price-cuts' || row.cards.length >= 3)
 }

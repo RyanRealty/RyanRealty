@@ -28,6 +28,14 @@ export const MANNERED_EXPLAINER_RES = Object.freeze([
   /recorded on the MLS that carries a coordinate/i,
   /hover a mark for/i,
   /the claim updates with your filter/i,
+  /the same homes the map above/i,
+  /the map above marks/i,
+  /as the map above marks/i,
+  /the map above draws from/i,
+  /a plat drawn on the map above/i,
+  /market section further down/i,
+  /counted on the market section/i,
+  /with price, beds and property type on the filters/i,
 ])
 
 /** ALL-CAPS or title-case verb plus a phone number in one visible label. */
@@ -35,6 +43,21 @@ export const ACTION_BILLBOARD_RE =
   /\b(?:CALL|TEXT|EMAIL|Call|Text|Email)\s+[+(]?\d[\d.()\s-]{5,}\d/
 
 const TEAM_COPY_FILES = Object.freeze(['app/team/page.tsx', 'app/about/_v3/AboutFaces.tsx'])
+
+const EXTRA_PUBLIC_COPY = Object.freeze({
+  'homepage-v6': [
+    'app/_v3/HomeHeroSearch.client.tsx',
+    'app/_v3/HomeHomesRails.tsx',
+    'app/_v3/HomeBrowsePlaces.tsx',
+    'app/_v3/HomeFeaturedCommunity.client.tsx',
+    'app/_v3/home-competitive-brief.ts',
+  ],
+  'listing-detail': [
+    'app/listing/[listingKey]/page.tsx',
+    'components/site/listing-detail/ListingFold.tsx',
+    'components/site/listing-detail/ListingHero.tsx',
+  ],
+})
 
 function isPlainObject(v) {
   return !!v && typeof v === 'object' && !Array.isArray(v)
@@ -90,6 +113,24 @@ export function publicCopyFilesFor({ route, kit } = {}) {
   if (kit === 'team') {
     for (const f of TEAM_COPY_FILES) {
       if (!files.includes(f)) files.push(f)
+    }
+  }
+  const extras = EXTRA_PUBLIC_COPY[kit] ?? []
+  for (const f of extras) {
+    if (!files.includes(f)) files.push(f)
+  }
+  if (typeof kit === 'string') {
+    if (kit.includes('subdivision') || kit === 'neighborhoods-index') {
+      const extra = 'app/subdivisions/[slug]/page.tsx'
+      if (!files.includes(extra)) files.push(extra)
+    }
+    if (kit.includes('community')) {
+      const extra = 'app/communities/[slug]/page.tsx'
+      if (!files.includes(extra)) files.push(extra)
+    }
+    if (kit.startsWith('city-') || kit === 'cities-index') {
+      const extra = 'app/cities/[slug]/page.tsx'
+      if (!files.includes(extra)) files.push(extra)
     }
   }
   return files

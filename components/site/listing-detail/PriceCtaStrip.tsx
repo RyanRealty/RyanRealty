@@ -20,7 +20,7 @@ import {
 } from '@/components/site/listing-detail/ListingShareButton'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
-import { publishListingDrop, publishListingEstPayment } from '@/lib/listing/publish-listing-ask'
+import { publishListingEstPayment } from '@/lib/listing/publish-listing-ask'
 import {
   listingPublishesClosePrice,
   publishListingPublishedPrice,
@@ -33,7 +33,10 @@ import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { publishListingLastDrop } from '@/lib/listing/publish-listing-history'
 import { publishListingListedBy } from '@/lib/listing/publish-listing-listed-by'
 import { formatPriceCompact } from '@/lib/format/money'
-import type { PublishedListingDropMark } from '@/lib/listing/publish-listing-drop-mark'
+import {
+  publishListingDropMark,
+  type PublishedListingDropMark,
+} from '@/lib/listing/publish-listing-drop-mark'
 import type { PublishedListingPillRead } from '@/lib/listing/publish-listing-pill-read'
 import { ActionSwapText } from '@/components/motion/action-swap'
 import { Button } from '@/components/ui/button'
@@ -139,10 +142,8 @@ type Props = {
   /** The saved-search capture on this page. The off-market secondary. */
   alertsHref?: string
   /**
-   * SITE-45. The newest price cut as two points (publishListingDropMark, off
-   * the same history rail): drawn as a slope mark beside the price, hover or
-   * tap for the two prices, the percent and the date. Null draws the label
-   * the strip always printed.
+   * SITE-45 / Matt 2026-09-15. Dated cut from publishListingDropMark.
+   * Omit to derive from `history`. Pass null to force no mark (tests).
    */
   dropMark?: PublishedListingDropMark | null
   /**
@@ -183,7 +184,7 @@ export function PriceCtaStrip({
   textHref,
   similarHref = '#similar',
   alertsHref = '#listing-like-alerts',
-  dropMark = null,
+  dropMark,
   read = null,
   className,
 }: Props) {
@@ -256,18 +257,6 @@ export function PriceCtaStrip({
     sqft: livingSqft,
     acres: listing.lotSizeAcres,
   }).join(' · ')
-  // "Down $150,000 from $1,250,000" reads as a price cut. Off market the
-  // headline figure is the CLOSE price, so the same subtraction silently
-  // becomes sold-versus-asked wearing a price-cut label — two different claims
-  // in one sentence (§0.5). Sold versus asked is the sold instrument's, stated
-  // as what it is; the price cuts stay in the history rail below.
-  const publishedDrop = offMarket
-    ? null
-    : publishListingDrop({
-        listPrice: headlinePrice,
-        originalListPrice: listing.originalListPrice,
-        historyPrices: history?.map((row) => row.price) ?? [],
-      })
   const contactKey = publishListingContactKey({
     listNumber: listing.listNumber,
     listingKey: listing.listingKey,
@@ -291,6 +280,7 @@ export function PriceCtaStrip({
       })?.label ?? null
     : null
   const lastDrop = offMarket || !history ? null : publishListingLastDrop(history)
+  const datedDrop = dropMark !== undefined ? dropMark : publishListingDropMark(history)
   const listedBy = publishListingListedBy({
     listAgentName: listing.listAgentName,
     listOfficeName: listing.listOfficeName,
@@ -371,22 +361,13 @@ export function PriceCtaStrip({
         <Price value={headlinePrice} exact />
         {estPayment ? <span className="listing-ask__est">{estPayment}</span> : null}
       </p>
-      {dropMark && !offMarket ? (
-        /* The cut as two prices at rest, not a 22px slope (Matt 2026-09-10). */
+      {datedDrop && !offMarket ? (
+        /* The cut as two prices at rest, with the date (Matt 2026-09-15). */
         <div className="mt-1.5">
           <PriceDropMark
-            mark={dropMark}
-            label={lastDrop?.label ?? `Price drop ${formatPriceCompact(dropMark.drop)}`}
+            mark={datedDrop}
+            label={lastDrop?.label ?? `Price drop ${formatPriceCompact(datedDrop.drop)}`}
           />
-        </div>
-      ) : publishedDrop ? (
-        <div className="mt-1.5 text-sm font-semibold" style={{ color: 'var(--navy)' }}>
-          Down <Price value={publishedDrop.drop} exact /> from{' '}
-          <Price value={publishedDrop.original} exact />
-        </div>
-      ) : lastDrop ? (
-        <div className="mt-1.5 text-sm font-semibold" style={{ color: 'var(--navy)' }}>
-          {lastDrop.label}
         </div>
       ) : null}
       <div className="listing-face__price-row">

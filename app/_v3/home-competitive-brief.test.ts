@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { HOME_COMPETITIVE_BRIEF, homeBriefText } from './home-competitive-brief'
 
@@ -11,5 +13,17 @@ describe('HOME_COMPETITIVE_BRIEF', () => {
     }
     expect(homeBriefText('1')).toBe('The homepage opens with live inventory in the first viewport.')
     expect(homeBriefText('8')).toBe('Browse places with live town counts, not identical empty chips.')
+  })
+
+  it('does not narrate beats on the four public home files', () => {
+    for (const rel of [
+      'app/_v3/HomeHeroSearch.client.tsx',
+      'app/_v3/HomeHomesRails.tsx',
+      'app/_v3/HomeBrowsePlaces.tsx',
+      'app/_v3/HomeFeaturedCommunity.client.tsx',
+    ]) {
+      const src = readFileSync(resolve(rel), 'utf8')
+      expect(src).not.toMatch(/homeBriefText\(/)
+    }
   })
 })

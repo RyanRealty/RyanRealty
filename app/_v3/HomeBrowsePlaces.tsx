@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/carousel'
 import { AnimatedNumber } from '@/components/motion/number'
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from '@/components/site/v3'
-import { homeBriefText } from './home-competitive-brief'
 import './home-browse-places.css'
 
 export type HomePlaceDoor = {
@@ -127,7 +126,6 @@ export function HomeBrowsePlaces({
         <V3Heading level={2} id="places-heading" className="home-browse-places__heading">
           {heading}
         </V3Heading>
-        <p className="home-browse-places__brief">{homeBriefText('8')}</p>
       </div>
 
       {shown.map((run) => {

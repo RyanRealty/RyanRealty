@@ -9,8 +9,13 @@ describe('listing remainder composition', () => {
   it('does not start the listing hero on a 320 Spark thumb', () => {
     expect(HERO).toContain('preferListingMosaicPhotoUrl')
     expect(HERO).toMatch(/const live = preferListingMosaicPhotoUrl\(src\)/)
+    expect(HERO).toMatch(/src=\{live\}/)
+    expect(HERO).not.toContain('listing-strip__toggle')
+    expect(HERO).not.toContain('stripOpen')
     expect(PAGE).toContain('LISTING_FIELD_LEAD_PHOTO_SIZE')
     expect(PAGE).toContain('LISTING_MOSAIC_LEAD_PHOTO_SIZE')
+    const CSS = readFileSync(resolve('components/site/listing-detail/listing-detail.css'), 'utf8')
+    expect(CSS).toMatch(/\.listing-mosaic__slide img[\s\S]*object-fit:\s*contain/)
   })
 
   it('locks Save and Share on the listing page so they cannot silently vanish', () => {
