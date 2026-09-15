@@ -100,9 +100,20 @@
   color: var(--v3-navy);
 }
 
-.contact-ask .v3-ask__control--select {
+.contact-ask .v3-ask__control--select,
+.contact-field__select {
+  width: 100%;
+  min-height: var(--v3-tap);
   background: var(--v3-surface);
+  border: 1px solid var(--v3-edge);
   border-radius: var(--v3-radius-mark);
+  color: var(--v3-ink);
+}
+
+.contact-ask .contact-field__select[data-state='open'],
+.contact-ask .contact-field__select:focus-visible {
+  border-color: var(--v3-navy);
+  box-shadow: 0 0 0 3px var(--v3-wash);
 }
 
 .contact-ask-root {
@@ -123,4 +134,12 @@
 .contact-ask__taste [data-taste] {
   min-width: var(--v3-tap);
   min-height: var(--v3-tap);
+}
+
+.contact-hours-live {
+  position: relative;
+}
+
+.contact-hours-live__taste {
+  top: 0;
 }

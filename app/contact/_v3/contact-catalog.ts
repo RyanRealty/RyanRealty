@@ -10,5 +10,12 @@
  */
 import { Input as BeuiInput } from '@/components/motion/input'
 import { Input as ShadcnInput } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
-export { BeuiInput, ShadcnInput }
+export { BeuiInput, ShadcnInput, Select, SelectContent, SelectItem, SelectTrigger, SelectValue }

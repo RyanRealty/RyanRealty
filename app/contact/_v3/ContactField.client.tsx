@@ -7,7 +7,15 @@
  */
 import { useEffect, useId, useRef, useState } from 'react'
 import { animate } from 'motion/react'
-import { BeuiInput } from './contact-catalog'
+import {
+  BeuiInput,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  ShadcnInput,
+} from './contact-catalog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
@@ -41,11 +49,13 @@ export function ContactField({
   hint,
   rows = 5,
   className,
+  options,
 }: V3InputProps) {
   const demo = useContactFieldDemo()
   const reactId = useId()
   const fieldId = id || reactId
   const area = kind === 'textarea'
+  const select = kind === 'select'
   const [value, setValue] = useState(defaultValue ?? '')
   const [error, setError] = useState<string | boolean>(false)
   const [success, setSuccess] = useState(false)
@@ -96,6 +106,38 @@ export function ContactField({
     }
     setError(false)
     setSuccess(Boolean(required && el.value.trim()))
+  }
+
+  if (select) {
+    return (
+      <div className={cn('contact-field', className)}>
+        <Label htmlFor={fieldId} className="contact-field__label">
+          {label}
+          {required ? null : <span className="contact-field__optional"> optional</span>}
+        </Label>
+        {hint ? <span className="contact-field__hint">{hint}</span> : null}
+        <ShadcnInput type="hidden" name={name} value={value} tabIndex={-1} aria-hidden />
+        <Select
+          value={value || undefined}
+          onValueChange={(next) => {
+            setValue(next)
+            setError(false)
+            setSuccess(Boolean(required && next.trim()))
+          }}
+        >
+          <SelectTrigger id={fieldId} className="w-full contact-field__select">
+            <SelectValue placeholder={placeholder ?? label} />
+          </SelectTrigger>
+          <SelectContent>
+            {(options ?? []).map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    )
   }
 
   if (area) {

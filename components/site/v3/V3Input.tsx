@@ -18,7 +18,9 @@ import './V3Input.css'
 
 const Field = BeuiInput || Input
 
-export type V3InputKind = 'text' | 'email' | 'tel' | 'textarea'
+export type V3InputKind = 'text' | 'email' | 'tel' | 'textarea' | 'select'
+
+export type V3InputOption = { value: string; label: string }
 
 export type V3InputProps = {
   id: string
@@ -33,6 +35,7 @@ export type V3InputProps = {
   hint?: string
   rows?: number
   className?: string
+  options?: readonly V3InputOption[]
 }
 
 function SuccessCheck() {
@@ -68,9 +71,11 @@ export function V3Input({
   hint,
   rows = 5,
   className,
+  options,
 }: V3InputProps) {
   const area = kind === 'textarea'
-  const controlClass = cn('v3-input__control', area && 'v3-input__control--area')
+  const select = kind === 'select'
+  const controlClass = cn('v3-input__control', area && 'v3-input__control--area', select && 'v3-input__control--select')
 
   return (
     <div className={cn('v3-input', className)}>
@@ -80,7 +85,21 @@ export function V3Input({
       </label>
       {hint ? <span className="v3-input__hint">{hint}</span> : null}
       <div className="v3-input__field">
-        {area ? (
+        {select ? (
+          <select
+            id={id}
+            name={name}
+            className={controlClass}
+            required={required}
+            defaultValue={defaultValue}
+          >
+            {(options ?? []).map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        ) : area ? (
           <textarea
             id={id}
             name={name}

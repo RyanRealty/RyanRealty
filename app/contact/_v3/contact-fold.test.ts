@@ -35,6 +35,14 @@ describe('contact fold (SITE-80)', () => {
     expect(ask).toContain('Field={ContactField}')
     expect(ask).toContain('data-taste="error-open"')
     expect(ask).toContain('data-taste="success-open"')
+    expect(catalog).toMatch(/from '@\/components\/ui\/select'/)
+  })
+
+  it('puts house-faces and hours-empty on the default fold', () => {
+    const src = readFileSync(PAGE, 'utf8')
+    expect(src).toContain('size="compact"')
+    expect(src).toContain('ContactHoursLive')
+    expect(src).toContain('from ${reviewSummary.count} Google reviews')
   })
 
   it('puts the Bend office street on the default fold', () => {
@@ -51,10 +59,11 @@ describe('contact fold (SITE-80)', () => {
     expect(css).not.toMatch(/#(?:102742|faf8f4)/i)
   })
 
-  it('keeps the lead still at the hero-width floor beside Call on wide', () => {
+  it('keeps house-doors hierarchy and the hero-width lead still', () => {
     const css = readFileSync(FOLD_CSS, 'utf8')
-    expect(css).toContain('width: 20rem')
-    expect(css).toContain('grid-template-columns: 20rem minmax(0, 1fr)')
-    expect(css).toContain('Call | Text | Email | Schedule')
+    expect(css).toContain('min-width: 20rem')
+    expect(css).not.toContain('repeat(3, minmax(0, 1fr))')
+    expect(css).toContain('about-faces--compact')
+    expect(css).toContain('order: 3')
   })
 })
