@@ -8,4 +8,9 @@ describe('cities-catalog SITE-92', () => {
     expect(src).toMatch(/from ['"]@\/components\/motion\/insight-cards['"]/)
     expect(src).toMatch(/from ['"]@\/components\/motion\/number['"]/)
   })
+
+  it('passes V3AlertsStrip the required stickyLabel', () => {
+    const src = readFileSync(new URL('./CitiesAlertStrip.client.tsx', import.meta.url), 'utf8')
+    expect(src).toMatch(/stickyLabel=\{`\$\{PLACE\} listing alerts`\}/)
+  })
 })

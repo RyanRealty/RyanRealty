@@ -85,6 +85,7 @@ export function CitiesAlertStrip({
       trap={TRAP}
       emphasis="primary"
       stickyAfter="featured-cities"
+      stickyLabel={`${PLACE} listing alerts`}
       onSubmit={submit}
     />
   )
