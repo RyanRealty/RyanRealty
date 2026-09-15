@@ -10,13 +10,14 @@ import { useCallback, useMemo, useState } from 'react'
 // (V3PlaceDocuments → lib/data → next/headers), which breaks this client module
 // under webpack. V3Ask is itself a client primitive.
 import { V3Ask, type V3AskField, type V3AskResult } from '@/components/site/v3/V3Ask.client'
-import { V3Input } from '@/components/site/v3/V3Input'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import './contact-ask.css'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
 import { submitContactForm } from '../actions'
 import { publishTourConfirmation } from '@/lib/contact/publish-tour-confirmation'
 import { CONTACT_FIELD_IDS } from './contact-constants'
+import { ContactField } from './ContactField.client'
+import { ContactFieldDemoContext, type ContactFieldDemo } from './contact-field-demo'
 
 const BASE_INQUIRY_OPTIONS = [
   { value: 'Buying', label: 'Buying' },
@@ -48,6 +49,7 @@ export function ContactAsk({
 }) {
   const isTour = intent === 'tour'
   const [smsConsent, setSmsConsent] = useState(false)
+  const [fieldDemo, setFieldDemo] = useState<ContactFieldDemo>('idle')
 
   const inquiryOptions = useMemo(() => {
     const extra =
@@ -123,6 +125,9 @@ export function ContactAsk({
       // The server writes the confirmation from this: "your tour request" reads
       // wrong on a plain question, and the reverse reads worse.
       if (intent) formData.set('intent', intent)
+      if (!answers.name?.trim() || !answers.email?.trim() || (!isTour && !answers.message?.trim())) {
+        return { ok: false, message: 'Fill the required fields. The boxes that need a value will shake.' }
+      }
       const result = await submitContactForm(formData)
       if (!result.success) {
         return { ok: false, message: result.error || 'The message did not send. Call or text instead, or try again.' }
@@ -152,18 +157,28 @@ export function ContactAsk({
   )
 
   return (
-    <V3Ask
-      id="write"
-      className="contact-ask"
-      eyebrow="Talk to a broker"
-      heading={isTour ? 'Request a tour' : 'Send a message'}
-      headingLevel={2}
-      lede={isTour && listingSummary ? listingSummary : undefined}
-      fields={fields}
-      Field={V3Input}
-      consent={<SmsConsentDisclosure checked={smsConsent} onCheckedChange={setSmsConsent} />}
-      submitLabel={isTour ? 'Request a tour' : 'Send message'}
-      onSubmit={send}
-    />
+    <ContactFieldDemoContext.Provider value={fieldDemo}>
+      <V3Ask
+        id="write"
+        className="contact-ask"
+        eyebrow="Talk to a broker"
+        heading={isTour ? 'Request a tour' : 'Send a message'}
+        headingLevel={2}
+        lede={isTour && listingSummary ? listingSummary : undefined}
+        fields={fields}
+        Field={ContactField}
+        consent={<SmsConsentDisclosure checked={smsConsent} onCheckedChange={setSmsConsent} />}
+        submitLabel={isTour ? 'Request a tour' : 'Send message'}
+        onSubmit={send}
+      />
+      <div className="contact-ask__taste">
+        <button type="button" data-taste="error-open" onClick={() => setFieldDemo('error')}>
+          Show field error
+        </button>
+        <button type="button" data-taste="success-open" onClick={() => setFieldDemo('success')}>
+          Show field success
+        </button>
+      </div>
+    </ContactFieldDemoContext.Provider>
   )
 }

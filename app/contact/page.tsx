@@ -33,7 +33,7 @@ import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listi
 import { listingTileHref } from '@/lib/slug'
 import { formatDate } from '@/lib/format/date'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
-import { BROKERS, CONTACT } from '@/lib/brand/contact'
+import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
 import { valuationHref } from '@/lib/site/valuation-href'
 import {
   V3_ROOT_CLASS,
@@ -160,6 +160,20 @@ export default async function ContactPage({ searchParams }: PageProps) {
     '@type': 'ContactPage',
     name: 'Contact Ryan Realty',
     url: `${baseUrl}/contact`,
+    mainEntity: {
+      '@type': ['RealEstateAgent', 'LocalBusiness'],
+      name: BRAND.name,
+      telephone: CONTACT.phoneDirect,
+      email: CONTACT.email.primary,
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: BRAND.address.street,
+        addressLocality: BRAND.address.city,
+        addressRegion: BRAND.address.region,
+        postalCode: BRAND.address.postalCode,
+        addressCountry: BRAND.address.country,
+      },
+    },
   }
   const breadcrumbJsonLd = generateBreadcrumbSchema([
     { name: 'Home', url: baseUrl },
@@ -190,6 +204,11 @@ export default async function ContactPage({ searchParams }: PageProps) {
             },
           }
         : {}),
+    },
+    {
+      label: BRAND.address.street,
+      detail: `${BRAND.address.city}, ${BRAND.address.region} ${BRAND.address.postalCode}`,
+      href: BRAND.social.googleBusinessProfile,
     },
     ...(listingHref
       ? [{ label: listingSummary || 'The listing you asked about', href: listingHref }]

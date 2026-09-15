@@ -2617,6 +2617,10 @@
           "url": "https://ui.shadcn.com/docs/components/input",
           "job": "Form fields. We already installed components/ui/input.tsx — restyle in v3."
         }
+      ],
+      "demoStates": [
+        "error-open=[data-taste=error-open]@#write!click",
+        "success-open=[data-taste=success-open]@#write!click"
       ]
     },
     "invest": {
