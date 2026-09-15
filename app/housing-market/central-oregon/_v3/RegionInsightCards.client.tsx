@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * Region fold InsightCards. Three distinct cards (sale / compare / ask),
- * pointer-scrub on the house chart updates DigitSwap (beautifului-insight +
- * house-chart hover). Animate lives on the number, not on the plot.
+ * Region fold InsightCards. The card (claim + DigitSwap + scrub visual +
+ * pill) is #market-insights — year-open frames that, not the Insights N
+ * pager. Animate is the beUI number control on the sourced face.
  */
 
 import Link from 'next/link'
@@ -13,7 +13,7 @@ import { InsightCards } from '@/components/motion/insight-cards'
 import { V3Chart, type V3ChartRead } from '@/components/site/v3/V3Chart'
 import { V3_ROOT_CLASS } from '@/components/site/v3'
 import { cn } from '@/lib/utils'
-import { insightFaceForRead, insightIsScrubbing, type RegionInsightPage } from './region-figures'
+import { insightFaceForRead, type RegionInsightPage } from './region-figures'
 
 export type RegionInsightCardsProps = {
   pages: readonly RegionInsightPage[]
@@ -47,8 +47,7 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
   const current = pages[safe]
   if (!current) return null
 
-  const scrubbing = insightIsScrubbing(current, read)
-  const face = insightFaceForRead(current, scrubbing ? read : null)
+  const face = insightFaceForRead(current, read)
   const segments = current.segments ?? []
   const safeSegment = Math.max(0, Math.min(Math.max(segments.length - 1, 0), segment))
   const chosen = segments[safeSegment]
@@ -100,7 +99,6 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
           key={`${current.key}-${heroValue}`}
           value={heroValue}
           label={heroLabel}
-          reveal={scrubbing}
           animationKey={`${current.key}-${heroValue}`}
           className="insight-cards__swap"
         />
@@ -111,7 +109,6 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
             key={`${current.key}-b-${face.secondFigure}`}
             value={face.secondFigure}
             label={face.secondLabel}
-            reveal={scrubbing}
             animationKey={`${current.key}-b-${face.secondFigure}`}
             className="insight-cards__swap"
           />

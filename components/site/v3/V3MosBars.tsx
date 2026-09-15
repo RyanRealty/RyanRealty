@@ -35,8 +35,8 @@ export type V3MosBarsProps = {
   id?: string
   className?: string
   /**
-   * beUI DigitSwapPreview on the two sourced counts (rest masked, Animate
-   * reveals). Opt-in — other MOS mounts keep the count-up face.
+   * beUI DigitSwapPreview on the two sourced counts (slots + Animate).
+   * Opt-in — other MOS mounts keep the count-up face.
    */
   replay?: boolean
 }
@@ -76,13 +76,12 @@ export function V3MosBars({
   if (!plot) return null
 
   // Whole-number faces count up (beui-number / rareui); fractional sales stay static.
-  // `replay` is the DigitSwapPreview: masked rest + Animate, not a mount count-up.
-  const valueFace = (label: string, value: number, name: string) => {
+  // `replay` is the DigitSwapPreview: live count in slots + Animate.
+  const valueFace = (label: string, value: number) => {
     if (replay) {
       return (
         <DigitSwapReplay
           value={label}
-          label={name}
           animationKey={`${id}-${label}`}
           className="v3-mos__swap"
         />
@@ -113,7 +112,7 @@ export function V3MosBars({
         {plot.bars.map((bar) => {
           const value = bar.index === 0 ? homesValue : salesValue
           const rowClass = cn('v3-mos__barrow', replay && 'v3-mos__barrow--replay')
-          const face = valueFace(bar.label, value, bar.name)
+          const face = valueFace(bar.label, value)
           const rowProps = {
             className: rowClass,
             'aria-describedby': open ? tipId : undefined,

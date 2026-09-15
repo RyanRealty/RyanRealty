@@ -51,7 +51,7 @@ export function InsightCards({
   }
 
   return (
-    <div id={id} className={cn('insight-cards', className)} data-insight-page={safe}>
+    <div className={cn('insight-cards', className)} data-insight-page={safe}>
       <div className="insight-cards__pager" role="group" aria-label={`${title} pages`}>
         <span className="insight-cards__pager-face">
           <span className="insight-cards__pager-title">{title}</span>
@@ -92,25 +92,27 @@ export function InsightCards({
           </button>
         </span>
       </div>
-      <p className="insight-cards__claim">{claim}</p>
-      {figure ? (
-        <div className="insight-cards__figures">
-          <p className="insight-cards__hero">
-            <span className="insight-cards__hero-value">{figure}</span>
-            {figureLabel ? <span className="insight-cards__hero-label">{figureLabel}</span> : null}
-          </p>
-          {secondFigure ? (
+      <div id={id} className="insight-cards__card">
+        <p className="insight-cards__claim">{claim}</p>
+        {figure ? (
+          <div className="insight-cards__figures">
             <p className="insight-cards__hero">
-              <span className="insight-cards__hero-value">{secondFigure}</span>
-              {secondLabel ? (
-                <span className="insight-cards__hero-label">{secondLabel}</span>
-              ) : null}
+              <span className="insight-cards__hero-value">{figure}</span>
+              {figureLabel ? <span className="insight-cards__hero-label">{figureLabel}</span> : null}
             </p>
-          ) : null}
-        </div>
-      ) : null}
-      {visual ? <div className="insight-cards__visual">{visual}</div> : null}
-      {pill ? <div className="insight-cards__pill">{pill}</div> : null}
+            {secondFigure ? (
+              <p className="insight-cards__hero">
+                <span className="insight-cards__hero-value">{secondFigure}</span>
+                {secondLabel ? (
+                  <span className="insight-cards__hero-label">{secondLabel}</span>
+                ) : null}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        {visual ? <div className="insight-cards__visual">{visual}</div> : null}
+        {pill ? <div className="insight-cards__pill">{pill}</div> : null}
+      </div>
     </div>
   )
 }

@@ -132,28 +132,24 @@ export function maskDigits(value: string | number): string {
 }
 
 /**
- * beUI DigitSwapPreview — rest is the masked face; Animate reveals the
- * sourced number. `reveal` lets a parent (chart scrub) open the live face
- * the same way the preview's Animate does.
+ * beUI DigitSwapPreview — fixed slots + Animate toggling the same sourced
+ * face between digits and a • mask. Rest shows the live count (the preview
+ * starts masked; hiding $664K / 1,502 / 325 read as missing figures).
  * Source: https://beui.dev/components/motion/number
  */
 export function DigitSwapReplay({
   value,
   label,
-  reveal = false,
   animationKey,
   className,
 }: {
   value: string | number
   /** Preview "Card number" label above the slots. */
   label?: string
-  /** Parent opened the live face (pointer-scrub). */
-  reveal?: boolean
   animationKey?: string | number
   className?: string
 }) {
-  const [toggled, setToggled] = useState(false)
-  const revealed = reveal ? !toggled : toggled
+  const [revealed, setRevealed] = useState(true)
   const face = revealed ? String(value) : maskDigits(value)
   return (
     <span className={cn("digit-swap-replay", className)}>
@@ -169,7 +165,7 @@ export function DigitSwapReplay({
         className="digit-swap-replay__btn"
         aria-label={revealed ? "Animate masked number" : "Animate the number"}
         aria-pressed={revealed}
-        onClick={() => setToggled((current) => !current)}
+        onClick={() => setRevealed((current) => !current)}
       >
         Animate
       </button>

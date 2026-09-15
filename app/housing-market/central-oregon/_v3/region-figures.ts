@@ -175,7 +175,7 @@ export function buildRegionInsightPages(
     const year = String(newest.name)
     pages.push({
       key: `sale-${year}`,
-      claim: `${year} median sale by month`,
+      claim: `${year} median sale ${String(newestLast.label)} in ${String(newestLast.tick)}`,
       figure: String(newestLast.label),
       figureLabel: `${year} median sale`,
       readName: String(newest.name),
@@ -200,7 +200,7 @@ export function buildRegionInsightPages(
     if (priorSame) {
       pages.push({
         key: `compare-${String(newest.name)}-${String(prior.name)}`,
-        claim: `${tick} median sale, ${String(newest.name)} and ${String(prior.name)}`,
+        claim: `${tick} ${String(newest.name)} median sale ${String(newestLast.label)}; ${String(prior.name)} was ${String(priorSame.label)}`,
         figure: String(priorSame.label),
         figureLabel: `${String(prior.name)} same month`,
         secondFigure: String(newestLast.label),

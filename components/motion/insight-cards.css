@@ -44,6 +44,13 @@
   cursor: pointer;
 }
 
+.insight-cards__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
 .insight-cards__claim {
   margin: 0;
   max-width: 40rem;
