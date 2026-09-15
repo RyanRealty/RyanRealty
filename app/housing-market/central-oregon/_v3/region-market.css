@@ -135,11 +135,16 @@
   text-underline-offset: 0.15em;
 }
 
-#market-insights .insight-chart-stage .v3-chart__plot,
-#market-insights .insight-chart-stage .v3-chart__svg,
-#market-insights .insight-chart-stage .v3-chart__hover {
-  max-height: 166px;
-  height: 166px;
+#market-insights .insight-chart-stage.insight-chart-stage--fill .v3-chart__plot,
+#market-insights .insight-chart-stage.insight-chart-stage--fill .v3-chart__svg,
+#market-insights .insight-chart-stage.insight-chart-stage--fill .v3-chart__hover {
+  height: calc(100vh - 18rem);
+  min-height: 22rem;
+  max-height: none;
+}
+
+#market-insights .insight-chart-stage .v3-chart__tip {
+  display: none;
 }
 
 @media (max-width: 63.99rem) {
@@ -160,8 +165,7 @@
     gap: var(--v3-space-xs);
   }
 
-  #central-oregon-mos .v3-mos__plain,
-  #central-oregon-mos .v3-source {
+  #central-oregon-mos .v3-mos__plain {
     display: none;
   }
 
@@ -177,15 +181,22 @@
     min-height: var(--v3-tap);
   }
 
-  #market-insights .insight-chart-stage .v3-chart__plot,
-  #market-insights .insight-chart-stage .v3-chart__svg,
-  #market-insights .insight-chart-stage .v3-chart__hover {
-    max-height: 7.5rem;
-    height: 7.5rem;
+  #market-insights[data-insight-kind='compare'] .insight-chart-stage {
+    display: none;
   }
 
-  #market-insights .insight-chart-stage {
-    height: 7.5rem;
+  #market-insights .insight-chart-stage.insight-chart-stage--fill {
+    min-height: 0;
+  }
+
+  #market-insights .insight-chart-stage.insight-chart-stage--fill .v3-chart,
+  #market-insights .insight-chart-stage.insight-chart-stage--fill .v3.v3-chart,
+  #market-insights .insight-chart-stage.insight-chart-stage--fill .v3-chart__plot,
+  #market-insights .insight-chart-stage.insight-chart-stage--fill .v3-chart__svg,
+  #market-insights .insight-chart-stage.insight-chart-stage--fill .v3-chart__hover {
+    height: 12rem;
+    min-height: 10rem;
+    max-height: 12rem;
   }
 
   #market .v3-instrument__action {

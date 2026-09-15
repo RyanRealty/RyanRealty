@@ -286,8 +286,8 @@ describe('demoStates are the capture the evaluator can actually see', () => {
 
   it('prints year-open and source-open specs for market-report-region', () => {
     const specs = demoStateSpecs(loaded, 'market-report-region')
-    expect(specs.some((s) => /year-open/.test(s) && /insight-chart-stage/.test(s) && /@#market-insights/.test(s) && /hover/.test(s))).toBe(true)
-    expect(specs.some((s) => /source-open/.test(s) && /v3-mos__barrow/.test(s) && /hover/.test(s))).toBe(true)
+    expect(specs.some((s) => /year-open/.test(s) && /data-insight-next/.test(s) && /@#market-insights/.test(s) && /click/.test(s))).toBe(true)
+    expect(specs.some((s) => /source-open/.test(s) && /v3-mos__animate/.test(s) && /click/.test(s))).toBe(true)
   })
 
   it('prints save-open, share-open, and gallery-open specs for listing-detail', () => {

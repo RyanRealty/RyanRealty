@@ -45,6 +45,8 @@ export type InsightCardsProps = {
   /** Official Compare/Anomaly pointer-scrub on the 166px stage. */
   pointCount?: number
   onScrub?: (index: number | null) => void
+  /** House-chart fill: long-view series owns the viewport. Official pointer-scrub stays on. */
+  fill?: boolean
 }
 
 export function InsightCards({
@@ -71,6 +73,7 @@ export function InsightCards({
   kind,
   pointCount = 0,
   onScrub,
+  fill = false,
 }: InsightCardsProps) {
   if (pageCount < 2) return null
   const safe = Math.max(0, Math.min(pageCount - 1, page))
@@ -168,7 +171,7 @@ export function InsightCards({
         {chrome}
         {stage ? (
           <div
-            className="insight-chart-stage"
+            className={cn('insight-chart-stage', fill && 'insight-chart-stage--fill')}
             data-insight-scrub="year"
             onPointerDown={(event) => scrubFromClientX(event.clientX, event.currentTarget)}
             onPointerMove={(event) => scrubFromClientX(event.clientX, event.currentTarget)}

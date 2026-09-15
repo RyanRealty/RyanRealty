@@ -103,17 +103,19 @@
 
 .v3-mos__animate {
   justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: var(--v3-tap);
   margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
+  padding: 0 var(--v3-space-sm);
+  border: var(--v3-rule-hairline);
+  border-radius: 6px;
   background: transparent;
   color: inherit;
   font: inherit;
   font-size: var(--v3-size-body-sm);
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
+  text-decoration: none;
   cursor: pointer;
 }
 

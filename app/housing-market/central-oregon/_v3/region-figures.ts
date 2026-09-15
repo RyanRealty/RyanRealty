@@ -152,6 +152,7 @@ export function insightIsScrubbing(
 export function insightFaceForRead(
   page: RegionInsightPage,
   read: InsightChartRead | null,
+  segment?: RegionInsightSegment,
 ): InsightFace {
   if (!read) {
     return {
@@ -191,6 +192,27 @@ export function insightFaceForRead(
       secondLabel: other?.name || page.secondLabel,
       figureSub: read.tick,
       secondSub: read.tick,
+    }
+  }
+  if (page.kind === 'anomaly') {
+    const sale = segment?.key === 'sale' || figure.startsWith('$')
+    if (sale) {
+      return {
+        claim: `Median sale ${figure} in ${read.tick}`,
+        figure,
+        figureLabel: segment?.label ?? 'Sale',
+        figureSub: read.tick,
+      }
+    }
+    const year = page.readName ?? ''
+    const offer = page.claim.match(/Days to an offer is \d+/)
+    return {
+      claim: offer
+        ? `${read.tick} ${year} closed ${figure} homes. ${offer[0]} over the last 90 days.`
+        : `${read.tick} ${year} closed ${figure} homes.`,
+      figure,
+      figureLabel: `${read.tick} closings`,
+      figureSub: read.tick,
     }
   }
   return { claim: page.claim, figure, figureLabel, figureSub: read.tick }
@@ -245,7 +267,6 @@ export function buildRegionInsightPages(
           yearPages: false,
           hover: false,
           stage: true,
-          restingRead: undefined,
         },
       })
     }
@@ -272,7 +293,6 @@ export function buildRegionInsightPages(
             yearPages: false,
             hover: false,
             stage: true,
-            restingRead: undefined,
           }
         : undefined
     const segments: RegionInsightSegment[] = [

@@ -138,6 +138,25 @@
   height: 166px;
 }
 
+.insight-chart-stage.insight-chart-stage--fill {
+  height: auto;
+  min-height: calc(100vh - 12rem);
+}
+
+.insight-chart-stage.insight-chart-stage--fill .v3-chart,
+.insight-chart-stage.insight-chart-stage--fill .v3.v3-chart {
+  height: auto;
+  min-height: calc(100vh - 12rem);
+}
+
+.insight-chart-stage.insight-chart-stage--fill .v3-chart__plot,
+.insight-chart-stage.insight-chart-stage--fill .v3-chart__svg,
+.insight-chart-stage.insight-chart-stage--fill .v3-chart__hover {
+  height: calc(100vh - 18rem);
+  min-height: 22rem;
+  max-height: none;
+}
+
 .insight-chart-stage .v3-chart,
 .insight-chart-stage .v3.v3-chart {
   height: 100%;
@@ -181,6 +200,12 @@
 .insight-chart-stage .v3-chart__hover {
   height: 166px;
   max-height: 166px;
+}
+
+.insight-chart-stage .v3-chart__tip,
+.insight-chart-stage .v3-chart__tip--flip,
+.insight-chart-stage .v3-chart__tip--resting {
+  display: none;
 }
 
 .insight-chart-tip {

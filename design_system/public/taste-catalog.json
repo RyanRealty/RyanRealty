@@ -2943,8 +2943,8 @@
         }
       ],
       "demoStates": [
-        "year-open=#market-insights .insight-chart-stage@#market-insights!hover",
-        "source-open=#central-oregon-mos .v3-mos__barrow!hover"
+        "year-open=#market-insights [data-insight-next]@#market-insights!click",
+        "source-open=#central-oregon-mos .v3-mos__animate@#central-oregon-mos!click"
       ]
     },
     "oregon-city": {

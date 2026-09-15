@@ -1,10 +1,11 @@
 'use client'
 
 /**
- * Region fold: official Insights Compare form. year-open is the official
- * year scrubber on insight-chart-stage (pointer X → Compare claims), not
- * house-chart hover. Prose stays outside the card. Next pages to
- * AnomalyCard (Closings/Sale). DigitSwapPreview replay lives on MOS.
+ * Region fold: official Insights pager + distinct Compare / Anomaly /
+ * Allocation claims. year-open clicks Next to Anomaly. The plot is a
+ * full house series (hover/scrub is the primary read) with the official
+ * beautifului pointer-scrub — not a cream V3Chart ChartTooltip on Compare.
+ * Claim follows the open month.
  */
 
 import Link from 'next/link'
@@ -172,10 +173,10 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
   const current = pages[safe]
   if (!current) return null
 
-  const face = insightFaceForRead(current, read)
   const segments = current.segments ?? []
   const safeSegment = Math.max(0, Math.min(Math.max(segments.length - 1, 0), segment))
   const chosen = current.kind === 'compare' ? undefined : segments[safeSegment]
+  const face = insightFaceForRead(current, read, chosen)
   const openChart = chosen?.chart ?? current.chart
   const heroValue = read || current.kind === 'compare' ? face.figure : (chosen?.figure ?? face.figure)
   const heroLabel = read || current.kind === 'compare' ? face.figureLabel : (chosen?.label ?? face.figureLabel)
@@ -220,7 +221,7 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
         setSegment(0)
         setPage(index)
       }}
-      claim={current.claim}
+      claim={face.claim}
       snapshot="Snapshot"
       trend="Trend snapshot"
       figure={
@@ -243,6 +244,7 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
       secondSub={face.secondSub}
       chrome={chrome}
       stage={stage}
+      fill
       tip={read ? <InsightChartTip read={read} /> : undefined}
       visual={visual}
       pill={pill}

@@ -59,10 +59,10 @@ export function V3MosBars({
   replay = false,
 }: V3MosBarsProps) {
   const uid = useId()
-  const tipId = `${uid}-tip`
   const [open, setOpen] = useState(false)
   const [plays, setPlays] = useState(0)
   const [revealed, setRevealed] = useState(true)
+  void tooltip
   const plot = useMemo(
     () =>
       buildPairPlot([
@@ -74,7 +74,6 @@ export function V3MosBars({
 
   const show = useCallback(() => {
     setOpen(true)
-    setPlays((n) => n + 1)
   }, [])
   const hide = useCallback(() => setOpen(false), [])
   const replayDigits = useCallback(() => {
@@ -86,17 +85,24 @@ export function V3MosBars({
 
   // Whole-number faces count up (beui-number / rareui); fractional sales stay static.
   // `replay` is official DigitSwapPreview (beui.dev/components/motion/number):
-  // rest and open stay the live sourced face. Hover / Animate remounts with
-  // animationKey masked/revealed so glyphs roll — never replace inventory
-  // with • masks while the source line still cites the real counts.
-  const previewRevealed = revealed && !open
+  // rest = live sourced face; Animate toggles MASKED ↔ revealed
+  // (value + animationKey) so a 400–700ms still is mid-swap. Hover does not remount.
+  void open
+  const previewRevealed = revealed
   const valueFace = (label: string, value: number) => {
     if (replay) {
       const live = label
-      const suffixLength = 0
+      const digits = live.replace(/\D/g, '')
+      const suffixLength = Math.min(2, digits.length)
+      let seen = 0
+      const masked = live.replace(/[0-9]/g, () => {
+        const index = seen
+        seen += 1
+        return index >= digits.length - suffixLength ? digits[index]! : '•'
+      })
       return (
         <DigitSwap
-          value={live}
+          value={previewRevealed ? live : masked}
           animationKey={`${previewRevealed ? 'revealed' : 'masked'}-${plays}`}
           direction={previewRevealed ? 'up' : 'down'}
           suffixLength={suffixLength}
@@ -136,7 +142,6 @@ export function V3MosBars({
               key={bar.index}
               type="button"
               className="v3-mos__barrow"
-              aria-describedby={open ? tipId : undefined}
               onMouseEnter={show}
               onFocus={show}
               onClick={show}
@@ -163,12 +168,7 @@ export function V3MosBars({
           Animate
         </button>
       ) : null}
-      {open ? (
-        <div className="v3-mos__tip" id={tipId} role="status">
-          <p className="v3-mos__tip-source">{tooltip.source}</p>
-        </div>
-      ) : null}
-      <V3SourceLine source={source} asOf={asOf} sourceName={sourceName} />
+      <V3SourceLine source={source} asOf={asOf} sourceName={sourceName} open={replay} />
     </figure>
   )
 }

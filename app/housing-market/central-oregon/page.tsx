@@ -474,7 +474,7 @@ export default async function CentralOregonRegionPage() {
             )}
             figures={[]}
             /* THE OPENING IS A CLAIM AND A DRAWING (SITE-103). MOS + InsightCards.
-               Rest is Compare. year-open is official year scrub on insight-chart-stage. */
+               Rest is Compare. year-open clicks Next to Anomaly + official scrub. */
             chartFirst
             foldAfter={REGION_LEAD_FIGURES}
             foldLabel={v3Text(REGION_MARKET_FOLD_LABEL)}

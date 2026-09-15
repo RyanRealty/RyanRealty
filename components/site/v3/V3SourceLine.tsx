@@ -193,6 +193,8 @@ export type V3SourceLineProps = {
   mount?: V3SourceLineMount
   id?: string
   className?: string
+  /** Start unfolded so a capture can quote the source line. */
+  open?: boolean
 }
 
 /**
@@ -210,11 +212,13 @@ export function V3SourceLine({
   mount = 'block',
   id,
   className,
+  open = false,
 }: V3SourceLineProps) {
   const { name, stamp, trace } = v3SourceParts({ source, sourceName, asOf, updatedAt })
   return (
     <details
       id={id}
+      open={open || undefined}
       className={cn(
         'v3-source',
         mount === 'hero' && 'v3-source--hero',
