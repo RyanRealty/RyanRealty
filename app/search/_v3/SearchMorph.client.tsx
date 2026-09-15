@@ -1,8 +1,9 @@
 'use client'
 
 /**
- * beui-morphing-search as the live dock field. Open state is the catalog
- * field-becomes-results portal — do not keep a cream typeahead beside it.
+ * Official beui-morphing-search iconOnly demo: 48×48 trigger grows into the
+ * glass results portal. Do not pass w-full — that stretches the icon into a
+ * cream typeahead bar (Mini demoMatch false).
  */
 import { MorphingSearch, type MorphingSearchItem } from '@/components/motion/morphing-search'
 import { cn } from '@/lib/utils'
@@ -25,16 +26,17 @@ export function SearchMorph({
   className,
 }: SearchMorphProps) {
   return (
-    <div className={cn('v3-morph-search v3-morph-search--live w-full min-w-0', className)}>
+    <div className={cn('v3-morph-search v3-morph-search--live', className)}>
       <MorphingSearch
         items={[...items]}
         placeholder={placeholder}
         shortcut="f"
+        iconOnly
         emptyMessage="No places match that."
         onQueryChange={onQueryChange}
         onSelect={onSelect}
         onOpenChange={onOpenChange}
-        className="w-full max-w-full"
+        className="size-12"
       />
     </div>
   )

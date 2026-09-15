@@ -1,6 +1,8 @@
+import { Building2, Home, MapPin, Trees, type LucideIcon } from 'lucide-react'
+import type { MorphingSearchItem } from '@/components/motion/morphing-search'
 import { listingTileHref } from '@/lib/slug'
 
-/** Seed places Command opens onto. MorphingSearch uses live listing addresses. */
+/** Seed places Command opens onto. MorphingSearch empty-open uses these with icons. */
 export const SEARCH_PLACE_SEEDS = [
   { id: '/homes-for-sale/bend', title: 'Bend', description: 'City' },
   { id: '/homes-for-sale/redmond', title: 'Redmond', description: 'City' },
@@ -27,12 +29,29 @@ export type MorphHomeListing = {
   BoundaryNeighborhood?: string | null
 }
 
-/** Field-becomes-results seeds: live listing addresses, not a Places city list. */
+function placeIcon(seed: SearchPlaceSeed): LucideIcon {
+  if (seed.description === 'Community' || seed.id.includes('tetherow')) return Trees
+  if (seed.description === 'City') return Building2
+  return MapPin
+}
+
+/** Catalog MorphingSearch rows: Lucide icon + title + description (beUI demo shape). */
+export function morphCatalogItems(): MorphingSearchItem[] {
+  return SEARCH_PLACE_SEEDS.map((seed) => ({
+    id: seed.id,
+    title: seed.title,
+    description: seed.description,
+    keywords: [seed.title, seed.description],
+    icon: placeIcon(seed),
+  }))
+}
+
+/** Listing addresses as Home-icon rows. Used only after the shopper types. */
 export function morphHomesFromListings(
   listings: readonly MorphHomeListing[],
   limit = 8,
-): Array<{ id: string; title: string; description: string }> {
-  const items: Array<{ id: string; title: string; description: string }> = []
+): MorphingSearchItem[] {
+  const items: MorphingSearchItem[] = []
   for (const listing of listings) {
     if (items.length >= limit) break
     const title = [listing.StreetNumber, listing.StreetName, listing.StreetSuffix]
@@ -54,6 +73,7 @@ export function morphHomesFromListings(
       }),
       title,
       description: [listing.City, listing.PostalCode].filter(Boolean).join(' '),
+      icon: Home,
     })
   }
   return items

@@ -31,6 +31,13 @@ const SEARCH_MORPH: Transition = {
 	bounce: 0.22,
 };
 
+// Keep the spring on the shell, but unfold complex clip-path values with the
+// same progressive tween as Morph Popover so the content never snaps ahead.
+const SEARCH_CLIP_TRANSITION: Transition = {
+	duration: 0.32,
+	ease: EASE_OUT,
+};
+
 export type MorphingSearchItem = {
 	id: string;
 	title: string;
@@ -340,18 +347,24 @@ export function MorphingSearch({
 	const listboxId = `${uid}-results`;
 	const panelWidth = mounted
 		? Math.max(
-				448,
 				anchorRect.width,
 				Math.min(448, window.innerWidth - anchorRect.left - 16),
 			)
-		: Math.max(448, anchorRect.width);
+		: anchorRect.width;
 	const resultsHeight = mounted
 		? Math.max(96, Math.min(288, window.innerHeight - anchorRect.top - 80))
 		: 288;
+	const collapsedContentClip = `inset(0px ${Math.max(
+		0,
+		panelWidth - anchorRect.width,
+	)}px ${resultsHeight}px 0px round 12px)`;
+	const expandedContentClip = "inset(0px 0px 0px 0px round 12px)";
 
-	// One grown card. layoutId stays on the closed trigger (mustContain).
-	// Sharing it with the open dialog freezes the shell at field size when
-	// shots disable animations, so the list spills out as a Places dropdown.
+	// Neither grouping layer carries a box: they only hold `inert`/`aria-hidden`,
+	// the z-index and the presence key, and every child below is `fixed` and
+	// resolves against the viewport itself. The click catcher spans the viewport
+	// edges but has no children and filters nothing, so it is not a sampling
+	// layer either. See tests/fixed-overlay-edge-sampling.test.tsx.
 	const overlay = mounted
 		? createPortal(
 				<div
@@ -372,8 +385,24 @@ export function MorphingSearch({
 								<button
 									type="button"
 									aria-label="Close search"
-									className="pointer-events-auto fixed inset-0 isolate z-50 cursor-default bg-foreground/50"
+									className="pointer-events-auto fixed inset-0 cursor-default bg-transparent"
 									onClick={closeSearch}
+								/>
+
+								<motion.div
+									layoutId={shellLayoutId}
+									aria-hidden="true"
+									data-v3-morph="panel"
+									data-v3-morph-panel=""
+									className="fixed z-10 rounded-xl bg-background/90 backdrop-blur-xl"
+									style={{
+										top: anchorRect.top,
+										left: anchorRect.left,
+										width: panelWidth,
+										height: 48 + resultsHeight,
+										boxShadow: "inset 0 0 0 1px var(--color-border)",
+									}}
+									transition={morphTransition}
 								/>
 
 								<motion.div
@@ -383,16 +412,32 @@ export function MorphingSearch({
 									aria-label="Search"
 									onKeyDown={handleDialogKeyDown}
 									initial={false}
+									animate={{ opacity: 1, clipPath: expandedContentClip }}
+									exit={{
+										opacity: 0,
+										clipPath: collapsedContentClip,
+										transition: reduce
+											? { duration: 0 }
+											: {
+													clipPath: SEARCH_CLIP_TRANSITION,
+													opacity: SEARCH_MORPH,
+												},
+									}}
+									transition={
+										reduce
+											? { duration: 0 }
+											: {
+													clipPath: SEARCH_CLIP_TRANSITION,
+													opacity: SEARCH_MORPH,
+												}
+									}
 									data-v3-morph="dialog"
-									data-v3-morph-panel=""
-									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl bg-background shadow-lg ring-1 ring-border backdrop-blur-xl"
+									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl"
 									style={{
 										top: anchorRect.top,
 										left: anchorRect.left,
 										width: panelWidth,
-										minHeight: 48 + resultsHeight,
 									}}
-									transition={reduce ? { duration: 0 } : morphTransition}
 								>
 									<div
 										className={cn(
@@ -558,30 +603,39 @@ export function MorphingSearch({
 						)}
 					></motion.button>
 				) : null}
-				{!open ? (
-					<motion.div
-						aria-hidden="true"
-						initial={false}
-						className={cn(
-							"pointer-events-none absolute inset-0 flex items-center",
-							iconOnly ? "justify-center" : "gap-2.5 px-3.5",
-						)}
-					>
-						<Search className="size-4 shrink-0 text-muted-foreground" />
-						{iconOnly ? null : (
-							<>
-								<span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-									{placeholder}
-								</span>
-								{shortcut ? (
-									<kbd className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md border border-border px-2 text-xs text-muted-foreground">
-										{shortcut.toUpperCase()}
-									</kbd>
-								) : null}
-							</>
-						)}
-					</motion.div>
-				) : null}
+				<motion.div
+					aria-hidden="true"
+					initial={false}
+					animate={{ opacity: open ? 0 : 1 }}
+					transition={
+						reduce
+							? { duration: 0 }
+							: {
+									duration: 0.1,
+									delay: open ? 0.1 : 0.12,
+									ease: EASE_OUT,
+								}
+					}
+					className={cn(
+						"pointer-events-none absolute inset-0 flex items-center",
+						backgroundScrollLocked && "z-[60]",
+						iconOnly ? "justify-center" : "gap-2.5 px-3.5",
+					)}
+				>
+					<Search className="size-4 shrink-0 text-muted-foreground" />
+					{iconOnly ? null : (
+						<>
+							<span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+								{placeholder}
+							</span>
+							{shortcut ? (
+								<kbd className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md border border-border px-2 text-xs text-muted-foreground">
+									{shortcut.toUpperCase()}
+								</kbd>
+							) : null}
+						</>
+					)}
+				</motion.div>
 			</div>
 			{overlay}
 		</LayoutGroup>

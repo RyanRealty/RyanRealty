@@ -55,7 +55,12 @@ import { SUBDIVISION_ALIASES } from '@/lib/subdivision-aliases'
 import { normalizeSearchKey } from '@/lib/search/neighborhood-match'
 import { SearchCommand } from '@/app/search/_v3/SearchCommand.client'
 import { SearchPriceRail } from '@/app/search/_v3/SearchPriceRail.client'
-import { morphHomesFromListings, type MorphHomeListing } from '@/app/search/_v3/search-places'
+import { MapPin } from 'lucide-react'
+import {
+  morphCatalogItems,
+  morphHomesFromListings,
+  type MorphHomeListing,
+} from '@/app/search/_v3/search-places'
 
 /** P6: load the house-sheet only after first open (not on cold search). */
 const SearchFiltersSheet = dynamic(
@@ -514,9 +519,13 @@ export default function SearchFilters({
         id: item.href,
         title: item.label,
         description: item.sublabel,
+        icon: MapPin,
       }))
-      if (typed.length > 0) return typed
-      return morphHomesFromListings(morphHomes)
+      if (typed.length > 0) {
+        const listed = morphHomesFromListings(morphHomes)
+        return [...typed, ...listed.filter((row) => !typed.some((t) => t.id === row.id))]
+      }
+      return morphCatalogItems()
     },
     [suggestItems, morphHomes],
   )
@@ -596,8 +605,8 @@ export default function SearchFilters({
         {hideLocation ? null : (
         <div className="relative flex w-full min-w-0 items-center gap-1 sm:w-64 sm:shrink-0">
           <SearchMorph
-            className={cn('srch-morph min-w-0 flex-1', morphOpen && 'v3-morph-search--open')}
-            placeholder="Address, city, or community"
+            className={cn('srch-morph shrink-0', morphOpen && 'v3-morph-search--open')}
+            placeholder="Find a home"
             items={morphItems}
             onOpenChange={(next) => {
               setMorphOpen(next)
