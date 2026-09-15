@@ -35,10 +35,7 @@ import {
   LISTING_MOSAIC_STRIP_SIZES,
   preferListingMosaicPhotoUrl,
 } from '@/lib/listing/publish-listing-mosaic'
-import {
-  LISTING_FIELD_LEAD_PHOTO_SIZE,
-  listingRowPhotoSrc,
-} from '@/lib/listing/row-photo'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { isOffsiteTourHost } from '@/lib/listing/publish-listing-on-site-tour'
 import dynamic from 'next/dynamic'
 
@@ -571,19 +568,16 @@ function MosaicStill({
   priority?: boolean
   contain?: boolean
 }) {
-  // The hero is a full-bleed frame. Prefer the 1600 mosaic derivative
-  // (Matt 2026-09-10). Spark 429 on that plate used to leave the fold as
-  // empty cream; fall back to the verified 800 bucket so the house still
-  // paints. Same listing, same asset id (listingRowPhotoSrc).
+  // Lead still is the 1600 mosaic derivative (or larger). Never the 320
+  // filmstrip thumb or the 800 field-lead plate in this frame.
   const live = preferListingMosaicPhotoUrl(src)
-  const first = listingRowPhotoSrc(src, LISTING_FIELD_LEAD_PHOTO_SIZE)
-  void live
   void sizes
   void priority
   return (
     <>
       <PhotoSkeleton label="Loading photograph" />
-      <img src={first} alt={alt} className={contain ? 'is-plan' : undefined} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={live} alt={alt} className={contain ? 'is-plan' : undefined} />
     </>
   )
 }
@@ -684,7 +678,8 @@ function IframeHeroLayer({
     <>
       {posterUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={listingRowPhotoSrc(posterUrl)} alt={altBase} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={preferListingMosaicPhotoUrl(posterUrl)} alt={altBase} />
       ) : null}
       {failed || !embedSrc ? null : (
         <iframe
