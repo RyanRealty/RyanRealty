@@ -325,6 +325,12 @@ export default function SearchFilters({
   // Dropdown panel state
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null)
   const [morphOpen, setMorphOpen] = useState(false)
+  useEffect(() => {
+    const root = document.documentElement
+    if (morphOpen) root.setAttribute('data-search-morph-open', '1')
+    else root.removeAttribute('data-search-morph-open')
+    return () => root.removeAttribute('data-search-morph-open')
+  }, [morphOpen])
   const [placesQuery, setPlacesQuery] = useState('')
   const [moreSheetOpen, setMoreSheetOpen] = useState(false)
   /** Keep the lazy sheet mounted after first open so close animation still works. */
@@ -590,7 +596,7 @@ export default function SearchFilters({
         {hideLocation ? null : (
         <div className="relative flex w-full min-w-0 items-center gap-1 sm:w-64 sm:shrink-0">
           <SearchMorph
-            className="srch-morph min-w-0 flex-1"
+            className={cn('srch-morph min-w-0 flex-1', morphOpen && 'v3-morph-search--open')}
             placeholder="Address, city, or community"
             items={morphItems}
             onOpenChange={(next) => {

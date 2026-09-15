@@ -21,6 +21,14 @@
     z-index: 20;
   }
 
+  /* MorphingSearch portal is the only search-open surface. The cream dock
+     bar bisects the grown card into a typeahead (Mini demoMatch false). */
+  html[data-search-morph-open] .search-filter-dock {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
   /* App-frame already locks the viewport. Sticky here overlays the
      List/Map + count/sort row at 390. Keep the dock in flow. */
   .search-app-frame .search-filter-dock {

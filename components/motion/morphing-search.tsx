@@ -372,7 +372,7 @@ export function MorphingSearch({
 								<button
 									type="button"
 									aria-label="Close search"
-									className="pointer-events-auto fixed inset-0 cursor-default bg-foreground/40"
+									className="pointer-events-auto fixed inset-0 isolate z-50 cursor-default bg-foreground/50"
 									onClick={closeSearch}
 								/>
 
