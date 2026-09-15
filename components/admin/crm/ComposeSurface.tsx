@@ -155,7 +155,8 @@ export function ComposeSurface({
       const res = await sendComposeAction(fd)
       if (!res.ok) toast.error(res.error)
       else {
-        toast.success(channel === 'email' ? 'Email sent.' : group ? 'Group text sent.' : 'Text sent.')
+        if (res.notice) toast.message(res.notice)
+        else toast.success(channel === 'email' ? 'Email sent.' : group ? 'Group text sent.' : 'Text sent.')
         setBody('')
         if (channel === 'email') setSubject('')
       }

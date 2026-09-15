@@ -29,24 +29,29 @@ const HARD_STOP_REASON = 'tag:compliance:hard-stop'
 export async function checkSendGuards(
   personId: number,
   channel: SendChannel,
-  opts?: { overrideQuietHours?: boolean; source?: string },
+  opts?: { overrideQuietHours?: boolean; source?: string; skipSuppression?: boolean },
 ): Promise<GovernedFailure | null> {
   // 1 + 2. Hard-stop tags, then channel suppression. One isSuppressed call is
   // the authoritative source for both (fail-closed on any read error).
-  const gate = await isSuppressed(personId, channel)
-  if (gate.suppressed) {
-    const error = `Blocked by suppression (${gate.reasons.join(', ')})`
-    const hardStop = gate.reasons.some((r) => r.toLowerCase() === HARD_STOP_REASON)
-    const stage = hardStop ? 'hard-stop' : 'suppression'
-    // Best-effort ledger — never blocks the refusal path.
-    void recordSendBlockEvent({
-      personId,
-      channel,
-      stage,
-      reasons: gate.reasons,
-      source: opts?.source,
-    })
-    return { ok: false, error, stage }
+  // Broker manual compose (CRM Text Send / group start) sets skipSuppression:
+  // consent / TCPA soft opt-in / STOP-list rows are BULK-ONLY — direct 1:1 and
+  // group-thread start must still deliver. Quiet hours below still apply.
+  if (!opts?.skipSuppression) {
+    const gate = await isSuppressed(personId, channel)
+    if (gate.suppressed) {
+      const error = `Blocked by suppression (${gate.reasons.join(', ')})`
+      const hardStop = gate.reasons.some((r) => r.toLowerCase() === HARD_STOP_REASON)
+      const stage = hardStop ? 'hard-stop' : 'suppression'
+      // Best-effort ledger — never blocks the refusal path.
+      void recordSendBlockEvent({
+        personId,
+        channel,
+        stage,
+        reasons: gate.reasons,
+        source: opts?.source,
+      })
+      return { ok: false, error, stage }
+    }
   }
 
   // 3. Quiet hours — SMS only. A6: only a manual, human-typed 1:1 reply passes

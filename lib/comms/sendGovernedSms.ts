@@ -31,6 +31,7 @@ export async function sendGovernedSms(req: GovernedSmsRequest): Promise<Governed
   // person never reaches the idempotency ledger or the provider.
   const refused = await checkSendGuards(req.personId, 'sms', {
     overrideQuietHours: req.overrideQuietHours,
+    skipSuppression: req.skipSuppression,
   })
   if (refused) return refused
 

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
-  GROUP_THREAD_FAILED,
+  GROUP_THREAD_FALLBACK_NOTICE,
   composeRecipientPayload,
   decideGroupSmsFallback,
   emailsForCompose,
   isComposeGroup,
 } from '@/lib/crm/compose-group'
 
-describe('compose group (one thread, not silent fan-out)', () => {
+describe('compose group (one thread, honest fan-out if group fails)', () => {
   it('two people is a group and packs extras for sendGroupMms', () => {
     const people = [
       { id: 63285, name: 'Jane' },
@@ -26,10 +26,10 @@ describe('compose group (one thread, not silent fan-out)', () => {
     expect(composeRecipientPayload([{ id: 1 }]).extraIds).toBe('')
   })
 
-  it('refuses silent fan-out when the compose surface asked for a group thread', () => {
+  it('allows honest per-person fan-out when the compose surface asked for a group thread', () => {
     expect(
       decideGroupSmsFallback({ explicitGroupThread: true, groupFormed: false }),
-    ).toEqual({ allowFanOut: false, error: GROUP_THREAD_FAILED })
+    ).toEqual({ allowFanOut: true, notice: GROUP_THREAD_FALLBACK_NOTICE })
   })
 
   it('does not fan out after a group thread actually formed', () => {

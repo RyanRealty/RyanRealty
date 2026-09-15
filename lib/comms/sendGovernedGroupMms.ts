@@ -31,6 +31,8 @@ export type GovernedGroupMmsRequest = {
   purpose: string
   initiator: GovernedInitiator
   overrideQuietHours?: boolean
+  /** Broker CRM compose: skip consent/STOP (bulk-only). */
+  skipSuppression?: boolean
   timelineSource?: string
 }
 
@@ -54,6 +56,7 @@ export async function sendGovernedGroupMms(
     const refused = await checkSendGuards(member.personId, 'sms', {
       overrideQuietHours: req.overrideQuietHours,
       source: req.purpose,
+      skipSuppression: req.skipSuppression,
     })
     if (refused) return refused
   }
