@@ -215,12 +215,12 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
             }
             setOpen((o) => o === false)
           }}
-          className="srch-chip shrink-0"
+          className="srch-chip shrink-0 whitespace-nowrap"
           aria-expanded={open}
           aria-haspopup="dialog"
           aria-label={triggerLabel}
         >
-          <span className="sm:hidden">{status === 'done' ? 'Saved' : 'Save Search'}</span>
+          <span className="sm:hidden">{status === 'done' ? 'Saved' : 'Save this search'}</span>
           <span className="hidden sm:inline">{triggerLabel}</span>
         </Button>
         {open ? (
@@ -300,12 +300,12 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
           }
           setOpen((o) => !o)
         }}
-        className="srch-chip shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
+        className="srch-chip shrink-0 whitespace-nowrap bg-primary text-primary-foreground hover:bg-primary/90"
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label={triggerLabel}
       >
-        <span className="sm:hidden">{status === 'done' ? 'Saved' : 'Save Search'}</span>
+        <span className="sm:hidden">{status === 'done' ? 'Saved' : 'Save this search'}</span>
         <span className="hidden sm:inline">{triggerLabel}</span>
       </Button>
       {open && (

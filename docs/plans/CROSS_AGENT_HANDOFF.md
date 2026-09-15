@@ -1,8 +1,8 @@
-# Current — 2026-09-15 (SITE-110 rematch after Mini 51 on 20829c1a5)
+# Current — 2026-09-15 (SITE-110 rematch after Mini 44 on 407b7ed92)
 
 Surface: Cursor cloud. Branch `cursor/site-110-search-tip-21f9` PR #248. Do not merge. Cos Mini `--ship`s.
 
-- **Done:** After Mini 51 (`demoMatch` false, score 51): official beui-morphing-search FIELD preview (`Find components` + catalog ITEMS). One-track DualTickRange Min+Max on dock, house-sheet, and atlas dock (`priceScrub=minmax` — native single-thumb removed from search map). House-sheet progressive ask→type with echo+progress. House-atlas full chrome + `markScale=ask`. Recaptured default+open shots. SITE-92/103 left alone. Public Patch P0 on main not fought. Receipt left honest.
+- **Done:** After Mini 44 (`demoMatch` false, score 44): official morph FIELD keep, Ryan Realty places/listings (no Find components / Project Folder). Command folds into morph (no cmdk overlay). One dock DualTickRange. House-sheet one checkbox step (House/Condo/flags) in open shot; Save this search nowrap. Atlas `markScale=ask` + place names + price-on-pin; `priceScrub=none` / `showTypes=false`. SITE-92/103 left alone. Receipt left honest.
 - **Next:** Cos Mini `--ship`. Do not invent `demoMatch`.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 

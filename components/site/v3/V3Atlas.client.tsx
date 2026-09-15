@@ -296,10 +296,11 @@ export type V3AtlasProps = {
   /**
    * Price scrub on the dock. `max` is the native ceiling slider (city pages).
    * `minmax` is official beui-range-slider DualTickRange — Min ask + Max ask
-   * on one tick-stop track. Search uses minmax so the map column is not a
-   * dotted single-thumb next to the catalog dual rail.
+   * on one tick-stop track. `none` leaves ask on the page's single dock rail.
    */
-  priceScrub?: 'max' | 'minmax'
+  priceScrub?: 'max' | 'minmax' | 'none'
+  /** Type toggles on the dock. Search keeps types on the house-sheet checkboxes. */
+  showTypes?: boolean
   children?: ReactNode
   className?: string
   /**
@@ -431,6 +432,7 @@ export function V3Atlas({
   quiet,
   markScale = 'state',
   priceScrub = 'max',
+  showTypes = true,
   noun: nounProp,
   incomplete,
   events,
@@ -1151,7 +1153,8 @@ export function V3Atlas({
       }
     }
     for (const s of towns) {
-      if (!s.anchor || isFrame(s) || s.id === active) continue
+      if (!s.anchor || s.id === active) continue
+      if (markScale !== 'ask' && isFrame(s)) continue
       const text = shortPlaceLabel(s.name)
       const [x, y] = screenOf(s.anchor[0], s.anchor[1])
       candidates.push({
@@ -1164,7 +1167,34 @@ export function V3Atlas({
         ...atlasLabelBox(text, 'town'),
       })
     }
-    if (cam.k > 1.2) {
+    if (markScale === 'ask') {
+      const priced = dots
+        .map((d, i) => ({ d, i }))
+        .filter(({ d }) => isOn(d) && d.p != null && d.p > 0 && d.s !== 'sold')
+        .sort((a, b) => (b.d.p ?? 0) - (a.d.p ?? 0))
+      const pins = [
+        priced[0],
+        priced[Math.floor((priced.length - 1) / 2)],
+        priced[priced.length - 1],
+      ].filter((row, idx, all): row is { d: (typeof dots)[number]; i: number } => {
+        if (!row) return false
+        return all.findIndex((other) => other?.d.k === row.d.k) === idx
+      })
+      for (const { d } of pins) {
+        const [x, y] = screenOf(d.lng, d.lat)
+        const text = fmtShort(d.p ?? 0)
+        candidates.push({
+          id: `ask-${d.k}`,
+          kind: 'home',
+          text,
+          x,
+          y: y - 12,
+          rank: 8_000,
+          ...atlasLabelBox(text, 'home'),
+        })
+      }
+    }
+    if (markScale === 'ask' || cam.k > 1.2) {
       for (const s of places) {
         if (!s.anchor || isFrame(s) || s.id === active || !s.bbox) continue
         const [x0, y0] = screenOf(s.bbox.minLon, s.bbox.maxLat)
@@ -1198,7 +1228,7 @@ export function V3Atlas({
       })
     }
     return packAtlasLabels(candidates, view)
-  }, [view, highlight, dots, towns, places, active, activeShape, cam.k, screenOf, isFrame, regionStats, doorLabel])
+  }, [view, highlight, dots, towns, places, active, activeShape, cam.k, screenOf, isFrame, regionStats, doorLabel, markScale, isOn])
 
   const activeHomes = useMemo(() => {
     if (!active || incomplete) return []
@@ -1382,6 +1412,7 @@ export function V3Atlas({
         </div>
       ) : null}
       {keyPlacement === 'dock' ? keyList : null}
+      {showTypes ? (
       <div className="v3-atlas__types" role="group" aria-label="Property types">
         {types.map((t) => (
           <button
@@ -1396,7 +1427,8 @@ export function V3Atlas({
           </button>
         ))}
       </div>
-      {priceScrub === 'minmax' ? (
+      ) : null}
+      {priceScrub === 'none' ? null : priceScrub === 'minmax' ? (
         <div className="v3-atlas__scrub">
           <span className="v3-atlas__scrub-label">
             Min ask to Max ask ·{' '}

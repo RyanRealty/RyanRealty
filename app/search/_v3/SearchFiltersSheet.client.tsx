@@ -1,23 +1,14 @@
 'use client'
 
 /**
- * house-sheet as All filters: one question per step (PUBLIC_UI Pattern 5).
- * First step is the dual-thumb ask. Echo + progress stay on — a dump of
- * type + flags + price on one cream panel is not the house sheet.
+ * house-sheet as All filters: one step, the shadcn checkbox object.
+ * Price lives once on the dock DualTickRange — repeating it here failed.
+ * Eyebrow is Filters so the sheet does not read as a clipped Save control.
  */
-import { useEffect, useMemo, useState } from 'react'
-import { RangeSlider } from '@/components/motion/range-slider'
+import { useEffect, useState } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
-import {
-  formatPriceRange,
-  formatPriceStop,
-  rangeToUrl,
-  snapToStops,
-  urlToRange,
-  V3_PRICE_STOPS,
-} from '@/components/site/v3/V3Range.logic'
 
 export type SearchFiltersSheetProps = {
   open: boolean
@@ -34,12 +25,11 @@ export type SearchFiltersSheetProps = {
   hasGolfCourse?: string
 }
 
-const TYPE_OPTIONS = [
-  { value: 'any', label: 'Any' },
-  { value: 'A', label: 'Houses' },
-  { value: 'B', label: 'Condos and townhomes' },
-  { value: 'C', label: 'Multi-family' },
-  { value: 'D', label: 'Land' },
+const TYPE_CHECKS = [
+  { key: 'A', label: 'House' },
+  { key: 'B', label: 'Condo' },
+  { key: 'C', label: 'Multi-family' },
+  { key: 'D', label: 'Land' },
 ] as const
 
 const FLAG_FIELDS = [
@@ -51,31 +41,12 @@ const FLAG_FIELDS = [
 ] as const
 
 type FlagKey = (typeof FLAG_FIELDS)[number]['key']
-
-function stopIndex(value: number): number {
-  const snapped = snapToStops(value, V3_PRICE_STOPS)
-  const exact = V3_PRICE_STOPS.indexOf(snapped as (typeof V3_PRICE_STOPS)[number])
-  if (exact >= 0) return exact
-  let best = 0
-  for (let i = 1; i < V3_PRICE_STOPS.length; i++) {
-    const stop = V3_PRICE_STOPS[i] ?? 0
-    const bestStop = V3_PRICE_STOPS[best] ?? 0
-    if (Math.abs(stop - value) < Math.abs(bestStop - value)) best = i
-  }
-  return best
-}
-
-function order(a: number, b: number): { low: number; high: number } {
-  return a <= b ? { low: a, high: b } : { low: b, high: a }
-}
+type TypeKey = (typeof TYPE_CHECKS)[number]['key']
 
 export function SearchFiltersSheet({
   open,
   onOpenChange,
   onApply,
-  minPrice,
-  maxPrice,
-  beds,
   propertyType,
   hasPool,
   hasView,
@@ -83,11 +54,12 @@ export function SearchFiltersSheet({
   hasFireplace,
   hasGolfCourse,
 }: SearchFiltersSheetProps) {
-  const urlPrice = useMemo(
-    () => urlToRange(minPrice, maxPrice, V3_PRICE_STOPS),
-    [minPrice, maxPrice],
-  )
-  const [draftPrice, setDraftPrice] = useState(urlPrice)
+  const [draftTypes, setDraftTypes] = useState<Record<TypeKey, boolean>>({
+    A: propertyType === 'A' || !propertyType,
+    B: propertyType === 'B',
+    C: propertyType === 'C',
+    D: propertyType === 'D',
+  })
   const [draftFlags, setDraftFlags] = useState<Record<FlagKey, boolean>>({
     hasPool: hasPool === '1',
     hasView: hasView === '1',
@@ -96,8 +68,13 @@ export function SearchFiltersSheet({
     hasGolfCourse: hasGolfCourse === '1',
   })
   useEffect(() => {
-    setDraftPrice(urlPrice)
-  }, [urlPrice])
+    setDraftTypes({
+      A: propertyType === 'A' || !propertyType,
+      B: propertyType === 'B',
+      C: propertyType === 'C',
+      D: propertyType === 'D',
+    })
+  }, [propertyType])
   useEffect(() => {
     setDraftFlags({
       hasPool: hasPool === '1',
@@ -108,56 +85,35 @@ export function SearchFiltersSheet({
     })
   }, [hasPool, hasView, hasWaterfront, hasFireplace, hasGolfCourse])
 
-  const lastIdx = Math.max(0, V3_PRICE_STOPS.length - 1)
-  const first = V3_PRICE_STOPS[0] ?? 0
-  const last = V3_PRICE_STOPS[lastIdx] ?? first
-  const pair = order(
-    Math.min(Math.max(draftPrice.low, first), last),
-    Math.min(Math.max(draftPrice.high, first), last),
-  )
-  const loIdx = stopIndex(pair.low)
-  const hiIdx = stopIndex(pair.high)
-
   const steps: readonly V3SheetStep[] = [
-    {
-      id: 'ask',
-      label: 'What ask should this search include?',
-      children: [beds ? `${beds}+ bedrooms already on this search.` : 'Min ask and Max ask on one track.'],
-      blocks: [
-        {
-          kind: 'drawing',
-          label: formatPriceRange(pair.low, pair.high, V3_PRICE_STOPS),
-          node: (
-            <RangeSlider
-              values={[loIdx, hiIdx]}
-              min={0}
-              max={lastIdx}
-              step={1}
-              showTicks
-              aria-label="Minimum ask"
-              maxAriaLabel="Maximum ask"
-              formatValueText={(i) => formatPriceStop(V3_PRICE_STOPS[i] ?? pair.low, V3_PRICE_STOPS)}
-              onValuesChange={([nextLo, nextHi]) => {
-                setDraftPrice(
-                  order(V3_PRICE_STOPS[nextLo] ?? pair.low, V3_PRICE_STOPS[nextHi] ?? pair.high),
-                )
-              }}
-            />
-          ),
-        },
-      ],
-      advanceLabel: 'Next',
-    },
     {
       id: 'type',
       label: 'What kind of home?',
-      field: {
-        kind: 'select',
-        name: 'propertyType',
-        label: 'Home type',
-        options: TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
-      },
+      children: ['House, condo, land, and the flags that belong on this search.'],
       blocks: [
+        {
+          kind: 'drawing',
+          label: 'Home type',
+          node: (
+            <div className="grid gap-3">
+              {TYPE_CHECKS.map((row) => {
+                const id = `srch-type-${row.key}`
+                return (
+                  <div key={row.key} className="flex items-center gap-2">
+                    <Checkbox
+                      id={id}
+                      checked={draftTypes[row.key]}
+                      onCheckedChange={(next) => {
+                        setDraftTypes((prev) => ({ ...prev, [row.key]: next === true }))
+                      }}
+                    />
+                    <Label htmlFor={id}>{row.label}</Label>
+                  </div>
+                )
+              })}
+            </div>
+          ),
+        },
         {
           kind: 'drawing',
           label: 'Flags',
@@ -189,30 +145,22 @@ export function SearchFiltersSheet({
   return (
     <V3Sheet
       heading="All filters"
-      eyebrow="This search"
+      eyebrow="Filters"
       surface="drawer"
       open={open}
       onOpenChange={onOpenChange}
-      showProgress
+      showProgress={false}
       showEcho
-      defaultAnswers={{
-        propertyType: propertyType || 'any',
-      }}
       steps={steps}
       onAdvance={(event: V3SheetAdvance) => {
         if (event.toStepId != null) return
-        const next = rangeToUrl(draftPrice.low, draftPrice.high, V3_PRICE_STOPS)
+        const selected = TYPE_CHECKS.filter((row) => draftTypes[row.key]).map((row) => row.key)
         const flags: Record<string, string | undefined> = {}
         for (const flag of FLAG_FIELDS) {
           flags[flag.key] = draftFlags[flag.key] ? '1' : undefined
         }
         onApply({
-          minPrice: next.min,
-          maxPrice: next.max,
-          propertyType:
-            event.answers.propertyType && event.answers.propertyType !== 'any'
-              ? event.answers.propertyType
-              : undefined,
+          propertyType: selected.length === 1 ? selected[0] : undefined,
           ...flags,
         })
         onOpenChange(false)

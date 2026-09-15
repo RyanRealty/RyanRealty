@@ -514,6 +514,8 @@ export default function SearchFilters({
 
   const morphItems = useMemo(
     () => {
+      const places = morphCatalogItems()
+      const listed = morphHomesFromListings(morphHomes)
       const typed = suggestItems.map((item) => ({
         id: item.href,
         title: item.label,
@@ -521,11 +523,9 @@ export default function SearchFilters({
         icon: MapPin,
       }))
       if (typed.length > 0) {
-        const listed = morphHomesFromListings(morphHomes)
         return [...typed, ...listed.filter((row) => !typed.some((t) => t.id === row.id))]
       }
-      const listed = morphHomesFromListings(morphHomes)
-      return listed.length > 0 ? listed : morphCatalogItems()
+      return [...places, ...listed]
     },
     [suggestItems, morphHomes],
   )
@@ -608,6 +608,7 @@ export default function SearchFilters({
             className={cn('srch-morph shrink-0', morphOpen && 'v3-morph-search--open')}
             placeholder="Search"
             items={morphItems}
+            open={morphOpen}
             onOpenChange={(next) => {
               setMorphOpen(next)
               if (next) setOpenPanel(null)
@@ -1213,9 +1214,9 @@ export default function SearchFilters({
             </span>
           </Button>
           <SearchCommand
-            onOpenFilters={() => {
-              setMoreSheetMounted(true)
-              setMoreSheetOpen(true)
+            onOpenMorph={() => {
+              setMorphOpen(true)
+              setOpenPanel(null)
             }}
           />
           <SaveSearchButton user={viewerState.signedIn} />
@@ -1261,6 +1262,7 @@ export default function SearchFilters({
         </div>
         )}
       </div>
+      {morphOpen ? <div className="srch-morph-reserve" aria-hidden /> : null}
 
       {/* SITE-110: catalog RangeSlider is the first-viewport price object. */}
       {morphOpen ? null : (

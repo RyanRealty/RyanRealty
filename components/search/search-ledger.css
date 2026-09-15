@@ -942,6 +942,12 @@ button.srch-chip--key {
   z-index: 40;
 }
 
+/* Grown morph stays in the dock. Reserve the panel height so listing photos
+   are not under the portal. */
+.search-filter-dock .srch-morph-reserve {
+  height: 13rem;
+}
+
 .search-filter-dock .srch-morph .v3-morph-search__results {
   position: absolute;
   left: 0;

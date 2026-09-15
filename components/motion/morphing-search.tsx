@@ -59,6 +59,8 @@ export interface MorphingSearchProps {
 	onOpenChange?: (open: boolean) => void;
 	onQueryChange?: (query: string) => void;
 	onSelect?: (item: MorphingSearchItem) => void;
+	/** Cap the grown results list so the panel stays in the dock, not over listing photos. */
+	resultsMaxHeight?: number;
 	className?: string;
 }
 
@@ -89,6 +91,7 @@ export function MorphingSearch({
 	onOpenChange,
 	onQueryChange,
 	onSelect,
+	resultsMaxHeight = 288,
 	className,
 }: MorphingSearchProps) {
 	const [internalOpen, setInternalOpen] = useState(defaultOpen);
@@ -352,8 +355,8 @@ export function MorphingSearch({
 			)
 		: anchorRect.width;
 	const resultsHeight = mounted
-		? Math.max(96, Math.min(288, window.innerHeight - anchorRect.top - 80))
-		: 288;
+		? Math.max(96, Math.min(resultsMaxHeight, window.innerHeight - anchorRect.top - 80))
+		: resultsMaxHeight;
 	const collapsedContentClip = `inset(0px ${Math.max(
 		0,
 		panelWidth - anchorRect.width,
