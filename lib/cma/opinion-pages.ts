@@ -63,6 +63,7 @@ import { renderMatrixHtml, subjectListingFailed, subjectPrintableAsk } from '@/l
 import { compAreaSentence } from '@/lib/cma/matrix-sets'
 import { setAsideCompIndexes } from '@/lib/cma/set-aside'
 import { statusPpsfBoardHtml, statusPpsfSummaries } from '@/lib/cma/status-ppsf'
+import { statusPriceBoardHtml, statusPriceSummaries, splitActivePending } from '@/lib/cma/status-price-summary'
 import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import type { CmaBroker, CmaClient } from '@/lib/cma/types'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
@@ -259,6 +260,12 @@ export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
       statusPpsfSummaries({
         closed: sets.closed,
         unsold: sets.unsold,
+        active: sets.active,
+      }),
+    ),
+    statusPriceBoard: statusPriceBoardHtml(
+      statusPriceSummaries({
+        closed: sets.closed,
         active: sets.active,
       }),
     ),
@@ -1301,17 +1308,31 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
   // comes off `extras.band`, not off the named rivals — so a document whose
   // row carries no named competitor still tells a seller what they are up
   // against, and simply prints no table.
-  const matrix =
-    sets.active.length > 0
+  // FlexMLS flow: separate Active and Pending grids (same matrix craft).
+  const { active: activeOnly, pending: pendingOnly } = splitActivePending(sets.active)
+  const activeMatrix =
+    activeOnly.length > 0
       ? renderMatrixHtml({
-          id: 'competition',
+          id: 'competition-active',
           family: 'active',
-          heading: 'Asking in this range now',
-          lead: activeMatrixLead(sets.active, { lo: b.lo, hi: b.hi }),
-          entries: [sets.subject, ...sets.active],
+          heading: 'Active — asking in this range now',
+          lead: activeMatrixLead(activeOnly, { lo: b.lo, hi: b.hi }),
+          entries: [sets.subject, ...activeOnly],
           range,
         })
       : ''
+  const pendingMatrix =
+    pendingOnly.length > 0
+      ? renderMatrixHtml({
+          id: 'competition-pending',
+          family: 'active',
+          heading: 'Pending — under contract in this range',
+          lead: '<p class="chart-read">Under contract is not closed. These are still competing until they close.</p>',
+          entries: [sets.subject, ...pendingOnly],
+          range,
+        })
+      : ''
+  const matrix = [activeMatrix, pendingMatrix].filter(Boolean).join('\n  ')
   const sentence =
     a.bandRivals?.sentence ??
     competitionSentence({

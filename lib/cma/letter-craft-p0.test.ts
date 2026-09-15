@@ -148,6 +148,10 @@ describe('letter craft P0 — cover headline once', () => {
       pricing,
     })
     expect(hero).toContain(COVER_LIST_PRICE_HEADLINE)
+    expect(hero).toContain('hero-trio')
+    expect(hero).toContain('>Low<')
+    expect(hero).toContain('>High<')
+    expect(hero).toContain('>Recommended<')
     expect(hero).toContain('$497,800')
     expect(hero).not.toMatch(/>Recommended list</)
     const fold = immersiveAnswerHtml({

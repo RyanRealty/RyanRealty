@@ -65,10 +65,16 @@ describe('cover and immersive value blocks', () => {
     expect(html).not.toMatch(/stayed inside/)
   })
 
-  it('puts the recommended list on the immersive hero payoff', () => {
+  it('puts Low · High · Recommended on the immersive hero payoff', () => {
     const html = immersiveHeroNumberHtml(args)
     expect(html).toContain('hero-payoff')
+    expect(html).toContain('hero-trio')
     expect(html).toContain('Our Recommended List Price for your home')
+    expect(html).toContain('>Low<')
+    expect(html).toContain('>High<')
+    expect(html).toContain('>Recommended<')
+    expect(html).toContain('$470,000')
+    expect(html).toContain('$515,000')
     expect(html).toContain('$505,000')
     expect(html).not.toContain('Expected close')
     expect(html).not.toMatch(/[—;]/)

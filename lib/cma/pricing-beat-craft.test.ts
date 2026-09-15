@@ -139,19 +139,23 @@ describe('pricing beat craft', () => {
     expect(html).not.toContain('This list is')
   })
 
-  it('puts recommend + range once on the hero — no sparse 3-number bar', () => {
+  it('puts Low · High · Recommended once on the hero — no THE LIST sparse bar', () => {
     const html = renderImmersiveCmaHtml(args(), 'https://ryan-realty.com')
     expect(html).toContain('hero-payoff')
+    expect(html).toContain('hero-trio')
+    expect(html).toContain('data-recommend-once="1"')
+    expect(html).toContain('>Low<')
+    expect(html).toContain('>High<')
+    expect(html).toContain('>Recommended<')
     expect(html).toContain('$563,000')
-    // The recommend is set in type above, so the line under it says what the
-    // home is worth — never the same figure twice in two sentences.
-    expect(html).toContain('Your home is worth $522,000 to $575,000 today.')
+    expect(html).toContain('$522,000')
+    expect(html).toContain('$575,000')
     expect(html).not.toContain('class="range-marks"')
     expect(html).not.toMatch(/class="rm-l">List low</)
     expect(html).not.toContain('id="answer"')
-    // Lead sentence appears once (hero), not again under the photo beat.
-    const leadHits = html.match(/Your home is worth \$522,000 to \$575,000 today\./g) ?? []
-    expect(leadHits.length).toBe(1)
+    expect(html).not.toMatch(/>\s*THE LIST\s*</i)
+    // Trio replaced the worth+ask echo on the photo.
+    expect(html).not.toContain('Your home is worth $522,000 to $575,000 today.')
   })
 
   it('immersiveAnswerHtml no longer restates the three-number strip', () => {

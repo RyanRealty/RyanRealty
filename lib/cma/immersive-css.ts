@@ -57,6 +57,11 @@ img{max-width:100%;display:block}
 .range{margin-top:56px}
 .range-track{position:relative;height:8px;background:var(--ink12)}
 .range-fill{position:absolute;top:0;bottom:0;left:0;background:var(--navy);width:var(--w,0%);transition:width 1.1s cubic-bezier(.2,.7,.2,1)}
+.hero-trio{display:flex;align-items:flex-end;justify-content:flex-start;gap:clamp(18px,4vw,40px);margin-top:10px;flex-wrap:wrap}
+.hero-trio .ht-l{font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;opacity:.7;color:rgba(250,248,244,.85)}
+.hero-trio .ht-v{font-family:'Amboqia Boriango',Georgia,serif;font-variant-numeric:tabular-nums;font-size:clamp(22px,3.6vw,36px);line-height:1.05;color:rgba(250,248,244,.92);margin-top:4px}
+.hero-trio .ht.is-rec .ht-v{font-size:clamp(48px,9vw,104px);color:var(--cream);text-shadow:0 2px 28px rgba(16,39,66,.7)}
+.hero-trio .ht.is-rec .ht-l{opacity:.9;color:rgba(250,248,244,.92)}
 .range-marks{display:flex;justify-content:space-between;margin-top:14px;gap:12px}
 .rm{flex:1}
 .rm-v{font-size:clamp(18px,2.6vw,26px);font-weight:700;font-variant-numeric:tabular-nums}
@@ -369,6 +374,9 @@ table.comp-matrix .matrix-addr{display:block}
 .addr-row.is-card .comp-stack-addr{margin:0;flex:1 1 auto;min-width:0}
 .small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
 .chart-read{font-size:16px;line-height:1.5;margin-top:18px;max-width:720px}
+.status-price{margin:8px 0 22px}
+.status-price .subhead{margin:0 0 10px}
+.status-price-table th.n,.status-price-table td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .ppsf-status{margin:8px 0 28px}
 .ppsf-status .subhead{margin:0 0 10px}
 .ppsf-status-table th.n,.ppsf-status-table td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
