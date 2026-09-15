@@ -1,3 +1,54 @@
+# Current — 2026-09-15 (SITE-108 /price-drops — false absence + cap-as-count, cloud session)
+
+Surface: Claude cloud session `claude-cloud-fermi-20260915`, branch `claude/cool-fermi-0paep0`.
+Nodes held: SITE-108 (price-drops), SITE-91 (buy, not started).
+
+- **§0 P0 — /price-drops published a false absence.** `getPriceDrops` hands one
+  `listing_key` per event to `getListingTiles`, which puts them in ONE PostgREST
+  `.in()`. The key list rides the URL. Measured cliff (anon AND service role, so not
+  RLS): **530 keys = 14,410 chars → 528 rows; 540 keys = 14,680 chars → `TypeError:
+  fetch failed`**. Fetch-layer death, so `error.message` never named it — `fetchTiles`
+  threw and `makeResilientCached` cached the fallback `[]` as a real empty market. The
+  window held 545 keys, so the page said "No active single-family home … has a
+  documented asking-price cut in the last 7 days" while **262 homes qualified**.
+  Activity-dependent and silent: the busier the market, the more certain the page says
+  nothing is happening. Fix: `KEY_CHUNK = 300` chunked read, union sorted + paged in JS,
+  cache key `listing-tiles-v6`.
+- **§0 P0 — the cap published itself as the count, live on production.**
+  `total` was `capped.length`. Production read 2026-09-15: `/price-drops` **60** (true
+  262), `/price-drops/bend` **40** (true 115), `/price-drops/redmond` **40** (true 51).
+  Bend and Redmond both reading exactly 40 is the tell. Understates only. Fix:
+  `total = joined.length`; `shownCount` now scopes the Dataset's dollar sum + median so a
+  48-row figure cannot sit beside a 262-row count.
+- **UX / demoMatch.** `V3Carousel` parked prev/next as a static pair under the first card
+  — the cream-box tell the table scored `demoMatch: false`. Restored shadcn's flanking
+  chevrons, centred on the media midline (measured: media mid 344, chevron centre 344),
+  44x44, navy on cream. Barrel var defaults moved to `:where()` so a consumer override
+  stops silently losing the cascade — which is also why `/price-drops` cards were 280px
+  wide instead of the 22rem the page had asked for since it was written (specs line
+  wrapped; hero image 262 → 334, floor is 300).
+- **Tooling fixed, not worked around.**
+  - `start:ci` hard-coded `-p 3000`, so the `PORT=` its own docs advertise could never
+    work. Now `next start -p ${PORT:-3000}`.
+  - `check-route-content-floor.mjs` measures IMAGES with a bare `chromium.launch()`.
+    In a cloud sandbox Node reaches the photo CDNs through the proxy and headless
+    Chromium does not, so every image-bearing route collapsed to `heroImageWidth: 120`
+    and floors failed on routes nobody touched. `take-route-shots.mjs` already solved
+    this ("TRAP 10"); extracted to `scripts/lib/remote-media-proxy.mjs` and shared.
+    Violations went 10 → 6 and `price-drops` now reads
+    `words 1800, images 7, hero 334px, jsonLd 6` — **passes its floor**.
+- **Pre-existing content-floor violations this surfaced** (NOT from this diff — none of
+  these routes render a `.v3-carousel`, verified 0 elements each): `about`
+  heroImageWidth 725 < 1296; `compare` heroImageNatural 1365 < 1382;
+  `place-type-community` heroImageNatural 720 < 2043; `search` heroImageWidth 160 < 230;
+  `team` words 115 < 130; `oregon-city` HTTP 500. Belongs to SITE-90 / 95 / 107 / 110 / 113.
+- **Sandbox limits worth knowing:** `sitemaps/listings.xml` 500s locally on a Postgres
+  statement timeout (200 on production); headless Chromium cannot reach the Spark CDN
+  directly (curl can) — that is what the shared media proxy is for.
+- **Judge:** no `grok` CLI and no `cursor-agent` in this sandbox, so the chain falls to
+  the claude CLI. Judge = claude-sonnet-5, builder = claude-opus-5. The live table was
+  scored on grok-4.6, so this mark REBASELINES the class and the node is NOT done on it.
+
 # Current — 2026-09-15 (Public Patch P0 Tip Ready — place plats + search + rail flip)
 
 Surface: Public Patch on Matthews Mini. Tip Ready locally. **Do not push origin** — Cos Mini lands. HOLD owner email.
