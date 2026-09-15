@@ -11,16 +11,17 @@ import { getLiveMortgageRate } from '@/lib/data/market/getLiveMortgageRate'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { formatDateTime } from '@/lib/format/date'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
-import { composeInvestInsightPages, type InvestInsightPage } from './invest-insight'
+import type { V3ChartProps, V3PulseProps } from '@/components/site/v3'
+import { composeInvestInsightChart, investActiveTotal } from './invest-insight'
 import { composeInvestListings, type InvestListingRow } from './invest-listings'
 import { composeInvestPulse } from './invest-pulse'
 import { composeInvestSegmentRows, type InvestSegmentTableRow } from './invest-table'
-import type { V3PulseProps } from '@/components/site/v3'
 
 export type InvestBoard = {
   segments: PublicSegmentRow[]
   listings: InvestListingRow[]
-  insightPages: InvestInsightPage[]
+  insightChart: V3ChartProps | null
+  activeTotal: number
   segmentRows: InvestSegmentTableRow[]
   pulse: V3PulseProps | null
   liveRate: Awaited<ReturnType<typeof getLiveMortgageRate>> | null
@@ -81,7 +82,8 @@ export const loadInvestBoard = cache(async (): Promise<InvestBoard> => {
   return {
     segments,
     listings,
-    insightPages: composeInvestInsightPages(segments),
+    insightChart: composeInvestInsightChart(segments),
+    activeTotal: investActiveTotal(segments),
     segmentRows: composeInvestSegmentRows(segments),
     pulse: composeInvestPulse({ rows: segments, stamp: readStamp }),
     liveRate,

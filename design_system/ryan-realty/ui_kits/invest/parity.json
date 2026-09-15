@@ -21,12 +21,12 @@
     },
     {
       "name": "V3Pulse",
-      "section": "#place — the opening. The finding as the H1, the four largest income populations as a part-to-whole with a definition and a door behind each, the moment of the read, and the §0 trace. Composed by app/invest/_v3/invest-pulse.ts, which publishes nothing when the read comes back empty.",
+      "section": "#place — the opening. The finding as the H1, one land reading (the chart draws the rest), the moment of the read, and the §0 trace. Composed by app/invest/_v3/invest-pulse.ts, which publishes nothing when the read comes back empty.",
       "blocking": true
     },
     {
       "name": "InvestInsight",
-      "section": "#place-insight — beautifului-insight InsightPager + scrubber. One page per income type, same live counts as the Pulse.",
+      "section": "#place-insight — beautifului-insight via V3Chart year pages + chart scrubber (InsightPager). Same live counts as the Pulse.",
       "blocking": true
     },
     {
@@ -59,7 +59,7 @@
     "V3SectionTracker + inline JSON-LD (not sections)",
     "V3Breadcrumb",
     "V3Pulse #place -- the finding, the H1, the live counts, the switch",
-    "InvestInsight #place-insight -- paged insights + scrubber (beautifului-insight)",
+    "InvestInsight #place-insight -- V3Chart year pages + chart scrubber (beautifului-insight)",
     "InvestTables -- shadcn Table of types and live listings",
     "V3Ledger #searches -- crawlable listing or type doors",
     "V3Quiet #tools -- the cost of money and the math doors",

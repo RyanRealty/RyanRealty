@@ -11,7 +11,7 @@
   margin: 0 auto;
   padding: 0 var(--v3-gutter);
   display: grid;
-  gap: var(--v3-space-xl);
+  gap: var(--v3-space-lg);
 }
 
 .invest-tables__block {

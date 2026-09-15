@@ -43,7 +43,7 @@ export function InvestTables({
               How each type trades
             </h2>
             <p className="invest-tables__lede">
-              Tap a row for the rest of the published pace. Counts match the finding above.
+              Tap a row for the rest of the published pace. For-sale counts are the same numbers as the chart.
             </p>
             <Table>
               <TableHeader>
