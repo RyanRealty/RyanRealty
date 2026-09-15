@@ -1,6 +1,8 @@
 /**
- * Verified city outlines for the /cities Atlas. Unknown geometry is omitted —
- * a missing boundary is not a point we invent (CLAUDE.md §0).
+ * Verified city outlines for the /cities Atlas. Geometry comes from
+ * `getBoundaryGeoJSON({ geoType: 'city' })` (TIGER rows in `boundaries`).
+ * Unknown geometry is omitted — a missing boundary is not a point we invent
+ * (CLAUDE.md §0).
  */
 
 import type { AtlasRegion } from '@/components/site/v3'

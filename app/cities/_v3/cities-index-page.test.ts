@@ -10,6 +10,8 @@ describe('cities index SITE-92', () => {
     expect(PAGE).toMatch(/<V3Quiet/)
     expect(PAGE).toMatch(/<RegionalAlertSheet/)
     expect(PAGE).toMatch(/<V3Atlas/)
+    expect(PAGE).toMatch(/getBoundaryGeoJSON/)
+    expect(PAGE).not.toMatch(/getCityBoundaryGeoJSON/)
     expect(PAGE).toMatch(/<CitiesInsight/)
     expect(PAGE).toMatch(/<CitiesAlertStrip/)
     expect(PAGE).toMatch(/<V3Number/)

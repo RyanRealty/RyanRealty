@@ -30,7 +30,7 @@ import { valuationHref } from '@/lib/site/valuation-href'
 import type { Metadata } from 'next'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
-import { getAllCitySnapshots, getCityBoundaryGeoJSON } from '@/lib/data'
+import { getAllCitySnapshots, getBoundaryGeoJSON } from '@/lib/data'
 import { getDetachedOverlays, type DetachedOverlay } from '@/lib/data/market-truth/getSellBendMarket'
 import { getPublicDetachedMonthly, type PublicMonthlyPoint } from '@/lib/data/market-truth/public-monthly'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
@@ -200,11 +200,14 @@ export default async function CitiesPage() {
             .split('-')
             .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
             .join(' ')
-          return { slug, name, geometry: await getCityBoundaryGeoJSON(name) }
+          // TIGER city polygons live in `boundaries` (geo_type=city).
+          // One RPC miss must not blank the other outlines.
+          const geometry = await getBoundaryGeoJSON({ geoType: 'city', geoSlug: slug }).catch(() => null)
+          return { slug, name, geometry }
         }),
       ),
       [] as Array<{ slug: string; name: string; geometry: unknown }>,
-      4000,
+      8000,
       'cities:boundaries',
     ),
   ])
