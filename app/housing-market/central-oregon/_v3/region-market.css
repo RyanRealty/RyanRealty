@@ -87,15 +87,32 @@
 }
 
 #market-insights .insight-cards__hero-value {
-  font-size: clamp(1.5rem, 3vw, 2.25rem);
-  font-weight: 600;
+  font-weight: 500;
+}
+
+#market-insights .digit-swap,
+#market-insights .insight-cards__swap-face,
+.region-insights .digit-swap,
+.v3-mos .digit-swap {
+  font-size: 1.125rem;
 }
 
 .region-insights .insight-cards__pager-btn,
+.region-insights .insight-cards__kind,
 .region-insights .insight-cards__metric,
 .region-insights .insight-cards__alloc-key,
 .region-insights .insight-cards__alloc-seg {
   color: var(--v3-ink);
+}
+
+/* year-open reuses .v3-chart__hover as the Anomaly tab hook. Kill the
+   plot-layer absolute inset so the tab cannot cover DigitSwap or MOS. */
+#market-insights .insight-cards__kind.v3-chart__hover,
+.region-insights .insight-cards__kind.v3-chart__hover {
+  position: relative;
+  inset: auto;
+  cursor: pointer;
+  touch-action: auto;
 }
 
 #market-insights .insight-cards__pill-link,
@@ -172,7 +189,7 @@
   }
 
   #market-insights .insight-cards__hero-value {
-    font-size: clamp(1.25rem, 6.5vw, 1.75rem);
+    font-weight: 500;
   }
 
   #market.v3-instrument.hm-tremor .v3-figure__value {

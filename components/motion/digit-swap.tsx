@@ -75,7 +75,10 @@ export function DigitSwap({
     <span
       data-slot="digit-swap"
       data-direction={direction}
-      className={cn("inline-flex items-center whitespace-nowrap", className)}
+      className={cn(
+        "digit-swap inline-flex items-center whitespace-nowrap font-mono tabular-nums",
+        className,
+      )}
     >
       <span className="sr-only">{text}</span>
       <span aria-hidden="true" className="inline-flex items-center">

@@ -110,6 +110,29 @@
   font-weight: 600;
 }
 
+.insight-cards__kinds {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.insight-cards__kind {
+  min-height: 44px;
+  flex: 0 0 auto;
+  padding-inline: 0.5rem;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.insight-cards__kind--on {
+  font-weight: 600;
+}
+
 .insight-cards__swap {
   display: flex;
   flex-direction: column;

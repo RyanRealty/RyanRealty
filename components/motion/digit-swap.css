@@ -1,5 +1,12 @@
-/* beUI DigitSwap slots. Color comes from the house wrapper. */
+/* beUI DigitSwap — fixed glyph slots. Color from the house wrapper. */
+
+.digit-swap {
+  letter-spacing: 0.12em;
+  font-size: 1.125rem;
+  font-variant-numeric: tabular-nums;
+}
 
 [data-slot='digit-swap-glyph'] {
-  box-shadow: inset 0 -1px 0 color-mix(in srgb, currentColor 22%, transparent);
+  box-shadow: inset 0 -2px 0 currentColor;
+  margin-inline: 0.12em;
 }

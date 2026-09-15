@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * Region fold InsightCards. Rest is Compare (two years, two DigitSwap
- * faces, scrub). Anomaly is pace (days / closings). Allocation is the
- * live inventory mix. #market-insights is the card so year-open frames
- * scrub driving DigitSwap.
+ * Region fold InsightCards. Rest is Compare. year-open clicks the
+ * in-card Anomaly tab (v3-chart__hover) — paged Insights
+ * Compare / Anomaly / Allocation, not a house month scrubber.
+ * Faces are DigitSwap 1ch glyph slots.
  */
 
 import Link from 'next/link'
@@ -14,7 +14,18 @@ import { InsightCards } from '@/components/motion/insight-cards'
 import { V3Chart, type V3ChartRead } from '@/components/site/v3/V3Chart'
 import { V3_ROOT_CLASS } from '@/components/site/v3'
 import { cn } from '@/lib/utils'
-import { insightFaceForRead, type RegionInsightPage, type RegionInsightSegment } from './region-figures'
+import {
+  insightFaceForRead,
+  type RegionInsightKind,
+  type RegionInsightPage,
+  type RegionInsightSegment,
+} from './region-figures'
+
+const KIND_TITLE: Record<RegionInsightKind, string> = {
+  compare: 'Compare',
+  anomaly: 'Anomaly',
+  allocation: 'Allocation',
+}
 
 export type RegionInsightCardsProps = {
   pages: readonly RegionInsightPage[]
@@ -49,7 +60,7 @@ function SwapFace({
       <DigitSwap
         value={value}
         animationKey={swapKey}
-        className="insight-cards__swap-face font-mono tabular-nums"
+        className="insight-cards__swap-face"
       />
       {label ? <span className="insight-cards__hero-label">{label}</span> : null}
     </span>
@@ -170,7 +181,7 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
   )
 
   const visual = current.chart ? (
-    <V3Chart {...current.chart} yearPages={false} onRead={onRead} />
+    <V3Chart {...current.chart} hover={false} yearPages={false} onRead={onRead} />
   ) : current.kind === 'allocation' && segments.length >= 2 ? (
     <AllocationBar segments={segments} selected={safeSegment} onSelect={setSegment} />
   ) : segments.length >= 2 ? (
@@ -183,6 +194,7 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
       className={cn(V3_ROOT_CLASS, 'region-insights')}
       title="Insights"
       kind={current.kind}
+      kinds={pages.map((item) => KIND_TITLE[item.kind])}
       page={safe}
       pageCount={pages.length}
       onPage={(index) => {

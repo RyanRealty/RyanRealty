@@ -201,6 +201,7 @@ export function buildRegionInsightPages(
           claim: undefined,
           keysToggle: false,
           yearPages: false,
+          hover: false,
           restingRead: 'last',
         },
       })

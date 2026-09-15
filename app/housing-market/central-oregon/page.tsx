@@ -470,7 +470,8 @@ export default async function CentralOregonRegionPage() {
             )}
             figures={[]}
             /* THE OPENING IS A CLAIM AND A DRAWING (SITE-103). MOS + InsightCards.
-               Rest is Compare: two DigitSwap faces, scrub. Not Animate chrome. */
+               Rest is Compare: two DigitSwap glyph slots. year-open pages
+               Insights to Anomaly, not a month scrub. */
             chartFirst
             foldAfter={REGION_LEAD_FIGURES}
             foldLabel={v3Text(REGION_MARKET_FOLD_LABEL)}

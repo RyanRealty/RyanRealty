@@ -28,6 +28,8 @@ export type InsightCardsProps = {
   className?: string
   id?: string
   kind?: string
+  /** Catalog page names — Compare / Anomaly / Allocation. */
+  kinds?: readonly string[]
 }
 
 export function InsightCards({
@@ -45,12 +47,15 @@ export function InsightCards({
   className,
   id,
   kind,
+  kinds,
 }: InsightCardsProps) {
   if (pageCount < 2) return null
   const safe = Math.max(0, Math.min(pageCount - 1, page))
   const move = (direction: -1 | 1) => {
     onPage((safe + direction + pageCount) % pageCount)
   }
+
+  const nextKind = kinds && kinds.length >= 2 ? (safe + 1) % kinds.length : -1
 
   return (
     <div
@@ -114,6 +119,26 @@ export function InsightCards({
                 ) : null}
               </p>
             ) : null}
+          </div>
+        ) : null}
+        {kinds && kinds.length >= 2 ? (
+          <div className="insight-cards__kinds" role="tablist" aria-label="Insight pages">
+            {kinds.map((label, index) => (
+              <button
+                key={label}
+                type="button"
+                role="tab"
+                className={cn(
+                  'insight-cards__kind',
+                  index === safe && 'insight-cards__kind--on',
+                  index === nextKind && 'v3-chart__hover',
+                )}
+                aria-selected={index === safe}
+                onClick={() => onPage(index)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         ) : null}
         {visual ? <div className="insight-cards__visual">{visual}</div> : null}
