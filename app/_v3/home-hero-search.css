@@ -84,21 +84,30 @@
   margin: 0 0 var(--v3-space-sm);
 }
 
-/* Nested V3 roots paint cream (tokens.css .v3). On the Stage that reads as
-   sharp white cards behind Buy|Sell and behind the rounded morph field.
-   Kill those wrappers on Home only — pills + morph sit on the photo. */
+/* Real cream painters behind Buy|Sell + morph on the Stage photo:
+   1) Nested V3_ROOT_CLASS (.v3) — tokens.css paints background: var(--v3-surface)
+   2) Catalog TabsList pill variant — Tailwind bg-card (background-color: var(--card))
+   3) V3Tabs.css .v3-tabs__list — cream fill + --v3-radius-control: 0 (sharp rect)
+   Kill all three on Home. Keep navy Buy pill + rounded morph trigger on the photo.
+   !important on the track beats bg-card's background-color longhand. */
+.v3 .home-hero-search .v3,
 .v3 .home-hero-search .v3-tabs,
 .v3 .home-hero-search .v3-morph-search {
-  background: transparent;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
-.v3 .home-hero-search .v3-tabs__list {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
-  border-radius: 999px;
+.v3 .home-hero-search .v3-tabs__list,
+.v3 .home-hero-search .v3-tabs__list.bg-card {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  /* Beat V3Tabs.css radius-control: 0 so the track (when any fill leaks) stays pill. */
+  border-radius: 999px !important;
 }
 
+/* Rounded morph field stays cream; only the sharp wrapper around it dies above. */
 .v3 .home-hero-search .v3-morph-search__shell {
   border-radius: 0.875rem;
 }
