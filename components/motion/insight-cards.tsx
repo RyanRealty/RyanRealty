@@ -22,7 +22,9 @@ const formatMoney = (v: number) => `$${Math.round(v).toLocaleString('en-US')}`
 const formatCount = (v: number) => Math.round(v).toLocaleString('en-US')
 
 function makePoints(values: number[], gap = 6): LivelinePoint[] {
-  const end = Math.floor(Date.now() / 1000)
+  // Fixed epoch: demo scrub times are relative. Live clocks in render
+  // (incl. useMemo) fail ci:hydration-safety (#418).
+  const end = 1_700_000_000
   return values.map((value, index) => ({
     time: end - (values.length - 1 - index) * gap,
     value,
