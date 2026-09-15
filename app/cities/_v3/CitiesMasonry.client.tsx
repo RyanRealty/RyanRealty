@@ -20,8 +20,8 @@ export type CitiesMasonryItem = {
 }
 
 const PAGE = 6
-const CASCADE_HEIGHTS = [280, 196, 248, 172, 232, 204] as const
-const CASCADE_RATIOS = ['4 / 5', '1 / 1', '3 / 4', '5 / 4', '5 / 6', '2 / 3'] as const
+const CASCADE_HEIGHTS = [196, 132, 172, 120, 160, 144] as const
+const CASCADE_RATIOS = ['5 / 6', '5 / 4', '1 / 1', '4 / 3', '3 / 4', '6 / 5'] as const
 
 export function CitiesMasonry({
   id,

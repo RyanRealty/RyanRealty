@@ -23,11 +23,12 @@ describe('cities-catalog SITE-92', () => {
     expect(css).toMatch(/\.cities-fold \.v3-mos__plain/)
     expect(css).not.toMatch(/max-height: min\(12vh, 4\.75rem\)/)
     expect(css).not.toMatch(/min\(28vh, 8\.5rem\)/)
-    expect(css).toMatch(/min\(34vh, 18rem\)/)
+    expect(css).toMatch(/min\(22vh, 10\.5rem\)/)
     expect(css).toMatch(/\.cities-fold__drawing \.v3-atlas__stage/)
     expect(css).toMatch(/overflow: visible/)
     expect(css).toMatch(/\.cities-fold \.v3-alerts__row/)
     expect(css).toMatch(/grid-template-columns: minmax\(0, 1fr\) auto/)
+    expect(css).toMatch(/#featured-cities > :has\(> \.v3-ledger__list\)/)
     expect(css).not.toMatch(/order: -1/)
   })
 

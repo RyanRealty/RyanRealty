@@ -1,4 +1,12 @@
-# Current — 2026-09-15 (SITE-92 cities rematch after Mini-4)
+# Current — 2026-09-15 (SITE-92 cities rematch after Mini-5)
+
+Surface: Cursor cloud tip worker on `cursor/site-92-cities-tip-35f7` PR #251. Claim `cursor-cloud-site92-20260915`. No merge. SITE-103/110 left alone.
+
+- **Done:** Mini-5 rematch after tip `825cb382` (`demoMatch` false, score 50). Rest-fold: combobox field chrome, masonry names/counts on photos, Allocation+Liveline one object, full-width atlas with label subset, 375 alerts CTA, A–Z bar in opener. `--ship` still exit 1 — demoMatch not invented.
+- **Next:** Cos Mini `--ship`s. Do not merge. Do not invent demoMatch.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `scripts/lib/taste-receipt.mjs --ship`.
+
+# Prior — 2026-09-15 (SITE-92 cities rematch after Mini-4)
 
 Surface: Cursor cloud tip worker on `cursor/site-92-cities-tip-35f7` PR #251. Claim `cursor-cloud-site92-20260915`. No merge. SITE-103/110 left alone.
 
