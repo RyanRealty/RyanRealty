@@ -1,9 +1,9 @@
-# Current — 2026-09-15 (SITE-110 search catalog rematch)
+# Current — 2026-09-15 (SITE-110 rematch after Mini 58)
 
 Surface: Cursor cloud. Branch `cursor/site-110-search-tip-21f9`. Do not merge. Cos Mini-judges.
 
-- **Done:** After Mini `demoMatch: false` on tip `a54faff47` / receipt `d0167511`, installed live catalog objects: MorphingSearch (no V3 wrapper), cmdk Command, V3Sheet + RangeSlider, V3Atlas as the map pane. SITE-103/107/109/CMA left alone.
-- **Next:** Cos Mini re-judge. Do not invent `demoMatch`. `--ship` stays honest.
+- **Done:** After Mini 58 / `83ea850ff` (`demoMatch` false): MorphingSearch hides the cream label when open; All filters is a V3Sheet drawer (price + type + flags, no bedroom wizard); RangeSlider CSS fill; Command Sort rows in the first fold. SITE-103/107/109/CMA left alone.
+- **Next:** Cos Mini re-judge. Do not invent `demoMatch`. `--ship` stays honest until Mini writes a receipt.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 
 # Prior — 2026-09-15 ~06:40 PT (Cos Mini land complete — AE rebuild Canter)

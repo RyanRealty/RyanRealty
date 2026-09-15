@@ -606,39 +606,30 @@ export function MorphingSearch({
 						)}
 					></motion.button>
 				) : null}
-				<motion.div
-					aria-hidden="true"
-					initial={false}
-					animate={{ opacity: open ? 0 : 1 }}
-					transition={
-						reduce
-							? { duration: 0 }
-							: {
-									duration: 0.1,
-									delay: open ? 0.1 : 0.12,
-									ease: EASE_OUT,
-								}
-					}
-					className={cn(
-						"pointer-events-none absolute inset-0 flex items-center",
-						backgroundScrollLocked && "z-[60]",
-						iconOnly ? "justify-center" : "gap-2.5 px-3.5",
-					)}
-				>
-					<Search className="size-4 shrink-0 text-muted-foreground" />
-					{iconOnly ? null : (
-						<>
-							<span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-								{placeholder}
-							</span>
-							{shortcut ? (
-								<kbd className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md border border-border px-2 text-xs text-muted-foreground">
-									{shortcut.toUpperCase()}
-								</kbd>
-							) : null}
-						</>
-					)}
-				</motion.div>
+				{!open ? (
+					<motion.div
+						aria-hidden="true"
+						initial={false}
+						className={cn(
+							"pointer-events-none absolute inset-0 flex items-center",
+							iconOnly ? "justify-center" : "gap-2.5 px-3.5",
+						)}
+					>
+						<Search className="size-4 shrink-0 text-muted-foreground" />
+						{iconOnly ? null : (
+							<>
+								<span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+									{placeholder}
+								</span>
+								{shortcut ? (
+									<kbd className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md border border-border px-2 text-xs text-muted-foreground">
+										{shortcut.toUpperCase()}
+									</kbd>
+								) : null}
+							</>
+						)}
+					</motion.div>
+				) : null}
 			</div>
 			{overlay}
 		</LayoutGroup>

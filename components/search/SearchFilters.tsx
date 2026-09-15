@@ -1334,6 +1334,11 @@ export default function SearchFilters({
           maxPrice={initialFilters.maxPrice}
           beds={initialFilters.beds}
           propertyType={initialFilters.propertyType}
+          hasPool={initialFilters.hasPool}
+          hasView={initialFilters.hasView}
+          hasWaterfront={initialFilters.hasWaterfront}
+          hasFireplace={initialFilters.hasFireplace}
+          hasGolfCourse={initialFilters.hasGolfCourse}
         />
       ) : null}
     </div>

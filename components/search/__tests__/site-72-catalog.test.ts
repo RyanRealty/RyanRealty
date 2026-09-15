@@ -28,8 +28,11 @@ describe('SITE-72 catalog wiring', () => {
   it('All-filters is the house sheet and price uses the same ticks', () => {
     const sheet = readSrc('app/search/_v3/SearchFiltersSheet.client.tsx')
     expect(sheet).toMatch(/V3Sheet/)
-    expect(sheet).toMatch(/SearchPriceRail/)
-    expect(sheet).toMatch(/How many bedrooms/)
+    expect(sheet).toMatch(/surface="drawer"/)
+    expect(sheet).toMatch(/showProgress=\{false\}/)
+    expect(sheet).toMatch(/RangeSlider/)
+    expect(sheet).toMatch(/Flags/)
+    expect(sheet).not.toMatch(/How many bedrooms/)
     expect(readSrc('components/search/SearchFilters.tsx')).toMatch(/SearchFiltersSheet/)
   })
 

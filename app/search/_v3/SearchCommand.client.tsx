@@ -70,7 +70,7 @@ export function SearchCommand({ onOpenFilters }: SearchCommandProps) {
         description="Jump, filter, or sort this search"
       >
         <CommandInput placeholder="Type a command or place" />
-        <CommandList>
+        <CommandList className="max-h-[min(32rem,70dvh)]">
           <CommandEmpty>No command matches that.</CommandEmpty>
           <CommandGroup heading="View">
             <CommandItem value="split view" onSelect={() => go('/homes-for-sale?view=split')}>
@@ -87,6 +87,21 @@ export function SearchCommand({ onOpenFilters }: SearchCommandProps) {
             </CommandItem>
           </CommandGroup>
           <CommandSeparator />
+          <CommandGroup heading="Sort">
+            <CommandItem value="newest listed" onSelect={() => go('/homes-for-sale?sort=newest')}>
+              Newest
+              <CommandShortcut>N</CommandShortcut>
+            </CommandItem>
+            <CommandItem value="price low to high" onSelect={() => go('/homes-for-sale?sort=price_asc')}>
+              Price, low to high
+              <CommandShortcut>1</CommandShortcut>
+            </CommandItem>
+            <CommandItem value="price high to low" onSelect={() => go('/homes-for-sale?sort=price_desc')}>
+              Price, high to low
+              <CommandShortcut>9</CommandShortcut>
+            </CommandItem>
+          </CommandGroup>
+          <CommandSeparator />
           <CommandGroup heading="Filters">
             {onOpenFilters ? (
               <CommandItem
@@ -99,24 +114,17 @@ export function SearchCommand({ onOpenFilters }: SearchCommandProps) {
                 All filters
                 <CommandShortcut>A</CommandShortcut>
               </CommandItem>
-            ) : null}
+            ) : (
+              <CommandItem value="all filters" onSelect={() => go('/homes-for-sale')}>
+                All filters
+                <CommandShortcut>A</CommandShortcut>
+              </CommandItem>
+            )}
             <CommandItem value="for sale active" onSelect={() => go('/homes-for-sale?status=Active')}>
               For sale
             </CommandItem>
             <CommandItem value="sold closed" onSelect={() => go('/homes-for-sale?status=Sold')}>
               Sold
-            </CommandItem>
-          </CommandGroup>
-          <CommandSeparator />
-          <CommandGroup heading="Sort">
-            <CommandItem value="sort newest" onSelect={() => go('/homes-for-sale?sort=newest')}>
-              Newest
-            </CommandItem>
-            <CommandItem value="sort price low" onSelect={() => go('/homes-for-sale?sort=price_asc')}>
-              Price, low to high
-            </CommandItem>
-            <CommandItem value="sort price high" onSelect={() => go('/homes-for-sale?sort=price_desc')}>
-              Price, high to low
             </CommandItem>
           </CommandGroup>
           <CommandSeparator />

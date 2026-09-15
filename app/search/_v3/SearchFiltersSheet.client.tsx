@@ -1,13 +1,20 @@
 'use client'
 
 /**
- * house-sheet as All filters. Progressive V3Sheet + catalog RangeSlider.
- * Not the registry min/max dump (demoMatch false).
+ * house-sheet as All filters. Bare V3Sheet drawer — one working surface
+ * with price, type, and flags together. Not a custom right-rail wizard.
  */
 import { useEffect, useMemo, useState } from 'react'
+import { RangeSlider } from '@/components/motion/range-slider'
 import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
-import { rangeToUrl, urlToRange, V3_PRICE_STOPS } from '@/components/site/v3/V3Range.logic'
-import { SearchPriceRail } from './SearchPriceRail.client'
+import {
+  formatPriceRange,
+  formatPriceStop,
+  rangeToUrl,
+  snapToStops,
+  urlToRange,
+  V3_PRICE_STOPS,
+} from '@/components/site/v3/V3Range.logic'
 
 export type SearchFiltersSheetProps = {
   open: boolean
@@ -17,15 +24,12 @@ export type SearchFiltersSheetProps = {
   maxPrice?: string
   beds?: string
   propertyType?: string
+  hasPool?: string
+  hasView?: string
+  hasWaterfront?: string
+  hasFireplace?: string
+  hasGolfCourse?: string
 }
-
-const BED_OPTIONS = [
-  { value: 'any', label: 'Any' },
-  { value: '1', label: '1+' },
-  { value: '2', label: '2+' },
-  { value: '3', label: '3+' },
-  { value: '4', label: '4+' },
-] as const
 
 const TYPE_OPTIONS = [
   { value: 'any', label: 'Any' },
@@ -35,6 +39,23 @@ const TYPE_OPTIONS = [
   { value: 'D', label: 'Land' },
 ] as const
 
+function flagValue(on: string | undefined): string {
+  return on === '1' ? 'On' : 'Any'
+}
+
+function stopIndex(value: number): number {
+  const snapped = snapToStops(value, V3_PRICE_STOPS)
+  const exact = V3_PRICE_STOPS.indexOf(snapped as (typeof V3_PRICE_STOPS)[number])
+  if (exact >= 0) return exact
+  let best = 0
+  for (let i = 1; i < V3_PRICE_STOPS.length; i++) {
+    const stop = V3_PRICE_STOPS[i] ?? 0
+    const bestStop = V3_PRICE_STOPS[best] ?? 0
+    if (Math.abs(stop - value) < Math.abs(bestStop - value)) best = i
+  }
+  return best
+}
+
 export function SearchFiltersSheet({
   open,
   onOpenChange,
@@ -43,6 +64,11 @@ export function SearchFiltersSheet({
   maxPrice,
   beds,
   propertyType,
+  hasPool,
+  hasView,
+  hasWaterfront,
+  hasFireplace,
+  hasGolfCourse,
 }: SearchFiltersSheetProps) {
   const urlPrice = useMemo(
     () => urlToRange(minPrice, maxPrice, V3_PRICE_STOPS),
@@ -53,23 +79,55 @@ export function SearchFiltersSheet({
     setDraftPrice(urlPrice)
   }, [urlPrice])
 
+  const lastIdx = Math.max(0, V3_PRICE_STOPS.length - 1)
+  const hiIdx = stopIndex(draftPrice.high)
+  const first = V3_PRICE_STOPS[0] ?? 0
+  const last = V3_PRICE_STOPS[lastIdx] ?? first
+  const lo = Math.min(Math.max(draftPrice.low, first), last)
+  const hi = V3_PRICE_STOPS[hiIdx] ?? last
+
   const steps: readonly V3SheetStep[] = [
     {
-      id: 'beds',
-      label: 'How many bedrooms?',
+      id: 'filters',
+      label: 'What should this search include?',
+      children: [
+        'Ask, home type, and flags sit on one sheet — the same language as sell.',
+      ],
+      blocks: [
+        {
+          kind: 'drawing',
+          label: formatPriceRange(lo, hi, V3_PRICE_STOPS),
+          node: (
+            <RangeSlider
+              value={hiIdx}
+              min={0}
+              max={lastIdx}
+              step={1}
+              showTicks
+              aria-label="Maximum ask"
+              formatValueText={(i) => formatPriceStop(V3_PRICE_STOPS[i] ?? hi, V3_PRICE_STOPS)}
+              onValueChange={(i) => {
+                const next = V3_PRICE_STOPS[i] ?? hi
+                setDraftPrice({ low: lo, high: next })
+              }}
+            />
+          ),
+        },
+        {
+          kind: 'facts',
+          label: 'Flags',
+          items: [
+            { label: 'Bedrooms', value: beds ? `${beds}+` : 'Any' },
+            { label: 'Pool', value: flagValue(hasPool) },
+            { label: 'Waterfront', value: flagValue(hasWaterfront) },
+            { label: 'View', value: flagValue(hasView) },
+            { label: 'Fireplace', value: flagValue(hasFireplace) },
+            { label: 'Golf', value: flagValue(hasGolfCourse) },
+          ],
+        },
+      ],
       field: {
-        kind: 'choice',
-        name: 'beds',
-        label: 'Bedrooms',
-        options: BED_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
-      },
-      advanceLabel: 'Next',
-    },
-    {
-      id: 'type',
-      label: 'What kind of home?',
-      field: {
-        kind: 'choice',
+        kind: 'select',
         name: 'propertyType',
         label: 'Home type',
         options: TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
@@ -78,53 +136,32 @@ export function SearchFiltersSheet({
     },
   ]
 
-  if (!open) return null
-
   return (
-    <div className="fixed inset-0 z-50">
-      <button
-        type="button"
-        aria-label="Close all filters"
-        className="absolute inset-0 bg-foreground/40"
-        onClick={() => onOpenChange(false)}
-      />
-      <div
-        role="dialog"
-        aria-label="All filters"
-        className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col overflow-y-auto bg-background"
-      >
-        <div className="border-b border-border px-4 py-3">
-          <SearchPriceRail
-            low={draftPrice.low}
-            high={draftPrice.high}
-            onChange={(low, high) => setDraftPrice({ low, high })}
-            onCommit={(low, high) => setDraftPrice({ low, high })}
-          />
-        </div>
-        <V3Sheet
-          heading="All filters"
-          eyebrow="This search"
-          defaultAnswers={{
-            beds: beds || 'any',
-            propertyType: propertyType || 'any',
-          }}
-          steps={steps}
-          onAdvance={(event: V3SheetAdvance) => {
-            if (event.toStepId != null) return
-            const next = rangeToUrl(draftPrice.low, draftPrice.high, V3_PRICE_STOPS)
-            onApply({
-              minPrice: next.min,
-              maxPrice: next.max,
-              beds: event.answers.beds && event.answers.beds !== 'any' ? event.answers.beds : undefined,
-              propertyType:
-                event.answers.propertyType && event.answers.propertyType !== 'any'
-                  ? event.answers.propertyType
-                  : undefined,
-            })
-            onOpenChange(false)
-          }}
-        />
-      </div>
-    </div>
+    <V3Sheet
+      heading="All filters"
+      eyebrow="This search"
+      surface="drawer"
+      open={open}
+      onOpenChange={onOpenChange}
+      showProgress={false}
+      showEcho={false}
+      defaultAnswers={{
+        propertyType: propertyType || 'any',
+      }}
+      steps={steps}
+      onAdvance={(event: V3SheetAdvance) => {
+        if (event.toStepId != null) return
+        const next = rangeToUrl(draftPrice.low, draftPrice.high, V3_PRICE_STOPS)
+        onApply({
+          minPrice: next.min,
+          maxPrice: next.max,
+          propertyType:
+            event.answers.propertyType && event.answers.propertyType !== 'any'
+              ? event.answers.propertyType
+              : undefined,
+        })
+        onOpenChange(false)
+      }}
+    />
   )
 }
