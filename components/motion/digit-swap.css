@@ -1,33 +1,5 @@
-/* beUI Digit Swap preview. Color comes from the house wrapper. */
+/* beUI DigitSwap slots. Color comes from the house wrapper. */
 
-.digit-swap-replay {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.digit-swap-replay__label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.digit-swap-replay__face {
-  letter-spacing: 0.08em;
-}
-
-.digit-swap-replay__face [data-slot='digit-swap-glyph'] {
+[data-slot='digit-swap-glyph'] {
   box-shadow: inset 0 -1px 0 color-mix(in srgb, currentColor 22%, transparent);
-}
-
-.digit-swap-replay__btn {
-  min-height: 44px;
-  padding-inline: 0.75rem;
-  border: 1px solid currentColor;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 0.875rem;
 }

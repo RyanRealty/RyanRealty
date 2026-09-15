@@ -8,8 +8,7 @@
  * beUI number source. House wrappers re-export the same modules.
  */
 import { InsightCards } from '@/components/motion/insight-cards'
-import { DigitSwap, DigitSwapReplay } from '@/components/motion/digit-swap'
+import { DigitSwap } from '@/components/motion/digit-swap'
 
 void InsightCards
 void DigitSwap
-void DigitSwapReplay

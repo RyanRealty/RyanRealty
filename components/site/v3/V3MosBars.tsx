@@ -14,7 +14,7 @@ import { useCallback, useId, useMemo, useState } from 'react'
 import { buildPairPlot } from '@/lib/charts/plot'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3SourceLine } from './atoms'
-import { DigitSwapReplay } from '@/components/motion/digit-swap'
+import { DigitSwap } from '@/components/motion/digit-swap'
 import { V3Number } from './V3Number.client'
 import './tokens.css'
 import './V3MosBars.css'
@@ -35,7 +35,7 @@ export type V3MosBarsProps = {
   id?: string
   className?: string
   /**
-   * beUI DigitSwapPreview on the two sourced counts (slots + Animate).
+   * beUI DigitSwap on the two sourced counts (slots that roll).
    * Opt-in — other MOS mounts keep the count-up face.
    */
   replay?: boolean
@@ -76,14 +76,14 @@ export function V3MosBars({
   if (!plot) return null
 
   // Whole-number faces count up (beui-number / rareui); fractional sales stay static.
-  // `replay` is the DigitSwapPreview: live count in slots + Animate.
+  // `replay` is DigitSwap: live slotted counts that roll when the face changes.
   const valueFace = (label: string, value: number) => {
     if (replay) {
       return (
-        <DigitSwapReplay
+        <DigitSwap
           value={label}
           animationKey={`${id}-${label}`}
-          className="v3-mos__swap"
+          className="v3-mos__swap font-mono tabular-nums"
         />
       )
     }
@@ -111,28 +111,16 @@ export function V3MosBars({
       <div className="v3-mos__pair">
         {plot.bars.map((bar) => {
           const value = bar.index === 0 ? homesValue : salesValue
-          const rowClass = cn('v3-mos__barrow', replay && 'v3-mos__barrow--replay')
           const face = valueFace(bar.label, value)
-          const rowProps = {
-            className: rowClass,
-            'aria-describedby': open ? tipId : undefined,
-            onFocus: show,
-            onClick: show,
-          }
-          return replay ? (
-            <div key={bar.index} role="button" tabIndex={0} {...rowProps}>
-              <span className="v3-mos__barname">{bar.name}</span>
-              <span className="v3-mos__bartrack">
-                <span
-                  className="v3-mos__barfill"
-                  style={{ ['--v3-mos-pct' as string]: `${bar.pct.toFixed(2)}%` }}
-                  aria-hidden="true"
-                />
-              </span>
-              <span className="v3-mos__barvalue v3-mos__barvalue--replay">{face}</span>
-            </div>
-          ) : (
-            <button key={bar.index} type="button" {...rowProps}>
+          return (
+            <button
+              key={bar.index}
+              type="button"
+              className="v3-mos__barrow"
+              aria-describedby={open ? tipId : undefined}
+              onFocus={show}
+              onClick={show}
+            >
               <span className="v3-mos__barname">{bar.name}</span>
               <span className="v3-mos__bartrack">
                 <span

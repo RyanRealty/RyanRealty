@@ -6,7 +6,6 @@ import { MOS_METHODOLOGY_CLAUSE } from '@/lib/market/classify'
 import { REGION_CITIES_SOURCE, REGION_FOLD_LABEL, REGION_MARKET_FOLD_LABEL } from './region-constants'
 import { marketReportHereBody } from '@/lib/market/report-doors'
 import { v3Text } from '@/components/site/v3'
-import { maskDigits } from '@/components/motion/digit-swap'
 import {
   REGION_JARGON_RE,
   buildRegionInsightPages,
@@ -85,7 +84,8 @@ describe('SITE-88 visitor-facing region traces', () => {
     const page = readFileSync(resolve(__dirname, '../page.tsx'), 'utf8')
     expect(catalog).toContain("from '@/components/motion/insight-cards'")
     expect(catalog).toContain("from '@/components/motion/digit-swap'")
-    expect(catalog).toContain('DigitSwapReplay')
+    expect(catalog).toContain('DigitSwap')
+    expect(catalog).not.toContain('DigitSwapReplay')
     expect(page).toContain('replay')
     const cards = readFileSync(resolve(__dirname, '../../../../components/motion/insight-cards.tsx'), 'utf8')
     expect(cards).not.toMatch(/from ['"]@\/components\/motion\/insight-pager['"]/)
@@ -93,13 +93,16 @@ describe('SITE-88 visitor-facing region traces', () => {
     expect(cards).toContain('insight-cards__card')
     expect(cards).toContain('id={id} className="insight-cards__card"')
     const swap = readFileSync(resolve(__dirname, '../../../../components/motion/digit-swap.tsx'), 'utf8')
-    expect(swap).toContain('maskDigits')
-    expect(swap).toContain('useState(true)')
-    expect(swap).not.toMatch(/useState\(false\)/)
+    expect(swap).toContain('export function DigitSwap')
+    expect(swap).not.toContain('digit-swap-replay')
+    expect(swap).not.toMatch(/>Animate</)
+    expect(swap).not.toContain('DigitSwapReplay')
     expect(swap).not.toMatch(/alternate\?:/)
     const client = readFileSync(resolve(__dirname, 'RegionInsightCards.client.tsx'), 'utf8')
     expect(client).toContain('id="market-insights"')
-    expect(client).not.toMatch(/\breveal=/)
+    expect(client).toContain('DigitSwap')
+    expect(client).not.toContain('DigitSwapReplay')
+    expect(client).not.toMatch(/\bAnimate\b/)
   })
 
   it('insight pages are distinct jobs, not a year switcher of one series', () => {
@@ -123,46 +126,52 @@ describe('SITE-88 visitor-facing region traces', () => {
       ],
     }
     const pages = buildRegionInsightPages(overlay, HUD)
-    expect(pages.map((page) => page.key)).toEqual(['sale-2026', 'compare-2026-2024', 'ask'])
-    expect(pages[0]?.claim).toContain('2026 median sale')
+    expect(pages.map((page) => page.key)).toEqual(['compare-2026-2024', 'pace', 'mix'])
+    expect(pages.map((page) => page.kind)).toEqual(['compare', 'anomaly', 'allocation'])
+    expect(pages[0]?.claim).toContain('2026')
+    expect(pages[0]?.claim).toContain('2024')
     expect(pages[0]?.claim).toContain('$664K')
-    expect(pages[1]?.claim).toContain('2024')
-    expect(pages[1]?.claim).toContain('$664K')
-    expect(pages[1]?.figure).toContain('602')
-    expect(pages[1]?.chart?.series).toHaveLength(2)
-    expect(pages[2]?.figure).toContain('939')
-    expect(pages[1]?.secondFigure).toContain('664')
-    expect(pages[2]?.segments?.map((row) => row.key)).toEqual(['ask', 'pending'])
+    expect(pages[0]?.figure).toContain('602')
+    expect(pages[0]?.secondFigure).toContain('664')
+    expect(pages[0]?.chart?.series).toHaveLength(2)
+    expect(pages[1]?.figure).toBe('24')
+    expect(pages[1]?.segments?.map((row) => row.key)).toEqual(['days', 'closed'])
+    expect(pages[2]?.figure).toContain('655')
+    expect(pages[2]?.segments?.map((row) => row.key)).toEqual(['sale', 'pending'])
     expect(pages[0]?.pill).not.toMatch(/scrub/i)
     expect(pages[0]?.chart?.yearPages).toBe(false)
     expect(pages[0]?.chart?.keysToggle).toBe(false)
-    expect(pages[1]?.chart?.keysToggle).toBe(false)
-    expect(pages[1]?.chart?.yearPages).toBe(false)
     expect(pages.some((page) => /YEAR/.test(page.claim))).toBe(false)
     expect(pages[0]).not.toHaveProperty('alternate')
     const hovered = insightFaceForRead(pages[0]!, {
       tick: 'Apr',
-      readings: [{ name: '2026', label: '$650K', emphasis: true }],
+      readings: [
+        { name: '2024', label: '$610K' },
+        { name: '2026', label: '$650K', emphasis: true },
+      ],
     })
-    expect(hovered.claim).toBe('2026 median sale $650K in Apr')
-    expect(hovered.figure).toBe('$650K')
-    expect(hovered.figureLabel).toBe('2026 median sale in Apr')
+    expect(hovered.figure).toBe('$610K')
+    expect(hovered.secondFigure).toBe('$650K')
+    expect(hovered.claim).toContain('Apr')
+    expect(hovered.claim).toContain('$650K')
     expect(
       insightIsScrubbing(pages[0]!, {
         tick: 'Aug',
-        readings: [{ name: '2026', label: '$664K', emphasis: true }],
+        readings: [
+          { name: '2024', label: '$602K' },
+          { name: '2026', label: '$664K', emphasis: true },
+        ],
       }),
     ).toBe(false)
     expect(
       insightIsScrubbing(pages[0]!, {
         tick: 'Apr',
-        readings: [{ name: '2026', label: '$650K', emphasis: true }],
+        readings: [
+          { name: '2024', label: '$610K' },
+          { name: '2026', label: '$650K', emphasis: true },
+        ],
       }),
     ).toBe(true)
-    expect(maskDigits('$664K')).toBe('$•••K')
-    expect(maskDigits('1,502')).toBe('•,•••')
-    expect(maskDigits('325')).toBe('•••')
-    expect(maskDigits('$749,900')).toBe('$•••,•••')
   })
 })
 

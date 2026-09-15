@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { EASE_OUT } from "@/lib/ease";
 import { cn } from "@/lib/utils";
@@ -124,51 +123,4 @@ export function DigitSwap({
       </span>
     </span>
   );
-}
-
-/** Mask every digit of a sourced face. $664K → $•••K. */
-export function maskDigits(value: string | number): string {
-  return String(value).replace(/\d/g, '•')
-}
-
-/**
- * beUI DigitSwapPreview — fixed slots + Animate toggling the same sourced
- * face between digits and a • mask. Rest shows the live count (the preview
- * starts masked; hiding $664K / 1,502 / 325 read as missing figures).
- * Source: https://beui.dev/components/motion/number
- */
-export function DigitSwapReplay({
-  value,
-  label,
-  animationKey,
-  className,
-}: {
-  value: string | number
-  /** Preview "Card number" label above the slots. */
-  label?: string
-  animationKey?: string | number
-  className?: string
-}) {
-  const [revealed, setRevealed] = useState(true)
-  const face = revealed ? String(value) : maskDigits(value)
-  return (
-    <span className={cn("digit-swap-replay", className)}>
-      {label ? <span className="digit-swap-replay__label">{label}</span> : null}
-      <DigitSwap
-        value={face}
-        animationKey={`${animationKey ?? value}-${revealed ? "revealed" : "masked"}-${face}`}
-        direction={revealed ? "up" : "down"}
-        className="digit-swap-replay__face font-mono tabular-nums"
-      />
-      <button
-        type="button"
-        className="digit-swap-replay__btn"
-        aria-label={revealed ? "Animate masked number" : "Animate the number"}
-        aria-pressed={revealed}
-        onClick={() => setRevealed((current) => !current)}
-      >
-        Animate
-      </button>
-    </span>
-  )
 }

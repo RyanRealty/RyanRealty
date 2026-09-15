@@ -470,8 +470,7 @@ export default async function CentralOregonRegionPage() {
             )}
             figures={[]}
             /* THE OPENING IS A CLAIM AND A DRAWING (SITE-103). MOS + InsightCards.
-               Live list is DigitSwap on the ask insight page — never a two-up
-               poster under the chart. */
+               Rest is Compare: two DigitSwap faces, scrub. Not Animate chrome. */
             chartFirst
             foldAfter={REGION_LEAD_FIGURES}
             foldLabel={v3Text(REGION_MARKET_FOLD_LABEL)}

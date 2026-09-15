@@ -109,3 +109,77 @@
 .insight-cards__segment--on {
   font-weight: 600;
 }
+
+.insight-cards__swap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+}
+
+.insight-cards__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.insight-cards__metric {
+  min-height: 44px;
+  padding-inline: 0.75rem;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.insight-cards__metric--on {
+  font-weight: 600;
+}
+
+.insight-cards__alloc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.insight-cards__alloc-bar {
+  display: flex;
+  min-height: 2.75rem;
+  overflow: hidden;
+  gap: 0.125rem;
+}
+
+.insight-cards__alloc-seg {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid currentColor;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  cursor: pointer;
+}
+
+.insight-cards__alloc-seg--on {
+  background: color-mix(in srgb, currentColor 28%, transparent);
+}
+
+.insight-cards__alloc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.insight-cards__alloc-key {
+  min-height: 44px;
+  padding-inline: 0.75rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.insight-cards__alloc-key--on {
+  font-weight: 600;
+}

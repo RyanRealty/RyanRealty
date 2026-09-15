@@ -27,6 +27,7 @@ export type InsightCardsProps = {
   pill?: ReactNode
   className?: string
   id?: string
+  kind?: string
 }
 
 export function InsightCards({
@@ -43,6 +44,7 @@ export function InsightCards({
   pill,
   className,
   id,
+  kind,
 }: InsightCardsProps) {
   if (pageCount < 2) return null
   const safe = Math.max(0, Math.min(pageCount - 1, page))
@@ -51,7 +53,11 @@ export function InsightCards({
   }
 
   return (
-    <div className={cn('insight-cards', className)} data-insight-page={safe}>
+    <div
+      className={cn('insight-cards', className)}
+      data-insight-page={safe}
+      data-insight-kind={kind}
+    >
       <div className="insight-cards__pager" role="group" aria-label={`${title} pages`}>
         <span className="insight-cards__pager-face">
           <span className="insight-cards__pager-title">{title}</span>

@@ -59,21 +59,26 @@ import {
 import { CLOSED_SALES_TO_YEAR, HISTORY_PATH } from './region-constants'
 
 /** One InsightCards page. Distinct claim + figure; chart only when that page owns a series. */
+export type RegionInsightKind = 'compare' | 'anomaly' | 'allocation'
+
 export type RegionInsightSegment = {
   key: string
   label: string
   figure: string
+  /** Allocation bar share. Same unit as the other segments. */
+  weight?: number
 }
 
 export type RegionInsightPage = {
   key: string
+  kind: RegionInsightKind
   claim: string
   figure: string
   figureLabel: string
   /** CompareCard second series face (beautifului compare page). */
   secondFigure?: string
   secondLabel?: string
-  /** AllocationCard segments (beautifului ask page). */
+  /** Anomaly metric toggle or AllocationCard segments. */
   segments?: readonly RegionInsightSegment[]
   /** Series name the chart hover should write into the hero. */
   readName?: string
@@ -158,9 +163,8 @@ function lastPoint(series: V3ChartSeries | undefined) {
 }
 
 /**
- * beautifului-insight pages for the region fold. Three distinct jobs — this
- * year's median, the same month a year earlier, live asking — not YEAR 3/3
- * of one series.
+ * beautifului-insight pages for the region fold. Official InsightCards are
+ * Compare / Anomaly / Allocation — not three pages of one 2026 series.
  */
 export function buildRegionInsightPages(
   overlay: V3ChartProps | undefined,
@@ -171,28 +175,6 @@ export function buildRegionInsightPages(
   const newest = series[series.length - 1]
   const prior = series.length >= 2 ? series[series.length - 2] : undefined
   const newestLast = lastPoint(newest)
-  if (newest && newestLast && newest.points.length >= 2 && overlay) {
-    const year = String(newest.name)
-    pages.push({
-      key: `sale-${year}`,
-      claim: `${year} median sale ${String(newestLast.label)} in ${String(newestLast.tick)}`,
-      figure: String(newestLast.label),
-      figureLabel: `${year} median sale`,
-      readName: String(newest.name),
-      pill: 'See homes for sale',
-      pillHref: listingsBrowsePath(),
-      chart: {
-        ...overlay,
-        id: 'market-insights-sale',
-        caption: v3Text(`${year} median sale price by month, single-family`),
-        series: [newest],
-        claim: undefined,
-        keysToggle: false,
-        yearPages: false,
-        restingRead: 'last',
-      },
-    })
-  }
   if (newest && prior && newestLast && overlay && prior.points.length >= 2) {
     const tick = String(newestLast.tick)
     const priorSame =
@@ -200,6 +182,7 @@ export function buildRegionInsightPages(
     if (priorSame) {
       pages.push({
         key: `compare-${String(newest.name)}-${String(prior.name)}`,
+        kind: 'compare',
         claim: `${tick} ${String(newest.name)} median sale ${String(newestLast.label)}; ${String(prior.name)} was ${String(priorSame.label)}`,
         figure: String(priorSame.label),
         figureLabel: `${String(prior.name)} same month`,
@@ -223,33 +206,74 @@ export function buildRegionInsightPages(
       })
     }
   }
-  const medianList = hud.medianList != null && hud.medianList > 0 ? hud.medianList : null
-  const pending = hud.pending != null && hud.pending > 0 ? hud.pending : null
-  if (medianList != null) {
+
+  const daysToPending =
+    hud.daysToPending != null && hud.daysToPending > 0 ? hud.daysToPending : null
+  const closedLast30Days = hud.closed30 != null && hud.closed30 > 0 ? hud.closed30 : null
+  if (daysToPending != null && closedLast30Days != null) {
+    const closedFace = closedLast30Days.toLocaleString('en-US')
     pages.push({
-      key: 'ask',
-      claim:
-        pending != null
-          ? 'What sellers are asking right now, and how many homes are already under contract.'
-          : 'What sellers are asking right now across Central Oregon single-family listings.',
-      figure: formatPriceExact(medianList),
-      figureLabel: 'median list price',
+      key: 'pace',
+      kind: 'anomaly',
+      claim: `Days to an offer is ${daysToPending} over the last 90 days. ${closedFace} homes closed in the last 30 days.`,
+      figure: String(daysToPending),
+      figureLabel: 'days to an offer',
       segments: [
         {
-          key: 'ask',
-          label: 'median list price',
-          figure: formatPriceExact(medianList),
+          key: 'days',
+          label: 'days to an offer',
+          figure: String(daysToPending),
         },
-        ...(pending != null
-          ? [
-              {
-                key: 'pending',
-                label: 'under contract now',
-                figure: pending.toLocaleString('en-US'),
-              } satisfies RegionInsightSegment,
-            ]
-          : []),
+        {
+          key: 'closed',
+          label: 'closed last 30 days',
+          figure: closedFace,
+        },
       ],
+      pill: 'See homes for sale',
+      pillHref: listingsBrowsePath(),
+    })
+  }
+
+  const active = hud.active != null && hud.active > 0 ? hud.active : null
+  const pending = hud.pending != null && hud.pending > 0 ? hud.pending : null
+  const medianList = hud.medianList != null && hud.medianList > 0 ? hud.medianList : null
+  if (active != null && pending != null) {
+    const activeFace = active.toLocaleString('en-US')
+    const pendingFace = pending.toLocaleString('en-US')
+    pages.push({
+      key: 'mix',
+      kind: 'allocation',
+      claim:
+        medianList != null
+          ? `${activeFace} houses for sale and ${pendingFace} under contract. Median ask is ${formatPriceExact(medianList)}.`
+          : `${activeFace} houses for sale and ${pendingFace} under contract.`,
+      figure: activeFace,
+      figureLabel: 'for sale',
+      segments: [
+        {
+          key: 'sale',
+          label: 'for sale',
+          figure: activeFace,
+          weight: active,
+        },
+        {
+          key: 'pending',
+          label: 'under contract',
+          figure: pendingFace,
+          weight: pending,
+        },
+      ],
+      pill: 'See homes for sale',
+      pillHref: listingsBrowsePath(),
+    })
+  } else if (medianList != null) {
+    pages.push({
+      key: 'ask',
+      kind: 'allocation',
+      claim: 'What sellers are asking right now across Central Oregon single-family listings.',
+      figure: formatPriceExact(medianList),
+      figureLabel: 'median list price',
       pill: 'See homes for sale',
       pillHref: listingsBrowsePath(),
     })

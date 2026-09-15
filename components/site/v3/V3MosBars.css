@@ -95,14 +95,6 @@
   color: var(--v3-ink);
 }
 
-.v3-mos__barrow--replay {
-  align-items: start;
-}
-
-.v3-mos__swap {
-  gap: 0.25rem;
-}
-
 .v3-mos__tip {
   display: grid;
   gap: var(--v3-space-3xs);
