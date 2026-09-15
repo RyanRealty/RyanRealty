@@ -1,8 +1,8 @@
-# Current — 2026-09-14 (SITE-105 oregon-city tip `91223a846`)
+# Current — 2026-09-15 (SITE-105 oregon-city Mini 91223a846 pixel fix)
 
 Surface: Cursor cloud `cursor-cloud-site105-20260914` on `cursor/oregon-city-site105-1e22` (PR #234). Do not merge.
 
-- **Done:** Mini tells on `286b00476` (score 50, demoMatch false): compact GitHub Alert (no cream wrap / 375 slab); hoverable two-bar drawing (no KPI fold); magazine listings with buyer-language places + reveal. MOS only if city pulse publishes it — Medford has no pulse/cache row (second-shaped check). Tip `062c9a9cc` + CSS hide of leftover typical-ask tile.
+- **Done:** Mini `91223a846` score 47 tells: stacked in-flow Alert in `--v3-measure` (no 32rem cream island / 375 chip clip); dek without orphaned numerals + hover notes (stamp, house definition, typical ask, no sold-pace invention); equal magazine cards, omit city `when`, listings `!hover` reveal demoState; Instrument CTA + duplicate SOURCE removed.
 - **Next:** Cos / Mini Cursor judge. `--ship` stays exit 1 until Mini writes `demoMatch: true`. Leave SITE-105 `in_progress`.
 - **Node:** `0e402cf5-3e29-419d-9e14-3f7896687b53` SITE-105
 - Skills read: `.claude/skills/site-queue/SKILL.md`, `docs/DATABASE_FOR_AI_AGENTS.md` §0

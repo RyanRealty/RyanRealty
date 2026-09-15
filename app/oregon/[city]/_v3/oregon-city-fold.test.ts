@@ -26,15 +26,13 @@ describe('oregon-city fold helpers', () => {
     )
   })
 
-  it('states all three snapshot figures in one claim without SFR jargon', () => {
-    expect(
-      buildOregonCityClaim({
-        name: 'Medford',
-        activeAllCount: 725,
-        activeSfrCount: 342,
-        medianAsk: '$467,000',
-      }),
-    ).toBe('725 live listings in Medford. 342 are houses. Typical ask $467,000.')
+  it('states the out-of-market claim without orphaned snapshot numerals', () => {
+    const claim = buildOregonCityClaim({ name: 'Medford' })
+    expect(claim).toBe(
+      'Live listings from the statewide MLS. We work Central Oregon, not Medford. Hover a bar for the window and the stamp.',
+    )
+    expect(claim).not.toMatch(/\d/)
+    expect(claim).not.toMatch(/\$/)
   })
 
   it('states the live count in the honesty description', () => {
@@ -46,18 +44,26 @@ describe('oregon-city fold helpers', () => {
     )
   })
 
-  it('draws two hoverable bars for the snapshot pair', () => {
+  it('draws two hoverable bars whose notes deepen past the bar labels', () => {
     const drawing = buildOregonCitySupplyDrawing({
       name: 'Medford',
       activeAllCount: 718,
       activeSfrCount: 339,
       source: 'snapshot',
+      asOf: 'Sep 14, 2026',
+      medianAsk: '$469,000',
     })
     expect(drawing?.draw).toBe('pair')
     expect(drawing?.bars).toHaveLength(2)
     expect(drawing?.bars?.[0]?.value).toBe(718)
     expect(drawing?.bars?.[1]?.value).toBe(339)
-    expect(drawing?.bars?.[0]?.note).toMatch(/statewide snapshot/)
+    expect(drawing?.claim).not.toMatch(/718|339|\$469/)
+    expect(drawing?.bars?.[0]?.note).toMatch(/stamped Sep 14, 2026/)
+    expect(drawing?.bars?.[0]?.note).toMatch(/no published sold pace/)
+    expect(drawing?.bars?.[0]?.note).not.toMatch(/718/)
+    expect(drawing?.bars?.[1]?.note).toMatch(/Typical ask among those houses is \$469,000/)
+    expect(drawing?.bars?.[1]?.note).toMatch(/newest twelve/)
+    expect(drawing?.bars?.[1]?.note).not.toMatch(/339/)
     expect(
       buildOregonCitySupplyDrawing({
         name: 'Medford',
@@ -78,7 +84,8 @@ describe('oregon-city fold helpers', () => {
     expect(
       buildOregonCityBuyerPlace({ subdivisionName: 'KERRISDALE RIDGE SUBDIVISION', city: 'Medford' }),
     ).toBe('Kerrisdale Ridge')
-    expect(buildOregonCityBuyerPlace({ subdivisionName: null, city: 'Medford' })).toBe('Medford')
+    expect(buildOregonCityBuyerPlace({ subdivisionName: null, city: 'Medford' })).toBeNull()
+    expect(buildOregonCityBuyerPlace({ subdivisionName: 'MEDFORD', city: 'Medford' })).toBeNull()
   })
 
   it('reveals a sourced extra fact the resting row does not already say', () => {
@@ -108,7 +115,7 @@ describe('oregon-city fold helpers', () => {
         pricePerSqft: null,
         city: 'Medford',
       }),
-    ).toBe('In Medford')
+    ).toBeNull()
   })
 
   it('puts price and beds/baths/sqft on the ItemList name', () => {
@@ -135,6 +142,10 @@ describe('oregon-city page holds the SITE-105 catalog object', () => {
     expect(PAGE).not.toMatch(/foldAfter=/)
     expect(PAGE).not.toMatch(/v3-instrument__fold-summary/)
     expect(PAGE).not.toMatch(/kind:\s*'range'/)
+    expect(PAGE).not.toContain("label: v3Text('Get a broker introduction')")
+    expect(ROUTE_CSS).toContain('.v3-instrument__source')
+    expect(ROUTE_CSS).toContain('#listings.v3-ledger--magazine .v3-ledger__item:first-child')
+    expect(ROUTE_CSS).toContain('aspect-ratio: 3 / 2')
     expect(PAGE).toContain('buildOregonCityItemListName')
     expect(PAGE).toContain('buildOregonCityTitle')
     expect(PAGE).toContain('OregonCityHonesty')
@@ -156,15 +167,17 @@ describe('oregon-city page holds the SITE-105 catalog object', () => {
     expect(HONESTY).not.toContain('v3-quiet')
     expect(HONESTY).not.toContain('V3Quiet.css')
     expect(HONESTY_CSS).not.toMatch(/background:\s*var\(--v3-cream\)/)
-    expect(HONESTY_CSS).not.toMatch(/position:\s*static/)
-    expect(HONESTY_CSS).not.toMatch(/grid-column:\s*2/)
+    expect(HONESTY_CSS).toMatch(/position:\s*static/)
+    expect(HONESTY_CSS).toMatch(/grid-column:\s*2/)
     expect(HONESTY_CSS).not.toMatch(/padding:\s*var\(--v3-space-md\)/)
-    expect(HONESTY_CSS).toContain('max-width: 32rem')
+    expect(HONESTY_CSS).toContain('max-width: var(--v3-measure)')
+    expect(HONESTY_CSS).not.toContain('max-width: 32rem')
+    expect(HONESTY).toContain('static top-auto right-auto')
   })
 
-  it('asks the judge to hover the bars and shoot listings', () => {
+  it('asks the judge to hover the bars and a listing reveal', () => {
     expect(CATALOG).toContain('figures-open=#top .v3-instrument__drawing button!hover')
-    expect(CATALOG).toContain('listings=#listings')
+    expect(CATALOG).toContain('listings=#listings .v3-ledger__item:has(.v3-ledger__reveal)!hover')
     expect(CATALOG).not.toContain('v3-instrument__fold-summary!click')
   })
 })

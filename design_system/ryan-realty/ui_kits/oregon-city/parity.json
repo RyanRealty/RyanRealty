@@ -16,12 +16,12 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, level 1, id='top'. The place answer is an interactive two-bar drawing (V3MosBars when city pulse publishes homes-for-sale vs a month of sales; otherwise V3Drawing of the snapshot pair with hover). One supporting figure at most — never a three-tile KPI grid and never a fold that unhides tiles. Labels stay plain — no SFR jargon. A claim sentence restates the same snapshot numbers. Photographed listings live on the Ledger immediately after this band. Its ask is PRIMARY pointing at #referral. Value my home is the wrong ask here: this city is outside our market.",
+      "section": "Pattern 1, level 1, id='top'. The place answer is an interactive two-bar drawing (V3MosBars when city pulse publishes homes-for-sale vs a month of sales; otherwise V3Drawing of the snapshot pair with hover). One supporting figure at most — never a three-tile KPI grid and never a fold that unhides tiles. Labels stay plain — no SFR jargon. The dek names the out-of-market claim without orphaned snapshot numerals; hover notes carry the stamp, the house definition, and typical ask. Photographed listings live on the Ledger immediately after this band. The Instrument does not carry a second navy introduction slab or a second SOURCE line — the drawing owns the trace. Value my home is the wrong ask here: this city is outside our market.",
       "blocking": true
     },
     {
       "name": "OregonCityHonesty",
-      "section": "SITE-105 catalog Alert on the route (app/oregon/[city]/_v3/OregonCityHonesty.tsx). id='about'. Imports and renders @/components/ui/alert as the compact stacked shadcn demo (icon, title, description, AlertAction outline Button) from the installed GitHub source — not a cream Quiet-width banner, not a 375 restack of AlertAction into a slab. Title 'We don't work in <city>', description carrying the live active count from the same geo snapshot the Instrument prints, door to #referral.",
+      "section": "SITE-105 catalog Alert on the route (app/oregon/[city]/_v3/OregonCityHonesty.tsx). id='about'. Imports and renders @/components/ui/alert as the stacked shadcn demo (icon, title, description, then AlertAction outline Button in flow) from the installed GitHub source — left-aligned in the page measure, not a centered cream island, not an absolute top-right chip that clips the title at 375. Title 'We don't work in <city>', description carrying the live active count from the same geo snapshot the Instrument prints, door to #referral.",
       "blocking": true
     },
     {
@@ -31,7 +31,7 @@
     },
     {
       "name": "V3Ledger",
-      "section": "Pattern 3, twice. id='listings': magazine photo cards, buyer-language place lines (not MLS plat slugs), and a hover/tap reveal with a sourced extra fact. Value column = list price, every row a door into the listing detail page, with the listing feed's own trace and no borrowed stamp. A row needs both a price and a street address; rows are deduped on street address. id='other-markets': plain rows for the other top out-of-area cities, each carrying its active count and, when the snapshot published one, its median; a city with no published median says so in its own row and keeps its link either way. Its stamp is the newest refreshedAt among the rows actually rendered.",
+      "section": "Pattern 3, twice. id='listings': equal magazine photo cards (no first-child 21:9 garage plate), buyer-language place lines only when they are not the city itself, and a hover/tap reveal with a sourced extra fact captured in the listings demoState. Value column = list price, every row a door into the listing detail page, with the listing feed's own trace and no borrowed stamp. A row needs both a price and a street address; rows are deduped on street address. id='other-markets': plain rows for the other top out-of-area cities, each carrying its active count and, when the snapshot published one, its median; a city with no published median says so in its own row and keeps its link either way. Its stamp is the newest refreshedAt among the rows actually rendered.",
       "blocking": true
     },
     {

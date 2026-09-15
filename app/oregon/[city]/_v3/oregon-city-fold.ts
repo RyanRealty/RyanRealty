@@ -21,19 +21,9 @@ export function buildOregonCityTitle(input: {
   return `${name} homes for sale — outside our market`
 }
 
-export function buildOregonCityClaim(input: {
-  name: string
-  activeAllCount: number
-  activeSfrCount: number
-  medianAsk: string | null
-}): string {
+export function buildOregonCityClaim(input: { name: string }): string {
   const name = input.name.trim()
-  const live = input.activeAllCount.toLocaleString('en-US')
-  const houses = input.activeSfrCount.toLocaleString('en-US')
-  if (input.medianAsk) {
-    return `${live} live listings in ${name}. ${houses} are houses. Typical ask ${input.medianAsk}.`
-  }
-  return `${live} live listings in ${name}. ${houses} are houses.`
+  return `Live listings from the statewide MLS. We work Central Oregon, not ${name}. Hover a bar for the window and the stamp.`
 }
 
 export function buildOregonCityHonestyDescription(input: {
@@ -59,15 +49,16 @@ function titleCasePlace(raw: string): string {
 
 /**
  * Buyer-facing place line. Drops ALL-CAPS plat suffixes and title-cases
- * what remains. Falls back to the city, never a raw MLS slug.
+ * what remains. Returns null when the place is the city itself — the
+ * address already names the city, so a repeated MEDFORD eyebrow is noise.
  */
 export function buildOregonCityBuyerPlace(input: {
   subdivisionName: string | null | undefined
   city: string
-}): string {
+}): string | null {
   const city = input.city.trim()
   let place = displaySubdivision(input.subdivisionName) ?? ''
-  if (!place) return city
+  if (!place) return null
   let next = place.trim()
   for (let i = 0; i < 4; i += 1) {
     const stripped = next.replace(PLAT_TAIL, '').trim()
@@ -75,7 +66,8 @@ export function buildOregonCityBuyerPlace(input: {
     next = stripped
   }
   const labeled = titleCasePlace(next)
-  return labeled || city
+  if (!labeled || labeled.toLowerCase() === city.toLowerCase()) return null
+  return labeled
 }
 
 export function buildOregonCityListingReveal(input: {
@@ -97,8 +89,7 @@ export function buildOregonCityListingReveal(input: {
   if (input.pricePerSqft != null && Number.isFinite(input.pricePerSqft) && input.pricePerSqft >= 1) {
     return `${formatPriceExact(Math.round(input.pricePerSqft))} / sqft`
   }
-  const city = input.city.trim()
-  return city ? `In ${city}` : null
+  return null
 }
 
 /**
@@ -110,6 +101,8 @@ export function buildOregonCitySupplyDrawing(input: {
   activeAllCount: number
   activeSfrCount: number
   source: string
+  asOf?: string | null
+  medianAsk?: string | null
 }): V3DrawingFigure | null {
   if (input.activeAllCount <= 0 || input.activeSfrCount <= 0) return null
   const name = input.name.trim()
@@ -117,10 +110,12 @@ export function buildOregonCitySupplyDrawing(input: {
   const houses = input.activeSfrCount
   const allLabel = all.toLocaleString('en-US')
   const housesLabel = houses.toLocaleString('en-US')
+  const stamp = input.asOf?.trim()
+  const typical = input.medianAsk?.trim()
   return {
     key: 'oregon-city-supply',
     draw: 'pair',
-    claim: `${allLabel} listings are on the market in ${name}. ${housesLabel} of them are houses.`,
+    claim: `The snapshot splits everything on the market in ${name} from the houses on their own lots.`,
     caption: 'On the market vs houses',
     source: input.source,
     bars: [
@@ -128,13 +123,17 @@ export function buildOregonCitySupplyDrawing(input: {
         name: 'On the market',
         value: all,
         label: allLabel,
-        note: `${allLabel} live listings of every type in ${name}, from the statewide snapshot.`,
+        note: stamp
+          ? `Statewide snapshot, stamped ${stamp}. Every active property type — houses, condos, and land together. Not months of supply: ${name} has no published sold pace.`
+          : `Statewide snapshot. Every active property type — houses, condos, and land together. Not months of supply: ${name} has no published sold pace.`,
       },
       {
         name: 'Houses',
         value: houses,
         label: housesLabel,
-        note: `${housesLabel} of those ${allLabel} are a house on its own lot.`,
+        note: typical
+          ? `A house on its own lot, not a condo or a lot. Typical ask among those houses is ${typical}. The cards below are the newest twelve with a price and a street, not this whole book.`
+          : `A house on its own lot, not a condo or a lot. The cards below are the newest twelve with a price and a street, not this whole book.`,
       },
     ],
   }

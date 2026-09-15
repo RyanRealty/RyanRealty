@@ -5,10 +5,35 @@
 }
 
 /* The drawing is the answer. A leftover typical-ask tile under the bars is
-   the banned KPI the Mini judge named. The claim sentence already carries
-   the ask; the figure stays in the tree for the required Instrument tuple. */
+   the banned KPI the Mini judge named. The figure stays in the tree for the
+   required Instrument tuple. The drawing already carries SOURCE — hide the
+   Instrument footer so the same disclosure is not stacked twice. */
 .v3.v3-instrument:has(.v3-instrument__drawing) .v3-instrument__figures {
   display: none;
+}
+
+.v3.v3-instrument:has(.v3-instrument__drawing) .v3-instrument__source {
+  display: none;
+}
+
+/* Magazine cards stay equal 3:2 plates. The barrel's first-child 21:9 span
+   is the garage-led banner Mini named. */
+@media (min-width: 40rem) {
+  #listings.v3-ledger--magazine .v3-ledger__item:first-child {
+    grid-column: auto;
+  }
+
+  #listings.v3-ledger--magazine .v3-ledger__item:first-child .v3-ledger__thumb {
+    aspect-ratio: 3 / 2;
+    max-height: none;
+  }
+
+  #listings.v3-ledger--magazine .v3-ledger__item:first-child .v3-ledger__label {
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+  }
 }
 
 @media (max-width: 40rem) {
