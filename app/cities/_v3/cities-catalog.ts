@@ -9,7 +9,7 @@
  *
  *   beui-combobox            → V3MosCompare city overlay
  *   beautifului-insight      → CitiesInsight pager + year Liveline scrub
- *   beui-number              → V3Number on the region active count
+ *   beui-number              → V3Number on MOS bar values (V3MosBars)
  *   beui-infinite-masonry    → featured-city photo field
  */
 import {

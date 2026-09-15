@@ -64,5 +64,20 @@ describe('citiesInsightBoard', () => {
     expect(board?.allocation.find((s) => s.name === 'Bend')?.amount).toBe('619 for sale')
     expect(board?.allocationProse).not.toMatch(/648|1550/)
     expect(JSON.stringify(board)).not.toMatch(/648|1550/)
+    expect(board?.compare?.[0]?.labels).toEqual([
+      'Jan 2025',
+      'Feb 2025',
+      'Mar 2025',
+      'Apr 2025',
+      'May 2025',
+      'Jun 2025',
+      'Jul 2025',
+      'Aug 2025',
+      'Sep 2025',
+      'Oct 2025',
+      'Nov 2025',
+      'Dec 2025',
+    ])
+    expect(new Set(board?.compare?.[0]?.labels).size).toBe(12)
   })
 })

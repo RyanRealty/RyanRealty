@@ -31,6 +31,8 @@ export type V3MosBarsProps = {
   asOf?: string | null
   sourceName?: string
   tooltip: { homes: string; sales: string; source: string }
+  /** Override the default homes÷sales tip. Two MOS readings use this. */
+  tipLine?: string
   id?: string
   className?: string
 }
@@ -48,6 +50,7 @@ export function V3MosBars({
   asOf,
   sourceName = 'Oregon Data Share',
   tooltip,
+  tipLine,
   id = 'place-mos',
   className,
 }: V3MosBarsProps) {
@@ -120,7 +123,8 @@ export function V3MosBars({
           {/* More data than the bars: the ratio and the dated source — not a
               second label of the same two numerals (SITE-84 evaluator). */}
           <p>
-            Supply ratio: {homesLabel} homes for sale ÷ {salesLabel} sales a month.
+            {tipLine ??
+              `Supply ratio: ${homesLabel} homes for sale ÷ ${salesLabel} sales a month.`}
           </p>
           <p className="v3-mos__tip-source">{tooltip.source}</p>
         </div>

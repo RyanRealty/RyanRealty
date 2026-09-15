@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronsUpDown, Search } from "lucide-react";
+import { motion } from "motion/react";
 import type {
   InputHTMLAttributes,
   KeyboardEvent as ReactKeyboardEvent,
@@ -9,6 +10,16 @@ import type {
 } from "react";
 import { cn } from "@/lib/utils";
 import { mergeRefs, useComboboxContext } from "./context";
+
+const COMBOBOX_TRIGGER_MORPH = {
+  type: "spring" as const,
+  duration: 0.5,
+  bounce: 0.22,
+};
+
+/** §3 warm-stone focus — never the browser amber/gold ring. */
+const WARM_STONE_FOCUS =
+  "outline-none focus-within:[outline:var(--v3-focus-ring,3px_solid_#b9ab97)] focus-within:[outline-offset:var(--v3-focus-offset,2px)]";
 
 export interface ComboboxTriggerProps {
   children: ReactNode;
@@ -19,10 +30,16 @@ export function ComboboxTrigger({ children, className }: ComboboxTriggerProps) {
   const context = useComboboxContext("ComboboxTrigger");
 
   return (
-    <div
+    <motion.div
       ref={context.triggerRef}
       id={context.triggerId}
+      data-combobox-trigger=""
       data-state={context.open ? "open" : "closed"}
+      initial={false}
+      animate={{
+        width: context.open ? "100%" : "3rem",
+      }}
+      transition={context.reduce ? { duration: 0 } : COMBOBOX_TRIGGER_MORPH}
       onPointerDown={(event) => {
         if (context.disabled || event.target === context.inputRef.current) return;
         event.preventDefault();
@@ -30,17 +47,29 @@ export function ComboboxTrigger({ children, className }: ComboboxTriggerProps) {
         context.setOpen(true);
       }}
       className={cn(
-        "relative z-20 flex h-10 w-full min-w-52 cursor-text items-center justify-between gap-3 rounded-xl border border-border bg-transparent px-3 text-sm text-foreground transition-[border-color] hover:border-(--color-border-strong)",
-        "focus-within:ring-2 focus-within:ring-foreground/20",
+        "relative z-20 flex h-12 cursor-pointer items-center justify-between gap-3 overflow-hidden rounded-2xl border border-border bg-transparent text-sm text-foreground transition-[border-color] hover:border-(--color-border-strong)",
+        WARM_STONE_FOCUS,
+        context.open
+          ? "min-w-52 cursor-text px-3"
+          : "min-w-12 justify-center px-0",
         context.disabled && "pointer-events-none opacity-50",
         className,
       )}
     >
-      <span className="min-w-0 flex-1 text-left">{children}</span>
-      <span aria-hidden className="shrink-0 text-muted-foreground">
-        <ChevronsUpDown className="size-4" />
+      <span
+        className={cn(
+          "min-w-0 text-left",
+          context.open ? "flex-1" : "flex flex-1 justify-center",
+        )}
+      >
+        {children}
       </span>
-    </div>
+      {context.open ? (
+        <span aria-hidden className="shrink-0 text-muted-foreground">
+          <ChevronsUpDown className="size-4" />
+        </span>
+      ) : null}
+    </motion.div>
   );
 }
 
@@ -140,6 +169,7 @@ export function ComboboxInput({
     <div
       className={cn(
         "flex min-w-0 flex-1 items-center gap-2",
+        !context.open && "relative justify-center",
         wrapperClassName,
       )}
     >
@@ -182,7 +212,10 @@ export function ComboboxInput({
         }}
         onKeyDown={handleKeyDown}
         className={cn(
-          "h-10 min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed",
+          "bg-transparent text-sm text-foreground outline-none [box-shadow:none] [appearance:none] placeholder:text-muted-foreground focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed",
+          context.open
+            ? "h-12 min-w-0 flex-1"
+            : "absolute inset-0 h-full w-full cursor-pointer opacity-0",
           className,
         )}
       />

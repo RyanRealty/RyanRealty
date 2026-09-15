@@ -78,6 +78,45 @@
   position: relative;
   height: 10.375rem;
   overflow: visible;
+  cursor: ew-resize;
+}
+
+.insight-year-scrub {
+  display: grid;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.insight-year-scrub__track {
+  position: relative;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--v3-navy) 16%, var(--v3-cream));
+}
+
+.insight-year-scrub__handle {
+  position: absolute;
+  top: 50%;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--v3-navy);
+  background: var(--v3-cream);
+  transform: translate(-50%, -50%);
+  cursor: grab;
+}
+
+.insight-year-scrub__handle[data-scrubbing] {
+  cursor: grabbing;
+}
+
+.insight-year-scrub__label {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink-muted);
 }
 
 .insight-tooltip {

@@ -115,6 +115,36 @@ export type CompareSeries = {
   color: string
   tooltipColor: string
   formatValue?: (v: number) => string
+  /** Unix seconds for each published value. Unique month axis when set. */
+  times?: number[]
+}
+
+function pointsFromTimes(values: number[], times: number[]): LivelinePoint[] {
+  if (times.length !== values.length || times.length < 2) {
+    return makePoints(values)
+  }
+  const dense = smooth(values)
+  const t0 = times[0]!
+  const t1 = times[times.length - 1]!
+  const span = Math.max(1, t1 - t0)
+  return dense.map((value, index) => ({
+    time: t0 + (span * index) / Math.max(1, dense.length - 1),
+    value,
+  }))
+}
+
+function snapTimeLabel(t: number, times: number[], labels: string[], fallback: (n: number) => string) {
+  if (times.length === 0 || labels.length !== times.length) return fallback(t)
+  let best = 0
+  let dist = Math.abs(times[0]! - t)
+  for (let i = 1; i < times.length; i += 1) {
+    const d = Math.abs(times[i]! - t)
+    if (d < dist) {
+      best = i
+      dist = d
+    }
+  }
+  return labels[best] ?? fallback(t)
 }
 
 const COMPARE_SERIES: CompareSeries[] = [
@@ -143,14 +173,18 @@ export function CompareCard({
   formatTime,
   hideLegend = false,
   windowSecs = 42,
+  monthLabels,
 }: {
   series?: CompareSeries[]
   formatTime?: (t: number) => string
   hideLegend?: boolean
   windowSecs?: number
+  /** Unique published-month labels aligned with series[0].times. */
+  monthLabels?: string[]
 }) {
   const stroke = useInkStroke()
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
+  const [scrubbing, setScrubbing] = useState(false)
   const painted = useMemo(
     () =>
       series.map((s, i) => ({
@@ -160,14 +194,18 @@ export function CompareCard({
       })),
     [series, stroke],
   )
+  const publishedTimes = painted[0]?.times
   const [points, setPoints] = useState<LivelinePoint[][]>(() => painted.map(() => []))
   useEffect(() => {
-    // Liveline windows around wall-clock now. Fixed-epoch points (1.7e9) fall
-    // outside that window and paint "No data to display" — the cream pager.
-    // Clock reads stay in useEffect (ci:hydration-safety).
+    // Clock reads stay in useEffect (ci:hydration-safety). Prefer the
+    // published month stamps so the axis cannot print the same month twice.
+    if (publishedTimes && publishedTimes.length === painted[0]?.values.length) {
+      setPoints(painted.map((s) => pointsFromTimes(s.values, s.times ?? publishedTimes)))
+      return
+    }
     const end = Date.now() / 1000
     setPoints(painted.map((s) => pointsInWindow(s.values, windowSecs, end)))
-  }, [painted, windowSecs])
+  }, [painted, publishedTimes, windowSecs])
   const pointCount = points[0]?.length ?? 0
   const chartSeries: LivelineSeries[] = useMemo(
     () =>
@@ -181,6 +219,28 @@ export function CompareCard({
     [painted, points],
   )
   const primary = points[0] ?? []
+  const spanSecs =
+    publishedTimes && publishedTimes.length >= 2
+      ? Math.max(1, publishedTimes[publishedTimes.length - 1]! - publishedTimes[0]!)
+      : windowSecs
+  const axisTime = formatTime
+    ? (t: number) =>
+        publishedTimes && monthLabels
+          ? snapTimeLabel(t, publishedTimes, monthLabels, formatTime)
+          : formatTime(t)
+    : undefined
+  const scrubPct =
+    pointCount > 1 && hoverIndex != null
+      ? (hoverIndex / (pointCount - 1)) * 100
+      : 100
+  const scrubLabel =
+    hoverIndex != null && primary[hoverIndex]
+      ? (axisTime?.(primary[hoverIndex]!.time) ?? '')
+      : monthLabels?.at(-1) ?? ''
+
+  const setFromPointer = (event: React.PointerEvent, count: number) => {
+    setHoverIndex(chartIndexFromPointer(event, count))
+  }
 
   return (
     <div className="insight-cards__card">
@@ -201,11 +261,16 @@ export function CompareCard({
       )}
       <div
         className="insight-chart-stage"
-        onPointerDown={(event) => setHoverIndex(chartIndexFromPointer(event, pointCount))}
-        onPointerMove={(event) => setHoverIndex(chartIndexFromPointer(event, pointCount))}
-        onPointerLeave={() => setHoverIndex(null)}
-        onPointerCancel={() => setHoverIndex(null)}
-        onPointerUp={() => setHoverIndex(null)}
+        onPointerDown={(event) => setFromPointer(event, pointCount)}
+        onPointerMove={(event) => setFromPointer(event, pointCount)}
+        onPointerLeave={() => {
+          if (!scrubbing) setHoverIndex(null)
+        }}
+        onPointerCancel={() => {
+          setScrubbing(false)
+          setHoverIndex(null)
+        }}
+        onPointerUp={() => setScrubbing(false)}
       >
         <Liveline
           data={primary}
@@ -214,14 +279,14 @@ export function CompareCard({
           theme="light"
           grid={false}
           pulse={false}
-          window={windowSecs}
+          window={spanSecs}
           paused
-          scrub={false}
-          cursor="default"
+          scrub
+          cursor="ew-resize"
           lineWidth={2.25}
           padding={{ top: 40, right: 0, bottom: 22, left: 0 }}
           formatValue={painted[0]?.formatValue ?? formatPercent}
-          {...(formatTime ? { formatTime } : {})}
+          {...(axisTime ? { formatTime: axisTime } : {})}
         />
         {hoverIndex !== null ? (
           <ChartTooltip
@@ -232,6 +297,47 @@ export function CompareCard({
             }))}
           />
         ) : null}
+      </div>
+      <div
+        className="insight-year-scrub"
+        role="slider"
+        aria-label="Year of closes"
+        aria-valuemin={0}
+        aria-valuemax={Math.max(0, pointCount - 1)}
+        aria-valuenow={hoverIndex ?? Math.max(0, pointCount - 1)}
+        aria-valuetext={scrubLabel || undefined}
+        tabIndex={0}
+        onPointerDown={(event) => {
+          event.currentTarget.setPointerCapture(event.pointerId)
+          setScrubbing(true)
+          setFromPointer(event, pointCount)
+        }}
+        onPointerMove={(event) => {
+          if (!scrubbing && event.buttons === 0) return
+          setFromPointer(event, pointCount)
+        }}
+        onPointerUp={() => setScrubbing(false)}
+        onPointerCancel={() => setScrubbing(false)}
+        onKeyDown={(event) => {
+          if (pointCount < 2) return
+          if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            event.preventDefault()
+            const step = event.key === 'ArrowRight' ? 1 : -1
+            setHoverIndex((cur) => {
+              const at = cur ?? pointCount - 1
+              return Math.max(0, Math.min(pointCount - 1, at + step))
+            })
+          }
+        }}
+      >
+        <div className="insight-year-scrub__track">
+          <span
+            className="insight-year-scrub__handle"
+            style={{ left: `${scrubPct}%` }}
+            data-scrubbing={scrubbing || undefined}
+          />
+        </div>
+        {scrubLabel ? <p className="insight-year-scrub__label">{scrubLabel}</p> : null}
       </div>
     </div>
   )

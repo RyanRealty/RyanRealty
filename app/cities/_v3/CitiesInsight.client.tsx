@@ -33,6 +33,8 @@ export type CitiesInsightSeries = {
   name: string
   values: number[]
   sub: string
+  times?: number[]
+  labels?: string[]
 }
 
 export type CitiesInsightBoard = {
@@ -54,12 +56,34 @@ export function CitiesInsight({ id, board }: { id: string; board: CitiesInsightB
   )
 }
 
+const CLOSE_MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+] as const
+
+/** Unique published-month label from YYYY-MM-DD. Never two "May 2026". */
+export function formatPublishedCloseMonth(periodStart: string) {
+  const match = /^(\d{4})-(\d{2})/.exec(periodStart.trim())
+  if (!match) return periodStart
+  const month = CLOSE_MONTHS[Number(match[2]) - 1]
+  return month ? `${month} ${match[1]}` : periodStart
+}
+
 /** Month + year of the close, never a liveline clock axis. */
 export function formatCloseYear(t: number) {
-  return new Date(t * 1000).toLocaleDateString('en-US', {
-    month: 'short',
-    year: 'numeric',
-  })
+  const d = new Date(t * 1000)
+  const month = CLOSE_MONTHS[d.getUTCMonth()]
+  return `${month} ${d.getUTCFullYear()}`
 }
 
 function livelineSeries(series: CitiesInsightSeries[]) {
@@ -71,6 +95,7 @@ function livelineSeries(series: CitiesInsightSeries[]) {
     dot: 'bg-accent',
     color: '',
     tooltipColor: '',
+    times: s.times,
     formatValue: (v: number) => Math.round(v).toLocaleString('en-US'),
   }))
 }
@@ -82,6 +107,7 @@ function pagesFromBoard(board: CitiesInsightBoard): InsightPage[] {
   const segments = board.allocation
   const note = board.allocationNote
   const series = livelineSeries(board.compare)
+  const monthLabels = board.compare[0]?.labels
 
   return [
     {
@@ -101,10 +127,11 @@ function pagesFromBoard(board: CitiesInsightBoard): InsightPage[] {
             series={series}
             windowSecs={YEAR_WINDOW_SECS}
             formatTime={formatCloseYear}
+            monthLabels={monthLabels}
           />
         )
       },
-      pill: 'Scrub the year of closes',
+      pill: 'See closes by city',
     },
   ]
 }

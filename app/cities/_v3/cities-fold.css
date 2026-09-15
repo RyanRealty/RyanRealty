@@ -102,8 +102,7 @@
     display: none;
   }
 
-  .cities-fold .v3-drawing,
-  .cities-fold .v3-drawing__plain,
+  .cities-fold .v3-mos__plain,
   .cities-fold .v3-mos-compare__plain {
     display: none;
   }
@@ -122,11 +121,8 @@
   gap: var(--v3-space-sm);
 }
 
-.cities-fold .v3-drawing__source,
-.cities-fold .v3-drawing__claim,
-.cities-fold .v3-drawing__verdict,
-.cities-fold .v3-drawing__foot,
-.cities-fold .v3-drawing__reading,
+.cities-fold .v3-mos .v3-source,
+.cities-fold .v3-mos__tip,
 .cities-fold .v3-source,
 .cities-fold .v3-mos-compare__plain,
 .cities-fold .v3-mos-compare__readout,
@@ -137,8 +133,10 @@
   display: none;
 }
 
-.cities-fold .v3-drawing__figure {
+.cities-fold .v3-mos {
   margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .cities-fold .v3-mos-compare {

@@ -5,7 +5,12 @@
 
 import { formatCount } from '@/lib/format/count'
 import type { PublicMonthlyPoint } from '@/lib/data/market-truth/public-monthly'
-import type { CitiesInsightBoard, CitiesInsightSegment } from './CitiesInsight.client'
+import {
+  formatPublishedCloseMonth,
+  type CitiesInsightBoard,
+  type CitiesInsightSegment,
+  type CitiesInsightSeries,
+} from './CitiesInsight.client'
 
 export type InsightCity = {
   slug: string
@@ -13,12 +18,18 @@ export type InsightCity = {
   activeCount: number | null
 }
 
-function publishedCloses(points: readonly PublicMonthlyPoint[]): number[] {
+function publishedCloseSeries(points: readonly PublicMonthlyPoint[]): CitiesInsightSeries | null {
   const window = points.slice(-12)
-  if (window.length < 6) return []
+  if (window.length < 6) return null
   const values = window.map((p) => p.closedCount)
-  if (values.some((v) => v == null || !Number.isFinite(v))) return []
-  return values.map((v) => Math.round(v as number))
+  if (values.some((v) => v == null || !Number.isFinite(v))) return null
+  return {
+    name: '',
+    values: values.map((v) => Math.round(v as number)),
+    sub: '',
+    times: window.map((p) => Date.parse(`${p.periodStart}T00:00:00Z`) / 1000),
+    labels: window.map((p) => formatPublishedCloseMonth(p.periodStart)),
+  }
 }
 
 function allocationSegments(
@@ -69,22 +80,24 @@ export function citiesInsightBoard(input: {
     input.cities,
     input.regionLeftover,
   )
-  const regionCloses = publishedCloses(input.regionMonthly)
-  const bendCloses = publishedCloses(input.bendMonthly)
+  const regionCloses = publishedCloseSeries(input.regionMonthly)
+  const bendCloses = publishedCloseSeries(input.bendMonthly)
   const compare =
-    regionCloses.length >= 6
+    regionCloses && regionCloses.values.length >= 6
       ? [
           {
+            ...regionCloses,
             name: 'Central Oregon',
-            values: regionCloses,
-            sub: `${formatCount(regionCloses[regionCloses.length - 1]!)} last complete month`,
+            sub: `${formatCount(regionCloses.values[regionCloses.values.length - 1]!)} last complete month`,
           },
-          ...(bendCloses.length === regionCloses.length
+          ...(bendCloses && bendCloses.values.length === regionCloses.values.length
             ? [
                 {
+                  ...bendCloses,
                   name: 'Bend',
-                  values: bendCloses,
-                  sub: `${formatCount(bendCloses[bendCloses.length - 1]!)} last complete month`,
+                  times: regionCloses.times,
+                  labels: regionCloses.labels,
+                  sub: `${formatCount(bendCloses.values[bendCloses.values.length - 1]!)} last complete month`,
                 },
               ]
             : []),
@@ -102,7 +115,7 @@ export function citiesInsightBoard(input: {
     ? `${lead.name} is ${lead.pct}% of the ${pile}.`
     : 'Published city leftover by share of homes for sale.'
 
-  const last = regionCloses.at(-1)
+  const last = regionCloses?.values.at(-1)
   const compareProse =
     last != null
       ? `Closed detached sales by month. Central Oregon closed ${formatCount(last)} in the last complete month. Scrub the line.`

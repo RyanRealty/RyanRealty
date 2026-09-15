@@ -1,4 +1,4 @@
-/* Region MOS threshold scale + city overlay combobox. tokens.css only. */
+/* Two named MOS bars + city overlay combobox. tokens.css only. */
 
 .v3.v3-mos-compare {
   display: grid;
@@ -160,6 +160,22 @@
   font: inherit;
   font-size: var(--v3-size-body-sm);
   cursor: pointer;
+}
+
+.v3-mos-compare__option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+}
+
+.v3-mos-compare__mark {
+  flex: 0 0 auto;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-top: 0.35rem;
+  background: var(--v3-navy);
+  box-shadow: 0 0 0 1px var(--v3-cream);
 }
 
 .v3-mos-compare__option-name {

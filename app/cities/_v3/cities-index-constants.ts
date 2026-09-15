@@ -6,6 +6,13 @@
 
 import { formatCount } from '@/lib/format/count'
 
+/** Resort geo_type rows that must not sit in the incorporated-cities ledger. */
+export const CITIES_INDEX_RESORT_SLUGS = ['black-butte-ranch', 'camp-sherman'] as const
+
+export function isCitiesIndexResortSlug(slug: string): boolean {
+  return (CITIES_INDEX_RESORT_SLUGS as readonly string[]).includes(slug)
+}
+
 export const FEATURED_CITY_SLUGS = [
   'bend',
   'redmond',

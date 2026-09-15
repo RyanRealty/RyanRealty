@@ -3,9 +3,8 @@
  * Cities index — A–Z directory of Central Oregon cities.
  *
  * PAGE_INVENTORY §3: live counts on the rows, doors. Not a mini-Bend KPI
- * Instrument. The region's months of supply is DRAWN above the rows as
- * V3Drawing's two bars (homes for sale against a month of sales); the caption
- * under the heading names the directory, not the figure.
+ * Instrument. Months of supply is two named MOS bars (region vs overlay city).
+ * Inventory counts are not MoS and are not lectured on the fold.
  *
  * SITE-52 (taste table 2026-09-08, /cities scored 30). Every row draws its
  * count as a bar on the list's shared scale; a hover, a focus, or a hold shows
@@ -14,15 +13,10 @@
  * carries a photo or the glyph; no row repeats "Oregon"; and a city whose
  * count no source published says so instead of "None listed now".
  *
- * SITE-69: the region pair sits on a labeled 4 / 6 threshold scale
- * (V3MosCompare); a searchable city overlay compares one city's reading to
- * the region (beui:combobox); no-photo rows carry a resting supply reading
- * when Market Truth publishes one.
- *
- * SITE-92: catalog sources installed — beui-combobox on V3MosCompare
- * (list opens up, off the H1), beautifului-insight year scrubber,
- * beui-number on the region count, beui-infinite-masonry on featured
- * city photographs. Atlas + MOS/alerts sit in the first viewport.
+ * SITE-69 / SITE-92: V3MosCompare is two named MOS bars plus beui:combobox
+ * (icon morphs to the panel, list opens up off the H1). beautifului-insight
+ * year scrubber, beui-infinite-masonry on featured photographs. Atlas + MOS
+ * + alerts sit in the first viewport. Resort geos split out of the cities list.
  *
  * Parity contract: design_system/ryan-realty/ui_kits/cities/parity.json
  */
@@ -45,16 +39,13 @@ import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months
 import { formatIndexMedianUsd } from '@/lib/market/publish-index-median'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
-import { buildAnswerFigures, salesPerMonthFrom } from '@/lib/site/answer-figures'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
   V3Atlas,
   V3Breadcrumb,
-  V3Drawing,
   V3Footer,
   V3Ledger,
   V3MosCompare,
-  V3Number,
   V3Quiet,
   V3SectionTracker,
   V3_FOOTER_COLUMNS,
@@ -74,6 +65,7 @@ import {
   NO_LIVE_COUNT_LABEL,
   firstSentence,
   indexBarWeight,
+  isCitiesIndexResortSlug,
   liveForSaleLabel,
 } from '@/app/cities/_v3/cities-index-constants'
 import { cityLeftoverActive, restingCityDetail } from '@/app/cities/_v3/cities-index-resting'
@@ -156,8 +148,15 @@ export default async function CitiesPage() {
   const [allCities, allSnapshots] = await Promise.all([getCitiesForIndex(), getAllCitySnapshots()])
 
   const sortedCities = sortCitiesWithPrimaryFirst(allCities)
-  const visibleCities = sortedCities.slice(0, 60)
-  const directorySlugs = [...new Set<string>([...FEATURED_CITY_SLUGS, ...visibleCities.map((c) => c.slug)])]
+  const resortCities = sortedCities.filter((c) => isCitiesIndexResortSlug(c.slug))
+  const visibleCities = sortedCities.filter((c) => !isCitiesIndexResortSlug(c.slug)).slice(0, 60)
+  const directorySlugs = [
+    ...new Set<string>([
+      ...FEATURED_CITY_SLUGS,
+      ...visibleCities.map((c) => c.slug),
+      ...resortCities.map((c) => c.slug),
+    ]),
+  ]
 
   // One Market Truth read for the region and every city on the page, and one
   // monthly read per city for the run under its row. Both are timeboxed: a
@@ -400,33 +399,55 @@ export default async function CitiesPage() {
   })
   const [firstFeatured, ...restFeatured] = figureRows
 
+  const resortDirectory = resortCities.map((city) => {
+    const layers = overlays.get(`city:${city.slug}`)
+    const snap = snapshotBySlug.get(city.slug)
+    return {
+      slug: city.slug,
+      name: city.name,
+      activeCount: cityLeftoverActive({
+        headlinesActive: layers?.headlines?.activeCount,
+        inventoryActive: layers?.inventory?.activeCount,
+      }),
+      medianListPrice:
+        layers?.headlines?.medianListPrice ??
+        layers?.inventory?.medianListPrice ??
+        (snap ? snap.medianPrice : city.medianPrice),
+    }
+  })
+  const resortMax = Math.max(0, ...resortDirectory.map((c) => c.activeCount ?? 0))
+  const resortRows: V3LedgerFigureRow[] = resortDirectory.map((city) => {
+    const layers = overlays.get(`city:${city.slug}`)
+    const headlines = layers?.headlines ?? null
+    const restingSupply = headlines
+      ? `${headlines.verdictLabel.charAt(0).toUpperCase()}${headlines.verdictLabel.slice(1)} · ${headlines.mosLabel} months`
+      : null
+    const median = fmtMedian(city.medianListPrice)
+    const detail = restingCityDetail({
+      medianLine: median ? `Median list ${median}` : null,
+      sentence: null,
+      hasPhoto: false,
+      restingSupply,
+    })
+    return {
+      id: city.slug,
+      href: `/cities/${city.slug}`,
+      what: v3Text(city.name),
+      detail: detail ? v3Text(detail) : undefined,
+      value: v3Text(city.activeCount != null ? liveForSaleLabel(city.activeCount) : NO_LIVE_COUNT_LABEL),
+      weight: indexBarWeight(city.activeCount, resortMax),
+      reveal: cityReveal(layers, monthlyBySlug.get(city.slug) ?? []),
+      ariaLabel: v3Text(`${city.name} resort community`),
+    }
+  })
+  const [firstResort, ...restResorts] = resortRows
+
   const cityDoors: V3QuietItem[] = featured.flatMap((city) =>
     cityFeaturedLinks(city.slug, city.name),
   )
 
-  // The region's months of supply as the two-bar drawing, from the same two
-  // published figures the old sentence quoted. G68: formatted and classified
-  // here, on the server, from one raw value; nothing downstream re-rounds it.
   const mosText = hud.monthsSupply != null ? formatMonthsOfSupply(hud.monthsSupply) : null
   const regionVerdict = monthsOfSupplyVerdict(hud.monthsSupply)
-  const regionFigures = buildAnswerFigures({
-    placeLabel: 'Central Oregon',
-    street: '',
-    monthsOfSupply: mosText,
-    verdictLabel: regionVerdict?.label ?? null,
-    activeCount: hud.active,
-    salesPerMonth: salesPerMonthFrom(hud.active, hud.monthsSupply),
-    daysToPending: null,
-    cityDaysToPending: null,
-    cityLabel: null,
-    compMarks: [],
-    compCount: null,
-    subjectFound: false,
-    subjectSummary: null,
-    asOfLabel: leftoverStamp ? formatDate(leftoverStamp) : null,
-    sources: { supply: REGION_SUPPLY_TRACE },
-    unmatchedSentence: '',
-  })
   const compareCities: V3MosCompareCity[] = directory.map((city) => {
     const headlines = overlays.get(`city:${city.slug}`)?.headlines ?? null
     return {
@@ -450,6 +471,7 @@ export default async function CitiesPage() {
         regionVerdict={regionVerdict.label}
         cities={compareCities}
         source={REGION_SUPPLY_TRACE}
+        asOf={leftoverStamp}
       />
     ) : null
 
@@ -473,15 +495,6 @@ export default async function CitiesPage() {
 
   const regionFigure = (
     <>
-      {hud.active != null ? (
-        <p className="cities-fold__count">
-          <V3Number value={hud.active} formatted={formatCount(hud.active)} startOnView={false} />{' '}
-          leftover homes for sale in Central Oregon
-        </p>
-      ) : null}
-      {regionFigures.length > 0 ? (
-        <V3Drawing figures={regionFigures} label="Central Oregon homes for sale against a month of sales" />
-      ) : null}
       {regionScale}
       <CitiesAlertStrip
         id="alerts"
@@ -532,7 +545,7 @@ export default async function CitiesPage() {
         {masonry}
         {insight}
       </div>
-    ) : regionFigures.length > 0 || insightBoard || masonry ? (
+    ) : regionScale || insightBoard || masonry ? (
       <div className="cities-fold" id="cities-fold">
         <div className="cities-fold__figure">{regionFigure}</div>
         {masonry}
@@ -541,11 +554,8 @@ export default async function CitiesPage() {
     ) : null
   // When the drawing cannot be drawn, the note carries the figure as before.
   const directoryNote = regionDrawing
-    ? `${formatCount(directory.length)} cities, A to Z. Overlay a city on the scale, scrub the year of closes, or rest on a row.`
+    ? `${formatCount(directory.length)} cities, A to Z. Overlay a city on the months-of-supply bars, drag the year of closes, or rest on a row.`
     : [
-        totalActive != null && totalActive > 0
-          ? `${formatCount(totalActive)} leftover homes for sale in Central Oregon.`
-          : null,
         mosText && regionVerdict ? `${regionVerdict.label} at ${mosText} months of supply.` : null,
       ]
         .filter(Boolean)
@@ -608,6 +618,21 @@ export default async function CitiesPage() {
             emptyMessage={v3Text('The city index returned no city on this refresh.')}
           />
         )}
+
+        {firstResort ? (
+          <V3Ledger
+            id="resort-places"
+            headingLevel={2}
+            eyebrow={v3Text('Resorts')}
+            heading={v3Text('Resort communities')}
+            note={v3Text(
+              'Resort geos, not incorporated cities. Split from the Central Oregon cities list.',
+            )}
+            rows={[firstResort, ...restResorts]}
+            encode={resortMax > 0 ? 'bar' : undefined}
+            source={v3Text(OTHERS_TRACE)}
+          />
+        ) : null}
 
         {cityDoors.length > 0 ? (
           <V3Quiet

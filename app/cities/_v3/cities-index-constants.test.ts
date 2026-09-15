@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { indexBarWeight, liveForSaleLabel } from './cities-index-constants'
+import { indexBarWeight, isCitiesIndexResortSlug, liveForSaleLabel } from './cities-index-constants'
 
 describe('indexBarWeight', () => {
   it('is the row share of the largest count', () => {
@@ -12,6 +12,15 @@ describe('indexBarWeight', () => {
     expect(indexBarWeight(null, 100)).toBeUndefined()
     expect(indexBarWeight(12, 0)).toBeUndefined()
     expect(indexBarWeight(Number.NaN, 10)).toBeUndefined()
+  })
+})
+
+describe('isCitiesIndexResortSlug', () => {
+  it('splits Black Butte Ranch and Camp Sherman out of the cities list', () => {
+    expect(isCitiesIndexResortSlug('black-butte-ranch')).toBe(true)
+    expect(isCitiesIndexResortSlug('camp-sherman')).toBe(true)
+    expect(isCitiesIndexResortSlug('bend')).toBe(false)
+    expect(isCitiesIndexResortSlug('sunriver')).toBe(false)
   })
 })
 
