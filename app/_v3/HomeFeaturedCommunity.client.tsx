@@ -20,7 +20,6 @@ import { AnimatedNumber } from '@/components/motion/number'
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from '@/components/site/v3'
 import type { HomeFeaturedCommunityFigure, HomeFeaturedCommunitySlide } from './home-featured-community-shared'
 import { HOME_FEATURED_COMMUNITY_SOURCE } from './home-featured-community-shared'
-import { homeBriefText } from './home-competitive-brief'
 import './home-featured-community.css'
 
 function figureFormat(figure: HomeFeaturedCommunityFigure) {
@@ -100,7 +99,6 @@ export function HomeFeaturedCommunity({
         <V3Heading level={2} id={`${id}-heading`} className="home-featured-community__heading">
           {heading}
         </V3Heading>
-        <p className="home-featured-community__brief">{homeBriefText('7')}</p>
       </div>
 
       <div className="home-featured-community__stage">

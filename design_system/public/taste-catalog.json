@@ -2349,7 +2349,7 @@
         "id": "homepage-v6-researchy-1-8",
         "source": "design_system/public/references/homepage-v6.md + taste-catalog homepage-v6 layoutLock (Researchy / Redfin + Stripe + Stage).",
         "productLock": "live inventory in first viewport + MorphingSearch + Sell address without JS + house Card rails + featured carousel Card + place Cards with live town counts + sourced MLS line",
-        "refuse": "Stock search-hero with no house photo. Cream-box search. House featured pager. Identical empty place chips. Lone competitiveBriefPass boolean without the beats visible in shots.",
+        "refuse": "Stock search-hero with no house photo. Cream-box search. House featured pager. Identical empty place chips. Dumping HOME_COMPETITIVE_BRIEF / homeBriefText as public copy. Lone competitiveBriefPass boolean without the beats demonstrated in shots (inventory, morph search, rails).",
         "beats": [
           {
             "id": "1",

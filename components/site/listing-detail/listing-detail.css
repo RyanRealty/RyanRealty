@@ -603,8 +603,17 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
   border: 0;
+}
+
+.listing-mosaic__slide img {
+  object-fit: contain;
+  object-position: center;
+}
+
+.listing-mosaic__slide video,
+.listing-mosaic__slide iframe {
+  object-fit: cover;
 }
 
 .listing-mosaic__slide.is-plan img {
@@ -944,9 +953,10 @@
    One photograph in the frame, a navy strip under it indexing every photo,
    the media controls on the strip. The frame is the column's width (the
    shell seats the hero in the main column, ListingDetailShell heroInMain), so
-   a 3:2 photograph keeps its crop and the broker card's Tour sits beside it
-   inside the first viewport at 1440x900. Below 64rem the swipe carousel is
-   the frame and the strip is a control bar under it, off the sky. */
+   the photograph shows the whole still (contain on cream) and the broker
+   card's Tour sits beside it inside the first viewport at 1440x900. Below
+   64rem the swipe carousel is the frame and the strip is a control bar
+   under it, off the sky. */
 .listing-frame {
   display: flex;
   flex-direction: column;
@@ -1175,8 +1185,17 @@
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
     border: 0;
+  }
+
+  .listing-frame__stage img {
+    object-fit: contain;
+    object-position: center;
+  }
+
+  .listing-frame__stage video,
+  .listing-frame__stage iframe {
+    object-fit: cover;
   }
 
   .listing-frame__stage.listing-mosaic__lead--empty {
