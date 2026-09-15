@@ -44,7 +44,8 @@ describe('reviews page composition', () => {
     expect(group).toContain('AvatarGroup')
     expect(group).toContain('AvatarImage')
     expect(group).toContain('DropdownMenuGroup')
-    expect(group).toContain('Account')
+    expect(group).toContain('Read this review')
+    expect(group).not.toMatch(/>\s*Sign Out\s*</)
     expect(group).not.toMatch(/<p className=/)
   })
 
