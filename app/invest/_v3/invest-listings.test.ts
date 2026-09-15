@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import type { ListingTile } from '@/lib/data/types/listing'
+import { INVEST_TILE_PULLS } from './load-invest-board'
 import { composeInvestListings, investListingFacts, investTypeLabel } from './invest-listings'
 
 function tile(partial: Partial<ListingTile> & { listingKey: string }): ListingTile {
@@ -95,5 +96,15 @@ describe('invest catalog import (Tip Ready route scan)', () => {
   it('imports the shadcn table from the installed source', () => {
     const src = readFileSync(new URL('./InvestTables.client.tsx', import.meta.url), 'utf8')
     expect(src).toMatch(/from '@\/components\/ui\/table'/)
+  })
+})
+
+describe('INVEST_TILE_PULLS', () => {
+  it('uses MLS letter codes that fit getListingTiles Zod (max 4 chars)', () => {
+    expect(INVEST_TILE_PULLS.map((p) => p.propertyType)).toEqual(['C', 'D', 'E', 'F', 'H'])
+    for (const pull of INVEST_TILE_PULLS) {
+      expect(pull.propertyType.length).toBeGreaterThan(0)
+      expect(pull.propertyType.length).toBeLessThanOrEqual(4)
+    }
   })
 })

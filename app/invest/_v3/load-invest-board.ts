@@ -28,6 +28,19 @@ export type InvestBoard = {
   listingsOk: boolean
 }
 
+/**
+ * MLS PropertyType letter codes for getListingTiles (max 4 chars).
+ * Same map as PLACE_TYPE_COVER_SPECS: C multi-family, D land, E farm,
+ * F commercial, H business. Browse slugs like `multi-family` fail Zod.
+ */
+export const INVEST_TILE_PULLS = [
+  { propertyType: 'C', label: 'mf' },
+  { propertyType: 'D', label: 'land' },
+  { propertyType: 'E', label: 'farm' },
+  { propertyType: 'F', label: 'commercial' },
+  { propertyType: 'H', label: 'business' },
+] as const
+
 function listingPull(propertyType: string, label: string) {
   return withTimeoutFallbackResult<ListingTile[]>(
     getListingTiles({
@@ -44,7 +57,7 @@ function listingPull(propertyType: string, label: string) {
 }
 
 export const loadInvestBoard = cache(async (): Promise<InvestBoard> => {
-  const [segments, liveRate, multi, land, commercial] = await Promise.all([
+  const [segments, liveRate, listingResults] = await Promise.all([
     withTimeoutFallback(
       getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }),
       [],
@@ -57,13 +70,11 @@ export const loadInvestBoard = cache(async (): Promise<InvestBoard> => {
       4500,
       'invest:rate',
     ),
-    listingPull('multi-family', 'mf'),
-    listingPull('Land', 'land'),
-    listingPull('Commercial', 'commercial'),
+    Promise.all(INVEST_TILE_PULLS.map((pull) => listingPull(pull.propertyType, pull.label))),
   ])
 
-  const listingBuckets = [multi, land, commercial].flatMap((result) => (result.ok ? [result.value] : []))
-  const listingsOk = multi.ok || land.ok || commercial.ok
+  const listingBuckets = listingResults.flatMap((result) => (result.ok ? [result.value] : []))
+  const listingsOk = listingResults.some((result) => result.ok)
   const listings = listingsOk ? composeInvestListings(listingBuckets) : []
   const readStamp = formatDateTime(new Date())
 
