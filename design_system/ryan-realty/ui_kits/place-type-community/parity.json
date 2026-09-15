@@ -75,7 +75,8 @@
         375
       ],
       "states": [
-        "default"
+        "default",
+        "carousel-open"
       ],
       "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, https://ryan-realty.com/communities/tetherow/types/single-family (live; claim+Atlas already shipped)"
     },
@@ -99,6 +100,9 @@
     },
     "beats": "Tetherow.com — we win on live MLS count, asking-price band, and 90-day sales density with a named Oregon Data Share timestamp; we lose on photography and place character, and Zillow community pages beat this fold on photographed listings.",
     "adaptedFrom": [
+      {
+        "id": "shadcn-carousel"
+      },
       {
         "id": "house-atlas"
       },

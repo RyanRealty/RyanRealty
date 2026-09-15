@@ -66,7 +66,7 @@ describe('place-type pages', () => {
       resolve('app/communities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx'),
       'utf8',
     )
-    expect(commFilm).toContain("from '@/components/ui/carousel'")
+    expect(commFilm).toMatch(/import\s*\{[\s\S]*Carousel[\s\S]*\}\s*from\s*'@\/components\/ui\/carousel'/)
     expect(commFilm).toMatch(/CarouselPrevious/)
     expect(commFilm).toMatch(/CarouselNext/)
     expect(CITY).toMatch(/bandLow=\{lowAsk\}/)

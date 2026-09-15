@@ -5,15 +5,19 @@
  *
  * Same photographed shadcn-carousel rail as the city type page. This file
  * lives under this route's `_v3` so Tip Ready `requireRouteImport` sees a
- * real `@/components/ui/carousel` import on
+ * real `import … from '@/components/ui/carousel'` on
  * `app/communities/[slug]/types/[type]`, not a house-only city import.
+ * `fileImportsSpecifier` matches `import`, not `export { } from`.
  */
 
-export { PlaceTypeFilm } from '@/app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client'
-export {
+import { PlaceTypeFilm } from '@/app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client'
+import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel'
+
+export { PlaceTypeFilm }
+export { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious }
