@@ -29,6 +29,7 @@ import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps
 import { JUDGMENT_PRUNE_FLOOR, pricedSetAfterJudgment } from '@/lib/cma/judgment-prune'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import { adjustCmaCompAlongMarket, adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
+import { selectionIsExclusivePocket } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { buildRejectedSales } from '@/lib/pricing/rejected'
 import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
 import { buildPricingReview, confidenceForVerdict } from '@/lib/pricing/review'
@@ -529,6 +530,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // adjustment on that one sale — it does not change which path the
       // document is measured along.
       const usePath = marketIndex.length > 0
+      // Exclusive pocket (Canter 2026-09-15): city-index date-adjust pumps
+      // Horse Back closes toward Clearpine ppsf. Admin owns picker exclusivity;
+      // this only refuses applying that series to a set that already stayed in.
+      const exclusivePocket = selectionIsExclusivePocket(selection.tiersUsed)
       const adj = (usePath
         ? set.map((c) => {
             const sale = salesByKey.get(c.listingKey)
@@ -542,6 +547,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
                   asOf,
                   // Sale rebuild drops original_entry / history. Keep hydrate.
                   hydrated: c,
+                  exclusivePocket,
                 }).adjusted
               : adjustCmaCompAlongMarket({
                   subject,
@@ -550,9 +556,22 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
                   saleStory: 'unknown',
                   points: marketIndex,
                   asOf,
+                  exclusivePocket,
                 }).adjusted
           })
-        : adjustComps(subject, set, market)
+        : exclusivePocket
+          ? set.map((c) =>
+              adjustCmaCompAlongMarket({
+                subject,
+                subjectStory,
+                comp: c,
+                saleStory: 'unknown',
+                points: [],
+                asOf,
+                exclusivePocket: true,
+              }).adjusted,
+            )
+          : adjustComps(subject, set, market)
       ).map((c) => {
         const tier = tierByKey.get(c.listingKey)
         return tier === 'weak' ? { ...c, weight: +(c.weight * 0.5).toFixed(4) } : c
@@ -575,7 +594,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // can count — not the wider band set the price path is fitted on
       // (§0 rule 5; look pass 2026-09-07 printed "4 of 8" beside a 5-row matrix).
       attachSellerNet(p, set)
-      if (p && usePath) {
+      if (p && exclusivePocket) {
+        p.notes.unshift(
+          `These sales are the exclusive pocket. Date adjustment does not walk the ${subject.city} city index — that series includes tracts already excluded from this set. Each sale stays on its sold and last-ask price, then size.`,
+        )
+      } else if (p && usePath) {
         p.notes.unshift(
           `Time adjustment follows the monthly ${subject.city} sale-price path between each comparable close and ${asOf}.`,
         )

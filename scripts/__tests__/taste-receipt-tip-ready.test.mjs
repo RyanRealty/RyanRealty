@@ -252,6 +252,37 @@ describe('taste-receipt --ship picker-contract', () => {
     expect(`${r.stderr}${r.stdout}`).toMatch(/blank-subdiv-infers-saddlestone-cluster/)
     expect(`${r.stderr}${r.stdout}`).toMatch(/Cos prose/)
   })
+
+  it('canter-date-adj parity --ship exits 0', () => {
+    const r = spawnSync(
+      process.execPath,
+      [SHIP, '--ship', 'lib/pricing/canter-date-adj.parity.json'],
+      { cwd: REPO, encoding: 'utf8', env: process.env },
+    )
+    expect(r.status).toBe(0)
+    expect(`${r.stdout}${r.stderr}`).toMatch(/ship OK/)
+  })
+
+  it('refuses --ship when exclusive-pocket-date-adj-keeps-flex-band is missing', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'rr-date-adj-'))
+    writeFileSync(join(dir, 'empty.test.ts'), 'it("no contracts here", () => {})\n')
+    writeFileSync(
+      join(dir, 'parity.json'),
+      JSON.stringify({
+        kind: 'picker-contract',
+        contracts: ['exclusive-pocket-date-adj-keeps-flex-band'],
+        testFiles: ['empty.test.ts'],
+      }),
+    )
+    const r = spawnSync(process.execPath, [SHIP, '--ship', 'parity.json'], {
+      cwd: dir,
+      encoding: 'utf8',
+      env: process.env,
+    })
+    expect(r.status).toBe(1)
+    expect(`${r.stderr}${r.stdout}`).toMatch(/exclusive-pocket-date-adj-keeps-flex-band/)
+    expect(`${r.stderr}${r.stdout}`).toMatch(/Cos prose/)
+  })
 })
 
 describe('taste-receipt --ship CLI', () => {

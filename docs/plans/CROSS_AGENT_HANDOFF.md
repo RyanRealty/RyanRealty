@@ -1,10 +1,10 @@
-# Current — 2026-09-15 (Canter live select path — plat RHM)
+# Current — 2026-09-15 (Canter exclusive-pocket date-adj residual)
 
-Surface: Cursor cloud. Named branch `cursor/canter-live-select-path-fd38`. Do not merge. Cos Mini-lands. AE rebuilds after land.
+Surface: Cursor cloud. Named branch `cursor/canter-date-adj-pump-bbb6`. Do not merge. Cos Mini-lands. Admin rebuilds `cma-1130-canter-sisters-usa` once after land.
 
-- **Done:** Live rebuild path (`selectCompsPreferringFacts` / `walkPricingLadder`) no longer treats GIS plat Rolling Horse Meadow as MLS. Street-cluster (SaddleStone / Horse Back / Ranch) wins. Ranch 220218584 + Horse Back 220214720 in; Clearpine out. `--ship lib/pricing/canter-pocket.parity.json` exit 0.
-- **Next:** Cos Mini land, then AE rebuild `cma-1130-canter-sisters-usa`.
-- Skills read: `lib/pricing/select.ts`, `lib/pricing/infer-pocket.ts`.
+- **Done:** Verified city-index date-adjust pumps Horse Back pocket closes toward ~$800k+ (Admin named residual after live-select 861a0db6). Exclusive-pocket sets no longer apply that factor. Recommend stays in raw sold/list ~$650–690k. `--ship lib/pricing/canter-date-adj.parity.json` exit 0. Picker exclusivity not reopened.
+- **Next:** Cos Mini land, then Admin one rebuild.
+- Skills read: `lib/pricing/estimate.ts`, `lib/pricing/market-path.ts`, `scripts/lib/taste-receipt.mjs --ship`.
 
 # Prior — 2026-09-15 ~06:40 PT (Cos Mini land complete — AE rebuild Canter)
 
