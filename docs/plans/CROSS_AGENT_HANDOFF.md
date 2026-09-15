@@ -1,10 +1,10 @@
-# Current — 2026-09-15 (Canter exclusive-pocket date-adj Mini land)
+# Current — 2026-09-15 (SITE-109 official avatar dropdown)
 
-Surface: Cos Mini on Matthews Mini. Canter date-adj Tip Ready only. No SITE-103. Do not invent demoMatch. HOLD send. Admin rebuilds `cma-1130-canter-sisters-usa` once after land.
+Surface: Cursor cloud on `cursor/site109-avatar-demo-cb02`. SITE-109 only. Do not invent demoMatch. Do not merge.
 
-- **Done:** Cherry-picked PR #247 tip `4ce82ea9` (`cursor/canter-date-adj-pump-bbb6`) onto `origin/main`. Exclusive-pocket sets no longer apply city-index date-adjust; recommend stays in raw sold/list ~$650–690k. `--ship lib/pricing/canter-date-adj.parity.json` exit 0. Picker exclusivity not reopened.
-- **Next:** `npm run push` this land. HOLD send. Admin one rebuild after land. Do not invent demoMatch.
-- Skills read: `lib/pricing/estimate.ts`, `lib/pricing/market-path.ts`, `scripts/lib/taste-receipt.mjs --ship`.
+- **Done:** Mini tip `34f7cd48f` scored 62, demoMatch false — avatar-open was a cream quote overlay on letter discs. Replaced with official shadcn-avatar: AvatarGroup → Avatar → AvatarImage (vendored catalog portraits) → AvatarFallback → AvatarBadge; open state is Button ghost icon + DropdownMenuGroup Account/Billing/Notifications + Separator + Sign Out. SITE-107 left alone.
+- **Next:** Cos Mini-judges again. `--ship` stays 1 until Mini writes demoMatch. SITE-103/110/CMA left alone.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`.
 
 # Prior — 2026-09-15 (SITE-96 contact Tip Ready land)
 
