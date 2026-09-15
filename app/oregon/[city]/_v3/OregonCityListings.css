@@ -1,0 +1,85 @@
+/* Magazine Card density: one lead plate, then a tighter sm grid.
+   Reveal lives inside CardContent (group-hover). Do not paint a
+   second house ledger. */
+
+.v3.oregon-city-listings {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+.v3.oregon-city-listings .oregon-city-listings__note,
+.v3.oregon-city-listings .oregon-city-listings__empty {
+  max-width: var(--v3-measure-text);
+  margin: var(--v3-space-sm) 0 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-note);
+}
+
+.v3.oregon-city-listings .oregon-city-listings__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-md);
+  margin-top: var(--v3-space-lg);
+}
+
+.v3.oregon-city-listings .oregon-city-listings__link {
+  display: block;
+  min-width: 0;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+
+.v3.oregon-city-listings .oregon-city-listings__photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.v3.oregon-city-listings .oregon-city-listings__source {
+  margin-top: var(--v3-space-lg);
+}
+
+.v3.oregon-city-listings .oregon-city-listings__action {
+  margin-top: var(--v3-space-md);
+}
+
+@media (min-width: 40rem) {
+  .v3.oregon-city-listings .oregon-city-listings__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .v3.oregon-city-listings .oregon-city-listings__lead {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .v3.oregon-city-listings .oregon-city-listings__lead .oregon-city-listings__photo {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    height: 100%;
+    min-height: 16rem;
+    aspect-ratio: auto;
+  }
+
+  .v3.oregon-city-listings .oregon-city-listings__lead [data-slot='card-header'] {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .v3.oregon-city-listings .oregon-city-listings__lead [data-slot='card-content'] {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+@media (min-width: 64rem) {
+  .v3.oregon-city-listings .oregon-city-listings__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
