@@ -16,12 +16,16 @@ export function PersonWorkspace({
   forceMobile = false,
   mobile,
   desktop,
+  desktopChrome,
   kickoff,
 }: {
   /** 390px verification frame (?view=mobile) — automation browsers can't shrink below 768px. */
   forceMobile?: boolean
   mobile: ReactNode
   desktop: ReactNode
+  /** tools route identity (Person chip + EntityTitle) — desktop only. Must not
+      sit above the mobile `-mt-5` full-bleed or glyph tops clip into black slivers. */
+  desktopChrome?: ReactNode
   kickoff?: ReactNode
 }) {
   if (forceMobile) {
@@ -39,11 +43,10 @@ export function PersonWorkspace({
   return (
     <>
       {kickoff}
+      {desktopChrome ? <div className="hidden md:block">{desktopChrome}</div> : null}
       {/* Mobile layout (< md) — full-bleed: cancel ConsoleShell main
-          `px-4 pt-5 pb-24`. Do NOT put EntityTitle / route chrome above this
-          wrapper on mobile — `-mt-5` pulls the detail header up into that
-          chrome and clips glyph tops (black slivers). people/[id]/tools hides
-          its desktop chrome at < md; Person chip lives inside MobileContactDetail. */}
+          `px-4 pt-5 pb-24`. Desktop identity chrome is `desktopChrome` above
+          (hidden md:block); Person chip on phone lives inside MobileContactDetail. */}
       <div className="-mx-4 -mt-5 -mb-24 md:hidden">{mobile}</div>
       <div className="hidden md:block">{desktop}</div>
     </>

@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import {
@@ -60,6 +61,7 @@ import { PersonEngagementRegion } from './PersonEngagementRegion'
 import { PersonMobileHomesRegion } from './PersonMobileHomesRegion'
 import { PersonMobileCalendarRegion } from './PersonMobileCalendarRegion'
 import { PersonRegionSkeleton } from './PersonRegionSkeleton'
+import { EntityTitle } from '@/components/admin/v2'
 
 const BASE = '/admin/crm'
 
@@ -593,11 +595,29 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
     </>
   )
 
+  // Desktop-only identity chrome (was on tools/page — moved here so the route
+  // stays free of md: forks). Must not render above mobile `-mt-5` full-bleed.
+  const desktopChrome = (
+    <div className="av2-scope" style={{ padding: '12px 16px 0' }}>
+      <div className="av2-wordrow" style={{ marginBottom: 6 }}>
+        <Link
+          href={`/admin/people/${person.id}`}
+          className="av2-btn av2-btn--quiet"
+          style={{ textDecoration: 'none' }}
+        >
+          Person
+        </Link>
+      </div>
+      <EntityTitle>{displayName} · all tools</EntityTitle>
+    </div>
+  )
+
   return (
     <PersonWorkspace
       forceMobile={view === 'mobile'}
       mobile={mobileDetail}
       desktop={desktopTree}
+      desktopChrome={desktopChrome}
       kickoff={cmaKickoffSheet}
     />
   )

@@ -1,6 +1,5 @@
 // @no-parity — internal admin surface, no public mockup contract
 import { Suspense } from 'react'
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import {
   getCrmAccess,
@@ -11,8 +10,6 @@ import {
   requirePersonInScope,
 } from '@/app/actions/crm'
 import { getPersonIdByLegacyId } from '@/lib/data/crm/getPersonIdByLegacyId'
-import { resolveDisplayName } from '@/app/admin/(protected)/crm/[id]/person-view-model'
-import { EntityTitle } from '@/components/admin/v2'
 import { PersonWorkspaceBody } from '@/components/admin/crm/person-detail/PersonWorkspaceBody'
 import { PersonWorkspaceSkeleton } from '@/components/admin/crm/person-detail/PersonWorkspaceSkeleton'
 
@@ -80,44 +77,26 @@ export default async function PersonWorkspaceToolsPage({
     notFound()
   }
 
+  // Desktop Person/EntityTitle chrome lives inside PersonWorkspace (hidden
+  // md:block) — this route must not own an md: fork (ci:person-workspace-
+  // single-tree). Mobile Person chip is inside MobileContactDetail so it
+  // never fights PersonWorkspace's -mt-5 full-bleed cancel.
   return (
-    <>
-      {/* Desktop-only identity chrome. On mobile, PersonWorkspace cancels
-          ConsoleShell main `pt-5` with `-mt-5` so MobileContactDetail
-          full-bleeds; EntityTitle + Person chip sitting in that cancel zone
-          left glyph tops clipped into black slivers between the chip and the
-          back/Edit row. Mobile keeps a Person chip inside MobileContactDetail. */}
-      <div className="av2-scope hidden md:block" style={{ padding: '12px 16px 0' }}>
-        <div className="av2-wordrow" style={{ marginBottom: 6 }}>
-          <Link
-            href={`/admin/people/${id}`}
-            className="av2-btn av2-btn--quiet"
-            style={{ textDecoration: 'none' }}
-          >
-            Person
-          </Link>
-        </div>
-        {/* The workspace tree below carries no h1 (PersonSidebar's name is an
-            h2), so the entity's own name is the heading here — the one h1
-            ADMIN_UI rule 1 allows on an entity page. */}
-        <EntityTitle>{resolveDisplayName(full.person.name, id)} · all tools</EntityTitle>
-      </div>
-      <Suspense fallback={<PersonWorkspaceSkeleton />}>
-        <PersonWorkspaceBody
-          personId={id}
-          crmAccess={crmAccess}
-          full={full}
-          templates={templates}
-          smsTemplates={smsTemplates}
-          twilioStatus={twilioStatus}
-          tpl={tpl}
-          smsTpl={smsTpl}
-          sendError={sendError}
-          flash={flash}
-          view={view}
-          intent={intent}
-        />
-      </Suspense>
-    </>
+    <Suspense fallback={<PersonWorkspaceSkeleton />}>
+      <PersonWorkspaceBody
+        personId={id}
+        crmAccess={crmAccess}
+        full={full}
+        templates={templates}
+        smsTemplates={smsTemplates}
+        twilioStatus={twilioStatus}
+        tpl={tpl}
+        smsTpl={smsTpl}
+        sendError={sendError}
+        flash={flash}
+        view={view}
+        intent={intent}
+      />
+    </Suspense>
   )
 }
