@@ -51,8 +51,11 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .v3.oregon-city-listings .oregon-city-listings__lead {
+  .v3.oregon-city-listings .oregon-city-listings__lead-link {
     grid-column: 1 / -1;
+  }
+
+  .v3.oregon-city-listings .oregon-city-listings__lead {
     display: grid;
     grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
     align-items: stretch;

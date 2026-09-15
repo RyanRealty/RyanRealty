@@ -15,6 +15,8 @@ const ROUTE_CSS = readFileSync(new URL('../oregon-city.css', import.meta.url), '
 const HONESTY = readFileSync(new URL('./OregonCityHonesty.tsx', import.meta.url), 'utf8')
 const HONESTY_CSS = readFileSync(new URL('./OregonCityHonesty.css', import.meta.url), 'utf8')
 const CATALOG = readFileSync(new URL('../../../../design_system/public/taste-catalog.json', import.meta.url), 'utf8')
+const LISTINGS = readFileSync(new URL('./OregonCityListings.tsx', import.meta.url), 'utf8')
+const LISTINGS_CSS = readFileSync(new URL('./OregonCityListings.css', import.meta.url), 'utf8')
 
 describe('oregon-city fold helpers', () => {
   it('puts the live count in the title for SEO', () => {
@@ -149,6 +151,9 @@ describe('oregon-city page holds the SITE-105 catalog object', () => {
     expect(PAGE).toContain('buildOregonCityTitle')
     expect(PAGE).toContain('OregonCityHonesty')
     expect(PAGE).toContain('OregonCityListings')
+    expect(LISTINGS).toContain("from '@/components/ui/card'")
+    expect(LISTINGS).toContain('oregon-city-listings__lead-link')
+    expect(LISTINGS_CSS).toContain('grid-column: 1 / -1')
     expect(PAGE).toContain('id="about"')
     expect(PAGE).toContain('id="listings"')
     expect(PAGE).not.toContain('layout="magazine"')

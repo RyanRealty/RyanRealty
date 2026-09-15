@@ -64,7 +64,14 @@ export function OregonCityListings(props: {
           {props.items.map((item, index) => {
             const lead = index === 0
             return (
-              <Link key={item.id} href={item.href} className="oregon-city-listings__link">
+              <Link
+                key={item.id}
+                href={item.href}
+                className={cn(
+                  'oregon-city-listings__link',
+                  lead && 'oregon-city-listings__lead-link',
+                )}
+              >
                 <Card
                   size={lead ? 'default' : 'sm'}
                   className={lead ? 'oregon-city-listings__lead' : undefined}
