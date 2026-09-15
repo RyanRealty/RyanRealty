@@ -36,6 +36,7 @@ const GLOBAL: Item[] = [
   { label: 'New task', href: '/admin/crm/tasks', icon: CheckSquare },
   { label: 'View pipeline', href: '/admin/crm/deals', icon: Briefcase },
   { label: 'Compose email', href: '/admin/messages/new?channel=email', icon: PenSquare },
+  { label: 'Text', href: '/admin/messages/new', icon: MessageSquare },
   { label: 'Start a CMA', href: '/admin/cmas', icon: Calculator },
   { label: 'Workflows', href: '/admin/crm/sequences', icon: ListChecks },
 ]

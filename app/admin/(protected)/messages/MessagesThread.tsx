@@ -9,6 +9,7 @@ import { addUnknownCallerPersonAction } from '@/app/actions/crm-inbox'
 import { searchPeopleForMergeAction, linkUnknownCallerToPersonAction } from '@/app/actions/crm-person-gaps'
 import { isUnknownCaller } from '@/lib/crm/display-name'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
+import { smsDisplayBody } from '@/lib/crm/sms-display-body'
 import { Button, ThreadBubble } from '@/components/admin/v2'
 import { ComposeSurface } from '@/components/admin/crm/ComposeSurface'
 import AddPersonForm from './AddPersonForm'
@@ -131,7 +132,7 @@ export async function MessagesThread({
             const body =
               chan === 'Email'
                 ? (m.subject ? `${m.subject} — ` : '') + (m.snippet ?? m.label)
-                : (m.fullBody ?? m.snippet ?? m.label)
+                : smsDisplayBody(m.fullBody ?? m.snippet ?? m.label)
             return (
               <ThreadBubble
                 key={m.id}

@@ -14,6 +14,7 @@ import { groupInfoFromPayload } from '@/lib/crm/group-message'
 import { Button } from '@/components/admin/v2'
 import { blockCrmNumber } from '@/app/actions/crm-block'
 import { timelineEmailBody } from '@/lib/crm/email-body'
+import { smsDisplayBody } from '@/lib/crm/sms-display-body'
 import { StoredAttachmentStrip } from '@/components/admin/crm/StoredAttachments'
 import { formatDate, formatDateTime as fmtDateTimeFn } from '@/lib/format/date'
 
@@ -145,7 +146,7 @@ export default function ConversationFeed({
     <ul className="divide-y divide-[color:var(--a-border)]">
       {items.map((e) => {
         const { Icon, title, participant } = rowMeta(e, personName)
-        const preview = (e.body ? timelineEmailBody(e.body) : '') || ''
+        const preview = (e.body ? smsDisplayBody(timelineEmailBody(e.body)) : '') || ''
         // Legacy imported messages with content redacted
         // (payload.contentHidden === true, body null) — show a labeled
         // placeholder rather than a blank row.
