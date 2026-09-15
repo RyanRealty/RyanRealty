@@ -114,8 +114,16 @@ export function ReviewsAvatarGroup({
                 aria-pressed={open}
               >
                 <Avatar size={open ? 'lg' : 'default'}>
-                  <AvatarImage src={src} alt={face.author} />
-                  <AvatarFallback delayMs={0}>{initials}</AvatarFallback>
+                  <AvatarImage
+                    src={src}
+                    alt={face.author}
+                    width={80}
+                    height={80}
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                  />
+                  <AvatarFallback delayMs={600}>{initials}</AvatarFallback>
                   <AvatarBadge>
                     {open ? <StarIcon /> : null}
                   </AvatarBadge>
@@ -125,8 +133,15 @@ export function ReviewsAvatarGroup({
             <DropdownMenuContent className="w-56" align="start">
               <DropdownMenuLabel className="flex items-center gap-2 font-normal">
                 <Avatar size="sm">
-                  <AvatarImage src={src} alt={face.author} />
-                  <AvatarFallback delayMs={0}>{initials}</AvatarFallback>
+                  <AvatarImage
+                    src={src}
+                    alt={face.author}
+                    width={48}
+                    height={48}
+                    loading="eager"
+                    decoding="async"
+                  />
+                  <AvatarFallback delayMs={600}>{initials}</AvatarFallback>
                 </Avatar>
                 <span className="min-w-0">
                   <span className="block truncate font-medium">{face.author}</span>
