@@ -20,8 +20,9 @@
  * There is no aggregateRating JSON-LD on the page (self-serving).
  */
 import { useCallback, useId, useMemo, useRef, useState } from 'react'
+import { ReviewsAvatarGroup } from '@/app/reviews/_v3/ReviewsAvatarGroup.client'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { reviewerInitials, uniqueReviewerInitials } from '@/lib/reviews/reviewer-initials'
+import { reviewerInitials } from '@/lib/reviews/reviewer-initials'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from './atoms'
 import './tokens.css'
@@ -111,65 +112,10 @@ function Marks({ rating }: { rating: number }) {
   )
 }
 
-function firstName(author: string): string {
-  const parts = author.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return author
-  // A one-letter "first name" (C, J) is not a label — use the whole author.
-  if ((parts[0]?.length ?? 0) <= 1) return author
-  return parts[0]!
-}
-
-function FaceAvatarRow({
-  faces,
-  focusId,
-  onPick,
-}: {
-  faces: readonly V3ProofQuote[]
-  focusId: string | null
-  onPick?: (id: string) => void
-}) {
-  const seen = new Set<string>()
-  const labeled = faces.map((q) => {
-    const initials = uniqueReviewerInitials(q.author, seen)
-    seen.add(initials)
-    return { q, initials }
-  })
-  return (
-    <ul className="v3-proof__face-avatars" aria-label="Recent reviewers — choose one to read">
-      {labeled.map(({ q, initials }) => {
-        const on = focusId === q.id
-        return (
-          <li key={q.id}>
-            <button
-              type="button"
-              className={cn('v3-proof__avatar-btn', on && 'is-on')}
-              onClick={() => onPick?.(q.id)}
-              aria-label={`Read ${q.author}'s review`}
-              aria-pressed={on}
-            >
-              <span className="v3-proof__avatar-wrap" title={q.author}>
-                <Avatar size="lg" className="v3-proof__avatar" data-initials={initials}>
-                  <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0}>
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="v3-proof__avatar-ink" aria-hidden="true">
-                  {initials}
-                </span>
-              </span>
-              <span className="v3-proof__avatar-name">{firstName(q.author)}</span>
-            </button>
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
-
 /**
  * Score as a hero figure: average at display scale, stars, and the count.
- * Reviewer Avatar initials render after the lead quote so the client's words
- * are the next read (public.reviews has no photo column — never invent a face).
+ * Reviewer faces after the lead quote are the shadcn AvatarGroup demo
+ * (`ReviewsAvatarGroup`). public.reviews has no photo column — never invent a face.
  */
 function ScoreFace({ average, count }: { average: string; count: string }) {
   const n = Number(average)
@@ -253,6 +199,9 @@ export function V3Proof({
   const [focus, setFocus] = useState<string | null>(() =>
     archive && quotes.length > 0 ? quotes[0]!.id : null,
   )
+  // Default keeps the AvatarGroup closed. avatar-open is a click that opens
+  // the catalog dropdown — not a selected ring on the same four discs.
+  const [openedId, setOpenedId] = useState<string | null>(null)
   // A click on a mark scrolls the page; the card that slides under the
   // stationary pointer must not steal the focus the click just set.
   const scrollLock = useRef(false)
@@ -484,13 +433,16 @@ export function V3Proof({
       ) : null}
 
       {showFace && record && faceAvatars.length > 0 ? (
-        <FaceAvatarRow
+        <ReviewsAvatarGroup
           faces={faceAvatars}
-          focusId={focus}
+          remaining={Math.max(0, quotes.length - faceAvatars.length)}
+          openedId={openedId}
           onPick={(id) => {
             setFocus(id)
+            setOpenedId(id)
             open(id)
           }}
+          onClose={() => setOpenedId(null)}
         />
       ) : null}
 

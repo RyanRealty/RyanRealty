@@ -1,12 +1,18 @@
 /**
  * Route-level shadcn-avatar install (SITE-109).
  *
- * V3Proof already imports Avatar for the house primitive. Tip Ready
- * `requireRouteImport` also needs this route's page/_v3 set to import
- * `@/components/ui/avatar` — `fileImportsSpecifier` matches `import … from`,
- * not `export { } from`. public.reviews has no photo column — initials
- * only; do not invent portraits.
+ * Tip Ready `requireRouteImport` needs this route's page/_v3 set to import
+ * `@/components/ui/avatar`. The live control is ReviewsAvatarGroup — the
+ * catalog AvatarGroup / AvatarImage / AvatarBadge / Dropdown composition.
  */
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import {
+  Avatar,
+  AvatarBadge,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarGroupCount,
+  AvatarImage,
+} from '@/components/ui/avatar'
 
-export { Avatar, AvatarFallback }
+export { Avatar, AvatarBadge, AvatarFallback, AvatarGroup, AvatarGroupCount, AvatarImage }
+export { ReviewsAvatarGroup } from './ReviewsAvatarGroup.client'
