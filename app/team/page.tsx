@@ -64,7 +64,7 @@ import './_v3/team-fold.css'
 export const metadata: Metadata = pageMetadata({
   title: 'Our team · Ryan Realty, Bend Oregon',
   description:
-    'Three licensed Oregon brokers who live and work in Central Oregon. Local experts, exceptional customer service, and the same broker with you from the first call through closing.',
+    'Ryan Realty brokers in Bend and Central Oregon.',
   path: '/team',
   ogImage: '/images/hero/hero-old-mill-master-4k.jpg',
   keywords: [
@@ -158,7 +158,7 @@ export default async function TeamPage() {
       aboutOrganization: true,
       name: 'The Ryan Realty Team',
       description:
-        'The licensed Oregon brokers behind Ryan Realty in Bend, serving buyers and sellers across Central Oregon.',
+        'Ryan Realty brokers in Bend and Central Oregon.',
       url: '/team',
     },
     {
@@ -182,7 +182,6 @@ export default async function TeamPage() {
             people={faces}
             heading="The brokers"
             size="editorial"
-            claim="Three licensed Oregon brokers, all of them here. The one you call is the one who works your deal, start to close, and each of them shows what they have actually closed."
           />
 
           {dots.length > 0 ? (

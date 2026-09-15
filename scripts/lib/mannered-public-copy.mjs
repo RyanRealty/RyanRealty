@@ -6,17 +6,19 @@
  * not a Cos-eye path. Same Looking refuse class as competitiveBrief:
  * inventing past what the heading + control already say.
  *
- * Four tells:
+ * Five tells:
  *   1. Meta-explainer / "this map is the full record" lecture
  *   2. Action-narrating control labels ("CALL 541…" on a Call door)
  *   3. Homepage Researchy brief dumped as visitor copy (homeBriefText)
  *   4. Place-list intro that narrates the map / filters ("the same homes the map above")
+ *   5. Mannered self-explaining intros ("Three licensed…", "the one you call…",
+ *      "Where those closings were") — over-explain / obvious blurb (Matt 2026-09-15)
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 export const MANNERED_COPY_REFUSE =
-  'mannered public copy: overtly stating the obvious / meta-explainer ("this map is the full record" class). Looking refuse. Leave the node in_progress.'
+  'mannered public copy: overtly stating the obvious / meta-explainer / self-explaining intro ("Three licensed…", "the one you call…", "Where those closings were" class). Looking refuse. Leave the node in_progress.'
 
 export const ACTION_BILLBOARD_REFUSE =
   'mannered public copy: action-narrating control ("CALL 541…" billboard). Quiet Call | Text | Email | Schedule. Leave the node in_progress.'
@@ -41,6 +43,14 @@ export const MANNERED_EXPLAINER_RES = Object.freeze([
   /market section further down/i,
   /counted on the market section/i,
   /with price, beds and property type on the filters/i,
+  /* /team mannered hero intro (Matt 2026-09-15 Writing Bot) */
+  /Three licensed Oregon brokers/i,
+  /the one you call is the one who works your deal/i,
+  /works your deal,? start to close/i,
+  /each of them shows what they have actually closed/i,
+  /Where those closings were/i,
+  /Where those sales were/i,
+  /same broker with you from the first call through closing/i,
 ])
 
 /** Homepage spec dumped as public copy (Matt 2026-09-15). Not the TS brief object. */
@@ -63,7 +73,7 @@ export const HOME_BRIEF_LEAK_RES = Object.freeze([
 export const ACTION_BILLBOARD_RE =
   /\b(?:CALL|TEXT|EMAIL|Call|Text|Email)\s+[+(]?\d[\d.()\s-]{5,}\d/
 
-const TEAM_COPY_FILES = Object.freeze(['app/team/page.tsx', 'app/about/_v3/AboutFaces.tsx'])
+const TEAM_COPY_FILES = Object.freeze(['app/team/page.tsx', 'app/team/_v3/broker-roster-record.ts', 'app/about/_v3/AboutFaces.tsx'])
 
 const HOME_COPY_FILES = Object.freeze([
   'app/page.tsx',

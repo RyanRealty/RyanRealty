@@ -82,7 +82,7 @@ export function brokerRosterRecord(input: {
       value: String(recent.length),
       label: recent.length === 1 ? 'closing in the last 12 months' : 'closings in the last 12 months',
       places,
-      placesSummary: places.length > 0 ? 'Where those closings were' : 'How this is counted',
+      placesSummary: places.length > 0 ? 'Cities' : 'How this is counted',
       sourceName: 'Closed MLS sales',
       trace:
         `Closed MLS sales through Oregon Data Share, every closing recorded for ${input.name} on either side of the deal ` +
@@ -105,7 +105,7 @@ export function brokerRosterRecord(input: {
       value: String(closed.length),
       label: closed.length === 1 ? `closed sale on record${span}` : `closed sales on record${span}`,
       places,
-      placesSummary: places.length > 0 ? 'Where those sales were' : 'How this is counted',
+      placesSummary: places.length > 0 ? 'Cities' : 'How this is counted',
       sourceName: 'Closed MLS sales',
       trace:
         `Closed MLS sales through Oregon Data Share, every closing recorded for ${input.name} on either side of the deal ` +
@@ -122,7 +122,7 @@ export function brokerRosterRecord(input: {
       value: String(actives.length),
       label: actives.length === 1 ? 'home for sale right now' : 'homes for sale right now',
       places,
-      placesSummary: places.length > 0 ? 'Where they are' : 'How this is counted',
+      placesSummary: places.length > 0 ? 'Cities' : 'How this is counted',
       sourceName: 'Live MLS listings',
       trace:
         `Live MLS listings through Oregon Data Share, active listings whose listing agent is ${input.name} ` +

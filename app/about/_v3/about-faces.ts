@@ -38,7 +38,7 @@ export type AboutFaceRecord = {
   label: string
   /** Where those transactions were, largest first. Empty is allowed. */
   places: readonly { name: string; n: number }[]
-  /** The disclosure's control: "Where those closings were". */
+  /** The disclosure's control label (plain: "Cities"). */
   placesSummary: string
   /** The section 0 trace for the figure and the places. */
   trace: string
