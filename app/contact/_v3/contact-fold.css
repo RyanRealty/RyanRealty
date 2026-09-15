@@ -174,20 +174,60 @@
     padding-bottom: 0;
   }
 
-  .contact-fold .v3-doors__door--lead {
+  .contact-fold .v3-quiet__body {
+    display: none;
+  }
+
+  /* Portrait + Call + hours on row one; Text | Email | Schedule under the
+     call copy so all four reach doors stay in the 1440 viewport. */
+  .contact-fold .v3-doors--lead .v3-doors__list {
+    grid-template-columns: 20rem repeat(3, minmax(0, 1fr));
+    grid-template-rows: auto auto;
+    align-items: start;
+  }
+
+  .contact-fold .v3-doors--lead .v3-doors__item--lead {
+    grid-column: 1 / -1;
+    grid-row: 1;
     display: grid;
     grid-template-columns: 20rem minmax(0, 1fr);
-    grid-template-rows: auto auto 1fr auto;
+    align-items: end;
+  }
+
+  .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead):nth-child(2) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead):nth-child(3) {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead):nth-child(4) {
+    grid-column: 4;
+    grid-row: 2;
+  }
+
+  .contact-fold .v3-doors__door--lead {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 20rem minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto;
     column-gap: var(--v3-space-sm);
     padding-block: var(--v3-space-sm);
     padding-inline: 0;
+    align-items: end;
   }
 
   .contact-fold .v3-doors__item--lead .v3-doors__art {
     grid-column: 1;
     grid-row: 1 / -1;
     width: 20rem;
+    max-height: 11rem;
+    aspect-ratio: 1;
     margin-bottom: 0;
+    align-self: end;
   }
 
   .contact-fold .v3-doors__item--lead .v3-doors__kicker,
@@ -196,13 +236,8 @@
     grid-column: 2;
   }
 
-  .contact-fold .v3-doors__item--lead {
-    display: grid;
-    grid-template-columns: 20rem minmax(0, 1fr);
-  }
-
-  .contact-fold .v3-doors__item--lead .v3-doors__door--lead {
-    grid-column: 1 / -1;
+  .contact-fold .v3-doors__door--lead .v3-doors__label {
+    font-size: var(--v3-size-display-2);
   }
 
   .contact-fold .v3-doors__item--lead .v3-doors__live {
@@ -211,7 +246,21 @@
     padding: 0 0 var(--v3-space-sm);
   }
 
+  .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) {
+    border-top: var(--v3-rule-hairline);
+    border-left: 0;
+  }
+
+  .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) + .v3-doors__item {
+    border-left: var(--v3-rule-hairline);
+  }
+
   .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) .v3-doors__door {
     padding-block: var(--v3-space-xs);
+  }
+
+  .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) .v3-doors__fact,
+  .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) .v3-doors__arrow {
+    display: none;
   }
 }
