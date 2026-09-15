@@ -1,0 +1,105 @@
+/* Insight band under the Pulse. Tokens only — navy on cream. */
+
+.v3.invest-insight {
+  padding: 0 0 clamp(2rem, 4vw, 3rem);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
+.invest-insight__inner {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: 0 var(--v3-gutter);
+  display: grid;
+  gap: var(--v3-space-md);
+}
+
+.invest-insight__pager {
+  color: var(--v3-ink);
+}
+
+.v3 .invest-insight .insight-pager__title,
+.v3 .invest-insight .insight-pager__count {
+  color: var(--v3-ink-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.v3 .invest-insight .insight-pager__current {
+  color: var(--v3-ink);
+  font-family: var(--v3-font-display);
+  font-size: 1.5rem;
+}
+
+.v3 .invest-insight .insight-pager__btn {
+  color: var(--v3-ink);
+  border: var(--v3-rule-hairline);
+}
+
+.v3 .invest-insight .insight-pager__btn:hover,
+.v3 .invest-insight .insight-pager__btn:focus-visible {
+  background: color-mix(in srgb, var(--v3-ink) 8%, var(--v3-surface));
+}
+
+.v3 .invest-insight .insight-pager__btn:focus-visible {
+  outline: 3px solid var(--v3-focus);
+  outline-offset: 2px;
+}
+
+.invest-insight__scrub {
+  display: block;
+  width: 100%;
+  height: 2.75rem;
+  margin: 0;
+  accent-color: var(--v3-navy);
+  cursor: pointer;
+}
+
+.invest-insight__face {
+  display: grid;
+  gap: var(--v3-space-sm);
+}
+
+.invest-insight__figure {
+  font-family: var(--v3-font-display);
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.invest-insight__share {
+  color: var(--v3-ink-muted);
+}
+
+.invest-insight__track {
+  height: 0.5rem;
+  background: color-mix(in srgb, var(--v3-ink) 10%, var(--v3-surface));
+}
+
+.invest-insight__fill {
+  display: block;
+  height: 100%;
+  background: var(--v3-ink);
+}
+
+.invest-insight__def {
+  max-width: var(--v3-measure-text);
+  margin: 0;
+}
+
+.invest-insight__trades {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
+  color: var(--v3-ink-muted);
+}
+
+.invest-insight__go {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+}

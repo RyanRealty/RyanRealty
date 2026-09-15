@@ -1,0 +1,90 @@
+/* shadcn Table, house tokens. Keep the hover + selected interaction. */
+
+.v3.invest-tables {
+  padding: 0 0 clamp(2.5rem, 5vw, 3.5rem);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+}
+
+.invest-tables__inner {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: 0 var(--v3-gutter);
+  display: grid;
+  gap: var(--v3-space-xl);
+}
+
+.invest-tables__block {
+  display: grid;
+  gap: var(--v3-space-sm);
+}
+
+.invest-tables__heading {
+  margin: 0;
+  font-family: var(--v3-font-display);
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  line-height: 1.15;
+}
+
+.invest-tables__lede {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .invest-tables [data-slot='table-container'] {
+  border-top: var(--v3-rule-section);
+}
+
+.v3 .invest-tables [data-slot='table'] {
+  color: var(--v3-ink);
+}
+
+.v3 .invest-tables [data-slot='table-head'] {
+  height: 2.75rem;
+  color: var(--v3-ink-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.v3 .invest-tables [data-slot='table-row'] {
+  min-height: 2.75rem;
+  border-color: var(--v3-hairline);
+}
+
+.v3 .invest-tables [data-slot='table-row']:hover {
+  background: color-mix(in srgb, var(--v3-ink) 6%, var(--v3-surface));
+}
+
+.v3 .invest-tables [data-slot='table-row'][data-state='selected'] {
+  background: color-mix(in srgb, var(--v3-ink) 10%, var(--v3-surface));
+}
+
+.v3 .invest-tables [data-slot='table-cell'] {
+  padding-block: 0.75rem;
+  white-space: normal;
+}
+
+.v3 .invest-tables [data-slot='table-caption'] {
+  color: var(--v3-ink-muted);
+  text-align: left;
+}
+
+.invest-tables__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.invest-tables__extra {
+  margin: 0.35rem 0 0;
+  color: var(--v3-ink-muted);
+}
+
+.invest-tables__facts {
+  color: var(--v3-ink-muted);
+}
