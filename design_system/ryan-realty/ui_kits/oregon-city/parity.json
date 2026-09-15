@@ -259,7 +259,7 @@
     ],
     "verdict": "Better than a 49/100 page: the banned KPI grid is gone, honesty leads, magazine Cards carry photographed inventory, Empty states exist, and figures-open shows a hover window \u2014 demoMatch is true because Alert, Card, and Empty are the catalog objects, not cream boxes. It is still not a 70: the first viewport is a cream type stack plus two bars, Feed miss is visitor jargon, and Redfin/Zillow/Bend still win map, series, and place. SEO improved in the H1 (718 + outside our market); inventory improved (photo, price, beds/baths/sqft, year versus Spark thumbs). Score under 70 is not done.",
     "comparedToPrior": "rebaselined",
-    "rebaselineReason": "Rubric v1-2026-09-10 \u2192 v1-2026-09-12 (demoMatch required) and new shot set (figures-open + empty + feed-miss). Prior 49 is not the same instrument.",
+    "rebaselineReason": "rubricVersion v1-2026-09-10 \u2192 v1-2026-09-12 (demoMatch required); shotsHash tip open set (figures-open + empty + feed-miss) differs from prior sha256:c53f1889\u2026. score 49 \u2192 57 (median of [53, 57, 59]). SITE-105 Mini Cursor Tip Ready; do not invent demoMatch.",
     "priorMark": {
       "evaluatedAt": "2026-09-10",
       "score": 49,
