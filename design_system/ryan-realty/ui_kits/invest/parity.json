@@ -134,7 +134,38 @@
         "id": "house-ledger"
       }
     ],
-    "defects": [],
+    "defects": [
+      {
+        "section": "#place",
+        "finding": "First viewport still cedes photos and a map to Zillow Land \u2014 Pulse + InsightCards state the income market, but the fold has no place photograph or atlas frame a visitor can orient by.",
+        "replaceWith": null,
+        "severity": "taste"
+      },
+      {
+        "section": "#place-insight",
+        "finding": "Score 46 on the frozen rubric: InsightCards Allocation + Liveline match the catalog demo, yet the year series remains a synthetic scrub of segment counts rather than a sourced time series a broker would underwrite from.",
+        "replaceWith": null,
+        "severity": "taste"
+      },
+      {
+        "section": "#searches-table",
+        "finding": "The four-row listings table matches shadcn Table open-state, but the fold still reads as a data sheet next to Zillow Land rather than a destination with a drawn finding above the inventory.",
+        "replaceWith": null,
+        "severity": "taste"
+      },
+      {
+        "section": "#tools",
+        "finding": "Cost-of-money Quiet band stays below the fold; the mortgage figure is honest and sourced, yet nothing in the first viewport rewards a hover or scrub the way the InsightCards demo does higher up.",
+        "replaceWith": null,
+        "severity": "taste"
+      },
+      {
+        "section": "overall",
+        "finding": "Median 46 (46\u00b746\u00b746) on v1-2026-09-12 \u2014 residual craft/destination points remain after the catalog install. No competitiveBrief on this class.",
+        "replaceWith": null,
+        "severity": "craft"
+      }
+    ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-10",
@@ -149,7 +180,7 @@
       "shotsHash": "sha256:8dad3a8eff7f418bbb1507909f34237d397421c065cf5e029a4d8ff31e3dcdfe",
       "source": "SITE-68 route receipt on this parity.json (median 57, grok-4.6)"
     },
-    "rebaselineReason": "Mini Cursor on tip dabbbf729 wrote demoMatch true against shotsHash sha256:caeaaf88635fe02b22caf0e69b0761db257b3a07fb6af4997fd7eb75e278fe50. This receipt records that judge pass. Route catalog imports added on page.tsx; shots unchanged.",
+    "rebaselineReason": "rubricVersion v1-2026-09-08 \u2192 v1-2026-09-12; shotsHash sha256:8dad3a8e\u2026 \u2192 sha256:caeaaf88\u2026 (open-state insight + table shots). Mini Cursor tip dabbbf729 judge pass recorded; residual defects name the score-46 craft gap.",
     "verdict": "Mini on dabbbf729: demoMatch true. --ship exit 0 after recording that pass and route imports.",
     "notes": "SITE-98 in_progress until Cos lands. Mini dabbbf729 demoMatch true recorded, not invented. No competitiveBrief on this class \u2014 competitiveBriefPass stays false."
   },
