@@ -13,10 +13,12 @@ describe('HomeListingRail in-card gallery', () => {
     expect(rail).toContain('href={card.href}')
   })
 
-  it('shows photo chevrons on home-rail cards (not only .v3-lrow hover)', () => {
+  it('shows photo chevrons on home-rail cards as a visible affordance (not hover-only)', () => {
+    const navBlock = rowCss.match(/\.v3-lrow__nav\s*\{[^}]*\}/)
+    expect(navBlock?.[0]).toMatch(/display:\s*flex/)
+    expect(navBlock?.[0]).not.toMatch(/display:\s*none/)
     expect(rowCss).toContain('.home-rail__card:hover .v3-lrow__nav')
     expect(rowCss).toContain('.v3-lrow__media:hover .v3-lrow__nav')
-    expect(rowCss).toContain('@media (hover: none)')
   })
 
   it('keeps street and city from gluing (LoopRedmond)', () => {

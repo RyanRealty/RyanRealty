@@ -26,7 +26,6 @@ import {
 import { HomeHomesRails } from './_v3/HomeHomesRails'
 import { loadHomePulseBundle } from './_v3/home-pulse'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
-import { homeHeroInventory, homeHeroLive } from './_v3/home-hero-inventory'
 import { HomeBrowsePlaces } from './_v3/HomeBrowsePlaces'
 import { HomeFeaturedCommunity } from './_v3/HomeFeaturedCommunity.client'
 import { loadHomeFeaturedCommunitySlides } from './_v3/home-featured-communities'
@@ -130,8 +129,6 @@ export default async function Home() {
       }),
     ])
   const pulse = pulseBundle?.pulse ?? null
-  const heroInventory = homeHeroInventory(pulseBundle?.counts, pulseBundle?.stamp)
-  const heroLive = homeHeroLive(pulseBundle?.counts)
 
   const cityBySlug = new Map(cities.map((c) => [c.slug, c]))
   const faces: AboutFace[] = [...brokers]
@@ -265,7 +262,7 @@ export default async function Home() {
           id="hero"
           headingLevel={1}
           // Compact so photographed rails clear the first 1440×900 viewport.
-          height={heroInventory ? 'compact' : 'tall'}
+          height="compact"
           eyebrow="Central Oregon"
           headline={v3Text('Homes for sale in Central Oregon')}
           // Sell mode swaps the copy with the panel, so the line over the
@@ -275,11 +272,10 @@ export default async function Home() {
           altHeadline="What is your home worth?"
           posterSrc={heroPosterSrc}
           videoSrc={HERO_VIDEO}
-          inventory={heroInventory}
+          // No Stage inventory KPI strip — state-brochure giant counts cut (Matt 2026-09-15).
         >
           <HomeHeroSearch
             valuationHref={valuationHref('/')}
-            live={heroLive}
             homes={railRows[0]?.cards.slice(0, 5).map((card) => ({
               id: card.href,
               title: card.addressLine,

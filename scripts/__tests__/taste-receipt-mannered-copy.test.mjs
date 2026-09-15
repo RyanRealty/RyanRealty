@@ -8,6 +8,7 @@ import {
   ACTION_BILLBOARD_REFUSE,
   HOME_BRIEF_LEAK_REFUSE,
   INVENTORY_LECTURE_REFUSE,
+  PLATS_VOICE_REFUSE,
   MANNERED_COPY_REFUSE,
   manneredPublicCopyProblems,
   publicCopyHaystack,
@@ -292,5 +293,30 @@ describe('taste-receipt --ship CLI refuses mannered team copy', () => {
     })
     expect(r.status).toBe(1)
     expect(`${r.stderr}${r.stdout}`).toMatch(/CALL 541|action-narrating/)
+  })
+})
+
+
+describe('plats voice refuse', () => {
+  it('refuses recorded boundary / plats visitor copy', () => {
+    expect(manneredPublicCopyProblems("claimText=\"Widgi Creek's recorded boundary — every mark\"" )).toContain(PLATS_VOICE_REFUSE)
+    expect(manneredPublicCopyProblems("heading=\"The plats inside Tetherow\"" )).toContain(PLATS_VOICE_REFUSE)
+    expect(manneredPublicCopyProblems("eyebrow: 'Sisters · Recorded plats'")).toContain(PLATS_VOICE_REFUSE)
+  })
+
+  it('passes subdivision / neighborhood buyer words', () => {
+    expect(manneredPublicCopyProblems("heading=\"Subdivisions in Sisters\"" )).toEqual([])
+    expect(manneredPublicCopyProblems("Neighborhoods in Widgi Creek")).toEqual([])
+  })
+})
+
+describe('Find a home + pulse lecture refuse', () => {
+  it('refuses Find a home over-label and fraction lecture', () => {
+    expect(manneredPublicCopyProblems("Find a home")).toContain(INVENTORY_LECTURE_REFUSE)
+    expect(
+      manneredPublicCopyProblems(
+        'More than one in five listings on the Central Oregon market is already under contract.',
+      ),
+    ).toContain(INVENTORY_LECTURE_REFUSE)
   })
 })

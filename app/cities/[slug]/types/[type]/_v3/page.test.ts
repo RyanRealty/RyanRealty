@@ -194,13 +194,13 @@ describe('placeTypeClaim', () => {
         low: 1_350_000,
         high: 4_250_000,
         stamp: 'Sep 9, 2026, 6:53 AM',
-        scopeNote: 'inside the recorded boundary of Tetherow',
+        scopeNote: 'in Tetherow',
       },
     })
     expect(claim?.sentence).toBe(
       '16 single-family homes for sale in Tetherow, asking $1,350,000 to $4,250,000.',
     )
-    expect(claim?.source).toContain('inside the recorded boundary of Tetherow')
+    expect(claim?.source).toContain('in Tetherow')
     expect(claim?.source).toContain('Sep 9, 2026, 6:53 AM')
     // one line, not a paragraph: the trace names the set, the source, the time
     expect(claim?.source.split('. ').length).toBe(1)

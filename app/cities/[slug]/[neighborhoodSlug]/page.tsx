@@ -477,7 +477,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       activeCountNotes:
         nbhAnswerActive != null && hud.active != null && nbhAnswerActive !== hud.active
           ? [
-              `The supply verdict above divides ${hud.active}, not this ${nbhAnswerActive}. That ratio counts the homes the market layer assigns to ${neighborhood.name} by place membership; this count is the homes inside its recorded boundary. Two honest counts of two populations, and neither is a correction of the other.`,
+              `The supply verdict above divides ${hud.active}, not this ${nbhAnswerActive}. That ratio counts the homes the market layer assigns to ${neighborhood.name} by place membership; this count is the homes inside its neighborhood lines. Two honest counts of two populations, and neither is a correction of the other.`,
             ]
           : null,
       closedCount:
@@ -746,8 +746,9 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             headingLevel={2}
             headline={v3Text(`${neighborhood.name} right now`)}
             dots={atlasView.dots}
-            regions={atlasRegions}
-            basemap={basemapForRegions(atlasRegions)}
+            regions={atlasRegions.filter((r) => r.kind === 'town' || r.kind === 'neighborhood')}
+            basemap={basemapForRegions(atlasRegions, { dots: atlasView.dots, fit: 'dots' })}
+            fit="dots"
             types={atlasView.types}
             events={atlasView.events}
             source={atlasView.source}

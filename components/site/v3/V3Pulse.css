@@ -406,3 +406,34 @@
     transition: none;
   }
 }
+
+/* Claim + drawing first. Hide the banned KPI tile row (giant inventory counts).
+   Radios + plot stay so the constellation still switches. Matt 2026-09-15. */
+.v3.v3-pulse.v3-pulse--claim-first .v3-pulse__figure {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.v3.v3-pulse.v3-pulse--claim-first .v3-pulse__rule {
+  display: none;
+}
+.v3.v3-pulse.v3-pulse--claim-first .v3-pulse__reading {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+.v3.v3-pulse.v3-pulse--claim-first .v3-pulse__name {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink);
+}
+.v3.v3-pulse.v3-pulse--claim-first .v3-pulse__caption {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: var(--v3-size-body-sm);
+}

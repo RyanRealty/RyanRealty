@@ -167,13 +167,7 @@ export function HomeHeroSearch({
         className="home-hero-search__mode home-hero-search__mode--sell"
       />
 
-      {live ? (
-        <p className="home-hero-search__live">
-          <span className="home-hero-search__live-n">{live.forSaleLabel}</span>
-          <span className="home-hero-search__live-label"> homes for sale</span>
-          <span className="home-hero-search__live-src">{live.source}</span>
-        </p>
-      ) : null}
+      {/* Inventory-count lecture under the search cut — Matt 2026-09-15. */}
 
       <V3Tabs
         label="Buy or sell"
@@ -196,8 +190,9 @@ export function HomeHeroSearch({
           onBuySubmit()
         }}
       >
-        <label className="home-hero-search__label" htmlFor={buyFieldId}>
-          Find a home
+        {/* Placeholder alone — no over-label above the field (Matt 2026-09-15). */}
+        <label className="sr-only" htmlFor={buyFieldId}>
+          Search homes
         </label>
         <V3MorphSearch
           placeholder="Bend, Tetherow, or an address"

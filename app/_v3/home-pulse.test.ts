@@ -28,24 +28,12 @@ const LIVE = {
 }
 
 describe('pulseClaim', () => {
-  it('states the direction of the rounding it just did', () => {
-    // 912 / 4,196 = 21.7%, rounds to one in five, and is MORE than a fifth.
-    expect(pulseClaim(3284, 912)).toBe(
-      'More than one in five listings on the Central Oregon market is already under contract.',
-    )
-    // 1,000 / 5,300 = 18.9%, rounds to one in five, and is LESS than a fifth.
-    expect(pulseClaim(4300, 1000)).toBe(
-      'Nearly one in five listings on the Central Oregon market is already under contract.',
-    )
-    // Exactly a quarter gets neither hedge.
-    expect(pulseClaim(3000, 1000)).toBe(
-      'One in four listings on the Central Oregon market is already under contract.',
-    )
-  })
-
-  it('does not publish a ratio it has no numerator for', () => {
-    expect(pulseClaim(3284, 0)).toBe('3,284 listings are on the market across Central Oregon right now.')
-    expect(pulseClaim(0, 0)).toBe('0 listings are on the market across Central Oregon right now.')
+  it('stays plain — no fraction lecture', () => {
+    expect(pulseClaim(3284, 912)).toBe('Central Oregon right now.')
+    expect(pulseClaim(4300, 1000)).toBe('Central Oregon right now.')
+    expect(pulseClaim(3000, 1000)).toBe('Central Oregon right now.')
+    expect(pulseClaim(3284, 0)).toBe('Central Oregon right now.')
+    expect(pulseClaim(0, 0)).toBe('Central Oregon right now.')
   })
 })
 
