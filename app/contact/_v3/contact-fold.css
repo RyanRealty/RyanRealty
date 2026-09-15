@@ -1,6 +1,6 @@
 /* /contact fold: reach + write as one viewport. Tokens only.
-   House-doors owns Call + light Text/Email/Schedule.
-   House-faces owns photographs. House-ask owns the write path. */
+   House-doors owns Call. Text/Email/Schedule are one Button Group.
+   House-faces owns one Matt photograph. House-ask owns the write path. */
 
 .contact-fold {
   max-width: var(--v3-measure);
@@ -51,8 +51,7 @@
   display: none;
 }
 
-/* House-faces compact as the catalog paints it: named cutouts, heading,
-   Meet the team. First photo stays the content-floor hero width (20rem). */
+/* One Matt face at hero width (20rem) so the content-floor holds. */
 .contact-fold .about-faces--compact {
   max-width: none;
   padding-block: var(--v3-space-sm);
@@ -73,12 +72,19 @@
   display: none;
 }
 
+.contact-reach__alts {
+  width: calc(100% - (var(--v3-gutter) * 2));
+  margin: 0 var(--v3-gutter) var(--v3-space-sm);
+}
+
 @media (max-width: 47.999rem) {
-  /* 375: write path (house-ask) in the first viewport with Call|Text|Email|Schedule.
-     Faces follow the form so they do not push house-ask off the fold. */
+  /* 375: write path in the first viewport with Call + one alt row.
+     Matt's face follows the form so it does not push house-ask off the fold.
+     Bottom pad clears the cookie bar so sent confirmation / the face stay visible. */
   .contact-fold {
     display: flex;
     flex-direction: column;
+    padding-bottom: 8.5rem;
   }
 
   .contact-fold__reach {
@@ -95,7 +101,7 @@
     font-size: var(--v3-size-display-2);
   }
 
-  .contact-fold .v3.v3-doors {
+  .contact-fold .contact-reach {
     order: 2;
   }
 
@@ -105,6 +111,7 @@
 
   .contact-fold .about-faces {
     order: 4;
+    padding-bottom: 8.5rem;
   }
 
   .contact-fold .v3.v3-ask {
@@ -136,10 +143,6 @@
     padding-block: var(--v3-space-2xs);
   }
 
-  .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) .v3-doors__door {
-    padding-block: 0.4rem;
-  }
-
   .contact-fold .v3-ask__heading {
     font-size: var(--v3-size-display-2);
   }
@@ -149,7 +152,7 @@
   }
 }
 
-/* Wide: intro + faces + call on the left, the one ask on the right. */
+/* Wide: intro + Matt + call on the left, the one ask on the right. */
 @media (min-width: 64rem) {
   .contact-fold {
     display: grid;
@@ -172,7 +175,7 @@
     order: 1;
   }
 
-  .contact-fold__reach .v3.v3-doors {
+  .contact-fold__reach .contact-reach {
     order: 2;
   }
 
@@ -190,7 +193,7 @@
   }
 
   .contact-fold .about-faces--compact .about-faces__grid {
-    grid-template-columns: minmax(20rem, 1.2fr) repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(20rem, 1.2fr);
   }
 
   .contact-fold .about-faces--compact .about-faces__photo-link {
@@ -204,6 +207,6 @@
   }
 
   .contact-fold .v3-doors--lead .v3-doors__list {
-    grid-template-columns: minmax(12rem, 1.15fr) minmax(0, 1fr);
+    grid-template-columns: minmax(12rem, 1fr);
   }
 }

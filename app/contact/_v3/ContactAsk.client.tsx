@@ -5,7 +5,7 @@
  * tour-time options, the SMS consent line, and the send itself — FormData to
  * submitContactForm, then the Meta and GA lead events the sheet fired.
  */
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 // Direct import — the v3 barrel also re-exports server-only place modules
 // (V3PlaceDocuments → lib/data → next/headers), which breaks this client module
 // under webpack. V3Ask is itself a client primitive.
@@ -51,13 +51,11 @@ export function ContactAsk({
   listingKey,
   intent,
   listingSummary,
-  faces,
 }: {
   defaultInquiryType?: string
   listingKey?: string
   intent?: 'tour' | 'question'
   listingSummary?: string
-  faces?: ReactNode
 }) {
   const isTour = intent === 'tour'
   const [smsConsent, setSmsConsent] = useState(false)
@@ -155,12 +153,7 @@ export function ContactAsk({
         window.fbq('track', 'Lead', { content_name: formData.get('inquiryType') }, { eventID: result.eventId })
       }
       trackEvent('generate_lead', { source: 'contact_page', inquiry: formData.get('inquiryType') })
-      // SITE-09: the sent state says what is happening RIGHT NOW, not what we
-      // will get around to. Both halves are real: the server queues the broker's
-      // text in this same request (the alert drain runs every minute) and sends
-      // the visitor's confirmation from the assigned broker's mailbox. No
-      // duration promise — "one business day" was the old line and it undersold
-      // a response clock that runs in minutes.
+      // SITE-09: the sent state says what is happening now. No duration promise.
       return {
         ok: true,
         heading: isTour ? 'Tour request received' : 'Message received',
@@ -209,7 +202,6 @@ export function ContactAsk({
           consent={<SmsConsentDisclosure checked={smsConsent} onCheckedChange={setSmsConsent} />}
           submitLabel={isTour ? 'Request a tour' : 'Send message'}
           onSubmit={send}
-          done={faces}
           previewSent={previewSent}
           previewSentResult={SENT_PREVIEW}
         />

@@ -18,7 +18,7 @@
       { "id": "8", "text": "Brokers who answer door to /team. FAQ (V3Answers) is optional. Do not invent a reply-time clock." }
     ]
   },
-  "note": "SITE-80 2026-09-10. Order is Breadcrumb, ContactFold (Quiet H1 + sourced Google-reviews figure, V3Doors #reach as a REACH CONTROL \u2014 one call door at display scale with the principal cutout and V3OnDuty live hours, then text, email and the calendar as lighter links \u2014 ContactAsk as the one ask in the same viewport via V3Input), AboutFaces (who answers \u2014 the same roster /team and /about use), V3Answers, Footer. Consent checkbox is padded to --v3-tap on this route without changing SMS_CONSENT_TEXT. The live state is PUBLISHED HOURS, never a reply time: SITE-09's response clock is still unproven and its answered ratio is a backlog, not a promise.",
+  "note": "SITE-96. Order is Breadcrumb, ContactFold (Quiet H1 + sourced Google-reviews figure, ContactReach #reach as one Call door at display scale with V3OnDuty published hours, Text/Email/Schedule as one Button Group, ContactAsk as the one ask, one Matt face via AboutFaces), V3Answers, Footer. Consent checkbox is padded to --v3-tap. Live state is published hours only.",
   "requiredComponents": [
     {
       "name": "V3SectionTracker",
@@ -108,9 +108,9 @@
     "V3Breadcrumb",
     "ContactFold -- Quiet H1 + sourced reviews figure | reach control + ContactAsk in the first viewport",
     "V3Quiet #contact -- H1 and the one true line (inside the fold)",
-    "V3Doors #reach -- one call door at display scale with the live hours and principal photograph, then text, email, calendar",
-    "ContactAsk -- one screen, V3Input fields (inside the fold)",
-    "AboutFaces -- who answers, the brokers with their photographs",
+    "V3Doors #reach -- one Call door at display scale with live published hours; Text, Email, Schedule as one Button Group",
+    "ContactAsk -- one screen, beui-input / shadcn-input fields (inside the fold)",
+    "AboutFaces -- who answers, one Matt face in the fold, door to /team",
     "V3Answers #faq -- before you write",
     "V3Footer"
   ],
@@ -239,15 +239,13 @@
     "contactListIsFirstContent": false,
     "contactListAnswer": "The first viewport is ContactFold: Quiet H1 plus a sourced 5.0, then the one ask (ContactAsk / V3Input). The reach control is the call door at display scale with live hours, not an undifferentiated list.",
     "supersededShots": {
-      "note": "states captured for the SITE-09 pass (the tour variant, the sent state, the admin CRM panel). Still on disk and still true; they are not in `shots` because this score was given for the default-state pair only, and shotsHash must cover exactly what was scored.",
+      "note": "Tour and sent states captured for earlier contact passes. They are not in `shots` because this score was given for the default-state pair only, and shotsHash must cover exactly what was scored.",
       "files": {
         "tourDesktop": "design_system/ryan-realty/ui_kits/contact/shots/tour-desktop.png",
         "sentDesktop": "design_system/ryan-realty/ui_kits/contact/shots/sent-desktop.png",
         "sentMobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-mobile375.png",
         "sentFocusDesktop": "design_system/ryan-realty/ui_kits/contact/shots/sent-focus-desktop.png",
-        "sentFocusMobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-focus-mobile375.png",
-        "adminCrmDesktop": "design_system/ryan-realty/ui_kits/contact/shots/admin-crm-desktop.png",
-        "adminCrmMobile375": "design_system/ryan-realty/ui_kits/contact/shots/admin-crm-mobile375.png"
+        "sentFocusMobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-focus-mobile375.png"
       }
     },
     "passes": {

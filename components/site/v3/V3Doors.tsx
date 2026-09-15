@@ -61,8 +61,8 @@ export type V3DoorsProps = {
   id: string
   /** The section's accessible name; never rendered visually. */
   name: V3Text
-  /** Two to four doors. One door is a button, five is a nav. */
-  doors: readonly [V3Door, V3Door, ...V3Door[]]
+  /** One to four doors. One door is a reach control; five is a nav. */
+  doors: readonly [V3Door, ...V3Door[]]
   className?: string
 }
 
@@ -103,7 +103,11 @@ export function V3Doors({ id, name, doors, className }: V3DoorsProps) {
           height with a third of its cell empty. */}
       <ul
         className="v3-doors__list"
-        style={hasLead ? ({ '--v3-doors-rows': ordered.length - 1 } as CSSProperties) : undefined}
+        style={
+          hasLead && ordered.length > 1
+            ? ({ '--v3-doors-rows': ordered.length - 1 } as CSSProperties)
+            : undefined
+        }
       >
         {ordered.map((door, index) => {
           const isLead = hasLead && index === 0
