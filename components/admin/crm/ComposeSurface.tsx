@@ -33,6 +33,7 @@ import {
   searchComposePeopleAction,
   sendComposeAction,
 } from '@/app/admin/(protected)/messages/actions'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 const EMAIL_ACCEPT =
   'application/pdf,image/jpeg,image/png,image/gif,image/webp,text/vcard,text/x-vcard,.vcf,.doc,.docx,.xls,.xlsx'
@@ -68,6 +69,11 @@ export function ComposeSurface({
   const [subject, setSubject] = useState(draftSubject)
   const [pending, startTransition] = useTransition()
   const [overrideQuiet, setOverrideQuiet] = useState(false)
+  const isMobile = useIsMobile()
+  // Mobile messages/group compose: kill quiet-hours chip + paperclip clutter.
+  // Manual compose on phone counts as intentional send during quiet hours.
+  const mobileTextClean = isMobile && channel === 'text'
+  const effectiveOverrideQuiet = mobileTextClean ? true : overrideQuiet
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const idempotencyKey = useMemo(() => crypto.randomUUID(), [])
 
@@ -116,8 +122,8 @@ export function ComposeSurface({
   const toEmails = emailsForCompose(people)
   const ccEmails = emailsForCompose(ccPeople)
   const textReady = brokerSelf
-    ? Boolean(body.trim() && (!quiet || overrideQuiet))
-    : Boolean(packed.personId && body.trim() && people.every((p) => p.phone) && (!quiet || overrideQuiet))
+    ? Boolean(body.trim() && (!quiet || effectiveOverrideQuiet))
+    : Boolean(packed.personId && body.trim() && people.every((p) => p.phone) && (!quiet || effectiveOverrideQuiet))
   const emailReady = Boolean(packed.personId && subject.trim() && body.trim() && toEmails.length)
   const canSend = channel === 'email' ? emailReady : textReady
 
@@ -134,7 +140,7 @@ export function ComposeSurface({
     } else {
       fd.set('personId', String(packed.personId))
     }
-    if (quiet && channel === 'text' && overrideQuiet) fd.set('overrideQuietHours', '1')
+    if (quiet && channel === 'text' && effectiveOverrideQuiet) fd.set('overrideQuietHours', '1')
     if (attachments.ready.length) fd.set('attachments', JSON.stringify(attachments.ready))
     if (channel === 'text') {
       if (packed.extraIds) fd.set('recipientIds', packed.extraIds)
@@ -265,7 +271,7 @@ export function ComposeSurface({
         <TextField label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
       ) : null}
 
-      {channel === 'text' && primaryId && people.length === 1 && !brokerSelf ? (
+      {channel === 'text' && primaryId && people.length === 1 && !brokerSelf && !mobileTextClean ? (
         // Drafting tools ported from the retired inbox compose sheet
         // (Messages-fold final slice): AI pills + per-contact template render.
         // Single-recipient only — a template renders THIS contact's tokens.
@@ -278,13 +284,13 @@ export function ComposeSurface({
         onChange={(e) => setBody(e.target.value)}
         rows={channel === 'email' ? 8 : 3}
         required
-        placeholder={channel === 'email' ? 'Write the email' : 'Text message'}
+        placeholder={channel === 'email' ? 'Write the email' : mobileTextClean ? 'Message' : 'Text message'}
         disabled={pending}
       />
 
       {attachments.items.length > 0 ? <AttachmentChips items={attachments.items} onRemove={attachments.remove} /> : null}
 
-      {primaryId && !brokerSelf ? (
+      {primaryId && !brokerSelf && !(mobileTextClean) ? (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           <Button type="button" variant="quiet" onClick={() => attachLibrary('disclosure')} disabled={pending}>
             Agency disclosure
@@ -302,14 +308,14 @@ export function ComposeSurface({
         </div>
       ) : null}
 
-      {quiet && channel === 'text' ? (
+      {quiet && channel === 'text' && !mobileTextClean ? (
         <FilterChip pressed={overrideQuiet} onClick={() => setOverrideQuiet((v) => !v)}>
           Send anyway. Quiet hours.
         </FilterChip>
       ) : null}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8 }}>
-        {primaryId && !brokerSelf ? (
+        {primaryId && !brokerSelf && !mobileTextClean ? (
           <AttachmentPicker attachments={attachments} accept={channel === 'email' ? EMAIL_ACCEPT : MMS_ACCEPT_ATTR} />
         ) : null}
         <Button type="button" variant="quiet" onClick={saveDraft} disabled={pending || !packed.personId}>
@@ -321,6 +327,7 @@ export function ComposeSurface({
         </Button>
       </div>
 
+      {mobileTextClean ? null : (
       <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
         {channel === 'text'
           ? quiet
@@ -328,6 +335,7 @@ export function ComposeSurface({
             : 'Sends from the business line. STOP and quiet hours still apply to leads.'
           : 'Sends one email to everyone on To. Nothing goes out until you hit Send.'}
       </p>
+      )}
     </div>
   )
 }

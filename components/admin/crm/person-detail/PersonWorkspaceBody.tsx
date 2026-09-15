@@ -357,7 +357,6 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
 
   const mobileDetail = (
     <MobileLeadDetail
-      sendCenter={sendCenterNode}
       full={full}
       displayName={displayName}
       backHref={BASE}

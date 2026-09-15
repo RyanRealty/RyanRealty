@@ -11,6 +11,7 @@
  */
 
 import { formatDate } from '@/lib/format/date'
+import { smsDisplayBody } from '@/lib/crm/sms-display-body'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY, CRM_STAGES } from '@/lib/crm/constants'
 import type { CrmPersonFull } from '@/app/actions/crm'
 import type { ConversationMessage } from '@/lib/data/crm/getContactConversation'
@@ -130,7 +131,6 @@ export function MobileLeadDetail({
   homesTab,
   calendarTab,
   smsComposer,
-  sendCenter,
   addNoteAction,
   assignBrokerAction,
   updateStageAction,
@@ -148,15 +148,14 @@ export function MobileLeadDetail({
     return hit ? String(hit[1]) : null
   }
 
+  // Recent row title = short channel/person label — never "A, B" participant dump.
   const recentMessages: MobileRecentMessage[] = conversation.items
     .filter((m) => m.kind === 'sms_in' || m.kind === 'sms_out')
     .slice(0, 2)
     .map((m) => ({
       id: m.id,
-      participants: [displayName, brokerDisplay(m.broker) ?? brokerDisplay(person.assigned_broker)]
-        .filter((v): v is string => Boolean(v))
-        .join(', '),
-      preview: (m.body ?? m.title ?? '').slice(0, 140),
+      participants: m.kind === 'sms_out' ? 'Text' : displayName,
+      preview: smsDisplayBody(m.body ?? m.title ?? '').slice(0, 140),
       date: fubDate(m.ts),
     }))
   const phones: MobilePhoneEntry[] = full.contactPoints
@@ -243,18 +242,21 @@ export function MobileLeadDetail({
       personId={person.id}
       displayName={displayName}
       pictureUrl={person.picture_url}
-      lastCommLabel={person.last_activity_at ? fubDate(person.last_activity_at) : null}
+      lastCommLabel={
+        person.last_activity_at
+          ? fubDate(person.last_activity_at)
+          : conversation.items[0]?.ts
+            ? fubDate(conversation.items[0].ts)
+            : null
+      }
       priceTarget={(person as unknown as { price?: number | null }).price ?? null}
       backHref={backHref}
       editData={editData}
       activityTab={<MobileActivityTab rows={activityRows} />}
       infoTab={
         <>
-          {sendCenter ? (
-            <div className="px-4 pb-1 pt-3" style={{ background: 'var(--a-surface)' }}>
-              {sendCenter}
-            </div>
-          ) : null}
+          {/* Mobile: no giant "Send to contact" — deliverables stay on desktop /
+              Comms. Keeps Info iMessage-clean (tip mobile CRM). */}
           <MobileInfoTab
           personId={person.id}
           personName={displayName}

@@ -78,6 +78,7 @@ function ActionGrid({ items, onPick }: { items: Item[]; onPick: () => void }) {
 export default function ConsoleQuickAction() {
   const pathname = usePathname() ?? ''
   const leadId = leadIdFrom(pathname)
+  const isMobile = useIsMobile()
   // §26: the mobile inbox owns its own FAB (compose sheet) — a second generic
   // FAB there violates the single-FAB rule (§25.12 / mob-02). Hooks above run
   // unconditionally; bail before render only.
@@ -109,7 +110,6 @@ export default function ConsoleQuickAction() {
   // the mobile Comms tab is a read-only feed, so the hash deep-link left phone
   // users with nothing to type into (2026-07-02 mobile audit; same ?m= deep
   // links the lead-detail SMS/Email circles use, punch #4).
-  const isMobile = useIsMobile()
   const leadActions: Item[] = leadId
     ? [
         { label: 'Call', href: '#overview', icon: Phone },
@@ -135,6 +135,10 @@ export default function ConsoleQuickAction() {
     : []
 
   if (suppressed) return null
+  // Mobile person detail: phone/text live on Info rows + Comms composer. The
+  // global + FAB stacked on those circles (overlapping +/chat/phone). Hide at
+  // < md on a lead; desktop keeps the sheet.
+  if (leadId && isMobile) return null
 
   const addPersonSurface =
     !leadId && (pathname === '/admin/people' || pathname === '/admin/crm')

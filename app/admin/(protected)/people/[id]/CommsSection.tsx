@@ -14,6 +14,7 @@
 import { useState, type ComponentProps } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { FilterChip, SelectField } from '@/components/admin/v2'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { CmaComposeAttach, type CmaComposeSeed } from '@/components/admin/crm/CmaComposeAttach'
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer, type SmsRecipient } from '@/components/admin/crm/SmsComposer'
@@ -50,6 +51,7 @@ export function CommsSection(props: {
   composeCma?: string | null
 }) {
   const [channel, setChannel] = useState<'sms' | 'email'>(props.initialChannel)
+  const isMobile = useIsMobile()
   const [cmaSeed, setCmaSeed] = useState<CmaComposeSeed | null>(null)
   const router = useRouter()
   const pathname = usePathname()
@@ -116,7 +118,7 @@ export function CommsSection(props: {
         <FilterChip pressed={channel === 'email'} onClick={() => setChannel('email')}>
           Email
         </FilterChip>
-        {channel === 'sms' ? (
+        {channel === 'sms' && !isMobile ? (
           <span
             style={{ marginLeft: 'auto', fontSize: 'var(--a-text-sm)' }}
             className={props.quietHours ? 'av2-composer__warn' : 'av2-composer__ok'}
@@ -142,6 +144,9 @@ export function CommsSection(props: {
               initialAttachments={cmaSeed?.channel === 'sms' ? [cmaSeed.stage.attachment] : undefined}
               textMePhone={cmaSeed?.stage.textMePhone ?? null}
               initialTextMe={cmaSeed?.channel === 'sms'}
+              hideMergeFields={isMobile}
+              hideQuietHours={isMobile}
+              hideAttachments={isMobile}
             />
           </>
         ) : (

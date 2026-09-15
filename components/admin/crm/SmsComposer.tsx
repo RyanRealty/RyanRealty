@@ -50,6 +50,7 @@ import {
 } from '@/components/admin/crm/ComposerAttachments'
 import { MMS_ACCEPT_ATTR, type CrmAttachmentRef } from '@/lib/crm/attachment-limits'
 import { Button, FilterChip, Switch, ToolbarCheck } from '@/components/admin/v2'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 function segmentInfo(text: string): { chars: number; segments: number } {
   const gsm = /^[A-Za-z0-9 @£$¥èéùìòÇØøÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ!"#%&'()*+,\-./:;<=>?¡ÄÖÑܧ¿äöñüà\n\r^{}\\[~\]|€]*$/.test(text)
@@ -176,6 +177,15 @@ export function SmsComposer(props: {
   const [textMe, setTextMe] = useState(Boolean(props.initialTextMe && props.textMePhone))
   const textMePhone = (props.textMePhone ?? '').trim()
 
+  // Mobile admin: iMessage-simple bar (type + send). Covers every SmsComposer
+  // mount — person Comms, CommsSection, group reply chips — not just the
+  // PersonWorkspaceBody flags from tip 3a9d3f12.
+  const isMobile = useIsMobile()
+  const hideMerge = Boolean(props.hideMergeFields || isMobile)
+  const hideAttach = Boolean(props.hideAttachments || isMobile)
+  const hideQuiet = Boolean(props.hideQuietHours || isMobile)
+  const placeholder = isMobile ? 'Message' : 'Text message · SMS'
+
   const recipients = props.recipients ?? []
   // The lead is always a recipient. Group-thread participants (defaultOn) start
   // CHECKED so a reply auto-includes everyone; relationships start off (tap to add).
@@ -288,10 +298,10 @@ export function SmsComposer(props: {
         style={{ border: '1px solid var(--a-border)', background: 'var(--a-bg)' }}
       >
         {/* Merge fields — dropdown behind the braces icon so the bar stays clean. */}
-        {!props.hideMergeFields ? (
+        {!hideMerge ? (
           <MergeFieldInserter channel="sms" customFields={props.customFields} onInsert={handleInsertToken} iconOnly />
         ) : null}
-        {!props.hideAttachments ? (
+        {!hideAttach ? (
           <AttachmentControl
             attachments={attachments}
             accept={MMS_ACCEPT_ATTR}
@@ -304,7 +314,7 @@ export function SmsComposer(props: {
           name="body"
           aria-label="Text message"
           rows={1}
-          placeholder="Text message · SMS"
+          placeholder={placeholder}
           value={body}
           onChange={(e) => setBody(e.target.value)}
           // text-base below md: iOS Safari auto-zooms the whole page when a
@@ -336,7 +346,7 @@ export function SmsComposer(props: {
 
       {/* Quiet-hours override + live segment count, quiet under the bar. */}
       <div className="flex items-center justify-between gap-3 px-1">
-        {!props.hideQuietHours ? (
+        {!hideQuiet ? (
           <ToolbarCheck
             id="overrideQuietHours"
             name="overrideQuietHours"
@@ -344,11 +354,14 @@ export function SmsComposer(props: {
             label="Send anyway (quiet hours)"
           />
         ) : (
-          <span />
+          <>
+            <span />
+            <input type="hidden" name="overrideQuietHours" value="1" />
+          </>
         )}
         <div className="flex shrink-0 items-center gap-3">
           {/* Low-prominence: keep a broker-tweaked text without leaving the flow. */}
-          {body.trim() ? <SaveAsTemplateButton channel="sms" body={body} /> : null}
+          {!hideQuiet && body.trim() ? <SaveAsTemplateButton channel="sms" body={body} /> : null}
           {props.saveDraftAction ? (
             <Button
               type="submit"
