@@ -1,0 +1,65 @@
+/* SITE-92 cities directory first viewport: Atlas drawing + figure (MOS,
+   insight, alerts). Page-local. Tokens only. */
+
+.cities-fold {
+  width: 100%;
+  margin: 0 0 var(--v3-space-md);
+}
+
+.cities-fold__stage {
+  display: grid;
+  gap: var(--v3-space-md);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .cities-fold__stage {
+    grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.9fr);
+    column-gap: var(--v3-space-lg);
+  }
+}
+
+.cities-fold__drawing {
+  min-width: 0;
+}
+
+.cities-fold__drawing .v3-atlas {
+  max-width: 100%;
+}
+
+.cities-fold__drawing .v3-atlas__frame {
+  max-height: min(28vh, 14rem);
+}
+
+.cities-fold__drawing .v3-atlas__key,
+.cities-fold__drawing .v3-atlas__sales-legend,
+.cities-fold__drawing .v3-atlas__aside,
+.cities-fold__drawing .v3-atlas__events {
+  display: none;
+}
+
+.cities-fold__figure {
+  min-width: 0;
+  display: grid;
+  gap: var(--v3-space-sm);
+}
+
+.cities-fold__count {
+  margin: 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+
+.cities-fold__count .v3-number {
+  font-family: var(--v3-font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+.cities-insight {
+  min-width: 0;
+}
+
+.cities-insight .insight-cards {
+  max-width: 100%;
+}

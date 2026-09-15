@@ -19,6 +19,10 @@
  * the region (beui:combobox); no-photo rows carry a resting supply reading
  * when Market Truth publishes one.
  *
+ * SITE-92: catalog sources installed — beui-combobox on V3MosCompare,
+ * beautifului-insight on the year of closes, beui-number on the region
+ * count. Atlas + alerts sit in the first viewport beside the figure.
+ *
  * Parity contract: design_system/ryan-realty/ui_kits/cities/parity.json
  */
 
@@ -26,11 +30,11 @@ import { valuationHref } from '@/lib/site/valuation-href'
 import type { Metadata } from 'next'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
-import { getAllCitySnapshots } from '@/lib/data'
+import { getAllCitySnapshots, getCityBoundaryGeoJSON } from '@/lib/data'
 import { getDetachedOverlays, type DetachedOverlay } from '@/lib/data/market-truth/getSellBendMarket'
 import { getPublicDetachedMonthly, type PublicMonthlyPoint } from '@/lib/data/market-truth/public-monthly'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
-import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { getCityContent } from '@/lib/city-content'
 import { cityHero, preferPlaceHero } from '@/lib/geo-images'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -43,11 +47,13 @@ import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { buildAnswerFigures, salesPerMonthFrom } from '@/lib/site/answer-figures'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
+  V3Atlas,
   V3Breadcrumb,
   V3Drawing,
   V3Footer,
   V3Ledger,
   V3MosCompare,
+  V3Number,
   V3Quiet,
   V3SectionTracker,
   V3_FOOTER_COLUMNS,
@@ -70,16 +76,23 @@ import {
   liveForSaleLabel,
 } from '@/app/cities/_v3/cities-index-constants'
 import { restingCityDetail } from '@/app/cities/_v3/cities-index-resting'
+import { cityAtlasRegions } from '@/app/cities/_v3/cities-index-atlas'
+import { citiesInsightBoard } from '@/app/cities/_v3/cities-index-insight'
+import { CitiesInsight } from '@/app/cities/_v3/CitiesInsight.client'
+import { CitiesAlertStrip } from '@/app/cities/_v3/CitiesAlertStrip.client'
+import { basemapForRegions } from '@/lib/geo/basemap-source'
+import { earnsDisplayFigure, newestFirstHref } from '@/lib/site/place-alerts'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import './_v3/cities-fold.css'
 
 export const revalidate = 3600
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export const metadata: Metadata = pageMetadata({
-  title: 'Central Oregon cities: Bend, Redmond, Sisters',
+  title: 'Central Oregon cities A–Z: Bend, Redmond, Sisters',
   description:
-    'Active single-family homes in Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the rest of Central Oregon. Live inventory and pricing from the regional MLS.',
+    'A–Z directory of Central Oregon cities with live single-family inventory. Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the rest of the region from the regional MLS.',
   path: '/cities',
 })
 
@@ -147,7 +160,7 @@ export default async function CitiesPage() {
   // One Market Truth read for the region and every city on the page, and one
   // monthly read per city for the run under its row. Both are timeboxed: a
   // slow read costs the drawing and the reveals, never the directory.
-  const [overlays, monthlyBySlug] = await Promise.all([
+  const [overlays, monthlyBySlug, regionPace, regionMonthly, featuredBounds] = await Promise.all([
     withTimeoutFallback(
       getDetachedOverlays([
         { geoType: 'region', geoSlug: 'central-oregon' },
@@ -168,13 +181,39 @@ export default async function CitiesPage() {
       4500,
       'cities:monthlyRuns',
     ),
+    withTimeoutFallback(
+      getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
+      EMPTY_PUBLIC_PACE,
+      3500,
+      'cities:regionPace',
+    ),
+    withTimeoutFallback(
+      getPublicDetachedMonthly({ geoType: 'region', geoSlug: 'central-oregon', currentMonthKey }),
+      [],
+      4500,
+      'cities:regionMonthly',
+    ),
+    withTimeoutFallback(
+      Promise.all(
+        FEATURED_CITY_SLUGS.map(async (slug) => {
+          const name = slug
+            .split('-')
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' ')
+          return { slug, name, geometry: await getCityBoundaryGeoJSON(name) }
+        }),
+      ),
+      [] as Array<{ slug: string; name: string; geometry: unknown }>,
+      4000,
+      'cities:boundaries',
+    ),
   ])
   const regionMt = overlays.get('region:central-oregon')
   const hud = leftoverHudKpis({
     grain: 'region',
     headlines: regionMt?.headlines ?? null,
     inventory: regionMt?.inventory ?? null,
-    pace: EMPTY_PUBLIC_PACE,
+    pace: regionPace,
   })
 
   const snapshotBySlug = new Map<string, { activeCount: number | null; medianPrice: number | null }>()
@@ -406,16 +445,81 @@ export default async function CitiesPage() {
       />
     ) : null
 
-  const regionDrawing =
-    regionFigures.length > 0 ? (
-      <>
+  const atlasRegions = cityAtlasRegions(
+    featuredBounds.map((row) => ({
+      slug: row.slug,
+      name: cityNameBySlug.get(row.slug) ?? row.name,
+      geometry: row.geometry,
+    })),
+  )
+  const insightBoard = citiesInsightBoard({
+    cities: directory.map((c) => ({ slug: c.slug, name: c.name, activeCount: c.activeCount })),
+    regionMonthly,
+    bendMonthly: monthlyBySlug.get('bend') ?? [],
+    regionActive: hud.active,
+  })
+  const new30Source =
+    hud.new30 != null
+      ? `Market Truth, detached homes across Central Oregon (market_metric, definition mt-v1, segment detached, region central-oregon, new_listings_30d): ${formatCount(hud.new30)} houses came on the market in the last 30 days.`
+      : undefined
+
+  const regionFigure = (
+    <>
+      {hud.active != null ? (
+        <p className="cities-fold__count">
+          <V3Number value={hud.active} formatted={formatCount(hud.active)} startOnView={false} />{' '}
+          homes for sale across these cities
+        </p>
+      ) : null}
+      {regionFigures.length > 0 ? (
         <V3Drawing figures={regionFigures} label="Central Oregon homes for sale against a month of sales" />
-        {regionScale}
-      </>
+      ) : null}
+      {regionScale}
+      {insightBoard ? <CitiesInsight id="cities-insight" board={insightBoard} /> : null}
+      <CitiesAlertStrip
+        id="alerts"
+        newCount30d={hud.new30}
+        countLabel={earnsDisplayFigure(hud.new30) ? formatCount(hud.new30) : null}
+        source={new30Source}
+        updatedAt={leftoverStamp}
+        browseHref={newestFirstHref('/search')}
+      />
+    </>
+  )
+
+  const regionDrawing =
+    atlasRegions.length > 0 ? (
+      <div className="cities-fold">
+        <div className="cities-fold__stage">
+          <div className="cities-fold__drawing">
+            <V3Atlas
+              id="atlas"
+              headingLevel={2}
+              headline={v3Text('Cities on the map')}
+              headlineTone="eyebrow"
+              claimText={`${formatCount(atlasRegions.length)} recorded city outlines. Ledger rows carry the live count for every city.`}
+              keyPlacement="head"
+              dots={[]}
+              regions={atlasRegions}
+              types={[]}
+              basemap={basemapForRegions(atlasRegions)}
+              sourceName="Oregon Data Share"
+              source="Recorded city boundaries from the cities table (boundary_geojson). Live single-family counts on the ledger are leftover Market Truth / geo snapshots, not invented map totals."
+              stamp={leftoverStamp ? formatDate(leftoverStamp) : undefined}
+              noun={{ one: 'city', many: 'cities' }}
+            />
+          </div>
+          <aside className="cities-fold__figure">{regionFigure}</aside>
+        </div>
+      </div>
+    ) : regionFigures.length > 0 || insightBoard ? (
+      <div className="cities-fold">
+        <div className="cities-fold__figure">{regionFigure}</div>
+      </div>
     ) : null
   // When the drawing cannot be drawn, the note carries the figure as before.
   const directoryNote = regionDrawing
-    ? `${formatCount(directory.length)} cities, A to Z. Region supply is the pair below; overlay a city or rest on a row for its year of closes.`
+    ? `${formatCount(directory.length)} cities, A to Z. Overlay a city on the scale, scrub the year of closes, or rest on a row.`
     : [
         totalActive != null && totalActive > 0
           ? `${formatCount(totalActive)} homes for sale across these cities.`
@@ -443,7 +547,7 @@ export default async function CitiesPage() {
               publisher: { '@type': 'Organization', name: 'Ryan Realty' },
               mainEntity: {
                 '@type': 'ItemList',
-                itemListElement: featured.map((c, i) => ({
+                itemListElement: directory.map((c, i) => ({
                   '@type': 'ListItem',
                   position: i + 1,
                   name: `${c.name}, Oregon`,
