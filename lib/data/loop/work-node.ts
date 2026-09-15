@@ -119,12 +119,11 @@ export function isSiteClaim(node: { domain?: string | null; versionGap?: string 
 export const MAX_SITE_CLAIMS_PER_SESSION = 2
 
 /**
- * How many workers may hold site claims at once. Four concurrent lanes plus an
- * hourly cloud fire exhausted the shared allowance at 09:13Z on 2026-09-08 and
- * killed every worker in the same minute. Three is the cap until the cost per
- * item drops.
+ * How many workers may hold site claims at once. Raised to 6 (Matt 2026-09-15)
+ * so Cos Cursor + Claude Code can grind in parallel. Still one allowance pool —
+ * watch subscription/credits; claims + heartbeats stay required.
  */
-export const MAX_SITE_WORKERS = 3
+export const MAX_SITE_WORKERS = 6
 
 /**
  * Liveness, not idleness. A claim is alive because its owner SAID so

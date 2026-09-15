@@ -5,6 +5,10 @@ description: Run the site queue from Cursor or a Grok agent. Same queue, same cl
 
 ## HARD TIP READY (Matt 2026-09-14)
 
+**Fleet cap (Matt 2026-09-15):** `MAX_SITE_WORKERS = 6`. Cos Cursor + Claude Code share the claim pool.
+
+**Claude judge as needed (Matt 2026-09-15):** Claude lanes may judge with **claude-sonnet** when grok-4.6 is unavailable (`--evaluator claude`); builder stays Opus / ≠ judge. Prefer grok-4.6 on Mini when present so one ruler stays comparable.
+
 Demos install BEFORE house paint. Tip Ready = `node scripts/lib/taste-receipt.mjs --ship <parity.json>` exit 0 only. House patch after `demoMatch: false` is FORBIDDEN — install the named `replaceWith` catalog source. Cos prose, score rise, and house chrome (V3Doors, cream pills, custom stacks) are not Tip Ready.
 
 # /site-queue for Cursor and Grok — the same loop, a different builder

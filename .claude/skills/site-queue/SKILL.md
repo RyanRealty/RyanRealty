@@ -5,6 +5,10 @@ description: Run the site queue until it is empty. Pull every eligible SITE node
 
 ## HARD TIP READY (Matt 2026-09-14)
 
+**Fleet cap (Matt 2026-09-15):** `MAX_SITE_WORKERS = 6` in `lib/data/loop/work-node.ts`. Claim via `site-queue-status.ts --claim`; do not twin a SITE another owner holds.
+
+**Claude judge as needed (Matt 2026-09-15):** Prefer the repo ruler (grok-4.6) when that CLI answers. A Claude Code lane may run the judge as **claude-sonnet** (`npx tsx scripts/taste-evaluate.ts <route> --builder claude-opus-5 --evaluator claude`) so the loop is not blocked waiting on Mini grok — builder must stay Opus (or otherwise ≠ the judge); never grade your own model. A sonnet mark rebases that route off a grok table (`comparedToPrior: "rebaselined"`) until the next full grok table run.
+
 Demos install BEFORE house paint. Tip Ready = `node scripts/lib/taste-receipt.mjs --ship <parity.json>` exit 0 only. House patch after `demoMatch: false` is FORBIDDEN — install the named `replaceWith` catalog source. Cos prose, score rise, and house chrome (V3Doors, cream pills, custom stacks) are not Tip Ready.
 
 # /site-queue — the site is done when this queue is empty
