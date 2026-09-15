@@ -1,20 +1,25 @@
 /**
- * Blank SubdivisionName → infer the home's mapped pocket BEFORE mile rings.
+ * Pocket / street-cluster before mile rings (Matt 2026-09-15 Canter).
  *
- * A Sisters subject at 1121 Canter Ct carries no MLS tract name. The nearest
- * mapped sales sit in Rolling Horse Meadow (~0.04 mi), SaddleStone, Timber
- * Creek — all inside a third of a mile — while the first mile ring then
- * reaches Crossroads at ~3.7 mi. Inferring the pocket first keeps closed,
- * active and expired reads on the same names.
+ * Blank SubdivisionName → infer the home's mapped pocket from plat or nearest
+ * neighbor. A Sisters subject at 1121 Canter Ct carries no MLS tract name.
+ * The nearest mapped sales sit in Rolling Horse Meadow (~0.04 mi), SaddleStone,
+ * Timber Creek — all inside a third of a mile — while the first mile ring then
+ * reaches Crossroads at ~3.7 mi.
  *
- * Do not infer a cluster when the MLS row already names a real subdivision.
+ * Named SubdivisionName → keep that name, AND collect the ~0.25 mi street
+ * cluster (Horse Back / Ranch next to SaddleStone). Exclusive first: same
+ * subdiv plus that cluster, before any mile ring that would reach up-market
+ * Clearpine / Forest Edge.
  */
 
 import { distanceMiles } from '@/lib/cma/market-area'
 import { normSubdivision, realSubdivisionName } from '@/lib/pricing/classes'
 
-/** Mapped neighbors inside this radius form the pocket cluster. */
+/** Mapped neighbors inside this radius form the blank-MLS inferred pocket. */
 export const POCKET_RADIUS_MILES = 0.35
+/** Named tract: exclusive street cluster before any mile ring (Matt 2026-09-15). */
+export const STREET_CLUSTER_RADIUS_MILES = 0.25
 
 export type PocketNeighbor = {
   subdivision: string | null
@@ -49,7 +54,7 @@ type MappedNeighbor = {
   miles: number
 }
 
-function mappedInsideRadius(input: InferPocketInput): MappedNeighbor[] {
+function mappedInsideRadius(input: InferPocketInput, radiusMiles: number): MappedNeighbor[] {
   const lat = input.latitude
   const lng = input.longitude
   if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) return []
@@ -60,7 +65,7 @@ function mappedInsideRadius(input: InferPocketInput): MappedNeighbor[] {
     if (!name || !norm) continue
     if (n.latitude == null || n.longitude == null) continue
     const miles = distanceMiles({ lat, lng }, { lat: n.latitude, lng: n.longitude })
-    if (miles == null || miles > POCKET_RADIUS_MILES) continue
+    if (miles == null || miles > radiusMiles) continue
     out.push({ name, norm, miles })
   }
   return out
@@ -108,26 +113,27 @@ const EMPTY: InferredPocket = {
 }
 
 /**
- * When MLS names a tract, return it unchanged. When it does not, prefer the
- * recorded plat label, then the nearest mapped neighbor inside 0.35 mi
- * (ties go to the most frequent name in the window). Other mapped names in
- * that window become the pocket cluster.
+ * When MLS names a tract, keep it and still collect the 0.25 mi street
+ * cluster. When it does not, prefer the recorded plat label, then the nearest
+ * mapped neighbor inside 0.35 mi (ties go to the most frequent name in the
+ * window). Other mapped names in that window become the pocket cluster.
  */
 export function inferSubdivisionPocket(input: InferPocketInput): InferredPocket {
   const mlsName = realSubdivisionName(input.subdivision)
   const mlsNorm = input.subdivisionNorm ?? normSubdivision(input.subdivision)
   if (mlsNorm) {
+    const cluster = mappedInsideRadius(input, STREET_CLUSTER_RADIUS_MILES)
     return {
       subdivision: mlsName ?? input.subdivision ?? null,
       subdivisionNorm: mlsNorm,
       subdivisionSlug: input.subdivisionSlug ?? null,
-      neighborNorms: [],
+      neighborNorms: uniqueOtherNorms(cluster, mlsNorm),
       inferred: false,
       source: 'mls',
     }
   }
 
-  const mapped = mappedInsideRadius(input)
+  const mapped = mappedInsideRadius(input, POCKET_RADIUS_MILES)
   const platName = realSubdivisionName(input.platLabel)
   const platNorm = normSubdivision(input.platLabel)
   if (platName && platNorm) {
@@ -162,12 +168,23 @@ export type PocketSubjectFields = {
   inferredPocket?: InferredPocket | null
 }
 
-/** Fill subdivision + pocket cluster only when a pocket was inferred. */
+/**
+ * Fill subdivision when a pocket was inferred. Attach the street-cluster
+ * names whenever they exist — including a named MLS tract (SaddleStone +
+ * Horse Back / Ranch inside 0.25 mi).
+ */
 export function applyInferredPocket<T extends PocketSubjectFields>(
   subject: T,
   pocket: InferredPocket,
 ): T & Pick<PocketSubjectFields, 'pocketSubdivisionNorms' | 'inferredPocket'> {
-  if (!pocket.inferred) return subject
+  if (!pocket.inferred && pocket.neighborNorms.length === 0) return subject
+  if (!pocket.inferred) {
+    return {
+      ...subject,
+      pocketSubdivisionNorms: pocket.neighborNorms,
+      inferredPocket: pocket,
+    }
+  }
   return {
     ...subject,
     subdivision: pocket.subdivision ?? subject.subdivision ?? null,

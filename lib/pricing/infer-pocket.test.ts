@@ -3,6 +3,7 @@ import {
   applyInferredPocket,
   inferSubdivisionPocket,
   POCKET_RADIUS_MILES,
+  STREET_CLUSTER_RADIUS_MILES,
 } from '@/lib/pricing/infer-pocket'
 
 /** Sisters — 1121 Canter Ct neighborhood. */
@@ -22,12 +23,30 @@ function neighbor(
 }
 
 describe('inferSubdivisionPocket', () => {
-  it('keeps a real MLS tract and does not invent a cluster', () => {
+  it('keeps a named MLS tract and still collects the 0.25 mi street cluster', () => {
+    const pocket = inferSubdivisionPocket({
+      subdivision: 'SaddleStone',
+      subdivisionNorm: 'saddlestone',
+      ...SISTERS,
+      neighbors: [
+        neighbor('Horse Back', 0.12),
+        neighbor('Ranch', 0.2),
+        neighbor('Clearpine', 2.1),
+      ],
+    })
+    expect(pocket.inferred).toBe(false)
+    expect(pocket.source).toBe('mls')
+    expect(pocket.subdivision).toBe('SaddleStone')
+    expect(pocket.neighborNorms).toEqual(['horse back', 'ranch'])
+    expect(pocket.neighborNorms).not.toContain('clearpine')
+  })
+
+  it('does not invent a cluster when every mapped neighbor sits outside a quarter mile', () => {
     const pocket = inferSubdivisionPocket({
       subdivision: 'Kenwood',
       subdivisionNorm: 'kenwood',
       ...SISTERS,
-      neighbors: [neighbor('Rolling Horse Meadow', 0.04)],
+      neighbors: [neighbor('Rolling Horse Meadow', 0.4)],
     })
     expect(pocket.inferred).toBe(false)
     expect(pocket.source).toBe('mls')
@@ -132,7 +151,7 @@ describe('applyInferredPocket', () => {
     expect(next.inferredPocket?.inferred).toBe(true)
   })
 
-  it('leaves a named subject untouched', () => {
+  it('leaves a named subject without nearby mapped names untouched', () => {
     const subject = { subdivision: 'Kenwood', subdivisionNorm: 'kenwood' }
     const next = applyInferredPocket(
       subject,
@@ -141,10 +160,32 @@ describe('applyInferredPocket', () => {
     expect(next).toBe(subject)
     expect(next.pocketSubdivisionNorms).toBeUndefined()
   })
+
+  it('attaches the street-cluster names on a named tract', () => {
+    const pocket = inferSubdivisionPocket({
+      subdivision: 'SaddleStone',
+      subdivisionNorm: 'saddlestone',
+      ...SISTERS,
+      neighbors: [neighbor('Horse Back', 0.12), neighbor('Clearpine', 2.1)],
+    })
+    const next = applyInferredPocket(
+      { subdivision: 'SaddleStone', subdivisionNorm: 'saddlestone' },
+      pocket,
+    )
+    expect(next.subdivision).toBe('SaddleStone')
+    expect(next.pocketSubdivisionNorms).toEqual(['horse back'])
+    expect(next.inferredPocket?.inferred).toBe(false)
+  })
 })
 
 describe('POCKET_RADIUS_MILES', () => {
-  it('is a third of a mile', () => {
+  it('is a third of a mile for blank-MLS inference', () => {
     expect(POCKET_RADIUS_MILES).toBe(0.35)
+  })
+})
+
+describe('STREET_CLUSTER_RADIUS_MILES', () => {
+  it('is a quarter mile for named-tract exclusive first', () => {
+    expect(STREET_CLUSTER_RADIUS_MILES).toBe(0.25)
   })
 })

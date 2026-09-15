@@ -295,7 +295,7 @@ function ladderGeography(tier: string, subject: CmaSubject): string {
     return sub ? `subdivision ${sub}${city ? `, ${city}` : ''}` : 'the subject subdivision'
   }
   if (tier.startsWith('pocket-')) {
-    return `mapped pockets within a third of a mile${city ? `, ${city}` : ''}`
+    return `mapped pockets within a quarter mile${city ? `, ${city}` : ''}`
   }
   const miles = tier.match(/(\d+(?:\.\d+)?)mi/)?.[1] ?? null
   if (tier.startsWith('rural-')) {

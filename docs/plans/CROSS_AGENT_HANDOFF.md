@@ -1,8 +1,8 @@
-# Current — 2026-09-15 (SITE-94 community Tip Ready land on main)
+# Current — 2026-09-15 (CMA pocket-first + FlexMLS letter FLOW land on main)
 
-Surface: Cos Mini land of PR #238 tip `a500d97d` after SITE-98 on main.
+Surface: Cos Mini cherry-pick land (no GitHub merge). Engine-only; no public `--ship`. Do not rebuild Canter — AE after land.
 
-- **Done:** SITE-98 invest Tip Ready on `origin/main` `847fd728` (`--ship` exit 0, demoMatch true). Community tip `--ship` exit 0 on Mini; cherry-pick in flight.
-- **Next:** Finish SITE-94 cherry-pick + `npm run push`; mark SITE-94 done. Then SITE-96 Mini judge.
-- **Node:** SITE-94 `b564694b-2b33-431d-9722-98e9c01f6368` owner `cursor-cloud-site94-20260914`.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
+- **Done:** SITE-94 community Tip Ready on `origin/main` `31111123`. SITE-98 invest Tip Ready on `847fd728`.
+- **Landing now:** PR #242 tip `bd00dc97` pocket-first CMA picker (named subdivision / 0.25 mi street-cluster exclusive first). FlexMLS letter FLOW `f53c0265` + land fixes `bc45e899`/`5fc04c87`.
+- **Next:** After push, AE rebuilds Canter. Then SITE-96 Mini judge.
+- Skills read: `lib/pricing` match path, infer-pocket, ladder; `lib/cma` letter/immersive path.

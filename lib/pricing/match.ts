@@ -49,6 +49,8 @@ import {
   type AppleStrictness,
   type PricingTier,
   BOUNDARY_EXIT_BELOW,
+  isGeographyWidenTier,
+  isPocketExclusiveTier,
 } from '@/lib/pricing/ladder'
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible, type RuralSplitCounts } from '@/lib/pricing/rural'
 import { applyInferredPocket, inferSubdivisionPocket, type InferredPocket } from '@/lib/pricing/infer-pocket'
@@ -93,8 +95,9 @@ export type PricingSubject = {
   /** Subject irrigation from remarks and/or OWRD. Sales use remarks only. */
   irrigationClass?: IrrigationClass | null
   /**
-   * Mapped tract names inside 0.35 mi when MLS SubdivisionName was blank.
-   * The pocket-* rungs match these; the inferred home name uses subdivision-*.
+   * Mapped tract names in the street-cluster / inferred pocket.
+   * Named MLS tracts: 0.25 mi cluster. Blank MLS: 0.35 mi inferred names.
+   * The pocket-* rungs match these; the home name uses subdivision-*.
    */
   pocketSubdivisionNorms?: string[]
   /** Set when a blank MLS tract was filled from a plat or nearest neighbor. */
@@ -201,8 +204,18 @@ export type PricingMatchResult = {
    * reason). Absent for in-town subjects.
    */
   ruralSplits?: RuralSplitCounts
-  /** Present when a blank SubdivisionName was filled before the mile rings. */
+  /** Present when a blank SubdivisionName was filled, or a named tract collected its street cluster. */
   inferredPocket?: InferredPocket | null
+  /**
+   * Closed sales held from own-street / own-plat / street-cluster rungs.
+   * Geography widening is skipped when this is at least BOUNDARY_EXIT_BELOW.
+   */
+  exclusiveCount?: number
+  /**
+   * True when the exclusive pocket did not reach PRICING_MIN_COMPS.
+   * Year/quality outranks radius only then (rural/custom).
+   */
+  pocketStarved?: boolean
 }
 
 function monthsBetween(laterIso: string, earlierIso: string): number {
@@ -789,7 +802,7 @@ function bracketGla(
   }
 }
 
-function similarity(subject: PricingSubject, sale: PricingSale, asOf: string): number {
+function similarity(subject: PricingSubject, sale: PricingSale, asOf: string, pocketStarved: boolean): number {
   const size = 1 / (1 + Math.abs(sale.sqft - subject.sqft) / subject.sqft)
   const recency = 1 / (1 + monthsBetween(asOf, sale.closeDate) / 9)
   const age =
@@ -812,8 +825,10 @@ function similarity(subject: PricingSubject, sale: PricingSale, asOf: string): n
     },
     Number(asOf.slice(0, 4)),
   )
-  if (customOrNew) {
-    // Year + quality outrank radius for this class (dist 0.18 used to beat age 0.16).
+  // Year + quality outrank radius ONLY when the exclusive pocket is starved
+  // (Matt 2026-09-15). A named SaddleStone pocket with Horse Back / Ranch
+  // sales must not lose to farther Clearpine / Forest Edge on vintage.
+  if (customOrNew && pocketStarved) {
     return size * 0.26 + recency * 0.20 + age * 0.28 + story * 0.14 + dist * 0.12
   }
   return size * 0.28 + recency * 0.22 + age * 0.16 + story * 0.16 + dist * 0.18
@@ -859,12 +874,17 @@ export function walkPricingLadder(
   const bySale = new Set<string>()
   const rungs: PricingLadderRung[] = []
   const tiersUsed: string[] = []
+  let exclusiveCount = 0
   const trace: string[] = [
-    `As-of ${asOf}. Same subdivision first (3, 6, 9, then 12 months, and a wider GLA band on the same street), then the plats next to it inside the same neighborhood or community (3 to 12 months), then distance inside that boundary, then similar-performing subdivisions; the boundary is crossed only when it supplied fewer than ${BOUNDARY_EXIT_BELOW} sales. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, and on acreage the zoning class (farm or forest against rural residential), outbuildings, and usable land, zoning when both sides have a zone in town, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
+    `As-of ${asOf}. Named subdivision and its ~0.25 mi street cluster first (own street, same plat, pocket names), exclusive while that set holds at least ${BOUNDARY_EXIT_BELOW} closed sales. Then the plats next to it inside the same neighborhood or community, then distance inside that boundary, then similar-performing subdivisions; the boundary is crossed only when it supplied fewer than ${BOUNDARY_EXIT_BELOW} sales. Year and quality outrank radius only when that pocket is starved (rural/custom). Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, and on acreage the zoning class (farm or forest against rural residential), outbuildings, and usable land, zoning when both sides have a zone in town, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
   ]
   if (subject.inferredPocket?.inferred && subject.inferredPocket.subdivision) {
     trace.push(
       `MLS SubdivisionName was blank, so the search inferred ${subject.inferredPocket.subdivision} (${subject.inferredPocket.source}) before any mile ring.`,
+    )
+  } else if ((subject.pocketSubdivisionNorms?.length ?? 0) > 0 && subject.subdivision) {
+    trace.push(
+      `${subject.subdivision} is a named tract, so the search also held the ${subject.pocketSubdivisionNorms!.length} mapped pocket${subject.pocketSubdivisionNorms!.length === 1 ? '' : 's'} inside a quarter mile before any mile ring.`,
     )
   }
 
@@ -911,7 +931,9 @@ export function walkPricingLadder(
         : tier.sameSubdivision && !subject.subdivisionSlug && !subject.subdivisionNorm
         ? 'no recorded plat holds the subject, and its MLS row names none either'
         : tier.samePocket && !(subject.pocketSubdivisionNorms?.length)
-          ? 'no nearby mapped pocket was inferred for a blank subdivision'
+          ? 'no nearby mapped pocket cluster sits inside a quarter mile'
+        : isGeographyWidenTier(tier) && exclusiveCount >= BOUNDARY_EXIT_BELOW
+          ? `the named subdivision and its street-cluster pocket already supplied ${exclusiveCount} closed sales, so the search stayed exclusive`
         : tier.adjacentSubdivision && !(subject.adjacentSubdivisionSlugs?.length)
           ? 'no plat next to the subject\'s is known'
           : tier.crossBoundary && !subject.marketArea
@@ -973,10 +995,14 @@ export function walkPricingLadder(
       )
       if (tier.disclosure) trace.push(tier.disclosure)
     }
+    if (isPocketExclusiveTier(tier)) exclusiveCount = byKey.size
     if (byKey.size >= PRICING_TARGET_COMPS) break
   }
 
-  const ranked = [...byKey.values()].sort((a, b) => similarity(subject, b, asOf) - similarity(subject, a, asOf))
+  const pocketStarved = exclusiveCount < PRICING_MIN_COMPS
+  const ranked = [...byKey.values()].sort(
+    (a, b) => similarity(subject, b, asOf, pocketStarved) - similarity(subject, a, asOf, pocketStarved),
+  )
   const sliced = ranked.slice(0, PRICING_MAX_COMPS)
   const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells)
   if (bracketed.note) {
@@ -999,6 +1025,8 @@ export function walkPricingLadder(
     rungs,
     priceAnchor,
     inferredPocket: subject.inferredPocket ?? null,
+    exclusiveCount,
+    pocketStarved,
     ...(ruralSplits ? { ruralSplits } : {}),
   }
 }
