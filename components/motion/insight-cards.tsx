@@ -129,8 +129,10 @@ const COMPARE_SERIES: CompareSeries[] = [
 
 export function CompareCard({
   series = COMPARE_SERIES,
+  formatTime,
 }: {
   series?: CompareSeries[]
+  formatTime?: (t: number) => string
 }) {
   const stroke = useInkStroke()
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
@@ -194,6 +196,7 @@ export function CompareCard({
           lineWidth={2.25}
           padding={{ top: 40, right: 0, bottom: 22, left: 0 }}
           formatValue={painted[0]?.formatValue ?? formatPercent}
+          {...(formatTime ? { formatTime } : {})}
         />
         {hoverIndex !== null ? (
           <ChartTooltip
@@ -238,9 +241,11 @@ const DEFAULT_ANOMALY_LABELS: AnomalyLabels = {
 export function AnomalyCard({
   data: anomaly = ANOMALY_DATA,
   labels,
+  formatTime,
 }: {
   data?: AnomalyData
   labels?: Partial<AnomalyLabels>
+  formatTime?: (t: number) => string
 }) {
   const stroke = useInkStroke()
   const l = { ...DEFAULT_ANOMALY_LABELS, ...labels }
@@ -302,6 +307,7 @@ export function AnomalyCard({
           cursor="crosshair"
           padding={{ top: 34, right: 0, bottom: 22, left: 0 }}
           formatValue={format}
+          {...(formatTime ? { formatTime } : {})}
         />
         {hoverIndex !== null ? (
           <ChartTooltip
