@@ -72,7 +72,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-15",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts search --builder grok-4.5 --beat 59 \u2014 grok-4.6 via cursor-agent (cursor-grok-4.6-high), three scorings of default + search-open/command-open/filters-open shots on tip a54faff4",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts search --builder grok-4.5 --beat 56 \u2014 grok-4.6 via cursor-agent (cursor-grok-4.6-high), three scorings of Mini-recaptured default + search-open/command-open/filters-open on tip 85356d754",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
     "transport": "cursor-cli",
@@ -90,7 +90,7 @@
         "command-open",
         "filters-open"
       ],
-      "capture": "first viewport + catalog demoStates, scripts/take-route-shots.mjs, scale 1, palette-quantized; open PNGs from tip a54faff4"
+      "capture": "first viewport + catalog demoStates, scripts/take-route-shots.mjs, scale 1, palette-quantized; Mini rejudge on tip 85356d754 at http://127.0.0.1:3029/homes-for-sale?city=Bend"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/search/shots/desktop.png",
@@ -102,28 +102,29 @@
       "filters-open-desktop": "design_system/ryan-realty/ui_kits/search/shots/filters-open-desktop.png",
       "filters-open-mobile375": "design_system/ryan-realty/ui_kits/search/shots/filters-open-mobile375.png"
     },
+    "shotsHash": "sha256:4bebd0b7435c62af16338e37c8d78b116b0ab67deae88caae6a95a9324ec3b00",
     "scores": [
-      58,
-      52,
-      56
+      55,
+      59,
+      58
     ],
-    "score": 56,
+    "score": 58,
     "criteria": {
       "designQuality": 16,
       "originality": 13,
-      "interaction": 10,
-      "craft": 9,
+      "interaction": 11,
+      "craft": 10,
       "honestyFunction": 8
     },
     "perCriterion": {
       "design": 16,
       "originality": 13,
-      "interaction": 10,
-      "craft": 9,
+      "interaction": 11,
+      "craft": 10,
       "honesty": 8
     },
     "demoMatch": false,
-    "beats": "Redfin Bend map search (https://www.redfin.com/city/16163/OR/Bend): this fold does not win map-as-product \u2014 Redfin encodes price on pins; this encodes headcount on cream Google tiles. Thin win vs that page: Oregon Data Share named on the 500 and a broker number in chrome. Loses cartography to V3Atlas on /cities/bend.",
+    "beats": "No win named",
     "adaptedFrom": [
       {
         "id": "beui-range-slider"
@@ -142,85 +143,77 @@
       {
         "section": "search-open field",
         "severity": "taste",
-        "finding": "Opened search is still a bordered cream input with Bend inside it and a Places dropdown beside/under the list. The control does not morph into results; a person would not recognize beui morphing-search.",
+        "finding": "Opened search is still a labeled cream input with Bend inside it and a static Places dropdown. The control does not morph into results; a person would not recognize beui morphing-search.",
         "primitive": "components/site/v3/V3MorphSearch.tsx",
         "replaceWith": "beui-morphing-search"
       },
       {
-        "section": "command-open palette",
+        "section": "filters-open sheet body",
         "severity": "taste",
-        "finding": "Command opens a floating cream card of city names that duplicates search-open. No cmdk item chrome, no empty state, no keyboard list \u2014 not the shadcn Command object, and two palettes for one job.",
-        "primitive": "app/search/_v3/SearchCommand.client.tsx",
-        "replaceWith": "shadcn-command"
+        "finding": "All filters opens a two-step bedroom quiz (Any / 1+ / 2+ / 3+ / 4+ and Next) instead of one house sheet that shows price, types, and flags together.",
+        "primitive": "app/search/_v3/SearchFiltersSheet.client.tsx",
+        "replaceWith": "house-sheet"
+      },
+      {
+        "section": "Any price dock",
+        "severity": "taste",
+        "finding": "The first-viewport Any price control is a gray dotted track with a black end cap and no navy fill, while the map column repeats a second Up to any price slider \u2014 two languages, neither the beui tick-stop navy range.",
+        "primitive": "app/search/_v3/SearchPriceRail.client.tsx",
+        "replaceWith": "beui-range-slider"
       },
       {
         "section": "map pane",
         "severity": "taste",
-        "finding": "Cream wash and navy clusters (168, 148, 406) still encode headcount. Price pills are sparse. This is not Atlas cells a buyer can read as affordability, and it is not Redfin price-on-pin.",
+        "finding": "Cream Bend polygon plus uniform navy dots encodes headcount, not ask. A buyer cannot read affordability from a mark the way Redfin price-on-pin or Atlas data-encoded cells would.",
         "primitive": "components/search/MapSearchView.tsx",
         "replaceWith": "house-atlas"
       },
       {
         "section": "desktop listing rail",
         "severity": "taste",
-        "finding": "Left column is portal MLS cards. The dot on the hairline under specs has no unit or claim, so the only per-row mark cannot be read.",
+        "finding": "Left column is portal MLS cards (photo, price, beds/baths/sqft, address) repeated past six rows. The ppsf tick under specs has no unit or claim, so the only per-row mark cannot be read.",
         "primitive": "components/search/SearchResults.tsx",
         "replaceWith": "house-atlas"
       },
       {
-        "section": "filters-open sheet body",
-        "severity": "taste",
-        "finding": "All filters is a right-hand panel of No min / No max fields stacked under a gray dual track. That is a form dump, not one house-sheet language with navy-filled range stops and checkboxes as the flags.",
-        "primitive": "components/search/AllFiltersSheet.tsx",
-        "replaceWith": "house-sheet"
-      },
-      {
-        "section": "filters price track",
-        "severity": "taste",
-        "finding": "Inside All filters the price control is two gray dotted tracks with end caps, not the beui range slider with tick stops and navy fill.",
-        "primitive": "app/search/_v3/SearchPriceRail.client.tsx",
-        "replaceWith": "beui-range-slider"
-      },
-      {
-        "section": "filters-open search",
+        "section": "command-open Sort",
         "severity": "defect",
-        "finding": "Placeholder cites MUA10, an internal filter code a visitor cannot use.",
-        "primitive": "components/search/AllFiltersSheet.tsx",
+        "finding": "Command palette Sort group is an empty header; the opened control has no rows, no empty state, and no sort actions.",
+        "primitive": "app/search/_v3/SearchCommand.client.tsx",
+        "replaceWith": "shadcn-command"
+      },
+      {
+        "section": "search-open desktop overlap",
+        "severity": "defect",
+        "finding": "The Places dropdown covers the first listing photo and address so the rail and the typeahead fight for the same pixels.",
+        "primitive": "components/site/v3/V3MorphSearch.tsx",
         "replaceWith": null
       },
       {
-        "section": "count stamp",
+        "section": "SEO and inventory hold",
         "severity": "defect",
-        "finding": "Same class, three maxima: desktop rest $57K\u2013$4.2M, mobile rest $57K\u2013$5.0M, open shots $57K\u2013$5.3M. The sourced sentence disagrees with itself.",
+        "finding": "Title, JSON-LD, and crawlable ask cannot be verified in these pixels so SEO is held at best; listing cards still show price, address, beds, baths, sqft, ppsf, badges \u2014 inventory held, not raised.",
         "primitive": "app/search/page.tsx",
-        "replaceWith": null
-      },
-      {
-        "section": "mobile map dock",
-        "severity": "defect",
-        "finding": "SAVED AREAS, Map/List/SORT, Showing Bend only, and the 1,223+ line stack on the field and bury the south of the map.",
-        "primitive": "components/search/MapSearchView.tsx",
         "replaceWith": null
       }
     ],
+    "dullest": "The desktop results rail: the same MLS photo-price-spec stack six times, with a mute hairline tick nobody can read. Nothing there would be screenshotted.",
     "tells": [
-      "Cream box. \u2014 search-open desktop and mobile: the Bend field stays a labeled cream rectangle; a city list drops under it. That is not beui morphing-search (the field must become the results).",
-      "Cream box. \u2014 command-open: a centered cream card with the same Places list the search field already shows. Command chrome (grouped cmdk rows, shortcuts, empty) is not the object; it is a second overlay of typeahead.",
-      "Scrolling lists as the design. \u2014 desktop listing rail: photo, price, beds/baths/sqft, address, mute hairline, repeat past six rows. No visual encoding a buyer can read.",
-      "Raw slugs, internal labels, methodology jargon \u2014 filters-open placeholder: Find a filter, like duplex or MUA10. MUA10 is MLS shop talk, not a buyer sentence."
+      "Cream box. \u2014 search-open desktop and mobile: Bend stays a bordered cream field with Esc; a Places list (Bend, Redmond, Sisters, Sunriver, Tetherow) drops under it. The field does not morph into results.",
+      "Cream box. \u2014 filters-open: All filters is a cream wizard (THIS SEARCH, STEP 1 OF 2, How many bedrooms?, five radios, Next), not one house sheet of every filter. Sheet chrome is not the object.",
+      "Missing states. \u2014 command-open Sort is a group header with no rows."
     ],
-    "dullest": "The desktop results rail: a portal photo-price-spec stack with a mute ppsf tick. It is the same MLS card six times. Nothing there would be screenshotted.",
-    "verdict": "This is a competent MLS split search wearing navy/cream, not a catalog object and not Atlas. demoMatch is false: search-open is a labeled cream field, command-open is a second cream card of the same list, filters-open is a min/max dump. SEO increment is not visible in these pixels (title/JSON-LD cannot be judged from shots) so SEO is held at best \u2014 that is a defect on this pass. Inventory is held, not raised: cards still show price, address, beds, baths, sqft, ppsf, open-house, and a named source; nothing new is proven. This is the same band as a 59/100 page, not better \u2014 open states exist and they are cream boxes. Not Tip Ready.",
-    "comparedToPrior": "fell",
+    "verdict": "This is a navy/cream MLS split that still fails the catalog objects it named. demoMatch is false: search-open is a cream typeahead, filters-open is a bedroom wizard, and the dock price track is gray dots \u2014 command-open is the one opened control that actually looks like shadcn Command (grouped rows, shortcuts, dim overlay), which is why this is a hair above a 56, not a different page. SEO is held (not visible in shots) and inventory is held (same card facts, same 500 / $57K\u2013$8.8M / Oregon Data Share); neither rose, so the pass is not comprehensive. Not Tip Ready.",
+    "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-10",
-      "score": 59,
+      "evaluatedAt": "2026-09-15",
+      "score": 56,
       "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-10",
-      "shotsHash": "sha256:7550e309aae7f2b6e03e9400ceac479f65333f21a48ece12754c8b4f9848c1a7",
-      "note": "SITE-72 / 2026-09-10 grok-4.6 mark before SITE-110 open-state rejudge"
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:83ccf9034c734390d2a2278c63e6cc22525215c70d563cf976ea112f7b5a6a5e",
+      "note": "Prior Mini tip-judge receipt on tip a54faff4 open shots (d0167511). New Mini recapture of open + default on tip 85356d754 changes shotsHash \u2014 rebaseline."
     },
-    "shotsHash": "sha256:83ccf9034c734390d2a2278c63e6cc22525215c70d563cf976ea112f7b5a6a5e"
+    "rebaselineReason": "shotsHash changed after Mini recapture of default + search-open/command-open/filters-open on tip 85356d754 (live catalog mounts). Same evaluatorModel/rubricVersion; median 58 is the first mark on this shot set. demoMatch remains false \u2014 do not invent."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
