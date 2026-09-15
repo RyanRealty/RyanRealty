@@ -1,8 +1,8 @@
-# Current — 2026-09-15 (SITE-110 rematch after Mini 56)
+# Current — 2026-09-15 (SITE-110 rematch after Mini 56 on 6671fdd0)
 
 Surface: Cursor cloud. Branch `cursor/site-110-search-tip-21f9`. Do not merge. Cos Mini-judges.
 
-- **Done:** After Mini 56 / `6671fdd0` (`demoMatch` false): removed house-paint that flattened MorphingSearch to a cream typeahead; search-open is the catalog glass portal (dim overlay, Search places, Places dropdown unmounted). SITE-103/107/109/CMA left alone.
+- **Done:** After Mini 56 / `6671fdd0` (`demoMatch` false): MorphingSearch open state is one grown dialog (layoutId on the field-becomes-results card, no clip-path typeahead split); empty-open seeds are live listing addresses, not Bend/Redmond Places. Cream typeahead stays unmounted. SITE-103/107/109/CMA left alone.
 - **Next:** Cos Mini re-judge. Do not invent `demoMatch`. `--ship` stays honest.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 

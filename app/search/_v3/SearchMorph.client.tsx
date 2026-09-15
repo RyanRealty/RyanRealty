@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * beui-morphing-search as the live dock field. No V3MorphSearch wrapper —
- * that house shell kept a cream input on search-open (demoMatch false).
+ * beui-morphing-search as the live dock field. Open state is the catalog
+ * field-becomes-results portal — do not keep a cream typeahead beside it.
  */
 import { MorphingSearch, type MorphingSearchItem } from '@/components/motion/morphing-search'
 import { cn } from '@/lib/utils'

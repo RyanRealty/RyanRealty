@@ -499,6 +499,7 @@ export default async function SearchPage({
           initialFilters={initialFiltersFromUrl}
           signedIn={!!session?.user}
           hideViewToggle={view === 'split'}
+          morphHomes={jsonLdListings}
         />
       </div>
       {/* Guest listing-alert capture stays on list/grid. Split/map hide the

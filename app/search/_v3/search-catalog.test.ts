@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { morphHomesFromListings } from './search-places'
 
 function readSrc(rel: string): string {
   return readFileSync(resolve(rel), 'utf8')
@@ -16,6 +17,7 @@ describe('SITE-110 search catalog install', () => {
     const sheet = readSrc('app/search/_v3/SearchFiltersSheet.client.tsx')
     const atlas = readSrc('app/search/_v3/SearchAtlas.client.tsx')
     expect(page).toContain("from '@/components/motion/morphing-search'")
+    expect(page).toContain('morphHomes={jsonLdListings}')
     expect(page).toContain("from '@/components/motion/range-slider'")
     expect(page).toContain("from '@/components/ui/command'")
     expect(page).toContain('SearchAtlasPane')
@@ -51,10 +53,11 @@ describe('SITE-110 search catalog install', () => {
     const filters = readSrc('components/search/SearchFilters.tsx')
     expect(filters).toContain('SearchMorph')
     expect(filters).not.toContain('V3MorphSearch')
-    expect(filters).toContain('SEARCH_PLACE_SEEDS')
+    expect(filters).toContain('morphHomesFromListings')
+    expect(filters).not.toMatch(/SEARCH_PLACE_SEEDS/)
     expect(filters).not.toMatch(/open=\{morphOpen\}/)
     expect(filters).toContain('onOpenChange')
-    expect(filters).toContain('Search places')
+    expect(filters).toContain('Address, city, or community')
     expect(filters).toContain('morphOpen ? null')
     expect(filters).toContain('catalog portal only')
     expect(filters).toContain('SearchPriceRail')
@@ -71,8 +74,31 @@ describe('SITE-110 search catalog install', () => {
     expect(morph).toContain('layoutId')
     expect(morph).toContain('backdrop-blur-xl')
     expect(morph).toContain('bg-foreground/40')
+    expect(morph).toContain('data-v3-morph="dialog"')
+    expect(morph).not.toContain('clipPath')
+    expect(morph).not.toMatch(/data-v3-morph=\"panel\"/)
     const houseCss = readSrc('components/site/v3/V3MorphSearch.css')
     expect(houseCss).not.toContain('backdrop-filter: none')
     expect(houseCss).not.toContain("[data-v3-morph='panel']")
+  })
+
+  it('morph empty-open seeds are listing addresses, not a Places city list', () => {
+    const items = morphHomesFromListings([
+      {
+        ListNumber: '220123456',
+        StreetNumber: '19669',
+        StreetName: 'Harvard',
+        StreetSuffix: 'Place',
+        City: 'Bend',
+        PostalCode: '97702',
+      },
+      { ListNumber: null, ListingKey: 'x', StreetNumber: null, StreetName: null },
+    ])
+    expect(items).toHaveLength(1)
+    expect(items[0]?.title).toBe('19669 Harvard Place')
+    expect(items[0]?.description).toBe('Bend 97702')
+    expect(items[0]?.id).toMatch(/^\/homes-for-sale\//)
+    expect(items[0]?.id).toMatch(/harvard/i)
+    expect(items.map((item) => item.title)).not.toContain('Bend')
   })
 })

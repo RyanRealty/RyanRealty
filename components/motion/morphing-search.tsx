@@ -31,13 +31,6 @@ const SEARCH_MORPH: Transition = {
 	bounce: 0.22,
 };
 
-// Keep the spring on the shell, but unfold complex clip-path values with the
-// same progressive tween as Morph Popover so the content never snaps ahead.
-const SEARCH_CLIP_TRANSITION: Transition = {
-	duration: 0.32,
-	ease: EASE_OUT,
-};
-
 export type MorphingSearchItem = {
 	id: string;
 	title: string;
@@ -355,17 +348,10 @@ export function MorphingSearch({
 	const resultsHeight = mounted
 		? Math.max(96, Math.min(288, window.innerHeight - anchorRect.top - 80))
 		: 288;
-	const collapsedContentClip = `inset(0px ${Math.max(
-		0,
-		panelWidth - anchorRect.width,
-	)}px ${resultsHeight}px 0px round 12px)`;
-	const expandedContentClip = "inset(0px 0px 0px 0px round 12px)";
 
-	// Neither grouping layer carries a box: they only hold `inert`/`aria-hidden`,
-	// the z-index and the presence key, and every child below is `fixed` and
-	// resolves against the viewport itself. The click catcher spans the viewport
-	// edges but has no children and filters nothing, so it is not a sampling
-	// layer either. See tests/fixed-overlay-edge-sampling.test.tsx.
+	// One grown card (layoutId on the dialog). A separate empty panel plus
+	// a clip-path that starts collapsed reads as cream field + dropdown when
+	// shots disable animations — Mini demoMatch false on that typeahead.
 	const overlay = mounted
 		? createPortal(
 				<div
@@ -391,57 +377,22 @@ export function MorphingSearch({
 								/>
 
 								<motion.div
-									layoutId={shellLayoutId}
-									aria-hidden="true"
-									data-v3-morph="panel"
-									className="fixed z-10 rounded-xl bg-background/90 backdrop-blur-xl"
-									style={{
-										top: anchorRect.top,
-										left: anchorRect.left,
-										width: panelWidth,
-										height: 48 + resultsHeight,
-										boxShadow: "inset 0 0 0 1px var(--color-border)",
-									}}
-									transition={morphTransition}
-								/>
-
-								<motion.div
 									ref={dialogRef}
+									layoutId={shellLayoutId}
 									role="dialog"
 									aria-modal="true"
 									aria-label="Search"
 									onKeyDown={handleDialogKeyDown}
-									initial={
-										reduce
-											? false
-											: { opacity: 0, clipPath: collapsedContentClip }
-									}
-									animate={{ opacity: 1, clipPath: expandedContentClip }}
-									exit={{
-										opacity: 0,
-										clipPath: collapsedContentClip,
-										transition: reduce
-											? { duration: 0 }
-											: {
-													clipPath: SEARCH_CLIP_TRANSITION,
-													opacity: SEARCH_MORPH,
-												},
-									}}
-									transition={
-										reduce
-											? { duration: 0 }
-											: {
-													clipPath: SEARCH_CLIP_TRANSITION,
-													opacity: SEARCH_MORPH,
-												}
-									}
+									initial={false}
 									data-v3-morph="dialog"
+									data-v3-morph-panel=""
 									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl bg-background/90 shadow-lg ring-1 ring-border backdrop-blur-xl"
 									style={{
 										top: anchorRect.top,
 										left: anchorRect.left,
 										width: panelWidth,
 									}}
+									transition={morphTransition}
 								>
 									<div
 										className={cn(

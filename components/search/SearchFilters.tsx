@@ -55,7 +55,7 @@ import { SUBDIVISION_ALIASES } from '@/lib/subdivision-aliases'
 import { normalizeSearchKey } from '@/lib/search/neighborhood-match'
 import { SearchCommand } from '@/app/search/_v3/SearchCommand.client'
 import { SearchPriceRail } from '@/app/search/_v3/SearchPriceRail.client'
-import { SEARCH_PLACE_SEEDS } from '@/app/search/_v3/search-places'
+import { morphHomesFromListings, type MorphHomeListing } from '@/app/search/_v3/search-places'
 
 /** P6: load the house-sheet only after first open (not on cold search). */
 const SearchFiltersSheet = dynamic(
@@ -289,6 +289,8 @@ type Props = {
    * chips read the merged filters, not the props.
    */
   staticShell?: boolean
+  /** Live listing addresses the morph opens onto (not a Places city list). */
+  morphHomes?: readonly MorphHomeListing[]
 }
 
 type OpenPanel = 'places' | 'status' | 'price' | 'beds' | 'baths' | 'type' | null
@@ -299,6 +301,7 @@ export default function SearchFilters({
   hideViewToggle = true,
   hideLocation = false,
   staticShell = false,
+  morphHomes = [],
 }: Props) {
   const router = useRouter()
   const pathname = usePathname()
@@ -507,13 +510,9 @@ export default function SearchFilters({
         description: item.sublabel,
       }))
       if (typed.length > 0) return typed
-      return SEARCH_PLACE_SEEDS.map((place) => ({
-        id: place.id,
-        title: place.title,
-        description: place.description,
-      }))
+      return morphHomesFromListings(morphHomes)
     },
-    [suggestItems],
+    [suggestItems, morphHomes],
   )
 
   // ---------------------------------------------------------------------------
@@ -592,7 +591,7 @@ export default function SearchFilters({
         <div className="relative flex w-full min-w-0 items-center gap-1 sm:w-64 sm:shrink-0">
           <SearchMorph
             className="srch-morph min-w-0 flex-1"
-            placeholder="Search places"
+            placeholder="Address, city, or community"
             items={morphItems}
             onOpenChange={(next) => {
               setMorphOpen(next)
