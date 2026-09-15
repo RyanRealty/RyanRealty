@@ -1,9 +1,10 @@
-# Current — 2026-09-15 (SITE-110 Tip Ready Mini rejudge — ship 1)
+# Current — 2026-09-15 (SITE-110 rematch after Mini 55 on 5c2d4bf0)
 
-Surface: Cos Mini on Matthews Mini. Tip Ready judge/land only. No SITE-103. No SITE-107. No SITE-109. No CMA. HOLD owner sends.
+Surface: Cursor cloud. Branch `cursor/site-110-search-tip-21f9` PR #248. Do not merge. Cos Mini-judges.
 
-- **SITE-110 search:** tip `bdfab0f1c` (`cursor/site-110-search-tip-21f9` PR #248) · `--ship` 1 · demoMatch false · competitiveBriefPass false · score 55 · replaceWith `beui-morphing-search` · left in_progress. Mini rejudge: recaptured default + search-open/command-open/filters-open on tip at http://127.0.0.1:3029/homes-for-sale?city=Bend; grok-4.6 via cursor-cli. search-open is cream address typeahead with listing streets (Esc) — not field-becomes-results morph; filters-open is V3Sheet Any-list; command-open has Sort rows. Do NOT invent demoMatch. Do NOT merge. Evidence note on owner `cursor-cloud-site110-20260915`. Artifacts: `.artifacts/site110-taste-evaluate.clean.json`, worktree `worktrees/site110-search-tip-judge`.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `scripts/lib/taste-receipt.mjs --ship`.
+- **Done:** After Mini 55 / `5c2d4bf0` (`demoMatch` false): official MorphingSearch restored; dock is catalog `iconOnly` (48×48 → 448×336 glass portal); empty-open Lucide icon rows (not listing streets); dialog `initial={false}`; token dim so the grown card reads as a portal. Recaptured default + search-open/command-open/filters-open. SITE-103/107/109/CMA left alone. Judge chain missing on this VM — receipt left honest (Mini `demoMatch` false). `--ship` 1.
+- **Next:** Cos Mini `--ship`. Do not invent `demoMatch`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`.
 
 # Current — 2026-09-15 (SITE-110 rematch after Mini 56 on 6671fdd0)
 
