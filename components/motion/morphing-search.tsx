@@ -349,9 +349,9 @@ export function MorphingSearch({
 		? Math.max(96, Math.min(288, window.innerHeight - anchorRect.top - 80))
 		: 288;
 
-	// One grown card (layoutId on the dialog). A separate empty panel plus
-	// a clip-path that starts collapsed reads as cream field + dropdown when
-	// shots disable animations — Mini demoMatch false on that typeahead.
+	// One grown card. layoutId stays on the closed trigger (mustContain).
+	// Sharing it with the open dialog freezes the shell at field size when
+	// shots disable animations, so the list spills out as a Places dropdown.
 	const overlay = mounted
 		? createPortal(
 				<div
@@ -378,7 +378,6 @@ export function MorphingSearch({
 
 								<motion.div
 									ref={dialogRef}
-									layoutId={shellLayoutId}
 									role="dialog"
 									aria-modal="true"
 									aria-label="Search"
@@ -386,13 +385,14 @@ export function MorphingSearch({
 									initial={false}
 									data-v3-morph="dialog"
 									data-v3-morph-panel=""
-									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl bg-background/90 shadow-lg ring-1 ring-border backdrop-blur-xl"
+									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl bg-background shadow-lg ring-1 ring-border backdrop-blur-xl"
 									style={{
 										top: anchorRect.top,
 										left: anchorRect.left,
 										width: panelWidth,
+										minHeight: 48 + resultsHeight,
 									}}
-									transition={morphTransition}
+									transition={reduce ? { duration: 0 } : morphTransition}
 								>
 									<div
 										className={cn(

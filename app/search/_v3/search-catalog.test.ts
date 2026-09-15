@@ -75,6 +75,7 @@ describe('SITE-110 search catalog install', () => {
     expect(morph).toContain('backdrop-blur-xl')
     expect(morph).toContain('bg-foreground/40')
     expect(morph).toContain('data-v3-morph="dialog"')
+    expect(morph).toContain('minHeight: 48 + resultsHeight')
     expect(morph).not.toContain('clipPath')
     expect(morph).not.toMatch(/data-v3-morph=\"panel\"/)
     const houseCss = readSrc('components/site/v3/V3MorphSearch.css')
