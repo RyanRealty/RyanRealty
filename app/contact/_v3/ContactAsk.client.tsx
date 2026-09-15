@@ -5,7 +5,7 @@
  * tour-time options, the SMS consent line, and the send itself — FormData to
  * submitContactForm, then the Meta and GA lead events the sheet fired.
  */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 // Direct import — the v3 barrel also re-exports server-only place modules
 // (V3PlaceDocuments → lib/data → next/headers), which breaks this client module
 // under webpack. V3Ask is itself a client primitive.
@@ -51,6 +51,11 @@ export function ContactAsk({
   const isTour = intent === 'tour'
   const [smsConsent, setSmsConsent] = useState(false)
   const [fieldDemo, setFieldDemo] = useState<ContactFieldDemo>('idle')
+
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get('taste_state')
+    if (raw === 'error' || raw === 'success') setFieldDemo(raw)
+  }, [])
 
   const inquiryOptions = useMemo(() => {
     const extra =
@@ -159,26 +164,28 @@ export function ContactAsk({
 
   return (
     <ContactFieldDemoContext.Provider value={fieldDemo}>
-      <V3Ask
-        id="write"
-        className="contact-ask"
-        eyebrow="Talk to a broker"
-        heading={isTour ? 'Request a tour' : 'Send a message'}
-        headingLevel={2}
-        lede={isTour && listingSummary ? listingSummary : undefined}
-        fields={fields}
-        Field={ContactField}
-        consent={<SmsConsentDisclosure checked={smsConsent} onCheckedChange={setSmsConsent} />}
-        submitLabel={isTour ? 'Request a tour' : 'Send message'}
-        onSubmit={send}
-      />
-      <div className="contact-ask__taste">
-        <Button type="button" variant="ghost" data-taste="error-open" onClick={() => setFieldDemo('error')}>
-          Show field error
-        </Button>
-        <Button type="button" variant="ghost" data-taste="success-open" onClick={() => setFieldDemo('success')}>
-          Show field success
-        </Button>
+      <div className="contact-ask-root">
+        <div className="contact-ask__taste">
+          <Button type="button" variant="ghost" data-taste="error-open" onClick={() => setFieldDemo('error')}>
+            Show field error
+          </Button>
+          <Button type="button" variant="ghost" data-taste="success-open" onClick={() => setFieldDemo('success')}>
+            Show field success
+          </Button>
+        </div>
+        <V3Ask
+          id="write"
+          className="contact-ask"
+          eyebrow="Talk to a broker"
+          heading={isTour ? 'Request a tour' : 'Send a message'}
+          headingLevel={2}
+          lede={isTour && listingSummary ? listingSummary : undefined}
+          fields={fields}
+          Field={ContactField}
+          consent={<SmsConsentDisclosure checked={smsConsent} onCheckedChange={setSmsConsent} />}
+          submitLabel={isTour ? 'Request a tour' : 'Send message'}
+          onSubmit={send}
+        />
       </div>
     </ContactFieldDemoContext.Provider>
   )

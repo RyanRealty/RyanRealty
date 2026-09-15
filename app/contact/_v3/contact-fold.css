@@ -34,11 +34,13 @@
   margin-top: var(--v3-space-md);
 }
 
-/* Lead door portrait: tap-sized cutout, not the 8/5 art slot. The
-   transparent edge of the headshot is the composition. */
+/* Lead door portrait at the content-floor hero width (319+). 20rem is
+   320px at the default root — wide enough for the floor, short enough
+   that Call | Text | Email | Schedule still sit in the 1440 first
+   viewport when the still sits beside the call copy. */
 .contact-fold .v3-doors__item--lead .v3-doors__art {
-  width: 4.5rem;
-  aspect-ratio: 1;
+  width: min(100%, 20rem);
+  aspect-ratio: 4 / 5;
   margin-bottom: var(--v3-space-xs);
   background: transparent;
 }
@@ -165,5 +167,51 @@
 
   .contact-fold__reach {
     min-width: 0;
+  }
+
+  .contact-fold .v3.v3-quiet {
+    padding-top: var(--v3-space-md);
+    padding-bottom: 0;
+  }
+
+  .contact-fold .v3-doors__door--lead {
+    display: grid;
+    grid-template-columns: 20rem minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr auto;
+    column-gap: var(--v3-space-sm);
+    padding-block: var(--v3-space-sm);
+    padding-inline: 0;
+  }
+
+  .contact-fold .v3-doors__item--lead .v3-doors__art {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    width: 20rem;
+    margin-bottom: 0;
+  }
+
+  .contact-fold .v3-doors__item--lead .v3-doors__kicker,
+  .contact-fold .v3-doors__item--lead .v3-doors__label,
+  .contact-fold .v3-doors__item--lead .v3-doors__foot {
+    grid-column: 2;
+  }
+
+  .contact-fold .v3-doors__item--lead {
+    display: grid;
+    grid-template-columns: 20rem minmax(0, 1fr);
+  }
+
+  .contact-fold .v3-doors__item--lead .v3-doors__door--lead {
+    grid-column: 1 / -1;
+  }
+
+  .contact-fold .v3-doors__item--lead .v3-doors__live {
+    grid-column: 2;
+    margin-top: 0;
+    padding: 0 0 var(--v3-space-sm);
+  }
+
+  .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) .v3-doors__door {
+    padding-block: var(--v3-space-xs);
   }
 }
