@@ -3,8 +3,8 @@
 /**
  * Region fold: official Insights Compare form. year-open is pointer hover
  * on the stage (ChartTooltip + series columns + Trend snapshot + Snapshot).
- * Prose stays outside the card. Not a cream .v3 Insights wrap. Next pages
- * to AnomalyCard (Closings/Sale). DigitSwapPreview replay lives on MOS.
+ * Prose stays outside the card. No cream card wrap. Next pages to
+ * AnomalyCard (Closings/Sale). DigitSwapPreview replay lives on MOS.
  */
 
 import Link from 'next/link'

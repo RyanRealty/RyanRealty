@@ -58,10 +58,10 @@
   color: var(--v3-ink);
 }
 
-.region-insights .insight-cards__card {
-  padding: var(--v3-space-sm);
-  border: var(--v3-rule-hairline);
-  background: transparent;
+/* Official Insights object owns the year-open frame (catalog demo is the
+   Compare card, not the cities ledger). No cream card wrap. */
+#market-insights {
+  min-height: calc(100vh - 6rem);
 }
 
 .region-insights .insight-cards__pager-title,

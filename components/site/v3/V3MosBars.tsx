@@ -85,21 +85,30 @@ export function V3MosBars({
   if (!plot) return null
 
   // Whole-number faces count up (beui-number / rareui); fractional sales stay static.
-  // `replay` is official DigitSwapPreview: Animate / hover changes value AND
-  // animationKey so 1ch glyphs roll. Rest stays the live sourced label
-  // (Mini 52 forbade rest-mask). Duration stays mid-swap at the 400ms hover wait.
-  const rolling = open || !revealed
+  // `replay` is official DigitSwapPreview (beui.dev/components/motion/number):
+  // rest = live sourced face (Mini 52 forbade rest-mask); hover / Animate
+  // toggles MASKED ••• suffix vs revealed, animationKey masked/revealed.
+  // Duration stays mid-swap at take-route-shots' 400ms hover wait.
+  const previewRevealed = revealed && !open
   const valueFace = (label: string, value: number) => {
     if (replay) {
       const live = label
-      const plain = String(Math.round(value))
-      const swapValue = rolling ? (plain !== live ? plain : `\u2007${plain}`) : live
+      const digits = live.replace(/\D/g, '')
+      const suffixLength = Math.min(2, digits.length)
+      let seen = 0
+      const masked = live.replace(/[0-9]/g, () => {
+        const index = seen
+        seen += 1
+        return index >= digits.length - suffixLength ? digits[index]! : '•'
+      })
       return (
         <DigitSwap
-          value={swapValue}
-          animationKey={`${id}-${label}-${rolling ? 'open' : 'rest'}-${plays}`}
-          direction={rolling ? 'up' : 'down'}
-          duration={1.15}
+          value={previewRevealed ? live : masked}
+          animationKey={`${previewRevealed ? 'revealed' : 'masked'}-${plays}`}
+          direction={previewRevealed ? 'up' : 'down'}
+          suffixLength={suffixLength}
+          duration={1.2}
+          stagger={0.05}
           className="v3-mos__swap font-mono text-lg tracking-[0.08em] tabular-nums"
         />
       )
