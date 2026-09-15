@@ -42,12 +42,9 @@
  * listing chrome never fill it. The door stays in the Sell nav group. The
  * footer never carries a second solid button (PUBLIC_UI.md section 1).
  *
- * WHAT THIS DELIBERATELY DOES NOT CARRY, versus KbNav:
- *  - The suggest-search field. It reached into components/search, which drags a
- *    second token layer onto every public page through the chrome, and search
- *    belongs to the Field pattern that owns Homes. No nav destination is lost:
- *    `/homes-for-sale` and the canonical map view both stay one tap away.
- *    Search returns to the chrome as a v3 primitive or not at all.
+ * SEARCH: catalog MorphingSearch via V3ChromeSearch (beUI install). Client
+ * open, ⌘K / Ctrl+K, icon on phone / pill on desk. Suggest feed for places —
+ * not a second token layer or a house-invented chrome field.
  *  - The transparent-over-hero bar with a scroll listener that flipped it to
  *    solid. One bar, one color contract, legible over whatever scrolls under
  *    it. AA on every text pair is a foundation, not a scroll position.
@@ -72,6 +69,7 @@ import { valuationHref } from '@/lib/site/valuation-href'
 import { chromeShowsSellerAsk } from '@/lib/site/chrome-seller-ask'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { V3Button, V3_ROOT_CLASS, v3Text, type V3Text } from './atoms'
+import { V3ChromeSearch } from './V3ChromeSearch.client'
 import { V3Icon } from './V3Icon'
 import './tokens.css'
 import './V3Chrome.css'
@@ -673,9 +671,9 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
         </nav>
 
         <div className="v3-chrome__actions">
-          {/* Mobile bar lock 2026-09-06: logo | Sign in | hamburger only.
-              Phone + seller ask stay desktop (and in the menu foot). Sign in shows on every width.
-              Find/mic removed. */}
+          {/* Mobile bar: logo | Search (MorphingSearch) | Sign in | hamburger.
+              Phone + seller ask stay desktop (and in the menu foot). */}
+          <V3ChromeSearch />
           {viewerReady && viewer ? (
             <Link
               href={ACCOUNT_HOME?.href ?? '/account'}

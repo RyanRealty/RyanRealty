@@ -197,6 +197,13 @@
   font-size: var(--v3-size-body-sm);
 }
 
+/* Street + city are adjacent inline spans — block them so "Loop"+"Redmond"
+   cannot glue into LoopRedmond. */
+.home-rail__addr,
+.home-rail__city {
+  display: block;
+}
+
 /* Photo badges sit over the photo link and must not swallow the listing click. */
 .home-rail__card .v3-lrow__photo-tags {
   z-index: 2;

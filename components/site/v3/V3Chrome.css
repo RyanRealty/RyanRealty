@@ -72,6 +72,34 @@
   margin-inline-start: auto;
 }
 
+/* Catalog MorphingSearch in the bar (V3ChromeSearch). Compact; morph portal
+   handles the open surface — no full nav churn. */
+.v3-chrome__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+}
+
+.v3-chrome__search-morph {
+  width: auto;
+  max-width: min(18rem, 42vw);
+}
+
+/* MorphingSearch closed trigger: keep tap floor, navy/cream via tokens on page. */
+.v3-chrome__search-morph button {
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+}
+
+@media (min-width: 56.25rem) {
+  .v3-chrome__search-morph {
+    max-width: 16rem;
+  }
+}
+
 /* Find me — mic in the bar, listening stage over the page. */
 .v3-chrome__findme-wrap {
   position: relative;
