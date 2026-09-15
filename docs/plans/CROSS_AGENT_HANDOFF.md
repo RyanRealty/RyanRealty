@@ -2,7 +2,7 @@
 
 Surface: Cursor cloud. Branch `cursor/site-110-search-tip-21f9` PR #248. Do not merge. Cos Mini `--ship`s.
 
-- **Done:** After Mini 44 (`demoMatch` false, score 44): official morph FIELD keep, Ryan Realty places/listings (no Find components / Project Folder). Command folds into morph (no cmdk overlay). One dock DualTickRange. House-sheet one checkbox step (House/Condo/flags) in open shot; Save this search nowrap. Atlas `markScale=ask` + place names + price-on-pin; `priceScrub=none` / `showTypes=false`. SITE-92/103 left alone. Receipt left honest.
+- **Done:** After Mini 44 (`demoMatch` false, score 44): official morph FIELD keep, Ryan Realty places/listings (Bend/Redmond + ask rows, no Find components / Project Folder). Command-open is the same morph. One dock DualTickRange. House-sheet one checkbox step in open shot; Save this search nowrap. Atlas `markScale=ask` + place names + price-on-pin. Shots recaptured. SITE-92/103 left alone. Receipt left honest (`--ship` 1 until Mini writes).
 - **Next:** Cos Mini `--ship`. Do not invent `demoMatch`.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 
