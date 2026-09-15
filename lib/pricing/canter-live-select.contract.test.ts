@@ -120,6 +120,18 @@ const liveFacts: PricingSale[] = [
     closeDate: '2025-11-01',
   }),
   fact({
+    listingKey: 'RHM-RANCH',
+    address: '1040 E Ranch',
+    subdivision: 'Rolling Horse Meadow',
+    subdivisionNorm: 'rolling horse meadow',
+    ...atMiles(0.1),
+    closePrice: 400_000,
+    lastAsk: 400_000,
+    yearBuilt: 1997,
+    sqft: 1700,
+    closeDate: '2024-01-15',
+  }),
+  fact({
     listingKey: 'HB-945',
     address: '945 Horse Back',
     listNumber: '220199945',
@@ -159,6 +171,66 @@ const liveFacts: PricingSale[] = [
     yearBuilt: 2008,
     sqft: 1900,
     closeDate: '2026-04-20',
+  }),
+  fact({
+    listingKey: 'HB-995',
+    address: '995 E Horse Back',
+    subdivision: 'SaddleStone',
+    subdivisionNorm: 'saddlestone',
+    ...atMiles(0.13),
+    closePrice: 705_000,
+    lastAsk: 705_000,
+    yearBuilt: 2019,
+    sqft: 1883,
+    closeDate: '2025-06-12',
+  }),
+  fact({
+    listingKey: 'HB-994',
+    address: '994 E Horse Back',
+    subdivision: 'SaddleStone',
+    subdivisionNorm: 'saddlestone',
+    ...atMiles(0.15),
+    closePrice: 702_950,
+    lastAsk: 702_950,
+    yearBuilt: 2021,
+    sqft: 1758,
+    closeDate: '2025-03-12',
+  }),
+  fact({
+    listingKey: 'HB-1104',
+    address: '1104 E Horse Back',
+    subdivision: 'SaddleStone',
+    subdivisionNorm: 'saddlestone',
+    ...atMiles(0.14),
+    closePrice: 797_950,
+    lastAsk: 797_950,
+    yearBuilt: 2018,
+    sqft: 1698,
+    closeDate: '2025-05-21',
+  }),
+  fact({
+    listingKey: 'BB-1006',
+    address: '1006 Black Butte',
+    subdivision: 'SaddleStone',
+    subdivisionNorm: 'saddlestone',
+    ...atMiles(0.18),
+    closePrice: 720_000,
+    lastAsk: 720_000,
+    yearBuilt: 2017,
+    sqft: 1841,
+    closeDate: '2025-06-27',
+  }),
+  fact({
+    listingKey: 'TC-355',
+    address: '355 Timber Creek',
+    subdivision: 'Timber Creek',
+    subdivisionNorm: 'timber creek',
+    ...atMiles(0.2),
+    closePrice: 780_000,
+    lastAsk: 780_000,
+    yearBuilt: 2006,
+    sqft: 2120,
+    closeDate: '2025-11-21',
   }),
   fact({
     listingKey: 'UP-Clearpine',
@@ -265,7 +337,14 @@ describe('1130 E Canter live selectPricingComps path', () => {
     expect(keys).not.toContain('UP-Clearpine')
     expect(keys).not.toContain('UP-ForestEdge')
     expect(keys).not.toContain('UP-GrandPeaks')
+    expect(keys).not.toContain('BB-1006')
+    expect(keys).not.toContain('TC-355')
     expect(sel.comps.every((c) => !/clearpine|forest edge|grand peaks/i.test(c.subdivision ?? ''))).toBe(
+      true,
+    )
+    // Residual after a8dc6270: densest street-cluster exclusivity — Horse Back
+    // in, Black Butte / Timber Creek out even when both share SaddleStone MLS.
+    expect(sel.comps.every((c) => !/black butte|timber creek|timber pine|cascade/i.test(c.address ?? ''))).toBe(
       true,
     )
     expect(sel.tiersUsed.some((t) => t.startsWith('nearby-') || t.startsWith('widened-'))).toBe(false)

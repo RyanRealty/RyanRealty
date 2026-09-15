@@ -136,21 +136,122 @@ function multiNameStreetCluster(
   return mostFrequent(cluster)
 }
 
+type BlankHomePick = {
+  home: MappedNeighbor
+  source: 'nearest-neighbor' | 'street-cluster'
+  /** Rows that define exclusive streets/names for a street-cluster pocket. */
+  clusterRows: MappedNeighbor[]
+  /** GIS/nearest plat the cluster beat — its local streets stay in the pocket. */
+  avoidedNorm: string | null
+}
+
 /**
- * Blank MLS: prefer a street cluster over the nearest isolated plat.
- * One SaddleStone next to Rolling Horse Meadow is not a cluster (keep nearest).
- * Horse Back + Ranch + SaddleStone beside a nearer Rolling Horse Meadow home
- * is the pocket the subject sits in — even when RHM itself spans two streets.
+ * Exclusive streets for a blank-MLS street cluster (Matt Flex HARD LOCK):
+ * subject street + local streets of the beaten plat (Ranch next to Canter in
+ * RHM) + the densest street of the inferred home tract (Horse Back in
+ * SaddleStone — not every Black Butte / Cowboy street in that MLS name) +
+ * streets of other cluster tract names. Timber Creek / Cascade stay out.
  */
+function exclusiveClusterRows(
+  mapped: MappedNeighbor[],
+  home: MappedNeighbor,
+  avoidedNorm: string | null,
+  subjectStreet: string | null,
+): MappedNeighbor[] {
+  const tight = mapped.filter((m) => m.miles <= STREET_CLUSTER_RADIUS_MILES)
+  const out: MappedNeighbor[] = []
+  const seen = new Set<string>()
+  const push = (row: MappedNeighbor) => {
+    const key = `${row.norm}|${row.street}|${row.miles}`
+    if (seen.has(key)) return
+    seen.add(key)
+    out.push(row)
+  }
+
+  const homeRows = tight.filter((m) => m.norm === home.norm && m.street)
+  const byStreet = new Map<string, MappedNeighbor[]>()
+  for (const m of homeRows) {
+    const list = byStreet.get(m.street!) ?? []
+    list.push(m)
+    byStreet.set(m.street!, list)
+  }
+  let densestStreet: string | null = null
+  let densestN = -1
+  let densestNearest = Infinity
+  for (const [street, rows] of byStreet) {
+    const nearest = Math.min(...rows.map((r) => r.miles))
+    if (
+      rows.length > densestN ||
+      (rows.length === densestN && nearest < densestNearest)
+    ) {
+      densestN = rows.length
+      densestNearest = nearest
+      densestStreet = street
+    }
+  }
+
+  // Sparse home label (unit fixtures: one SaddleStone next to Horse Back /
+  // Ranch): keep every non-avoided cluster street. Dense live SaddleStone
+  // (Horse Back + Black Butte + Cowboy): only the densest street — Horse Back
+  // — so Black Butte does not ride the catch-all MLS name into the set.
+  // Only the fixture-scale home (one/two mapped sales). A live densest street
+  // with many Horse Back sales must NOT open Timber Creek / Cascade.
+  const sparseHome = homeRows.length > 0 && homeRows.length <= 2
+  if (sparseHome) {
+    for (const m of tight) {
+      if (avoidedNorm && m.norm === avoidedNorm) continue
+      push(m)
+    }
+  } else if (densestStreet) {
+    const avoidedStreets = new Set(
+      tight.filter((m) => avoidedNorm && m.norm === avoidedNorm && m.street).map((m) => m.street!),
+    )
+    if (subjectStreet) avoidedStreets.add(subjectStreet)
+    for (const m of homeRows) {
+      if (m.street === densestStreet || (m.street != null && avoidedStreets.has(m.street))) push(m)
+    }
+    for (const m of tight) {
+      if (m.norm === home.norm) continue
+      if (avoidedNorm && m.norm === avoidedNorm) continue
+      if (m.street && (m.street === densestStreet || avoidedStreets.has(m.street))) {
+        push(m)
+      }
+    }
+  } else {
+    for (const m of homeRows) push(m)
+  }
+
+  // Beaten GIS/plat local streets (Canter / Ranch / Meadow in RHM). Safe only
+  // because avoidNorm prefers platLabel over geographic-nearest (Timber Creek).
+  if (avoidedNorm) {
+    for (const m of tight) {
+      if (m.norm !== avoidedNorm) continue
+      if (m.street) push(m)
+    }
+  }
+
+  return out
+}
+
 function pickBlankHome(
   mapped: MappedNeighbor[],
   subjectStreet: string | null,
-): { home: MappedNeighbor; source: 'nearest-neighbor' | 'street-cluster' } | null {
+  platNorm: string | null = null,
+): BlankHomePick | null {
   const nearest = pickNearestHome(mapped)
   if (!nearest) return null
 
-  const multiName = multiNameStreetCluster(mapped, subjectStreet, nearest.norm)
-  if (multiName) return { home: multiName, source: 'street-cluster' }
+  // Prefer the recorded GIS/plat name as the beaten plat when present (RHM),
+  // even if that plat has no recent mapped sales in the pool — otherwise the
+  // geographic nearest (live Timber Creek) becomes "avoided" and its streets
+  // reopen into the exclusive set.
+  const avoidNorm = platNorm || nearest.norm
+
+  const multiName = multiNameStreetCluster(mapped, subjectStreet, avoidNorm)
+  if (multiName) {
+    const clusterRows = exclusiveClusterRows(mapped, multiName, avoidNorm, subjectStreet)
+    return { home: multiName, source: 'street-cluster', clusterRows, avoidedNorm: avoidNorm }
+  }
 
   const streetsByNorm = new Map<string, Set<string>>()
   for (const m of mapped) {
@@ -180,7 +281,15 @@ function pickBlankHome(
       bestMulti = { streets: streets.size, n: rows.length, sample }
     }
   }
-  if (bestMulti) return { home: bestMulti.sample, source: 'street-cluster' }
+  if (bestMulti) {
+    const clusterRows = exclusiveClusterRows(mapped, bestMulti.sample, null, subjectStreet)
+    return {
+      home: bestMulti.sample,
+      source: 'street-cluster',
+      clusterRows,
+      avoidedNorm: null,
+    }
+  }
 
   const nearestStreets = streetsByNorm.get(nearest.norm) ?? new Set<string>()
   const offCluster = mapped.filter((m) => m.norm !== nearest.norm)
@@ -189,10 +298,18 @@ function pickBlankHome(
   const clusterExists = offCluster.length >= 2 || offNames.size >= 2
   if (nearestIsSingleStreet && clusterExists) {
     const picked = mostFrequent(offCluster)
-    if (picked) return { home: picked, source: 'street-cluster' }
+    if (picked) {
+      const clusterRows = exclusiveClusterRows(mapped, picked, avoidNorm, subjectStreet)
+      return { home: picked, source: 'street-cluster', clusterRows, avoidedNorm: avoidNorm }
+    }
   }
 
-  return { home: nearest, source: 'nearest-neighbor' }
+  return {
+    home: nearest,
+    source: 'nearest-neighbor',
+    clusterRows: mapped.filter((m) => m.norm === nearest.norm),
+    avoidedNorm: null,
+  }
 }
 
 function uniqueOtherNorms(mapped: MappedNeighbor[], homeNorm: string | null): string[] {
@@ -270,20 +387,27 @@ export function inferSubdivisionPocket(input: InferPocketInput): InferredPocket 
   }
 
   const mapped = mappedInsideRadius(input, POCKET_RADIUS_MILES)
-  const picked = pickBlankHome(mapped, subjectStreet)
+  const platNormEarly = normSubdivision(input.platLabel)
+  const picked = pickBlankHome(mapped, subjectStreet, platNormEarly)
   // Live 1130 E Canter: county plat / nearest home is Rolling Horse Meadow.
   // The priced pocket is SaddleStone / Horse Back / Ranch. Sales cluster wins.
+  // Exclusive streets stay on that cluster — not every Black Butte / Timber
+  // Creek street that happens to sit inside 0.35 mi.
   if (picked?.source === 'street-cluster') {
+    const clusterRows = picked.clusterRows
     return finish(
       {
         subdivision: picked.home.name,
         subdivisionNorm: picked.home.norm,
-        subdivisionSlug: input.subdivisionSlug ?? null,
-        neighborNorms: uniqueOtherNorms(mapped, picked.home.norm),
+        // Never keep the beaten GIS plat slug (rolling-horse-meadow) on a
+        // street-cluster home label — samePlat would then prefer the wrong plat.
+        subdivisionSlug: null,
+        neighborNorms: uniqueOtherNorms(clusterRows, picked.home.norm),
+        pocketStreetKeys: uniqueStreets(clusterRows, subjectStreet),
         inferred: true,
         source: 'street-cluster',
       },
-      mapped,
+      clusterRows,
       subjectStreet,
     )
   }
@@ -386,7 +510,9 @@ export function applyInferredPocket<T extends PocketSubjectFields>(
     ...subject,
     subdivision: pocket.subdivision ?? subject.subdivision ?? null,
     subdivisionNorm: pocket.subdivisionNorm ?? subject.subdivisionNorm ?? null,
-    subdivisionSlug: pocket.subdivisionSlug ?? subject.subdivisionSlug ?? null,
+    // Street-cluster sets subdivisionSlug null on purpose so GIS RHM does not
+    // stick via `??` keeping the prior plat slug.
+    subdivisionSlug: pocket.subdivisionSlug,
     pocketSubdivisionNorms: pocket.neighborNorms,
     pocketStreetKeys: pocket.pocketStreetKeys,
     inferredPocket: pocket,
@@ -400,15 +526,25 @@ export function saleInExclusivePocket(
     pocketSubdivisionNorms?: string[]
     pocketStreetKeys?: string[]
     streetAddress?: string | null
+    inferredPocket?: { source?: string | null } | null
   },
   sale: { subdivisionNorm?: string | null; address?: string | null },
 ): boolean {
   const saleNorm = sale.subdivisionNorm ?? null
+  const saleStreet = streetKey(sale.address)
+  const subjectStreet = streetKey(subject.streetAddress)
+  // Street-cluster (1130 E Canter): exclusivity is the street keys (+ other
+  // cluster tract names on those streets), NOT every home that shares the
+  // catch-all MLS label (Black Butte ≠ Horse Back even when both say SaddleStone).
+  if (subject.inferredPocket?.source === 'street-cluster') {
+    if (saleStreet && (subject.pocketStreetKeys ?? []).includes(saleStreet)) return true
+    if (saleNorm && (subject.pocketSubdivisionNorms ?? []).includes(saleNorm)) return true
+    if (saleStreet && subjectStreet && saleStreet === subjectStreet) return true
+    return false
+  }
   if (saleNorm && subject.subdivisionNorm && saleNorm === subject.subdivisionNorm) return true
   if (saleNorm && (subject.pocketSubdivisionNorms ?? []).includes(saleNorm)) return true
-  const saleStreet = streetKey(sale.address)
   if (saleStreet && (subject.pocketStreetKeys ?? []).includes(saleStreet)) return true
-  const subjectStreet = streetKey(subject.streetAddress)
   if (saleStreet && subjectStreet && saleStreet === subjectStreet) return true
   return false
 }

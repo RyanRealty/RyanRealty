@@ -230,3 +230,59 @@ describe('STREET_CLUSTER_RADIUS_MILES', () => {
     expect(STREET_CLUSTER_RADIUS_MILES).toBe(0.25)
   })
 })
+
+describe('street-cluster exclusive streets (Flex HARD LOCK residual)', () => {
+  it('contract: plat RHM with no RHM sales still beats geographic-nearest Timber Creek', () => {
+    const neighbors = [
+      { ...neighbor('Timber Creek', 0.09), address: '1141 Cascade' },
+      { ...neighbor('Timber Creek', 0.12), address: '912 Timber Pine' },
+      { ...neighbor('SaddleStone', 0.11), address: '1025 E Horse Back' },
+      { ...neighbor('SaddleStone', 0.13), address: '995 E Horse Back' },
+      { ...neighbor('SaddleStone', 0.14), address: '945 E Horse Back' },
+      { ...neighbor('SaddleStone', 0.18), address: '1006 Black Butte' },
+    ]
+    const pocket = inferSubdivisionPocket({
+      subdivision: null,
+      platLabel: 'Rolling Horse Meadow',
+      streetAddress: '1130 E Canter',
+      ...SISTERS,
+      neighbors,
+    })
+    expect(pocket.source).toBe('street-cluster')
+    expect(pocket.subdivision).toBe('SaddleStone')
+    expect(pocket.pocketStreetKeys).toEqual(expect.arrayContaining(['canter', 'horse']))
+    expect(pocket.pocketStreetKeys).not.toContain('timber')
+    expect(pocket.pocketStreetKeys).not.toContain('cascade')
+    expect(pocket.neighborNorms).not.toContain('timber creek')
+  })
+
+  it('contract: dense SaddleStone keeps densest street only — not Timber Creek / Black Butte', () => {
+    const neighbors = [
+      { ...neighbor('Rolling Horse Meadow', 0.04), address: '1121 Canter Ct' },
+      { ...neighbor('Timber Creek', 0.09), address: '1141 Cascade' },
+      { ...neighbor('Timber Creek', 0.12), address: '912 Timber Pine' },
+      { ...neighbor('SaddleStone', 0.11), address: '1025 E Horse Back' },
+      { ...neighbor('SaddleStone', 0.13), address: '995 E Horse Back' },
+      { ...neighbor('SaddleStone', 0.14), address: '945 E Horse Back' },
+      { ...neighbor('SaddleStone', 0.15), address: '994 E Horse Back' },
+      { ...neighbor('SaddleStone', 0.16), address: '1006 Black Butte' },
+      { ...neighbor('SaddleStone', 0.17), address: '1048 Black Butte' },
+      { ...neighbor('SaddleStone', 0.18), address: '1009 Black Butte' },
+    ]
+    const pocket = inferSubdivisionPocket({
+      subdivision: null,
+      platLabel: 'Rolling Horse Meadow',
+      streetAddress: '1130 E Canter',
+      ...SISTERS,
+      neighbors,
+    })
+    expect(pocket.source).toBe('street-cluster')
+    expect(pocket.subdivision).toBe('SaddleStone')
+    expect(pocket.subdivisionSlug).toBeNull()
+    expect(pocket.pocketStreetKeys).toEqual(expect.arrayContaining(['canter', 'horse']))
+    expect(pocket.pocketStreetKeys).not.toContain('timber')
+    expect(pocket.pocketStreetKeys).not.toContain('cascade')
+    expect(pocket.pocketStreetKeys).not.toContain('black')
+    expect(pocket.neighborNorms).not.toContain('timber creek')
+  })
+})

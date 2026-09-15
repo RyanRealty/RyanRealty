@@ -431,7 +431,16 @@ function passesTier(
   // The subject's own street is its own ground for every rule below, exactly as
   // its own plat is.
   const ownPlat = tier.sameSubdivision === true || tier.sameStreetOnly === true
-  if (tier.sameSubdivision && !samePlat(subject, sale)) return { ok: false, miles: null }
+  // Street-cluster subjects: "same subdivision" means the exclusive Canter /
+  // Horse Back / Ranch pocket, not every Black Butte home that shares the
+  // catch-all SaddleStone MLS name (Matt Flex HARD LOCK 2026-09-15).
+  if (tier.sameSubdivision) {
+    if (isClusterPocket(subject)) {
+      if (!saleInExclusivePocket(subject, sale)) return { ok: false, miles: null }
+    } else if (!samePlat(subject, sale)) {
+      return { ok: false, miles: null }
+    }
+  }
   // THE PARENT LEVEL IS A WALL (Matt 2026-09-09): a plat inside a planned or
   // golf community is priced from that community until the community itself is
   // exhausted. Only the like-community rung and a boundary-exit rung may look
@@ -955,6 +964,12 @@ export function walkPricingLadder(
         : isGeographyWidenTier(tier) &&
             pocketHoldsGeographyExclusive(exclusiveCount, exclusivePending, isClusterPocket(subject))
           ? `the pocket already supplied a tight closed+pending set (${exclusiveCount} closed, ${exclusivePending} pending), so the search stayed exclusive`
+        // Street-cluster: adjacent / community / similar are also wideners once
+        // Canter+Horse Back already hold — do not open Black Butte via GIS ring.
+        : isClusterPocket(subject) &&
+            !isPocketExclusiveTier(tier) &&
+            pocketHoldsGeographyExclusive(exclusiveCount, exclusivePending, true)
+          ? `the street-cluster pocket already supplied a tight closed+pending set (${exclusiveCount} closed, ${exclusivePending} pending), so the search stayed exclusive`
         : tier.adjacentSubdivision && !(subject.adjacentSubdivisionSlugs?.length)
           ? 'no plat next to the subject\'s is known'
           : tier.crossBoundary && !subject.marketArea
