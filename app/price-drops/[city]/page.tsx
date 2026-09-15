@@ -113,6 +113,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
       pageUrl,
       placeName: cityName,
       total,
+      shownCount: drops.length,
       totalReducedLabel,
       medianDropPctLabel,
       fetchedAt: drops.length > 0 ? fetchedAt : null,

@@ -4,7 +4,9 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  overflow: hidden;
+  /* NOT `overflow: hidden` — shadcn already clips the track on
+     [data-slot='carousel-content'], and clipping here as well would eat the
+     flanking chevrons that sit at the track's edges. */
 }
 
 .v3 .v3-carousel__label {
@@ -44,7 +46,11 @@
 
 .v3.v3-carousel--rail .v3-carousel__slide,
 .v3.v3-carousel--rail [data-slot='carousel-item'] {
-  flex: 0 0 min(17.5rem, 78vw);
+  /* One variable, because the flanking chevrons are centred on the media and
+     the media's height is derived from this width. Change the slide width
+     through `--v3-carousel-slide-w` (below) and the buttons follow; hard-code
+     a different `flex-basis` here and they silently drift onto the price row. */
+  flex: 0 0 var(--v3-carousel-slide-w);
   min-height: auto;
   height: auto;
   overflow: visible;
@@ -64,30 +70,74 @@
   height: auto;
 }
 
-.v3.v3-carousel--rail .v3-carousel__nav {
-  padding-inline: var(--v3-gutter);
+/* The flanking chevrons. Round, one per side, vertically centred on the part
+   of the slide that carries the photograph: `--v3-carousel-nav-top` is 50% in
+   `page` mode (the media IS the slide) and is retuned below for `rail` mode,
+   where the slide continues into price/address/specs and a centred button
+   would sit on the text.
+
+   `:where()` keeps these at ZERO specificity so they are true defaults a
+   consumer rule such as `.pd-cuts-rail.v3-carousel--rail` always outranks.
+   Declaring them at normal specificity is what silently restored the barrel's
+   slide width over /price-drops' own documented 22rem. */
+:where(.v3.v3-carousel) {
+  --v3-carousel-nav-top: 50%;
+  --v3-carousel-nav-inset: var(--v3-space-sm);
 }
 
-.v3 .v3-carousel__nav {
-  display: flex;
-  gap: var(--v3-space-xs);
-  margin-top: var(--v3-space-xs);
-}
-
+/* THE BOX — every step, wherever it is mounted. This stays a descendant
+   selector on purpose: `HomeListingRail` renders its pair nested inside
+   `.home-rail__arrows` rather than as children of the carousel root, and when
+   this rule was briefly scoped to `>` those buttons lost their hit area and
+   `ci:tap-targets` measured them at 18x18 on the homepage. Position is the
+   only thing that belongs to the flanking layout; the control itself is the
+   same object everywhere. */
 .v3 .v3-carousel__step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   appearance: none;
+  /* WCAG 2.5.8 / ci:tap-targets — a full 44x44 control, not an icon with a
+     hairline around it. */
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  min-width: var(--v3-tap);
   min-height: var(--v3-tap);
-  padding: 0 var(--v3-space-md);
+  padding: 0;
   border: 1px solid var(--v3-navy);
-  background: transparent;
+  border-radius: 999px;
+  background: var(--v3-cream);
   color: var(--v3-navy);
   cursor: pointer;
   font: inherit;
-  font-size: var(--v3-size-body-sm);
-  font-weight: var(--v3-weight-strong);
   transition:
     background var(--v3-dur-state) var(--v3-ease-out),
-    color var(--v3-dur-state) var(--v3-ease-out);
+    color var(--v3-dur-state) var(--v3-ease-out),
+    opacity var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* THE FLANKING PLACEMENT — only the pair the barrel itself mounts as children
+   of the carousel root. */
+.v3.v3-carousel > .v3-carousel__step {
+  position: absolute;
+  top: var(--v3-carousel-nav-top);
+  /* shadcn ships the button with `inset-y-0 … my-auto`, which pins BOTH edges
+     and lets auto margins recentre it between them — so setting `top` alone
+     moves nothing (measured 2026-09-15: top:82.5px still rendered at 393px,
+     centred in the whole card instead of on the photograph). Release the
+     bottom edge and the auto margins so `top` is the only anchor. */
+  bottom: auto;
+  margin: 0;
+  z-index: 2;
+  transform: translateY(-50%);
+}
+
+.v3.v3-carousel > .v3-carousel__step--prev {
+  left: var(--v3-carousel-nav-inset);
+}
+
+.v3.v3-carousel > .v3-carousel__step--next {
+  right: var(--v3-carousel-nav-inset);
 }
 
 .v3 .v3-carousel__step:hover {
@@ -95,7 +145,22 @@
   color: var(--v3-ink-on-navy);
 }
 
+/* shadcn disables the button at each end of the track; keep it in place so the
+   pair never reflows, but read as spent. */
+.v3 .v3-carousel__step:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .v3 .v3-carousel__step:focus-visible {
   outline: var(--v3-focus-ring);
   outline-offset: var(--v3-focus-offset);
+}
+
+/* A rail slide opens on a 16/10 photograph and then continues into price,
+   address and specs, so the chevrons centre on the MEDIA's midline: the slide
+   width less its own right padding, times the aspect, halved. */
+:where(.v3.v3-carousel--rail) {
+  --v3-carousel-slide-w: min(17.5rem, 78vw);
+  --v3-carousel-nav-top: calc((var(--v3-carousel-slide-w) - var(--v3-space-md)) * 10 / 16 / 2);
 }
