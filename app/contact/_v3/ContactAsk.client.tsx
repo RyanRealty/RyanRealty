@@ -10,6 +10,7 @@ import { useCallback, useMemo, useState } from 'react'
 // (V3PlaceDocuments → lib/data → next/headers), which breaks this client module
 // under webpack. V3Ask is itself a client primitive.
 import { V3Ask, type V3AskField, type V3AskResult } from '@/components/site/v3/V3Ask.client'
+import { Button } from '@/components/ui/button'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import './contact-ask.css'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
@@ -172,12 +173,12 @@ export function ContactAsk({
         onSubmit={send}
       />
       <div className="contact-ask__taste">
-        <button type="button" data-taste="error-open" onClick={() => setFieldDemo('error')}>
+        <Button type="button" variant="ghost" data-taste="error-open" onClick={() => setFieldDemo('error')}>
           Show field error
-        </button>
-        <button type="button" data-taste="success-open" onClick={() => setFieldDemo('success')}>
+        </Button>
+        <Button type="button" variant="ghost" data-taste="success-open" onClick={() => setFieldDemo('success')}>
           Show field success
-        </button>
+        </Button>
       </div>
     </ContactFieldDemoContext.Provider>
   )
