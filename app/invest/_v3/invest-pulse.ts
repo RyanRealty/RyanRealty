@@ -47,13 +47,12 @@ import { v3Text, type V3PulseProps, type V3PulseReading } from '@/components/sit
 export const INVEST_PULSE_ID = 'place'
 
 /**
- * V3Pulse draws four rules; past that it is a table, not a gauge. Five income
- * segments exist, so the band draws the four largest and the fifth keeps its
- * door in the Ledger below. The share denominator stays the WHOLE set, so the
- * drawn rules and the claim are measured against the same 761 and the tail the
- * band does not draw is visible as the gap it is.
+ * V3Pulse opens the page with the finding. The chart below draws the types —
+ * stacking four hairline KPI rules next to that chart was the product UI Mini
+ * refused. One land reading carries the claim; the rest keep their doors in
+ * the table. The share denominator stays the WHOLE set.
  */
-const DRAWN = 4
+const DRAWN = 1
 
 /** What each population IS, in words a visitor reads. Never a slug. */
 const DEFINITION: Record<string, string> = {
@@ -127,9 +126,9 @@ export function investTrace(counts: readonly InvestSegmentCount[], drawn: number
   const shownTotal = shown.reduce((sum, c) => sum + c.count, 0)
   const largest = counts[0]
   const lines = [
-    'Regional MLS through Oregon Data Share, read through the Market Truth metric layer at region grain, geography central-oregon: the active count for each income property type the layer publishes.',
-    `The five income segments and their active counts on this read: ${parts} — ${n(total)} listings in all.`,
-    `Each rule is that count over ${n(total)}, so the rules together are a part-to-whole and not a bar beside a full-width bar.`,
+    'Regional MLS listings for sale across Central Oregon, counted by property type — lots, commercial, two-to-four-unit buildings, farms, and businesses. Oregon Data Share is the feed. Geography is the whole region, not one town.',
+    `This read: ${parts} — ${n(total)} listings in all.`,
+    `Each count is that number over ${n(total)}, so the shares add to the whole set.`,
   ]
   if (largest) {
     const pct = ((largest.count / total) * 100).toFixed(1)
@@ -143,7 +142,7 @@ export function investTrace(counts: readonly InvestSegmentCount[], drawn: number
     )
   }
   lines.push(
-    'Detached houses are not counted here — that is the buyer story, and it is on the homes-for-sale pages. A figure the metric layer withheld is absent, not estimated.',
+    'Houses people live in are on the homes-for-sale pages, not here. A type with no published count is left off, not guessed.',
   )
   return lines.join(' ')
 }

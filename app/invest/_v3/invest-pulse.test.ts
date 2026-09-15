@@ -90,12 +90,14 @@ describe('investTrace', () => {
     expect(trace).toContain('business 8')
     expect(trace).toContain('761 listings in all')
     expect(trace).toContain('605 ÷ 761 = 79.5%')
-    expect(trace).toContain('central-oregon')
+    expect(trace).toContain('Central Oregon')
+    expect(trace).not.toContain('Market Truth')
+    expect(trace).not.toContain('metric layer')
   })
 
   it('says which populations the band did not draw', () => {
-    const trace = investTrace(investCounts(LIVE), 4)
-    expect(trace).toContain('753 of 761')
+    const trace = investTrace(investCounts(LIVE), 1)
+    expect(trace).toContain('605 of 761')
   })
 
   it('says nothing about undrawn populations when every one is drawn', () => {
@@ -115,13 +117,8 @@ describe('composeInvestPulse', () => {
     )
   })
 
-  it('draws the four largest populations, largest first', () => {
-    expect(built?.readings.map((r) => r.key)).toEqual([
-      'land',
-      'commercial_sale',
-      'multifamily_2_4',
-      'farm',
-    ])
+  it('opens on the land reading only — the chart draws the rest', () => {
+    expect(built?.readings.map((r) => r.key)).toEqual(['land'])
   })
 
   it('formats each figure and shares it against the WHOLE set, not the largest', () => {

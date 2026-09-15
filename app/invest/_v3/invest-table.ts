@@ -1,9 +1,9 @@
 /**
  * Segment rows for the shadcn Table on /invest.
  *
- * Same Market Truth rows as the Pulse. The table's job is "how each type
- * trades" — pending, sold-in-12-months, days to an offer — not a second
- * count of the Pulse figures. A withheld trade bit is absent, never a dash
+ * Same segment rows as the Pulse and the chart (`investCounts`). The table's
+ * job is "how each type trades" — pending, sold-in-12-months, days to an
+ * offer — not a second KPI grid. A withheld trade bit is absent, never a dash
  * that looks like a measured zero.
  */
 import type { PublicSegmentRow } from '@/lib/data/market-truth/public-segments'

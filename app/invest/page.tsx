@@ -7,9 +7,9 @@
  * yield: those need a live rent source this site does not publish.
  *
  * SITE-98: catalog demos install before house paint. The opening is still
- * the land-not-buildings finding (V3Pulse). beautifului-insight
- * (InsightPager + scrubber) pages the same counts. shadcn Table is the
- * segment board and the live listing inventory (price, address, beds /
+ * the land-not-buildings finding (V3Pulse, one land reading). beautifului-insight
+ * is V3Chart year pages + chart scrubber on the same counts. shadcn Table is
+ * the segment board and the live listing inventory (price, address, beds /
  * baths / sqft or acres). V3Ledger keeps crawlable doors.
  *
  * Data ONLY through @/lib/data and @/app/actions.
@@ -52,7 +52,7 @@ const DESCRIPTION =
 
 export async function generateMetadata(): Promise<Metadata> {
   const board = await loadInvestBoard()
-  const total = board.insightPages.reduce((sum, page) => sum + page.count, 0)
+  const total = board.activeTotal
   const description =
     total > 0
       ? `${total.toLocaleString('en-US')} income listings on the regional MLS right now — lots, commercial, two-to-four-unit buildings, farms. No rent or yield: that math needs a rent only you know.`
@@ -65,11 +65,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const SEGMENT_TRACE =
-  'regional MLS through Oregon Data Share, read through the Market Truth metric layer: active listings per property type across Central Oregon. A figure the layer withheld is absent, not estimated'
+  'Regional MLS listings for sale across Central Oregon, counted by property type. Oregon Data Share is the feed. A type with no published count is left off, not guessed.'
 
 export default async function InvestPage() {
   const board = await loadInvestBoard()
-  const { segments, listings, insightPages, segmentRows, pulse, liveRate, listingsOk } = board
+  const { segments, listings, insightChart, segmentRows, pulse, liveRate, listingsOk } = board
   const bySegment = new Map(segments.map((row) => [row.segment, row]))
   const typeDoorRows: V3LedgerFigureRow[] = INVEST_SEGMENTS.flatMap((key) => {
     const row = bySegment.get(key)
@@ -206,11 +206,7 @@ export default async function InvestPage() {
           />
         )}
 
-        {insightPages.length > 0 ? (
-          <div id="place-insight">
-            <InvestInsight pages={insightPages} />
-          </div>
-        ) : null}
+        {insightChart ? <InvestInsight id="place-insight" {...insightChart} /> : null}
 
         <InvestTables
           segments={segmentRows}
