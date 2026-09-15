@@ -379,7 +379,7 @@ export default async function OutOfAreaCityPage({
   // they disagree, using the real numbers both queries returned.
   const listingsNote =
     listingCards.length > 0
-      ? 'Each card is the official Image, Header, Content, Footer stack. This spread is the newest priced, addressed homes, not the whole live book.'
+      ? 'This spread is the newest priced, addressed homes, not the whole live book.'
       : undefined
   const feedMiss = tiles.length === 0 && city.activeAllCount > 0
   const listingView =
