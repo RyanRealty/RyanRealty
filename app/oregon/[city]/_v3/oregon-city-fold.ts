@@ -57,7 +57,7 @@ export function buildOregonCityBuyerPlace(input: {
   city: string
 }): string | null {
   const city = input.city.trim()
-  let place = displaySubdivision(input.subdivisionName) ?? ''
+  const place = displaySubdivision(input.subdivisionName) ?? ''
   if (!place) return null
   let next = place.trim()
   for (let i = 0; i < 4; i += 1) {
