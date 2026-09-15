@@ -211,6 +211,7 @@ export async function selectPricingComps(
         subdivisionNorm: pricingSubject.subdivisionNorm,
         subdivisionSlug: pricingSubject.subdivisionSlug,
         platLabel: ring?.homeLabel ?? null,
+        streetAddress: pricingSubject.streetAddress,
         latitude: pricingSubject.latitude,
         longitude: pricingSubject.longitude,
         neighbors: sales,

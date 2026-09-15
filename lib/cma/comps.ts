@@ -77,11 +77,11 @@ import {
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible } from '@/lib/pricing/rural'
 import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import { communitySlugForSubdivision, isResortCommunity, resortCommunityCompatible } from '@/lib/cma/resort-guard'
-import { ANCHOR_MIN_N, ANCHOR_RADIUS_MILES, ANCHOR_RURAL_RADII_MILES, sameStreetPeer } from '@/lib/pricing/price-anchor'
+import { ANCHOR_MIN_N, ANCHOR_RADIUS_MILES, ANCHOR_RURAL_RADII_MILES, sameStreetPeer, streetKey } from '@/lib/pricing/price-anchor'
 import { roomCountsUsable } from '@/lib/pricing/room-counts'
 import { SAME_NEIGHBORHOOD_TIER_RATIO, STARVED_TIER_WIDEN, SUBDIVISION_TIER_RATIO, normSubdivision } from '@/lib/pricing/classes'
 import { inferSubdivisionPocket, POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
-import { BOUNDARY_EXIT_BELOW } from '@/lib/pricing/ladder'
+import { isClusterPocket, pocketHoldsGeographyExclusive } from '@/lib/pricing/ladder'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -385,6 +385,8 @@ export async function selectComps(
   // Filled from a plat or nearest mapped neighbor before the mile rings.
   let subdivisionIlike = realSubdivision(subject.subdivision)
   let pocketNeighborNorms: string[] = []
+  let pocketStreetKeys: string[] = []
+  let pocketSource: string | null = null
 
   // The subject's GIS market area, when it sits inside one. Null is a legitimate
   // answer (rural, or a city with no mesh) — those subjects fall back to distance.
@@ -469,6 +471,7 @@ export async function selectComps(
       subdivision: subject.subdivision,
       platLabel: ring?.homeLabel ?? null,
       subdivisionSlug: ring?.homeSlug ?? null,
+      streetAddress: subject.streetAddress,
       latitude: subject.latitude,
       longitude: subject.longitude,
       neighbors: nearby.map((r) => ({
@@ -478,21 +481,30 @@ export async function selectComps(
         ),
         latitude: num(r['Latitude']),
         longitude: num(r['Longitude']),
+        address: [r['StreetNumber'], r['StreetName']].filter(Boolean).join(' ') || null,
       })),
     })
     if (pocket.inferred && pocket.subdivision) {
       subdivisionIlike = pocket.subdivision
       pocketNeighborNorms = pocket.neighborNorms
+      pocketStreetKeys = pocket.pocketStreetKeys
+      pocketSource = pocket.source
       trace.push(
         `MLS SubdivisionName was blank, so the search inferred ${pocket.subdivision} (${pocket.source}) before any mile ring.`,
       )
-    } else if (pocket.neighborNorms.length > 0) {
+    } else if (pocket.neighborNorms.length > 0 || pocket.pocketStreetKeys.length > 0) {
       pocketNeighborNorms = pocket.neighborNorms
+      pocketStreetKeys = pocket.pocketStreetKeys
+      pocketSource = pocket.source
       trace.push(
         `${subdivisionIlike ?? subject.subdivision} is a named tract, so the search also held the ${pocket.neighborNorms.length} mapped pocket${pocket.neighborNorms.length === 1 ? '' : 's'} inside a quarter mile before any mile ring.`,
       )
     }
   }
+  const clusterPocket = isClusterPocket({
+    inferredPocket: { source: pocketSource, neighborNorms: pocketNeighborNorms },
+    pocketSubdivisionNorms: pocketNeighborNorms,
+  })
   const tiers = compTierLadder(subdivisionIlike)
 
   // How many sales the widening rung crossed the resort-membership rule for.
@@ -596,6 +608,8 @@ export async function selectComps(
       // THE WIDENING RUNS ONLY WHEN THE BOUNDED LADDER CAME UP SHORT.
       tier.whenStarved && byKey.size >= MIN_COMPS
         ? 'the bounded search already reached the minimum, so no widening was needed'
+        : tier.whenStarved && pocketHoldsGeographyExclusive(exclusiveCount, 0, clusterPocket)
+          ? `the pocket already supplied a tight closed set (${exclusiveCount} closed), so the search stayed exclusive`
         : tier.sameCommunity && !subjectCommunity
         ? 'the subject is not inside a planned or golf community'
         : tier.likeCommunity && !isResortCommunity(subjectCommunity)
@@ -606,8 +620,9 @@ export async function selectComps(
         ? 'the subject has no usable SubdivisionName on its MLS record'
         : tier.samePocket && pocketNeighborNorms.length === 0
         ? 'no nearby mapped pocket cluster sits inside a quarter mile'
-        : isListingsGeographyWidenTier(tier) && exclusiveCount >= BOUNDARY_EXIT_BELOW
-        ? `the named subdivision and its street-cluster pocket already supplied ${exclusiveCount} closed sales, so the search stayed exclusive`
+        : isListingsGeographyWidenTier(tier) &&
+            pocketHoldsGeographyExclusive(exclusiveCount, 0, clusterPocket)
+        ? `the pocket already supplied a tight closed set (${exclusiveCount} closed), so the search stayed exclusive`
         : tier.sameArea && !subjectArea
           ? 'the subject sits outside every mapped neighborhood polygon'
           : tier.adjacentSubdivisions && adjacentSlugs.size === 0
@@ -712,7 +727,10 @@ export async function selectComps(
       }
       if (tier.samePocket) {
         const norm = normSubdivision(comp.subdivision)
-        if (!norm || !pocketNeighborNorms.includes(norm)) {
+        const nameHit = Boolean(norm && pocketNeighborNorms.includes(norm))
+        const saleStreet = streetKey(comp.address)
+        const streetHit = Boolean(saleStreet && pocketStreetKeys.includes(saleStreet))
+        if (!nameHit && !streetHit) {
           rung.excluded.market_area++
           continue
         }
@@ -950,6 +968,7 @@ export async function selectComps(
       // tight radius. Widen geography or time; do not pad TARGET_COMPS with
       // a different construction generation. Ordinary resale subjects skip.
       if (
+        !(isListingsPocketExclusiveTier(tier) && clusterPocket) &&
         !yearQualityCompatible(
           {
             yearBuilt: subject.yearBuilt,
