@@ -81,7 +81,7 @@ import { citiesInsightBoard } from '@/app/cities/_v3/cities-index-insight'
 import { CitiesInsight } from '@/app/cities/_v3/CitiesInsight.client'
 import { CitiesAlertStrip } from '@/app/cities/_v3/CitiesAlertStrip.client'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
-import { earnsDisplayFigure, newestFirstHref } from '@/lib/site/place-alerts'
+import { newestFirstHref } from '@/lib/site/place-alerts'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import './_v3/cities-fold.css'
 
@@ -474,19 +474,19 @@ export default async function CitiesPage() {
           homes for sale across these cities
         </p>
       ) : null}
-      {regionFigures.length > 0 ? (
-        <V3Drawing figures={regionFigures} label="Central Oregon homes for sale against a month of sales" />
-      ) : null}
       {regionScale}
       {insightBoard ? <CitiesInsight id="cities-insight" board={insightBoard} /> : null}
       <CitiesAlertStrip
         id="alerts"
         newCount30d={hud.new30}
-        countLabel={earnsDisplayFigure(hud.new30) ? formatCount(hud.new30) : null}
+        countLabel={null}
         source={new30Source}
         updatedAt={leftoverStamp}
         browseHref={newestFirstHref('/search')}
       />
+      {regionFigures.length > 0 ? (
+        <V3Drawing figures={regionFigures} label="Central Oregon homes for sale against a month of sales" />
+      ) : null}
     </>
   )
 
@@ -497,6 +497,7 @@ export default async function CitiesPage() {
           <div className="cities-fold__drawing">
             <V3Atlas
               id="atlas"
+              quiet
               headingLevel={2}
               headline={v3Text('Cities on the map')}
               headlineTone="eyebrow"
@@ -507,7 +508,7 @@ export default async function CitiesPage() {
               types={[]}
               basemap={basemapForRegions(atlasRegions)}
               sourceName="Oregon Data Share"
-              source="Recorded city boundaries from the cities table (boundary_geojson). Live single-family counts on the ledger are leftover Market Truth / geo snapshots, not invented map totals."
+              source="Recorded city outlines from public.boundaries (geo_type=city, Census TIGER). Live single-family counts on the ledger are leftover Market Truth / geo snapshots, not invented map totals."
               stamp={leftoverStamp ? formatDate(leftoverStamp) : undefined}
               noun={{ one: 'city', many: 'cities' }}
             />

@@ -8,14 +8,14 @@
 
 .cities-fold__stage {
   display: grid;
-  gap: var(--v3-space-md);
+  gap: var(--v3-space-sm);
   align-items: start;
 }
 
 @media (min-width: 64rem) {
   .cities-fold__stage {
-    grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.9fr);
-    column-gap: var(--v3-space-lg);
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 1fr);
+    column-gap: var(--v3-space-md);
   }
 }
 
@@ -28,7 +28,7 @@
 }
 
 .cities-fold__drawing .v3-atlas__frame {
-  max-height: min(28vh, 14rem);
+  max-height: min(22vh, 11rem);
 }
 
 .cities-fold__drawing .v3-atlas__key,
@@ -41,7 +41,44 @@
 .cities-fold__figure {
   min-width: 0;
   display: grid;
-  gap: var(--v3-space-sm);
+  gap: var(--v3-space-xs);
+}
+
+.cities-fold .v3-drawing__source,
+.cities-fold .v3-source,
+.cities-fold .v3-alerts__source,
+.cities-fold .v3-alerts__num,
+.cities-fold .v3-alerts__browse,
+.cities-fold .v3-alerts__scope {
+  display: none;
+}
+
+.cities-fold .v3-alerts__claim {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+
+.cities-fold .v3-alerts__promise {
+  font-size: var(--v3-size-note);
+}
+
+.cities-insight .insight-chart-stage {
+  min-height: 3.5rem;
+  height: 3.5rem;
+}
+
+.cities-insight .insight-cards__note,
+.cities-insight .insight-cards__pill {
+  display: none;
+}
+
+.cities-insight .insight-cards__hero {
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-note);
+}
+
+.cities-insight .insight-cards__alloc-track {
+  height: 1.25rem;
 }
 
 .cities-fold__count {
