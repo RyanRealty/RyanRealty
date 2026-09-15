@@ -87,6 +87,11 @@ export type V3ChartHoverProps = {
    * Opt-in beside keysToggle so charts that only want legend filters stay put.
    */
   yearPages?: boolean
+  /** Open stop for a parent (insight hero DigitSwap). */
+  onRead?: (read: {
+    tick: string
+    readings: readonly { name: string; label: string; emphasis: boolean }[]
+  } | null) => void
 }
 
 export type V3ChartHoverFrame = {
@@ -107,6 +112,7 @@ export function V3ChartHover({
   keyClasses,
   frame,
   yearPages = false,
+  onRead,
 }: V3ChartHoverProps) {
   const vertical = axis === 'y'
   const live = keys != null && keys.length > 1 && frame != null
@@ -236,6 +242,26 @@ export function V3ChartHover({
   }, [pageable, keys, columns, activeYear])
 
   const col = active != null ? columns[active] ?? null : null
+  const readKey = col
+    ? `${col.tick}|${col.readings.map((row) => `${row.name}:${row.label}:${row.emphasis}`).join(';')}`
+    : ''
+  useEffect(() => {
+    if (!onRead) return
+    if (!readKey || !col) {
+      onRead(null)
+      return
+    }
+    onRead({
+      tick: col.tick,
+      readings: col.readings.map((row) => ({
+        name: row.name,
+        label: row.label,
+        emphasis: row.emphasis,
+      })),
+    })
+    // readKey is the open stop; col is the matching column.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- serialize the stop, not the object identity
+  }, [readKey, onRead])
   const pos = col ? `${Math.min(Math.max(col.frac * 100, 0), 100)}%` : undefined
   // A row chart's tick IS the series name, so repeating it would read
   // "Madras: Madras 5.9 mo".
@@ -303,9 +329,9 @@ export function V3ChartHover({
               mark on top of it would be two dots for one value. */}
           {vertical
             ? null
-            : col.readings.map((r) => (
+            : col.readings.map((r, readingIndex) => (
                 <span
-                  key={`${r.name}-${r.label}-${r.frac}`}
+                  key={`${readingIndex}-${r.name}-${r.label}`}
                   className={cn('v3-chart__hoverdot', r.emphasis && 'v3-chart__hoverdot--em')}
                   style={{ left: pos, top: `${r.frac * 100}%` }}
                   aria-hidden="true"
@@ -333,13 +359,12 @@ export function V3ChartHover({
     </div>
   )
 
-  // Non-live path mounts inside `.v3-chart__plot` (absolute overlay). Keep the
-  // scrubber on the live frame path only, under the plot — not clipped inside it.
-  if (!live || !keys || !frame) return layer
+  // Overlay-only (bars / range): no frame, so no scrubber sibling.
+  if (!frame) return layer
 
   return (
     <>
-      {pageable ? (
+      {pageable && keys ? (
         <>
           <InsightPager
             className="v3-chart__year-pager"
@@ -350,7 +375,7 @@ export function V3ChartHover({
           />
           {yearInsight ? <p className="v3-chart__claim">{yearInsight}</p> : null}
         </>
-      ) : (
+      ) : live && keys ? (
         <ul className="v3-chart__legend v3-chart__legend--live">
           {keys.map((name, i) => (
             <li key={`${i}-${name}`}>
@@ -366,7 +391,7 @@ export function V3ChartHover({
             </li>
           ))}
         </ul>
-      )}
+      ) : null}
       {/* The same frame the static branch composes, with one extra attribute: the
           list of series indexes the stylesheet drops from the drawing. Nothing about
           the geometry is recomputed on the client. */}

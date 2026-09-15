@@ -64,8 +64,11 @@ export type RegionInsightPage = {
   claim: string
   figure: string
   figureLabel: string
-  secondFigure?: string
-  secondLabel?: string
+  /** Second sourced DigitSwap face — Animate toggles to it. */
+  alternate?: string
+  alternateLabel?: string
+  /** Series name the chart hover should write into the hero. */
+  readName?: string
   pill: string
   pillHref?: string
   chart?: V3ChartProps
@@ -74,6 +77,11 @@ export type RegionInsightPage = {
 function lastPoint(series: V3ChartSeries | undefined) {
   const points = series?.points ?? []
   return points.length ? points[points.length - 1] : undefined
+}
+
+function firstPoint(series: V3ChartSeries | undefined) {
+  const points = series?.points ?? []
+  return points.length ? points[0] : undefined
 }
 
 /**
@@ -92,12 +100,17 @@ export function buildRegionInsightPages(
   const newestLast = lastPoint(newest)
   if (newest && newestLast && newest.points.length >= 2 && overlay) {
     const year = String(newest.name)
+    const newestFirst = firstPoint(newest)
     pages.push({
       key: `sale-${year}`,
       claim: `${year} median sale ${String(newestLast.label)} in ${String(newestLast.tick)}`,
       figure: String(newestLast.label),
       figureLabel: `${year} median sale`,
-      pill: 'Scrub this year month by month',
+      alternate: newestFirst ? String(newestFirst.label) : undefined,
+      alternateLabel: newestFirst ? `${year} median sale in ${String(newestFirst.tick)}` : undefined,
+      readName: String(newest.name),
+      pill: 'See homes for sale',
+      pillHref: listingsBrowsePath(),
       chart: {
         ...overlay,
         id: 'market-insights-sale',
@@ -106,6 +119,7 @@ export function buildRegionInsightPages(
         claim: undefined,
         keysToggle: false,
         yearPages: false,
+        restingRead: 'last',
       },
     })
   }
@@ -119,7 +133,11 @@ export function buildRegionInsightPages(
         claim: `${tick} ${String(newest.name)} median sale ${String(newestLast.label)}; ${String(prior.name)} was ${String(priorSame.label)}`,
         figure: String(priorSame.label),
         figureLabel: `${String(prior.name)} same month`,
-        pill: 'Same month, two years',
+        alternate: String(newestLast.label),
+        alternateLabel: `${String(newest.name)} same month`,
+        readName: String(prior.name),
+        pill: 'See homes for sale',
+        pillHref: listingsBrowsePath(),
         chart: {
           ...overlay,
           id: 'market-insights-compare',
@@ -130,6 +148,7 @@ export function buildRegionInsightPages(
           claim: undefined,
           keysToggle: true,
           yearPages: false,
+          restingRead: 'last',
         },
       })
     }
@@ -145,8 +164,8 @@ export function buildRegionInsightPages(
           : 'What sellers are asking right now across Central Oregon single-family listings.',
       figure: formatPriceExact(medianList),
       figureLabel: 'median list price',
-      secondFigure: pending != null ? pending.toLocaleString('en-US') : undefined,
-      secondLabel: pending != null ? 'under contract now' : undefined,
+      alternate: pending != null ? pending.toLocaleString('en-US') : undefined,
+      alternateLabel: pending != null ? 'under contract now' : undefined,
       pill: 'See homes for sale',
       pillHref: listingsBrowsePath(),
     })

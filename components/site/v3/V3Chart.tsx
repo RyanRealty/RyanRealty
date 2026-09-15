@@ -188,6 +188,12 @@ export type V3ChartProps = {
   /** The crosshair-and-reading layer. On for lines unless turned off. */
   hover?: boolean
   /**
+   * Fires when the house-chart hover / month scrubber changes the open stop.
+   * Insight cards use this so the hero DigitSwap follows the pointer — the
+   * beautifului-insight scrub. Omit on charts that only read in place.
+   */
+  onRead?: (read: V3ChartRead | null) => void
+  /**
    * A LEGEND THAT DOES SOMETHING (SITE-41). Lines only, and only with more than one
    * series: each key becomes a pressed/unpressed control that drops its series from the
    * drawing AND from the reading, so the tooltip never reports a line that is not there.
@@ -236,6 +242,12 @@ export type V3ChartProps = {
   emptyReason?: V3Text
   id?: string
   className?: string
+}
+
+/** One open stop on a house chart — tick plus the readings at that x. */
+export type V3ChartRead = {
+  tick: string
+  readings: readonly { name: string; label: string; emphasis: boolean }[]
 }
 
 function toPlotSeries(series: readonly V3ChartSeries[] | undefined): PlotSeriesIn[] {
@@ -411,6 +423,7 @@ export function V3Chart({
   keysToggle,
   yearPages,
   restingRead,
+  onRead,
   sampleKey,
   rangeKeyLabel,
   rangeBaseKeyLabel,
@@ -748,7 +761,7 @@ export function V3Chart({
                   ))
                 : null}
               {marks || emphasisIndex != null
-                ? plot.lines.map((line, i) =>
+                ? plot.lines.flatMap((line, i) =>
                     // The emphasized series wears marks only when they can be
                     // told apart: past sixty points (a weekly year) the beads
                     // bury the line they were meant to lift.
@@ -809,18 +822,25 @@ export function V3Chart({
               keyClasses={keys.map((_, i) => cn(keyClass(i)))}
               frame={{ axis: yAxis, plot: svg, xTicks: xAxis }}
               yearPages={yearPages === true}
+              onRead={onRead}
+            />
+          )
+        }
+        if (hoverColumns.length > 0) {
+          return (
+            <V3ChartHover
+              columns={hoverColumns}
+              label={caption}
+              initial={restingIndex}
+              frame={{ axis: yAxis, plot: svg, xTicks: xAxis }}
+              onRead={onRead}
             />
           )
         }
         return (
           <div className="v3-chart__frame">
             {yAxis}
-            <div className="v3-chart__plot">
-              {svg}
-              {hoverColumns.length > 0 ? (
-                <V3ChartHover columns={hoverColumns} label={caption} initial={restingIndex} />
-              ) : null}
-            </div>
+            <div className="v3-chart__plot">{svg}</div>
             {xAxis}
           </div>
         )

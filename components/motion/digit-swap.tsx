@@ -133,20 +133,24 @@ export function DigitSwap({
  */
 export function DigitSwapReplay({
   value,
+  alternate,
   animationKey,
   className,
 }: {
   value: string | number
+  /** Second sourced face — Animate toggles to it, same as the beUI preview. */
+  alternate?: string | number
   animationKey?: string | number
   className?: string
 }) {
   const [play, setPlay] = useState(0)
   const revealed = play % 2 === 1
+  const face = alternate != null && revealed ? alternate : value
   return (
     <span className={cn("digit-swap-replay", className)}>
       <DigitSwap
-        value={value}
-        animationKey={`${animationKey ?? value}-${play}`}
+        value={face}
+        animationKey={`${animationKey ?? value}-${play}-${face}`}
         direction={revealed ? "down" : "up"}
         className="digit-swap-replay__face font-mono tabular-nums"
       />

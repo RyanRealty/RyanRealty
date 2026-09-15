@@ -110,6 +110,7 @@ export { V3_CHART_CATEGORY_SLOTS } from './V3Chart'
 
 export type {
   V3ChartProps,
+  V3ChartRead,
   V3ChartSeries,
   V3ChartPoint,
   V3ChartKind,
