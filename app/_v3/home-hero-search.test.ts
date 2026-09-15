@@ -159,11 +159,18 @@ describe('homepage hero search uses the public search stack', () => {
     expect(css).toContain('.v3 .home-hero-search__mode--buy:checked')
     expect(css).toContain('.v3 .home-hero-search__mode--sell:checked')
     expect(css).toContain('.v3.v3-stage--inventory.v3-stage--compact:has(.home-hero-search)')
-    // Sharp cream .v3 wrappers behind Buy|Sell + morph — gone on the Stage.
+    // Sharp cream painters: nested .v3 + TabsList bg-card + V3Tabs track — gone on Stage.
+    expect(css).toContain('.v3 .home-hero-search .v3,')
     expect(css).toContain('.v3 .home-hero-search .v3-tabs,')
     expect(css).toContain('.v3 .home-hero-search .v3-morph-search')
-    expect(css).toMatch(/\.v3 \.home-hero-search \.v3-tabs,[\s\S]*?background:\s*transparent/)
-    expect(css).toMatch(/\.v3 \.home-hero-search \.v3-tabs__list \{[\s\S]*?background:\s*transparent/)
+    expect(css).toContain('.v3 .home-hero-search .v3-tabs__list.bg-card')
+    expect(css).toMatch(/\.v3 \.home-hero-search \.v3,[\s\S]*?background:\s*transparent\s*!important/)
+    expect(css).toMatch(/\.v3 \.home-hero-search \.v3-tabs__list\.bg-card \{[\s\S]*?background-color:\s*transparent\s*!important/)
+    const stageCssForWrappers = readFileSync(resolve('components/site/v3/V3Stage.css'), 'utf8')
+    expect(stageCssForWrappers).toContain('.v3.v3-stage .v3-stage-copy .v3')
+    expect(stageCssForWrappers).toMatch(
+      /\.v3\.v3-stage \.v3-stage-copy \.v3 \{\s*background:\s*transparent/,
+    )
     expect(readFileSync(resolve('components/site/v3/V3Tabs.tsx'), 'utf8')).toContain('v3-tabs__tab--${row.value}')
     const stageCss = readFileSync(resolve('components/site/v3/V3Stage.css'), 'utf8')
     expect(stageCss).toContain('.v3.v3-stage--inventory.v3-stage--compact .v3-stage-band')

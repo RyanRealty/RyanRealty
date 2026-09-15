@@ -45,6 +45,14 @@
   color: var(--v3-ink-on-media);
 }
 
+/* Nested pattern roots remount V3_ROOT_CLASS and re-apply tokens.css cream.
+   Inside Stage copy (on media) that reads as sharp white cards behind slot
+   controls (homepage Buy|Sell + morph). Transparent the nested roots only —
+   the Stage ground itself stays navy via the rule above. */
+.v3.v3-stage .v3-stage-copy .v3 {
+  background: transparent;
+}
+
 /* ---------------------------------------------------------------------------
    1. THE FRAME
    --------------------------------------------------------------------------- */
