@@ -619,7 +619,10 @@ export default function SearchFilters({
           )}
         </div>
         )}
-        {/* Row 2 @375: Places chip + Filters + Save. Desktop: same row as search. */}
+        {/* Row 2 @375: Places chip + Filters + Save. Desktop: same row as search.
+            Unmounts while MorphingSearch is open so search-open is the catalog
+            portal only — cream dock chips next to Bend+Esc is fail. */}
+        {morphOpen ? null : (
         <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2">
         <div className="flex shrink-0 items-center gap-2">
         {/* Places typeahead unmounts while MorphingSearch is open so search-open
@@ -1244,9 +1247,11 @@ export default function SearchFilters({
         </div>
         )}
         </div>
+        )}
       </div>
 
       {/* SITE-110: catalog RangeSlider is the first-viewport price object. */}
+      {morphOpen ? null : (
       <div className="srch-price-rail px-3 pb-2 sm:px-4">
         <SearchPriceRail
           low={draftPrice.low}
@@ -1255,6 +1260,7 @@ export default function SearchFilters({
           onCommit={commitPrice}
         />
       </div>
+      )}
 
       {/* Row 3: active filter chips. Row 2's trigger buttons already show the
           same value ("Price: $90M+") in their own label, so on mobile this

@@ -56,6 +56,7 @@ describe('SITE-110 search catalog install', () => {
     expect(filters).toContain('onOpenChange')
     expect(filters).toContain('Search places')
     expect(filters).toContain('morphOpen ? null')
+    expect(filters).toContain('catalog portal only')
     expect(filters).toContain('SearchPriceRail')
     expect(filters).toContain('SearchCommand')
     expect(filters).toContain('SearchFiltersSheet')

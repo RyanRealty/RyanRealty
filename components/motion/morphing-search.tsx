@@ -347,10 +347,11 @@ export function MorphingSearch({
 	const listboxId = `${uid}-results`;
 	const panelWidth = mounted
 		? Math.max(
+				448,
 				anchorRect.width,
 				Math.min(448, window.innerWidth - anchorRect.left - 16),
 			)
-		: anchorRect.width;
+		: Math.max(448, anchorRect.width);
 	const resultsHeight = mounted
 		? Math.max(96, Math.min(288, window.innerHeight - anchorRect.top - 80))
 		: 288;
@@ -435,7 +436,7 @@ export function MorphingSearch({
 												}
 									}
 									data-v3-morph="dialog"
-									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl bg-background/90 backdrop-blur-xl"
+									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl bg-background/90 shadow-lg ring-1 ring-border backdrop-blur-xl"
 									style={{
 										top: anchorRect.top,
 										left: anchorRect.left,
