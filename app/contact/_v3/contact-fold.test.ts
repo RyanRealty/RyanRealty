@@ -4,7 +4,6 @@ import { join } from 'node:path'
 
 const PAGE = join(process.cwd(), 'app/contact/page.tsx')
 const FOLD_CSS = join(process.cwd(), 'app/contact/_v3/contact-fold.css')
-const INPUT_CSS = join(process.cwd(), 'components/site/v3/V3Input.css')
 
 describe('contact fold (SITE-80)', () => {
   it('opens on ContactFold with a hierarchical call door and the ask', () => {
@@ -24,13 +23,24 @@ describe('contact fold (SITE-80)', () => {
     expect(src).not.toContain("label: 'The office'")
   })
 
-  it('adapts beui-input shake and success check into V3Input', () => {
-    const css = readFileSync(INPUT_CSS, 'utf8')
-    expect(css).toContain('v3-input-shake')
-    expect(css).toContain('v3-input__check')
-    expect(css).toContain(':user-invalid')
-    expect(css).toContain(':user-valid')
-    expect(css).not.toMatch(/#(?:e11|ef4444|22c55e|16a34a)/i)
+  it('imports the installed beui-input and shadcn-input sources on the route', () => {
+    const catalog = readFileSync(join(process.cwd(), 'app/contact/_v3/contact-catalog.ts'), 'utf8')
+    const ask = readFileSync(join(process.cwd(), 'app/contact/_v3/ContactAsk.client.tsx'), 'utf8')
+    const field = readFileSync(join(process.cwd(), 'app/contact/_v3/ContactField.client.tsx'), 'utf8')
+    expect(catalog).toMatch(/from '@\/components\/motion\/input'/)
+    expect(catalog).toMatch(/from '@\/components\/ui\/input'/)
+    expect(field).toContain('BeuiInput')
+    expect(field).toContain('error={error}')
+    expect(field).toContain('success={success}')
+    expect(ask).toContain('Field={ContactField}')
+    expect(ask).toContain('data-taste="error-open"')
+    expect(ask).toContain('data-taste="success-open"')
+  })
+
+  it('puts the Bend office street on the default fold', () => {
+    const src = readFileSync(PAGE, 'utf8')
+    expect(src).toContain('BRAND.address.street')
+    expect(src).toContain('streetAddress: BRAND.address.street')
   })
 
   it('puts the ask beside the reach control on a wide viewport', () => {
