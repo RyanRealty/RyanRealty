@@ -1,8 +1,8 @@
 {
   "route": "app/invest/page.tsx",
-  "visualLanguage": "design_system/public/PUBLIC_UI.md patterns, built from components/site/v3. No KB-era mockup — the pattern set is the target (same basis as every post-2026-08-27 page).",
-  "competitiveTarget": "No Central Oregon brokerage has an investor destination at all — competitors bury multi-family in a search filter. This page wins by honesty: the composition of the income market stated as a finding in the first line, live per-type counts with the Market Truth trace, this week's published 30-year fixed beside the calculators, and NO cash-flow promise. The rent side of an investor's math has no live source on this site — the only rent-bearing table is per-listing, frozen at a 2026-08-03 batch and walled behind admin auth — so the page publishes no rent, no yield and no DSCR, and hands the reader a calculator for the number only they know.",
-  "note": "Matt ruling 2026-09-01 (decisions.md): investor becomes a real job with /invest as the door and the listing-page investor lens as the depth layer. Every inventory figure is a getPublicPlaceSegments region row — the same numbers the housing-market and search pages print (one source, §0). Stale internal analysis figures are never republished here. Capture is the income-property alert (multi-family pin — a narrowing filter). Detached/SFR is deliberately absent: that is the buyer story. SITE-50 (2026-09-09) replaced the Quiet #place opening — two prose blocks headed 'What this page is' and 'How to underwrite here', which the taste table scored 25 and called a cover memo — with a V3Pulse band whose claim IS the page's H1 and whose four rules are the largest income populations drawn as a part-to-whole, lit one at a time by the native radio switch. V3Instrument left the page in the same change: at region grain the metric layer withholds medianList and monthsOfSupply for every income segment, so the Instrument's only two figures were the multi-family and commercial ACTIVE COUNTS, which the Pulse above it now prints — an Instrument whose whole content is two numbers the section above already said is the repeated fact TASTE.md bans. The three remaining data families are split one per section: Pulse takes the active counts and their shares, Ledger takes the doors and how each type trades, Quiet #tools takes this week's published 30-year fixed. The rental-analysis sentence was cut, not reworded: RentalAnalysis.tsx and lib/hud-fmr.ts were deleted on 2026-09-09 (545e4e50), so the page had been advertising a surface the site no longer has.",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md patterns, built from components/site/v3. No KB-era mockup \u2014 the pattern set is the target (same basis as every post-2026-08-27 page).",
+  "competitiveTarget": "No Central Oregon brokerage has an investor destination at all \u2014 competitors bury multi-family in a search filter. This page wins by honesty: the composition of the income market stated as a finding in the first line, live per-type counts with the Market Truth trace, this week's published 30-year fixed beside the calculators, and NO cash-flow promise. The rent side of an investor's math has no live source on this site \u2014 the only rent-bearing table is per-listing, frozen at a 2026-08-03 batch and walled behind admin auth \u2014 so the page publishes no rent, no yield and no DSCR, and hands the reader a calculator for the number only they know.",
+  "note": "Matt ruling 2026-09-01 (decisions.md): investor becomes a real job with /invest as the door and the listing-page investor lens as the depth layer. Every inventory figure is a getPublicPlaceSegments region row \u2014 the same numbers the housing-market and search pages print (one source, \u00a70). Stale internal analysis figures are never republished here. Capture is the income-property alert (multi-family pin \u2014 a narrowing filter). Detached/SFR is deliberately absent: that is the buyer story. SITE-50 (2026-09-09) replaced the Quiet #place opening \u2014 two prose blocks headed 'What this page is' and 'How to underwrite here', which the taste table scored 25 and called a cover memo \u2014 with a V3Pulse band whose claim IS the page's H1 and whose four rules are the largest income populations drawn as a part-to-whole, lit one at a time by the native radio switch. V3Instrument left the page in the same change: at region grain the metric layer withholds medianList and monthsOfSupply for every income segment, so the Instrument's only two figures were the multi-family and commercial ACTIVE COUNTS, which the Pulse above it now prints \u2014 an Instrument whose whole content is two numbers the section above already said is the repeated fact TASTE.md bans. The three remaining data families are split one per section: Pulse takes the active counts and their shares, Ledger takes the doors and how each type trades, Quiet #tools takes this week's published 30-year fixed. The rental-analysis sentence was cut, not reworded: RentalAnalysis.tsx and lib/hud-fmr.ts were deleted on 2026-09-09 (545e4e50), so the page had been advertising a surface the site no longer has.",
   "requiredComponents": [
     {
       "name": "V3SectionTracker",
@@ -11,7 +11,7 @@
     },
     {
       "name": "buildJsonLd",
-      "section": "BreadcrumbList JSON-LD, inlined through lib/site/json-ld — ci:public-ui admits no new page onto the legacy MetadataBlock register.",
+      "section": "BreadcrumbList JSON-LD, inlined through lib/site/json-ld \u2014 ci:public-ui admits no new page onto the legacy MetadataBlock register.",
       "blocking": true
     },
     {
@@ -21,32 +21,32 @@
     },
     {
       "name": "V3Pulse",
-      "section": "#place — the opening. The finding as the H1, lots vs buildings drawn as a part-to-whole, the moment of the read, and the §0 trace. Composed by app/invest/_v3/invest-pulse.ts, which publishes nothing when the read comes back empty.",
+      "section": "#place \u2014 the opening. The finding as the H1, lots vs buildings drawn as a part-to-whole, the moment of the read, and the \u00a70 trace. Composed by app/invest/_v3/invest-pulse.ts, which publishes nothing when the read comes back empty.",
       "blocking": true
     },
     {
       "name": "InvestInsight",
-      "section": "#place-insight — beautifului-insight via InsightCards. Every pager page mounts Allocation + Liveline (hideLegend). Same live counts as the Pulse.",
+      "section": "#place-insight \u2014 beautifului-insight via InsightCards. Every pager page mounts Allocation + Liveline (hideLegend). Same live counts as the Pulse.",
       "blocking": true
     },
     {
       "name": "InvestTables",
-      "section": "#searches-table — shadcn Table of four live listings with price, address, and facts (type absorbed). No TYPE column.",
+      "section": "#searches-table \u2014 shadcn Table of four live listings with price, address, and facts (type absorbed). No TYPE column.",
       "blocking": true
     },
     {
       "name": "V3Ledger",
-      "section": "#searches — crawlable doors. Live listing rows (price + address + facts) when the tile read published any; otherwise one door per income property type.",
+      "section": "#searches \u2014 crawlable doors. Live listing rows (price + address + facts) when the tile read published any; otherwise one door per income property type.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
-      "section": "#tools — this week's published 30-year fixed as a sourced fact row, then the math doors (rental calculator, mortgage calculator, market report). Also the fallback opening when the segment read returns nothing, so the page never ships without an H1.",
+      "section": "#tools \u2014 this week's published 30-year fixed as a sourced fact row, then the math doors (rental calculator, mortgage calculator, market report). Also the fallback opening when the segment read returns nothing, so the page never ships without an H1.",
       "blocking": true
     },
     {
       "name": "InvestAlertSheet",
-      "section": "#alerts — income-property alert capture on the hardened submitSearchAlertSignup path, multi-family pin.",
+      "section": "#alerts \u2014 income-property alert capture on the hardened submitSearchAlertSignup path, multi-family pin.",
       "blocking": true
     },
     {
@@ -79,7 +79,7 @@
     "rubricVersion": "v1-2026-09-12",
     "demoMatch": false,
     "competitiveBriefPass": false,
-    "evaluator": "Mini Cursor judge on tip 9defcaec0 — demoMatch FALSE, score 50, competitiveBriefPass false, --ship exit 1. This receipt is that honest fail plus the InsightCards recapture. Mini must rewrite demoMatch after re-judging these shots. Do not invent true.",
+    "evaluator": "Mini Cursor judge on tip 0c7efd619 \u2014 demoMatch FALSE, score 46, competitiveBriefPass false, --ship exit 1. This receipt is that honest fail plus the Allocation+Liveline recapture. Mini must rewrite demoMatch after re-judging these shots. Do not invent true.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "cursor-grok-4.6",
     "shotSpec": {
@@ -95,7 +95,7 @@
         "insight-open",
         "table-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs catalog demoStates, scale 1, palette-quantized, lane next dev --webpack :4310 after InsightCards install"
+      "capture": "first viewport, scripts/take-route-shots.mjs catalog demoStates, scale 1, palette-quantized, lane next dev --webpack :4310 after Mini 0c7efd619 tells"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/invest/shots/desktop.png",
@@ -105,57 +105,65 @@
       "tableOpenDesktop": "design_system/ryan-realty/ui_kits/invest/shots/table-open-desktop.png",
       "tableOpenMobile375": "design_system/ryan-realty/ui_kits/invest/shots/table-open-mobile375.png"
     },
-    "shotsHash": "sha256:3a6cb59cfaabe45a1420edba5a265b83269fb31d8d948ce3c7abf3b7f1188855",
+    "shotsHash": "sha256:caeaaf88635fe02b22caf0e69b0761db257b3a07fb6af4997fd7eb75e278fe50",
     "scores": [
-      50,
-      50,
-      50
+      46,
+      46,
+      46
     ],
-    "score": 50,
+    "score": 46,
     "criteria": {
-      "designQuality": 12,
-      "originality": 10,
+      "designQuality": 10,
+      "originality": 9,
       "interaction": 8,
-      "craft": 10,
-      "honestyFunction": 8
+      "craft": 9,
+      "honestyFunction": 10
     },
-    "beats": "Zillow Land for sale in Deschutes County still wins photos and a map in the first viewport. This page wins a four-rule Pulse, InsightCards (Insights 3, Allocation + Liveline), and a selected listings table. Mini has not yet marked the InsightCards install as a demo match.",
+    "beats": "Zillow Land still wins photos and a map. This recapture puts lots vs buildings on the Pulse track, Allocation + Liveline on every InsightCards page, and four listing rows without TYPE. Mini has not yet marked demoMatch.",
     "adaptedFrom": [
-      { "id": "beautifului-insight" },
-      { "id": "shadcn-table" },
-      { "id": "house-pulse" },
-      { "id": "house-ledger" }
+      {
+        "id": "beautifului-insight"
+      },
+      {
+        "id": "shadcn-table"
+      },
+      {
+        "id": "house-pulse"
+      },
+      {
+        "id": "house-ledger"
+      }
     ],
     "defects": [
       {
-        "section": "#place",
+        "section": "#place-insight",
         "severity": "taste",
-        "finding": "Mini on tip 9defcaec0: single 595 poster in a cream void, not part-to-whole Pulse. This recapture restores four readings on one track. Mini must confirm demoMatch.",
-        "replaceWith": "house-pulse"
+        "finding": "Mini on tip 0c7efd619: InsightCards chrome without Allocation + Liveline. This recapture mounts both on every pager page. Mini must confirm demoMatch.",
+        "replaceWith": "beautifului-insight"
       },
       {
         "section": "#place-insight",
         "severity": "taste",
-        "finding": "Mini on tip 9defcaec0: YEAR 1/2 pager + native range + cream tooltip is not beautifului-insight catalog craft. This recapture installs InsightCards (Insights pager, Allocation bar, Liveline pointer-scrub). Mini must confirm demoMatch.",
-        "replaceWith": "beautifului-insight"
-      },
-      {
-        "section": "#place-insight .v3-chart",
-        "severity": "honesty",
-        "finding": "Mini: slope across unordered property-type categories. The type-as-line V3Chart is gone. Allocation is part-to-whole; Compare/Anomaly use sold / under contract / for sale windows for lots vs buildings. Mini must confirm encoding.",
+        "finding": "Mini: LOTS/BUILDINGS KPI posters. Compare hideLegend is on. Mini must confirm the tiles are gone.",
         "replaceWith": "beautifului-insight"
       },
       {
         "section": "#searches-table",
         "severity": "taste",
-        "finding": "Mini: hairline type board restated the chart. Type table is gone; #searches-table is live listings with price, address, and facts. Mini must re-judge table-open.",
+        "finding": "Mini: 12 hairline rows and 375 clips TYPE. This recapture is four rows, type absorbed into Facts. Mini must re-judge table-open.",
         "replaceWith": "shadcn-table"
       },
       {
-        "section": "#place-insight",
-        "severity": "craft",
-        "finding": "Mini: tooltip clips series / wraps YEAR; SEO + fold listing facts missing from judged shots. YEAR pager is gone; listing facts are in the default fold heading and in table-open. Mini must confirm the recapture.",
-        "replaceWith": "beautifului-insight"
+        "section": "#place",
+        "severity": "honesty",
+        "finding": "Mini: 602 buildings vs 595 lots. Pulse and Liveline now share investSplit() (live 595 lots / 150 buildings). Mini must confirm the claim and the figures agree.",
+        "replaceWith": "house-pulse"
+      },
+      {
+        "section": "#place",
+        "severity": "taste",
+        "finding": "Mini: Pulse is a radio-row legend, not a part-to-whole track. This recapture draws two readings, lots vs buildings. Mini must confirm the track.",
+        "replaceWith": "house-pulse"
       }
     ],
     "comparedToPrior": "rebaselined",
@@ -172,9 +180,9 @@
       "shotsHash": "sha256:8dad3a8eff7f418bbb1507909f34237d397421c065cf5e029a4d8ff31e3dcdfe",
       "source": "SITE-68 route receipt on this parity.json (median 57, grok-4.6)"
     },
-    "rebaselineReason": "shotsHash changed after installing InsightCards. Mini Cursor scored tip 9defcaec0 (V3Chart YEAR pager) 50 / demoMatch false. This receipt keeps that honest fail on new shots. Mini must re-score. honestyFunction holds at 8.",
-    "verdict": "Honest fail until Mini rewrites demoMatch true. The YEAR pager and type-as-line chart are gone from these shots; Pulse is four part-to-whole readings; table-open is listings. --ship stays exit 1.",
-    "notes": "SITE-98 in_progress. Recapture after InsightCards install. Do not invent demoMatch. Mini must re-run the judge on these shots."
+    "rebaselineReason": "shotsHash changed after Mini 0c7efd619 tells (Allocation+Liveline every page, lots vs buildings Pulse, CAP=4 no TYPE). Mini scored tip 0c7efd619 46 / demoMatch false. This receipt keeps that honest fail on new shots. Mini must re-score.",
+    "verdict": "Honest fail until Mini rewrites demoMatch true. --ship stays exit 1.",
+    "notes": "SITE-98 in_progress. Recapture after Mini 0c7efd619 tells. Do not invent demoMatch. Mini must re-run the judge on these shots."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",

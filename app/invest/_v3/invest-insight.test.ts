@@ -63,6 +63,17 @@ describe('composeInvestInsight', () => {
   it('publishes nothing when only one type has a count', () => {
     expect(composeInvestInsight([row('land', 595)])).toBeNull()
   })
+
+  it('ignores buyer-side rows so buildings cannot exceed the income split', () => {
+    const board = composeInvestInsight([
+      ...LIVE,
+      row('detached', 400, { pendingCount: 20, closedCount: 900 }),
+      row('condo', 50, { pendingCount: 8, closedCount: 80 }),
+    ])
+    expect(board?.buildingsCount).toBe(156)
+    expect(board?.compare?.[1]?.values.at(-1)).toBe(156)
+    expect(board?.compare?.[1]?.values.at(-1)).toBeLessThan(board?.landCount ?? 0)
+  })
 })
 
 describe('one stats source', () => {
