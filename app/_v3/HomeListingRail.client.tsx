@@ -3,9 +3,9 @@
 /**
  * One horizontal house rail for the homepage. Cards reuse SplitCardMedia
  * (badges, photo carousel, 3D/video) and the same ask/meta publishers as Field Split cards.
- * Save/heart rides the existing saved-listings action.
+ * Photo and copy open the listing. No save/heart on public cards (Matt 2026-09-15).
  */
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
@@ -31,10 +31,6 @@ import {
   SPLIT_CARD_MEDIA_SIZES_RAIL,
 } from '@/components/site/v3/SplitCardMedia'
 import { ListingTourOverlay } from '@/components/site/listing-detail/ListingTourOverlay'
-import { HeartIcon } from '@/components/icons/ActionIcons'
-import { toggleSavedListing } from '@/app/actions/saved-listings'
-import { getViewerListingState } from '@/app/actions/viewer-listing-state'
-import { redirectToLoginForSave } from '@/lib/pending-save'
 import type { HomeRailCard, HomeRailRow } from './home-rail-items'
 import '@/components/site/v3/V3ListingRow.css'
 import '@/components/site/v3/V3Carousel.css'
@@ -42,20 +38,13 @@ import './home-homes-rails.css'
 
 function HomeRailCardFace({
   card,
-  saved,
-  signedIn,
-  onSavedChange,
   onOpenTour,
   priority,
 }: {
   card: HomeRailCard
-  saved: boolean
-  signedIn: boolean
-  onSavedChange: (key: string, next: boolean) => void
   onOpenTour?: () => void
   priority?: boolean
 }) {
-  const [busy, setBusy] = useState(false)
   const ask = formatPublishedSaleAsk({ price: card.price, propertyType: card.propertyType })
   const shareKind = publishListingShareKind({
     propertySubType: card.propertySubType,
@@ -80,23 +69,6 @@ function HomeRailCardFace({
     meta.push(`$${Math.round(publishedPpsf).toLocaleString('en-US')}/sqft`)
   }
 
-  async function onSave(event: React.MouseEvent) {
-    event.preventDefault()
-    event.stopPropagation()
-    if (!signedIn) {
-      redirectToLoginForSave(card.listingKey) // hydration-safe: click handler, never runs during render
-      return
-    }
-    if (busy) return
-    setBusy(true)
-    try {
-      const result = await toggleSavedListing(card.listingKey)
-      if (!result.error) onSavedChange(card.listingKey, result.saved)
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return (
     <Card size="sm" className={cn(V3_ROOT_CLASS, 'home-rail__card')}>
       <div className="home-rail__media">
@@ -109,30 +81,20 @@ function HomeRailCardFace({
           priority={priority}
           tourLabel={card.tourLabel}
           sizes={SPLIT_CARD_MEDIA_SIZES_RAIL}
+          href={card.href}
         />
-        <V3Button
-          type="button"
-          variant="ghost"
-          className={cn('home-rail__save', saved && 'home-rail__save--on')}
-          ariaLabel={saved ? 'Remove saved home' : 'Save home'}
-          ariaPressed={saved}
-          disabled={busy}
-          onClick={onSave}
-        >
-          <HeartIcon filled={saved} className="home-rail__save-icon" />
-        </V3Button>
       </div>
-      <CardHeader className="home-rail__copy">
-        <CardTitle>{ask ?? 'Price on request'}</CardTitle>
-        {shareKind ? <span className="home-rail__kind">{shareKind}</span> : null}
-        {meta.length > 0 ? <CardDescription>{meta.join(' · ')}</CardDescription> : null}
-      </CardHeader>
-      <CardContent>
-        <Link href={card.href} className="home-rail__copy-link">
+      <Link href={card.href} className="home-rail__copy-link">
+        <CardHeader className="home-rail__copy">
+          <CardTitle>{ask ?? 'Price on request'}</CardTitle>
+          {shareKind ? <span className="home-rail__kind">{shareKind}</span> : null}
+          {meta.length > 0 ? <CardDescription>{meta.join(' · ')}</CardDescription> : null}
+        </CardHeader>
+        <CardContent>
           <span className="home-rail__addr">{card.addressLine}</span>
           <span className="home-rail__city">{card.cityLine}</span>
-        </Link>
-      </CardContent>
+        </CardContent>
+      </Link>
     </Card>
   )
 }
@@ -145,21 +107,7 @@ export function HomeListingRail({
   /** Optional animated regional count on the lead rail (Rare UI / beUI number). */
   live?: HomeHeroLive
 }) {
-  const [signedIn, setSignedIn] = useState(false)
-  const [saved, setSaved] = useState(() => new Set<string>())
   const [tour, setTour] = useState<VideoEmbed | null>(null)
-
-  useEffect(() => {
-    let alive = true
-    void getViewerListingState().then((state) => {
-      if (!alive) return
-      setSignedIn(state.signedIn)
-      setSaved(new Set(state.savedListingKeys))
-    })
-    return () => {
-      alive = false
-    }
-  }, [])
 
   return (
     <section
@@ -206,8 +154,6 @@ export function HomeListingRail({
             >
               <HomeRailCardFace
                 card={card}
-                saved={saved.has(card.listingKey)}
-                signedIn={signedIn}
                 priority={index < 2}
                 onOpenTour={
                   card.tourUrl || card.hasTour
@@ -221,14 +167,6 @@ export function HomeListingRail({
                       }
                     : undefined
                 }
-                onSavedChange={(key, next) => {
-                  setSaved((prev) => {
-                    const copy = new Set(prev)
-                    if (next) copy.add(key)
-                    else copy.delete(key)
-                    return copy
-                  })
-                }}
               />
             </CarouselItem>
           ))}

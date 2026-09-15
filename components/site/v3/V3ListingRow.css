@@ -235,6 +235,7 @@
   flex-wrap: wrap;
   gap: var(--v3-space-3xs);
   max-width: calc(100% - 0.5rem);
+  pointer-events: none;
 }
 
 .v3-lrow__nav {
@@ -276,6 +277,7 @@
   color: var(--v3-cream);
   font-size: var(--v3-size-eyebrow);
   transform: translateX(-50%);
+  pointer-events: none;
 }
 .v3-lrow__dot {
   width: 0.35rem;

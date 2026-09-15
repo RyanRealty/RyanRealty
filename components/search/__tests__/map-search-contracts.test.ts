@@ -309,6 +309,7 @@ describe('split row and map chrome stay navy', () => {
     expect(readSrc('components/search/SplitListingCard.tsx')).toMatch(/href=\{href\}/)
     expect(css).toMatch(/box-shadow: inset 0 0 0 2px var\(--v3-navy\)/)
     expect(css).toMatch(/v3-lrow__addr-tip/)
+    expect(css).toMatch(/\.v3-lrow__photo-tags[\s\S]*pointer-events: none/)
     expect(css).not.toMatch(/content: '‹'/)
     expect(css).not.toMatch(/content: '›'/)
   })
