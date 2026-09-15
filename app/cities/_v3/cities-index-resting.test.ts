@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { restingCityDetail } from './cities-index-resting'
+import { cityLeftoverActive, restingCityDetail } from './cities-index-resting'
 
 describe('restingCityDetail', () => {
   it('surfaces a published supply reading at rest', () => {
@@ -22,6 +22,25 @@ describe('restingCityDetail', () => {
         restingSupply: null,
       }),
     ).toBeNull()
+  })
+
+  it('uses one leftover pile and never mixes a later snapshot over headlines', () => {
+    expect(
+      cityLeftoverActive({
+        headlinesActive: 29,
+        inventoryActive: 648,
+        snapshotActive: 648,
+        indexActive: 12,
+      }),
+    ).toBe(29)
+    expect(
+      cityLeftoverActive({
+        headlinesActive: null,
+        inventoryActive: 29,
+        snapshotActive: 648,
+        indexActive: 12,
+      }),
+    ).toBe(29)
   })
 
   it('keeps median and sentence when a verified photo is present', () => {

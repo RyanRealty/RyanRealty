@@ -1,9 +1,21 @@
-/* SITE-92 cities directory first viewport: Atlas drawing + figure (MOS,
-   insight, alerts). Page-local. Tokens only. */
+/* SITE-92 cities directory first viewport: Atlas + MOS/combobox + InsightCards
+   + house-alerts. Page-local. Tokens only. Drawing opens the page. */
 
 .cities-fold {
   width: 100%;
   margin: 0 0 var(--v3-space-md);
+}
+
+/* Atlas and the figure sit above the H1 so the first viewport is a drawing
+   beside alerts, not a MOS lecture under a title. */
+#featured-cities .v3-ledger__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-xs);
+}
+
+#featured-cities .v3-ledger__drawing {
+  order: -1;
 }
 
 .cities-fold__stage {
@@ -14,7 +26,7 @@
 
 @media (min-width: 64rem) {
   .cities-fold__stage {
-    grid-template-columns: minmax(0, 1fr) minmax(20rem, 1fr);
+    grid-template-columns: minmax(0, 1.2fr) minmax(22rem, 1fr);
     column-gap: var(--v3-space-md);
   }
 }
@@ -28,7 +40,13 @@
 }
 
 .cities-fold__drawing .v3-atlas__frame {
-  max-height: min(22vh, 11rem);
+  max-height: min(42vh, 22rem);
+}
+
+@media (max-width: 63.99rem) {
+  .cities-fold__drawing .v3-atlas__frame {
+    max-height: min(22vh, 10rem);
+  }
 }
 
 .cities-fold__drawing .v3-atlas__key,
@@ -41,14 +59,12 @@
 .cities-fold__figure {
   min-width: 0;
   display: grid;
-  gap: var(--v3-space-xs);
+  gap: var(--v3-space-sm);
 }
 
 .cities-fold .v3-drawing__source,
 .cities-fold .v3-source,
 .cities-fold .v3-alerts__source,
-.cities-fold .v3-alerts__num,
-.cities-fold .v3-alerts__browse,
 .cities-fold .v3-alerts__scope {
   display: none;
 }
@@ -60,25 +76,6 @@
 
 .cities-fold .v3-alerts__promise {
   font-size: var(--v3-size-note);
-}
-
-.cities-insight .insight-chart-stage {
-  min-height: 3.5rem;
-  height: 3.5rem;
-}
-
-.cities-insight .insight-cards__note,
-.cities-insight .insight-cards__pill {
-  display: none;
-}
-
-.cities-insight .insight-cards__hero {
-  font-size: var(--v3-size-body);
-  line-height: var(--v3-leading-note);
-}
-
-.cities-insight .insight-cards__alloc-track {
-  height: 1.25rem;
 }
 
 .cities-fold__count {
@@ -99,4 +96,9 @@
 
 .cities-insight .insight-cards {
   max-width: 100%;
+}
+
+.cities-insight .insight-chart-stage {
+  min-height: 8rem;
+  height: 8rem;
 }

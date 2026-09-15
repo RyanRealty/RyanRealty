@@ -75,7 +75,7 @@ import {
   indexBarWeight,
   liveForSaleLabel,
 } from '@/app/cities/_v3/cities-index-constants'
-import { restingCityDetail } from '@/app/cities/_v3/cities-index-resting'
+import { cityLeftoverActive, restingCityDetail } from '@/app/cities/_v3/cities-index-resting'
 import { cityAtlasRegions } from '@/app/cities/_v3/cities-index-atlas'
 import { citiesInsightBoard } from '@/app/cities/_v3/cities-index-insight'
 import { CitiesInsight } from '@/app/cities/_v3/CitiesInsight.client'
@@ -241,12 +241,12 @@ export default async function CitiesPage() {
     // Until SITE-52 a featured city with no Market Truth row (Tumalo, Crooked
     // River Ranch) went null here, printed as "None listed now", and switched
     // the bars off for the whole list.
-    const leftoverActive =
-      layers?.headlines?.activeCount ??
-      layers?.inventory?.activeCount ??
-      snapshotBySlug.get(slug)?.activeCount ??
-      indexRow?.activeCount ??
-      null
+    const leftoverActive = cityLeftoverActive({
+      headlinesActive: layers?.headlines?.activeCount,
+      inventoryActive: layers?.inventory?.activeCount,
+      snapshotActive: snapshotBySlug.get(slug)?.activeCount,
+      indexActive: indexRow?.activeCount,
+    })
     const leftoverMedian =
       layers?.headlines?.medianListPrice ??
       layers?.inventory?.medianListPrice ??
@@ -350,13 +350,22 @@ export default async function CitiesPage() {
       mediaSrc: city.hero.verified ? city.hero.src : undefined,
     })),
     ...others.map((city) => {
+      const layers = overlays.get(`city:${city.slug}`)
       const snap = snapshotBySlug.get(city.slug)
       return {
         slug: city.slug,
         name: city.name,
         sentence: null as string | null,
-        activeCount: snap ? snap.activeCount : city.activeCount,
-        medianListPrice: snap ? snap.medianPrice : city.medianPrice,
+        activeCount: cityLeftoverActive({
+          headlinesActive: layers?.headlines?.activeCount,
+          inventoryActive: layers?.inventory?.activeCount,
+          snapshotActive: snap?.activeCount,
+          indexActive: city.activeCount,
+        }),
+        medianListPrice:
+          layers?.headlines?.medianListPrice ??
+          layers?.inventory?.medianListPrice ??
+          (snap ? snap.medianPrice : city.medianPrice),
         mediaSrc: undefined as string | undefined,
       }
     }),
@@ -459,7 +468,6 @@ export default async function CitiesPage() {
     cities: directory.map((c) => ({ slug: c.slug, name: c.name, activeCount: c.activeCount })),
     regionMonthly,
     bendMonthly: monthlyBySlug.get('bend') ?? [],
-    regionActive: hud.active,
   })
   const new30Source =
     hud.new30 != null
@@ -471,22 +479,22 @@ export default async function CitiesPage() {
       {hud.active != null ? (
         <p className="cities-fold__count">
           <V3Number value={hud.active} formatted={formatCount(hud.active)} startOnView={false} />{' '}
-          homes for sale across these cities
+          leftover homes for sale in Central Oregon
         </p>
+      ) : null}
+      {regionFigures.length > 0 ? (
+        <V3Drawing figures={regionFigures} label="Central Oregon homes for sale against a month of sales" />
       ) : null}
       {regionScale}
       {insightBoard ? <CitiesInsight id="cities-insight" board={insightBoard} /> : null}
       <CitiesAlertStrip
         id="alerts"
         newCount30d={hud.new30}
-        countLabel={null}
+        countLabel={hud.new30 != null ? formatCount(hud.new30) : null}
         source={new30Source}
         updatedAt={leftoverStamp}
         browseHref={newestFirstHref('/search')}
       />
-      {regionFigures.length > 0 ? (
-        <V3Drawing figures={regionFigures} label="Central Oregon homes for sale against a month of sales" />
-      ) : null}
     </>
   )
 
@@ -526,7 +534,7 @@ export default async function CitiesPage() {
     ? `${formatCount(directory.length)} cities, A to Z. Overlay a city on the scale, scrub the year of closes, or rest on a row.`
     : [
         totalActive != null && totalActive > 0
-          ? `${formatCount(totalActive)} homes for sale across these cities.`
+          ? `${formatCount(totalActive)} leftover homes for sale in Central Oregon.`
           : null,
         mosText && regionVerdict ? `${regionVerdict.label} at ${mosText} months of supply.` : null,
       ]
@@ -575,6 +583,7 @@ export default async function CitiesPage() {
             )}
             drawing={regionDrawing}
             rows={[firstFeatured, ...restFeatured]}
+            mediaGaps="omit"
             encode={countsPublishable ? 'bar' : undefined}
             source={v3Text(FEATURED_TRACE + '. Remaining cities: ' + OTHERS_TRACE + '. ' + REVEAL_TRACE)}
             updated={ledgerStamp ? v3Text(formatDate(ledgerStamp)) : undefined}

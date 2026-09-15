@@ -21,13 +21,15 @@ function publishedCloses(points: readonly PublicMonthlyPoint[]): number[] {
   return values.map((v) => Math.round(v as number))
 }
 
-function allocationSegments(cities: readonly InsightCity[]): CitiesInsightSegment[] {
+function allocationSegments(
+  cities: readonly InsightCity[],
+): { segments: CitiesInsightSegment[]; total: number } {
   const published = cities.filter((c): c is InsightCity & { activeCount: number } => {
     return c.activeCount != null && Number.isFinite(c.activeCount) && c.activeCount > 0
   })
-  if (published.length < 2) return []
+  if (published.length < 2) return { segments: [], total: 0 }
   const total = published.reduce((sum, c) => sum + c.activeCount, 0)
-  if (!(total > 0)) return []
+  if (!(total > 0)) return { segments: [], total: 0 }
   const top = published.slice().sort((a, b) => b.activeCount - a.activeCount).slice(0, 5)
   const topSum = top.reduce((sum, c) => sum + c.activeCount, 0)
   const rest = total - topSum
@@ -36,24 +38,26 @@ function allocationSegments(cities: readonly InsightCity[]): CitiesInsightSegmen
   const rounded = raw.map((n) => Math.round(n))
   const drift = 100 - rounded.reduce((sum, n) => sum + n, 0)
   rounded[rounded.length - 1] = (rounded[rounded.length - 1] ?? 0) + drift
-  if (rounded.some((n) => n <= 0)) return []
-  return parts.map((c, i) => ({
-    name: c.name,
-    label: c.name,
-    amount: `${formatCount(c.activeCount)} for sale`,
-    pct: rounded[i] ?? 0,
-    cls: `insight-cards__alloc-seg--${i}`,
-    tone: '',
-  }))
+  if (rounded.some((n) => n <= 0)) return { segments: [], total: 0 }
+  return {
+    total,
+    segments: parts.map((c, i) => ({
+      name: c.name,
+      label: c.name,
+      amount: `${formatCount(c.activeCount)} for sale`,
+      pct: rounded[i] ?? 0,
+      cls: `insight-cards__alloc-seg--${i}`,
+      tone: '',
+    })),
+  }
 }
 
 export function citiesInsightBoard(input: {
   cities: readonly InsightCity[]
   regionMonthly: readonly PublicMonthlyPoint[]
   bendMonthly: readonly PublicMonthlyPoint[]
-  regionActive: number | null
 }): CitiesInsightBoard | null {
-  const allocation = allocationSegments(input.cities)
+  const { segments: allocation, total: publishedTotal } = allocationSegments(input.cities)
   const regionCloses = publishedCloses(input.regionMonthly)
   const bendCloses = publishedCloses(input.bendMonthly)
   const compare =
@@ -79,12 +83,9 @@ export function citiesInsightBoard(input: {
   if (allocation.length < 2 && !compare) return null
 
   const lead = allocation[0]
-  const allocationProse =
-    lead && input.regionActive != null
-      ? `${lead.name} is ${lead.pct}% of the ${formatCount(input.regionActive)} homes for sale across these cities.`
-      : lead
-        ? `${lead.name} is ${lead.pct}% of published city inventory on this directory.`
-        : 'Published city inventory by share of homes for sale.'
+  const allocationProse = lead
+    ? `${lead.name} is ${lead.pct}% of the ${formatCount(publishedTotal)} leftover homes on this directory.`
+    : 'Published city leftover by share of homes for sale.'
 
   const last = regionCloses.at(-1)
   const compareProse =

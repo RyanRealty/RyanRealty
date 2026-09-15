@@ -180,12 +180,11 @@ export function V3MosCompare({
             onOpenChange={setOpen}
             className="v3-mos-compare__combo-root"
           >
-            <ComboboxTrigger className="v3-mos-compare__trigger">
+            <ComboboxTrigger>
               <ComboboxInput
                 aria-label="Overlay a city against the region"
                 aria-labelledby={`${uid}-combo-label`}
                 placeholder={selected ? selected.name : 'Search a city with a published reading…'}
-                className="v3-mos-compare__input"
               />
             </ComboboxTrigger>
             {selected ? (
@@ -200,15 +199,14 @@ export function V3MosCompare({
                 Clear
               </button>
             ) : null}
-            <ComboboxContent className="v3-mos-compare__panel" align="start">
-              <ComboboxList ariaLabel="Cities with months of supply" className="v3-mos-compare__list">
+            <ComboboxContent align="start">
+              <ComboboxList ariaLabel="Cities with months of supply">
                 {overlayable.map((city) => (
                   <ComboboxItem
                     key={city.slug}
                     value={city.slug}
                     textValue={city.name}
                     keywords={[city.name, city.mosLabel ?? '', city.verdictLabel ?? '']}
-                    className="v3-mos-compare__option"
                   >
                     <span className="v3-mos-compare__option-name">{city.name}</span>
                     <span className="v3-mos-compare__option-meta">
@@ -217,7 +215,7 @@ export function V3MosCompare({
                     </span>
                   </ComboboxItem>
                 ))}
-                <ComboboxEmpty className="v3-mos-compare__empty">
+                <ComboboxEmpty>
                   No published reading matches that name.
                 </ComboboxEmpty>
               </ComboboxList>

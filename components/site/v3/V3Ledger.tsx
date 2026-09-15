@@ -334,6 +334,13 @@ type V3LedgerBase = {
    * nine copies of a bar on nine pages.
    */
   encode?: 'bar'
+  /**
+   * When some rows have verified photos and others do not: `glyph` (default)
+   * draws a navy initial so the media column stays all-or-none; `omit` leaves
+   * the gap empty. The cities A–Z directory uses `omit` so no-photo rows are
+   * not dull letter tiles (SITE-92). Absence of a photo stays honest.
+   */
+  mediaGaps?: 'glyph' | 'omit'
 }
 
 /**
@@ -419,6 +426,7 @@ export function V3Ledger(props: V3LedgerProps) {
     layout = 'list',
     media = 'mark',
     encode,
+    mediaGaps = 'glyph',
   } = props
 
   /**
@@ -503,7 +511,7 @@ export function V3Ledger(props: V3LedgerProps) {
                shape twice, 2026-09-09). The caller may still pass media; it
                is simply not drawn on this layout. */
             const showMedia = Boolean(row.media) && layout !== 'walk'
-            const showGlyph = anyMedia && !showMedia
+            const showGlyph = anyMedia && !showMedia && mediaGaps !== 'omit'
             const spark =
               row.reveal?.series && row.reveal.series.length > 0
                 ? buildSparkPlot(row.reveal.series, {

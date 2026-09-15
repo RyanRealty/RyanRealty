@@ -145,42 +145,9 @@
   text-transform: uppercase;
 }
 
-.v3-mos-compare__trigger {
-  display: flex;
-  align-items: stretch;
-  gap: var(--v3-space-2xs);
-  min-height: var(--v3-tap);
-  width: 100%;
-  min-width: 0;
-  height: auto;
-  border-radius: 0;
-  border: 0;
-  border-bottom: var(--v3-rule-hairline);
-  background: transparent;
-  padding: 0;
-  box-shadow: none;
-}
-
-.v3-mos-compare__trigger.is-open { border-bottom-color: var(--v3-navy); }
-
-.v3-mos-compare__input {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: var(--v3-tap);
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--v3-ink);
-  font: inherit;
-  font-size: var(--v3-size-body);
-}
-
-.v3-mos-compare__input::placeholder { color: var(--v3-ink-muted); }
-.v3-mos-compare__input:focus-visible { outline: none; }
-.v3-mos-compare__trigger:focus-within {
-  outline: var(--v3-focus-ring);
-  outline-offset: var(--v3-focus-offset);
-}
+/* ComboboxTrigger / ComboboxList keep the installed beui-combobox chrome
+   (rounded field, Search + Chevrons, portal list, Check). House paint after
+   demoMatch:false is forbidden — do not restyle those into a cream box. */
 
 .v3-mos-compare__clear {
   flex: 0 0 auto;
@@ -195,58 +162,17 @@
   cursor: pointer;
 }
 
-.v3-mos-compare__panel {
-  z-index: 40;
-  min-width: min(22rem, 100vw);
-  background: var(--v3-cream);
-  color: var(--v3-ink);
-  border: var(--v3-rule-hairline);
-  border-radius: 0;
-}
-
-.v3-mos-compare__list {
-  margin: 0;
-  padding: var(--v3-space-2xs) 0;
-  max-height: 14rem;
-  overflow: auto;
-  background: var(--v3-cream);
-}
-
-button.v3-mos-compare__option {
-  display: grid;
-  gap: 0.1rem;
-  width: 100%;
-  min-height: var(--v3-tap);
-  padding: var(--v3-space-xs) var(--v3-space-sm);
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  justify-items: start;
-}
-
-.v3-mos-compare__option.is-active,
-.v3-mos-compare__option:hover {
-  background: color-mix(in srgb, var(--v3-ink) 6%, transparent);
-}
-
 .v3-mos-compare__option-name {
+  display: block;
   font-size: var(--v3-size-body);
   color: var(--v3-ink);
 }
 
 .v3-mos-compare__option-meta {
+  display: block;
   font-size: var(--v3-size-source);
   font-variant-numeric: tabular-nums;
   color: var(--v3-ink-muted);
-}
-
-.v3-mos-compare__empty {
-  padding: var(--v3-space-sm);
-  color: var(--v3-ink-muted);
-  font-size: var(--v3-size-body-sm);
 }
 
 @media (max-width: 30rem) {
