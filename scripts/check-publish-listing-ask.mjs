@@ -42,14 +42,20 @@ const strip = src('components/site/listing-detail/PriceCtaStrip.tsx')
 // Court (MLS 220219603). The ternary may not come back: a second copy of the
 // branch is how the surfaces disagreed in the first place.
 checks.push({
+  // Matt 2026-09-15: strip dropped the prose "Down $X from $Y" path for the
+  // dated PriceDropMark (publishListingDropMark). Exact whole dollars still
+  // required on the H1 via <Price exact />; the mark formats from/to/cut with
+  // toLocaleString (no compact/nearest-thousand).
   label: 'PriceCtaStrip H1 and drop gate through publishListingPublishedPrice / Drop + Price exact',
   ok:
     /from ['"]@\/lib\/listing\/publish-listing-published-price['"]/.test(strip) &&
     /publishListingPublishedPrice\(\{[^}]*status: listing\.status[^}]*closePrice: listing\.closePrice/s.test(strip) &&
-    /publishListingDrop\(/.test(strip) &&
     !/isClosed \? listing\.closePrice : listing\.listPrice/.test(strip) &&
     strip.includes('<Price value={headlinePrice} exact />') &&
-    strip.includes('<Price value={publishedDrop.drop} exact />'),
+    (
+      (/publishListingDrop\(/.test(strip) && strip.includes('<Price value={publishedDrop.drop} exact />')) ||
+      (/publishListingDropMark\(/.test(strip) && /<PriceDropMark\b/.test(strip))
+    ),
 })
 
 // The JSON-LD moved into a sibling builder when the page hit its file-size
