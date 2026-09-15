@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * beautifului InsightCards — paged insights with distinct claims and a
- * scrub-ready visual. Navy/cream paint is the house wrapper.
+ * beautifului InsightCards — official Insights N ‹ › object.
+ * Pages are Compare / Anomaly / Allocation. Pager is the only chrome.
  *
  * Source: https://www.beautifului.dev/r/insight-cards.json
  * Interaction kept: Insights N ‹ ›, claim, hero figure, card visual, pill.
@@ -28,8 +28,6 @@ export type InsightCardsProps = {
   className?: string
   id?: string
   kind?: string
-  /** Catalog page names — Compare / Anomaly / Allocation. */
-  kinds?: readonly string[]
 }
 
 export function InsightCards({
@@ -47,7 +45,6 @@ export function InsightCards({
   className,
   id,
   kind,
-  kinds,
 }: InsightCardsProps) {
   if (pageCount < 2) return null
   const safe = Math.max(0, Math.min(pageCount - 1, page))
@@ -55,10 +52,9 @@ export function InsightCards({
     onPage((safe + direction + pageCount) % pageCount)
   }
 
-  const nextKind = kinds && kinds.length >= 2 ? (safe + 1) % kinds.length : -1
-
   return (
     <div
+      id={id}
       className={cn('insight-cards', className)}
       data-insight-page={safe}
       data-insight-kind={kind}
@@ -88,6 +84,7 @@ export function InsightCards({
           <button
             type="button"
             className="insight-cards__pager-btn"
+            data-insight-next=""
             aria-label={`Next ${title.toLowerCase()}`}
             onClick={() => move(1)}
           >
@@ -103,7 +100,7 @@ export function InsightCards({
           </button>
         </span>
       </div>
-      <div id={id} className="insight-cards__card">
+      <div className="insight-cards__card">
         <p className="insight-cards__claim">{claim}</p>
         {figure ? (
           <div className="insight-cards__figures">
@@ -119,27 +116,6 @@ export function InsightCards({
                 ) : null}
               </p>
             ) : null}
-          </div>
-        ) : null}
-        {kinds && kinds.length >= 2 ? (
-          <div className="insight-cards__kinds" role="tablist" aria-label="Insight pages">
-            {kinds.map((label, index) => (
-              <button
-                key={label}
-                type="button"
-                role="tab"
-                className={cn(
-                  'insight-cards__kind',
-                  index === safe && 'insight-cards__kind--on',
-                  index === nextKind && 'insight-cards__kind--next',
-                )}
-                data-insight-next={index === nextKind ? '' : undefined}
-                aria-selected={index === safe}
-                onClick={() => onPage(index)}
-              >
-                {label}
-              </button>
-            ))}
           </div>
         ) : null}
         {visual ? <div className="insight-cards__visual">{visual}</div> : null}

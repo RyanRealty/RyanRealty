@@ -69,7 +69,7 @@ export type RegionInsightSegment = {
   figure: string
   /** Allocation bar share. Same unit as the other segments. */
   weight?: number
-  /** Anomaly metric: that year's closings chart. */
+  /** Anomaly metric: Closings or Sale for the newest year. */
   chart?: V3ChartProps
 }
 
@@ -222,19 +222,44 @@ export function buildRegionInsightPages(
       daysToPending != null
         ? `${newestClosed.lastTick} ${newestClosed.year} closed ${newestClosed.lastLabel} homes. Days to an offer is ${daysToPending} over the last 90 days.`
         : `${newestClosed.lastTick} ${newestClosed.year} closed ${newestClosed.lastLabel} homes.`
+    const saleChart: V3ChartProps | undefined =
+      newest && newest.points.length >= 2 && overlay
+        ? {
+            ...overlay,
+            id: 'market-insights-anomaly-sale',
+            caption: v3Text(`Median sale price by month, ${String(newest.name)}`),
+            series: [newest],
+            claim: undefined,
+            keysToggle: false,
+            yearPages: false,
+            hover: true,
+            restingRead: 'last',
+          }
+        : undefined
+    const segments: RegionInsightSegment[] = [
+      {
+        key: 'closings',
+        label: 'Closings',
+        figure: newestClosed.lastLabel,
+        chart: newestClosed.chart,
+      },
+    ]
+    if (saleChart && newestLast) {
+      segments.push({
+        key: 'sale',
+        label: 'Sale',
+        figure: String(newestLast.label),
+        chart: saleChart,
+      })
+    }
     pages.push({
       key: `anomaly-closed-${newestClosed.year}`,
       kind: 'anomaly',
       claim,
       figure: newestClosed.lastLabel,
-      figureLabel: `${newestClosed.lastTick} ${newestClosed.year} closings`,
+      figureLabel: `${newestClosed.lastTick} closings`,
       readName: String(newestClosed.year),
-      segments: [...closedYears].reverse().map((row) => ({
-        key: String(row.year),
-        label: `${row.year} closings`,
-        figure: row.lastLabel,
-        chart: row.chart,
-      })),
+      segments,
       chart: newestClosed.chart,
       pill: 'See homes for sale',
       pillHref: listingsBrowsePath(),

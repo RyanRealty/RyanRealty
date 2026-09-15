@@ -76,7 +76,7 @@ export function DigitSwap({
       data-slot="digit-swap"
       data-direction={direction}
       className={cn(
-        "digit-swap inline-flex items-center whitespace-nowrap font-mono tabular-nums",
+        "digit-swap inline-flex items-center whitespace-nowrap font-mono text-lg tracking-[0.08em] tabular-nums",
         className,
       )}
     >

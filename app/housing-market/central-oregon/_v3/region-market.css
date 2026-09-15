@@ -90,15 +90,7 @@
   font-weight: 500;
 }
 
-#market-insights .digit-swap,
-#market-insights .insight-cards__swap-face,
-.region-insights .digit-swap,
-.v3-mos .digit-swap {
-  font-size: 1.125rem;
-}
-
 .region-insights .insight-cards__pager-btn,
-.region-insights .insight-cards__kind,
 .region-insights .insight-cards__metric,
 .region-insights .insight-cards__alloc-key,
 .region-insights .insight-cards__alloc-seg {

@@ -83,7 +83,7 @@ export function V3MosBars({
         <DigitSwap
           value={label}
           animationKey={`${id}-${label}`}
-          className="v3-mos__swap font-mono tabular-nums"
+          className="v3-mos__swap font-mono text-lg tracking-[0.08em] tabular-nums"
         />
       )
     }

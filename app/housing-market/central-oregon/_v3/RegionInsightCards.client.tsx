@@ -2,8 +2,8 @@
 
 /**
  * Region fold InsightCards. Rest is Compare with house-chart hover.
- * year-open pages to Anomaly: closings chart + metric toggle + hover,
- * DigitSwap follows the open stop. Allocation stays the third page.
+ * Insights Next pages to Anomaly: Closings/Sale pills + hover (not year chips).
+ * DigitSwap is official 1ch glyph slots. Allocation stays the third page.
  */
 
 import Link from 'next/link'
@@ -15,16 +15,9 @@ import { V3_ROOT_CLASS } from '@/components/site/v3'
 import { cn } from '@/lib/utils'
 import {
   insightFaceForRead,
-  type RegionInsightKind,
   type RegionInsightPage,
   type RegionInsightSegment,
 } from './region-figures'
-
-const KIND_TITLE: Record<RegionInsightKind, string> = {
-  compare: 'Compare',
-  anomaly: 'Anomaly',
-  allocation: 'Allocation',
-}
 
 export type RegionInsightCardsProps = {
   pages: readonly RegionInsightPage[]
@@ -59,7 +52,7 @@ function SwapFace({
       <DigitSwap
         value={value}
         animationKey={swapKey}
-        className="insight-cards__swap-face"
+        className="insight-cards__swap-face font-mono text-lg tracking-[0.08em] tabular-nums"
       />
       {label ? <span className="insight-cards__hero-label">{label}</span> : null}
     </span>
@@ -76,7 +69,7 @@ function AnomalyToggle({
   onSelect: (index: number) => void
 }) {
   return (
-    <div className="insight-cards__metrics" role="group" aria-label="Pace snapshot">
+    <div className="insight-cards__metrics" role="group" aria-label="Anomaly metric">
       {segments.map((item, index) => (
         <button
           key={item.key}
@@ -204,7 +197,6 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
       className={cn(V3_ROOT_CLASS, 'region-insights')}
       title="Insights"
       kind={current.kind}
-      kinds={pages.map((item) => KIND_TITLE[item.kind])}
       page={safe}
       pageCount={pages.length}
       onPage={(index) => {
