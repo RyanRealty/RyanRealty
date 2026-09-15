@@ -15,6 +15,8 @@
  * context, not a data source.
  */
 import { GROK_MODELS, GrokError, ticksToUsd, xaiFetch } from './client'
+import { resolveGrokTransport } from './transport'
+import { generateGrokStructuredViaCursorCli } from './cursor-cli'
 
 export type GrokMessage = {
   role: 'system' | 'user' | 'assistant'
@@ -116,6 +118,12 @@ export function parseJsonLoose<T>(raw: string): T {
 export async function generateGrokStructured<T>(
   options: GrokTextOptions & { schema: Record<string, unknown>; schemaName: string },
 ): Promise<{ value: T; raw: string; costUsd: number | null }> {
+  // Cursor subscription transport (expired Auto-CMA / GROK_TRANSPORT=cursor).
+  // Never calls api.x.ai; XAI_API_KEY is stripped inside the spawn.
+  if (resolveGrokTransport() === 'cursor') {
+    const via = generateGrokStructuredViaCursorCli<T>(options)
+    return { value: via.value, raw: via.raw, costUsd: via.costUsd }
+  }
   const model = options.model ?? GROK_MODELS.text
   const body: Record<string, unknown> = {
     model,

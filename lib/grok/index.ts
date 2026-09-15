@@ -56,3 +56,18 @@ export {
   type VisionQaInput,
   type VisionVerdict,
 } from './vision'
+
+export {
+  resolveGrokTransport,
+  runWithGrokTransport,
+  runWithGrokTransportAsync,
+  grokTransportFromEnv,
+  cursorCliPresent,
+  CURSOR_CLI,
+  type GrokTransport,
+} from './transport'
+export {
+  generateGrokStructuredViaCursorCli,
+  CURSOR_GROK_MODEL,
+} from './cursor-cli'
+

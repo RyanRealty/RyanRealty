@@ -338,22 +338,22 @@ export async function processNewExpiredListings(
         // PLAN 71 AUTO-ENROLL PAUSED (Matt directive 2026-07-11): expired
         // outreach is manual approve-and-send at /admin/expired-outreach —
         // nothing texts an expired owner without a broker's click. Tags,
-        // custom fields, the call task, and the Matt alert still fire; Auto-CMA
-        // is separately gated by EXPIRED_AUTO_CMA (default OFF). To restore
+        // custom fields, the call task, Auto-CMA, and the Matt alert still
+        // fire; only the automatic first-touch sequence is off. To restore
         // auto-enroll, re-add autoEnrollPerson(crmPersonId) here (import kept).
         void autoEnrollPerson // import retained for the documented restore path
         console.log(
-          `[expired-listing-processor] auto-enroll PAUSED for crm ${crmPersonId} — manual queue at /admin/expired-outreach (2026-07-11 directive)`,
+          `[expired-listing-processor] auto-enroll PAUSED for crm ${crmPersonId} — manual approve at /admin/expired-outreach (2026-07-11 directive)`,
         )
 
-        // Auto-CMA gated: EXPIRED_AUTO_CMA defaults OFF; only runs when EXPIRED_AUTO_CMA=1|true|yes (kills SpaceX burn from expired-listing-cron).
-        const expiredAutoCmaOn = /^(1|true|yes)$/i.test(
+        // Auto-CMA (Matt 2026-06-11; restored 2026-09-15): runs by default.
+        // Opt out with EXPIRED_AUTO_CMA=0|false|no. Judge/audit for this path
+        // use Cursor subscription transport (lib/grok/transport + cursor-cli),
+        // not api.x.ai — see lib/cma/worker.ts.
+        const expiredAutoCmaOff = /^(0|false|no)$/i.test(
           (process.env.EXPIRED_AUTO_CMA ?? '').trim(),
         )
-        if (expiredAutoCmaOn) {
-          // When enabled (Matt directive 2026-06-11): queue a CMA for the
-          // property, link attached to the opening outreach. notifyLead=false
-          // — the owner never asked us for anything.
+        if (!expiredAutoCmaOff) {
           try {
             const { createCmaRequest } = await import('@/lib/cma-request')
             const cmaRes = await createCmaRequest({
