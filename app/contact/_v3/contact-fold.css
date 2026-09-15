@@ -1,4 +1,6 @@
-/* /contact fold: reach + write as one viewport. Tokens only. */
+/* /contact fold: reach + write as one viewport. Tokens only.
+   House-doors owns hierarchy (lead + light column). This file only
+   places that band in the first viewport and restyles the fold. */
 
 .contact-fold {
   max-width: var(--v3-measure);
@@ -7,11 +9,12 @@
 
 .contact-fold .v3.v3-quiet {
   max-width: none;
-  padding-top: var(--v3-space-lg);
+  padding-top: var(--v3-space-md);
   padding-bottom: var(--v3-space-sm);
 }
 
-.contact-fold .v3.v3-quiet:has(+ .v3.v3-doors) {
+.contact-fold .v3.v3-quiet:has(+ .v3.v3-doors),
+.contact-fold .v3.v3-quiet:has(+ .about-faces) {
   padding-bottom: 0;
 }
 
@@ -34,12 +37,15 @@
   margin-top: var(--v3-space-md);
 }
 
-/* Lead door portrait: tap-sized cutout, not the 8/5 art slot. The
-   transparent edge of the headshot is the composition. */
+/* Lead still at the content-floor hero width (319+). 20rem is 320px.
+   Height is short so Call, hours, and the three light doors stay in the
+   1440×900 first viewport with the faces strip. */
 .contact-fold .v3-doors__item--lead .v3-doors__art {
-  width: 4.5rem;
-  aspect-ratio: 1;
-  margin-bottom: var(--v3-space-xs);
+  width: 20rem;
+  min-width: 20rem;
+  aspect-ratio: 4 / 5;
+  max-height: 8rem;
+  margin-bottom: 0;
   background: transparent;
 }
 
@@ -48,38 +54,80 @@
   object-position: center top;
 }
 
-/* Lead door owns the reach column; the three alternatives sit as one row
-   under it. That keeps the phone number on one line and the write sheet
-   in the first viewport at both 1440 and 375. */
-.contact-fold .v3-doors--lead .v3-doors__list {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: auto auto;
+/* 5.0 + count stay one line; the sentence sits beside it. */
+.contact-fold .v3-figure__label {
+  white-space: nowrap;
 }
 
-.contact-fold .v3-doors--lead .v3-doors__item--lead {
-  grid-column: 1 / -1;
-  grid-row: auto;
-  border-right: 0;
-}
-
-.contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) {
-  grid-column: auto;
+.contact-fold .v3-quiet__figure {
+  flex-direction: row;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--v3-space-xs);
+  padding-top: var(--v3-space-2xs);
   border-top: var(--v3-rule-hairline);
-  border-left: 0;
 }
 
-.contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) + .v3-doors__item {
-  border-left: var(--v3-rule-hairline);
+/* Fold-scale house-faces: photographs + names in the first viewport.
+   Licenses and reach rows stay on /team. */
+.contact-fold .about-faces--compact {
+  max-width: none;
+  padding-block: var(--v3-space-2xs);
+  padding-inline: var(--v3-gutter);
+}
+
+.contact-fold .about-faces--compact .v3-eyebrow {
+  display: none;
+}
+
+.contact-fold .about-faces--compact .about-faces__head {
+  margin-bottom: var(--v3-space-2xs);
+}
+
+.contact-fold .about-faces--compact .about-faces__heading {
+  font-size: var(--v3-size-body);
+}
+
+.contact-fold .about-faces--compact .about-faces__role,
+.contact-fold .about-faces--compact .about-faces__license,
+.contact-fold .about-faces--compact .about-faces__reach {
+  display: none;
+}
+
+.contact-fold .v3-quiet__figuresource {
+  display: none;
+}
+
+.contact-fold .about-faces--compact .about-faces__photo-link {
+  aspect-ratio: 1;
+  max-height: 3.5rem;
+}
+
+.contact-fold .about-faces--compact .about-faces__name {
+  min-height: 0;
+  font-size: var(--v3-size-label);
+}
+
+.contact-fold .v3-doors__door--lead {
+  padding-block: var(--v3-space-2xs);
+}
+
+.contact-fold .v3-doors__door--lead .v3-doors__label {
+  font-size: var(--v3-size-display-2);
+}
+
+.contact-fold .v3-doors__live {
+  padding-bottom: var(--v3-space-xs);
+  padding-top: 0;
 }
 
 .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) .v3-doors__door {
-  padding-inline: var(--v3-space-xs);
+  padding-block: var(--v3-space-xs);
 }
 
 @media (max-width: 47.999rem) {
-  /* H1, then the one ask, then the call door — the write sheet must start
-     in the first 812px. display:contents lets Quiet and Doors order apart. */
+  /* H1 + faces + Call on the 375 fold. display:contents lets Quiet,
+     AboutFaces and Doors order apart. Form follows the reach control. */
   .contact-fold {
     display: flex;
     flex-direction: column;
@@ -95,12 +143,16 @@
     padding-bottom: 0;
   }
 
-  .contact-fold__write {
+  .contact-fold .about-faces {
     order: 2;
   }
 
   .contact-fold .v3.v3-doors {
     order: 3;
+  }
+
+  .contact-fold__write {
+    order: 4;
   }
 
   .contact-fold .v3.v3-ask {
@@ -112,10 +164,6 @@
     margin-top: var(--v3-space-sm);
   }
 
-  .contact-fold .v3-quiet__body {
-    display: none;
-  }
-
   .contact-fold .v3-quiet__item--prose {
     padding: var(--v3-space-xs) 0;
   }
@@ -124,33 +172,36 @@
     row-gap: var(--v3-space-2xs);
   }
 
-  .contact-fold .v3-quiet__figure {
-    padding-top: var(--v3-space-2xs);
-    flex-direction: row;
-    align-items: baseline;
-    gap: var(--v3-space-sm);
-    border-top: var(--v3-rule-hairline);
-  }
-
   .contact-fold .v3-quiet__figure .v3-figure__value {
     font-size: var(--v3-size-display-2);
-  }
-
-  .contact-fold .v3-doors__door--lead {
-    padding-block: var(--v3-space-sm);
   }
 
   .contact-fold .v3-doors__door--lead .v3-doors__label {
     font-size: var(--v3-size-display-2);
   }
 
-  .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) .v3-doors__fact,
-  .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) .v3-doors__arrow {
+  .contact-fold .about-faces--compact .about-faces__head {
     display: none;
+  }
+
+  .contact-fold .about-faces--compact .about-faces__name {
+    min-height: 0;
+    padding-top: var(--v3-space-2xs);
+    font-size: var(--v3-size-label);
+  }
+
+  .contact-fold .about-faces--compact .about-faces__photo-link {
+    max-height: 2.75rem;
+  }
+
+  .contact-fold .v3-doors__item--lead .v3-doors__art {
+    width: min(100%, 20rem);
+    min-width: 0;
+    max-height: 7rem;
   }
 }
 
-/* Wide: intro + call on the left, the one ask on the right. */
+/* Wide: intro + faces + call on the left, the one ask on the right. */
 @media (min-width: 64rem) {
   .contact-fold {
     display: grid;
@@ -165,5 +216,18 @@
 
   .contact-fold__reach {
     min-width: 0;
+  }
+
+  .contact-fold .v3.v3-quiet {
+    padding-top: var(--v3-space-sm);
+    padding-bottom: 0;
+  }
+
+  .contact-fold .v3-quiet__item--prose {
+    padding: var(--v3-space-2xs) 0;
+  }
+
+  .contact-fold .v3-doors--lead .v3-doors__list {
+    grid-template-columns: minmax(20rem, 1.25fr) minmax(0, 1fr);
   }
 }

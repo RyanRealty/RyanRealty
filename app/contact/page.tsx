@@ -33,7 +33,7 @@ import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listi
 import { listingTileHref } from '@/lib/slug'
 import { formatDate } from '@/lib/format/date'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
-import { BROKERS, CONTACT } from '@/lib/brand/contact'
+import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
 import { valuationHref } from '@/lib/site/valuation-href'
 import {
   V3_ROOT_CLASS,
@@ -53,6 +53,7 @@ import {
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { ContactAsk } from './_v3/ContactAsk.client'
 import { ContactFold } from './_v3/ContactFold'
+import { ContactHoursLive } from './_v3/ContactHoursLive.client'
 import { CONTACT_FAQ_ITEMS } from './_v3/contact-constants'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
@@ -160,6 +161,20 @@ export default async function ContactPage({ searchParams }: PageProps) {
     '@type': 'ContactPage',
     name: 'Contact Ryan Realty',
     url: `${baseUrl}/contact`,
+    mainEntity: {
+      '@type': ['RealEstateAgent', 'LocalBusiness'],
+      name: BRAND.name,
+      telephone: CONTACT.phoneDirect,
+      email: CONTACT.email.primary,
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: BRAND.address.street,
+        addressLocality: BRAND.address.city,
+        addressRegion: BRAND.address.region,
+        postalCode: BRAND.address.postalCode,
+        addressCountry: BRAND.address.country,
+      },
+    },
   }
   const breadcrumbJsonLd = generateBreadcrumbSchema([
     { name: 'Home', url: baseUrl },
@@ -177,19 +192,27 @@ export default async function ContactPage({ searchParams }: PageProps) {
     // and the chevron row already used by V3Doors.
     {
       kind: 'prose' as const,
-      body: 'Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the surrounding communities. Local experts who take care of you from the first call through closing.',
+      body:
+        reviewSummary && reviewSummary.count > 0
+          ? `${reviewSummary.averageRating.toFixed(1)} from ${reviewSummary.count} Google reviews of Ryan Realty.`
+          : 'Local experts who take care of you from the first call through closing.',
       ...(reviewSummary && reviewSummary.count > 0
         ? {
             figure: {
               value: reviewSummary.averageRating.toFixed(1),
-              label: 'Google reviews',
-              unit: `of 5, from ${reviewSummary.count} Google reviews`,
+              label: `${reviewSummary.count} reviews`,
+              unit: 'of 5',
               source:
                 'Google Business Profile reviews of Ryan Realty — every non-hidden review row in public.reviews, ratings averaged to a tenth, read live at render.',
               sourceName: 'Google reviews',
             },
           }
         : {}),
+    },
+    {
+      label: BRAND.address.street,
+      detail: `${BRAND.address.city}, ${BRAND.address.region} ${BRAND.address.postalCode}`,
+      href: BRAND.social.googleBusinessProfile,
     },
     ...(listingHref
       ? [{ label: listingSummary || 'The listing you asked about', href: listingHref }]
@@ -388,6 +411,16 @@ export default async function ContactPage({ searchParams }: PageProps) {
                   headingLevel={1}
                   items={introItems}
                 />
+                {faces.length > 0 ? (
+                  <AboutFaces
+                    people={faces}
+                    heading="Who answers"
+                    headingLevel={2}
+                    size="compact"
+                    eyebrow="Ryan Realty · Bend"
+                    claim="Three licensed Oregon brokers, all of them here. Whichever one you reach is the one who works your deal."
+                  />
+                ) : null}
                 {/* Reach control in the first viewport, beside the form.
                     Calling is the one door, at display scale, with the principal
                     photograph as the mark and published hours as the live state.
@@ -403,7 +436,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
                       fact: v3Text('One number for the whole brokerage'),
                       href: `tel:${CONTACT.phoneDirectTel}`,
                       primary: true,
-                      live: hoursLive,
+                      live: <ContactHoursLive>{hoursLive}</ContactHoursLive>,
                       ...(principal?.headshotPng
                         ? {
                             imageSrc: principal.headshotPng,
@@ -444,7 +477,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
           />
         ) : null}
 
-        {variant !== 'faces-first' && faces.length > 0 ? (
+        {variant !== 'faces-first' && variant !== 'quiet-doors' && faces.length > 0 ? (
           <AboutFaces
             people={faces}
             heading="Who answers"
