@@ -184,7 +184,7 @@ export function ContactField({
         success={success}
         reserveErrorLine={Boolean(error)}
         classNames={{
-          field: 'border-foreground',
+          field: 'border-foreground ring-foreground/25',
           successIcon: 'text-foreground',
           errorMessage: 'text-foreground',
         }}

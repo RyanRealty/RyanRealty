@@ -23,12 +23,15 @@
   background: var(--v3-cream);
 }
 
-.contact-field [data-state='error'] {
+.contact-field [data-state='error'],
+.contact-field [data-state='success'],
+.contact-field [aria-invalid='true'] {
   border-color: var(--v3-ink);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--v3-ink) 25%, transparent);
 }
 
-.contact-field [data-state='success'] {
-  border-color: var(--v3-ink);
+.contact-field [role='alert'] {
+  color: var(--v3-ink);
 }
 
 .contact-field__hint {
