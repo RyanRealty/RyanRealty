@@ -36,6 +36,13 @@ import {
   type ReconcilableSale,
 } from '@/lib/pricing/reconciliation'
 import { applyFailedAskCap as applyExpiredFailedAskCap } from '@/lib/cma/expired-audit'
+import {
+  applyExclusivePocketDateAdj,
+  exclusivePocketPathNote,
+  selectionIsExclusivePocket,
+  TIME_ADJUSTMENT_BASIS_POCKET,
+  TIME_ADJUSTMENT_MEASURE_POCKET,
+} from '@/lib/pricing/exclusive-pocket-date-adj'
 
 const SIZE_ADJ_FACTOR = 0.5
 const MS_PER_MONTH = 30.44 * 86_400_000
@@ -165,7 +172,7 @@ export interface PricingTimeAdjustment {
    * of the last three COMPLETE months of the city index, never the running
    * month (R2d, 2026-09-08).
    */
-  basis: 'city-monthly-index-trailing-3' | 'year-over-year' | 'none'
+  basis: 'city-monthly-index-trailing-3' | 'year-over-year' | 'exclusive-pocket-sold-list' | 'none'
   /**
    * WHAT THIS BASIS MEASURES (round four, class E). The date adjustment and
    * the market chapter's month line are two different city trends, and the
@@ -233,10 +240,39 @@ export function buildTimeAdjustmentBasis(opts: {
   windowMonths?: number
   /** Why the monthly index was not used, when it was not. Printed. */
   indexUnavailableReason?: string | null
+  /**
+   * Exclusive pocket (Canter 2026-09-15): city-index date-adjust is refuse.
+   * The picker already excluded the tracts that series mixes in.
+   */
+  exclusivePocket?: boolean
 }): PricingTimeAdjustment {
   const windowMonths = opts.windowMonths ?? TIME_ADJUSTMENT_WINDOW_MONTHS
   const fetchedAt = opts.fetchedAt ?? new Date().toISOString()
   const city = opts.cityName?.trim() ? `${opts.cityName.trim()}'s` : "this city's"
+  if (opts.exclusivePocket === true) {
+    const trend = marketIndexTrend({ points: opts.points, asOf: opts.asOf, windowMonths })
+    const wouldMove = trend.pctOverWindow
+    const would =
+      wouldMove != null && Number.isFinite(wouldMove) && wouldMove !== 0
+        ? ` That city index ${wouldMove > 0 ? 'rose' : 'fell'} ${Math.abs(wouldMove).toFixed(1)} percent over the last ${windowMonths} months; it is not applied here.`
+        : ''
+    return {
+      pctPerMonth: 0,
+      pctOverWindow: 0,
+      windowMonths,
+      n: trend.n,
+      basis: TIME_ADJUSTMENT_BASIS_POCKET,
+      measure: TIME_ADJUSTMENT_MEASURE_POCKET,
+      referenceMonths: trend.referenceMonths,
+      source: {
+        table: 'sale_pricing_facts (exclusive pocket closes)',
+        filter: `Exclusive pocket: date adjustment does not walk pricing_market_index for ${opts.citySlug}. Sold and last-ask prices in the selected pocket set are the market.`,
+        fetchedAt,
+        query: `exclusive pocket — city_slug='${opts.citySlug}' index computed but not applied`,
+      },
+      sentence: `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price, then size.${would}`,
+    }
+  }
   const trend = marketIndexTrend({ points: opts.points, asOf: opts.asOf, windowMonths })
   if (trend.pctPerMonth != null) {
     const move = trend.pctOverWindow ?? 0
@@ -589,6 +625,8 @@ export function adjustCompAlongMarket(opts: {
   asOf: string
   /** Hydrated first-list DOM from `selection.comps`. Overlay after sale rebuild. */
   hydrated?: HydratedClosedCompDom | null
+  /** Exclusive pocket: do not apply the city-index date-adjust factor. */
+  exclusivePocket?: boolean
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
   return adjustCmaCompAlongMarket({
     ...opts,
@@ -618,9 +656,12 @@ export function adjustCmaCompAlongMarket(opts: {
   saleStory: StoryClass
   points: MarketIndexPoint[]
   asOf: string
+  /** Exclusive pocket: do not apply the city-index date-adjust factor. */
+  exclusivePocket?: boolean
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
   const sale = opts.comp
-  const path = marketPath({ points: opts.points, fromDate: sale.closeDate, toDate: opts.asOf })
+  const cityPath = marketPath({ points: opts.points, fromDate: sale.closeDate, toDate: opts.asOf })
+  const path = applyExclusivePocketDateAdj(cityPath, opts.exclusivePocket === true)
   const timeAdjustedPrice = timeAdjustAlongPath(sale.closePrice, path)
   const timeAdjustment = timeAdjustedPrice - sale.closePrice
   const monthsSinceClose = Math.max(
@@ -646,7 +687,11 @@ export function adjustCmaCompAlongMarket(opts: {
     adjustedPrice,
     weight: +(sizeProximity * recency).toFixed(4),
   }
-  return { adjusted, path, pathNote: `${sale.address}: ${describePath(path)}` }
+  const pathNote =
+    opts.exclusivePocket === true
+      ? exclusivePocketPathNote(sale.address, cityPath)
+      : `${sale.address}: ${describePath(path)}`
+  return { adjusted, path, pathNote }
 }
 
 export type EngineListResult = {
@@ -1055,6 +1100,7 @@ export function priceCmaSet(args: {
     asOf: args.asOf,
     yoyMedianPriceDeltaPct: args.market?.yoyMedianPriceDeltaPct ?? null,
     indexUnavailableReason: args.indexUnavailableReason ?? null,
+    exclusivePocket: selectionIsExclusivePocket(args.selection.tiersUsed),
   })
   // THE HOUSE NEXT DOOR IS THE EVIDENCE, AND IT GETS THE LAST WORD BEFORE THE
   // FAILED-ASK CEILING (Matt 2026-09-10). computePricing already applied it,
@@ -1118,6 +1164,7 @@ export function estimateClosePrice(opts: {
 } {
   const pathNotes: string[] = []
   const regimes = new Set<string>()
+  const exclusivePocket = selectionIsExclusivePocket(opts.comps.map((c) => c.selectionTier))
   const adjusted = opts.comps.map((sale, i) => {
     const row = adjustCompAlongMarket({
       subject: opts.subject,
@@ -1126,6 +1173,7 @@ export function estimateClosePrice(opts: {
       saleStory: opts.compStories[i] ?? 'unknown',
       points: opts.points,
       asOf: opts.asOf,
+      exclusivePocket,
     })
     pathNotes.push(row.pathNote)
     regimes.add(row.path.regime)

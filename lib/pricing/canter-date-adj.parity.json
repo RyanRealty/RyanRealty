@@ -1,0 +1,14 @@
+{
+  "kind": "picker-contract",
+  "id": "cma-canter-date-adj",
+  "contracts": [
+    "city-index-pumps-horse-back-toward-800k",
+    "exclusive-pocket-date-adj-keeps-flex-band",
+    "ranch-absent-does-not-reopen-city-index-pump",
+    "exclusive-pocket-basis-names-sold-list"
+  ],
+  "testFiles": [
+    "lib/pricing/canter-date-adj.contract.test.ts",
+    "lib/pricing/exclusive-pocket-date-adj.test.ts"
+  ]
+}
