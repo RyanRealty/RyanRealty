@@ -110,6 +110,12 @@ describe('manneredPublicCopyProblems', () => {
     )
     expect(p).toContain(HOME_BRIEF_LEAK_REFUSE)
   })
+
+  it('refuses a list-intro lecture about the map and filters', () => {
+    const lecture =
+      'The same homes the map above marks, with price, beds and property type on the filters. Sold and pending homes are counted on the market section further down, not here.'
+    expect(manneredPublicCopyProblems(`body: \`${lecture}\``)).toContain(MANNERED_COPY_REFUSE)
+  })
 })
 
 describe('tasteDoneProblems — mannered copy is Tip Ready refuse', () => {

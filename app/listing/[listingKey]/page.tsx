@@ -18,6 +18,10 @@ import { listingHistorySeedFrom, readListingDetailHistory } from '@/lib/listing/
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingPlaceTrail } from '@/lib/site/place-trail'
 import { listingAliasPlatLadder } from '@/lib/listing/listing-alias-plat-trail'
+import {
+  firstVisitorPlaceLabel,
+  firstVisitorPlaceSlug,
+} from '@/lib/site/visitor-place-noise'
 import { listingShareSummary } from '@/lib/share-metadata'
 import { publishListingDrop } from '@/lib/listing/publish-listing-ask'
 import {
@@ -519,8 +523,14 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
     city: listing.city ?? '',
     citySlug: listing.citySlug ?? null,
     cityName: listing.city ?? null,
-    neighborhoodSlug: listing.neighborhoodSlug ?? null,
-    neighborhoodName: placeContext.neighborhood?.label ?? listing.neighborhoodName ?? null,
+    neighborhoodSlug: firstVisitorPlaceSlug(
+      placeContext.neighborhood?.slug,
+      listing.neighborhoodSlug,
+    ),
+    neighborhoodName: firstVisitorPlaceLabel(
+      placeContext.neighborhood?.label,
+      listing.neighborhoodName,
+    ),
     communitySlug: placeContext.curatedCommunity?.slug ?? null,
     communityName: placeContext.curatedCommunity?.label ?? null,
     boundary: placeBoundary,

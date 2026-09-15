@@ -121,6 +121,18 @@ describe('listingPlaceTrail', () => {
   })
 
 
+  it('never prints Undesignated as a neighborhood crumb', () => {
+    expect(
+      listingPlaceTrail({
+        city: { label: 'Bend', slug: 'bend' },
+        neighborhood: { label: 'Undesignated', slug: 'bend-undesignated' },
+        community: { label: 'Stevens Ranch', slug: 'stevens-ranch' },
+        subdivision: null,
+        address: '21404 SE Krakatoa Court',
+      }).map((c) => c.label),
+    ).toEqual(['Bend', 'Stevens Ranch', '21404 SE Krakatoa Court'])
+  })
+
   it('sends an alias-only parent to the subdivision door, not a missing community page', () => {
     expect(
       listingPlaceTrail({
@@ -136,10 +148,6 @@ describe('listingPlaceTrail', () => {
     ).toEqual([
       { label: 'Bend', href: '/cities/bend' },
       { label: 'Stevens Ranch', href: '/subdivisions/stevens-ranch' },
-      {
-        label: 'Stevens Ranch Phase RS-1',
-        href: '/subdivisions/stevens-ranch-phase-rs-1-plld20211070',
-      },
       { label: '21812 SE Stromboli Court' },
     ])
   })

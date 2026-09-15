@@ -57,6 +57,32 @@ describe('leftoverListingGrains', () => {
     )
   })
 
+  it('skips Undesignated leftover neighborhood', () => {
+    const undesignated = {
+      city: 'Bend',
+      citySlug: 'bend',
+      subdivisionName: 'Stevens Ranch',
+      subdivisionSlug: 'stevens-ranch',
+      neighborhoodName: 'Undesignated',
+      neighborhoodSlug: 'bend-undesignated',
+    }
+    const { marketGeo } = resolveListingPlaceAndMarket(undesignated)
+    expect(leftoverListingGrains(undesignated, marketGeo).map((g) => g.name).join(' ')).not.toMatch(
+      /undesignated/i,
+    )
+    expect(
+      listingAtlasFrameIntent({
+        city: 'Bend',
+        citySlug: 'bend',
+        cityName: 'Bend',
+        neighborhoodSlug: 'bend-undesignated',
+        neighborhoodName: 'Undesignated',
+        communitySlug: 'stevens-ranch',
+        communityName: 'Stevens Ranch',
+      }),
+    ).toEqual({ grain: 'community', slug: 'stevens-ranch', name: 'Stevens Ranch' })
+  })
+
   it('tries curated community as leftover neighborhood when no neighborhood slug', () => {
     const tetherow = {
       city: 'Bend',

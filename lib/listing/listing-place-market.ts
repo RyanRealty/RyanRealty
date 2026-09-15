@@ -7,8 +7,15 @@ import { resolvePlaceContextFromListing } from '@/lib/data/geo/resolvePlaceConte
 import type { PlaceContext } from '@/lib/data/geo/resolvePlaceContext'
 import type { BoundaryGeoJSONInput } from '@/lib/data/geo/getBoundaryGeoJSON'
 import { cityHref, cityNeighborhoodHref, hasCityNeighborhoodPages } from '@/lib/site/place-href'
+import {
+  isPermitGluedPlatSlug,
+  isVisitorPlaceNoiseLabel,
+  isVisitorPlaceNoiseSlug,
+} from '@/lib/site/visitor-place-noise'
 
-const NOISE_SLUGS = new Set(['na', 'none', 'unknown', 'outside-city-limits'])
+function isNoiseSlug(slug: string | null | undefined): boolean {
+  return isVisitorPlaceNoiseSlug(slug) || isPermitGluedPlatSlug(slug)
+}
 
 export type ListingPlaceFields = {
   city: string | null
@@ -41,11 +48,13 @@ export function resolveListingPlaceAndMarket(listing: ListingPlaceFields): {
   })
 
   const validSubdivisionSlug =
-    listing.subdivisionSlug && !NOISE_SLUGS.has(listing.subdivisionSlug)
+    listing.subdivisionSlug && !isNoiseSlug(listing.subdivisionSlug)
       ? listing.subdivisionSlug
       : null
   const validNeighborhoodSlug =
-    listing.neighborhoodSlug && !NOISE_SLUGS.has(listing.neighborhoodSlug)
+    listing.neighborhoodSlug &&
+    !isNoiseSlug(listing.neighborhoodSlug) &&
+    !isVisitorPlaceNoiseLabel(listing.neighborhoodName)
       ? listing.neighborhoodSlug
       : null
 
@@ -99,13 +108,22 @@ export function leftoverListingGrains(
   const seen = new Set<string>()
   const push = (grain: LeftoverListingGrain) => {
     const key = `${grain.geoType}:${grain.geoSlug}`
-    if (seen.has(key) || !grain.geoSlug || NOISE_SLUGS.has(grain.geoSlug)) return
+    if (
+      seen.has(key) ||
+      !grain.geoSlug ||
+      isNoiseSlug(grain.geoSlug) ||
+      isVisitorPlaceNoiseLabel(grain.name)
+    ) {
+      return
+    }
     seen.add(key)
     grains.push(grain)
   }
 
   const neighborhoodSlug =
-    listing.neighborhoodSlug && !NOISE_SLUGS.has(listing.neighborhoodSlug)
+    listing.neighborhoodSlug &&
+    !isNoiseSlug(listing.neighborhoodSlug) &&
+    !isVisitorPlaceNoiseLabel(listing.neighborhoodName ?? listing.boundaryNeighborhood)
       ? listing.neighborhoodSlug
       : null
   if (neighborhoodSlug) {
@@ -123,7 +141,8 @@ export function leftoverListingGrains(
   } else if (
     marketGeo?.geoType === 'community' &&
     marketGeo.geoSlug &&
-    !NOISE_SLUGS.has(marketGeo.geoSlug)
+    !isNoiseSlug(marketGeo.geoSlug) &&
+    !isVisitorPlaceNoiseLabel(marketGeo.name)
   ) {
     push({
       geoType: 'neighborhood',
@@ -147,11 +166,19 @@ export function leftoverListingGrains(
 
 /** Finest leftover place door for inventory in this listing's boundary. */
 export function listingInventoryDoor(placeContext: PlaceContext): { href: string; name: string } | null {
-  const node =
-    placeContext.neighborhood ??
-    placeContext.curatedCommunity ??
-    placeContext.subdivision ??
-    placeContext.city
+  const node = [
+    placeContext.neighborhood,
+    placeContext.curatedCommunity,
+    placeContext.subdivision,
+    placeContext.city,
+  ].find(
+    (n) =>
+      n &&
+      n.href &&
+      n.label &&
+      !isNoiseSlug(n.slug) &&
+      !isVisitorPlaceNoiseLabel(n.label),
+  )
   if (!node?.href || !node.label) return null
   return { href: `${node.href}#homes`, name: node.label }
 }
@@ -165,7 +192,7 @@ export function listingBoundaryAttempts(
   const out: BoundaryGeoJSONInput[] = []
   const push = (geoType: BoundaryGeoJSONInput['geoType'], geoSlug: string | null | undefined) => {
     const slug = geoSlug?.trim()
-    if (!slug || NOISE_SLUGS.has(slug)) return
+    if (!slug || isNoiseSlug(slug)) return
     const key = `${geoType}:${slug}`
     if (seen.has(key)) return
     seen.add(key)
@@ -200,13 +227,16 @@ export function listingAtlasFrameIntent(input: {
   communityName: string | null
 }): ListingAtlasFrameIntent {
   const neighborhoodSlug =
-    input.neighborhoodSlug && !NOISE_SLUGS.has(input.neighborhoodSlug)
+    input.neighborhoodSlug &&
+    !isNoiseSlug(input.neighborhoodSlug) &&
+    !isVisitorPlaceNoiseLabel(input.neighborhoodName)
       ? input.neighborhoodSlug
       : null
   if (
     input.citySlug &&
     neighborhoodSlug &&
     input.neighborhoodName &&
+    !isVisitorPlaceNoiseLabel(input.neighborhoodName) &&
     hasCityNeighborhoodPages(input.citySlug)
   ) {
     return {
@@ -216,7 +246,11 @@ export function listingAtlasFrameIntent(input: {
     }
   }
   const communitySlug =
-    input.communitySlug && !NOISE_SLUGS.has(input.communitySlug) ? input.communitySlug : null
+    input.communitySlug &&
+    !isNoiseSlug(input.communitySlug) &&
+    !isVisitorPlaceNoiseLabel(input.communityName)
+      ? input.communitySlug
+      : null
   if (communitySlug && input.communityName) {
     return { grain: 'community', slug: communitySlug, name: input.communityName }
   }
