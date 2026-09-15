@@ -137,7 +137,7 @@
         "source-open",
         "year-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3221/housing-market/central-oregon. year-open = official Compare hover (prose outside card, series columns, Trend snapshot, Snapshot, ChartTooltip). source-open = MOS DigitSwapPreview value+key mid-roll. Aliases year-page←year-open, source←source-open."
+      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3221/housing-market/central-oregon. year-open = official Compare hover (no cream card wrap, no cities). source-open = official DigitSwapPreview masked vs revealed. Aliases year-page←year-open, source←source-open."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/desktop.png",
@@ -151,7 +151,7 @@
       "sourceOpenDesktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/source-open-desktop.png",
       "sourceOpenMobile375": "design_system/ryan-realty/ui_kits/market-report-region/shots/source-open-mobile375.png"
     },
-    "shotsHash": "sha256:9e65a36e3ad99e7b64b38551343ed9d7927d1e32bca0c81ecdb4ccddb28a3dee",
+    "shotsHash": "sha256:2866f3cc51120bd89995e16c75cb6558a16f7ca589c592dddccca563309e1a5e",
     "scores": [
       64,
       58,
