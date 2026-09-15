@@ -4,7 +4,11 @@
  * Meadow, widened to Clearpine). Tip Ready is this file + --ship.
  */
 import { describe, expect, it } from 'vitest'
-import { inferSubdivisionPocket } from '@/lib/pricing/infer-pocket'
+import {
+  applyInferredPocket,
+  inferPocketForPricingWalk,
+  inferSubdivisionPocket,
+} from '@/lib/pricing/infer-pocket'
 import { walkPricingLadder, type PricingSale, type PricingSubject } from '@/lib/pricing/match'
 
 const CANTER = { latitude: 44.2908, longitude: -121.5493, city: 'Sisters', citySlug: 'sisters' }
@@ -172,6 +176,40 @@ const decoys = () => [
   upmarket('Sunset Meadows', 2.3, 800_000),
 ]
 
+/** Live 2026-09-15 07:28 PT rebuild: GIS plat RHM + multi-street RHM + one newer pocket sale. */
+const rhmMeadow = () =>
+  sale({
+    listingKey: 'RHM-MEADOW',
+    address: '200 Meadow Ln',
+    subdivision: 'Rolling Horse Meadow',
+    subdivisionNorm: 'rolling horse meadow',
+    ...atMiles(0.08),
+    closePrice: 710_000,
+    lastAsk: 710_000,
+    yearBuilt: 1995,
+    sqft: 2000,
+    closeDate: '2025-11-01',
+  })
+
+const horse945 = () =>
+  sale({
+    listingKey: 'HB-945',
+    address: '945 Horse Back',
+    subdivision: 'SaddleStone',
+    subdivisionNorm: 'saddlestone',
+    ...atMiles(0.18),
+    closePrice: 710_000,
+    lastAsk: 710_000,
+    closePpsf: 373,
+    yearBuilt: 2023,
+    sqft: 1900,
+    closeDate: '2025-10-01',
+  })
+
+function liveRebuildPool(): PricingSale[] {
+  return [rhmNearest(), rhmMeadow(), horse945(), ranch(), horseBackClosed(), ...decoys()]
+}
+
 describe('1130 E Canter Sisters pocket residual', () => {
   it('contract: blank-subdiv-infers-saddlestone-cluster', () => {
     const pocket = inferSubdivisionPocket({
@@ -234,5 +272,52 @@ describe('1130 E Canter Sisters pocket residual', () => {
     expect(out.comps.map((c) => c.listingKey)).toContain('HB-1025')
     expect(out.comps.map((c) => c.listingKey)).not.toContain('UP-Clearpine')
     expect(out.comps.every((c) => !/clearpine|forest edge/i.test(c.subdivision ?? ''))).toBe(true)
+  })
+
+  it('contract: live-rebuild-plat-rhm-infers-cluster', () => {
+    const pocket = inferPocketForPricingWalk(
+      {
+        subdivision: null,
+        subdivisionNorm: null,
+        streetAddress: '1130 E Canter',
+        platLabel: 'Rolling Horse Meadow',
+        ...CANTER,
+      },
+      liveRebuildPool(),
+    )
+    expect(pocket.subdivision).not.toBe('Rolling Horse Meadow')
+    expect(pocket.source).toBe('street-cluster')
+    expect(['SaddleStone', 'Horse Back', 'Ranch']).toContain(pocket.subdivision)
+    const names = [pocket.subdivisionNorm, ...pocket.neighborNorms]
+    expect(names).toEqual(expect.arrayContaining(['saddlestone', 'horse back']))
+  })
+
+  it('contract: live-rebuild-select-prefill-rhm-then-walk', () => {
+    const prefilled = applyInferredPocket(subject({ platLabel: 'Rolling Horse Meadow' }), {
+      subdivision: 'Rolling Horse Meadow',
+      subdivisionNorm: 'rolling horse meadow',
+      subdivisionSlug: 'rolling-horse-meadow',
+      neighborNorms: ['saddlestone'],
+      pocketStreetKeys: ['canter'],
+      inferred: true,
+      source: 'plat',
+    })
+    expect(prefilled.subdivision).toBe('Rolling Horse Meadow')
+    const out = walkPricingLadder(prefilled, liveRebuildPool(), {
+      asOf,
+      pendingPool: [horseBackPending()],
+    })
+    expect(out.inferredPocket?.subdivision).not.toBe('Rolling Horse Meadow')
+    expect(out.inferredPocket?.source).toBe('street-cluster')
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toContain('RANCH-1058')
+    expect(keys).toContain('HB-1025')
+    expect(keys).not.toContain('UP-Clearpine')
+    expect(keys).not.toContain('UP-ForestEdge')
+    expect(keys).not.toContain('UP-GrandPeaks')
+    const closes = out.comps.map((c) => c.closePrice).sort((a, b) => a - b)
+    const mid = closes[Math.floor(closes.length / 2)]!
+    expect(mid).toBeGreaterThanOrEqual(649_000)
+    expect(mid).toBeLessThanOrEqual(710_000)
   })
 })

@@ -58,7 +58,7 @@ import {
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible, type RuralSplitCounts } from '@/lib/pricing/rural'
 import {
   applyInferredPocket,
-  inferSubdivisionPocket,
+  inferPocketForPricingWalk,
   saleInExclusivePocket,
   type InferredPocket,
 } from '@/lib/pricing/infer-pocket'
@@ -112,6 +112,8 @@ export type PricingSubject = {
   pocketStreetKeys?: string[]
   /** Set when a blank MLS tract was filled from a plat or nearest neighbor. */
   inferredPocket?: InferredPocket | null
+  /** County plat label from getSubdivisionRing — not an MLS SubdivisionName. */
+  platLabel?: string | null
 }
 
 export type PricingSale = {
@@ -864,15 +866,7 @@ export function walkPricingLadder(
     pendingPool?: PricingSale[]
   },
 ): PricingMatchResult {
-  const inferred = inferSubdivisionPocket({
-    subdivision: rawSubject.subdivision,
-    subdivisionNorm: rawSubject.subdivisionNorm,
-    subdivisionSlug: rawSubject.subdivisionSlug,
-    streetAddress: rawSubject.streetAddress,
-    latitude: rawSubject.latitude,
-    longitude: rawSubject.longitude,
-    neighbors: pool,
-  })
+  const inferred = inferPocketForPricingWalk(rawSubject, pool)
   const subject = applyInferredPocket({ ...rawSubject }, inferred)
   const asOf = opts.asOf.slice(0, 10)
   const cells = opts.cells ?? new Map()

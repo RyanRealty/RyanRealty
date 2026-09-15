@@ -34,7 +34,6 @@ import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CompSelection } from '@/lib/cma/comps'
 import { emptyExclusions } from '@/lib/cma/comp-trace'
 import { FACTS_STANDALONE_MIN, LOCAL_POOL_RADIUS_MILES, PRICING_MIN_COMPS, PRICING_TARGET_COMPS } from '@/lib/pricing/ladder'
-import { applyInferredPocket, inferSubdivisionPocket } from '@/lib/pricing/infer-pocket'
 import { walkPricingLadder, type PricingMatchResult, type PricingSubject } from '@/lib/pricing/match'
 import type { CmaMarketContext, CmaPricing } from '@/lib/cma/types'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
@@ -194,6 +193,7 @@ export async function selectPricingComps(
   // A plat outside the neighborhood polygon is not "next to" for this purpose.
   if (ring) {
     pricingSubject.subdivisionSlug = ring.homeSlug
+    pricingSubject.platLabel = ring.homeLabel
     pricingSubject.adjacentSubdivisionSlugs = ring.ring
       .filter((r) => r.inNeighborhood !== false)
       .map((r) => r.slug)
@@ -202,22 +202,6 @@ export async function selectPricingComps(
       s.subdivisionSlug = slugs[i]
     })
   }
-  Object.assign(
-    pricingSubject,
-    applyInferredPocket(
-      pricingSubject,
-      inferSubdivisionPocket({
-        subdivision: pricingSubject.subdivision,
-        subdivisionNorm: pricingSubject.subdivisionNorm,
-        subdivisionSlug: pricingSubject.subdivisionSlug,
-        platLabel: ring?.homeLabel ?? null,
-        streetAddress: pricingSubject.streetAddress,
-        latitude: pricingSubject.latitude,
-        longitude: pricingSubject.longitude,
-        neighbors: sales,
-      }),
-    ),
-  )
   // Delta 4 (Matt 2026-09-09): a rural sale's zoning class is a hard split,
   // and the facts table carries no zone. Nearest rural sales first, county
   // GIS through the cache, at most MAX_ZONE_LOOKUPS live queries a build.
@@ -426,7 +410,11 @@ export function pickCompSource(match: {
 
 export async function selectCompsPreferringFacts(
   subject: CmaSubject,
-  opts: { subjectIrrigation?: IrrigationClass | null; subjectZoning?: string | null } = {},
+  opts: {
+    subjectIrrigation?: IrrigationClass | null
+    subjectZoning?: string | null
+    asOf?: string
+  } = {},
 ): Promise<CompSelection> {
   // Classify BEFORE any ladder. Custom/new must never load listings SQL tiers
   // (subdivision / competing-area / citywide) — live Rim View after #187 still

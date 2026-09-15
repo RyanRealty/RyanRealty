@@ -67,6 +67,26 @@ describe('inferSubdivisionPocket', () => {
     }
   })
 
+  it('contract: live-rebuild-plat-rhm-infers-cluster — plat Rolling Horse Meadow loses to Canter/Horse/Ranch', () => {
+    const pocket = inferSubdivisionPocket({
+      subdivision: null,
+      platLabel: 'Rolling Horse Meadow',
+      streetAddress: '1130 E Canter',
+      ...SISTERS,
+      neighbors: [
+        { ...neighbor('Rolling Horse Meadow', 0.04), address: '1121 Canter Ct' },
+        { ...neighbor('Rolling Horse Meadow', 0.08), address: '200 Meadow Ln' },
+        { ...neighbor('SaddleStone', 0.12), address: '1 SaddleStone Ln' },
+        { ...neighbor('Horse Back', 0.14), address: '1025 E Horse Back' },
+        { ...neighbor('Ranch', 0.18), address: '1058 E Ranch' },
+      ],
+    })
+    expect(pocket.inferred).toBe(true)
+    expect(pocket.source).toBe('street-cluster')
+    expect(pocket.subdivision).not.toBe('Rolling Horse Meadow')
+    expect(['SaddleStone', 'Horse Back', 'Ranch']).toContain(pocket.subdivision)
+  })
+
   it('prefers the recorded plat label over nearby sales', () => {
     const pocket = inferSubdivisionPocket({
       subdivision: null,

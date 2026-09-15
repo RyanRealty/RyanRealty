@@ -5,7 +5,14 @@
     "blank-subdiv-infers-saddlestone-cluster",
     "exclusive-while-tight-closed-pending",
     "ranch-and-horse-back-in-clearpine-out",
-    "year-quality-does-not-outrank-until-starved-below-5"
+    "year-quality-does-not-outrank-until-starved-below-5",
+    "live-rebuild-plat-rhm-infers-cluster",
+    "live-rebuild-select-prefill-rhm-then-walk",
+    "live-select-path-rhm-plat-does-not-widen"
   ],
-  "testFiles": ["lib/pricing/canter-pocket.contract.test.ts", "lib/pricing/infer-pocket.test.ts"]
+  "testFiles": [
+    "lib/pricing/canter-pocket.contract.test.ts",
+    "lib/pricing/canter-live-select.contract.test.ts",
+    "lib/pricing/infer-pocket.test.ts"
+  ]
 }

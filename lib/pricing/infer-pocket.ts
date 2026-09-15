@@ -116,10 +116,31 @@ function mostFrequent(rows: MappedNeighbor[]): MappedNeighbor | null {
 }
 
 /**
+ * Two-plus other tract names on two-plus streets — SaddleStone / Horse Back /
+ * Ranch off a nearer Rolling Horse Meadow home. Beats a single name that
+ * merely spans two streets (RHM on Canter + Meadow).
+ */
+function multiNameStreetCluster(
+  mapped: MappedNeighbor[],
+  subjectStreet: string | null,
+  avoidNorm: string | null,
+): MappedNeighbor | null {
+  const cluster = mapped.filter((m) => !avoidNorm || m.norm !== avoidNorm)
+  const names = new Set(cluster.map((m) => m.norm))
+  const streets = new Set<string>()
+  if (subjectStreet) streets.add(subjectStreet)
+  for (const m of cluster) {
+    if (m.street) streets.add(m.street)
+  }
+  if (names.size < 2 || streets.size < 2) return null
+  return mostFrequent(cluster)
+}
+
+/**
  * Blank MLS: prefer a street cluster over the nearest isolated plat.
  * One SaddleStone next to Rolling Horse Meadow is not a cluster (keep nearest).
  * Horse Back + Ranch + SaddleStone beside a nearer Rolling Horse Meadow home
- * is the pocket the subject sits in.
+ * is the pocket the subject sits in — even when RHM itself spans two streets.
  */
 function pickBlankHome(
   mapped: MappedNeighbor[],
@@ -127,6 +148,9 @@ function pickBlankHome(
 ): { home: MappedNeighbor; source: 'nearest-neighbor' | 'street-cluster' } | null {
   const nearest = pickNearestHome(mapped)
   if (!nearest) return null
+
+  const multiName = multiNameStreetCluster(mapped, subjectStreet, nearest.norm)
+  if (multiName) return { home: multiName, source: 'street-cluster' }
 
   const streetsByNorm = new Map<string, Set<string>>()
   for (const m of mapped) {
@@ -168,7 +192,6 @@ function pickBlankHome(
     if (picked) return { home: picked, source: 'street-cluster' }
   }
 
-  void subjectStreet
   return { home: nearest, source: 'nearest-neighbor' }
 }
 
@@ -247,6 +270,24 @@ export function inferSubdivisionPocket(input: InferPocketInput): InferredPocket 
   }
 
   const mapped = mappedInsideRadius(input, POCKET_RADIUS_MILES)
+  const picked = pickBlankHome(mapped, subjectStreet)
+  // Live 1130 E Canter: county plat / nearest home is Rolling Horse Meadow.
+  // The priced pocket is SaddleStone / Horse Back / Ranch. Sales cluster wins.
+  if (picked?.source === 'street-cluster') {
+    return finish(
+      {
+        subdivision: picked.home.name,
+        subdivisionNorm: picked.home.norm,
+        subdivisionSlug: input.subdivisionSlug ?? null,
+        neighborNorms: uniqueOtherNorms(mapped, picked.home.norm),
+        inferred: true,
+        source: 'street-cluster',
+      },
+      mapped,
+      subjectStreet,
+    )
+  }
+
   const platName = realSubdivisionName(input.platLabel)
   const platNorm = normSubdivision(input.platLabel)
   if (platName && platNorm) {
@@ -264,7 +305,6 @@ export function inferSubdivisionPocket(input: InferPocketInput): InferredPocket 
     )
   }
 
-  const picked = pickBlankHome(mapped, subjectStreet)
   if (!picked) return { ...EMPTY, subdivisionSlug: input.subdivisionSlug ?? null }
 
   return finish(
@@ -279,6 +319,39 @@ export function inferSubdivisionPocket(input: InferPocketInput): InferredPocket 
     mapped,
     subjectStreet,
   )
+}
+
+/**
+ * The infer walkPricingLadder / selectPricingComps share.
+ * A plat-filled name is not MLS — re-infer from blank + platLabel + street.
+ */
+export function inferPocketForPricingWalk(
+  rawSubject: {
+    subdivision?: string | null
+    subdivisionNorm?: string | null
+    subdivisionSlug?: string | null
+    streetAddress?: string | null
+    latitude?: number | null
+    longitude?: number | null
+    platLabel?: string | null
+    inferredPocket?: InferredPocket | null
+  },
+  neighbors: readonly PocketNeighbor[],
+): InferredPocket {
+  const prior = rawSubject.inferredPocket
+  const filled = prior?.inferred === true
+  const platLabel =
+    rawSubject.platLabel ?? (prior?.source === 'plat' ? prior.subdivision : null)
+  return inferSubdivisionPocket({
+    subdivision: filled ? null : rawSubject.subdivision,
+    subdivisionNorm: filled ? null : rawSubject.subdivisionNorm,
+    subdivisionSlug: rawSubject.subdivisionSlug,
+    platLabel,
+    streetAddress: rawSubject.streetAddress,
+    latitude: rawSubject.latitude,
+    longitude: rawSubject.longitude,
+    neighbors,
+  })
 }
 
 export type PocketSubjectFields = {
