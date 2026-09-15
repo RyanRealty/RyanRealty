@@ -128,7 +128,8 @@ describe('merge lock — one search component', () => {
     const src = readFileSync(join(root, 'components/search/SearchFilters.tsx'), 'utf8')
     expect(src).toContain("from '@/components/search/SearchSuggest'")
     expect(src).toContain('useSearchSuggest')
-    expect(src).toContain('<V3MorphSearch')
+    expect(src).toContain('<SearchMorph')
+    expect(src).not.toContain('<V3MorphSearch')
     expect(src).not.toContain('<SearchSuggestPanel')
   })
 

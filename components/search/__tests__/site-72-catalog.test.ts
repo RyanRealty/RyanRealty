@@ -9,12 +9,13 @@ function readSrc(rel: string): string {
 describe('SITE-72 catalog wiring', () => {
   it('search dock adapts morphing search, command list, and the price ticks', () => {
     const filters = readSrc('components/search/SearchFilters.tsx')
-    expect(filters).toMatch(/V3MorphSearch/)
+    expect(filters).toMatch(/SearchMorph/)
+    expect(filters).not.toMatch(/V3MorphSearch/)
     expect(filters).toMatch(/srch-morph/)
     expect(filters).toMatch(/SearchCommand/)
     expect(readSrc('app/search/_v3/SearchCommand.client.tsx')).toMatch(/srch-command-trigger/)
     expect(filters).toMatch(/SearchPriceRail/)
-    expect(readSrc('components/site/v3/V3MorphSearch.tsx')).toMatch(
+    expect(readSrc('app/search/_v3/SearchMorph.client.tsx')).toMatch(
       /from '@\/components\/motion\/morphing-search'/,
     )
     expect(readSrc('app/search/_v3/SearchPriceRail.client.tsx')).toMatch(
@@ -25,11 +26,11 @@ describe('SITE-72 catalog wiring', () => {
   })
 
   it('All-filters is the house sheet and price uses the same ticks', () => {
-    const sheet = readSrc('components/search/AllFiltersSheet.tsx')
-    expect(sheet).toMatch(/srch-sheet/)
-    expect(sheet).toMatch(/def\.key === 'price'/)
-    expect(sheet).toMatch(/V3Range/)
-    expect(sheet).toMatch(/srch-command/)
+    const sheet = readSrc('app/search/_v3/SearchFiltersSheet.client.tsx')
+    expect(sheet).toMatch(/V3Sheet/)
+    expect(sheet).toMatch(/SearchPriceRail/)
+    expect(sheet).toMatch(/How many bedrooms/)
+    expect(readSrc('components/search/SearchFilters.tsx')).toMatch(/SearchFiltersSheet/)
   })
 
   it('split and map-only canvases paint the cream field, not a muted flash', () => {

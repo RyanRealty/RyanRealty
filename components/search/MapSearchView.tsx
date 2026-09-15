@@ -48,6 +48,7 @@ import { publishTourEmbedFromUrl } from '@/lib/listing/publish-listing-hero-vide
 import { ListingTourOverlay } from '@/components/site/listing-detail/ListingTourOverlay'
 import type { VideoEmbed } from '@/lib/data/types/video'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
+import { SearchAtlasPane } from '@/app/search/_v3/SearchAtlasPane.client'
 import './search-ledger.css'
 
 const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered'), {
@@ -298,6 +299,11 @@ export type MapSearchViewProps = {
    */
   listOnly?: boolean
   /**
+   * SITE-110: the map pane is house-atlas (price-encoded dots), not Google
+   * headcount clusters. Place pages keep the Google canvas unless they pass this.
+   */
+  atlasMap?: boolean
+  /**
    * The page is a static shell (SITE-29): `filters` and the initial listings
    * are the prerendered DEFAULTS, the URL's query is laid over them after
    * mount, a query change refetches the viewport here (the route's RSC
@@ -335,6 +341,7 @@ export default function MapSearchView({
   lockPlace = false,
   openHouseLabels = {},
   listOnly = false,
+  atlasMap = false,
   staticShell = false,
   scopePolygon = null,
 }: MapSearchViewProps) {
@@ -1217,8 +1224,29 @@ export default function MapSearchView({
     </div>
   )
 
+  const atlasClaim =
+    viewClaim.count > 0
+      ? viewClaim.low != null && viewClaim.high != null
+        ? viewClaim.low === viewClaim.high
+          ? `${formatCount(viewClaim.count)} ${viewClaim.count === 1 ? 'home' : 'homes'} on this map, asking ${formatPriceCompact(viewClaim.low)}${claimPlace ? ` · ${claimPlace}` : ''}`
+          : `${formatCount(viewClaim.count)} ${viewClaim.count === 1 ? 'home' : 'homes'} on this map, ${formatPriceCompact(viewClaim.low)} to ${formatPriceCompact(viewClaim.high)}${claimPlace ? ` · ${claimPlace}` : ''}`
+        : `${formatCount(viewClaim.count)} ${viewClaim.count === 1 ? 'home' : 'homes'} on this map${claimPlace ? ` · ${claimPlace}` : ''}`
+      : 'No homes are drawn on this map yet.'
+
   const mapPanel = listOnly ? null : (
     <div className="relative h-full min-h-0 min-w-0 flex-1">
+      {atlasMap ? (
+        <SearchAtlasPane
+          listings={visibleListings}
+          placeName={claimPlace || placeQuery || 'This view'}
+          placeHref="/homes-for-sale"
+          geometry={boundaryGeojson as GeoJSON.Geometry | null | undefined}
+          source="Oregon Data Share listings in this view"
+          incomplete={initialDegraded}
+          claimText={atlasClaim}
+          className="srch-map-field h-full w-full"
+        />
+      ) : (
       <SearchMapClustered
         listings={mapListings}
         savedListingKeys={viewerState.savedListingKeys}
@@ -1238,10 +1266,9 @@ export default function MapSearchView({
         onMarkerClick={onMarkerClick}
         className="srch-map-field h-full w-full"
       />
-      {/* Saved named areas (Flexmls My-Map-Overlays parity). Applying one
-          replaces the drawn shape set, so it rides the identical ?shapes=
-          contract and is shareable + alert-savable like any drawn area. */}
-      <AreaPicker shapes={drawnShapes} onApply={handleAreaShapes} />
+      )}
+      {/* Saved named areas stay on the Google canvas only. Atlas is the map. */}
+      {atlasMap ? null : <AreaPicker shapes={drawnShapes} onApply={handleAreaShapes} />}
       {/* Zillow-style floating Map | Sort pill (Matt 2026-09-07). */}
       <div className="map-search-mapsort pointer-events-none absolute bottom-[5.5rem] left-1/2 z-[110] -translate-x-1/2 lg:bottom-6">
         <div className="map-search-mapsort__pill pointer-events-auto" role="group" aria-label="Map and sort">
@@ -1317,7 +1344,7 @@ export default function MapSearchView({
           </div>
         </div>
       </div>
-      {areaDirty ? (
+      {atlasMap || !areaDirty ? null : (
         <Button
           type="button"
           variant="outline"
@@ -1326,10 +1353,10 @@ export default function MapSearchView({
         >
           Search this area
         </Button>
-      ) : null}
+      )}
       {/* Active place scope — visible until the first user map move, then the
           query is pure bounding-box. Tap the chip to drop the scope now. */}
-      {scopeLabel && scopeDropped === false && !lockPlace ? (
+      {atlasMap || !(scopeLabel && scopeDropped === false && !lockPlace) ? null : (
         <Button
           type="button"
           variant="outline"
@@ -1347,7 +1374,7 @@ export default function MapSearchView({
             ✕
           </span>
         </Button>
-      ) : null}
+      )}
       {/* Canvas-level fetch state — the map itself says when results are stale. */}
       {loading ? (
         <div className="pointer-events-none absolute inset-0 z-[95] bg-background/20" aria-hidden />

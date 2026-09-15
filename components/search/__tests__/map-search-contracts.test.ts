@@ -255,7 +255,8 @@ describe('390 Map uses one camera', () => {
     expect(filters).toMatch(/VoiceSearchButton/)
     // 375 residual: full-width search row keeps mic in-bar; Places chip on row 2.
     expect(filters).toMatch(/Row 1 @375/)
-    expect(filters).toMatch(/w-full min-w-0 sm:w-64/)
+    expect(filters).toMatch(/w-full min-w-0/)
+    expect(filters).toMatch(/sm:w-64/)
     expect(filters).toMatch(/Row 2 @375/)
     expect(filters).toMatch(/return 'Places'/)
     expect(filters).toMatch(/PLACE_SCHOOL_DISTRICT_OPTIONS/)
@@ -521,17 +522,17 @@ describe('the /search map-only pin layer subtracts hidden homes (W7.2, 2026-07-2
     expect(wrap).toMatch(/<SearchMapClustered\s+listings=\{visible\}/)
   })
 
-  it('the /search map-only branch renders HideAwareSearchMap, not a raw pin layer', () => {
-    expect(page).toMatch(/import HideAwareSearchMap from '@\/components\/search\/HideAwareSearchMap'/)
-    expect(page).toMatch(/<HideAwareSearchMap/)
-    // The page must not import the raw pin layer directly anymore.
+  it('the /search map-only branch renders house-atlas, not a raw pin layer', () => {
+    expect(page).toMatch(/SearchAtlasPane/)
+    expect(page).toMatch(/<SearchAtlasPane/)
+    expect(page).not.toMatch(/<HideAwareSearchMap/)
     expect(page).not.toMatch(/import\s+\w+\s+from '@\/components\/(Lazy)?SearchMapClustered'/)
   })
 
-  it('map mode restores the URL bbox and locks the camera instead of fitting Oregon', () => {
+  it('map mode still seeds the viewport from the URL bbox; Atlas is the canvas', () => {
     expect(page).toMatch(/bboxFromSearchParam\(sp\.bbox\)/)
     expect(page).toMatch(/initialBounds=\{initialBounds\}/)
-    expect(page).toMatch(/lockBounds/)
+    expect(page).toMatch(/atlasMap/)
     expect(wrap).toMatch(/lockBounds=\{lockBounds\}/)
     expect(wrap).toMatch(/initialBounds=\{initialBounds\}/)
     expect(wrap).toMatch(/nextSearchUrlWithBbox/)
@@ -539,7 +540,8 @@ describe('the /search map-only pin layer subtracts hidden homes (W7.2, 2026-07-2
     expect(clustered).toMatch(/if \(lockBounds && initialBounds\)/)
     const view = readSrc('components/search/MapSearchView.tsx')
     expect(view).toMatch(/nextSearchUrlWithBbox/)
-    expect(view).toMatch(/lockBounds/)
+    expect(view).toMatch(/SearchAtlasPane/)
+    expect(view).toMatch(/atlasMap/)
   })
 })
 
@@ -1049,15 +1051,17 @@ describe('Home type two-layer filter (class + MLS sub type)', () => {
 })
 
 describe('SEARCH_UX_WAVE3 P6/P7 polish (2026-08-11)', () => {
-  it('P6: filter bars load AllFiltersSheet via dynamic() and mount only after first open', () => {
-    for (const rel of ['components/search/SearchFilters.tsx', 'components/SearchFilterBar.tsx']) {
-      const src = readSrc(rel)
-      expect(src).toMatch(/dynamic\(\(\)\s*=>\s*import\(['"]@\/components\/search\/AllFiltersSheet['"]\)/)
-      expect(src).toMatch(/moreSheetMounted/)
-      expect(src).toMatch(/from ['"]@\/components\/search\/registry-filter-chrome['"]/)
-      // Cold path must not static-import the heavy sheet module.
-      expect(src).not.toMatch(/import AllFiltersSheet[, ]/)
-    }
+  it('P6: filter bars load the all-filters sheet via dynamic() and mount only after first open', () => {
+    const search = readSrc('components/search/SearchFilters.tsx')
+    expect(search).toMatch(/import\(['"]@\/app\/search\/_v3\/SearchFiltersSheet\.client['"]\)/)
+    expect(search).toMatch(/moreSheetMounted/)
+    expect(search).toMatch(/from ['"]@\/components\/search\/registry-filter-chrome['"]/)
+    expect(search).not.toMatch(/import AllFiltersSheet[, ]/)
+    const bar = readSrc('components/SearchFilterBar.tsx')
+    expect(bar).toMatch(/dynamic\(\(\)\s*=>\s*import\(['"]@\/components\/search\/AllFiltersSheet['"]\)/)
+    expect(bar).toMatch(/moreSheetMounted/)
+    expect(bar).toMatch(/from ['"]@\/components\/search\/registry-filter-chrome['"]/)
+    expect(bar).not.toMatch(/import AllFiltersSheet[, ]/)
   })
 
   it('All filters sheet is full width at 390 so boolean labels are not clipped', () => {
@@ -1082,9 +1086,9 @@ describe('flagship map timeout + city honesty (runtime crosswalk 2026-08-18)', (
   const page = readSrc('app/search/page.tsx')
   const view = readSrc('components/search/MapSearchView.tsx')
 
-  it('view=map uses withTimeoutSettled and passes degraded into HideAwareSearchMap', () => {
+  it('view=map uses withTimeoutSettled and passes degraded into the atlas pane', () => {
     expect(page).toMatch(/view === 'map' \? await withTimeoutSettled\(getSearchMapListings/)
-    expect(page).toMatch(/degraded=\{mapDegraded\}/)
+    expect(page).toMatch(/incomplete=\{mapDegraded\}/)
     expect(page).not.toMatch(/view === 'map' \? await withTimeout\(getSearchMapListings/)
   })
 

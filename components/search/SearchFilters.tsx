@@ -7,7 +7,7 @@ import {
   useUrlSearchParams,
 } from '@/lib/search/url-search-params.client'
 import { mergeUrlSearchFilters } from '@/components/search/merge-url-search-filters'
-import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { trackEvent } from '@/lib/tracking'
 import { fireFirstPartyEvent } from '@/components/VisitTracker'
 import { buildFilterApplyPayload } from '@/lib/search/search-events'
@@ -30,12 +30,6 @@ import {
 import VoiceSearchButton from '@/components/VoiceSearchButton'
 import { useViewerListingState } from '@/components/search/use-viewer-listing-state'
 import './search-ledger.css'
-
-/** P6: load the ~1k-LOC registry sheet only after first open (not on cold search). */
-const AllFiltersSheet = dynamic(() => import('@/components/search/AllFiltersSheet'), {
-  ssr: false,
-  loading: () => null,
-})
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -44,16 +38,15 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowDown01Icon,
   FilterIcon,
-  Search01Icon,
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
 import {
-  V3MorphSearch,
   V3Range,
   V3_PRICE_STOPS,
   rangeToUrl,
   urlToRange,
 } from '@/components/site/v3'
+import { SearchMorph } from '@/app/search/_v3/SearchMorph.client'
 import { REPORT_CITY_LABELS } from '@/lib/data/geo/report-cities'
 import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/bend-neighborhood-districts'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
@@ -63,6 +56,12 @@ import { normalizeSearchKey } from '@/lib/search/neighborhood-match'
 import { SearchCommand } from '@/app/search/_v3/SearchCommand.client'
 import { SearchPriceRail } from '@/app/search/_v3/SearchPriceRail.client'
 import { SEARCH_PLACE_SEEDS } from '@/app/search/_v3/search-places'
+
+/** P6: load the house-sheet only after first open (not on cold search). */
+const SearchFiltersSheet = dynamic(
+  () => import('@/app/search/_v3/SearchFiltersSheet.client').then((m) => m.SearchFiltersSheet),
+  { ssr: false, loading: () => null },
+)
 
 export type SearchFiltersInitial = {
   city?: string
@@ -336,12 +335,8 @@ export default function SearchFilters({
   // client cache, cached GET route, every backend category rendered
   // (addresses included — the "3480" class).
   const [locationQuery, setLocationQuery] = useState('')
-  const [locationOpen, setLocationOpen] = useState(false)
-  const [highlight, setHighlight] = useState(-1)
-  const locationInputRef = useRef<HTMLInputElement>(null)
-  const { suggestions, loading: suggestLoading } = useSearchSuggest(locationQuery)
+  const { suggestions } = useSearchSuggest(locationQuery)
   const suggestItems = flattenSuggestions(suggestions)
-  const morphOpen = locationOpen && (suggestItems.length > 0 || suggestLoading)
 
   const urlPrice = useMemo(
     () => urlToRange(initialFilters.minPrice, initialFilters.maxPrice, V3_PRICE_STOPS),
@@ -455,7 +450,6 @@ export default function SearchFilters({
         updateUrl({ city, subdivision: subdivision ?? '', postalCode: undefined })
         setLocationQuery(subdivision ? `${subdivision}, ${city}` : city)
       }
-      setLocationOpen(false)
       trackEvent('search', { city, subdivision: subdivision ?? undefined, search_term: locationQuery })
       // First-party mirror — feeds visitor_events so the CRM behavior panel's
       // "top searches" reads real on-site searches (metadata.query is the label
@@ -469,7 +463,6 @@ export default function SearchFilters({
     (postalCode: string) => {
       updateUrl({ postalCode, city: undefined, subdivision: undefined })
       setLocationQuery(postalCode)
-      setLocationOpen(false)
       trackEvent('search', { postalCode, search_term: locationQuery })
       fireFirstPartyEvent('search', { metadata: { query: postalCode, term: locationQuery || undefined, postalCode, source: 'typeahead' } })
     },
@@ -478,7 +471,6 @@ export default function SearchFilters({
 
   const handleNavigateSelect = useCallback(
     (href: string, label?: string) => {
-      setLocationOpen(false)
       if (label) {
         trackEvent('search', { search_term: locationQuery })
         fireFirstPartyEvent('search', { metadata: { query: label, term: locationQuery || undefined, source: 'typeahead' } })
@@ -576,7 +568,6 @@ export default function SearchFilters({
       else if (statusFilter === 'pending') updates.status = 'Pending'
       updateUrl(updates)
       showParsedChips(parsed)
-      setLocationOpen(false)
       setLocationQuery(parsed.city ?? '')
       trackEvent('search', { search_term: text, ...(parsed.city ? { city: parsed.city } : {}) })
       fireFirstPartyEvent('search', { metadata: { query: text, city: parsed.city, source: 'natural_language' } })
@@ -609,17 +600,13 @@ export default function SearchFilters({
       <div className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:px-4">
         {/* Row 1 @375: full-width search so mic stays inside the bar. */}
         {hideLocation ? null : (
-        <div className={cn('relative w-full min-w-0 sm:w-64 sm:shrink-0', morphOpen && 'z-40')}>
-          {/* SITE-72: beui-morphing-search + shadcn-command. The field grows
-              into the grouped suggest list on one cream surface. Overlay so
-              the dock does not shove the map. */}
-          <V3MorphSearch
-            className="srch-morph"
+        <div className="relative flex w-full min-w-0 items-center gap-1 sm:w-64 sm:shrink-0">
+          <SearchMorph
+            className="srch-morph min-w-0 flex-1"
             placeholder={locationPlaceholder}
             items={morphItems}
             onQueryChange={(next) => {
               setLocationQuery(next)
-              setHighlight(-1)
             }}
             onSelect={(item) => {
               const picked = suggestItems.find((row) => row.href === item.id)
@@ -627,57 +614,11 @@ export default function SearchFilters({
               else if (item.id.startsWith('/')) handleNavigateSelect(item.id, item.title)
               else applyNaturalQuery(item.title)
             }}
-          >
-            <div className="v3-morph-search__field srch-morph__field min-h-11">
-              <HugeiconsIcon icon={Search01Icon} className="srch-morph__mark" aria-hidden />
-              <Input
-                ref={locationInputRef}
-                type="search"
-                placeholder={locationPlaceholder}
-                value={locationQuery}
-                onChange={(e) => {
-                  setLocationQuery(e.target.value)
-                  setHighlight(-1)
-                }}
-                onFocus={() => setLocationOpen(true)}
-                onBlur={() => setTimeout(() => setLocationOpen(false), 150)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    setLocationOpen(false)
-                    return
-                  }
-                  if (e.key === 'ArrowDown' && locationOpen && suggestItems.length > 0) {
-                    e.preventDefault()
-                    setHighlight((h) => (h < suggestItems.length - 1 ? h + 1 : 0))
-                    return
-                  }
-                  if (e.key === 'ArrowUp' && locationOpen && suggestItems.length > 0) {
-                    e.preventDefault()
-                    setHighlight((h) => (h > 0 ? h - 1 : suggestItems.length - 1))
-                    return
-                  }
-                  if (e.key !== 'Enter') return
-                  e.preventDefault()
-                  const picked = highlight >= 0 ? suggestItems[highlight] : undefined
-                  if (picked) handleSuggestPick(picked)
-                  else applyNaturalQuery(locationQuery)
-                }}
-                className="srch-suggest h-auto min-w-0 flex-1 border-0 bg-transparent px-0 py-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                aria-label="Search by address, city, community, zip, or broker"
-                role="combobox"
-                aria-autocomplete="list"
-                aria-expanded={morphOpen}
-                aria-controls="search-filters-suggest-listbox"
-                aria-activedescendant={
-                  locationOpen && highlight >= 0 ? `search-filters-suggest-item-${highlight}` : undefined
-                }
-              />
-              <VoiceSearchButton
-                onTranscript={applyNaturalQuery}
-                className="srch-mic-inbar size-9 shrink-0 border-0 bg-transparent shadow-none hover:bg-muted/60"
-              />
-            </div>
-          </V3MorphSearch>
+          />
+          <VoiceSearchButton
+            onTranscript={applyNaturalQuery}
+            className="srch-mic-inbar size-9 shrink-0"
+          />
           <ParsedSearchNotice chips={parsedChips} className="absolute left-0 right-0 top-full z-50 mt-1" />
         </div>
         )}
@@ -1385,15 +1326,14 @@ export default function SearchFilters({
       {/* All filters — registry-driven sheet shared with the SEO filter bar.
           Mount only after first open so the P6 chunk stays off the cold path. */}
       {moreSheetMounted ? (
-        <AllFiltersSheet
+        <SearchFiltersSheet
           open={moreSheetOpen}
           onOpenChange={setMoreSheetOpen}
           onApply={updateUrl}
-          closedScope={initialFilters.status === 'Sold'}
-          contextDefaults={{
-            ...(initialFilters.city ? { city: initialFilters.city } : {}),
-            status: initialFilters.status ?? 'Active',
-          }}
+          minPrice={initialFilters.minPrice}
+          maxPrice={initialFilters.maxPrice}
+          beds={initialFilters.beds}
+          propertyType={initialFilters.propertyType}
         />
       ) : null}
     </div>

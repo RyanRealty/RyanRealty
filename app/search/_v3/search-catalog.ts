@@ -13,4 +13,4 @@ export {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-export { Sheet } from '@/components/ui/sheet'
+export { V3Sheet, V3Atlas } from '@/components/site/v3'

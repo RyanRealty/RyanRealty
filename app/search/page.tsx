@@ -69,7 +69,7 @@ import SearchResults from '@/components/search/SearchResults'
 import MapSearchView from '@/components/search/MapSearchView'
 import { UrlSearchParamsProvider } from '@/lib/search/url-search-params.client'
 import { queryStringFromSearchParams } from '@/lib/search/search-params-query'
-import HideAwareSearchMap from '@/components/search/HideAwareSearchMap'
+import { SearchAtlasPane } from './_v3/SearchAtlasPane.client'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { ResultsStamp } from '@/components/search/ResultsStamp.client'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
@@ -514,20 +514,15 @@ export default async function SearchPage({
       <div className={cn('w-full', isAppFrame && 'flex min-h-0 flex-1 flex-col')}>
         {view === 'map' && (
           <div className="map-search-shell w-full">
-            {/* HideAwareSearchMap subtracts the signed-in user's hidden homes
-                before the pins render (W7.2) — a home hidden on the list/split
-                view does not reappear as a map-only pin. */}
             <div className="map-search-canvas">
-            <HideAwareSearchMap
+            <SearchAtlasPane
               listings={mapListingsWithCoords}
-              savedListingKeys={savedKeys}
-              likedListingKeys={likedKeys}
-              placeQuery={placeQuery}
-              boundaryGeojson={boundaryGeojson ?? undefined}
+              placeName={placeQuery}
+              placeHref="/homes-for-sale"
+              geometry={boundaryGeojson}
+              source="Oregon Data Share listings in this view"
+              incomplete={mapDegraded}
               className="h-full w-full"
-              degraded={mapDegraded}
-              initialBounds={initialBounds}
-              lockBounds
             />
             </div>
           </div>
@@ -549,6 +544,7 @@ export default async function SearchPage({
                 nowMs={Date.now()}
                 initialDegraded={viewportDegraded}
                 openHouseLabels={openHouseLabels}
+                atlasMap
               />
             ) : (
               <SearchResults

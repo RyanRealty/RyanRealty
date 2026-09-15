@@ -62,7 +62,7 @@
     "ResultsStamp -- the count and the stamp",
     "SentenceSearch + SearchFilters -- the query surface",
     "SearchAlertCapture -- save this search, mounted with the query surface so the ask travels with the filters",
-    "HideAwareSearchMap / MapSearchView -- search-as-you-move; pan/zoom re-queries the visible area",
+    "SearchAtlasPane / MapSearchView -- house-atlas on the map pane; split list stays in lockstep with the plotted set",
     "SearchResults -- the list, in lockstep with the markers from ONE viewport fetch"
   ],
   "openDefects": {

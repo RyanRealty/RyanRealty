@@ -1,10 +1,10 @@
-# Current — 2026-09-15 (Canter live select path — plat RHM)
+# Current — 2026-09-15 (SITE-110 search catalog rematch)
 
-Surface: Cursor cloud. Named branch `cursor/canter-live-select-path-fd38`. Do not merge. Cos Mini-lands. AE rebuilds after land.
+Surface: Cursor cloud. Branch `cursor/site-110-search-tip-21f9`. Do not merge. Cos Mini-judges.
 
-- **Done:** Live rebuild path (`selectCompsPreferringFacts` / `walkPricingLadder`) no longer treats GIS plat Rolling Horse Meadow as MLS. Street-cluster (SaddleStone / Horse Back / Ranch) wins. Ranch 220218584 + Horse Back 220214720 in; Clearpine out. `--ship lib/pricing/canter-pocket.parity.json` exit 0.
-- **Next:** Cos Mini land, then AE rebuild `cma-1130-canter-sisters-usa`.
-- Skills read: `lib/pricing/select.ts`, `lib/pricing/infer-pocket.ts`.
+- **Done:** After Mini `demoMatch: false` on tip `a54faff47` / receipt `d0167511`, installed live catalog objects: MorphingSearch (no V3 wrapper), cmdk Command, V3Sheet + RangeSlider, V3Atlas as the map pane. SITE-103/107/109/CMA left alone.
+- **Next:** Cos Mini re-judge. Do not invent `demoMatch`. `--ship` stays honest.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 
 # Prior — 2026-09-15 ~06:40 PT (Cos Mini land complete — AE rebuild Canter)
 
