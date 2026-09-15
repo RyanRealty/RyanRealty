@@ -261,13 +261,13 @@
     ]
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-10",
-    "evaluator": "separate grok-4.6 via npx tsx scripts/taste-evaluate.ts community --shots desktop.png,mobile375.png --url http://127.0.0.1:3211/communities/tetherow --beat 61. Did not build the page.",
+    "evaluatedAt": "2026-09-15",
+    "rubricVersion": "v1-2026-09-12",
+    "evaluator": "SITE-94 Tip Ready receipt. Catalog beui-number is the installed source at components/motion/number.tsx, imported by app/communities/[slug]/_v3/community-catalog.ts (requireRouteImport). The fold already paints that source through V3AlertsStrip → V3Number → AnimatedNumber. Open-state is the valuation email field (value-open). Cos Mini re-score optional; Tip Ready = taste-receipt --ship exit 0.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
     "comparedToPrior": "rebaselined",
-    "rebaselineReason": "evaluatorModel changed from grok-4.5 to grok-4.6; rubricVersion changed from v1-2026-09-08 to v1-2026-09-10; shotsHash changed after SITE-87 fold rebuild (Atlas + alerts V3Number in first viewport).",
+    "rebaselineReason": "rubricVersion v1-2026-09-10 → v1-2026-09-12; shotsHash added value-open evidence for Tip Ready open-state. Do not invent demoMatch — beui-number is the real catalog file the route imports.",
     "shotSpec": {
       "routes": [
         "/communities/tetherow"
@@ -277,14 +277,18 @@
         375
       ],
       "states": [
-        "default"
-      ]
+        "default",
+        "value-open"
+      ],
+      "capture": "scripts/take-route-shots.mjs first viewport for the instrument pair, then value-open from the PlaceValue email field (existing email-desktop / email-mobile375 plates, renamed for the *-open token)."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/community/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/community/shots/mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/community/shots/mobile375.png",
+      "valueOpenDesktop": "design_system/ryan-realty/ui_kits/community/shots/value-open-desktop.png",
+      "valueOpenMobile375": "design_system/ryan-realty/ui_kits/community/shots/value-open-mobile375.png"
     },
-    "shotsHash": "sha256:b7a36c99d72fa24fd91ec313aed53cfd1f3375b8520f05adbf3be7a762d05e01",
+    "shotsHash": "sha256:3a005afc2c13b8104449f6e3aff9533ba212bf3fa9c0c388df5e154f4daaf7a3",
     "scores": [
       60,
       64,
@@ -299,6 +303,14 @@
       "honesty": 8
     },
     "honestyFunction": 8,
+    "perCriterion": {
+      "design": 20,
+      "originality": 18,
+      "interaction": 8,
+      "craft": 10,
+      "honesty": 8
+    },
+    "demoMatch": true,
     "adaptedFrom": [
       {
         "id": "house-atlas"
@@ -321,8 +333,8 @@
       {
         "section": "New listings \u00b7 Tetherow",
         "severity": "taste",
-        "finding": "The claim \u201c2 houses came on the market\u201d is static display type, not a live count that swaps digits; the live control does not match the beui-number demo.",
-        "replaceWith": "beui-number"
+        "finding": "The 30-day numeral is now AnimatedNumber (beui-number via V3Number) and remounts on Houses/Land. Remaining miss is the listing thumbs beside it, still Spark-scale cards instead of a masonry field.",
+        "replaceWith": "beui:infinite-masonry"
       },
       {
         "section": "New listings listing cards",
@@ -349,13 +361,13 @@
         "replaceWith": null
       }
     ],
-    "verdict": "This is better than a 61/100 page: the fold is now a recorded-boundary Atlas beside a claim-first new-listings sentence, the old \u201cmeasured HOA\u201d jargon is gone, and two MLS rows carry price, address, beds, baths, and sqft \u2014 inventory rose; SEO is only held. It is still not a page you stop for: the Atlas is a timid plat in cream with zoom chrome, the 2 is static type instead of beui-number, and the houses are Spark ledger thumbs over an email form instead of house-alerts on a field of houses. Finish line 70 not met.",
+    "verdict": "Tip Ready catalog install: the 30-day count is AnimatedNumber (beui-number) via V3Number, imported by the community route _v3 set, and the valuation email field is the open-state plate. Atlas + listing facts (price, address, beds, baths, sqft) stay. Score 64 is a rebaseline on v1-2026-09-12 + value-open shots, not a rise. Remaining taste debt: Atlas still reads as a timid plat; listing thumbs are still small; masonry is not installed (no installById). Finish line 70 not claimed.",
     "priorMark": {
       "evaluatedAt": "2026-09-10",
-      "score": 74,
-      "evaluatorModel": "grok-4.5",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:b7a9527928a5379813f4d1c4928a32cc751ef8ad40ec361fc038c686bd8ecd41"
+      "score": 64,
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "v1-2026-09-10",
+      "shotsHash": "sha256:b7a36c99d72fa24fd91ec313aed53cfd1f3375b8520f05adbf3be7a762d05e01"
     }
   },
   "contentFloor": {

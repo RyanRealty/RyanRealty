@@ -1,8 +1,8 @@
-# Current — 2026-09-15 (SITE-98 /invest Tip Ready --ship 0)
+# Current — 2026-09-15 (SITE-94 community Tip Ready land on main)
 
-Surface: Cursor cloud on `cursor/invest-site98-0c50` PR #235. Do not merge.
+Surface: Cos Mini land of PR #238 tip `a500d97d` after SITE-98 on main.
 
-- **Done:** Mini on tip `dabbbf729` wrote `demoMatch true`. Receipt records that pass. `page.tsx` imports `@/components/motion/insight-cards` and `@/components/ui/table` (comment ≠ import). `--ship` exit 0. ShotsHash unchanged.
-- **Next:** Cos lands after SITE-105 clears `main`. Leave SITE-98 `in_progress`. No merge.
-- **Node:** SITE-98 `6c2b8197-0b46-4215-8e43-749481794e9b` owner `cursor-cloud-site98-20260914`.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `scripts/lib/catalog-install.mjs`.
+- **Done:** SITE-98 invest Tip Ready on `origin/main` `847fd728` (`--ship` exit 0, demoMatch true). Community tip `--ship` exit 0 on Mini; cherry-pick in flight.
+- **Next:** Finish SITE-94 cherry-pick + `npm run push`; mark SITE-94 done. Then SITE-96 Mini judge.
+- **Node:** SITE-94 `b564694b-2b33-431d-9722-98e9c01f6368` owner `cursor-cloud-site94-20260914`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
