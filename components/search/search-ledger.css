@@ -1007,6 +1007,20 @@ button.srch-chip--key {
   gap: 0;
 }
 
+.srch-price-beui {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.srch-price-beui__value {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-num, 500);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink);
+}
+
 /* House-sheet language on the All-filters overlay (catalog: house-sheet). */
 .srch-sheet {
   background: var(--v3-surface, rgba(255, 255, 255, 1));

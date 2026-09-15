@@ -1,4 +1,5 @@
 import { listingTileHref } from '@/lib/slug'
+import { SEARCH_PLACE_SEEDS } from './_v3/search-places'
 
 /**
  * Structured data for the root search page (/homes-for-sale, unslugged
@@ -88,12 +89,26 @@ export default function SearchRootJsonLd({
         }
       : null
 
+  const cityList = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Central Oregon places with homes for sale',
+    numberOfItems: SEARCH_PLACE_SEEDS.length,
+    itemListElement: SEARCH_PLACE_SEEDS.map((place, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: place.title,
+      url: `${siteUrl}${place.id}`,
+    })),
+  }
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPage) }} />
       {itemList && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
       )}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(cityList) }} />
     </>
   )
 }

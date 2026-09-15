@@ -284,6 +284,13 @@ describe('demoStates are the capture the evaluator can actually see', () => {
     expect(specs.some((s) => /search-open/.test(s) && /click/.test(s))).toBe(true)
   })
 
+  it('prints search-open, command-open, and filters-open for the search class', () => {
+    const specs = demoStateSpecs(loaded, 'search')
+    expect(specs.some((s) => /search-open/.test(s) && /click/.test(s))).toBe(true)
+    expect(specs.some((s) => /command-open/.test(s) && /Search command/.test(s))).toBe(true)
+    expect(specs.some((s) => /filters-open/.test(s) && /Open all filters/.test(s))).toBe(true)
+  })
+
   it('prints save-open, share-open, and gallery-open specs for listing-detail', () => {
     const specs = demoStateSpecs(loaded, 'listing-detail')
     expect(specs.some((s) => /save-open/.test(s) && /button\[aria-label/.test(s) && /click/.test(s))).toBe(true)

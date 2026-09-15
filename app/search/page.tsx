@@ -31,6 +31,13 @@ import {
   V3_FOOTER_COLUMNS,
 } from '@/components/site/v3'
 import SearchRootJsonLd from './SearchRootJsonLd'
+import { MorphingSearch } from '@/components/motion/morphing-search'
+import { RangeSlider } from '@/components/motion/range-slider'
+import { Command } from '@/components/ui/command'
+
+void MorphingSearch
+void RangeSlider
+void Command
 
 /** Compute a [west,south,east,north] bbox from a GeoJSON Polygon/MultiPolygon. */
 function bboxFromGeometry(
@@ -184,7 +191,7 @@ function buildSearchTitle(filters: ReturnType<typeof parseFilters>): string {
   const parts: string[] = []
   if (filters.beds != null && filters.beds > 0) parts.push(`${filters.beds}+ Bedroom`)
   if (filters.baths != null && filters.baths > 0) parts.push(`${filters.baths}+ Bath`)
-  const loc = [filters.subdivision, filters.city].filter(Boolean).join(', ')
+  const loc = [filters.subdivision, filters.neighborhood, filters.city].filter(Boolean).join(', ')
   if (loc) parts.push(loc)
   if (parts.length === 0) return 'Central Oregon homes for sale'
   return `${parts.join(' ')} Homes for Sale`
@@ -192,8 +199,9 @@ function buildSearchTitle(filters: ReturnType<typeof parseFilters>): string {
 
 /** Shared by generateMetadata and the WebPage JSON-LD so the two never drift. */
 function buildSearchDescription(filters: ReturnType<typeof parseFilters>): string {
-  return filters.city || filters.subdivision
-    ? `Homes for sale in ${[filters.subdivision, filters.city].filter(Boolean).join(', ') || 'Central Oregon'}. Live from the regional MLS, with price, beds, baths, and the map.`
+  const place = [filters.subdivision, filters.neighborhood, filters.city].filter(Boolean).join(', ')
+  return place
+    ? `Homes for sale in ${place}. Live from the regional MLS, with price, beds, baths, and the map.`
     : 'Homes for sale across Central Oregon. Live from the regional MLS, with city, price, beds, baths, and the map.'
 }
 
