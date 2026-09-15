@@ -64,6 +64,7 @@ describe('contact fold (SITE-80)', () => {
     expect(css).toContain('min-width: 20rem')
     expect(css).not.toContain('repeat(3, minmax(0, 1fr))')
     expect(css).toContain('about-faces--compact')
-    expect(css).toContain('order: 3')
+    expect(css).toMatch(/\.contact-fold \.about-faces \{\s*order: 2;/)
+    expect(css).toMatch(/\.contact-fold \.v3\.v3-doors \{\s*order: 3;/)
   })
 })
