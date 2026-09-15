@@ -70,7 +70,7 @@ export function RangeSlider({ showTicks = true, className, ...options }: RangeSl
     <div
       {...trackProps}
       className={cn(
-        "relative flex h-10 w-full touch-none items-center overflow-hidden rounded-lg bg-muted",
+        "relative flex h-10 w-full touch-none items-center overflow-hidden rounded-lg bg-primary/15",
         TOUCH_GESTURE_CLASS,
         options.disabled
           ? "pointer-events-none opacity-50"
@@ -80,10 +80,10 @@ export function RangeSlider({ showTicks = true, className, ...options }: RangeSl
     >
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-[2px] inset-y-0 overflow-hidden rounded-lg">
         <div
-          className="absolute inset-y-0 left-0 rounded-lg bg-foreground/40"
+          className="absolute inset-y-0 left-0 rounded-lg bg-primary"
           style={{ width: `${Math.max(0, Math.min(100, percent))}%` }}
         />
-        <motion.div className="absolute inset-0 rounded-lg bg-foreground/15" style={{ x: fillX }} />
+        <motion.div className="absolute inset-0 rounded-lg bg-primary/40" style={{ x: fillX }} />
       </div>
 
       {/* Tick centres follow the same inset path as the handle centre. */}
@@ -93,7 +93,7 @@ export function RangeSlider({ showTicks = true, className, ...options }: RangeSl
           return (
             <span
               key={t}
-              className="absolute top-1/2 size-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/25"
+              className="absolute top-1/2 size-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/50"
               style={{ left: `${tp}%` }}
             />
           );
@@ -105,7 +105,7 @@ export function RangeSlider({ showTicks = true, className, ...options }: RangeSl
         {...sliderProps}
         animate={reduce ? undefined : { scaleY: dragging ? 1.35 : 1 }}
         transition={SPRING_BOUNCY}
-        className="absolute left-0 top-1/2 h-6 w-1 rounded-full bg-foreground outline-none ring-inset ring-foreground/30 focus-visible:ring-4"
+        className="absolute left-0 top-1/2 h-6 w-1 rounded-full bg-primary outline-none ring-inset ring-primary/30 focus-visible:ring-4"
         style={{ x: thumbX, y: "-50%" }}
       />
     </div>

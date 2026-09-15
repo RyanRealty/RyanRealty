@@ -41,7 +41,6 @@ import {
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
 import {
-  V3Range,
   V3_PRICE_STOPS,
   rangeToUrl,
   urlToRange,
@@ -525,7 +524,8 @@ export default function SearchFilters({
         const listed = morphHomesFromListings(morphHomes)
         return [...typed, ...listed.filter((row) => !typed.some((t) => t.id === row.id))]
       }
-      return morphCatalogItems()
+      const listed = morphHomesFromListings(morphHomes)
+      return listed.length > 0 ? listed : morphCatalogItems()
     },
     [suggestItems, morphHomes],
   )
@@ -603,10 +603,10 @@ export default function SearchFilters({
       <div className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:px-4">
         {/* Row 1 @375: full-width search so mic stays inside the bar. */}
         {hideLocation ? null : (
-        <div className="relative flex w-full min-w-0 items-center gap-1 sm:w-64 sm:shrink-0">
+        <div className="relative flex w-full min-w-0 items-center gap-1 sm:w-72 sm:shrink-0">
           <SearchMorph
             className={cn('srch-morph shrink-0', morphOpen && 'v3-morph-search--open')}
-            placeholder="Find a home"
+            placeholder="Search"
             items={morphItems}
             onOpenChange={(next) => {
               setMorphOpen(next)
@@ -996,11 +996,9 @@ export default function SearchFilters({
         >
           <div className="p-3">
             <p className="srch-label mb-2.5">Price range</p>
-            <V3Range
-              label="Ask"
+            <SearchPriceRail
               low={draftPrice.low}
               high={draftPrice.high}
-              stops={V3_PRICE_STOPS}
               onChange={(low, high) => setDraftPrice({ low, high })}
               onCommit={commitPrice}
               className="mb-3"

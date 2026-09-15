@@ -2,7 +2,7 @@ import { Building2, Home, MapPin, Trees, type LucideIcon } from 'lucide-react'
 import type { MorphingSearchItem } from '@/components/motion/morphing-search'
 import { listingTileHref } from '@/lib/slug'
 
-/** Seed places Command opens onto. MorphingSearch empty-open uses these with icons. */
+/** Seed places Command opens onto. MorphingSearch empty-open prefers live homes. */
 export const SEARCH_PLACE_SEEDS = [
   { id: '/homes-for-sale/bend', title: 'Bend', description: 'City' },
   { id: '/homes-for-sale/redmond', title: 'Redmond', description: 'City' },
@@ -27,6 +27,8 @@ export type MorphHomeListing = {
   SubdivisionName?: string | null
   BoundaryCity?: string | null
   BoundaryNeighborhood?: string | null
+  ListPrice?: number | string | null
+  BedroomsTotal?: number | string | null
 }
 
 function placeIcon(seed: SearchPlaceSeed): LucideIcon {
@@ -35,7 +37,17 @@ function placeIcon(seed: SearchPlaceSeed): LucideIcon {
   return MapPin
 }
 
-/** Catalog MorphingSearch rows: Lucide icon + title + description (beUI demo shape). */
+function askLabel(price: number | string | null | undefined): string | null {
+  const n = typeof price === 'number' ? price : Number(price)
+  if (!Number.isFinite(n) || n <= 0) return null
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(n)
+}
+
+/** Catalog-shaped fallback rows (icon + title + description). */
 export function morphCatalogItems(): MorphingSearchItem[] {
   return SEARCH_PLACE_SEEDS.map((seed) => ({
     id: seed.id,
@@ -46,7 +58,7 @@ export function morphCatalogItems(): MorphingSearchItem[] {
   }))
 }
 
-/** Listing addresses as Home-icon rows. Used only after the shopper types. */
+/** Field-becomes-results rows: live homes with ask in the description. */
 export function morphHomesFromListings(
   listings: readonly MorphHomeListing[],
   limit = 8,
@@ -60,6 +72,11 @@ export function morphHomesFromListings(
       .trim()
     const key = listing.ListNumber ?? listing.ListingKey
     if (!title || !key) continue
+    const ask = askLabel(listing.ListPrice)
+    const beds =
+      listing.BedroomsTotal != null && String(listing.BedroomsTotal).trim() !== ''
+        ? `${listing.BedroomsTotal} bd`
+        : null
     items.push({
       id: listingTileHref({
         listingKey: String(key),
@@ -72,7 +89,8 @@ export function morphHomesFromListings(
         subdivisionName: listing.SubdivisionName ?? null,
       }),
       title,
-      description: [listing.City, listing.PostalCode].filter(Boolean).join(' '),
+      description: [ask, beds, listing.City].filter(Boolean).join(' · '),
+      keywords: [title, listing.City ?? '', ask ?? ''],
       icon: Home,
     })
   }

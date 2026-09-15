@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * Official beui-morphing-search iconOnly demo: 48×48 trigger grows into the
- * glass results portal. Do not pass w-full — that stretches the icon into a
- * cream typeahead bar (Mini demoMatch false).
+ * Official beui-morphing-search FIELD demo: h-12 w-72 trigger grows into the
+ * glass results portal. A compact-icon trigger read as a typeahead (Mini 52).
+ * Do not pass w-full — that stretches the field into a cream dock bar.
  */
 import { MorphingSearch, type MorphingSearchItem } from '@/components/motion/morphing-search'
 import { cn } from '@/lib/utils'
@@ -31,12 +31,10 @@ export function SearchMorph({
         items={[...items]}
         placeholder={placeholder}
         shortcut="f"
-        iconOnly
-        emptyMessage="No places match that."
+        emptyMessage="No homes match that."
         onQueryChange={onQueryChange}
         onSelect={onSelect}
         onOpenChange={onOpenChange}
-        className="size-12"
       />
     </div>
   )

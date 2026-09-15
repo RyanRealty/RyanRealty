@@ -1,11 +1,13 @@
 'use client'
 
 /**
- * house-sheet as All filters. Bare V3Sheet drawer — one working surface
- * with price, type, and flags together. Not a custom right-rail wizard.
+ * house-sheet as All filters. Bare V3Sheet drawer with live RangeSlider
+ * and shadcn Checkbox flags — not a cream Any-list of facts.
  */
 import { useEffect, useMemo, useState } from 'react'
 import { RangeSlider } from '@/components/motion/range-slider'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
 import {
   formatPriceRange,
@@ -39,9 +41,15 @@ const TYPE_OPTIONS = [
   { value: 'D', label: 'Land' },
 ] as const
 
-function flagValue(on: string | undefined): string {
-  return on === '1' ? 'On' : 'Any'
-}
+const FLAG_FIELDS = [
+  { key: 'hasPool', label: 'Pool' },
+  { key: 'hasWaterfront', label: 'Waterfront' },
+  { key: 'hasView', label: 'View' },
+  { key: 'hasFireplace', label: 'Fireplace' },
+  { key: 'hasGolfCourse', label: 'Golf' },
+] as const
+
+type FlagKey = (typeof FLAG_FIELDS)[number]['key']
 
 function stopIndex(value: number): number {
   const snapped = snapToStops(value, V3_PRICE_STOPS)
@@ -75,9 +83,25 @@ export function SearchFiltersSheet({
     [minPrice, maxPrice],
   )
   const [draftPrice, setDraftPrice] = useState(urlPrice)
+  const [draftFlags, setDraftFlags] = useState<Record<FlagKey, boolean>>({
+    hasPool: hasPool === '1',
+    hasView: hasView === '1',
+    hasWaterfront: hasWaterfront === '1',
+    hasFireplace: hasFireplace === '1',
+    hasGolfCourse: hasGolfCourse === '1',
+  })
   useEffect(() => {
     setDraftPrice(urlPrice)
   }, [urlPrice])
+  useEffect(() => {
+    setDraftFlags({
+      hasPool: hasPool === '1',
+      hasView: hasView === '1',
+      hasWaterfront: hasWaterfront === '1',
+      hasFireplace: hasFireplace === '1',
+      hasGolfCourse: hasGolfCourse === '1',
+    })
+  }, [hasPool, hasView, hasWaterfront, hasFireplace, hasGolfCourse])
 
   const lastIdx = Math.max(0, V3_PRICE_STOPS.length - 1)
   const hiIdx = stopIndex(draftPrice.high)
@@ -90,7 +114,7 @@ export function SearchFiltersSheet({
     {
       id: 'filters',
       label: 'What should this search include?',
-      children: ['Price, type, and flags.'],
+      children: [beds ? `${beds}+ bedrooms already on this search.` : 'Price, type, and flags.'],
       blocks: [
         {
           kind: 'drawing',
@@ -112,16 +136,27 @@ export function SearchFiltersSheet({
           ),
         },
         {
-          kind: 'facts',
+          kind: 'drawing',
           label: 'Flags',
-          items: [
-            { label: 'Bedrooms', value: beds ? `${beds}+` : 'Any' },
-            { label: 'Pool', value: flagValue(hasPool) },
-            { label: 'Waterfront', value: flagValue(hasWaterfront) },
-            { label: 'View', value: flagValue(hasView) },
-            { label: 'Fireplace', value: flagValue(hasFireplace) },
-            { label: 'Golf', value: flagValue(hasGolfCourse) },
-          ],
+          node: (
+            <div className="grid gap-3">
+              {FLAG_FIELDS.map((flag) => {
+                const id = `srch-flag-${flag.key}`
+                return (
+                  <div key={flag.key} className="flex items-center gap-2">
+                    <Checkbox
+                      id={id}
+                      checked={draftFlags[flag.key]}
+                      onCheckedChange={(next) => {
+                        setDraftFlags((prev) => ({ ...prev, [flag.key]: next === true }))
+                      }}
+                    />
+                    <Label htmlFor={id}>{flag.label}</Label>
+                  </div>
+                )
+              })}
+            </div>
+          ),
         },
       ],
       field: {
@@ -150,6 +185,10 @@ export function SearchFiltersSheet({
       onAdvance={(event: V3SheetAdvance) => {
         if (event.toStepId != null) return
         const next = rangeToUrl(draftPrice.low, draftPrice.high, V3_PRICE_STOPS)
+        const flags: Record<string, string | undefined> = {}
+        for (const flag of FLAG_FIELDS) {
+          flags[flag.key] = draftFlags[flag.key] ? '1' : undefined
+        }
         onApply({
           minPrice: next.min,
           maxPrice: next.max,
@@ -157,6 +196,7 @@ export function SearchFiltersSheet({
             event.answers.propertyType && event.answers.propertyType !== 'any'
               ? event.answers.propertyType
               : undefined,
+          ...flags,
         })
         onOpenChange(false)
       }}

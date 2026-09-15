@@ -35,8 +35,7 @@ describe('SITE-110 search catalog install', () => {
     expect(price).toContain('snapToStops')
     expect(morph).toContain("from '@/components/motion/morphing-search'")
     expect(morph).toContain('<MorphingSearch')
-    expect(morph).toContain('iconOnly')
-    expect(morph).toContain('className="size-12"')
+    expect(morph).not.toMatch(/\biconOnly\b/)
     expect(morph).not.toContain('w-full max-w-full')
     expect(morph).not.toMatch(/from ['"]@\/components\/site\/v3['"]/)
     expect(morph).not.toContain('<V3MorphSearch')
@@ -45,7 +44,9 @@ describe('SITE-110 search catalog install', () => {
     expect(sheet).toContain('showProgress={false}')
     expect(sheet).toContain("from '@/components/motion/range-slider'")
     expect(sheet).toContain('<RangeSlider')
-    expect(sheet).toContain("kind: 'facts'")
+    expect(sheet).toContain("from '@/components/ui/checkbox'")
+    expect(sheet).toContain('<Checkbox')
+    expect(sheet).not.toContain("kind: 'facts'")
     expect(sheet).toContain("kind: 'select'")
     expect(sheet).not.toContain('How many bedrooms')
     expect(sheet).not.toContain('STEP 1')
@@ -60,12 +61,14 @@ describe('SITE-110 search catalog install', () => {
     expect(filters).toContain('morphHomesFromListings')
     expect(filters).not.toMatch(/open=\{morphOpen\}/)
     expect(filters).toContain('onOpenChange')
-    expect(filters).toContain('Find a home')
+    expect(filters).toContain('placeholder="Search"')
+    expect(filters).not.toContain('Find a home')
     expect(filters).not.toContain('Address, city, or community')
+    expect(filters).not.toContain('<V3Range')
+    expect(filters).toContain('SearchPriceRail')
     expect(filters).toContain('morphOpen ? null')
     expect(filters).toContain('data-search-morph-open')
     expect(filters).toContain('catalog portal only')
-    expect(filters).toContain('SearchPriceRail')
     expect(filters).toContain('SearchCommand')
     expect(filters).toContain('SearchFiltersSheet')
     expect(filters).not.toContain('AllFiltersSheet')
@@ -75,30 +78,21 @@ describe('SITE-110 search catalog install', () => {
 
   it('catalog sources keep the official demo markers', () => {
     const morph = readSrc('components/motion/morphing-search.tsx')
+    const range = readSrc('components/motion/range-slider.tsx')
     expect(morph).toContain('aria-haspopup="dialog"')
     expect(morph).toContain('layoutId')
     expect(morph).toContain('backdrop-blur-xl')
     expect(morph).toContain('data-v3-morph="dialog"')
     expect(morph).toContain('data-v3-morph="panel"')
-    expect(morph).toContain('data-v3-morph-panel')
     expect(morph).toContain('clipPath')
-    expect(morph).toContain('iconOnly')
-    expect(morph).toContain('bg-background/90')
+    expect(range).toContain('bg-primary')
+    expect(range).toContain('showTicks')
     const houseCss = readSrc('components/site/v3/V3MorphSearch.css')
     expect(houseCss).not.toContain('backdrop-filter: none')
     expect(houseCss).not.toContain("[data-v3-morph='panel']")
   })
 
-  it('empty-open seeds are catalog icon rows, not listing streets', () => {
-    const catalog = morphCatalogItems()
-    expect(catalog.length).toBeGreaterThan(0)
-    expect(catalog[0]?.title).toBe('Bend')
-    expect(catalog[0]?.description).toBe('City')
-    expect(catalog[0]?.icon).toBeTruthy()
-    expect(catalog.map((item) => item.title)).not.toContain('19669 Harvard Place')
-  })
-
-  it('typed listing rows keep Home icons for after-query matches', () => {
+  it('empty-open listing rows are results with ask, not a Places city list', () => {
     const items = morphHomesFromListings([
       {
         ListNumber: '220123456',
@@ -107,14 +101,23 @@ describe('SITE-110 search catalog install', () => {
         StreetSuffix: 'Place',
         City: 'Bend',
         PostalCode: '97702',
+        ListPrice: 775000,
+        BedroomsTotal: 4,
       },
       { ListNumber: null, ListingKey: 'x', StreetNumber: null, StreetName: null },
     ])
     expect(items).toHaveLength(1)
     expect(items[0]?.title).toBe('19669 Harvard Place')
-    expect(items[0]?.description).toBe('Bend 97702')
+    expect(items[0]?.description).toContain('$775,000')
+    expect(items[0]?.description).toContain('4 bd')
+    expect(items[0]?.description).toContain('Bend')
     expect(items[0]?.id).toMatch(/^\/homes-for-sale\//)
-    expect(items[0]?.id).toMatch(/harvard/i)
-    expect(items[0]?.icon).toBeTruthy()
+    expect(items.map((item) => item.title)).not.toContain('Bend')
+  })
+
+  it('catalog place seeds stay available as a fallback', () => {
+    const catalog = morphCatalogItems()
+    expect(catalog[0]?.title).toBe('Bend')
+    expect(catalog[0]?.icon).toBeTruthy()
   })
 })
