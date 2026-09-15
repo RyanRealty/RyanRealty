@@ -798,6 +798,7 @@ export default async function CityDetailPage({ params }: Props) {
   // cannot disagree with 645 on first paint.
   const foldAtlasDots = atlasView.dots.filter((d) => d.t === 'house')
   const foldAtlasTypes = atlasView.types.filter((t) => t.key === 'house')
+  const foldAtlasRegions = atlasRegions.filter((r) => r.kind === 'town')
   return (
     <>
       <main className={V3_ROOT_CLASS}>
