@@ -20,6 +20,8 @@ describe('SITE-110 search catalog install', () => {
     expect(catalog).toContain("from '@/components/ui/command'")
     expect(command).toContain("from '@/components/ui/command'")
     expect(price).toContain("from '@/components/motion/range-slider'")
+    expect(price).toContain("from '@/components/site/v3/V3Range.logic'")
+    expect(price).toContain('snapToStops')
   })
 
   it('search dock does not control MorphingSearch open — the catalog owns the morph', () => {

@@ -11,7 +11,7 @@ import {
   formatPriceRange,
   formatPriceStop,
   snapToStops,
-} from '@/components/site/v3'
+} from '@/components/site/v3/V3Range.logic'
 
 export type SearchPriceRailProps = {
   low: number
