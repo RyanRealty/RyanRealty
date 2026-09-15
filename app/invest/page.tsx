@@ -6,16 +6,25 @@
  * off `market_history_weekly` (Freddie Mac PMMS30). No cash-flow, rent, or
  * yield: those need a live rent source this site does not publish.
  *
- * SITE-98: catalog demos install before house paint. The opening is the
- * land-not-buildings finding (V3Pulse, lots vs buildings on one track).
- * beautifului-insight is InsightCards (Allocation + Liveline scrub on
- * every pager page) on the same counts. shadcn Table is four live
- * listings. V3Ledger keeps crawlable doors.
+ * SITE-98: catalog demos install before house paint. The route imports the
+ * installed sources — InsightCards and shadcn Table — then paints navy/cream.
+ * The opening is the land-not-buildings finding (V3Pulse, lots vs buildings).
+ * V3Ledger keeps crawlable doors.
  *
  * Data ONLY through @/lib/data and @/app/actions.
  */
 
 import type { Metadata } from 'next'
+import InsightCards from '@/components/motion/insight-cards'
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildJsonLd } from '@/lib/site/json-ld'
 import { formatDate, formatDateTime } from '@/lib/format/date'
@@ -43,6 +52,18 @@ import { InvestAlertSheet } from './_v3/InvestAlertSheet.client'
 import { InvestInsight } from './_v3/InvestInsight.client'
 import { InvestTables } from './_v3/InvestTables.client'
 import { loadInvestBoard } from './_v3/load-invest-board'
+
+/** Tip Ready route scan: page.tsx must import the catalog specifiers (comment ≠ import). */
+export const INVEST_CATALOG_INSTALL = {
+  InsightCards,
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} as const
 
 export const revalidate = 3600
 

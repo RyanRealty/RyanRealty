@@ -103,7 +103,10 @@ describe('one stats source', () => {
 describe('invest catalog import (Tip Ready route scan)', () => {
   it('imports InsightCards from the installed source', () => {
     const src = readFileSync(new URL('./InvestInsight.client.tsx', import.meta.url), 'utf8')
+    const page = readFileSync(new URL('../page.tsx', import.meta.url), 'utf8')
     expect(src).toMatch(/from '@\/components\/motion\/insight-cards'/)
+    expect(page).toMatch(/from '@\/components\/motion\/insight-cards'/)
+    expect(page).toMatch(/INVEST_CATALOG_INSTALL/)
     expect(src).toMatch(/InsightCards/)
     expect(src).toMatch(/AllocationCard/)
     expect(src).toMatch(/CompareCard/)

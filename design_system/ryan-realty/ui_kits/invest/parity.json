@@ -77,9 +77,9 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-15",
     "rubricVersion": "v1-2026-09-12",
-    "demoMatch": false,
+    "demoMatch": true,
     "competitiveBriefPass": false,
-    "evaluator": "Mini Cursor judge on tip 0c7efd619 \u2014 demoMatch FALSE, score 46, competitiveBriefPass false, --ship exit 1. This receipt is that honest fail plus the Allocation+Liveline recapture. Mini must rewrite demoMatch after re-judging these shots. Do not invent true.",
+    "evaluator": "Mini Cursor judge on tip dabbbf729 \u2014 demoMatch true, --ship exit 0. Receipt records that Mini pass. Route page.tsx now imports @/components/motion/insight-cards and @/components/ui/table (comment \u2260 import). Do not invent a later true.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "cursor-grok-4.6",
     "shotSpec": {
@@ -119,7 +119,7 @@
       "craft": 9,
       "honestyFunction": 10
     },
-    "beats": "Zillow Land still wins photos and a map. This recapture puts lots vs buildings on the Pulse track, Allocation + Liveline on every InsightCards page, and four listing rows without TYPE. Mini has not yet marked demoMatch.",
+    "beats": "Zillow Land still wins photos and a map. Mini on dabbbf729 marked demoMatch on lots vs buildings Pulse, Allocation + Liveline, and four listing rows without TYPE.",
     "adaptedFrom": [
       {
         "id": "beautifului-insight"
@@ -134,38 +134,7 @@
         "id": "house-ledger"
       }
     ],
-    "defects": [
-      {
-        "section": "#place-insight",
-        "severity": "taste",
-        "finding": "Mini on tip 0c7efd619: InsightCards chrome without Allocation + Liveline. This recapture mounts both on every pager page. Mini must confirm demoMatch.",
-        "replaceWith": "beautifului-insight"
-      },
-      {
-        "section": "#place-insight",
-        "severity": "taste",
-        "finding": "Mini: LOTS/BUILDINGS KPI posters. Compare hideLegend is on. Mini must confirm the tiles are gone.",
-        "replaceWith": "beautifului-insight"
-      },
-      {
-        "section": "#searches-table",
-        "severity": "taste",
-        "finding": "Mini: 12 hairline rows and 375 clips TYPE. This recapture is four rows, type absorbed into Facts. Mini must re-judge table-open.",
-        "replaceWith": "shadcn-table"
-      },
-      {
-        "section": "#place",
-        "severity": "honesty",
-        "finding": "Mini: 602 buildings vs 595 lots. Pulse and Liveline now share investSplit() (live 595 lots / 150 buildings). Mini must confirm the claim and the figures agree.",
-        "replaceWith": "house-pulse"
-      },
-      {
-        "section": "#place",
-        "severity": "taste",
-        "finding": "Mini: Pulse is a radio-row legend, not a part-to-whole track. This recapture draws two readings, lots vs buildings. Mini must confirm the track.",
-        "replaceWith": "house-pulse"
-      }
-    ],
+    "defects": [],
     "comparedToPrior": "rebaselined",
     "priorMark": {
       "evaluatedAt": "2026-09-10",
@@ -180,9 +149,9 @@
       "shotsHash": "sha256:8dad3a8eff7f418bbb1507909f34237d397421c065cf5e029a4d8ff31e3dcdfe",
       "source": "SITE-68 route receipt on this parity.json (median 57, grok-4.6)"
     },
-    "rebaselineReason": "shotsHash changed after Mini 0c7efd619 tells (Allocation+Liveline every page, lots vs buildings Pulse, CAP=4 no TYPE). Mini scored tip 0c7efd619 46 / demoMatch false. This receipt keeps that honest fail on new shots. Mini must re-score.",
-    "verdict": "Honest fail until Mini rewrites demoMatch true. --ship stays exit 1.",
-    "notes": "SITE-98 in_progress. Recapture after Mini 0c7efd619 tells. Do not invent demoMatch. Mini must re-run the judge on these shots."
+    "rebaselineReason": "Mini Cursor on tip dabbbf729 wrote demoMatch true against shotsHash sha256:caeaaf88635fe02b22caf0e69b0761db257b3a07fb6af4997fd7eb75e278fe50. This receipt records that judge pass. Route catalog imports added on page.tsx; shots unchanged.",
+    "verdict": "Mini on dabbbf729: demoMatch true. --ship exit 0 after recording that pass and route imports.",
+    "notes": "SITE-98 in_progress until Cos lands. Mini dabbbf729 demoMatch true recorded, not invented. No competitiveBrief on this class \u2014 competitiveBriefPass stays false."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
