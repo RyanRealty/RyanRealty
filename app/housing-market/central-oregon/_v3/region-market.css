@@ -68,6 +68,8 @@
 
 .region-insights .insight-cards__pager-title,
 .region-insights .insight-cards__series-name,
+.region-insights .insight-cards__series-sub,
+.region-insights .insight-cards__trend,
 .region-insights .insight-cards__snapshot {
   color: var(--v3-ink-muted);
 }
@@ -75,6 +77,21 @@
 .region-insights .insight-cards__pager-count,
 .region-insights .insight-cards__claim,
 .region-insights .insight-cards__series-value {
+  color: var(--v3-ink);
+}
+
+.region-insights .insight-chart-tip {
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  border: var(--v3-rule-hairline);
+}
+
+.region-insights .insight-chart-tip__tick,
+.region-insights .insight-chart-tip__name {
+  color: var(--v3-ink-muted);
+}
+
+.region-insights .insight-chart-tip__value {
   color: var(--v3-ink);
 }
 

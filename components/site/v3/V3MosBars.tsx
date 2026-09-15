@@ -61,6 +61,7 @@ export function V3MosBars({
   const uid = useId()
   const tipId = `${uid}-tip`
   const [open, setOpen] = useState(false)
+  const [plays, setPlays] = useState(0)
   const plot = useMemo(
     () =>
       buildPairPlot([
@@ -70,19 +71,25 @@ export function V3MosBars({
     [homesName, homesValue, homesLabel, salesName, salesValue, salesLabel],
   )
 
-  const show = useCallback(() => setOpen(true), [])
+  const show = useCallback(() => {
+    setOpen(true)
+    setPlays((n) => n + 1)
+  }, [])
   const hide = useCallback(() => setOpen(false), [])
+  const replayDigits = useCallback(() => setPlays((n) => n + 1), [])
 
   if (!plot) return null
 
   // Whole-number faces count up (beui-number / rareui); fractional sales stay static.
-  // `replay` is DigitSwap: live slotted counts that roll when the face changes.
+  // `replay` is official DigitSwapPreview: Animate / hover flips animationKey so
+  // 1ch glyphs roll. Duration stays mid-swap at take-route-shots' 400ms hover wait.
   const valueFace = (label: string, value: number) => {
     if (replay) {
       return (
         <DigitSwap
           value={label}
-          animationKey={`${id}-${label}`}
+          animationKey={`${id}-${label}-${open ? 'open' : 'rest'}-${plays}`}
+          duration={0.62}
           className="v3-mos__swap font-mono text-lg tracking-[0.08em] tabular-nums"
         />
       )
@@ -134,6 +141,15 @@ export function V3MosBars({
           )
         })}
       </div>
+      {replay ? (
+        <button
+          type="button"
+          className="v3-mos__animate"
+          onClick={replayDigits}
+        >
+          Animate
+        </button>
+      ) : null}
       {open ? (
         <div className="v3-mos__tip" id={tipId} role="status">
           {/* More data than the bars: the ratio and the dated source — not a

@@ -101,6 +101,25 @@
   font-size: unset;
 }
 
+.v3-mos__animate {
+  justify-self: start;
+  min-height: var(--v3-tap);
+  margin: 0;
+  padding: 0 var(--v3-space-sm);
+  border: var(--v3-rule-hairline);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--v3-size-body-sm);
+  cursor: pointer;
+}
+
+.v3-mos__animate:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
 .v3-mos__tip {
   display: grid;
   gap: var(--v3-space-3xs);

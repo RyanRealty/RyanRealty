@@ -13,8 +13,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  min-height: 2.75rem;
+  gap: 0.5rem;
+  min-height: 1.5rem;
   width: 100%;
 }
 
@@ -35,12 +35,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: 0.375rem;
+  border-radius: 6px;
   background: transparent;
   cursor: pointer;
 }
@@ -68,16 +68,35 @@
 .insight-cards__series {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem 1.5rem;
+  gap: 0.75rem 1.75rem;
   min-width: 0;
 }
 
 .insight-cards__series-row {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 0.125rem;
   margin: 0;
   min-width: 0;
+}
+
+.insight-cards__series-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.insight-cards__series-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.insight-cards__series-row--2 .insight-cards__series-dot {
+  opacity: 0.55;
 }
 
 .insight-cards__series-name {
@@ -87,9 +106,23 @@
 
 .insight-cards__series-value {
   font-variant-numeric: tabular-nums;
+  font-size: 1.5rem;
   line-height: 1.1;
 }
 
+.insight-cards__series-sub {
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.insight-cards__snap {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.insight-cards__trend,
 .insight-cards__snapshot {
   font-size: 0.65625rem;
   font-weight: 500;
@@ -143,6 +176,41 @@
 .insight-chart-stage .v3-chart__hover {
   height: 166px;
   max-height: 166px;
+}
+
+.insight-chart-tip {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.35rem;
+  z-index: 3;
+  display: grid;
+  gap: 0.125rem;
+  min-width: 7rem;
+  padding: 0.35rem 0.5rem;
+  pointer-events: none;
+}
+
+.insight-chart-tip__tick,
+.insight-chart-tip__name,
+.insight-chart-tip__value {
+  margin: 0;
+  font-size: 0.65625rem;
+  line-height: 1.2;
+}
+
+.insight-chart-tip__row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0;
+}
+
+.insight-chart-tip__dot {
+  display: inline-block;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 999px;
+  background: currentColor;
 }
 
 .insight-cards__pill {

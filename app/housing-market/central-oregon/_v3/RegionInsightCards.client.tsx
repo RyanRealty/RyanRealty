@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * Region fold: official Insights card. Rest is CompareCard (series rows +
- * Snapshot + insight-chart-stage). year-open is pointer hover on the stage,
- * not a house V3Chart pager and not a pinned last-month rest. Next pages to
- * AnomalyCard (Closings/Sale). DigitSwap is official 1ch glyph slots.
+ * Region fold: official Insights Compare form. year-open is pointer hover
+ * on the stage (ChartTooltip + series columns + Trend snapshot + Snapshot).
+ * Not a house V3Chart pager. Next pages to AnomalyCard (Closings/Sale).
+ * DigitSwap is official 1ch glyph slots. DigitSwapPreview replay lives on MOS.
  */
 
 import Link from 'next/link'
@@ -84,6 +84,21 @@ function AnomalyToggle({
         >
           {item.label}
         </button>
+      ))}
+    </div>
+  )
+}
+
+function InsightChartTip({ read }: { read: V3ChartRead }) {
+  return (
+    <div className="insight-chart-tip" role="status">
+      <p className="insight-chart-tip__tick">{read.tick}</p>
+      {read.readings.map((row) => (
+        <p key={row.name} className="insight-chart-tip__row">
+          <span className="insight-chart-tip__dot" aria-hidden="true" />
+          <span className="insight-chart-tip__name">{row.name}</span>
+          <span className="insight-chart-tip__value">{row.label}</span>
+        </p>
       ))}
     </div>
   )
@@ -208,6 +223,7 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
       }}
       claim={face.claim}
       snapshot="Snapshot"
+      trend="Trend snapshot"
       figure={
         <SwapFace
           value={heroValue}
@@ -215,6 +231,7 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
         />
       }
       figureLabel={current.kind === 'compare' ? face.figureLabel : heroLabel}
+      figureSub={face.figureSub}
       secondFigure={
         face.secondFigure ? (
           <SwapFace
@@ -224,8 +241,10 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
         ) : undefined
       }
       secondLabel={face.secondLabel}
+      secondSub={face.secondSub}
       chrome={chrome}
       stage={stage}
+      tip={read ? <InsightChartTip read={read} /> : undefined}
       visual={visual}
       pill={pill}
     />

@@ -28,8 +28,14 @@ export type InsightCardsProps = {
   chrome?: ReactNode
   /** Pointer-scrub chart. Wrapped in official insight-chart-stage. */
   stage?: ReactNode
+  /** Official Compare/Anomaly ChartTooltip — on the stage while scrubbing. */
+  tip?: ReactNode
   pill?: ReactNode
   snapshot?: string
+  /** Official Compare label over the stage. */
+  trend?: string
+  figureSub?: string
+  secondSub?: string
   className?: string
   id?: string
   kind?: string
@@ -48,8 +54,12 @@ export function InsightCards({
   visual,
   chrome,
   stage,
+  tip,
   pill,
   snapshot = 'Snapshot',
+  trend = 'Trend snapshot',
+  figureSub,
+  secondSub,
   className,
   id,
   kind,
@@ -110,29 +120,43 @@ export function InsightCards({
       </div>
       <div className="insight-cards__card">
         <p className="insight-cards__claim">{claim}</p>
-        <div className="insight-cards__card-head">
-          {figure ? (
-            <div className="insight-cards__series">
-              <p className="insight-cards__series-row">
+        {figure ? (
+          <div className="insight-cards__series">
+            <p className="insight-cards__series-row">
+              <span className="insight-cards__series-head">
+                <span className="insight-cards__series-dot" aria-hidden="true" />
                 {figureLabel ? (
                   <span className="insight-cards__series-name">{figureLabel}</span>
                 ) : null}
-                <span className="insight-cards__series-value">{figure}</span>
-              </p>
-              {secondFigure ? (
-                <p className="insight-cards__series-row">
+              </span>
+              <span className="insight-cards__series-value">{figure}</span>
+              {figureSub ? <span className="insight-cards__series-sub">{figureSub}</span> : null}
+            </p>
+            {secondFigure ? (
+              <p className="insight-cards__series-row insight-cards__series-row--2">
+                <span className="insight-cards__series-head">
+                  <span className="insight-cards__series-dot" aria-hidden="true" />
                   {secondLabel ? (
                     <span className="insight-cards__series-name">{secondLabel}</span>
                   ) : null}
-                  <span className="insight-cards__series-value">{secondFigure}</span>
-                </p>
-              ) : null}
-            </div>
-          ) : null}
+                </span>
+                <span className="insight-cards__series-value">{secondFigure}</span>
+                {secondSub ? <span className="insight-cards__series-sub">{secondSub}</span> : null}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        <div className="insight-cards__snap">
+          {trend ? <span className="insight-cards__trend">{trend}</span> : null}
           {snapshot ? <span className="insight-cards__snapshot">{snapshot}</span> : null}
         </div>
         {chrome}
-        {stage ? <div className="insight-chart-stage">{stage}</div> : null}
+        {stage ? (
+          <div className="insight-chart-stage">
+            {stage}
+            {tip}
+          </div>
+        ) : null}
         {visual}
         {pill ? <div className="insight-cards__pill">{pill}</div> : null}
       </div>

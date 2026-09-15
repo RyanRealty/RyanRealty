@@ -82,6 +82,9 @@ export type RegionInsightPage = {
   /** CompareCard second series face (beautifului compare page). */
   secondFigure?: string
   secondLabel?: string
+  /** Official Compare column sub (tick / sourced delta). */
+  figureSub?: string
+  secondSub?: string
   /** Anomaly metric toggle or AllocationCard segments. */
   segments?: readonly RegionInsightSegment[]
   /** Series name the chart hover should write into the hero. */
@@ -102,6 +105,8 @@ export type InsightFace = {
   figureLabel: string
   secondFigure?: string
   secondLabel?: string
+  figureSub?: string
+  secondSub?: string
 }
 
 /** Pointer left the rest month — not the chart's resting last-point read. */
@@ -128,6 +133,8 @@ export function insightFaceForRead(
       figureLabel: page.figureLabel,
       secondFigure: page.secondFigure,
       secondLabel: page.secondLabel,
+      figureSub: page.figureSub,
+      secondSub: page.secondSub,
     }
   }
   const named = page.readName
@@ -141,6 +148,7 @@ export function insightFaceForRead(
       claim: `${page.figureLabel} ${figure} in ${read.tick}`,
       figure,
       figureLabel,
+      figureSub: read.tick,
     }
   }
   if (page.key.startsWith('compare-')) {
@@ -154,9 +162,11 @@ export function insightFaceForRead(
       figureLabel: row?.name || page.figureLabel,
       secondFigure: other?.label || page.secondFigure,
       secondLabel: other?.name || page.secondLabel,
+      figureSub: read.tick,
+      secondSub: read.tick,
     }
   }
-  return { claim: page.claim, figure, figureLabel }
+  return { claim: page.claim, figure, figureLabel, figureSub: read.tick }
 }
 
 function lastPoint(series: V3ChartSeries | undefined) {
@@ -191,6 +201,8 @@ export function buildRegionInsightPages(
         figureLabel: String(prior.name),
         secondFigure: String(newestLast.label),
         secondLabel: String(newest.name),
+        figureSub: tick,
+        secondSub: tick,
         readName: String(prior.name),
         pill: 'See homes for sale',
         pillHref: listingsBrowsePath(),
@@ -258,6 +270,7 @@ export function buildRegionInsightPages(
       claim,
       figure: newestClosed.lastLabel,
       figureLabel: `${newestClosed.lastTick} closings`,
+      figureSub: newestClosed.lastTick,
       readName: String(newestClosed.year),
       segments,
       chart: newestClosed.chart,
