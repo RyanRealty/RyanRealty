@@ -959,12 +959,13 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 44.0596,
     lng: -121.3126,
     recurrence: 'Annually, mid-September',
-    nextConfirmedDate: '2026-09-11',
-    endDate: '2026-09-13',
+    // 2026 edition (Sep 11–13) has passed; 2027 dates not yet confirmed on bendroots.net.
+    nextConfirmedDate: null,
+    endDate: null,
     priceInfo: 'Free',
     organizer: 'Bend Roots Revival',
     officialUrl: 'https://bendroots.net/',
-    lastVerified: '2026-07-03',
+    lastVerified: '2026-09-15',
     blurb:
       'A free, family friendly celebration of the region’s music, with more than a hundred local and regional acts across Midtown Bend stages.',
   },
