@@ -72,19 +72,6 @@ export function SearchCommand({ onOpenFilters }: SearchCommandProps) {
         <CommandInput placeholder="Type a command or place" />
         <CommandList>
           <CommandEmpty>No command matches that.</CommandEmpty>
-          <CommandGroup heading="Places">
-            {SEARCH_PLACE_SEEDS.map((place) => (
-              <CommandItem
-                key={place.id}
-                value={`${place.title} ${place.description} place`}
-                onSelect={() => go(place.id)}
-              >
-                {place.title}
-                <span className="text-muted-foreground ml-auto text-xs">{place.description}</span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-          <CommandSeparator />
           <CommandGroup heading="View">
             <CommandItem value="split view" onSelect={() => go('/homes-for-sale?view=split')}>
               Split
@@ -131,6 +118,19 @@ export function SearchCommand({ onOpenFilters }: SearchCommandProps) {
             <CommandItem value="sort price high" onSelect={() => go('/homes-for-sale?sort=price_desc')}>
               Price, high to low
             </CommandItem>
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup heading="Places">
+            {SEARCH_PLACE_SEEDS.map((place) => (
+              <CommandItem
+                key={place.id}
+                value={`${place.title} ${place.description} place`}
+                onSelect={() => go(place.id)}
+              >
+                {place.title}
+                <span className="text-muted-foreground ml-auto text-xs">{place.description}</span>
+              </CommandItem>
+            ))}
           </CommandGroup>
         </CommandList>
       </CommandDialog>
