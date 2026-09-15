@@ -44,14 +44,40 @@
 }
 
 @media (max-width: 63.99rem) {
+  /* Atlas, Insights, then MOS/combo. display:contents lets order pull
+     InsightCards between the map and the combobox so the open list cannot
+     cover the pager. MOS bars stay off the map (house-mos is the scale). */
+  .cities-fold {
+    display: flex;
+    flex-direction: column;
+    gap: var(--v3-space-sm);
+  }
+
+  .cities-fold__stage {
+    display: contents;
+  }
+
+  .cities-fold__drawing {
+    order: 1;
+  }
+
+  .cities-insight {
+    order: 2;
+  }
+
+  .cities-fold__figure {
+    order: 3;
+  }
+
   .cities-fold__drawing .v3-atlas__frame {
-    max-height: min(12vh, 4.75rem);
+    max-height: min(28vh, 8.5rem);
   }
 
   .cities-fold__drawing .v3-atlas__claim {
     display: none;
   }
 
+  .cities-fold .v3-drawing,
   .cities-fold .v3-drawing__plain,
   .cities-fold .v3-mos-compare__plain {
     display: none;
@@ -130,17 +156,6 @@
 .cities-fold .v3-alerts__ask {
   padding-left: 0;
   border-left: 0;
-}
-
-@media (max-width: 63.99rem) {
-  .cities-fold__count {
-    display: none;
-  }
-
-  .cities-fold .v3-mos-compare__field,
-  .cities-fold .v3-mos-compare__ends {
-    display: none;
-  }
 }
 
 .cities-fold .v3-alerts__promise {

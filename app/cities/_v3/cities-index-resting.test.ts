@@ -41,6 +41,14 @@ describe('restingCityDetail', () => {
         indexActive: 12,
       }),
     ).toBe(29)
+    expect(
+      cityLeftoverActive({
+        headlinesActive: null,
+        inventoryActive: null,
+        snapshotActive: 648,
+        indexActive: 1550,
+      }),
+    ).toBeNull()
   })
 
   it('keeps median and sentence when a verified photo is present', () => {

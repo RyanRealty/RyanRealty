@@ -43,4 +43,26 @@ describe('citiesInsightBoard', () => {
     expect(board?.allocation.find((s) => s.name === 'Bend')?.amount).toBe('29 for sale')
     expect(board?.allocationProse).not.toMatch(/648/)
   })
+
+  it('uses leftoverHud region leftover as the one pile, never snapshot 648 / 1550', () => {
+    const months = Array.from({ length: 12 }, (_, i) => ({
+      periodStart: `2025-${String(i + 1).padStart(2, '0')}-01`,
+      periodEnd: `2025-${String(i + 1).padStart(2, '0')}-28`,
+      medianClose: 500000,
+      closedCount: 10,
+    }))
+    const board = citiesInsightBoard({
+      cities: [
+        { slug: 'bend', name: 'Bend', activeCount: 619 },
+        { slug: 'redmond', name: 'Redmond', activeCount: 200 },
+      ],
+      regionMonthly: months,
+      bendMonthly: months,
+      regionLeftover: 1499,
+    })
+    expect(board?.allocationProse).toBe('Bend is 41% of the 1,499 leftover homes.')
+    expect(board?.allocation.find((s) => s.name === 'Bend')?.amount).toBe('619 for sale')
+    expect(board?.allocationProse).not.toMatch(/648|1550/)
+    expect(JSON.stringify(board)).not.toMatch(/648|1550/)
+  })
 })

@@ -237,15 +237,11 @@ export default async function CitiesPage() {
       slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
     const layers = overlays.get(`city:${slug}`)
     const indexRow = allCities.find((c) => c.slug === slug)
-    // Market Truth first, then the snapshot row, then the index's own count.
-    // Until SITE-52 a featured city with no Market Truth row (Tumalo, Crooked
-    // River Ranch) went null here, printed as "None listed now", and switched
-    // the bars off for the whole list.
+    // leftoverHud only (headlines ?? inventory). Snapshot / index are a
+    // second pile (SITE-92 Mini: 619 vs 648). Miss omits.
     const leftoverActive = cityLeftoverActive({
       headlinesActive: layers?.headlines?.activeCount,
       inventoryActive: layers?.inventory?.activeCount,
-      snapshotActive: snapshotBySlug.get(slug)?.activeCount,
-      indexActive: indexRow?.activeCount,
     })
     const leftoverMedian =
       layers?.headlines?.medianListPrice ??
@@ -359,8 +355,6 @@ export default async function CitiesPage() {
         activeCount: cityLeftoverActive({
           headlinesActive: layers?.headlines?.activeCount,
           inventoryActive: layers?.inventory?.activeCount,
-          snapshotActive: snap?.activeCount,
-          indexActive: city.activeCount,
         }),
         medianListPrice:
           layers?.headlines?.medianListPrice ??
@@ -468,6 +462,7 @@ export default async function CitiesPage() {
     cities: directory.map((c) => ({ slug: c.slug, name: c.name, activeCount: c.activeCount })),
     regionMonthly,
     bendMonthly: monthlyBySlug.get('bend') ?? [],
+    regionLeftover: hud.active,
   })
   const new30Source =
     hud.new30 != null
@@ -500,7 +495,7 @@ export default async function CitiesPage() {
 
   const regionDrawing =
     atlasRegions.length > 0 ? (
-      <div className="cities-fold">
+      <div className="cities-fold" id="cities-fold">
         <div className="cities-fold__stage">
           <div className="cities-fold__drawing">
             <V3Atlas
@@ -526,7 +521,7 @@ export default async function CitiesPage() {
         {insight}
       </div>
     ) : regionFigures.length > 0 || insightBoard ? (
-      <div className="cities-fold">
+      <div className="cities-fold" id="cities-fold">
         <div className="cities-fold__figure">{regionFigure}</div>
         {insight}
       </div>

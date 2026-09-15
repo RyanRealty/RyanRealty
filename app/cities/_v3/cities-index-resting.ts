@@ -7,9 +7,9 @@
  */
 
 /**
- * One leftover active count for a city row (leftoverHudKpis order).
- * Headlines, then inventory, then the snapshot, then the index row.
- * Never mix a region leftover into a city rest panel (SITE-92 Mini: 648 vs 29).
+ * One leftover active count for a city row — leftoverHudKpis order only
+ * (headlines ?? inventory). Snapshot / index piles are a second count
+ * (SITE-92 Mini: fold 619 vs supply/reveal 648). Miss omits.
  */
 export function cityLeftoverActive(input: {
   headlinesActive?: number | null
@@ -17,10 +17,10 @@ export function cityLeftoverActive(input: {
   snapshotActive?: number | null
   indexActive?: number | null
 }): number | null {
+  void input.snapshotActive
+  void input.indexActive
   const leftover = input.headlinesActive ?? input.inventoryActive
   if (leftover != null && Number.isFinite(leftover)) return leftover
-  if (input.snapshotActive != null && Number.isFinite(input.snapshotActive)) return input.snapshotActive
-  if (input.indexActive != null && Number.isFinite(input.indexActive)) return input.indexActive
   return null
 }
 

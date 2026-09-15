@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * beautifului-insight on /cities — real InsightCards (Insights pager,
- * Allocation bar + Liveline pointer-scrub). Navy/cream paint only.
- * Compare KPI tiles stay off (hideLegend). Do not wrap this in a house year pager.
+ * beautifului-insight on /cities — catalog InsightCards pages, one card each
+ * (AllocationCard, then CompareCard). Navy/cream paint only. Do not stack
+ * cards or wrap this in a house pager.
  */
 import InsightCards, {
   AllocationCard,
@@ -63,37 +63,20 @@ function livelineSeries(series: CitiesInsightSeries[]) {
   }))
 }
 
-function AllocationAndLiveline({
-  segments,
-  note,
-  series,
-}: {
-  segments: CitiesInsightSegment[]
-  note: string
-  series: CitiesInsightSeries[]
-}) {
-  return (
-    <div data-insight-combo="allocation-liveline">
-      <AllocationCard segments={segments} note={note} />
-      <CompareCard hideLegend series={livelineSeries(series)} formatTime={() => ''} />
-    </div>
-  )
-}
-
 function pagesFromBoard(board: CitiesInsightBoard): InsightPage[] {
   if (board.allocation.length < 2) return []
   if (!board.compare || board.compare.length < 1 || board.compare[0]!.values.length < 6) return []
 
   const segments = board.allocation
   const note = board.allocationNote
-  const series = board.compare
+  const series = livelineSeries(board.compare)
 
   return [
     {
       key: 'mix',
       prose: <>{board.allocationProse}</>,
       Card: function CityMix() {
-        return <AllocationAndLiveline segments={segments} note={note} series={series} />
+        return <AllocationCard segments={segments} note={note} />
       },
       pill: 'See every city for sale',
     },
@@ -101,7 +84,7 @@ function pagesFromBoard(board: CitiesInsightBoard): InsightPage[] {
       key: 'closes',
       prose: <>{board.compareProse}</>,
       Card: function CityCloses() {
-        return <AllocationAndLiveline segments={segments} note={note} series={series} />
+        return <CompareCard series={series} />
       },
       pill: 'Scrub the year of closes',
     },

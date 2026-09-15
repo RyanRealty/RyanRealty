@@ -62,6 +62,15 @@ function smoothPoints(values: number[], spanSecs: number): LivelinePoint[] {
   return makePoints(dense, spanSecs / Math.max(1, dense.length - 1))
 }
 
+function pointsInWindow(values: number[], spanSecs: number, end: number): LivelinePoint[] {
+  const dense = smooth(values)
+  const gap = spanSecs / Math.max(1, dense.length - 1)
+  return dense.map((value, index) => ({
+    time: end - (dense.length - 1 - index) * gap,
+    value,
+  }))
+}
+
 function useInkStroke() {
   const [stroke, setStroke] = useState({ ink: 'currentColor', muted: 'currentColor' })
   useEffect(() => {
@@ -149,7 +158,14 @@ export function CompareCard({
       })),
     [series, stroke],
   )
-  const points = useMemo(() => painted.map((s) => smoothPoints(s.values, 42)), [painted])
+  const [points, setPoints] = useState<LivelinePoint[][]>(() => painted.map(() => []))
+  useEffect(() => {
+    // Liveline windows around wall-clock now. Fixed-epoch points (1.7e9) fall
+    // outside that window and paint "No data to display" — the cream pager.
+    // Clock reads stay in useEffect (ci:hydration-safety).
+    const end = Date.now() / 1000
+    setPoints(painted.map((s) => pointsInWindow(s.values, 42, end)))
+  }, [painted])
   const pointCount = points[0]?.length ?? 0
   const chartSeries: LivelineSeries[] = useMemo(
     () =>
@@ -162,6 +178,7 @@ export function CompareCard({
       })),
     [painted, points],
   )
+  const primary = points[0] ?? []
 
   return (
     <div className="insight-cards__card">
@@ -189,8 +206,8 @@ export function CompareCard({
         onPointerUp={() => setHoverIndex(null)}
       >
         <Liveline
-          data={[]}
-          value={0}
+          data={primary}
+          value={primary.at(-1)?.value ?? 0}
           series={chartSeries}
           theme="light"
           grid={false}

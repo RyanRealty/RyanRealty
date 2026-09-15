@@ -23,12 +23,19 @@ function publishedCloses(points: readonly PublicMonthlyPoint[]): number[] {
 
 function allocationSegments(
   cities: readonly InsightCity[],
+  regionLeftover?: number | null,
 ): { segments: CitiesInsightSegment[]; total: number } {
   const published = cities.filter((c): c is InsightCity & { activeCount: number } => {
     return c.activeCount != null && Number.isFinite(c.activeCount) && c.activeCount > 0
   })
   if (published.length < 2) return { segments: [], total: 0 }
-  const total = published.reduce((sum, c) => sum + c.activeCount, 0)
+  const citySum = published.reduce((sum, c) => sum + c.activeCount, 0)
+  const leadCount = Math.max(...published.map((c) => c.activeCount))
+  const region =
+    regionLeftover != null && Number.isFinite(regionLeftover) && regionLeftover >= leadCount
+      ? regionLeftover
+      : null
+  const total = region ?? citySum
   if (!(total > 0)) return { segments: [], total: 0 }
   const top = published.slice().sort((a, b) => b.activeCount - a.activeCount).slice(0, 5)
   const topSum = top.reduce((sum, c) => sum + c.activeCount, 0)
@@ -56,8 +63,12 @@ export function citiesInsightBoard(input: {
   cities: readonly InsightCity[]
   regionMonthly: readonly PublicMonthlyPoint[]
   bendMonthly: readonly PublicMonthlyPoint[]
+  regionLeftover?: number | null
 }): CitiesInsightBoard | null {
-  const { segments: allocation, total: publishedTotal } = allocationSegments(input.cities)
+  const { segments: allocation, total: publishedTotal } = allocationSegments(
+    input.cities,
+    input.regionLeftover,
+  )
   const regionCloses = publishedCloses(input.regionMonthly)
   const bendCloses = publishedCloses(input.bendMonthly)
   const compare =
@@ -83,8 +94,12 @@ export function citiesInsightBoard(input: {
   if (allocation.length < 2 && !compare) return null
 
   const lead = allocation[0]
+  const pile =
+    input.regionLeftover != null && Number.isFinite(input.regionLeftover) && input.regionLeftover === publishedTotal
+      ? `${formatCount(publishedTotal)} leftover homes`
+      : `${formatCount(publishedTotal)} leftover homes on this directory`
   const allocationProse = lead
-    ? `${lead.name} is ${lead.pct}% of the ${formatCount(publishedTotal)} leftover homes on this directory.`
+    ? `${lead.name} is ${lead.pct}% of the ${pile}.`
     : 'Published city leftover by share of homes for sale.'
 
   const last = regionCloses.at(-1)
