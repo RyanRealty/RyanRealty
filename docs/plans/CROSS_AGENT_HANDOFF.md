@@ -1,3 +1,10 @@
+# Current — 2026-09-15 (SITE-110 Tip Ready Mini rejudge — ship 1)
+
+Surface: Cos Mini on Matthews Mini. Tip Ready judge/land only. No SITE-103. No SITE-107. No SITE-109. No CMA. HOLD owner sends.
+
+- **SITE-110 search:** tip `ff248ea81` (`cursor/site-110-search-tip-21f9` PR #248) · `--ship` 1 · demoMatch false · competitiveBriefPass false · score 56 · replaceWith `beui-morphing-search` · left in_progress. Mini rejudge: recaptured default + search-open/command-open/filters-open on tip at http://127.0.0.1:3029; grok-4.6 via cursor-cli. search-open still cream Bend+Esc Places dropdown (not morph); filters-open is V3Sheet (not STEP 1 OF 2 quiz); command-open has Sort rows. Do NOT invent demoMatch. Do NOT merge. Evidence note on owner `cursor-cloud-site110-20260915`. Artifacts: `.artifacts/site110-taste-evaluate.clean.json`, worktree `worktrees/site110-search-tip-judge`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `scripts/lib/taste-receipt.mjs --ship`.
+
 # Current — 2026-09-15 (SITE-110 rematch after Mini 58)
 
 Surface: Cursor cloud. Branch `cursor/site-110-search-tip-21f9`. Do not merge. Cos Mini-judges.
