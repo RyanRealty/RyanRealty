@@ -1,9 +1,9 @@
-# Current — 2026-09-15 (SITE-105 oregon-city Mini f55e24ddc pixel fix)
+# Current — 2026-09-15 (SITE-105 Tip Ready, Cos landing)
 
-Surface: Cursor cloud `cursor-cloud-site105-20260914` on `cursor/oregon-city-site105-1e22` @ `987236e4d` (PR #234). Do not merge.
+Surface: Cursor cloud `cursor-cloud-site105-20260914` on `cursor/oregon-city-site105-1e22`. Do not merge from this checkout.
 
-- **Done:** Mini `f55e24ddc` score 47 tells: official compact Card (no lead stretch), catalog data-window hover (`717 · all types · stamp`), official Empty + empty/feed-miss demoStates, H1 = `buildOregonCityTitle`. Shots recaptured. `--ship` stays exit 1 until Mini writes `demoMatch: true`.
-- **Next:** Cos / Mini Cursor judge. Leave SITE-105 `in_progress`.
+- **Done:** Mini Cursor on tip `987236e4d`: `demoMatch` true, `--ship` exit 0. Cos is landing on Mini (`npm run push` from main). No more craft unless that land fails.
+- **Next:** After Cos push, SITE-105 is marked done. This worker holds the claim and does not patch the page.
 - **Node:** `0e402cf5-3e29-419d-9e14-3f7896687b53` SITE-105
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`
 
