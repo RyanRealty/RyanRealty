@@ -30,8 +30,8 @@ const TYPE_BY_CODE: Record<string, string> = {
   H: 'Business',
 }
 
-const PER_TYPE = 4
-const CAP = 12
+const PER_TYPE = 1
+const CAP = 4
 
 export function investTypeLabel(tile: ListingTile): string {
   const code = String(tile.propertyType ?? '').toUpperCase()
@@ -92,8 +92,9 @@ function toRow(tile: ListingTile): InvestListingRow | null {
 }
 
 /**
- * Interleave the newest publishable tile from each type bucket so the table
- * is not twelve lots. Cap at 12. A bucket that sent nothing is skipped.
+ * One newest publishable tile from each type bucket, cap 4. A scrolling
+ * twelve-row list is not catalog craft (Mini 0c7efd619). A bucket that
+ * sent nothing is skipped.
  */
 export function composeInvestListings(buckets: readonly (readonly ListingTile[])[]): InvestListingRow[] {
   const queues = buckets.map((bucket) => bucket.filter(qualify).map(toRow).filter((row): row is InvestListingRow => row != null).slice(0, PER_TYPE))
@@ -115,5 +116,5 @@ export function composeInvestListings(buckets: readonly (readonly ListingTile[])
 }
 
 export function investListingFacts(row: InvestListingRow): string {
-  return [row.beds, row.baths, row.size].filter(Boolean).join(' · ')
+  return [row.typeLabel, row.beds, row.baths, row.size].filter(Boolean).join(' · ')
 }

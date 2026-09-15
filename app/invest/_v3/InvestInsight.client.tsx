@@ -2,12 +2,12 @@
 
 /**
  * beautifului-insight on /invest — real InsightCards (Insights pager,
- * Compare/Anomaly Liveline pointer-scrub, Allocation bar). Navy/cream
- * paint only. Do not wrap this in a house year pager.
+ * Allocation bar + Liveline pointer-scrub on every page). Navy/cream
+ * paint only. Compare KPI tiles stay off (hideLegend). Do not wrap
+ * this in a house year pager.
  */
 import InsightCards, {
   AllocationCard,
-  AnomalyCard,
   CompareCard,
   type InsightPage,
 } from '@/components/motion/insight-cards'
@@ -28,20 +28,48 @@ export function InvestInsight({ id, board }: { id: string; board: InvestInsightB
   )
 }
 
+function AllocationAndLiveline({
+  segments,
+  note,
+  series,
+}: {
+  segments: InvestInsightBoard['allocation']
+  note: string
+  series: NonNullable<InvestInsightBoard['compare']>
+}) {
+  const formatValue = (v: number) => Math.round(v).toLocaleString('en-US')
+  return (
+    <div data-insight-combo="allocation-liveline">
+      <AllocationCard segments={segments} note={note} />
+      <CompareCard
+        hideLegend
+        series={series.map((s) => ({ ...s, formatValue }))}
+        formatTime={() => ''}
+      />
+    </div>
+  )
+}
+
 function pagesFromBoard(board: InvestInsightBoard): InsightPage[] {
+  if (!board.compare) return []
+
+  const series = board.compare
   const pages: InsightPage[] = [
     {
-      key: 'allocation',
+      key: 'for-sale',
       prose: (
         <>
-          Lots are {board.landSharePct}% of income property for sale in Central Oregon — {board.landCount.toLocaleString('en-US')} of {board.total.toLocaleString('en-US')}.
+          Lots are {board.landSharePct}% of income property for sale in Central Oregon —{' '}
+          {board.landCount.toLocaleString('en-US')} lots against {board.buildingsCount.toLocaleString('en-US')}{' '}
+          buildings, {board.total.toLocaleString('en-US')} in all.
         </>
       ),
-      Card: function ForSaleAllocation() {
+      Card: function ForSaleMix() {
         return (
-          <AllocationCard
+          <AllocationAndLiveline
             segments={board.allocation}
-            note="For sale now, by type. Tap a segment to inspect that population. Shares add to the whole set."
+            note="For sale now, by type. Tap a segment to inspect that population. The line below is lots against buildings across the three published windows — scrub it."
+            series={series}
           />
         )
       },
@@ -49,71 +77,45 @@ function pagesFromBoard(board: InvestInsightBoard): InsightPage[] {
     },
   ]
 
-  if (board.compare) {
+  if (board.soldAllocation && board.soldTotal && board.soldLandCount) {
     pages.push({
-      key: 'compare',
+      key: 'sold',
       prose: (
         <>
-          Lots against buildings across the three published windows: sold last 12 months, under contract, and for sale now.
+          Sold in the last 12 months, the mix is still lots-heavy — {board.soldLandCount.toLocaleString('en-US')} of{' '}
+          {board.soldTotal.toLocaleString('en-US')}. Same two populations on the line: lots against buildings.
         </>
       ),
-      Card: function LotsVsBuildings() {
-        const formatValue = (v: number) => Math.round(v).toLocaleString('en-US')
+      Card: function SoldMix() {
         return (
-          <CompareCard
-            series={board.compare!.map((s) => ({ ...s, formatValue }))}
-            formatTime={() => ''}
-          />
-        )
-      },
-      pill: 'Scrub the three published windows',
-    })
-  }
-
-  if (board.anomaly) {
-    pages.push({
-      key: 'anomaly',
-      prose: (
-        <>
-          The unusual share is lots, not buildings. Toggle the two populations on the same three published windows.
-        </>
-      ),
-      Card: function LandAnomaly() {
-        return (
-          <AnomalyCard
-            data={board.anomaly!}
-            labels={{
-              title: 'Lots vs buildings',
-              spend: 'Lots',
-              usage: 'Buildings',
-              formatSpend: (v) => Math.round(v).toLocaleString('en-US'),
-              formatUsage: (v) => Math.round(v).toLocaleString('en-US'),
-              spentLine: (value) => `${value} lots at the last published window`,
-              vsLine: board.windowLabels.join(' · '),
-            }}
-            formatTime={() => ''}
-          />
-        )
-      },
-      pill: 'Toggle lots and buildings',
-    })
-  } else if (board.soldAllocation && board.soldTotal && board.soldLandCount) {
-    pages.push({
-      key: 'sold-allocation',
-      prose: (
-        <>
-          Sold in the last 12 months, the mix is still lots-heavy — {board.soldLandCount.toLocaleString('en-US')} of {board.soldTotal.toLocaleString('en-US')}.
-        </>
-      ),
-      Card: function SoldAllocation() {
-        return (
-          <AllocationCard
+          <AllocationAndLiveline
             segments={board.soldAllocation!}
-            note="Closed in the last 12 months, by type. The same segment rows as the Pulse, sold window."
+            note="Closed in the last 12 months, by type. The line is the same three published windows. Pointer-scrub to move through them."
+            series={series}
           />
         )
       },
       pill: 'How the last year closed',
+    })
+  } else {
+    pages.push({
+      key: 'windows',
+      prose: (
+        <>
+          Lots against buildings across the three published windows: sold last 12 months, under contract, and for sale
+          now.
+        </>
+      ),
+      Card: function WindowMix() {
+        return (
+          <AllocationAndLiveline
+            segments={board.allocation}
+            note="The bar is for sale now. The line is lots against buildings across the published windows — scrub it."
+            series={series}
+          />
+        )
+      },
+      pill: 'Scrub the three published windows',
     })
   }
 

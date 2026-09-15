@@ -39,7 +39,7 @@ export function InvestTables({
             Income properties for sale now
           </h2>
           <p className="invest-tables__lede">
-            Price, address, and the rooms or acres the feed published. Open a row for the listing.
+            Price, address, and the type plus rooms or acres the feed published. Open a row for the listing.
           </p>
           <Table>
             <TableHeader>
@@ -47,7 +47,6 @@ export function InvestTables({
                 <TableHead>Address</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Facts</TableHead>
-                <TableHead>Type</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -76,7 +75,6 @@ export function InvestTables({
                     </TableCell>
                     <TableCell className="tabular-nums">{row.price}</TableCell>
                     <TableCell className="invest-tables__facts">{facts || '—'}</TableCell>
-                    <TableCell>{row.typeLabel}</TableCell>
                   </TableRow>
                 )
               })}

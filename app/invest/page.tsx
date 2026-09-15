@@ -7,10 +7,10 @@
  * yield: those need a live rent source this site does not publish.
  *
  * SITE-98: catalog demos install before house paint. The opening is the
- * land-not-buildings finding (V3Pulse, four part-to-whole readings).
- * beautifului-insight is InsightCards (Allocation + Liveline scrub) on the
- * same counts. shadcn Table is the live listing inventory. V3Ledger keeps
- * crawlable doors.
+ * land-not-buildings finding (V3Pulse, lots vs buildings on one track).
+ * beautifului-insight is InsightCards (Allocation + Liveline scrub on
+ * every pager page) on the same counts. shadcn Table is four live
+ * listings. V3Ledger keeps crawlable doors.
  *
  * Data ONLY through @/lib/data and @/app/actions.
  */
@@ -206,9 +206,9 @@ export default async function InvestPage() {
           />
         )}
 
-        <InvestTables listings={listingsOk ? listings : []} source={SEGMENT_TRACE} />
-
         {insight ? <InvestInsight id="place-insight" board={insight} /> : null}
+
+        <InvestTables listings={listingsOk ? listings : []} source={SEGMENT_TRACE} />
 
         {firstSearchRow ? (
           <V3Ledger

@@ -130,9 +130,11 @@ const COMPARE_SERIES: CompareSeries[] = [
 export function CompareCard({
   series = COMPARE_SERIES,
   formatTime,
+  hideLegend = false,
 }: {
   series?: CompareSeries[]
   formatTime?: (t: number) => string
+  hideLegend?: boolean
 }) {
   const stroke = useInkStroke()
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
@@ -161,19 +163,21 @@ export function CompareCard({
 
   return (
     <div className="insight-cards__card">
-      <div className="insight-cards__legend">
-        {painted.map((s, i) => {
-          const last = points[i]?.at(-1)?.value ?? (s.values.at(-1) ?? 0)
-          const format = s.formatValue ?? formatPercent
-          return (
-            <div key={s.name}>
-              <span className="insight-cards__series-name">{s.name}</span>
-              <span className="insight-cards__delta">{format(last)}</span>
-              <span className="insight-cards__sub">{s.sub}</span>
-            </div>
-          )
-        })}
-      </div>
+      {hideLegend ? null : (
+        <div className="insight-cards__legend">
+          {painted.map((s, i) => {
+            const last = points[i]?.at(-1)?.value ?? (s.values.at(-1) ?? 0)
+            const format = s.formatValue ?? formatPercent
+            return (
+              <div key={s.name}>
+                <span className="insight-cards__series-name">{s.name}</span>
+                <span className="insight-cards__delta">{format(last)}</span>
+                <span className="insight-cards__sub">{s.sub}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
       <div
         className="insight-chart-stage"
         onPointerDown={(event) => setHoverIndex(chartIndexFromPointer(event, pointCount))}
