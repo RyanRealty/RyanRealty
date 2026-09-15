@@ -2781,7 +2781,8 @@
       "demoStates": [
         "error-open=[data-taste=error-open]@#write!click",
         "success-open=[data-taste=success-open]@#write!click",
-        "hours-empty-open=[data-taste=hours-empty]@#reach!click"
+        "hours-empty-open=[data-taste=hours-empty]@#reach!click",
+        "sent-open=[data-taste=sent-open]@#write!click"
       ]
     },
     "invest": {

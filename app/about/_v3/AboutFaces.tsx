@@ -249,6 +249,7 @@ export function AboutFaces({
   figures,
   source,
   proof,
+  sectionId,
 }: {
   people: readonly AboutFace[]
   heading: string
@@ -293,23 +294,26 @@ export function AboutFaces({
    * badge on one overlapping circle.
    */
   proof?: AboutFaceProof
+  /** Compact landmark id. Default stays `faces` so homepage / about callers match. */
+  sectionId?: string
 }) {
   const [first, ...rest] = people
   if (!first) return null
   const shown = [first, ...rest]
   const lead = headingLevel === 1 && size === "roster"
+  const compactId = sectionId ?? "faces"
 
   if (size === "compact") {
     return (
       <section
-        id="faces"
+        id={compactId}
         className={cn(V3_ROOT_CLASS, "about-faces", "about-faces--compact")}
-        aria-labelledby="faces-heading"
+        aria-labelledby={`${compactId}-heading`}
       >
         <div className="about-faces__head">
           <V3Eyebrow>Our brokers</V3Eyebrow>
           <div className="about-faces__head-row">
-            <V3Heading level={headingLevel} id="faces-heading" className="about-faces__heading">
+            <V3Heading level={headingLevel} id={`${compactId}-heading`} className="about-faces__heading">
               {heading}
             </V3Heading>
             <V3Button variant="text" href={teamPath()} className="about-faces__door">
