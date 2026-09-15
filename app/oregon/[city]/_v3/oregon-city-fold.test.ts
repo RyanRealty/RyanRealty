@@ -46,7 +46,7 @@ describe('oregon-city fold helpers', () => {
     )
   })
 
-  it('draws two hoverable bars whose notes deepen past the bar labels', () => {
+  it('draws two hoverable bars whose notes are a catalog data window', () => {
     const drawing = buildOregonCitySupplyDrawing({
       name: 'Medford',
       activeAllCount: 718,
@@ -60,12 +60,10 @@ describe('oregon-city fold helpers', () => {
     expect(drawing?.bars?.[0]?.value).toBe(718)
     expect(drawing?.bars?.[1]?.value).toBe(339)
     expect(drawing?.claim).not.toMatch(/718|339|\$469/)
-    expect(drawing?.bars?.[0]?.note).toMatch(/stamped Sep 14, 2026/)
-    expect(drawing?.bars?.[0]?.note).toMatch(/no published sold pace/)
-    expect(drawing?.bars?.[0]?.note).not.toMatch(/718/)
-    expect(drawing?.bars?.[1]?.note).toMatch(/Typical ask among those houses is \$469,000/)
-    expect(drawing?.bars?.[1]?.note).toMatch(/newest twelve/)
-    expect(drawing?.bars?.[1]?.note).not.toMatch(/339/)
+    expect(drawing?.bars?.[0]?.note).toBe('718 · all types · Sep 14, 2026')
+    expect(drawing?.bars?.[1]?.note).toBe('339 · houses · $469,000')
+    expect(drawing?.bars?.[0]?.note).not.toMatch(/sold pace/)
+    expect(drawing?.bars?.[1]?.note).not.toMatch(/newest twelve/)
     expect(
       buildOregonCitySupplyDrawing({
         name: 'Medford',
@@ -151,9 +149,16 @@ describe('oregon-city page holds the SITE-105 catalog object', () => {
     expect(PAGE).toContain('buildOregonCityTitle')
     expect(PAGE).toContain('OregonCityHonesty')
     expect(PAGE).toContain('OregonCityListings')
+    expect(PAGE).toContain('headline={v3Text(headline)}')
+    expect(PAGE).toContain('buildOregonCityTitle({ name: city.name, activeAllCount: city.activeAllCount })')
     expect(LISTINGS).toContain("from '@/components/ui/card'")
-    expect(LISTINGS).toContain('oregon-city-listings__lead-link')
-    expect(LISTINGS_CSS).toContain('grid-column: 1 / -1')
+    expect(LISTINGS).toContain("from '@/components/ui/empty'")
+    expect(LISTINGS).toContain('<CardFooter>')
+    expect(LISTINGS).toContain('<CardContent>')
+    expect(LISTINGS).not.toContain('hidden group-hover/card:block')
+    expect(LISTINGS).not.toContain('oregon-city-listings__lead')
+    expect(LISTINGS_CSS).not.toContain('grid-column: 1 / -1')
+    expect(LISTINGS_CSS).not.toContain('grid-template-columns: minmax(0, 1.35fr)')
     expect(PAGE).toContain('id="about"')
     expect(PAGE).toContain('id="listings"')
     expect(PAGE).not.toContain('layout="magazine"')
@@ -181,9 +186,11 @@ describe('oregon-city page holds the SITE-105 catalog object', () => {
     expect(HONESTY_CSS).not.toContain('max-width: 32rem')
   })
 
-  it('asks the judge to hover the bars and a Card reveal', () => {
+  it('asks the judge to hover the bars, a Card, and the empty listing states', () => {
     expect(CATALOG).toContain('figures-open=#top .v3-instrument__drawing button!hover')
     expect(CATALOG).toContain('listings=#listings [data-slot=card]:has([data-slot=card-content])!hover')
+    expect(CATALOG).toContain('empty=#listings [data-demo-state=empty]!click')
+    expect(CATALOG).toContain('feed-miss=#listings [data-demo-state=feed-miss]!click')
     expect(CATALOG).not.toContain('v3-instrument__fold-summary!click')
   })
 })

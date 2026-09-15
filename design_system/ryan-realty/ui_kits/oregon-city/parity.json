@@ -16,7 +16,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, level 1, id='top'. The place answer is an interactive two-bar drawing (V3MosBars when city pulse publishes homes-for-sale vs a month of sales; otherwise V3Drawing of the snapshot pair with hover). One supporting figure at most — never a three-tile KPI grid and never a fold that unhides tiles. Labels stay plain — no SFR jargon. The dek names the out-of-market claim without orphaned snapshot numerals; hover notes carry the stamp, the house definition, and typical ask. Photographed listings live on the Ledger immediately after this band. The Instrument does not carry a second navy introduction slab or a second SOURCE line — the drawing owns the trace. Value my home is the wrong ask here: this city is outside our market.",
+      "section": "Pattern 1, level 1, id='top'. The place answer is an interactive two-bar drawing (V3MosBars when city pulse publishes homes-for-sale vs a month of sales; otherwise V3Drawing of the snapshot pair with hover). One supporting figure at most — never a three-tile KPI grid and never a fold that unhides tiles. Labels stay plain — no SFR jargon. The H1 is buildOregonCityTitle (live count + outside our market) so SEO is in pixels. Hover notes are a catalog data window (count · population · stamp), not house disclosure copy. Photographed listings live on OregonCityListings immediately after this band. The Instrument does not carry a second navy introduction slab or a second SOURCE line — the drawing owns the trace. Value my home is the wrong ask here: this city is outside our market.",
       "blocking": true
     },
     {
@@ -36,7 +36,7 @@
     },
     {
       "name": "OregonCityListings",
-      "section": "SITE-105 catalog Card magazine on the route (app/oregon/[city]/_v3/OregonCityListings.tsx). id='listings'. Image + CardHeader (title address, description beds/baths, CardAction price) + CardContent reveal on hover. Lead card is default size and spans the measure; remaining cards are size=sm. No MLS plat / DELTA when line. Every card is a door. Source line is the listing feed's own trace.",
+      "section": "SITE-105 official Card + Empty on the route (app/oregon/[city]/_v3/OregonCityListings.tsx). id='listings'. Compact Card Image + Header (title address, description beds/baths, CardAction price) + CardContent + CardFooter. Equal cards, no house lead stretch. Empty and feed-miss are official Empty objects, capturable via catalog demoStates. No MLS plat / DELTA when line. Source line is the listing feed's own trace.",
       "blocking": true
     },
     {
@@ -160,7 +160,9 @@
       "states": [
         "default",
         "figures-open",
-        "listings"
+        "listings",
+        "empty",
+        "feed-miss"
       ]
     },
     "shots": {

@@ -123,17 +123,13 @@ export function buildOregonCitySupplyDrawing(input: {
         name: 'On the market',
         value: all,
         label: allLabel,
-        note: stamp
-          ? `Statewide snapshot, stamped ${stamp}. Every active property type — houses, condos, and land together. Not months of supply: ${name} has no published sold pace.`
-          : `Statewide snapshot. Every active property type — houses, condos, and land together. Not months of supply: ${name} has no published sold pace.`,
+        note: stamp ? `${allLabel} · all types · ${stamp}` : `${allLabel} · all types`,
       },
       {
         name: 'Houses',
         value: houses,
         label: housesLabel,
-        note: typical
-          ? `A house on its own lot, not a condo or a lot. Typical ask among those houses is ${typical}. The cards below are the newest twelve with a price and a street, not this whole book.`
-          : `A house on its own lot, not a condo or a lot. The cards below are the newest twelve with a price and a street, not this whole book.`,
+        note: typical ? `${housesLabel} · houses · ${typical}` : `${housesLabel} · houses`,
       },
     ],
   }

@@ -177,8 +177,15 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   })
 }
 
-export default async function OutOfAreaCityPage({ params }: { params: Promise<Params> }) {
+export default async function OutOfAreaCityPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<Params>
+  searchParams: Promise<{ taste_variant?: string }>
+}) {
   const { city: raw } = await params
+  const { taste_variant: tasteVariant } = await searchParams
   const slug = normalizeSlug(raw)
 
   // Guard FIRST, before anything streams: an unknown slug is a REAL 404
@@ -280,9 +287,10 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   }
   const [firstFigure, ...restFigures] = figures
 
-  // H1 stays the search phrase. Honesty lives in the Alert above (SITE-76), so
-  // this band does not restate "we don't work here" as a second display title.
-  const headline = `Homes for sale in ${city.name}, Oregon`
+  // SEO in pixels (SITE-105): the document title and the H1 share the live
+  // count plus the out-of-market claim. Portal "Homes for sale in {city}"
+  // is not this page's job.
+  const headline = buildOregonCityTitle({ name: city.name, activeAllCount: city.activeAllCount })
 
   // ── Live listings. A row needs a price and an address, because the value column
   // is a figure and the row text is its name: formatPrice answers a missing price
@@ -371,8 +379,11 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   // they disagree, using the real numbers both queries returned.
   const listingsNote =
     listingCards.length > 0
-      ? 'Hover a card for a sourced extra fact the resting plate does not carry. This spread is the newest priced, addressed homes, not the whole live book.'
+      ? 'Each card is the official Image, Header, Content, Footer stack. This spread is the newest priced, addressed homes, not the whole live book.'
       : undefined
+  const feedMiss = tiles.length === 0 && city.activeAllCount > 0
+  const listingView =
+    tasteVariant === 'empty' || tasteVariant === 'feed-miss' ? tasteVariant : undefined
 
   // ── The other top out-of-area markets, so the referral tier interlinks instead
   // of dead-ending. Same snapshot population as the answer above, a different set
@@ -534,15 +545,13 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
           eyebrow={`${city.name} · For sale`}
           heading={`The newest ${city.name} listings`}
           items={firstListingCard ? listingCards : []}
-          emptyMessage={
-            firstListingCard
-              ? undefined
-              : `No ${city.name} listing came back with both a price and a street address on this refresh.`
-          }
+          emptyMessage={`No ${city.name} listing came back with both a price and a street address on this refresh.`}
+          feedMissMessage={`The live listing feed did not return this refresh. The ${city.name} snapshot above is a different read.`}
           note={listingsNote}
           source={listingTrace}
           actionLabel={`See every ${city.name} home for sale`}
           actionHref={browsePath}
+          forcedView={listingView ?? (feedMiss && !firstListingCard ? 'feed-miss' : undefined)}
         />
 
         {/* Home-market doors stay crawlable; after live inventory so the
