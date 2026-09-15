@@ -678,7 +678,6 @@ function IframeHeroLayer({
     <>
       {posterUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={preferListingMosaicPhotoUrl(posterUrl)} alt={altBase} />
       ) : null}
       {failed || !embedSrc ? null : (
