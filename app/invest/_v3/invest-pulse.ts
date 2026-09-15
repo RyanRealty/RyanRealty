@@ -47,12 +47,12 @@ import { v3Text, type V3PulseProps, type V3PulseReading } from '@/components/sit
 export const INVEST_PULSE_ID = 'place'
 
 /**
- * V3Pulse opens the page with the finding. The chart below draws the types —
- * stacking four hairline KPI rules next to that chart was the product UI Mini
- * refused. One land reading carries the claim; the rest keep their doors in
- * the table. The share denominator stays the WHOLE set.
+ * V3Pulse opens the page with the finding drawn as a part-to-whole: the
+ * four largest populations as rules on one track. InsightCards below is
+ * Allocation / Compare / Anomaly, not a second KPI stack. The share
+ * denominator stays the WHOLE set.
  */
-const DRAWN = 1
+const DRAWN = 4
 
 /** What each population IS, in words a visitor reads. Never a slug. */
 const DEFINITION: Record<string, string> = {

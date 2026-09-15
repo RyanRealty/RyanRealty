@@ -117,8 +117,13 @@ describe('composeInvestPulse', () => {
     )
   })
 
-  it('opens on the land reading only — the chart draws the rest', () => {
-    expect(built?.readings.map((r) => r.key)).toEqual(['land'])
+  it('draws the four largest populations as a part-to-whole', () => {
+    expect(built?.readings.map((r) => r.key)).toEqual([
+      'land',
+      'commercial_sale',
+      'multifamily_2_4',
+      'farm',
+    ])
   })
 
   it('formats each figure and shares it against the WHOLE set, not the largest', () => {

@@ -97,9 +97,10 @@
     "transitions:number-pop-in": { "aliasOf": "beui-number" },
     "beautifului-insight": {
       "add": "https://www.beautifului.dev/r/insight-cards.json",
-      "file": "components/motion/insight-pager.tsx",
-      "import": "@/components/motion/insight-pager",
-      "house": "components/site/v3/V3Chart.tsx"
+      "file": "components/motion/insight-cards.tsx",
+      "import": "@/components/motion/insight-cards",
+      "house": "app/invest/_v3/InvestInsight.client.tsx",
+      "mustContain": ["Previous insight", "Next insight", "Liveline", "AllocationCard"]
     },
     "beautifului:insight": { "aliasOf": "beautifului-insight" },
     "beautifului:insight-cards": { "aliasOf": "beautifului-insight" },

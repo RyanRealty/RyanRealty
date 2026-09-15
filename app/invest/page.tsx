@@ -6,11 +6,11 @@
  * off `market_history_weekly` (Freddie Mac PMMS30). No cash-flow, rent, or
  * yield: those need a live rent source this site does not publish.
  *
- * SITE-98: catalog demos install before house paint. The opening is still
- * the land-not-buildings finding (V3Pulse, one land reading). beautifului-insight
- * is V3Chart year pages + chart scrubber on the same counts. shadcn Table is
- * the segment board and the live listing inventory (price, address, beds /
- * baths / sqft or acres). V3Ledger keeps crawlable doors.
+ * SITE-98: catalog demos install before house paint. The opening is the
+ * land-not-buildings finding (V3Pulse, four part-to-whole readings).
+ * beautifului-insight is InsightCards (Allocation + Liveline scrub) on the
+ * same counts. shadcn Table is the live listing inventory. V3Ledger keeps
+ * crawlable doors.
  *
  * Data ONLY through @/lib/data and @/app/actions.
  */
@@ -69,7 +69,7 @@ const SEGMENT_TRACE =
 
 export default async function InvestPage() {
   const board = await loadInvestBoard()
-  const { segments, listings, insightChart, segmentRows, pulse, liveRate, listingsOk } = board
+  const { segments, listings, insight, segmentRows, pulse, liveRate, listingsOk } = board
   const bySegment = new Map(segments.map((row) => [row.segment, row]))
   const typeDoorRows: V3LedgerFigureRow[] = INVEST_SEGMENTS.flatMap((key) => {
     const row = bySegment.get(key)
@@ -206,13 +206,9 @@ export default async function InvestPage() {
           />
         )}
 
-        {insightChart ? <InvestInsight id="place-insight" {...insightChart} /> : null}
+        <InvestTables listings={listingsOk ? listings : []} source={SEGMENT_TRACE} />
 
-        <InvestTables
-          segments={segmentRows}
-          listings={listingsOk ? listings : []}
-          source={SEGMENT_TRACE}
-        />
+        {insight ? <InvestInsight id="place-insight" board={insight} /> : null}
 
         {firstSearchRow ? (
           <V3Ledger
