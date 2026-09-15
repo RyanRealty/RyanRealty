@@ -81,7 +81,8 @@
         375
       ],
       "states": [
-        "default"
+        "default",
+        "avatar-open"
       ],
       "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, against lane dev server :3213"
     },
