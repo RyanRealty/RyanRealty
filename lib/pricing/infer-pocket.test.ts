@@ -82,6 +82,27 @@ describe('inferSubdivisionPocket', () => {
     expect(pocket.neighborNorms).toEqual(['rolling horse meadow', 'saddlestone'])
   })
 
+  it('contract: blank-subdiv-infers-saddlestone-cluster — 1130 E Canter does not take Rolling Horse Meadow', () => {
+    const pocket = inferSubdivisionPocket({
+      subdivision: null,
+      streetAddress: '1130 E Canter',
+      ...SISTERS,
+      neighbors: [
+        { ...neighbor('Rolling Horse Meadow', 0.04), address: '1121 Canter Ct' },
+        { ...neighbor('SaddleStone', 0.12), address: '1 SaddleStone Ln' },
+        { ...neighbor('Horse Back', 0.14), address: '1025 E Horse Back' },
+        { ...neighbor('Ranch', 0.18), address: '1058 E Ranch' },
+      ],
+    })
+    expect(pocket.inferred).toBe(true)
+    expect(pocket.source).toBe('street-cluster')
+    expect(pocket.subdivision).not.toBe('Rolling Horse Meadow')
+    expect(['SaddleStone', 'Horse Back', 'Ranch']).toContain(pocket.subdivision)
+    const cluster = [pocket.subdivisionNorm, ...pocket.neighborNorms]
+    expect(cluster).toEqual(expect.arrayContaining(['saddlestone', 'horse back', 'ranch']))
+    expect(pocket.pocketStreetKeys).toEqual(expect.arrayContaining(['canter', 'horse', 'ranch']))
+  })
+
   it('picks the nearest mapped neighbor inside 0.35 mi when MLS and plat are blank', () => {
     const pocket = inferSubdivisionPocket({
       subdivision: null,

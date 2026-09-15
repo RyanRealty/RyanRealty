@@ -168,7 +168,7 @@ export const SAME_STREET_SIZE_BAND = 0.1
  */
 export const SAME_STREET_PREMIUM_MAX = 0.1
 
-function streetKey(address: string | null | undefined): string | null {
+export function streetKey(address: string | null | undefined): string | null {
   const s = (address ?? '').trim().toLowerCase()
   if (!s) return null
   // "23 Benaiah" / "23 NW Benaiah Ave" → "benaiah". The house number goes, the

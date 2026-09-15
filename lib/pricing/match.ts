@@ -5,7 +5,7 @@
 
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { communitySlugForSubdivision, isResortCommunity } from '@/lib/cma/resort-guard'
-import { resolvePriceAnchor, sameStreetPeer, type PriceAnchor } from '@/lib/pricing/price-anchor'
+import { resolvePriceAnchor, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
 import { bathCountCompatible, distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
 import { roomCountsUsable } from '@/lib/pricing/room-counts'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
@@ -49,11 +49,19 @@ import {
   type AppleStrictness,
   type PricingTier,
   BOUNDARY_EXIT_BELOW,
+  isClusterPocket,
   isGeographyWidenTier,
   isPocketExclusiveTier,
+  pocketHoldsGeographyExclusive,
+  pocketStarvedForYearQuality,
 } from '@/lib/pricing/ladder'
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible, type RuralSplitCounts } from '@/lib/pricing/rural'
-import { applyInferredPocket, inferSubdivisionPocket, type InferredPocket } from '@/lib/pricing/infer-pocket'
+import {
+  applyInferredPocket,
+  inferSubdivisionPocket,
+  saleInExclusivePocket,
+  type InferredPocket,
+} from '@/lib/pricing/infer-pocket'
 
 export type PricingSubject = {
   listingKey: string | null
@@ -100,6 +108,8 @@ export type PricingSubject = {
    * The pocket-* rungs match these; the home name uses subdivision-*.
    */
   pocketSubdivisionNorms?: string[]
+  /** Street keys in the inferred / named cluster (canter, horse, ranch). */
+  pocketStreetKeys?: string[]
   /** Set when a blank MLS tract was filled from a plat or nearest neighbor. */
   inferredPocket?: InferredPocket | null
 }
@@ -208,11 +218,11 @@ export type PricingMatchResult = {
   inferredPocket?: InferredPocket | null
   /**
    * Closed sales held from own-street / own-plat / street-cluster rungs.
-   * Geography widening is skipped when this is at least BOUNDARY_EXIT_BELOW.
+   * Geography widening is skipped when closed+pending is a tight set.
    */
   exclusiveCount?: number
   /**
-   * True when the exclusive pocket did not reach PRICING_MIN_COMPS.
+   * True when exclusive closed sales sit below POCKET_STARVE_BELOW (5).
    * Year/quality outranks radius only then (rural/custom).
    */
   pocketStarved?: boolean
@@ -452,8 +462,12 @@ function passesTier(
     if (!sale.subdivisionSlug || !ring.includes(sale.subdivisionSlug)) return { ok: false, miles: null }
   }
   if (tier.samePocket) {
-    const norms = subject.pocketSubdivisionNorms ?? []
-    if (!sale.subdivisionNorm || !norms.includes(sale.subdivisionNorm)) return { ok: false, miles: null }
+    const nameHit =
+      Boolean(sale.subdivisionNorm) &&
+      (subject.pocketSubdivisionNorms ?? []).includes(sale.subdivisionNorm!)
+    const saleStreet = streetKey(sale.address)
+    const streetHit = Boolean(saleStreet && (subject.pocketStreetKeys ?? []).includes(saleStreet))
+    if (!nameHit && !streetHit) return { ok: false, miles: null }
   }
   const sqftLo = subject.sqft * (1 - tier.sqftBand)
   const sqftHi = subject.sqft * (1 + tier.sqftBand)
@@ -510,7 +524,11 @@ function passesTier(
   )
   // Custom/new uses the 15-year generation band. The 0–2 year new-vs-resale
   // cut would drop a 2022 custom peer for a 2024 custom subject.
+  // Exclusive pocket rungs skip year/quality so a 2025 Canter new-build
+  // still takes 1058 E Ranch / 1025 E Horse Back until the pocket is starved.
+  const skipYearQualityOnExclusive = isPocketExclusiveTier(tier) && isClusterPocket(subject)
   if (
+    !skipYearQualityOnExclusive &&
     !customOrNew &&
     !newConstructionCompatible(
       isNewBuild(subject.yearBuilt, asOfYear, subject.newConstruction),
@@ -520,6 +538,7 @@ function passesTier(
     return { ok: false, miles: null }
   }
   if (
+    !skipYearQualityOnExclusive &&
     !yearQualityCompatible(
       {
         yearBuilt: subject.yearBuilt,
@@ -841,12 +860,15 @@ export function walkPricingLadder(
     asOf: string
     cells?: Map<string, SubdivisionCell>
     tiers?: PricingTier[]
+    /** Pending listings in the same pocket — hold exclusivity, never enter the closed set. */
+    pendingPool?: PricingSale[]
   },
 ): PricingMatchResult {
   const inferred = inferSubdivisionPocket({
     subdivision: rawSubject.subdivision,
     subdivisionNorm: rawSubject.subdivisionNorm,
     subdivisionSlug: rawSubject.subdivisionSlug,
+    streetAddress: rawSubject.streetAddress,
     latitude: rawSubject.latitude,
     longitude: rawSubject.longitude,
     neighbors: pool,
@@ -875,8 +897,9 @@ export function walkPricingLadder(
   const rungs: PricingLadderRung[] = []
   const tiersUsed: string[] = []
   let exclusiveCount = 0
+  const exclusivePending = (opts.pendingPool ?? []).filter((p) => saleInExclusivePocket(subject, p)).length
   const trace: string[] = [
-    `As-of ${asOf}. Named subdivision and its ~0.25 mi street cluster first (own street, same plat, pocket names), exclusive while that set holds at least ${BOUNDARY_EXIT_BELOW} closed sales. Then the plats next to it inside the same neighborhood or community, then distance inside that boundary, then similar-performing subdivisions; the boundary is crossed only when it supplied fewer than ${BOUNDARY_EXIT_BELOW} sales. Year and quality outrank radius only when that pocket is starved (rural/custom). Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, and on acreage the zoning class (farm or forest against rural residential), outbuildings, and usable land, zoning when both sides have a zone in town, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
+    `As-of ${asOf}. Named subdivision and its street cluster first (own street, same plat, pocket names and streets), exclusive while that set holds a tight closed+pending group. Then the plats next to it inside the same neighborhood or community, then distance inside that boundary, then similar-performing subdivisions; the boundary is crossed only when it supplied fewer than ${BOUNDARY_EXIT_BELOW} sales. Year and quality outrank radius only when exclusive closed sales sit below ${BOUNDARY_EXIT_BELOW}. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, and on acreage the zoning class (farm or forest against rural residential), outbuildings, and usable land, zoning when both sides have a zone in town, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
   ]
   if (subject.inferredPocket?.inferred && subject.inferredPocket.subdivision) {
     trace.push(
@@ -922,6 +945,9 @@ export function walkPricingLadder(
       // THE WIDENING RUNS ONLY WHEN THE BOUNDED LADDER CAME UP SHORT.
       tier.whenStarved && byKey.size >= PRICING_MIN_COMPS
         ? 'the bounded search already reached the minimum, so no widening was needed'
+        : tier.whenStarved &&
+            pocketHoldsGeographyExclusive(exclusiveCount, exclusivePending, isClusterPocket(subject))
+          ? `the pocket already supplied a tight closed+pending set (${exclusiveCount} closed, ${exclusivePending} pending), so the search stayed exclusive`
         : tier.sameCommunity && !communitySlugForSubdivision(subject.subdivision)
         ? 'the subject is not inside a planned or golf community'
         : tier.likeCommunity && !isResortCommunity(communitySlugForSubdivision(subject.subdivision))
@@ -932,8 +958,9 @@ export function walkPricingLadder(
         ? 'no recorded plat holds the subject, and its MLS row names none either'
         : tier.samePocket && !(subject.pocketSubdivisionNorms?.length)
           ? 'no nearby mapped pocket cluster sits inside a quarter mile'
-        : isGeographyWidenTier(tier) && exclusiveCount >= BOUNDARY_EXIT_BELOW
-          ? `the named subdivision and its street-cluster pocket already supplied ${exclusiveCount} closed sales, so the search stayed exclusive`
+        : isGeographyWidenTier(tier) &&
+            pocketHoldsGeographyExclusive(exclusiveCount, exclusivePending, isClusterPocket(subject))
+          ? `the pocket already supplied a tight closed+pending set (${exclusiveCount} closed, ${exclusivePending} pending), so the search stayed exclusive`
         : tier.adjacentSubdivision && !(subject.adjacentSubdivisionSlugs?.length)
           ? 'no plat next to the subject\'s is known'
           : tier.crossBoundary && !subject.marketArea
@@ -999,7 +1026,7 @@ export function walkPricingLadder(
     if (byKey.size >= PRICING_TARGET_COMPS) break
   }
 
-  const pocketStarved = exclusiveCount < PRICING_MIN_COMPS
+  const pocketStarved = pocketStarvedForYearQuality(exclusiveCount)
   const ranked = [...byKey.values()].sort(
     (a, b) => similarity(subject, b, asOf, pocketStarved) - similarity(subject, a, asOf, pocketStarved),
   )

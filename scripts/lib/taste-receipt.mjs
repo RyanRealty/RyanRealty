@@ -19,6 +19,7 @@
  *   node scripts/lib/taste-receipt.mjs desktop=path/a.png mobile375=path/b.png
  */
 import { createHash } from 'node:crypto'
+import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -834,6 +835,45 @@ export function requiredComponentsHoldProblems(currentList, headList) {
   return p
 }
 
+/** Engine picker contract (not a SITE page). Cos prose is refuse. */
+export function isPickerContract(d) {
+  return isPlainObject(d) && d.kind === 'picker-contract'
+}
+
+export function pickerContractProblems(d, { root = process.cwd() } = {}) {
+  if (!isPickerContract(d)) return ['picker-contract kind is required']
+  const p = []
+  const files = Array.isArray(d.testFiles) ? d.testFiles : []
+  const contracts = Array.isArray(d.contracts) ? d.contracts.map((c) => String(c)) : []
+  if (files.length === 0) p.push('picker-contract testFiles is empty. Encode the contracts as tests.')
+  if (contracts.length === 0) p.push('picker-contract contracts is empty.')
+  const text = files
+    .map((rel) => {
+      const abs = join(root, rel)
+      return existsSync(abs) ? readFileSync(abs, 'utf8') : ''
+    })
+    .join('\n')
+  for (const id of contracts) {
+    if (!text.includes(`contract: ${id}`)) {
+      p.push(`contract ${id} is missing from testFiles. Cos prose is not Tip Ready.`)
+    }
+  }
+  return p
+}
+
+export function runPickerContractTests(d, { root = process.cwd() } = {}) {
+  const files = Array.isArray(d.testFiles) ? d.testFiles : []
+  const r = spawnSync('npx', ['vitest', 'run', '--reporter=dot', ...files], {
+    cwd: root,
+    encoding: 'utf8',
+    env: process.env,
+  })
+  return {
+    status: r.status ?? 1,
+    output: `${r.stdout ?? ''}${r.stderr ?? ''}`,
+  }
+}
+
 /* CLI: print the shotsHash for a parity.json, or for key=path pairs.
  * `--ship <parity.json>` is the Tip Ready / node-complete gate. */
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
@@ -855,6 +895,21 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
       process.exit(2)
     }
     const d = JSON.parse(readFileSync(join(root, rel), 'utf8'))
+    if (isPickerContract(d)) {
+      const problems = pickerContractProblems(d, { root })
+      if (problems.length) {
+        console.error(problems.join('\n'))
+        process.exit(1)
+      }
+      const ran = runPickerContractTests(d, { root })
+      if (ran.status !== 0) {
+        console.error(ran.output)
+        console.error('ship refuse — picker contract tests failed. Cos prose is not Tip Ready.')
+        process.exit(1)
+      }
+      console.log('ship OK — picker contract tests passed')
+      process.exit(0)
+    }
     const kitFromPath = rel.includes('ui_kits/') ? rel.split('/').filter(Boolean).at(-2) : null
     const kit = /ui_kits\/about\//.test(rel.replace(/\\/g, '/')) ? 'about' : kitFromPath
     let catalog = null

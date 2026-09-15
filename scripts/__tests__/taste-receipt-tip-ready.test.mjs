@@ -231,6 +231,29 @@ describe('siteQueueDoneEvidenceProblems — Tip Ready language without --ship', 
   })
 })
 
+describe('taste-receipt --ship picker-contract', () => {
+  it('refuses when a named contract is missing from the test files', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'rr-picker-'))
+    writeFileSync(join(dir, 'empty.test.ts'), 'it("no contracts here", () => {})\n')
+    writeFileSync(
+      join(dir, 'parity.json'),
+      JSON.stringify({
+        kind: 'picker-contract',
+        contracts: ['blank-subdiv-infers-saddlestone-cluster'],
+        testFiles: ['empty.test.ts'],
+      }),
+    )
+    const r = spawnSync(process.execPath, [SHIP, '--ship', 'parity.json'], {
+      cwd: dir,
+      encoding: 'utf8',
+      env: process.env,
+    })
+    expect(r.status).toBe(1)
+    expect(`${r.stderr}${r.stdout}`).toMatch(/blank-subdiv-infers-saddlestone-cluster/)
+    expect(`${r.stderr}${r.stdout}`).toMatch(/Cos prose/)
+  })
+})
+
 describe('taste-receipt --ship CLI', () => {
   it('exits 1 on a cream-box receipt with no open shot', () => {
     const dir = mkdtempSync(join(tmpdir(), 'rr-ship-'))
