@@ -486,7 +486,6 @@ export default async function CitiesPage() {
         <V3Drawing figures={regionFigures} label="Central Oregon homes for sale against a month of sales" />
       ) : null}
       {regionScale}
-      {insightBoard ? <CitiesInsight id="cities-insight" board={insightBoard} /> : null}
       <CitiesAlertStrip
         id="alerts"
         newCount30d={hud.new30}
@@ -495,6 +494,7 @@ export default async function CitiesPage() {
         updatedAt={leftoverStamp}
         browseHref={newestFirstHref('/search')}
       />
+      {insightBoard ? <CitiesInsight id="cities-insight" board={insightBoard} /> : null}
     </>
   )
 

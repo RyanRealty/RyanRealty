@@ -14,6 +14,7 @@ describe('cities index SITE-92', () => {
     expect(PAGE).not.toMatch(/getCityBoundaryGeoJSON/)
     expect(PAGE).toMatch(/<CitiesInsight/)
     expect(PAGE).toMatch(/<CitiesAlertStrip/)
+    expect(PAGE.indexOf('<CitiesAlertStrip')).toBeLessThan(PAGE.indexOf('<CitiesInsight'))
     expect(PAGE).toMatch(/<V3Number/)
     expect(PAGE).toMatch(/<V3MosCompare/)
     expect(PAGE).toMatch(/mediaGaps="omit"/)

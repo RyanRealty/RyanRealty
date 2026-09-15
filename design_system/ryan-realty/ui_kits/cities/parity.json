@@ -106,18 +106,18 @@
       ],
       "states": [
         "default",
-        "supply",
-        "reveal"
+        "combo-open",
+        "insight-open"
       ],
-      "capture": "scripts/take-route-shots.mjs; supply barrow!hover; reveal first row!hover; --await .v3-drawing.is-drawn"
+      "capture": "scripts/take-route-shots.mjs cities --states combo-open=#cities-mos-compare [role=combobox]!click,insight-open=#cities-insight .insight-pager__btn[aria-label^='Next']@#cities-insight!click --await .v3-atlas,.v3-mos-compare,.insight-cards,.v3-alerts"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/cities/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/cities/shots/mobile375.png",
-      "supplyDesktop": "design_system/ryan-realty/ui_kits/cities/shots/supply-desktop.png",
-      "supplyMobile375": "design_system/ryan-realty/ui_kits/cities/shots/supply-mobile375.png",
-      "revealDesktop": "design_system/ryan-realty/ui_kits/cities/shots/reveal-desktop.png",
-      "revealMobile375": "design_system/ryan-realty/ui_kits/cities/shots/reveal-mobile375.png"
+      "comboOpenDesktop": "design_system/ryan-realty/ui_kits/cities/shots/combo-open-desktop.png",
+      "comboOpenMobile375": "design_system/ryan-realty/ui_kits/cities/shots/combo-open-mobile375.png",
+      "insightOpenDesktop": "design_system/ryan-realty/ui_kits/cities/shots/insight-open-desktop.png",
+      "insightOpenMobile375": "design_system/ryan-realty/ui_kits/cities/shots/insight-open-mobile375.png"
     },
     "shotsHash": "sha256:58d39b34bc359dc110a673ed23d73c2b8bd59f2fe3b7fb4c34c6b324cc9f02e9",
     "scores": [

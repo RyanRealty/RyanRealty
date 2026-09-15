@@ -45,7 +45,16 @@
 
 @media (max-width: 63.99rem) {
   .cities-fold__drawing .v3-atlas__frame {
-    max-height: min(22vh, 10rem);
+    max-height: min(12vh, 4.75rem);
+  }
+
+  .cities-fold__drawing .v3-atlas__claim {
+    display: none;
+  }
+
+  .cities-fold .v3-drawing__plain,
+  .cities-fold .v3-mos-compare__plain {
+    display: none;
   }
 }
 
@@ -99,6 +108,5 @@
 }
 
 .cities-insight .insight-chart-stage {
-  min-height: 8rem;
-  height: 8rem;
+  min-height: 10.375rem;
 }
