@@ -1,8 +1,8 @@
-# Current — 2026-09-15 (SITE-110 rematch after Mini 52 on 934ef032)
+# Current — 2026-09-15 (SITE-110 rematch after Mini 51 on ebfae7fbb)
 
 Surface: Cursor cloud. Branch `cursor/site-110-search-tip-21f9` PR #248. Do not merge. Cos Mini-judges.
 
-- **Done:** After Mini 52 / `934ef032` (`demoMatch` false): official MorphingSearch FIELD (256×48 → 448×336) grows into live home rows (ask · beds · city). RangeSlider navy fill. All-filters V3Sheet + shadcn Checkbox flags. Recaptured default + open-states. SITE-92/103 left alone. Receipt left honest. `--ship` 1.
+- **Done:** After Mini 51 (`demoMatch` false): official MorphingSearch overlay `bg-transparent` + ask-first rows (not street popover). Dual tick-stop RangeSliders on dock + house-sheet. Search atlas `quiet` + `markScale=ask`. Delayed fold is shadcn Empty. Recaptured default + open-states. SITE-92/103 left alone. Receipt left honest. `--ship` 1.
 - **Next:** Cos Mini `--ship`. Do not invent `demoMatch`.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 

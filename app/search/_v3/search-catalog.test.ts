@@ -121,12 +121,13 @@ describe('SITE-110 search catalog install', () => {
       { ListNumber: null, ListingKey: 'x', StreetNumber: null, StreetName: null },
     ])
     expect(items).toHaveLength(1)
-    expect(items[0]?.title).toBe('19669 Harvard Place')
-    expect(items[0]?.description).toContain('$775,000')
+    expect(items[0]?.title).toBe('$775,000')
     expect(items[0]?.description).toContain('4 bd')
     expect(items[0]?.description).toContain('Bend')
+    expect(items[0]?.description).toContain('19669 Harvard Place')
     expect(items[0]?.id).toMatch(/^\/homes-for-sale\//)
     expect(items.map((item) => item.title)).not.toContain('Bend')
+    expect(items.map((item) => item.title)).not.toContain('19669 Harvard Place')
   })
 
   it('catalog place seeds stay available as a fallback', () => {

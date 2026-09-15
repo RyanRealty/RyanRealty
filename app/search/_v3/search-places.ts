@@ -58,7 +58,7 @@ export function morphCatalogItems(): MorphingSearchItem[] {
   }))
 }
 
-/** Field-becomes-results rows: live homes with ask in the description. */
+/** Field-becomes-results rows: ask first so empty-open is not a street popover. */
 export function morphHomesFromListings(
   listings: readonly MorphHomeListing[],
   limit = 8,
@@ -66,13 +66,13 @@ export function morphHomesFromListings(
   const items: MorphingSearchItem[] = []
   for (const listing of listings) {
     if (items.length >= limit) break
-    const title = [listing.StreetNumber, listing.StreetName, listing.StreetSuffix]
+    const street = [listing.StreetNumber, listing.StreetName, listing.StreetSuffix]
       .filter(Boolean)
       .join(' ')
       .trim()
     const key = listing.ListNumber ?? listing.ListingKey
-    if (!title || !key) continue
     const ask = askLabel(listing.ListPrice)
+    if (!ask || !key) continue
     const beds =
       listing.BedroomsTotal != null && String(listing.BedroomsTotal).trim() !== ''
         ? `${listing.BedroomsTotal} bd`
@@ -88,9 +88,9 @@ export function morphHomesFromListings(
         boundaryNeighborhood: listing.BoundaryNeighborhood ?? null,
         subdivisionName: listing.SubdivisionName ?? null,
       }),
-      title,
-      description: [ask, beds, listing.City].filter(Boolean).join(' · '),
-      keywords: [title, listing.City ?? '', ask ?? ''],
+      title: ask,
+      description: [beds, listing.City, street || null].filter(Boolean).join(' · '),
+      keywords: [ask, street, listing.City ?? ''],
       icon: Home,
     })
   }
