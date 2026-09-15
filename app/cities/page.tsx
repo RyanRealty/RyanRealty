@@ -494,9 +494,9 @@ export default async function CitiesPage() {
         updatedAt={leftoverStamp}
         browseHref={newestFirstHref('/search')}
       />
-      {insightBoard ? <CitiesInsight id="cities-insight" board={insightBoard} /> : null}
     </>
   )
+  const insight = insightBoard ? <CitiesInsight id="cities-insight" board={insightBoard} /> : null
 
   const regionDrawing =
     atlasRegions.length > 0 ? (
@@ -523,10 +523,12 @@ export default async function CitiesPage() {
           </div>
           <aside className="cities-fold__figure">{regionFigure}</aside>
         </div>
+        {insight}
       </div>
     ) : regionFigures.length > 0 || insightBoard ? (
       <div className="cities-fold">
         <div className="cities-fold__figure">{regionFigure}</div>
+        {insight}
       </div>
     ) : null
   // When the drawing cannot be drawn, the note carries the figure as before.

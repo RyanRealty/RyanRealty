@@ -109,7 +109,7 @@
         "combo-open",
         "insight-open"
       ],
-      "capture": "scripts/take-route-shots.mjs cities --states combo-open=#cities-mos-compare [role=combobox]!click,insight-open=#cities-insight .insight-pager__btn[aria-label^='Next']@#cities-insight!click --await .v3-atlas,.v3-mos-compare,.insight-cards,.v3-alerts"
+      "capture": "scripts/take-route-shots.mjs cities http://127.0.0.1:3193 --states combo-open=#cities-mos-compare [role=combobox]!click,insight-open=#cities-insight .insight-pager__btn[aria-label^='Next']@#cities-insight!click --await .v3-atlas,.v3-mos-compare,.insight-cards,.v3-alerts"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/cities/shots/desktop.png",
@@ -119,7 +119,7 @@
       "insightOpenDesktop": "design_system/ryan-realty/ui_kits/cities/shots/insight-open-desktop.png",
       "insightOpenMobile375": "design_system/ryan-realty/ui_kits/cities/shots/insight-open-mobile375.png"
     },
-    "shotsHash": "sha256:58d39b34bc359dc110a673ed23d73c2b8bd59f2fe3b7fb4c34c6b324cc9f02e9",
+    "shotsHash": "sha256:0ec6d05a2ad6552d0ad4f75c0da6edddc870e17cc0614ab603213a039e261051",
     "scores": [
       41,
       51,
@@ -135,7 +135,11 @@
     },
     "beats": "Zillow Bend homes on sourced months-of-supply clarity (two named bars, 4.8 Balanced, dated Market Truth); loses map, listings, and place photography.",
     "adaptedFrom": [
-      { "id": "house-mos-bars" }
+      { "id": "house-mos" },
+      { "id": "house-atlas" },
+      { "id": "house-alerts" },
+      { "id": "beautifului-insight" },
+      { "id": "beui-number" }
     ],
     "tells": [],
     "dullest": "After the MOS pair the page is still an A\u2013Z directory; the fold has no Atlas and no alerts sentence.",
@@ -179,7 +183,7 @@
       }
     ],
     "comparedToPrior": "rebaselined",
-    "rebaselineReason": "evaluatorModel claude-sonnet-5\u2192grok-4.6; rubricVersion v1-2026-09-08\u2192v1-2026-09-10; shotsHash changed with SITE-69 capture.",
+    "rebaselineReason": "evaluatorModel claude-sonnet-5\u2192grok-4.6; rubricVersion v1-2026-09-08\u2192v1-2026-09-10; shotsHash changed with SITE-92 combo-open and insight-open plates. Do not invent demoMatch.",
     "priorMark": {
       "evaluatedAt": "2026-09-09",
       "score": 75,
