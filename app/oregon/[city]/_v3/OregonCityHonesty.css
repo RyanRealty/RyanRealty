@@ -1,12 +1,24 @@
-/* Compact stacked shadcn Alert. Do not paint a cream banner, do not
-   restack AlertAction into a full-width slab, do not inflate padding.
-   The installed Alert source (components/ui/alert.tsx) already is the
-   GitHub object: icon, title, description, Action absolute top-right. */
+/* Stacked GitHub/shadcn Alert in the page measure — not a 32rem centered
+   cream island. AlertAction sits in flow under the description so 375
+   does not clip the title behind a top-right chip. */
 
 .v3.oregon-city-honesty {
-  max-width: 32rem;
+  max-width: var(--v3-measure);
   margin: var(--v3-space-lg) auto 0;
   padding: 0 var(--v3-gutter);
+}
+
+.v3.oregon-city-honesty [data-slot='alert'] {
+  padding-right: 0.625rem;
+}
+
+.v3.oregon-city-honesty [data-slot='alert-action'] {
+  position: static;
+  top: auto;
+  right: auto;
+  grid-column: 2;
+  width: max-content;
+  margin-top: 0.25rem;
 }
 
 .v3.oregon-city-honesty .oregon-city-honesty__link {

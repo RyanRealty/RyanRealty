@@ -4,8 +4,8 @@
  * Tip Ready `requireRouteImport` needs `app/oregon/[city]` page/_v3 to import
  * `@/components/ui/alert`. Composition matches the shadcn Alert demo
  * (ui.shadcn.com/docs/components/alert): Icon, AlertTitle, AlertDescription,
- * AlertAction + outline Button. No cream box around it. AlertAction stays
- * `absolute top-2 right-2` from the installed GitHub source.
+ * then AlertAction + outline Button stacked in flow. Not a centered cream
+ * island. Not an absolute top-right chip (that clips the title at 375).
  */
 import Link from 'next/link'
 import { InfoIcon } from 'lucide-react'
@@ -34,13 +34,13 @@ export function OregonCityHonesty(props: {
       className={cn(V3_ROOT_CLASS, 'oregon-city-honesty')}
       aria-label={title}
     >
-      <Alert>
+      <Alert className="has-data-[slot=alert-action]:pr-2.5">
         <InfoIcon />
         <AlertTitle>{title}</AlertTitle>
         <AlertDescription>
           <p>{description}</p>
         </AlertDescription>
-        <AlertAction>
+        <AlertAction className="static top-auto right-auto col-start-2 mt-1 w-max">
           <Button asChild variant="outline" size="sm">
             <Link href="#referral" className="oregon-city-honesty__link">
               Get a broker introduction

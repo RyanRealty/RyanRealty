@@ -63,8 +63,8 @@
  *     introduced: the visible figure follows the brand's rounding rule and the machine
  *     payload stays equal to the source row.
  *  5. ONE PRIMARY PER VIEWPORT (PUBLIC_UI.md section 1). The header's filled CTA is
- *     display:none below 880px, so the Instrument's ask is PRIMARY at 390. It points
- *     at the referral Sheet further down the page. That is the ask this node earns.
+ *     display:none below 880px. The Alert outline door and the Sheet are the
+ *     introduction asks. The Instrument does not carry a second navy slab.
  *     Value my home is the wrong primary here: this city is outside our market.
  */
 
@@ -251,6 +251,8 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
         activeAllCount: city.activeAllCount,
         activeSfrCount: city.activeSfrCount,
         source: snapshotTrace,
+        asOf: city.refreshedAt ? formatDate(city.refreshedAt) : null,
+        medianAsk: city.medianListPrice != null ? formatPrice(city.medianListPrice) : null,
       })
 
   // One supporting figure only. A three-tile KPI grid is the banned open
@@ -339,9 +341,13 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
       pricePerSqft: tile.pricePerSqft,
       city: tile.city ?? city.name,
     })
+    const buyerPlace = buildOregonCityBuyerPlace({
+      subdivisionName: tile.subdivisionName,
+      city: city.name,
+    })
     listingRows.push({
       href: listingTileHref(tile),
-      when: v3Text(buildOregonCityBuyerPlace({ subdivisionName: tile.subdivisionName, city: city.name })),
+      ...(buyerPlace ? { when: v3Text(buyerPlace) } : {}),
       what: v3Text(address),
       detail: meta ? v3Text(meta) : undefined,
       value: v3Text(formatPrice(price)),
@@ -368,8 +374,8 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   // shared street address. One sentence connects the two counts whenever
   // they disagree, using the real numbers both queries returned.
   const listingsNote =
-    city.activeAllCount > 0 && listingRows.length > 0 && listingRows.length !== city.activeAllCount
-      ? `The snapshot above counts ${city.activeAllCount.toLocaleString('en-US')} active listings. This list shows the ${listingRows.length.toLocaleString('en-US')} with both a price and a street address, one row per address.`
+    listingRows.length > 0
+      ? 'Hover a card for a sourced extra fact the resting plate does not carry. This spread is the newest priced, addressed homes, not the whole live book.'
       : undefined
 
   // ── The other top out-of-area markets, so the referral tier interlinks instead
@@ -483,26 +489,13 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
             level={1}
             eyebrow={v3Text(`${city.name} · Oregon`)}
             headline={v3Text(headline)}
-            note={v3Text(
-              buildOregonCityClaim({
-                name: city.name,
-                activeAllCount: city.activeAllCount,
-                activeSfrCount: city.activeSfrCount,
-                medianAsk: city.medianListPrice != null ? formatPrice(city.medianListPrice) : null,
-              }),
-            )}
+            note={v3Text(buildOregonCityClaim({ name: city.name }))}
             figures={[firstFigure, ...restFigures]}
             chartFirst={placeMos != null || supplyDrawing != null}
             source={v3Text(snapshotTrace)}
             sourceName={v3Text('Oregon Data Share MLS')}
             asOf={city.refreshedAt ?? undefined}
             updated={city.refreshedAt ? v3Text(formatDate(city.refreshedAt)) : undefined}
-            // PRIMARY at 390: the chrome CTA sits in the menu. The ask this
-            // node earns is the referral, not a Central Oregon valuation.
-            action={{
-              label: v3Text('Get a broker introduction'),
-              href: '#referral',
-            }}
             drawing={
               placeMos ? (
                 <V3MosBars
