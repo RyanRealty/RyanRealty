@@ -25,8 +25,18 @@
       "blocking": true
     },
     {
+      "name": "InvestInsight",
+      "section": "#place-insight — beautifului-insight InsightPager + scrubber. One page per income type, same live counts as the Pulse.",
+      "blocking": true
+    },
+    {
+      "name": "InvestTables",
+      "section": "#searches-table and #listings — shadcn Table of how each type trades, then live listings with price, address, beds/baths/sqft or acres.",
+      "blocking": true
+    },
+    {
       "name": "V3Ledger",
-      "section": "#searches — one door per income property type (multi-family, commercial, land, farm, business), each with its live count and how that type trades.",
+      "section": "#searches — crawlable doors. Live listing rows (price + address + facts) when the tile read published any; otherwise one door per income property type.",
       "blocking": true
     },
     {
@@ -49,7 +59,9 @@
     "V3SectionTracker + inline JSON-LD (not sections)",
     "V3Breadcrumb",
     "V3Pulse #place -- the finding, the H1, the live counts, the switch",
-    "V3Ledger #searches -- live per-type doors and how each one trades",
+    "InvestInsight #place-insight -- paged insights + scrubber (beautifului-insight)",
+    "InvestTables -- shadcn Table of types and live listings",
+    "V3Ledger #searches -- crawlable listing or type doors",
     "V3Quiet #tools -- the cost of money and the math doors",
     "InvestAlertSheet -- the ask (id=alerts renders inside the component, matching HomeAlertSheet)",
     "V3Footer"

@@ -254,6 +254,15 @@
     },
     "shadcn:empty": {
       "aliasOf": "shadcn-empty"
+    },
+    "shadcn-table": {
+      "add": "table",
+      "file": "components/ui/table.tsx",
+      "import": "@/components/ui/table",
+      "house": "app/invest/_v3/InvestTables.client.tsx"
+    },
+    "shadcn:table": {
+      "aliasOf": "shadcn-table"
     }
   },
   "catalogs": [
@@ -2771,6 +2780,10 @@
     },
     "invest": {
       "layoutLock": "The first viewport carries a drawn finding and a live count, not two memo paragraphs headed What this page is. No cash-flow or rent figure without a live source.",
+      "demoStates": [
+        "insight-open=#place-insight .insight-pager__btn[aria-label^='Next']!click",
+        "table-open=#searches-table [data-slot=table-row][data-invest-row]!click"
+      ],
       "modules": [
         {
           "id": "house-pulse",
