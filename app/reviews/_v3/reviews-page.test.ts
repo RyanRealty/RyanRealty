@@ -36,6 +36,13 @@ describe('reviews page composition', () => {
     expect(PAGE).toContain("href: '/team'")
   })
 
+  it('imports shadcn-avatar on the route _v3 (SITE-109 Tip Ready)', () => {
+    const avatars = readFileSync('app/reviews/_v3/ReviewsAvatars.ts', 'utf8')
+    expect(avatars).toMatch(/import\s*\{[^}]*Avatar[^}]*\}\s*from\s*'@\/components\/ui\/avatar'/)
+    expect(avatars).toContain('AvatarFallback')
+    expect(avatars).not.toMatch(/AvatarImage/)
+  })
+
   it('leads with the score face rather than a bare figure row', () => {
     expect(PAGE).toContain('face')
     expect(PAGE).toContain("{ value: average.toFixed(1), label: 'average of 5' }")

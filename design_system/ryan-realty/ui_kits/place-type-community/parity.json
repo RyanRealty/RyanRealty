@@ -2,8 +2,13 @@
   "route": "app/communities/[slug]/types/[type]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. Built from components/site/v3. Same place-type class as /cities/[slug]/types/[type].",
   "competitiveTarget": "Beat Zillow / Redfin community type filters. A dedicated community+type page with leftover/segment stats, the parent community atlas, and photographed listings of that type, instead of a search-results URL. Unique title, canonical, ItemList when listings exist. Breadcrumb is City then type, no Home.",
-  "note": "Same composition as /cities/[slug]/types/[type], from that route's _v3 components. H1 `{Type} in {Place}` is the only display line; the Atlas wears an eyebrow under it; one section-0 claim sentence with its source line, single-sourced on listing_tile_mv. The page still reads the recorded boundary itself because the LIST depends on its pins (Sunriver: 52 listings by polygon, 0 by subdivision name, measured 2026-09-09); the Atlas re-reads the resort outline on its own streamed budget so one miss is not both. Communities with no trusted polygon and no resort GeoJSON (sunriver, brasada-ranch) render the standin's unavailable state instead of nothing. Unknown type notFound().",
+  "note": "Same composition as /cities/[slug]/types/[type], from that route's _v3 components plus this route's PlaceTypeFilm (shadcn-carousel import on the community _v3). H1 `{Type} in {Place}` is the only display line; the Atlas wears an eyebrow under it; one section-0 claim sentence with its source line, single-sourced on listing_tile_mv. A V3Carousel mode=rail of photographed listings follows Atlas in the fold with price+address+beds/baths/sqft on 800x600 plates. The page still reads the recorded boundary itself because the LIST depends on its pins (Sunriver: 52 listings by polygon, 0 by subdivision name, measured 2026-09-09); the Atlas re-reads the resort outline on its own streamed budget so one miss is not both. Communities with no trusted polygon and no resort GeoJSON (sunriver, brasada-ranch) render the standin's unavailable state instead of nothing. Unknown type notFound().",
   "requiredComponents": [
+    {
+      "name": "PlaceTypeFilm",
+      "section": "Fold V3Carousel rail of photographed listings (mode=rail, prev/next, 800x600 plates, price+address+beds/baths/sqft).",
+      "blocking": true
+    },
     {
       "name": "MetadataBlock",
       "section": "BreadcrumbList + WebPage + ItemList when photographed listings exist.",
@@ -70,7 +75,8 @@
         375
       ],
       "states": [
-        "default"
+        "default",
+        "carousel-open"
       ],
       "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, https://ryan-realty.com/communities/tetherow/types/single-family (live; claim+Atlas already shipped)"
     },
@@ -94,6 +100,9 @@
     },
     "beats": "Tetherow.com — we win on live MLS count, asking-price band, and 90-day sales density with a named Oregon Data Share timestamp; we lose on photography and place character, and Zillow community pages beat this fold on photographed listings.",
     "adaptedFrom": [
+      {
+        "id": "shadcn-carousel"
+      },
       {
         "id": "house-atlas"
       },
@@ -155,6 +164,7 @@
     "V3Breadcrumb",
     "V3Heading + claim sentence + source line",
     "PlaceTypeAtlasSection (#atlas, streamed, standin fallback)",
+    "PlaceTypeFilm (V3Carousel mode=rail)",
     "PlaceTypeSortBar + PlaceTypeRows (#homes)",
     "V3Quiet",
     "V3Footer"

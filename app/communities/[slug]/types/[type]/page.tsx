@@ -34,6 +34,7 @@ import {
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { formatDateTime } from '@/lib/format/date'
+import { formatPriceExact } from '@/lib/format/money'
 import { asPlaceBoundary } from '@/lib/place/place-type-page'
 import { PLACE_TYPE_PAGE_SLUGS } from '@/lib/place/publish-place-type-cards'
 import {
@@ -61,6 +62,7 @@ import {
   PlaceTypeRows,
   PlaceTypeSortBar,
 } from '@/app/cities/[slug]/types/[type]/_v3/PlaceTypeField.client'
+import { PlaceTypeFilm } from './_v3/PlaceTypeFilm.client'
 import { PlaceTypeAtlasSection } from '@/app/cities/[slug]/types/[type]/_v3/PlaceTypeAtlasSection'
 import { PlaceTypeAtlasStandin } from '@/app/cities/[slug]/types/[type]/_v3/PlaceTypeAtlasStandin'
 import boundarySanityBaseline from '@/data/boundary-sanity-baseline.json' assert { type: 'json' }
@@ -124,8 +126,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     'comm-type:count',
   )
   const copy = placeTypeMetadataCopy({ spec, placeName: publicName, count: activeCount })
+  /* SEO increment vs HEAD: live count in the title when measured. */
+  const title =
+    activeCount != null && activeCount > 0
+      ? `${activeCount.toLocaleString('en-US')} ${
+          activeCount === 1 ? spec.nounOne : spec.nounMany
+        } for sale in ${publicName}, Oregon`
+      : copy.title
   return pageMetadata({
-    title: copy.title,
+    title,
     description: copy.description,
     path: `/communities/${slug}/types/${spec.slug}`,
   })
@@ -163,8 +172,20 @@ export default async function CommunityPlaceTypePage({ params }: Props) {
     ...spec.listingFilter,
   }
 
-  const [countRead, lowRead, highRead, listRead] = await Promise.all([
-    withTimeoutFallbackResult(getListingTilesCount(scope), null, 4500, 'comm-type:count'),
+  const countProbe = await withTimeoutFallbackResult(
+    getListingTilesCount(scope),
+    null,
+    4500,
+    'comm-type:count',
+  )
+  const countForBand =
+    countProbe.ok && countProbe.value != null && countProbe.value > 0
+      ? countProbe.value
+      : 20
+  const topDecileLimit = Math.max(1, Math.min(80, Math.ceil(countForBand * 0.1)))
+
+  const [countRead, lowRead, highRead, p90Read, listRead] = await Promise.all([
+    Promise.resolve(countProbe),
     withTimeoutFallbackResult(
       getListingTiles({ ...scope, sort: 'price-asc', limit: 1 }),
       [],
@@ -178,6 +199,12 @@ export default async function CommunityPlaceTypePage({ params }: Props) {
       'comm-type:high',
     ),
     withTimeoutFallbackResult(
+      getListingTiles({ ...scope, sort: 'price-desc', limit: topDecileLimit }),
+      [],
+      4500,
+      'comm-type:p90',
+    ),
+    withTimeoutFallbackResult(
       getListingTiles({ ...scope, sort: 'newest', limit: 120 }),
       [],
       4500,
@@ -189,13 +216,24 @@ export default async function CommunityPlaceTypePage({ params }: Props) {
     countRead.ok && countRead.value != null && countRead.value > 0 ? countRead.value : null
   const measuredEmpty =
     countRead.ok && countRead.value === 0 && listRead.ok && listRead.value.length === 0
-  const claim = placeTypeClaim({
+  const lowAsk = lowRead.ok ? (lowRead.value[0]?.listPrice ?? null) : null
+  const highAsk = highRead.ok ? (highRead.value[0]?.listPrice ?? null) : null
+  const p90Ask = (() => {
+    if (!p90Read.ok || p90Read.value.length === 0) return highAsk
+    const priced = p90Read.value
+      .map((t) => t.listPrice)
+      .filter((n): n is number => n != null && Number.isFinite(n) && n > 0)
+    if (priced.length === 0) return highAsk
+    return priced[priced.length - 1] ?? highAsk
+  })()
+  const bandHigh = p90Ask ?? highAsk
+  const claimBase = placeTypeClaim({
     spec,
     placeName: publicName,
     inventory: {
       count: activeCount,
-      low: lowRead.ok ? (lowRead.value[0]?.listPrice ?? null) : null,
-      high: highRead.ok ? (highRead.value[0]?.listPrice ?? null) : null,
+      low: lowAsk,
+      high: bandHigh,
       stamp: formatDateTime(new Date()),
       /* The set is drawn one of two ways and the trace says which: the
          recorded polygon when we have its pins, the subdivision name when we
@@ -207,12 +245,23 @@ export default async function CommunityPlaceTypePage({ params }: Props) {
           : `in the ${publicName} subdivision`,
     },
   })
+  const claim = claimBase
+    ? {
+        sentence:
+          activeCount != null && lowAsk != null && bandHigh != null
+            ? `${activeCount.toLocaleString('en-US')} homes ask ${formatPriceExact(lowAsk)} to ${formatPriceExact(bandHigh)} for nine in ten.`
+            : claimBase.sentence,
+        source: claimBase.source,
+      }
+    : null
 
   const headline = placeTypeHeadline(spec, publicName)
   const copy = placeTypeMetadataCopy({ spec, placeName: publicName, count: activeCount })
   const listOk = listRead.ok
   const rows = listOk ? placeTypeListingRows(listRead.value) : []
-  const eyebrow = placeTypeAtlasEyebrow(spec, spec.atlasDotType != null)
+  /* H1 already named the type. Atlas eyebrow is a section marker, not a
+     second "Single-family…" Amboqia line (SITE-107 / taste table). */
+  const eyebrow = placeTypeAtlasEyebrow(spec, false)
   const atlasCities = [...new Set([cityName, ...(registry?.mls_cities ?? [])])]
 
   const schemas = placeTypeSchemas({
@@ -231,55 +280,71 @@ export default async function CommunityPlaceTypePage({ params }: Props) {
       <main className={V3_ROOT_CLASS}>
         <V3SectionTracker />
         <MetadataBlock schemas={schemas} />
-        <V3Breadcrumb trail={[{ label: cityName, href: cityHref }, { label: spec.h1Type }]} />
-        <div className="place-opening">
-          <div className="place-opening__copy">
-            <V3Heading level={1} size="field">
-              {headline}
-            </V3Heading>
-            {claim ? (
-              <>
-                <p className="place-type-claim">{claim.sentence}</p>
-                <p className="place-type-claim__source">{claim.source}</p>
-              </>
-            ) : null}
-          </div>
-        </div>
-
+        <V3Breadcrumb
+          trail={[
+            { label: cityName, href: cityHref },
+            { label: 'For sale' },
+          ]}
+        />
         <PlaceTypeField>
-          <Suspense
-            fallback={
-              <PlaceTypeAtlasStandin
+          <div className="place-type-fold">
+            <div className="place-opening place-type-opening">
+              <div className="place-opening__copy">
+                <V3Heading level={1} size="field">
+                  {headline}
+                </V3Heading>
+                {claim ? (
+                  <>
+                    <p className="place-type-claim">{claim.sentence}</p>
+                    <p className="place-type-claim__source">{claim.source}</p>
+                  </>
+                ) : null}
+              </div>
+            </div>
+
+            <Suspense
+              fallback={
+                <PlaceTypeAtlasStandin
+                  id="atlas"
+                  eyebrow={eyebrow}
+                  placeName={publicName}
+                  state="loading"
+                  placeHref={placeHref}
+                />
+              }
+            >
+              <PlaceTypeAtlasSection
                 id="atlas"
                 eyebrow={eyebrow}
                 placeName={publicName}
-                state="loading"
                 placeHref={placeHref}
+                cities={atlasCities}
+                spec={spec}
+                region={{
+                  id: `community:${slug}`,
+                  kind: 'town',
+                  kindLabel: 'Community',
+                  name: publicName,
+                  href: placeHref,
+                }}
+                listingsCount={activeCount}
+                source={{ kind: 'community', geoSlug: slug, stored: storedBoundary }}
               />
-            }
-          >
-            <PlaceTypeAtlasSection
-              id="atlas"
-              eyebrow={eyebrow}
-              placeName={publicName}
-              placeHref={placeHref}
-              cities={atlasCities}
-              spec={spec}
-              region={{
-                id: `community:${slug}`,
-                kind: 'town',
-                kindLabel: 'Community',
-                name: publicName,
-                href: placeHref,
-              }}
-              listingsCount={activeCount}
-              source={{ kind: 'community', geoSlug: slug, stored: storedBoundary }}
-            />
-          </Suspense>
+            </Suspense>
+
+            {rows.length > 0 ? (
+              <PlaceTypeFilm
+                rows={rows}
+                label={`Photographed ${spec.nounMany} in ${publicName}`}
+                bandLow={lowAsk}
+                bandHigh={bandHigh}
+              />
+            ) : null}
+          </div>
 
           <section id="homes" className={cn(V3_ROOT_CLASS, 'place-type-homes')}>
             <div className="place-type-homes__head">
-              <V3Heading level={2}>Photographed listings</V3Heading>
+              <V3Heading level={2}>All photographed listings</V3Heading>
               {rows.length > 1 ? <PlaceTypeSortBar pagePath={pagePath} /> : null}
             </div>
             {rows.length > 0 ? (
@@ -305,7 +370,11 @@ export default async function CommunityPlaceTypePage({ params }: Props) {
 
         <V3Quiet
           ariaLabel={`${publicName} homes`}
-          items={[{ label: `${publicName} homes for sale`, href: placeHref }]}
+          items={[
+            { label: `${publicName} homes for sale`, href: placeHref },
+            { label: `Browse ${spec.nounMany} on the map`, href: '#atlas' },
+            { label: 'All photographed listings', href: '#homes' },
+          ]}
         />
       </main>
       <V3Footer columns={V3_FOOTER_COLUMNS} />

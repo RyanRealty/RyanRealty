@@ -506,6 +506,39 @@ export function V3Proof({
         </ul>
       ) : null}
 
+      {asArchive && years.length > 0 ? (
+        <div className="v3-proof__filters v3-proof__filters--fold" role="group" aria-label="Show reviews from">
+          <button
+            type="button"
+            className="v3-proof__chip"
+            aria-pressed={year == null}
+            onClick={() => {
+              setYear(null)
+              setFocus(null)
+            }}
+          >
+            All {quotes.length}
+          </button>
+          {[...years].reverse().map((y) => {
+            const n = quotes.filter((q) => q.year === y).length
+            return (
+              <button
+                key={y}
+                type="button"
+                className="v3-proof__chip"
+                aria-pressed={year === y}
+                onClick={() => {
+                  setYear((cur) => (cur === y ? null : y))
+                  setFocus(null)
+                }}
+              >
+                {y} <span className="v3-proof__chip-n">{n}</span>
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
+
       {showFace && record ? <p className="v3-proof__claim v3-proof__claim--after-face">{claim}</p> : null}
 
       {showFace && restFigures.length > 0 ? (
@@ -645,6 +678,7 @@ export function V3Proof({
             ))}
           </div>
           </div>
+          {!asArchive ? (
           <div className="v3-proof__filters" role="group" aria-label="Show reviews from">
             <button
               type="button"
@@ -675,6 +709,7 @@ export function V3Proof({
               )
             })}
           </div>
+          ) : null}
         </div>
       ) : null}
 
