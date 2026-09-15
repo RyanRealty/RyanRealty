@@ -75,11 +75,13 @@
   ],
   "openDefects": {},
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts invest — grok-4.6 via grok CLI, three scorings of SITE-68 production first-viewport shots, separate from the grok-4.5 builder",
+    "evaluatedAt": "2026-09-15",
+    "rubricVersion": "v1-2026-09-12",
+    "demoMatch": false,
+    "competitiveBriefPass": false,
+    "evaluator": "Mini Cursor judge on tip 50cd73a4d — demoMatch FALSE, score 48, competitiveBriefPass false, --ship exit 1. This receipt is that honest fail plus the V3Chart recapture. Mini must rewrite demoMatch after re-judging these shots. Do not invent true.",
     "evaluatorModel": "grok-4.6",
-    "builderModel": "grok-4.5",
+    "builderModel": "cursor-grok-4.6",
     "shotSpec": {
       "routes": [
         "/invest"
@@ -89,106 +91,90 @@
         375
       ],
       "states": [
-        "default"
+        "default",
+        "insight-open",
+        "table-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, https://ryan-realty.com/invest after SITE-50 Pulse opening (SITE-68 re-measure)"
+      "capture": "first viewport, scripts/take-route-shots.mjs catalog demoStates, scale 1, palette-quantized, lane next dev --webpack :4310 after V3Chart year-pages install"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/invest/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/invest/shots/mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/invest/shots/mobile375.png",
+      "insightOpenDesktop": "design_system/ryan-realty/ui_kits/invest/shots/insight-open-desktop.png",
+      "insightOpenMobile375": "design_system/ryan-realty/ui_kits/invest/shots/insight-open-mobile375.png",
+      "tableOpenDesktop": "design_system/ryan-realty/ui_kits/invest/shots/table-open-desktop.png",
+      "tableOpenMobile375": "design_system/ryan-realty/ui_kits/invest/shots/table-open-mobile375.png"
     },
-    "shotsHash": "sha256:8dad3a8eff7f418bbb1507909f34237d397421c065cf5e029a4d8ff31e3dcdfe",
+    "shotsHash": "sha256:f4582810dcf76236b95d4b48398cf52e8ed3f0c60736416c5cb10c84b0745f87",
     "scores": [
-      57,
-      63,
-      51
+      48,
+      48,
+      48
     ],
-    "score": 57,
+    "score": 48,
     "criteria": {
-      "designQuality": 18,
-      "originality": 14,
-      "interaction": 6,
-      "craft": 11,
+      "designQuality": 12,
+      "originality": 10,
+      "interaction": 8,
+      "craft": 10,
       "honestyFunction": 8
     },
-    "beats": "Zillow's Land for sale in Deschutes County grid (and LandWatch's county land search): they put photos, asking prices and a map in the first viewport. This page wins the composition claim — 604 lots against 61 commercial, 46 two-to-four-unit buildings and 41 farms, each a live count under a named MLS source — and loses every metric that lets an investor act on it: no map, no ask, no listing.",
+    "beats": "Zillow Land for sale in Deschutes County still wins photos and a map in the first viewport. This page wins a live composition drawing (for-sale line across types, 595 lots on the same count the table prints) and a selected inventory table. Mini has not yet marked the V3Chart scrubber as a demo match.",
     "adaptedFrom": [
+      { "id": "beautifului-insight" },
+      { "id": "shadcn-table" },
       { "id": "house-pulse" },
       { "id": "house-ledger" }
     ],
     "defects": [
       {
-        "section": "#place .v3-pulse__readings",
+        "section": "#place-insight",
         "severity": "taste",
-        "finding": "The four rules are a ranked list of independent hairlines, not a part-to-whole: land's fill reads as a section divider, the 2-4 unit and farm fills collapse to nubs, and neither the 752-door whole nor land's share is on the graphic.",
-        "replaceWith": "house-pulse"
-      },
-      {
-        "section": "#place",
-        "severity": "taste",
-        "finding": "V3Pulse is mounted without a plot, so the band that is supposed to be marks on a field is a caption column beside a list; 604 lots in Central Oregon have no geography on the fold.",
-        "replaceWith": "house-pulse"
-      },
-      {
-        "section": "#place .v3-pulse__pick",
-        "severity": "taste",
-        "finding": "The native radio is invisible as a control at rest: twelve-pixel squares look like list bullets, the capture shows no hover or focus, and a tap only swaps a definition the four counts already implied.",
-        "replaceWith": "house-pulse"
-      },
-      {
-        "section": "#place",
-        "severity": "taste",
-        "finding": "The captured view has no paged insight and no scrubber; the catalog job beautifului-insight was ignored, so the only data section on screen does not reward a scrub with more data.",
+        "finding": "Mini on tip 50cd73a4d: insight-open was a cream box (pager + native range + KPI 57), not beautifului insight-cards / chart scrubber. This recapture installs V3Chart year pages + .v3-chart__scrub. Mini must confirm demoMatch.",
         "replaceWith": "beautifului-insight"
       },
       {
-        "section": "#place .v3-pulse__foot",
-        "severity": "craft",
-        "finding": "At 1440 the words column is two sentences restating the H1 and it ends far above the last rule, leaving a cream void that the next section's eyebrow then leaks into.",
-        "replaceWith": null
-      },
-      {
-        "section": "#place .v3-pulse__go",
-        "severity": "craft",
-        "finding": "See all 604 lots is an inline text link inside the definition, so the tap target at 375 sits under the 44px floor.",
-        "replaceWith": null
-      },
-      {
-        "section": "#place .v3-pulse__rule",
-        "severity": "craft",
-        "finding": "At 375 the 604-lot fill spans the row and reads as a hairline divider, so the mobile composition loses the part-to-whole encoding the desktop bars barely hold.",
-        "replaceWith": null
-      },
-      {
-        "section": "#searches",
+        "section": "#place .v3-pulse__readings",
         "severity": "taste",
-        "finding": "The first viewport already shows the stacked-section tell: a small-caps eyebrow CENTRAL OREGON · BY PROPERTY TYPE under a rule, promising another list of the same types the Pulse just ranked.",
-        "replaceWith": "house-ledger"
+        "finding": "Mini: kill orphaned big numerals as the product UI. Pulse is one land reading now; the chart draws the types. Mini has not re-scored the recapture.",
+        "replaceWith": "house-pulse"
+      },
+      {
+        "section": "#searches-table",
+        "severity": "taste",
+        "finding": "Mini: stacked hairline Pulse + tables is not catalog craft density. Pulse no longer stacks four rules; table-open shows the shadcn table. Mini must re-judge craft.",
+        "replaceWith": "shadcn-table"
       },
       {
         "section": "#place .v3-pulse__source",
         "severity": "craft",
-        "finding": "Four live counts share one visible source line; the per-segment filter and the 604-over-whole arithmetic sit behind the disclosure instead of on the figures.",
+        "finding": "Mini: Market Truth metric layer jargon. Visitor-facing source is now regional MLS listings counted by property type. Mini must confirm the voice.",
+        "replaceWith": null
+      },
+      {
+        "section": "#searches-table",
+        "severity": "honesty",
+        "finding": "Mini: 604 vs 595 count mismatch. Pulse, chart, and table now share investCounts(); this recapture prints 595 lots on Pulse and table. Mini must confirm one source.",
         "replaceWith": null
       }
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 61,
+      "evaluatedAt": "2026-09-10",
+      "score": 57,
       "scores": [
-        61,
-        66,
-        56
+        57,
+        63,
+        51
       ],
-      "evaluatorModel": "claude-sonnet-5",
+      "evaluatorModel": "grok-4.6",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:042578c7951d396797f04544da36398bf94d2dd43aeb791cadf372482e50bb60",
-      "source": "SITE-50 route receipt on this parity.json (median 61, claude-sonnet-5)"
+      "shotsHash": "sha256:8dad3a8eff7f418bbb1507909f34237d397421c065cf5e029a4d8ff31e3dcdfe",
+      "source": "SITE-68 route receipt on this parity.json (median 57, grok-4.6)"
     },
-    "rebaselineReason": "evaluatorModel and shotsHash differ: SITE-50 scored 61 with claude-sonnet-5 on shotsHash sha256:042578c7951d396797f04544da36398bf94d2dd43aeb791cadf372482e50bb60; this SITE-68 mark is grok-4.6 on new production first-viewport shots after re-measure. Same rubricVersion v1-2026-09-08. The standing table instrument still shows median 25 for the pre-Pulse memo; live fold is a finding plus live counts, and this receipt scores 57 on the table rubric.",
-    "verdict": "This is better than a 25 because the first viewport is a finding and four live counts, not two memo blocks headed What this page is. It is still dull: a ranked hairline list and a caption, with no map, no share of the whole, and no scrubber, so land-not-buildings is a headline sitting on the house's default Pulse instead of a drawing anyone would send.",
-    "notes": "SITE-68 builder lane re-measured live https://ryan-realty.com/invest. The memo defects from the 2026-09-08 table are already gone (SITE-50 Pulse). No page rebuild this lane — recapture + separate grok-4.6 evaluate + catalog-shaped receipt. honestyFunction holds at 8 vs the prior route mark."
+    "rebaselineReason": "rubricVersion differs: prior SITE-68 mark is v1-2026-09-08; this receipt is v1-2026-09-12 with new open-state shots after the V3Chart install. Mini Cursor scored the cream-box tip 48 / demoMatch false. honestyFunction holds at 8.",
+    "verdict": "Honest fail until Mini rewrites demoMatch true. The cream-box KPI is gone from these shots; the Tip Ready receipt now carries insight-open and table-open evidence. --ship stays exit 1.",
+    "notes": "SITE-98 in_progress. Recapture after V3Chart year-pages install. Do not invent demoMatch. Mini must re-run the judge on these shots."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
