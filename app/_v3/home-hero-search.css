@@ -84,16 +84,54 @@
   margin: 0 0 var(--v3-space-sm);
 }
 
-.v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__tabs .home-hero-search__tab--buy,
-.v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__tabs .home-hero-search__tab--sell {
-  color: var(--v3-ink-on-navy);
-  font-weight: var(--v3-weight-strong);
+/* Nested V3 roots paint cream (tokens.css .v3). On the Stage that reads as
+   sharp white cards behind Buy|Sell and behind the rounded morph field.
+   Kill those wrappers on Home only — pills + morph sit on the photo. */
+.v3 .home-hero-search .v3-tabs,
+.v3 .home-hero-search .v3-morph-search {
+  background: transparent;
 }
 
-.v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__tabs .home-hero-search__tab--sell,
-.v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__tabs .home-hero-search__tab--buy {
-  color: var(--v3-ink);
+.v3 .home-hero-search .v3-tabs__list {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  border-radius: 999px;
+}
+
+.v3 .home-hero-search .v3-morph-search__shell {
+  border-radius: 0.875rem;
+}
+
+/* Catalog Tabs paints active via aria-selected; inactive must read on the photo
+   once the cream track is gone (no navy-on-photo). */
+.v3 .home-hero-search .v3-tabs__tab[aria-selected='true'],
+.v3 .home-hero-search .v3-tabs [role='tab'][aria-selected='true'] {
+  color: var(--v3-ink-on-navy);
+  font-weight: var(--v3-weight-strong);
+  text-shadow: none;
+}
+
+.v3 .home-hero-search .v3-tabs__tab[aria-selected='false'],
+.v3 .home-hero-search .v3-tabs [role='tab'][aria-selected='false'] {
+  color: var(--v3-ink-on-navy);
   font-weight: var(--v3-weight-body);
+  text-shadow: var(--v3-media-shadow);
+}
+
+/* Keep radio-driven class hooks for no-JS / SSR paint before hydrate. */
+.v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__tabs .v3-tabs__tab--buy,
+.v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__tabs .v3-tabs__tab--sell {
+  color: var(--v3-ink-on-navy);
+  font-weight: var(--v3-weight-strong);
+  text-shadow: none;
+}
+
+.v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__tabs .v3-tabs__tab--sell,
+.v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__tabs .v3-tabs__tab--buy {
+  color: var(--v3-ink-on-navy);
+  font-weight: var(--v3-weight-body);
+  text-shadow: var(--v3-media-shadow);
 }
 
 /* Headline switch with the same radios (SITE-12). */
