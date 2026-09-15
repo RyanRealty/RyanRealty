@@ -19,6 +19,12 @@ const SHIP = join(REPO, 'scripts/lib/taste-receipt.mjs')
 const BAD_TEAM_CLAIM =
   'Every closing a Ryan Realty broker recorded on the MLS that carries a coordinate. The 12-month counts on the faces are a trailing window of that same feed; this map is the full record.'
 
+/** Pre-fix /team AboutFaces claim (Writing Bot 2026-09-15 — delete, do not soften). */
+const BAD_TEAM_INTRO =
+  'Three licensed Oregon brokers, all of them here. The one you call is the one who works your deal, start to close, and each of them shows what they have actually closed.'
+
+const BAD_PLACES_SUMMARY = 'Where those closings were'
+
 const PLAIN_CLAIM = '25 closings.'
 
 const BAD_CALL_BILLBOARD = 'CALL 541.703.3095'
@@ -66,6 +72,17 @@ describe('publicCopyHaystack', () => {
 describe('manneredPublicCopyProblems', () => {
   it('refuses the /team map feed lecture', () => {
     const p = manneredPublicCopyProblems(`claimText="${BAD_TEAM_CLAIM}"`)
+    expect(p).toContain(MANNERED_COPY_REFUSE)
+  })
+
+  it('refuses the old /team self-explaining intro', () => {
+    const p = manneredPublicCopyProblems(`claim="${BAD_TEAM_INTRO}"`)
+    expect(p).toContain(MANNERED_COPY_REFUSE)
+    expect(p.join('\n')).toMatch(/Three licensed|the one you call|mannered public copy/)
+  })
+
+  it('refuses the mannered places dropdown label', () => {
+    const p = manneredPublicCopyProblems(`placesSummary: '${BAD_PLACES_SUMMARY}'`)
     expect(p).toContain(MANNERED_COPY_REFUSE)
   })
 
@@ -121,7 +138,12 @@ describe('manneredPublicCopyProblems', () => {
 describe('tasteDoneProblems — mannered copy is Tip Ready refuse', () => {
   it('refuses a receipt whose page source is the /team lecture', () => {
     const p = tasteDoneProblems(doneReceipt(), { sourceText: `claimText="${BAD_TEAM_CLAIM}"` })
-    expect(p.join('\n')).toMatch(/this map is the full record/)
+    expect(p).toContain(MANNERED_COPY_REFUSE)
+    expect(p.join('\n')).toMatch(/mannered public copy|this map is the full record/)
+  })
+
+  it('refuses a receipt whose page source is the old /team intro', () => {
+    const p = tasteDoneProblems(doneReceipt(), { sourceText: `claim="${BAD_TEAM_INTRO}"` })
     expect(p).toContain(MANNERED_COPY_REFUSE)
   })
 
@@ -139,7 +161,18 @@ describe('live /team source after the copy fix', () => {
   it('passes manneredPublicCopyProblems on the team page + editorial faces', () => {
     const page = readFileSync(join(REPO, 'app/team/page.tsx'), 'utf8')
     const faces = readFileSync(join(REPO, 'app/about/_v3/AboutFaces.tsx'), 'utf8')
-    expect(manneredPublicCopyProblems(`${page}\n${faces}`)).toEqual([])
+    const roster = readFileSync(join(REPO, 'app/team/_v3/broker-roster-record.ts'), 'utf8')
+    expect(manneredPublicCopyProblems(`${page}\n${faces}\n${roster}`)).toEqual([])
+  })
+
+  it('cuts the AboutFaces claim under The brokers and labels places Cities', () => {
+    const page = readFileSync(join(REPO, 'app/team/page.tsx'), 'utf8')
+    const roster = readFileSync(join(REPO, 'app/team/_v3/broker-roster-record.ts'), 'utf8')
+    expect(page).not.toMatch(/\bclaim\s*=/)
+    expect(page).not.toContain('Three licensed Oregon brokers')
+    expect(page).not.toContain('the one you call')
+    expect(roster).toContain("placesSummary: places.length > 0 ? 'Cities'")
+    expect(roster).not.toContain('Where those closings were')
   })
 })
 
@@ -158,6 +191,34 @@ describe('live homepage source after the brief leak kill', () => {
 })
 
 describe('taste-receipt --ship CLI refuses mannered team copy', () => {
+  it('exits 1 when the route source is the old /team self-explaining intro', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'rr-team-intro-'))
+    mkdirSync(join(dir, 'app/team'), { recursive: true })
+    mkdirSync(join(dir, 'design_system/public'), { recursive: true })
+    writeFileSync(
+      join(dir, 'design_system/public/taste-catalog.json'),
+      JSON.stringify({ installById: {}, classes: {}, routeClasses: {} }),
+    )
+    writeFileSync(
+      join(dir, 'app/team/page.tsx'),
+      `export default function Team() { return <AboutFaces claim="${BAD_TEAM_INTRO}" /> }\n`,
+    )
+    writeFileSync(
+      join(dir, 'parity.json'),
+      JSON.stringify({
+        route: 'app/team/page.tsx',
+        tasteReview: doneReceipt(),
+      }),
+    )
+    const r = spawnSync(process.execPath, [SHIP, '--ship', 'parity.json'], {
+      cwd: dir,
+      encoding: 'utf8',
+      env: process.env,
+    })
+    expect(r.status).toBe(1)
+    expect(`${r.stderr}${r.stdout}`).toMatch(/Three licensed|the one you call|mannered public copy/)
+  })
+
   it('exits 1 when the route source is the /team lecture', () => {
     const dir = mkdtempSync(join(tmpdir(), 'rr-mannered-'))
     mkdirSync(join(dir, 'app/team'), { recursive: true })
