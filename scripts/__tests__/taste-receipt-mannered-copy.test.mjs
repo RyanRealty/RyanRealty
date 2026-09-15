@@ -6,6 +6,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   ACTION_BILLBOARD_REFUSE,
+  HOME_BRIEF_LEAK_REFUSE,
   MANNERED_COPY_REFUSE,
   manneredPublicCopyProblems,
   publicCopyHaystack,
@@ -102,6 +103,13 @@ describe('manneredPublicCopyProblems', () => {
     expect(manneredPublicCopyProblems(undefined)).toEqual([])
     expect(manneredPublicCopyProblems('')).toEqual([])
   })
+
+  it('refuses homepage competitive brief leaked as public copy', () => {
+    const p = manneredPublicCopyProblems(
+      '<p className="home-hero-search__brief">{homeBriefText(\'2\')} Search field that morphs into results.</p>',
+    )
+    expect(p).toContain(HOME_BRIEF_LEAK_REFUSE)
+  })
 })
 
 describe('tasteDoneProblems — mannered copy is Tip Ready refuse', () => {
@@ -126,6 +134,20 @@ describe('live /team source after the copy fix', () => {
     const page = readFileSync(join(REPO, 'app/team/page.tsx'), 'utf8')
     const faces = readFileSync(join(REPO, 'app/about/_v3/AboutFaces.tsx'), 'utf8')
     expect(manneredPublicCopyProblems(`${page}\n${faces}`)).toEqual([])
+  })
+})
+
+describe('live homepage source after the brief leak kill', () => {
+  it('passes manneredPublicCopyProblems on public Home files', () => {
+    const files = [
+      'app/page.tsx',
+      'app/_v3/HomeHeroSearch.client.tsx',
+      'app/_v3/HomeHomesRails.tsx',
+      'app/_v3/HomeBrowsePlaces.tsx',
+      'app/_v3/HomeFeaturedCommunity.client.tsx',
+    ]
+    const src = files.map((rel) => readFileSync(join(REPO, rel), 'utf8')).join('\n')
+    expect(manneredPublicCopyProblems(src)).toEqual([])
   })
 })
 

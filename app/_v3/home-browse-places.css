@@ -21,14 +21,6 @@
   margin: 0;
 }
 
-.home-browse-places__brief {
-  margin: 0;
-  max-width: var(--v3-measure-text);
-  color: var(--v3-ink);
-  font-size: var(--v3-size-body);
-  line-height: var(--v3-leading-body);
-}
-
 .home-browse-places__unit {
   font-weight: var(--v3-weight-body);
   color: var(--v3-ink-muted);

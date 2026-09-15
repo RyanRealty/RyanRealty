@@ -1,7 +1,8 @@
 /**
  * Homepage Researchy 1–8. Same object lives on homepage-v6 parity +
- * taste-catalog so Mini can quote beats verbatim. Every beat string is
- * rendered on the page (section claims) — a boolean is not evidence.
+ * taste-catalog so the competitiveBriefPass GATE can name the beats.
+ * Beats must be DEMONSTRATED (live inventory, morph search, house Cards)
+ * not NARRATED. Never render homeBriefText / beat strings as public copy.
  *
  * Source: design_system/public/references/homepage-v6.md (Redfin live
  * signal · Stripe composed object · Stage + Pulse) and the homepage-v6
@@ -16,7 +17,7 @@ export const HOME_COMPETITIVE_BRIEF = {
   productLock:
     'live inventory in first viewport + MorphingSearch + Sell address without JS + house Card rails + featured carousel Card + place Cards with live town counts + sourced MLS line',
   refuse:
-    'Stock search-hero with no house photo. Cream-box search. House featured pager. Identical empty place chips. Lone competitiveBriefPass boolean without the beats visible in shots.',
+    'Stock search-hero with no house photo. Cream-box search. House featured pager. Identical empty place chips. Dumping HOME_COMPETITIVE_BRIEF / homeBriefText as public copy. Lone competitiveBriefPass boolean without the beats demonstrated in shots (inventory, morph search, rails).',
   beats: [
     {
       id: '1',

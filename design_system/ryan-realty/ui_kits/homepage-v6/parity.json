@@ -194,7 +194,7 @@
     "id": "homepage-v6-researchy-1-8",
     "source": "design_system/public/references/homepage-v6.md + taste-catalog homepage-v6 layoutLock (Researchy / Redfin + Stripe + Stage).",
     "productLock": "live inventory in first viewport + MorphingSearch + Sell address without JS + house Card rails + featured carousel Card + place Cards with live town counts + sourced MLS line",
-    "refuse": "Stock search-hero with no house photo. Cream-box search. House featured pager. Identical empty place chips. Lone competitiveBriefPass boolean without the beats visible in shots.",
+    "refuse": "Stock search-hero with no house photo. Cream-box search. House featured pager. Identical empty place chips. Dumping HOME_COMPETITIVE_BRIEF / homeBriefText as public copy. Lone competitiveBriefPass boolean without the beats demonstrated in shots (inventory, morph search, rails).",
     "beats": [
       {
         "id": "1",
@@ -251,14 +251,14 @@
     "demoMatch": true,
     "competitiveBriefPass": true,
     "competitiveBriefEvidence": {
-      "1": "The homepage opens with live inventory in the first viewport.",
-      "2": "Search field that morphs into results. Navy on cream, no glass.",
-      "3": "Buy / Sell as tabs with a sliding indicator on the house control.",
-      "4": "Street address",
-      "5": "House cards on the rail: price, address, beds/baths/sqft on the installed Card.",
-      "6": "Search hero carries a live market or inventory signal, not only a photo bar.",
-      "7": "Featured community cards carry sourced pulse figures.",
-      "8": "Browse places with live town counts, not identical empty chips."
+      "1": "HomeHomesRails stacked house carousels; live.forSaleLabel homes for sale across Central Oregon on the lead rail.",
+      "2": "V3MorphSearch (field morphs into results) from MorphingSearch — navy on cream, no glass.",
+      "3": "V3Tabs Buy | Sell with a sliding indicator; both panels exist in the server HTML.",
+      "4": "AddressAutocomplete Street address on the Sell panel; both forms method=get without waiting on JS.",
+      "5": "CardTitle price, home-rail__addr address, CardDescription beds/baths/sqft on the installed Card.",
+      "6": "home-hero-search__live-n forSaleLabel plus homes for sale and live.source on the search hero.",
+      "7": "HomeFeaturedCommunity Card slides with sourced pulse figures via AnimatedNumber.",
+      "8": "Browse places heading plus home-browse-places__count AnimatedNumber on town Cards."
     },
     "shotSpec": {
       "routes": [
