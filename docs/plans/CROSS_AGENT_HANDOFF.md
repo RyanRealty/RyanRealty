@@ -1,10 +1,10 @@
-# Current — 2026-09-15 (SITE-109 reviews Tip Ready land)
+# Current — 2026-09-15 (SITE-92 cities tip, Mini-2 rework)
 
-Surface: Cos Mini on Matthews Mini. Tip Ready judge/land only. SITE-107 done — left alone. SITE-103/110/CMA untouched.
+Surface: Cursor cloud tip worker on `cursor/site-92-cities-tip-35f7` PR #251. Claim `cursor-cloud-site92-20260915`. No merge. SITE-103/110 left alone.
 
-- **Done:** Tip Ready Mini rejudge of tip `fb0158a30` (`cursor/site109-avatar-demo-cb02` PR #250). grok-4.6 via cursor-cli: score 58 (52 · 64 · 58), `demoMatch: true`. avatar-open = reviewer Avatar dropdown (Read this review / View on Google / All reviews); SaaS Sign Out gone; catalog portraits. `node scripts/lib/taste-receipt.mjs --ship design_system/ryan-realty/ui_kits/reviews/parity.json` exit 0 — ship OK — demoMatch true · open-state · catalog-install. Landed on `origin/main` `f455b77d` (land commits `af17aafb` / `f455b77d`; tip `fb0158a30` cherry-pick + Mini receipt).
-- **Next:** HOLD. SITE-103/110 stay in_progress for their owners. No CMA.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `scripts/lib/taste-receipt.mjs --ship`.
+- **Done:** Mini-2 craft after tip `d444e1b61` failed `--ship` 1 (demoMatch omitted, score 44). Catalog InsightCards pages (AllocationCard / CompareCard, Liveline in-window), leftoverHud-only pile (1499/619), 375 atlas clipped so the map no longer covers Insights, combo-open list no longer covers the pager. Stale supply/reveal 1550/648 plates removed. `--ship` still exit 1 — demoMatch not invented.
+- **Next:** Cos Mini `--ship`s. Do not merge. Do not invent demoMatch.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/skills/database-canonical-reference/SKILL.md`.
 
 # Prior — 2026-09-15 (SITE-96 contact Tip Ready land)
 

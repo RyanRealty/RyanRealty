@@ -39,8 +39,24 @@
   max-width: 100%;
 }
 
+.cities-fold__drawing .v3.v3-atlas {
+  padding-bottom: 0;
+}
+
+.cities-fold__drawing .v3-atlas__head {
+  padding-top: 0;
+  padding-bottom: var(--v3-space-xs);
+}
+
 .cities-fold__drawing .v3-atlas__frame {
   max-height: min(32vh, 16rem);
+  overflow: hidden;
+}
+
+.cities-fold__drawing .v3-atlas__stage {
+  min-height: 0;
+  max-height: 100%;
+  height: min(32vh, 16rem);
 }
 
 @media (max-width: 63.99rem) {
@@ -71,6 +87,11 @@
 
   .cities-fold__drawing .v3-atlas__frame {
     max-height: min(28vh, 8.5rem);
+    overflow: hidden;
+  }
+
+  .cities-fold__drawing .v3-atlas__stage {
+    height: min(28vh, 8.5rem);
   }
 
   .cities-fold__drawing .v3-atlas__claim {
@@ -176,6 +197,12 @@
 
 .cities-insight {
   min-width: 0;
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-sm));
+}
+
+#cities-fold,
+#cities-mos-compare {
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-sm));
 }
 
 .cities-insight .insight-cards {

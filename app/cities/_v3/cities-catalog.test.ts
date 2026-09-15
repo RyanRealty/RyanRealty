@@ -19,6 +19,8 @@ describe('cities-catalog SITE-92', () => {
     expect(css).toMatch(/\.cities-insight \{\s*order: 2;/)
     expect(css).toMatch(/\.cities-fold \.v3-drawing,/)
     expect(css).not.toMatch(/max-height: min\(12vh, 4\.75rem\)/)
+    expect(css).toMatch(/\.cities-fold__drawing \.v3-atlas__stage/)
+    expect(css).toMatch(/overflow: hidden/)
   })
 
   it('installs catalog InsightCards pages, not a stacked house pager', () => {

@@ -109,7 +109,7 @@
         "combo-open",
         "insight-open"
       ],
-      "capture": "scripts/take-route-shots.mjs cities http://127.0.0.1:3193 --states combo-open=#cities-mos-compare [role=combobox]!click,insight-open=#cities-insight .insight-pager__btn[aria-label^='Next']@#cities-insight!click --await .v3-atlas,.v3-mos-compare,.insight-cards,.v3-alerts"
+      "capture": "scripts/take-route-shots.mjs cities http://127.0.0.1:3193 --states combo-open=#cities-mos-compare [role=combobox]!click,insight-open=#cities-insight button[aria-label='Next insight']@#cities-insight!click --await .v3-atlas,.v3-mos-compare,.insight-cards,.v3-alerts"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/cities/shots/desktop.png",
@@ -119,7 +119,7 @@
       "insightOpenDesktop": "design_system/ryan-realty/ui_kits/cities/shots/insight-open-desktop.png",
       "insightOpenMobile375": "design_system/ryan-realty/ui_kits/cities/shots/insight-open-mobile375.png"
     },
-    "shotsHash": "sha256:0ec6d05a2ad6552d0ad4f75c0da6edddc870e17cc0614ab603213a039e261051",
+    "shotsHash": "sha256:4b95e46011037618b1abf9e39b1dc0db1cd9ecaca9a8eaaa0cc86fa26e50f2df",
     "scores": [
       41,
       51,
