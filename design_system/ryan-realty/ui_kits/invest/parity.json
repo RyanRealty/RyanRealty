@@ -21,17 +21,17 @@
     },
     {
       "name": "V3Pulse",
-      "section": "#place — the opening. The finding as the H1, four largest populations drawn as a part-to-whole, the moment of the read, and the §0 trace. Composed by app/invest/_v3/invest-pulse.ts, which publishes nothing when the read comes back empty.",
+      "section": "#place — the opening. The finding as the H1, lots vs buildings drawn as a part-to-whole, the moment of the read, and the §0 trace. Composed by app/invest/_v3/invest-pulse.ts, which publishes nothing when the read comes back empty.",
       "blocking": true
     },
     {
       "name": "InvestInsight",
-      "section": "#place-insight — beautifului-insight via InsightCards (Insights pager, Allocation bar, Liveline pointer-scrub). Same live counts as the Pulse.",
+      "section": "#place-insight — beautifului-insight via InsightCards. Every pager page mounts Allocation + Liveline (hideLegend). Same live counts as the Pulse.",
       "blocking": true
     },
     {
       "name": "InvestTables",
-      "section": "#searches-table — shadcn Table of live listings with price, address, beds/baths/sqft or acres.",
+      "section": "#searches-table — shadcn Table of four live listings with price, address, and facts (type absorbed). No TYPE column.",
       "blocking": true
     },
     {
@@ -58,9 +58,9 @@
   "sectionOrder": [
     "V3SectionTracker + inline JSON-LD (not sections)",
     "V3Breadcrumb",
-    "V3Pulse #place -- the finding, the H1, the live counts, the switch",
-    "InvestTables -- shadcn Table of live listings in the fold",
-    "InvestInsight #place-insight -- InsightCards (beautifului-insight)",
+    "V3Pulse #place -- the finding, the H1, lots vs buildings on one track",
+    "InvestInsight #place-insight -- InsightCards (Allocation + Liveline on every page)",
+    "InvestTables -- shadcn Table of four live listings",
     "V3Ledger #searches -- crawlable listing or type doors",
     "V3Quiet #tools -- the cost of money and the math doors",
     "InvestAlertSheet -- the ask (id=alerts renders inside the component, matching HomeAlertSheet)",

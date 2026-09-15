@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import type { PublicSegmentRow } from '@/lib/data/market-truth/public-segments'
 import { composeInvestInsight, investActiveTotal } from './invest-insight'
-import { composeInvestPulse, investCounts } from './invest-pulse'
+import { composeInvestPulse, investClaim, investCounts, investSplit } from './invest-pulse'
 
 function row(
   segment: string,
@@ -66,17 +66,26 @@ describe('composeInvestInsight', () => {
 })
 
 describe('one stats source', () => {
-  it('Pulse, insight allocation, and live total print the same land count', () => {
+  it('Pulse, insight allocation, and live total print the same lots vs buildings split', () => {
     const counts = investCounts(LIVE)
+    const split = investSplit(counts)
     const pulse = composeInvestPulse({ rows: LIVE, stamp: 'Sep 14, 2026, 4:00 PM' })
     const board = composeInvestInsight(LIVE)
-    const land = counts.find((c) => c.segment === 'land')
-    expect(land?.count).toBe(595)
+    const lastLots = board?.compare?.[0]?.values.at(-1)
+    const lastBuildings = board?.compare?.[1]?.values.at(-1)
+    expect(split).toEqual({ lots: 595, buildings: 156, total: 751 })
     expect(investActiveTotal(LIVE)).toBe(751)
-    expect(pulse?.readings[0]?.figure).toBe('595')
-    expect(pulse?.readings).toHaveLength(4)
+    expect(pulse?.readings.map((r) => r.figure)).toEqual(['595', '156'])
+    expect(pulse?.readings).toHaveLength(2)
     expect(board?.allocation[0]?.amount).toBe('595')
     expect(board?.landCount).toBe(595)
+    expect(board?.buildingsCount).toBe(156)
+    expect(board?.total).toBe(751)
+    expect(lastLots).toBe(595)
+    expect(lastBuildings).toBe(156)
+    expect(investClaim(counts)).toContain('land, not buildings')
+    expect(split.lots).toBeGreaterThan(split.buildings)
+    expect(split.lots + split.buildings).toBe(split.total)
   })
 })
 
@@ -85,6 +94,11 @@ describe('invest catalog import (Tip Ready route scan)', () => {
     const src = readFileSync(new URL('./InvestInsight.client.tsx', import.meta.url), 'utf8')
     expect(src).toMatch(/from '@\/components\/motion\/insight-cards'/)
     expect(src).toMatch(/InsightCards/)
+    expect(src).toMatch(/AllocationCard/)
+    expect(src).toMatch(/CompareCard/)
+    expect(src).toMatch(/hideLegend/)
+    expect(src).toMatch(/allocation-liveline/)
     expect(src).not.toMatch(/yearPages/)
+    expect(src).not.toMatch(/AnomalyCard/)
   })
 })

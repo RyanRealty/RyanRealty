@@ -10,7 +10,7 @@
  */
 import type { PublicSegmentRow } from '@/lib/data/market-truth/public-segments'
 import { publicSegmentNoun } from '@/lib/data/market-truth/public-segments'
-import { investCounts } from './invest-pulse'
+import { investCounts, investSplit } from './invest-pulse'
 
 export type InvestAllocationSegment = {
   name: string
@@ -126,6 +126,7 @@ export type InvestInsightBoard = {
   compare: InvestCompareSeries[] | null
   anomaly: InvestAnomalyData | null
   landCount: number
+  buildingsCount: number
   total: number
   landSharePct: string
   soldLandCount: number | null
@@ -136,10 +137,11 @@ export type InvestInsightBoard = {
 export function composeInvestInsight(rows: readonly PublicSegmentRow[]): InvestInsightBoard | null {
   const counts = investCounts(rows)
   if (counts.length < 2) return null
-  const total = counts.reduce((sum, c) => sum + c.count, 0)
-  if (total <= 0) return null
+  const split = investSplit(counts)
+  if (split.total <= 0 || split.lots <= 0) return null
   const land = counts.find((c) => c.segment === 'land')
   if (!land) return null
+  const total = split.total
 
   const allocation = shareParts(
     counts.map((c) => ({
@@ -199,9 +201,10 @@ export function composeInvestInsight(rows: readonly PublicSegmentRow[]): InvestI
     soldAllocation,
     compare,
     anomaly,
-    landCount: land.count,
+    landCount: split.lots,
+    buildingsCount: split.buildings,
     total,
-    landSharePct: ((land.count / total) * 100).toFixed(1),
+    landSharePct: ((split.lots / total) * 100).toFixed(1),
     soldLandCount: soldLand,
     soldTotal: soldTotal > 0 ? soldTotal : null,
     windowLabels: windows.map((w) => w.name),

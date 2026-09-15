@@ -57,6 +57,7 @@ describe('composeInvestListings', () => {
     expect(rows[0]?.beds).toBe('4 bd')
     expect(rows[0]?.baths).toBe('2 ba')
     expect(rows[0]?.size).toBe('1,800 sqft')
+    expect(investListingFacts(rows[0]!)).toContain('Multi-family')
     expect(investListingFacts(rows[0]!)).toContain('bd')
     expect(rows[1]?.size).toBe('2.50 acres')
     expect(investTypeLabel(tile({ listingKey: 'x', propertyType: 'D' }))).toBe('Lot')
@@ -73,22 +74,17 @@ describe('composeInvestListings', () => {
     ).toEqual([])
   })
 
-  it('interleaves types instead of dumping one bucket', () => {
+  it('interleaves types and caps at four rows, not a scrolling list', () => {
     const mf = [1, 2, 3, 4].map((n) => tile({ listingKey: `mf-${n}` }))
     const lots = [1, 2, 3, 4].map((n) =>
       tile({ listingKey: `lot-${n}`, propertyType: 'D', beds: null, baths: null }),
     )
-    const rows = composeInvestListings([mf, lots])
-    expect(rows.map((r) => r.listingKey)).toEqual([
-      'mf-1',
-      'lot-1',
-      'mf-2',
-      'lot-2',
-      'mf-3',
-      'lot-3',
-      'mf-4',
-      'lot-4',
-    ])
+    const farms = [1, 2].map((n) => tile({ listingKey: `farm-${n}`, propertyType: 'E' }))
+    const commercial = [1, 2].map((n) => tile({ listingKey: `com-${n}`, propertyType: 'F' }))
+    const extra = [1, 2].map((n) => tile({ listingKey: `biz-${n}`, propertyType: 'H' }))
+    const rows = composeInvestListings([mf, lots, farms, commercial, extra])
+    expect(rows.map((r) => r.listingKey)).toEqual(['mf-1', 'lot-1', 'farm-1', 'com-1'])
+    expect(rows).toHaveLength(4)
   })
 })
 
@@ -96,6 +92,7 @@ describe('invest catalog import (Tip Ready route scan)', () => {
   it('imports the shadcn table from the installed source', () => {
     const src = readFileSync(new URL('./InvestTables.client.tsx', import.meta.url), 'utf8')
     expect(src).toMatch(/from '@\/components\/ui\/table'/)
+    expect(src).not.toMatch(/<TableHead>Type<\/TableHead>/)
   })
 })
 

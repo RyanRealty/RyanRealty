@@ -47,12 +47,12 @@ import { v3Text, type V3PulseProps, type V3PulseReading } from '@/components/sit
 export const INVEST_PULSE_ID = 'place'
 
 /**
- * V3Pulse opens the page with the finding drawn as a part-to-whole: the
- * four largest populations as rules on one track. InsightCards below is
- * Allocation / Compare / Anomaly, not a second KPI stack. The share
- * denominator stays the WHOLE set.
+ * V3Pulse opens the page with the finding drawn as a part-to-whole: lots
+ * against buildings on one track — the same split the H1 claims. Four
+ * type rows read as a radio-row legend (Mini 0c7efd619). The share
+ * denominator stays the WHOLE set. Type doors stay on the Ledger.
  */
-const DRAWN = 4
+const DRAWN = 2
 
 /** What each population IS, in words a visitor reads. Never a slug. */
 const DEFINITION: Record<string, string> = {
@@ -79,6 +79,19 @@ export type InvestSegmentCount = {
   segment: InvestSegment
   /** Rows the metric layer published as active for this segment. */
   count: number
+}
+
+export type InvestSplit = {
+  lots: number
+  buildings: number
+  total: number
+}
+
+/** Lots vs every other income listing. One source for Pulse, insight, and the H1. */
+export function investSplit(counts: readonly InvestSegmentCount[]): InvestSplit {
+  const total = counts.reduce((sum, c) => sum + c.count, 0)
+  const lots = counts.find((c) => c.segment === 'land')?.count ?? 0
+  return { lots, buildings: Math.max(0, total - lots), total }
 }
 
 /**
@@ -119,16 +132,14 @@ export function investClaim(counts: readonly InvestSegmentCount[]): string | nul
 }
 
 /** The §0 trace: the read, the filter, every count, and the arithmetic. */
-export function investTrace(counts: readonly InvestSegmentCount[], drawn: number): string {
-  const total = counts.reduce((sum, c) => sum + c.count, 0)
+export function investTrace(counts: readonly InvestSegmentCount[]): string {
+  const { lots, buildings, total } = investSplit(counts)
   const parts = counts.map((c) => `${c.segment} ${n(c.count)}`).join(', ')
-  const shown = counts.slice(0, drawn)
-  const shownTotal = shown.reduce((sum, c) => sum + c.count, 0)
   const largest = counts[0]
   const lines = [
     'Regional MLS listings for sale across Central Oregon, counted by property type — lots, commercial, two-to-four-unit buildings, farms, and businesses. Oregon Data Share is the feed. Geography is the whole region, not one town.',
     `This read: ${parts} — ${n(total)} listings in all.`,
-    `Each count is that number over ${n(total)}, so the shares add to the whole set.`,
+    `The two rules are lots ${n(lots)} and buildings ${n(buildings)} — ${n(lots)} + ${n(buildings)} = ${n(total)}. Each share is that number over ${n(total)}, so the fills add to the whole set.`,
   ]
   if (largest) {
     const pct = ((largest.count / total) * 100).toFixed(1)
@@ -136,13 +147,8 @@ export function investTrace(counts: readonly InvestSegmentCount[], drawn: number
       `The headline is ${n(largest.count)} ÷ ${n(total)} = ${pct}% — it is published only while the largest population is land and holds more than half the set.`,
     )
   }
-  if (shown.length < counts.length) {
-    lines.push(
-      `The band draws the ${shown.length} largest (${n(shownTotal)} of ${n(total)}); the rest keep their own door in the list below, so the gap at the end of the track is the population not drawn.`,
-    )
-  }
   lines.push(
-    'Houses people live in are on the homes-for-sale pages, not here. A type with no published count is left off, not guessed.',
+    'Type doors stay in the list below. Houses people live in are on the homes-for-sale pages, not here. A type with no published count is left off, not guessed.',
   )
   return lines.join(' ')
 }
@@ -166,26 +172,40 @@ export function composeInvestPulse(input: InvestPulseInput): V3PulseProps | null
   const claim = investClaim(counts)
   if (!claim) return null
 
-  const readings: V3PulseReading[] = counts.slice(0, DRAWN).map((c) => {
-    const definition = DEFINITION[c.segment]
-    return {
-      key: c.segment,
-      figure: n(c.count),
-      label: publicSegmentNoun(c.segment, c.count),
-      share: c.count / total,
-      definition: definition ?? `Active ${publicSegmentNoun(c.segment, c.count)} on the regional MLS.`,
-      href: publicSegmentBrowseHref(null, c.segment),
-      hrefLabel: goLabel(c.segment, c.count),
-    }
-  })
-  if (readings.length === 0) return null
+  const split = investSplit(counts)
+  if (split.lots <= 0 || split.buildings <= 0) return null
+
+  const buildingLead = counts.find((c) => c.segment !== 'land')
+  const readings: V3PulseReading[] = [
+    {
+      key: 'lots',
+      figure: n(split.lots),
+      label: publicSegmentNoun('land', split.lots),
+      share: split.lots / split.total,
+      definition:
+        DEFINITION.land ??
+        'Lots and acreage with no house on them: bare residential lots, larger parcels, and development ground.',
+      href: publicSegmentBrowseHref(null, 'land'),
+      hrefLabel: goLabel('land', split.lots),
+    },
+    {
+      key: 'buildings',
+      figure: n(split.buildings),
+      label: split.buildings === 1 ? 'building' : 'buildings',
+      share: split.buildings / split.total,
+      definition:
+        'Commercial, two-to-four-unit, farm, and business listings — every income property for sale that is not a vacant lot. Together with the lots they add to the whole set.',
+      href: buildingLead ? publicSegmentBrowseHref(null, buildingLead.segment) : '/homes-for-sale',
+      hrefLabel: `See all ${n(split.buildings)} ${split.buildings === 1 ? 'building' : 'buildings'}`,
+    },
+  ]
 
   return {
     id: INVEST_PULSE_ID,
     claim: v3Text(claim),
     headingLevel: 1,
-    readings,
+    readings: readings.slice(0, DRAWN),
     note: `Read ${input.stamp}`,
-    source: investTrace(counts, DRAWN),
+    source: investTrace(counts),
   }
 }
