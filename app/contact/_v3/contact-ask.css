@@ -18,72 +18,13 @@
   min-width: 0;
 }
 
-.contact-field__label {
-  font-size: var(--v3-size-label);
-  font-weight: var(--v3-weight-medium);
-  letter-spacing: var(--v3-track-label);
-  text-transform: uppercase;
-  color: var(--v3-ink-muted);
-}
-
-.contact-field__optional {
-  text-transform: none;
-  letter-spacing: 0;
-  font-weight: var(--v3-weight-body);
-}
-
 .contact-field__hint {
   font-size: var(--v3-size-body-sm);
   color: var(--v3-ink-muted);
 }
 
-.contact-field__area {
-  display: block;
-  width: 100%;
-  min-height: calc(var(--v3-tap) * 2.5);
-  padding: 0.7rem 0.9rem;
-  border: 1px solid var(--v3-edge);
-  border-radius: var(--v3-radius-mark);
-  background: var(--v3-surface);
-  color: var(--v3-ink);
-  caret-color: var(--v3-ink);
-  font: inherit;
-  resize: vertical;
-}
-
-.contact-field__area[data-state='error'] {
-  border-color: var(--v3-navy);
-  border-width: 2px;
-}
-
-.contact-field__error {
-  color: var(--v3-ink);
-  font-size: var(--v3-size-label);
-}
-
-.contact-ask .v3-ask__control--select,
-.contact-field__select {
-  width: 100%;
-  min-height: var(--v3-tap);
-  background: var(--v3-surface);
-  border: 1px solid var(--v3-edge);
-  border-radius: 999px;
-  color: var(--v3-ink);
-}
-
-.contact-ask .contact-field__select[data-state='open'],
-.contact-ask .contact-field__select:focus-visible {
-  border-color: var(--v3-navy);
-  box-shadow: 0 0 0 3px var(--v3-wash);
-}
-
 .contact-ask-root {
   position: relative;
-}
-
-.contact-ask .v3-ask__done .about-faces--compact {
-  padding-inline: 0;
-  padding-block: var(--v3-space-sm);
 }
 
 /* Opacity 0 keeps the controls out of the frame; a tap-sized box keeps
@@ -108,4 +49,11 @@
 
 .contact-hours-live__taste {
   top: 0;
+}
+
+@media (max-width: 47.999rem) {
+  .contact-ask .v3-ask__done-detail,
+  .contact-ask .v3-ask__done-door {
+    padding-bottom: var(--v3-space-sm);
+  }
 }

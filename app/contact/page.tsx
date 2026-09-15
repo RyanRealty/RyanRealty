@@ -2,10 +2,10 @@
  * /contact - write a broker, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Order: ContactFold (Quiet H1 + sourced reviews figure, V3Doors #reach as a
- * REACH CONTROL with the principal photograph on the call door and live hours,
- * ContactAsk as the one ask in the first viewport), AboutFaces (who answers),
- * V3Answers.
+ * Order: ContactFold (Quiet H1 + sourced reviews figure, ContactReach as one
+ * Call door at display scale with live hours plus Text/Email/Schedule as one
+ * Button Group, ContactAsk as the one ask in the first viewport), one Matt
+ * face via AboutFaces, V3Answers.
  *
  * SITE-48 (2026-09-09) changed two of those. The taste table scored this page
  * 49 with the verdict "the fold is a text hero on top of a four-times-repeated
@@ -30,10 +30,10 @@ import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { getBrokers, getListingTiles, getReviews } from '@/lib/data'
 import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listing-ask'
-import { listingTileHref } from '@/lib/slug'
+import { listingTileHref, teamPath } from '@/lib/slug'
 import { formatDate } from '@/lib/format/date'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
-import { BRAND, CONTACT } from '@/lib/brand/contact'
+import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
 import { valuationHref } from '@/lib/site/valuation-href'
 import {
   V3_ROOT_CLASS,
@@ -54,6 +54,7 @@ import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { ContactAsk } from './_v3/ContactAsk.client'
 import { ContactFold } from './_v3/ContactFold'
 import { ContactHoursLive } from './_v3/ContactHoursLive.client'
+import { ContactReach } from './_v3/ContactReach'
 import { CONTACT_FAQ_ITEMS } from './_v3/contact-constants'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
@@ -237,38 +238,33 @@ export default async function ContactPage({ searchParams }: PageProps) {
     { label: 'Value my home', href: valuationHref('/contact') },
   ]
 
-  /* The live state on the reach control, and its section 0 trace.
-     WHAT THIS IS NOT: a response-time figure. SITE-09 removed the "one
-     business day" promise from this page and left the speed claim empty on
-     purpose. Read on 2026-09-09, getResponseClockReport() over its 28-day
-     window returned a median whose every counted touch predates the
-     provenance stamp — the exact condition /admin/crm prints "unproven" for —
-     and 2 of 8 in-hours site submits answered by a person. Neither ships: one
-     is not proven and the other is a backlog, not a promise.
-     WHAT IT IS: our published hours against the clock, from the same
-     crm_company_settings.booking_hours rows that fill /book's calendar, so a
-     reader can check the claim in one tap. Empty hours render nothing. */
+  /* Published hours against the clock, from crm_company_settings.booking_hours
+     — the same rows that fill /book. Empty still paints the hours product
+     (V3OnDuty allowEmpty). No reply-time figure. */
   const hoursBlocks = companySettings?.booking_hours ?? []
   const hoursTimeZone = companySettings?.time_zone || 'America/Los_Angeles'
-  const hoursLive =
-    hoursBlocks.length > 0 ? (
-      <>
-        <V3OnDuty blocks={hoursBlocks} timeZone={hoursTimeZone} nowIso={new Date().toISOString()} />
-        {/* No `asOf` stamp on this one. The state above is as of NOW — that is
-            what makes it live — and "as of <the day the row was last edited>"
-            beside it reads as a stale figure, besides wrapping onto a line of
-            its own behind a stray middot at 375. The row's own edit date is
-            inside the trace, where it belongs. */}
+  const hoursLive = (
+    <>
+      <V3OnDuty
+        blocks={hoursBlocks}
+        timeZone={hoursTimeZone}
+        nowIso={new Date().toISOString()}
+        allowEmpty
+      />
+      {hoursBlocks.length > 0 ? (
         <V3SourceLine
           sourceName={v3Text('Ryan Realty booking hours')}
           source={v3Text(
             `Ryan Realty booking hours, public.crm_company_settings.booking_hours — ${hoursBlocks
               .map((b) => `${b.days.join(', ')} ${b.start_time} to ${b.end_time}`)
-              .join('; ')}, evaluated in ${hoursTimeZone} against the clock at page render. Hours row last edited ${companySettings?.updated_at ? formatDate(companySettings.updated_at) : 'unknown'}. These are the same windows the /book calendar offers time from (lib/booking/slots.ts), so the state above is checkable in one tap. It is a statement of published hours only: this page makes no claim about how fast anyone replies, because the CRM response clock's median is still unproven (SITE-09).`,
+              .join('; ')}, evaluated in ${hoursTimeZone} at page render. Hours row last edited ${companySettings?.updated_at ? formatDate(companySettings.updated_at) : 'unknown'}. Same windows the /book calendar offers. Published hours only.`,
           )}
         />
-      </>
-    ) : null
+      ) : null}
+    </>
+  )
+  const mattFace =
+    faces.find((face) => face.href === teamPath(BROKERS.matt.slug)) ?? faces[0] ?? null
 
   // Split once, here, so the discarded third bucket is visible rather than
   // vanishing inside a JSX spread: `prose` holds passages with no question to
@@ -319,7 +315,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
                   value: CONTACT.phoneDirect,
                   unit: 'call or text · one line',
                   source:
-                    'Ryan Realty published direct line (lib/brand/contact CONTACT.phoneDirect). Hours state when present is public.crm_company_settings.booking_hours evaluated at render — hours only, no reply-time claim (SITE-09).',
+                    'Ryan Realty published direct line (lib/brand/contact CONTACT.phoneDirect). Hours state when present is public.crm_company_settings.booking_hours evaluated at render — published hours only.',
                   sourceName: 'Ryan Realty',
                 },
               },
@@ -417,52 +413,18 @@ export default async function ContactPage({ searchParams }: PageProps) {
                   headingLevel={1}
                   items={introItems}
                 />
-                {faces.length > 0 ? (
+                {mattFace ? (
                   <AboutFaces
-                    people={faces}
+                    people={[mattFace]}
                     heading="Who answers"
                     headingLevel={2}
                     size="compact"
                     sectionId="who-answers"
                     eyebrow="Ryan Realty · Bend"
-                    claim="Three licensed Oregon brokers, all of them here. Whichever one you reach is the one who works your deal."
+                    claim="Meet the team for every broker who answers."
                   />
                 ) : null}
-                {/* Reach control in the first viewport, beside the form.
-                    House-doors: Call at display scale with live hours.
-                    Photographs live on house-faces above, not a door stamp. */}
-                <V3Doors
-                  id="reach"
-                  name={v3Text('Reach a broker')}
-                  doors={[
-                    {
-                      kicker: v3Text('Call'),
-                      label: v3Text(CONTACT.phoneDirect),
-                      fact: v3Text('One number for the whole brokerage'),
-                      href: `tel:${CONTACT.phoneDirectTel}`,
-                      primary: true,
-                      live: <ContactHoursLive>{hoursLive}</ContactHoursLive>,
-                    },
-                    {
-                      kicker: v3Text('Text'),
-                      label: v3Text('Send a text'),
-                      fact: v3Text('Same line as the call'),
-                      href: `sms:${CONTACT.phoneDirectTel}`,
-                    },
-                    {
-                      kicker: v3Text('Email'),
-                      label: v3Text('Send an email'),
-                      fact: v3Text("Straight to Matt's inbox"),
-                      href: `mailto:${CONTACT.email.primary}`,
-                    },
-                    {
-                      kicker: v3Text('Schedule'),
-                      label: v3Text('Book a time'),
-                      fact: v3Text('Open slots on the calendar'),
-                      href: '/book',
-                    },
-                  ]}
-                />
+                <ContactReach id="reach" hours={<ContactHoursLive>{hoursLive}</ContactHoursLive>} />
               </>
             }
             write={
@@ -471,18 +433,6 @@ export default async function ContactPage({ searchParams }: PageProps) {
                 listingKey={params.listingKey}
                 intent={intent}
                 listingSummary={listingSummary || undefined}
-                faces={
-                  faces.length > 0 ? (
-                    <AboutFaces
-                      people={faces}
-                      heading="Who answers"
-                      headingLevel={2}
-                      size="compact"
-                      sectionId="who-answers-sent"
-                      eyebrow="Ryan Realty · Bend"
-                    />
-                  ) : null
-                }
               />
             }
           />

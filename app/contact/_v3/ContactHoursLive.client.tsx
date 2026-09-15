@@ -2,7 +2,8 @@
 
 /**
  * Taste / live hours: the reach control's published-hours chip can be emptied
- * so take-route-shots can record hours-empty without inventing a reply time.
+ * so take-route-shots can record hours-empty. Empty still paints the hours
+ * product — it does not delete the line or invent a reply time.
  */
 import { useEffect, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
@@ -20,10 +21,17 @@ export function ContactHoursLive({ children }: { children: ReactNode }) {
     <div className="contact-hours-live">
       <div className="contact-ask__taste contact-hours-live__taste">
         <Button type="button" variant="ghost" data-taste="hours-empty" onClick={() => setEmpty(true)}>
-          Hide hours
+          Show empty hours
         </Button>
       </div>
-      {empty ? null : children}
+      {empty ? (
+        <p className="v3-onduty">
+          <span className="v3-onduty__dot" aria-hidden="true" />
+          <span className="v3-onduty__label">Hours not published</span>
+        </p>
+      ) : (
+        children
+      )}
     </div>
   )
 }

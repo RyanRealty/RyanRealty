@@ -147,6 +147,11 @@
     grid-template-rows: repeat(var(--v3-doors-rows, 3), auto);
   }
 
+  .v3-doors--lead .v3-doors__list:has(> .v3-doors__item:only-child) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+
   .v3-doors--lead .v3-doors__item--lead {
     grid-column: 1;
     grid-row: 1 / -1;

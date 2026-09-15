@@ -1,9 +1,9 @@
 /**
  * /contact first viewport: reach control + the one ask, side by side.
  *
- * Layout lock: one ask, doors with hierarchy and live hours, not four
+ * Layout lock: one ask, one Call reach control with live hours, not four
  * identical link rows. The form is a first-viewport control (beui-input /
- * shadcn-input adapted into V3Input), not a section under a text hero.
+ * shadcn-input imported on ContactField), not a section under a text hero.
  */
 import type { ReactNode } from 'react'
 import './contact-fold.css'

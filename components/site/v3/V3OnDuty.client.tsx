@@ -32,13 +32,20 @@ export type V3OnDutyProps = {
   nowIso: string
   /** How the reader can check the claim: "Bend office hours". */
   note?: string
+  /**
+   * When nothing is published, still paint the hours product (the chip) with
+   * an honest empty line. Default stays null so other callers do not invent
+   * an open state. Contact hours-empty uses this so the demo does not delete
+   * the line.
+   */
+  allowEmpty?: boolean
   className?: string
 }
 
 /** One minute: the smallest step that can change the sentence. */
 const TICK_MS = 60_000
 
-export function V3OnDuty({ blocks, timeZone, nowIso, note, className }: V3OnDutyProps) {
+export function V3OnDuty({ blocks, timeZone, nowIso, note, allowEmpty = false, className }: V3OnDutyProps) {
   const [now, setNow] = useState(() => new Date(nowIso))
 
   useEffect(() => {
@@ -48,7 +55,15 @@ export function V3OnDuty({ blocks, timeZone, nowIso, note, className }: V3OnDuty
   }, [])
 
   const state = onDutyState({ blocks, timeZone, now })
-  if (!state) return null
+  if (!state) {
+    if (!allowEmpty) return null
+    return (
+      <p className={cn('v3-onduty', className)}>
+        <span className="v3-onduty__dot" aria-hidden="true" />
+        <span className="v3-onduty__label">Hours not published</span>
+      </p>
+    )
+  }
 
   return (
     <p className={cn('v3-onduty', state.open && 'is-open', className)}>

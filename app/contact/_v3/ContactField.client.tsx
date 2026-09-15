@@ -2,21 +2,19 @@
 
 /**
  * Write-path field: the installed beui-input demo (shake + check + error
- * line) and shadcn Select. Tokens restyle idle/focus only — error stays
- * `border-destructive` and success keeps the catalog SVG check. A second
- * shake, a navy invalid border, or a "✓" glyph on top of Beui is a house
- * wrapper, which Mini already scored demoMatch false.
+ * line) and shadcn Input / Select. Tokens restyle idle/focus only — error
+ * stays `border-destructive` and success keeps the catalog SVG check.
  */
 import { useEffect, useId, useRef, useState } from 'react'
+import { Input as BeuiInput } from '@/components/motion/input'
+import { Input as ShadcnInput } from '@/components/ui/input'
 import {
-  BeuiInput,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  ShadcnInput,
-} from './contact-catalog'
+} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
@@ -106,10 +104,7 @@ export function ContactField({
   if (select) {
     return (
       <div className={cn('contact-field', className)}>
-        <Label htmlFor={fieldId} className="contact-field__label">
-          {label}
-          {required ? null : <span className="contact-field__optional"> optional</span>}
-        </Label>
+        <Label htmlFor={fieldId}>{label}</Label>
         {hint ? <span className="contact-field__hint">{hint}</span> : null}
         <ShadcnInput type="hidden" name={name} value={value} tabIndex={-1} aria-hidden />
         <Select
@@ -120,7 +115,7 @@ export function ContactField({
             setSuccess(Boolean(required && next.trim()))
           }}
         >
-          <SelectTrigger id={fieldId} className="w-full contact-field__select">
+          <SelectTrigger id={fieldId} className="w-full">
             <SelectValue placeholder={placeholder ?? label} />
           </SelectTrigger>
           <SelectContent>
@@ -139,10 +134,7 @@ export function ContactField({
     const errorMessage = typeof error === 'string' ? error : null
     return (
       <div className={cn('contact-field', className)}>
-        <Label htmlFor={fieldId} className="contact-field__label">
-          {label}
-          {required ? null : <span className="contact-field__optional"> optional</span>}
-        </Label>
+        <Label htmlFor={fieldId}>{label}</Label>
         {hint ? <span className="contact-field__hint">{hint}</span> : null}
         <Textarea
           ref={(node) => {
@@ -150,7 +142,6 @@ export function ContactField({
           }}
           id={fieldId}
           name={name}
-          className="contact-field__area"
           required={required}
           placeholder={placeholder}
           value={value}
@@ -158,7 +149,6 @@ export function ContactField({
           maxLength={maxLength}
           aria-invalid={error ? true : undefined}
           aria-describedby={errorMessage ? `${fieldId}-error` : undefined}
-          data-state={error ? 'error' : success ? 'success' : 'idle'}
           onChange={(event) => {
             setValue(event.target.value)
             if (error || success) applyValidity(event.target)
@@ -166,7 +156,7 @@ export function ContactField({
           onBlur={(event) => applyValidity(event.target)}
         />
         {errorMessage ? (
-          <p id={`${fieldId}-error`} role="alert" className="contact-field__error">
+          <p id={`${fieldId}-error`} role="alert" className="text-xs text-destructive">
             {errorMessage}
           </p>
         ) : null}
