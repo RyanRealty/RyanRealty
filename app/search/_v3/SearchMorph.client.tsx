@@ -12,6 +12,7 @@ export type SearchMorphProps = {
   placeholder: string
   onQueryChange: (query: string) => void
   onSelect: (item: MorphingSearchItem) => void
+  onOpenChange?: (open: boolean) => void
   className?: string
 }
 
@@ -20,6 +21,7 @@ export function SearchMorph({
   placeholder,
   onQueryChange,
   onSelect,
+  onOpenChange,
   className,
 }: SearchMorphProps) {
   return (
@@ -31,6 +33,7 @@ export function SearchMorph({
         emptyMessage="No places match that."
         onQueryChange={onQueryChange}
         onSelect={onSelect}
+        onOpenChange={onOpenChange}
         className="w-full max-w-full"
       />
     </div>

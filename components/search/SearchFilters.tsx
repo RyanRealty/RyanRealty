@@ -321,6 +321,7 @@ export default function SearchFilters({
 
   // Dropdown panel state
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null)
+  const [morphOpen, setMorphOpen] = useState(false)
   const [placesQuery, setPlacesQuery] = useState('')
   const [moreSheetOpen, setMoreSheetOpen] = useState(false)
   /** Keep the lazy sheet mounted after first open so close animation still works. */
@@ -575,18 +576,6 @@ export default function SearchFilters({
     [updateUrl, showParsedChips]
   )
 
-  // Current location label for the input placeholder
-  const locationPlaceholder =
-    locationQuery !== ''
-      ? locationQuery
-      : initialFilters.postalCode
-        ? initialFilters.postalCode
-        : initialFilters.subdivision && initialFilters.city
-          ? `${initialFilters.subdivision}, ${initialFilters.city}`
-          : initialFilters.city
-            ? initialFilters.city
-            : 'City, community, zip, address...'
-
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
@@ -603,8 +592,12 @@ export default function SearchFilters({
         <div className="relative flex w-full min-w-0 items-center gap-1 sm:w-64 sm:shrink-0">
           <SearchMorph
             className="srch-morph min-w-0 flex-1"
-            placeholder={locationPlaceholder}
+            placeholder="Search places"
             items={morphItems}
+            onOpenChange={(next) => {
+              setMorphOpen(next)
+              if (next) setOpenPanel(null)
+            }}
             onQueryChange={(next) => {
               setLocationQuery(next)
             }}
@@ -615,17 +608,23 @@ export default function SearchFilters({
               else applyNaturalQuery(item.title)
             }}
           />
-          <VoiceSearchButton
-            onTranscript={applyNaturalQuery}
-            className="srch-mic-inbar size-9 shrink-0"
-          />
-          <ParsedSearchNotice chips={parsedChips} className="absolute left-0 right-0 top-full z-50 mt-1" />
+          {morphOpen ? null : (
+            <VoiceSearchButton
+              onTranscript={applyNaturalQuery}
+              className="srch-mic-inbar size-9 shrink-0"
+            />
+          )}
+          {morphOpen ? null : (
+            <ParsedSearchNotice chips={parsedChips} className="absolute left-0 right-0 top-full z-50 mt-1" />
+          )}
         </div>
         )}
         {/* Row 2 @375: Places chip + Filters + Save. Desktop: same row as search. */}
         <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2">
         <div className="flex shrink-0 items-center gap-2">
-        {/* Places — City / Neighborhood / Community / Subdivision / School district. */}
+        {/* Places typeahead unmounts while MorphingSearch is open so search-open
+            is the catalog portal only (cream Bend+Esc Places dropdown = fail). */}
+        {morphOpen ? null : (
         <FilterDropdown
           label={(() => {
             const cities = splitCsv(initialFilters.city)
@@ -939,6 +938,7 @@ export default function SearchFilters({
             </div>
           </div>
         </FilterDropdown>
+        )}
         </div>
 
         <div className="srch-chip-rail hidden min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar">

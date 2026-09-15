@@ -385,7 +385,7 @@ export function MorphingSearch({
 								<button
 									type="button"
 									aria-label="Close search"
-									className="pointer-events-auto fixed inset-0 cursor-default bg-transparent"
+									className="pointer-events-auto fixed inset-0 cursor-default bg-foreground/40"
 									onClick={closeSearch}
 								/>
 
@@ -435,7 +435,7 @@ export function MorphingSearch({
 												}
 									}
 									data-v3-morph="dialog"
-									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl"
+									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl bg-background/90 backdrop-blur-xl"
 									style={{
 										top: anchorRect.top,
 										left: anchorRect.left,
