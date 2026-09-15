@@ -42,7 +42,7 @@ import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPriceExact } from '@/lib/format/money'
 import { listingsBrowsePath } from '@/lib/slug'
-import { v3Text, type V3ChartProps, type V3InstrumentFigure } from '@/components/site/v3'
+import { v3Text, type V3ChartProps, type V3ChartSeries, type V3InstrumentFigure } from '@/components/site/v3'
 import { buildMosSupplyChart } from '@/app/months-of-supply/_v3/mos-chart'
 import {
   buildClosedVolumeChart,
@@ -57,6 +57,102 @@ import {
   pickLatestMartYear,
 } from '../../_v3/closed-kpis'
 import { CLOSED_SALES_TO_YEAR, HISTORY_PATH } from './region-constants'
+
+/** One InsightCards page. Distinct claim + figure; chart only when that page owns a series. */
+export type RegionInsightPage = {
+  key: string
+  claim: string
+  figure: string
+  figureLabel: string
+  secondFigure?: string
+  secondLabel?: string
+  pill: string
+  pillHref?: string
+  chart?: V3ChartProps
+}
+
+function lastPoint(series: V3ChartSeries | undefined) {
+  const points = series?.points ?? []
+  return points.length ? points[points.length - 1] : undefined
+}
+
+/**
+ * beautifului-insight pages for the region fold. Three distinct jobs — this
+ * year's median, the same month a year earlier, live asking — not YEAR 3/3
+ * of one series.
+ */
+export function buildRegionInsightPages(
+  overlay: V3ChartProps | undefined,
+  hud: LeftoverHudKpis,
+): RegionInsightPage[] {
+  const pages: RegionInsightPage[] = []
+  const series = overlay?.series ?? []
+  const newest = series[series.length - 1]
+  const prior = series.length >= 2 ? series[series.length - 2] : undefined
+  const newestLast = lastPoint(newest)
+  if (newest && newestLast && newest.points.length >= 2 && overlay) {
+    const year = String(newest.name)
+    pages.push({
+      key: `sale-${year}`,
+      claim: `${year} median sale ${String(newestLast.label)} in ${String(newestLast.tick)}`,
+      figure: String(newestLast.label),
+      figureLabel: `${year} median sale`,
+      pill: 'Scrub this year month by month',
+      chart: {
+        ...overlay,
+        id: 'market-insights-sale',
+        caption: v3Text(`${year} median sale price by month, single-family`),
+        series: [newest],
+        claim: undefined,
+        keysToggle: false,
+        yearPages: false,
+      },
+    })
+  }
+  if (newest && prior && newestLast && overlay && prior.points.length >= 2) {
+    const tick = String(newestLast.tick)
+    const priorSame =
+      prior.points.find((point) => String(point.tick) === tick) ?? lastPoint(prior)
+    if (priorSame) {
+      pages.push({
+        key: `compare-${String(newest.name)}-${String(prior.name)}`,
+        claim: `${tick} ${String(newest.name)} median sale ${String(newestLast.label)}; ${String(prior.name)} was ${String(priorSame.label)}`,
+        figure: String(newestLast.label),
+        figureLabel: `${String(newest.name)} vs ${String(prior.name)}`,
+        pill: 'Same month, two years',
+        chart: {
+          ...overlay,
+          id: 'market-insights-compare',
+          caption: v3Text(
+            `Median sale price by month, ${String(prior.name)} and ${String(newest.name)}`,
+          ),
+          series: [prior, newest],
+          claim: undefined,
+          keysToggle: true,
+          yearPages: false,
+        },
+      })
+    }
+  }
+  const medianList = hud.medianList != null && hud.medianList > 0 ? hud.medianList : null
+  const pending = hud.pending != null && hud.pending > 0 ? hud.pending : null
+  if (medianList != null) {
+    pages.push({
+      key: 'ask',
+      claim:
+        pending != null
+          ? 'What sellers are asking right now, and how many homes are already under contract.'
+          : 'What sellers are asking right now across Central Oregon single-family listings.',
+      figure: formatPriceExact(medianList),
+      figureLabel: 'median list price',
+      secondFigure: pending != null ? pending.toLocaleString('en-US') : undefined,
+      secondLabel: pending != null ? 'under contract now' : undefined,
+      pill: 'See homes for sale',
+      pillHref: listingsBrowsePath(),
+    })
+  }
+  return pages
+}
 
 /** Pipeline words a visitor must never see on this route (SITE-88). */
 export const REGION_JARGON_RE =

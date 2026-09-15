@@ -237,9 +237,6 @@ export function V3ChartHover({
 
   const col = active != null ? columns[active] ?? null : null
   const pos = col ? `${Math.min(Math.max(col.frac * 100, 0), 100)}%` : undefined
-  // Only the horizontal tip needs flipping; a row tip spans the plot's width
-  // and has no edge to fall off.
-  const flip = col ? !vertical && col.frac > 0.62 : false
   // A row chart's tick IS the series name, so repeating it would read
   // "Madras: Madras 5.9 mo".
   const reading = col
@@ -253,7 +250,9 @@ export function V3ChartHover({
     !vertical && columns.length > 1 ? (
       <label className="v3-chart__scrub">
         <span className="v3-chart__scrub-label">
-          {col ? col.tick : columns[scrubValue]?.tick ?? 'Month'}
+          {col
+            ? reading
+            : columns[scrubValue]?.tick ?? 'Month'}
         </span>
         <input
           type="range"
@@ -321,30 +320,11 @@ export function V3ChartHover({
             active and the live region below carries the full reading, note
             and all, for a reader who cannot see the highlight.
           */}
-          {vertical ? null : (
-          <div
-            className={cn(
-              'v3-chart__tip',
-              flip && 'v3-chart__tip--flip',
-              rest != null && active === rest && 'v3-chart__tip--resting',
-            )}
-            style={{ left: pos }}
-            aria-hidden="true"
-          >
-            <p className="v3-chart__tip-tick">{col.tick}</p>
-            <dl className="v3-chart__tip-list">
-              {col.readings.map((r, ri) => (
-                <div
-                  key={`${ri}-${r.name}-${r.label}`}
-                  className={cn('v3-chart__tip-row', r.emphasis && 'v3-chart__tip-row--em')}
-                >
-                  {r.name ? <dt>{r.name}</dt> : null}
-                  <dd>{r.label}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-          )}
+          {/*
+            NO FLOATING TIP ON THE PLOT (house-chart). A cream box parked on
+            the series covers the neighboring marks it should compare. The
+            scrubber label and the live region below carry the reading.
+          */}
         </>
       ) : null}
       <p id={`${uid}-live`} className="v3-chart__live" aria-live="polite">

@@ -118,8 +118,8 @@
     },
     "beui-number": {
       "add": "@beui/number",
-      "file": "components/motion/number.tsx",
-      "import": "@/components/motion/number",
+      "file": "components/motion/digit-swap.tsx",
+      "import": "@/components/motion/digit-swap",
       "house": "components/site/v3/V3Number.client.tsx"
     },
     "beui:number": {
@@ -133,8 +133,8 @@
     },
     "beautifului-insight": {
       "add": "https://www.beautifului.dev/r/insight-cards.json",
-      "file": "components/motion/insight-pager.tsx",
-      "import": "@/components/motion/insight-pager",
+      "file": "components/motion/insight-cards.tsx",
+      "import": "@/components/motion/insight-cards",
       "house": "components/site/v3/V3Chart.tsx"
     },
     "beautifului:insight": {
@@ -2943,7 +2943,7 @@
         }
       ],
       "demoStates": [
-        "year-open=#market-chart .insight-pager__btn[aria-label^=\"Next\"]!click",
+        "year-open=#market-insights .insight-pager__btn[aria-label^=\"Next\"]!click",
         "source-open=#central-oregon-mos .v3-mos__barrow!hover"
       ]
     },

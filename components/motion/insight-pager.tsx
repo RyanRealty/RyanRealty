@@ -12,17 +12,26 @@ import { cn } from '@/lib/utils'
 import './insight-pager.css'
 
 export type InsightPagerProps = {
-  /** Section label, e.g. "Year". */
+  /** Section label, e.g. "Insights". */
   title: string
-  /** Page labels in order (year names). */
+  /** Page labels in order. */
   pages: readonly string[]
   /** Active page index. */
   page: number
   onPage: (index: number) => void
+  /** When false, the face is title + total (InsightCards). */
+  showCurrent?: boolean
   className?: string
 }
 
-export function InsightPager({ title, pages, page, onPage, className }: InsightPagerProps) {
+export function InsightPager({
+  title,
+  pages,
+  page,
+  onPage,
+  showCurrent = true,
+  className,
+}: InsightPagerProps) {
   if (pages.length < 2) return null
   const safe = Math.max(0, Math.min(pages.length - 1, page))
   const move = (direction: -1 | 1) => {
@@ -33,9 +42,11 @@ export function InsightPager({ title, pages, page, onPage, className }: InsightP
     <div className={cn('insight-pager', className)} role="group" aria-label={`${title} pages`}>
       <span className="insight-pager__face">
         <span className="insight-pager__title">{title}</span>
-        <span className="insight-pager__current tabular-nums">{pages[safe]}</span>
+        {showCurrent ? (
+          <span className="insight-pager__current tabular-nums">{pages[safe]}</span>
+        ) : null}
         <span className="insight-pager__count tabular-nums">
-          {safe + 1}/{pages.length}
+          {showCurrent ? `${safe + 1}/${pages.length}` : String(pages.length)}
         </span>
       </span>
       <span className="insight-pager__controls">

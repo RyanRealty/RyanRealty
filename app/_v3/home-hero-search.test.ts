@@ -79,7 +79,7 @@ describe('homepage hero search uses the public search stack', () => {
       "from '@/components/ui/carousel'",
     )
     expect(readFileSync(resolve('components/site/v3/V3Number.client.tsx'), 'utf8')).toContain(
-      "from '@/components/motion/number'",
+      "from '@/components/motion/digit-swap'",
     )
     expect(RAIL_CLIENT).toContain("from '@/components/ui/carousel'")
     expect(RAIL_CLIENT).toContain('CarouselPrevious')

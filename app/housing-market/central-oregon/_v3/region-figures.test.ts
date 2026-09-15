@@ -5,8 +5,10 @@ import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { MOS_METHODOLOGY_CLAUSE } from '@/lib/market/classify'
 import { REGION_CITIES_SOURCE, REGION_FOLD_LABEL, REGION_MARKET_FOLD_LABEL } from './region-constants'
 import { marketReportHereBody } from '@/lib/market/report-doors'
+import { v3Text } from '@/components/site/v3'
 import {
   REGION_JARGON_RE,
+  buildRegionInsightPages,
   buildRegionInstruments,
   buildRegionMosChart,
   composeRegionLiveTrace,
@@ -77,8 +79,38 @@ describe('SITE-88 visitor-facing region traces', () => {
 
   it('the route _v3 set imports the catalog specifiers Tip Ready requires', () => {
     const catalog = readFileSync(resolve(__dirname, 'region-catalog.ts'), 'utf8')
-    expect(catalog).toContain("from '@/components/motion/insight-pager'")
-    expect(catalog).toContain("from '@/components/motion/number'")
+    expect(catalog).toContain("from '@/components/motion/insight-cards'")
+    expect(catalog).toContain("from '@/components/motion/digit-swap'")
+  })
+
+  it('insight pages are distinct jobs, not a year switcher of one series', () => {
+    const overlay = {
+      caption: v3Text('Median sale price by month, recent years'),
+      series: [
+        {
+          name: v3Text('2024'),
+          points: [
+            { value: 610000, tick: v3Text('Jan'), label: v3Text('$610K'), at: 1 },
+            { value: 602000, tick: v3Text('Aug'), label: v3Text('$602K'), at: 8 },
+          ],
+        },
+        {
+          name: v3Text('2026'),
+          points: [
+            { value: 650000, tick: v3Text('Jan'), label: v3Text('$650K'), at: 1 },
+            { value: 664000, tick: v3Text('Aug'), label: v3Text('$664K'), at: 8 },
+          ],
+        },
+      ],
+    }
+    const pages = buildRegionInsightPages(overlay, HUD)
+    expect(pages.map((page) => page.key)).toEqual(['sale-2026', 'compare-2026-2024', 'ask'])
+    expect(pages[0]?.claim).toContain('2026 median sale')
+    expect(pages[1]?.claim).toContain('2024')
+    expect(pages[1]?.chart?.series).toHaveLength(2)
+    expect(pages[2]?.figure).toContain('939')
+    expect(pages[2]?.secondFigure).toBe('293')
+    expect(pages.some((page) => /YEAR/.test(page.claim))).toBe(false)
   })
 })
 

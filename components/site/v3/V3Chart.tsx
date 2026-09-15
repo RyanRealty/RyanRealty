@@ -35,6 +35,7 @@ import {
   type PlotSeriesIn,
   type RangeBandIn,
 } from '@/lib/charts/plot'
+import { InsightCards } from '@/components/motion/insight-cards'
 import { InsightPager } from '@/components/motion/insight-pager'
 import { V3ChartHover, type V3ChartHoverColumn } from './V3ChartHover.client'
 import { V3_ROOT_CLASS, type V3Text } from './atoms'
@@ -42,7 +43,7 @@ import './tokens.css'
 import './V3Chart.css'
 
 export type { InsightPagerProps } from '@/components/motion/insight-pager'
-export { InsightPager }
+export { InsightCards, InsightPager }
 
 export type V3ChartPoint = {
   value: number

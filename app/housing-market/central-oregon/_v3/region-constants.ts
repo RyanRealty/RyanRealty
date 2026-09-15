@@ -77,25 +77,24 @@ export const REGION_FOLD_LABEL =
   'Supply by property type, and how fast homes are selling'
 
 /**
- * What the opening Instrument disclosure reveals (SITE-103). MOS bars and
- * the year overlay own the first viewport. Live list and under-contract
- * sit behind this editorial line — never "All 42 figures".
+ * What a remaining fold would reveal. Live list and under-contract now sit
+ * on the InsightCards ask page as DigitSwap figures — never "All 42 figures".
  */
 export const REGION_MARKET_FOLD_LABEL = 'Live list price and homes under contract'
 
 /**
- * Opening lead count (SITE-103). Zero: the drawing is the answer, so every
- * live figure folds. V3Instrument still requires foldAfter={REGION_LEAD_FIGURES}
+ * Opening lead count (SITE-103). Two: median list and under-contract stay
+ * on screen as DigitSwap faces. V3Instrument requires foldAfter={REGION_LEAD_FIGURES}
  * (not a raw 0) so the fold-after gate can see the named cap.
  */
-export const REGION_LEAD_FIGURES = 0
+export const REGION_LEAD_FIGURES = 2
 
 /**
  * Cities Ledger trace. Visitor English — no MarketPulse / leftover membership.
- * Covers the count, median list, and months of supply the row actually prints.
+ * Rows print count and median list only. MOS lives on the region two-bar drawing.
  */
 export const REGION_CITIES_SOURCE =
-  'Oregon Data Share, one row per city. Count and median list are active single-family houses; months of supply uses the same listings'
+  'Oregon Data Share, one row per city. Count and median list are active single-family houses.'
 
 /**
  * What the supply verdict means to someone deciding to buy or sell, one sentence

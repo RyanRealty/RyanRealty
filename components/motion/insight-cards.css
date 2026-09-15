@@ -1,0 +1,48 @@
+/* Structure. House tokens paint this from V3Chart / region-market. */
+
+.insight-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.insight-cards__claim {
+  margin: 0;
+  max-width: 40rem;
+}
+
+.insight-cards__figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+}
+
+.insight-cards__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.insight-cards__hero-value {
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.insight-cards__hero-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.insight-cards__visual {
+  min-width: 0;
+  width: 100%;
+}
+
+.insight-cards__pill {
+  margin: 0;
+}

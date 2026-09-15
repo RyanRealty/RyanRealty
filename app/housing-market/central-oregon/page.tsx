@@ -130,7 +130,7 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { RegionInquirySheet } from './_v3/RegionInquirySheet.client'
-import { RegionCityMos } from './_v3/RegionCityMos.client'
+import { RegionInsightCards } from './_v3/RegionInsightCards.client'
 import './_v3/region-market.css'
 import {
   CLOSED_SALES_FROM_YEAR,
@@ -143,6 +143,7 @@ import {
   REGION_MARKET_FOLD_LABEL,
 } from './_v3/region-constants'
 import {
+  buildRegionInsightPages,
   buildRegionInstruments,
   buildRegionLead,
   buildRegionPlaceMos,
@@ -250,9 +251,7 @@ export default async function CentralOregonRegionPage() {
     dropInProgressMonth(priceHistory, currentMonthKey),
   )
   const regionChart = buildRegionMedianChart(chartMonths.months, chartMonths.leftoverUsed)
-  // SITE-88: year isolate lives on THIS route's opening chart only. Do not put
-  // yearPages on YEAR_OVERLAY_READING — that object is shared with city detail
-  // and the annual review.
+  const insightPages = buildRegionInsightPages(regionChart, hud)
   // Two market-truth rows feed this section's figures. One stamp only when
   // both rows carry one clock; a mismatch withholds the stamp rather than
   // aging the fresher row (publishInstrumentStamp contract).
@@ -265,8 +264,6 @@ export default async function CentralOregonRegionPage() {
     mosText,
     leftoverStamp ? formatDate(leftoverStamp) : null,
   )
-  const openingChart = regionChart ? { ...regionChart, yearPages: true } : regionChart
-
   // buildMarketFaq - the single source for the visible FAQ, the FAQPage JSON-LD, and
   // the Dataset variableMeasured. The pulse-or-fallback input is the timeout fallback
   // the page contract requires (G52): the structured data survives a slow or missing
@@ -473,9 +470,9 @@ export default async function CentralOregonRegionPage() {
                 : `A ${verdict.label}`,
             )}
             figures={[firstLiveFigure, ...restLiveFigures]}
-            /* THE OPENING IS A CLAIM AND A DRAWING (SITE-103). MOS + the year
-               overlay own the fold. Live list and under-contract sit behind an
-               editorial disclosure — never "All 42 figures". */
+            /* THE OPENING IS A CLAIM AND A DRAWING (SITE-103). MOS + InsightCards.
+               Live list / under-contract DigitSwap on the instrument and on the
+               ask insight page — never "All 42 figures". */
             chartFirst
             foldAfter={REGION_LEAD_FIGURES}
             foldLabel={v3Text(REGION_MARKET_FOLD_LABEL)}
@@ -484,26 +481,30 @@ export default async function CentralOregonRegionPage() {
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
             asOf={refreshedAt ?? undefined}
             action={{ label: v3Text('Ask about Central Oregon'), href: '#ask' }}
-            chart={openingChart}
             drawing={
-              regionMos ? (
-                <V3MosBars
-                  id="central-oregon-mos"
-                  className="region-market-mos"
-                  caption={regionMos.caption}
-                  plainLabel={regionMos.plainLabel}
-                  homesName={regionMos.homesName}
-                  homesLabel={regionMos.homesLabel}
-                  homesValue={regionMos.homesValue}
-                  salesName={regionMos.salesName}
-                  salesLabel={regionMos.salesLabel}
-                  salesValue={regionMos.salesValue}
-                  source={regionMos.source}
-                  asOf={regionMos.asOf}
-                  sourceName="Oregon Data Share MLS"
-                  tooltip={regionMos.tooltip}
-                />
-              ) : null
+              <div className="region-insight-stage">
+                {regionMos ? (
+                  <V3MosBars
+                    id="central-oregon-mos"
+                    className="region-market-mos"
+                    caption={regionMos.caption}
+                    plainLabel={regionMos.plainLabel}
+                    homesName={regionMos.homesName}
+                    homesLabel={regionMos.homesLabel}
+                    homesValue={regionMos.homesValue}
+                    salesName={regionMos.salesName}
+                    salesLabel={regionMos.salesLabel}
+                    salesValue={regionMos.salesValue}
+                    source={regionMos.source}
+                    asOf={regionMos.asOf}
+                    sourceName="Oregon Data Share MLS"
+                    tooltip={regionMos.tooltip}
+                  />
+                ) : null}
+                {insightPages.length >= 2 ? (
+                  <RegionInsightCards pages={insightPages} />
+                ) : null}
+              </div>
             }
           />
         ) : (
@@ -533,9 +534,6 @@ export default async function CentralOregonRegionPage() {
             source={v3Text(REGION_CITIES_SOURCE)}
             updated={cityLedger.stamp ? v3Text(formatDate(cityLedger.stamp)) : undefined}
             action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
-            drawing={
-              cityLedger.mos.length > 0 ? <RegionCityMos cities={cityLedger.mos} /> : null
-            }
           />
         ) : (
           <V3Ledger

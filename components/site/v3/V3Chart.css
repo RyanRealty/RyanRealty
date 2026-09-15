@@ -861,6 +861,7 @@
   color: var(--v3-ink-muted);
   font-variant-numeric: tabular-nums;
   min-width: 4.5ch;
+  max-width: 22rem;
 }
 
 .v3 .v3-chart__scrub-input {
