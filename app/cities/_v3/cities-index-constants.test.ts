@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { indexBarWeight, isCitiesIndexResortSlug, liveForSaleLabel } from './cities-index-constants'
+import {
+  CITIES_ATLAS_LABEL_SLUGS,
+  indexBarWeight,
+  isCitiesIndexResortSlug,
+  liveForSaleLabel,
+} from './cities-index-constants'
 
 describe('indexBarWeight', () => {
   it('is the row share of the largest count', () => {
@@ -21,6 +26,16 @@ describe('isCitiesIndexResortSlug', () => {
     expect(isCitiesIndexResortSlug('camp-sherman')).toBe(true)
     expect(isCitiesIndexResortSlug('bend')).toBe(false)
     expect(isCitiesIndexResortSlug('sunriver')).toBe(false)
+  })
+})
+
+describe('CITIES_ATLAS_LABEL_SLUGS', () => {
+  it('labels the readable basin cities and skips the colliding cluster', () => {
+    expect(CITIES_ATLAS_LABEL_SLUGS).toContain('sisters')
+    expect(CITIES_ATLAS_LABEL_SLUGS).toContain('redmond')
+    expect(CITIES_ATLAS_LABEL_SLUGS).not.toContain('terrebonne')
+    expect(CITIES_ATLAS_LABEL_SLUGS).not.toContain('tumalo')
+    expect(CITIES_ATLAS_LABEL_SLUGS).not.toContain('powell-butte')
   })
 })
 

@@ -138,6 +138,8 @@ export type AtlasRegion = {
   name: string
   href: string
   geometry: GeoJSON.Geometry
+  /** Skip the packed map label when true is not set and false is passed. */
+  showLabel?: boolean
 }
 
 export type AtlasType = { key: string; label: string }
@@ -1087,7 +1089,7 @@ export function V3Atlas({
       }
     }
     for (const s of towns) {
-      if (!s.anchor || isFrame(s) || s.id === active) continue
+      if (!s.anchor || isFrame(s) || s.id === active || s.showLabel === false) continue
       const text = shortPlaceLabel(s.name)
       const [x, y] = screenOf(s.anchor[0], s.anchor[1])
       candidates.push({

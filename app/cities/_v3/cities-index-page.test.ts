@@ -25,6 +25,7 @@ describe('cities index SITE-92', () => {
     expect(PAGE).toMatch(/id="cities-fold"/)
     expect(PAGE).toMatch(/isCitiesIndexResortSlug/)
     expect(PAGE).toMatch(/id="resort-places"/)
+    expect(PAGE).toMatch(/CITIES_ATLAS_LABEL_SLUGS/)
     expect(PAGE).not.toMatch(/snapshotActive:/)
     expect(PAGE).not.toMatch(/<V3Drawing/)
     expect(PAGE).not.toMatch(/leftover homes for sale in Central Oregon/)

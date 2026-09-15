@@ -28,6 +28,17 @@ export const FEATURED_CITY_SLUGS = [
   'culver',
 ] as const
 
+/** Map labels only — skip the tight Terrebonne / Tumalo / ranch cluster. */
+export const CITIES_ATLAS_LABEL_SLUGS = [
+  'bend',
+  'redmond',
+  'sisters',
+  'sunriver',
+  'la-pine',
+  'prineville',
+  'madras',
+] as const
+
 export const FEATURED_PULSE_LABELS = [
   'Bend',
   'Redmond',

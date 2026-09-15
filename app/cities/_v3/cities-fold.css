@@ -1,34 +1,28 @@
 /* SITE-92 cities directory first viewport: Atlas + MOS/combobox + InsightCards
-   + house-alerts. Page-local. Tokens only. Drawing opens the page. */
+   + house-alerts + A–Z ledger. Page-local. Tokens only. H1 and city rows
+   open the page so the rest fold is honest. */
 
 .cities-fold {
   width: 100%;
-  margin: 0 0 var(--v3-space-md);
+  margin: 0 0 var(--v3-space-sm);
 }
 
-/* Atlas and the figure sit above the H1 so the first viewport is a drawing
-   beside alerts, not a MOS lecture under a title. */
+#featured-cities.v3.v3-ledger {
+  max-width: min(72rem, 100%);
+  padding-top: var(--v3-space-md);
+}
+
 #featured-cities .v3-ledger__head {
   display: flex;
   flex-direction: column;
   gap: var(--v3-space-xs);
-}
-
-#featured-cities .v3-ledger__drawing {
-  order: -1;
+  margin-bottom: var(--v3-space-sm);
 }
 
 .cities-fold__stage {
   display: grid;
   gap: var(--v3-space-sm);
   align-items: start;
-}
-
-@media (min-width: 64rem) {
-  .cities-fold__stage {
-    grid-template-columns: minmax(0, 1.2fr) minmax(22rem, 1fr);
-    column-gap: var(--v3-space-md);
-  }
 }
 
 .cities-fold__drawing {
@@ -49,20 +43,18 @@
 }
 
 .cities-fold__drawing .v3-atlas__frame {
-  max-height: min(56vh, 28rem);
-  overflow: hidden;
+  max-height: min(34vh, 18rem);
+  overflow: visible;
+  padding: 0.85rem 1.4rem 1.5rem;
 }
 
 .cities-fold__drawing .v3-atlas__stage {
   min-height: 0;
   max-height: 100%;
-  height: min(56vh, 28rem);
+  height: min(34vh, 18rem);
 }
 
 @media (max-width: 63.99rem) {
-  /* Atlas + MOS/alerts share the first viewport. Masonry then Insights
-     follow. display:contents lets order pull the figure under the map
-     so house-alerts is not below the fold. MOS bars stay off the map. */
   .cities-fold {
     display: flex;
     flex-direction: column;
@@ -90,12 +82,13 @@
   }
 
   .cities-fold__drawing .v3-atlas__frame {
-    max-height: min(42vh, 16rem);
-    overflow: hidden;
+    max-height: min(28vh, 14rem);
+    overflow: visible;
+    padding: 0.65rem 1rem 1.15rem;
   }
 
   .cities-fold__drawing .v3-atlas__stage {
-    height: min(42vh, 16rem);
+    height: min(28vh, 14rem);
   }
 
   .cities-fold__drawing .v3-atlas__claim {
@@ -121,6 +114,13 @@
   gap: var(--v3-space-sm);
 }
 
+@media (min-width: 64rem) {
+  .cities-fold__figure {
+    grid-template-columns: minmax(16rem, 1fr) minmax(20rem, 1fr);
+    align-items: end;
+  }
+}
+
 .cities-fold .v3-mos .v3-source,
 .cities-fold .v3-mos__tip,
 .cities-fold .v3-source,
@@ -141,6 +141,7 @@
 
 .cities-fold .v3-mos-compare {
   margin: 0;
+  max-width: none;
 }
 
 .cities-fold .v3-alerts {
@@ -185,6 +186,16 @@
   font-size: var(--v3-size-note);
 }
 
+.cities-fold .v3-alerts__row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.cities-fold .v3.v3-alerts .v3-alerts__row .v3-btn {
+  width: auto;
+  white-space: nowrap;
+}
+
 .cities-fold__count {
   margin: 0;
   color: var(--v3-ink);
@@ -202,18 +213,19 @@
 }
 
 .cities-masonry__feed {
-  height: min(36vh, 20rem);
-  max-height: min(36vh, 20rem);
+  height: min(42vh, 22rem);
+  max-height: min(42vh, 22rem);
   background: var(--v3-cream);
   border-color: color-mix(in srgb, var(--v3-navy) 16%, var(--v3-cream));
   color: var(--v3-navy);
 }
 
 .cities-masonry__card {
+  position: relative;
   display: block;
   overflow: hidden;
   background: var(--v3-cream);
-  color: var(--v3-navy);
+  color: var(--v3-cream);
   text-decoration: none;
   border: 1px solid color-mix(in srgb, var(--v3-navy) 16%, var(--v3-cream));
 }
@@ -221,14 +233,17 @@
 .cities-masonry__photo {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 5;
   object-fit: cover;
 }
 
 .cities-masonry__meta {
+  position: absolute;
+  inset: auto 0 0;
   display: grid;
-  gap: 0.15rem;
-  padding: var(--v3-space-xs);
+  gap: 0.1rem;
+  padding: 0.55rem 0.65rem 0.5rem;
+  background: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+  color: var(--v3-cream);
 }
 
 .cities-masonry__name {
@@ -240,13 +255,13 @@
 .cities-masonry__count {
   font-size: var(--v3-size-note);
   line-height: var(--v3-leading-note);
-  color: var(--v3-ink);
+  color: color-mix(in srgb, var(--v3-cream) 86%, var(--v3-navy));
 }
 
 @media (max-width: 63.99rem) {
   .cities-masonry__feed {
-    height: min(28vh, 14rem);
-    max-height: min(28vh, 14rem);
+    height: min(34vh, 16rem);
+    max-height: min(34vh, 16rem);
   }
 }
 
@@ -265,5 +280,5 @@
 }
 
 .cities-insight .insight-chart-stage {
-  min-height: 10.375rem;
+  min-height: 8.5rem;
 }

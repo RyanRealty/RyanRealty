@@ -32,7 +32,13 @@ export function asCityGeometry(value: unknown): GeoJSON.Geometry | null {
 
 export function cityAtlasRegions(
   rows: ReadonlyArray<{ slug: string; name: string; geometry: unknown }>,
+  labeledSlugs?: ReadonlySet<string> | readonly string[],
 ): AtlasRegion[] {
+  const labeled = labeledSlugs
+    ? labeledSlugs instanceof Set
+      ? labeledSlugs
+      : new Set(labeledSlugs)
+    : null
   const out: AtlasRegion[] = []
   for (const row of rows) {
     const geometry = asCityGeometry(row.geometry)
@@ -44,6 +50,7 @@ export function cityAtlasRegions(
       name: row.name,
       href: `/cities/${row.slug}`,
       geometry,
+      showLabel: labeled ? labeled.has(row.slug) : true,
     })
   }
   return out

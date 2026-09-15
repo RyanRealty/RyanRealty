@@ -132,7 +132,7 @@
 
 .v3-mos-compare__combo-root {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: var(--v3-space-2xs);
 }

@@ -23,15 +23,19 @@ describe('cities-catalog SITE-92', () => {
     expect(css).toMatch(/\.cities-fold \.v3-mos__plain/)
     expect(css).not.toMatch(/max-height: min\(12vh, 4\.75rem\)/)
     expect(css).not.toMatch(/min\(28vh, 8\.5rem\)/)
-    expect(css).toMatch(/min\(56vh, 28rem\)/)
+    expect(css).toMatch(/min\(34vh, 18rem\)/)
     expect(css).toMatch(/\.cities-fold__drawing \.v3-atlas__stage/)
-    expect(css).toMatch(/overflow: hidden/)
+    expect(css).toMatch(/overflow: visible/)
+    expect(css).toMatch(/\.cities-fold \.v3-alerts__row/)
+    expect(css).toMatch(/grid-template-columns: minmax\(0, 1fr\) auto/)
+    expect(css).not.toMatch(/order: -1/)
   })
 
-  it('installs catalog InsightCards pages as a year scrubber, not a clock axis', () => {
+  it('installs catalog InsightCards as one Allocation + Liveline object', () => {
     const src = readFileSync(new URL('./CitiesInsight.client.tsx', import.meta.url), 'utf8')
     expect(src).toMatch(/<AllocationCard /)
     expect(src).toMatch(/<CompareCard/)
+    expect(src).toMatch(/hideLegend/)
     expect(src).toMatch(/windowSecs=\{YEAR_WINDOW_SECS\}/)
     expect(src).toMatch(/formatTime=\{formatCloseYear\}/)
     expect(src).toMatch(/monthLabels=\{monthLabels\}/)
@@ -39,7 +43,6 @@ describe('cities-catalog SITE-92', () => {
     expect(src).not.toMatch(/Scrub the year of closes/)
     expect(src).not.toMatch(/AllocationAndLiveline/)
     expect(src).not.toMatch(/data-insight-combo/)
-    expect(src).not.toMatch(/hideLegend/)
   })
 
   it('installs catalog InfiniteMasonry for featured city photographs', () => {
@@ -47,7 +50,24 @@ describe('cities-catalog SITE-92', () => {
     expect(src).toMatch(/from ['"]@\/components\/motion\/infinite-masonry['"]/)
     expect(src).toMatch(/<InfiniteMasonry/)
     expect(src).toMatch(/onLoadMore/)
+    expect(src).toMatch(/CASCADE_HEIGHTS/)
+    expect(src).toMatch(/cities-masonry__name/)
+    expect(src).toMatch(/cities-masonry__count/)
     expect(src).not.toMatch(/320x240/)
+  })
+
+  it('keeps combobox field chrome at rest, not an icon-only circle', () => {
+    const src = readFileSync(
+      new URL('../../../components/motion/combobox/trigger.tsx', import.meta.url),
+      'utf8',
+    )
+    expect(src).toMatch(/min-w-52/)
+    expect(src).toMatch(/ChevronsUpDown/)
+    expect(src).toMatch(/WARM_STONE_FOCUS/)
+    expect(src).toMatch(/COMBOBOX_TRIGGER_MORPH/)
+    expect(src).not.toMatch(/width: context.open \? "100%" : "3rem"/)
+    expect(src).not.toMatch(/opacity-0/)
+    expect(src).not.toMatch(/min-w-12/)
   })
 
   it('passes V3AlertsStrip the required stickyLabel', () => {

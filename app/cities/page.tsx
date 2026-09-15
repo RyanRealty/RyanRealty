@@ -14,9 +14,10 @@
  * count no source published says so instead of "None listed now".
  *
  * SITE-69 / SITE-92: V3MosCompare is two named MOS bars plus beui:combobox
- * (icon morphs to the panel, list opens up off the H1). beautifului-insight
- * year scrubber, beui-infinite-masonry on featured photographs. Atlas + MOS
- * + alerts sit in the first viewport. Resort geos split out of the cities list.
+ * (field chrome at rest, list morphs off the H1). beautifului-insight is
+ * AllocationCard + Liveline as one object. beui-infinite-masonry cascade
+ * on featured photographs. Atlas + MOS + alerts + A–Z bars sit in the
+ * first viewport. Resort geos split out of the cities list.
  *
  * Parity contract: design_system/ryan-realty/ui_kits/cities/parity.json
  */
@@ -60,6 +61,7 @@ import {
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 import { cityFeaturedLinks } from '@/app/cities/CityFeaturedLinks'
 import {
+  CITIES_ATLAS_LABEL_SLUGS,
   CITY_SENTENCE_FALLBACK,
   FEATURED_CITY_SLUGS,
   NO_LIVE_COUNT_LABEL,
@@ -481,6 +483,7 @@ export default async function CitiesPage() {
       name: cityNameBySlug.get(row.slug) ?? row.name,
       geometry: row.geometry,
     })),
+    CITIES_ATLAS_LABEL_SLUGS,
   )
   const insightBoard = citiesInsightBoard({
     cities: directory.map((c) => ({ slug: c.slug, name: c.name, activeCount: c.activeCount })),

@@ -19,7 +19,9 @@ export type CitiesMasonryItem = {
   countLabel: string | null
 }
 
-const PAGE = 3
+const PAGE = 6
+const CASCADE_HEIGHTS = [280, 196, 248, 172, 232, 204] as const
+const CASCADE_RATIOS = ['4 / 5', '1 / 1', '3 / 4', '5 / 4', '5 / 6', '2 / 3'] as const
 
 export function CitiesMasonry({
   id,
@@ -42,11 +44,11 @@ export function CitiesMasonry({
       <InfiniteMasonry
         items={visible}
         getItemKey={(item) => item.slug}
-        renderItem={(item) => <CityMasonryCard item={item} />}
+        renderItem={(item, index) => <CityMasonryCard item={item} index={index} />}
         onLoadMore={onLoadMore}
         hasMore={hasMore}
-        estimateSize={() => 260}
-        minColumnWidth={148}
+        estimateSize={(_item, index) => CASCADE_HEIGHTS[index % CASCADE_HEIGHTS.length]!}
+        minColumnWidth={200}
         maxColumns={3}
         gap={12}
         ariaLabel="Featured city photographs"
@@ -56,7 +58,13 @@ export function CitiesMasonry({
   )
 }
 
-function CityMasonryCard({ item }: { item: CitiesMasonryItem }) {
+function CityMasonryCard({
+  item,
+  index,
+}: {
+  item: CitiesMasonryItem
+  index: number
+}) {
   return (
     <a className="cities-masonry__card" href={`/cities/${item.slug}`}>
       <img
@@ -65,6 +73,7 @@ function CityMasonryCard({ item }: { item: CitiesMasonryItem }) {
         alt=""
         width={720}
         height={900}
+        style={{ aspectRatio: CASCADE_RATIOS[index % CASCADE_RATIOS.length] }}
       />
       <span className="cities-masonry__meta">
         <span className="cities-masonry__name">{item.name}</span>
