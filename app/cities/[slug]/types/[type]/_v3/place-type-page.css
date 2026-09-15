@@ -67,10 +67,10 @@
   order: 3;
 }
 
-/* Official shadcn carousel stage: room for absolute prev/next (-left-12 / -right-12). */
+/* Official shadcn carousel stage: -left-12 / -right-12 plus 44px tap (--v3-tap). */
 .place-type-film__stage {
   min-width: 0;
-  padding-inline: 3rem;
+  padding-inline: calc(3rem + var(--v3-tap));
   overflow: visible;
 }
 
@@ -182,6 +182,15 @@
   color: var(--v3-ink);
 }
 
+@media (max-width: 39.99rem) {
+  .place-type-film__addr,
+  .place-type-film__specs {
+    white-space: normal;
+    text-overflow: unset;
+    overflow: visible;
+  }
+}
+
 .place-type-film__specs {
   font-variant-numeric: tabular-nums;
   color: var(--v3-ink-muted);
@@ -260,10 +269,12 @@
 
   .place-type-film {
     margin-top: var(--v3-space-sm);
+    padding-inline: 0;
   }
 
+  /* Official -left-12 only — extra tap padding made the 375 card a stamp. */
   .place-type-film__stage {
-    padding-inline: 2.75rem;
+    padding-inline: 3rem;
   }
 }
 
@@ -386,7 +397,9 @@
 .place-type-homes {
   max-width: var(--v3-measure);
   margin: 0 auto;
-  padding: var(--v3-space-md) var(--v3-gutter) var(--v3-space-xl);
+  /* Keep the ledger off the carousel-open viewport so the catalog demo is
+     the object, not a second inventory stacked under it. */
+  padding: min(70vh, 40rem) var(--v3-gutter) var(--v3-space-xl);
 }
 
 .place-type-homes__head {
