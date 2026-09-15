@@ -83,7 +83,7 @@ async function latestPriceDropsForKeys(
     .from('activity_events')
     .select('listing_key, event_at, payload')
     .eq('event_type', 'price_drop')
-    .in('listing_key', keys)
+    .in('listing_key', keys) // @canonical-key — keys come from listing_tile_mv ListingKey on the same card row
     .order('event_at', { ascending: false })
     .limit(Math.min(keys.length * 4, 500))
   if (error || !data) return out
