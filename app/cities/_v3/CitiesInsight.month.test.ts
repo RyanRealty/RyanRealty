@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatPublishedCloseMonth } from './CitiesInsight.client'
+import { formatPublishedCloseMonth } from './cities-insight-months'
 
 describe('formatPublishedCloseMonth', () => {
   it('labels each published month once — no duplicate May 2026', () => {

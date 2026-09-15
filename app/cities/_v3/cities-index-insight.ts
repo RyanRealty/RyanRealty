@@ -5,12 +5,12 @@
 
 import { formatCount } from '@/lib/format/count'
 import type { PublicMonthlyPoint } from '@/lib/data/market-truth/public-monthly'
-import {
-  formatPublishedCloseMonth,
-  type CitiesInsightBoard,
-  type CitiesInsightSegment,
-  type CitiesInsightSeries,
+import type {
+  CitiesInsightBoard,
+  CitiesInsightSegment,
+  CitiesInsightSeries,
 } from './CitiesInsight.client'
+import { formatPublishedCloseMonth } from './cities-insight-months'
 
 export type InsightCity = {
   slug: string

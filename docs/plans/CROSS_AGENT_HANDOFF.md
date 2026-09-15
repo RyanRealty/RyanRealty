@@ -1,10 +1,10 @@
-# Current — 2026-09-15 (SITE-92 cities tip, Mini-2 rework)
+# Current — 2026-09-15 (SITE-92 cities rematch after Mini-4)
 
 Surface: Cursor cloud tip worker on `cursor/site-92-cities-tip-35f7` PR #251. Claim `cursor-cloud-site92-20260915`. No merge. SITE-103/110 left alone.
 
-- **Done:** Mini-2 craft after tip `d444e1b61` failed `--ship` 1 (demoMatch omitted, score 44). Catalog InsightCards pages (AllocationCard / CompareCard, Liveline in-window), leftoverHud-only pile (1499/619), 375 atlas clipped so the map no longer covers Insights, combo-open list no longer covers the pager. Stale supply/reveal 1550/648 plates removed. `--ship` still exit 1 — demoMatch not invented.
+- **Done:** Mini-4 rematch after tip `6e9f668a4` (`demoMatch` false, score 53). Catalog combobox icon→panel morph + warm-stone focus; Liveline year scrubber track+handle with unique month labels; two named MOS bars (region vs overlay city); BBR + Camp Sherman split to a Resorts ledger. `--ship` still exit 1 — demoMatch not invented.
 - **Next:** Cos Mini `--ship`s. Do not merge. Do not invent demoMatch.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.cursor/skills/database-canonical-reference/SKILL.md`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `scripts/lib/taste-receipt.mjs --ship`.
 
 # Prior — 2026-09-15 (SITE-96 contact Tip Ready land)
 
