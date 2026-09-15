@@ -84,23 +84,17 @@ describe('investClaim', () => {
 })
 
 describe('investTrace', () => {
-  it('prints every count, the denominator, and the headline arithmetic', () => {
-    const trace = investTrace(investCounts(LIVE), 4)
+  it('prints every count, the lots-vs-buildings split, and the headline arithmetic', () => {
+    const trace = investTrace(investCounts(LIVE))
     expect(trace).toContain('land 605')
     expect(trace).toContain('business 8')
     expect(trace).toContain('761 listings in all')
+    expect(trace).toContain('lots 605 and buildings 156')
+    expect(trace).toContain('605 + 156 = 761')
     expect(trace).toContain('605 ÷ 761 = 79.5%')
-    expect(trace).toContain('central-oregon')
-  })
-
-  it('says which populations the band did not draw', () => {
-    const trace = investTrace(investCounts(LIVE), 4)
-    expect(trace).toContain('753 of 761')
-  })
-
-  it('says nothing about undrawn populations when every one is drawn', () => {
-    const trace = investTrace(investCounts([row('land', 605), row('farm', 41)]), 4)
-    expect(trace).not.toContain('the rest keep their own door')
+    expect(trace).toContain('Central Oregon')
+    expect(trace).not.toContain('Market Truth')
+    expect(trace).not.toContain('metric layer')
   })
 })
 
@@ -115,13 +109,11 @@ describe('composeInvestPulse', () => {
     )
   })
 
-  it('draws the four largest populations, largest first', () => {
-    expect(built?.readings.map((r) => r.key)).toEqual([
-      'land',
-      'commercial_sale',
-      'multifamily_2_4',
-      'farm',
-    ])
+  it('draws lots against buildings as the part-to-whole, not a four-type legend', () => {
+    expect(built?.readings.map((r) => r.key)).toEqual(['lots', 'buildings'])
+    expect(built?.readings.map((r) => r.figure)).toEqual(['605', '156'])
+    const shares = built?.readings.map((r) => r.share ?? 0) ?? []
+    expect(shares.reduce((sum, s) => sum + s, 0)).toBeCloseTo(1, 6)
   })
 
   it('formats each figure and shares it against the WHOLE set, not the largest', () => {
@@ -130,6 +122,13 @@ describe('composeInvestPulse', () => {
     expect(land?.label).toBe('lots')
     expect(land?.share).toBeCloseTo(605 / 761, 6)
     expect(land?.share).toBeLessThan(1)
+    expect(built?.readings[1]?.share).toBeCloseTo(156 / 761, 6)
+  })
+
+  it('keeps lots larger than buildings while the land-not-buildings claim publishes', () => {
+    expect(String(built?.claim)).toContain('land, not buildings')
+    expect(605).toBeGreaterThan(156)
+    expect(605 + 156).toBe(761)
   })
 
   it('gives every reading a definition and a door', () => {

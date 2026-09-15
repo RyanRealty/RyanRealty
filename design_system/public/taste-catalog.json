@@ -97,9 +97,10 @@
     "transitions:number-pop-in": { "aliasOf": "beui-number" },
     "beautifului-insight": {
       "add": "https://www.beautifului.dev/r/insight-cards.json",
-      "file": "components/motion/insight-pager.tsx",
-      "import": "@/components/motion/insight-pager",
-      "house": "components/site/v3/V3Chart.tsx"
+      "file": "components/motion/insight-cards.tsx",
+      "import": "@/components/motion/insight-cards",
+      "house": "app/invest/_v3/InvestInsight.client.tsx",
+      "mustContain": ["Previous insight", "Next insight", "Liveline", "AllocationCard"]
     },
     "beautifului:insight": { "aliasOf": "beautifului-insight" },
     "beautifului:insight-cards": { "aliasOf": "beautifului-insight" },
@@ -176,7 +177,14 @@
       "house": "components/site/listing-detail/ListingHero.tsx",
       "mustContain": ["PhotoSkeleton", "data-elapsed"]
     },
-    "beautifului:loading": { "aliasOf": "beautifului-loading" }
+    "beautifului:loading": { "aliasOf": "beautifului-loading" },
+    "shadcn-table": {
+      "add": "table",
+      "file": "components/ui/table.tsx",
+      "import": "@/components/ui/table",
+      "house": "app/invest/_v3/InvestTables.client.tsx"
+    },
+    "shadcn:table": { "aliasOf": "shadcn-table" }
   },
   "catalogs": [
     {
@@ -2621,6 +2629,10 @@
     },
     "invest": {
       "layoutLock": "The first viewport carries a drawn finding and a live count, not two memo paragraphs headed What this page is. No cash-flow or rent figure without a live source.",
+      "demoStates": [
+        "insight-open=#place-insight .insight-pager__btn[aria-label^='Next']!click",
+        "table-open=#searches-table [data-slot=table-row][data-invest-row]!click"
+      ],
       "modules": [
         {
           "id": "house-pulse",

@@ -1,0 +1,243 @@
+/* beautifului InsightCards — structure only. Paint is v3 tokens. */
+
+.insight-cards {
+  display: grid;
+  gap: var(--v3-space-md);
+}
+
+.insight-cards__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+}
+
+.insight-cards__face {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.insight-cards__title {
+  font-family: var(--v3-font-display);
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.insight-cards__count {
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink-muted);
+  font-size: 0.875rem;
+}
+
+.insight-cards__prose {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  font-size: 1.05rem;
+  line-height: 1.45;
+}
+
+.insight-cards__card {
+  display: grid;
+  gap: var(--v3-space-sm);
+  padding: var(--v3-space-md) 0 0;
+  border-top: var(--v3-rule-hairline);
+}
+
+.insight-cards__legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--v3-space-sm);
+}
+
+.insight-cards__series-name {
+  display: block;
+  color: var(--v3-ink-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.insight-cards__delta {
+  display: block;
+  font-family: var(--v3-font-display);
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.insight-cards__sub {
+  display: block;
+  color: var(--v3-ink-muted);
+  font-size: 0.875rem;
+}
+
+.insight-chart-stage {
+  position: relative;
+  height: 10.375rem;
+  overflow: visible;
+}
+
+.insight-tooltip {
+  position: absolute;
+  top: 0.35rem;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.75rem;
+  max-width: calc(100% - 0.5rem);
+  padding: 0.35rem 0.6rem;
+  transform: translateX(-50%);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  border: var(--v3-rule-hairline);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.insight-tooltip__row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.insight-tooltip__swatch {
+  width: 0.45rem;
+  height: 0.45rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.insight-tooltip__value {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+}
+
+.insight-cards__pill {
+  justify-self: start;
+  min-height: 2.75rem;
+  padding: 0 0.9rem;
+  border: var(--v3-rule-hairline);
+  border-radius: 999px;
+  background: var(--v3-surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.insight-cards__hero {
+  font-family: var(--v3-font-display);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.insight-cards__alloc-track {
+  display: flex;
+  height: 2.25rem;
+  gap: 0.125rem;
+  overflow: hidden;
+  padding: 0.125rem;
+  background: var(--v3-wash);
+}
+
+.insight-cards__alloc-seg {
+  position: relative;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  background: var(--v3-navy);
+  cursor: pointer;
+  opacity: 0.58;
+}
+
+.insight-cards__alloc-seg[aria-pressed='true'] {
+  opacity: 1;
+}
+
+.insight-cards__alloc-seg--1 {
+  background: color-mix(in srgb, var(--v3-navy) 78%, var(--v3-cream));
+}
+
+.insight-cards__alloc-seg--2 {
+  background: color-mix(in srgb, var(--v3-navy) 56%, var(--v3-cream));
+}
+
+.insight-cards__alloc-seg--3 {
+  background: color-mix(in srgb, var(--v3-navy) 38%, var(--v3-cream));
+}
+
+.insight-cards__alloc-seg--4 {
+  background: color-mix(in srgb, var(--v3-navy) 24%, var(--v3-cream));
+}
+
+.insight-cards__alloc-shine {
+  position: absolute;
+  inset: 0.25rem auto 0.25rem 0.25rem;
+  width: 0;
+  background: color-mix(in srgb, var(--v3-cream) 22%, transparent);
+  opacity: 0;
+}
+
+.insight-cards__alloc-seg[aria-pressed='true'] .insight-cards__alloc-shine {
+  width: calc(100% - 0.5rem);
+  opacity: 1;
+}
+
+.insight-cards__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.insight-cards__chip,
+.insight-cards__metric {
+  min-height: 2.25rem;
+  padding: 0 0.65rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--v3-ink-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.insight-cards__chip[aria-pressed='true'],
+.insight-cards__metric[aria-pressed='true'] {
+  background: var(--v3-wash);
+  color: var(--v3-ink);
+}
+
+.insight-cards__note {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: 0.875rem;
+}
+
+.insight-cards__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.v3.invest-insight {
+  padding: 0 0 clamp(2rem, 4vw, 2.75rem);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
+.invest-insight__inner {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: 0 var(--v3-gutter);
+}

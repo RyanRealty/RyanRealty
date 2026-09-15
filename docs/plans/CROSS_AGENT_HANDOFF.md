@@ -1,9 +1,8 @@
-# Current — 2026-09-14 (SITE-99 listing-detail Tip Ready landed on main)
+# Current — 2026-09-15 (SITE-98 /invest Mini 0c7efd619 recapture)
 
-Surface: Mini Cos land of PR #227 tip `6bbe80e8b` + Tip Ready receipt `045d6abb` → main.
+Surface: Cursor cloud on `cursor/invest-site98-0c50` PR #235. Do not merge.
 
-- **Done:** Re-ran `node scripts/lib/taste-receipt.mjs --ship design_system/ryan-realty/ui_kits/listing-detail/parity.json` on Mini at tip and on main after cherry-pick — exit 0 (`ship OK — demoMatch true · competitiveBriefPass true · open-state · catalog-install`). Score median 57 ignored per Cos north star (Tip Ready = --ship exit 0 only). Cherry-picked 10 commits onto main (9 product + Tip Ready receipt).
-- **Next:** `npm run push` / deploy verify. Mark SITE-99 done with Tip Ready evidence.
-- **Node:** SITE-99 Tip Ready → done after push.
-- Skills read: `.claude/skills/site-queue/SKILL.md`.
-
+- **Done:** Mini on tip `0c7efd619` wrote `demoMatch false`, score 46. Recapture: Allocation + Liveline on every InsightCards page (`hideLegend`), Pulse lots vs buildings (live 595+150=745), listings CAP=4 no TYPE. Income-only Liveline windows so buildings cannot read 602. Honest `demoMatch: false`. `--ship` exit 1.
+- **Next:** Mini re-judges these shots and writes `demoMatch true`. Then `--ship` exit 0. Leave SITE-98 `in_progress`.
+- **Node:** SITE-98 `6c2b8197-0b46-4215-8e43-749481794e9b` owner `cursor-cloud-site98-20260914`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`.
