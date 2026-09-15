@@ -1081,10 +1081,19 @@ async function main() {
             // The pointer rests on SEL and the shot records what that reveals.
             // The tool parks the pointer top-right before every plain shot
             // (Trap 13), so a reveal is only ever in a record that asked for it.
-            await page.hover(state.selector, { timeout: 5000 }).catch((err) => {
+            // Playwright hover scrolls SEL into view. That steals an ANCHOR
+            // frame (SITE-103 year-open: chart hover cropped DigitSwap off the
+            // insight card). force:true keeps the pointer on SEL without
+            // moving the page; re-apply the frame if one was named.
+            await page.hover(state.selector, { timeout: 5000, force: Boolean(state.anchor) }).catch((err) => {
               console.error(`  ${viewport.key}: state "${state.name}" — hover failed: ${err.message.split('\n')[0]}`)
               failed = true
             })
+            if (state.anchor) {
+              const framed = await measure(state.anchor)
+              if (framed) await wheelTo(page, Math.max(0, framed.top - framed.reserve))
+              await page.hover(state.selector, { timeout: 5000, force: true }).catch(() => {})
+            }
             await page.waitForTimeout(400)
           }
           if (state.type != null) {

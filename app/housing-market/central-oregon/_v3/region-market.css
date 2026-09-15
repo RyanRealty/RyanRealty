@@ -131,7 +131,8 @@
     gap: var(--v3-space-xs);
   }
 
-  #central-oregon-mos .v3-mos__plain {
+  #central-oregon-mos .v3-mos__plain,
+  #central-oregon-mos .v3-source {
     display: none;
   }
 
@@ -149,8 +150,26 @@
 
   #market-insights .v3-chart__plot,
   #market-insights .v3-chart__svg {
-    max-height: 7.25rem;
-    height: 7.25rem;
+    max-height: 6.25rem;
+    height: 6.25rem;
+  }
+
+  #market-insights .v3-chart__caption,
+  #market-insights .v3-chart__claim,
+  #market-insights .insight-cards__hero-label {
+    display: none;
+  }
+
+  #market .v3-instrument__action {
+    display: none;
+  }
+
+  #market-insights .insight-cards__claim {
+    font-size: var(--v3-size-body-sm);
+  }
+
+  #market-insights .digit-swap-replay {
+    gap: 0.25rem;
   }
 
   #market-insights .digit-swap-replay__btn {
