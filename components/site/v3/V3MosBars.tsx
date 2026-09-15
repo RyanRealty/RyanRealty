@@ -62,6 +62,7 @@ export function V3MosBars({
   const tipId = `${uid}-tip`
   const [open, setOpen] = useState(false)
   const [plays, setPlays] = useState(0)
+  const [revealed, setRevealed] = useState(true)
   const plot = useMemo(
     () =>
       buildPairPlot([
@@ -76,20 +77,29 @@ export function V3MosBars({
     setPlays((n) => n + 1)
   }, [])
   const hide = useCallback(() => setOpen(false), [])
-  const replayDigits = useCallback(() => setPlays((n) => n + 1), [])
+  const replayDigits = useCallback(() => {
+    setRevealed((current) => !current)
+    setPlays((n) => n + 1)
+  }, [])
 
   if (!plot) return null
 
   // Whole-number faces count up (beui-number / rareui); fractional sales stay static.
-  // `replay` is official DigitSwapPreview: Animate / hover flips animationKey so
-  // 1ch glyphs roll. Duration stays mid-swap at take-route-shots' 400ms hover wait.
+  // `replay` is official DigitSwapPreview: Animate / hover changes value AND
+  // animationKey so 1ch glyphs roll. Rest stays the live sourced label
+  // (Mini 52 forbade rest-mask). Duration stays mid-swap at the 400ms hover wait.
+  const rolling = open || !revealed
   const valueFace = (label: string, value: number) => {
     if (replay) {
+      const live = label
+      const plain = String(Math.round(value))
+      const swapValue = rolling ? (plain !== live ? plain : `\u2007${plain}`) : live
       return (
         <DigitSwap
-          value={label}
-          animationKey={`${id}-${label}-${open ? 'open' : 'rest'}-${plays}`}
-          duration={0.62}
+          value={swapValue}
+          animationKey={`${id}-${label}-${rolling ? 'open' : 'rest'}-${plays}`}
+          direction={rolling ? 'up' : 'down'}
+          duration={1.15}
           className="v3-mos__swap font-mono text-lg tracking-[0.08em] tabular-nums"
         />
       )
@@ -125,6 +135,7 @@ export function V3MosBars({
               type="button"
               className="v3-mos__barrow"
               aria-describedby={open ? tipId : undefined}
+              onMouseEnter={show}
               onFocus={show}
               onClick={show}
             >

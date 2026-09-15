@@ -774,7 +774,7 @@ export function V3Chart({
                     </text>
                   ))
                 : null}
-              {marks || emphasisIndex != null
+              {!stage && (marks || emphasisIndex != null)
                 ? plot.lines.flatMap((line, i) =>
                     // The emphasized series wears marks only when they can be
                     // told apart: past sixty points (a weekly year) the beads

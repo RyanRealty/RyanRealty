@@ -3,8 +3,8 @@
 /**
  * Region fold: official Insights Compare form. year-open is pointer hover
  * on the stage (ChartTooltip + series columns + Trend snapshot + Snapshot).
- * Not a house V3Chart pager. Next pages to AnomalyCard (Closings/Sale).
- * DigitSwap is official 1ch glyph slots. DigitSwapPreview replay lives on MOS.
+ * Prose stays outside the card. Not a cream .v3 Insights wrap. Next pages
+ * to AnomalyCard (Closings/Sale). DigitSwapPreview replay lives on MOS.
  */
 
 import Link from 'next/link'
@@ -12,7 +12,6 @@ import { useCallback, useState } from 'react'
 import { DigitSwap } from '@/components/motion/digit-swap'
 import { InsightCards } from '@/components/motion/insight-cards'
 import { V3Chart, type V3ChartRead } from '@/components/site/v3/V3Chart'
-import { V3_ROOT_CLASS } from '@/components/site/v3'
 import { cn } from '@/lib/utils'
 import {
   insightFaceForRead,
@@ -211,7 +210,7 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
   return (
     <InsightCards
       id="market-insights"
-      className={cn(V3_ROOT_CLASS, 'region-insights')}
+      className="region-insights"
       title="Insights"
       kind={current.kind}
       page={safe}

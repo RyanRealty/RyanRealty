@@ -2,7 +2,9 @@
 
 /**
  * beautifului InsightCards — official Insights card object.
- * Pager + prose + card (series rows, Snapshot, insight-chart-stage) + pill.
+ * Official Compare form: pager, prose outside the card, then Card
+ * (series columns, Trend snapshot, Snapshot, 166px stage, ChartTooltip)
+ * then pill. Claim never lives inside insight-cards__card.
  *
  * Source: https://www.beautifului.dev/r/insight-cards.json
  * Compare / Anomaly / Allocation pages. Chart stage is pointer-scrub, not a
@@ -118,8 +120,8 @@ export function InsightCards({
           </button>
         </span>
       </div>
+      <p className="insight-cards__claim">{claim}</p>
       <div className="insight-cards__card">
-        <p className="insight-cards__claim">{claim}</p>
         {figure ? (
           <div className="insight-cards__series">
             <p className="insight-cards__series-row">
@@ -158,8 +160,8 @@ export function InsightCards({
           </div>
         ) : null}
         {visual}
-        {pill ? <div className="insight-cards__pill">{pill}</div> : null}
       </div>
+      {pill ? <div className="insight-cards__pill">{pill}</div> : null}
     </div>
   )
 }

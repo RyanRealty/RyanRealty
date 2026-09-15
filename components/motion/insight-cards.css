@@ -142,6 +142,11 @@
 .insight-chart-stage .v3.v3-chart {
   height: 100%;
   margin: 0;
+  background: transparent;
+}
+
+.insight-chart-stage .v3-chart__mark {
+  display: none;
 }
 
 .insight-chart-stage .v3-chart__frame {
