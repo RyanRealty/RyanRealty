@@ -42,6 +42,25 @@ export function buildReviewsJsonLd(
         ],
       },
       {
+        '@type': 'WebPage',
+        '@id': `${siteUrl}/reviews#webpage`,
+        name: `${quotes.length} Google reviews of Ryan Realty`,
+        url: `${siteUrl}/reviews`,
+        description: `${quotes.length} verified Google reviews of Ryan Realty, each in full on this page.`,
+      },
+      {
+        '@type': 'ItemList',
+        '@id': `${siteUrl}/reviews#list`,
+        name: 'Google reviews of Ryan Realty',
+        numberOfItems: quotes.length,
+        itemListElement: quotes.map((t, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          name: t.author,
+          url: `${siteUrl}/reviews#reviews`,
+        })),
+      },
+      {
         '@type': 'RealEstateAgent',
         '@id': `${siteUrl}#organization`,
         name: 'Ryan Realty',

@@ -2855,6 +2855,9 @@
     },
     "reviews": {
       "layoutLock": "The page opens on the rating as V3Proof: stars, count, one client's words in full. Do not lead with a Quiet list of reach rows above the proof.",
+      "demoStates": [
+        "avatar-open=.v3-proof__avatar-btn!click"
+      ],
       "modules": [
         {
           "id": "house-proof",
