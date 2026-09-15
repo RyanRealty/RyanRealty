@@ -92,15 +92,12 @@ describe('SITE-88 visitor-facing region traces', () => {
     expect(cards).toContain('insight-cards__pager')
     expect(cards).toContain('insight-cards__card')
     expect(cards).toContain('id={id} className="insight-cards__card"')
-    expect(cards).toContain('v3-chart__hover')
     expect(cards).toContain('insight-cards__kinds')
+    expect(cards).toContain('data-insight-next')
+    expect(cards).not.toContain("index === nextKind && 'v3-chart__hover'")
     expect(cards.indexOf('insight-cards__figures')).toBeLessThan(
       cards.indexOf('insight-cards__kinds'),
     )
-    const css = readFileSync(resolve(__dirname, './region-market.css'), 'utf8')
-    expect(css).toContain('.insight-cards__kind.v3-chart__hover')
-    expect(css).toContain('position: relative')
-    expect(css).toContain('inset: auto')
     const swap = readFileSync(resolve(__dirname, '../../../../components/motion/digit-swap.tsx'), 'utf8')
     expect(swap).toContain('export function DigitSwap')
     expect(swap).toContain('data-slot="digit-swap-glyph"')
@@ -115,6 +112,7 @@ describe('SITE-88 visitor-facing region traces', () => {
     expect(client).toContain('Anomaly')
     expect(client).toContain('Allocation')
     expect(client).toContain('DigitSwap')
+    expect(client).not.toContain('hover={false}')
     expect(client).not.toContain('DigitSwapReplay')
     expect(client).not.toMatch(/\bAnimate\b/)
   })
@@ -139,8 +137,18 @@ describe('SITE-88 visitor-facing region traces', () => {
         },
       ],
     }
-    const pages = buildRegionInsightPages(overlay, HUD)
-    expect(pages.map((page) => page.key)).toEqual(['compare-2026-2024', 'pace', 'mix'])
+    const monthly = [
+      { periodStart: '2024-01-01', medianSalePrice: 610000, soldCount: 100 },
+      { periodStart: '2024-08-01', medianSalePrice: 602000, soldCount: 110 },
+      { periodStart: '2026-01-01', medianSalePrice: 650000, soldCount: 90 },
+      { periodStart: '2026-08-01', medianSalePrice: 664000, soldCount: 120 },
+    ]
+    const pages = buildRegionInsightPages(overlay, HUD, monthly)
+    expect(pages.map((page) => page.key)).toEqual([
+      'compare-2026-2024',
+      'anomaly-closed-2026',
+      'mix',
+    ])
     expect(pages.map((page) => page.kind)).toEqual(['compare', 'anomaly', 'allocation'])
     expect(pages[0]?.claim).toContain('2026')
     expect(pages[0]?.claim).toContain('2024')
@@ -148,14 +156,19 @@ describe('SITE-88 visitor-facing region traces', () => {
     expect(pages[0]?.figure).toContain('602')
     expect(pages[0]?.secondFigure).toContain('664')
     expect(pages[0]?.chart?.series).toHaveLength(2)
-    expect(pages[1]?.figure).toBe('24')
-    expect(pages[1]?.segments?.map((row) => row.key)).toEqual(['days', 'closed'])
+    expect(pages[1]?.figure).toBe('120')
+    expect(pages[1]?.chart).toBeTruthy()
+    expect(pages[1]?.chart?.hover).not.toBe(false)
+    expect(pages[1]?.chart?.restingRead).toBe('last')
+    expect(pages[1]?.segments?.map((row) => row.key)).toEqual(['2026', '2024'])
+    expect(pages[1]?.segments?.every((row) => row.chart)).toBe(true)
     expect(pages[2]?.figure).toContain('655')
     expect(pages[2]?.segments?.map((row) => row.key)).toEqual(['sale', 'pending'])
     expect(pages[0]?.pill).not.toMatch(/scrub/i)
     expect(pages[0]?.chart?.yearPages).toBe(false)
     expect(pages[0]?.chart?.keysToggle).toBe(false)
-    expect(pages[0]?.chart?.hover).toBe(false)
+    expect(pages[0]?.chart?.hover).not.toBe(false)
+    expect(pages[0]?.chart?.restingRead).toBe('last')
     expect(pages.some((page) => /YEAR/.test(page.claim))).toBe(false)
     expect(pages[0]).not.toHaveProperty('alternate')
     const hovered = insightFaceForRead(pages[0]!, {

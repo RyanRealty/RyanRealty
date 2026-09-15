@@ -45,9 +45,11 @@ import { listingsBrowsePath } from '@/lib/slug'
 import { v3Text, type V3ChartProps, type V3ChartSeries, type V3InstrumentFigure } from '@/components/site/v3'
 import { buildMosSupplyChart } from '@/app/months-of-supply/_v3/mos-chart'
 import {
+  buildClosedCountYearCharts,
   buildClosedVolumeChart,
   buildCompositionChart,
   withChartId,
+  type MedianMonth,
 } from '../../_v3/market-charts'
 import {
   buildAllTypeFigures,
@@ -67,6 +69,8 @@ export type RegionInsightSegment = {
   figure: string
   /** Allocation bar share. Same unit as the other segments. */
   weight?: number
+  /** Anomaly metric: that year's closings chart. */
+  chart?: V3ChartProps
 }
 
 export type RegionInsightPage = {
@@ -169,6 +173,7 @@ function lastPoint(series: V3ChartSeries | undefined) {
 export function buildRegionInsightPages(
   overlay: V3ChartProps | undefined,
   hud: LeftoverHudKpis,
+  monthly: readonly MedianMonth[] = [],
 ): RegionInsightPage[] {
   const pages: RegionInsightPage[] = []
   const series = overlay?.series ?? []
@@ -201,36 +206,36 @@ export function buildRegionInsightPages(
           claim: undefined,
           keysToggle: false,
           yearPages: false,
-          hover: false,
+          hover: true,
           restingRead: 'last',
         },
       })
     }
   }
 
-  const daysToPending =
-    hud.daysToPending != null && hud.daysToPending > 0 ? hud.daysToPending : null
-  const closedLast30Days = hud.closed30 != null && hud.closed30 > 0 ? hud.closed30 : null
-  if (daysToPending != null && closedLast30Days != null) {
-    const closedFace = closedLast30Days.toLocaleString('en-US')
+  const closedYears = buildClosedCountYearCharts(monthly)
+  const newestClosed = closedYears[closedYears.length - 1]
+  if (newestClosed) {
+    const daysToPending =
+      hud.daysToPending != null && hud.daysToPending > 0 ? hud.daysToPending : null
+    const claim =
+      daysToPending != null
+        ? `${newestClosed.lastTick} ${newestClosed.year} closed ${newestClosed.lastLabel} homes. Days to an offer is ${daysToPending} over the last 90 days.`
+        : `${newestClosed.lastTick} ${newestClosed.year} closed ${newestClosed.lastLabel} homes.`
     pages.push({
-      key: 'pace',
+      key: `anomaly-closed-${newestClosed.year}`,
       kind: 'anomaly',
-      claim: `Days to an offer is ${daysToPending} over the last 90 days. ${closedFace} homes closed in the last 30 days.`,
-      figure: String(daysToPending),
-      figureLabel: 'days to an offer',
-      segments: [
-        {
-          key: 'days',
-          label: 'days to an offer',
-          figure: String(daysToPending),
-        },
-        {
-          key: 'closed',
-          label: 'closed last 30 days',
-          figure: closedFace,
-        },
-      ],
+      claim,
+      figure: newestClosed.lastLabel,
+      figureLabel: `${newestClosed.lastTick} ${newestClosed.year} closings`,
+      readName: String(newestClosed.year),
+      segments: [...closedYears].reverse().map((row) => ({
+        key: String(row.year),
+        label: `${row.year} closings`,
+        figure: row.lastLabel,
+        chart: row.chart,
+      })),
+      chart: newestClosed.chart,
       pill: 'See homes for sale',
       pillHref: listingsBrowsePath(),
     })

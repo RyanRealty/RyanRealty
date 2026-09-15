@@ -200,6 +200,66 @@ export function withChartId(
   return chart ? { ...chart, id } : undefined
 }
 
+export type ClosedCountYear = {
+  year: number
+  lastLabel: string
+  lastTick: string
+  chart: V3ChartProps
+}
+
+/**
+ * beautifului Anomaly: one closings series per recent year. Hover + metric
+ * toggle, not a snapshot KPI. soldCount only — miss omits the year.
+ */
+export function buildClosedCountYearCharts(
+  monthly: readonly MedianMonth[],
+): ClosedCountYear[] {
+  const byYear = new Map<number, V3ChartPoint[]>()
+  for (const row of monthly) {
+    if (row.soldCount == null || !(row.soldCount > 0)) continue
+    const d = new Date(row.periodStart)
+    if (Number.isNaN(d.getTime())) continue
+    const month = MONTH_TICK[d.getUTCMonth()]
+    if (!month) continue
+    const year = d.getUTCFullYear()
+    const label = row.soldCount.toLocaleString('en-US')
+    const points = byYear.get(year) ?? []
+    points.push({
+      value: row.soldCount,
+      tick: v3Text(month),
+      label: v3Text(label),
+      at: d.getUTCMonth() + 1,
+    })
+    byYear.set(year, points)
+  }
+  const out: ClosedCountYear[] = []
+  for (const year of [...byYear.keys()].sort((a, b) => a - b).slice(-2)) {
+    const points = byYear.get(year)
+    if (!points || points.length < 2) continue
+    const series = [{ name: v3Text(String(year)), points }]
+    const yTicks = countTicks(series)
+    const last = points[points.length - 1]
+    if (!last) continue
+    out.push({
+      year,
+      lastLabel: String(last.label),
+      lastTick: String(last.tick),
+      chart: {
+        id: `market-insights-anomaly-${year}`,
+        caption: v3Text(`Homes closed by month, ${year}`),
+        series,
+        hover: true,
+        yearPages: false,
+        keysToggle: false,
+        restingRead: 'last',
+        ...(yTicks.length ? { yTicks } : {}),
+        xTicks: monthTicks(MONTH_TICK),
+      },
+    })
+  }
+  return out
+}
+
 export type ClosedYearPoint = {
   year: number
   soldCount: number

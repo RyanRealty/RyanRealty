@@ -131,8 +131,9 @@ export function InsightCards({
                 className={cn(
                   'insight-cards__kind',
                   index === safe && 'insight-cards__kind--on',
-                  index === nextKind && 'v3-chart__hover',
+                  index === nextKind && 'insight-cards__kind--next',
                 )}
+                data-insight-next={index === nextKind ? '' : undefined}
                 aria-selected={index === safe}
                 onClick={() => onPage(index)}
               >

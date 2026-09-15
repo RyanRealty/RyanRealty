@@ -105,15 +105,6 @@
   color: var(--v3-ink);
 }
 
-/* year-open reuses .v3-chart__hover as the Anomaly tab hook. Kill the
-   plot-layer absolute inset so the tab cannot cover DigitSwap or MOS. */
-#market-insights .insight-cards__kind.v3-chart__hover,
-.region-insights .insight-cards__kind.v3-chart__hover {
-  position: relative;
-  inset: auto;
-  cursor: pointer;
-  touch-action: auto;
-}
 
 #market-insights .insight-cards__pill-link,
 #market-insights .insight-cards__pill span {

@@ -251,7 +251,11 @@ export default async function CentralOregonRegionPage() {
     dropInProgressMonth(priceHistory, currentMonthKey),
   )
   const regionChart = buildRegionMedianChart(chartMonths.months, chartMonths.leftoverUsed)
-  const insightPages = buildRegionInsightPages(regionChart, hud)
+  const completePriceMonths = dropInProgressMonth(priceHistory, currentMonthKey)
+  const anomalyMonths = chartMonths.months.some((row) => row.soldCount != null && row.soldCount > 0)
+    ? chartMonths.months
+    : completePriceMonths
+  const insightPages = buildRegionInsightPages(regionChart, hud, anomalyMonths)
   // Two market-truth rows feed this section's figures. One stamp only when
   // both rows carry one clock; a mismatch withholds the stamp rather than
   // aging the fresher row (publishInstrumentStamp contract).
@@ -470,8 +474,8 @@ export default async function CentralOregonRegionPage() {
             )}
             figures={[]}
             /* THE OPENING IS A CLAIM AND A DRAWING (SITE-103). MOS + InsightCards.
-               Rest is Compare: two DigitSwap glyph slots. year-open pages
-               Insights to Anomaly, not a month scrub. */
+               Rest is Compare with house-chart hover. year-open pages to
+               Anomaly: closings chart + toggle, DigitSwap follows the stop. */
             chartFirst
             foldAfter={REGION_LEAD_FIGURES}
             foldLabel={v3Text(REGION_MARKET_FOLD_LABEL)}

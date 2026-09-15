@@ -1,10 +1,9 @@
 'use client'
 
 /**
- * Region fold InsightCards. Rest is Compare. year-open clicks the
- * in-card Anomaly tab (v3-chart__hover) — paged Insights
- * Compare / Anomaly / Allocation, not a house month scrubber.
- * Faces are DigitSwap 1ch glyph slots.
+ * Region fold InsightCards. Rest is Compare with house-chart hover.
+ * year-open pages to Anomaly: closings chart + metric toggle + hover,
+ * DigitSwap follows the open stop. Allocation stays the third page.
  */
 
 import Link from 'next/link'
@@ -170,8 +169,9 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
   const segments = current.segments ?? []
   const safeSegment = Math.max(0, Math.min(Math.max(segments.length - 1, 0), segment))
   const chosen = current.kind === 'compare' ? undefined : segments[safeSegment]
-  const heroValue = chosen?.figure ?? face.figure
-  const heroLabel = chosen?.label ?? face.figureLabel
+  const openChart = chosen?.chart ?? current.chart
+  const heroValue = read || current.kind === 'compare' ? face.figure : (chosen?.figure ?? face.figure)
+  const heroLabel = read || current.kind === 'compare' ? face.figureLabel : (chosen?.label ?? face.figureLabel)
   const pill = current.pillHref ? (
     <Link href={current.pillHref} className="insight-cards__pill-link">
       {current.pill}
@@ -180,12 +180,22 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
     <span>{current.pill}</span>
   )
 
-  const visual = current.chart ? (
-    <V3Chart {...current.chart} hover={false} yearPages={false} onRead={onRead} />
+  const visual = openChart ? (
+    <>
+      {current.kind === 'anomaly' && segments.length >= 2 ? (
+        <AnomalyToggle
+          segments={segments}
+          selected={safeSegment}
+          onSelect={(index) => {
+            setRead(null)
+            setSegment(index)
+          }}
+        />
+      ) : null}
+      <V3Chart {...openChart} yearPages={false} onRead={onRead} />
+    </>
   ) : current.kind === 'allocation' && segments.length >= 2 ? (
     <AllocationBar segments={segments} selected={safeSegment} onSelect={setSegment} />
-  ) : segments.length >= 2 ? (
-    <AnomalyToggle segments={segments} selected={safeSegment} onSelect={setSegment} />
   ) : undefined
 
   return (
