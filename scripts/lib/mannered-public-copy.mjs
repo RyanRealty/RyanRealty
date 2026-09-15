@@ -6,13 +6,15 @@
  * not a Cos-eye path. Same Looking refuse class as competitiveBrief:
  * inventing past what the heading + control already say.
  *
- * Five tells:
+ * Six tells:
  *   1. Meta-explainer / "this map is the full record" lecture
  *   2. Action-narrating control labels ("CALL 541…" on a Call door)
  *   3. Homepage Researchy brief dumped as visitor copy (homeBriefText)
  *   4. Place-list intro that narrates the map / filters ("the same homes the map above")
  *   5. Mannered self-explaining intros ("Three licensed…", "the one you call…",
  *      "Where those closings were") — over-explain / obvious blurb (Matt 2026-09-15)
+ *   6. Inventory-count lectures on rails / carousels / place folds
+ *      ("3,271 homes for sale across Central Oregon…") — cut, do not replace (Matt 2026-09-15)
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -25,6 +27,18 @@ export const ACTION_BILLBOARD_REFUSE =
 
 export const HOME_BRIEF_LEAK_REFUSE =
   'mannered public copy: HOME_COMPETITIVE_BRIEF / homeBriefText rendered as visitor copy. Demonstrate the beats (inventory, morph search, rails). Leave the node in_progress.'
+
+export const INVENTORY_LECTURE_REFUSE =
+  'mannered public copy: inventory-count lecture ("N homes for sale across…"). Cut — do not replace with another explain. Leave the node in_progress.'
+
+/** "3,271 homes for sale across Central Oregon…" under Homes in Bend / place folds. */
+export const INVENTORY_LECTURE_RES = Object.freeze([
+  /\d[\d,]*\+?\s*homes for sale across/i,
+  /homes for sale across Central Oregon/i,
+  /homes for sale across these (cities|districts|communities)/i,
+  /homes for sale across .+ communities/i,
+  /homes for sale across .+ subdivisions/i,
+])
 
 /** Visitor-facing lectures about how the map / feed / filter works. */
 export const MANNERED_EXPLAINER_RES = Object.freeze([
@@ -79,6 +93,7 @@ const HOME_COPY_FILES = Object.freeze([
   'app/page.tsx',
   'app/_v3/HomeHeroSearch.client.tsx',
   'app/_v3/HomeHomesRails.tsx',
+  'app/_v3/HomeListingRail.client.tsx',
   'app/_v3/HomeBrowsePlaces.tsx',
   'app/_v3/HomeFeaturedCommunity.client.tsx',
 ])
@@ -189,6 +204,9 @@ export function manneredPublicCopyProblems(sourceText) {
   }
   if (HOME_BRIEF_LEAK_RES.some((re) => re.test(scan))) {
     p.push(HOME_BRIEF_LEAK_REFUSE)
+  }
+  if (INVENTORY_LECTURE_RES.some((re) => re.test(scan))) {
+    p.push(INVENTORY_LECTURE_REFUSE)
   }
   return p
 }

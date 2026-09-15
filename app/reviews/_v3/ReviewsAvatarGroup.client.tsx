@@ -1,19 +1,18 @@
 'use client'
 
 /**
- * Official shadcn Avatar catalog (SITE-109).
+ * Official shadcn AvatarGroup on /reviews (SITE-109).
  *
  * Source: https://ui.shadcn.com/docs/components/avatar
  *
  * AvatarGroup
- * ├── Avatar → AvatarImage → AvatarFallback → AvatarBadge
+ * ├── Avatar → AvatarFallback → AvatarBadge
  * └── AvatarGroupCount
  *
- * Catalog portraits fill AvatarImage (public.reviews has no photo column —
- * do not invent reviewer photos). Fallback initials, alt, and the open
- * menu are the reviewer. avatar-open is the catalog Avatar dropdown
- * (Button ghost icon + Avatar trigger) with reviewer identity — not
- * a SaaS auth menu, and not a cream quote overlay.
+ * public.reviews has no photo column — never invent a face. AvatarFallback
+ * initials come from the real reviewer name. avatar-open is the Avatar
+ * dropdown with reviewer identity (Read this review / View on Google /
+ * All reviews) — not a SaaS auth menu, and not catalog dummy portraits.
  */
 
 import { ExternalLinkIcon, StarIcon, UsersIcon } from 'lucide-react'
@@ -23,7 +22,6 @@ import {
   AvatarFallback,
   AvatarGroup,
   AvatarGroupCount,
-  AvatarImage,
 } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -36,32 +34,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { uniqueReviewerInitials } from '@/lib/reviews/reviewer-initials'
 
-/**
- * Official Avatar docs portraits. Remote URLs are the catalog source;
- * local copies are what AvatarImage loads so shots do not depend on github.com.
- */
-const CATALOG_PORTRAITS = [
-  {
-    remote: 'https://github.com/shadcn.png',
-    src: '/images/catalog/shadcn-avatar/shadcn.jpg',
-  },
-  {
-    remote: 'https://github.com/leerob.png',
-    src: '/images/catalog/shadcn-avatar/leerob.png',
-  },
-  {
-    remote: 'https://github.com/evilrabbit.png',
-    src: '/images/catalog/shadcn-avatar/evilrabbit.png',
-  },
-] as const
-
 export type ReviewsAvatarFace = {
   id: string
   author: string
   pull: string
   attribution: string
   rating: number
-  imageSrc?: string | null
 }
 
 export function ReviewsAvatarGroup({
@@ -80,7 +58,7 @@ export function ReviewsAvatarGroup({
   onClose: () => void
 }) {
   const seen = new Set<string>()
-  const shown = faces.slice(0, CATALOG_PORTRAITS.length).map((face) => {
+  const shown = faces.slice(0, 3).map((face) => {
     const initials = uniqueReviewerInitials(face.author, seen)
     seen.add(initials)
     return { face, initials }
@@ -91,9 +69,7 @@ export function ReviewsAvatarGroup({
       className="v3-proof__avatar-group [&_[data-slot=avatar]]:ring-2 [&_[data-slot=avatar]]:ring-background"
       aria-label="Recent reviewers"
     >
-      {shown.map(({ face, initials }, index) => {
-        const portrait = CATALOG_PORTRAITS[index]!
-        const src = face.imageSrc?.trim() || portrait.src
+      {shown.map(({ face, initials }) => {
         const open = openedId === face.id
         return (
           <DropdownMenu
@@ -113,35 +89,20 @@ export function ReviewsAvatarGroup({
                 aria-label={`Open ${face.author}'s review`}
                 aria-pressed={open}
               >
-                <Avatar size={open ? 'lg' : 'default'}>
-                  <AvatarImage
-                    src={src}
-                    alt={face.author}
-                    width={80}
-                    height={80}
-                    loading="eager"
-                    fetchPriority="high"
-                    decoding="async"
-                  />
-                  <AvatarFallback delayMs={600}>{initials}</AvatarFallback>
-                  <AvatarBadge>
-                    {open ? <StarIcon /> : null}
-                  </AvatarBadge>
+                <Avatar size={open ? 'lg' : 'default'} data-initials={initials}>
+                  <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0}>
+                    {initials}
+                  </AvatarFallback>
+                  <AvatarBadge>{open ? <StarIcon /> : null}</AvatarBadge>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="start">
               <DropdownMenuLabel className="flex items-center gap-2 font-normal">
-                <Avatar size="sm">
-                  <AvatarImage
-                    src={src}
-                    alt={face.author}
-                    width={48}
-                    height={48}
-                    loading="eager"
-                    decoding="async"
-                  />
-                  <AvatarFallback delayMs={600}>{initials}</AvatarFallback>
+                <Avatar size="sm" data-initials={initials}>
+                  <AvatarFallback className="v3-proof__avatar-fallback" delayMs={0}>
+                    {initials}
+                  </AvatarFallback>
                 </Avatar>
                 <span className="min-w-0">
                   <span className="block truncate font-medium">{face.author}</span>

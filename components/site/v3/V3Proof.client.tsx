@@ -114,9 +114,9 @@ function Marks({ rating }: { rating: number }) {
 
 /**
  * Score as a hero figure: average at display scale, stars, and the count.
- * Reviewer faces after the lead quote are the shadcn AvatarGroup demo
- * (`ReviewsAvatarGroup`). public.reviews has no photo column — AvatarImage
- * loads the official catalog portraits, not invented reviewer faces.
+ * Reviewer faces after the lead quote are the shadcn AvatarGroup
+ * (`ReviewsAvatarGroup`) with AvatarFallback initials from real reviewer
+ * names. public.reviews has no photo column — never invent portraits.
  */
 function ScoreFace({ average, count }: { average: string; count: string }) {
   const n = Number(average)
@@ -201,7 +201,7 @@ export function V3Proof({
     archive && quotes.length > 0 ? quotes[0]!.id : null,
   )
   // Default keeps the AvatarGroup closed. avatar-open is a click that opens
-  // the catalog dropdown — not a selected ring on the same four discs.
+  // the reviewer-identity dropdown — not a selected ring on the same discs.
   const [openedId, setOpenedId] = useState<string | null>(null)
   // A click on a mark scrolls the page; the card that slides under the
   // stationary pointer must not steal the focus the click just set.
@@ -352,7 +352,7 @@ export function V3Proof({
     figures.find((f) => /review/i.test(f.label)) ??
     figures.find((f) => f !== averageFigure)
   const showFace = (face || !record) && averageFigure != null && countFigure != null
-  // Newest distinct authors for the AvatarGroup (catalog is three portraits
+  // Newest distinct authors for the AvatarGroup (three initials discs
   // + AvatarGroupCount). quotes arrive newest-first from getReviews.
   const faceAvatars = useMemo(() => {
     const seen = new Set<string>()

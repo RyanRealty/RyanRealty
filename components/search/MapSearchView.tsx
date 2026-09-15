@@ -1169,6 +1169,7 @@ export default function MapSearchView({
                   listOfficeName={l.ListOfficeName}
                   badges={badges}
                   hasTour={l.has_virtual_tour === true || Boolean(l.tourUrl)}
+                  tourUrl={l.tourUrl ?? null}
                   tourLabel={
                     l.tourUrl && !isListingVirtualTour({ url: l.tourUrl, isVirtualTour: true })
                       ? 'Video tour'

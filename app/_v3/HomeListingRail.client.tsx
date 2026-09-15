@@ -2,10 +2,9 @@
 
 /**
  * One horizontal house rail for the homepage. Cards reuse SplitCardMedia
- * (badges, photo carousel, 3D/video) and the same ask/meta publishers as Field Split cards.
- * Photo and copy open the listing. No save/heart on public cards (Matt 2026-09-15).
+ * (badges, photo carousel, in-card 3D/video) and the same ask/meta publishers as Field Split cards.
+ * Photo and copy open the listing. Tour plays in the card media. No save/heart on public cards (Matt 2026-09-15).
  */
-import { useState } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
@@ -13,8 +12,6 @@ import {
   publishListingShareKind,
   publishListingSharePricePerSqft,
 } from '@/lib/listing/publish-listing-share'
-import { publishTourEmbedFromUrl } from '@/lib/listing/publish-listing-hero-video'
-import type { VideoEmbed } from '@/lib/data/types/video'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Carousel,
@@ -23,14 +20,11 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel'
-import { AnimatedNumber } from '@/components/motion/number'
 import { V3_ROOT_CLASS, V3Button } from '@/components/site/v3'
-import type { HomeHeroLive } from './home-hero-inventory'
 import {
   SplitCardMedia,
   SPLIT_CARD_MEDIA_SIZES_RAIL,
 } from '@/components/site/v3/SplitCardMedia'
-import { ListingTourOverlay } from '@/components/site/listing-detail/ListingTourOverlay'
 import type { HomeRailCard, HomeRailRow } from './home-rail-items'
 import '@/components/site/v3/V3ListingRow.css'
 import '@/components/site/v3/V3Carousel.css'
@@ -38,11 +32,9 @@ import './home-homes-rails.css'
 
 function HomeRailCardFace({
   card,
-  onOpenTour,
   priority,
 }: {
   card: HomeRailCard
-  onOpenTour?: () => void
   priority?: boolean
 }) {
   const ask = formatPublishedSaleAsk({ price: card.price, propertyType: card.propertyType })
@@ -76,7 +68,7 @@ function HomeRailCardFace({
           urls={card.photoUrls}
           tags={card.badges}
           hasTour={card.hasTour}
-          onOpenTour={card.hasTour ? onOpenTour : undefined}
+          tourUrl={card.tourUrl}
           addressLine={card.addressLine}
           priority={priority}
           tourLabel={card.tourLabel}
@@ -101,14 +93,9 @@ function HomeRailCardFace({
 
 export function HomeListingRail({
   row,
-  live,
 }: {
   row: HomeRailRow
-  /** Optional animated regional count on the lead rail (Rare UI / beUI number). */
-  live?: HomeHeroLive
 }) {
-  const [tour, setTour] = useState<VideoEmbed | null>(null)
-
   return (
     <section
       id={row.id}
@@ -120,22 +107,6 @@ export function HomeListingRail({
           <h2 id={`${row.id}-heading`} className="home-rail__title">
             {row.heading}
           </h2>
-          {live ? (
-            <p className="home-rail__live">
-              <AnimatedNumber
-                value={live.forSale}
-                format={(n) =>
-                  Math.round(n) === Math.round(live.forSale)
-                    ? live.forSaleLabel
-                    : Math.round(n).toLocaleString('en-US')
-                }
-                startOnView={false}
-                className="home-rail__live-n"
-              />
-              <span> homes for sale across Central Oregon</span>
-              <span className="home-rail__live-src">{live.source}</span>
-            </p>
-          ) : null}
         </div>
         <V3Button href={row.seeAll.href} variant="ghost">
           {row.seeAll.label}
@@ -152,22 +123,7 @@ export function HomeListingRail({
               key={card.listingKey}
               className="v3-carousel__slide v3-carousel__slide--rail pl-0 !basis-[min(17.5rem,78vw)] min-[64rem]:!basis-1/4"
             >
-              <HomeRailCardFace
-                card={card}
-                priority={index < 2}
-                onOpenTour={
-                  card.tourUrl || card.hasTour
-                    ? () => {
-                        const embed = publishTourEmbedFromUrl(
-                          card.tourUrl,
-                          card.photoUrls[0] ?? null,
-                        )
-                        if (embed) setTour(embed)
-                        else if (card.href) window.location.assign(`${card.href}#tour`)
-                      }
-                    : undefined
-                }
-              />
+              <HomeRailCardFace card={card} priority={index < 2} />
             </CarouselItem>
           ))}
         </CarouselContent>
@@ -178,12 +134,6 @@ export function HomeListingRail({
           </div>
         ) : null}
       </Carousel>
-      <ListingTourOverlay
-        open={tour != null}
-        video={tour}
-        title="Listing tour"
-        onClose={() => setTour(null)}
-      />
     </section>
   )
 }

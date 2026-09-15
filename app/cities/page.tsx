@@ -415,15 +415,10 @@ export default async function CitiesPage() {
     ) : null
   // When the drawing cannot be drawn, the note carries the figure as before.
   const directoryNote = regionDrawing
-    ? `${formatCount(directory.length)} cities, A to Z. Region supply is the pair below; overlay a city or rest on a row for its year of closes.`
-    : [
-        totalActive != null && totalActive > 0
-          ? `${formatCount(totalActive)} homes for sale across these cities.`
-          : null,
-        mosText && regionVerdict ? `${regionVerdict.label} at ${mosText} months of supply.` : null,
-      ]
-        .filter(Boolean)
-        .join(' ')
+    ? `${formatCount(directory.length)} cities, A to Z.`
+    : mosText && regionVerdict
+      ? `${regionVerdict.label} at ${mosText} months of supply.`
+      : ''
 
   return (
     <>
