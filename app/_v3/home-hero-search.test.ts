@@ -270,6 +270,19 @@ describe('homepage hero search uses the public search stack', () => {
 })
 
 describe('homepage plain buyer copy', () => {
+  it('does not dump the competitive brief as public copy', () => {
+    expect(SEARCH).not.toContain('homeBriefText')
+    expect(SEARCH).not.toContain('home-hero-search__brief')
+    expect(RAILS).not.toContain('homeBriefText')
+    expect(RAILS).not.toContain('home-rails__brief')
+    expect(PLACES).not.toContain('homeBriefText')
+    expect(PLACES).not.toContain('home-browse-places__brief')
+    expect(FEATURED).not.toContain('homeBriefText')
+    expect(FEATURED).not.toContain('home-featured-community__brief')
+    expect(SEARCH).not.toContain('Search field that morphs into results')
+    expect(RAILS).not.toContain('The homepage opens with live inventory in the first viewport')
+  })
+
   it('drops mannered door and proof filler', () => {
     expect(PAGE).not.toContain('Start with what you came to do')
     expect(PAGE).not.toContain('Find your place')

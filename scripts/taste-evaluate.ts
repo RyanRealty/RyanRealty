@@ -310,7 +310,7 @@ async function main() {
         competitiveBrief.productLock ? `Product lock: ${competitiveBrief.productLock}` : '',
         competitiveBrief.refuse ? `Refuse: ${competitiveBrief.refuse}` : '',
         ...competitiveBrief.beats.map((b) => `${b.id}. ${b.text}`),
-        'Score competitiveBriefPass true only if every beat is visible in the shots. Omit is refuse. Do not invent true. Checklist all true is the other pass path.',
+        'Score competitiveBriefPass true only if every beat is demonstrated in the shots (inventory, morph search, rails, cards). Printed HOME_COMPETITIVE_BRIEF / homeBriefText copy is refuse, not a pass. Omit is refuse. Do not invent true. Checklist all true is the other pass path.',
       ]
         .filter(Boolean)
         .join('\n')

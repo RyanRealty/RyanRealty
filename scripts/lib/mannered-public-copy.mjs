@@ -6,9 +6,11 @@
  * not a Cos-eye path. Same Looking refuse class as competitiveBrief:
  * inventing past what the heading + control already say.
  *
- * Two tells:
+ * Four tells:
  *   1. Meta-explainer / "this map is the full record" lecture
  *   2. Action-narrating control labels ("CALL 541…" on a Call door)
+ *   3. Homepage Researchy brief dumped as visitor copy (homeBriefText)
+ *   4. Place-list intro that narrates the map / filters ("the same homes the map above")
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -19,6 +21,9 @@ export const MANNERED_COPY_REFUSE =
 export const ACTION_BILLBOARD_REFUSE =
   'mannered public copy: action-narrating control ("CALL 541…" billboard). Quiet Call | Text | Email | Schedule. Leave the node in_progress.'
 
+export const HOME_BRIEF_LEAK_REFUSE =
+  'mannered public copy: HOME_COMPETITIVE_BRIEF / homeBriefText rendered as visitor copy. Demonstrate the beats (inventory, morph search, rails). Leave the node in_progress.'
+
 /** Visitor-facing lectures about how the map / feed / filter works. */
 export const MANNERED_EXPLAINER_RES = Object.freeze([
   /this map is the full record/i,
@@ -28,6 +33,30 @@ export const MANNERED_EXPLAINER_RES = Object.freeze([
   /recorded on the MLS that carries a coordinate/i,
   /hover a mark for/i,
   /the claim updates with your filter/i,
+  /the same homes the map above/i,
+  /the map above marks/i,
+  /as the map above marks/i,
+  /the map above draws from/i,
+  /a plat drawn on the map above/i,
+  /market section further down/i,
+  /counted on the market section/i,
+  /with price, beds and property type on the filters/i,
+])
+
+/** Homepage spec dumped as public copy (Matt 2026-09-15). Not the TS brief object. */
+export const HOME_BRIEF_LEAK_RES = Object.freeze([
+  /homeBriefText\s*\(/,
+  /home-hero-search__brief/,
+  /home-rails__brief/,
+  /home-browse-places__brief/,
+  /home-featured-community__brief/,
+  /Search field that morphs into results/i,
+  /The homepage opens with live inventory in the first viewport/i,
+  /Buy \/ Sell as tabs with a sliding indicator/i,
+  /House cards on the rail: price, address, beds\/baths\/sqft/i,
+  /Search hero carries a live market or inventory signal/i,
+  /Featured community cards carry sourced pulse figures/i,
+  /Browse places with live town counts, not identical empty chips/i,
 ])
 
 /** ALL-CAPS or title-case verb plus a phone number in one visible label. */
@@ -35,6 +64,22 @@ export const ACTION_BILLBOARD_RE =
   /\b(?:CALL|TEXT|EMAIL|Call|Text|Email)\s+[+(]?\d[\d.()\s-]{5,}\d/
 
 const TEAM_COPY_FILES = Object.freeze(['app/team/page.tsx', 'app/about/_v3/AboutFaces.tsx'])
+
+const HOME_COPY_FILES = Object.freeze([
+  'app/page.tsx',
+  'app/_v3/HomeHeroSearch.client.tsx',
+  'app/_v3/HomeHomesRails.tsx',
+  'app/_v3/HomeBrowsePlaces.tsx',
+  'app/_v3/HomeFeaturedCommunity.client.tsx',
+])
+
+const EXTRA_PUBLIC_COPY = Object.freeze({
+  'listing-detail': [
+    'app/listing/[listingKey]/page.tsx',
+    'components/site/listing-detail/ListingFold.tsx',
+    'components/site/listing-detail/ListingHero.tsx',
+  ],
+})
 
 function isPlainObject(v) {
   return !!v && typeof v === 'object' && !Array.isArray(v)
@@ -92,6 +137,15 @@ export function publicCopyFilesFor({ route, kit } = {}) {
       if (!files.includes(f)) files.push(f)
     }
   }
+  if (kit === 'homepage-v6' || route === 'app/page.tsx') {
+    for (const f of HOME_COPY_FILES) {
+      if (!files.includes(f)) files.push(f)
+    }
+  }
+  const extras = EXTRA_PUBLIC_COPY[kit] ?? []
+  for (const f of extras) {
+    if (!files.includes(f)) files.push(f)
+  }
   return files
 }
 
@@ -122,6 +176,9 @@ export function manneredPublicCopyProblems(sourceText) {
   }
   if (ACTION_BILLBOARD_RE.test(scan) || editorialCallBillboard(raw)) {
     p.push(ACTION_BILLBOARD_REFUSE)
+  }
+  if (HOME_BRIEF_LEAK_RES.some((re) => re.test(scan))) {
+    p.push(HOME_BRIEF_LEAK_REFUSE)
   }
   return p
 }

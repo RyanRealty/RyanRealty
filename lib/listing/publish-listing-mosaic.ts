@@ -1,10 +1,11 @@
 /**
  * Listing hero media (SITE-45): one frame of THIS house plus a filmstrip
- * that indexes every still. The frame is 3:2 cover-crop; a marketing reel,
- * when leftover has one, leads. 3D, floor, and street view are tools on the
- * strip, not tiles. The map is the atlas below the fold, never a Google
- * static beside the photo. The four-cell side grid this file used to size
- * (publishListingMosaicTiles) went with the mosaic.
+ * that indexes every still. The photograph shows the whole still
+ * (object-fit: contain on cream) — cover-crop of the house is the bug.
+ * A marketing reel, when leftover has one, leads. 3D, floor, and street
+ * view are tools on the strip, not tiles. The map is the atlas below the
+ * fold, never a Google static beside the photo. The four-cell side grid
+ * this file used to size (publishListingMosaicTiles) went with the mosaic.
  */
 
 export const LISTING_MOSAIC_PHOTO_QUALITY = 75

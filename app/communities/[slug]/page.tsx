@@ -1011,7 +1011,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           countLabel="for sale"
           entries={platIndexEntries}
           foldAfter={10}
-          source={`recorded plat polygons from public.boundaries (geo_type='subdivision', Deschutes County DIAL), selected by spatial membership — the plat's centroid inside the recorded ${publicName} boundary, via the community_subdivisions RPC. The figure is that plat's active listings counted by boundary membership in listing_boundary_xref_mv, the same read the map above draws from. A plat with no active listing prints 0, which is a counted zero and not a missing read.`}
+          source="Deschutes County plat lines · Oregon Data Share"
         />
 
         <PlaceTypeSlider cards={typeCards} label={`${publicName} property types`} />

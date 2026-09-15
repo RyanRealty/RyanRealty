@@ -17,7 +17,8 @@ export async function loadOpenHouseBadgeLabels(
   const labels: Record<string, string> = {}
   for (const row of rows) {
     if (labels[row.listing_key]) continue
-    labels[row.listing_key] = publishOpenHouseBadgeLabel(row.event_date, row.start_time)
+    const label = publishOpenHouseBadgeLabel(row.event_date, row.start_time)
+    if (label) labels[row.listing_key] = label
   }
   return labels
 }

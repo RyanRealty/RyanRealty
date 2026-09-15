@@ -50,7 +50,6 @@ import {
   getIndexableSubdivisions,
   getPlaceOpeningListings,
 } from '@/lib/data'
-import { SUBDIVISION_INDEX_MIN_LIFETIME_SALES } from '@/lib/data/subdivisions/subdivision-index'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import {
@@ -939,7 +938,7 @@ export default async function CityDetailPage({ params }: Props) {
               ? { label: `Every Central Oregon subdivision`, href: '/subdivisions' }
               : undefined
           }
-          source={`recorded plat polygons from public.boundaries (geo_type='subdivision', Deschutes County DIAL). The figure is the plat's LIFETIME closed sales from public.subdivision_plat_closed_mv, attributed two ways and unioned over distinct listing: every closed listing in listing_tile_mv whose point falls inside the recorded polygon, plus every closed listing recorded under that plat's own name. Both are needed — a sub-plat's homes are listed under the resort's name and never its own, while a coarse builder geocode can put a correctly-named sale outside its own lines. Every property type, no date filter. This is the same read that decides whether the plat's page is indexable (floor: ${SUBDIVISION_INDEX_MIN_LIFETIME_SALES} lifetime sales), so the figure here and the robots tag there can never disagree. A plat drawn on the map above but below that floor still has a page and still appears here; it prints no figure rather than one measured a different way.`}
+          source="Deschutes County plat lines · Oregon Data Share"
         />
 
         <PlaceTypeSlider cards={typeCards} label={`${cityName} property types`} />

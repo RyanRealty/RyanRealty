@@ -22,6 +22,10 @@ import { incrementListingShareCount } from '@/app/actions/engagement'
 import { trackListingClick } from '@/lib/tracking'
 import { listingTileHref, listingsBrowsePath } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import {
+  publishListingDropBadge,
+  publishOpenHouseBadgeLabel,
+} from '@/lib/listing/publish-listing-card-badges'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeftRightIcon } from '@hugeicons/core-free-icons'
 import { normalizeMlsDisplayNumber } from '@/lib/mls-source'
@@ -181,7 +185,7 @@ function ListingTile({
   liked = false,
   signedIn,
   userEmail,
-  hasRecentPriceChange = false,
+  hasRecentPriceChange: _hasRecentPriceChange = false,
   priceDropAmount = null,
   activityAt = null,
   hotBadge = false,
@@ -233,7 +237,17 @@ function ListingTile({
   }, [listing.OnMarketDate, listing.CloseDate, listing.StandardStatus])
   const listedDate = formatDate(listing.OnMarketDate ?? null)
   const activityDateTime = formatActivityDateTime(activityAt)
-  const hasOpenHouse = Array.isArray(listing.OpenHouses) && listing.OpenHouses.length > 0
+  const firstOpenHouse = Array.isArray(listing.OpenHouses) ? listing.OpenHouses[0] : null
+  const openHouseLabel = firstOpenHouse
+    ? publishOpenHouseBadgeLabel(
+        firstOpenHouse.Date ?? (firstOpenHouse as { event_date?: string }).event_date,
+        firstOpenHouse.StartTime ?? (firstOpenHouse as { start_time?: string }).start_time,
+      )
+    : null
+  const dropLabel = publishListingDropBadge({
+    lastPriceChangeTimestamp: activityAt,
+    priceDropAmount,
+  })
   const isResort =
     listing.City != null &&
     listing.SubdivisionName != null &&
@@ -534,16 +548,9 @@ function ListingTile({
           items={[
             ...(hotBadge ? [{ label: 'Hot market', variant: 'hot' as const }] : []),
             ...(isTrendingVideo ? [{ label: 'Trending video', variant: 'trending' as const, icon: <span aria-hidden><svg className="size-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg></span> }] : []),
-            ...(hasRecentPriceChange
-              ? [{
-                  label: priceDropAmount && priceDropAmount > 0
-                    ? `Price reduced $${Math.round(priceDropAmount).toLocaleString()}`
-                    : 'Price reduced',
-                  variant: 'price-drop' as const,
-                }]
-              : []),
+            ...(dropLabel ? [{ label: dropLabel, variant: 'price-drop' as const }] : []),
             ...(isPopular ? [{ label: 'Popular', variant: 'popular' as const }] : []),
-            ...(hasOpenHouse ? [{ label: 'Open house', variant: 'open-house' as const }] : []),
+            ...(openHouseLabel ? [{ label: openHouseLabel, variant: 'open-house' as const }] : []),
             ...(dom === 0 ? [{ label: 'New', variant: 'new' as const, icon: <span aria-hidden><svg className="size-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" /></svg></span> }] : []),
             ...(isResort ? [{ label: 'Resort & master plan', variant: 'resort' as const }] : []),
           ]}
@@ -607,9 +614,9 @@ function ListingTile({
           </span>
           <span>Listed: {listedDate}</span>
           {activityDateTime && <span>Activity: {activityDateTime}</span>}
-          {hasRecentPriceChange && priceDropAmount && priceDropAmount > 0 && (
-            <span className="text-warning">Price drop: ${Math.round(priceDropAmount).toLocaleString()}</span>
-          )}
+          {dropLabel ? (
+            <span className="text-warning">{dropLabel}</span>
+          ) : null}
           <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${statusColor(listing.StandardStatus)}`}>
             {statusLabel(listing.StandardStatus)}
           </span>

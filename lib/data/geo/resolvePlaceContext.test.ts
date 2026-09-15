@@ -87,6 +87,7 @@ describe('resolvePlaceContextFromListing', () => {
     })
 
     expect(PLACE_NOISE_SLUGS.has('na')).toBe(true)
+    expect(PLACE_NOISE_SLUGS.has('undesignated')).toBe(true)
     expect(ctx.subdivision).toBeNull()
     expect(ctx.neighborhood).toBeNull()
     expect(ctx.city?.slug).toBe('bend')
@@ -116,6 +117,19 @@ describe('resolvePlaceContextFromListing', () => {
     expect(ctx.subdivision?.label).toBe('Forked Horn Butte')
     expect(ctx.identityLine).toContain('Forked Horn Butte')
     expect(ctx.identityLine).not.toMatch(/Cedar Creek|Orchard District/i)
+  })
+
+  it('skips Undesignated as a neighborhood', () => {
+    const ctx = resolvePlaceContextFromListing({
+      city: 'Bend',
+      citySlug: 'bend',
+      neighborhoodName: 'Undesignated',
+      neighborhoodSlug: 'bend-undesignated',
+      subdivisionName: 'Stevens Ranch',
+      subdivisionSlug: 'stevens-ranch',
+    })
+    expect(ctx.neighborhood).toBeNull()
+    expect(ctx.breadcrumb.map((b) => b.label).join(' ')).not.toMatch(/undesignated/i)
   })
 
   it('city-only listing has empty parents beyond city leaf', () => {
