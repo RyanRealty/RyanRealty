@@ -91,7 +91,9 @@ describe('composeInvestListings', () => {
 describe('invest catalog import (Tip Ready route scan)', () => {
   it('imports the shadcn table from the installed source', () => {
     const src = readFileSync(new URL('./InvestTables.client.tsx', import.meta.url), 'utf8')
+    const page = readFileSync(new URL('../page.tsx', import.meta.url), 'utf8')
     expect(src).toMatch(/from '@\/components\/ui\/table'/)
+    expect(page).toMatch(/from '@\/components\/ui\/table'/)
     expect(src).not.toMatch(/<TableHead>Type<\/TableHead>/)
   })
 })
