@@ -105,10 +105,8 @@
       "originality": 16,
       "interaction": 8,
       "craft": 10,
-      "honesty": 6,
-      "honestyFunction": 6
+      "honesty": 6
     },
-    "honestyFunction": 6,
     "perCriterion": {
       "design": 18,
       "originality": 16,
@@ -160,19 +158,13 @@
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-08",
-      "score": 48,
-      "scores": [
-        45,
-        51,
-        48
-      ],
-      "evaluatorModel": "claude-sonnet-5",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "not recorded \u2014 the cross-class table predates per-row shot hashes",
-      "source": "design_system/public/taste-table.json"
+      "evaluatedAt": "2026-09-10",
+      "score": 67,
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "v1-2026-09-10",
+      "shotsHash": "sha256:6a9b95818fcf9af5d2a7263c6c04eb689b8af960cb276e5e8335c6588f46d439"
     },
-    "rebaselineReason": "Tip Ready Mini rejudge on tip fb0158a30 (reviewer-identity avatar-open) after 39f818bfc SaaS Sign Out miss; same grok-4.6 cursor-cli instrument. Landed on Matthews Mini.",
+    "rebaselineReason": "rubricVersion differs (v1-2026-09-10 \u2192 v1-2026-09-12) and shotsHash differs (tip fb0158a30 avatar-open reviewer-identity shots). First v1-2026-09-12 mark on open-state evidence; demoMatch true from judge. Do not invent demoMatch.",
     "verdict": "demoMatch is true: the avatar-open shots are AvatarGroup plus a dropdown on an Avatar trigger, navy on cream, not a cream box that hid the control. The opening is house-proof (5.0, stars, 25 Google reviews, one client's words in full) with Call and Book after the quote, not a Quiet reach list. What fails is honesty and dull remainder: catalog-demo faces standing in for MJB, a 375px year row that clips 2019, and a beeswarm that does not reveal a review. SEO did not improve in these pixels; inventory is held (count, years, full quote), not raised.",
     "demoMatch": true,
     "tells": [],
