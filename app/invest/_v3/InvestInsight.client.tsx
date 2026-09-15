@@ -58,7 +58,13 @@ function pagesFromBoard(board: InvestInsightBoard): InsightPage[] {
         </>
       ),
       Card: function LotsVsBuildings() {
-        return <CompareCard series={board.compare!} />
+        const formatValue = (v: number) => Math.round(v).toLocaleString('en-US')
+        return (
+          <CompareCard
+            series={board.compare!.map((s) => ({ ...s, formatValue }))}
+            formatTime={() => ''}
+          />
+        )
       },
       pill: 'Scrub the three published windows',
     })
@@ -85,6 +91,7 @@ function pagesFromBoard(board: InvestInsightBoard): InsightPage[] {
               spentLine: (value) => `${value} lots at the last published window`,
               vsLine: board.windowLabels.join(' · '),
             }}
+            formatTime={() => ''}
           />
         )
       },

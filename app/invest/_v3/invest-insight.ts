@@ -29,7 +29,6 @@ export type InvestCompareSeries = {
   dot: string
   color: string
   tooltipColor: string
-  formatValue?: (v: number) => string
 }
 
 export type InvestAnomalyData = {
@@ -174,7 +173,6 @@ export function composeInvestInsight(rows: readonly PublicSegmentRow[]): InvestI
             dot: '',
             color: '',
             tooltipColor: '',
-            formatValue: formatCount,
           },
           {
             name: 'Buildings',
@@ -184,7 +182,6 @@ export function composeInvestInsight(rows: readonly PublicSegmentRow[]): InvestI
             dot: '',
             color: '',
             tooltipColor: '',
-            formatValue: formatCount,
           },
         ]
       : null
@@ -209,10 +206,6 @@ export function composeInvestInsight(rows: readonly PublicSegmentRow[]): InvestI
     soldTotal: soldTotal > 0 ? soldTotal : null,
     windowLabels: windows.map((w) => w.name),
   }
-}
-
-function formatCount(v: number): string {
-  return Math.round(v).toLocaleString('en-US')
 }
 
 /** @deprecated use composeInvestInsight — kept name for older tests during the swap */

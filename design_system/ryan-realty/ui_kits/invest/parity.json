@@ -79,7 +79,7 @@
     "rubricVersion": "v1-2026-09-12",
     "demoMatch": false,
     "competitiveBriefPass": false,
-    "evaluator": "Mini Cursor judge on tip 50cd73a4d — demoMatch FALSE, score 48, competitiveBriefPass false, --ship exit 1. This receipt is that honest fail plus the V3Chart recapture. Mini must rewrite demoMatch after re-judging these shots. Do not invent true.",
+    "evaluator": "Mini Cursor judge on tip 9defcaec0 — demoMatch FALSE, score 50, competitiveBriefPass false, --ship exit 1. This receipt is that honest fail plus the InsightCards recapture. Mini must rewrite demoMatch after re-judging these shots. Do not invent true.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "cursor-grok-4.6",
     "shotSpec": {
@@ -95,7 +95,7 @@
         "insight-open",
         "table-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs catalog demoStates, scale 1, palette-quantized, lane next dev --webpack :4310 after V3Chart year-pages install"
+      "capture": "first viewport, scripts/take-route-shots.mjs catalog demoStates, scale 1, palette-quantized, lane next dev --webpack :4310 after InsightCards install"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/invest/shots/desktop.png",
@@ -105,13 +105,13 @@
       "tableOpenDesktop": "design_system/ryan-realty/ui_kits/invest/shots/table-open-desktop.png",
       "tableOpenMobile375": "design_system/ryan-realty/ui_kits/invest/shots/table-open-mobile375.png"
     },
-    "shotsHash": "sha256:f4582810dcf76236b95d4b48398cf52e8ed3f0c60736416c5cb10c84b0745f87",
+    "shotsHash": "sha256:3a6cb59cfaabe45a1420edba5a265b83269fb31d8d948ce3c7abf3b7f1188855",
     "scores": [
-      48,
-      48,
-      48
+      50,
+      50,
+      50
     ],
-    "score": 48,
+    "score": 50,
     "criteria": {
       "designQuality": 12,
       "originality": 10,
@@ -119,7 +119,7 @@
       "craft": 10,
       "honestyFunction": 8
     },
-    "beats": "Zillow Land for sale in Deschutes County still wins photos and a map in the first viewport. This page wins a live composition drawing (for-sale line across types, 595 lots on the same count the table prints) and a selected inventory table. Mini has not yet marked the V3Chart scrubber as a demo match.",
+    "beats": "Zillow Land for sale in Deschutes County still wins photos and a map in the first viewport. This page wins a four-rule Pulse, InsightCards (Insights 3, Allocation + Liveline), and a selected listings table. Mini has not yet marked the InsightCards install as a demo match.",
     "adaptedFrom": [
       { "id": "beautifului-insight" },
       { "id": "shadcn-table" },
@@ -128,34 +128,34 @@
     ],
     "defects": [
       {
-        "section": "#place-insight",
+        "section": "#place",
         "severity": "taste",
-        "finding": "Mini on tip 50cd73a4d: insight-open was a cream box (pager + native range + KPI 57), not beautifului insight-cards / chart scrubber. This recapture installs V3Chart year pages + .v3-chart__scrub. Mini must confirm demoMatch.",
-        "replaceWith": "beautifului-insight"
-      },
-      {
-        "section": "#place .v3-pulse__readings",
-        "severity": "taste",
-        "finding": "Mini: kill orphaned big numerals as the product UI. Pulse is one land reading now; the chart draws the types. Mini has not re-scored the recapture.",
+        "finding": "Mini on tip 9defcaec0: single 595 poster in a cream void, not part-to-whole Pulse. This recapture restores four readings on one track. Mini must confirm demoMatch.",
         "replaceWith": "house-pulse"
       },
       {
+        "section": "#place-insight",
+        "severity": "taste",
+        "finding": "Mini on tip 9defcaec0: YEAR 1/2 pager + native range + cream tooltip is not beautifului-insight catalog craft. This recapture installs InsightCards (Insights pager, Allocation bar, Liveline pointer-scrub). Mini must confirm demoMatch.",
+        "replaceWith": "beautifului-insight"
+      },
+      {
+        "section": "#place-insight .v3-chart",
+        "severity": "honesty",
+        "finding": "Mini: slope across unordered property-type categories. The type-as-line V3Chart is gone. Allocation is part-to-whole; Compare/Anomaly use sold / under contract / for sale windows for lots vs buildings. Mini must confirm encoding.",
+        "replaceWith": "beautifului-insight"
+      },
+      {
         "section": "#searches-table",
         "severity": "taste",
-        "finding": "Mini: stacked hairline Pulse + tables is not catalog craft density. Pulse no longer stacks four rules; table-open shows the shadcn table. Mini must re-judge craft.",
+        "finding": "Mini: hairline type board restated the chart. Type table is gone; #searches-table is live listings with price, address, and facts. Mini must re-judge table-open.",
         "replaceWith": "shadcn-table"
       },
       {
-        "section": "#place .v3-pulse__source",
+        "section": "#place-insight",
         "severity": "craft",
-        "finding": "Mini: Market Truth metric layer jargon. Visitor-facing source is now regional MLS listings counted by property type. Mini must confirm the voice.",
-        "replaceWith": null
-      },
-      {
-        "section": "#searches-table",
-        "severity": "honesty",
-        "finding": "Mini: 604 vs 595 count mismatch. Pulse, chart, and table now share investCounts(); this recapture prints 595 lots on Pulse and table. Mini must confirm one source.",
-        "replaceWith": null
+        "finding": "Mini: tooltip clips series / wraps YEAR; SEO + fold listing facts missing from judged shots. YEAR pager is gone; listing facts are in the default fold heading and in table-open. Mini must confirm the recapture.",
+        "replaceWith": "beautifului-insight"
       }
     ],
     "comparedToPrior": "rebaselined",
@@ -172,9 +172,9 @@
       "shotsHash": "sha256:8dad3a8eff7f418bbb1507909f34237d397421c065cf5e029a4d8ff31e3dcdfe",
       "source": "SITE-68 route receipt on this parity.json (median 57, grok-4.6)"
     },
-    "rebaselineReason": "rubricVersion differs: prior SITE-68 mark is v1-2026-09-08; this receipt is v1-2026-09-12 with new open-state shots after the V3Chart install. Mini Cursor scored the cream-box tip 48 / demoMatch false. honestyFunction holds at 8.",
-    "verdict": "Honest fail until Mini rewrites demoMatch true. The cream-box KPI is gone from these shots; the Tip Ready receipt now carries insight-open and table-open evidence. --ship stays exit 1.",
-    "notes": "SITE-98 in_progress. Recapture after V3Chart year-pages install. Do not invent demoMatch. Mini must re-run the judge on these shots."
+    "rebaselineReason": "shotsHash changed after installing InsightCards. Mini Cursor scored tip 9defcaec0 (V3Chart YEAR pager) 50 / demoMatch false. This receipt keeps that honest fail on new shots. Mini must re-score. honestyFunction holds at 8.",
+    "verdict": "Honest fail until Mini rewrites demoMatch true. The YEAR pager and type-as-line chart are gone from these shots; Pulse is four part-to-whole readings; table-open is listings. --ship stays exit 1.",
+    "notes": "SITE-98 in_progress. Recapture after InsightCards install. Do not invent demoMatch. Mini must re-run the judge on these shots."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
