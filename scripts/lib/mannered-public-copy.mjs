@@ -6,10 +6,11 @@
  * not a Cos-eye path. Same Looking refuse class as competitiveBrief:
  * inventing past what the heading + control already say.
  *
- * Three tells:
+ * Four tells:
  *   1. Meta-explainer / "this map is the full record" lecture
  *   2. Action-narrating control labels ("CALL 541…" on a Call door)
  *   3. Homepage Researchy brief dumped as visitor copy (homeBriefText)
+ *   4. Place-list intro that narrates the map / filters ("the same homes the map above")
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -32,6 +33,14 @@ export const MANNERED_EXPLAINER_RES = Object.freeze([
   /recorded on the MLS that carries a coordinate/i,
   /hover a mark for/i,
   /the claim updates with your filter/i,
+  /the same homes the map above/i,
+  /the map above marks/i,
+  /as the map above marks/i,
+  /the map above draws from/i,
+  /a plat drawn on the map above/i,
+  /market section further down/i,
+  /counted on the market section/i,
+  /with price, beds and property type on the filters/i,
 ])
 
 /** Homepage spec dumped as public copy (Matt 2026-09-15). Not the TS brief object. */
@@ -63,6 +72,14 @@ const HOME_COPY_FILES = Object.freeze([
   'app/_v3/HomeBrowsePlaces.tsx',
   'app/_v3/HomeFeaturedCommunity.client.tsx',
 ])
+
+const EXTRA_PUBLIC_COPY = Object.freeze({
+  'listing-detail': [
+    'app/listing/[listingKey]/page.tsx',
+    'components/site/listing-detail/ListingFold.tsx',
+    'components/site/listing-detail/ListingHero.tsx',
+  ],
+})
 
 function isPlainObject(v) {
   return !!v && typeof v === 'object' && !Array.isArray(v)
@@ -124,6 +141,10 @@ export function publicCopyFilesFor({ route, kit } = {}) {
     for (const f of HOME_COPY_FILES) {
       if (!files.includes(f)) files.push(f)
     }
+  }
+  const extras = EXTRA_PUBLIC_COPY[kit] ?? []
+  for (const f of extras) {
+    if (!files.includes(f)) files.push(f)
   }
   return files
 }

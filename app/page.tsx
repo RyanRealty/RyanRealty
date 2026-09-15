@@ -1,7 +1,13 @@
 import type { Metadata } from 'next'
 
 import { valuationHref } from '@/lib/site/valuation-href'
-import { getListingTiles, getBrokers, getReviews, attachListingCardExtras } from '@/lib/data'
+import {
+  getListingTiles,
+  getBrokers,
+  getReviews,
+  attachListingCardExtras,
+  loadRecentPriceDropEvents,
+} from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
@@ -103,12 +109,13 @@ const RESORT_DOORS = [
 ] as const
 
 export default async function Home() {
-  const [cities, tiles, brokers, openHouseLabels, reviewSummary, featuredCommunitySlides, pulseBundle] =
+  const [cities, tiles, brokers, openHouseLabels, recentPriceDrops, reviewSummary, featuredCommunitySlides, pulseBundle] =
     await Promise.all([
       getCitiesForIndex().catch(() => []),
       getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
       getBrokers().catch(() => []),
       loadOpenHouseBadgeLabels().catch(() => ({})),
+      loadRecentPriceDropEvents(30).catch(() => new Map()),
       getReviews(6).catch(() => null),
       loadHomeFeaturedCommunitySlides().catch((err) => {
         console.error('[home] featured community loader failed', err)
@@ -139,6 +146,7 @@ export default async function Home() {
     priceCutsHref: '/price-drops',
     newHref: '/homes-for-sale?view=list&sort=newest',
     openHouseLabels,
+    priceDrops: recentPriceDrops,
   })
   const railKeys = railRowsRaw.flatMap((row) => row.cards.map((card) => card.listingKey))
   const railExtras = await attachListingCardExtras(railKeys).catch(

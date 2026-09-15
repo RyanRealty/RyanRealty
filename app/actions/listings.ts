@@ -111,6 +111,8 @@ export type ListingTileRow = {
   photoUrls?: string[]
   originalListPrice?: number | null
   price_drop_amount?: number | null
+  /** ISO from activity_events.price_drop — required to publish a drop badge. */
+  last_price_change_timestamp?: string | null
   ListOfficeName?: string | null
 }
 
@@ -1564,13 +1566,21 @@ export async function getViewportListings(
       row.ListOfficeName = extra.listOfficeName
       row.photoUrls = extra.photoUrls.length > 0 ? extra.photoUrls : undefined
       row.originalListPrice = extra.originalListPrice
-      if (
-        extra.originalListPrice != null &&
+      const drop =
+        extra.priceDrop &&
         row.ListPrice != null &&
-        extra.originalListPrice > row.ListPrice
-      ) {
-        row.price_drop_amount = extra.originalListPrice - row.ListPrice
-        if (!(row.price_drop_count && row.price_drop_count > 0)) row.price_drop_count = 1
+        Number.isFinite(row.ListPrice) &&
+        extra.priceDrop.previousPrice > row.ListPrice
+          ? extra.priceDrop
+          : null
+      if (drop) {
+        row.price_drop_amount = drop.previousPrice - row.ListPrice!
+        row.price_drop_count = 1
+        row.last_price_change_timestamp = drop.at
+        row.originalListPrice = drop.previousPrice
+      } else {
+        row.price_drop_amount = null
+        row.last_price_change_timestamp = null
       }
     }
   } catch {

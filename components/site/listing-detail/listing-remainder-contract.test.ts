@@ -11,6 +11,8 @@ describe('listing remainder composition', () => {
     expect(HERO).toMatch(/const live = preferListingMosaicPhotoUrl\(src\)/)
     expect(HERO).toMatch(/<img src=\{live\}/)
     expect(HERO).not.toMatch(/listingRowPhotoSrc\(src, LISTING_FIELD_LEAD_PHOTO_SIZE\)/)
+    expect(HERO).not.toContain('listing-strip__toggle')
+    expect(HERO).not.toContain('stripOpen')
     expect(PAGE).toContain('LISTING_FIELD_LEAD_PHOTO_SIZE')
     expect(PAGE).toContain('LISTING_MOSAIC_LEAD_PHOTO_SIZE')
     const CSS = readFileSync(resolve('components/site/listing-detail/listing-detail.css'), 'utf8')
