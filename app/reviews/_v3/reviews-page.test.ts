@@ -38,8 +38,7 @@ describe('reviews page composition', () => {
 
   it('imports shadcn-avatar on the route _v3 (SITE-109 Tip Ready)', () => {
     const avatars = readFileSync('app/reviews/_v3/ReviewsAvatars.ts', 'utf8')
-    expect(avatars).toContain("from '@/components/ui/avatar'")
-    expect(avatars).toContain('Avatar')
+    expect(avatars).toMatch(/import\s*\{[^}]*Avatar[^}]*\}\s*from\s*'@\/components\/ui\/avatar'/)
     expect(avatars).toContain('AvatarFallback')
     expect(avatars).not.toMatch(/AvatarImage/)
   })
