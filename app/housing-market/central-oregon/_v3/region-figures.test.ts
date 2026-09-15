@@ -14,6 +14,7 @@ import {
   buildRegionMosChart,
   composeRegionLiveTrace,
   insightFaceForRead,
+  insightIsScrubbing,
   monthlyPaceFromMos,
 } from './region-figures'
 
@@ -139,6 +140,18 @@ describe('SITE-88 visitor-facing region traces', () => {
     expect(hovered.claim).toBe('2026 median sale $650K in Apr')
     expect(hovered.figure).toBe('$650K')
     expect(hovered.figureLabel).toBe('2026 median sale in Apr')
+    expect(
+      insightIsScrubbing(pages[0]!, {
+        tick: 'Aug',
+        readings: [{ name: '2026', label: '$664K', emphasis: true }],
+      }),
+    ).toBe(false)
+    expect(
+      insightIsScrubbing(pages[0]!, {
+        tick: 'Apr',
+        readings: [{ name: '2026', label: '$650K', emphasis: true }],
+      }),
+    ).toBe(true)
     expect(maskDigits('$664K')).toBe('$•••K')
     expect(maskDigits('1,502')).toBe('•,•••')
     expect(maskDigits('325')).toBe('•••')

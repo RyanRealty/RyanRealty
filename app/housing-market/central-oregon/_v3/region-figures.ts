@@ -95,6 +95,15 @@ export type InsightFace = {
   secondLabel?: string
 }
 
+/** Pointer left the rest month — not the chart's resting last-point read. */
+export function insightIsScrubbing(
+  page: RegionInsightPage,
+  read: InsightChartRead | null,
+): boolean {
+  if (!read) return false
+  return insightFaceForRead(page, read).figure !== page.figure
+}
+
 /**
  * Claim, hero, and label stay one sourced face. Scrub writes the open month
  * into all three so the card never says Aug $664K next to an April $650K hero.

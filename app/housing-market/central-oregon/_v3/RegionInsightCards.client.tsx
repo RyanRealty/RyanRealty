@@ -13,7 +13,7 @@ import { InsightCards } from '@/components/motion/insight-cards'
 import { V3Chart, type V3ChartRead } from '@/components/site/v3/V3Chart'
 import { V3_ROOT_CLASS } from '@/components/site/v3'
 import { cn } from '@/lib/utils'
-import { insightFaceForRead, type RegionInsightPage } from './region-figures'
+import { insightFaceForRead, insightIsScrubbing, type RegionInsightPage } from './region-figures'
 
 export type RegionInsightCardsProps = {
   pages: readonly RegionInsightPage[]
@@ -47,13 +47,13 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
   const current = pages[safe]
   if (!current) return null
 
-  const face = insightFaceForRead(current, read)
+  const scrubbing = insightIsScrubbing(current, read)
+  const face = insightFaceForRead(current, scrubbing ? read : null)
   const segments = current.segments ?? []
   const safeSegment = Math.max(0, Math.min(Math.max(segments.length - 1, 0), segment))
   const chosen = segments[safeSegment]
   const heroValue = chosen?.figure ?? face.figure
   const heroLabel = chosen?.label ?? face.figureLabel
-  const scrubbing = read != null
   const pill = current.pillHref ? (
     <Link href={current.pillHref} className="insight-cards__pill-link">
       {current.pill}
