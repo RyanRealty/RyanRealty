@@ -133,9 +133,11 @@
       "states": [
         "default",
         "source",
-        "year-page"
+        "year-page",
+        "source-open",
+        "year-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3221/housing-market/central-oregon on SITE-88 worktree"
+      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, http://127.0.0.1:3221/housing-market/central-oregon. year-open = Insights Compare hover; source-open = MOS DigitSwap replay hover. Aliases year-page←year-open, source←source-open."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/desktop.png",
@@ -143,9 +145,13 @@
       "sourceDesktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/source-desktop.png",
       "sourceMobile375": "design_system/ryan-realty/ui_kits/market-report-region/shots/source-mobile375.png",
       "yearPageDesktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/year-page-desktop.png",
-      "yearPageMobile375": "design_system/ryan-realty/ui_kits/market-report-region/shots/year-page-mobile375.png"
+      "yearPageMobile375": "design_system/ryan-realty/ui_kits/market-report-region/shots/year-page-mobile375.png",
+      "yearOpenDesktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/year-open-desktop.png",
+      "yearOpenMobile375": "design_system/ryan-realty/ui_kits/market-report-region/shots/year-open-mobile375.png",
+      "sourceOpenDesktop": "design_system/ryan-realty/ui_kits/market-report-region/shots/source-open-desktop.png",
+      "sourceOpenMobile375": "design_system/ryan-realty/ui_kits/market-report-region/shots/source-open-mobile375.png"
     },
-    "shotsHash": "sha256:4e46f2ae12975882ee7943bc7e3daed284799e935de91e22f6cdda3f8f034099",
+    "shotsHash": "sha256:44cdb3d28f27250197ca19e3fb8f4da3645ff23526a389007d2789a6e91b1f6f",
     "scores": [
       64,
       58,
