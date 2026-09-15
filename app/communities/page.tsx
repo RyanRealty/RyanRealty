@@ -168,10 +168,7 @@ export default async function CommunitiesPage() {
     { label: `Homes for sale in ${r.city}`, href: `/homes-for-sale/${r.citySlug}` },
   ])
 
-  const caption =
-    totalActive > 0
-      ? `${formatCount(totalActive)} homes for sale across ${formatCount(communityCount)} communities.`
-      : `${formatCount(communityCount)} resort and master-planned communities.`
+  const caption = `${formatCount(communityCount)} resort and master-planned communities.`
 
   return (
     <>

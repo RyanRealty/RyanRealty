@@ -36,13 +36,16 @@ describe('reviews page composition', () => {
     expect(PAGE).toContain("href: '/team'")
   })
 
-  it('imports the shadcn-avatar catalog composition on the route _v3 (SITE-109)', () => {
+  it('imports the shadcn-avatar composition on the route _v3 (SITE-109)', () => {
     const avatars = readFileSync('app/reviews/_v3/ReviewsAvatars.ts', 'utf8')
     const group = readFileSync('app/reviews/_v3/ReviewsAvatarGroup.client.tsx', 'utf8')
-    expect(avatars).toMatch(/import\s*\{[\s\S]*AvatarImage[\s\S]*\}\s*from\s*'@\/components\/ui\/avatar'/)
+    expect(avatars).toMatch(/import\s*\{[\s\S]*AvatarFallback[\s\S]*\}\s*from\s*'@\/components\/ui\/avatar'/)
     expect(avatars).toContain('AvatarGroup')
+    expect(avatars).not.toContain('AvatarImage')
     expect(group).toContain('AvatarGroup')
-    expect(group).toContain('AvatarImage')
+    expect(group).toContain('AvatarFallback')
+    expect(group).not.toContain('AvatarImage')
+    expect(group).not.toContain('/images/catalog/shadcn-avatar/')
     expect(group).toContain('DropdownMenuGroup')
     expect(group).toContain('Read this review')
     expect(group).not.toMatch(/>\s*Sign Out\s*</)

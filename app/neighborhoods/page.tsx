@@ -15,7 +15,6 @@ import {
 } from '@/lib/data'
 import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/getBendNeighborhoodLedger'
 import { cityHero, preferPlaceHero } from '@/lib/geo-images'
-import { formatCount } from '@/lib/format/count'
 import { formatIndexMedianUsd } from '@/lib/market/publish-index-median'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -125,7 +124,6 @@ export default async function NeighborhoodsPage() {
     })
     .sort((a, b) => a.name.localeCompare(b.name))
 
-  const totalActive = featured.reduce((sum, n) => sum + (n.activeCount ?? 0), 0)
   const countsPublishable = ledger.length > 0 && featured.every((n) => n.activeCount != null)
   const maxCount = Math.max(0, ...featured.map((n) => n.activeCount ?? 0))
 
@@ -163,10 +161,7 @@ export default async function NeighborhoodsPage() {
     },
   ]
 
-  const caption =
-    countsPublishable && totalActive > 0
-      ? `${formatCount(totalActive)} homes for sale across these districts.`
-      : null
+  const caption = null
 
   return (
     <>

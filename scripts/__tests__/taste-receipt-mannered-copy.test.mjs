@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import {
   ACTION_BILLBOARD_REFUSE,
   HOME_BRIEF_LEAK_REFUSE,
+  INVENTORY_LECTURE_REFUSE,
   MANNERED_COPY_REFUSE,
   manneredPublicCopyProblems,
   publicCopyHaystack,
@@ -133,6 +134,16 @@ describe('manneredPublicCopyProblems', () => {
       'The same homes the map above marks, with price, beds and property type on the filters. Sold and pending homes are counted on the market section further down, not here.'
     expect(manneredPublicCopyProblems(`body: \`${lecture}\``)).toContain(MANNERED_COPY_REFUSE)
   })
+
+  it('refuses inventory-count lectures on rails and place folds', () => {
+    const p = manneredPublicCopyProblems(
+      '<span>3,271 homes for sale across Central Oregon</span>',
+    )
+    expect(p).toContain(INVENTORY_LECTURE_REFUSE)
+    expect(
+      manneredPublicCopyProblems('`1,746 homes for sale across these cities.`'),
+    ).toContain(INVENTORY_LECTURE_REFUSE)
+  })
 })
 
 describe('tasteDoneProblems — mannered copy is Tip Ready refuse', () => {
@@ -154,6 +165,13 @@ describe('tasteDoneProblems — mannered copy is Tip Ready refuse', () => {
 
   it('passes a plain short line', () => {
     expect(tasteDoneProblems(doneReceipt(), { sourceText: PLAIN_CLAIM })).toEqual([])
+  })
+
+  it('refuses an inventory-count lecture on an otherwise Tip Ready receipt', () => {
+    const p = tasteDoneProblems(doneReceipt(), {
+      sourceText: '3,271 homes for sale across Central Oregon',
+    })
+    expect(p).toContain(INVENTORY_LECTURE_REFUSE)
   })
 })
 
@@ -182,6 +200,7 @@ describe('live homepage source after the brief leak kill', () => {
       'app/page.tsx',
       'app/_v3/HomeHeroSearch.client.tsx',
       'app/_v3/HomeHomesRails.tsx',
+      'app/_v3/HomeListingRail.client.tsx',
       'app/_v3/HomeBrowsePlaces.tsx',
       'app/_v3/HomeFeaturedCommunity.client.tsx',
     ]

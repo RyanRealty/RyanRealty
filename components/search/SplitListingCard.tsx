@@ -32,6 +32,7 @@ export function SplitListingCard({
   listOfficeName,
   badges,
   hasTour,
+  tourUrl,
   tourLabel,
   onOpenTour,
   className,
@@ -55,6 +56,7 @@ export function SplitListingCard({
   listOfficeName?: string | null
   badges: Array<{ kind: V3ListingRowBadge; label: string }>
   hasTour: boolean
+  tourUrl?: string | null
   tourLabel?: string
   onOpenTour?: () => void
   className?: string
@@ -125,6 +127,7 @@ export function SplitListingCard({
         urls={photoUrls}
         tags={badges}
         hasTour={hasTour}
+        tourUrl={tourUrl}
         onOpenTour={onOpenTour}
         addressLine={addressLine}
         priority={priority}

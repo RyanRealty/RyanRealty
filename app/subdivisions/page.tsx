@@ -165,10 +165,7 @@ export default async function SubdivisionsPage() {
   const [firstFigureRow, ...restFigureRows] = figureRows
   const [firstPlainRow, ...restPlainRows] = plainRows
 
-  const caption =
-    totalActive != null && totalActive > 0
-      ? `${formatCount(totalActive)} homes for sale across ${formatCount(platCount)} subdivisions. Each bar is the subdivision's share of the largest live count on the list.`
-      : `${formatCount(platCount)} subdivisions inside the known communities.`
+  const caption = `${formatCount(platCount)} subdivisions inside the known communities.`
 
   return (
     <>
