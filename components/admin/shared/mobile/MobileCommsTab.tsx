@@ -2,7 +2,7 @@
  * MobileCommsTab — §25.6 Comms tab for the mobile Contact Detail
  *
  * A chronological list of inbound/outbound emails, texts, and calls.
- * Newest first. Matches the CRM iOS Comms tab anatomy:
+ * Oldest → newest (composer sticky under latest — iMessage). Row anatomy matches CRM iOS:
  *   - Email row: envelope icon (accent) · bold subject · sender+thread badge · preview · date
  *   - Archived label in muted text
  *   - Open-tracking sub-row: orange envelope + "N open(s)" + "Last opened [date]"

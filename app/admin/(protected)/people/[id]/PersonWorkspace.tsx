@@ -30,7 +30,8 @@ import {
   getCrmSmsTemplates,
   getTwilioSmsStatus,
 } from '@/app/actions/crm'
-import { SectionHead, StateWord, ThreadBubble } from '@/components/admin/v2'
+import { SectionHead, StateWord, ThreadBubble, ThreadScrollEnd } from '@/components/admin/v2'
+import { oldestFirst } from '@/lib/crm/thread-chronology'
 import ContactEmailEngagement from '@/components/admin/crm/ContactEmailEngagement'
 import {
   emailSendCampaignHref,
@@ -233,7 +234,8 @@ export async function PersonWorkspace({
           <div className="av2-pane av2-pane--thread" style={{ marginBottom: 12 }}>
             {(() => {
               const used = new Set<string>()
-              const bubbles = conversation.items.map((m) => {
+              // DAL newest-first; pane is normal column (not column-reverse).
+              const bubbles = oldestFirst(conversation.items).map((m) => {
                 const chan = m.kind.startsWith('sms') ? ('SMS' as const) : m.kind.startsWith('email') ? ('Email' as const) : null
                 const dir = m.kind.endsWith('_in') ? ('in' as const) : m.kind.endsWith('_out') ? ('out' as const) : null
                 const send =
@@ -332,6 +334,7 @@ export async function PersonWorkspace({
                 <>
                   {bubbles}
                   {extras}
+                  <ThreadScrollEnd />
                 </>
               )
             })()}

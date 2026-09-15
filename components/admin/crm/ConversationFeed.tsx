@@ -2,21 +2,22 @@
 
 /**
  * CRM-clone Comms feed for a CRM person. Renders the contact's messages as a
- * chronological row list — one row per message, newest first — matching the
- * Comms tab (channel icon · subject/descriptor · participant ·
- * 2-line preview · date · email open-count). Rows collapse to the CRM anatomy at
- * rest and expand on tap to reveal the full body, MMS attachments, and call
- * recordings (features CRM's collapsed rows don't carry, surfaced on demand).
+ * chronological row list — one row per message, oldest → newest — so the sticky
+ * mobile composer sits under the latest (iMessage). Row anatomy still matches
+ * CRM (channel icon · subject/descriptor · participant · 2-line preview · date ·
+ * email open-count). Rows collapse at rest and expand on tap for full body, MMS,
+ * and call recordings. DAL still returns newest-first; we reverse once here.
  */
 import { useState, useTransition } from 'react'
 import { EyeOff, Mail, MailOpen, MessageSquare, Phone, ShieldAlert, Users, Voicemail } from 'lucide-react'
 import { groupInfoFromPayload } from '@/lib/crm/group-message'
-import { Button } from '@/components/admin/v2'
+import { Button, ThreadScrollEnd } from '@/components/admin/v2'
 import { blockCrmNumber } from '@/app/actions/crm-block'
 import { timelineEmailBody } from '@/lib/crm/email-body'
 import { smsDisplayBody } from '@/lib/crm/sms-display-body'
 import { StoredAttachmentStrip } from '@/components/admin/crm/StoredAttachments'
 import { formatDate, formatDateTime as fmtDateTimeFn } from '@/lib/format/date'
+import { oldestFirst } from '@/lib/crm/thread-chronology'
 
 export type ConversationEvent = {
   id: number
@@ -107,7 +108,7 @@ export default function ConversationFeed({
   initialCursor?: string | null
 }) {
   const [openId, setOpenId] = useState<number | null>(null)
-  const [items, setItems] = useState<ConversationEvent[]>(events)
+  const [items, setItems] = useState<ConversationEvent[]>(() => oldestFirst(events))
   const [cursor, setCursor] = useState<string | null>(initialCursor)
   const [pending, startTransition] = useTransition()
   // Inbound spam blocking: numbers blocked this session + the one in flight.
@@ -128,7 +129,8 @@ export default function ConversationFeed({
     startTransition(async () => {
       const { loadContactConversation } = await import('@/app/actions/crm-conversation')
       const res = await loadContactConversation(personId, cursor)
-      setItems((prev) => [...prev, ...res.items])
+      // API page is newest-first; prepend as oldest→newer so chronology holds.
+      setItems((prev) => [...oldestFirst(res.items), ...prev])
       setCursor(res.nextCursor)
     })
   }
@@ -143,6 +145,13 @@ export default function ConversationFeed({
 
   return (
     <>
+    {cursor ? (
+      <div className="pb-2 text-center">
+        <Button variant="quiet" onClick={loadOlder} disabled={pending}>
+          {pending ? 'Loading…' : 'Load older messages'}
+        </Button>
+      </div>
+    ) : null}
     <ul className="divide-y divide-[color:var(--a-border)]">
       {items.map((e) => {
         const { Icon, title, participant } = rowMeta(e, personName)
@@ -273,13 +282,7 @@ export default function ConversationFeed({
         )
       })}
     </ul>
-    {cursor ? (
-      <div className="pt-2 text-center">
-        <Button variant="quiet" onClick={loadOlder} disabled={pending}>
-          {pending ? 'Loading…' : 'Load older messages'}
-        </Button>
-      </div>
-    ) : null}
+    {items.length ? <ThreadScrollEnd /> : null}
     </>
   )
 }

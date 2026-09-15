@@ -48,3 +48,25 @@ describe('CRM compose is the only send path', () => {
     expect(surface.includes('osascript')).toBe(false)
   })
 })
+
+describe('CRM thread chronology (iMessage)', () => {
+  it('MessagesThread reverses newest-first DAL into oldest→newest + scrolls to latest', () => {
+    const thread = read('app/admin/(protected)/messages/MessagesThread.tsx')
+    expect(thread).toMatch(/oldestFirst/)
+    expect(thread).toMatch(/ThreadScrollEnd/)
+  })
+
+  it('person bubble pane uses oldestFirst (not column-reverse)', () => {
+    const ws = read('app/admin/(protected)/people/[id]/PersonWorkspace.tsx')
+    const css = read('components/admin/v2/admin-v2.css')
+    expect(ws).toMatch(/oldestFirst\(conversation\.items\)/)
+    expect(css).toMatch(/\.av2-pane--thread \{ flex-direction:column;/)
+    expect(css).not.toMatch(/\.av2-pane--thread \{ flex-direction:column-reverse;/)
+  })
+
+  it('ConversationFeed (mobile Comms) is oldest→newest under sticky compose', () => {
+    const feed = read('components/admin/crm/ConversationFeed.tsx')
+    expect(feed).toMatch(/oldestFirst\(events\)/)
+    expect(feed).toMatch(/ThreadScrollEnd/)
+  })
+})

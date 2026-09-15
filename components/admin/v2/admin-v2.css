@@ -239,7 +239,9 @@ textarea.av2-input { min-height:88px; resize:vertical; }
 .av2-pane { display:flex; flex-direction:column; gap:var(--a-s3); min-width:0;
   border:1px solid var(--a-border);
   border-radius:var(--a-r-lg); padding:var(--a-s4); background:var(--a-bg); }
-.av2-pane--thread { flex-direction:column-reverse; max-height:440px; overflow-y:auto; }
+/* Oldest→newest in DOM (not column-reverse). Scroll ends on latest above compose. */
+.av2-pane--thread { flex-direction:column; max-height:440px; overflow-y:auto; }
+.av2-thread-end { width:100%; height:1px; flex:none; }
 .av2-inline-form { display:flex; gap:var(--a-s3); align-items:flex-end; flex-wrap:wrap; }
 .av2-inline-form .av2-field { flex:1 1 180px; }
 .av2-editgrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));

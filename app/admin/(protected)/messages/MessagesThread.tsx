@@ -10,7 +10,8 @@ import { searchPeopleForMergeAction, linkUnknownCallerToPersonAction } from '@/a
 import { isUnknownCaller } from '@/lib/crm/display-name'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
 import { smsDisplayBody } from '@/lib/crm/sms-display-body'
-import { Button, ThreadBubble } from '@/components/admin/v2'
+import { Button, ThreadBubble, ThreadScrollEnd } from '@/components/admin/v2'
+import { oldestFirst } from '@/lib/crm/thread-chronology'
 import { ComposeSurface } from '@/components/admin/crm/ComposeSurface'
 import AddPersonForm from './AddPersonForm'
 import type { CrmAccess } from '@/app/actions/crm'
@@ -63,6 +64,9 @@ export async function MessagesThread({
     canAssign ? getCrmBrokers() : Promise.resolve([]),
   ])
   const quiet = inSmsQuietHours()
+
+  // DAL is newest-first (LIMIT window); bubbles need oldest → newest.
+  const chronological = oldestFirst(thread)
 
   // Unknown-caller naming (Messages-fold slice 2): the same inline add/link
   // affordance the inbox reading pane carried, so an unidentified caller can
@@ -120,7 +124,7 @@ export async function MessagesThread({
         </header>
 
         <div className="av2-scroll">
-          {thread.map((m) => {
+          {chronological.map((m) => {
             const chan = channelLabel(m.kind)
             if (m.direction !== 'in' && m.direction !== 'out') {
               return (
@@ -144,7 +148,7 @@ export async function MessagesThread({
               </ThreadBubble>
             )
           })}
-          {thread.length === 0 ? <div className="av2-sysnote">No messages yet.</div> : null}
+          {thread.length === 0 ? <div className="av2-sysnote">No messages yet.</div> : <ThreadScrollEnd />}
         </div>
 
         {isUnknown ? (
