@@ -1,8 +1,9 @@
 'use client'
 
 /**
- * house-sheet as All filters. Bare V3Sheet drawer with dual tick-stop
- * RangeSliders and shadcn Checkbox flags — not a thin cream Any-list.
+ * house-sheet as All filters: one question per step (PUBLIC_UI Pattern 5).
+ * First step is the dual-thumb ask. Echo + progress stay on — a dump of
+ * type + flags + price on one cream panel is not the house sheet.
  */
 import { useEffect, useMemo, useState } from 'react'
 import { RangeSlider } from '@/components/motion/range-slider'
@@ -64,6 +65,10 @@ function stopIndex(value: number): number {
   return best
 }
 
+function order(a: number, b: number): { low: number; high: number } {
+  return a <= b ? { low: a, high: b } : { low: b, high: a }
+}
+
 export function SearchFiltersSheet({
   open,
   onOpenChange,
@@ -106,51 +111,53 @@ export function SearchFiltersSheet({
   const lastIdx = Math.max(0, V3_PRICE_STOPS.length - 1)
   const first = V3_PRICE_STOPS[0] ?? 0
   const last = V3_PRICE_STOPS[lastIdx] ?? first
-  const lo = Math.min(Math.max(draftPrice.low, first), last)
-  const hi = Math.min(Math.max(draftPrice.high, first), last)
-  const loIdx = stopIndex(lo)
-  const hiIdx = stopIndex(hi)
+  const pair = order(
+    Math.min(Math.max(draftPrice.low, first), last),
+    Math.min(Math.max(draftPrice.high, first), last),
+  )
+  const loIdx = stopIndex(pair.low)
+  const hiIdx = stopIndex(pair.high)
 
   const steps: readonly V3SheetStep[] = [
     {
-      id: 'filters',
-      label: 'What should this search include?',
-      children: [beds ? `${beds}+ bedrooms already on this search.` : 'Price, type, and flags.'],
+      id: 'ask',
+      label: 'What ask should this search include?',
+      children: [beds ? `${beds}+ bedrooms already on this search.` : 'Min ask and Max ask on one track.'],
       blocks: [
         {
           kind: 'drawing',
-          label: formatPriceRange(lo, hi, V3_PRICE_STOPS),
+          label: formatPriceRange(pair.low, pair.high, V3_PRICE_STOPS),
           node: (
-            <div className="grid gap-2">
-              <RangeSlider
-                value={loIdx}
-                min={0}
-                max={lastIdx}
-                step={1}
-                showTicks
-                aria-label="Minimum ask"
-                formatValueText={(i) => formatPriceStop(V3_PRICE_STOPS[i] ?? lo, V3_PRICE_STOPS)}
-                onValueChange={(i) => {
-                  const next = V3_PRICE_STOPS[i] ?? lo
-                  setDraftPrice({ low: Math.min(next, hi), high: Math.max(next, hi) })
-                }}
-              />
-              <RangeSlider
-                value={hiIdx}
-                min={0}
-                max={lastIdx}
-                step={1}
-                showTicks
-                aria-label="Maximum ask"
-                formatValueText={(i) => formatPriceStop(V3_PRICE_STOPS[i] ?? hi, V3_PRICE_STOPS)}
-                onValueChange={(i) => {
-                  const next = V3_PRICE_STOPS[i] ?? hi
-                  setDraftPrice({ low: Math.min(lo, next), high: Math.max(lo, next) })
-                }}
-              />
-            </div>
+            <RangeSlider
+              values={[loIdx, hiIdx]}
+              min={0}
+              max={lastIdx}
+              step={1}
+              showTicks
+              aria-label="Minimum ask"
+              maxAriaLabel="Maximum ask"
+              formatValueText={(i) => formatPriceStop(V3_PRICE_STOPS[i] ?? pair.low, V3_PRICE_STOPS)}
+              onValuesChange={([nextLo, nextHi]) => {
+                setDraftPrice(
+                  order(V3_PRICE_STOPS[nextLo] ?? pair.low, V3_PRICE_STOPS[nextHi] ?? pair.high),
+                )
+              }}
+            />
           ),
         },
+      ],
+      advanceLabel: 'Next',
+    },
+    {
+      id: 'type',
+      label: 'What kind of home?',
+      field: {
+        kind: 'select',
+        name: 'propertyType',
+        label: 'Home type',
+        options: TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+      },
+      blocks: [
         {
           kind: 'drawing',
           label: 'Flags',
@@ -175,12 +182,6 @@ export function SearchFiltersSheet({
           ),
         },
       ],
-      field: {
-        kind: 'select',
-        name: 'propertyType',
-        label: 'Home type',
-        options: TYPE_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
-      },
       advanceLabel: 'See homes',
     },
   ]
@@ -192,8 +193,8 @@ export function SearchFiltersSheet({
       surface="drawer"
       open={open}
       onOpenChange={onOpenChange}
-      showProgress={false}
-      showEcho={false}
+      showProgress
+      showEcho
       defaultAnswers={{
         propertyType: propertyType || 'any',
       }}

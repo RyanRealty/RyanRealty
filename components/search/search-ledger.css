@@ -1021,6 +1021,15 @@ button.srch-chip--key {
   color: var(--v3-ink);
 }
 
+.srch-price-beui__ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--v3-size-label, 0.7rem);
+  letter-spacing: var(--v3-track-label, 0.12em);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted, color-mix(in srgb, var(--v3-navy) 70%, transparent));
+}
+
 /* House-sheet language on the All-filters overlay (catalog: house-sheet). */
 .srch-sheet {
   background: var(--v3-surface, rgba(255, 255, 255, 1));

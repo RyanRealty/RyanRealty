@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * First-viewport price control: beui-range-slider twice (min + max) with
- * tick stops. A single max slider at 100% reads as a navy capsule (Mini 51).
+ * Official beui-range-slider as one dual-thumb tick-stop track.
+ * Two stacked sliders read as a dotted single-thumb plus a navy capsule (Mini 51).
  */
 import { RangeSlider } from '@/components/motion/range-slider'
 import { cn } from '@/lib/utils'
@@ -64,33 +64,26 @@ export function SearchPriceRail({
         {formatPriceRange(pair.low, pair.high, V3_PRICE_STOPS)}
       </p>
       <RangeSlider
-        value={loIdx}
+        values={[loIdx, hiIdx]}
         min={0}
         max={lastIdx}
         step={1}
         showTicks
         aria-label="Minimum ask"
+        maxAriaLabel="Maximum ask"
         formatValueText={(i) => formatPriceStop(V3_PRICE_STOPS[i] ?? pair.low, V3_PRICE_STOPS)}
-        onValueChange={(i) => {
-          const next = V3_PRICE_STOPS[i] ?? pair.low
-          const ordered = order(next, pair.high)
+        onValuesChange={([nextLo, nextHi]) => {
+          const ordered = order(
+            V3_PRICE_STOPS[nextLo] ?? pair.low,
+            V3_PRICE_STOPS[nextHi] ?? pair.high,
+          )
           onChange(ordered.low, ordered.high)
         }}
       />
-      <RangeSlider
-        value={hiIdx}
-        min={0}
-        max={lastIdx}
-        step={1}
-        showTicks
-        aria-label="Maximum ask"
-        formatValueText={(i) => formatPriceStop(V3_PRICE_STOPS[i] ?? pair.high, V3_PRICE_STOPS)}
-        onValueChange={(i) => {
-          const next = V3_PRICE_STOPS[i] ?? pair.high
-          const ordered = order(pair.low, next)
-          onChange(ordered.low, ordered.high)
-        }}
-      />
+      <div className="srch-price-beui__ends" aria-hidden>
+        <span>Min ask</span>
+        <span>Max ask</span>
+      </div>
     </div>
   )
 }
