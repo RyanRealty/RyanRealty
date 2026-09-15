@@ -90,7 +90,8 @@
     order: 3;
   }
 
-  .v3-proof--score > .v3-proof__face-avatars {
+  .v3-proof--score > .v3-proof__face-avatars,
+  .v3-proof--score > .v3-proof__avatar-group {
     order: 4;
   }
 
@@ -243,6 +244,10 @@
    cream initials on navy. AboutFaces disables it the same way. */
 .v3-proof__avatar::after {
   display: none !important;
+}
+
+.v3-proof__avatar-group {
+  margin: var(--v3-space-sm) 0 0;
 }
 
 .v3-proof__face-avatars {
