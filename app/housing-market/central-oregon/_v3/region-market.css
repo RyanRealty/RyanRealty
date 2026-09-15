@@ -67,10 +67,23 @@
 }
 
 @media (max-width: 63.99rem) {
+  #market.v3-instrument {
+    padding-top: var(--v3-space-sm);
+    padding-bottom: var(--v3-space-sm);
+  }
+
+  #market .v3-instrument__headline {
+    margin-bottom: var(--v3-space-sm);
+  }
+
   #market .v3-instrument__stage--split {
     display: flex;
     flex-direction: column;
-    gap: var(--v3-space-sm);
+    gap: var(--v3-space-xs);
+  }
+
+  #central-oregon-mos .v3-mos__plain {
+    display: none;
   }
 
   #central-oregon-mos .v3-mos__caption {
@@ -78,16 +91,20 @@
   }
 
   #central-oregon-mos .v3-mos__pair {
-    gap: 0.25rem;
+    gap: 0.125rem;
   }
 
   #central-oregon-mos .v3-mos__barrow {
-    min-height: 2rem;
+    min-height: var(--v3-tap);
   }
 
-  /* Phone: both MOS bars clear the fold; year series follows after the ask. */
+  /* Phone: MOS then the year chart in the first viewport — plot plus month labels. */
+  #market .v3-instrument__stage--split .v3-instrument__drawing {
+    order: -1;
+  }
+
   #market .v3-instrument__stage--split .v3-instrument__chart {
-    order: 2;
+    order: 1;
   }
 
   #market-chart .v3-chart__legend {
@@ -100,7 +117,12 @@
 
   #market-chart .v3-chart__plot,
   #market-chart .v3-chart__svg {
-    max-height: 6.5rem;
+    max-height: 9.5rem;
+    height: 9.5rem;
+  }
+
+  #market-chart .v3-chart__x {
+    font-size: var(--v3-size-label);
   }
 
   #market-chart .v3-chart__tip--resting {
@@ -115,6 +137,15 @@
 
   #market-chart .v3-chart__tip-row dt {
     display: none;
+  }
+
+  #market-chart .v3-chart__year-pager {
+    margin-bottom: var(--v3-space-2xs);
+  }
+
+  #market-chart .v3-chart__claim {
+    font-size: var(--v3-size-body-sm);
+    margin-bottom: var(--v3-space-2xs);
   }
 
   #market.v3-instrument.hm-tremor .v3-figure__value {

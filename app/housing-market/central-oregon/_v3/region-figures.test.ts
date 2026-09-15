@@ -1,7 +1,9 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { MOS_METHODOLOGY_CLAUSE } from '@/lib/market/classify'
-import { REGION_CITIES_SOURCE, REGION_FOLD_LABEL } from './region-constants'
+import { REGION_CITIES_SOURCE, REGION_FOLD_LABEL, REGION_MARKET_FOLD_LABEL } from './region-constants'
 import { marketReportHereBody } from '@/lib/market/report-doors'
 import {
   REGION_JARGON_RE,
@@ -27,7 +29,14 @@ describe('SITE-88 visitor-facing region traces', () => {
   it('does not print leftover membership, sample-gated, or MarketPulse', () => {
     const { live, pace } = buildRegionInstruments(HUD, '3.8')
     const extra = composeRegionLiveTrace(live.trace, true)
-    for (const text of [live.trace, pace.trace, extra, REGION_CITIES_SOURCE, REGION_FOLD_LABEL]) {
+    for (const text of [
+      live.trace,
+      pace.trace,
+      extra,
+      REGION_CITIES_SOURCE,
+      REGION_FOLD_LABEL,
+      REGION_MARKET_FOLD_LABEL,
+    ]) {
       expect(text, text).not.toMatch(REGION_JARGON_RE)
     }
   })
@@ -58,10 +67,18 @@ describe('SITE-88 visitor-facing region traces', () => {
   })
 
   it('the fold label names what is behind it and never a count', () => {
-    expect(REGION_FOLD_LABEL).not.toMatch(/\d/)
-    expect(REGION_FOLD_LABEL.length).toBeGreaterThan(20)
-    expect(REGION_FOLD_LABEL.toLowerCase()).not.toContain('all ')
-    expect(REGION_FOLD_LABEL.toLowerCase()).not.toContain('figures')
+    for (const label of [REGION_FOLD_LABEL, REGION_MARKET_FOLD_LABEL]) {
+      expect(label).not.toMatch(/\d/)
+      expect(label.length).toBeGreaterThan(20)
+      expect(label.toLowerCase()).not.toContain('all ')
+      expect(label.toLowerCase()).not.toContain('figures')
+    }
+  })
+
+  it('the route _v3 set imports the catalog specifiers Tip Ready requires', () => {
+    const catalog = readFileSync(resolve(__dirname, 'region-catalog.ts'), 'utf8')
+    expect(catalog).toContain("from '@/components/motion/insight-pager'")
+    expect(catalog).toContain("from '@/components/motion/number'")
   })
 })
 

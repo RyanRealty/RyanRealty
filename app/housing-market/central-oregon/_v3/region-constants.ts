@@ -70,22 +70,25 @@ export const CLOSED_SALES_TO_YEAR = 2025
 export const HISTORY_PATH = '/housing-market/history'
 
 /**
- * What the hero fold reveals (SITE-88). Route-local: V3Instrument's default
- * summary is "All {n} figures", which printed as a database row count. Mix
- * cells are not on this page, so the label names property-type supply and
- * pace only.
+ * What the pace fold reveals. Route-local: V3Instrument's default summary
+ * is "All {n} figures", which printed as a database row count.
  */
 export const REGION_FOLD_LABEL =
   'Supply by property type, and how fast homes are selling'
 
 /**
- * How many figures lead when the MOS drawing is on screen (SITE-88). Two:
- * median list and under contract. Homes-for-sale and a-month-of-sales are
- * the two bars, so reprinting them as tiles is the KPI-grid tell. The
- * shared MARKET_LEAD_FIGURES cap of four still applies on city/annual
- * openings that have no two-bar on the same fold.
+ * What the opening Instrument disclosure reveals (SITE-103). MOS bars and
+ * the year overlay own the first viewport. Live list and under-contract
+ * sit behind this editorial line — never "All 42 figures".
  */
-export const REGION_LEAD_FIGURES = 2
+export const REGION_MARKET_FOLD_LABEL = 'Live list price and homes under contract'
+
+/**
+ * Opening lead count (SITE-103). Zero: the drawing is the answer, so every
+ * live figure folds. V3Instrument still requires foldAfter={REGION_LEAD_FIGURES}
+ * (not a raw 0) so the fold-after gate can see the named cap.
+ */
+export const REGION_LEAD_FIGURES = 0
 
 /**
  * Cities Ledger trace. Visitor English — no MarketPulse / leftover membership.
