@@ -2,26 +2,26 @@
 
 /**
  * Region months-of-supply on a labeled threshold scale, with a searchable
- * city overlay (SITE-69).
+ * city overlay (SITE-69 / SITE-92).
  *
- * Adapted from beui:combobox (searchable select that reveals more data) and
- * beautifului:insight-cards (one figure compared against another). House paint
- * only: navy on cream. Geometry reuses answerScaleGeometry so the mark and the
- * bands never disagree.
+ * The overlay IS the installed beui-combobox (`components/motion/combobox`):
+ * ComboboxTrigger + ComboboxList, restyled navy on cream. House paint only.
+ * Geometry reuses answerScaleGeometry so the mark and the bands never disagree.
  *
  * MOS stays two named bars upstream (V3Drawing). This is the scale that shows
  * where that ratio sits versus seller ≤4 / balanced 4–6 / buyer ≥6.
  */
 
+import { useId, useMemo, useState } from 'react'
 import {
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from 'react'
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from '@/components/motion/combobox'
 import { cn } from '@/lib/utils'
 import { answerScaleGeometry, type V3AnswerScale } from './V3Answers.marks'
 import { V3_ROOT_CLASS } from './atoms'
@@ -85,62 +85,18 @@ export function V3MosCompare({
   className,
 }: V3MosCompareProps) {
   const uid = useId()
-  const listId = `${uid}-list`
-  const inputId = `${uid}-input`
-  const rootRef = useRef<HTMLDivElement | null>(null)
-  const inputRef = useRef<HTMLInputElement | null>(null)
-
   const overlayable = useMemo(
     () => cities.filter((c) => c.mos != null && c.mos > 0 && c.mosLabel && c.verdictLabel),
     [cities],
   )
 
   const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
-  const [activeIndex, setActiveIndex] = useState(0)
+  const [selectedSlug, setSelectedSlug] = useState<string | undefined>(undefined)
 
   const selected = useMemo(
     () => (selectedSlug ? overlayable.find((c) => c.slug === selectedSlug) ?? null : null),
     [overlayable, selectedSlug],
   )
-
-  const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase()
-    if (!needle) return overlayable
-    return overlayable.filter((c) => {
-      const hay = `${c.name} ${c.mosLabel ?? ''} ${c.verdictLabel ?? ''}`.toLowerCase()
-      return hay.includes(needle)
-    })
-  }, [overlayable, query])
-
-  useEffect(() => {
-    setActiveIndex(0)
-  }, [query, open])
-
-  useEffect(() => {
-    if (!open) return
-    const onPointer = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false)
-        setQuery('')
-      }
-    }
-    const onKey = (event: Event) => {
-      const ke = event as unknown as KeyboardEvent
-      if (ke.key === 'Escape') {
-        setOpen(false)
-        setQuery('')
-        inputRef.current?.blur()
-      }
-    }
-    window.addEventListener('pointerdown', onPointer)
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('pointerdown', onPointer)
-      window.removeEventListener('keydown', onKey)
-    }
-  }, [open])
 
   const geometry = useMemo(() => {
     const context =
@@ -149,48 +105,6 @@ export function V3MosCompare({
         : undefined
     return answerScaleGeometry(scaleFor(regionMos, context))
   }, [regionMos, selected])
-
-  const selectCity = useCallback((slug: string) => {
-    setSelectedSlug(slug)
-    setOpen(false)
-    setQuery('')
-  }, [])
-
-  const clearCity = useCallback(() => {
-    setSelectedSlug(null)
-    setQuery('')
-    setOpen(false)
-  }, [])
-
-  const onKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLInputElement>) => {
-      if (event.key === 'ArrowDown') {
-        event.preventDefault()
-        if (!open) {
-          setOpen(true)
-          return
-        }
-        setActiveIndex((i) => Math.min(i + 1, Math.max(filtered.length - 1, 0)))
-      } else if (event.key === 'ArrowUp') {
-        event.preventDefault()
-        if (!open) {
-          setOpen(true)
-          return
-        }
-        setActiveIndex((i) => Math.max(i - 1, 0))
-      } else if (event.key === 'Enter') {
-        event.preventDefault()
-        const hit = filtered[activeIndex]
-        if (open && hit) selectCity(hit.slug)
-        else setOpen(true)
-      } else if (event.key === 'Escape' && open) {
-        event.preventDefault()
-        setOpen(false)
-        setQuery('')
-      }
-    },
-    [activeIndex, filtered, open, selectCity],
-  )
 
   if (!geometry || !Number.isFinite(regionMos) || regionMos <= 0) return null
 
@@ -203,7 +117,6 @@ export function V3MosCompare({
   return (
     <figure
       id={id}
-      ref={rootRef}
       className={cn(V3_ROOT_CLASS, 'v3-mos-compare', className)}
       aria-labelledby={`${uid}-caption`}
     >
@@ -257,72 +170,59 @@ export function V3MosCompare({
 
       {overlayable.length > 0 ? (
         <div className="v3-mos-compare__combo">
-          <label htmlFor={inputId} className="v3-mos-compare__label">
+          <p className="v3-mos-compare__label" id={`${uid}-combo-label`}>
             Overlay a city against the region
-          </label>
-          <div className={cn('v3-mos-compare__trigger', open && 'is-open')} data-state={open ? 'open' : 'closed'}>
-            <input
-              ref={inputRef}
-              id={inputId}
-              role="combobox"
-              type="search"
-              className="v3-mos-compare__input"
-              placeholder={selected ? selected.name : 'Search a city with a published reading…'}
-              value={open ? query : selected?.name ?? ''}
-              aria-expanded={open}
-              aria-controls={listId}
-              aria-autocomplete="list"
-              aria-activedescendant={
-                open && filtered[activeIndex] ? `${uid}-opt-${filtered[activeIndex]!.slug}` : undefined
-              }
-              autoComplete="off"
-              onFocus={() => setOpen(true)}
-              onClick={() => setOpen(true)}
-              onChange={(event) => {
-                setOpen(true)
-                setQuery(event.target.value)
-              }}
-              onKeyDown={onKeyDown}
-            />
+          </p>
+          <Combobox
+            value={selectedSlug ?? ''}
+            onValueChange={setSelectedSlug}
+            open={open}
+            onOpenChange={setOpen}
+            className="v3-mos-compare__combo-root"
+          >
+            <ComboboxTrigger className="v3-mos-compare__trigger">
+              <ComboboxInput
+                aria-label="Overlay a city against the region"
+                aria-labelledby={`${uid}-combo-label`}
+                placeholder={selected ? selected.name : 'Search a city with a published reading…'}
+                className="v3-mos-compare__input"
+              />
+            </ComboboxTrigger>
             {selected ? (
-              <button type="button" className="v3-mos-compare__clear" onClick={clearCity}>
+              <button
+                type="button"
+                className="v3-mos-compare__clear"
+                onClick={() => {
+                  setSelectedSlug(undefined)
+                  setOpen(false)
+                }}
+              >
                 Clear
               </button>
             ) : null}
-          </div>
-          {open ? (
-            <ul id={listId} role="listbox" className="v3-mos-compare__list" aria-label="Cities with months of supply">
-              {filtered.length === 0 ? (
-                <li className="v3-mos-compare__empty" role="presentation">
+            <ComboboxContent className="v3-mos-compare__panel" align="start">
+              <ComboboxList ariaLabel="Cities with months of supply" className="v3-mos-compare__list">
+                {overlayable.map((city) => (
+                  <ComboboxItem
+                    key={city.slug}
+                    value={city.slug}
+                    textValue={city.name}
+                    keywords={[city.name, city.mosLabel ?? '', city.verdictLabel ?? '']}
+                    className="v3-mos-compare__option"
+                  >
+                    <span className="v3-mos-compare__option-name">{city.name}</span>
+                    <span className="v3-mos-compare__option-meta">
+                      {city.mosLabel} mo · {city.verdictLabel}
+                      {city.activeLabel ? ` · ${city.activeLabel}` : ''}
+                    </span>
+                  </ComboboxItem>
+                ))}
+                <ComboboxEmpty className="v3-mos-compare__empty">
                   No published reading matches that name.
-                </li>
-              ) : (
-                filtered.map((city, index) => (
-                  <li key={city.slug} role="presentation">
-                    <button
-                      type="button"
-                      role="option"
-                      id={`${uid}-opt-${city.slug}`}
-                      aria-selected={selectedSlug === city.slug}
-                      className={cn(
-                        'v3-mos-compare__option',
-                        index === activeIndex && 'is-active',
-                        selectedSlug === city.slug && 'is-selected',
-                      )}
-                      onMouseEnter={() => setActiveIndex(index)}
-                      onClick={() => selectCity(city.slug)}
-                    >
-                      <span className="v3-mos-compare__option-name">{city.name}</span>
-                      <span className="v3-mos-compare__option-meta">
-                        {city.mosLabel} mo · {city.verdictLabel}
-                        {city.activeLabel ? ` · ${city.activeLabel}` : ''}
-                      </span>
-                    </button>
-                  </li>
-                ))
-              )}
-            </ul>
-          ) : null}
+                </ComboboxEmpty>
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
         </div>
       ) : null}
 

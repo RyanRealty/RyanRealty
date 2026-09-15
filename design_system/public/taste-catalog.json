@@ -81,7 +81,7 @@
       "add": "@beui/combobox",
       "file": "components/motion/combobox.tsx",
       "import": "@/components/motion/combobox",
-      "house": "components/site/v3/V3MorphSearch.tsx",
+      "house": "components/site/v3/V3MosCompare.client.tsx",
       "repo": "https://github.com/starc007/ui-components",
       "mustContain": [
         "ComboboxTrigger",
