@@ -8,14 +8,38 @@
     "productLock": "hero Call/text/write + address on fold + Call|Text|Email|Schedule PASS + form+SMS + brokers→/team; FAQ optional; do not reopen CTAs as missing",
     "refuse": "Five-step wizard. Four equal link cells. Looking that reopens Call|Text|Email|Schedule as missing. Invented reply-time.",
     "beats": [
-      { "id": "1", "text": "Hero H1 is Call, text, or write — one conversion sentence, not a five-step contact wizard." },
-      { "id": "2", "text": "Street address sits on the fold (115 NW Oregon Ave #2). A visitor can find the office without scrolling." },
-      { "id": "3", "text": "Call is on the reach control at display scale with live published hours. PASS regression — do not drop Call." },
-      { "id": "4", "text": "Text sits on the same reach control as Call. PASS regression — do not drop Text." },
-      { "id": "5", "text": "Email sits on the same reach control as Call and Text. PASS regression — do not drop Email." },
-      { "id": "6", "text": "Schedule sits on the same reach control as Call, Text, and Email. PASS regression — do not drop Schedule." },
-      { "id": "7", "text": "Form plus SMS consent (ContactAsk) is the write path. Do not reopen CTAs as missing when the form is present." },
-      { "id": "8", "text": "Brokers who answer door to /team. FAQ (V3Answers) is optional. Do not invent a reply-time clock." }
+      {
+        "id": "1",
+        "text": "Hero H1 is Call, text, or write — one conversion sentence, not a five-step contact wizard."
+      },
+      {
+        "id": "2",
+        "text": "Street address sits on the fold (115 NW Oregon Ave #2). A visitor can find the office without scrolling."
+      },
+      {
+        "id": "3",
+        "text": "Call is on the reach control at display scale with live published hours. PASS regression — do not drop Call."
+      },
+      {
+        "id": "4",
+        "text": "Text sits on the same reach control as Call. PASS regression — do not drop Text."
+      },
+      {
+        "id": "5",
+        "text": "Email sits on the same reach control as Call and Text. PASS regression — do not drop Email."
+      },
+      {
+        "id": "6",
+        "text": "Schedule sits on the same reach control as Call, Text, and Email. PASS regression — do not drop Schedule."
+      },
+      {
+        "id": "7",
+        "text": "Form plus SMS consent (ContactAsk) is the write path. Do not reopen CTAs as missing when the form is present."
+      },
+      {
+        "id": "8",
+        "text": "Brokers who answer door to /team. FAQ (V3Answers) is optional. Do not invent a reply-time clock."
+      }
     ]
   },
   "note": "SITE-96. Order is Breadcrumb, ContactFold (Quiet H1 + sourced Google-reviews figure, V3Doors #reach --lead Call at display scale with V3OnDuty published hours plus Text/Email/Schedule as the light door column, ContactAsk as the one ask, homepage-compact AboutFaces for who answers), V3Answers, Footer. Consent checkbox is padded to --v3-tap. Live state is published hours only. tasteReview scores and demoMatch are judge-written only.",
@@ -62,12 +86,12 @@
     },
     {
       "name": "AboutFaces",
-      "section": "Who answers, headingLevel 2 \u2014 the same roster primitive /team and /about use, with the canonical broker cutouts and their reach chips. No record figures here: this route is dynamic and the per-broker MLS reads belong on the two cached pages.",
+      "section": "Who answers, headingLevel 2 — the same roster primitive /team and /about use, with the canonical broker cutouts and their reach chips. No record figures here: this route is dynamic and the per-broker MLS reads belong on the two cached pages.",
       "blocking": true
     },
     {
       "name": "V3OnDuty",
-      "section": "The live state on the reach control: published booking hours against the Pacific clock, from crm_company_settings.booking_hours \u2014 the same rows /book offers time from. NEVER a reply-time figure (SITE-09, V3OnDuty.view.ts).",
+      "section": "The live state on the reach control: published booking hours against the Pacific clock, from crm_company_settings.booking_hours — the same rows /book offers time from. NEVER a reply-time figure (SITE-09, V3OnDuty.view.ts).",
       "blocking": true
     }
   ],
@@ -96,7 +120,7 @@
     },
     {
       "name": "V3Ledger",
-      "reason": "The brokers band was a flat hairline row per broker with no visual encoding \u2014 the 2026-09-08 evaluator's own finding. AboutFaces does that job on every other page; a second, flatter way of listing the same three people is how one site becomes two (TASTE.md consistency)."
+      "reason": "The brokers band was a flat hairline row per broker with no visual encoding — the 2026-09-08 evaluator's own finding. AboutFaces does that job on every other page; a second, flatter way of listing the same three people is how one site becomes two (TASTE.md consistency)."
     }
   ],
   "removedComponents": [
@@ -115,11 +139,12 @@
     "V3Footer"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "scripts/taste-evaluate.ts contact via grok CLI, grok-4.6, three scorings of the same two first-viewport shots. Builder did not grade the page. Round one 59 (53/59/66) named the 375 ask below the fold; round two after ContactFold order at 375 is this receipt.",
+    "evaluatedAt": "2026-09-15",
+    "rubricVersion": "v1-2026-09-12",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts contact --builder cursor-agent — grok-4.6 via cursor-cli (cursor-grok-4.6-high). Builder cursor-agent (PR #237 tip b2fe8a5c: product 459669a / 07ecabf / shots b2fe8a5) did not grade the page.",
     "evaluatorModel": "grok-4.6",
-    "builderModel": "grok-4.5",
+    "builderModel": "cursor-agent",
+    "transport": "cursor-cli",
     "shotSpec": {
       "routes": [
         "/contact"
@@ -129,36 +154,110 @@
         375
       ],
       "states": [
-        "default"
+        "default",
+        "error-open",
+        "success-open",
+        "hours-empty-open",
+        "sent-open",
+        "sent-focus",
+        "admin-crm",
+        "tour"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, against next dev --webpack on :3220"
+      "capture": "tip b2fe8a5c Mini rejudge; envelope shots as printed by taste-evaluate (all 17 PNGs on disk)"
     },
     "shots": {
+      "admin-crm-desktop": "design_system/ryan-realty/ui_kits/contact/shots/admin-crm-desktop.png",
+      "admin-crm-mobile375": "design_system/ryan-realty/ui_kits/contact/shots/admin-crm-mobile375.png",
       "desktop": "design_system/ryan-realty/ui_kits/contact/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/contact/shots/mobile375.png"
+      "error-open-desktop": "design_system/ryan-realty/ui_kits/contact/shots/error-open-desktop.png",
+      "error-open-mobile375": "design_system/ryan-realty/ui_kits/contact/shots/error-open-mobile375.png",
+      "hours-empty-open-desktop": "design_system/ryan-realty/ui_kits/contact/shots/hours-empty-open-desktop.png",
+      "hours-empty-open-mobile375": "design_system/ryan-realty/ui_kits/contact/shots/hours-empty-open-mobile375.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/contact/shots/mobile375.png",
+      "sent-desktop": "design_system/ryan-realty/ui_kits/contact/shots/sent-desktop.png",
+      "sent-focus-desktop": "design_system/ryan-realty/ui_kits/contact/shots/sent-focus-desktop.png",
+      "sent-focus-mobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-focus-mobile375.png",
+      "sent-mobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-mobile375.png",
+      "sent-open-desktop": "design_system/ryan-realty/ui_kits/contact/shots/sent-open-desktop.png",
+      "sent-open-mobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-open-mobile375.png",
+      "success-open-desktop": "design_system/ryan-realty/ui_kits/contact/shots/success-open-desktop.png",
+      "success-open-mobile375": "design_system/ryan-realty/ui_kits/contact/shots/success-open-mobile375.png",
+      "tour-desktop": "design_system/ryan-realty/ui_kits/contact/shots/tour-desktop.png"
     },
-    "shotsHash": "sha256:d8f500829f3e1c303b62b3f2a282c4693c27c55a775b566307239b7e55817cc5",
+    "shotsHash": "sha256:312d3101dd913c04cfb1f3dc16ba666259caa156eb5bd36ee636f3a97cf44b59",
     "scores": [
+      57,
       64,
-      60,
-      67
+      61
     ],
-    "score": 64,
-    "perCriterion": {
-      "design": 21,
-      "originality": 17,
-      "interaction": 8,
-      "craft": 9,
-      "honesty": 9
-    },
+    "score": 61,
     "criteria": {
-      "designQuality": 21,
-      "originality": 17,
-      "interaction": 8,
-      "craft": 9,
-      "honestyFunction": 9
+      "designQuality": 19,
+      "originality": 16,
+      "interaction": 7,
+      "craft": 11,
+      "honestyFunction": 8
     },
-    "beats": "Windermere Central Oregon /contact: we win a sourced 5.0 and live Closed-now hours with a trace; we lose the phone number in the first 375 viewport, which their header and body both keep. Better than a 59 four-cell door grid because desktop is a split telephone broadside beside the ask, not four identical link rows.",
+    "perCriterion": {
+      "design": 19,
+      "originality": 16,
+      "interaction": 7,
+      "craft": 11,
+      "honesty": 8
+    },
+    "demoMatch": true,
+    "competitiveBriefPass": true,
+    "tells": [
+      "The stacked-section page. — mobile375.png first viewport is Quiet, then address, then Call / Text / Email / Schedule as repeating hairline rows, with the write path shoved off-screen.",
+      "Cream box. — error-open-desktop.png leaves Name / Email / Phone as idle navy pills; the beui error object is only a caption under an empty field, and the message textarea never grows a check."
+    ],
+    "defects": [
+      {
+        "section": "375 first viewport / contact-fold",
+        "severity": "taste",
+        "finding": "At 375 the first screen is the H1, a reviews sentence, the office address, then four stacked reach rows; only the Talk to a broker eyebrow peeks. The write path and SMS consent are not in the first viewport, so the page's job is not one path from what a visitor actually sees.",
+        "primitive": "app/contact/_v3/ContactFold.tsx",
+        "replaceWith": "house-ask"
+      },
+      {
+        "section": "#reach at 375",
+        "severity": "taste",
+        "finding": "Text, Email, and Schedule stack as equal hairline rows under Call. Desktop's display-scale Call with a lighter side column collapses into the four-row list the class was told not to open on.",
+        "primitive": "components/site/v3/V3Doors.tsx",
+        "replaceWith": "house-doors"
+      },
+      {
+        "section": "error-open / Your message",
+        "severity": "taste",
+        "finding": "success-open shows the beui check on Name, Email, and Phone. The message textarea in error-open and success-open is a static rounded box with a caption and no check, so the write path is two different field objects. error-open also never shows the shake or an error icon; empty pills plus Enter name is the still.",
+        "primitive": "app/contact/_v3/ContactField.client.tsx",
+        "replaceWith": "beui-input"
+      },
+      {
+        "section": "Who answers vs sent-focus The brokers",
+        "severity": "taste",
+        "finding": "hours-empty-open-desktop.png and sent-open-mobile375.png show three editorial cutouts. sent-focus-desktop.png still shows a gray hairline roster with 40px avatars, OR license numbers, and a cookie bar covering the last row — two roster forms for the same three people.",
+        "primitive": "app/about/_v3/AboutFaces.tsx",
+        "replaceWith": "house-faces"
+      },
+      {
+        "section": "tour-desktop.png / sent-desktop.png",
+        "severity": "taste",
+        "finding": "The full-page tour and sent captures still show four equal door cells (two phone tiles, email, Book a broker) and a gray broker ledger — the refused Looking form, not Call at display scale.",
+        "primitive": "components/site/v3/V3Doors.tsx",
+        "replaceWith": "house-doors"
+      },
+      {
+        "section": "visible SEO shell",
+        "severity": "defect",
+        "finding": "Shots cannot show the title tag or JSON-LD. Visible H1, address, and crawlable Call / Text / Email / Schedule doors are present, so SEO and page information look held, not risen. A prettier fold with SEO only held is a hold.",
+        "primitive": "app/contact/page.tsx",
+        "replaceWith": null
+      }
+    ],
+    "dullest": "The 375 first viewport. Desktop's one idea — Call as a hero figure with the form beside it — dies on the small screen, and what remains is a stacked list of Text / Email / Schedule hairlines while the actual ask is somewhere below. The Send a message panel itself is every brokerage contact form shipped since 2014.",
+    "beats": "Apple Support Contact (https://support.apple.com/contact) — we win on how easy it is to reach a named local broker: display-scale number, live published hours, 115 NW Oregon Ave #2 on the fold, and photographs of who answers. We do not win on first-viewport simplicity at 375, where Apple still puts one path in front of you.",
+    "verdict": "This is a competent navy-and-cream contact fold, not a breathtaking one. demoMatch is true because success-open.png shows the beui-input check on the text fields, restyled navy on cream, and error-open.png shows the error line — the shake itself is invisible in a still, and the textarea never joins that object. competitiveBriefPass is true: Call, text, or write; the Bend office on the fold; Call at display scale with live hours; Text, Email, and Schedule on the same reach control; form plus SMS; Who answers with a Meet the team door. SEO and inventory look held from pixels (H1, sourced 5.0 from 25 Google reviews, live hours, address, the ask), not improved; JSON-LD cannot be certified from shots. The node is not Tip Ready on taste: the 375 stack, the leftover four-cell full-page captures, and the dual broker roster keep this in the 60s.",
     "adaptedFrom": [
       {
         "id": "beui-input"
@@ -176,89 +275,15 @@
         "id": "house-faces"
       }
     ],
-    "defects": [
-      {
-        "section": "#reach .v3-doors__item:not(.v3-doors__item--lead)",
-        "severity": "taste",
-        "finding": "Text, Email and Schedule still sit as three equal hairline cells under the display-scale call, the old four-pack with the hero pulled out, and at 1440 they crop to orphaned TEXT / EMAIL / SCHEDULE kickers with no values.",
-        "replaceWith": "house-doors"
-      },
-      {
-        "section": ".contact-fold #reach",
-        "severity": "taste",
-        "finding": "At 375 the first viewport is Quiet H1, a 5.0, then ContactAsk only. The display-scale call door, live hours and principal photograph sit below the fold, so a phone visitor meets a labeled form.",
-        "replaceWith": "house-doors"
-      },
-      {
-        "section": "#contact .v3-quiet__figure",
-        "severity": "craft",
-        "finding": "GOOGLE REVIEWS wraps onto two lines under 5.0 while SOURCE and how we calculate this sit on the right, an orphaned label at 375.",
-        "replaceWith": null
-      },
-      {
-        "section": ".v3-ask__control--select",
-        "severity": "craft",
-        "finding": "How can we help still reads as a raised white field against cream Name, Email, Phone and Message boxes, so one fold has two field surfaces.",
-        "replaceWith": "shadcn-input"
-      },
-      {
-        "section": "#reach .v3-doors__art",
-        "severity": "taste",
-        "finding": "The principal cutout is a timid unnamed stamp on the call door; who answers is not in either first viewport, so house-faces is unused in the shots.",
-        "replaceWith": "house-faces"
-      },
-      {
-        "section": "#contact .v3-quiet__item--prose",
-        "severity": "taste",
-        "finding": "The 5.0 sits beside a town-list paragraph that does not explain the rating, and the visible label is GOOGLE REVIEWS with no count, a score without a sentence.",
-        "replaceWith": null
-      },
-      {
-        "section": ".v3-ask__form",
-        "severity": "craft",
-        "finding": "The scored pair is the empty happy path only; field error shake, success check and an hours-empty state are not in the frame.",
-        "replaceWith": "beui-input"
-      }
-    ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 66,
-      "scores": [
-        65,
-        66,
-        68
-      ],
-      "evaluatorModel": "claude-sonnet-5",
+      "evaluatedAt": "2026-09-10",
+      "score": 64,
+      "evaluatorModel": "grok-4.6",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:0429de75df3cc47c4b501d42d54fab22f3a71d7ab4200d06d0bc17fa85853030",
-      "honestyFunction": 6
+      "shotsHash": "sha256:d8f500829f3e1c303b62b3f2a282c4693c27c55a775b566307239b7e55817cc5"
     },
-    "rebaselineReason": "evaluatorModel and shotsHash: HEAD receipt is claude-sonnet-5 on the SITE-48/40 merged fold (66); this mark is grok-4.6 on new ContactFold shots. Same rubricVersion v1-2026-09-08. Table instrument bar to beat was 49.",
-    "verdict": "Desktop is a telephone broadside beside a sheet, which is the right idea; 375 throws that broadside away and opens on labeled boxes, which is the median contact page. Better than a 59 four-cell grid because the call door has scale, live hours and a trace, but the leftover three-cell row, the unnamed stamp and a form that still looks like a CRM keep it from being a page you would send someone.",
-    "contactListIsFirstContent": false,
-    "contactListAnswer": "The first viewport is ContactFold: Quiet H1 plus a sourced 5.0, then the one ask (ContactAsk / V3Input). The reach control is the call door at display scale with live hours, not an undifferentiated list.",
-    "supersededShots": {
-      "note": "Tour and sent states captured for earlier contact passes. They are not in `shots` because this score was given for the default-state pair only, and shotsHash must cover exactly what was scored.",
-      "files": {
-        "tourDesktop": "design_system/ryan-realty/ui_kits/contact/shots/tour-desktop.png",
-        "sentDesktop": "design_system/ryan-realty/ui_kits/contact/shots/sent-desktop.png",
-        "sentMobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-mobile375.png",
-        "sentFocusDesktop": "design_system/ryan-realty/ui_kits/contact/shots/sent-focus-desktop.png",
-        "sentFocusMobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-focus-mobile375.png"
-      }
-    },
-    "passes": {
-      "note": "Two evaluator rounds in this lane. The score recorded here is the last one, on the shots this receipt hashes.",
-      "roundOne": {
-        "score": 59,
-        "scores": [
-          59,
-          53,
-          66
-        ]
-      }
-    }
+    "rebaselineReason": "rubricVersion v1-2026-09-08 → v1-2026-09-12; shotsHash open-state tip recapture b2fe8a5 (printed envelope). Mini rejudge of PR #237; do not invent demoMatch."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
