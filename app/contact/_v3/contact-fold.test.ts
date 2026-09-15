@@ -10,7 +10,7 @@ describe('contact fold (SITE-80)', () => {
     const src = readFileSync(PAGE, 'utf8')
     expect(src).toContain('ContactFold')
     expect(src).toContain('primary: true')
-    expect(src).toContain('imageSrc: principal.headshotPng')
+    expect(src).not.toContain('imageSrc:')
     expect(src).toContain('<V3OnDuty')
     expect(src).toContain('<AboutFaces')
     expect(src).toContain('<ContactAsk')
@@ -35,12 +35,16 @@ describe('contact fold (SITE-80)', () => {
     expect(ask).toContain('Field={ContactField}')
     expect(ask).toContain('data-taste="error-open"')
     expect(ask).toContain('data-taste="success-open"')
+    expect(ask).toContain('data-taste="sent-open"')
+    expect(ask).toContain('previewSent')
+    expect(ask).toContain('done={faces}')
     expect(catalog).toMatch(/from '@\/components\/ui\/select'/)
   })
 
   it('puts house-faces and hours-empty on the default fold', () => {
     const src = readFileSync(PAGE, 'utf8')
     expect(src).toContain('size="compact"')
+    expect(src).toContain('sectionId="who-answers"')
     expect(src).toContain('ContactHoursLive')
     expect(src).toContain('from ${reviewSummary.count} Google reviews')
   })
@@ -59,12 +63,12 @@ describe('contact fold (SITE-80)', () => {
     expect(css).not.toMatch(/#(?:102742|faf8f4)/i)
   })
 
-  it('keeps house-doors hierarchy and the hero-width lead still', () => {
+  it('keeps house-doors hierarchy and house-faces at hero width', () => {
     const css = readFileSync(FOLD_CSS, 'utf8')
-    expect(css).toContain('min-width: 20rem')
+    expect(css).toContain('minmax(20rem, 1.2fr)')
     expect(css).not.toContain('repeat(3, minmax(0, 1fr))')
     expect(css).toContain('about-faces--compact')
-    expect(css).toMatch(/\.contact-fold \.about-faces \{\s*order: 2;/)
-    expect(css).toMatch(/\.contact-fold \.v3\.v3-doors \{\s*order: 3;/)
+    expect(css).toMatch(/\.contact-fold \.v3\.v3-doors \{\s*order: 2;/)
+    expect(css).toMatch(/\.contact-fold__write \{\s*order: 3;/)
   })
 })

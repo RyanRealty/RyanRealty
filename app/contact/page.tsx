@@ -33,7 +33,7 @@ import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listi
 import { listingTileHref } from '@/lib/slug'
 import { formatDate } from '@/lib/format/date'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
-import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
+import { BRAND, CONTACT } from '@/lib/brand/contact'
 import { valuationHref } from '@/lib/site/valuation-href'
 import {
   V3_ROOT_CLASS,
@@ -77,9 +77,9 @@ function resolveContactVariant(raw: string | undefined): ContactVariant {
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'Contact · Call, text, or write',
+  title: 'Contact · Call, text, or write — 115 NW Oregon Ave #2, Bend',
   description:
-    'Call, text, or email Ryan Realty about buying or selling in Central Oregon. Local experts who answer you personally.',
+    'Call, text, or email Ryan Realty at 115 NW Oregon Ave #2, Bend. One number for the brokerage, a form that sends now, and the three brokers who answer.',
   alternates: { canonical: `${getCanonicalSiteUrl()}/contact` },
   openGraph: {
     title: 'Contact · Ryan Realty',
@@ -174,6 +174,14 @@ export default async function ContactPage({ searchParams }: PageProps) {
         postalCode: BRAND.address.postalCode,
         addressCountry: BRAND.address.country,
       },
+      contactPoint: {
+        '@type': 'ContactPoint',
+        telephone: CONTACT.phoneDirect,
+        email: CONTACT.email.primary,
+        contactType: 'sales',
+        areaServed: 'US-OR',
+        availableLanguage: ['English'],
+      },
     },
   }
   const breadcrumbJsonLd = generateBreadcrumbSchema([
@@ -183,8 +191,6 @@ export default async function ContactPage({ searchParams }: PageProps) {
   const faqJsonLd = generateFAQSchema([...CONTACT_FAQ_ITEMS])
 
   const listingHref = listingTile ? listingTileHref(listingTile) : null
-  const principal =
-    brokers.find((b) => b.isPrincipal) ?? brokers.find((b) => b.slug === BROKERS.matt.slug) ?? null
   const introItems: V3QuietItem[] = [
     // H1 lives on this Quiet; with no rows it would not render (empty items
     // return null). One true line, and the sourced review figure in the column
@@ -417,15 +423,14 @@ export default async function ContactPage({ searchParams }: PageProps) {
                     heading="Who answers"
                     headingLevel={2}
                     size="compact"
+                    sectionId="who-answers"
                     eyebrow="Ryan Realty · Bend"
                     claim="Three licensed Oregon brokers, all of them here. Whichever one you reach is the one who works your deal."
                   />
                 ) : null}
                 {/* Reach control in the first viewport, beside the form.
-                    Calling is the one door, at display scale, with the principal
-                    photograph as the mark and published hours as the live state.
-                    Text, email and the calendar are lighter alternatives — not
-                    four identical cells. */}
+                    House-doors: Call at display scale with live hours.
+                    Photographs live on house-faces above, not a door stamp. */}
                 <V3Doors
                   id="reach"
                   name={v3Text('Reach a broker')}
@@ -437,12 +442,6 @@ export default async function ContactPage({ searchParams }: PageProps) {
                       href: `tel:${CONTACT.phoneDirectTel}`,
                       primary: true,
                       live: <ContactHoursLive>{hoursLive}</ContactHoursLive>,
-                      ...(principal?.headshotPng
-                        ? {
-                            imageSrc: principal.headshotPng,
-                            imageAlt: principal.fullName,
-                          }
-                        : {}),
                     },
                     {
                       kicker: v3Text('Text'),
@@ -472,6 +471,18 @@ export default async function ContactPage({ searchParams }: PageProps) {
                 listingKey={params.listingKey}
                 intent={intent}
                 listingSummary={listingSummary || undefined}
+                faces={
+                  faces.length > 0 ? (
+                    <AboutFaces
+                      people={faces}
+                      heading="Who answers"
+                      headingLevel={2}
+                      size="compact"
+                      sectionId="who-answers-sent"
+                      eyebrow="Ryan Realty · Bend"
+                    />
+                  ) : null
+                }
               />
             }
           />

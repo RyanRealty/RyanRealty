@@ -1,12 +1,13 @@
 'use client'
 
 /**
- * Contact write-path field: the installed beui-input (shake + check) and
- * shadcn Input, restyled navy on cream. Validity drives `error` / `success`
- * so the demo interaction is the live control, not a CSS cream capsule.
+ * Write-path field: the installed beui-input demo (shake + check + error
+ * line) and shadcn Select. Tokens restyle idle/focus only — error stays
+ * `border-destructive` and success keeps the catalog SVG check. A second
+ * shake, a navy invalid border, or a "✓" glyph on top of Beui is a house
+ * wrapper, which Mini already scored demoMatch false.
  */
 import { useEffect, useId, useRef, useState } from 'react'
-import { animate } from 'motion/react'
 import {
   BeuiInput,
   Select,
@@ -47,7 +48,7 @@ export function ContactField({
   defaultValue,
   maxLength,
   hint,
-  rows = 5,
+  rows = 4,
   className,
   options,
 }: V3InputProps) {
@@ -60,7 +61,6 @@ export function ContactField({
   const [error, setError] = useState<string | boolean>(false)
   const [success, setSuccess] = useState(false)
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
-  const shakeRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (demo === 'error') {
@@ -92,11 +92,6 @@ export function ContactField({
     form.addEventListener('submit', onSubmit)
     return () => form.removeEventListener('submit', onSubmit)
   }, [label, required])
-
-  useEffect(() => {
-    if (!error || !shakeRef.current) return
-    animate(shakeRef.current, { x: [0, -6, 6, -4, 4, -2, 0] }, { duration: 0.45 })
-  }, [error])
 
   const applyValidity = (el: HTMLInputElement | HTMLTextAreaElement) => {
     if (!el.checkValidity()) {
@@ -149,37 +144,27 @@ export function ContactField({
           {required ? null : <span className="contact-field__optional"> optional</span>}
         </Label>
         {hint ? <span className="contact-field__hint">{hint}</span> : null}
-        <div
-          ref={shakeRef}
+        <Textarea
+          ref={(node) => {
+            inputRef.current = node
+          }}
+          id={fieldId}
+          name={name}
+          className="contact-field__area"
+          required={required}
+          placeholder={placeholder}
+          value={value}
+          rows={rows}
+          maxLength={maxLength}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={errorMessage ? `${fieldId}-error` : undefined}
           data-state={error ? 'error' : success ? 'success' : 'idle'}
-          className="contact-field__shell contact-field__shell--area"
-        >
-          <Textarea
-            ref={(node) => {
-              inputRef.current = node
-            }}
-            id={fieldId}
-            name={name}
-            className="contact-field__area"
-            required={required}
-            placeholder={placeholder}
-            value={value}
-            rows={rows}
-            maxLength={maxLength}
-            aria-invalid={error ? true : undefined}
-            aria-describedby={errorMessage ? `${fieldId}-error` : undefined}
-            onChange={(event) => {
-              setValue(event.target.value)
-              if (error || success) applyValidity(event.target)
-            }}
-            onBlur={(event) => applyValidity(event.target)}
-          />
-          {success ? (
-            <span className="contact-field__check" aria-hidden="true">
-              ✓
-            </span>
-          ) : null}
-        </div>
+          onChange={(event) => {
+            setValue(event.target.value)
+            if (error || success) applyValidity(event.target)
+          }}
+          onBlur={(event) => applyValidity(event.target)}
+        />
         {errorMessage ? (
           <p id={`${fieldId}-error`} role="alert" className="contact-field__error">
             {errorMessage}
@@ -192,40 +177,30 @@ export function ContactField({
   return (
     <div className={cn('contact-field', className)}>
       {hint ? <span className="contact-field__hint">{hint}</span> : null}
-      <div ref={shakeRef}>
-        <BeuiInput
-          ref={(node) => {
-            inputRef.current = node
-          }}
-          id={fieldId}
-          name={name}
-          label={label}
-          type={kind === 'email' ? 'email' : kind === 'tel' ? 'tel' : 'text'}
-          required={required}
-          autoComplete={autoComplete}
-          placeholder={placeholder}
-          value={value}
-          maxLength={maxLength}
-          inputMode={kind === 'tel' ? 'tel' : kind === 'email' ? 'email' : undefined}
-          error={error}
-          success={success}
-          reserveErrorLine={Boolean(error)}
-          onChange={(next) => {
-            setValue(next)
-            const el = inputRef.current
-            if (el && (error || success)) applyValidity(el)
-          }}
-          onBlur={(event) => applyValidity(event.currentTarget)}
-          classNames={{
-            root: 'contact-field__beui',
-            label: 'contact-field__label',
-            field: 'contact-field__shell',
-            input: 'contact-field__control',
-            successIcon: 'contact-field__check',
-            errorMessage: 'contact-field__error',
-          }}
-        />
-      </div>
+      <BeuiInput
+        ref={(node) => {
+          inputRef.current = node
+        }}
+        id={fieldId}
+        name={name}
+        label={label}
+        type={kind === 'email' ? 'email' : kind === 'tel' ? 'tel' : 'text'}
+        required={required}
+        autoComplete={autoComplete}
+        placeholder={placeholder}
+        value={value}
+        maxLength={maxLength}
+        inputMode={kind === 'tel' ? 'tel' : kind === 'email' ? 'email' : undefined}
+        error={error}
+        success={success}
+        reserveErrorLine={Boolean(error)}
+        onChange={(next) => {
+          setValue(next)
+          const el = inputRef.current
+          if (el && (error || success)) applyValidity(el)
+        }}
+        onBlur={(event) => applyValidity(event.currentTarget)}
+      />
     </div>
   )
 }

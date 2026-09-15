@@ -1,20 +1,16 @@
 /* /contact fold: reach + write as one viewport. Tokens only.
-   House-doors owns hierarchy (lead + light column). This file only
-   places that band in the first viewport and restyles the fold. */
+   House-doors owns Call + light Text/Email/Schedule.
+   House-faces owns photographs. House-ask owns the write path. */
 
 .contact-fold {
   max-width: var(--v3-measure);
   margin: 0 auto;
+  overflow: visible;
 }
 
 .contact-fold .v3.v3-quiet {
   max-width: none;
   padding-top: var(--v3-space-md);
-  padding-bottom: var(--v3-space-sm);
-}
-
-.contact-fold .v3.v3-quiet:has(+ .v3.v3-doors),
-.contact-fold .v3.v3-quiet:has(+ .about-faces) {
   padding-bottom: 0;
 }
 
@@ -28,30 +24,13 @@
 
 .contact-fold .v3.v3-ask {
   max-width: none;
-  padding-top: var(--v3-space-lg);
-  padding-bottom: var(--v3-space-lg);
+  padding-top: var(--v3-space-md);
+  padding-bottom: var(--v3-space-md);
 }
 
 .contact-fold .v3-ask__form {
   max-width: none;
-  margin-top: var(--v3-space-md);
-}
-
-/* Lead still at the content-floor hero width (319+). 20rem is 320px.
-   Height is short so Call, hours, and the three light doors stay in the
-   1440×900 first viewport with the faces strip. */
-.contact-fold .v3-doors__item--lead .v3-doors__art {
-  width: 20rem;
-  min-width: 20rem;
-  aspect-ratio: 4 / 5;
-  max-height: 8rem;
-  margin-bottom: 0;
-  background: transparent;
-}
-
-.contact-fold .v3-doors__item--lead .v3-doors__art img {
-  object-fit: contain;
-  object-position: center top;
+  margin-top: var(--v3-space-sm);
 }
 
 /* 5.0 + count stay one line; the sentence sits beside it. */
@@ -68,24 +47,16 @@
   border-top: var(--v3-rule-hairline);
 }
 
-/* Fold-scale house-faces: photographs + names in the first viewport.
-   Licenses and reach rows stay on /team. */
-.contact-fold .about-faces--compact {
-  max-width: none;
-  padding-block: var(--v3-space-2xs);
-  padding-inline: var(--v3-gutter);
-}
-
-.contact-fold .about-faces--compact .v3-eyebrow {
+.contact-fold .v3-quiet__figuresource {
   display: none;
 }
 
-.contact-fold .about-faces--compact .about-faces__head {
-  margin-bottom: var(--v3-space-2xs);
-}
-
-.contact-fold .about-faces--compact .about-faces__heading {
-  font-size: var(--v3-size-body);
+/* House-faces compact as the catalog paints it: named cutouts, heading,
+   Meet the team. First photo stays the content-floor hero width (20rem). */
+.contact-fold .about-faces--compact {
+  max-width: none;
+  padding-block: var(--v3-space-sm);
+  padding-inline: var(--v3-gutter);
 }
 
 .contact-fold .about-faces--compact .about-faces__role,
@@ -94,40 +65,17 @@
   display: none;
 }
 
-.contact-fold .v3-quiet__figuresource {
+.contact-fold .v3-doors__live {
+  padding-bottom: var(--v3-space-2xs);
+}
+
+.contact-fold .v3-doors__live .v3-source {
   display: none;
 }
 
-.contact-fold .about-faces--compact .about-faces__photo-link {
-  aspect-ratio: 1;
-  max-height: 3.5rem;
-}
-
-.contact-fold .about-faces--compact .about-faces__name {
-  min-height: 0;
-  font-size: var(--v3-size-label);
-}
-
-.contact-fold .v3-doors__door--lead {
-  padding-block: var(--v3-space-2xs);
-}
-
-.contact-fold .v3-doors__door--lead .v3-doors__label {
-  font-size: var(--v3-size-display-2);
-}
-
-.contact-fold .v3-doors__live {
-  padding-bottom: var(--v3-space-xs);
-  padding-top: 0;
-}
-
-.contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) .v3-doors__door {
-  padding-block: var(--v3-space-xs);
-}
-
 @media (max-width: 47.999rem) {
-  /* H1 + faces + Call on the 375 fold. display:contents lets Quiet,
-     AboutFaces and Doors order apart. Form follows the reach control. */
+  /* 375: write path (house-ask) in the first viewport with Call|Text|Email|Schedule.
+     Faces follow the form so they do not push house-ask off the fold. */
   .contact-fold {
     display: flex;
     flex-direction: column;
@@ -139,19 +87,23 @@
 
   .contact-fold .v3.v3-quiet {
     order: 1;
-    padding-top: var(--v3-space-md);
+    padding-top: var(--v3-space-sm);
     padding-bottom: 0;
   }
 
-  .contact-fold .about-faces {
-    order: 2;
+  .contact-fold .v3-quiet__heading.v3-heading--1 {
+    font-size: var(--v3-size-display-2);
   }
 
   .contact-fold .v3.v3-doors {
-    order: 3;
+    order: 2;
   }
 
   .contact-fold__write {
+    order: 3;
+  }
+
+  .contact-fold .about-faces {
     order: 4;
   }
 
@@ -161,7 +113,7 @@
   }
 
   .contact-fold .v3-ask__form {
-    margin-top: var(--v3-space-sm);
+    margin-top: var(--v3-space-xs);
   }
 
   .contact-fold .v3-quiet__item--prose {
@@ -172,32 +124,28 @@
     row-gap: var(--v3-space-2xs);
   }
 
-  .contact-fold .v3-quiet__figure .v3-figure__value {
-    font-size: var(--v3-size-display-2);
+  .contact-fold .v3-quiet__figure {
+    display: none;
   }
 
   .contact-fold .v3-doors__door--lead .v3-doors__label {
     font-size: var(--v3-size-display-2);
   }
 
-  .contact-fold .about-faces--compact .about-faces__head {
-    display: none;
+  .contact-fold .v3-doors__door--lead {
+    padding-block: var(--v3-space-2xs);
   }
 
-  .contact-fold .about-faces--compact .about-faces__name {
-    min-height: 0;
-    padding-top: var(--v3-space-2xs);
-    font-size: var(--v3-size-label);
+  .contact-fold .v3-doors--lead .v3-doors__item:not(.v3-doors__item--lead) .v3-doors__door {
+    padding-block: 0.4rem;
   }
 
-  .contact-fold .about-faces--compact .about-faces__photo-link {
-    max-height: 2.75rem;
+  .contact-fold .v3-ask__heading {
+    font-size: var(--v3-size-display-2);
   }
 
-  .contact-fold .v3-doors__item--lead .v3-doors__art {
-    width: min(100%, 20rem);
-    min-width: 0;
-    max-height: 7rem;
+  .contact-fold .about-faces--compact {
+    padding-block: var(--v3-space-sm);
   }
 }
 
@@ -216,6 +164,20 @@
 
   .contact-fold__reach {
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .contact-fold__reach .v3.v3-quiet {
+    order: 1;
+  }
+
+  .contact-fold__reach .v3.v3-doors {
+    order: 2;
+  }
+
+  .contact-fold__reach .about-faces {
+    order: 3;
   }
 
   .contact-fold .v3.v3-quiet {
@@ -227,7 +189,21 @@
     padding: var(--v3-space-2xs) 0;
   }
 
+  .contact-fold .about-faces--compact .about-faces__grid {
+    grid-template-columns: minmax(20rem, 1.2fr) repeat(2, minmax(0, 1fr));
+  }
+
+  .contact-fold .about-faces--compact .about-faces__photo-link {
+    aspect-ratio: 4 / 5;
+    max-height: 8.5rem;
+    width: 100%;
+  }
+
+  .contact-fold .about-faces--compact {
+    padding-block: var(--v3-space-2xs);
+  }
+
   .contact-fold .v3-doors--lead .v3-doors__list {
-    grid-template-columns: minmax(20rem, 1.25fr) minmax(0, 1fr);
+    grid-template-columns: minmax(12rem, 1.15fr) minmax(0, 1fr);
   }
 }

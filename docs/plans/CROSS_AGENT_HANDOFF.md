@@ -1,9 +1,9 @@
-# Current — 2026-09-14 (SITE-99 listing-detail Tip Ready landed on main)
+# Current — 2026-09-15 (SITE-96 contact tip waiting for Mini judge)
 
-Surface: Mini Cos land of PR #227 tip `6bbe80e8b` + Tip Ready receipt `045d6abb` → main.
+Surface: Cursor Cloud on PR #237 `cursor/contact-site96-b2fa`. Claim `cursor-cloud-site96-20260914`. No merge to main.
 
-- **Done:** Re-ran `node scripts/lib/taste-receipt.mjs --ship design_system/ryan-realty/ui_kits/listing-detail/parity.json` on Mini at tip and on main after cherry-pick — exit 0 (`ship OK — demoMatch true · competitiveBriefPass true · open-state · catalog-install`). Score median 57 ignored per Cos north star (Tip Ready = --ship exit 0 only). Cherry-picked 10 commits onto main (9 product + Tip Ready receipt).
-- **Next:** `npm run push` / deploy verify. Mark SITE-99 done with Tip Ready evidence.
-- **Node:** SITE-99 Tip Ready → done after push.
-- Skills read: `.claude/skills/site-queue/SKILL.md`.
+- **Done:** Cos defects reworked on the tip. 1440 first viewport now holds faces, Call + hours, and Text/Email/Schedule with facts (no hairline three-up). 375 holds reviews sentence, faces, Call photo/number/hours. Open shots: error/success/hours-empty. `demoMatch` not invented. `taste-receipt --ship` still exit 1 until Mini writes the receipt.
+- **Next:** Cos Mini: `npx tsx scripts/taste-evaluate.ts contact --builder cursor-agent` then `node scripts/lib/taste-receipt.mjs --ship design_system/ryan-realty/ui_kits/contact/parity.json` must exit 0.
+- **Node:** SITE-96 in_progress. Tip SHA is the latest on PR #237.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`.
 

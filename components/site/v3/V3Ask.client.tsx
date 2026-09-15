@@ -80,6 +80,11 @@ export type V3AskProps = {
    * paints select with the shadcn Select so the write path is one surface.
    */
   Field?: ComponentType<V3InputProps>
+  /** Who answers after send — house-faces, not a broker ledger. */
+  done?: ReactNode
+  /** Taste / sent-open: print the sent state without posting. */
+  previewSent?: boolean
+  previewSentResult?: Extract<V3AskResult, { ok: true }>
 }
 
 type Status = 'asking' | 'sending' | 'sent' | 'failed'
@@ -96,10 +101,15 @@ export function V3Ask({
   onSubmit,
   className,
   Field = V3Input,
+  done,
+  previewSent = false,
+  previewSentResult,
 }: V3AskProps) {
   const uid = useId()
   const [status, setStatus] = useState<Status>('asking')
   const [result, setResult] = useState<V3AskResult | null>(null)
+  const sent = previewSent || status === 'sent'
+  const sentResult = previewSent && previewSentResult ? previewSentResult : result
   const reset = useCallback(() => {
     setResult(null)
     setStatus('asking')
@@ -132,29 +142,31 @@ export function V3Ask({
       <div className="v3-ask__head">
         {eyebrow ? <V3Eyebrow>{eyebrow}</V3Eyebrow> : null}
         <V3Heading level={headingLevel} id={`${uid}-h`} className="v3-ask__heading">
-          {status === 'sent' && result?.ok ? result.heading : heading}
+          {sent && sentResult?.ok ? sentResult.heading : heading}
         </V3Heading>
-        {status === 'sent' && result?.ok ? (
-          result.body ? <p className="v3-ask__lede">{result.body}</p> : null
+        {sent && sentResult?.ok ? (
+          sentResult.body ? <p className="v3-ask__lede">{sentResult.body}</p> : null
         ) : lede ? (
           <p className="v3-ask__lede">{lede}</p>
         ) : null}
-        {status === 'sent' && result?.ok && result.detail ? (
-          <p className="v3-ask__done-detail">{result.detail}</p>
+        {sent && sentResult?.ok && sentResult.detail ? (
+          <p className="v3-ask__done-detail">{sentResult.detail}</p>
         ) : null}
-        {status === 'sent' && result?.ok && (result.door || result.again) ? (
+        {sent && sentResult?.ok && (sentResult.door || sentResult.again) ? (
           <p className="v3-ask__done-door">
-            {result.door ? <V3Button href={result.door.href}>{result.door.label}</V3Button> : null}
-            {result.again ? (
+            {sentResult.door ? <V3Button href={sentResult.door.href}>{sentResult.door.label}</V3Button> : null}
+            {sentResult.again && !previewSent ? (
               <button type="button" className="v3-ask__done-again" onClick={reset}>
-                {result.again}
+                {sentResult.again}
               </button>
             ) : null}
           </p>
         ) : null}
       </div>
 
-      {status !== 'sent' ? (
+      {sent && sentResult?.ok && done ? <div className="v3-ask__done">{done}</div> : null}
+
+      {!sent ? (
         <form className="v3-ask__form" onSubmit={submit} aria-busy={status === 'sending'}>
           <div className="v3-ask__fields">
             {fields.map((f) => {
