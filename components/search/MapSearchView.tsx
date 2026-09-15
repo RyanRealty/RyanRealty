@@ -34,6 +34,13 @@ import { useViewerListingState } from '@/components/search/use-viewer-listing-st
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from '@/components/ui/empty'
 import AreaPicker from '@/components/search/AreaPicker'
 import { V3SourceDisclosure, type V3ListingRowBadge as ListingBadge } from '@/components/site/v3'
 import { buildPpsfBand } from '@/components/search/ppsf-band'
@@ -1052,67 +1059,75 @@ export default function MapSearchView({
         )}
       </header>
       {resultsDegraded ? (
-        <div className="srch-panel m-4 p-8 text-center">
-          <p className="srch-label">Try again</p>
-          <h3 className="mt-2 text-base font-semibold text-foreground">Search took too long</h3>
-          <p className="mt-2 text-muted-foreground">
-            We could not load homes for this view. Try again, or reload the page.
-          </p>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <Button type="button" size="sm" className="srch-chip" onClick={retryViewportSearch} disabled={loading}>
-              Try again
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="srch-chip"
-              onClick={() => {
-                if (typeof window !== 'undefined') window.location.reload()
-              }}
-            >
-              Reload page
-            </Button>
-          </div>
-        </div>
+        <Empty className="m-4">
+          <EmptyHeader>
+            <EmptyTitle>Search took too long</EmptyTitle>
+            <EmptyDescription>
+              We could not load homes for this view. Try again, or reload the page.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button type="button" size="sm" className="srch-chip" onClick={retryViewportSearch} disabled={loading}>
+                Try again
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="srch-chip"
+                onClick={() => {
+                  if (typeof window !== 'undefined') window.location.reload()
+                }}
+              >
+                Reload page
+              </Button>
+            </div>
+          </EmptyContent>
+        </Empty>
       ) : !matchCountReady && listings.length === 0 ? (
-        <div className="srch-panel m-4 p-8 text-center">
-          <p className="srch-label">Updating</p>
-          <h3 className="mt-2 text-base font-semibold text-foreground">Checking homes for this view</h3>
-          <p className="mt-2 text-muted-foreground">
-            The filter-match count is still loading. This is not an empty market.
-          </p>
-        </div>
+        <Empty className="m-4">
+          <EmptyHeader>
+            <EmptyTitle>Checking homes for this view</EmptyTitle>
+            <EmptyDescription>
+              The filter-match count is still loading. This is not an empty market.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : listings.length === 0 ? (
         hasNarrowingFilters ? (
-          <div className="srch-panel m-4 p-8 text-center">
-            <p className="srch-label">{beyondViewportCount != null ? 'Outside this view' : 'No matches'}</p>
-            <h3 className="mt-2 text-base font-semibold text-foreground">
-              {beyondViewportCount != null
-                ? `${beyondViewportCount.toLocaleString('en-US')} matching home${beyondViewportCount === 1 ? ' is' : 's are'} outside this map view`
-                : 'No homes match these filters here'}
-            </h3>
-            <p className="mt-2 text-muted-foreground">
-              {beyondViewportCount != null
-                ? 'Zoom out to see them, or loosen a filter.'
-                : 'Loosen a filter, or zoom out to widen the search area.'}
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="srch-chip mt-4"
-              onClick={() => navigateQuery(router, `${pathname ?? '/homes-for-sale'}?view=${filters.view ?? 'split'}`, { staticShell })}
-            >
-              Clear all filters
-            </Button>
-          </div>
+          <Empty className="m-4">
+            <EmptyHeader>
+              <EmptyTitle>
+                {beyondViewportCount != null
+                  ? `${beyondViewportCount.toLocaleString('en-US')} matching home${beyondViewportCount === 1 ? ' is' : 's are'} outside this map view`
+                  : 'No homes match these filters here'}
+              </EmptyTitle>
+              <EmptyDescription>
+                {beyondViewportCount != null
+                  ? 'Zoom out to see them, or loosen a filter.'
+                  : 'Loosen a filter, or zoom out to widen the search area.'}
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="srch-chip"
+                onClick={() => navigateQuery(router, `${pathname ?? '/homes-for-sale'}?view=${filters.view ?? 'split'}`, { staticShell })}
+              >
+                Clear all filters
+              </Button>
+            </EmptyContent>
+          </Empty>
         ) : (
-          <div className="srch-panel m-4 p-8 text-center">
-            <p className="srch-label">Empty view</p>
-            <h3 className="mt-2 text-base font-semibold text-foreground">No homes in this part of the map</h3>
-            <p className="mt-2 text-muted-foreground">Zoom out or pan to a different area to see listings.</p>
-          </div>
+          <Empty className="m-4">
+            <EmptyHeader>
+              <EmptyTitle>No homes in this part of the map</EmptyTitle>
+              <EmptyDescription>Zoom out or pan to a different area to see listings.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         )
       ) : (
         <>

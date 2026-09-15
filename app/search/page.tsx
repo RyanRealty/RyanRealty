@@ -34,10 +34,12 @@ import SearchRootJsonLd from './SearchRootJsonLd'
 import { MorphingSearch } from '@/components/motion/morphing-search'
 import { RangeSlider } from '@/components/motion/range-slider'
 import { Command } from '@/components/ui/command'
+import { Empty } from '@/components/ui/empty'
 
 void MorphingSearch
 void RangeSlider
 void Command
+void Empty
 
 /** Compute a [west,south,east,north] bbox from a GeoJSON Polygon/MultiPolygon. */
 function bboxFromGeometry(

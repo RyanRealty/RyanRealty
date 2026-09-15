@@ -57,6 +57,8 @@ export function SearchAtlas({
         source={source}
         stamp={stamp}
         incomplete={incomplete}
+        quiet
+        markScale="ask"
       />
     </div>
   )

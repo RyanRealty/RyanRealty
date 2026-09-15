@@ -280,6 +280,12 @@ export type V3AtlasProps = {
    * "1 listing of every type for sale, slide the price" is noise on it.
    */
   quiet?: boolean
+  /**
+   * How inventory marks are sized. `state` (default) is a uniform disc per
+   * status — that reads as headcount. `ask` scales stroke from `AtlasDot.p`
+   * so a buyer can read affordability from the mark.
+   */
+  markScale?: 'state' | 'ask'
   children?: ReactNode
   className?: string
   /**
@@ -330,6 +336,12 @@ function median(values: number[]): number | null {
   const s = [...values].sort((a, b) => a - b)
   const mid = Math.floor(s.length / 2)
   return s.length % 2 ? s[mid]! : Math.round((s[mid - 1]! + s[mid]!) / 2)
+}
+
+function atlasAskStroke(p: number | null | undefined, lo: number, hi: number): number {
+  if (p == null || !Number.isFinite(p) || hi <= lo) return 4.2
+  const t = Math.min(1, Math.max(0, (p - lo) / (hi - lo)))
+  return Number((3.2 + t * 5.8).toFixed(2))
 }
 
 function quantile(sorted: number[], q: number): number {
@@ -390,6 +402,7 @@ export function V3Atlas({
   parcels,
   frame,
   quiet,
+  markScale = 'state',
   noun: nounProp,
   incomplete,
   events,
@@ -638,6 +651,14 @@ export function V3Atlas({
     const lo = Math.floor(quantile(sorted, 0.05) / 50_000) * 50_000
     const hi = Math.ceil(quantile(sorted, 0.95) / 100_000) * 100_000
     return { min: Math.max(lo, 50_000), max: Math.max(hi, lo + 100_000), step: 25_000 }
+  }, [dots])
+
+  const askBand = useMemo(() => {
+    const prices = dots
+      .map((d) => d.p)
+      .filter((p): p is number => typeof p === 'number' && Number.isFinite(p) && p > 0)
+    if (prices.length === 0) return { lo: 0, hi: 0 }
+    return { lo: Math.min(...prices), hi: Math.max(...prices) }
   }, [dots])
 
   /* Visitor state. */
@@ -1564,6 +1585,11 @@ export function V3Atlas({
                             !isOn(d) && 'is-off',
                             active && !inActivePlace(i) && 'is-away',
                           )}
+                          style={
+                            markScale === 'ask'
+                              ? { strokeWidth: atlasAskStroke(d.p, askBand.lo, askBand.hi) }
+                              : undefined
+                          }
                         />
                       )
                     })}

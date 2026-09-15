@@ -603,7 +603,7 @@ export default function SearchFilters({
       <div className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:px-4">
         {/* Row 1 @375: full-width search so mic stays inside the bar. */}
         {hideLocation ? null : (
-        <div className="relative flex w-full min-w-0 items-center gap-1 sm:w-72 sm:shrink-0">
+        <div className="relative flex w-full min-w-0 items-center gap-1 sm:w-64 sm:shrink-0">
           <SearchMorph
             className={cn('srch-morph shrink-0', morphOpen && 'v3-morph-search--open')}
             placeholder="Search"

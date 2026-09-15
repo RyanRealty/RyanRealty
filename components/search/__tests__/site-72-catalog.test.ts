@@ -31,6 +31,8 @@ describe('SITE-72 catalog wiring', () => {
     expect(sheet).toMatch(/surface="drawer"/)
     expect(sheet).toMatch(/showProgress=\{false\}/)
     expect(sheet).toMatch(/RangeSlider/)
+    expect(sheet).toMatch(/Minimum ask/)
+    expect(sheet).toMatch(/Maximum ask/)
     expect(sheet).toMatch(/Flags/)
     expect(sheet).not.toMatch(/How many bedrooms/)
     expect(readSrc('components/search/SearchFilters.tsx')).toMatch(/SearchFiltersSheet/)

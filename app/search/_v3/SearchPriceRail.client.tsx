@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * First-viewport price control. The catalog RangeSlider is the live object
- * (one track, ticks, fill to the thumb) — not the dual-track house stack.
+ * First-viewport price control: beui-range-slider twice (min + max) with
+ * tick stops. A single max slider at 100% reads as a navy capsule (Mini 51).
  */
 import { RangeSlider } from '@/components/motion/range-slider'
 import { cn } from '@/lib/utils'
@@ -34,6 +34,10 @@ function stopIndex(value: number): number {
   return best
 }
 
+function order(a: number, b: number): { low: number; high: number } {
+  return a <= b ? { low: a, high: b } : { low: b, high: a }
+}
+
 export function SearchPriceRail({
   low,
   high,
@@ -42,20 +46,37 @@ export function SearchPriceRail({
   className,
 }: SearchPriceRailProps) {
   const lastIdx = Math.max(0, V3_PRICE_STOPS.length - 1)
-  const hiIdx = stopIndex(high)
   const first = V3_PRICE_STOPS[0] ?? 0
   const last = V3_PRICE_STOPS[lastIdx] ?? first
-  const lo = Math.min(Math.max(low, first), last)
-  const hi = V3_PRICE_STOPS[hiIdx] ?? last
+  const pair = order(
+    Math.min(Math.max(low, first), last),
+    Math.min(Math.max(high, first), last),
+  )
+  const loIdx = stopIndex(pair.low)
+  const hiIdx = stopIndex(pair.high)
 
   return (
     <div
       className={cn('srch-price-beui', className)}
-      onPointerUp={() => onCommit(lo, hi)}
+      onPointerUp={() => onCommit(pair.low, pair.high)}
     >
       <p className="srch-price-beui__value" aria-live="polite">
-        {formatPriceRange(lo, hi, V3_PRICE_STOPS)}
+        {formatPriceRange(pair.low, pair.high, V3_PRICE_STOPS)}
       </p>
+      <RangeSlider
+        value={loIdx}
+        min={0}
+        max={lastIdx}
+        step={1}
+        showTicks
+        aria-label="Minimum ask"
+        formatValueText={(i) => formatPriceStop(V3_PRICE_STOPS[i] ?? pair.low, V3_PRICE_STOPS)}
+        onValueChange={(i) => {
+          const next = V3_PRICE_STOPS[i] ?? pair.low
+          const ordered = order(next, pair.high)
+          onChange(ordered.low, ordered.high)
+        }}
+      />
       <RangeSlider
         value={hiIdx}
         min={0}
@@ -63,10 +84,11 @@ export function SearchPriceRail({
         step={1}
         showTicks
         aria-label="Maximum ask"
-        formatValueText={(i) => formatPriceStop(V3_PRICE_STOPS[i] ?? hi, V3_PRICE_STOPS)}
+        formatValueText={(i) => formatPriceStop(V3_PRICE_STOPS[i] ?? pair.high, V3_PRICE_STOPS)}
         onValueChange={(i) => {
-          const next = V3_PRICE_STOPS[i] ?? hi
-          onChange(lo, next)
+          const next = V3_PRICE_STOPS[i] ?? pair.high
+          const ordered = order(pair.low, next)
+          onChange(ordered.low, ordered.high)
         }}
       />
     </div>

@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * house-sheet as All filters. Bare V3Sheet drawer with live RangeSlider
- * and shadcn Checkbox flags — not a cream Any-list of facts.
+ * house-sheet as All filters. Bare V3Sheet drawer with dual tick-stop
+ * RangeSliders and shadcn Checkbox flags — not a thin cream Any-list.
  */
 import { useEffect, useMemo, useState } from 'react'
 import { RangeSlider } from '@/components/motion/range-slider'
@@ -104,11 +104,12 @@ export function SearchFiltersSheet({
   }, [hasPool, hasView, hasWaterfront, hasFireplace, hasGolfCourse])
 
   const lastIdx = Math.max(0, V3_PRICE_STOPS.length - 1)
-  const hiIdx = stopIndex(draftPrice.high)
   const first = V3_PRICE_STOPS[0] ?? 0
   const last = V3_PRICE_STOPS[lastIdx] ?? first
   const lo = Math.min(Math.max(draftPrice.low, first), last)
-  const hi = V3_PRICE_STOPS[hiIdx] ?? last
+  const hi = Math.min(Math.max(draftPrice.high, first), last)
+  const loIdx = stopIndex(lo)
+  const hiIdx = stopIndex(hi)
 
   const steps: readonly V3SheetStep[] = [
     {
@@ -120,19 +121,34 @@ export function SearchFiltersSheet({
           kind: 'drawing',
           label: formatPriceRange(lo, hi, V3_PRICE_STOPS),
           node: (
-            <RangeSlider
-              value={hiIdx}
-              min={0}
-              max={lastIdx}
-              step={1}
-              showTicks
-              aria-label="Maximum ask"
-              formatValueText={(i) => formatPriceStop(V3_PRICE_STOPS[i] ?? hi, V3_PRICE_STOPS)}
-              onValueChange={(i) => {
-                const next = V3_PRICE_STOPS[i] ?? hi
-                setDraftPrice({ low: lo, high: next })
-              }}
-            />
+            <div className="grid gap-2">
+              <RangeSlider
+                value={loIdx}
+                min={0}
+                max={lastIdx}
+                step={1}
+                showTicks
+                aria-label="Minimum ask"
+                formatValueText={(i) => formatPriceStop(V3_PRICE_STOPS[i] ?? lo, V3_PRICE_STOPS)}
+                onValueChange={(i) => {
+                  const next = V3_PRICE_STOPS[i] ?? lo
+                  setDraftPrice({ low: Math.min(next, hi), high: Math.max(next, hi) })
+                }}
+              />
+              <RangeSlider
+                value={hiIdx}
+                min={0}
+                max={lastIdx}
+                step={1}
+                showTicks
+                aria-label="Maximum ask"
+                formatValueText={(i) => formatPriceStop(V3_PRICE_STOPS[i] ?? hi, V3_PRICE_STOPS)}
+                onValueChange={(i) => {
+                  const next = V3_PRICE_STOPS[i] ?? hi
+                  setDraftPrice({ low: Math.min(lo, next), high: Math.max(lo, next) })
+                }}
+              />
+            </div>
           ),
         },
         {
