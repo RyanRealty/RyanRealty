@@ -75,9 +75,9 @@ export type V3AskProps = {
   onSubmit: (answers: Readonly<Record<string, string>>) => Promise<V3AskResult>
   className?: string
   /**
-   * The labelled control for text / email / tel / textarea. Defaults to
-   * V3Input (beui-input shake + check, shadcn-input structure). Select stays
-   * the native control below — a dropdown is not that job.
+   * The labelled control for every field, including select. Defaults to
+   * V3Input (beui-input shake + check, shadcn-input structure). Contact
+   * paints select with the shadcn Select so the write path is one surface.
    */
   Field?: ComponentType<V3InputProps>
 }
@@ -163,52 +163,30 @@ export function V3Ask({
               const span = f.span ?? (kind === 'textarea' ? 'full' : 'half')
               return (
                 <div key={f.name} className={cn('v3-ask__field', `v3-ask__field--${span}`)}>
-                  {kind === 'select' ? (
-                    <>
-                      <label htmlFor={fid} className="v3-ask__label">
-                        {f.label}
-                        {f.required ? null : <span className="v3-ask__optional"> optional</span>}
-                      </label>
-                      {f.hint ? <span className="v3-ask__hint">{f.hint}</span> : null}
-                      <span className="v3-ask__select-wrap">
-                        <select
-                          id={fid}
-                          name={f.name}
-                          className="v3-ask__control v3-ask__control--select"
-                          required={f.required}
-                          defaultValue={f.defaultValue}
-                        >
-                          {(f.options ?? []).map((o) => (
-                            <option key={o.value} value={o.value}>
-                              {o.label}
-                            </option>
-                          ))}
-                        </select>
-                      </span>
-                    </>
-                  ) : (
-                    <Field
-                      id={fid}
-                      name={f.name}
-                      label={f.label}
-                      kind={
-                        kind === 'textarea'
-                          ? 'textarea'
-                          : kind === 'email'
-                            ? 'email'
-                            : kind === 'tel'
-                              ? 'tel'
+                  <Field
+                    id={fid}
+                    name={f.name}
+                    label={f.label}
+                    kind={
+                      kind === 'textarea'
+                        ? 'textarea'
+                        : kind === 'email'
+                          ? 'email'
+                          : kind === 'tel'
+                            ? 'tel'
+                            : kind === 'select'
+                              ? 'select'
                               : 'text'
-                      }
-                      required={f.required}
-                      autoComplete={f.autoComplete}
-                      placeholder={f.placeholder}
-                      defaultValue={f.defaultValue}
-                      maxLength={f.maxLength}
-                      hint={f.hint}
-                      rows={f.rows}
-                    />
-                  )}
+                    }
+                    required={f.required}
+                    autoComplete={f.autoComplete}
+                    placeholder={f.placeholder}
+                    defaultValue={f.defaultValue}
+                    maxLength={f.maxLength}
+                    hint={f.hint}
+                    rows={f.rows}
+                    options={f.options}
+                  />
                 </div>
               )
             })}
