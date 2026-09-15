@@ -105,14 +105,22 @@
   border-radius: var(--v3-radius-mark);
 }
 
+.contact-ask-root {
+  position: relative;
+}
+
+/* Opacity 0 keeps the controls out of the frame; a tap-sized box keeps
+   them clickable for take-route-shots (clip/1px fails Playwright visible). */
 .contact-ask__taste {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
+  right: 0;
+  top: var(--v3-space-md);
+  z-index: 2;
+  display: flex;
+  opacity: 0;
+}
+
+.contact-ask__taste [data-taste] {
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
 }

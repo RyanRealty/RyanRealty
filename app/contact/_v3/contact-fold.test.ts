@@ -50,4 +50,11 @@ describe('contact fold (SITE-80)', () => {
     expect(css).toContain('var(--v3-measure)')
     expect(css).not.toMatch(/#(?:102742|faf8f4)/i)
   })
+
+  it('keeps the lead still at the hero-width floor beside Call on wide', () => {
+    const css = readFileSync(FOLD_CSS, 'utf8')
+    expect(css).toContain('width: 20rem')
+    expect(css).toContain('grid-template-columns: 20rem minmax(0, 1fr)')
+    expect(css).toContain('Call | Text | Email | Schedule')
+  })
 })

@@ -167,7 +167,7 @@ export function ContactField({
           inputMode={kind === 'tel' ? 'tel' : kind === 'email' ? 'email' : undefined}
           error={error}
           success={success}
-          reserveErrorLine
+          reserveErrorLine={Boolean(error)}
           onChange={(next) => {
             setValue(next)
             const el = inputRef.current
