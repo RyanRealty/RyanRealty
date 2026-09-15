@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   BOUNDARY_EXIT_BELOW,
+  isClusterPocket,
   isGeographyWidenTier,
   isPocketExclusiveTier,
+  pocketHoldsGeographyExclusive,
+  pocketStarvedForYearQuality,
+  POCKET_STARVE_BELOW,
+  POCKET_TIGHT_SET_MIN,
   PRICING_MAX_COMPS,
   PRICING_TARGET_COMPS,
   pricingTierLadder,
@@ -131,6 +136,23 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
       }
     }
     expect(BOUNDARY_EXIT_BELOW).toBe(5)
+    expect(POCKET_STARVE_BELOW).toBe(5)
+    expect(POCKET_TIGHT_SET_MIN).toBe(2)
+    expect(pocketStarvedForYearQuality(4)).toBe(true)
+    expect(pocketStarvedForYearQuality(5)).toBe(false)
+    expect(isClusterPocket({ pocketSubdivisionNorms: [] })).toBe(false)
+    expect(isClusterPocket({ pocketSubdivisionNorms: ['horse back', 'ranch'] })).toBe(false)
+    expect(isClusterPocket({ inferredPocket: { source: 'mls', neighborNorms: ['horse back', 'ranch'] } })).toBe(
+      false,
+    )
+    expect(isClusterPocket({ inferredPocket: { source: 'street-cluster', neighborNorms: [] } })).toBe(true)
+    expect(pocketHoldsGeographyExclusive(1, 0)).toBe(false)
+    expect(pocketHoldsGeographyExclusive(2, 0)).toBe(false)
+    expect(pocketHoldsGeographyExclusive(4, 0)).toBe(false)
+    expect(pocketHoldsGeographyExclusive(5, 0)).toBe(true)
+    expect(pocketHoldsGeographyExclusive(1, 1, true)).toBe(true)
+    expect(pocketHoldsGeographyExclusive(2, 0, true)).toBe(true)
+    expect(pocketHoldsGeographyExclusive(1, 0, true)).toBe(false)
   })
 
   it('marks the community rungs sameCommunity and nothing else', () => {

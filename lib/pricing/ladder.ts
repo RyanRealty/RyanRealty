@@ -413,6 +413,16 @@ export const PRICING_MIN_COMPS = 3
  */
 export const BOUNDARY_EXIT_BELOW = 5
 /**
+ * Year/quality may outrank radius only when exclusive closed sales sit
+ * below this (Matt 2026-09-15 residual: #242 used PRICING_MIN_COMPS = 3).
+ */
+export const POCKET_STARVE_BELOW = BOUNDARY_EXIT_BELOW
+/**
+ * Closed + pending in the exclusive pocket that holds geography exclusive
+ * (Ranch + Horse Back is a tight set; 1 Horse Back is not).
+ */
+export const POCKET_TIGHT_SET_MIN = 2
+/**
  * How many sales the facts ladder must hold to price a document on its own.
  * Below this the listings ladder (lib/cma/comps.ts, MIN_COMPS = 5) is the
  * fallback. Was 3 until 2026-09-09: Merle's 1617 NW 8th reached exactly 3 on
@@ -452,6 +462,35 @@ export function isGeographyWidenTier(tier: PricingTier): boolean {
   if (isPocketExclusiveTier(tier)) return false
   if (tier.sameCommunity || tier.likeCommunity || tier.adjacentSubdivision) return false
   return true
+}
+
+/**
+ * Blank-MLS street cluster (1130 E Canter), not a named plat with nearby
+ * plats. Named Kenwood plus three touching plats is not this.
+ */
+export function isClusterPocket(input: {
+  inferredPocket?: { source?: string | null; neighborNorms?: readonly string[] } | null
+  pocketSubdivisionNorms?: readonly string[] | null
+}): boolean {
+  return input.inferredPocket?.source === 'street-cluster'
+}
+
+/** Year/quality may jump only when exclusive closed sales are below 5. */
+export function pocketStarvedForYearQuality(exclusiveClosed: number): boolean {
+  return exclusiveClosed < POCKET_STARVE_BELOW
+}
+
+/**
+ * Street-cluster / multi-name pockets hold geography at 2 exclusive
+ * (closed + pending). A single named plat still needs 5 closed.
+ */
+export function pocketHoldsGeographyExclusive(
+  exclusiveClosed: number,
+  exclusivePending: number,
+  clusterPocket = false,
+): boolean {
+  if (clusterPocket) return exclusiveClosed + exclusivePending >= POCKET_TIGHT_SET_MIN
+  return exclusiveClosed >= BOUNDARY_EXIT_BELOW
 }
 
 /**

@@ -1,0 +1,11 @@
+{
+  "kind": "picker-contract",
+  "id": "cma-canter-pocket",
+  "contracts": [
+    "blank-subdiv-infers-saddlestone-cluster",
+    "exclusive-while-tight-closed-pending",
+    "ranch-and-horse-back-in-clearpine-out",
+    "year-quality-does-not-outrank-until-starved-below-5"
+  ],
+  "testFiles": ["lib/pricing/canter-pocket.contract.test.ts", "lib/pricing/infer-pocket.test.ts"]
+}
