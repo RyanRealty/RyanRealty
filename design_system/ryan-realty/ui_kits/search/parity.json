@@ -70,9 +70,9 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-15",
+    "evaluatedAt": "2026-09-15T19:49:30.772Z",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts search --builder grok-4.5 --beat 55 — grok-4.6 via cursor-agent (cursor-grok-4.6-high), three scorings of Mini-recaptured default + search-open/command-open/filters-open on tip ff248ea81",
+    "evaluator": "cursor-agent",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
     "transport": "cursor-cli",
@@ -90,7 +90,7 @@
         "command-open",
         "filters-open"
       ],
-      "capture": "first viewport + catalog demoStates, scripts/take-route-shots.mjs, scale 1, palette-quantized; Mini rejudge on tip ff248ea81 at http://127.0.0.1:3029/homes-for-sale?city=Bend"
+      "capture": "first viewport + catalog demoStates, scripts/take-route-shots.mjs, scale 1, palette-quantized; Mini rejudge on tip bdfab0f1c at http://127.0.0.1:3029/homes-for-sale?city=Bend"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/search/shots/desktop.png",
@@ -102,23 +102,23 @@
       "filters-open-desktop": "design_system/ryan-realty/ui_kits/search/shots/filters-open-desktop.png",
       "filters-open-mobile375": "design_system/ryan-realty/ui_kits/search/shots/filters-open-mobile375.png"
     },
-    "shotsHash": "sha256:b1977089c452f0deb97d753aa6fd1885425710d43fd6ac885b0efd1d1a5541ce",
+    "shotsHash": "sha256:0e578b3667b4d86235018c9c1e2592b4440ea40ee80faf350e0bd0479b4c02c7",
     "scores": [
-      54,
-      59,
-      56
+      52,
+      58,
+      55
     ],
-    "score": 56,
+    "score": 55,
     "criteria": {
       "designQuality": 16,
-      "originality": 12,
+      "originality": 11,
       "interaction": 10,
       "craft": 10,
       "honestyFunction": 8
     },
     "perCriterion": {
       "design": 16,
-      "originality": 12,
+      "originality": 11,
       "interaction": 10,
       "craft": 10,
       "honesty": 8
@@ -144,8 +144,8 @@
       {
         "section": "search-open field",
         "severity": "taste",
-        "finding": "Opened search is still a labeled cream input with Bend inside it and a static Places dropdown. The control does not morph into results; a person would not recognize beui morphing-search.",
-        "primitive": "components/site/v3/V3MorphSearch.tsx",
+        "finding": "Opened search is still a labeled cream input plus a static address dropdown. The control does not morph into results; a person would not recognize beui morphing-search.",
+        "primitive": "app/search/_v3/SearchMorph.client.tsx",
         "replaceWith": "beui-morphing-search"
       },
       {
@@ -173,7 +173,7 @@
         "section": "map pane",
         "severity": "taste",
         "finding": "Cream Bend polygon plus uniform navy dots encodes headcount, not ask. A buyer cannot read affordability from a mark the way Redfin price-on-pin or Atlas data-encoded cells would.",
-        "primitive": "components/search/MapSearchView.tsx",
+        "primitive": "app/search/_v3/SearchAtlasPane.client.tsx",
         "replaceWith": "house-atlas"
       },
       {
@@ -186,8 +186,8 @@
       {
         "section": "search-open desktop overlap",
         "severity": "defect",
-        "finding": "The Places dropdown covers the first listing photo and address so the rail and the typeahead fight for the same pixels.",
-        "primitive": "components/site/v3/V3MorphSearch.tsx",
+        "finding": "The address typeahead covers the first listing photo and price so the rail and the dropdown fight for the same pixels.",
+        "primitive": "app/search/_v3/SearchMorph.client.tsx",
         "replaceWith": null
       },
       {
@@ -199,21 +199,20 @@
       }
     ],
     "tells": [
-      "Cream box. — search-open desktop and mobile: Bend stays a labeled cream field with Esc; a Places list (Bend, Redmond, Sisters, Sunriver, Tetherow) drops under it. The field does not morph into results.",
+      "Cream box. — search-open desktop and mobile: the dock stays a labeled cream field (Address, city, or community) with Esc; a street-address typeahead (61875 Broken Top Drive, 2526 Awbrey Road, 19017 Mt Shasta Drive…) drops under it. The field does not morph into results.",
       "Cream box. — Any price on the dock and again inside filters-open is a gray dotted track with a black end cap and no navy fill — not the beui tick-stop navy range.",
-      "Scrolling lists as the design. — desktop results rail: MLS photo-price-spec cards repeat past six rows; the ppsf hairline under specs is mute and does not make the stack a data graphic."
+      "Scrolling lists as the design. — desktop results rail: MLS photo-price-spec cards repeat past six rows; the unlabeled ppsf tick under specs does not make the stack a data graphic."
     ],
-    "dullest": "The desktop results rail: the same MLS photo-price-spec stack six times, with a mute hairline tick nobody can read. Nothing there would be screenshotted.",
-    "verdict": "This is a navy/cream MLS split that still fails the catalog objects it named. demoMatch is false: search-open is a cream typeahead, the dock and filters-open price tracks are gray dots, and filters-open is a cream Any-list rather than one house sheet of live controls — command-open is the one opened control that actually looks like shadcn Command (grouped rows, shortcuts, dim overlay), which is why this is a hair above a 55, not a different page. SEO is held (not visible in shots) and inventory is held (same card facts, same 500 / $57K–$8.8M / Oregon Data Share); neither rose, so the pass is not comprehensive. Not Tip Ready.",
+    "dullest": "The All filters sheet: Home type Any, a dead gray price track, then Bedrooms Any, Pool Any, Waterfront Any, View Any, Fireplace Any, Golf Any. A filter surface that offers nothing to set.",
+    "verdict": "This is a navy/cream MLS split that still fails the catalog objects it named. demoMatch is false: search-open is a cream address typeahead, the dock and filters-open price tracks are gray dots, and filters-open is a cream Any-list rather than one house sheet of live controls — command-open is the one opened control that actually looks like shadcn Command (grouped rows, shortcuts, dim overlay), which is why this is a 55 and not a different page. SEO is held (not visible in shots) and inventory is held (same card facts, same 500 / $57K–$8.8M / Oregon Data Share); neither rose, so the pass is not comprehensive. Not Tip Ready.",
     "priorMark": {
-      "evaluatedAt": "2026-09-15",
-      "score": 58,
+      "score": 56,
+      "shotsHash": "sha256:b1977089c452f0deb97d753aa6fd1885425710d43fd6ac885b0efd1d1a5541ce",
       "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-12",
-      "shotsHash": "sha256:4bebd0b7435c62af16338e37c8d78b116b0ab67deae88caae6a95a9324ec3b00"
+      "rubricVersion": "v1-2026-09-12"
     },
     "comparedToPrior": "rebaselined",
-    "rebaselineReason": "Mini rejudge on tip ff248ea81 with fresh open-state shots (MorphingSearch / V3Sheet / Command Sort claims); new shotsHash vs prior Mini receipt on 85356d754"
+    "rebaselineReason": "Mini Tip Ready rejudge on tip bdfab0f1c; new shotsHash after open-state recapture. demoMatch remains false — do not invent."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
