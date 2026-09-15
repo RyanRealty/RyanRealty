@@ -99,7 +99,7 @@
     },
     {
       "name": "HomeHomesRails",
-      "section": "Stacked Zillow-style house carousels (local Bend-area actives + honest price-cut / new rows when data exists). SplitCardMedia cards with badges/save.",
+      "section": "Stacked Zillow-style house carousels (local Bend-area actives + honest price-cut / new rows when data exists). SplitCardMedia cards with badges; photo and copy open the listing. No save/heart on the card.",
       "blocking": true
     },
     {
