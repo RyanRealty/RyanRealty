@@ -1,9 +1,9 @@
-# Current — 2026-09-14 (SITE-99 listing-detail Tip Ready landed on main)
+# Current — 2026-09-15 (SITE-103 market-report-region tip — judge blocked)
 
-Surface: Mini Cos land of PR #227 tip `6bbe80e8b` + Tip Ready receipt `045d6abb` → main.
+Surface: Cursor cloud `cursor-cloud-site103-20260915` on `cursor/site-103-market-report-region-a8f3` (PR #244). Do not merge. Do not mark SITE-103 done.
 
-- **Done:** Re-ran `node scripts/lib/taste-receipt.mjs --ship design_system/ryan-realty/ui_kits/listing-detail/parity.json` on Mini at tip and on main after cherry-pick — exit 0 (`ship OK — demoMatch true · competitiveBriefPass true · open-state · catalog-install`). Score median 57 ignored per Cos north star (Tip Ready = --ship exit 0 only). Cherry-picked 10 commits onto main (9 product + Tip Ready receipt).
-- **Next:** `npm run push` / deploy verify. Mark SITE-99 done with Tip Ready evidence.
-- **Node:** SITE-99 Tip Ready → done after push.
-- Skills read: `.claude/skills/site-queue/SKILL.md`.
+- **Done:** Catalog jobs installed (`beui-number`, `beautifului-insight`) before house paint. Region fold: jargon-free ODS citation, editorial disclosure (not ALL 42), InsightPager + per-year claim + scrubber, MOS two bars, 375 first viewport reaches the chart. Open-state shots in kit (`year-open`, `source-open`). `catalog-install OK`. `taste-catalog --preflight` OK.
+- **Blocked:** `npx tsx scripts/taste-evaluate.ts market-report-region --builder cursor-agent` exit 2 — cursor-agent installed but not logged in (no `CURSOR_API_KEY`); grok CLI missing; claude CLI missing. Did not invent `demoMatch`. `--ship` exit 1 until a judge writes `demoMatch: true` plus open-state paths on `tasteReview`.
+- **Next:** On a machine with a judge subscription, re-run taste-evaluate, write the printed envelope into `parity.json`, `--ship` exit 0, then Cos Mini lands. Leave SITE-96 / SITE-106 alone.
+- **Node:** `4de56cc6-c112-4db6-b785-a76bb0488b5a` in_progress. Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`.
 
