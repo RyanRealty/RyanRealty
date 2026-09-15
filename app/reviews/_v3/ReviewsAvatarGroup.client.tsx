@@ -4,18 +4,19 @@
  * Official shadcn Avatar catalog (SITE-109).
  *
  * Source: https://ui.shadcn.com/docs/components/avatar
- * Dropdown: apps/v4/examples/base/dropdown-menu-avatar.tsx
  *
  * AvatarGroup
  * ├── Avatar → AvatarImage → AvatarFallback → AvatarBadge
  * └── AvatarGroupCount
  *
- * avatar-open is the catalog dropdown (Button ghost icon + Avatar trigger,
- * DropdownMenuGroup Account / Billing / Notifications, Separator, Sign Out).
- * Not a cream quote overlay on letter discs.
+ * Catalog portraits fill AvatarImage (public.reviews has no photo column —
+ * do not invent reviewer photos). Fallback initials, alt, and the open
+ * menu are the reviewer. avatar-open is the catalog Avatar dropdown
+ * (Button ghost icon + Avatar trigger) with reviewer identity — not
+ * a SaaS auth menu, and not a cream quote overlay.
  */
 
-import { BadgeCheckIcon, BellIcon, CreditCardIcon, LogOutIcon } from 'lucide-react'
+import { ExternalLinkIcon, StarIcon, UsersIcon } from 'lucide-react'
 import {
   Avatar,
   AvatarBadge,
@@ -30,9 +31,10 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuSeparator,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { uniqueReviewerInitials } from '@/lib/reviews/reviewer-initials'
 
 /**
  * Official Avatar docs portraits. Remote URLs are the catalog source;
@@ -42,20 +44,14 @@ const CATALOG_PORTRAITS = [
   {
     remote: 'https://github.com/shadcn.png',
     src: '/images/catalog/shadcn-avatar/shadcn.jpg',
-    alt: 'shadcn',
-    initials: 'CN',
   },
   {
     remote: 'https://github.com/leerob.png',
     src: '/images/catalog/shadcn-avatar/leerob.png',
-    alt: 'leerob',
-    initials: 'LR',
   },
   {
     remote: 'https://github.com/evilrabbit.png',
     src: '/images/catalog/shadcn-avatar/evilrabbit.png',
-    alt: 'evilrabbit',
-    initials: 'ER',
   },
 ] as const
 
@@ -71,24 +67,31 @@ export type ReviewsAvatarFace = {
 export function ReviewsAvatarGroup({
   faces,
   remaining,
+  sourceHref,
   openedId,
   onPick,
   onClose,
 }: {
   faces: readonly ReviewsAvatarFace[]
   remaining: number
+  sourceHref: string
   openedId: string | null
   onPick: (id: string) => void
   onClose: () => void
 }) {
-  const shown = faces.slice(0, CATALOG_PORTRAITS.length)
+  const seen = new Set<string>()
+  const shown = faces.slice(0, CATALOG_PORTRAITS.length).map((face) => {
+    const initials = uniqueReviewerInitials(face.author, seen)
+    seen.add(initials)
+    return { face, initials }
+  })
 
   return (
     <AvatarGroup
       className="v3-proof__avatar-group [&_[data-slot=avatar]]:ring-2 [&_[data-slot=avatar]]:ring-background"
       aria-label="Recent reviewers"
     >
-      {shown.map((face, index) => {
+      {shown.map(({ face, initials }, index) => {
         const portrait = CATALOG_PORTRAITS[index]!
         const src = face.imageSrc?.trim() || portrait.src
         const open = openedId === face.id
@@ -107,36 +110,49 @@ export function ReviewsAvatarGroup({
                 variant="ghost"
                 size="icon"
                 className="v3-proof__avatar-btn rounded-full"
-                aria-label={`Open ${portrait.alt} menu`}
+                aria-label={`Open ${face.author}'s review`}
                 aria-pressed={open}
               >
-                <Avatar>
-                  <AvatarImage src={src} alt={portrait.alt} />
-                  <AvatarFallback delayMs={0}>{portrait.initials}</AvatarFallback>
-                  <AvatarBadge />
+                <Avatar size={open ? 'lg' : 'default'}>
+                  <AvatarImage src={src} alt={face.author} />
+                  <AvatarFallback delayMs={0}>{initials}</AvatarFallback>
+                  <AvatarBadge>
+                    {open ? <StarIcon /> : null}
+                  </AvatarBadge>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="start">
+              <DropdownMenuLabel className="flex items-center gap-2 font-normal">
+                <Avatar size="sm">
+                  <AvatarImage src={src} alt={face.author} />
+                  <AvatarFallback delayMs={0}>{initials}</AvatarFallback>
+                </Avatar>
+                <span className="min-w-0">
+                  <span className="block truncate font-medium">{face.author}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {face.attribution}
+                  </span>
+                </span>
+              </DropdownMenuLabel>
               <DropdownMenuGroup>
-                <DropdownMenuItem>
-                  <BadgeCheckIcon />
-                  Account
+                <DropdownMenuItem onSelect={() => onPick(face.id)}>
+                  <StarIcon />
+                  Read this review
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <CreditCardIcon />
-                  Billing
+                <DropdownMenuItem asChild>
+                  <a href={sourceHref} target="_blank" rel="noopener noreferrer">
+                    <ExternalLinkIcon />
+                    View on Google
+                  </a>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <BellIcon />
-                  Notifications
+                <DropdownMenuItem asChild>
+                  <a href="#reviews">
+                    <UsersIcon />
+                    All reviews
+                  </a>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <LogOutIcon />
-                Sign Out
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )

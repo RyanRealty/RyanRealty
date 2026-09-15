@@ -1,8 +1,8 @@
-# Current — 2026-09-15 (SITE-109 official avatar dropdown)
+# Current — 2026-09-15 (SITE-109 reviewer-identity avatar)
 
 Surface: Cursor cloud on `cursor/site109-avatar-demo-cb02`. SITE-109 only. Do not invent demoMatch. Do not merge.
 
-- **Done:** Mini tip `34f7cd48f` scored 62, demoMatch false — avatar-open was a cream quote overlay on letter discs. Replaced with official shadcn-avatar: AvatarGroup → Avatar → AvatarImage (vendored catalog portraits) → AvatarFallback → AvatarBadge; open state is Button ghost icon + DropdownMenuGroup Account/Billing/Notifications + Separator + Sign Out. SITE-107 left alone.
+- **Done:** Mini tip `39f818bfc` scored 61, demoMatch false — open was SaaS Account/Billing/Sign Out on catalog faces. AvatarGroup stays catalog portraits (no invented reviewer photos). Open is catalog Avatar dropdown with reviewer name + Read this review / View on Google / All reviews. SITE-107 left alone.
 - **Next:** Cos Mini-judges again. `--ship` stays 1 until Mini writes demoMatch. SITE-103/110/CMA left alone.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`.
 

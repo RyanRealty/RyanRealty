@@ -437,6 +437,7 @@ export function V3Proof({
         <ReviewsAvatarGroup
           faces={faceAvatars}
           remaining={Math.max(0, quotes.length - faceAvatars.length)}
+          sourceHref={source.href}
           openedId={openedId}
           onPick={(id) => {
             setFocus(id)
