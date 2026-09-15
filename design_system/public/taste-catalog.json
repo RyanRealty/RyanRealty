@@ -3006,6 +3006,9 @@
     },
     "place-type": {
       "layoutLock": "H1 is the type in the place, then one plain sentence with the count and the price band, then Atlas. Do not say the type twice as two display lines with no fact. Count and band from the same listing-tile read as the map marks.",
+      "demoStates": [
+        "carousel-open=[data-slot=\"carousel-next\"]!click"
+      ],
       "modules": [
         {
           "id": "house-atlas",

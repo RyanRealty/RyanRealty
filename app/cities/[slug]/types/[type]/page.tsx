@@ -189,9 +189,9 @@ export default async function CityPlaceTypePage({ params }: Props) {
     return priced[priced.length - 1] ?? highAsk
   })()
   const bandHigh = p90Ask ?? highAsk
-  /* Claim: H1 already named the type — do not say it again. Address census +
-     city-limits caveat so Atlas's clipped count is not a second "for sale"
-     figure fighting the lead. Same MV for count + band. */
+  /* One inventory. H1 already named the type — do not say it again. Count and
+     band from the same listing-tile read the map marks use. Do not add a
+     second "city limits" census that fights the lead. */
   const stamp = formatDateTime(new Date())
   const claimBase = placeTypeClaim({
     spec,
@@ -208,10 +208,8 @@ export default async function CityPlaceTypePage({ params }: Props) {
     ? {
         sentence:
           activeCount != null && lowAsk != null && bandHigh != null
-            ? `${activeCount.toLocaleString('en-US')} homes with a ${cityName} address ask ${formatPriceExact(lowAsk)} to ${formatPriceExact(bandHigh)} for nine in ten. The map marks for-sale homes inside city limits.`
+            ? `${activeCount.toLocaleString('en-US')} homes ask ${formatPriceExact(lowAsk)} to ${formatPriceExact(bandHigh)} for nine in ten.`
             : claimBase.sentence,
-        /* Absolute ceiling stays off the fold — naming $11.9M next to a p90
-           band made the range look like a fight (grok-4.6 blocking). */
         source: claimBase.source,
       }
     : null
@@ -220,14 +218,9 @@ export default async function CityPlaceTypePage({ params }: Props) {
   const copy = placeTypeMetadataCopy({ spec, placeName: cityName, count: activeCount })
   const listOk = listRead.ok
   const rows = listOk ? placeTypeListingRows(listRead.value) : []
-  /* H1 already named the type. Atlas eyebrow is a section marker ("Listings
-     inside the … city limits"), not a second "Single-family…" Amboqia line
-     (SITE-89 / taste table). */
-  const eyebrow = placeTypeAtlasEyebrow(
-    spec,
-    false,
-    `inside the ${cityName} city limits`,
-  )
+  /* H1 already named the type. Atlas eyebrow is a section marker, not a
+     second "Single-family…" Amboqia line (SITE-89 / taste table). */
+  const eyebrow = placeTypeAtlasEyebrow(spec, false)
 
   const schemas = placeTypeSchemas({
     spec,

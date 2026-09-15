@@ -67,6 +67,11 @@ function useLink(): LinkState {
   return ctx
 }
 
+/** Film cards and rows share one hovered listing key with Atlas marks. */
+export function usePlaceTypeLink(): LinkState {
+  return useLink()
+}
+
 /**
  * The provider. Wraps BOTH sections, including the Suspense boundary the Atlas
  * streams inside, so the two halves share one hovered key even though the map
