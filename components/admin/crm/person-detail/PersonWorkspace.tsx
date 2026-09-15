@@ -39,8 +39,12 @@ export function PersonWorkspace({
   return (
     <>
       {kickoff}
-      {/* Mobile layout (< md) — full-bleed: cancel ConsoleShell main padding. */}
-      <div className="-mx-4 -mt-5 -mb-24 md:hidden">{mobile}</div>
+      {/* Mobile layout (< md) — cancel ConsoleShell main `px-4` + `pb-24`.
+          Do NOT use `-mt-5` here: tools/page renders Person chip + EntityTitle
+          above this tree, and pulling the detail header into that chrome clipped
+          glyph tops into black slivers (mobile person Info crop). Shell `pt-5`
+          stays as breathing room under that identity row. */}
+      <div className="-mx-4 -mb-24 md:hidden">{mobile}</div>
       <div className="hidden md:block">{desktop}</div>
     </>
   )

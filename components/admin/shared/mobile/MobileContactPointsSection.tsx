@@ -58,14 +58,12 @@ const CIRCLE_CLS =
 const CIRCLE_STYLE = { backgroundColor: 'var(--a-btn-bg)', color: 'var(--a-btn-fg)' } as const
 
 function AddRow({ label, onTap }: { label: string; onTap: () => void }) {
+  // Text + accent plus — not a filled FAB circle. Tip 1ce45a39 hid the global
+  // ConsoleQuickAction + on mobile person detail; a solid blue circle here
+  // looked like that FAB came back / was the wrong leftover.
   return (
-    <button type="button" onClick={onTap} className="flex w-full items-center gap-2.5 px-4 py-3 text-left">
-      <span
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
-        style={CIRCLE_STYLE}
-      >
-        <Plus size={14} strokeWidth={3} />
-      </span>
+    <button type="button" onClick={onTap} className="flex w-full items-center gap-2 px-4 py-3 text-left">
+      <Plus size={16} strokeWidth={2.5} style={{ color: 'var(--a-accent)' }} aria-hidden />
       <span className="text-[15px]" style={{ color: 'var(--a-accent)' }}>{label}</span>
     </button>
   )
