@@ -13,6 +13,24 @@
 .v3.v3-mos.region-market-mos {
   max-width: none;
   width: 100%;
+  background: transparent;
+  border: 0;
+  padding-inline: 0;
+  box-shadow: none;
+}
+
+.region-fold-doors {
+  margin: 0;
+}
+
+.region-fold-doors a {
+  display: inline-flex;
+  min-height: var(--v3-tap);
+  align-items: center;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
 }
 
 #market.v3-instrument {
@@ -23,9 +41,9 @@
 
 #market .v3-instrument__eyebrow { order: 1; }
 #market .v3-instrument__headline { order: 2; }
-#market .v3-instrument__stage { order: 3; }
-#market .v3-instrument__figures { order: 4; }
-#market .v3-instrument__action { order: 5; }
+#market .v3-instrument__action { order: 3; }
+#market .v3-instrument__stage { order: 4; }
+#market .v3-instrument__figures { order: 5; }
 #market .v3-instrument__fold { order: 6; }
 #market .v3-instrument__source { order: 7; }
 
@@ -171,7 +189,7 @@
   }
 
   #market .v3-instrument__action {
-    display: none;
+    display: flex;
   }
 
   #market-insights .insight-cards__claim,

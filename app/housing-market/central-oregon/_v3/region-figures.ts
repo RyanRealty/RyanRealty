@@ -109,6 +109,33 @@ export type InsightFace = {
   secondSub?: string
 }
 
+/** Official stage scrub: pointer X maps to this series index. */
+export function insightReadAtIndex(
+  chart: V3ChartProps | undefined,
+  index: number,
+): InsightChartRead | null {
+  const series = chart?.series ?? []
+  const first = series[0]?.points ?? []
+  if (first.length < 2) return null
+  const safe = Math.max(0, Math.min(first.length - 1, index))
+  const tick = String(first[safe]?.tick ?? '')
+  if (!tick) return null
+  return {
+    tick,
+    readings: series.map((row) => {
+      const point = row.points[safe] ?? row.points[row.points.length - 1]
+      return {
+        name: String(row.name),
+        label: String(point?.label ?? ''),
+      }
+    }),
+  }
+}
+
+export function insightPointCount(chart: V3ChartProps | undefined): number {
+  return chart?.series?.[0]?.points?.length ?? 0
+}
+
 /** Pointer left the rest month — not the chart's resting last-point read. */
 export function insightIsScrubbing(
   page: RegionInsightPage,
@@ -216,7 +243,7 @@ export function buildRegionInsightPages(
           claim: undefined,
           keysToggle: false,
           yearPages: false,
-          hover: true,
+          hover: false,
           stage: true,
           restingRead: undefined,
         },
@@ -243,7 +270,7 @@ export function buildRegionInsightPages(
             claim: undefined,
             keysToggle: false,
             yearPages: false,
-            hover: true,
+            hover: false,
             stage: true,
             restingRead: undefined,
           }
@@ -417,7 +444,7 @@ export function buildRegionPlaceMos(
     tooltip: {
       homes: homesLabel,
       sales: salesLabel,
-      source: `${tipSource}. ${MOS_METHODOLOGY_CLAUSE}`,
+      source: tipSource,
     },
   }
 }

@@ -7,8 +7,9 @@
  * then pill. Claim never lives inside insight-cards__card.
  *
  * Source: https://www.beautifului.dev/r/insight-cards.json
- * Compare / Anomaly / Allocation pages. Chart stage is pointer-scrub, not a
- * house figure caption. Not InsightPager (that is YEAR 2024 1/3).
+ * Compare / Anomaly / Allocation pages. Chart stage is the official year
+ * scrubber (pointer X → point index). Not house-chart hover. Not InsightPager
+ * (that is YEAR 2024 1/3).
  */
 
 import type { ReactNode } from 'react'
@@ -41,6 +42,9 @@ export type InsightCardsProps = {
   className?: string
   id?: string
   kind?: string
+  /** Official Compare/Anomaly pointer-scrub on the 166px stage. */
+  pointCount?: number
+  onScrub?: (index: number | null) => void
 }
 
 export function InsightCards({
@@ -65,11 +69,20 @@ export function InsightCards({
   className,
   id,
   kind,
+  pointCount = 0,
+  onScrub,
 }: InsightCardsProps) {
   if (pageCount < 2) return null
   const safe = Math.max(0, Math.min(pageCount - 1, page))
   const move = (direction: -1 | 1) => {
     onPage((safe + direction + pageCount) % pageCount)
+  }
+  const scrubFromClientX = (clientX: number, el: HTMLElement) => {
+    if (!onScrub || pointCount < 2) return
+    const rect = el.getBoundingClientRect()
+    const width = rect.width || 1
+    const progress = Math.max(0, Math.min(1, (clientX - rect.left) / width))
+    onScrub(Math.round(progress * (pointCount - 1)))
   }
 
   return (
@@ -154,7 +167,18 @@ export function InsightCards({
         </div>
         {chrome}
         {stage ? (
-          <div className="insight-chart-stage">
+          <div
+            className="insight-chart-stage"
+            data-insight-scrub="year"
+            onPointerDown={(event) => scrubFromClientX(event.clientX, event.currentTarget)}
+            onPointerMove={(event) => scrubFromClientX(event.clientX, event.currentTarget)}
+            onPointerLeave={() => onScrub?.(null)}
+            onPointerCancel={() => onScrub?.(null)}
+            onPointerUp={() => onScrub?.(null)}
+            onMouseEnter={(event) => scrubFromClientX(event.clientX, event.currentTarget)}
+            onMouseMove={(event) => scrubFromClientX(event.clientX, event.currentTarget)}
+            onMouseLeave={() => onScrub?.(null)}
+          >
             {stage}
             {tip}
           </div>

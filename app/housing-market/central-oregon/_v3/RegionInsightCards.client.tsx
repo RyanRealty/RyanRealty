@@ -1,20 +1,22 @@
 'use client'
 
 /**
- * Region fold: official Insights Compare form. year-open is pointer hover
- * on the stage (ChartTooltip + series columns + Trend snapshot + Snapshot).
- * Prose stays outside the card. No cream card wrap. Next pages to
+ * Region fold: official Insights Compare form. year-open is the official
+ * year scrubber on insight-chart-stage (pointer X → Compare claims), not
+ * house-chart hover. Prose stays outside the card. Next pages to
  * AnomalyCard (Closings/Sale). DigitSwapPreview replay lives on MOS.
  */
 
 import Link from 'next/link'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import { DigitSwap } from '@/components/motion/digit-swap'
 import { InsightCards } from '@/components/motion/insight-cards'
 import { V3Chart, type V3ChartRead } from '@/components/site/v3/V3Chart'
 import { cn } from '@/lib/utils'
 import {
   insightFaceForRead,
+  insightPointCount,
+  insightReadAtIndex,
   type RegionInsightPage,
   type RegionInsightSegment,
 } from './region-figures'
@@ -164,9 +166,6 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
   const [page, setPage] = useState(0)
   const [read, setRead] = useState<V3ChartRead | null>(null)
   const [segment, setSegment] = useState(0)
-  const onRead = useCallback((next: V3ChartRead | null) => {
-    setRead((current) => (sameRead(current, next) ? current : next))
-  }, [])
 
   if (pages.length < 2) return null
   const safe = Math.max(0, Math.min(pages.length - 1, page))
@@ -200,8 +199,9 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
       />
     ) : undefined
   const stage = openChart ? (
-    <V3Chart {...openChart} yearPages={false} stage onRead={onRead} />
+    <V3Chart {...openChart} yearPages={false} hover={false} stage />
   ) : undefined
+  const pointCount = insightPointCount(openChart)
   const visual =
     current.kind === 'allocation' && segments.length >= 2 ? (
       <AllocationBar segments={segments} selected={safeSegment} onSelect={setSegment} />
@@ -220,7 +220,7 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
         setSegment(0)
         setPage(index)
       }}
-      claim={face.claim}
+      claim={current.claim}
       snapshot="Snapshot"
       trend="Trend snapshot"
       figure={
@@ -246,6 +246,15 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
       tip={read ? <InsightChartTip read={read} /> : undefined}
       visual={visual}
       pill={pill}
+      pointCount={pointCount}
+      onScrub={(index) => {
+        if (index == null) {
+          setRead(null)
+          return
+        }
+        const next = insightReadAtIndex(openChart, index)
+        setRead((currentRead) => (sameRead(currentRead, next) ? currentRead : next))
+      }}
     />
   )
 }

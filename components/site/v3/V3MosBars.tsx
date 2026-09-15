@@ -86,24 +86,17 @@ export function V3MosBars({
 
   // Whole-number faces count up (beui-number / rareui); fractional sales stay static.
   // `replay` is official DigitSwapPreview (beui.dev/components/motion/number):
-  // rest = live sourced face (Mini 52 forbade rest-mask); hover / Animate
-  // toggles MASKED ••• suffix vs revealed, animationKey masked/revealed.
-  // Duration stays mid-swap at take-route-shots' 400ms hover wait.
+  // rest and open stay the live sourced face. Hover / Animate remounts with
+  // animationKey masked/revealed so glyphs roll — never replace inventory
+  // with • masks while the source line still cites the real counts.
   const previewRevealed = revealed && !open
   const valueFace = (label: string, value: number) => {
     if (replay) {
       const live = label
-      const digits = live.replace(/\D/g, '')
-      const suffixLength = Math.min(2, digits.length)
-      let seen = 0
-      const masked = live.replace(/[0-9]/g, () => {
-        const index = seen
-        seen += 1
-        return index >= digits.length - suffixLength ? digits[index]! : '•'
-      })
+      const suffixLength = 0
       return (
         <DigitSwap
-          value={previewRevealed ? live : masked}
+          value={live}
           animationKey={`${previewRevealed ? 'revealed' : 'masked'}-${plays}`}
           direction={previewRevealed ? 'up' : 'down'}
           suffixLength={suffixLength}
@@ -172,11 +165,6 @@ export function V3MosBars({
       ) : null}
       {open ? (
         <div className="v3-mos__tip" id={tipId} role="status">
-          {/* More data than the bars: the ratio and the dated source — not a
-              second label of the same two numerals (SITE-84 evaluator). */}
-          <p>
-            Supply ratio: {homesLabel} homes for sale ÷ {salesLabel} sales a month.
-          </p>
           <p className="v3-mos__tip-source">{tooltip.source}</p>
         </div>
       ) : null}

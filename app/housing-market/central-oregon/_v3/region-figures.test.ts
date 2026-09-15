@@ -11,9 +11,11 @@ import {
   buildRegionInsightPages,
   buildRegionInstruments,
   buildRegionMosChart,
+  buildRegionPlaceMos,
   composeRegionLiveTrace,
   insightFaceForRead,
   insightIsScrubbing,
+  insightReadAtIndex,
   monthlyPaceFromMos,
 } from './region-figures'
 
@@ -87,6 +89,9 @@ describe('SITE-88 visitor-facing region traces', () => {
     expect(catalog).toContain('DigitSwap')
     expect(catalog).not.toContain('DigitSwapReplay')
     expect(page).toContain('replay')
+    expect(page).toContain('See homes for sale')
+    expect(page).toContain('Ask about Central Oregon')
+    expect(page).toContain('Central Oregon housing market: a ${verdict.label}')
     const cards = readFileSync(resolve(__dirname, '../../../../components/motion/insight-cards.tsx'), 'utf8')
     expect(cards).not.toMatch(/from ['"]@\/components\/motion\/insight-pager['"]/)
     expect(cards).toContain('insight-cards__pager')
@@ -105,6 +110,9 @@ describe('SITE-88 visitor-facing region traces', () => {
     expect(cards).not.toContain('insight-cards__kinds')
     expect(cards).not.toContain('kinds?:')
     expect(cards).toContain('data-insight-next')
+    expect(cards).toContain('data-insight-scrub')
+    expect(cards).toContain('onScrub')
+    expect(cards).toContain('pointCount')
     expect(cards).not.toContain("index === nextKind && 'v3-chart__hover'")
     const cardsCss = readFileSync(resolve(__dirname, '../../../../components/motion/insight-cards.css'), 'utf8')
     expect(cardsCss).toContain('.insight-chart-stage .v3-chart__scrub')
@@ -140,11 +148,27 @@ describe('SITE-88 visitor-facing region traces', () => {
     expect(mos).toContain("previewRevealed ? 'revealed' : 'masked'")
     expect(mos).toContain("previewRevealed ? 'up' : 'down'")
     expect(mos).toContain('suffixLength={suffixLength}')
+    expect(mos).toContain('value={live}')
+    expect(mos).not.toContain("'•'")
+    expect(mos).not.toMatch(/replace\(\/\[0-9\]\/g/)
+    expect(mos).not.toContain('Supply ratio:')
     expect(mos).toMatch(/className="v3-mos__barrow"[\s\S]*onMouseEnter=\{show\}/)
     expect(mos).toContain('setRevealed')
+    const tasteCatalog = readFileSync(
+      resolve(__dirname, '../../../../design_system/public/taste-catalog.json'),
+      'utf8',
+    )
+    expect(tasteCatalog).toContain(
+      'year-open=#market-insights .insight-chart-stage@#market-insights!hover',
+    )
+    expect(tasteCatalog).not.toContain(
+      'year-open=#market-insights .v3-chart__hover@#market-insights!hover',
+    )
     const regionCss = readFileSync(resolve(__dirname, 'region-market.css'), 'utf8')
     expect(regionCss).not.toMatch(/\.region-insights \.insight-cards__card \{[\s\S]*border:/)
     expect(regionCss).toContain('#market-insights {\n  min-height: calc(100vh - 6rem);')
+    expect(regionCss).toContain('#market .v3-instrument__action { order: 3; }')
+    expect(regionCss).toContain('.region-fold-doors')
     const client = readFileSync(resolve(__dirname, 'RegionInsightCards.client.tsx'), 'utf8')
     expect(client).toContain('id="market-insights"')
     expect(client).toContain('title="Insights"')
@@ -157,13 +181,15 @@ describe('SITE-88 visitor-facing region traces', () => {
     expect(client).toContain('AnomalyToggle')
     expect(client).toContain('stage={stage}')
     expect(client).not.toContain('kinds=')
-    expect(client).not.toContain('hover={false}')
-    expect(client).toContain('yearPages={false} stage')
+    expect(client).toContain('hover={false}')
+    expect(client).toContain('yearPages={false} hover={false} stage')
+    expect(client).toContain('onScrub=')
+    expect(client).toContain('insightReadAtIndex')
     expect(client).not.toContain('V3_ROOT_CLASS')
     expect(client).not.toContain('restingRead')
     expect(client).not.toContain('DigitSwapReplay')
     expect(client).not.toMatch(/>\s*Animate\s*</)
-    expect(client).toContain('year-open is pointer hover')
+    expect(client).toContain('year-open is the official')
   })
 
   it('insight pages are distinct jobs, not a year switcher of one series', () => {
@@ -211,21 +237,19 @@ describe('SITE-88 visitor-facing region traces', () => {
     expect(pages[0]?.chart?.series).toHaveLength(2)
     expect(pages[1]?.figure).toBe('120')
     expect(pages[1]?.chart).toBeTruthy()
-    expect(pages[1]?.chart?.hover).not.toBe(false)
     expect(pages[1]?.chart?.stage).toBe(true)
     expect(pages[1]?.chart?.restingRead).toBeUndefined()
     expect(pages[1]?.segments?.map((row) => row.key)).toEqual(['closings', 'sale'])
     expect(pages[1]?.segments?.map((row) => row.label)).toEqual(['Closings', 'Sale'])
     expect(pages[1]?.segments?.some((row) => /\d{4}/.test(row.label))).toBe(false)
     expect(pages[1]?.segments?.every((row) => row.chart)).toBe(true)
-    expect(pages[1]?.segments?.[0]?.chart?.hover).not.toBe(false)
-    expect(pages[1]?.segments?.[1]?.chart?.hover).not.toBe(false)
+    expect(pages[1]?.segments?.[1]?.chart?.hover).toBe(false)
     expect(pages[2]?.figure).toContain('655')
     expect(pages[2]?.segments?.map((row) => row.key)).toEqual(['sale', 'pending'])
     expect(pages[0]?.pill).not.toMatch(/scrub/i)
     expect(pages[0]?.chart?.yearPages).toBe(false)
     expect(pages[0]?.chart?.keysToggle).toBe(false)
-    expect(pages[0]?.chart?.hover).not.toBe(false)
+    expect(pages[0]?.chart?.hover).toBe(false)
     expect(pages[0]?.chart?.stage).toBe(true)
     expect(pages[0]?.chart?.restingRead).toBeUndefined()
     expect(pages.some((page) => /YEAR/.test(page.claim))).toBe(false)
@@ -261,6 +285,9 @@ describe('SITE-88 visitor-facing region traces', () => {
         ],
       }),
     ).toBe(true)
+    const scrubbed = insightReadAtIndex(pages[0]?.chart, 0)
+    expect(scrubbed?.tick).toBe('Jan')
+    expect(scrubbed?.readings.map((row) => row.label)).toEqual(['$610K', '$650K'])
   })
 })
 
@@ -308,5 +335,15 @@ describe('SITE-88 months of supply is two bars, not a 4.9 tile', () => {
   it('misses omit — never a zero bar', () => {
     expect(buildRegionMosChart({ ...HUD, active: null }, '3.8')).toBeUndefined()
     expect(buildRegionMosChart(HUD, null)).toBeUndefined()
+  })
+
+  it('opens a quoteable source line, not a methodology dump', () => {
+    const mos = buildRegionPlaceMos(HUD, '3.8', 'Sep 15, 2026')
+    expect(mos?.source).toContain('Oregon Data Share MLS')
+    expect(mos?.source).toContain('655')
+    expect(mos?.source).toContain('172')
+    expect(mos?.source).not.toContain(MOS_METHODOLOGY_CLAUSE)
+    expect(mos?.tooltip.source).toBe('Oregon Data Share · single-family · as of Sep 15, 2026')
+    expect(mos?.tooltip.source).not.toContain(MOS_METHODOLOGY_CLAUSE)
   })
 })

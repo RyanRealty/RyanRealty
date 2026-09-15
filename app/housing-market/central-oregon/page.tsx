@@ -470,11 +470,11 @@ export default async function CentralOregonRegionPage() {
             headline={v3Text(
               verdict.kind === 'unknown'
                 ? 'Central Oregon housing market'
-                : `A ${verdict.label}`,
+                : `Central Oregon housing market: a ${verdict.label}`,
             )}
             figures={[]}
             /* THE OPENING IS A CLAIM AND A DRAWING (SITE-103). MOS + InsightCards.
-               Rest is Compare. year-open is pointer hover on insight-chart-stage. */
+               Rest is Compare. year-open is official year scrub on insight-chart-stage. */
             chartFirst
             foldAfter={REGION_LEAD_FIGURES}
             foldLabel={v3Text(REGION_MARKET_FOLD_LABEL)}
@@ -485,6 +485,9 @@ export default async function CentralOregonRegionPage() {
             action={{ label: v3Text('Ask about Central Oregon'), href: '#ask' }}
             drawing={
               <div className="region-insight-stage">
+                <p className="region-fold-doors">
+                  <a href={listingsBrowsePath()}>See homes for sale</a>
+                </p>
                 {regionMos ? (
                   <V3MosBars
                     id="central-oregon-mos"
