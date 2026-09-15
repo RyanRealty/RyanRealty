@@ -251,6 +251,7 @@ export function MobileLeadDetail({
       }
       priceTarget={(person as unknown as { price?: number | null }).price ?? null}
       backHref={backHref}
+      personHref={`/admin/people/${person.id}`}
       editData={editData}
       activityTab={<MobileActivityTab rows={activityRows} />}
       infoTab={

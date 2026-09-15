@@ -22,6 +22,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -58,6 +59,10 @@ export interface MobileContactDetailProps {
   priceTarget: number | null
   /** href for back chevron */
   backHref: string
+  /** Optional Person chip → simple entity page (/admin/people/:id). Renders
+      inside this header surface so it never sits above PersonWorkspace's
+      -mt-5 full-bleed cancel (that stacking clipped EntityTitle glyph tops). */
+  personHref?: string
   /** Per-tab default: which tab to show first */
   defaultTab?: MobileTabKey
 
@@ -90,6 +95,7 @@ export function MobileContactDetail({
   lastCommLabel,
   priceTarget,
   backHref,
+  personHref,
   defaultTab = 'info',
   editData,
   infoTab,
@@ -178,6 +184,18 @@ export function MobileContactDetail({
           borderBottom: '1px solid var(--a-border)',
         }}
       >
+        {personHref ? (
+          <div className="av2-scope flex items-center px-4 pt-2">
+            <Link
+              href={personHref}
+              className="av2-btn av2-btn--quiet"
+              style={{ textDecoration: 'none' }}
+            >
+              Person
+            </Link>
+          </div>
+        ) : null}
+
         {/* §25.3.2 Back row (44 pt / h-11) */}
         <div className="flex h-11 items-center justify-between px-4">
           <button

@@ -39,7 +39,11 @@ export function PersonWorkspace({
   return (
     <>
       {kickoff}
-      {/* Mobile layout (< md) — full-bleed: cancel ConsoleShell main padding. */}
+      {/* Mobile layout (< md) — full-bleed: cancel ConsoleShell main
+          `px-4 pt-5 pb-24`. Do NOT put EntityTitle / route chrome above this
+          wrapper on mobile — `-mt-5` pulls the detail header up into that
+          chrome and clips glyph tops (black slivers). people/[id]/tools hides
+          its desktop chrome at < md; Person chip lives inside MobileContactDetail. */}
       <div className="-mx-4 -mt-5 -mb-24 md:hidden">{mobile}</div>
       <div className="hidden md:block">{desktop}</div>
     </>

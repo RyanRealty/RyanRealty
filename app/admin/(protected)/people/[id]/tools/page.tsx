@@ -82,7 +82,12 @@ export default async function PersonWorkspaceToolsPage({
 
   return (
     <>
-      <div className="av2-scope" style={{ padding: '12px 16px 0' }}>
+      {/* Desktop-only identity chrome. On mobile, PersonWorkspace cancels
+          ConsoleShell main `pt-5` with `-mt-5` so MobileContactDetail
+          full-bleeds; EntityTitle + Person chip sitting in that cancel zone
+          left glyph tops clipped into black slivers between the chip and the
+          back/Edit row. Mobile keeps a Person chip inside MobileContactDetail. */}
+      <div className="av2-scope hidden md:block" style={{ padding: '12px 16px 0' }}>
         <div className="av2-wordrow" style={{ marginBottom: 6 }}>
           <Link
             href={`/admin/people/${id}`}
