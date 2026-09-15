@@ -126,39 +126,42 @@ export function DigitSwap({
   );
 }
 
+/** Mask every digit of a sourced face. $664K → $•••K. */
+export function maskDigits(value: string | number): string {
+  return String(value).replace(/\d/g, '•')
+}
+
 /**
- * beUI Digit Swap preview — slots plus the Animate control that replays the
- * roll. Navy/cream paint is the house wrapper; the interaction is the demo.
+ * beUI Digit Swap preview — fixed slots plus Animate toggling the same
+ * sourced face between revealed digits and a • mask. Navy/cream paint is
+ * the house wrapper; the interaction is the demo.
  * Source: https://beui.dev/components/motion/number
  */
 export function DigitSwapReplay({
   value,
-  alternate,
   animationKey,
   className,
 }: {
   value: string | number
-  /** Second sourced face — Animate toggles to it, same as the beUI preview. */
-  alternate?: string | number
   animationKey?: string | number
   className?: string
 }) {
   const [play, setPlay] = useState(0)
-  const revealed = play % 2 === 1
-  const face = alternate != null && revealed ? alternate : value
+  const revealed = play % 2 === 0
+  const face = revealed ? String(value) : maskDigits(value)
   return (
     <span className={cn("digit-swap-replay", className)}>
       <DigitSwap
         value={face}
         animationKey={`${animationKey ?? value}-${play}-${face}`}
-        direction={revealed ? "down" : "up"}
+        direction={revealed ? "up" : "down"}
         className="digit-swap-replay__face font-mono tabular-nums"
       />
       <button
         type="button"
         className="digit-swap-replay__btn"
-        aria-label={revealed ? "Animate the number again" : "Animate the number"}
-        aria-pressed={revealed}
+        aria-label={revealed ? "Mask the number" : "Reveal the number"}
+        aria-pressed={!revealed}
         onClick={() => setPlay((current) => current + 1)}
       >
         Animate

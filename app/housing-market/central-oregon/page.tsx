@@ -306,8 +306,8 @@ export default async function CentralOregonRegionPage() {
     ...buildSegmentTailFigures(publicSegments, null),
     ...buildPaceTailFigures(publicPace),
   ]
-  // SITE-103: live list / under-contract sit on the ask InsightCards page as
-  // DigitSwap. The opening instrument is MOS + insights, not a two-up poster.
+  // SITE-103: live list sits on the ask InsightCards page as DigitSwap.
+  // The opening instrument is MOS + insights, not a two-up poster.
   const firstLiveFigure = region.live.figures[0]
   const [firstExtraFigure, ...restExtraFigures] = extraLive
   const liveTrace =
@@ -470,8 +470,8 @@ export default async function CentralOregonRegionPage() {
             )}
             figures={[]}
             /* THE OPENING IS A CLAIM AND A DRAWING (SITE-103). MOS + InsightCards.
-               Live list / under-contract are DigitSwap on the ask insight page —
-               never a two-up poster under the chart. */
+               Live list is DigitSwap on the ask insight page — never a two-up
+               poster under the chart. */
             chartFirst
             foldAfter={REGION_LEAD_FIGURES}
             foldLabel={v3Text(REGION_MARKET_FOLD_LABEL)}

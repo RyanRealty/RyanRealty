@@ -64,9 +64,6 @@ export type RegionInsightPage = {
   claim: string
   figure: string
   figureLabel: string
-  /** Second sourced DigitSwap face — Animate toggles to it. */
-  alternate?: string
-  alternateLabel?: string
   /** Series name the chart hover should write into the hero. */
   readName?: string
   pill: string
@@ -74,14 +71,54 @@ export type RegionInsightPage = {
   chart?: V3ChartProps
 }
 
+export type InsightChartRead = {
+  tick: string
+  readings: readonly { name: string; label: string; emphasis?: boolean }[]
+}
+
+export type InsightFace = {
+  claim: string
+  figure: string
+  figureLabel: string
+}
+
+/**
+ * Claim, hero, and label stay one sourced face. Scrub writes the open month
+ * into all three so the card never says Aug $664K next to an April $650K hero.
+ */
+export function insightFaceForRead(
+  page: RegionInsightPage,
+  read: InsightChartRead | null,
+): InsightFace {
+  if (!read) {
+    return { claim: page.claim, figure: page.figure, figureLabel: page.figureLabel }
+  }
+  const named = page.readName
+    ? read.readings.find((row) => row.name === page.readName)
+    : undefined
+  const row = named ?? read.readings.find((item) => item.emphasis) ?? read.readings[0]
+  const figure = row?.label || page.figure
+  const figureLabel = `${page.figureLabel} in ${read.tick}`
+  if (page.key.startsWith('sale-')) {
+    return {
+      claim: `${page.figureLabel} ${figure} in ${read.tick}`,
+      figure,
+      figureLabel,
+    }
+  }
+  if (page.key.startsWith('compare-')) {
+    const other = read.readings.find((item) => item.name !== row?.name)
+    const claim = other
+      ? `${read.tick} ${other.name} median sale ${other.label}; ${row?.name ?? page.readName} was ${figure}`
+      : `${page.figureLabel} ${figure} in ${read.tick}`
+    return { claim, figure, figureLabel }
+  }
+  return { claim: page.claim, figure, figureLabel }
+}
+
 function lastPoint(series: V3ChartSeries | undefined) {
   const points = series?.points ?? []
   return points.length ? points[points.length - 1] : undefined
-}
-
-function firstPoint(series: V3ChartSeries | undefined) {
-  const points = series?.points ?? []
-  return points.length ? points[0] : undefined
 }
 
 /**
@@ -100,14 +137,11 @@ export function buildRegionInsightPages(
   const newestLast = lastPoint(newest)
   if (newest && newestLast && newest.points.length >= 2 && overlay) {
     const year = String(newest.name)
-    const newestFirst = firstPoint(newest)
     pages.push({
       key: `sale-${year}`,
       claim: `${year} median sale ${String(newestLast.label)} in ${String(newestLast.tick)}`,
       figure: String(newestLast.label),
       figureLabel: `${year} median sale`,
-      alternate: newestFirst ? String(newestFirst.label) : undefined,
-      alternateLabel: newestFirst ? `${year} median sale in ${String(newestFirst.tick)}` : undefined,
       readName: String(newest.name),
       pill: 'See homes for sale',
       pillHref: listingsBrowsePath(),
@@ -133,8 +167,6 @@ export function buildRegionInsightPages(
         claim: `${tick} ${String(newest.name)} median sale ${String(newestLast.label)}; ${String(prior.name)} was ${String(priorSame.label)}`,
         figure: String(priorSame.label),
         figureLabel: `${String(prior.name)} same month`,
-        alternate: String(newestLast.label),
-        alternateLabel: `${String(newest.name)} same month`,
         readName: String(prior.name),
         pill: 'See homes for sale',
         pillHref: listingsBrowsePath(),
@@ -146,7 +178,7 @@ export function buildRegionInsightPages(
           ),
           series: [prior, newest],
           claim: undefined,
-          keysToggle: true,
+          keysToggle: false,
           yearPages: false,
           restingRead: 'last',
         },
@@ -164,8 +196,6 @@ export function buildRegionInsightPages(
           : 'What sellers are asking right now across Central Oregon single-family listings.',
       figure: formatPriceExact(medianList),
       figureLabel: 'median list price',
-      alternate: pending != null ? pending.toLocaleString('en-US') : undefined,
-      alternateLabel: pending != null ? 'under contract now' : undefined,
       pill: 'See homes for sale',
       pillHref: listingsBrowsePath(),
     })

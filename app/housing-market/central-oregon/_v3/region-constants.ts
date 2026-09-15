@@ -77,9 +77,9 @@ export const REGION_FOLD_LABEL =
   'Supply by property type, and how fast homes are selling'
 
 /**
- * Named fold cap the fold-after gate can see (not a raw 0). Live list and
- * under-contract are DigitSwap on the ask InsightCards page, not a two-up
- * poster row on the instrument.
+ * Named fold cap the fold-after gate can see (not a raw 0). Live list is
+ * DigitSwap on the ask InsightCards page, not a two-up poster row on the
+ * instrument.
  */
 export const REGION_MARKET_FOLD_LABEL = 'Live list price and homes under contract'
 

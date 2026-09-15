@@ -19,7 +19,7 @@ export type InsightPagerProps = {
   /** Active page index. */
   page: number
   onPage: (index: number) => void
-  /** When false, the face is title + total (InsightCards). */
+  /** When false, the face is title + total. YEAR chrome keeps this true. */
   showCurrent?: boolean
   className?: string
 }

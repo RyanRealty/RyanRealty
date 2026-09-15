@@ -2,8 +2,8 @@
 
 /**
  * Region fold InsightCards. Pointer-scrub on the house chart updates the
- * DigitSwap hero (beautifului-insight + beui-number). Animate toggles a
- * second sourced face, same as the beUI number preview.
+ * DigitSwap hero and the claim (beautifului-insight + beui-number). Animate
+ * masks the same sourced face, same as the beUI number preview.
  */
 
 import Link from 'next/link'
@@ -12,7 +12,7 @@ import { DigitSwapReplay } from '@/components/motion/digit-swap'
 import { InsightCards } from '@/components/motion/insight-cards'
 import { V3Chart, type V3ChartRead } from '@/components/site/v3/V3Chart'
 import { V3_ROOT_CLASS } from '@/components/site/v3'
-import type { RegionInsightPage } from './region-figures'
+import { insightFaceForRead, type RegionInsightPage } from './region-figures'
 
 export type RegionInsightCardsProps = {
   pages: readonly RegionInsightPage[]
@@ -33,15 +33,6 @@ function sameRead(left: V3ChartRead | null, right: V3ChartRead | null): boolean 
   })
 }
 
-function labelForRead(page: RegionInsightPage, read: V3ChartRead | null): string {
-  if (!read) return page.figure
-  const named = page.readName
-    ? read.readings.find((row) => row.name === page.readName)
-    : undefined
-  const row = named ?? read.readings.find((item) => item.emphasis) ?? read.readings[0]
-  return row?.label || page.figure
-}
-
 export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
   const [page, setPage] = useState(0)
   const [read, setRead] = useState<V3ChartRead | null>(null)
@@ -54,8 +45,7 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
   const current = pages[safe]
   if (!current) return null
 
-  const figure = labelForRead(current, read)
-  const figureLabel = read ? `${current.figureLabel} in ${read.tick}` : current.figureLabel
+  const face = insightFaceForRead(current, read)
   const pill = current.pillHref ? (
     <Link href={current.pillHref} className="insight-cards__pill-link">
       {current.pill}
@@ -75,16 +65,16 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
         setRead(null)
         setPage(index)
       }}
-      claim={current.claim}
+      claim={face.claim}
       figure={
         <DigitSwapReplay
-          value={figure}
-          alternate={current.alternate}
-          animationKey={`${current.key}-${figure}`}
+          key={`${current.key}-${face.figure}`}
+          value={face.figure}
+          animationKey={`${current.key}-${face.figure}`}
           className="insight-cards__swap"
         />
       }
-      figureLabel={figureLabel}
+      figureLabel={face.figureLabel}
       visual={
         current.chart ? (
           <V3Chart {...current.chart} yearPages={false} onRead={onRead} />

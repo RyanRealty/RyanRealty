@@ -6,12 +6,14 @@ import { MOS_METHODOLOGY_CLAUSE } from '@/lib/market/classify'
 import { REGION_CITIES_SOURCE, REGION_FOLD_LABEL, REGION_MARKET_FOLD_LABEL } from './region-constants'
 import { marketReportHereBody } from '@/lib/market/report-doors'
 import { v3Text } from '@/components/site/v3'
+import { maskDigits } from '@/components/motion/digit-swap'
 import {
   REGION_JARGON_RE,
   buildRegionInsightPages,
   buildRegionInstruments,
   buildRegionMosChart,
   composeRegionLiveTrace,
+  insightFaceForRead,
   monthlyPaceFromMos,
 } from './region-figures'
 
@@ -82,6 +84,12 @@ describe('SITE-88 visitor-facing region traces', () => {
     expect(catalog).toContain("from '@/components/motion/insight-cards'")
     expect(catalog).toContain("from '@/components/motion/digit-swap'")
     expect(catalog).toContain('DigitSwapReplay')
+    const cards = readFileSync(resolve(__dirname, '../../../../components/motion/insight-cards.tsx'), 'utf8')
+    expect(cards).not.toMatch(/from ['"]@\/components\/motion\/insight-pager['"]/)
+    expect(cards).toContain('insight-cards__pager')
+    const swap = readFileSync(resolve(__dirname, '../../../../components/motion/digit-swap.tsx'), 'utf8')
+    expect(swap).toContain('maskDigits')
+    expect(swap).not.toMatch(/alternate\?:/)
   })
 
   it('insight pages are distinct jobs, not a year switcher of one series', () => {
@@ -111,11 +119,22 @@ describe('SITE-88 visitor-facing region traces', () => {
     expect(pages[1]?.figure).toContain('602')
     expect(pages[1]?.chart?.series).toHaveLength(2)
     expect(pages[2]?.figure).toContain('939')
-    expect(pages[2]?.alternate).toBe('293')
-    expect(pages[0]?.alternate).toBe('$650K')
     expect(pages[0]?.pill).not.toMatch(/scrub/i)
     expect(pages[0]?.chart?.yearPages).toBe(false)
+    expect(pages[0]?.chart?.keysToggle).toBe(false)
+    expect(pages[1]?.chart?.keysToggle).toBe(false)
+    expect(pages[1]?.chart?.yearPages).toBe(false)
     expect(pages.some((page) => /YEAR/.test(page.claim))).toBe(false)
+    expect(pages[0]).not.toHaveProperty('alternate')
+    const hovered = insightFaceForRead(pages[0]!, {
+      tick: 'Apr',
+      readings: [{ name: '2026', label: '$650K', emphasis: true }],
+    })
+    expect(hovered.claim).toBe('2026 median sale $650K in Apr')
+    expect(hovered.figure).toBe('$650K')
+    expect(hovered.figureLabel).toBe('2026 median sale in Apr')
+    expect(maskDigits('$664K')).toBe('$•••K')
+    expect(maskDigits('$749,900')).toBe('$•••,•••')
   })
 })
 
