@@ -2,7 +2,7 @@
 
 Surface: Cursor cloud. Branch `cursor/site-110-search-tip-21f9`. Do not merge. Cos Mini-judges.
 
-- **Done:** After Mini 56 / `6671fdd0` (`demoMatch` false): MorphingSearch open state is one grown dialog (layoutId on the field-becomes-results card, no clip-path typeahead split); empty-open seeds are live listing addresses, not Bend/Redmond Places. Cream typeahead stays unmounted. SITE-103/107/109/CMA left alone.
+- **Done:** After Mini 56 / `6671fdd0` (`demoMatch` false): search-open is MorphingSearch field-becomes-results (live listing addresses, Command-strength dim, cream dock recedes). Not Bend+Esc Places. SITE-103/107/109/CMA left alone.
 - **Next:** Cos Mini re-judge. Do not invent `demoMatch`. `--ship` stays honest.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 
