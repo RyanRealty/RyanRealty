@@ -11,16 +11,16 @@ describe('SITE-72 catalog wiring', () => {
     const filters = readSrc('components/search/SearchFilters.tsx')
     expect(filters).toMatch(/V3MorphSearch/)
     expect(filters).toMatch(/srch-morph/)
-    expect(filters).toMatch(/srch-command/)
-    expect(filters).toMatch(/V3Range/)
+    expect(filters).toMatch(/SearchCommand/)
+    expect(readSrc('app/search/_v3/SearchCommand.client.tsx')).toMatch(/srch-command-trigger/)
+    expect(filters).toMatch(/SearchPriceRail/)
     expect(readSrc('components/site/v3/V3MorphSearch.tsx')).toMatch(
       /from '@\/components\/motion\/morphing-search'/,
     )
-    expect(readSrc('components/site/v3/V3Range.tsx')).toMatch(
+    expect(readSrc('app/search/_v3/SearchPriceRail.client.tsx')).toMatch(
       /from '@\/components\/motion\/range-slider'/,
     )
     expect(filters).toMatch(/srch-price-rail/)
-    expect(filters).toMatch(/V3_PRICE_STOPS/)
     expect(filters).toMatch(/commitPrice/)
   })
 

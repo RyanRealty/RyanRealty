@@ -214,7 +214,7 @@ describe('390 Map uses one camera', () => {
   it('hides the filter-bar List/Split/Map ToggleGroup so the map shell is the one view switch', () => {
     const src = readSrc('components/search/SearchFilters.tsx')
     expect(src).toMatch(/hideViewToggle = true/)
-    expect(src).toMatch(/srch-chip-rail hidden min-w-0 flex-1[\s\S]*sm:flex/)
+    expect(src).toMatch(/srch-chip-rail hidden min-w-0 flex-1/)
     const map = readSrc('components/search/MapSearchView.tsx')
     expect(map).toMatch(/map-search-views/)
     expect(map).toMatch(/aria-label="Map view"/)

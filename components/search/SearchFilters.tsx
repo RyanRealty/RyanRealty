@@ -13,7 +13,6 @@ import { fireFirstPartyEvent } from '@/components/VisitTracker'
 import { buildFilterApplyPayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
 import {
-  SearchSuggestPanel,
   flattenSuggestions,
   useSearchSuggest,
   type SuggestItem,
@@ -61,6 +60,9 @@ import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { getSchoolDistrictOptions } from '@/lib/data/schools/getSchools'
 import { SUBDIVISION_ALIASES } from '@/lib/subdivision-aliases'
 import { normalizeSearchKey } from '@/lib/search/neighborhood-match'
+import { SearchCommand } from '@/app/search/_v3/SearchCommand.client'
+import { SearchPriceRail } from '@/app/search/_v3/SearchPriceRail.client'
+import { SEARCH_PLACE_SEEDS } from '@/app/search/_v3/search-places'
 
 export type SearchFiltersInitial = {
   city?: string
@@ -504,6 +506,23 @@ export default function SearchFilters({
     [handleLocationSelect, handleZipSelect, handleNavigateSelect]
   )
 
+  const morphItems = useMemo(
+    () => {
+      const typed = suggestItems.map((item) => ({
+        id: item.href,
+        title: item.label,
+        description: item.sublabel,
+      }))
+      if (typed.length > 0) return typed
+      return SEARCH_PLACE_SEEDS.map((place) => ({
+        id: place.id,
+        title: place.title,
+        description: place.description,
+      }))
+    },
+    [suggestItems],
+  )
+
   // ---------------------------------------------------------------------------
   // Active chip helpers
   // ---------------------------------------------------------------------------
@@ -596,15 +615,8 @@ export default function SearchFilters({
               the dock does not shove the map. */}
           <V3MorphSearch
             className="srch-morph"
-            open={morphOpen}
-            onOpenChange={(next) => setLocationOpen(next)}
             placeholder={locationPlaceholder}
-            items={suggestItems.map((item) => ({
-              id: item.href,
-              title: item.label,
-              description: item.sublabel,
-              onSelect: () => handleSuggestPick(item),
-            }))}
+            items={morphItems}
             onQueryChange={(next) => {
               setLocationQuery(next)
               setHighlight(-1)
@@ -612,21 +624,9 @@ export default function SearchFilters({
             onSelect={(item) => {
               const picked = suggestItems.find((row) => row.href === item.id)
               if (picked) handleSuggestPick(picked)
+              else if (item.id.startsWith('/')) handleNavigateSelect(item.id, item.title)
               else applyNaturalQuery(item.title)
             }}
-            results={
-              morphOpen ? (
-                <SearchSuggestPanel
-                  items={suggestItems}
-                  loading={suggestLoading}
-                  hasResult={suggestions !== null}
-                  highlight={highlight}
-                  idPrefix="search-filters-suggest"
-                  onPick={handleSuggestPick}
-                  className="srch-command"
-                />
-              ) : null
-            }
           >
             <div className="v3-morph-search__field srch-morph__field min-h-11">
               <HugeiconsIcon icon={Search01Icon} className="srch-morph__mark" aria-hidden />
@@ -708,9 +708,6 @@ export default function SearchFilters({
           <div className="srch-places-body flex max-h-96 flex-col p-0">
             <div className="shrink-0 border-b border-border p-3">
               <p className="srch-label mb-2">Places</p>
-              <p className="mb-2 text-xs text-muted-foreground">
-                Select one or more. Map draws the place boundary when GIS exists and zooms to it.
-              </p>
               <Label className="sr-only" htmlFor="srch-places-typeahead">
                 Search places
               </Label>
@@ -1003,7 +1000,7 @@ export default function SearchFilters({
         </FilterDropdown>
         </div>
 
-        <div className="srch-chip-rail hidden min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar sm:flex">
+        <div className="srch-chip-rail hidden min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar">
 
         {/* For Sale / Status */}
         <FilterDropdown
@@ -1259,6 +1256,12 @@ export default function SearchFilters({
               {moreFilterCount > 0 ? `All filters (${moreFilterCount})` : 'All filters'}
             </span>
           </Button>
+          <SearchCommand
+            onOpenFilters={() => {
+              setMoreSheetMounted(true)
+              setMoreSheetOpen(true)
+            }}
+          />
           <SaveSearchButton user={viewerState.signedIn} />
         </span>
         {hideViewToggle ? null : (
@@ -1302,14 +1305,11 @@ export default function SearchFilters({
         </div>
       </div>
 
-      {/* SITE-72: price ticks live in the first viewport — the catalog job is
-          a range with stops, not a Price pill that hides the instrument. */}
+      {/* SITE-110: catalog RangeSlider is the first-viewport price object. */}
       <div className="srch-price-rail px-3 pb-2 sm:px-4">
-        <V3Range
-          label="Price"
+        <SearchPriceRail
           low={draftPrice.low}
           high={draftPrice.high}
-          stops={V3_PRICE_STOPS}
           onChange={(low, high) => setDraftPrice({ low, high })}
           onCommit={commitPrice}
         />

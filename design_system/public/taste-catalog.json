@@ -189,6 +189,15 @@
     "shadcn:alert": {
       "aliasOf": "shadcn-alert"
     },
+    "shadcn-command": {
+      "add": "command",
+      "file": "components/ui/command.tsx",
+      "import": "@/components/ui/command",
+      "house": "app/search/_v3/SearchCommand.client.tsx"
+    },
+    "shadcn:command": {
+      "aliasOf": "shadcn-command"
+    },
     "shadcn-sheet": {
       "add": "sheet",
       "file": "components/ui/sheet.tsx",
@@ -2428,6 +2437,11 @@
       "layoutLock": "Search is Atlas-grade cartography plus a list. Do not shrink the map to a default Google embed. Filters live in the house sheet, not a second overlay language.",
       "primitivesToAdd": [
         "V3Carousel"
+      ],
+      "demoStates": [
+        "search-open=.v3-morph-search--live [aria-haspopup=dialog]!click",
+        "command-open=button[aria-label=\"Search command\"]!click",
+        "filters-open=button[aria-label^=\"Open all filters\"]!click"
       ],
       "modules": [
         {

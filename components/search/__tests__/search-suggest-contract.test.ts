@@ -124,10 +124,12 @@ describe('flattenSuggestions category coverage', () => {
 describe('merge lock — one search component', () => {
   const root = join(__dirname, '..', '..', '..')
 
-  it('SearchFilters renders the shared panel, not a re-forked inline dropdown', () => {
+  it('SearchFilters uses the shared suggest engine through MorphingSearch, not a forked dropdown', () => {
     const src = readFileSync(join(root, 'components/search/SearchFilters.tsx'), 'utf8')
     expect(src).toContain("from '@/components/search/SearchSuggest'")
-    expect(src).toContain('<SearchSuggestPanel')
+    expect(src).toContain('useSearchSuggest')
+    expect(src).toContain('<V3MorphSearch')
+    expect(src).not.toContain('<SearchSuggestPanel')
   })
 
   // RE-EXPRESSED 2026-08-27. The chrome has NO search field, deliberately, and
