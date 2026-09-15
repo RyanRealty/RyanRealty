@@ -2,7 +2,7 @@
   "route": "app/oregon/[city]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). This directory holds no index.html and never did: the route shipped in W12 as a light KB page composed from the KB section library, with a `// @no-parity` comment in the source that no gate ever read (ci:mockup-parity binds by the existence of a parity.json naming the route, and `no-parity` has zero matches across scripts/). That comment is deleted and this contract replaces it, so the route's section list is mechanical instead of prose. ci:mockup-coverage is not affected: it fails a ui_kits directory holding an index.html with no parity.json, never the reverse.",
   "competitiveTarget": "The out-of-market referral tier, about 60 indexable URLs with earned search equity. Beat every statewide portal's city page on honesty rather than on inventory: the live count and median with the trace and stamp under them, a block that says plainly this is not our market, every listing a door, and one introduction offer. No portal tells a visitor to work with someone else.",
-  "note": "Migrated off the KB register onto the v3 barrel 2026-08-12 (P9, wave 2). Rhythm: FOUR of the six patterns, no two adjacent alike, chrome exempt. SITE-105 order is Breadcrumb, OregonCityHonesty (catalog Alert, id=about), Instrument level 1 (the place answer), Quiet (home-market doors), Ledger (live listings), Sheet (the referral), Ledger (other Oregon markets), Footer. SECTION IDS ARE PART OF THIS CONTRACT: top, about, listings, referral, other-markets are the ids the KB page emitted, and KbSectionTracker keys section_view on the id, so renaming one is an analytics deletion. Two populations sit on this page (the geo snapshot's per-city row, and the listing tile cache) and neither section prints a figure the other's trace covers or borrows the other's stamp; the listing Ledger carries no stamp because the tile cache exposes no refresh timestamp and a listing's own modified date is not a refresh claim. Prices render through formatPrice, which rounds to the nearest $1,000 and reproduces character for character the strings the KB register printed through kbMoneyFull, so no figure on this page moved. The middleware double-308 boundary depends on one thing here and it is unchanged: an unknown slug reaches notFound() from the guard that runs before anything streams (measured after the migration: /cities/medford 308s here, /oregon/bend 308s back, a junk slug renders the not-found page — with HTTP 200 rather than 404, which production already did on the KB build and which this route does not control). ONE PRIMARY PER VIEWPORT holds where a caller can hold it: the Instrument's ask is PRIMARY at 390, because the chrome CTA sits in the closed menu. At 1280 the header CTA is a second filled control, which is the chrome unit's conflict. Scrolled to the Sheet, the header CTA and the Sheet's own advance are both filled, because V3Sheet hardcodes variant='primary' on its advance (V3Sheet.tsx, the submit V3Button inside the step form) and no prop reaches it — the same state /housing-market shipped in. ONE BARREL CHANGE BELONGS TO THIS MIGRATION, and it is the pressure valve components/site/v3/index.ts describes rather than an exception to it: V3Sheet gained a `trap` prop, a sheet-level honeypot, because the referral form's `company` field is the server action's only bot deterrent and a step's single `field` slot is reserved for the one question that step asks. Nothing here is hand-rolled, so the raw-primitive rule is untouched. KB-era deletions this migration made, each listed with its reason in the deletions block below; the honeypot is NOT among them and must not become one.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-12 (P9, wave 2). Rhythm: FOUR of the six patterns, no two adjacent alike, chrome exempt. SITE-105 order is Breadcrumb, OregonCityHonesty (catalog Alert, id=about), Instrument level 1 (the place answer), Quiet (home-market doors), Ledger (live listings), Sheet (the referral), Ledger (other Oregon markets), Footer. SECTION IDS ARE PART OF THIS CONTRACT: top, about, listings, referral, other-markets are the ids the KB page emitted, and KbSectionTracker keys section_view on the id, so renaming one is an analytics deletion. Two populations sit on this page (the geo snapshot's per-city row, and the listing tile cache) and neither section prints a figure the other's trace covers or borrows the other's stamp; the listing Ledger carries no stamp because the tile cache exposes no refresh timestamp and a listing's own modified date is not a refresh claim. Prices render through formatPrice, which rounds to the nearest $1,000 and reproduces character for character the strings the KB register printed through kbMoneyFull, so no figure on this page moved. The middleware double-308 boundary depends on one thing here and it is unchanged: an unknown slug reaches notFound() from the guard that runs before anything streams (measured after the migration: /cities/medford 308s here, /oregon/bend 308s back, a junk slug renders the not-found page \u2014 with HTTP 200 rather than 404, which production already did on the KB build and which this route does not control). ONE PRIMARY PER VIEWPORT holds where a caller can hold it: the Instrument's ask is PRIMARY at 390, because the chrome CTA sits in the closed menu. At 1280 the header CTA is a second filled control, which is the chrome unit's conflict. Scrolled to the Sheet, the header CTA and the Sheet's own advance are both filled, because V3Sheet hardcodes variant='primary' on its advance (V3Sheet.tsx, the submit V3Button inside the step form) and no prop reaches it \u2014 the same state /housing-market shipped in. ONE BARREL CHANGE BELONGS TO THIS MIGRATION, and it is the pressure valve components/site/v3/index.ts describes rather than an exception to it: V3Sheet gained a `trap` prop, a sheet-level honeypot, because the referral form's `company` field is the server action's only bot deterrent and a step's single `field` slot is reserved for the one question that step asks. Nothing here is hand-rolled, so the raw-primitive rule is untouched. KB-era deletions this migration made, each listed with its reason in the deletions block below; the honeypot is NOT among them and must not become one.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -16,7 +16,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, level 1, id='top'. The place answer is an interactive two-bar drawing (V3MosBars when city pulse publishes homes-for-sale vs a month of sales; otherwise V3Drawing of the snapshot pair with hover). One supporting figure at most — never a three-tile KPI grid and never a fold that unhides tiles. Labels stay plain — no SFR jargon. The H1 is buildOregonCityTitle (live count + outside our market) so SEO is in pixels. Hover notes are a catalog data window (count · population · stamp), not house disclosure copy. Photographed listings live on OregonCityListings immediately after this band. The Instrument does not carry a second navy introduction slab or a second SOURCE line — the drawing owns the trace. Value my home is the wrong ask here: this city is outside our market.",
+      "section": "Pattern 1, level 1, id='top'. The place answer is an interactive two-bar drawing (V3MosBars when city pulse publishes homes-for-sale vs a month of sales; otherwise V3Drawing of the snapshot pair with hover). One supporting figure at most \u2014 never a three-tile KPI grid and never a fold that unhides tiles. Labels stay plain \u2014 no SFR jargon. The H1 is buildOregonCityTitle (live count + outside our market) so SEO is in pixels. Hover notes are a catalog data window (count \u00b7 population \u00b7 stamp), not house disclosure copy. Photographed listings live on OregonCityListings immediately after this band. The Instrument does not carry a second navy introduction slab or a second SOURCE line \u2014 the drawing owns the trace. Value my home is the wrong ask here: this city is outside our market.",
       "blocking": true
     },
     {
@@ -86,7 +86,7 @@
     },
     {
       "what": "KbExploreTowns' per-town median and count chips",
-      "why": "Not deleted — moved. The other-markets Ledger prints both figures per city and adds what the KB rail never had: the source trace and the freshness stamp for that population."
+      "why": "Not deleted \u2014 moved. The other-markets Ledger prints both figures per city and adds what the KB rail never had: the source trace and the freshness stamp for that population."
     },
     {
       "what": "SmoothScrollProvider (Lenis) and components/site/kb/kb.css",
@@ -119,9 +119,9 @@
     "note": "Meaning, wording, units and emission conditions are byte-identical to the KB page. The figures in the markup are the same snapshot fields the Instrument prints. One carried-across split, stated so it does not read as drift: the Dataset publishes the UNROUNDED median while the Instrument prints it rounded to the nearest $1,000, which is what the KB page did through usd() and kbMoneyFull. The visible figure follows the brand rounding rule; the machine payload stays equal to the source row."
   },
   "dataLayer": {
-    "getOutOfAreaCity": "lib/data/geo/getOutOfAreaCities.ts. One row of the cached geo snapshot index (geo_snapshot_mv, geo_type='city', active_all_count >= 1, minus the Central Oregon service area and feed noise). Called in generateMetadata and again as the page's FIRST await, where a miss is notFound() before anything streams — the middleware's 308 boundary depends on that 404.",
+    "getOutOfAreaCity": "lib/data/geo/getOutOfAreaCities.ts. One row of the cached geo snapshot index (geo_snapshot_mv, geo_type='city', active_all_count >= 1, minus the Central Oregon service area and feed noise). Called in generateMetadata and again as the page's FIRST await, where a miss is notFound() before anything streams \u2014 the middleware's 308 boundary depends on that 404.",
     "getListingTiles": "lib/data/listings/. listing_tile_mv, city = <city name>, status active, limit 12, sort newest. Feeds the listings Ledger. Wrapped in withTimeoutFallback(5000) exactly as before.",
-    "getMarketPulse": "lib/data/market/getMarketPulse.ts. City pulse row for homes-for-sale vs a month of sales (docs/DATABASE_FOR_AI_AGENTS.md §0). Out-of-area cities have no pulse row today; a miss withholds MOS rather than inventing a sold pace from the snapshot.",
+    "getMarketPulse": "lib/data/market/getMarketPulse.ts. City pulse row for homes-for-sale vs a month of sales (docs/DATABASE_FOR_AI_AGENTS.md \u00a70). Out-of-area cities have no pulse row today; a miss withholds MOS rather than inventing a sold pace from the snapshot.",
     "getIndexableOutOfAreaCities": "lib/data/geo/getOutOfAreaCities.ts. The indexable top set (>= 5 active, top 25 by count). Feeds generateStaticParams AND the other-markets Ledger. Wrapped in withTimeoutFallback(4000) exactly as before.",
     "isIndexableOutOfAreaCity": "lib/data/geo/getOutOfAreaCities.ts. Decides noindex in generateMetadata. The indexability policy lives in lib/out-of-area-cities.ts and this route does not restate it.",
     "submitOutOfAreaReferral": "app/actions/out-of-area-referral.ts. Bound to OutOfAreaReferralSheet. Same action, same payload keys, same tags, same non-enrolling behaviour.",
@@ -144,11 +144,12 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-10",
-    "evaluator": "SITE-76. Separate evaluator via `npx tsx scripts/taste-evaluate.ts oregon-city --url http://127.0.0.1:3212/oregon/medford --beat 41` (grok-4.6). Builder did not score the page.",
+    "evaluatedAt": "2026-09-14",
+    "rubricVersion": "v1-2026-09-12",
+    "evaluator": "Mini Cursor 2026-09-14 cursor-grok-4.6-high via `npx tsx scripts/taste-evaluate.ts oregon-city --evaluator cursor --builder grok-4.5 --url http://127.0.0.1:3247/oregon/medford --beat 49`. Builder did not score the page. Do not invent demoMatch.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
+    "transport": "cursor-cli",
     "shotSpec": {
       "routes": [
         "/oregon/medford"
@@ -163,94 +164,109 @@
         "listings",
         "empty",
         "feed-miss"
-      ]
+      ],
+      "capture": "first viewport + figures-open=#top .v3-instrument__drawing button!hover + listings=#listings [data-slot=card]:has([data-slot=card-content])!hover + empty=#listings [data-demo-state=empty]!click + feed-miss=#listings [data-demo-state=feed-miss]!click, scripts/take-route-shots.mjs (catalog demoStates), scale 1, palette-quantized",
+      "baseUrl": "http://127.0.0.1:3247/oregon/medford"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/oregon-city/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/oregon-city/shots/mobile375.png",
-      "sourceDesktop": "design_system/ryan-realty/ui_kits/oregon-city/shots/source-desktop.png",
-      "sourceMobile375": "design_system/ryan-realty/ui_kits/oregon-city/shots/source-mobile375.png",
+      "figuresOpenDesktop": "design_system/ryan-realty/ui_kits/oregon-city/shots/figures-open-desktop.png",
+      "figuresOpenMobile375": "design_system/ryan-realty/ui_kits/oregon-city/shots/figures-open-mobile375.png",
       "listingsDesktop": "design_system/ryan-realty/ui_kits/oregon-city/shots/listings-desktop.png",
-      "listingsMobile375": "design_system/ryan-realty/ui_kits/oregon-city/shots/listings-mobile375.png"
+      "listingsMobile375": "design_system/ryan-realty/ui_kits/oregon-city/shots/listings-mobile375.png",
+      "emptyDesktop": "design_system/ryan-realty/ui_kits/oregon-city/shots/empty-desktop.png",
+      "emptyMobile375": "design_system/ryan-realty/ui_kits/oregon-city/shots/empty-mobile375.png",
+      "feedMissDesktop": "design_system/ryan-realty/ui_kits/oregon-city/shots/feed-miss-desktop.png",
+      "feedMissMobile375": "design_system/ryan-realty/ui_kits/oregon-city/shots/feed-miss-mobile375.png"
     },
-    "shotsHash": "sha256:c53f1889524bed34751d218381d1436115a42f4f835ad3bc6e535c7278c45149",
+    "shotsHash": "sha256:ed42b3dd16a679e39919a261e9dba6f00d6c2d967351a2ef831332feb546af7f",
     "scores": [
-      46,
-      49,
-      53
+      53,
+      57,
+      59
     ],
-    "score": 49,
+    "score": 57,
     "perCriterion": {
       "design": 16,
       "originality": 14,
-      "interaction": 2,
-      "craft": 9,
-      "honesty": 8
+      "interaction": 8,
+      "craft": 10,
+      "honesty": 9
     },
-    "honestyFunction": 8,
-    "beats": "Redfin Medford (redfin.com/city/11422/OR/Medford): we lose the first-viewport interactive map and listing grid; we win the out-of-area confession and a dated Oregon Data Share MLS stamp. Zillow's Medford home-values page still wins the market time series. Better than the 41/100 three-tile fold, not a 70.",
+    "honestyFunction": 9,
+    "demoMatch": true,
+    "beats": "Redfin Medford (redfin.com/city/11422/OR/Medford): we win the out-of-area confession and a dated Oregon MLS stamp; we lose the first-viewport map and listing grid. Zillow's Medford home-values page still wins the market time series. City of Bend (bendoregon.gov) still wins place identity. Better than the 49/100 three-tile fold, not a 70.",
     "adaptedFrom": [
       {
         "id": "shadcn-alert"
       },
       {
-        "id": "house-quiet"
+        "id": "shadcn-card"
+      },
+      {
+        "id": "shadcn-empty"
       },
       {
         "id": "house-instrument"
       },
       {
+        "id": "house-quiet"
+      },
+      {
         "id": "house-ledger"
       }
     ],
+    "tells": [
+      "Raw slugs, internal labels, methodology jargon \u2014 visitor tabs and Empty title read Feed miss on #listings (empty and feed-miss shots)."
+    ],
     "defects": [
       {
-        "section": "#top figures",
+        "section": "#top",
         "severity": "taste",
-        "finding": "The first desktop viewport still ends on a three-up KPI grid — 726, 344, $465,000 — the same banned form the 41-mark page was. Sentences under the tiles do not make them a drawing; the lollipop above already stated the price range.",
+        "finding": "First viewport is a cream announcement plus two bars and no photograph, map, or landmark, so a visitor never sees Medford \u2014 City of Bend still wins place identity before any stat strip.",
+        "primitive": "components/site/v3/V3Instrument.tsx",
         "replaceWith": "house-instrument"
       },
       {
-        "section": "#top chart",
+        "section": "#top drawing",
         "severity": "taste",
-        "finding": "The newest-asks lollipop is a static list wearing dots. $1,850,000 at 3311 Biddle (11,620 sqft, no beds/baths) crushes the scale so six marks pile between $215k and $420k, and no slider, toggle, or hover cursor is visible in the shot.",
+        "finding": "The drawing is a composition split labeled On the market 718 vs Houses 338, not homes-for-sale versus a month of sales, and Houses does not say houses on their own lots until the sentence above.",
+        "primitive": "components/site/v3/V3Instrument.tsx",
         "replaceWith": "house-instrument"
       },
       {
-        "section": "#top headline",
+        "section": "#listings tabs",
         "severity": "taste",
-        "finding": "After the page admits we do not work in Medford, it shouts the portal H1 Homes for sale in Medford, Oregon with no photograph, map, or place mark. The fold is still a template, not this city.",
-        "replaceWith": "house-instrument"
+        "finding": "On the market / No matches / Feed miss is shipped as visitor chrome; Feed miss is engineer jargon and No matches fabricates an empty book on a city the fold says has 718 live listings.",
+        "primitive": "app/oregon/[city]/_v3/OregonCityListings.tsx",
+        "replaceWith": "shadcn-empty"
       },
       {
-        "section": "#listings",
-        "severity": "taste",
-        "finding": "Newest listings are a hairline ledger of Spark-sized 320×240 thumbs. D'ANJOU VILLAGE UNIT NO 1 and KERRISDALE RIDGE SUBDIVISION read as MLS internals, and the row reveals no more data than the static line.",
-        "replaceWith": "house-ledger"
-      },
-      {
-        "section": "#listings (375)",
-        "severity": "craft",
-        "finding": "At 375 the Kerrisdale Ridge Drive price is clipped at the right edge and the address wraps under a postage-stamp photo.",
+        "section": "#listings 3075 Umpqua Drive",
+        "severity": "defect",
+        "finding": "The lot Card prints Lot \u00b7 0.15 acres twice and drops beds/baths/sqft, so a listing fact is duplicated instead of complete.",
+        "primitive": "app/oregon/[city]/_v3/OregonCityListings.tsx",
         "replaceWith": null
       },
       {
-        "section": "#top chart (375)",
-        "severity": "craft",
-        "finding": "At 375 the label 2663 Kerrisdale R... is truncated and $1,850,000 collides with its dot, so the instrument cannot be read as a set of eight.",
+        "section": "#top (375)",
+        "severity": "defect",
+        "finding": "At 375 the instrument's SOURCE line and how we calculate this control are clipped off the first viewport, so the stamp the dek promises is not in frame.",
+        "primitive": "components/site/v3/V3Instrument.tsx",
         "replaceWith": null
       }
     ],
-    "verdict": "Better than the 41/100 KPI-only fold: honesty leads, a lollipop encodes newest asks, listing rows carry price/address/beds/baths/sqft, and the source is dated — inventory and honesty rose; SEO cannot be verified from these pixels so it is not a scored rise. It still will not beat Redfin Medford: the banned KPI grid remains under the chart, the lollipops are a static list crushed by one land-scale outlier, and nothing visible rewards a hover or scrub. Finish line 70 not met.",
+    "verdict": "Better than a 49/100 page: the banned KPI grid is gone, honesty leads, magazine Cards carry photographed inventory, Empty states exist, and figures-open shows a hover window \u2014 demoMatch is true because Alert, Card, and Empty are the catalog objects, not cream boxes. It is still not a 70: the first viewport is a cream type stack plus two bars, Feed miss is visitor jargon, and Redfin/Zillow/Bend still win map, series, and place. SEO improved in the H1 (718 + outside our market); inventory improved (photo, price, beds/baths/sqft, year versus Spark thumbs). Score under 70 is not done.",
     "comparedToPrior": "rebaselined",
+    "rebaselineReason": "Rubric v1-2026-09-10 \u2192 v1-2026-09-12 (demoMatch required) and new shot set (figures-open + empty + feed-miss). Prior 49 is not the same instrument.",
     "priorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 81,
-      "evaluatorModel": "claude-sonnet-5",
-      "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:8673b567f6ea325da5d9234140b5a6f053f8e89b4e8f949ba610d6b75d51600b"
-    },
-    "rebaselineReason": "SITE-76 rebaseline onto grok-4.6 / v1-2026-09-10 with a new honesty-first instrument: shadcn Alert adapted into Quiet, chartFirst ask strip, ItemList JSON-LD, and retaken default/source/listings shots. The prior 81 was claude-sonnet-5 on v1-2026-09-08 against a different shotsHash."
+      "evaluatedAt": "2026-09-10",
+      "score": 49,
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "v1-2026-09-10",
+      "shotsHash": "sha256:c53f1889524bed34751d218381d1436115a42f4f835ad3bc6e535c7278c45149"
+    }
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
