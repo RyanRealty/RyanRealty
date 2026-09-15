@@ -2,7 +2,7 @@
 
 Surface: Public Patch on Matthews Mini. Tip Ready locally. **Do not push origin** — Cos Mini lands. HOLD owner email.
 
-- **Tip:** `TIP_SHA` on `tip/public-patch-p0-place-search-20260915` (not pushed).
+- **Tip:** `5149d641` on `tip/public-patch-p0-place-search-20260915` (not pushed).
 - **--ship 0:** homepage-v6 · community · place-type-community (demoMatch true; homepage competitiveBriefPass true).
 - **Surfaces:**
   1. **Homes in Bend in-card flip root cause:** prior tip only widened hover selectors; chevrons stayed `display:none` until hover (desktop looked like no flip). Now always `display:flex` when multi-photo; SplitCardMedia + enrichHomeRailRows photo stacks unchanged.
