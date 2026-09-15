@@ -42,7 +42,14 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { RangeSlider } from '@/components/motion/range-slider'
 import { cn } from '@/lib/utils'
+import {
+  formatPriceRange,
+  formatPriceStop,
+  snapToStops,
+  V3_PRICE_STOPS,
+} from '@/components/site/v3/V3Range.logic'
 import {
   bboxOfRings,
   labelAnchor,
@@ -286,6 +293,13 @@ export type V3AtlasProps = {
    * so a buyer can read affordability from the mark.
    */
   markScale?: 'state' | 'ask'
+  /**
+   * Price scrub on the dock. `max` is the native ceiling slider (city pages).
+   * `minmax` is official beui-range-slider DualTickRange — Min ask + Max ask
+   * on one tick-stop track. Search uses minmax so the map column is not a
+   * dotted single-thumb next to the catalog dual rail.
+   */
+  priceScrub?: 'max' | 'minmax'
   children?: ReactNode
   className?: string
   /**
@@ -336,6 +350,19 @@ function median(values: number[]): number | null {
   const s = [...values].sort((a, b) => a - b)
   const mid = Math.floor(s.length / 2)
   return s.length % 2 ? s[mid]! : Math.round((s[mid - 1]! + s[mid]!) / 2)
+}
+
+function atlasStopIndex(value: number): number {
+  const snapped = snapToStops(value, V3_PRICE_STOPS)
+  const exact = V3_PRICE_STOPS.indexOf(snapped as (typeof V3_PRICE_STOPS)[number])
+  if (exact >= 0) return exact
+  let best = 0
+  for (let i = 1; i < V3_PRICE_STOPS.length; i++) {
+    const stop = V3_PRICE_STOPS[i] ?? 0
+    const bestStop = V3_PRICE_STOPS[best] ?? 0
+    if (Math.abs(stop - value) < Math.abs(bestStop - value)) best = i
+  }
+  return best
 }
 
 function atlasAskStroke(p: number | null | undefined, lo: number, hi: number): number {
@@ -403,6 +430,7 @@ export function V3Atlas({
   frame,
   quiet,
   markScale = 'state',
+  priceScrub = 'max',
   noun: nounProp,
   incomplete,
   events,
@@ -662,10 +690,18 @@ export function V3Atlas({
   }, [dots])
 
   /* Visitor state. */
+  const stopFirst = V3_PRICE_STOPS[0] ?? 0
+  const stopLast = V3_PRICE_STOPS[V3_PRICE_STOPS.length - 1] ?? stopFirst
+  const stopLastIdx = Math.max(0, V3_PRICE_STOPS.length - 1)
+  const minBound = priceScrub === 'minmax' ? stopFirst : priceScale.min
+  const maxBound = priceScrub === 'minmax' ? stopLast : priceScale.max
+  const [minPriceRaw, setMinPriceRaw] = useState<number | null>(null)
   const [maxPriceRaw, setMaxPriceRaw] = useState<number | null>(null)
-  const maxPrice = maxPriceRaw ?? priceScale.max
-  const atCeiling = maxPrice >= priceScale.max
-  const setMaxPrice = (v: number) => setMaxPriceRaw(v >= priceScale.max ? null : v)
+  const minPrice = minPriceRaw ?? minBound
+  const maxPrice = maxPriceRaw ?? maxBound
+  const atFloor = minPrice <= minBound
+  const atCeiling = maxPrice >= maxBound
+  const setMaxPrice = (v: number) => setMaxPriceRaw(v >= maxBound ? null : v)
   const [offTypes, setOffTypes] = useState<ReadonlySet<string>>(() => new Set())
   const [hover, setHover] = useState<string | null>(null)
   /* The phone fold on the chips: closed on arrival, so a page with eighty
@@ -678,8 +714,15 @@ export function V3Atlas({
 
   /* ONE filter for every layer, sold included. */
   const isOn = useCallback(
-    (d: AtlasDot) => !offTypes.has(d.t) && (atCeiling || d.p == null || d.p <= maxPrice),
-    [offTypes, atCeiling, maxPrice],
+    (d: AtlasDot) => {
+      if (offTypes.has(d.t)) return false
+      if (d.p == null) return true
+      if (priceScrub === 'minmax') {
+        return (atFloor || d.p >= minPrice) && (atCeiling || d.p <= maxPrice)
+      }
+      return atCeiling || d.p <= maxPrice
+    },
+    [atCeiling, atFloor, maxPrice, minPrice, offTypes, priceScrub],
   )
 
   const counts = useMemo(() => {
@@ -1353,6 +1396,36 @@ export function V3Atlas({
           </button>
         ))}
       </div>
+      {priceScrub === 'minmax' ? (
+        <div className="v3-atlas__scrub">
+          <span className="v3-atlas__scrub-label">
+            Min ask to Max ask ·{' '}
+            <strong className="v3-atlas__scrub-value">
+              {formatPriceRange(minPrice, maxPrice, V3_PRICE_STOPS)}
+            </strong>
+          </span>
+          <RangeSlider
+            values={[atlasStopIndex(minPrice), atlasStopIndex(maxPrice)]}
+            min={0}
+            max={stopLastIdx}
+            step={1}
+            showTicks
+            aria-label="Minimum ask"
+            maxAriaLabel="Maximum ask"
+            formatValueText={(i) => formatPriceStop(V3_PRICE_STOPS[i] ?? minPrice, V3_PRICE_STOPS)}
+            onValuesChange={([nextLo, nextHi]) => {
+              const lo = V3_PRICE_STOPS[nextLo] ?? stopFirst
+              const hi = V3_PRICE_STOPS[nextHi] ?? stopLast
+              setMinPriceRaw(lo <= stopFirst ? null : lo)
+              setMaxPriceRaw(hi >= stopLast ? null : hi)
+            }}
+          />
+          <div className="v3-atlas__scrub-ends" aria-hidden>
+            <span>Min ask</span>
+            <span>Max ask</span>
+          </div>
+        </div>
+      ) : (
       <label className="v3-atlas__scrub">
         <span className="v3-atlas__scrub-label">
           Up to <strong className="v3-atlas__scrub-value">{atCeiling ? 'any price' : fmtShort(maxPrice)}</strong>
@@ -1368,6 +1441,7 @@ export function V3Atlas({
           aria-valuetext={atCeiling ? 'Any price' : `Up to ${fmtShort(maxPrice)}`}
         />
       </label>
+      )}
     </div>
   )
 

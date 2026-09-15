@@ -329,7 +329,7 @@ function DualTickRange({
           return (
             <span
               key={t}
-              className="absolute top-1/2 size-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/50"
+              className="absolute top-1/2 size-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-background/80"
               style={{ left: `${tp}%` }}
             />
           );

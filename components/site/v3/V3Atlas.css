@@ -580,6 +580,14 @@
   cursor: pointer;
 }
 
+.v3-atlas__scrub-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--v3-size-label, 0.7rem);
+  letter-spacing: var(--v3-track-label, 0.12em);
+  text-transform: uppercase;
+}
+
 /* Two columns from 64rem: the map takes the whole frame height. */
 @media (min-width: 64rem) {
   .v3-atlas__grid {

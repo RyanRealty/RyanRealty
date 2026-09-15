@@ -71,6 +71,7 @@ describe('SITE-110 search catalog install', () => {
     expect(atlas).toContain('<V3Atlas')
     expect(atlas).not.toMatch(/\bquiet\b/)
     expect(atlas).toContain('markScale="ask"')
+    expect(atlas).toContain('priceScrub="minmax"')
     expect(readSrc('components/search/MapSearchView.tsx')).toContain("from '@/components/ui/empty'")
     expect(readSrc('components/search/MapSearchView.tsx')).toContain('<Empty')
     expect(readSrc('components/motion/morphing-search.tsx')).toContain('bg-transparent')

@@ -58,6 +58,7 @@ export function SearchAtlas({
         stamp={stamp}
         incomplete={incomplete}
         markScale="ask"
+        priceScrub="minmax"
       />
     </div>
   )
