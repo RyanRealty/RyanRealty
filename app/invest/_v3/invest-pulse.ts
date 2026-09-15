@@ -40,7 +40,7 @@
  */
 import type { PublicSegmentRow } from '@/lib/data/market-truth/public-segments'
 import { publicSegmentNoun, publicSegmentBrowseHref } from '@/lib/data/market-truth/public-segments'
-import { INVEST_SEGMENTS } from '@/lib/invest/segments'
+import { INVEST_SEGMENTS, type InvestSegment } from '@/lib/invest/segments'
 import { v3Text, type V3PulseProps, type V3PulseReading } from '@/components/site/v3'
 
 /** The section id, and the stem of every control id in the band. */
@@ -77,7 +77,7 @@ function n(value: number): string {
 }
 
 export type InvestSegmentCount = {
-  segment: string
+  segment: InvestSegment
   /** Rows the metric layer published as active for this segment. */
   count: number
 }
