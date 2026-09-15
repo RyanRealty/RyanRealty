@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { coverValueBlockHtml, expectedSale, immersiveAnswerHtml, immersiveHeroNumberHtml } from '@/lib/cma/cover-value'
+import { coverValueBlockHtml, expectedSale, immersiveAnswerHtml, immersiveHeroNumberHtml, letterCoverPayoffHtml } from '@/lib/cma/cover-value'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const subject = {
@@ -80,6 +80,22 @@ describe('cover and immersive value blocks', () => {
     expect(html).not.toMatch(/[—;]/)
     // Headline is the long form once; fold label is not the short "Recommended list".
     expect(html).not.toMatch(/>Recommended list</)
+  })
+
+  it('puts the same Low · High · Recommended trio on the letter cover payoff', () => {
+    const html = letterCoverPayoffHtml(args.pricing)
+    expect(html).toContain('cover-payoff')
+    expect(html).toContain('cover-headline')
+    expect(html).toContain('hero-trio')
+    expect(html).toContain('data-recommend-once')
+    expect(html).toContain('>Low<')
+    expect(html).toContain('>High<')
+    expect(html).toContain('>Recommended<')
+    expect(html).toContain('$470,000')
+    expect(html).toContain('$515,000')
+    expect(html).toContain('$505,000')
+    expect(html).not.toContain('cover-price')
+    expect(html).not.toContain('We recommend listing at')
   })
 
   it('names what the sales support when the list sits outside it', () => {

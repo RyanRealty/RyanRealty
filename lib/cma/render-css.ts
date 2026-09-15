@@ -230,16 +230,37 @@ export function cmaStylesheet(siteUrl: string): string {
     margin: 0 0 8px 0;
     font-weight: 600;
   }
-  .cover-price {
-    font-size: clamp(42px, 9vw, 64px);
-    font-weight: 600;
-    line-height: 1.05;
-    margin: 0 0 8px 0;
-    font-variant-numeric: tabular-nums;
+  /* FlexMLS letter FLOW: Low · High · Recommended once (same markup as immersive).
+     Cream plate / navy type — not Flex chrome, not immersive cream-on-photo. */
+  .cover-payoff .hero-trio {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    gap: clamp(16px, 3.5vw, 36px);
+    margin: 4px 0 0 0;
+    flex-wrap: wrap;
   }
-  .cover-range {
-    font-size: 16px;
-    margin: 0 0 10px 0;
+  .cover-payoff .hero-trio .ht-l {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    opacity: 0.62;
+    color: var(--navy);
+  }
+  .cover-payoff .hero-trio .ht-v {
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(20px, 3.2vw, 32px);
+    line-height: 1.05;
+    font-weight: 600;
+    color: var(--navy);
+    margin-top: 4px;
+  }
+  .cover-payoff .hero-trio .ht.is-rec .ht-v {
+    font-size: clamp(42px, 9vw, 64px);
+    opacity: 1;
+  }
+  .cover-payoff .hero-trio .ht.is-rec .ht-l {
     opacity: 0.78;
   }
   .cover-worth {

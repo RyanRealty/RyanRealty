@@ -136,7 +136,12 @@ describe('letter craft P0 — cover headline once', () => {
     const { html } = renderCmaHtml(args())
     expect(html).toContain(COVER_LIST_PRICE_HEADLINE)
     expect(html).toContain('cover-headline')
-    expect(html).toContain('cover-price')
+    expect(html).toContain('hero-trio')
+    expect(html).toContain('data-recommend-once')
+    expect(html).toContain('>Low<')
+    expect(html).toContain('>High<')
+    expect(html).toContain('>Recommended<')
+    expect(html).not.toContain('cover-price')
     expect(html).not.toContain('We recommend listing at')
     // Fold chapter is not titled with the recommend dollars.
     expect(html).not.toContain('class="section is-answer">$497,800')

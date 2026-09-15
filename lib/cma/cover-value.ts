@@ -143,22 +143,18 @@ export function coverValueBlockHtml(a: CoverArgs): string {
 }
 
 /**
- * Recommend once on the hero: Low · High · Recommended.
- * FlexMLS flow labels; immersive Ryan craft (not a Flex chrome dump).
- * Uses the list-range pair the cover already owns (conservative / highEnd),
- * falling back to valueLow / valueHigh when a tier is missing.
+ * Low · High · Recommended once — FlexMLS letter FLOW labels, Ryan craft.
+ * Shared by immersive hero and letter cover so renderCmaHtml cannot skip the trio.
+ * Uses list-range (conservative / highEnd), falling back to valueLow / valueHigh.
  */
-export function immersiveHeroNumberHtml(a: CoverArgs): string {
-  const p = a.pricing
+export function heroTrioHtml(p: CmaPricing, opts?: { singleClass?: string }): string {
   const loRaw = p.conservative ?? p.valueLow ?? 0
   const hiRaw = p.highEnd ?? p.valueHigh ?? 0
   const low = Math.min(loRaw, hiRaw)
   const high = Math.max(loRaw, hiRaw)
   const rec = p.recommended
-  const cause = rangeSpreadCauseSentence(p)
-  const trio =
-    low > 0 && high > 0 && rec > 0
-      ? `<div class="hero-trio" data-recommend-once="1">
+  if (low > 0 && high > 0 && rec > 0) {
+    return `<div class="hero-trio" data-recommend-once="1">
       <div class="ht">
         <div class="ht-l">Low</div>
         <div class="ht-v">${usd(low)}</div>
@@ -172,14 +168,39 @@ export function immersiveHeroNumberHtml(a: CoverArgs): string {
         <div class="ans-n r ht-v">${usd(rec)}</div>
       </div>
     </div>`
-      : rec > 0
-        ? `<div class="ans-n r">${usd(rec)}</div>`
-        : ''
+  }
+  if (rec > 0) {
+    const cls = opts?.singleClass ?? 'ans-n r'
+    return `<div class="${cls}">${usd(rec)}</div>`
+  }
+  return ''
+}
+
+/**
+ * Immersive hero payoff: locked headline + Low · High · Recommended once.
+ */
+export function immersiveHeroNumberHtml(a: CoverArgs): string {
+  const p = a.pricing
+  const cause = rangeSpreadCauseSentence(p)
   return `
     <div class="hero-payoff">
       <div class="ans-l r">${esc(COVER_LIST_PRICE_HEADLINE)}</div>
-      ${trio}
+      ${heroTrioHtml(p)}
       ${cause ? `<div class="hero-why r">${esc(cause)}</div>` : ''}
+    </div>`
+}
+
+/**
+ * Letter cover payoff (renderCmaHtml): same FLOW trio as immersive — never sole cover-price.
+ */
+export function letterCoverPayoffHtml(p: CmaPricing): string {
+  const cause = rangeSpreadCauseSentence(p)
+  const trio = heroTrioHtml(p)
+  if (!trio && !cause) return ''
+  return `<div class="cover-payoff">
+      <div class="cover-headline">${esc(COVER_LIST_PRICE_HEADLINE)}</div>
+      ${trio}
+      ${cause ? `<p class="cover-why">${esc(cause)}</p>` : ''}
     </div>`
 }
 

@@ -281,9 +281,13 @@ describe('print CMA price-opinion spine', () => {
     expect(cover).toContain('Our Recommended List Price for your home')
     expect(cover).toContain('$475,000')
     expect(cover).not.toContain('We recommend listing at')
-    expect(cover).toMatch(/Your home is worth \$[\d,]+ to \$[\d,]+ today\./)
-    expect(cover).toContain('List $470,000 to $490,000')
-    expect(cover).toContain('Our Recommended List Price for your home')
+    expect(cover).toContain('hero-trio')
+    expect(cover).toContain('>Low<')
+    expect(cover).toContain('>High<')
+    expect(cover).toContain('>Recommended<')
+    expect(cover).toContain('$470,000')
+    expect(cover).toContain('$490,000')
+    expect(cover).not.toContain('cover-price')
     expect(cover).not.toContain('Expected close')
     // CUT by the blueprint (CMA_REIMAGINED_2026-09-07.md): the property-facts
     // table served none of the three questions a seller opens this for.

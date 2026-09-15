@@ -11,7 +11,6 @@ import {
   monthYear,
   reviewNoticeBandHtml,
   sparkPhotoAt,
-  usd,
 } from '@/lib/cma/render-blocks'
 import { readReviewNotice } from '@/lib/cma/render-contract'
 import { isCmaClientReady } from '@/lib/cma/draft-access'
@@ -34,7 +33,7 @@ import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
 import { assembleOpinionPages } from '@/lib/cma/opinion-pages'
-import { COVER_LIST_PRICE_HEADLINE, coverWorthSentence, rangeSpreadCauseSentence } from '@/lib/cma/cover-value'
+import { letterCoverPayoffHtml } from '@/lib/cma/cover-value'
 import {
   cmaCoverLabelHtml,
 } from '@/lib/cma/fsbo-cma-render'
@@ -233,30 +232,9 @@ function coverPage(a: RenderCmaArgs): PageDef {
     a.client.name ? `Prepared for ${a.client.name}` : 'Prepared',
     `by ${a.broker.displayName}, Ryan Realty`,
   ].join(' ')
-  // Tip Ready P0 (Matt 2026-09-12 / Cos Falcon smoke): recommend + range ONCE
-  // on the photo under the locked headline. Never "We recommend listing at $X"
-  // here — that restated the number the type already carries.
-  const p = a.pricing
-  const worthOnly = coverWorthSentence(p, { omitAsk: true })
-  const listRange =
-    p.conservative > 0 && p.highEnd > 0
-      ? `List ${usd(p.conservative)} to ${usd(p.highEnd)}.`
-      : ''
-  const why = rangeSpreadCauseSentence(p)
-  const payoff =
-    p.recommended > 0
-      ? `<div class="cover-payoff">
-      <div class="cover-headline">${esc(COVER_LIST_PRICE_HEADLINE)}</div>
-      <p class="cover-price">${usd(p.recommended)}</p>
-      ${listRange ? `<p class="cover-range">${esc(listRange)}</p>` : ''}
-      ${worthOnly ? `<p class="cover-worth">${esc(worthOnly)}</p>` : ''}
-      ${why ? `<p class="cover-why">${esc(why)}</p>` : ''}
-    </div>`
-      : worthOnly
-        ? `<p class="cover-worth">${esc(worthOnly)}</p>${why ? `<p class="cover-why">${esc(why)}</p>` : ''}`
-        : why
-          ? `<p class="cover-why">${esc(why)}</p>`
-          : ''
+  // FlexMLS letter FLOW on the letter cover (same trio as immersive hero):
+  // Low · High · Recommended once. Never sole legacy cover-price.
+  const payoff = letterCoverPayoffHtml(a.pricing)
   return {
     cover: true,
     meta: `Pricing report · ${dateLong(a.generatedAtIso)}`,
