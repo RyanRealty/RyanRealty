@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { PRICING_MAX_COMPS, PRICING_TARGET_COMPS, pricingTierLadder } from '@/lib/pricing/ladder'
+import {
+  BOUNDARY_EXIT_BELOW,
+  isGeographyWidenTier,
+  isPocketExclusiveTier,
+  PRICING_MAX_COMPS,
+  PRICING_TARGET_COMPS,
+  pricingTierLadder,
+} from '@/lib/pricing/ladder'
 
 describe('pricingTierLadder — time before distance', () => {
   it('walks 3 then 6 then 9 months inside the subdivision before any mile ring', () => {
@@ -47,7 +54,8 @@ describe('pricingTierLadder — containment (Matt 2026-09-08)', () => {
   it('exhausts the subdivision to 12 months, then the plats next to it, before any mile ring', () => {
     const names = pricingTierLadder().map((t) => t.name)
     expect(names.indexOf('subdivision-9mo-wide')).toBeLessThan(names.indexOf('subdivision-12mo'))
-    expect(names.indexOf('subdivision-12mo-wide')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
+    expect(names.indexOf('subdivision-12mo-wide')).toBeLessThan(names.indexOf('pocket-3mo'))
+    expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
     expect(names.filter((n) => n.startsWith('adjacent-sub-'))).toEqual([
       'adjacent-sub-3mo',
       'adjacent-sub-6mo',
@@ -77,16 +85,16 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
   const names = pricingTierLadder().map((t) => t.name)
 
   it('holds a plat to its community before any ring, and reaches two years inside first', () => {
-    expect(names.indexOf('subdivision-24mo')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
-    expect(names.indexOf('adjacent-sub-24mo')).toBeLessThan(names.indexOf('pocket-3mo'))
+    expect(names.indexOf('subdivision-24mo')).toBeLessThan(names.indexOf('pocket-3mo'))
+    expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
     expect(names.filter((n) => n.startsWith('pocket-'))).toEqual([
       'pocket-3mo',
       'pocket-6mo',
       'pocket-9mo',
       'pocket-12mo',
     ])
-    expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('community-6mo'))
     expect(names.indexOf('adjacent-sub-24mo')).toBeLessThan(names.indexOf('community-6mo'))
+    expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('community-6mo'))
     expect(names.filter((n) => n.startsWith('community-'))).toEqual(['community-6mo', 'community-12mo', 'community-24mo'])
     expect(names.indexOf('community-24mo')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
   })
@@ -106,6 +114,23 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
     expect(names.indexOf('community-24mo')).toBeLessThan(names.indexOf('like-community-24mo'))
     expect(names.indexOf('like-community-24mo')).toBeLessThan(names.indexOf('similar-sub-3mo'))
     expect(peer.disclosure).toMatch(/golf or resort community/)
+  })
+
+  it('marks exclusive pocket rungs vs geography-widening rungs', () => {
+    for (const t of pricingTierLadder()) {
+      if (t.name.startsWith('subdivision-') || t.name.startsWith('own-street-') || t.name.startsWith('pocket-')) {
+        expect(isPocketExclusiveTier(t)).toBe(true)
+        expect(isGeographyWidenTier(t)).toBe(false)
+      }
+      if (t.name.startsWith('nearby-') || t.name.startsWith('similar-sub') || t.name.startsWith('city-') || t.name.startsWith('beyond-')) {
+        expect(isGeographyWidenTier(t)).toBe(true)
+        expect(isPocketExclusiveTier(t)).toBe(false)
+      }
+      if (t.name.startsWith('community-') || t.name.startsWith('adjacent-') || t.name.startsWith('like-community')) {
+        expect(isGeographyWidenTier(t)).toBe(false)
+      }
+    }
+    expect(BOUNDARY_EXIT_BELOW).toBe(5)
   })
 
   it('marks the community rungs sameCommunity and nothing else', () => {

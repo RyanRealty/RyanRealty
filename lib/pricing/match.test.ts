@@ -532,8 +532,10 @@ describe('walkPricingLadder', () => {
         subdivision: 'Aubrey',
         subdivisionNorm: 'aubrey',
         address: '2 Aubrey',
-        latitude: 44.0604,
-        longitude: -121.3004,
+        // Outside the 0.25 mi street cluster, inside the 1-mile ring — three
+        // plat sales are not a reason to stop before that ring.
+        latitude: 44.06 + 0.5 / 69,
+        longitude: -121.3,
         marketArea: 'bend-old-bend',
         closeDate: '2026-07-15',
       }),
@@ -1110,8 +1112,23 @@ describe('containment — the plats next to the subject, then the boundary (Matt
   it('a sale in a touching plat is taken by the adjacent rung, before any mile ring', () => {
     const subj = subject({ ...RIVER_WEST, subdivisionSlug: 'kenwood', adjacentSubdivisionSlugs: ['kenwood-first-addition', 'roanoke'] })
     const pool = [
-      sale({ ...RIVER_WEST, subdivision: 'Roanoke', subdivisionNorm: 'roanoke', subdivisionSlug: 'roanoke', closeDate: '2026-07-15' }),
-      sale({ ...RIVER_WEST, subdivision: 'Aubrey Heights', subdivisionNorm: 'aubrey heights', subdivisionSlug: 'aubrey-heights', closeDate: '2026-07-15' }),
+      // Outside the 0.25 mi street cluster so the adjacent rung, not pocket, is the one that fires.
+      sale({
+        ...RIVER_WEST,
+        latitude: RIVER_WEST.latitude + 0.4 / 69,
+        subdivision: 'Roanoke',
+        subdivisionNorm: 'roanoke',
+        subdivisionSlug: 'roanoke',
+        closeDate: '2026-07-15',
+      }),
+      sale({
+        ...RIVER_WEST,
+        latitude: RIVER_WEST.latitude + 0.8 / 69,
+        subdivision: 'Aubrey Heights',
+        subdivisionNorm: 'aubrey heights',
+        subdivisionSlug: 'aubrey-heights',
+        closeDate: '2026-07-15',
+      }),
     ]
     const out = walkPricingLadder(subj, pool, { asOf })
     const tiers = out.comps.map((c) => [c.subdivisionNorm, c.selectionTier])
@@ -1143,7 +1160,7 @@ describe('containment — the plats next to the subject, then the boundary (Matt
     expect(held.comps.every((c) => c.listingKey.startsWith('IN'))).toBe(true)
     const beyond = held.rungs.find((r) => r.tier === 'beyond-2mi-12mo')!
     expect(beyond.ran).toBe(false)
-    expect(beyond.skippedReason).toMatch(/stayed inside/)
+    expect(beyond.skippedReason).toMatch(/stayed (inside|exclusive)/)
 
     const crossed = walkPricingLadder(subj, [...inside(3), ...strangers], { asOf })
     expect(crossed.comps.some((c) => c.selectionTier.startsWith('beyond-'))).toBe(true)
@@ -1413,5 +1430,156 @@ describe('blank SubdivisionName infers the pocket before mile rings', () => {
     if (farComp) {
       expect(farComp.selectionTier).not.toMatch(/^nearby-/)
     }
+  })
+})
+
+describe('named subdivision pocket-first (Matt 2026-09-15 Canter / SaddleStone)', () => {
+  const CANTER = { latitude: 44.2908, longitude: -121.5493, city: 'Sisters', citySlug: 'sisters' }
+  const FLEX_GOLD = [
+    { mls: '220218584', name: 'SaddleStone', miles: 0.06, price: 649_000 },
+    { mls: '220214720', name: 'SaddleStone', miles: 0.09, price: 655_000 },
+    { mls: '220224488', name: 'Horse Back', miles: 0.11, price: 662_000 },
+    { mls: '220216121', name: 'Horse Back', miles: 0.14, price: 668_000 },
+    { mls: '220221029', name: 'Ranch', miles: 0.16, price: 670_000 },
+    { mls: '220228243', name: 'Ranch', miles: 0.18, price: 672_000 },
+    { mls: '220228324', name: 'SaddleStone', miles: 0.08, price: 675_000 },
+  ] as const
+
+  function goldSale(row: (typeof FLEX_GOLD)[number], i: number) {
+    return sale({
+      ...CANTER,
+      latitude: CANTER.latitude + row.miles / 69,
+      listingKey: `GOLD-${row.mls}`,
+      listNumber: row.mls,
+      address: `${100 + i} ${row.name} Ln`,
+      subdivision: row.name,
+      subdivisionNorm: row.name.toLowerCase(),
+      yearBuilt: 2006,
+      sqft: 1980 + (i % 5) * 40,
+      closePrice: row.price,
+      lastAsk: row.price,
+      closePpsf: row.price / (1980 + (i % 5) * 40),
+      closeDate: `2026-0${5 + (i % 3)}-${String(10 + i).padStart(2, '0')}`,
+    })
+  }
+
+  function upmarket(name: string, miles: number, price: number) {
+    return sale({
+      ...CANTER,
+      latitude: CANTER.latitude + miles / 69,
+      listingKey: `UP-${name.replace(/\s+/g, '')}`,
+      listNumber: name === 'Clearpine' ? '220199001' : '220199002',
+      address: `191 ${name} Dr`,
+      subdivision: name,
+      subdivisionNorm: name.toLowerCase(),
+      yearBuilt: 2021,
+      sqft: 2100,
+      closePrice: price,
+      lastAsk: price,
+      closePpsf: price / 2100,
+      closeDate: '2026-07-01',
+      publicRemarks: 'Custom built modern home.',
+    })
+  }
+
+  const canterSubject = () =>
+    subject({
+      ...CANTER,
+      streetAddress: '1130 E Canter',
+      subdivision: 'SaddleStone',
+      subdivisionNorm: 'saddlestone',
+      yearBuilt: 2006,
+      sqft: 2050,
+      beds: 3,
+      baths: 2,
+      lotAcres: 0.22,
+    })
+
+  it('prefers the Flex gold SaddleStone / Horse Back / Ranch set over Clearpine and Forest Edge', () => {
+    const gold = FLEX_GOLD.map((row, i) => goldSale(row, i))
+    const decoys = [upmarket('Clearpine', 2.2, 890_000), upmarket('Forest Edge', 2.5, 860_000)]
+    const out = walkPricingLadder(canterSubject(), [...decoys, ...gold], { asOf })
+    const numbers = out.comps.map((c) => c.listNumber)
+    for (const row of FLEX_GOLD) {
+      expect(numbers).toContain(row.mls)
+    }
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('UP-Clearpine')
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('UP-ForestEdge')
+    expect(out.comps.every((c) => !/clearpine|forest edge/i.test(c.subdivision ?? ''))).toBe(true)
+    expect(out.tiersUsed.some((t) => t.startsWith('nearby-') || t.startsWith('similar-sub') || t.startsWith('city-'))).toBe(
+      false,
+    )
+    expect(out.pocketStarved).toBe(false)
+    expect(out.exclusiveCount).toBeGreaterThanOrEqual(5)
+    const closes = out.comps.map((c) => c.closePrice).sort((a, b) => a - b)
+    const mid = closes[Math.floor(closes.length / 2)]!
+    expect(mid).toBeGreaterThanOrEqual(649_000)
+    expect(mid).toBeLessThanOrEqual(675_000)
+    expect(mid).toBeLessThan(846_000)
+  })
+
+  it('keeps year/quality from outranking radius while the pocket is filled', () => {
+    const gold = FLEX_GOLD.map((row, i) => goldSale(row, i))
+    const decoys = [upmarket('Clearpine', 2.2, 890_000), upmarket('Forest Edge', 2.5, 860_000)]
+    const customCanter = subject({
+      ...canterSubject(),
+      yearBuilt: 2020,
+      publicRemarks: 'Custom built modern home.',
+    })
+    const out = walkPricingLadder(customCanter, [...decoys, ...gold], { asOf })
+    expect(out.pocketStarved).toBe(false)
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('UP-Clearpine')
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('UP-ForestEdge')
+    expect(out.comps.some((c) => c.listNumber && FLEX_GOLD.some((g) => g.mls === c.listNumber))).toBe(true)
+  })
+})
+
+describe('year/quality outranks radius only when the pocket is starved', () => {
+  it('still takes a farther same-generation custom peer when the named pocket has no sales', () => {
+    const nearbyOlder = sale({
+      listingKey: 'NEAR_OLDER',
+      address: '10 Nearby Older',
+      yearBuilt: 2000,
+      subdivision: 'Old Tract',
+      subdivisionNorm: 'old tract',
+      sqft: 4900,
+      lotAcres: 2,
+      latitude: 44.0602,
+      longitude: -121.3002,
+      marketArea: 'bend-north-rim',
+      closeDate: '2026-07-01',
+    })
+    const farCustom = sale({
+      listingKey: 'FAR_CUSTOM',
+      address: '80 Custom Far',
+      yearBuilt: 2017,
+      subdivision: 'Custom Far',
+      subdivisionNorm: 'custom far',
+      sqft: 5000,
+      lotAcres: 2,
+      publicRemarks: 'Custom built home.',
+      latitude: 44.09,
+      longitude: -121.29,
+      marketArea: 'bend-north-rim',
+      closeDate: '2026-06-01',
+    })
+    const out = walkPricingLadder(
+      subject({
+        yearBuilt: 2018,
+        newConstruction: false,
+        sqft: 4972,
+        lotAcres: 2,
+        lotClass: 'acreage',
+        publicRemarks: 'Custom built modern home.',
+        subdivision: 'Lakes At Tanager PUD',
+        subdivisionNorm: 'lakes at tanager pud',
+        marketArea: 'bend-north-rim',
+      }),
+      [nearbyOlder, farCustom],
+      { asOf },
+    )
+    expect(out.pocketStarved).toBe(true)
+    expect(out.exclusiveCount).toBe(0)
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['FAR_CUSTOM'])
   })
 })

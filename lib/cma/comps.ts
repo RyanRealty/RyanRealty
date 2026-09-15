@@ -67,7 +67,13 @@ import {
   type CompSelectionDiagnostics,
   type CompTierTrace,
 } from '@/lib/cma/comp-trace'
-import { compTierLadder, isRuralAcreage, realSubdivision } from '@/lib/cma/comp-tiers'
+import {
+  compTierLadder,
+  isListingsGeographyWidenTier,
+  isListingsPocketExclusiveTier,
+  isRuralAcreage,
+  realSubdivision,
+} from '@/lib/cma/comp-tiers'
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible } from '@/lib/pricing/rural'
 import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import { communitySlugForSubdivision, isResortCommunity, resortCommunityCompatible } from '@/lib/cma/resort-guard'
@@ -75,6 +81,7 @@ import { ANCHOR_MIN_N, ANCHOR_RADIUS_MILES, ANCHOR_RURAL_RADII_MILES, sameStreet
 import { roomCountsUsable } from '@/lib/pricing/room-counts'
 import { SAME_NEIGHBORHOOD_TIER_RATIO, STARVED_TIER_WIDEN, SUBDIVISION_TIER_RATIO, normSubdivision } from '@/lib/pricing/classes'
 import { inferSubdivisionPocket, POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
+import { BOUNDARY_EXIT_BELOW } from '@/lib/pricing/ladder'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -358,6 +365,7 @@ export async function selectComps(
   const byKey = new Map<string, CmaComp>()
   /** Sales already held, so one closed sale cannot enter a comp set twice. */
   const bySale = new Set<string>()
+  let exclusiveCount = 0
 
   // Lot-character band for the QUERY. The in-memory lotCharacterCompatible check
   // is the authoritative exclusion (it also rejects an in-town lot for an acreage
@@ -441,7 +449,7 @@ export async function selectComps(
   const sqlSubType = compPoolPropertySubType(subject.propertySubType)
   const subTypeSql = sqlSubType ? ` AND property_sub_type='${sqlSubType}'` : ''
 
-  if (!subdivisionIlike) {
+  {
     const nearby = await selectCmaCompsPool({
       cityIlike: subject.city,
       closeDateGte: isoMonthsAgo(24),
@@ -477,6 +485,11 @@ export async function selectComps(
       pocketNeighborNorms = pocket.neighborNorms
       trace.push(
         `MLS SubdivisionName was blank, so the search inferred ${pocket.subdivision} (${pocket.source}) before any mile ring.`,
+      )
+    } else if (pocket.neighborNorms.length > 0) {
+      pocketNeighborNorms = pocket.neighborNorms
+      trace.push(
+        `${subdivisionIlike ?? subject.subdivision} is a named tract, so the search also held the ${pocket.neighborNorms.length} mapped pocket${pocket.neighborNorms.length === 1 ? '' : 's'} inside a quarter mile before any mile ring.`,
       )
     }
   }
@@ -592,7 +605,9 @@ export async function selectComps(
         : tier.name.startsWith('subdivision') && !tier.subdivisionIlike
         ? 'the subject has no usable SubdivisionName on its MLS record'
         : tier.samePocket && pocketNeighborNorms.length === 0
-        ? 'no nearby mapped pocket was inferred for a blank subdivision'
+        ? 'no nearby mapped pocket cluster sits inside a quarter mile'
+        : isListingsGeographyWidenTier(tier) && exclusiveCount >= BOUNDARY_EXIT_BELOW
+        ? `the named subdivision and its street-cluster pocket already supplied ${exclusiveCount} closed sales, so the search stayed exclusive`
         : tier.sameArea && !subjectArea
           ? 'the subject sits outside every mapped neighborhood polygon'
           : tier.adjacentSubdivisions && adjacentSlugs.size === 0
@@ -979,6 +994,7 @@ export async function selectComps(
         `${tier.sameArea ? ` AND market area = ${subjectAreaName}` : ''}${tier.maxMiles != null ? ` AND distance <= ${tier.maxMiles} miles` : ''}. Returned ${rows.length} rows, ${added} new comps.`,
     )
     if (added > 0) tiersUsed.push(tier.name)
+    if (isListingsPocketExclusiveTier(tier)) exclusiveCount = byKey.size
     if (byKey.size >= TARGET_COMPS) break
   }
 

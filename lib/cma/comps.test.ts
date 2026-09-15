@@ -65,6 +65,8 @@ describe('compTierLadder', () => {
     expect(names).toEqual([
       'subdivision-6mo',
       'subdivision-12mo',
+      'pocket-6mo',
+      'pocket-12mo',
       'adjacent-subdivision-6mo',
       'adjacent-subdivision-12mo',
       'neighborhood-6mo',
@@ -74,8 +76,6 @@ describe('compTierLadder', () => {
       // (Matt 2026-09-09: go up a parent level, and never leave it early).
       'subdivision-24mo',
       'adjacent-subdivision-24mo',
-      'pocket-6mo',
-      'pocket-12mo',
       'community-6mo',
       'community-12mo',
       'community-24mo',

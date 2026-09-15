@@ -45,8 +45,9 @@ export type PricingTier = {
   /** Only sales on the subject's own street, at close to its size. Runs first. */
   sameStreetOnly?: boolean
   /**
-   * Mapped tracts inside 0.35 mi when MLS SubdivisionName was blank.
-   * Skipped when pocketSubdivisionNorms is empty.
+   * Mapped tracts inside the street-cluster / inferred pocket.
+   * Named MLS tracts fill this from the 0.25 mi cluster; blank MLS
+   * fills it from the 0.35 mi inferred pocket. Skipped when empty.
    */
   samePocket?: boolean
   /**
@@ -149,7 +150,7 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     bedSlop: apples === 'strict' ? 1 : 2,
     bathSlop: apples === 'strict' ? 1 : 2,
     disclosure:
-      'These sales are in the mapped pockets next to this home, inside a third of a mile, walked before any mile ring.',
+      'These sales are in the mapped pockets next to this home, inside a quarter mile, walked before any mile ring.',
   })
   // The exit. Only after the subdivision, its neighbours and every ring inside
   // the boundary have run, and only when they supplied fewer than the minimum.
@@ -265,17 +266,18 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     // 2026-09-09: exhaust the boundary out to 24 months before leaving it).
     sub(18),
     sub(24),
+    // Same subdiv + ~0.25 mi street cluster, before adjacent plats or mile rings
+    // (Matt 2026-09-15: named SaddleStone stays exclusive when Horse Back / Ranch exist).
+    pocket(3, 'strict'),
+    pocket(6, 'strict'),
+    pocket(9, 'utilities'),
+    pocket(12, 'utilities'),
     adjacent(3, 'strict'),
     adjacent(6, 'strict'),
     adjacent(9, 'utilities'),
     adjacent(12, 'utilities'),
     adjacent(18, 'utilities'),
     adjacent(24, 'utilities'),
-    // Blank MLS tract: the mapped names inside 0.35 mi, before any mile ring.
-    pocket(3, 'strict'),
-    pocket(6, 'strict'),
-    pocket(9, 'utilities'),
-    pocket(12, 'utilities'),
     // The community the plat sits inside, before any ring or polygon rung.
     community(6, 'strict'),
     community(12, 'utilities'),
@@ -435,6 +437,23 @@ export const LOCAL_POOL_RADIUS_MILES = 3
  * adjusted back. See WIDENED_SQFT_BAND in lib/cma/comp-tiers.ts.
  */
 export const WIDENED_SQFT_BAND = 0.25
+
+/** Own street, own plat, or the 0.25 mi street-cluster pocket. */
+export function isPocketExclusiveTier(tier: Pick<PricingTier, 'sameSubdivision' | 'sameStreetOnly' | 'samePocket'>): boolean {
+  return Boolean(tier.sameSubdivision || tier.sameStreetOnly || tier.samePocket)
+}
+
+/**
+ * Mile rings, similar-performing tracts, citywide, and boundary-exit.
+ * Not the exclusive pocket, not adjacent plats, not designated communities.
+ */
+export function isGeographyWidenTier(tier: PricingTier): boolean {
+  if (tier.whenStarved || tier.ruralOnly) return false
+  if (isPocketExclusiveTier(tier)) return false
+  if (tier.sameCommunity || tier.likeCommunity || tier.adjacentSubdivision) return false
+  return true
+}
+
 /**
  * THE SIZE BAND INSIDE THE SUBJECT'S OWN PLAT (Matt 2026-09-10).
  *

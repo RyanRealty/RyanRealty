@@ -57,10 +57,29 @@ export type CompTier = {
    */
   relaxResort?: boolean
   /**
-   * Mapped tracts inside 0.35 mi when MLS SubdivisionName was blank.
-   * Skipped when no pocket cluster was inferred.
+   * Mapped tracts in the street-cluster / inferred pocket.
+   * Skipped when no pocket cluster was collected.
    */
   samePocket?: boolean
+}
+
+/** Own plat or the 0.25 mi street-cluster pocket. */
+export function isListingsPocketExclusiveTier(
+  tier: Pick<CompTier, 'subdivisionIlike' | 'samePocket'>,
+): boolean {
+  return Boolean(tier.subdivisionIlike || tier.samePocket)
+}
+
+/**
+ * Competing-area and citywide mile rings. Not the exclusive pocket, not
+ * adjacent plats, not designated communities, not the neighborhood polygon.
+ */
+export function isListingsGeographyWidenTier(tier: CompTier): boolean {
+  if (tier.whenStarved || tier.ruralOnly) return false
+  if (isListingsPocketExclusiveTier(tier)) return false
+  if (tier.sameCommunity || tier.likeCommunity || tier.adjacentSubdivisions) return false
+  if (tier.sameArea) return false
+  return true
 }
 
 // TRADE TIME BEFORE YOU TRADE LOCATION (Matt 2026-07-30). The ladder used to
@@ -116,6 +135,30 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
     // BEFORE any geographic widening.
     { name: 'subdivision-6mo', subdivisionIlike, monthsBack: 6, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
     { name: 'subdivision-12mo', subdivisionIlike, monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
+    // Same subdiv + ~0.25 mi street cluster before adjacent plats or mile rings
+    // (Matt 2026-09-15: named SaddleStone stays exclusive when Horse Back / Ranch exist).
+    {
+      name: 'pocket-6mo',
+      monthsBack: 6,
+      sqftBand: 0.25,
+      sameArea: false,
+      competing: false,
+      maxMiles: POCKET_RADIUS_MILES,
+      samePocket: true,
+      disclosure:
+        'These sales are in the mapped pockets next to this home, inside a quarter mile, walked before any mile ring.',
+    },
+    {
+      name: 'pocket-12mo',
+      monthsBack: 12,
+      sqftBand: 0.25,
+      sameArea: false,
+      competing: false,
+      maxMiles: POCKET_RADIUS_MILES,
+      samePocket: true,
+      disclosure:
+        'These sales are in the mapped pockets next to this home, inside a quarter mile, walked before any mile ring.',
+    },
     // 2a-2b. The plats that TOUCH the subject's, inside the same neighborhood
     // or community (Matt 2026-09-08 containment): the most adjacent
     // subdivisions before the whole polygon, and never a plat across the
@@ -131,28 +174,6 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
     // 2026-09-09: exhaust the boundary before leaving it).
     { name: 'subdivision-24mo', subdivisionIlike, monthsBack: 24, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
     { name: 'adjacent-subdivision-24mo', monthsBack: 24, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
-    {
-      name: 'pocket-6mo',
-      monthsBack: 6,
-      sqftBand: 0.25,
-      sameArea: false,
-      competing: false,
-      maxMiles: POCKET_RADIUS_MILES,
-      samePocket: true,
-      disclosure:
-        'These sales are in the mapped pockets next to this home, inside a third of a mile, walked before any mile ring.',
-    },
-    {
-      name: 'pocket-12mo',
-      monthsBack: 12,
-      sqftBand: 0.25,
-      sameArea: false,
-      competing: false,
-      maxMiles: POCKET_RADIUS_MILES,
-      samePocket: true,
-      disclosure:
-        'These sales are in the mapped pockets next to this home, inside a third of a mile, walked before any mile ring.',
-    },
     // 2d. THE COMMUNITY THE PLAT SITS INSIDE, before any ring or polygon rung.
     { name: 'community-6mo', monthsBack: 6, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
     { name: 'community-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
