@@ -1,6 +1,5 @@
-/* /contact fold: reach + write as one viewport. Tokens only.
-   House-doors owns Call. Text/Email/Schedule are one Button Group.
-   House-faces owns one Matt photograph. House-ask owns the write path. */
+/* /contact fold: house-doors + house-ask, then house-faces.
+   Tokens only. Do not hide AboutFaces rows or crop the compact table. */
 
 .contact-fold {
   max-width: var(--v3-measure);
@@ -51,17 +50,10 @@
   display: none;
 }
 
-/* One Matt face at hero width (20rem) so the content-floor holds. */
 .contact-fold .about-faces--compact {
   max-width: none;
   padding-block: var(--v3-space-sm);
   padding-inline: var(--v3-gutter);
-}
-
-.contact-fold .about-faces--compact .about-faces__role,
-.contact-fold .about-faces--compact .about-faces__license,
-.contact-fold .about-faces--compact .about-faces__reach {
-  display: none;
 }
 
 .contact-fold .v3-doors__live {
@@ -72,22 +64,16 @@
   display: none;
 }
 
-.contact-reach__alts {
-  width: calc(100% - (var(--v3-gutter) * 2));
-  margin: 0 var(--v3-gutter) var(--v3-space-sm);
-}
-
 @media (max-width: 47.999rem) {
-  /* 375: write path in the first viewport with Call + one alt row.
-     Matt's face follows the form so it does not push house-ask off the fold.
-     Bottom pad clears the cookie bar so sent confirmation / the face stay visible. */
+  /* 375: Quiet → doors → write → faces. Cookie pad keeps sent + faces clear. */
   .contact-fold {
     display: flex;
     flex-direction: column;
     padding-bottom: 8.5rem;
   }
 
-  .contact-fold__reach {
+  .contact-fold__reach,
+  .contact-fold__faces {
     display: contents;
   }
 
@@ -101,7 +87,7 @@
     font-size: var(--v3-size-display-2);
   }
 
-  .contact-fold .contact-reach {
+  .contact-fold .v3.v3-doors {
     order: 2;
   }
 
@@ -152,11 +138,12 @@
   }
 }
 
-/* Wide: intro + Matt + call on the left, the one ask on the right. */
+/* Wide: intro + --lead doors on the left, the one ask on the right.
+   Compact AboutFaces spans the full measure so three photographs hold hero width. */
 @media (min-width: 64rem) {
   .contact-fold {
     display: grid;
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    grid-template-columns: minmax(22rem, 1.2fr) minmax(18rem, 1fr);
     align-items: start;
   }
 
@@ -171,16 +158,17 @@
     flex-direction: column;
   }
 
+  .contact-fold__faces {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
   .contact-fold__reach .v3.v3-quiet {
     order: 1;
   }
 
-  .contact-fold__reach .contact-reach {
+  .contact-fold__reach .v3.v3-doors {
     order: 2;
-  }
-
-  .contact-fold__reach .about-faces {
-    order: 3;
   }
 
   .contact-fold .v3.v3-quiet {
@@ -192,21 +180,18 @@
     padding: var(--v3-space-2xs) 0;
   }
 
-  .contact-fold .about-faces--compact .about-faces__grid {
-    grid-template-columns: minmax(20rem, 1.2fr);
-  }
-
-  .contact-fold .about-faces--compact .about-faces__photo-link {
-    aspect-ratio: 4 / 5;
-    max-height: 8.5rem;
-    width: 100%;
-  }
-
   .contact-fold .about-faces--compact {
     padding-block: var(--v3-space-2xs);
   }
 
+  /* Full-measure compact table: let each cutout fill its column so hero
+     width stays on the content floor. Do not crop to one face. */
+  .contact-fold .about-faces--compact .about-faces__photo-link {
+    width: calc(100% - var(--v3-space-xs));
+  }
+
+  /* Light-door values (Text / Email / Schedule) need a real track, not a crop. */
   .contact-fold .v3-doors--lead .v3-doors__list {
-    grid-template-columns: minmax(12rem, 1fr);
+    grid-template-columns: minmax(14rem, 1.2fr) minmax(12rem, 1fr);
   }
 }

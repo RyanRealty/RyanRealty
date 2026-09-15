@@ -2,10 +2,10 @@
  * /contact - write a broker, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Order: ContactFold (Quiet H1 + sourced reviews figure, ContactReach as one
- * Call door at display scale with live hours plus Text/Email/Schedule as one
- * Button Group, ContactAsk as the one ask in the first viewport), one Matt
- * face via AboutFaces, V3Answers.
+ * Order: ContactFold (Quiet H1 + sourced reviews figure, V3Doors --lead as
+ * Call at display scale with live hours plus Text/Email/Schedule as the light
+ * door column, ContactAsk as the one ask, homepage-compact AboutFaces for
+ * who answers), V3Answers.
  *
  * SITE-48 (2026-09-09) changed two of those. The taste table scored this page
  * 49 with the verdict "the fold is a text hero on top of a four-times-repeated
@@ -30,10 +30,10 @@ import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { getBrokers, getListingTiles, getReviews } from '@/lib/data'
 import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listing-ask'
-import { listingTileHref, teamPath } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 import { formatDate } from '@/lib/format/date'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
-import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
+import { BRAND, CONTACT } from '@/lib/brand/contact'
 import { valuationHref } from '@/lib/site/valuation-href'
 import {
   V3_ROOT_CLASS,
@@ -54,7 +54,6 @@ import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { ContactAsk } from './_v3/ContactAsk.client'
 import { ContactFold } from './_v3/ContactFold'
 import { ContactHoursLive } from './_v3/ContactHoursLive.client'
-import { ContactReach } from './_v3/ContactReach'
 import { CONTACT_FAQ_ITEMS } from './_v3/contact-constants'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
@@ -263,9 +262,6 @@ export default async function ContactPage({ searchParams }: PageProps) {
       ) : null}
     </>
   )
-  const mattFace =
-    faces.find((face) => face.href === teamPath(BROKERS.matt.slug)) ?? faces[0] ?? null
-
   // Split once, here, so the discarded third bucket is visible rather than
   // vanishing inside a JSX spread: `prose` holds passages with no question to
   // sit under, and this page has none. If one ever arrives it belongs in a
@@ -413,18 +409,35 @@ export default async function ContactPage({ searchParams }: PageProps) {
                   headingLevel={1}
                   items={introItems}
                 />
-                {mattFace ? (
-                  <AboutFaces
-                    people={[mattFace]}
-                    heading="Who answers"
-                    headingLevel={2}
-                    size="compact"
-                    sectionId="who-answers"
-                    eyebrow="Ryan Realty · Bend"
-                    claim="Meet the team for every broker who answers."
-                  />
-                ) : null}
-                <ContactReach id="reach" hours={<ContactHoursLive>{hoursLive}</ContactHoursLive>} />
+                <V3Doors
+                  id="reach"
+                  name={v3Text('Reach a broker')}
+                  doors={[
+                    {
+                      kicker: v3Text('Call'),
+                      label: v3Text(CONTACT.phoneDirect),
+                      fact: v3Text('One number for the whole brokerage'),
+                      href: `tel:${CONTACT.phoneDirectTel}`,
+                      primary: true,
+                      live: <ContactHoursLive>{hoursLive}</ContactHoursLive>,
+                    },
+                    {
+                      kicker: v3Text('Text'),
+                      label: v3Text('Message the same number'),
+                      href: `sms:${CONTACT.phoneDirectTel}`,
+                    },
+                    {
+                      kicker: v3Text('Email'),
+                      label: v3Text(CONTACT.email.primary),
+                      href: `mailto:${CONTACT.email.primary}`,
+                    },
+                    {
+                      kicker: v3Text('Schedule'),
+                      label: v3Text('Pick a time'),
+                      href: '/book',
+                    },
+                  ]}
+                />
               </>
             }
             write={
@@ -434,6 +447,17 @@ export default async function ContactPage({ searchParams }: PageProps) {
                 intent={intent}
                 listingSummary={listingSummary || undefined}
               />
+            }
+            faces={
+              faces.length > 0 ? (
+                <AboutFaces
+                  people={faces}
+                  heading="Who answers"
+                  headingLevel={2}
+                  size="compact"
+                  sectionId="who-answers"
+                />
+              ) : null
             }
           />
         ) : null}
