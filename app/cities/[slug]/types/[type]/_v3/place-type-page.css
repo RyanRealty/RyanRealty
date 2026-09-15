@@ -67,6 +67,13 @@
   order: 3;
 }
 
+/* Official shadcn carousel stage: -left-12 / -right-12 plus 44px tap (--v3-tap). */
+.place-type-film__stage {
+  min-width: 0;
+  padding-inline: calc(3rem + var(--v3-tap));
+  overflow: visible;
+}
+
 .place-type-fold > .place-type-opening {
   order: 1;
 }
@@ -87,93 +94,45 @@
   text-transform: uppercase;
 }
 
-.place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__viewport,
-.place-type-film__carousel.v3.v3-carousel--rail [data-slot='carousel-content'] {
-  min-height: 0;
-  padding-inline: 0;
+.place-type-film__carousel {
+  min-width: 0;
 }
 
-.place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__slide,
-.place-type-film__carousel.v3.v3-carousel--rail [data-slot='carousel-item'] {
-  flex-basis: min(16.5rem, 78vw);
-  min-height: 0;
-  padding-right: var(--v3-space-sm);
-}
-
-/* shadcn carousel demo: round prev/next on the sides of the track, not a
-   text row under it. V3Carousel defaults to static under-rail steps — restore
-   the demo placement here so demoMatch can hold. */
-.place-type-film__carousel.v3.v3-carousel--rail {
-  position: relative;
-  padding-inline: 2.75rem;
-}
-
-.place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__nav {
-  position: static;
-  display: block;
-  height: 0;
-  margin: 0;
-  padding: 0;
-  overflow: visible;
-}
-
-.place-type-film__carousel.v3.v3-carousel--rail [data-slot='carousel-previous'],
-.place-type-film__carousel.v3.v3-carousel--rail [data-slot='carousel-next'],
-.place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__step {
-  position: absolute !important;
-  inset-block-start: 32%;
-  translate: none;
-  transform: none;
-  z-index: 2;
+.place-type-film__step {
   min-width: var(--v3-tap);
   min-height: var(--v3-tap);
   width: var(--v3-tap);
   height: var(--v3-tap);
-  padding: 0;
-  border: var(--v3-rule-hairline);
-  border-color: var(--v3-navy);
-  border-radius: 999px;
-  background: var(--v3-cream);
-  color: var(--v3-navy);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: none;
 }
 
-.place-type-film__carousel.v3.v3-carousel--rail [data-slot='carousel-previous'],
-.place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__step:first-child {
-  inset-inline-start: 0;
-  inset-inline-end: auto;
+.place-type-film [data-slot='card'] {
+  --card: var(--v3-cream);
+  --card-foreground: var(--v3-navy);
 }
 
-.place-type-film__carousel.v3.v3-carousel--rail [data-slot='carousel-next'],
-.place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__step:last-child {
-  inset-inline-end: 0;
-  inset-inline-start: auto;
+.place-type-film__card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
 }
 
-.place-type-film__carousel.v3.v3-carousel--rail [data-slot='carousel-previous']:hover,
-.place-type-film__carousel.v3.v3-carousel--rail [data-slot='carousel-next']:hover,
-.place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__step:hover {
-  background: var(--v3-navy);
-  color: var(--v3-cream);
+.place-type-film__card-link:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.place-type-film__card-link.is-linked [data-slot='card'] {
+  box-shadow: inset 3px 0 0 var(--v3-navy);
 }
 
 .place-type-film__card {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
   min-width: 0;
-  color: var(--v3-ink);
-  text-decoration: none;
-  background: var(--v3-surface);
-  border: var(--v3-rule-hairline);
+  padding-top: 0;
 }
 
-.place-type-film__card:focus-visible {
-  outline: var(--v3-focus-ring);
-  outline-offset: var(--v3-focus-offset);
+.place-type-film [data-slot='card-content'] {
+  display: grid;
+  gap: 1px;
 }
 
 .place-type-film__media {
@@ -223,6 +182,15 @@
   color: var(--v3-ink);
 }
 
+@media (max-width: 39.99rem) {
+  .place-type-film__addr,
+  .place-type-film__specs {
+    white-space: normal;
+    text-overflow: unset;
+    overflow: visible;
+  }
+}
+
 .place-type-film__specs {
   font-variant-numeric: tabular-nums;
   color: var(--v3-ink-muted);
@@ -234,8 +202,9 @@
   display: none !important;
 }
 
-/* Claim counts active asks; pending is a different set. Showing both next to
-   the address census made 777 vs 502+263 look like a 12-home fight. */
+/* One inventory on the fold: the claim sentence. Atlas key counts were a
+   second census (772 vs 499). Pending stays hidden for the same reason. */
+.place-type-atlas .v3-atlas__key,
 .place-type-atlas .v3-atlas__key-item:has(.v3-atlas__key-mark--pending) {
   display: none;
 }
@@ -254,21 +223,11 @@
   }
 
   .place-type-fold .place-atlas-standin {
-    max-height: 14rem;
-    overflow: hidden;
+    max-height: 32rem;
   }
 
   .place-type-film {
-    margin-top: var(--v3-space-2xs);
-  }
-
-  .place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__slide,
-  .place-type-film__carousel.v3.v3-carousel--rail [data-slot='carousel-item'] {
-    flex-basis: min(13.5rem, 19vw);
-  }
-
-  .place-type-film__media {
-    max-height: 6.75rem;
+    margin-top: var(--v3-space-sm);
   }
 }
 
@@ -287,9 +246,8 @@
   }
 
   .place-type-fold .v3.v3-atlas.place-type-atlas .v3-atlas__stage {
-    max-height: 6.5rem;
-    min-height: 0;
-    overflow: hidden;
+    min-height: 16rem;
+    max-height: 20rem;
   }
 
   .place-type-fold .v3.v3-atlas.place-type-atlas .v3-atlas__aside {
@@ -304,41 +262,19 @@
   }
 
   .place-type-fold .place-atlas-standin__field {
-    min-height: 6rem;
-    max-height: 6.5rem;
+    min-height: 16rem;
+    max-height: 20rem;
     aspect-ratio: auto;
   }
 
   .place-type-film {
-    margin-top: var(--v3-space-2xs);
+    margin-top: var(--v3-space-sm);
+    padding-inline: 0;
   }
 
-  .place-type-film__carousel.v3.v3-carousel--rail {
-    padding-inline: 2.25rem;
-  }
-
-  .place-type-film__carousel.v3.v3-carousel--rail .v3-carousel__slide,
-  .place-type-film__carousel.v3.v3-carousel--rail [data-slot='carousel-item'] {
-    flex-basis: min(11.75rem, 70vw);
-    padding-right: var(--v3-space-2xs);
-  }
-
-  .place-type-film__media {
-    aspect-ratio: 4 / 3;
-    max-height: 5.25rem;
-  }
-
-  .place-type-film__body {
-    padding: var(--v3-space-2xs) var(--v3-space-xs) var(--v3-space-xs);
-  }
-
-  .place-type-film__price {
-    font-size: var(--v3-size-body-sm);
-  }
-
-  .place-type-film__addr,
-  .place-type-film__specs {
-    font-size: var(--v3-size-source);
+  /* Official -left-12 only — extra tap padding made the 375 card a stamp. */
+  .place-type-film__stage {
+    padding-inline: 3rem;
   }
 }
 
@@ -380,9 +316,8 @@
   }
 
   .v3.v3-atlas.place-type-atlas .v3-atlas__stage {
-    max-height: 14rem !important;
-    min-height: 0 !important;
-    overflow: hidden;
+    min-height: 22rem;
+    max-height: 32rem;
   }
 
   .v3.v3-atlas.place-type-atlas .v3-atlas__head {
@@ -462,7 +397,9 @@
 .place-type-homes {
   max-width: var(--v3-measure);
   margin: 0 auto;
-  padding: var(--v3-space-md) var(--v3-gutter) var(--v3-space-xl);
+  /* Keep the ledger off the carousel-open viewport so the catalog demo is
+     the object, not a second inventory stacked under it. */
+  padding: min(70vh, 40rem) var(--v3-gutter) var(--v3-space-xl);
 }
 
 .place-type-homes__head {

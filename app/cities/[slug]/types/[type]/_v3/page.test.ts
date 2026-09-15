@@ -51,7 +51,7 @@ describe('place-type pages', () => {
     expect(CITY).toMatch(/label: 'For sale'/)
   })
 
-  it('puts a V3Carousel rail of photographed listings in the fold (SITE-89)', () => {
+  it('puts a shadcn carousel rail of photographed listings in the fold (SITE-106)', () => {
     expect(CITY).toMatch(/<PlaceTypeFilm/)
     expect(CITY).toMatch(/from '\.\/_v3\/PlaceTypeFilm\.client'/)
     expect(CITY).toMatch(/bandLow=\{lowAsk\}/)
@@ -61,28 +61,27 @@ describe('place-type pages', () => {
       resolve('app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx'),
       'utf8',
     )
-    expect(film).toMatch(/V3Carousel/)
-    expect(film).toMatch(/mode="rail"/)
+    expect(film).toContain("from '@/components/ui/carousel'")
+    expect(film).toMatch(/CarouselPrevious/)
+    expect(film).toMatch(/CarouselNext/)
+    expect(film).toMatch(/md:basis-1\/2/)
     expect(film).toMatch(/LISTING_FIELD_LEAD_PHOTO_SIZE/)
     expect(film).toMatch(/place-type-film__specs/)
     expect(film).toMatch(/place-type-film__addr/)
-    expect(film).toMatch(/place-type-film__body/)
     expect(film).not.toMatch(/place-type-film__on-photo/)
-    // Atlas eyebrow softens so H1 is the only type display line
-    expect(CITY).toMatch(/placeTypeAtlasEyebrow\(\s*spec,\s*false,/)
+    expect(film).not.toMatch(/V3Carousel/)
+    expect(CITY).toMatch(/placeTypeAtlasEyebrow\(spec, false\)/)
   })
 
-  it('claims count + useful band without repeating the H1 type (SITE-89)', () => {
-    expect(CITY).toMatch(/homes with a \$\{cityName\} address ask/)
+  it('claims count + useful band without repeating the H1 type (SITE-106)', () => {
+    expect(CITY).toMatch(/homes ask/)
     expect(CITY).toMatch(/formatPriceExact\(lowAsk\)/)
     expect(CITY).toMatch(/formatPriceExact\(bandHigh\)/)
     expect(CITY).toMatch(/city-type:p90/)
-    expect(CITY).toMatch(/The map marks for-sale homes inside city limits/)
+    expect(CITY).not.toMatch(/The map marks for-sale homes inside city limits/)
     expect(CITY).toMatch(/for nine in ten/)
     // Claim body: count + "homes", not `${count} ${spec.nounMany}`
-    expect(CITY).toMatch(
-      /\$\{activeCount\.toLocaleString\('en-US'\)\} homes with a \$\{cityName\} address ask/,
-    )
+    expect(CITY).toMatch(/\$\{activeCount\.toLocaleString\('en-US'\)\} homes ask/)
     // SEO increment lives in generateMetadata title + ItemList JSON-LD
     expect(CITY).toMatch(/activeCount\.toLocaleString\('en-US'\)/)
     expect(CITY).toMatch(/placeTypeSchemas/)
