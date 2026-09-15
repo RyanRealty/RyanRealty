@@ -151,11 +151,9 @@ export function insightFaceForRead(
     return {
       claim,
       figure,
-      figureLabel,
+      figureLabel: row?.name || page.figureLabel,
       secondFigure: other?.label || page.secondFigure,
-      secondLabel: other
-        ? `${other.name} median sale in ${read.tick}`
-        : page.secondLabel,
+      secondLabel: other?.name || page.secondLabel,
     }
   }
   return { claim: page.claim, figure, figureLabel }
@@ -190,9 +188,9 @@ export function buildRegionInsightPages(
         kind: 'compare',
         claim: `${tick} ${String(newest.name)} median sale ${String(newestLast.label)}; ${String(prior.name)} was ${String(priorSame.label)}`,
         figure: String(priorSame.label),
-        figureLabel: `${String(prior.name)} same month`,
+        figureLabel: String(prior.name),
         secondFigure: String(newestLast.label),
-        secondLabel: `${String(newest.name)} same month`,
+        secondLabel: String(newest.name),
         readName: String(prior.name),
         pill: 'See homes for sale',
         pillHref: listingsBrowsePath(),

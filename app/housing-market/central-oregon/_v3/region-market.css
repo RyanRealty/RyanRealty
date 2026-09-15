@@ -67,27 +67,20 @@
 }
 
 .region-insights .insight-cards__pager-title,
-.region-insights .insight-cards__hero-label {
+.region-insights .insight-cards__series-name,
+.region-insights .insight-cards__snapshot {
   color: var(--v3-ink-muted);
-  font-size: var(--v3-size-label);
-  font-weight: 600;
-  letter-spacing: var(--v3-track-label);
-  text-transform: uppercase;
 }
 
 .region-insights .insight-cards__pager-count,
 .region-insights .insight-cards__claim,
-.region-insights .insight-cards__hero-value {
+.region-insights .insight-cards__series-value {
   color: var(--v3-ink);
 }
 
 #market-insights .insight-cards__claim {
   font-size: var(--v3-size-body);
   line-height: var(--v3-leading-body);
-}
-
-#market-insights .insight-cards__hero-value {
-  font-weight: 500;
 }
 
 .region-insights .insight-cards__pager-btn,
@@ -109,10 +102,10 @@
   text-underline-offset: 0.15em;
 }
 
-#market-insights .v3-chart__plot,
-#market-insights .v3-chart__svg {
-  max-height: 11rem;
-  height: 11rem;
+#market-insights .insight-chart-stage .v3-chart__plot,
+#market-insights .insight-chart-stage .v3-chart__svg {
+  max-height: 166px;
+  height: 166px;
 }
 
 @media (max-width: 63.99rem) {
@@ -150,16 +143,14 @@
     min-height: var(--v3-tap);
   }
 
-  #market-insights .v3-chart__plot,
-  #market-insights .v3-chart__svg {
-    max-height: 6.25rem;
-    height: 6.25rem;
+  #market-insights .insight-chart-stage .v3-chart__plot,
+  #market-insights .insight-chart-stage .v3-chart__svg {
+    max-height: 7.5rem;
+    height: 7.5rem;
   }
 
-  #market-insights .v3-chart__caption,
-  #market-insights .v3-chart__claim,
-  #market-insights .insight-cards__hero-label {
-    display: none;
+  #market-insights .insight-chart-stage {
+    height: 7.5rem;
   }
 
   #market .v3-instrument__action {
@@ -169,10 +160,6 @@
   #market-insights .insight-cards__claim,
   .region-insights .insight-cards__claim {
     font-size: var(--v3-size-body-sm);
-  }
-
-  #market-insights .insight-cards__hero-value {
-    font-weight: 500;
   }
 
   #market.v3-instrument.hm-tremor .v3-figure__value {

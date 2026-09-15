@@ -1,12 +1,12 @@
 'use client'
 
 /**
- * beautifului InsightCards — official Insights N ‹ › object.
- * Pages are Compare / Anomaly / Allocation. Pager is the only chrome.
+ * beautifului InsightCards — official Insights card object.
+ * Pager + prose + card (series rows, Snapshot, insight-chart-stage) + pill.
  *
  * Source: https://www.beautifului.dev/r/insight-cards.json
- * Interaction kept: Insights N ‹ ›, claim, hero figure, card visual, pill.
- * Owns its own pager chrome. Not InsightPager (that is YEAR 2024 1/3).
+ * Compare / Anomaly / Allocation pages. Chart stage is pointer-scrub, not a
+ * house figure caption. Not InsightPager (that is YEAR 2024 1/3).
  */
 
 import type { ReactNode } from 'react'
@@ -24,7 +24,12 @@ export type InsightCardsProps = {
   secondFigure?: ReactNode
   secondLabel?: string
   visual?: ReactNode
+  /** Official Anomaly Spend/Usage-style chrome — outside the chart stage. */
+  chrome?: ReactNode
+  /** Pointer-scrub chart. Wrapped in official insight-chart-stage. */
+  stage?: ReactNode
   pill?: ReactNode
+  snapshot?: string
   className?: string
   id?: string
   kind?: string
@@ -41,7 +46,10 @@ export function InsightCards({
   secondFigure,
   secondLabel,
   visual,
+  chrome,
+  stage,
   pill,
+  snapshot = 'Snapshot',
   className,
   id,
   kind,
@@ -102,23 +110,30 @@ export function InsightCards({
       </div>
       <div className="insight-cards__card">
         <p className="insight-cards__claim">{claim}</p>
-        {figure ? (
-          <div className="insight-cards__figures">
-            <p className="insight-cards__hero">
-              <span className="insight-cards__hero-value">{figure}</span>
-              {figureLabel ? <span className="insight-cards__hero-label">{figureLabel}</span> : null}
-            </p>
-            {secondFigure ? (
-              <p className="insight-cards__hero">
-                <span className="insight-cards__hero-value">{secondFigure}</span>
-                {secondLabel ? (
-                  <span className="insight-cards__hero-label">{secondLabel}</span>
+        <div className="insight-cards__card-head">
+          {figure ? (
+            <div className="insight-cards__series">
+              <p className="insight-cards__series-row">
+                {figureLabel ? (
+                  <span className="insight-cards__series-name">{figureLabel}</span>
                 ) : null}
+                <span className="insight-cards__series-value">{figure}</span>
               </p>
-            ) : null}
-          </div>
-        ) : null}
-        {visual ? <div className="insight-cards__visual">{visual}</div> : null}
+              {secondFigure ? (
+                <p className="insight-cards__series-row">
+                  {secondLabel ? (
+                    <span className="insight-cards__series-name">{secondLabel}</span>
+                  ) : null}
+                  <span className="insight-cards__series-value">{secondFigure}</span>
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          {snapshot ? <span className="insight-cards__snapshot">{snapshot}</span> : null}
+        </div>
+        {chrome}
+        {stage ? <div className="insight-chart-stage">{stage}</div> : null}
+        {visual}
         {pill ? <div className="insight-cards__pill">{pill}</div> : null}
       </div>
     </div>

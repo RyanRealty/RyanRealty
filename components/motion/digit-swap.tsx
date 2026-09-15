@@ -76,12 +76,12 @@ export function DigitSwap({
       data-slot="digit-swap"
       data-direction={direction}
       className={cn(
-        "digit-swap inline-flex items-center whitespace-nowrap font-mono text-lg tracking-[0.08em] tabular-nums",
+        "digit-swap inline-flex items-center gap-[0.08em] whitespace-nowrap font-mono text-lg tracking-[0.08em] tabular-nums",
         className,
       )}
     >
       <span className="sr-only">{text}</span>
-      <span aria-hidden="true" className="inline-flex items-center">
+      <span aria-hidden="true" className="inline-flex items-center gap-[0.08em]">
         {glyphs.map(({ character, id, position }) => {
           if (character === " ") {
             return <span key={id} className="inline-block w-[0.7ch]" />;

@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * Region fold InsightCards. Rest is Compare with house-chart hover.
- * Insights Next pages to Anomaly: Closings/Sale pills + hover (not year chips).
- * DigitSwap is official 1ch glyph slots. Allocation stays the third page.
+ * Region fold: official Insights card. Rest is CompareCard (series rows +
+ * Snapshot + insight-chart-stage). Next pages to AnomalyCard (Closings/Sale
+ * + stage). DigitSwap is official 1ch glyph slots with catalog tracking gap.
  */
 
 import Link from 'next/link'
@@ -54,7 +54,7 @@ function SwapFace({
         animationKey={swapKey}
         className="insight-cards__swap-face font-mono text-lg tracking-[0.08em] tabular-nums"
       />
-      {label ? <span className="insight-cards__hero-label">{label}</span> : null}
+      {label ? <span className="insight-cards__series-name">{label}</span> : null}
     </span>
   )
 }
@@ -173,23 +173,24 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
     <span>{current.pill}</span>
   )
 
-  const visual = openChart ? (
-    <>
-      {current.kind === 'anomaly' && segments.length >= 2 ? (
-        <AnomalyToggle
-          segments={segments}
-          selected={safeSegment}
-          onSelect={(index) => {
-            setRead(null)
-            setSegment(index)
-          }}
-        />
-      ) : null}
-      <V3Chart {...openChart} yearPages={false} onRead={onRead} />
-    </>
-  ) : current.kind === 'allocation' && segments.length >= 2 ? (
-    <AllocationBar segments={segments} selected={safeSegment} onSelect={setSegment} />
+  const chrome =
+    current.kind === 'anomaly' && segments.length >= 2 ? (
+      <AnomalyToggle
+        segments={segments}
+        selected={safeSegment}
+        onSelect={(index) => {
+          setRead(null)
+          setSegment(index)
+        }}
+      />
+    ) : undefined
+  const stage = openChart ? (
+    <V3Chart {...openChart} yearPages={false} onRead={onRead} />
   ) : undefined
+  const visual =
+    current.kind === 'allocation' && segments.length >= 2 ? (
+      <AllocationBar segments={segments} selected={safeSegment} onSelect={setSegment} />
+    ) : undefined
 
   return (
     <InsightCards
@@ -205,14 +206,14 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
         setPage(index)
       }}
       claim={face.claim}
+      snapshot="Snapshot"
       figure={
         <SwapFace
           value={heroValue}
-          label={current.kind === 'compare' ? undefined : heroLabel}
           swapKey={`${current.key}-${heroValue}`}
         />
       }
-      figureLabel={current.kind === 'compare' ? face.figureLabel : undefined}
+      figureLabel={current.kind === 'compare' ? face.figureLabel : heroLabel}
       secondFigure={
         face.secondFigure ? (
           <SwapFace
@@ -222,6 +223,8 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
         ) : undefined
       }
       secondLabel={face.secondLabel}
+      chrome={chrome}
+      stage={stage}
       visual={visual}
       pill={pill}
     />

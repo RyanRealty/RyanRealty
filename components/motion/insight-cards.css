@@ -57,13 +57,22 @@
   max-width: 40rem;
 }
 
-.insight-cards__figures {
+.insight-cards__card-head {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem 1.5rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
 }
 
-.insight-cards__hero {
+.insight-cards__series {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  min-width: 0;
+}
+
+.insight-cards__series-row {
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
@@ -71,20 +80,48 @@
   min-width: 0;
 }
 
-.insight-cards__hero-value {
+.insight-cards__series-name {
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.insight-cards__series-value {
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
 }
 
-.insight-cards__hero-label {
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.insight-cards__snapshot {
+  font-size: 0.65625rem;
+  font-weight: 500;
+  line-height: 1.2;
 }
 
-.insight-cards__visual {
+/* Official Compare/Anomaly chart stage. House caption stays for a11y only. */
+.insight-chart-stage {
+  position: relative;
   min-width: 0;
   width: 100%;
+  height: 166px;
+}
+
+.insight-chart-stage .v3-chart__caption,
+.insight-chart-stage .v3-chart__claim,
+.insight-chart-stage .v3-chart__legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.insight-chart-stage .v3-chart__plot,
+.insight-chart-stage .v3-chart__svg {
+  height: 166px;
+  max-height: 166px;
 }
 
 .insight-cards__pill {
@@ -112,10 +149,9 @@
 }
 
 .insight-cards__swap {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.125rem;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
 }
 
 /* Official Anomaly Spend/Usage pills — not year-pager chips. */
