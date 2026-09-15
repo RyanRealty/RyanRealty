@@ -42,6 +42,8 @@ function allocationSegments(cities: readonly InsightCity[]): CitiesInsightSegmen
     label: c.name,
     amount: `${formatCount(c.activeCount)} for sale`,
     pct: rounded[i] ?? 0,
+    cls: `insight-cards__alloc-seg--${i}`,
+    tone: '',
   }))
 }
 

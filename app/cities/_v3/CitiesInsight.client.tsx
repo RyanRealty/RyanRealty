@@ -21,6 +21,8 @@ export type CitiesInsightSegment = {
   label: string
   amount: string
   pct: number
+  cls: string
+  tone: string
 }
 
 export type CitiesInsightSeries = {
@@ -48,45 +50,60 @@ export function CitiesInsight({ id, board }: { id: string; board: CitiesInsightB
   )
 }
 
+function livelineSeries(series: CitiesInsightSeries[]) {
+  return series.map((s) => ({
+    name: s.name,
+    values: s.values,
+    sub: s.sub,
+    tone: 'green' as const,
+    dot: 'bg-accent',
+    color: '',
+    tooltipColor: '',
+    formatValue: (v: number) => Math.round(v).toLocaleString('en-US'),
+  }))
+}
+
+function AllocationAndLiveline({
+  segments,
+  note,
+  series,
+}: {
+  segments: CitiesInsightSegment[]
+  note: string
+  series: CitiesInsightSeries[]
+}) {
+  return (
+    <div data-insight-combo="allocation-liveline">
+      <AllocationCard segments={segments} note={note} />
+      <CompareCard hideLegend series={livelineSeries(series)} formatTime={() => ''} />
+    </div>
+  )
+}
+
 function pagesFromBoard(board: CitiesInsightBoard): InsightPage[] {
-  const pages: InsightPage[] = []
-  if (board.allocation.length >= 2) {
-    const segments = board.allocation
-    const note = board.allocationNote
-    pages.push({
+  if (board.allocation.length < 2) return []
+  if (!board.compare || board.compare.length < 1 || board.compare[0]!.values.length < 6) return []
+
+  const segments = board.allocation
+  const note = board.allocationNote
+  const series = board.compare
+
+  return [
+    {
       key: 'mix',
       prose: <>{board.allocationProse}</>,
       Card: function CityMix() {
-        return <AllocationCard segments={segments} note={note} />
+        return <AllocationAndLiveline segments={segments} note={note} series={series} />
       },
       pill: 'See every city for sale',
-    })
-  }
-  if (board.compare && board.compare.length >= 1 && board.compare[0]!.values.length >= 6) {
-    const series = board.compare
-    pages.push({
+    },
+    {
       key: 'closes',
       prose: <>{board.compareProse}</>,
       Card: function CityCloses() {
-        return (
-          <CompareCard
-            hideLegend
-            series={series.map((s) => ({
-              name: s.name,
-              values: s.values,
-              sub: s.sub,
-              tone: 'green' as const,
-              dot: 'bg-accent',
-              color: '',
-              tooltipColor: '',
-              formatValue: (v: number) => Math.round(v).toLocaleString('en-US'),
-            }))}
-            formatTime={() => ''}
-          />
-        )
+        return <AllocationAndLiveline segments={segments} note={note} series={series} />
       },
       pill: 'Scrub the year of closes',
-    })
-  }
-  return pages
+    },
+  ]
 }

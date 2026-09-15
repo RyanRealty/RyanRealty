@@ -20,5 +20,6 @@ describe('citiesInsightBoard', () => {
     expect(board?.compare).toBeNull()
     expect(board?.allocation).toHaveLength(2)
     expect(board?.allocation.reduce((sum, s) => sum + s.pct, 0)).toBe(100)
+    expect(board?.allocation[0]?.cls).toMatch(/^insight-cards__alloc-seg--/)
   })
 })
