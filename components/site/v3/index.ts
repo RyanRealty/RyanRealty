@@ -638,6 +638,9 @@ export { V3Chrome } from './V3Chrome'
 
 export type { V3ChromeProps, V3ChromeGroup, V3ChromeLive, V3ChromeLiveGroup, V3ChromeLiveFact } from './V3Chrome'
 
+/** Header Search — catalog MorphingSearch mount used by V3Chrome. */
+export { V3ChromeSearch } from './V3ChromeSearch.client'
+
 /** V3_FOOTER_COLUMNS and V3_FOOTER_LEGAL are the canonical site-nav projections. */
 export { V3Footer, V3_FOOTER_COLUMNS, V3_FOOTER_LEGAL } from './V3Footer'
 
