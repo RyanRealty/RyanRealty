@@ -2,8 +2,8 @@
 
 Surface: Cursor cloud. Branch `cursor/site-110-search-tip-21f9` PR #248. Do not merge. Cos Mini `--ship`s.
 
-- **Done:** After Mini 51 (`demoMatch` false, score 51): official beui-morphing-search FIELD preview (`Find components` + catalog ITEMS, not cream Search+listing popover). One-track DualTickRange Min+Max ask (not stacked dotted single-thumb). House-sheet progressive ask→type with echo+progress. House-atlas full chrome (quiet removed) + `markScale=ask`. SITE-92/103 left alone. Public Patch P0 on main not fought. Receipt left honest.
-- **Next:** Recapture default+open shots, push tip, Cos Mini `--ship`. Do not invent `demoMatch`.
+- **Done:** After Mini 51 (`demoMatch` false, score 51): official beui-morphing-search FIELD preview (`Find components` + catalog ITEMS). One-track DualTickRange Min+Max on dock, house-sheet, and atlas dock (`priceScrub=minmax` — native single-thumb removed from search map). House-sheet progressive ask→type with echo+progress. House-atlas full chrome + `markScale=ask`. Recaptured default+open shots. SITE-92/103 left alone. Public Patch P0 on main not fought. Receipt left honest.
+- **Next:** Cos Mini `--ship`. Do not invent `demoMatch`.
 - Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 
 # Current — 2026-09-15 (SITE-110 rematch after Mini 56 on 6671fdd0)
