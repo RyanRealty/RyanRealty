@@ -10,6 +10,7 @@
  */
 import type { PublicSegmentRow } from '@/lib/data/market-truth/public-segments'
 import { publicSegmentNoun } from '@/lib/data/market-truth/public-segments'
+import { INVEST_SEGMENTS } from '@/lib/invest/segments'
 import { investCounts, investSplit } from './invest-pulse'
 
 export type InvestAllocationSegment = {
@@ -98,9 +99,10 @@ type WindowPoint = {
 }
 
 function publishedWindows(rows: readonly PublicSegmentRow[]): WindowPoint[] {
-  const bySegment = new Map(rows.map((row) => [row.segment, row]))
+  const income = new Set<string>(INVEST_SEGMENTS)
+  const bySegment = new Map(rows.filter((row) => income.has(row.segment)).map((row) => [row.segment, row]))
   const land = bySegment.get('land')
-  const others = rows.filter((row) => row.segment !== 'land')
+  const others = [...bySegment.values()].filter((row) => row.segment !== 'land')
   const out: WindowPoint[] = []
   for (const window of WINDOWS) {
     const lots = window.pick(land)
