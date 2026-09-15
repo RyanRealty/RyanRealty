@@ -1,10 +1,10 @@
-# Current — 2026-09-15 (SITE-110 rematch after Mini 55 on 5c2d4bf0)
+# Current — 2026-09-15 (SITE-110 rematch after Mini 52 on 934ef032)
 
 Surface: Cursor cloud. Branch `cursor/site-110-search-tip-21f9` PR #248. Do not merge. Cos Mini-judges.
 
-- **Done:** After Mini 55 / `5c2d4bf0` (`demoMatch` false): official MorphingSearch restored; dock is catalog `iconOnly` (48×48 → 448×336 glass portal); empty-open Lucide icon rows (not listing streets); dialog `initial={false}`; token dim so the grown card reads as a portal. Recaptured default + search-open/command-open/filters-open. SITE-103/107/109/CMA left alone. Judge chain missing on this VM — receipt left honest (Mini `demoMatch` false). `--ship` 1.
+- **Done:** After Mini 52 / `934ef032` (`demoMatch` false): official MorphingSearch FIELD (256×48 → 448×336) grows into live home rows (ask · beds · city). RangeSlider navy fill. All-filters V3Sheet + shadcn Checkbox flags. Recaptured default + open-states. SITE-92/103 left alone. Receipt left honest. `--ship` 1.
 - **Next:** Cos Mini `--ship`. Do not invent `demoMatch`.
-- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`.
 
 # Current — 2026-09-15 (SITE-110 rematch after Mini 56 on 6671fdd0)
 
