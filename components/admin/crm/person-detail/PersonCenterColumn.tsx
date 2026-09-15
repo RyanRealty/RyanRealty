@@ -64,6 +64,7 @@ import {
   Users,
 } from 'lucide-react'
 import { groupInfoFromPayload } from '@/lib/crm/group-message'
+import { smsDisplayBody } from '@/lib/crm/sms-display-body'
 import { Button, IconButton, Menu, SearchField, ToolbarSelect } from '@/components/admin/v2'
 import { cn } from '@/lib/utils'
 import { TimelineMediaStrip } from '@/components/admin/crm/StoredAttachments'
@@ -344,7 +345,7 @@ function EventCard({ item }: { item: TimelineItem }) {
   const { icon, style: kindStyle } = kindIcon(item.kind, item.source)
   const isAutomationEmail = item.kind === 'email_out' && item.source === 'sequence'
   const isLeadOrigin = item.kind === 'lead_created'
-  const preview = (item.body ?? '').trim()
+  const preview = smsDisplayBody(item.body ?? '').trim()
   const long = preview.length > 220
   // Legacy imported texts/emails came in with their content redacted at
   // import (payload.contentHidden === true, body null). Show a labeled

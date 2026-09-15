@@ -307,6 +307,9 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
         primaryPersonId={person.id}
         personId={person.id}
         customFields={composerCustomFields}
+        hideMergeFields
+        hideQuietHours
+        hideAttachments
       />
     ) : (
       <p className="px-1 py-2 text-center text-[13px]" style={{ color: 'var(--a-text-2)' }}>
