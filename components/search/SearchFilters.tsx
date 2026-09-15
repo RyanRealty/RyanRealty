@@ -525,7 +525,7 @@ export default function SearchFilters({
       if (typed.length > 0) {
         return [...typed, ...listed.filter((row) => !typed.some((t) => t.id === row.id))]
       }
-      return [...places, ...listed]
+      return [...places.slice(0, 2), ...listed, ...places.slice(2)]
     },
     [suggestItems, morphHomes],
   )

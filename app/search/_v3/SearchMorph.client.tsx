@@ -38,7 +38,8 @@ export function SearchMorph({
         onQueryChange={onQueryChange}
         onSelect={onSelect}
         onOpenChange={onOpenChange}
-        resultsMaxHeight={160}
+        resultsMaxHeight={220}
+        triggerAriaLabel="Search command"
       />
     </div>
   )

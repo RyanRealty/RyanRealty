@@ -61,6 +61,8 @@ export interface MorphingSearchProps {
 	onSelect?: (item: MorphingSearchItem) => void;
 	/** Cap the grown results list so the panel stays in the dock, not over listing photos. */
 	resultsMaxHeight?: number;
+	/** Closed-field name. Command-open clicks this same trigger. */
+	triggerAriaLabel?: string;
 	className?: string;
 }
 
@@ -92,6 +94,7 @@ export function MorphingSearch({
 	onQueryChange,
 	onSelect,
 	resultsMaxHeight = 288,
+	triggerAriaLabel,
 	className,
 }: MorphingSearchProps) {
 	const [internalOpen, setInternalOpen] = useState(defaultOpen);
@@ -593,7 +596,7 @@ export function MorphingSearch({
 						type="button"
 						aria-haspopup="dialog"
 						aria-expanded="false"
-						aria-label={placeholder}
+						aria-label={triggerAriaLabel ?? placeholder}
 						data-v3-morph="trigger"
 						onClick={openSearch}
 						transition={morphTransition}

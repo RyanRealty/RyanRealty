@@ -20,11 +20,11 @@ export function SearchCommand({ onOpenMorph }: SearchCommandProps) {
   return (
     <Button
       type="button"
-      variant="outline"
+      variant="ghost"
       size="sm"
       className="srch-command-trigger sr-only"
-      aria-label="Search command"
-      aria-haspopup="dialog"
+      tabIndex={-1}
+      aria-hidden
       onClick={onOpenMorph}
     >
       Search
