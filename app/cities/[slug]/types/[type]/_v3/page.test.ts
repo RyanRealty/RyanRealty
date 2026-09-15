@@ -49,11 +49,26 @@ describe('place-type pages', () => {
       expect(src).not.toMatch(/label: 'Home'/)
     }
     expect(CITY).toMatch(/label: 'For sale'/)
+    expect(COMM).toMatch(/label: 'For sale'/)
   })
 
-  it('puts a shadcn carousel rail of photographed listings in the fold (SITE-106)', () => {
+  it('puts a shadcn carousel rail of photographed listings in the fold (SITE-106 / SITE-107)', () => {
     expect(CITY).toMatch(/<PlaceTypeFilm/)
     expect(CITY).toMatch(/from '\.\/_v3\/PlaceTypeFilm\.client'/)
+    expect(COMM).toMatch(/<PlaceTypeFilm/)
+    expect(COMM).toMatch(/from '\.\/_v3\/PlaceTypeFilm\.client'/)
+    expect(COMM).toMatch(/bandLow=\{lowAsk\}/)
+    expect(COMM).toMatch(/bandHigh=\{bandHigh\}/)
+    expect(COMM).toMatch(/comm-type:p90/)
+    expect(COMM).toMatch(/homes ask/)
+    expect(COMM).toMatch(/for nine in ten/)
+    const commFilm = readFileSync(
+      resolve('app/communities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx'),
+      'utf8',
+    )
+    expect(commFilm).toContain("from '@/components/ui/carousel'")
+    expect(commFilm).toMatch(/CarouselPrevious/)
+    expect(commFilm).toMatch(/CarouselNext/)
     expect(CITY).toMatch(/bandLow=\{lowAsk\}/)
     expect(CITY).toMatch(/bandHigh=\{bandHigh\}/)
     expect(CITY).toMatch(/listingsCount=\{activeCount\}/)
