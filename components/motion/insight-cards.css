@@ -96,12 +96,24 @@
   line-height: 1.2;
 }
 
-/* Official Compare/Anomaly chart stage. House caption stays for a11y only. */
+/* Official Compare/Anomaly chart stage: 166px Liveline box, pointer hover.
+   House V3Chart pager / y-axis / month ticks / range slider stay off the stage. */
 .insight-chart-stage {
   position: relative;
   min-width: 0;
   width: 100%;
   height: 166px;
+}
+
+.insight-chart-stage .v3-chart,
+.insight-chart-stage .v3.v3-chart {
+  height: 100%;
+  margin: 0;
+}
+
+.insight-chart-stage .v3-chart__frame {
+  display: block;
+  height: 100%;
 }
 
 .insight-chart-stage .v3-chart__caption,
@@ -118,8 +130,17 @@
   border: 0;
 }
 
+.insight-chart-stage .v3-chart__bandkey,
+.insight-chart-stage .v3-chart__y,
+.insight-chart-stage .v3-chart__x,
+.insight-chart-stage .v3-chart__scrub,
+.insight-chart-stage .v3-chart__year-pager {
+  display: none;
+}
+
 .insight-chart-stage .v3-chart__plot,
-.insight-chart-stage .v3-chart__svg {
+.insight-chart-stage .v3-chart__svg,
+.insight-chart-stage .v3-chart__hover {
   height: 166px;
   max-height: 166px;
 }

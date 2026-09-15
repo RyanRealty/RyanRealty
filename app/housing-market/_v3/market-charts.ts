@@ -251,7 +251,6 @@ export function buildClosedCountYearCharts(
         hover: true,
         yearPages: false,
         keysToggle: false,
-        restingRead: 'last',
         ...(yTicks.length ? { yTicks } : {}),
         xTicks: monthTicks(MONTH_TICK),
       },

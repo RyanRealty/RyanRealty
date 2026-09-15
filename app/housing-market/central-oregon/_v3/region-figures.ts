@@ -205,7 +205,7 @@ export function buildRegionInsightPages(
           keysToggle: false,
           yearPages: false,
           hover: true,
-          restingRead: 'last',
+          restingRead: undefined,
         },
       })
     }
@@ -231,7 +231,7 @@ export function buildRegionInsightPages(
             keysToggle: false,
             yearPages: false,
             hover: true,
-            restingRead: 'last',
+            restingRead: undefined,
           }
         : undefined
     const segments: RegionInsightSegment[] = [

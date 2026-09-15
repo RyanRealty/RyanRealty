@@ -2,8 +2,9 @@
 
 /**
  * Region fold: official Insights card. Rest is CompareCard (series rows +
- * Snapshot + insight-chart-stage). Next pages to AnomalyCard (Closings/Sale
- * + stage). DigitSwap is official 1ch glyph slots with catalog tracking gap.
+ * Snapshot + insight-chart-stage). year-open is pointer hover on the stage,
+ * not a house V3Chart pager and not a pinned last-month rest. Next pages to
+ * AnomalyCard (Closings/Sale). DigitSwap is official 1ch glyph slots.
  */
 
 import Link from 'next/link'

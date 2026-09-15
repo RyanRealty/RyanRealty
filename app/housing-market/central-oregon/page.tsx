@@ -474,8 +474,7 @@ export default async function CentralOregonRegionPage() {
             )}
             figures={[]}
             /* THE OPENING IS A CLAIM AND A DRAWING (SITE-103). MOS + InsightCards.
-               Rest is Compare with house-chart hover. year-open pages to
-               Anomaly: closings chart + toggle, DigitSwap follows the stop. */
+               Rest is Compare. year-open is pointer hover on insight-chart-stage. */
             chartFirst
             foldAfter={REGION_LEAD_FIGURES}
             foldLabel={v3Text(REGION_MARKET_FOLD_LABEL)}

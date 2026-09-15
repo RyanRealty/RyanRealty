@@ -103,7 +103,8 @@
 }
 
 #market-insights .insight-chart-stage .v3-chart__plot,
-#market-insights .insight-chart-stage .v3-chart__svg {
+#market-insights .insight-chart-stage .v3-chart__svg,
+#market-insights .insight-chart-stage .v3-chart__hover {
   max-height: 166px;
   height: 166px;
 }
@@ -144,7 +145,8 @@
   }
 
   #market-insights .insight-chart-stage .v3-chart__plot,
-  #market-insights .insight-chart-stage .v3-chart__svg {
+  #market-insights .insight-chart-stage .v3-chart__svg,
+  #market-insights .insight-chart-stage .v3-chart__hover {
     max-height: 7.5rem;
     height: 7.5rem;
   }

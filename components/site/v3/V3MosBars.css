@@ -95,6 +95,12 @@
   color: var(--v3-ink);
 }
 
+/* Catalog DigitSwap face wins — do not squash 1ch slots to body type. */
+.v3-mos__barvalue:has([data-slot='digit-swap']) {
+  font-family: unset;
+  font-size: unset;
+}
+
 .v3-mos__tip {
   display: grid;
   gap: var(--v3-space-3xs);
