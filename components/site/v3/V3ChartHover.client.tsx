@@ -226,6 +226,15 @@ export function V3ChartHover({
     }
   }
 
+  const yearInsight = useMemo(() => {
+    if (!pageable || !keys) return null
+    const last = columns[columns.length - 1]
+    const reading = last?.readings[0]
+    if (!last || !reading) return null
+    const year = keys[activeYear]
+    return year ? `${year} median sale ${reading.label} in ${last.tick}` : null
+  }, [pageable, keys, columns, activeYear])
+
   const col = active != null ? columns[active] ?? null : null
   const pos = col ? `${Math.min(Math.max(col.frac * 100, 0), 100)}%` : undefined
   // Only the horizontal tip needs flipping; a row tip spans the plot's width
@@ -351,13 +360,16 @@ export function V3ChartHover({
   return (
     <>
       {pageable ? (
-        <InsightPager
-          className="v3-chart__year-pager"
-          title="Year"
-          pages={keys}
-          page={activeYear}
-          onPage={setYearPage}
-        />
+        <>
+          <InsightPager
+            className="v3-chart__year-pager"
+            title="Year"
+            pages={keys}
+            page={activeYear}
+            onPage={setYearPage}
+          />
+          {yearInsight ? <p className="v3-chart__claim">{yearInsight}</p> : null}
+        </>
       ) : (
         <ul className="v3-chart__legend v3-chart__legend--live">
           {keys.map((name, i) => (

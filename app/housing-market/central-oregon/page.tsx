@@ -140,6 +140,7 @@ import {
   REGION_CITIES_SOURCE,
   REGION_FOLD_LABEL,
   REGION_LEAD_FIGURES,
+  REGION_MARKET_FOLD_LABEL,
 } from './_v3/region-constants'
 import {
   buildRegionInstruments,
@@ -472,15 +473,12 @@ export default async function CentralOregonRegionPage() {
                 : `A ${verdict.label}`,
             )}
             figures={[firstLiveFigure, ...restLiveFigures]}
-            /* THE OPENING IS A CLAIM AND A DRAWING (SITE-41). foldAfter={0} hid every
-               figure behind a summary reading "ALL 42 FIGURES", a row count offered as
-               a reason to tap. The four measures that answer what the region is doing
-               lead, each with a sentence; the tail keeps every figure behind a summary
-               that names what is in it. */
+            /* THE OPENING IS A CLAIM AND A DRAWING (SITE-103). MOS + the year
+               overlay own the fold. Live list and under-contract sit behind an
+               editorial disclosure — never "All 42 figures". */
             chartFirst
-            /* Two lead figures only — no collapsed appendix in the first viewport. */
             foldAfter={REGION_LEAD_FIGURES}
-            foldLabel={v3Text(REGION_FOLD_LABEL)}
+            foldLabel={v3Text(REGION_MARKET_FOLD_LABEL)}
             source={v3Text(liveTrace)}
             sourceName={v3Text('Oregon Data Share')}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}

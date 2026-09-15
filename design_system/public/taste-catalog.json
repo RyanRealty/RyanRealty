@@ -2955,6 +2955,10 @@
           "url": "https://beui.dev/components/motion/number",
           "job": "Live counts that swap digits. Only sourced figures."
         }
+      ],
+      "demoStates": [
+        "year-open=#market-chart .insight-pager__btn[aria-label^=\"Next\"]!click",
+        "source-open=#central-oregon-mos .v3-mos__barrow!hover"
       ]
     },
     "oregon-city": {
