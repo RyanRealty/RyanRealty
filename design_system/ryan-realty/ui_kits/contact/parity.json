@@ -18,7 +18,7 @@
       { "id": "8", "text": "Brokers who answer door to /team. FAQ (V3Answers) is optional. Do not invent a reply-time clock." }
     ]
   },
-  "note": "SITE-96. Order is Breadcrumb, ContactFold (Quiet H1 + sourced Google-reviews figure, ContactReach #reach as one Call door at display scale with V3OnDuty published hours, Text/Email/Schedule as one Button Group, ContactAsk as the one ask, one Matt face via AboutFaces), V3Answers, Footer. Consent checkbox is padded to --v3-tap. Live state is published hours only.",
+  "note": "SITE-96. Order is Breadcrumb, ContactFold (Quiet H1 + sourced Google-reviews figure, V3Doors #reach --lead Call at display scale with V3OnDuty published hours plus Text/Email/Schedule as the light door column, ContactAsk as the one ask, homepage-compact AboutFaces for who answers), V3Answers, Footer. Consent checkbox is padded to --v3-tap. Live state is published hours only. tasteReview scores and demoMatch are judge-written only.",
   "requiredComponents": [
     {
       "name": "V3SectionTracker",
@@ -108,9 +108,9 @@
     "V3Breadcrumb",
     "ContactFold -- Quiet H1 + sourced reviews figure | reach control + ContactAsk in the first viewport",
     "V3Quiet #contact -- H1 and the one true line (inside the fold)",
-    "V3Doors #reach -- one Call door at display scale with live published hours; Text, Email, Schedule as one Button Group",
+    "V3Doors #reach -- Call at display scale with live published hours; Text, Email, Schedule as the light door column",
     "ContactAsk -- one screen, beui-input / shadcn-input fields (inside the fold)",
-    "AboutFaces -- who answers, one Matt face in the fold, door to /team",
+    "AboutFaces -- who answers, homepage compact table, door to /team",
     "V3Answers #faq -- before you write",
     "V3Footer"
   ],

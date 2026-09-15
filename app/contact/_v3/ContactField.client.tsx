@@ -2,8 +2,7 @@
 
 /**
  * Write-path field: the installed beui-input demo (shake + check + error
- * line) and shadcn Input / Select. Tokens restyle idle/focus only — error
- * stays `border-destructive` and success keeps the catalog SVG check.
+ * line) and shadcn Input / Select. Interaction stays; chrome is navy/cream.
  */
 import { useEffect, useId, useRef, useState } from 'react'
 import { Input as BeuiInput } from '@/components/motion/input'
@@ -156,7 +155,7 @@ export function ContactField({
           onBlur={(event) => applyValidity(event.target)}
         />
         {errorMessage ? (
-          <p id={`${fieldId}-error`} role="alert" className="text-xs text-destructive">
+          <p id={`${fieldId}-error`} role="alert" className="text-xs text-foreground">
             {errorMessage}
           </p>
         ) : null}
@@ -184,6 +183,11 @@ export function ContactField({
         error={error}
         success={success}
         reserveErrorLine={Boolean(error)}
+        classNames={{
+          field: 'border-foreground',
+          successIcon: 'text-foreground',
+          errorMessage: 'text-foreground',
+        }}
         onChange={(next) => {
           setValue(next)
           const el = inputRef.current
