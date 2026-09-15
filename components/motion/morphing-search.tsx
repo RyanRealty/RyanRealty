@@ -586,25 +586,52 @@ export function MorphingSearch({
 				)}
 			>
 				{!open ? (
-					<motion.button
-						ref={triggerRef}
-						key="morphing-search-trigger"
-						layoutId={shellLayoutId}
-						type="button"
-						aria-haspopup="dialog"
-						aria-expanded="false"
-						aria-label={placeholder}
-						data-v3-morph="trigger"
-						onClick={openSearch}
-						transition={morphTransition}
-						style={{
-							boxShadow: "inset 0 0 0 1px var(--search-trigger-stroke)",
-						}}
-						className={cn(
-							"flex size-full items-center rounded-xl bg-background/60 text-left backdrop-blur-md outline-none [--search-trigger-stroke:var(--color-border)] hover:[--search-trigger-stroke:var(--color-border-strong)] focus-visible:ring-2 focus-visible:ring-ring",
-							iconOnly ? "cursor-pointer justify-center" : "cursor-text px-3.5",
-						)}
-					></motion.button>
+					iconOnly ? (
+						<motion.button
+							ref={triggerRef}
+							key="morphing-search-trigger"
+							layoutId={shellLayoutId}
+							type="button"
+							aria-haspopup="dialog"
+							aria-expanded="false"
+							aria-label={placeholder}
+							data-v3-morph="trigger"
+							onClick={openSearch}
+							transition={morphTransition}
+							style={{
+								boxShadow: "inset 0 0 0 1px var(--search-trigger-stroke)",
+							}}
+							className="flex size-full cursor-pointer items-center justify-center rounded-xl bg-background/60 text-left backdrop-blur-md outline-none [--search-trigger-stroke:var(--color-border)] hover:[--search-trigger-stroke:var(--color-border-strong)] focus-visible:ring-2 focus-visible:ring-ring"
+						></motion.button>
+					) : (
+						<motion.div
+							key="morphing-search-trigger"
+							layoutId={shellLayoutId}
+							data-v3-morph="trigger"
+							transition={morphTransition}
+							style={{
+								boxShadow: "inset 0 0 0 1px var(--search-trigger-stroke)",
+							}}
+							className="flex size-full items-center rounded-xl bg-background/60 text-left backdrop-blur-md outline-none [--search-trigger-stroke:var(--color-border)] hover:[--search-trigger-stroke:var(--color-border-strong)] focus-within:ring-2 focus-within:ring-ring"
+						>
+							{/* Real typeable field at rest — closed button was not accepting input. */}
+							<input
+								type="search"
+								value={query}
+								aria-label={placeholder}
+								aria-haspopup="dialog"
+								aria-expanded="false"
+								placeholder={placeholder}
+								autoComplete="off"
+								className="size-full cursor-text bg-transparent py-0 pl-9 pr-14 text-sm text-foreground outline-none placeholder:text-muted-foreground"
+								onFocus={openSearch}
+								onChange={(event) => {
+									updateQuery(event.target.value);
+									openSearch();
+								}}
+							/>
+						</motion.div>
+					)
 				) : null}
 				<motion.div
 					aria-hidden="true"
@@ -628,11 +655,10 @@ export function MorphingSearch({
 					<Search className="size-4 shrink-0 text-muted-foreground" />
 					{iconOnly ? null : (
 						<>
-							<span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-								{placeholder}
-							</span>
+							{/* Placeholder lives on the typeable input; keep shortcut only. */}
+							<span className="min-w-0 flex-1" aria-hidden="true" />
 							{shortcut ? (
-								<kbd className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md border border-border px-2 text-xs text-muted-foreground">
+								<kbd className="pointer-events-none flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md border border-border px-2 text-xs text-muted-foreground">
 									{shortcut.toUpperCase()}
 								</kbd>
 							) : null}

@@ -69,8 +69,6 @@ export type HomePulseInput = {
   closedInWindow: number
 }
 
-const ONES = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'] as const
-
 function n(value: number): string {
   return value.toLocaleString('en-US')
 }
@@ -84,21 +82,10 @@ function n(value: number): string {
  * fraction gets neither word. The exact percentage is in the trace.
  */
 export function pulseClaim(forSale: number, pending: number): string {
-  const onMarket = forSale + pending
-  if (onMarket <= 0 || pending <= 0) {
-    return `${n(forSale)} listings are on the market across Central Oregon right now.`
-  }
-  const share = pending / onMarket
-  const denominator = Math.min(9, Math.max(2, Math.round(1 / share)))
-  const word = ONES[denominator]
-  const rounded = 1 / denominator
-  const lead =
-    Math.abs(share - rounded) < 0.0005
-      ? 'One in'
-      : share > rounded
-        ? 'More than one in'
-        : 'Nearly one in'
-  return `${lead} ${word} listings on the Central Oregon market is already under contract.`
+  // Plain voice — no "More than one in five…" lecture (Matt 2026-09-15).
+  void forSale
+  void pending
+  return 'Central Oregon right now.'
 }
 
 /** The §0 trace: every table, every filter, every window, and the arithmetic. */
@@ -186,9 +173,10 @@ export function composeHomePulse(input: HomePulseInput): V3PulseProps | null {
   return {
     id: HOME_PULSE_ID,
     claim: v3Text(pulseClaim(forSale, pending)),
+    className: 'v3-pulse--claim-first',
     readings,
     field: field ? { w: field.w, h: field.h } : undefined,
-    plotCaption: 'Every listing, where it sits',
+    plotCaption: 'For sale, under contract, and recent sales',
     fieldAlt: `Central Oregon with every listing plotted at its own coordinate: ${n(forSale)} for sale, ${n(pending)} under contract, and ${n(sold)} sold in the last ${ATLAS_PULSE_WINDOW_DAYS} days.`,
     note: `Read ${input.stamp}`,
     source: pulseTrace(input),

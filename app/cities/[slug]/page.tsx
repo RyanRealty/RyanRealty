@@ -215,7 +215,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const cityName = snapshot.geoLabel
   return pageMetadata({
     title: `Homes for Sale in ${cityName}, Oregon`,
-    description: `Live ${cityName}, Oregon real estate: active single-family homes, months of supply, neighborhoods, recorded plats, open houses, and MLS market data from Oregon Data Share.`,
+    description: `Live ${cityName}, Oregon real estate: active single-family homes, months of supply, neighborhoods, subdivisions, open houses, and MLS market data from Oregon Data Share.`,
     path: `/cities/${slug}`,
   })
 }
@@ -864,17 +864,21 @@ export default async function CityDetailPage({ params }: Props) {
                 headingLevel={2}
                 headline={v3Text(`${cityName} right now`)}
                 headlineTone="eyebrow"
-                claimText={`${cityName} houses — every active and pending detached mark inside the recorded boundary. Scrub price; the claim updates with your filter.`}
+                claimText={`${cityName} houses for sale — active and pending detached homes. Scrub price to filter the map.`}
                 keyPlacement="dock"
                 sourceName="Oregon Data Share"
                 dots={foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots}
-                regions={atlasRegions}
-                basemap={basemapForRegions(atlasRegions)}
+                regions={foldAtlasRegions}
+                basemap={basemapForRegions(foldAtlasRegions, {
+                  dots: foldAtlasDots.length > 0 ? foldAtlasDots : atlasView.dots,
+                  fit: 'dots',
+                })}
+                fit="dots"
                 types={foldAtlasTypes.length > 0 ? foldAtlasTypes : atlasView.types}
                 events={atlasView.events}
                 source={
                   foldAtlasDots.length > 0
-                    ? `Detached single-family (Houses) active and pending marks inside the recorded ${cityName} boundary, from the same Oregon Data Share listing tiles the map draws. Price scrubber filters this set.`
+                    ? `Detached single-family (Houses) active and pending in ${cityName}, from Oregon Data Share listing tiles. Price scrubber filters this set.`
                     : atlasView.source
                 }
                 stamp={atlasView.stamp}
@@ -922,13 +926,13 @@ export default async function CityDetailPage({ params }: Props) {
             draws plus every plat in this city with a page of its own, each one
             a real anchor a crawler can follow. */}
         <V3PlaceIndex
-          id="plats"
-          eyebrow={`${cityName} · Recorded plats`}
-          heading={`The plats of ${cityName}`}
+          id="subdivisions"
+          eyebrow={`${cityName} · Subdivisions`}
+          heading={`Subdivisions in ${cityName}`}
           lede={
             cityIndexablePlats.length > platIndexEntries.length
-              ? `A plat is the subdivision the county recorded when the ground was divided. ${cityName} holds ${cityIndexablePlats.length.toLocaleString('en-US')} of them with a page of their own; these are the ${platIndexEntries.length} with the deepest sale history.`
-              : `A plat is the subdivision the county recorded when the ground was divided. Each one below has its own page — what has sold there, what is for sale, and where its lines run.`
+              ? `${cityName} has ${cityIndexablePlats.length.toLocaleString('en-US')} subdivisions with their own pages; these are the ${platIndexEntries.length} with the deepest sale history.`
+              : `Each subdivision below has its own page — what has sold there, what is for sale, and where it sits.`
           }
           countLabel="lifetime sales"
           entries={platIndexEntries}
@@ -938,7 +942,7 @@ export default async function CityDetailPage({ params }: Props) {
               ? { label: `Every Central Oregon subdivision`, href: '/subdivisions' }
               : undefined
           }
-          source="Deschutes County plat lines · Oregon Data Share"
+          source="Deschutes County · Oregon Data Share"
         />
 
         <PlaceTypeSlider cards={typeCards} label={`${cityName} property types`} />

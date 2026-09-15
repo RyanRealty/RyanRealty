@@ -31,6 +31,9 @@ export const HOME_BRIEF_LEAK_REFUSE =
 export const INVENTORY_LECTURE_REFUSE =
   'mannered public copy: inventory-count lecture ("N homes for sale across…"). Cut — do not replace with another explain. Leave the node in_progress.'
 
+export const PLATS_VOICE_REFUSE =
+  'mannered public copy: public-facing plat / plats / recorded boundary plat language. Buyers say subdivision / neighborhood / community. Leave the node in_progress.'
+
 /** "3,271 homes for sale across Central Oregon…" under Homes in Bend / place folds. */
 export const INVENTORY_LECTURE_RES = Object.freeze([
   /\d[\d,]*\+?\s*homes for sale across/i,
@@ -38,6 +41,23 @@ export const INVENTORY_LECTURE_RES = Object.freeze([
   /homes for sale across these (cities|districts|communities)/i,
   /homes for sale across .+ communities/i,
   /homes for sale across .+ subdivisions/i,
+  /* Search / Stage hero chip + mannered pulse (Matt 2026-09-15). */
+  /home-hero-search__live/,
+  /Find a home/,
+  /More than one in (two|three|four|five|six|seven|eight|nine) listings/i,
+  /Nearly one in (two|three|four|five|six|seven|eight|nine) listings/i,
+  /Every listing, where it sits/i,
+])
+
+/** Public plat voice on place / search surfaces — county jargon, not buyer words. */
+export const PLATS_VOICE_RES = Object.freeze([
+  /\brecorded boundary\b/i,
+  /\brecorded plats?\b/i,
+  /\bThe plats (of|inside)\b/i,
+  /A plat is the subdivision the county recorded/i,
+  /each phase is its own plat/i,
+  /\bplat lines\b/i,
+  /· Recorded plats/i,
 ])
 
 /** Visitor-facing lectures about how the map / feed / filter works. */
@@ -98,12 +118,32 @@ const HOME_COPY_FILES = Object.freeze([
   'app/_v3/HomeFeaturedCommunity.client.tsx',
 ])
 
+const PLACE_COPY_FILES = Object.freeze([
+  'app/cities/[slug]/page.tsx',
+  'app/communities/[slug]/page.tsx',
+  'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
+  'app/subdivisions/[slug]/page.tsx',
+])
+
+const SEARCH_COPY_FILES = Object.freeze([
+  'app/search/page.tsx',
+  'components/search/SearchFilters.tsx',
+  'components/search/MapSearchView.tsx',
+])
+
 const EXTRA_PUBLIC_COPY = Object.freeze({
   'listing-detail': [
     'app/listing/[listingKey]/page.tsx',
     'components/site/listing-detail/ListingFold.tsx',
     'components/site/listing-detail/ListingHero.tsx',
   ],
+  city: PLACE_COPY_FILES,
+  community: PLACE_COPY_FILES,
+  'place-type': PLACE_COPY_FILES,
+  'place-type-community': PLACE_COPY_FILES,
+  neighborhood: PLACE_COPY_FILES,
+  subdivision: PLACE_COPY_FILES,
+  search: SEARCH_COPY_FILES,
 })
 
 function isPlainObject(v) {
@@ -167,6 +207,23 @@ export function publicCopyFilesFor({ route, kit } = {}) {
       if (!files.includes(f)) files.push(f)
     }
   }
+  if (
+    kit === 'city' ||
+    kit === 'community' ||
+    kit === 'place-type' ||
+    kit === 'place-type-community' ||
+    kit === 'neighborhood' ||
+    kit === 'subdivision'
+  ) {
+    for (const f of PLACE_COPY_FILES) {
+      if (!files.includes(f)) files.push(f)
+    }
+  }
+  if (kit === 'search') {
+    for (const f of SEARCH_COPY_FILES) {
+      if (!files.includes(f)) files.push(f)
+    }
+  }
   const extras = EXTRA_PUBLIC_COPY[kit] ?? []
   for (const f of extras) {
     if (!files.includes(f)) files.push(f)
@@ -207,6 +264,9 @@ export function manneredPublicCopyProblems(sourceText) {
   }
   if (INVENTORY_LECTURE_RES.some((re) => re.test(scan))) {
     p.push(INVENTORY_LECTURE_REFUSE)
+  }
+  if (PLATS_VOICE_RES.some((re) => re.test(scan))) {
+    p.push(PLATS_VOICE_REFUSE)
   }
   return p
 }

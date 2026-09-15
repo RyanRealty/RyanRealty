@@ -194,7 +194,7 @@ function buildSearchTitle(filters: ReturnType<typeof parseFilters>): string {
 function buildSearchDescription(filters: ReturnType<typeof parseFilters>): string {
   return filters.city || filters.subdivision
     ? `Homes for sale in ${[filters.subdivision, filters.city].filter(Boolean).join(', ') || 'Central Oregon'}. Live from the regional MLS, with price, beds, baths, and the map.`
-    : 'Homes for sale across Central Oregon. Live from the regional MLS, with city, price, beds, baths, and the map.'
+    : 'Homes for sale in Central Oregon. Live from the regional MLS, with city, price, beds, baths, and the map.'
 }
 
 /** Shared by generateMetadata and the WebPage JSON-LD so the canonical URL

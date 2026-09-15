@@ -27,8 +27,9 @@ describe('homepage hero search uses the public search stack', () => {
   it('mounts HomeHeroSearch on the Stage; house rails before doors (expanded Home lock)', () => {
     expect(PAGE).toMatch(/<V3Stage/)
     // SITE-97: compact Stage so photographed rails clear the first viewport.
-    expect(PAGE).toMatch(/height=\{heroInventory \? 'compact' : 'tall'\}/)
-    expect(PAGE).toMatch(/inventory=\{heroInventory\}/)
+    expect(PAGE).toMatch(/height="compact"/)
+    expect(PAGE).not.toMatch(/inventory=\{heroInventory\}/)
+    expect(PAGE).not.toMatch(/live=\{heroLive\}/)
     expect(PAGE).toMatch(/videoSrc=\{HERO_VIDEO\}/)
     expect(PAGE).toMatch(/preferPlaceHero\(cityBySlug\.get\('bend'\)\?\.heroImageUrl, HERO_POSTER\)/)
     expect(PAGE).toMatch(/posterSrc=\{heroPosterSrc\}/)
@@ -111,10 +112,10 @@ describe('homepage hero search uses the public search stack', () => {
     expect(RAIL_CLIENT).not.toContain('v3-lrow__price')
   })
 
-  it('prints the live count as type, not a digit wheel on navy', () => {
-    expect(SEARCH).toContain('live.forSaleLabel')
-    expect(SEARCH).toContain('live.source')
-    expect(SEARCH).not.toMatch(/<V3Number/)
+  it('does not print an inventory-count lecture chip under the search', () => {
+    expect(SEARCH).not.toContain('home-hero-search__live')
+    expect(SEARCH).not.toContain('live.forSaleLabel')
+    expect(SEARCH).not.toContain(' homes for sale')
   })
 
   it('hero suggestions are places and houses, not blog posts', () => {
@@ -129,7 +130,7 @@ describe('homepage hero search uses the public search stack', () => {
     expect(SEARCH).not.toContain('<SearchSuggestPanel')
     expect(SEARCH).toContain("from '@/lib/parse-search-query'")
     expect(SEARCH).toContain('searchHrefForQuery')
-    expect(SEARCH).toContain('Find a home')
+    expect(SEARCH).not.toContain('Find a home')
     expect(SEARCH).toContain('home-hero-search__label')
     expect(SEARCH).toContain('htmlFor={buyFieldId}')
   })
@@ -258,11 +259,12 @@ describe('homepage hero search uses the public search stack', () => {
     expect(SEARCH).toContain('publishRegionalSearchHref()')
   })
 
-  it('does not print leftover Search homes on the Stage; label is visible (H2)', () => {
-    expect(SEARCH).not.toContain('>Search homes<')
+  it('keeps the buy field label screen-reader only; placeholder carries the ask', () => {
+    expect(SEARCH).toContain('className="sr-only"')
+    expect(SEARCH).toContain('Search homes')
     expect(SEARCH).toContain('home-hero-search__label')
-    expect(SEARCH).toContain('Find a home')
-    expect(SEARCH).not.toContain('aria-label="Search city, community, or address"')
+    expect(SEARCH).not.toContain('Find a home')
+    expect(SEARCH).toContain('Bend, Tetherow, or an address')
   })
 
   it('paints the search as cream field and navy Search wherever the v3 root hosts it', () => {

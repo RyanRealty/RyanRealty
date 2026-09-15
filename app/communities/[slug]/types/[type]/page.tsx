@@ -241,7 +241,7 @@ export default async function CommunityPlaceTypePage({ params }: Props) {
          is the figure, not a footnote. */
       scopeNote:
         pinKeys.length > 0
-          ? `inside the recorded boundary of ${publicName}`
+          ? `in ${publicName}`
           : `in the ${publicName} subdivision`,
     },
   })

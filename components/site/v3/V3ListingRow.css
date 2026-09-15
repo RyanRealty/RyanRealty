@@ -242,7 +242,12 @@
   position: absolute;
   top: 50%;
   z-index: 3;
-  display: none;
+  /* Always visible when mounted (photos > 1). Prior tip hid chevrons until
+     hover — desktop Chrome with a mouse looked like "no flip" even when
+     SplitCardMedia + multi-photo stacks were live. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 1.75rem;
   height: 1.75rem;
   margin: 0;
@@ -254,26 +259,15 @@
   line-height: 1;
   cursor: pointer;
   transform: translateY(-50%);
+  opacity: 0.92;
 }
 .v3-lrow:hover .v3-lrow__nav,
 .v3-lrow:focus-within .v3-lrow__nav,
-/* Home rails mount SplitCardMedia without .v3-lrow — hover the card/media. */
 .home-rail__card:hover .v3-lrow__nav,
 .home-rail__card:focus-within .v3-lrow__nav,
 .v3-lrow__media:hover .v3-lrow__nav,
 .v3-lrow__media:focus-within .v3-lrow__nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Touch / no-hover: chevrons stay reachable (swipe still works too). */
-@media (hover: none) {
-  .v3-lrow__nav {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+  opacity: 1;
 }
 .v3-lrow__nav--prev { left: var(--v3-space-2xs); }
 .v3-lrow__nav--next { right: var(--v3-space-2xs); }

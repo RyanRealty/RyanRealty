@@ -103,7 +103,7 @@ import './_v3/community-fold.css'
 import { getCommunityCourseMap } from '@/lib/golf/community-course'
 import { courseMapKind } from '@/lib/golf/course-map'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
-import { getTaxlotsInBoundary, TAXLOT_DISCLAIMER, getPlaceOpeningListings } from '@/lib/data'
+import { getPlaceOpeningListings } from '@/lib/data'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
@@ -667,21 +667,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   // The lots inside this community, from the county assessor's cadastre. A
   // /subdivisions/ slug for a registry community redirects here, so this is
   // where a plat's lot lines actually get drawn.
-  const [platLots, publishedPosts] = await Promise.all([
-    withTimeoutFallback(
-      getTaxlotsInBoundary({ geoType: null, geoSlug: slug, maxLots: 320 }).catch((err) => {
-        console.error('[community] plat lots failed', { slug, err })
-        return []
-      }),
-      [],
-      8000,
-      'comm:taxlots',
-    ),
-    // SITE-30: every published post, so the reverse of the blog's own geo link
-    // can be drawn. The city page's "latest guides" rail reads a fixed
-    // 24-post window and cannot answer "which post is about THIS place".
-    withTimeoutFallback(getAllPublishedBlogRefs(), [], 3000, 'comm:blogRefs'),
-  ])
+  const publishedPosts = await withTimeoutFallback(getAllPublishedBlogRefs(), [], 3000, 'comm:blogRefs')
   // ONE array of child plats. The Atlas draws it and the index below names it,
   // so the map and the list are the same set by construction rather than by
   // two reads that happen to agree today.
@@ -692,6 +678,7 @@ export default async function CommunityDetailPage({ params }: Props) {
         ...platRegions,
       ]
     : []
+  const foldAtlasRegions = atlasRegions.filter((r) => r.kind === 'town')
 
   /**
    * THE PLAT INDEX, IN SERVER HTML (site queue SITE-30, 2026-09-09).
@@ -966,16 +953,19 @@ export default async function CommunityDetailPage({ params }: Props) {
                 headingLevel={2}
                 headline={v3Text(`${publicName} right now`)}
                 headlineTone="eyebrow"
-                claimText={`${publicName}'s recorded boundary — every active and pending mark is a live MLS listing.`}
+                claimText={`${publicName} — every active and pending mark is a live MLS listing.`}
                 keyPlacement="head"
                 sourceName="Oregon Data Share"
                 dots={atlasView.dots}
-                regions={atlasRegions}
-                basemap={basemapForRegions(atlasRegions)}
-                parcels={platLots.map((lot) => ({ id: lot.taxlot, subject: false, geometry: lot.geometry }))}
+                regions={foldAtlasRegions}
+                basemap={basemapForRegions(foldAtlasRegions, {
+                  dots: atlasView.dots,
+                  fit: 'dots',
+                })}
+                fit="dots"
                 types={atlasView.types}
                 events={atlasView.events}
-                source={platLots.length > 0 ? `${atlasView.source} ${TAXLOT_DISCLAIMER}` : atlasView.source}
+                source={atlasView.source}
                 stamp={atlasView.stamp}
                 incomplete={!atlasView.complete}
               />
@@ -1004,14 +994,14 @@ export default async function CommunityDetailPage({ params }: Props) {
             the Atlas above draws, each one a real anchor with the homes for
             sale inside it right now. */}
         <V3PlaceIndex
-          id="plats"
-          eyebrow={`${publicName} · Recorded plats`}
-          heading={`The plats inside ${publicName}`}
-          lede={`${publicName} was recorded in phases, and each phase is its own plat with its own page — its lot lines, what has sold there, and what is for sale today.`}
+          id="subdivisions"
+          eyebrow={`${publicName} · Neighborhoods`}
+          heading={`Neighborhoods in ${publicName}`}
+          lede={`${publicName} was built in phases. Each neighborhood below has its own page — what has sold there and what is for sale today.`}
           countLabel="for sale"
           entries={platIndexEntries}
           foldAfter={10}
-          source="Deschutes County plat lines · Oregon Data Share"
+          source="Deschutes County · Oregon Data Share"
         />
 
         <PlaceTypeSlider cards={typeCards} label={`${publicName} property types`} />
