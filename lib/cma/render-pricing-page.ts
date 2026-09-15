@@ -437,6 +437,11 @@ export type PricingPageInput = {
    * Built in salesThatSetItArgs so letter and immersive cannot drift.
    */
   statusPpsfBoard?: string
+  /**
+   * Closed / Pending / Active Low·Avg·Median·High (FlexMLS flow summaries).
+   * Same selected homes as the matrices; no MoS.
+   */
+  statusPriceBoard?: string
 }
 
 /**
@@ -526,6 +531,7 @@ export function salesThatSetItPage(input: PricingPageInput): CmaPageDef | null {
     toc: 'The sales that set this price',
     body: `
   <h2 class="section">${esc(SALES_THAT_SET_IT_HEADING)}</h2>
+  ${input.statusPriceBoard ?? ''}
   ${input.statusPpsfBoard ?? ''}
   ${matrix}
   ${renderSetAsideHtml(p, input.comps)}

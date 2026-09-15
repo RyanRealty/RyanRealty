@@ -142,18 +142,43 @@ export function coverValueBlockHtml(a: CoverArgs): string {
     <div class="vb-detail">${a.comps.length} closed MLS sales. Automated estimates are not used.${a.market?.geoLabel ? ` The market read is ${esc(a.market.geoLabel)}.` : ''} ${esc(story.body)}</div>`
 }
 
+/**
+ * Recommend once on the hero: Low · High · Recommended.
+ * FlexMLS flow labels; immersive Ryan craft (not a Flex chrome dump).
+ * Uses the list-range pair the cover already owns (conservative / highEnd),
+ * falling back to valueLow / valueHigh when a tier is missing.
+ */
 export function immersiveHeroNumberHtml(a: CoverArgs): string {
   const p = a.pricing
-  // The recommend is set in type right above, so the sentence under it says
-  // what the home is WORTH and stops — never the same figure a second time.
-  const worth = coverWorthSentence(p, { omitAsk: true })
-  // A quarter-of-the-price range meets the reader here first (§3.E).
+  const loRaw = p.conservative ?? p.valueLow ?? 0
+  const hiRaw = p.highEnd ?? p.valueHigh ?? 0
+  const low = Math.min(loRaw, hiRaw)
+  const high = Math.max(loRaw, hiRaw)
+  const rec = p.recommended
   const cause = rangeSpreadCauseSentence(p)
+  const trio =
+    low > 0 && high > 0 && rec > 0
+      ? `<div class="hero-trio" data-recommend-once="1">
+      <div class="ht">
+        <div class="ht-l">Low</div>
+        <div class="ht-v">${usd(low)}</div>
+      </div>
+      <div class="ht">
+        <div class="ht-l">High</div>
+        <div class="ht-v">${usd(high)}</div>
+      </div>
+      <div class="ht is-rec">
+        <div class="ht-l">Recommended</div>
+        <div class="ans-n r ht-v">${usd(rec)}</div>
+      </div>
+    </div>`
+      : rec > 0
+        ? `<div class="ans-n r">${usd(rec)}</div>`
+        : ''
   return `
     <div class="hero-payoff">
       <div class="ans-l r">${esc(COVER_LIST_PRICE_HEADLINE)}</div>
-      <div class="ans-n r">${usd(p.recommended)}</div>
-      ${worth ? `<div class="hero-list r">${esc(worth)}</div>` : ''}
+      ${trio}
       ${cause ? `<div class="hero-why r">${esc(cause)}</div>` : ''}
     </div>`
 }
