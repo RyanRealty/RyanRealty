@@ -44,6 +44,10 @@ function tile(partial: Partial<ListingTile> & Pick<ListingTile, 'listingKey'>): 
   }
 }
 
+function drop(at = '2026-08-20T00:00:00.000Z') {
+  return { previousPrice: 525000, newPrice: 500000, at }
+}
+
 describe('homeRailRows', () => {
   const hrefs = {
     nowMs: Date.now(),
@@ -51,6 +55,11 @@ describe('homeRailRows', () => {
     bendHref: '/homes-for-sale/bend',
     priceCutsHref: '/price-drops',
     newHref: '/homes-for-sale?view=list&sort=newest',
+    priceDrops: new Map([
+      ['d', drop()],
+      ['e', drop()],
+      ['f', drop()],
+    ]),
   }
 
   it('builds a Bend-area rail and honest extra rows when data exists', () => {
@@ -83,7 +92,10 @@ describe('homeRailRows', () => {
         onMarketDate: new Date(Date.now() - (i < 8 ? 1 : 40) * 86_400_000).toISOString(),
       }),
     )
-    const rows = homeRailRows(tiles, hrefs)
+    const priceDrops = new Map(
+      tiles.filter((_, i) => i % 4 === 0).map((t) => [t.listingKey, drop()]),
+    )
+    const rows = homeRailRows(tiles, { ...hrefs, priceDrops })
     expect(rows.map((r) => r.heading)).toEqual([
       'Homes in Bend and nearby',
       'Price cuts',
@@ -116,6 +128,7 @@ describe('homeRailRows', () => {
     const rows = homeRailRows(tiles, {
       ...hrefs,
       openHouseLabels: { oh1: 'Open Sat 1pm', oh3: 'Open Sun' },
+      priceDrops: new Map([['oh3', drop()]]),
     })
     const byKey = Object.fromEntries(
       rows.flatMap((r) => r.cards.map((c) => [c.listingKey, c])),

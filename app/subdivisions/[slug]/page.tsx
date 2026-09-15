@@ -1422,18 +1422,9 @@ export default async function SubdivisionPage({ params }: Props) {
             that is what it now says, and the count cannot disagree with the
             Atlas above because it is the same set. */}
         <div id="homes">
-          <V3Quiet
-            id="homes-head"
-            eyebrow={v3Text('Every home, filtered')}
-            headingLevel={2}
-            heading={v3Text(`Every home for sale in ${displayName}`)}
-            items={[
-              {
-                kind: 'prose' as const,
-                body: `The same homes the map above marks, with price, beds and property type on the filters. Sold and pending homes are counted on the market section further down, not here.`,
-              },
-            ]}
-          />
+          <div id="homes-head" className={V3_ROOT_CLASS}>
+            <V3Heading level={2}>{`Every home for sale in ${displayName}`}</V3Heading>
+          </div>
           <PlaceSplitView
             city={splitCity}
             subdivision={splitSubdivision}

@@ -1,13 +1,18 @@
 /**
  * Extra leftover fields on search cards that listing_tile_mv
- * does not project: original ask (for Price reduced $X), virtual tour URL,
- * office name, and extra photo URIs for the card carousel.
+ * does not project: original ask, virtual tour URL, office name,
+ * extra photo URIs, and the latest *current* price-drop event.
+ *
+ * ⚠️ Do not use listings.last_price_change_* / price_drop_count for the
+ * drop badge. Those columns went stale on 2026-04-07. Canonical live
+ * signal is activity_events (event_type = 'price_drop'). See getPriceDrops.ts.
  */
 import { supabaseAnon } from '@/lib/data/client'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 
 const PHOTO_CAP = 8
 const ROW_CAP = 60
+const RECENT_DROP_DAYS = 30
 
 type DetailsPhotoJson = {
   Uri1600?: string
@@ -33,11 +38,88 @@ function bestUri(p: DetailsPhotoJson): string | null {
   return raw ? listingRowPhotoSrc(raw) : null
 }
 
+export type ListingCardPriceDrop = {
+  previousPrice: number
+  newPrice: number
+  at: string
+}
+
 export type ListingCardExtras = {
   originalListPrice: number | null
   tourUrl: string | null
   listOfficeName: string | null
   photoUrls: string[]
+  priceDrop: ListingCardPriceDrop | null
+}
+
+type ActivityDropRow = {
+  listing_key?: string | null
+  event_at?: string | null
+  payload?: unknown
+}
+
+export function parseActivityPriceDrop(
+  payload: unknown,
+  eventAt: string | null | undefined,
+): ListingCardPriceDrop | null {
+  const at = (eventAt ?? '').trim()
+  if (!at) return null
+  if (!payload || typeof payload !== 'object') return null
+  const raw = payload as { previous_price?: unknown; new_price?: unknown }
+  const previousPrice = Number(raw.previous_price)
+  const newPrice = Number(raw.new_price)
+  if (!Number.isFinite(previousPrice) || !Number.isFinite(newPrice)) return null
+  if (previousPrice <= newPrice) return null
+  return { previousPrice, newPrice, at }
+}
+
+async function latestPriceDropsForKeys(
+  keys: string[],
+): Promise<Map<string, ListingCardPriceDrop>> {
+  const out = new Map<string, ListingCardPriceDrop>()
+  const sb = supabaseAnon()
+  if (!sb || keys.length === 0) return out
+  const { data, error } = await sb
+    .from('activity_events')
+    .select('listing_key, event_at, payload')
+    .eq('event_type', 'price_drop')
+    .in('listing_key', keys)
+    .order('event_at', { ascending: false })
+    .limit(Math.min(keys.length * 4, 500))
+  if (error || !data) return out
+  for (const row of data as ActivityDropRow[]) {
+    const key = row.listing_key?.trim()
+    if (!key || out.has(key)) continue
+    const drop = parseActivityPriceDrop(row.payload, row.event_at)
+    if (drop) out.set(key, drop)
+  }
+  return out
+}
+
+/** Latest current price-drop events in the last N days (homepage rails). */
+export async function loadRecentPriceDropEvents(
+  days = RECENT_DROP_DAYS,
+): Promise<Map<string, ListingCardPriceDrop>> {
+  const out = new Map<string, ListingCardPriceDrop>()
+  const sb = supabaseAnon()
+  if (!sb) return out
+  const window = Math.min(Math.max(days, 1), 45)
+  const windowStart = new Date(Date.now() - window * 86_400_000).toISOString()
+  const { data, error } = await sb
+    .from('activity_events')
+    .select('listing_key, event_at, payload')
+    .eq('event_type', 'price_drop')
+    .gte('event_at', windowStart)
+    .order('event_at', { ascending: false })
+    .limit(1000)
+  if (error || !data) return out
+  for (const row of data as ActivityDropRow[]) {
+    const key = row.listing_key?.trim()
+    if (!key || out.has(key)) continue
+    const drop = parseActivityPriceDrop(row.payload, row.event_at)
+    if (drop) out.set(key, drop)
+  }
+  return out
 }
 
 export async function attachListingCardExtras(
@@ -47,10 +129,13 @@ export async function attachListingCardExtras(
   const out = new Map<string, ListingCardExtras>()
   if (!sb || keys.length === 0) return out
   const slice = keys.filter(Boolean).slice(0, ROW_CAP)
-  const { data, error } = await sb
-    .from('listings')
-    .select('ListingKey, original_list_price, virtual_tour_url, ListOfficeName, PhotoURL, details')
-    .in('ListingKey', slice) // @canonical-key — keys come from listing_tile_mv ListingKey on the same card row
+  const [{ data, error }, drops] = await Promise.all([
+    sb
+      .from('listings')
+      .select('ListingKey, original_list_price, virtual_tour_url, ListOfficeName, PhotoURL, details')
+      .in('ListingKey', slice), // @canonical-key — keys come from listing_tile_mv ListingKey on the same card row
+    latestPriceDropsForKeys(slice),
+  ])
   if (error || !data) return out
   for (const raw of data as Array<{
     ListingKey?: string | null
@@ -80,11 +165,13 @@ export async function attachListingCardExtras(
       raw.original_list_price != null && Number.isFinite(Number(raw.original_list_price))
         ? Number(raw.original_list_price)
         : null
+    const priceDrop = drops.get(key) ?? null
     out.set(key, {
       originalListPrice: original,
       tourUrl: raw.virtual_tour_url?.trim() || null,
       listOfficeName: raw.ListOfficeName?.trim() || null,
       photoUrls: photos,
+      priceDrop,
     })
   }
   return out
