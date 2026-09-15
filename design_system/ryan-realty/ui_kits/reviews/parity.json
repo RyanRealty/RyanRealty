@@ -67,11 +67,12 @@
     "V3Footer"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-10",
-    "evaluator": "separate grok-4.6 via grok CLI (scripts/taste-evaluate.ts / constrained catalog replaceWith), SITE-79 reviews class \u2014 three independent scorings of the same two shots",
+    "evaluatedAt": "2026-09-15",
+    "rubricVersion": "v1-2026-09-12",
+    "evaluator": "separate grok-4.6 via cursor-cli (scripts/taste-evaluate.ts), SITE-109 reviews Tip Ready Mini \u2014 three scorings of tip fb0158a30 shots (default + avatar-open)",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
+    "transport": "cursor-cli",
     "shotSpec": {
       "routes": [
         "/reviews"
@@ -84,36 +85,38 @@
         "default",
         "avatar-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs, scale 1, palette-quantized, against lane dev server :3213"
+      "capture": "first viewport, tip fb0158a30 cloud recapture (AvatarGroup catalog portraits; avatar-open = reviewer dropdown Read this review / View on Google / All reviews \u2014 SaaS Sign Out gone)"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/reviews/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/reviews/shots/mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/reviews/shots/mobile375.png",
+      "avatar-open-desktop": "design_system/ryan-realty/ui_kits/reviews/shots/avatar-open-desktop.png",
+      "avatar-open-mobile375": "design_system/ryan-realty/ui_kits/reviews/shots/avatar-open-mobile375.png"
     },
-    "shotsHash": "sha256:6a9b95818fcf9af5d2a7263c6c04eb689b8af960cb276e5e8335c6588f46d439",
+    "shotsHash": "sha256:0f348878ee75ea6f5c72da5c2ac4ed6168c3e6dc480ca93eec2d5d7a6d9f514c",
     "scores": [
+      52,
       64,
-      70,
-      67
+      58
     ],
-    "score": 67,
+    "score": 58,
     "breakdown": {
-      "design": 19,
-      "originality": 20,
-      "interaction": 9,
+      "design": 18,
+      "originality": 16,
+      "interaction": 8,
       "craft": 10,
-      "honesty": 9,
-      "honestyFunction": 9
+      "honesty": 6,
+      "honestyFunction": 6
     },
-    "honestyFunction": 9,
+    "honestyFunction": 6,
     "perCriterion": {
-      "design": 19,
-      "originality": 20,
-      "interaction": 9,
+      "design": 18,
+      "originality": 16,
+      "interaction": 8,
       "craft": 10,
-      "honesty": 9
+      "honesty": 6
     },
-    "beats": "Beats Google Business Profile's reviews UI and a Zillow agent-reviews tab on first-read of the full quote (display type, not a truncated snippet) and on seeing all 25 reviews as a year-encoded strip instead of a paginated handful.",
+    "beats": "Google Business Profile reviews UI (google.com/maps): this page wins on first-read of the full quote in display type rather than a truncated snippet, and on encoding all 25 reviews as year marks instead of a paginated handful. It loses on reviewer identity.",
     "adaptedFrom": [
       {
         "id": "house-proof"
@@ -127,21 +130,31 @@
     ],
     "defects": [
       {
-        "section": "reviewer avatars",
+        "section": "reviewer AvatarGroup (v3-proof__avatar-group)",
         "severity": "taste",
-        "finding": "Under the quote the control is four navy letter-circles (MJ, EO, AH, DG). Catalog is shadcn-avatar portraits if we have them; initials-only is the Google-widget fallback. Desktop prints names; 375 drops them, so the selected ring sits on four unmarked discs.",
+        "finding": "The three stacked faces are the catalog demo's own portraits (illustrated GitHub avatar, stock headshot, dark mascot), not Google reviewers. MJB is labeled next to a cartoon that is not MJB. The job is reviewer portraits if we have them; public.reviews has none, so AvatarFallback initials is the honest Avatar object, not pasted demo people.",
+        "primitive": "app/reviews/_v3/ReviewsAvatarGroup.client.tsx",
         "replaceWith": "shadcn-avatar"
       },
       {
-        "section": "year chips",
-        "severity": "craft",
-        "finding": "At 1440 the year chips are clipped by the bottom of the first viewport, so the beeswarm's filter is not operable before scroll. At 375 the chips wrap into a two-column keypad (All 25, 2026 4, 2025 8, 2024 6 / 2023 3, 2019 4) with leftover empty cells.",
+        "section": "year chips (v3-proof__filters)",
+        "severity": "defect",
+        "finding": "At 375px the chip row clips the 2019 count off the right edge, so the oldest year is not operable in the first viewport. Desktop shows All 25 through 2019 4; mobile stops at 2023 3.",
+        "primitive": "components/site/v3/V3Proof.client.tsx",
         "replaceWith": null
       },
       {
-        "section": "review beeswarm",
+        "section": "review beeswarm (v3-proof__record)",
         "severity": "taste",
-        "finding": "Linear 2019\u20132026 axis leaves 2020\u20132022 as empty cream while 21 of 25 marks crush into 2023\u20132026; the opening data graphic spends its width on absence.",
+        "finding": "The strip is a field of identical navy dots under the caption 25 marks on the timeline. One mark is darker; nothing in the first viewport reveals the review behind a mark. A beeswarm that does not show the quote on hover or focus is a mute chart.",
+        "primitive": "components/site/v3/V3Proof.client.tsx",
+        "replaceWith": null
+      },
+      {
+        "section": "document head / fold information",
+        "severity": "defect",
+        "finding": "These shots cannot show a title, JSON-LD, or visible H1, so SEO did not evidence an increment. Inventory on the fold is the 5.0, the 25-count, year totals, and one full quote \u2014 held, not visibly improved, which this loop treats as a miss.",
+        "primitive": "app/reviews/page.tsx",
         "replaceWith": null
       }
     ],
@@ -159,8 +172,11 @@
       "shotsHash": "not recorded \u2014 the cross-class table predates per-row shot hashes",
       "source": "design_system/public/taste-table.json"
     },
-    "rebaselineReason": "Instrument changed: evaluatorModel claude-sonnet-5 \u2192 grok-4.6, rubricVersion v1-2026-09-08 \u2192 v1-2026-09-10, and shotsHash after SITE-79 rebuild (V3Proof + shadcn-avatar initials, Quiet reach no longer opens). Table mark 48 is the accept-test prior; median 67 on the new instrument.",
-    "verdict": "The opening is house-proof: 5.0 as stars, the count, then one client's words in full, with Call and Book after the quote \u2014 not a Quiet list of reach rows. What still fails is Google-widget residue and a half-working record: letter-circle avatars instead of shadcn-avatar portraits, year chips clipped at 1440 and keypad-wrapped at 375, and a beeswarm whose empty 2020\u20132022 stretch is the dullest thing in the frame. Doors correctly stay off this viewport. Composed and on-brand, not breathtaking.",
+    "rebaselineReason": "Tip Ready Mini rejudge on tip fb0158a30 (reviewer-identity avatar-open) after 39f818bfc SaaS Sign Out miss; same grok-4.6 cursor-cli instrument. Landed on Matthews Mini.",
+    "verdict": "demoMatch is true: the avatar-open shots are AvatarGroup plus a dropdown on an Avatar trigger, navy on cream, not a cream box that hid the control. The opening is house-proof (5.0, stars, 25 Google reviews, one client's words in full) with Call and Book after the quote, not a Quiet reach list. What fails is honesty and dull remainder: catalog-demo faces standing in for MJB, a 375px year row that clips 2019, and a beeswarm that does not reveal a review. SEO did not improve in these pixels; inventory is held (count, years, full quote), not raised.",
+    "demoMatch": true,
+    "tells": [],
+    "dullest": "The year-chip keypad over a mute swarm of same-size navy dots. The quote already did the work; the instrument under it is a filter strip and a caption pretending the dots are a story.",
     "contactListIsFirstContent": false,
     "contactListAnswer": "The fold opens on 5.0 as stars, the count, and one client quote in full; Call and Book sit after the quote. V3Doors closes the page."
   },
