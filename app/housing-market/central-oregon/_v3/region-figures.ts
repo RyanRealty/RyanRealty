@@ -205,6 +205,7 @@ export function buildRegionInsightPages(
           keysToggle: false,
           yearPages: false,
           hover: true,
+          stage: true,
           restingRead: undefined,
         },
       })
@@ -231,6 +232,7 @@ export function buildRegionInsightPages(
             keysToggle: false,
             yearPages: false,
             hover: true,
+            stage: true,
             restingRead: undefined,
           }
         : undefined

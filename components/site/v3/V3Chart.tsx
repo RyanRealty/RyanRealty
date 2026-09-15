@@ -217,6 +217,11 @@ export type V3ChartProps = {
    */
   restingRead?: 'last'
   /**
+   * Official Insights stage (beautifului-insight). Plot + pointer hover only.
+   * House y-axis, month ticks, and the month range slider stay off.
+   */
+  stage?: boolean
+  /**
    * Range rows only. Names what every row's `sample` counted, drawn ONCE
    * above the rows ("detached closes in the quarter"). A bare n is not a
    * reading until the chart says what it counted, so the atom refuses a
@@ -423,6 +428,7 @@ export function V3Chart({
   keysToggle,
   yearPages,
   restingRead,
+  stage = false,
   onRead,
   sampleKey,
   rangeKeyLabel,
@@ -696,7 +702,9 @@ export function V3Chart({
            as it always did; the live-keys branch hands the same three nodes to the
            client island, which composes the same frame around its pressed state. */
         const yAxis =
-          ticks.y.length >= 2 ? (
+          stage
+            ? null
+            : ticks.y.length >= 2 ? (
             <div className="v3-chart__y v3-chart__y--ticks" aria-hidden="true">
               {ticks.y.map((tk) => (
                 <span key={tk.label} className="v3-chart__ytick" style={{ top: `${bandTopPct(tk.frac)}%` }}>
@@ -728,11 +736,17 @@ export function V3Chart({
                   height={b.h}
                 />
               ))}
-              {ticks.y.map((tk) => (
-                <line key={`g-${tk.label}`} className="v3-chart__grid" x1={2} y1={tk.y} x2={318} y2={tk.y} />
-              ))}
-              <line className="v3-chart__axis-line" x1={2} y1={8} x2={2} y2={132} />
-              <line className="v3-chart__axis-line" x1={2} y1={132} x2={318} y2={132} />
+              {stage
+                ? null
+                : ticks.y.map((tk) => (
+                    <line key={`g-${tk.label}`} className="v3-chart__grid" x1={2} y1={tk.y} x2={318} y2={tk.y} />
+                  ))}
+              {stage ? null : (
+                <>
+                  <line className="v3-chart__axis-line" x1={2} y1={8} x2={2} y2={132} />
+                  <line className="v3-chart__axis-line" x1={2} y1={132} x2={318} y2={132} />
+                </>
+              )}
               {plot.lines.map((line, i) => (
                 <path
                   key={`${i}-${line.name}`}
@@ -785,7 +799,9 @@ export function V3Chart({
             </svg>
         )
         const xAxis =
-          ticks.x.length >= 2 ? (
+          stage
+            ? null
+            : ticks.x.length >= 2 ? (
             <div
               className={cn(
                 'v3-chart__x v3-chart__x--ticks',
@@ -822,6 +838,8 @@ export function V3Chart({
               keyClasses={keys.map((_, i) => cn(keyClass(i)))}
               frame={{ axis: yAxis, plot: svg, xTicks: xAxis }}
               yearPages={yearPages === true}
+              scrub={!stage}
+              stage={stage}
               onRead={onRead}
             />
           )
@@ -833,12 +851,14 @@ export function V3Chart({
               label={caption}
               initial={restingIndex}
               frame={{ axis: yAxis, plot: svg, xTicks: xAxis }}
+              scrub={!stage}
+              stage={stage}
               onRead={onRead}
             />
           )
         }
         return (
-          <div className="v3-chart__frame">
+          <div className={cn('v3-chart__frame', stage && 'v3-chart__frame--stage')}>
             {yAxis}
             <div className="v3-chart__plot">{svg}</div>
             {xAxis}

@@ -186,7 +186,7 @@ export function RegionInsightCards({ pages }: RegionInsightCardsProps) {
       />
     ) : undefined
   const stage = openChart ? (
-    <V3Chart {...openChart} yearPages={false} onRead={onRead} />
+    <V3Chart {...openChart} yearPages={false} stage onRead={onRead} />
   ) : undefined
   const visual =
     current.kind === 'allocation' && segments.length >= 2 ? (

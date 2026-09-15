@@ -87,6 +87,13 @@ export type V3ChartHoverProps = {
    * Opt-in beside keysToggle so charts that only want legend filters stay put.
    */
   yearPages?: boolean
+  /**
+   * Month range slider. Official Insights stage is pointer hover on the plot
+   * (Liveline scrub={false}), so the house slider stays off there.
+   */
+  scrub?: boolean
+  /** Plot-only frame (official Insights stage). */
+  stage?: boolean
   /** Open stop for a parent (insight hero DigitSwap). */
   onRead?: (read: {
     tick: string
@@ -112,6 +119,8 @@ export function V3ChartHover({
   keyClasses,
   frame,
   yearPages = false,
+  scrub = true,
+  stage = false,
   onRead,
 }: V3ChartHoverProps) {
   const vertical = axis === 'y'
@@ -273,7 +282,7 @@ export function V3ChartHover({
 
   const scrubValue = active ?? rest ?? 0
   const scrubber =
-    !vertical && columns.length > 1 ? (
+    scrub && !vertical && columns.length > 1 ? (
       <label className="v3-chart__scrub">
         <span className="v3-chart__scrub-label">
           {col
@@ -396,7 +405,7 @@ export function V3ChartHover({
           list of series indexes the stylesheet drops from the drawing. Nothing about
           the geometry is recomputed on the client. */}
       <div
-        className="v3-chart__frame"
+        className={cn('v3-chart__frame', stage && 'v3-chart__frame--stage')}
         data-off={off.length > 0 ? off.map((i) => String(i)).join(' ') : undefined}
       >
         {frame.axis}
