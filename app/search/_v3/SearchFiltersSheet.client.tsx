@@ -90,9 +90,7 @@ export function SearchFiltersSheet({
     {
       id: 'filters',
       label: 'What should this search include?',
-      children: [
-        'Ask, home type, and flags sit on one sheet — the same language as sell.',
-      ],
+      children: ['Price, type, and flags.'],
       blocks: [
         {
           kind: 'drawing',

@@ -80,7 +80,7 @@ export function RangeSlider({ showTicks = true, className, ...options }: RangeSl
     >
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-[2px] inset-y-0 overflow-hidden rounded-lg">
         <div
-          className="absolute inset-y-0 left-0 rounded-lg bg-foreground/15"
+          className="absolute inset-y-0 left-0 rounded-lg bg-foreground/40"
           style={{ width: `${Math.max(0, Math.min(100, percent))}%` }}
         />
         <motion.div className="absolute inset-0 rounded-lg bg-foreground/15" style={{ x: fillX }} />
