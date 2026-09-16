@@ -73,6 +73,7 @@ describe('priceDropDatasetSchemas', () => {
         pageUrl: 'https://ryan-realty.com/price-drops',
         placeName: 'Central Oregon',
         total: 0,
+        shownCount: 0,
         totalReducedLabel: null,
         medianDropPctLabel: null,
         fetchedAt: new Date().toISOString(),
@@ -85,6 +86,7 @@ describe('priceDropDatasetSchemas', () => {
       pageUrl: 'https://ryan-realty.com/price-drops',
       placeName: 'Central Oregon',
       total: 12,
+      shownCount: 12,
       totalReducedLabel: '$1.2M',
       medianDropPctLabel: '4.5%',
       fetchedAt: '2026-08-12T17:00:00.000Z',
@@ -93,6 +95,43 @@ describe('priceDropDatasetSchemas', () => {
     expect(schemas[0]).toMatchObject({ type: 'dataset', dateModified: '2026-08-12T17:00:00.000Z' })
     expect(schemas[1]).toMatchObject({ type: 'webPage' })
     expect(JSON.stringify(schemas)).not.toContain('\u2014')
+  })
+
+  // SITE-108 (§0): `total` is the whole window; the dollar sum and the median
+  // are computed from the rendered rows only. When those differ, every figure
+  // says which set it covers so a 48-row sum cannot read as the 262-row total.
+  it('names the rendered scope when the page shows fewer than the window holds', () => {
+    const [dataset] = priceDropDatasetSchemas({
+      pageUrl: 'https://ryan-realty.com/price-drops',
+      placeName: 'Central Oregon',
+      total: 262,
+      shownCount: 48,
+      totalReducedLabel: '$1.2M',
+      medianDropPctLabel: '6.8%',
+      fetchedAt: '2026-09-15T17:00:00.000Z',
+    })
+    const named = (dataset as unknown as {
+      variableMeasured: Array<{ name: string; value: unknown }>
+    }).variableMeasured
+    expect(named[0]).toMatchObject({ name: 'Price reductions (7-day window)', value: 262 })
+    expect(named[1].name).toBe('Total asking-price cuts (48 shown)')
+    expect(named[2].name).toBe('Median drop (48 shown)')
+  })
+
+  it('leaves the scope unsaid when the page renders the whole window', () => {
+    const [dataset] = priceDropDatasetSchemas({
+      pageUrl: 'https://ryan-realty.com/price-drops',
+      placeName: 'Central Oregon',
+      total: 9,
+      shownCount: 9,
+      totalReducedLabel: '$400K',
+      medianDropPctLabel: '3.0%',
+      fetchedAt: '2026-09-15T17:00:00.000Z',
+    })
+    const named = (dataset as unknown as { variableMeasured: Array<{ name: string }> })
+      .variableMeasured
+    expect(named[1].name).toBe('Total asking-price cuts')
+    expect(named[2].name).toBe('Median drop')
   })
 })
 

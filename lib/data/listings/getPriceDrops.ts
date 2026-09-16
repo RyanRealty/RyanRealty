@@ -338,7 +338,12 @@ async function fetchPriceDrops(
   joined.sort((a, b) => (b.lastDropPct ?? 0) - (a.lastDropPct ?? 0))
   const capped = joined.slice(0, regionCap)
 
-  const total = capped.length
+  // `total` is the FULL population that cleared every filter, not the size of
+  // the capped page. /price-drops headlines this number and appends "· N shown
+  // below" when it exceeds the rendered list, so returning `capped.length` made
+  // the cap masquerade as the count: on 2026-09-15 the region had 259
+  // qualifying cuts and the page announced 60. The rendered list stays capped.
+  const total = joined.length
   const page = capped.slice(offset, offset + limit)
 
   return { drops: page, total, fetchedAt }
@@ -442,7 +447,11 @@ export const getPriceDrops = (
     // entries cached without it.
     // v5 (2026-07-12, §0): drop is prev→current price (recovered/relisted
     // listings excluded) — evict entries holding the event-new_price math.
-    ['price-drops-v5', key],
+    // v6 (2026-09-15, SITE-108, §0): the tile join below handed one key per
+    // event straight to getListingTiles; past ~535 keys that read blew the
+    // PostgREST URL, threw, and cached [] — so a BUSY week published
+    // "Nothing in this window" while 259 homes qualified. Evict those.
+    ['price-drops-v6', key],
     { revalidate: 1800, tags: [cacheTag.listings] },
     { drops: [], total: 0, fetchedAt: new Date().toISOString() },
   )()
