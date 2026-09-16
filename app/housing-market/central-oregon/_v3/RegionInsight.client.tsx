@@ -121,27 +121,29 @@ function CompareMonths() {
     <div className="region-insight__card">
       <CompareCard
         smoothLine={false}
-        formatTime={() => ''}
+        tickLabels={compare.cells.map((month) => month.short.slice(0, 3))}
         onScrubProgress={setCompareAt}
         renderValue={(value, formatted) => (
           <Figure value={value} formatted={formatted} money />
         )}
+        /* The RECENT window is series 0, which is the ink the card reserves for
+           its subject; the year before it is the navy tint behind it. */
         series={[
           {
-            name: compare.priorName,
-            values: compare.priorValues,
-            sub: priorCell ? priorCell.label : compare.priorName,
-            tone: 'red',
+            name: compare.name,
+            values: compare.values,
+            sub: cell ? cell.label : compare.name,
+            tone: 'green',
             dot: '',
             color: '',
             tooltipColor: '',
             formatValue: insightMoney,
           },
           {
-            name: compare.name,
-            values: compare.values,
-            sub: cell ? cell.label : compare.name,
-            tone: 'green',
+            name: compare.priorName,
+            values: compare.priorValues,
+            sub: priorCell ? priorCell.label : compare.priorName,
+            tone: 'red',
             dot: '',
             color: '',
             tooltipColor: '',
@@ -159,26 +161,35 @@ function CompareMonths() {
 /* -------------------------------------------------------------------------- */
 
 function PaceMonths() {
-  const { board, setPaceAt, setPaceMetric } = useRegionInsight()
+  const { board, paceAt, setPaceAt, setPaceMetric } = useRegionInsight()
   const pace = board.pace
   if (!pace) return null
+  // The card's own title is the MONTH the pointer is on, so the figure beneath
+  // it is never an unlabelled numeral. At rest it is the newest month, which is
+  // the value AnomalyCard rests on.
+  const at = paceAt ?? pace.cells.length - 1
+  const cell = pace.cells[at] ?? pace.cells[pace.cells.length - 1]
+  const peak = pace.cells[pace.peakIndex]
   return (
     <div className="region-insight__card">
       <AnomalyCard
         data={{ spend: pace.closings, usage: pace.medians }}
+        tickLabels={pace.cells.map((month) => month.short.slice(0, 3))}
         onScrubProgress={setPaceAt}
         onMetric={setPaceMetric}
-        formatTime={() => ''}
         renderValue={(value, formatted) => (
           <Figure value={value} formatted={formatted} money={formatted.startsWith('$')} />
         )}
         labels={{
-          title: 'Homes closed',
+          title: cell ? cell.label : 'The last twelve months',
           spend: 'Homes closed',
           usage: 'Median sale',
           formatSpend: insightCount,
           formatUsage: insightMoney,
-          spentLine: (value) => `${value} closed in the busiest month of the twelve.`,
+          spentLine: () =>
+            peak && peak.closings != null
+              ? `Busiest month on this line: ${peak.label}, ${insightCount(peak.closings)} closings.`
+              : 'Twelve complete months, newest on the right.',
           vsLine: '',
         }}
       />
@@ -255,18 +266,21 @@ function compareProse(
   }
 }
 
-function paceProse(board: RegionInsightBoard, at: number | null, metric: 'spend' | 'usage') {
+function paceProse(board: RegionInsightBoard, at: number | null) {
   const pace = board.pace
   if (!pace) return null
-  const index = at ?? (metric === 'spend' ? pace.peakIndex : pace.cells.length - 1)
+  // The RESTING index is the newest month, because that is the point
+  // AnomalyCard itself rests on. Reading the peak here while the card read the
+  // last month is how a claim and the figure under it end up disagreeing.
+  const index = at ?? pace.cells.length - 1
   const cell = pace.cells[index]
   if (!cell || cell.closings == null || cell.median == null) return null
   const peak = pace.cells[pace.peakIndex]
   const isPeak = index === pace.peakIndex
   return (
     <>
-      {insightCount(cell.closings)} single-family homes closed in {cell.label}, at a median of{' '}
-      {insightMoney(cell.median)}.{' '}
+      <strong>{insightCount(cell.closings)}</strong> single-family homes closed in {cell.label}, at
+      a median of {insightMoney(cell.median)}.{' '}
       {isPeak
         ? 'That was the busiest month of the last twelve.'
         : peak && peak.closings != null
@@ -328,7 +342,7 @@ export function RegionInsight({ board }: { board: RegionInsightBoard }) {
       pillHref: listingsBrowsePath(),
     })
   }
-  const pace = paceProse(board, paceAt, paceMetric)
+  const pace = paceProse(board, paceAt)
   if (board.pace && pace) {
     pages.push({
       key: 'pace',
@@ -353,7 +367,9 @@ export function RegionInsight({ board }: { board: RegionInsightBoard }) {
   return (
     <RegionInsightContext.Provider value={state}>
       <div className="region-insight" id="market-insights">
-        <InsightCards pages={pages} labels={{ title: 'What the market is doing' }} />
+        {/* Short on purpose: the pager face sits beside a count and two
+            arrows, and anything longer wrapped to two lines at 375. */}
+        <InsightCards pages={pages} labels={{ title: "What's happening" }} />
       </div>
     </RegionInsightContext.Provider>
   )

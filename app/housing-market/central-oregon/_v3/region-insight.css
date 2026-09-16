@@ -7,6 +7,15 @@
   display: block;
   width: 100%;
   min-width: 0;
+  /* The card is a capture target and an anchor; clear the fixed chrome. */
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
+/* Liveline paints its month axis inside the canvas's own bottom padding, so
+   the stage needs the room or the labels sit on the source note. */
+.region-insight .insight-chart-stage {
+  height: 11.5rem;
+  margin-bottom: var(--v3-space-md);
 }
 
 .region-insight .insight-cards {
@@ -58,7 +67,7 @@
 
 @media (max-width: 47.99rem) {
   .region-insight .insight-chart-stage {
-    height: 8.5rem;
+    height: 10rem;
   }
 
   .region-insight .insight-cards__prose {

@@ -134,7 +134,10 @@ import { RegionCityMos } from './_v3/RegionCityMos.client'
 import { RegionInsight } from './_v3/RegionInsight.client'
 import {
   buildRegionInsightBoard,
+  regionInsightDatasetVariables,
+  regionInsightFaqs,
   regionInsightPageCount,
+  regionInsightTemporalCoverage,
 } from './_v3/region-insight'
 import './_v3/region-market.css'
 import {
@@ -183,12 +186,22 @@ export async function generateMetadata(): Promise<Metadata> {
   })
   const median =
     hud.medianList != null && hud.medianList > 0 ? formatPriceCompact(hud.medianList) : null
+  // SITE-103 SEO: the description carries the live verdict and the supply
+  // figure the H1 states, so the snippet is the answer instead of a promise of
+  // one. Both clauses ship only when their own figure resolved — a description
+  // is a published number and gets the same guard as the screen (section 0).
+  const mosRawMeta = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
+  const verdictMeta = marketVerdict(mosRawMeta)
+  const supplyClause =
+    mosRawMeta != null && verdictMeta.kind !== 'unknown'
+      ? `${formatMonthsOfSupply(mosRawMeta)} months of supply — ${verdictMeta.label}. `
+      : ''
   return pageMetadata({
     title: median
       ? `Central Oregon housing market · ${median} median list`
       : 'Central Oregon region deep dive',
     description:
-      'Central Oregon housing market: live single-family inventory, months of supply as homes for sale vs a month of sales, and city doors for Bend, Redmond, Sisters, and the rest of the region. Oregon Data Share via Ryan Realty.',
+      `${supplyClause}Central Oregon housing market: live single-family inventory, months of supply as homes for sale against a month of sales, the last twelve months of closed sale prices, and city doors for Bend, Redmond, Sisters, and the rest of the region. Oregon Data Share via Ryan Realty.`,
     path: '/housing-market/central-oregon',
     keywords: [
       'Central Oregon housing market',
@@ -303,10 +316,16 @@ export default async function CentralOregonRegionPage() {
     pulseActiveCount: hud.active,
     refreshedAt: leftoverStamp,
   }
-  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
+  const { faqs: pulseFaqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
     'Central Oregon',
     pulse ?? { grain: 'region', activeCount: null, medianListPrice: null, refreshedAt: null },
   )
+  // SITE-103: the closed-sales questions the cards above already answer, in the
+  // words a visitor types. Route-local (see regionInsightFaqs) — the shared
+  // builder answers the live region row, and these are a different population.
+  // ONE array still feeds the visible block and the FAQPage payload, so the two
+  // cannot diverge.
+  const faqs = [...pulseFaqs, ...regionInsightFaqs(insightBoard)]
   const refreshedAt = leftoverStamp
 
   // The region row's TWO Instruments, built in ./_v3/region-figures.ts. Every figure is
@@ -343,7 +362,7 @@ export default async function CentralOregonRegionPage() {
   const liveTrace =
     composeRegionLiveTrace(regionMos ? REGION_LIVE_CITATION : region.live.trace, false) +
     (hasInsight || openingChart
-      ? ' The cards and the line are a second population: houses that already SOLD, month by month, from the same Oregon Data Share MLS feed. Active asking prices and closed sale prices are not the same number.'
+      ? ' The cards and the line above are a second population: houses that already sold, month by month, from the same Oregon Data Share MLS feed. An asking price and a closed sale price are not the same number.'
       : '') +
     (publicMixHasRow(publicMix)
       ? ' Financing, feature, and bedroom mix for this refresh is not shown on this page.'
@@ -445,11 +464,18 @@ export default async function CentralOregonRegionPage() {
     // metric names while the variable list is derived one figure at a time, so a null
     // column left the payload describing a measurement it did not contain - a claim
     // outrunning its payload, which is the same defect class as a wrong number.
-    const metricNames = datasetVariables.map((variable) => variable.name.toLowerCase())
+    // SITE-103: the closed-sales figures the InsightCards publish join the
+    // payload, so what a reader scrubs to and what an answer engine quotes are
+    // the same number. They are derived from the same board the cards render —
+    // never typed beside it — so a page the board could not source adds
+    // nothing, and the description below still names only what is carried.
+    const publishedVariables = [...datasetVariables, ...regionInsightDatasetVariables(insightBoard)]
+    const metricNames = publishedVariables.map((variable) => variable.name.toLowerCase())
     const metricList =
       metricNames.length === 1
         ? metricNames[0]
         : `${metricNames.slice(0, -1).join(', ')}, and ${metricNames[metricNames.length - 1]}`
+    const coverage = regionInsightTemporalCoverage(insightBoard)
     schemas.push({
       type: 'dataset',
       name: `Central Oregon, Oregon real estate market statistics${asOfLabel ? `, ${asOfLabel}` : ''}`,
@@ -459,8 +485,9 @@ export default async function CentralOregonRegionPage() {
         'Sourced from Oregon Data Share via Ryan Realty.',
       url: '/housing-market/central-oregon',
       dateModified: asOfIso ?? undefined,
+      ...(coverage ? { temporalCoverage: coverage } : {}),
       spatialCoverageName: 'Central Oregon, OR',
-      variableMeasured: datasetVariables,
+      variableMeasured: publishedVariables,
     })
   }
 

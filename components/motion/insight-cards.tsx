@@ -21,10 +21,36 @@ const formatPercent = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(2)}%`
 const formatMoney = (v: number) => `$${Math.round(v).toLocaleString('en-US')}`
 const formatCount = (v: number) => Math.round(v).toLocaleString('en-US')
 
-function makePoints(values: number[], gap = 6): LivelinePoint[] {
-  // Fixed epoch: demo scrub times are relative. Live clocks in render
-  // (incl. useMemo) fail ci:hydration-safety (#418).
-  const end = 1_700_000_000
+/**
+ * LIVELINE FILTERS AGAINST THE WALL CLOCK (SITE-103, and this is why every
+ * Liveline on this site read "No data to display").
+ *
+ * The chart keeps only the points inside `[now - window, now]`, where `now` is
+ * `Date.now()`, and the window is 42–49 SECONDS. This file used to end its
+ * series at the literal `1_700_000_000` — a perfectly stable epoch, and a
+ * correct hydration fix (#418: a clock read during render is a hydration
+ * failure), but one that stopped being "now" in November 2023. Every card built
+ * on it has been drawing an empty stage ever since the clock walked past it,
+ * on /invest as well as here, under a receipt that called the control installed.
+ *
+ * So the clock is read ONCE, after mount, in an effect. The server and the
+ * first client render agree on `null` — no hydration divergence — and the
+ * canvas, which never renders on the server anyway, fills on the next frame.
+ * Liveline also SNAPSHOTS its series on the first frame it sees `paused` and
+ * never re-reads them, so correcting the epoch one render later is too late:
+ * the stage mounts only once the real clock is in hand.
+ */
+const STABLE_EPOCH = 1_700_000_000
+
+function useChartEpoch(): number | null {
+  const [epoch, setEpoch] = useState<number | null>(null)
+  useEffect(() => {
+    setEpoch(Date.now() / 1000)
+  }, [])
+  return epoch
+}
+
+function makePoints(values: number[], gap = 6, end = STABLE_EPOCH): LivelinePoint[] {
   return values.map((value, index) => ({
     time: end - (values.length - 1 - index) * gap,
     value,
@@ -57,9 +83,9 @@ function smooth(values: number[], perSegment = 9): number[] {
   return out
 }
 
-function smoothPoints(values: number[], spanSecs: number): LivelinePoint[] {
+function smoothPoints(values: number[], spanSecs: number, end: number): LivelinePoint[] {
   const dense = smooth(values)
-  return makePoints(dense, spanSecs / Math.max(1, dense.length - 1))
+  return makePoints(dense, spanSecs / Math.max(1, dense.length - 1), end)
 }
 
 function useInkStroke() {
@@ -100,6 +126,31 @@ export type ScrubReporter = (progress: number | null) => void
  * sourced count can arrive as a beUI number instead of a static string.
  */
 export type ValueRenderer = (value: number, formatted: string) => ReactNode
+
+/**
+ * Opt-in (SITE-103): give the demo's own time axis real labels.
+ *
+ * Liveline reads the x axis as clock seconds, so the demo hands it a relative
+ * ramp and lets the axis print elapsed time. Our points are months, so the
+ * caller passes the month names in series order and the card maps each tick
+ * back onto them. Without this the only honest `formatTime` is one that returns
+ * nothing, and the chart loses its x axis entirely.
+ */
+function tickFormatter(
+  labels: readonly string[] | undefined,
+  points: readonly LivelinePoint[] | undefined,
+): ((t: number) => string) | undefined {
+  if (!labels || labels.length < 2 || !points || points.length < 2) return undefined
+  const first = points[0]?.time
+  const last = points[points.length - 1]?.time
+  if (first == null || last == null || last <= first) return undefined
+  return (t: number) => {
+    const frac = (t - first) / (last - first)
+    if (frac < -0.02 || frac > 1.02) return ''
+    const i = Math.round(Math.max(0, Math.min(1, frac)) * (labels.length - 1))
+    return labels[i] ?? ''
+  }
+}
 
 function ChartTooltip({ rows }: { rows: { label: string; value: string; color: string }[] }) {
   return (
@@ -153,12 +204,15 @@ export function CompareCard({
   formatTime,
   hideLegend = false,
   smoothLine = true,
+  tickLabels,
   onScrubProgress,
   renderValue,
 }: {
   series?: CompareSeries[]
   formatTime?: (t: number) => string
   hideLegend?: boolean
+  /** Opt-in (SITE-103): x-axis faces, one per sourced point. See tickFormatter. */
+  tickLabels?: readonly string[]
   /**
    * Opt-in (SITE-103). The demo smooths its line through a Catmull-Rom pass,
    * which invents ~9 points between every real one. On a marketing chart that
@@ -171,6 +225,7 @@ export function CompareCard({
   renderValue?: ValueRenderer
 }) {
   const stroke = useInkStroke()
+  const epoch = useChartEpoch()
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
   const painted = useMemo(
     () =>
@@ -185,12 +240,13 @@ export function CompareCard({
     () =>
       painted.map((s) =>
         smoothLine
-          ? smoothPoints(s.values, 42)
-          : makePoints(s.values, 42 / Math.max(1, s.values.length - 1)),
+          ? smoothPoints(s.values, 42, epoch ?? STABLE_EPOCH)
+          : makePoints(s.values, 42 / Math.max(1, s.values.length - 1), epoch ?? STABLE_EPOCH),
       ),
-    [painted, smoothLine],
+    [painted, smoothLine, epoch],
   )
   const pointCount = points[0]?.length ?? 0
+  const ticks = useMemo(() => tickFormatter(tickLabels, points[0]), [tickLabels, points])
   const chartSeries: LivelineSeries[] = useMemo(
     () =>
       painted.map((s, i) => ({
@@ -253,22 +309,24 @@ export function CompareCard({
           onScrubProgress?.(null)
         }}
       >
-        <Liveline
-          data={[]}
-          value={0}
-          series={chartSeries}
-          theme="light"
-          grid={false}
-          pulse={false}
-          window={42}
-          paused
-          scrub={false}
-          cursor="default"
-          lineWidth={2.25}
-          padding={{ top: 40, right: 0, bottom: 22, left: 0 }}
-          formatValue={painted[0]?.formatValue ?? formatPercent}
-          {...(formatTime ? { formatTime } : {})}
-        />
+        {epoch == null ? null : (
+          <Liveline
+            data={[]}
+            value={0}
+            series={chartSeries}
+            theme="light"
+            grid={false}
+            pulse={false}
+            window={42}
+            paused
+            scrub={false}
+            cursor="default"
+            lineWidth={2.25}
+            padding={{ top: 40, right: 0, bottom: 22, left: 0 }}
+            formatValue={painted[0]?.formatValue ?? formatPercent}
+            {...(ticks ? { formatTime: ticks } : formatTime ? { formatTime } : {})}
+          />
+        )}
         {hoverIndex !== null ? (
           <ChartTooltip
             rows={painted.map((s, i) => ({
@@ -313,6 +371,7 @@ export function AnomalyCard({
   data: anomaly = ANOMALY_DATA,
   labels,
   formatTime,
+  tickLabels,
   onScrubProgress,
   onMetric,
   renderValue,
@@ -320,17 +379,26 @@ export function AnomalyCard({
   data?: AnomalyData
   labels?: Partial<AnomalyLabels>
   formatTime?: (t: number) => string
+  /** Opt-in (SITE-103): x-axis faces, one per sourced point. See tickFormatter. */
+  tickLabels?: readonly string[]
   onScrubProgress?: ScrubReporter
   onMetric?: (metric: 'spend' | 'usage') => void
   renderValue?: ValueRenderer
 }) {
   const stroke = useInkStroke()
+  const epoch = useChartEpoch()
   const l = { ...DEFAULT_ANOMALY_LABELS, ...labels }
   const [metric, setMetric] = useState<'spend' | 'usage'>('spend')
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
-  const spend = useMemo(() => makePoints(anomaly.spend, 7), [anomaly])
-  const usage = useMemo(() => makePoints(anomaly.usage, 7), [anomaly])
+  // GAP 7 IS THE DEMO'S EIGHT-POINT SPAN (7 x 7 = 49 = the window below).
+  // A longer series at the same gap runs off the left edge of the window and
+  // Liveline draws nothing at all; deriving the gap keeps ANY length on screen
+  // and leaves the demo's own eight-point data byte-identical.
+  const gap = 49 / Math.max(1, Math.max(anomaly.spend.length, anomaly.usage.length) - 1)
+  const spend = useMemo(() => makePoints(anomaly.spend, gap, epoch ?? STABLE_EPOCH), [anomaly, gap, epoch])
+  const usage = useMemo(() => makePoints(anomaly.usage, gap, epoch ?? STABLE_EPOCH), [anomaly, gap, epoch])
   const data = metric === 'spend' ? spend : usage
+  const ticks = useMemo(() => tickFormatter(tickLabels, data), [tickLabels, data])
   const value = data.at(-1)?.value ?? (metric === 'spend' ? anomaly.spend.at(-1) ?? 0 : anomaly.usage.at(-1) ?? 0)
   const formatSpend = l.formatSpend ?? formatMoney
   const formatUsage = l.formatUsage ?? ((v: number) => `${Math.round(v)} kWh`)
@@ -390,6 +458,7 @@ export function AnomalyCard({
           onScrubProgress?.(null)
         }}
       >
+        {epoch == null ? null : (
         <Liveline
           data={data}
           value={value}
@@ -406,8 +475,9 @@ export function AnomalyCard({
           cursor="crosshair"
           padding={{ top: 34, right: 0, bottom: 22, left: 0 }}
           formatValue={format}
-          {...(formatTime ? { formatTime } : {})}
+          {...(ticks ? { formatTime: ticks } : formatTime ? { formatTime } : {})}
         />
+        )}
         {hoverIndex !== null ? (
           <ChartTooltip
             rows={[{ label: metric === 'spend' ? l.spend : l.usage, value: format(data[hoverIndex]?.value ?? 0), color: stroke.ink }]}
@@ -416,7 +486,10 @@ export function AnomalyCard({
       </div>
       <p className="insight-cards__note">
         {l.spentLine ? l.spentLine(moneyLabel) : `${moneyLabel} spent`}
-        {l.vsLine ? ` ${l.vsLine}` : ' vs 3 months'}
+        {/* An EXPLICIT empty vsLine means the caller's own sentence is
+            complete. Only an omitted one falls back to the demo's clause
+            (SITE-103: `vsLine: ''` printed "vs 3 months" on a market page). */}
+        {l.vsLine === undefined ? ' vs 3 months' : l.vsLine ? ` ${l.vsLine}` : ''}
       </p>
     </div>
   )

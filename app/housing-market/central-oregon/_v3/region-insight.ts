@@ -99,6 +99,27 @@ export type RegionPaceBoard = {
   source: string
 }
 
+/**
+ * The MLS property-type codes in a visitor's words, for the Allocation bar.
+ *
+ * PROPERTY_TYPE_LABELS is the site's canonical label set and stays canonical
+ * everywhere else; what it is not is a chip. "All residential" abbreviates to
+ * "ALL", which next to "LAND" and "COMMERCIAL" reads as a filter name rather
+ * than a kind of building, and TASTE.md bans internal labels in copy a visitor
+ * reads. `chip` is the band's short face; `plain` is the sentence above it.
+ * Anything outside this map keeps the canonical label.
+ */
+const MIX_WORDS: Record<string, { chip: string; plain: string }> = {
+  A: { chip: 'HOMES', plain: 'Houses, condos and townhomes' },
+  B: { chip: 'IN PARK', plain: 'Manufactured homes in a park' },
+  C: { chip: '2–4 UNITS', plain: 'Small income property, two to four units' },
+  D: { chip: 'LAND', plain: 'Bare land' },
+  E: { chip: 'FARMS', plain: 'Farms and ranches' },
+  F: { chip: 'COMMERCIAL', plain: 'Commercial buildings' },
+  G: { chip: 'LEASE', plain: 'Commercial leases' },
+  H: { chip: 'BUSINESS', plain: 'Business opportunities' },
+}
+
 export type RegionMixSegment = {
   /** Chip face, e.g. "HOUSES". */
   name: string
@@ -221,12 +242,15 @@ function buildMix(series: readonly CoMarketAnnualRow[]): RegionMixBoard | null {
   if (parts.length < 2) return null
   const total = parts.reduce((sum, part) => sum + part.n, 0)
   if (!(total > 0)) return null
-  const segments = parts.slice(0, 5).map((part) => ({
-    name: part.label.split(/[\s/]+/)[0]?.toUpperCase() ?? part.code.toUpperCase(),
-    label: part.label,
-    count: part.n,
-    pct: (part.n / total) * 100,
-  }))
+  const segments = parts.slice(0, 5).map((part) => {
+    const words = MIX_WORDS[part.code]
+    return {
+      name: words?.chip ?? part.label.toUpperCase(),
+      label: words?.plain ?? labelPropertyType(part.code),
+      count: part.n,
+      pct: (part.n / total) * 100,
+    }
+  })
   if (segments.length < 2) return null
   return {
     year: latest.year,
@@ -257,4 +281,136 @@ export function buildRegionInsightBoard(opts: {
 /** How many pages the board can actually publish. Two is the catalog minimum. */
 export function regionInsightPageCount(board: RegionInsightBoard): number {
   return [board.compare, board.pace, board.mix].filter(Boolean).length
+}
+
+/**
+ * ISO 8601 interval for Dataset.temporalCoverage — the window the cards draw.
+ * Month precision, because that is the grain of the rows behind them. Null when
+ * no page published a series, so the payload never claims a coverage it has no
+ * figures for.
+ */
+export function regionInsightTemporalCoverage(board: RegionInsightBoard): string | null {
+  const cells = board.compare
+    ? [...board.compare.priorCells, ...board.compare.cells]
+    : board.pace?.cells ?? []
+  const first = cells[0]
+  const last = cells[cells.length - 1]
+  if (!first || !last) return null
+  return `${first.key}/${last.key}`
+}
+
+/**
+ * The figures the cards publish, as Dataset variables, so the number a reader
+ * sees and the number an answer engine reads are the same number (CLAUDE.md
+ * section 0). Every entry is a value already on the page; a page the board could
+ * not source contributes nothing.
+ */
+export function regionInsightDatasetVariables(
+  board: RegionInsightBoard,
+): { name: string; value: string | number; unitText?: string }[] {
+  const out: { name: string; value: string | number; unitText?: string }[] = []
+  const recent = board.compare?.cells[board.compare.cells.length - 1]
+  const prior = board.compare?.priorCells[board.compare.priorCells.length - 1]
+  if (recent?.median != null) {
+    out.push({
+      name: `Median sale price, ${recent.label}`,
+      value: recent.median,
+      unitText: 'USD',
+    })
+  }
+  if (prior?.median != null) {
+    out.push({
+      name: `Median sale price, ${prior.label}`,
+      value: prior.median,
+      unitText: 'USD',
+    })
+  }
+  const paceCell = board.pace?.cells[board.pace.cells.length - 1]
+  if (paceCell?.closings != null) {
+    out.push({ name: `Homes closed, ${paceCell.label}`, value: paceCell.closings })
+  }
+  if (board.mix) {
+    out.push({ name: `Closed sales, all property types, ${board.mix.year}`, value: board.mix.total })
+    const lead = board.mix.segments[0]
+    if (lead) {
+      out.push({
+        name: `${lead.label} share of ${board.mix.year} closed sales`,
+        value: Number(lead.pct.toFixed(1)),
+        unitText: 'PERCENT',
+      })
+    }
+  }
+  return out
+}
+
+/**
+ * The questions the cards answer, in the words a visitor types, for the FAQ
+ * block AND the FAQPage payload it shares. Route-local on purpose: the shared
+ * buildMarketFaq answers the region row's own figures and is used by other
+ * market routes, and widening it there would put closed-sales answers on pages
+ * that draw none. Every answer restates a number already on this page.
+ */
+export function regionInsightFaqs(
+  board: RegionInsightBoard,
+): { question: string; answer: string }[] {
+  const out: { question: string; answer: string }[] = []
+  const recent = board.compare?.cells[board.compare.cells.length - 1]
+  const prior = board.compare?.priorCells[board.compare.priorCells.length - 1]
+  if (recent?.median != null && prior?.median != null) {
+    const delta = insightDelta(recent.median, prior.median)
+    const direction =
+      recent.median > prior.median ? 'higher' : recent.median < prior.median ? 'lower' : 'level'
+    out.push({
+      question: 'What is a house actually selling for in Central Oregon right now?',
+      answer:
+        `In ${recent.label} the middle single-family sale across Central Oregon closed at ` +
+        `${insightMoney(recent.median)}. A year earlier, in ${prior.label}, the middle sale was ` +
+        `${insightMoney(prior.median)}${delta ? ` — ${delta}` : ''}, so sale prices are ${direction} ` +
+        'than the same month last year. This is what buyers paid, not what sellers are asking; ' +
+        'asking prices sit higher. Source: closed single-family sales through Oregon Data Share MLS.',
+    })
+  }
+  const pace = board.pace
+  const paceCell = pace?.cells[pace.cells.length - 1]
+  const peak = pace ? pace.cells[pace.peakIndex] : undefined
+  if (pace && paceCell?.closings != null) {
+    out.push({
+      question: 'How many homes sell in Central Oregon in a month?',
+      answer:
+        `${insightCount(paceCell.closings)} single-family homes closed across Central Oregon in ` +
+        `${paceCell.label}.` +
+        (peak?.closings != null
+          ? ` The busiest of the last twelve months was ${peak.label}, at ${insightCount(peak.closings)}.`
+          : '') +
+        ' Only sales that actually closed are counted; a home that went under contract and fell ' +
+        'through is not in the number. Source: Oregon Data Share MLS.',
+    })
+  }
+  if (board.mix) {
+    const lead = board.mix.segments[0]
+    const land = board.mix.segments.find((segment) => segment.name === 'LAND')
+    if (lead) {
+      out.push({
+        question: `What kinds of property sold in Central Oregon in ${board.mix.year}?`,
+        answer:
+          `${insightCount(board.mix.total)} sales closed across Central Oregon in ${board.mix.year}, ` +
+          `counting every property type. ${lead.label} were ${lead.pct.toFixed(1)}% of them ` +
+          `(${insightCount(lead.count)} sales)` +
+          (land ? `, and bare land was ${land.pct.toFixed(1)}% (${insightCount(land.count)})` : '') +
+          '. Source: closed MLS sales across the Central Oregon service area, all property types.',
+      })
+    }
+  }
+  return out
+}
+
+/** One plain sentence for the meta description, built from the board. */
+export function regionInsightMetaClause(board: RegionInsightBoard): string | null {
+  const recent = board.compare?.cells[board.compare.cells.length - 1]
+  const prior = board.compare?.priorCells[board.compare.priorCells.length - 1]
+  if (!recent || !prior || recent.median == null || prior.median == null) return null
+  const delta = insightDelta(recent.median, prior.median)
+  return `The middle house sold for ${insightMoney(recent.median)} in ${recent.label}${
+    delta ? ` (${delta} against ${prior.label})` : ''
+  }.`
 }
