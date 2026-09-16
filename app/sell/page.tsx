@@ -28,10 +28,9 @@
  * Stage is tall: the photograph carries the H1 and the address ask, so
  * the first viewport is the working surface, not a cream void under a still.
  *
- * SITE-85 first viewport: Stage is a two-column working surface — sourced Bend
- * closes + quiet MOS two-bar beside the address ask (not the portal stacked
- * card) — with form-specific focus (poster reframe + Places pin), a scroll cue
- * to #proof, and mobile breathing room under the capture card.
+ * SITE-111 first viewport: Stage photograph, then the address sheet. Sourced
+ * Bend MOS belongs in the post-address answer panel, not a cream card on the
+ * fold. Do not demote the ask.
  */
 
 import type { Metadata } from 'next'
@@ -71,16 +70,15 @@ import {
   V3StickyAsk,
   V3SectionTracker,
   V3SourceDisclosure,
-  V3MosBars,
   proofBlockView,
   type V3InstrumentFigure,
   type V3ProofReach,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { buildPlaceMosView } from '@/lib/site/place-mos'
 import { SellCapture } from './_v3/SellCapture'
 import { SellValueForm } from './_v3/SellValueForm'
+import { sellPreviewAnswer } from './_v3/sell-preview-answer'
 import { sellBendLedgerRows } from './_v3/sell-market-rows'
 import { sellListingRows, OUR_LISTINGS_TRACE } from './_v3/sell-listings'
 import './_v3/sell-stage.css'
@@ -324,61 +322,19 @@ export default async function SellPage() {
       ],
     })
   }
+  if (listingRows.length > 0) {
+    schemas.push({
+      type: 'itemList',
+      name: 'Ryan Realty listings',
+      items: listingRows.map((row) => ({
+        name: String(row.what),
+        url: row.href,
+      })),
+    })
+  }
 
   const posterSrc = heroSrc ?? SELL_POSTER
-
-  // SITE-85 · §0. Quiet hero figure from the pace read this page already makes.
-  // Re-verified 2026-09-10 this session: market_metric city=bend
-  // segment=detached is_publishable — closed_count window_months=12 → 2071,
-  // median_close window_months=12 → 760000, complete_through=2026-09-09;
-  // active_count window_months=0 → 648, months_of_supply window_months=6 →
-  // 3.745… (same Bend pulse the Instrument prints). Prefer pace over
-  // track-record career totals so the first viewport backs "what is my home
-  // worth" with Bend closes.
-  const heroClosed = publicPace.closedCount
-  const heroMedian = publicPace.medianClose
-  // Visitor-facing sentence only — no methodology jargon on the ask
-  // (evaluator 2026-09-10: "Market Truth detached…" read as engineer copy).
-  // The Instrument and Ledger keep the full §0 traces below the fold.
-  const heroProof =
-    heroClosed != null && heroMedian != null ? (
-      <>
-        <strong>{heroClosed.toLocaleString('en-US')}</strong>
-        {' Bend homes closed in the last 12 months · median sale '}
-        <strong>{formatPriceExact(heroMedian)}</strong>
-        .
-      </>
-    ) : trackRecord ? (
-      <>
-        <strong>{trackRecord.homesSold.toLocaleString('en-US')}</strong>
-        {' homes sold by Ryan Realty · average close '}
-        <strong>{formatPriceExact(trackRecord.avgSalePrice)}</strong>
-        .
-      </>
-    ) : null
-
-  // Same Bend pulse the Instrument uses — two bars, never a MOS KPI tile.
-  // Round the month-of-sales label to a whole home count (173 not 173.0).
-  const heroMosBase =
-    bend != null
-      ? buildPlaceMosView({
-          active: bend.activeCount,
-          monthsSupply: bend.monthsOfSupply,
-          grain: 'city',
-          geoSlug: 'bend',
-          asOf: bend.computedAt,
-        })
-      : null
-  const heroMos = heroMosBase
-    ? {
-        ...heroMosBase,
-        salesLabel: Math.round(heroMosBase.salesValue).toLocaleString('en-US'),
-        tooltip: {
-          ...heroMosBase.tooltip,
-          sales: Math.round(heroMosBase.salesValue).toLocaleString('en-US'),
-        },
-      }
-    : null
+  const previewAnswer = sellPreviewAnswer(bend, publicPace)
 
   return (
     <>
@@ -404,31 +360,9 @@ export default async function SellPage() {
           <SellCapture
             eyebrow="Free. No listing agreement."
             placement="stage"
-            proof={heroProof}
-            aside={
-              heroMos ? (
-                <V3MosBars
-                  id="sell-hero-mos"
-                  className="sell-stage-mos"
-                  caption={heroMos.caption}
-                  plainLabel={heroMos.plainLabel}
-                  homesName={heroMos.homesName}
-                  homesLabel={heroMos.homesLabel}
-                  homesValue={heroMos.homesValue}
-                  salesName={heroMos.salesName}
-                  salesLabel={heroMos.salesLabel}
-                  salesValue={heroMos.salesValue}
-                  source={heroMos.source}
-                  asOf={heroMos.asOf}
-                  sourceName="Oregon Data Share"
-                  tooltip={heroMos.tooltip}
-                />
-              ) : null
-            }
-            nextHref={proofView ? '#proof' : '#bend-market'}
-            nextLabel={proofView ? 'The record' : 'Bend market'}
+            heading="Home address"
           >
-            <SellValueForm pagePath={ROUTE_PATH} />
+            <SellValueForm pagePath={ROUTE_PATH} previewAnswer={previewAnswer} />
           </SellCapture>
         </V3Stage>
 
