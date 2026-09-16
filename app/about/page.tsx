@@ -23,6 +23,7 @@
 import type { Metadata } from 'next'
 import { getReviews } from '@/lib/data'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
+import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
@@ -84,6 +85,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export const revalidate = 3600
 
 export default async function AboutPage() {
+  return runPublishedPageRender('about', renderAboutPage)
+}
+
+async function renderAboutPage() {
   const [atlasRead, regionAtlas, reviewSummary, companySettings, proof] = await Promise.all([
     withTimeoutFallback(buildPlaceAtlas({ cities: [], label: 'Central Oregon' }).catch(() => null), null, 6000, 'about atlas'),
     buildRegionAtlasRegions().catch(() => null),

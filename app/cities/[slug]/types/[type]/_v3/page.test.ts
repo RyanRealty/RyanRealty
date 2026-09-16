@@ -121,8 +121,9 @@ describe('place-type pages', () => {
     // and the resolved branch has a standin of its own when the read misses
     expect(SECTION).toMatch(/if \(!boundary\)/)
     expect(SECTION).toMatch(/state="unavailable"/)
-    // unknown is not empty: ISR must not persist a mapless render
-    expect(SECTION).toMatch(/noStore\(\)/)
+    // unknown is not empty: ISR must not persist a mapless render (SITE-118)
+    expect(SECTION).toMatch(/refuseDegradedIsr\(/)
+    expect(SECTION).toMatch(/runPublishedPageRender\(/)
   })
 
   it('does not treat photographed list length as the count', () => {

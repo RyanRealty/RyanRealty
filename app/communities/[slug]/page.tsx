@@ -72,6 +72,7 @@ import { isTrendSeriesTooSparse } from '@/lib/kb/place-sections'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { communityPageTrail } from '@/lib/site/place-trail'
+import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { skippableRail } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
@@ -241,7 +242,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   )
 }
 
-export default async function CommunityDetailPage({ params }: Props) {
+export default async function CommunityDetailPage(props: Props) {
+  return runPublishedPageRender('community', () => renderCommunityDetail(props))
+}
+
+async function renderCommunityDetail({ params }: Props) {
   const { slug } = await params
 
   const community = await getCommunityBySlug(slug)
