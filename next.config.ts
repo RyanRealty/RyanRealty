@@ -36,10 +36,8 @@ function loadSupabaseEnvFromLocal(): Record<string, string> {
 
 const supabaseFromEnvLocal = loadSupabaseEnvFromLocal()
 
-// NFT on admin/bpo/* walks process.cwd() via the CMA map/basemap read
-// (lib/geo/basemap-streets.ts). Production then zipped the repo: design_system
-// PNGs, scratch drafts, docs, CMA PDFs — 366.95mb against a 250mb cap.
-// These stay off the BPO lambdas. CMA PDF API routes keep their own includes.
+// Heavy packages the BPO review lambda must not ship. CMA PDF API routes
+// keep public/cmas via outputFileTracingIncludes — do not put those on `*`.
 const BPO_LAMBDA_TRACE_EXCLUDES = [
   './node_modules/googleapis/**',
   './node_modules/googleapis-common/**',
@@ -47,6 +45,17 @@ const BPO_LAMBDA_TRACE_EXCLUDES = [
   './node_modules/@napi-rs/canvas/**',
   './node_modules/puppeteer-core/**',
   './node_modules/@sparticuz/chromium-min/**',
+  './public/cmas/**',
+  './public/drafts/**',
+  './public/v5_library/**',
+] as const
+
+// Turbopack NFT on admin/bpo/* walks process.cwd() (basemap-streets uses
+// path.join(process.cwd(), ...)) and zips the repo. Per-route exclude keys
+// did not apply locally; the `*` list did (public/images already gone).
+// None of these trees are runtime for any lambda. CMA PDF routes include
+// public/cmas separately — that path stays off this global list.
+const REPO_DUMP_TRACE_EXCLUDES = [
   './scratch/**',
   './tmp/**',
   './docs/**',
@@ -56,9 +65,6 @@ const BPO_LAMBDA_TRACE_EXCLUDES = [
   './marketing_brain_skills/**',
   './video_production_skills/**',
   './social_media_skills/**',
-  './public/cmas/**',
-  './public/drafts/**',
-  './public/v5_library/**',
   './data/asset-library/**',
   './out/**',
   './.artifacts/**',
@@ -545,6 +551,7 @@ const nextConfig: NextConfig = {
       './node_modules/@ffmpeg-installer/**',
       './node_modules/puppeteer-core/**',
       './node_modules/@sparticuz/chromium-min/**',
+      ...REPO_DUMP_TRACE_EXCLUDES,
     ],
     // Found 2026-09-16: admin/bpo/[slug] traced at 366.95mb (limit 250mb) after
     // the action-required shrink. Two leaks: the @/lib/data barrel
@@ -553,8 +560,14 @@ const nextConfig: NextConfig = {
     // googleapis; these excludes drop the repo dump. Rebuild writes HTML to
     // the DB — it does not need Gmail, a PDF renderer, or kit PNGs.
     'app/admin/(protected)/bpo/[slug]/page': [...BPO_LAMBDA_TRACE_EXCLUDES],
+    'app/admin/bpo/[slug]/page': [...BPO_LAMBDA_TRACE_EXCLUDES],
+    '/admin/bpo/[slug]': [...BPO_LAMBDA_TRACE_EXCLUDES],
     'app/admin/(protected)/bpo/page': [...BPO_LAMBDA_TRACE_EXCLUDES],
+    'app/admin/bpo/page': [...BPO_LAMBDA_TRACE_EXCLUDES],
+    '/admin/bpo': [...BPO_LAMBDA_TRACE_EXCLUDES],
     'app/admin/(protected)/bpo/new/page': [...BPO_LAMBDA_TRACE_EXCLUDES],
+    'app/admin/bpo/new/page': [...BPO_LAMBDA_TRACE_EXCLUDES],
+    '/admin/bpo/new': [...BPO_LAMBDA_TRACE_EXCLUDES],
   },
 }
 
