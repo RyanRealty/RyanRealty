@@ -1,11 +1,8 @@
 /**
- * /about first-viewport faces + the firm's MLS closings.
- *
- * SITE-90: each broker is a person on the fold (Matt, Rebecca, Paul). The
- * figure on a card is that broker's closings (or live listings), the same
- * ladder /team uses (`brokerRosterRecord`). Unknown is not zero. Closings
- * are the real firm record: each broker's getBrokerSales plus office-name
- * tiles, unique ListingKey, no invented rows.
+ * /about firm closings loader. Brokers belong on /team — this file still
+ * reads the roster only to assemble the brokerage closing set (each
+ * broker's getBrokerSales plus office-name tiles, unique ListingKey).
+ * About does not mount faces. Unknown is not zero. No invented rows.
  */
 
 import {
