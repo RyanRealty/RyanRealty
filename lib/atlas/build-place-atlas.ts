@@ -288,7 +288,7 @@ async function buildPlaceAtlasUncached(scope: AtlasScope, nowMs: number): Promis
   // round five, LISTING-NOBOUNDARY-5).
   const washSentence =
     scope.salesWash === false
-      ? 'Homes for sale and pending are the marks; closes are counted, not drawn. '
+      ? `Homes for sale and pending are the marks; closes of the last ${ATLAS_HEAT_WINDOW_DAYS} days are counted under the key by the place that holds them, not drawn. `
       : `The wash is sales density of closes in the last ${ATLAS_HEAT_WINDOW_DAYS} days; homes for sale and pending stay as marks. `
   const source =
     `Every active and pending listing of every property type on the regional MLS through Oregon Data Share ${where}. ` +

@@ -125,6 +125,25 @@
    flanking chevrons the stage just made room for. */
 .pd-cuts-rail.v3.v3-carousel,
 .pd-cuts-rail.v3-carousel--rail {
+  /* SHADCN'S OWN PLACEMENT, THROUGH THE BARREL'S OWN VARIABLES.
+     `CarouselPrevious` / `CarouselNext` ship `inset-y-0 -left-12 my-auto` and
+     `-right-12`: a round control on each side of the track you drag, OUTSIDE
+     it, centred on the whole slide. The 2026-09-15 evaluator scored our
+     inside-the-track pair "overlay chevrons at the far edges, not the shadcn
+     Carousel's composition — a visitor would not recognise the same control",
+     demoMatch false.
+
+     This is set HERE and not in V3Carousel.css on purpose. SITE-91 shipped
+     /buy and the homepage rails on the barrel default — flanking children
+     centred on the MEDIA midline, its receipt measured at "chevron centre 646,
+     media midline 646" — so moving the default outside the track would drag
+     two surfaces that did not ask for it out of position and undo that
+     receipt. The barrel keeps its default; this page overrides the two
+     variables the barrel already exposes for exactly this. `-3rem` is
+     shadcn's `-left-12`; `50%` is its `inset-y-0 my-auto`. `.pd-cuts-stage`
+     above is the inline room the outside placement needs. */
+  --v3-carousel-nav-inset: -3rem;
+  --v3-carousel-nav-top: 50%;
   width: 100%;
   min-width: 0;
   overflow: visible;

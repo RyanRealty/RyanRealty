@@ -1231,6 +1231,19 @@ const SEEDS: readonly Seed[] = [
     accept:
       'Mechanical: on a production build started cold with the database under load (run ci:route-content-floor immediately after start, twice), every seeded sectionDepth floor holds on the first request; a render whose atlas read timed out is never the copy served on the second request; server logs show which reads degraded and that the copy was not persisted. ci:route-content-floor green on CI three runs in a row across the :00/:30 refresh windows. No floor lowered. honestyFunction and requiredComponents cannot fall.',
   },
+
+  {
+    versionGap: 'SITE-119',
+    domain: 'public-ux',
+    title:
+      'Fleet: ci:route-content-floor counts aria-hidden decoration as content — four empty sales-legend swatch <li>s are 4 of the 9 seeded "items" in the cities and community Atlas sections',
+    objective:
+      "Found 2026-09-16 on the ship-class build M: /cities failed sections.atlas.items 5 < floor 8 (seeded 9) after SITE-92 r2 withheld the Atlas sales wash — a taste fix the separate evaluator asked for ('a blurred point-density heatmap'). The four missing items were the legend's `<ol aria-hidden=\"true\">` of four empty `<li>` swatches (V3Atlas dock): decoration a reader cannot perceive, counted by measurePage() as content. A rule fix — skip any li/article/tr/[data-floor-item] inside an aria-hidden subtree, pinned by a jsdom test — measured /communities/tetherow atlas at 5 < floor 8 on build N, because that seed (2026-09-16) counted the same four swatches. Floors are lowered only by hand, in the same commit, with a reason (contentFloor.note), and the classifier treats a floor edit as a CI bypass for an agent — so the rule fix and the two re-seeds are one decision for Matt. Meanwhile the cities section carries real items (the wash-off Atlas lists 90-day closes by town under the key, lib/atlas/closes-by-place.ts) and the rule stays as it is. Patch + test parked in the orchestrator scratchpad (content-floor-aria-hidden.patch, content-floor-measure.test.mjs) and described on this node.",
+    output:
+      'One commit: (1) scripts/lib/content-floor.mjs measurePage() item rule skips a candidate whose closest aria-hidden=\"true\" ancestor is inside the section (the candidate itself included); (2) scripts/__tests__/content-floor-measure.test.mjs (jsdom) pins: nested lists count once, aria-hidden candidates never count, an aria-hidden section has 0 items; (3) the two seeded floors that counted decoration re-seeded from a production build under the new rule with the reason in contentFloor.note — cities atlas (9 → real items: 2 key + 3 live + up to 8 closes rows) and community atlas (9 → 5); (4) every other sectionDepth floor re-measured under the new rule and shown unchanged.',
+    accept:
+      'Mechanical: the jsdom test passes; ci:route-content-floor green for cities and community on a production build; no floor lowered except the two named, each carrying the counted-decoration reason; honestyFunction and requiredComponents cannot fall. Matt approves the two re-seeds explicitly (a passing gate is not approval).',
+  },
 ]
 
 async function main() {

@@ -23,8 +23,12 @@
  *  · THE DEEPEST CUT LEADS at a wider slide, so the opening reads as an
  *    edited field rather than a grid of equal tiles.
  *  · THE CONTROL IS THE DEMO'S. shadcn's own prev/next, flanking the track
- *    from OUTSIDE it, painted navy on cream; `.pd-cuts-stage` is the room
- *    they need (the same stage `place-type` uses).
+ *    from OUTSIDE it (`-left-12` / `-right-12`, centred on the slide),
+ *    painted navy on cream. This page sets the barrel's own
+ *    `--v3-carousel-nav-inset` / `--v3-carousel-nav-top` rather than moving
+ *    the barrel default, because /buy and the homepage rails ship on that
+ *    default; `.pd-cuts-stage` is the inline room the outside placement
+ *    needs, the same stage `place-type` uses.
  *
  * Every figure on the card comes off the one getPriceDrops call the route
  * makes. Nothing here rounds, estimates or fills a gap (§0): a row with no

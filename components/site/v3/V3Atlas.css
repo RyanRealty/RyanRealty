@@ -512,6 +512,102 @@
   color: var(--v3-ink-muted);
 }
 
+/* Closes by place: the withheld wash as a ranked count, under the key. Each
+   row is a door in the chip's own register (same tap height, same active
+   navy), a name and a tabular figure — no bar, because one linear scale keyed
+   to Bend renders every other town as a sliver (evaluator, SITE-92 r2). */
+.v3-atlas__closes {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3-atlas__closes-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--v3-space-3xs) var(--v3-space-xs);
+  margin: 0;
+  color: var(--v3-ink-muted);
+}
+
+.v3-atlas__closes-title {
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+}
+
+.v3-atlas__closes-window {
+  font-size: var(--v3-size-source);
+}
+
+.v3-atlas__closes-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0 var(--v3-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-atlas__closes-item {
+  min-width: 0;
+  border-top: 1px solid var(--v3-edge);
+}
+
+.v3-atlas__closes-door {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v3-space-2xs);
+  width: 100%;
+  min-height: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--v3-ink);
+  font-family: inherit;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+  text-align: left;
+  cursor: pointer;
+}
+
+.v3-atlas__closes-door.is-active {
+  color: var(--v3-navy);
+  box-shadow: inset 0 -2px 0 var(--v3-navy);
+}
+
+.v3-atlas__closes-door:focus-visible {
+  outline: var(--v3-focus-ring, 3px solid color-mix(in srgb, var(--v3-navy) 45%, transparent));
+  outline-offset: 2px;
+}
+
+.v3-atlas__closes-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v3-atlas__closes-n {
+  flex: none;
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-atlas__closes-door.is-active .v3-atlas__closes-n {
+  color: var(--v3-navy);
+}
+
+.v3-atlas__closes-rest {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+}
+
 /* The key to the map's own ink: the states the claim counts, drawn with
    the marks the map draws (evaluator round five, HOMEPAGE-2). */
 .v3-atlas__key {
