@@ -4,11 +4,13 @@
  * THE /buy FOLD SHELF — catalog job `shadcn-carousel`, owned by this route.
  *
  * This file imports the installed source itself (`@/components/ui/carousel`,
- * `npx shadcn add carousel`) and composes it: the official track, the official
- * prev/next buttons flanking the track, and the demo's own position readout
- * ("Slide 1 of 5" on ui.shadcn.com, `01 / 09` here). A house rail wrapper is
- * not the install — `ci:catalog-install --requireRouteImport` and
- * `taste-receipt --ship` both read THIS directory for the specifier.
+ * `npx shadcn add carousel`) and composes it: the official track and the
+ * official prev/next buttons flanking it, 44x44 and centred on the media
+ * midline. A house rail wrapper is not the install — `ci:catalog-install`'s
+ * requireRouteImport and `taste-receipt --ship` both read THIS directory for
+ * the specifier. (The demo's position readout, "Slide 1 of 5", ships on the
+ * shelves BELOW the fold, where 25px of chrome above the photograph is free;
+ * see `HomeRailPosition`.)
  *
  * WHAT IT ADDS OVER THE SHELVES BELOW IT. `HomeListingRail` is the editorial
  * shelf: one claim ("Price cuts", "New this week"), one track, scroll it. This
@@ -20,10 +22,10 @@
  * crawlable whichever band is open, and the rail ItemList JSON-LD still
  * describes all of them.
  *
- * The card face, the position readout and the chrome classes are IMPORTED from
- * the rail, not copied: two shelves doing the same job on two pages are the
- * same object here, down to the stylesheet (TASTE.md, "Consistency is a taste
- * rule"). Only the composition around them belongs to this route.
+ * The card face and the chrome classes are IMPORTED from the rail, not copied:
+ * two shelves doing the same job on two pages are the same object here, down to
+ * the stylesheet (TASTE.md, "Consistency is a taste rule"). Only the
+ * composition around them belongs to this route.
  */
 import {
   Carousel,

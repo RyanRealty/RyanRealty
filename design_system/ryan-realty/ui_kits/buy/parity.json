@@ -66,7 +66,7 @@
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Stage #top -- the opening, inventory variant: photo + H1 + the navy action, then the live market band across the base (SITE-46). Each figure is a door and carries the register's caret at rest (SITE-91)",
     "V3Breadcrumb",
-    "BuyHomesShelf #homes-local -- the lead shelf (SITE-91): the installed shadcn carousel, cheapest first, band chips + see-all on one line with the heading, flanking chevrons on the media midline",
+    "BuyHomesShelf -- the lead shelf (its section id is the rail row's own, homes-local, set in app/_v3/home-rail-items.ts rather than in the page) (SITE-91): the installed shadcn carousel, cheapest first, band chips + see-all on one line with the heading, flanking chevrons on the media midline",
     "HomeHomesRails -- the remaining inventory shelves (price cuts, new this week) on the homepage primitive",
     "V3Ledger #buyer-guides -- first-time, relocation, investment",
     "HomeHomesField -- browse the same single-family population by type, regional search as the door out; under the guides so the shelves and the Field are never adjacent (moved here SITE-91)",
