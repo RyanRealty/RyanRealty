@@ -304,6 +304,18 @@ export function zipFieldCaption(zip: string, total: number, shown: number): stri
   return `${totalLabel} · the ${shown.toLocaleString('en-US')} highest-priced below`
 }
 
+/** Opening caption. Uses the same count the claim and MOS print (layout lock). */
+export function zipOpeningCaption(
+  zip: string,
+  count: number | null,
+  noun: string,
+): string | null {
+  if (count == null || count <= 0) return null
+  const n = count.toLocaleString('en-US')
+  const word = noun.trim() || 'homes'
+  return `${n} ${word} for sale in ${zip}. Atlas marks and the photographs are this set.`
+}
+
 /**
  * Every tile is a row so the list, the map, and the caption count one set.
  * Photographs pass through when the tile has one. A missing photo does not drop the home.

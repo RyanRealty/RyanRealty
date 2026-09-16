@@ -3,6 +3,7 @@ import type { ListingTile } from '@/lib/data'
 import {
   neighborhoodName,
   zipFieldCaption,
+  zipOpeningCaption,
   zipFieldItems,
   zipItemListEntries,
   zipMasonryItems,
@@ -38,6 +39,13 @@ describe('zipFieldCaption', () => {
     expect(zipFieldCaption('97702', 1, 1)).toBe('1 active single-family listing in 97702')
     expect(zipFieldCaption('97702', 24, 24)).toBe('24 active single-family listings in 97702')
     expect(zipFieldCaption('97702', 0, 0)).toBeNull()
+  })
+
+  it('opening caption reprints the claim count, never a second inventory', () => {
+    expect(zipOpeningCaption('97702', 198, 'detached single-family homes')).toBe(
+      '198 detached single-family homes for sale in 97702. Atlas marks and the photographs are this set.',
+    )
+    expect(zipOpeningCaption('97702', 0, 'homes')).toBeNull()
   })
 })
 

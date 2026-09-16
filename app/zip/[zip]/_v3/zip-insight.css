@@ -1,0 +1,49 @@
+/* SITE-114. InsightCards on the ZIP market instrument. Tokens only. */
+
+.zip-insight {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
+.zip-insight .insight-chart-stage {
+  height: 11.5rem;
+  margin-bottom: var(--v3-space-md);
+}
+
+.zip-insight .insight-cards {
+  gap: var(--v3-space-sm);
+}
+
+.zip-insight .insight-cards__title {
+  font-size: var(--v3-size-h4, 1.25rem);
+  letter-spacing: -0.01em;
+}
+
+.zip-insight .insight-cards__prose {
+  max-width: var(--v3-measure-text);
+  color: var(--v3-ink);
+}
+
+.zip-insight .insight-cards__prose strong {
+  font-weight: 600;
+}
+
+.zip-insight__digits {
+  display: inline-block;
+  min-width: 4ch;
+  font-variant-numeric: tabular-nums;
+}
+
+.zip-insight .insight-cards__chip,
+.zip-insight .insight-cards__metric,
+.zip-insight .insight-pager__btn {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  padding-inline: 0.8rem;
+}
+
+.zip-insight .insight-cards__pill {
+  min-height: 2.75rem;
+}
