@@ -8,8 +8,12 @@
  */
 
 import { formatPriceCompact } from '@/lib/format/money'
-import { formatPaceShare } from '@/lib/data/market-truth/public-pace'
-import type { PublicMixShare } from '@/lib/data/market-truth/public-mix'
+
+export type ZipMixShare = {
+  key: string
+  share: number
+  floor?: boolean
+}
 
 export const ZIP_INSIGHT_WINDOW = 12
 
@@ -209,8 +213,13 @@ function buildPace(cells: readonly ZipMonthCell[], source: string): ZipPaceBoard
   return { cells: window, closings, medians, peakIndex, source }
 }
 
+function formatShare(share: number): string {
+  const pct = Math.round(share * 1000) / 10
+  return `${pct.toFixed(1)}%`
+}
+
 function mixSegments(
-  shares: readonly PublicMixShare[],
+  shares: readonly ZipMixShare[],
   words: Record<string, { chip: string; plain: string }>,
 ): ZipMixSegment[] {
   const named = shares
@@ -219,7 +228,7 @@ function mixSegments(
       if (!w || !(row.share > 0)) return null
       return { row, w }
     })
-    .filter((item): item is { row: PublicMixShare; w: { chip: string; plain: string } } => item != null)
+    .filter((item): item is { row: ZipMixShare; w: { chip: string; plain: string } } => item != null)
   if (named.length < 2) return []
   const total = named.reduce((sum, item) => sum + item.row.share, 0)
   if (!(total > 0)) return []
@@ -229,14 +238,14 @@ function mixSegments(
       name: item.w.chip,
       label: item.w.plain,
       pct,
-      amount: formatPaceShare(item.row.share),
+      amount: formatShare(item.row.share),
     }
   })
 }
 
 function buildMix(
-  bedrooms: readonly PublicMixShare[],
-  financing: readonly PublicMixShare[],
+  bedrooms: readonly ZipMixShare[],
+  financing: readonly ZipMixShare[],
   source: string,
 ): ZipMixBoard | null {
   const beds = mixSegments(bedrooms, BED_CHIP)
@@ -255,8 +264,8 @@ export function buildZipInsightBoard(input: {
   cityName: string
   cityFallback: boolean
   months: readonly ZipInsightMonth[]
-  bedrooms: readonly PublicMixShare[]
-  financing: readonly PublicMixShare[]
+  bedrooms: readonly ZipMixShare[]
+  financing: readonly ZipMixShare[]
 }): ZipInsightBoard {
   const place = `ZIP ${input.zip}`
   const scope = scopeClause(input.zip, input.cityName, input.cityFallback)

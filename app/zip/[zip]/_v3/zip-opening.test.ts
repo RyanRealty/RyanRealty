@@ -15,6 +15,7 @@ const ALERTS = readFileSync(join(HERE, 'ZipAlertsSheet.client.tsx'), 'utf8')
 const CLAIM = readFileSync(join(HERE, 'ZipClaim.client.tsx'), 'utf8')
 const CSS = readFileSync(join(HERE, 'zip-opening.css'), 'utf8')
 const CONSTANTS = readFileSync(join(HERE, 'zip-constants.ts'), 'utf8')
+const INSIGHT = readFileSync(join(HERE, 'zip-insight.ts'), 'utf8')
 
 describe('SITE-73 zip fold composition', () => {
   it('opens with Atlas drawing beside MOS + alerts figure (layout lock)', () => {
@@ -74,6 +75,7 @@ describe('SITE-73 zip fold composition', () => {
     expect(PAGE).toMatch(/ZipInsight/)
     expect(PAGE).toMatch(/buildZipInsightBoard/)
     expect(PAGE).toMatch(/zipOpeningCaption/)
+    expect(INSIGHT).not.toMatch(/lib\/data\/market-truth|lib\/supabase/)
     expect(ALERTS).toMatch(/V3AlertsStrip/)
     expect(ALERTS).toMatch(/types=\{types\}/)
     expect(PAGE).toMatch(/buildPlaceAlertTypes/)
