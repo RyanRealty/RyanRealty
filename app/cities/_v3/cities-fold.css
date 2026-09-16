@@ -56,27 +56,43 @@
 }
 
 /* 375 fold: drawing first, then the alerts sentence. Hide Atlas type
-   switches / price slider / event dock so the map and the figure share
-   the first viewport. Desktop keeps the full Atlas chrome. */
+   switches / price slider / event dock / head so the map and the figure
+   share the first viewport. The page dek already names both counts.
+   Desktop keeps the full Atlas chrome. */
 @media (max-width: 63.99rem) {
+  .cities-fold {
+    padding-top: var(--v3-space-xs);
+    padding-bottom: var(--v3-space-sm);
+  }
+
+  .cities-fold__head {
+    margin-bottom: var(--v3-space-2xs);
+  }
+
   .cities-fold .v3-atlas__dock,
-  .cities-fold .v3-atlas__aside {
+  .cities-fold .v3-atlas__aside,
+  .cities-fold .v3-atlas__head {
     display: none;
   }
 
-  .cities-fold .v3-atlas__head {
-    padding-top: 0;
-    padding-bottom: var(--v3-space-2xs);
-  }
-
   .cities-fold .v3-atlas__stage {
-    min-height: 14rem;
-    max-height: 38vh;
+    min-height: 10rem;
+    max-height: 26vh;
   }
 
   .cities-fold .v3-alerts__num {
     white-space: nowrap;
   }
+}
+
+.cities-fold .v3.v3-alerts .v3-alerts__claim {
+  font-size: var(--v3-size-body-lg, 1.25rem);
+  line-height: 1.3;
+}
+
+.cities-fold .v3-alerts__num {
+  font-size: var(--v3-size-display-2, 2rem);
+  white-space: nowrap;
 }
 
 @media (min-width: 64rem) {

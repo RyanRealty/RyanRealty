@@ -606,11 +606,11 @@ export default async function CitiesPage() {
               </div>
             ) : null}
             <aside className="cities-fold__figure">
+              {regionDrawing}
               <CitiesAlertsStrip
                 newCount30d={hud.new30}
                 updatedAt={leftoverStamp}
               />
-              {regionDrawing}
               {showInsight ? <CitiesInsight board={insightBoard} /> : null}
             </aside>
           </div>

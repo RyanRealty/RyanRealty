@@ -69,6 +69,7 @@ function Figure({
       value={value}
       duration={0.5}
       startOnView={false}
+      settleOnMount
       className="cities-insight__digits"
       format={(n) => {
         if (Math.round(n) === Math.round(value)) return formatted

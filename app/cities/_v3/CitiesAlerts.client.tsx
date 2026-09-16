@@ -28,7 +28,7 @@ const TRAP = { name: 'company', label: 'Company' } as const
 const PROPERTY_TYPE = 'A'
 
 const ALERT_SOURCE =
-  'Market Truth new_listings_30d for Central Oregon, detached, definition mt-v1. The count is houses that came on the market in the last 30 days. The alert filter is every new single-family listing in the region.'
+  'Market Truth for Central Oregon detached homes. The count is houses that came on the market in the last 30 days. The alert is every new single-family listing in the region.'
 
 type Props = {
   id?: string
@@ -92,7 +92,7 @@ export function CitiesAlertsStrip({ id = 'fold-alerts', newCount30d, updatedAt }
       updatedAt={updatedAt}
       trap={TRAP}
       emphasis="primary"
-      stickyAfter="atlas"
+      stickyAfter="featured-cities"
       stickyLabel="Central Oregon listing alerts"
       onSubmit={submit}
     />
