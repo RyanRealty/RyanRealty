@@ -22,9 +22,11 @@ export type V3NumberProps = {
   /** When false, count up on mount (fold numerals that may never hit 60% in-view). */
   startOnView?: boolean
   /**
-   * Opt-in (SITE-103): publish the sourced face on the server and animate only
-   * when the value changes. See AnimatedNumber.settleOnMount — the default
-   * renders `0` until hydration, which is a wrong number in the HTML.
+   * Publish the sourced face on the server (SITE-117). Default true — a
+   * hydration flash of `0` is a wrong number in the HTML (CLAUDE.md §0).
+   * Pass false only for a decorative count-up the caller has already
+   * decided is not a published figure. Animate on later value changes
+   * either way (AnimatedNumber.settleOnMount).
    */
   settle?: boolean
   className?: string
@@ -35,17 +37,18 @@ export function V3Number({
   formatted,
   durationMs = 900,
   startOnView = true,
-  settle = false,
+  settle = true,
   className,
 }: V3NumberProps) {
-  const safe = Number.isFinite(value) ? Math.max(0, value) : 0
+  // Never invent 0. A missing or non-finite count is an empty face, not data.
+  if (!Number.isFinite(value) || value < 0) return null
   return (
     <AnimatedNumber
-      value={safe}
+      value={value}
       settleOnMount={settle}
       duration={Math.max(0, durationMs) / 1000}
       format={(n) => {
-        if (Math.round(n) === Math.round(safe)) return formatted
+        if (Math.round(n) === Math.round(value)) return formatted
         return Math.round(n).toLocaleString('en-US')
       }}
       className={cn(V3_ROOT_CLASS, 'v3-number', className)}

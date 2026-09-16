@@ -447,15 +447,21 @@ export function V3AlertsStrip({
     ) : null
 
   // A figure, not a control: the one door is the labelled button under the claim.
-  // SITE-84: count-up via V3Number (beui-number / rareui:animatedcounter /
-  // transitions:number-pop-in). key remounts on type toggle so the wheel runs
-  // again when Houses ↔ Land swaps the figure. No hyphen mark — the numeral
-  // is the spectacle; the labelled browse button is the door.
+  // SITE-84 / SITE-117: V3Number (beui-number). settle publishes the sourced
+  // face in the first HTML — a flash of "0 houses came on the market" is a
+  // wrong number. key remounts on type toggle so the wheel still runs when
+  // Houses ↔ Land swaps the figure.
   const countValue = shownCount ? Number(String(shownCount).replace(/,/g, '')) : Number.NaN
   const numeral = shownCount ? (
     <span className="v3-alerts__num">
       {Number.isFinite(countValue) ? (
-        <V3Number key={shownCount} value={countValue} formatted={shownCount} className="v3-alerts__num-pop" />
+        <V3Number
+          key={shownCount}
+          value={countValue}
+          formatted={shownCount}
+          settle
+          className="v3-alerts__num-pop"
+        />
       ) : (
         shownCount
       )}
@@ -594,7 +600,12 @@ export function V3AlertsStrip({
               {shownCount ? (
                 <span className="v3-alerts-sticky__num">
                   {Number.isFinite(countValue) ? (
-                    <V3Number key={`sticky-${shownCount}`} value={countValue} formatted={shownCount} />
+                    <V3Number
+                      key={`sticky-${shownCount}`}
+                      value={countValue}
+                      formatted={shownCount}
+                      settle
+                    />
                   ) : (
                     shownCount
                   )}

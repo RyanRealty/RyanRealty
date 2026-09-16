@@ -1,3 +1,11 @@
+# Current — 2026-09-16 (SITE-117 Tip Ready PR — V3Number SSR honesty)
+
+Surface: Cursor cloud `cursor-cloud-site117-20260916`, branch `cursor/site-117-v3number-ssr-e734`. PR only — do not merge. Node left `in_progress`.
+
+- **SITE-117.** `V3Number` defaulted `settle=false`, so production `/cities/bend` first HTML said `<span class="v3-number v3-alerts__num-pop">0</span> houses came on the market`. Default is now `true`; non-finite values omit (never fake 0); `V3AlertsStrip` passes `settle` on both mounts; `V3MosBars` defaults `settle` too (place MOS was the leftover `0`).
+- **Evidence.** Production before: numeral `0`. Local `next dev --webpack :3401` after: alerts `121`, sticky `121`, MOS homes `612`. Gate: `components/site/__tests__/v3-number-ssr.test.tsx` (14 passed). No taste receipt invented.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY + §6, `TASTE.md`.
+
 # Current — 2026-09-16 (SITE-100 Tip Ready PR — market-report hub)
 
 Surface: Cursor cloud `cursor-cloud-site100-20260916`, branch `cursor/site-100-market-report-hub-6b52`, PR https://github.com/RyanRealty/RyanRealty/pull/258. PR only — do not merge.
