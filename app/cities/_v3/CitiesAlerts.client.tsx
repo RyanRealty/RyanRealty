@@ -19,7 +19,7 @@ import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
 import {
   buildGuestWatchFromPlace,
-  rememberGuestWatch,
+  rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
 import { formatCount } from '@/lib/format/count'
 import { newestFirstHref, placeAlertsStickyNote, PLACE_ALERTS_FIGURE_MIN } from '@/lib/site/place-alerts'
@@ -42,10 +42,10 @@ export function CitiesAlertsStrip({ id = 'fold-alerts', newCount30d, updatedAt }
       email: input.email,
       filters: { city: '', propertyType: PROPERTY_TYPE },
       company: input.company,
-      sessionId: readRrSessionId(),
+      sessionId: readRrSessionId(), // hydration-safe
     })
     if (!result.ok) return result
-    rememberGuestWatch(
+    rememberGuestWatch( // hydration-safe: event/effect storage only
       buildGuestWatchFromPlace({
         communityName: 'Central Oregon',
         city: '',
