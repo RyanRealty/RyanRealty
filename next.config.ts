@@ -40,8 +40,15 @@ const supabaseFromEnvLocal = loadSupabaseEnvFromLocal()
 // Manifest + offline page + InstallPrompt work without the service worker.
 const nextConfig: NextConfig = {
   // Turbopack: use project dir as root so @/ resolves correctly when multiple lockfiles exist (e.g. parent folder).
+  // RR_TURBOPACK_ROOT overrides it for a worktree, whose `node_modules` is a
+  // symlink into the main checkout: Turbopack refuses a symlink that "points
+  // out of the filesystem root" and the build dies in resolve_internal before
+  // it compiles a line. Pointing the root at the common ancestor lets a lane
+  // run the same production build CI runs. Unset everywhere else.
   turbopack: {
-    root: path.resolve(process.cwd()),
+    root: process.env.RR_TURBOPACK_ROOT
+      ? path.resolve(process.env.RR_TURBOPACK_ROOT)
+      : path.resolve(process.cwd()),
   },
   typescript: {
     // Vercel-ONLY: skip the type-check phase there. Vercel's standard build
