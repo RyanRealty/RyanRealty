@@ -36,7 +36,7 @@ checks.push({
   ok: /export function pickCrmSlug/.test(resolve) && /hardcodedSlugForEmail/.test(resolve),
 })
 
-const access = src('app/actions/crm.ts')
+const access = src('app/actions/crm-access.ts')
 checks.push({
   label: 'getCrmAccess resolves slug via resolveCrmSlugForAccess',
   ok:
