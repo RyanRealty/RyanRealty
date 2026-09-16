@@ -60,14 +60,20 @@ describe('SITE-73 zip fold composition', () => {
     expect(CSS).toMatch(/\.zip-opening__figure \.v3-alerts__strip > li:nth-child\(n \+ 2\)/)
   })
 
-  it('installs catalog sources on the route (masonry, scroll-animation, number)', () => {
+  it('installs catalog sources on the route (masonry, scroll-animation, number, insight-cards)', () => {
     expect(CATALOG).toContain("from '@/components/motion/infinite-masonry'")
     expect(CATALOG).toContain("from '@/components/motion/scroll-animation'")
     expect(CATALOG).toContain("from '@/components/motion/number'")
+    expect(CATALOG).toContain("from '@/components/motion/insight-cards'")
     expect(MASONRY).toContain("from '@/components/motion/infinite-masonry'")
     expect(MASONRY).toContain("from '@/components/motion/scroll-animation'")
+    expect(MASONRY).toContain('id="masonry-open"')
     expect(CLAIM).toMatch(/V3Number/)
     expect(CLAIM).toMatch(/settle/)
+    expect(CLAIM).toContain('id="number-open"')
+    expect(PAGE).toMatch(/ZipInsight/)
+    expect(PAGE).toMatch(/buildZipInsightBoard/)
+    expect(PAGE).toMatch(/zipOpeningCaption/)
     expect(ALERTS).toMatch(/V3AlertsStrip/)
     expect(ALERTS).toMatch(/types=\{types\}/)
     expect(PAGE).toMatch(/buildPlaceAlertTypes/)

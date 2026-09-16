@@ -141,7 +141,9 @@ import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
 import { buildPublicMixFigures } from '@/app/housing-market/[...slug]/_v3/geo-figures'
 import { ZipAlertsSheet } from './_v3/ZipAlertsSheet.client'
 import { ZipHomesField } from './_v3/ZipHomesField'
+import { ZipInsight } from './_v3/ZipInsight.client'
 import { ZipSellSheet } from './_v3/ZipSellSheet.client'
+import { buildZipInsightBoard, zipInsightHasPages } from './_v3/zip-insight'
 import {
   CANONICAL_ZIPS,
   ZIP_AREA,
@@ -153,8 +155,7 @@ import {
   normalizeZip,
   numeric,
   zipAlertBuckets,
-  zipFieldCaption,
-  zipFieldItems,
+  zipOpeningCaption,
   zipItemListEntries,
   zipMasonryItems,
   zipMedianChart,
@@ -395,6 +396,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       value: v3Text(activeCount.toLocaleString('en-US')),
       label: v3Text(mtHit ? 'detached homes for sale' : 'homes for sale'),
       href: zipSearchHref(zip),
+      count: activeCount,
     })
   }
   if (hud.pending != null && hud.pending > 0) {
@@ -512,13 +514,24 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       : `Homes for sale in ${zip}`
 
   // ── THE FIELD ────────────────────────────────────────────────────────────
-  const fieldItemsAll = zipFieldItems(tiles, zip)
   const masonryItems = zipMasonryItems(tiles, zip)
-  const fieldCaption = zipFieldCaption(zip, fieldItemsAll.length, fieldItemsAll.length)
+  const claimNoun = mtHit ? 'detached single-family homes' : 'single-family homes'
+  const fieldCaption = zipOpeningCaption(zip, activeCount, claimNoun)
   const fieldTrace =
-    `live MLS through Oregon Data Share, every active single-family listing in ZIP ${zip} (${area}) ` +
-    'that reports a list price. The Atlas marks and the masonry are the same set'
+    (mtHit
+      ? `regional MLS through Oregon Data Share, detached single-family houses in ZIP ${zip} (${area}). `
+      : `live MLS through Oregon Data Share, every active single-family listing in ZIP ${zip} (${area}) that reports a list price. `) +
+    'The claim, MOS bars, Atlas house marks, and photographs print one count.'
   const itemListEntries = zipItemListEntries(masonryItems)
+  const insightBoard = buildZipInsightBoard({
+    zip,
+    cityName,
+    cityFallback: chartMonths.cityFallback,
+    months: chartMonths.months,
+    bedrooms: publicMix.bedrooms,
+    financing: publicMix.financing,
+  })
+  const showInsight = zipInsightHasPages(insightBoard)
 
   // ── NEIGHBOURHOODS IN THIS ZIP ───────────────────────────────────────────
   // Grouped from the same tiles. THE KEY IS THE RAW FEED VALUE AND THE LABEL IS
@@ -702,7 +715,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           citySlug={cacheCitySlug}
           headline={v3Text(`Homes for sale in ${zip}`)}
           claimCount={activeCount != null && activeCount > 0 ? activeCount : null}
-          claimNoun={mtHit ? 'detached single-family homes' : 'single-family homes'}
+          claimNoun={claimNoun}
           claimHref={zipSearchHref(zip)}
           cityHref={`/cities/${cityUrlSlug(cityName)}`}
           browseHref={zipSearchHref(zip)}
@@ -751,8 +764,18 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
             headline={v3Text(marketHeadline)}
             note={verdictSentence ? v3Text(verdictSentence) : undefined}
             figures={[firstMarketFigure, ...restMarketFigures]}
-            chart={scopedChart}
+            chart={showInsight ? undefined : scopedChart}
+            chartFirst={showInsight}
+            foldAfter={showInsight ? 0 : undefined}
+            foldLabel={
+              showInsight
+                ? v3Text('List price, days on market, and the rest of the figures for this ZIP')
+                : undefined
+            }
+            drawing={showInsight ? <ZipInsight zip={zip} board={insightBoard} /> : undefined}
+            settleFigures
             source={v3Text(marketTrace)}
+            sourceName={v3Text('Oregon Data Share')}
             updated={hudAsOf ? v3Text(formatDate(hudAsOf)) : undefined}
             action={{
               label: v3Text('See the full market report'),

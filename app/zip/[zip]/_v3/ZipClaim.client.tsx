@@ -24,7 +24,7 @@ export function ZipClaim({
 }) {
   const formatted = count.toLocaleString('en-US')
   return (
-    <p className="zip-opening__claim" data-demo-state="number-open">
+    <p id="number-open" className="zip-opening__claim" data-demo-state="number-open">
       <a href={href} className="zip-opening__claim-count">
         <V3Number value={count} formatted={formatted} startOnView={false} settle />
       </a>

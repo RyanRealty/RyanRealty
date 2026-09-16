@@ -25,6 +25,7 @@
   line-height: 1.35;
   color: var(--v3-navy);
   max-width: 42rem;
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 
 .zip-opening__claim a {
@@ -317,6 +318,10 @@
 }
 
 /* Contained SmoothScroll + masonry (beui:scroll-animation + infinite-masonry). */
+#masonry-open {
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
 .zip-opening__scroll {
   position: relative;
   height: 28rem;
@@ -324,20 +329,9 @@
   border-radius: var(--v3-radius-lg, 0.75rem);
 }
 
-.zip-opening__homes-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--v3-space-xs);
-  padding: var(--v3-space-xs) var(--v3-space-xs) 0;
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: var(--v3-cream, var(--background));
-}
-
 .zip-opening__homes-kicker {
   margin: 0;
+  padding: 2.25rem var(--v3-space-xs) 0;
   font-family: var(--v3-font-sans);
   font-size: var(--v3-size-source);
   letter-spacing: 0.06em;
@@ -346,7 +340,20 @@
 }
 
 .zip-opening__progress {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  z-index: 4;
   color: var(--v3-navy);
+  pointer-events: none;
+}
+
+.zip-opening__progress-bar {
+  position: absolute;
+  top: 0;
+  z-index: 3;
+  color: var(--v3-navy);
+  background: color-mix(in oklab, var(--v3-navy) 12%, transparent);
 }
 
 .zip-opening__masonry {
@@ -407,7 +414,7 @@
 
 @media (max-width: 63.99rem) {
   .zip-opening {
-    padding-bottom: var(--v3-space-sm);
+    padding-bottom: 5.5rem;
   }
 
   .zip-opening__stage {

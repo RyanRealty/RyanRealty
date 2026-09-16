@@ -6,6 +6,7 @@
  * Tip Ready (`taste-receipt --ship`) requires the zip page/_v3 set to import
  * each adaptedFrom specifier (requireRouteImport). House-only import is refuse.
  */
+import InsightCards from '@/components/motion/insight-cards'
 import { InfiniteMasonry } from '@/components/motion/infinite-masonry'
 import { AnimatedNumber } from '@/components/motion/number'
 import {
@@ -14,6 +15,7 @@ import {
   useSmoothScroll,
 } from '@/components/motion/scroll-animation'
 
+void InsightCards
 void InfiniteMasonry
 void AnimatedNumber
 void ScrollProgress

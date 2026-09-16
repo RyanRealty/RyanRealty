@@ -6,7 +6,7 @@
  * Cards carry price + address + beds/baths/sqft. Photos stay card-sized
  * (800×600), never the 320 ledger thumb.
  */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { InfiniteMasonry } from '@/components/motion/infinite-masonry'
 import {
   ScrollProgress,
@@ -24,7 +24,7 @@ function MasonryProgress() {
   return (
     <ScrollProgress
       variant="circle"
-      size={36}
+      size={40}
       thickness={3}
       progress={progress}
       className="zip-opening__progress"
@@ -42,6 +42,7 @@ export function ZipHomesMasonry({
   emptyMessage: string
 }) {
   void zipCatalogReady
+  const rootRef = useRef<HTMLDivElement>(null)
   const [shown, setShown] = useState(() => Math.min(FIRST_PAGE, items.length))
   const [loading, setLoading] = useState(false)
   const visible = useMemo(() => items.slice(0, shown), [items, shown])
@@ -54,17 +55,29 @@ export function ZipHomesMasonry({
     setLoading(false)
   }, [hasMore, items.length, loading])
 
+  useEffect(() => {
+    const root = rootRef.current?.querySelector('.zip-opening__scroll')
+    if (!(root instanceof HTMLElement)) return
+    const max = root.scrollHeight - root.clientHeight
+    if (max > 40) root.scrollTop = Math.round(max * 0.42)
+  }, [visible.length])
+
   if (items.length === 0) {
     return <p className="zip-opening__empty">{emptyMessage}</p>
   }
 
   return (
-    <div data-demo-state="masonry-open">
+    <div id="masonry-open" ref={rootRef} data-demo-state="masonry-open">
       <SmoothScroll root={false} className="zip-opening__scroll" touch>
-        <div className="zip-opening__homes-head">
-          <p className="zip-opening__homes-kicker">Houses in {zip}</p>
-          <MasonryProgress />
-        </div>
+        <ScrollProgress
+          variant="bar"
+          height={4}
+          position="top"
+          fixed={false}
+          className="zip-opening__progress-bar"
+        />
+        <MasonryProgress />
+        <p className="zip-opening__homes-kicker">Houses in {zip}</p>
         <InfiniteMasonry
           items={visible}
           getItemKey={(item) => item.id}
