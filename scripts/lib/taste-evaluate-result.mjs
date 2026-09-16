@@ -298,6 +298,18 @@ export function claudeModelFromWrapper(wrapper, alias) {
   const usage = wrapper && typeof wrapper === 'object' ? wrapper.modelUsage : null
   if (usage && typeof usage === 'object') {
     const ids = Object.keys(usage).filter((k) => /^claude-/.test(k))
+    // THE CLI REPORTS EVERY MODEL THE TURN TOUCHED, not just the one that
+    // answered. A `--model sonnet` run on 2026-09-15 came back with
+    // modelUsage { claude-haiku-4-5-20251001: 899 input tokens (the CLI's own
+    // internal helper), claude-sonnet-5: 28,660 } — and taking ids[0] stamped
+    // the receipt `claude-haiku-4-5`, a model that is not on the judge chain
+    // at all. The judge is the model matching the alias we asked for; anything
+    // else in that map is a passenger. When no sonnet/opus ran, the first id
+    // still comes back, so a receipt says honestly what actually graded it.
+    const asked = ids.find((k) => new RegExp(`^claude-${alias}(?:-|$)`).test(k))
+    if (asked) return asked
+    const ruler = ids.find((k) => /^claude-(sonnet|opus)(?:-|$)/.test(k))
+    if (ruler) return ruler
     if (ids.length) return ids[0]
   }
   return FALLBACK_EVALUATORS[alias] ?? FALLBACK_EVALUATORS.sonnet

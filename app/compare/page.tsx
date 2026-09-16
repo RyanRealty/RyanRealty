@@ -100,14 +100,19 @@ type RowSpec = {
    * because the spread between 1981 and 2016 is 35 years, not the year 35.
    */
   formatSpread?: (n: number) => string
-  /** The words after the spread figure, e.g. "apart", "more square feet". */
-  spreadWord: string
+  /** The words after the spread figure, e.g. "apart", "more square feet".
+   *  A function because "1 more beds" is not a sentence. */
+  spreadWord: (n: number) => string
   /**
-   * Whether a length is drawn under the figure. A bar is a comparison, so it
-   * only goes on a row where the comparison teaches something: four homes
-   * built 1999-2020 all sit at 99% of the newest, which draws four identical
-   * bars and says nothing, and a bed count of 2 beside 4 is already read faster
-   * as "2" than as half a bar.
+   * Whether a length is drawn under the figure. ONE RULE FOR EVERY ROW as of
+   * 2026-09-15: the first cut drew bars on price, price per foot, size, lot and
+   * days on market only, on the argument that four homes built 1999-2020 all
+   * sit at 99% of the newest and teach nothing — and two evaluators in a row
+   * read the result as a table whose rhythm broke halfway down, "bare numbers
+   * with no mark", an afterthought rather than a system. A near-equal row
+   * drawing four near-equal lengths is the honest picture of a near-equal row.
+   * The field stays because a future row (a yes/no, a status) will not take a
+   * length at all.
    */
   encoded: boolean
   /** Whether the spread also reads as a percentage. Only where it means
@@ -126,7 +131,7 @@ const SAMPLE_ROWS: readonly RowSpec[] = [
     label: 'Price',
     read: (t) => t.listPrice,
     format: (n) => formatPriceExact(n),
-    spreadWord: 'apart',
+    spreadWord: () => 'apart',
     encoded: true,
     percent: true,
   },
@@ -134,24 +139,36 @@ const SAMPLE_ROWS: readonly RowSpec[] = [
     label: 'Price / sq ft',
     read: (t) => t.pricePerSqft,
     format: (n) => `$${Math.round(n).toLocaleString('en-US')}`,
-    spreadWord: 'apart',
+    spreadWord: () => 'apart',
     encoded: true,
     percent: true,
   },
-  { label: 'Beds', read: (t) => t.beds, format: num, spreadWord: 'more beds', encoded: false },
-  { label: 'Baths', read: (t) => t.baths, format: num, spreadWord: 'more baths', encoded: false },
+  {
+    label: 'Beds',
+    read: (t) => t.beds,
+    format: num,
+    spreadWord: (n) => (n === 1 ? 'more bedroom' : 'more bedrooms'),
+    encoded: true,
+  },
+  {
+    label: 'Baths',
+    read: (t) => t.baths,
+    format: num,
+    spreadWord: (n) => (n === 1 ? 'more bathroom' : 'more bathrooms'),
+    encoded: true,
+  },
   {
     label: 'Sq ft',
     read: (t) => t.sqft,
     format: num,
-    spreadWord: 'more square feet',
+    spreadWord: () => 'more square feet',
     encoded: true,
   },
   {
     label: 'Lot',
     read: (t) => t.lotSizeAcres,
     format: (n) => `${n.toFixed(2)} ac`,
-    spreadWord: 'more land',
+    spreadWord: () => 'more land',
     encoded: true,
   },
   {
@@ -162,21 +179,21 @@ const SAMPLE_ROWS: readonly RowSpec[] = [
     read: (t) => t.yearBuilt,
     format: (n) => String(Math.round(n)),
     formatSpread: (n) => String(Math.round(n)),
-    spreadWord: 'years apart',
-    encoded: false,
+    spreadWord: (n) => (n === 1 ? 'year apart' : 'years apart'),
+    encoded: true,
   },
   {
     label: 'Garage',
     read: (t) => t.garageSpaces,
     format: num,
-    spreadWord: 'more spaces',
-    encoded: false,
+    spreadWord: (n) => (n === 1 ? 'more space' : 'more spaces'),
+    encoded: true,
   },
   {
     label: 'Days on market',
     read: (t) => t.dom,
     format: num,
-    spreadWord: 'days apart',
+    spreadWord: (n) => (n === 1 ? 'day apart' : 'days apart'),
     encoded: true,
   },
 ]
@@ -200,7 +217,12 @@ function isFinitePresent(v: number | null | undefined): v is number {
  * The spread sentence for one row: the two extremes, whose they are, and the
  * distance between them. Computed from the same raw values the cells format.
  */
-function readingFor(spec: RowSpec, values: readonly (number | null)[], titles: readonly string[]): string {
+function readingFor(
+  spec: RowSpec,
+  values: readonly (number | null)[],
+  titles: readonly string[],
+  { named = true }: { named?: boolean } = {},
+): string {
   const present = values
     .map((v, i) => ({ v, i }))
     .filter((p): p is { v: number; i: number } => isFinitePresent(p.v))
@@ -220,7 +242,11 @@ function readingFor(spec: RowSpec, values: readonly (number | null)[], titles: r
     spec.percent && low.v > 0 ? `, ${Math.round((high.v / low.v - 1) * 100).toLocaleString('en-US')}% more` : ''
   const missing = values.length - present.length
   const withheld = missing > 0 ? ` (${missing} not published)` : ''
-  return `${spec.format(low.v)} at ${titles[low.i]} · ${spec.format(high.v)} at ${titles[high.i]} · ${spread} ${spec.spreadWord}${pct}${withheld}`
+  // At 375 the two addresses push this to three lines above the houses, so the
+  // narrow reading names the extremes without naming whose they are — the
+  // LOWEST / HIGHEST marks in the columns do that job on the same screen.
+  if (!named) return `${spec.format(low.v)} lowest · ${spec.format(high.v)} highest · ${spread} ${spec.spreadWord(diff)}${pct}`
+  return `${spec.format(low.v)} at ${titles[low.i]} · ${spec.format(high.v)} at ${titles[high.i]} · ${spread} ${spec.spreadWord(diff)}${pct}${withheld}`
 }
 
 export default async function ComparePage({
@@ -322,8 +348,7 @@ export default async function ComparePage({
     // Which home holds each extreme. Marked only on encoded rows, and only when
     // the two extremes actually differ — "Lowest" on four identical figures is
     // a mark that teaches nothing.
-    const extremes = rawByRow.map((values, r) => {
-      if (!SAMPLE_ROWS[r]!.encoded) return { low: -1, high: -1 }
+    const extremes = rawByRow.map((values) => {
       const present = values
         .map((v, i) => ({ v, i }))
         .filter((p): p is { v: number; i: number } => isFinitePresent(p.v))
@@ -336,6 +361,7 @@ export default async function ComparePage({
     sampleRows = SAMPLE_ROWS.map((spec, r) => ({
       label: spec.label,
       reading: readingFor(spec, rawByRow[r] ?? [], readingNames),
+      readingShort: readingFor(spec, rawByRow[r] ?? [], readingNames, { named: false }),
       encoded: spec.encoded,
     }))
 
@@ -403,17 +429,21 @@ export default async function ComparePage({
       // to look at (2026-09-12 table). The sheet's own reading line states the
       // spread, in the row the reader is on, so the claim gets out of its way
       // and carries the door instead.
-      sampleClaim = `${n} homes for sale right now, side by side. Tap a row to read the spread.`
+      sampleClaim = `${n} homes for sale right now. Tap a row to read the spread.`
       // The source is NAMED in the caption, in the fold, not only inside the
       // disclosure below the sheet: an evaluator reading the rendered page on
       // 2026-09-09 could see a freshness stamp and no publisher.
       sampleCaption = `${n} real listings, shown as an example — not your queue. Oregon Data Share, read ${formatDate(new Date())}.`
-      sampleSheetCaption = `Regional MLS through Oregon Data Share. Every figure read from listing_tile_mv in this render, ${stamp}. A field the feed withheld prints as an em dash, never as a zero.`
+      // NO DATASET CODENAMES IN COPY A VISITOR READS (TASTE.md: raw slugs and
+      // internal labels are a named tell; the 2026-09-15 evaluator called this
+      // one blocking). The table name belongs in the §0 trace behind "Source",
+      // which is the audit line, not in the caption under the sheet.
+      sampleSheetCaption = `Regional MLS through Oregon Data Share, read ${stamp}. Where the MLS published no figure you will see a dash.`
       // The trace opens with its source's NAME, because V3SourceDisclosure
       // folds a trace to the shorter of its pre-comma segment and its first
       // sentence — a trace that opens with a clause instead of a name folds to
       // a fragment nobody can read.
-      sampleSource = `Regional MLS through Oregon Data Share, read from listing_tile_mv in this render: standard_status Active, scoped to the Central Oregon service-area cities, ordered by most recent MLS update, the first ${SAMPLE_POOL} read and the first ${SAMPLE_SIZE} that publish a photograph, a price, beds, baths and square feet shown here — a comparison of four homes has to be four homes, so a vacant lot is not one of them. Price is ListPrice as published; beds, baths, square feet, lot acres, year built, garage spaces and days on market are the feed's own fields, and the photographs are that listing's own, read through getListingPhotos from the Spark payload on the listings row (details.Photos at Uri1600, falling back to the single PhotoURL), in the order the feed publishes them and honouring an owner's media-removal request. A field the feed withheld renders as an em dash, never as a zero and never as an estimate. The length under a figure is that home's value as a share of the largest in the same row, and the spread sentence over the sheet is the difference between the two extremes in that row — both computed from the same numbers printed in the cells, and drawn only on the rows where the spread is the point: price, price per foot, size, lot and days on market. These are real active listings and they are labelled as an example — they are not your comparison, and nothing here has been filled in for you.`
+      sampleSource = `Regional MLS through Oregon Data Share, read from listing_tile_mv in this render: standard_status Active, scoped to the Central Oregon service-area cities, ordered by most recent MLS update, the first ${SAMPLE_POOL} read and the first ${SAMPLE_SIZE} that publish a photograph, a price, beds, baths and square feet shown here — a comparison of four homes has to be four homes, so a vacant lot is not one of them. Price is ListPrice as published; beds, baths, square feet, lot acres, year built, garage spaces and days on market are the feed's own fields, and the photographs are that listing's own, read through getListingPhotos from the Spark payload on the listings row (details.Photos at Uri1600, falling back to the single PhotoURL), in the order the feed publishes them and honouring an owner's media-removal request. A field the feed withheld renders as an em dash, never as a zero and never as an estimate. The length under a figure is that home's value as a share of the largest in the same row — one rule for every row — and the spread sentence over the sheet is the difference between the two extremes in that row, with the two extremes marked in the columns that hold them; all of it computed from the same numbers printed in the cells. These are real active listings and they are labelled as an example — they are not your comparison, and nothing here has been filled in for you.`
     }
   }
 

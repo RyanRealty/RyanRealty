@@ -97,6 +97,9 @@ export type CompareSheetRow = {
   label: string
   /** The spread across the homes, computed in the page from the same numbers. */
   reading: string
+  /** The same reading without the addresses, for 375 where the names cost a
+   *  line the houses need. Optional; the long one stands in when absent. */
+  readingShort?: string
   /** True when the row carries a bar. A row a bar would not teach prints alone. */
   encoded: boolean
 }
@@ -184,17 +187,30 @@ function PhotoStrip({
         <span className="compare-sheet__add-glyph" aria-hidden="true">
           +
         </span>
-        {addLabel}
+        {/* At 375 the words come off and the plus stands alone: "Add to yours"
+            wrapped to two lines across a 145px photograph (2026-09-15 capture).
+            The control keeps its name for a screen reader either way. */}
+        <span className="compare-sheet__add-word">{addLabel}</span>
         <span className="compare-sheet__sr"> {home.title} to your comparison</span>
       </a>
       {count > 1 ? (
-        <div className="compare-sheet__strip-nav">
-          <CarouselPrevious className="compare-sheet__step static size-auto translate-x-0 translate-y-0" />
-          <span className="compare-sheet__strip-count" aria-hidden="true">
-            {index + 1}/{count}
+        <>
+          <div className="compare-sheet__strip-nav">
+            <CarouselPrevious className="compare-sheet__step static size-auto translate-x-0 translate-y-0" />
+            <CarouselNext className="compare-sheet__step static size-auto translate-x-0 translate-y-0" />
+          </div>
+          {/* The track, drawn. Indicators, not controls: the steps and the drag
+              are the controls, and a 10px dot would be under the tap floor. */}
+          <span className="compare-sheet__dots" aria-hidden="true">
+            {home.photos.map((photo, i) => (
+              <span
+                key={`dot-${photo.url}`}
+                className="compare-sheet__dot"
+                data-state={i === index ? 'on' : 'off'}
+              />
+            ))}
           </span>
-          <CarouselNext className="compare-sheet__step static size-auto translate-x-0 translate-y-0" />
-        </div>
+        </>
       ) : null}
     </Carousel>
   )
@@ -262,7 +278,14 @@ export function CompareSheet({
           to whichever field the reader is resting on. */}
       <p className="compare-sheet__reading">
         <span className="compare-sheet__reading-label">{reading?.label}</span>
-        <span className="compare-sheet__reading-body">{reading?.reading}</span>
+        <span className="compare-sheet__reading-body compare-sheet__reading-body--named">
+          {reading?.reading}
+        </span>
+        {reading?.readingShort ? (
+          <span className="compare-sheet__reading-body compare-sheet__reading-body--short">
+            {reading.readingShort}
+          </span>
+        ) : null}
       </p>
 
       {/* WHICH HOMES ARE IN THE SHEET. At 375 this is how four homes stay
@@ -315,6 +338,21 @@ export function CompareSheet({
                   {[home.place, home.price].filter(Boolean).join(' · ')}
                 </span>
                 <span className="compare-sheet__col-facts">{home.facts}</span>
+              </TableHead>
+            ))}
+          </TableRow>
+          {/* THE LABEL ROW. The photographs and the address block above are the
+              column heads, but a reader coming down the ledger loses which
+              column is which house (2026-09-15 evaluator: "home names sit in
+              the card strip above, disconnected from the ledger"). This is the
+              thead row the shadcn demo carries, in the same small caps. */}
+          <TableRow className="compare-sheet__label-row">
+            <TableHead className="compare-sheet__rowhead compare-sheet__corner">
+              <span className="compare-sheet__sr">Field</span>
+            </TableHead>
+            {shown.map((home) => (
+              <TableHead key={home.key} scope="col" className="compare-sheet__label">
+                {home.shortTitle}
               </TableHead>
             ))}
           </TableRow>

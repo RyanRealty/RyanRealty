@@ -16,6 +16,9 @@
    =========================================================================== */
 
 .compare-sheet {
+  /* How much of the next photograph shows past the current slide. One value,
+     read by the slide basis and by the add control that has to sit on the
+     slide the reader is looking at rather than on the peek. */
   display: grid;
   gap: var(--v3-space-sm);
   /* Out to the section's own gutter at phone widths: at 375 the instrument
@@ -61,9 +64,13 @@
 }
 
 .v3 .compare-sheet__reading-body {
-  font-size: var(--v3-size-body);
+  font-size: var(--v3-size-body-lg);
   line-height: var(--v3-leading-heading);
   font-variant-numeric: tabular-nums;
+}
+
+.v3 .compare-sheet__reading-body--short {
+  display: none;
 }
 
 /* --------------------------------------------------------------------------
@@ -137,10 +144,6 @@
   font-size: var(--v3-size-body-sm);
 }
 
-.v3 .compare-sheet [data-slot='table-header'] .compare-sheet__head-row {
-  border-bottom: var(--v3-rule-hairline);
-}
-
 .v3 .compare-sheet [data-slot='table-row'] {
   border-color: var(--v3-hairline);
   transition: background var(--v3-dur-state) var(--v3-ease-out);
@@ -155,6 +158,16 @@
 
 .v3 .compare-sheet [data-slot='table-body'] [data-slot='table-row'][data-state='selected'] {
   background: color-mix(in srgb, var(--v3-navy) 8%, transparent);
+}
+
+/* THE FIELD BEING READ IS UNMISTAKABLE. An 8% wash alone was read as "no
+   visible state change at all" twice (2026-09-15 evaluator), so the row the
+   reading line is about also carries a navy edge and its own name in navy. */
+.v3 .compare-sheet [data-slot='table-row'][data-state='selected'] .compare-sheet__rowhead {
+  box-shadow: inset 3px 0 0 var(--v3-navy);
+  padding-left: var(--v3-space-xs);
+  color: var(--v3-ink);
+  font-weight: var(--v3-weight-strong);
 }
 
 .v3 .compare-sheet [data-slot='table-row']:focus-visible {
@@ -186,6 +199,32 @@
   white-space: normal;
   font-weight: var(--v3-weight-body);
   color: var(--v3-ink);
+}
+
+.v3 .compare-sheet__label {
+  height: auto;
+  padding: var(--v3-space-2xs) var(--v3-space-xs) var(--v3-space-2xs) 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .compare-sheet [data-slot='table-header'] .compare-sheet__label-row {
+  /* The thead band. A muted line of names read as part of the photo block;
+     the kit's own header is a distinct band over the rows (2026-09-15
+     evaluator: "no header row"). */
+  background: color-mix(in srgb, var(--v3-navy) 4%, transparent);
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.v3 .compare-sheet__head-row {
+  border-bottom: 0;
 }
 
 .v3 .compare-sheet__col-title {
@@ -233,9 +272,17 @@
   touch-action: pan-y pinch-zoom;
 }
 
+/* ONE PHOTOGRAPH PER FRAME. A peeking sliver of the next one was read as
+   clipped overflow rather than as a rail (2026-09-15 evaluator, defect), so
+   the affordance lives in the steps at the frame's edges instead. */
 .v3 .compare-sheet__strip-slide {
-  flex: 0 0 100%;
+  /* The next frame shows past this one. A full-width slide with two chevrons
+     is a photo flipper; the rail reads as a rail because the frame is not the
+     slide. 18% is another photograph, not the 4px slip that read as clipped
+     overflow on 2026-09-15. */
+  flex: 0 0 82%;
   min-width: 0;
+  padding-right: var(--v3-space-3xs);
 }
 
 .v3 .compare-sheet__photo {
@@ -246,19 +293,25 @@
   background: var(--v3-hairline);
 }
 
- /* The steps ride ON the photograph, bottom left. A 44px row under every
-    column cost the first viewport three comparison rows, and shadcn's own
-    demo overlays its prev/next on the frame rather than stacking them
-    beneath it. */
+/* The steps ride ON the photograph, at its left and right edges, where every
+   reader already looks for them — shadcn's own demo centres its prev/next on
+   the frame rather than stacking them beneath it. A 44px row under every
+   column also cost the first viewport three comparison rows. */
 .v3 .compare-sheet__strip-nav {
   position: absolute;
-  left: 0;
+  top: 0;
   bottom: 0;
+  left: 0;
+  right: 18%;
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: 0;
-  background: color-mix(in srgb, var(--v3-navy) 92%, transparent);
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.v3 .compare-sheet__strip-nav > * {
+  pointer-events: auto;
 }
 
 .v3 .compare-sheet__step {
@@ -271,7 +324,7 @@
   padding: 0;
   border: 0;
   border-radius: var(--v3-radius-control);
-  background: transparent;
+  background: color-mix(in srgb, var(--v3-navy) 88%, transparent);
   color: var(--v3-ink-on-navy);
   cursor: pointer;
   transition:
@@ -294,19 +347,35 @@
   outline-offset: var(--v3-focus-offset);
 }
 
-.v3 .compare-sheet__strip-count {
-  padding: 0 var(--v3-space-3xs);
-  font-family: var(--v3-font-mono);
-  font-size: var(--v3-size-label);
-  font-variant-numeric: tabular-nums;
-  color: var(--v3-ink-on-navy-muted);
+.v3 .compare-sheet__step svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.v3 .compare-sheet__dots {
+  position: absolute;
+  right: 18%;
+  bottom: var(--v3-space-3xs);
+  z-index: 1;
+  display: flex;
+  gap: 3px;
+}
+
+.v3 .compare-sheet__dot {
+  width: 0.5rem;
+  height: 3px;
+  background: color-mix(in srgb, var(--v3-white) 45%, transparent);
+}
+
+.v3 .compare-sheet__dot[data-state='on'] {
+  background: var(--v3-white);
 }
 
 /* The add rides on the house, top right of its photograph. */
 .v3 .compare-sheet__add {
   position: absolute;
   top: 0;
-  right: 0;
+  right: 18%;
   z-index: 1;
   display: inline-flex;
   align-items: center;
@@ -330,6 +399,10 @@
 .v3 .compare-sheet__add:focus-visible {
   outline: var(--v3-focus-ring);
   outline-offset: var(--v3-focus-offset);
+}
+
+.v3 .compare-sheet__add-word {
+  white-space: nowrap;
 }
 
 .v3 .compare-sheet__add-glyph {
@@ -412,6 +485,14 @@
     gap: var(--v3-space-xs);
   }
 
+  .v3 .compare-sheet__reading-body--named {
+    display: none;
+  }
+
+  .v3 .compare-sheet__reading-body--short {
+    display: inline;
+  }
+
   /* The TABLE bleeds to the edge at 375 — that is 40px of photograph. The
      prose around it does not: a control touching the viewport edge reads as a
      clipped control (2026-09-15 capture, the fourth picker pill). */
@@ -421,8 +502,42 @@
     padding-inline: var(--v3-gutter);
   }
 
+  /* No peek at 375: 18% of a 120px photograph is not a rail, it is a crowded
+     frame with two controls on top of it. The steps and the drag stay. */
+  .v3 .compare-sheet__strip-slide {
+    flex: 0 0 100%;
+    padding-right: 0;
+  }
+
+  .v3 .compare-sheet__strip-nav {
+    right: 0;
+  }
+
+  .v3 .compare-sheet__dots {
+    right: var(--v3-space-3xs);
+  }
+
+  .v3 .compare-sheet__add {
+    right: 0;
+    min-width: var(--v3-tap);
+    justify-content: center;
+    padding: 0;
+  }
+
+  .v3 .compare-sheet__add-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
   .v3 .compare-sheet__rowhead {
-    width: 4rem;
+    /* Wide enough for "Days on market" and "Price / sq ft" on one line: a
+       label that wraps while its neighbours do not breaks the row rhythm
+       (2026-09-15 evaluator, craft). */
+    width: 5.25rem;
     padding-right: var(--v3-space-xs);
     font-size: var(--v3-size-label);
   }

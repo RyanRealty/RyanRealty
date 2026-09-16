@@ -12,6 +12,7 @@ const ROWS: CompareSheetRow[] = [
   {
     label: 'Price',
     reading: '$435,000 at 787 Union Loop · $569,900 at 3672 Volcano Avenue · $134,900 apart, 31% more',
+    readingShort: '$435,000 lowest · $569,900 highest · $134,900 apart, 31% more',
     encoded: true,
   },
   { label: 'Beds', reading: '3 at 3672 Volcano Avenue · 4 at 787 Union Loop · 1 more beds', encoded: false },
@@ -77,7 +78,10 @@ describe('CompareSheet — the installed kit', () => {
     expect(m).toContain('data-slot="table"')
     expect(m).toContain('data-slot="table-header"')
     expect(m).toContain('data-slot="table-body"')
-    expect(count(m, /data-slot="table-row"/g)).toBe(ROWS.length + 1)
+    // One row per field, plus the two header rows (photographs, then labels).
+    expect(count(m, /data-slot="table-row"/g)).toBe(ROWS.length + 2)
+    // cn() merges the kit's own classes ahead of ours, so match the tail.
+    expect(count(m, /compare-sheet__label"/g)).toBe(HOMES.length)
     expect(m).toContain('data-slot="table-caption"')
   })
 
@@ -102,6 +106,12 @@ describe('CompareSheet — the comparison', () => {
     const m = html()
     expect(m).toContain('$134,900 apart, 31% more')
     expect(m).toMatch(/compare-sheet__reading-label">Price</)
+  })
+
+  it('carries both readings so 375 can drop the addresses and keep the figures', () => {
+    const m = html()
+    expect(m).toContain('at 787 Union Loop')
+    expect(m).toContain('$435,000 lowest · $569,900 highest')
   })
 
   it('marks the extremes of the field being read, and only that field', () => {

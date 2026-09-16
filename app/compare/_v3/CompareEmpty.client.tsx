@@ -86,7 +86,7 @@ export function CompareEmpty({
       // The door out of the landing state. The tray that used to carry it is
       // withheld while the sample is the opening (SITE-65), so the claim keeps
       // one real anchor to the place a visitor picks their own homes.
-      claimAction={{ label: 'Start from your own search.', href: '/homes-for-sale?view=list' }}
+      claimAction={{ label: 'Search all homes.', href: '/homes-for-sale?view=list' }}
       slots={SLOTS}
       filled={filled}
       emptyLabel="Add a home"
@@ -97,7 +97,7 @@ export function CompareEmpty({
           homes={homes}
           rows={rows}
           caption={sheetCaption}
-          addLabel="Add"
+          addLabel="Add to yours"
           onAdd={addToComparison}
         />
       }
