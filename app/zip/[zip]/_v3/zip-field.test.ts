@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { ListingTile } from '@/lib/data'
-import { zipFieldCaption, zipFieldItems } from './zip-constants'
+import {
+  neighborhoodName,
+  zipFieldCaption,
+  zipFieldItems,
+  zipItemListEntries,
+  zipMasonryItems,
+} from './zip-constants'
 
 function tile(partial: Partial<ListingTile> & Pick<ListingTile, 'listingKey'>): ListingTile {
   return {
@@ -46,5 +52,40 @@ describe('zipFieldItems', () => {
 
   it('drops a home with no list price', () => {
     expect(zipFieldItems([tile({ listingKey: 'a', listPrice: null })], '97702')).toEqual([])
+  })
+})
+
+describe('neighborhoodName', () => {
+  it('drops Undesignated and other visitor-place noise', () => {
+    expect(neighborhoodName('Undesignated')).toBeNull()
+    expect(neighborhoodName('undesignated')).toBeNull()
+    expect(neighborhoodName('Awbrey Butte')).toBe('Awbrey Butte')
+  })
+})
+
+describe('zipMasonryItems', () => {
+  it('keeps price, address, and beds/baths/sqft on photographed cards', () => {
+    const items = zipMasonryItems(
+      [tile({ listingKey: 'a', photoUrl: 'https://cdn.example/photo.jpg' })],
+      '97702',
+    )
+    expect(items).toHaveLength(1)
+    expect(items[0]?.priceLabel).toBeTruthy()
+    expect(items[0]?.title).toMatch(/Main/)
+    expect(items[0]?.meta).toMatch(/3 bd/)
+    expect(items[0]?.photoSrc).not.toMatch(/320x240/)
+    expect(items[0]?.imageHeight).toBeGreaterThan(160)
+  })
+})
+
+describe('zipItemListEntries', () => {
+  it('names price + address + facts for the crawlable ItemList', () => {
+    const items = zipMasonryItems(
+      [tile({ listingKey: 'a', photoUrl: 'https://cdn.example/photo.jpg' })],
+      '97702',
+    )
+    const entries = zipItemListEntries(items)
+    expect(entries[0]?.name).toMatch(/Main/)
+    expect(entries[0]?.url).toBeTruthy()
   })
 })

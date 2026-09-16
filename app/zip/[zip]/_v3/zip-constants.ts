@@ -50,6 +50,7 @@ import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import type { PlaceAlertListing, PlaceAlertTypeBucket } from '@/lib/site/place-alerts'
+import { isVisitorPlaceNoiseLabel } from '@/lib/site/visitor-place-noise'
 
 /** Month ticks for the year overlay, in the order a calendar year runs. */
 const MONTH_TICK = [
@@ -177,6 +178,7 @@ export function neighborhoodName(raw: string | null | undefined): string | null 
   const clean = displaySubdivision(raw)
   if (!clean) return null
   if (SUBDIVISION_NOISE.has(clean.toLowerCase())) return null
+  if (isVisitorPlaceNoiseLabel(clean)) return null
   if (clean.includes('_')) return null
   if (!CRR_ABBREVIATION.test(clean)) return clean
   const rest = clean.slice(3).trim()
@@ -325,6 +327,55 @@ export function zipFieldItems(tiles: readonly ListingTile[], zip: string): V3Fie
           : {}),
       }
     })
+}
+
+const MASONRY_HEIGHTS = [190, 220, 260, 300] as const
+
+export type ZipMasonryItem = {
+  id: string
+  href: string
+  title: string
+  priceLabel: string
+  meta?: string
+  photoSrc?: string
+  imageHeight: number
+}
+
+function masonryHeightFor(id: string, hasPhoto: boolean): number {
+  if (!hasPhoto) return 140
+  let hash = 0
+  for (let i = 0; i < id.length; i += 1) hash = (hash + id.charCodeAt(i)) % MASONRY_HEIGHTS.length
+  return MASONRY_HEIGHTS[hash] ?? 220
+}
+
+/** Photographed-first masonry cards. Same population as zipFieldItems. */
+export function zipMasonryItems(tiles: readonly ListingTile[], zip: string): ZipMasonryItem[] {
+  return zipFieldItems(tiles, zip).map((item) => ({
+    id: item.id,
+    href: item.href,
+    title: item.title,
+    priceLabel: item.priceLabel,
+    meta: item.meta,
+    photoSrc: item.photoSrc,
+    imageHeight: masonryHeightFor(item.id, Boolean(item.photoSrc)),
+  }))
+}
+
+export function zipItemListEntries(
+  items: readonly ZipMasonryItem[],
+): Array<{ name: string; url: string }> {
+  return items
+    .slice(0, 8)
+    .map((item) => {
+      const name = [item.priceLabel, item.title, item.meta].filter(Boolean).join(' · ')
+      if (!name || !item.href) return null
+      return { name, url: item.href }
+    })
+    .filter((row): row is { name: string; url: string } => row != null)
+}
+
+export function zipLeadItem(items: readonly ZipMasonryItem[]): ZipMasonryItem | null {
+  return items.find((item) => Boolean(item.photoSrc)) ?? items[0] ?? null
 }
 
 /**

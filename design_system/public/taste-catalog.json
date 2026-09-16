@@ -131,6 +131,34 @@
     "transitions:number-pop-in": {
       "aliasOf": "beui-number"
     },
+    "beui-infinite-masonry": {
+      "add": "@beui/infinite-masonry",
+      "file": "components/motion/infinite-masonry.tsx",
+      "import": "@/components/motion/infinite-masonry",
+      "repo": "https://github.com/starc007/ui-components",
+      "mustContain": [
+        "InfiniteMasonry",
+        "useVirtualizer",
+        "onLoadMore"
+      ]
+    },
+    "beui:infinite-masonry": {
+      "aliasOf": "beui-infinite-masonry"
+    },
+    "beui-scroll-animation": {
+      "add": "@beui/smooth-scroll",
+      "file": "components/motion/scroll-animation.tsx",
+      "import": "@/components/motion/scroll-animation",
+      "repo": "https://github.com/starc007/ui-components",
+      "mustContain": [
+        "useSmoothScroll",
+        "EASE_SCROLL",
+        "ScrollProgress"
+      ]
+    },
+    "beui:scroll-animation": {
+      "aliasOf": "beui-scroll-animation"
+    },
     "beautifului-insight": {
       "add": "https://www.beautifului.dev/r/insight-cards.json",
       "file": "components/motion/insight-cards.tsx",
