@@ -114,7 +114,7 @@
 
   .city-fold__drawing .v3-atlas__stage {
     min-height: 0;
-    max-height: min(32vh, 16rem);
+    max-height: min(42vh, 21rem);
   }
 
   /* Three columns, two rules. The register's own separator (PUBLIC_UI: rules,
@@ -354,6 +354,21 @@
   min-width: var(--v3-tap);
 }
 
+/* The ask is a COLUMN in this narrow column. Field beside button at 312px left
+   the placeholder reading "you@ema" — a field a visitor cannot see the shape of
+   is a worse ask than one that takes another row. */
+.city-fold__figure .v3-alerts__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-2xs);
+  align-items: stretch;
+}
+
+.city-fold__figure .v3-alerts__row .v3-btn {
+  width: 100%;
+  justify-content: center;
+}
+
 .city-fold__figure .v3-alerts__eyebrow {
   white-space: normal;
   overflow-wrap: anywhere;
@@ -414,6 +429,9 @@
   row-gap: 0;
   min-width: 0;
   max-width: none;
+  /* Each card is a link to that home: a real target at 375 (WCAG 2.5.5). The
+     compacted two-line body came to 41.3px on its own (ci:tap-targets). */
+  min-block-size: var(--v3-tap);
 }
 
 .city-fold__figure .v3-alerts__thumb img {

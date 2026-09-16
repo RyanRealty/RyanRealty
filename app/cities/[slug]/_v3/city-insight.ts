@@ -37,6 +37,13 @@ export type CityInsightPath = {
   points: CityInsightPoint[]
   /** "January 2026 - August 2026" */
   window: string
+  /**
+   * What the line covers, preformatted. A chart a reader has to scrub to get a
+   * single number out of is a decorative squiggle in a still; this is the same
+   * eight months stated as a range, so the drawing is legible before anyone
+   * touches it and every figure on it is one of these rows (§0).
+   */
+  range: { medianLow: string; medianHigh: string; soldLow: string; soldHigh: string }
   source: string
   href: string
   hrefLabel: string
@@ -100,6 +107,12 @@ export function buildCityInsightBoard(input: CityInsightInput): CityInsightBoard
       ? {
           points: tail,
           window: `${tail[0].label} - ${tail[tail.length - 1].label}`,
+          range: {
+            medianLow: formatPrice(Math.min(...tail.map((p) => p.median))),
+            medianHigh: formatPrice(Math.max(...tail.map((p) => p.median))),
+            soldLow: Math.min(...tail.map((p) => p.sold)).toLocaleString('en-US'),
+            soldHigh: Math.max(...tail.map((p) => p.sold)).toLocaleString('en-US'),
+          },
           source: `${sourceName} · closed detached single-family sales in ${input.placeName}, one point per calendar month, ${tail[0].label} through ${tail[tail.length - 1].label}. Median sale price is the middle closed price that month; homes sold is how many closed. The month in progress is not plotted, so a partial month never draws as a fall. Same rows as the year overlay further down this page.`,
           href: input.marketHref,
           hrefLabel: `The ${input.placeName} market report`,

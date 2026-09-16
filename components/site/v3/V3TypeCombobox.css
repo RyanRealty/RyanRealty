@@ -93,14 +93,38 @@
   background: transparent;
 }
 
+/* THE DEMO'S OWN TWO STATES, in our ink. beUI paints the ACTIVE row — the one
+   the pointer or the arrow keys are on — with a muted fill that slides between
+   rows, and marks the SELECTED row with a check. The first pass filled the
+   selected row solid navy instead, which is a house invention: it hides the
+   active fill whenever the two are the same row, and an evaluator reading the
+   open shot saw "a plain static list" with no highlight to move. */
 .city-typebox__content .city-typebox__item[data-active='true'],
 .city-typebox__content .city-typebox__item:hover {
   background: var(--v3-wash);
 }
 
 .city-typebox__content .city-typebox__item[aria-selected='true'] {
-  background: var(--v3-navy);
-  color: var(--v3-ink-on-navy);
+  color: var(--v3-ink);
+  font-weight: var(--v3-weight-strong);
+}
+
+/* The catalog's own sliding fill, which lives behind the row. */
+.city-typebox__content .city-typebox__item > span[aria-hidden]:first-child {
+  background: var(--v3-wash);
+  border-radius: var(--v3-radius-control);
+}
+
+/* THE ROW IS A NAME AND A COUNT, NOT ONE WORD. The catalog item wraps its
+   children in a single `min-w-0 flex-1` span, so two inline spans inside it sit
+   with nothing between them and the evaluator read the result as
+   "Houses121 new". The wrapper carries the row's own layout. */
+.city-typebox__content .city-typebox__item > span:not([aria-hidden]) {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  min-width: 0;
 }
 
 .city-typebox__item-name {

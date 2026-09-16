@@ -183,12 +183,12 @@
     "V3Footer"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-10",
-    "evaluator": "separate grok-4.6 via npx tsx scripts/taste-evaluate.ts city — three scorings of first-viewport + mos-hover + alerts + alerts-toggle captures. Did not read page code.",
-    "evaluatorModel": "grok-4.6",
-    "builderModel": "grok-4.5",
-    "comparedToPrior": "rose",
+    "evaluatedAt": "2026-09-16",
+    "rubricVersion": "v1-2026-09-12",
+    "evaluator": "A separate claude CLI sonnet through scripts/taste-evaluate.ts (the grok and cursor CLIs are not installed in this sandbox, so the judge chain fell to link 2). It scored these eight captures three times in one call and read no code.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "comparedToPrior": "rebaselined",
     "shotSpec": {
       "routes": [
         "/cities/bend"
@@ -199,45 +199,49 @@
       ],
       "states": [
         "default",
-        "mos-hover",
-        "alerts",
-        "alerts-toggle"
-      ]
+        "insight-open",
+        "types-open",
+        "mos-hover"
+      ],
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/city/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/city/shots/mobile375.png",
+      "insightOpenDesktop": "design_system/ryan-realty/ui_kits/city/shots/insight-open-desktop.png",
+      "insightOpenMobile375": "design_system/ryan-realty/ui_kits/city/shots/insight-open-mobile375.png",
+      "typesOpenDesktop": "design_system/ryan-realty/ui_kits/city/shots/types-open-desktop.png",
+      "typesOpenMobile375": "design_system/ryan-realty/ui_kits/city/shots/types-open-mobile375.png",
       "mosHoverDesktop": "design_system/ryan-realty/ui_kits/city/shots/mos-hover-desktop.png",
-      "mosHoverMobile375": "design_system/ryan-realty/ui_kits/city/shots/mos-hover-mobile375.png",
-      "alertsDesktop": "design_system/ryan-realty/ui_kits/city/shots/alerts-desktop.png",
-      "alertsMobile375": "design_system/ryan-realty/ui_kits/city/shots/alerts-mobile375.png",
-      "alertsToggleDesktop": "design_system/ryan-realty/ui_kits/city/shots/alerts-toggle-desktop.png",
-      "alertsToggleMobile375": "design_system/ryan-realty/ui_kits/city/shots/alerts-toggle-mobile375.png"
+      "mosHoverMobile375": "design_system/ryan-realty/ui_kits/city/shots/mos-hover-mobile375.png"
     },
-    "shotsHash": "sha256:2e16763bdaaceadb2a745d56bde7daad33121e2153c55bd331777ab768767269",
+    "shotsHash": "sha256:8eb36e0666ad297c72c6a314b2e916fcaa182a5e7431063aa7c4a66452363bed",
     "scores": [
-      59,
-      67,
-      63
+      63,
+      68,
+      62
     ],
     "score": 63,
-    "breakdown": {
-      "design": 19,
-      "originality": 16,
-      "interaction": 10,
-      "craft": 10,
-      "honesty": 8
-    },
     "perCriterion": {
-      "design": 19,
+      "design": 18,
       "originality": 16,
       "interaction": 10,
-      "craft": 10,
+      "craft": 11,
       "honesty": 8
     },
     "honestyFunction": 8,
-    "beats": "Zillow Bend home-values (https://www.zillow.com/bend-or/home-values/) — wins on reaching a broker (email ask in the first viewport) and on months-of-supply as two named bars (645 vs 174); loses the interactive market-history chart.",
+    "beats": "Redfin Bend housing market (redfin.com/city/16163/OR/Bend/housing-market) — this page wins on source transparency: every figure carries a named source and an 'as of' date plus an expandable 'how we calculate this' formula reveal, and months-of-supply is encoded as two labeled bars instead of Redfin's verdict-only sentence. It does not clearly beat Zillow's own Bend chart on data depth — Zillow's history run is longer and the scrubber here only proves itself in copy ('Drag across the line'), not in a mid-drag frame.",
+    "demoMatch": true,
     "adaptedFrom": [
+      {
+        "id": "beautifului-insight"
+      },
+      {
+        "id": "beui-number"
+      },
+      {
+        "id": "beui:combobox"
+      },
       {
         "id": "house-atlas"
       },
@@ -246,54 +250,45 @@
       },
       {
         "id": "house-alerts"
-      },
-      {
-        "id": "beui-number"
       }
     ],
     "defects": [
       {
-        "section": "#atlas / Bend right now",
+        "section": "Subdivisions in Bend (below-fold list of 60)",
         "severity": "taste",
-        "finding": "On 1440 the Atlas is a small density stamp in leftover cream, so the drawing is not the fold; on 375 the House filter and price scrubber that make those marks interrogable are missing from the first viewport.",
-        "replaceWith": "house-atlas"
-      },
-      {
-        "section": "#alerts / NEW LISTINGS · BEND",
-        "severity": "taste",
-        "finding": "142 houses is still a typeset sentence plus one Spark-thumb card ($743K, 17146 Covina Road, 4 bd · 2 ba · 2,031 sqft). The reader cannot scrub the 30-day inflow or see the set — the live control is not beautifului-insight.",
-        "replaceWith": "beautifului-insight"
-      },
-      {
-        "section": "#plats / The plats of Bend",
-        "severity": "taste",
-        "finding": "Scrolling lists as the design: Waywest Properties, Deschutes River Woods, and the rest are name plus lifetime sales past six rows, with no mark, bar, map, or image.",
+        "finding": "the teaser promises 60 subdivisions but nothing in the visible chrome shows a mark, sparkline, badge, or map pin per row — as built this is set up to land as a bare scrolling list past six rows, which TASTE.md names 'scrolling lists as the design.'",
         "replaceWith": "beui:infinite-masonry"
       },
       {
-        "section": "HOMES FOR SALE VS A MONTH OF SALES (mos-hover)",
-        "severity": "craft",
-        "finding": "MOS hover reprints Oregon Data Share and as of Sep 10, 2026 in the formula block and again on the SOURCE line.",
+        "section": "hero banner (top of desktop.png/mobile375.png)",
+        "severity": "taste",
+        "finding": "a single static dark drone photo with a white headline over a scrim is the same hero shape as any portal city page — no data, no motion, nothing that differentiates 'Bend real estate' from a stock template hero.",
         "replaceWith": null
       },
       {
-        "section": "alerts-toggle-desktop sticky header",
-        "severity": "craft",
-        "finding": "The sticky header clips “in Bend in the last 30 days,” so the 142 claim is beheaded in the toggle capture.",
+        "section": "THIS MARKET / NEW LISTINGS / Subdivisions in Bend column stack",
+        "severity": "taste",
+        "finding": "three consecutive sections share the eyebrow → heading → rows → source shape (THIS MARKET, NEW LISTINGS · BEND, BEND · SUBDIVISIONS) — TASTE.md's 'the stacked-section page' tell, softened only by different media (bars, cards, prose) rather than a genuinely different section form.",
         "replaceWith": null
       }
     ],
+    "verdict": "This is a competent, honestly-sourced real-estate dashboard, not the breathtaking page Matt asked for — it reads as Redfin-with-navy, not editorial data journalism. demoMatch is true: the scrubber chart with its toggle pill and the combobox with search icon, counts, and a checked state both look like real adapted catalog controls rather than cream boxes, and the house-mos bars and custom heat-dot Atlas correctly avoid a KPI tile and a Google embed. But the three stacked eyebrow-heading-source sections and a generic static hero keep it from being something a visitor would screenshot, and the 60-subdivision teaser is one bad build away from the exact scrolling-list tell the reference file already flagged once.",
     "priorMark": {
       "evaluatedAt": "2026-09-10",
-      "score": 60,
+      "score": 63,
       "evaluatorModel": "grok-4.6",
       "rubricVersion": "v1-2026-09-10",
       "shotsHash": "sha256:2e16763bdaaceadb2a745d56bde7daad33121e2153c55bd331777ab768767269",
       "perCriterion": {
-        "honesty": 6
+        "design": 19,
+        "originality": 16,
+        "interaction": 10,
+        "craft": 10,
+        "honesty": 8
       },
-      "honestyFunction": 6
-    }
+      "honestyFunction": 8
+    },
+    "rebaselineReason": "All three identity keys differ, so the 63 is not a number this mark can be measured against. evaluatorModel: grok-4.6 -> claude-sonnet-5 (neither the grok CLI nor cursor-agent exists in this sandbox, so the judge chain fell to link 2, which the site-queue skill allows for a Claude lane building on Opus). rubricVersion: v1-2026-09-10 -> v1-2026-09-12, which added the blocking demoMatch verdict. shotsHash: the fold is a different page - three columns, the InsightCards pager, the beUI combobox, four proof cards - and two states the prior set never carried (insight-open, types-open), while alerts-toggle went away with the toggles it captured. honestyFunction holds at 8 across both marks."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",

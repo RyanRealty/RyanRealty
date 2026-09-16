@@ -129,8 +129,12 @@ function buildPages(
                 usage: 'Homes sold',
                 formatSpend: cityInsightMoney,
                 formatUsage: cityInsightCount,
-                spentLine: (money) => `${money} in ${lastLabel},`,
-                vsLine: `over ${path.window}.`,
+                // The line, read without touching it: both metrics as a
+                // range over the window it draws. Every figure here is one of
+                // the same published months (§0).
+                spentLine: () =>
+                  `Median sale price ran ${path.range.medianLow} to ${path.range.medianHigh};`,
+                vsLine: `homes sold ran ${path.range.soldLow} to ${path.range.soldHigh}. ${path.window}, latest ${lastLabel}.`,
               }}
               formatTime={(t) => monthFace(t, labels, epoch)}
             />

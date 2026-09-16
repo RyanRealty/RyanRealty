@@ -67,6 +67,22 @@ describe('buildCityInsightBoard', () => {
     expect(board.path).toBeNull()
   })
 
+  it('publishes the range the line covers, so the drawing reads without a scrub', () => {
+    const board = buildCityInsightBoard({
+      placeName: 'Bend',
+      marketHref: '/housing-market/bend',
+      verdictProse: null,
+      months: TWELVE,
+    })
+    const r = board.path!.range
+    // TWELVE rises $1,000 a month from 700,000; the last eight are 704k..711k,
+    // rounded to thousands by the same formatter the rest of the page uses.
+    expect(r.medianLow).toBe('$704,000')
+    expect(r.medianHigh).toBe('$711,000')
+    expect(r.soldLow).toBe('84')
+    expect(r.soldHigh).toBe('91')
+  })
+
   it('names both metrics, the window and the in-progress rule in the trace', () => {
     const board = buildCityInsightBoard({
       placeName: 'Bend',
