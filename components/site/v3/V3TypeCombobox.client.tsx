@@ -89,12 +89,17 @@ export function V3TypeCombobox({
   emptyMessage,
 }: V3TypeComboboxProps) {
   if (options.length < 2) return null
-  const selected = options.find((o) => o.key === value) ?? options[0]
+  // `null` means NOTHING IS CHOSEN YET (SITE-116 round 3): the field shows its
+  // placeholder and the list opens with no row marked. A finder over twenty
+  // plats must not open reading "Tetherow Phase 1" as if someone had picked
+  // it. A non-null key that matches no option still falls back to the first
+  // row, exactly as before, so every existing caller renders unchanged.
+  const selected = value == null ? null : (options.find((o) => o.key === value) ?? options[0])
 
   return (
     <div className={cn(V3_ROOT_CLASS, 'city-typebox', className)}>
       <Combobox
-        value={selected.key}
+        {...(selected ? { value: selected.key } : {})}
         onValueChange={(next) => onChange(String(next))}
         {...(filter ? { filter } : {})}
       >

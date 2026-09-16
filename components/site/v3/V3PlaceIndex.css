@@ -46,6 +46,12 @@
   max-width: var(--v3-measure-text);
 }
 
+/* The finder (SITE-116 round 3): the combobox sits under the lede, a breath
+   above the columns, at the control's own 24rem cap. */
+.v3-place-index__finder {
+  margin-top: var(--v3-space-sm);
+}
+
 /* The columns ---------------------------------------------------------------
    auto-fill so the column count is a consequence of the measure and the name
    width, never a breakpoint someone has to maintain. min() keeps a single

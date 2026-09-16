@@ -42,29 +42,34 @@
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { V3Eyebrow, V3Heading, V3Lede, V3SourceDisclosure, V3_ROOT_CLASS } from './atoms'
-import { V3Icon, type V3IconName } from './V3Icon'
+import type { V3IconName } from './V3Icon'
 import { V3Number } from './V3Number.client'
-import { V3Reveal } from './V3Reveal.client'
 import './tokens.css'
 import './V3PlaceAmenities.css'
 
 /**
- * THE KIND'S MARK (SITE-116 round 2, 2026-09-16). A board tile we hold no
- * photograph of used to be type alone, and nine of those in a grid is the
- * "wall of text" Matt named beside a resort homepage that is nothing but photo
- * tiles. It is ALSO not something we can fix by inventing a picture: a frame
- * on a tile is a claim that the frame shows that place, and the asset rule
- * excludes generated stills outright (lib/place-photos.ts).
+ * THE KIND'S MARK — RETIRED FROM THE TILE (SITE-116 round 3, 2026-09-16).
  *
- * So the honest state is a DRAWN one. Every kind a community config uses —
- * measured across all 27 of them on 2026-09-16: Recreation 54, Parks 24, Golf
- * 22, Schools 20, Dining 16, Landmark 10, Wellness 9, Other 8, Shopping 5, and
- * one each of Events, Education, Fitness, Racquet, Winter, Trails — resolves
- * to an Iconoir stroke mark from the house set, and anything unmapped falls to
- * the building. The mark is deliberately SMALL: it sits where a photograph
- * would start, at a control's height, so a tile that has a photograph plainly
- * has one and a tile that does not is plainly a drawing rather than a grey box
- * pretending to be a picture that failed to load.
+ * Round 2 put an Iconoir stroke mark at a control's height on every tile we
+ * hold no photograph of, so a tile without a picture was "plainly a drawing".
+ * The separate evaluator read the result by TASTE.md's own name: "every
+ * non-golf amenity wears an identical square icon badge (wine glass, flower,
+ * dumbbell) over a name and a paragraph — the banned 'card grids with icons'
+ * tell". It was right. Eight identical badges are a grid of icons whatever
+ * the intent, and a badge says nothing about Coorie that its name and its
+ * line do not.
+ *
+ * So a tile we cannot photograph is carried by TYPE and FACTS: the kind as a
+ * running head, the name in the display face at heading size, the authored
+ * line, and a short fact list — who can use it, hours when the config records
+ * them, anything else the access line states — set as a description list.
+ * The resort's own homepage leads with photo tiles; where we hold a frame OF
+ * the place it stands on its tile and the tile leads the board. Where we do
+ * not, the honest thing is the information, not a pictogram standing in for
+ * a picture.
+ *
+ * `amenityKindMark` stays exported: the Place JSON-LD and any caller that
+ * needs a kind's mark for a control (not a card) can still resolve one.
  */
 const KIND_MARK: Record<string, V3IconName> = {
   golf: 'Golf',
@@ -102,6 +107,17 @@ export function amenityKindMark(category: string | null | undefined): V3IconName
   return KIND_MARK[key] ?? 'Building'
 }
 
+/**
+ * One recorded fact about a place, as a label and its value — "Who can use
+ * it · Open to public", "Hours · 7am to 2pm seasonally". Both halves are
+ * authored text the caller already holds; the tile prints them as a
+ * description list and invents neither.
+ */
+export type V3PlaceAmenityFact = {
+  label: string
+  value: string
+}
+
 /** One recorded place inside the place this section sits on. */
 export type V3PlaceAmenity = {
   /** The published name. */
@@ -112,6 +128,14 @@ export type V3PlaceAmenity = {
   description?: string | null
   /** Who can use it, as authored: "Open to public", "Members only". */
   access?: string | null
+  /**
+   * The tile's fact list (SITE-116 round 3). When present it replaces the
+   * bare access line on the tile: the caller has split the authored access
+   * text into its parts (who can use it, hours, booking) or added facts it
+   * can vouch for. `access` stays on the row for the JSON-LD and any caller
+   * that reads it whole.
+   */
+  facts?: readonly V3PlaceAmenityFact[] | null
   /**
    * The door. Either our own published guide about this place (the caller has
    * resolved the post and its title) or the row's recorded external URL. A
@@ -205,6 +229,8 @@ export function amenityGroups(id: string, amenities: readonly V3PlaceAmenity[]):
       key,
       description: trimmed(row.description) ?? null,
       access: trimmed(row.access) ?? null,
+      // A fact is the pair. Half of one is a dangling label or a naked value.
+      facts: (row.facts ?? []).filter((f) => f && trimmed(f.label) && trimmed(f.value)),
       door: row.door && trimmed(row.door.href) && trimmed(row.door.label) ? row.door : null,
     })
     groups.set(category, group)
@@ -242,58 +268,48 @@ function AmenityTile({
   row,
   kind,
   anchorId,
-  step,
 }: {
   row: V3PlaceAmenityGroup['rows'][number]
   kind: string
   /** Set on the first tile of a kind: the chip in the head lands here. */
   anchorId?: string
-  /** Reveal position, so a row of tiles does not all arrive on one frame. */
-  step: number
 }) {
   const door = row.door
   const image = row.image && row.image.src?.trim() ? row.image : null
+  const facts = row.facts ?? []
   return (
     <li
       className={cn(
         'v3-place-amenities__tile',
-        image ? 'v3-place-amenities__tile--pictured' : 'v3-place-amenities__tile--marked',
+        image ? 'v3-place-amenities__tile--pictured' : 'v3-place-amenities__tile--typed',
       )}
       id={anchorId}
     >
-      {/* A PHOTOGRAPH IS NEVER BEHIND THE REVEAL; A DRAWN MARK ALWAYS IS.
-          The catalog component serves its child at `opacity: 0` until the
-          element is scrolled to, and measured on 2026-09-16 the Tetherow
-          course frame came back BLANK in three separate capture runs while the
-          same tile photographed perfectly in a hand-driven browser — a record
-          can catch an entrance that a reader would not. On a board whose whole
-          job this round is imagery, a photograph that any reader, crawler or
-          record can catch as an empty box is not a trade worth 300ms of
-          motion. So the frame is plain, always-on, first-byte HTML.
-          The mark is the opposite case: it is a drawing, it costs nothing if a
-          reader never sees it arrive, and eight of Tetherow's nine tiles carry
-          one — so the board still shows the catalog's interaction, staggered
-          across the grid, on the elements where being late is free. */}
+      {/* A PHOTOGRAPH IS PLAIN, ALWAYS-ON, FIRST-BYTE HTML — never behind an
+          entrance a record or a fast scroller can catch empty (round 2 measured
+          the Tetherow course frame blank in three capture runs behind the
+          scroll reveal). A tile with no frame OF this place shows no picture
+          and no pictogram standing in for one (round 3): the kind, the name at
+          heading size, the line and the facts carry it. */}
       {image ? (
         <div className="v3-place-amenities__media">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="v3-place-amenities__photo" src={image.src} alt={image.alt} loading="lazy" decoding="async" />
         </div>
-      ) : (
-        <V3Reveal
-          className="v3-place-amenities__media"
-          step={step}
-          media={
-            <span className="v3-place-amenities__mark">
-              <V3Icon name={amenityKindMark(kind)} size={24} />
-            </span>
-          }
-        />
-      )}
+      ) : null}
       <p className="v3-place-amenities__kind">{kind}</p>
       <h3 className="v3-place-amenities__name">{row.name}</h3>
       {row.description ? <p className="v3-place-amenities__line">{row.description}</p> : null}
-      {row.access ? (
+      {facts.length > 0 ? (
+        <dl className="v3-place-amenities__facts">
+          {facts.map((fact) => (
+            <div className="v3-place-amenities__fact" key={`${fact.label}:${fact.value}`}>
+              <dt className="v3-place-amenities__fact-label">{fact.label}</dt>
+              <dd className="v3-place-amenities__fact-value">{fact.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : row.access ? (
         <p className="v3-place-amenities__access">
           <span className="v3-place-amenities__access-label">Access</span> {row.access}
         </p>
@@ -410,7 +426,9 @@ export function V3PlaceAmenities({
           one-row groups, four of them a single tile beside two empty columns
           (Tetherow measured 1,882px tall that way on 2026-09-16). The kind
           sits on each tile as its eyebrow, and the chip for a kind lands on
-          that kind's first tile. */}
+          that kind's first tile. A pictured tile spans two columns on a wide
+          window (round 3): the frame we hold leads the board the way the
+          resort's own tiles do, and the typed tiles run beside it. */}
       <ul className="v3-place-amenities__tiles">
         {groups
           .flatMap((group) =>
@@ -420,16 +438,8 @@ export function V3PlaceAmenities({
               anchorId: index === 0 ? group.id : undefined,
             })),
           )
-          .map((tile, position) => (
-            <AmenityTile
-              key={tile.row.key}
-              row={tile.row}
-              kind={tile.kind}
-              anchorId={tile.anchorId}
-              // The stagger runs across the board, not inside a group, so the
-              // ramp follows the reading order a visitor actually scrolls.
-              step={position}
-            />
+          .map((tile) => (
+            <AmenityTile key={tile.row.key} row={tile.row} kind={tile.kind} anchorId={tile.anchorId} />
           ))}
       </ul>
 

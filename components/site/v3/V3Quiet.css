@@ -621,6 +621,234 @@
   background: var(--v3-navy);
 }
 
+/* --- The plate (SITE-116 round 3) -------------------------------------------
+   `factLayout="plate"`: fact rows become cells in an auto-fill grid — the
+   term as a small-caps label OVER the value in the display face — so a block
+   of authored facts (HOA, founded, acres, architect, par, yardage …) reads as
+   a spec plate rather than as another run of hairline rows. Every other item
+   kind spans the full width in reading order, so prose, folds, chips and the
+   drawn reach line keep their measure. */
+.v3.v3-quiet--plate .v3-quiet__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr));
+  column-gap: var(--v3-space-lg);
+  align-items: start;
+}
+
+.v3.v3-quiet--plate .v3-quiet__item:not(.v3-quiet__item--fact) {
+  grid-column: 1 / -1;
+}
+
+.v3.v3-quiet--plate .v3-quiet__item--fact {
+  padding: var(--v3-space-sm) 0 var(--v3-space-md);
+  /* A grid cell closes on its own hairline; the list's last-child rule cannot
+     reach every cell in the bottom row, so each carries one. */
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.v3.v3-quiet--plate .v3-quiet__factpair {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--v3-space-3xs);
+}
+
+.v3.v3-quiet--plate .v3-quiet__factterm {
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+}
+
+.v3.v3-quiet--plate .v3-quiet__factvalue {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: var(--v3-space-3xs);
+  text-align: left;
+}
+
+/* The value in the display face at the heading step — the plate's spectacle.
+   A sentence-length value (a turf blend, a status) would set a paragraph in
+   Amboqia, so it steps back to body size by its own length. */
+.v3.v3-quiet--plate .v3-quiet__factfigure {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-heading);
+  overflow-wrap: anywhere;
+}
+
+.v3.v3-quiet--plate .v3-quiet__factfigure--long {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: 0;
+  line-height: var(--v3-leading-body);
+}
+
+.v3.v3-quiet--plate .v3-quiet__factdetail {
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-size: var(--v3-size-source);
+}
+
+.v3.v3-quiet--plate .v3-quiet__factbar {
+  width: 100%;
+}
+
+/* --- The reach line (SITE-116 round 3) ---------------------------------------
+   One axis from here to the farthest destination; a mark per place at its
+   share of the way (`--v3-at`, set by the primitive from the caller's value
+   and max). Names ride above the line, distances below; every other mark
+   flips so near neighbours (7 and 10 minutes) do not collide. A mark is an
+   anchor to its row, tap-height, and lifts on hover or focus. */
+.v3-quiet__item--reach {
+  padding: var(--v3-space-sm) 0 var(--v3-space-xs);
+}
+
+.v3-quiet__reach {
+  margin-top: var(--v3-space-md);
+  padding: 2.6rem 3.5rem 2.6rem 1.5rem;
+}
+
+.v3-quiet__reach-track {
+  position: relative;
+  height: var(--v3-rule-weight-section);
+  background: var(--v3-hairline);
+}
+
+/* The travelled line: navy to the farthest mark. */
+.v3-quiet__reach-track::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--v3-navy);
+}
+
+.v3-quiet__reach-mark {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--v3-at, 0) * 100%);
+  display: grid;
+  justify-items: center;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  transform: translate(-50%, -50%);
+  color: var(--v3-ink);
+  text-decoration: none;
+}
+
+.v3-quiet__reach-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: var(--v3-rule-weight-section) solid var(--v3-navy);
+  border-radius: var(--v3-radius-mark);
+  background: var(--v3-surface);
+  transform: translate(-50%, -50%);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out), background-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-quiet__reach-name,
+.v3-quiet__reach-value {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  line-height: var(--v3-leading-note);
+}
+
+.v3-quiet__reach-name {
+  bottom: calc(50% + 0.85rem);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+}
+
+.v3-quiet__reach-value {
+  top: calc(50% + 0.85rem);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Every other mark flips: name below, distance above. */
+.v3-quiet__reach-mark--below .v3-quiet__reach-name {
+  top: calc(50% + 0.85rem);
+  bottom: auto;
+}
+
+.v3-quiet__reach-mark--below .v3-quiet__reach-value {
+  bottom: calc(50% + 0.85rem);
+  top: auto;
+}
+
+/* The ends anchor their text inward so nothing leaves the measure. */
+.v3-quiet__reach-mark--end .v3-quiet__reach-name,
+.v3-quiet__reach-mark--end .v3-quiet__reach-value {
+  left: auto;
+  right: calc(50% - 0.5rem);
+  transform: none;
+}
+
+.v3-quiet__reach-mark--start .v3-quiet__reach-name,
+.v3-quiet__reach-mark--start .v3-quiet__reach-value {
+  left: calc(50% - 0.5rem);
+  transform: none;
+}
+
+.v3-quiet__reach-mark:hover .v3-quiet__reach-dot,
+.v3-quiet__reach-mark:focus-visible .v3-quiet__reach-dot {
+  background: var(--v3-navy);
+  transform: translate(-50%, -50%) scale(1.35);
+}
+
+.v3-quiet__reach-mark:hover .v3-quiet__reach-name,
+.v3-quiet__reach-mark:focus-visible .v3-quiet__reach-name {
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.v3-quiet__reach-mark:focus-visible {
+  outline: var(--v3-focus-width) solid var(--v3-focus);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-quiet__reach-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2.4rem;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+}
+
+/* The rows under the line: the set's legend, two-up on a wide window even
+   outside the plate, so four destinations are two lines, not four. */
+.v3.v3-quiet--plate .v3-quiet__item--reach-row .v3-quiet__factfigure {
+  font-size: var(--v3-size-num);
+}
+
+@media (max-width: 40rem) {
+  .v3-quiet__reach {
+    padding: 2.4rem 2.5rem 2.4rem 0.75rem;
+  }
+
+  .v3-quiet__reach-name {
+    font-size: var(--v3-size-label);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-quiet__reach-dot {
+    transition: none;
+  }
+}
+
 /* --- Chip sets -------------------------------------------------------------
    A named set of short labels. Amenities in a category and builders were
    `·`-joined sentences; a set reads as a set. */

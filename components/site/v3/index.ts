@@ -539,6 +539,8 @@ export type {
   V3QuietFact,
   V3QuietChips,
   V3QuietFold,
+  V3QuietReach,
+  V3QuietReachMark,
   V3QuietFigure,
   V3QuietMark,
 } from './V3Quiet'
@@ -586,9 +588,26 @@ export type {
  */
 export { V3PlaceIndex, placeIndexRows } from './V3PlaceIndex'
 export { V3PlaceAmenities, amenityGroups, amenityBoardLede } from './V3PlaceAmenities'
-export type { V3PlaceAmenitiesProps, V3PlaceAmenity, V3PlaceAmenityGroup } from './V3PlaceAmenities'
+export type { V3PlaceAmenitiesProps, V3PlaceAmenity, V3PlaceAmenityGroup, V3PlaceAmenityFact } from './V3PlaceAmenities'
 
-export type { V3PlaceIndexProps, V3PlaceIndexEntry } from './V3PlaceIndex'
+export type { V3PlaceIndexProps, V3PlaceIndexEntry, V3PlaceIndexFinder } from './V3PlaceIndex'
+
+/* The place finder: the installed beUI combobox over an index's own rows,     */
+/* mounted by V3PlaceIndex (SITE-116 round 3). Exported so the barrel gate     */
+/* sees one register and a page can mount it alone.                            */
+export { V3PlaceFinder } from './V3PlaceFinder.client'
+export type { V3PlaceFinderProps, V3PlaceFinderItem } from './V3PlaceFinder.client'
+
+/* -------------------------------------------------------------------------- */
+/* Pattern 11 — CENSUS: one place, counted several true ways, on one sheet     */
+/*                                                                             */
+/* A page that prints several correct inventory figures over different         */
+/* populations owes the reader the sentence that says how they differ. This    */
+/* is that sentence as a table: figure, what, where, when, and the door to the */
+/* section that holds it (SITE-116 round 3).                                   */
+/* -------------------------------------------------------------------------- */
+export { V3Census, censusRows } from './V3Census'
+export type { V3CensusProps, V3CensusRow } from './V3Census'
 
 /* -------------------------------------------------------------------------- */
 /* Pattern 10 — SLOTS: a tool's empty state, drawn as the thing it makes       */

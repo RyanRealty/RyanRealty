@@ -140,7 +140,7 @@
   line-height: var(--v3-leading-note);
 }
 
-/* A pictured tile: the guide's own cover above the name, same 3:2 frame. */
+/* A pictured tile: the frame we hold of THIS place above the name, 3:2. */
 .v3-place-amenities__photo {
   display: block;
   width: 100%;
@@ -149,30 +149,21 @@
   background: var(--v3-wash);
 }
 
-/* The media slot ------------------------------------------------------------
-   One box per tile, whether it holds a photograph or the kind's mark, so the
-   spacing under it is written once and the scroll reveal has something with a
-   size to move. */
+/* The media slot: the photograph's box, and the spacing under it. A tile with
+   no frame of the place has no media slot at all (SITE-116 round 3) — no grey
+   plate, no pictogram; the type below starts at the hairline. */
 .v3-place-amenities__media {
   margin-bottom: var(--v3-space-2xs);
 }
 
-/* THE PLACE MARK: what a tile shows when we hold no photograph OF THIS PLACE
-   (SITE-116 round 2). Deliberately not a 3:2 plate. A grey box at the size of
-   a photograph reads as a picture that failed to load, and a board of eight of
-   them beside one real frame reads as a broken page — so the mark is a
-   control-height square of the same wash the chips use, carrying the kind's
-   Iconoir stroke in navy. A tile that HAS a photograph obviously has one; a
-   tile that does not is obviously a drawing. Nobody is told a picture exists
-   where none does, and nothing is invented to fill the space. */
-.v3-place-amenities__mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--v3-tap);
-  height: var(--v3-tap);
-  background: var(--v3-wash);
-  color: var(--v3-navy);
+/* THE PICTURED TILE LEADS (round 3). On a wide window the frame spans two
+   columns, so the one photograph we can vouch for reads as the board's lead
+   the way the resort's own homepage tiles do, and the typed tiles run beside
+   and under it in the packed grid. */
+@media (min-width: 60rem) {
+  .v3-place-amenities__tile--pictured {
+    grid-column: span 2;
+  }
 }
 
 @media (max-width: 47.99rem) {
@@ -222,17 +213,61 @@
   text-transform: uppercase;
 }
 
+/* THE NAME CARRIES THE TILE (round 3). With no badge over it, the place's
+   name is the tile's first read: display face at the section-heading step, so
+   "Coorie" and "The Row" read as places on a board rather than captions under
+   a missing picture. A pictured tile keeps the smaller name — its frame is
+   already the first read. */
 .v3-place-amenities__name {
   margin: 0;
   color: var(--v3-ink);
   font-family: var(--v3-font-display);
-  font-size: var(--v3-size-body-lg);
+  font-size: var(--v3-size-display-2);
   font-weight: var(--v3-weight-display);
   line-height: var(--v3-leading-heading);
   letter-spacing: var(--v3-track-display);
+  text-wrap: balance;
+}
+
+.v3-place-amenities__tile--pictured .v3-place-amenities__name {
+  font-size: var(--v3-size-body-lg);
 }
 
 .v3-place-amenities__line {
+  margin: 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  max-width: 34rem;
+}
+
+/* THE FACTS (round 3): who can use it, hours, booking — the authored access
+   text as a description list, small caps label over the value, hairline above
+   so the list reads as a spec block and not as another sentence. */
+.v3-place-amenities__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, max-content));
+  gap: var(--v3-space-2xs) var(--v3-space-lg);
+  margin: var(--v3-space-2xs) 0 0;
+  padding-top: var(--v3-space-2xs);
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3-place-amenities__fact {
+  min-width: 0;
+}
+
+.v3-place-amenities__fact-label {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-eyebrow);
+  line-height: var(--v3-leading-note);
+  text-transform: uppercase;
+}
+
+.v3-place-amenities__fact-value {
   margin: 0;
   color: var(--v3-ink);
   font-size: var(--v3-size-body-sm);

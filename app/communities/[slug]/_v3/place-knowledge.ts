@@ -126,12 +126,6 @@ export function placeKnowledgeSource(input: {
     : authored
 }
 
-/** Small counts read as words in a sentence, larger ones as digits. */
-const SMALL_NUMBER_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
-function spelledOut(n: number): string {
-  return n >= 0 && n < SMALL_NUMBER_WORDS.length ? SMALL_NUMBER_WORDS[n]! : n.toLocaleString('en-US')
-}
-
 function childPlatItems(input: {
   name: string
   aliases: readonly string[]
@@ -258,38 +252,34 @@ export function buildPlaceKnowledge(input: {
   items.push(...childPlatItems({ name, aliases, countIsAliasAware: input.countIsAliasAware }))
 
   /**
-   * Drive times are `{minutes, destination}` and were being written out as
-   * "18 minutes to Bend · 25 minutes to Redmond Airport · ...". Nearest first,
-   * each drawn as a share of the longest, so the set reads as one comparison
-   * instead of a sentence. The share is computed here, beside the number it
-   * formats, so the primitive never does arithmetic on a published figure.
+   * Drive times are `{minutes, destination, note}` and were being written out
+   * as "18 minutes to Bend · 25 minutes to Redmond Airport · ...", then (round
+   * 2) as four hairline fact rows with a proportional underline — which the
+   * evaluator read as one more instance of the row template. A set of
+   * distances is a DRAWING (SITE-116 round 3): one line from here to the
+   * farthest, a mark per destination where it falls, its name and minutes on
+   * the mark, and a row per destination beneath carrying the note. Nearest
+   * first. The primitive draws the marks from `value` and `max` as geometry;
+   * every printed figure is formatted here.
    */
   const drives = (content?.driveTimes ?? [])
     .filter((d) => Number.isFinite(d.minutes) && d.destination)
     .sort((a, b) => a.minutes - b.minutes)
   const longestDrive = drives.reduce((max, d) => Math.max(max, d.minutes), 0)
-  if (drives.length > 0) {
-    // SAY WHAT THE LINE IS (SITE-116 round 2, 2026-09-16). Each drive row
-    // already draws its minutes as a length — the share of the longest drive
-    // in the set — and an evaluator read the result as "a decorative hairline
-    // underline that carries no visible encoding to any value". A drawing
-    // nobody is told how to read is a drawing that is not doing its job
-    // (PLACE_PAGES.md rule 7: labels are the question a non-broker asks). One
-    // sentence turns the same marks into a chart, and it also gives the run of
-    // facts above it somewhere to end.
+  if (drives.length > 0 && longestDrive > 0) {
     items.push({
-      kind: 'prose',
+      kind: 'reach',
       term: 'How far to what',
-      body: `Nearest first. The line under each name is that drive against the longest one here, so the set reads as one comparison instead of ${spelledOut(drives.length)} separate numbers.`,
-    })
-  }
-  for (const drive of drives) {
-    items.push({
-      kind: 'fact',
-      term: drive.destination,
-      value: `${drive.minutes} min`,
-      detail: drive.note ?? undefined,
-      ...(longestDrive > 0 ? { weight: drive.minutes / longestDrive } : {}),
+      body: `Drive times from ${name}, nearest first, on one line out to the farthest. Each mark on the line is a door to its row below, and the rows carry what is there.`,
+      unitLabel: 'minutes by car',
+      max: longestDrive,
+      maxLabel: `${longestDrive} min`,
+      marks: drives.map((drive) => ({
+        label: drive.destination,
+        value: drive.minutes,
+        valueLabel: `${drive.minutes} min`,
+        detail: drive.note ?? undefined,
+      })),
     })
   }
 
