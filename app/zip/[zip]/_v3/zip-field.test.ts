@@ -84,6 +84,22 @@ describe('zipMasonryItems', () => {
     expect(items[0]?.photoSrc).not.toMatch(/320x240/)
     expect(items[0]?.imageHeight).toBeGreaterThan(160)
   })
+
+  it('staggers photographed card heights so the masonry is not a 3-up row', () => {
+    const items = zipMasonryItems(
+      ['a', 'b', 'c', 'd', 'e', 'f'].map((id, i) =>
+        tile({
+          listingKey: `${id}-${i}-listing`,
+          photoUrl: `https://cdn.example/${id}.jpg`,
+          listPrice: 400000 + i * 25000,
+        }),
+      ),
+      '97702',
+    )
+    const heights = new Set(items.map((item) => item.imageHeight))
+    expect(Math.max(...items.map((item) => item.imageHeight))).toBeGreaterThanOrEqual(280)
+    expect(heights.size).toBeGreaterThanOrEqual(3)
+  })
 })
 
 describe('zipItemListEntries', () => {

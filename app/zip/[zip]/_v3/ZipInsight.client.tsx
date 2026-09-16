@@ -277,6 +277,16 @@ export function ZipInsight({ zip, board }: { zip: string; board: ZipInsightBoard
   if (!zipInsightHasPages(board)) return null
 
   const pages: InsightPage[] = []
+  const mix = mixProse(board, mixName)
+  if (board.mix && mix) {
+    pages.push({
+      key: 'mix',
+      prose: mix,
+      Card: MixYear,
+      pill: `Browse ${zip}`,
+      pillHref: zipSearchHref(zip),
+    })
+  }
   const compare = compareProse(board, compareAt)
   if (board.compare && compare) {
     pages.push({
@@ -295,16 +305,6 @@ export function ZipInsight({ zip, board }: { zip: string; board: ZipInsightBoard
       Card: PaceMonths,
       pill: `${board.scope} market report`,
       pillHref: '/housing-market',
-    })
-  }
-  const mix = mixProse(board, mixName)
-  if (board.mix && mix) {
-    pages.push({
-      key: 'mix',
-      prose: mix,
-      Card: MixYear,
-      pill: `Browse ${zip}`,
-      pillHref: zipSearchHref(zip),
     })
   }
   if (pages.length < 2) return null

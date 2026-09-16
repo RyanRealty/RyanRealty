@@ -535,6 +535,7 @@ async function renderZipPage({ params }: { params: Promise<Params> }) {
     months: chartMonths.months,
     bedrooms: publicMix.bedrooms,
     financing: publicMix.financing,
+    asOf: mosAsOf,
   })
   const showInsight = zipInsightHasPages(insightBoard)
 

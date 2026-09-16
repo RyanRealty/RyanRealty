@@ -259,6 +259,11 @@ function buildMix(
   return null
 }
 
+function withAsOf(source: string, asOf?: string | null): string {
+  if (!asOf) return source
+  return `${source.replace(/\.$/, '')} as of ${asOf}.`
+}
+
 export function buildZipInsightBoard(input: {
   zip: string
   cityName: string
@@ -266,18 +271,27 @@ export function buildZipInsightBoard(input: {
   months: readonly ZipInsightMonth[]
   bedrooms: readonly ZipMixShare[]
   financing: readonly ZipMixShare[]
+  asOf?: string | null
 }): ZipInsightBoard {
   const place = `ZIP ${input.zip}`
   const scope = scopeClause(input.zip, input.cityName, input.cityFallback)
   const cells = cellsFromMonths(input.months)
-  const monthSource = input.cityFallback
-    ? `Median close of detached single-family homes in ${input.cityName}, because ZIP ${input.zip} does not yet have a publishable monthly series. Oregon Data Share.`
-    : `Median close of detached single-family homes inside ZIP ${input.zip}. Oregon Data Share.`
-  const paceSource = input.cityFallback
-    ? `Closed detached sales by month in ${input.cityName}, not ZIP ${input.zip}. Oregon Data Share.`
-    : `Closed detached sales by month inside ZIP ${input.zip}. Oregon Data Share.`
-  const mixSource =
-    `Detached closes in ZIP ${input.zip} over the last 12 months, among the groups this page publishes (each at least 5%). Oregon Data Share.`
+  const monthSource = withAsOf(
+    input.cityFallback
+      ? `Median close of detached single-family homes in ${input.cityName}, because ZIP ${input.zip} does not yet have a publishable monthly series. Oregon Data Share.`
+      : `Median close of detached single-family homes inside ZIP ${input.zip}. Oregon Data Share.`,
+    input.asOf,
+  )
+  const paceSource = withAsOf(
+    input.cityFallback
+      ? `Closed detached sales by month in ${input.cityName}, not ZIP ${input.zip}. Oregon Data Share.`
+      : `Closed detached sales by month inside ZIP ${input.zip}. Oregon Data Share.`,
+    input.asOf,
+  )
+  const mixSource = withAsOf(
+    `Detached closes in ZIP ${input.zip} over the last 12 months, among the groups this page publishes (each at least 5%). Oregon Data Share.`,
+    input.asOf,
+  )
   return {
     place,
     scope,

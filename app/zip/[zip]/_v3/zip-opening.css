@@ -44,6 +44,13 @@
   line-height: 1;
 }
 
+.zip-opening__claim-swap {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: inherit;
+  line-height: 1;
+}
+
 .zip-opening__doors {
   margin: 0 0 var(--v3-space-sm);
   font-family: var(--v3-font-sans);
@@ -317,21 +324,16 @@
   color: color-mix(in oklab, var(--v3-navy) 68%, transparent);
 }
 
-/* Contained SmoothScroll + masonry (beui:scroll-animation + infinite-masonry). */
-#masonry-open {
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
-}
-
-.zip-opening__scroll {
+/* beui:infinite-masonry is the scroller. beui:scroll-animation marks sit on the frame. */
+#masonry-open,
+.zip-opening__masonry-frame {
   position: relative;
-  height: 28rem;
-  overflow-y: auto;
-  border-radius: var(--v3-radius-lg, 0.75rem);
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 
 .zip-opening__homes-kicker {
   margin: 0;
-  padding: 2.25rem var(--v3-space-xs) 0;
+  padding: 0 var(--v3-space-xs) var(--v3-space-2xs);
   font-family: var(--v3-font-sans);
   font-size: var(--v3-size-source);
   letter-spacing: 0.06em;
@@ -341,8 +343,8 @@
 
 .zip-opening__progress {
   position: absolute;
-  top: 0.65rem;
-  right: 0.65rem;
+  top: 1.85rem;
+  right: 0.75rem;
   z-index: 4;
   color: var(--v3-navy);
   pointer-events: none;
@@ -350,17 +352,16 @@
 
 .zip-opening__progress-bar {
   position: absolute;
-  top: 0;
+  top: 1.55rem;
   z-index: 3;
   color: var(--v3-navy);
   background: color-mix(in oklab, var(--v3-navy) 12%, transparent);
 }
 
 .zip-opening__masonry {
-  height: 24rem;
-  border: 0;
+  height: 28rem;
+  border-color: color-mix(in oklab, var(--v3-navy) 14%, transparent);
   background: transparent;
-  padding-inline: var(--v3-space-xs);
 }
 
 .zip-opening__card {
@@ -476,11 +477,7 @@
     line-height: 1.6;
   }
 
-  .zip-opening__scroll {
-    height: 22rem;
-  }
-
   .zip-opening__masonry {
-    height: 18rem;
+    height: 22rem;
   }
 }

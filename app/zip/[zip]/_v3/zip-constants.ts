@@ -341,7 +341,7 @@ export function zipFieldItems(tiles: readonly ListingTile[], zip: string): V3Fie
     })
 }
 
-const MASONRY_HEIGHTS = [190, 220, 260, 300] as const
+const MASONRY_HEIGHTS = [168, 236, 312, 196, 280, 360] as const
 
 export type ZipMasonryItem = {
   id: string
@@ -353,24 +353,24 @@ export type ZipMasonryItem = {
   imageHeight: number
 }
 
-function masonryHeightFor(id: string, hasPhoto: boolean): number {
-  if (!hasPhoto) return 140
-  let hash = 0
-  for (let i = 0; i < id.length; i += 1) hash = (hash + id.charCodeAt(i)) % MASONRY_HEIGHTS.length
-  return MASONRY_HEIGHTS[hash] ?? 220
-}
-
 /** Photographed-first masonry cards. Same population as zipFieldItems. */
 export function zipMasonryItems(tiles: readonly ListingTile[], zip: string): ZipMasonryItem[] {
-  return zipFieldItems(tiles, zip).map((item) => ({
-    id: item.id,
-    href: item.href,
-    title: item.title,
-    priceLabel: item.priceLabel,
-    meta: item.meta,
-    photoSrc: item.photoSrc,
-    imageHeight: masonryHeightFor(item.id, Boolean(item.photoSrc)),
-  }))
+  let photoLane = 0
+  return zipFieldItems(tiles, zip).map((item) => {
+    const hasPhoto = Boolean(item.photoSrc)
+    const imageHeight = hasPhoto
+      ? (MASONRY_HEIGHTS[photoLane++ % MASONRY_HEIGHTS.length] ?? 236)
+      : 140
+    return {
+      id: item.id,
+      href: item.href,
+      title: item.title,
+      priceLabel: item.priceLabel,
+      meta: item.meta,
+      photoSrc: item.photoSrc,
+      imageHeight,
+    }
+  })
 }
 
 export function zipItemListEntries(

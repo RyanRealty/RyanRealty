@@ -37,6 +37,7 @@ describe('buildZipInsightBoard', () => {
         { key: '2', share: 0.18, floor: false },
       ],
       financing: [],
+      asOf: 'Sep 15, 2026',
     })
     expect(board.compare).not.toBeNull()
     expect(board.pace).not.toBeNull()
@@ -44,6 +45,8 @@ describe('buildZipInsightBoard', () => {
     expect(board.mix?.segments.length).toBeGreaterThanOrEqual(2)
     expect(board.compare?.source).toMatch(/Bend/)
     expect(board.compare?.source).toMatch(/97702/)
+    expect(board.compare?.source).toMatch(/Sep 15, 2026/)
+    expect(board.mix?.source).toMatch(/Sep 15, 2026/)
     expect(zipInsightHasPages(board)).toBe(true)
   })
 
