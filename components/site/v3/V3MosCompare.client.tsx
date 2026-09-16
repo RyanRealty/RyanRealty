@@ -50,6 +50,45 @@ export type V3MosCompareProps = {
   className?: string
 }
 
+/**
+ * How many cities sit in each band, off the same published readings the
+ * bars draw. The idle caption used to restate the region's own figure —
+ * "Balanced at 4.6 months · Balanced 4–6" after the bars and the number line
+ * had shown 4.6 twice already (the separate evaluator's finding, 2026-09-16).
+ * A count of cities per band is something the drawing does not say.
+ */
+export function mosBandCounts(
+  cities: readonly Pick<V3MosCompareCity, 'mos'>[],
+): { seller: number; balanced: number; buyer: number; total: number } {
+  let seller = 0
+  let balanced = 0
+  let buyer = 0
+  for (const c of cities) {
+    if (c.mos == null || !Number.isFinite(c.mos) || c.mos <= 0) continue
+    if (c.mos < 4) seller += 1
+    else if (c.mos < 6) balanced += 1
+    else buyer += 1
+  }
+  return { seller, balanced, buyer, total: seller + balanced + buyer }
+}
+
+/** The caption at rest: the region's reading once, then where the cities sit. */
+export function mosCompareIdleRead(input: {
+  regionLabel: string
+  regionMosLabel: string
+  regionVerdict: string
+  cities: readonly Pick<V3MosCompareCity, 'mos'>[]
+}): string {
+  const head = `${input.regionLabel} at ${input.regionMosLabel} months, ${input.regionVerdict.toLowerCase()}`
+  const n = mosBandCounts(input.cities)
+  if (n.total === 0) return head
+  const parts: string[] = []
+  if (n.seller) parts.push(`${n.seller} seller's`)
+  if (n.balanced) parts.push(`${n.balanced} balanced`)
+  if (n.buyer) parts.push(`${n.buyer} buyer's`)
+  return `${head} · of ${n.total} ${n.total === 1 ? 'city' : 'cities'} with a reading: ${parts.join(', ')}`
+}
+
 function clampMos(value: number): number {
   if (!Number.isFinite(value) || value < 0) return 0
   return Math.min(value, V3_MOS_COMPARE_MAX)
@@ -194,11 +233,10 @@ export function V3MosCompare({
 
   if (!geometry || !Number.isFinite(regionMos) || regionMos <= 0) return null
 
-  const activeBand = geometry.bands.find((b) => b.active)?.label ?? regionVerdict
   const idleRead =
     selected && selected.mosLabel && selected.verdictLabel
       ? `${selected.name} at ${selected.mosLabel} mo (${selected.verdictLabel}) · ${regionLabel} at ${regionMosLabel}`
-      : `${regionVerdict} at ${regionMosLabel} months · ${activeBand}`
+      : mosCompareIdleRead({ regionLabel, regionMosLabel, regionVerdict, cities })
 
   return (
     <figure

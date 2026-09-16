@@ -280,6 +280,16 @@ export type V3AtlasProps = {
    * "1 listing of every type for sale, slide the price" is noise on it.
    */
   quiet?: boolean
+  /**
+   * Draw the sales-heat wash under the marks (default). The region index
+   * passes false: at Central Oregon scale the kernel field over a year of
+   * closings covered the town silhouettes, and the separate evaluator read the
+   * frame as "a blurred point-density heatmap with floating labels" rather than
+   * an atlas of places (SITE-92, 2026-09-16). The marks, counts, pulses, key
+   * and dock are unchanged; only the field is withheld, so nothing the wash
+   * would have said is claimed in text.
+   */
+  salesWash?: boolean
   children?: ReactNode
   className?: string
   /**
@@ -390,6 +400,7 @@ export function V3Atlas({
   parcels,
   frame,
   quiet,
+  salesWash = true,
   noun: nounProp,
   incomplete,
   events,
@@ -838,7 +849,7 @@ export function V3Atlas({
      maps, incomplete reads, and a broker's record of closings (the dots ARE
      the subject) draw none. */
   const heat = useMemo(() => {
-    if (quiet || incomplete || closingsMap) return { cells: [] as const, n: 0, max: 0 }
+    if (quiet || incomplete || closingsMap || !salesWash) return { cells: [] as const, n: 0, max: 0 }
     const points: { x: number; y: number }[] = []
     dots.forEach((d, i) => {
       if (!isAtlasHeatClosing(d.s) || !isOn(d)) return
@@ -847,7 +858,7 @@ export function V3Atlas({
       points.push({ x: p[0], y: p[1] })
     })
     return salesHeatField(points, { width: proj.width, height: proj.height })
-  }, [quiet, incomplete, closingsMap, dots, isOn, xy, proj.width, proj.height])
+  }, [quiet, incomplete, closingsMap, salesWash, dots, isOn, xy, proj.width, proj.height])
 
   /* ROW ↔ MARK, the list's direction. One index, so a hover over a sibling
      list re-renders one mark instead of every dot on the map. */

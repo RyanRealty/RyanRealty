@@ -130,8 +130,8 @@ export function CitiesAlertsStrip({ id = 'regional-alerts', newCount30d, updated
   const source =
     n == null
       ? undefined
-      : `${formatCount(n)} houses: regional MLS through Oregon Data Share, Market Truth new listings in the ` +
-        'last 30 days across Central Oregon (detached single-family; Coming Soon excluded). The alert follows ' +
+      : `${formatCount(n)} houses: regional MLS through Oregon Data Share — new listings in the last 30 days ` +
+        'across Central Oregon as our market metric layer counts them (detached single-family; Coming Soon excluded). The alert follows ' +
         "this page's filter, every city in the region."
   const href = newestFirstHref((browseHref ?? '').trim() || REGIONAL_SEARCH_HREF)
 

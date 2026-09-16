@@ -98,10 +98,19 @@ const OTHERS_TRACE =
   'live MLS through Oregon Data Share, the city snapshot row for each remaining Central Oregon city: active single-family count and the median list price of those listings'
 
 const REVEAL_TRACE =
-  'On hover, focus, or a hold, a row shows its months-of-supply verdict where Market Truth publishes one for the city (market_metric, detached, months_of_supply and market_verdict), and the last twelve complete months of closed detached sales as a line (market_metric closed_count, detached, one calendar month each); a month the source withheld breaks the line, and fewer than six published months draws none'
+  'On hover, focus, or a hold, a row shows its months-of-supply verdict where our market metric layer publishes one for the city — regional MLS through Oregon Data Share, detached homes (market_metric: months_of_supply and market_verdict), and the last twelve complete months of closed detached sales as a line (market_metric closed_count, detached, one calendar month each); a month the source withheld breaks the line, and fewer than six published months draws none'
 
 const REGION_SUPPLY_TRACE =
-  'Market Truth, detached homes across Central Oregon (market_metric, definition mt-v1, segment detached, region central-oregon): active_count, and months_of_supply as homes for sale divided by closes in the last six months divided by six. The monthly pace drawn here is that division recovered exactly from the two published figures'
+  'Regional MLS through Oregon Data Share, read through our market metric layer — detached homes across Central Oregon (market_metric, definition mt-v1, segment detached, region central-oregon): active_count, and months_of_supply as homes for sale divided by closes in the last six months divided by six. The monthly pace drawn here is that division recovered exactly from the two published figures'
+
+/**
+ * The index draws marks, not the sales-heat wash: at region scale a year of
+ * closings covered the town silhouettes and the evaluator read the frame as a
+ * heatmap with floating labels (SITE-92 round two). One flag, handed to both
+ * the population read (so its source line describes what is drawn) and the
+ * Atlas (so nothing is drawn that the line does not describe).
+ */
+const INDEX_SALES_WASH = false
 
 /** The twelve complete months a row's run covers. */
 const REVEAL_MONTHS = 12
@@ -157,7 +166,7 @@ export default async function CitiesPage() {
   const [allCities, allSnapshots, atlasRead, regionAtlas, regionPace] = await Promise.all([
     getCitiesForIndex(),
     getAllCitySnapshots(),
-    withTimeoutFallback(buildPlaceAtlas({ cities: [], label: 'Central Oregon' }).catch(() => null), null, 6000, 'cities:atlas'),
+    withTimeoutFallback(buildPlaceAtlas({ cities: [], label: 'Central Oregon', salesWash: INDEX_SALES_WASH }).catch(() => null), null, 6000, 'cities:atlas'),
     buildRegionAtlasRegions().catch(() => null),
     withTimeoutFallback(
       getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
@@ -512,6 +521,7 @@ export default async function CitiesPage() {
                   regions={townRegions}
                   basemap={basemapForRegions(townRegions, { dots: atlas.dots, fit: 'dots' })}
                   fit="dots"
+                  salesWash={INDEX_SALES_WASH}
                   types={atlas.types}
                   events={atlas.events}
                   source={atlas.source}
