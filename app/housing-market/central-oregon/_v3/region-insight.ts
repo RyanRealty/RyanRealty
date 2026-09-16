@@ -397,7 +397,8 @@ export function regionInsightFaqs(
           `counting every property type. ${lead.label} were ${lead.pct.toFixed(1)}% of them ` +
           `(${insightCount(lead.count)} sales)` +
           (land ? `, and bare land was ${land.pct.toFixed(1)}% (${insightCount(land.count)})` : '') +
-          '. Source: closed MLS sales across the Central Oregon service area, all property types.',
+          '. Source: closed sales through Oregon Data Share MLS across the Central Oregon ' +
+          'service area, all property types.',
       })
     }
   }
