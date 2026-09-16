@@ -3,6 +3,7 @@ import {
   sendGroupMms,
   groupShapeOf,
   parseConversationMedia,
+  parseExistingGroupConversationSid,
   toE164,
   type ConversationParticipantInfo,
 } from './twilio-conversations'
@@ -220,5 +221,155 @@ describe('toE164', () => {
     expect(toE164('(714) 337-6028')).toBe('+17143376028')
     expect(toE164('+15417033095')).toBe('+15417033095')
     expect(toE164('12345')).toBeNull()
+  })
+})
+
+// One number group = one Conversation (2026-09-16). Twilio refuses a second
+// group for the same participant set and NAMES the existing one. Found on the
+// Hogan thread: the group formed once on Jul 31 (CHaf1f40…); every group text
+// after that hit this refusal, the half-built conversation was deleted, and
+// the composer fell back to one text per person for six weeks. The message
+// belongs in the existing conversation.
+const EXISTING = 'CHaf1f40233b2944ec944df877e7c57ce9'
+const REFUSAL = {
+  code: 50438,
+  message: `Group MMS with given participant list already exists as Conversation ${EXISTING}`,
+}
+const OUR_LINE = '+15417033095'
+const PARTICIPANTS_WITH_LINE = {
+  participants: [
+    { messaging_binding: { projected_address: OUR_LINE } },
+    { messaging_binding: { address: '+17143376028' } },
+    { messaging_binding: { address: '+19093430531' } },
+  ],
+}
+
+describe('parseExistingGroupConversationSid', () => {
+  it('reads the conversation Twilio names in the refusal', () => {
+    expect(parseExistingGroupConversationSid(REFUSAL.message)).toBe(EXISTING)
+  })
+  it('is null for every other error and for nothing', () => {
+    expect(parseExistingGroupConversationSid('Address rejected')).toBeNull()
+    expect(parseExistingGroupConversationSid(undefined)).toBeNull()
+    expect(parseExistingGroupConversationSid('already exists as Conversation CHnope')).toBeNull()
+  })
+})
+
+describe('sendGroupMms — posts into the group Twilio already holds', () => {
+  const send = () =>
+    sendGroupMms({
+      projectedAddress: OUR_LINE,
+      participants: ['7143376028', '9093430531'],
+      body: 'Just sent an email with the counteroffer language.',
+      friendlyName: 'Group · Tanya Hogan',
+    })
+
+  it('reuses the existing active conversation when the projected line completes a known number group', async () => {
+    const calls = mockTwilio([
+      { sid: 'CH2', chat_service_sid: 'IS2' }, // create (the one that will be torn down)
+      { sid: 'MB1' },
+      { sid: 'MB2' },
+      REFUSAL, // adding our line completes the number group → Twilio names CHaf1f…
+      {}, // DELETE CH2
+      { sid: EXISTING, state: 'active', chat_service_sid: 'IS1' }, // GET existing
+      PARTICIPANTS_WITH_LINE, // GET its participants
+      { sid: 'IM9' }, // POST message into the existing conversation
+    ])
+    const res = await send()
+    expect(res).toEqual({
+      ok: true,
+      conversationSid: EXISTING,
+      messageSid: 'IM9',
+      chatServiceSid: 'IS1',
+      media: [],
+      reused: true,
+    })
+    // The half-built conversation is deleted; the existing one never is.
+    const dels = calls.filter((c) => c.method === 'DELETE')
+    expect(dels).toHaveLength(1)
+    expect(dels[0].url).toContain('/Conversations/CH2')
+    expect(dels.some((c) => c.url.includes(EXISTING))).toBe(false)
+    // The message goes into the existing conversation, authored by our line.
+    const msg = calls.find((c) => c.method === 'POST' && c.url.endsWith(`/Conversations/${EXISTING}/Messages`))
+    expect(msg?.body?.get('Author')).toBe(OUR_LINE)
+    expect(msg?.body?.get('Body')).toBe('Just sent an email with the counteroffer language.')
+    // An active conversation is not poked.
+    expect(calls.some((c) => c.body?.get('State') === 'active')).toBe(false)
+  })
+
+  it('also reuses when the refusal lands on a member add, not the projected line', async () => {
+    const calls = mockTwilio([
+      { sid: 'CH2' },
+      { sid: 'MB1' },
+      REFUSAL, // second member completes the group in Twilio's eyes
+      {}, // DELETE CH2
+      { sid: EXISTING, state: 'active', chat_service_sid: 'IS1' },
+      PARTICIPANTS_WITH_LINE,
+      { sid: 'IM9' },
+    ])
+    const res = await send()
+    expect(res.ok).toBe(true)
+    if (res.ok) expect(res.conversationSid).toBe(EXISTING)
+    expect(calls.filter((c) => c.method === 'DELETE').map((c) => c.url)).toEqual([expect.stringContaining('/Conversations/CH2')])
+  })
+
+  it('wakes an inactive existing conversation before posting', async () => {
+    const calls = mockTwilio([
+      { sid: 'CH2' },
+      { sid: 'MB1' },
+      { sid: 'MB2' },
+      REFUSAL,
+      {}, // DELETE CH2
+      { sid: EXISTING, state: 'inactive', chat_service_sid: 'IS1' },
+      { sid: EXISTING, state: 'active', chat_service_sid: 'IS1' }, // POST State=active
+      PARTICIPANTS_WITH_LINE,
+      { sid: 'IM10' },
+    ])
+    const res = await send()
+    expect(res.ok).toBe(true)
+    if (res.ok) expect(res.messageSid).toBe('IM10')
+    const wake = calls.find((c) => c.method === 'POST' && c.url.endsWith(`/Conversations/${EXISTING}`))
+    expect(wake?.body?.get('State')).toBe('active')
+    const msgIdx = calls.findIndex((c) => c.url.endsWith(`/Conversations/${EXISTING}/Messages`))
+    expect(calls.indexOf(wake!)).toBeLessThan(msgIdx)
+  })
+
+  it('refuses honestly when the existing conversation is closed — nothing posted, nothing deleted on it', async () => {
+    const calls = mockTwilio([
+      { sid: 'CH2' },
+      { sid: 'MB1' },
+      { sid: 'MB2' },
+      REFUSAL,
+      {}, // DELETE CH2
+      { sid: EXISTING, state: 'closed', chat_service_sid: 'IS1' },
+    ])
+    const res = await send()
+    expect(res.ok).toBe(false)
+    if (!res.ok) expect(res.error).toContain(`${EXISTING} is closed`)
+    expect(calls.some((c) => c.url.includes(`/Conversations/${EXISTING}/Messages`))).toBe(false)
+    expect(calls.filter((c) => c.method === 'DELETE').some((c) => c.url.includes(EXISTING))).toBe(false)
+  })
+
+  it('refuses when our line is no longer projected into the existing group', async () => {
+    mockTwilio([
+      { sid: 'CH2' },
+      { sid: 'MB1' },
+      { sid: 'MB2' },
+      REFUSAL,
+      {},
+      { sid: EXISTING, state: 'active', chat_service_sid: 'IS1' },
+      { participants: [{ messaging_binding: { address: '+17143376028' } }, { messaging_binding: { address: '+19093430531' } }] },
+    ])
+    const res = await send()
+    expect(res.ok).toBe(false)
+    if (!res.ok) expect(res.error).toContain(`does not carry our line ${OUR_LINE}`)
+  })
+
+  it('still fails a plain participant rejection the old way (no reuse without a named conversation)', async () => {
+    const calls = mockTwilio([{ sid: 'CH1' }, { sid: 'MB1' }, { message: 'Address rejected' }, {}])
+    const res = await sendGroupMms({ projectedAddress: OUR_LINE, participants: ['7143376028', '9093430531'], body: 'x' })
+    expect(res.ok).toBe(false)
+    if (!res.ok) expect(res.error).toContain('Address rejected')
+    expect(calls.filter((c) => c.method === 'DELETE').map((c) => c.url)).toEqual([expect.stringContaining('/Conversations/CH1')])
   })
 })

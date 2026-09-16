@@ -82,21 +82,62 @@ function isUniqueViolation(err: unknown): boolean {
   return code === '23505'
 }
 
+/**
+ * ONE SPELLING PER ADDRESS. `channel_address` is the per-conversation
+ * participant key, so two spellings of one phone are two participants. The
+ * 1:1 send path passed the number as the contact stores it ("(541) 902-0420",
+ * "5419020420") while the inbound webhook recorded the same line as
+ * "+15419020420" — every reply pair put a second row on the thread, the
+ * participant_count trigger marked the one-person thread is_group=true, the
+ * next send could not find a non-group thread for the contact and opened a
+ * new one. Measured 2026-09-16: 17 one-person threads flagged as groups, one
+ * contact's texts split across eight conversations. Phones normalize to E.164
+ * (+1 — the only numbers the carrier paths accept), emails to lower case;
+ * anything else passes through trimmed.
+ */
+export function normalizeChannelAddress(address: string): string {
+  const trimmed = String(address ?? '').trim()
+  if (!trimmed) return trimmed
+  if (trimmed.includes('@')) return trimmed.toLowerCase()
+  const digits = trimmed.replace(/\D/g, '')
+  if (digits.length === 10) return `+1${digits}`
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`
+  return trimmed
+}
+
 async function upsertParticipants(
   sb: SupabaseClient,
   conversationId: string,
   participants: RecordMessageParticipant[],
 ): Promise<void> {
   if (participants.length === 0) return
-  const rows = participants.map((p) => ({
-    conversation_id: conversationId,
-    person_id: p.personId ?? null,
-    raw_phone: p.rawPhone ?? null,
-    raw_email: p.rawEmail ?? null,
-    channel_address: p.address,
-    display_name: p.displayName ?? null,
-    role: p.personId ? 'contact' : 'raw',
-  }))
+  // Dedupe on the normalized key so two spellings of one number in a single
+  // call collapse to one row here, not two rows in the table.
+  const seen = new Set<string>()
+  const rows: Array<{
+    conversation_id: string
+    person_id: number | null
+    raw_phone: string | null
+    raw_email: string | null
+    channel_address: string
+    display_name: string | null
+    role: 'contact' | 'raw'
+  }> = []
+  for (const p of participants) {
+    const address = normalizeChannelAddress(p.address)
+    if (!address || seen.has(address)) continue
+    seen.add(address)
+    rows.push({
+      conversation_id: conversationId,
+      person_id: p.personId ?? null,
+      raw_phone: p.rawPhone ?? null,
+      raw_email: p.rawEmail ?? null,
+      channel_address: address,
+      display_name: p.displayName ?? null,
+      role: p.personId ? 'contact' : 'raw',
+    })
+  }
+  if (rows.length === 0) return
   // (conversation_id, channel_address) is unique — a member already on the thread
   // is a no-op. ignoreDuplicates so re-recording a group never errors.
   await sb

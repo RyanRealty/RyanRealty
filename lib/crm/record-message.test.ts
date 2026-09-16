@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { recordConversationMessage } from './record-message'
+import { normalizeChannelAddress, recordConversationMessage } from './record-message'
 
 /**
  * Regression lock for the conversation-model chokepoint. Pins the RESOLUTION
@@ -139,5 +139,48 @@ describe('recordConversationMessage — resolution logic', () => {
       sb, direction: 'in', channel: 'sms', participants: [{ rawPhone: '+9', address: '+9' }],
     })
     expect(r.ok).toBe(false)
+  })
+})
+
+
+// One spelling per address (2026-09-16). See normalizeChannelAddress for the
+// eight-fragment thread this closes.
+describe('normalizeChannelAddress', () => {
+  it('spells every US phone as E.164 whatever the contact record held', () => {
+    expect(normalizeChannelAddress('5419020420')).toBe('+15419020420')
+    expect(normalizeChannelAddress('(541) 902-0420')).toBe('+15419020420')
+    expect(normalizeChannelAddress('541-902-0420')).toBe('+15419020420')
+    expect(normalizeChannelAddress('1 541 902 0420')).toBe('+15419020420')
+    expect(normalizeChannelAddress('+15419020420')).toBe('+15419020420')
+  })
+  it('lower-cases emails and leaves anything else trimmed', () => {
+    expect(normalizeChannelAddress('  Tanya@Example.com ')).toBe('tanya@example.com')
+    expect(normalizeChannelAddress('+441onlypartial')).toBe('+441onlypartial')
+    expect(normalizeChannelAddress('')).toBe('')
+  })
+})
+
+describe('recordConversationMessage — participant rows carry one spelling', () => {
+  it('writes the E.164 form and collapses two spellings of one number into one row', async () => {
+    const { sb, calls } = makeSb({
+      reads: [
+        { data: null },                    // provider_sid dedup probe → miss
+        { data: { id: 'existing-1to1' } }, // 1:1 conversation lookup → hit
+      ],
+      writes: [{ data: { id: 'msg-new' } }],
+    })
+    const r = await recordConversationMessage({
+      sb, direction: 'out', channel: 'sms', providerSid: 'SID-norm', primaryPersonId: 57300,
+      participants: [
+        { personId: 57300, address: '(541) 902-0420', displayName: 'Tanya Hogan' },
+        { personId: 57300, address: '+15419020420', displayName: 'Tanya Hogan' },
+      ],
+    })
+    expect(r.ok).toBe(true)
+    const partUpsert = calls.find((c) => c.table === 'crm_conversation_participant')
+    const rows = partUpsert?.payload as Array<{ channel_address: string; person_id: number }>
+    expect(rows).toHaveLength(1)
+    expect(rows[0].channel_address).toBe('+15419020420')
+    expect(rows[0].person_id).toBe(57300)
   })
 })

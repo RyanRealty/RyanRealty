@@ -28,9 +28,14 @@ import { resilientFetch } from '@/lib/http/fetchJson'
  * support group MMS, so the per-number inbound-sms webhook NEVER fires for
  * group traffic. Recording depends entirely on the Conversations webhook.
  *
+ * One number group = one Conversation. Twilio refuses a second group for the
+ * same participant set and names the existing one; sendGroupMms posts into it
+ * (see postToExistingGroup) — the fix for six weeks of "texted each person
+ * separately" on threads that had grouped once (2026-09-16).
+ *
  * Caller is responsible for the fallback: if this returns ok:false (bad
- * numbers, Twilio rejection, group MMS activation failure), send the message
- * 1:1 to each recipient instead.
+ * numbers, Twilio rejection, group MMS activation failure, a closed existing
+ * group), send the message 1:1 to each recipient instead.
  */
 const BASE = 'https://conversations.twilio.com/v1'
 
@@ -80,6 +85,9 @@ export type GroupMmsResult =
       chatServiceSid: string | null
       /** MCS media attached to the send, in message order. */
       media: Array<{ mediaSid: string; contentType: string }>
+      /** True when the message was posted into the group conversation Twilio
+       *  already held for this number group instead of a new one. */
+      reused?: true
     }
   | { ok: false; error: string }
 
@@ -107,6 +115,178 @@ async function uploadConversationMedia(
     return { ok: true, mediaSid: data.sid }
   } catch (e) {
     return { ok: false, error: String(e) }
+  }
+}
+
+/**
+ * Twilio keys a group MMS Conversation by its "number group" — the sorted set
+ * of every member address plus the projected line — and refuses to create a
+ * second one for the same set. The refusal NAMES the conversation that owns
+ * the group, e.g. "Group MMS with given participant list already exists as
+ * Conversation CHaf1f40233b2944ec944df877e7c57ce9". Before 2026-09-16 that
+ * refusal was treated like any other participant error: the half-built
+ * conversation was torn down and the composer fell back to one text per
+ * person — for six weeks on the Hogan thread, every group text after the
+ * first. The existing conversation IS the group thread the broker asked for
+ * (Apple Messages semantics: one thread per set of people), so the message
+ * belongs in it.
+ */
+const EXISTING_GROUP_RE = /already exists as Conversation (CH[0-9a-f]{32})/i
+
+/** The conversation SID Twilio names in a "participant list already exists" refusal, or null. */
+export function parseExistingGroupConversationSid(message: string | null | undefined): string | null {
+  const m = String(message ?? '').match(EXISTING_GROUP_RE)
+  return m ? m[1] : null
+}
+
+type PostedGroupMessages =
+  | { ok: true; messageSid: string; media: Array<{ mediaSid: string; contentType: string }> }
+  | { ok: false; error: string }
+
+/**
+ * Steps 4–6 of a group send, shared by a freshly created conversation and a
+ * reused one: upload media to the conversation's chat service, post the body
+ * message authored by the projected line (first media rides it), then any
+ * remaining media as follow-up media-only messages. Never deletes anything —
+ * the caller owns the conversation's lifecycle, because a reused conversation
+ * must survive a failed post.
+ */
+async function postGroupMessages(params: {
+  conversationSid: string
+  chatServiceSid: string | null
+  projected: string
+  body: string
+  media?: GroupMmsMedia[]
+}): Promise<PostedGroupMessages> {
+  const { conversationSid, chatServiceSid, projected } = params
+
+  // Media → MCS (attachments were silently DROPPED on group sends before
+  // 2026-07-09 — the uploaded file never reached the message).
+  const mediaSids: Array<{ mediaSid: string; contentType: string }> = []
+  if (params.media?.length) {
+    if (!chatServiceSid) {
+      return { ok: false, error: 'conversation has no chat service sid — cannot attach media' }
+    }
+    for (const m of params.media) {
+      const up = await uploadConversationMedia(chatServiceSid, m)
+      if (!up.ok) {
+        return { ok: false, error: `media upload (${m.filename ?? m.contentType}): ${up.error}` }
+      }
+      mediaSids.push({ mediaSid: up.mediaSid, contentType: m.contentType })
+    }
+  }
+
+  // The message, authored by the projected address — Twilio fans it out as a
+  // real carrier group MMS. First media rides the body message.
+  const first = new URLSearchParams({ Author: projected, Body: params.body })
+  if (mediaSids[0]) first.set('MediaSid', mediaSids[0].mediaSid)
+  let msgRes: Response
+  try {
+    msgRes = await resilientFetch(`${BASE}/Conversations/${conversationSid}/Messages`, {
+      method: 'POST',
+      headers: headers(),
+      body: first,
+    })
+  } catch (e) {
+    return { ok: false, error: String(e) }
+  }
+  const msg = (await msgRes.json()) as { sid?: string; message?: string }
+  if (!msg.sid) return { ok: false, error: msg.message ?? 'failed to send group message' }
+
+  // Any remaining media go out as media-only follow-up messages (one MediaSid
+  // per message — the reliably-documented REST contract).
+  for (const m of mediaSids.slice(1)) {
+    const extra = new URLSearchParams({ Author: projected, MediaSid: m.mediaSid })
+    let extraRes: Response
+    try {
+      extraRes = await resilientFetch(`${BASE}/Conversations/${conversationSid}/Messages`, {
+        method: 'POST',
+        headers: headers(),
+        body: extra,
+      })
+    } catch (e) {
+      // Timeout/network error on a follow-up media message — the primary
+      // message already sent, so this degrades exactly like the !ok branch
+      // below: log and stop, still report overall success.
+      console.warn('[twilio-conversations] follow-up media message failed:', String(e))
+      break
+    }
+    const extraMsg = (await extraRes.json()) as { sid?: string; message?: string }
+    if (!extraMsg.sid) {
+      // The body message already went out — do NOT tear the group down.
+      // Report success with the media that did send.
+      console.warn('[twilio-conversations] follow-up media message failed:', extraMsg.message)
+      break
+    }
+  }
+
+  return { ok: true, messageSid: msg.sid, media: mediaSids }
+}
+
+/**
+ * Post into the group conversation Twilio says already owns this number
+ * group. Reads the conversation (state + chat service), wakes an `inactive`
+ * one, refuses a `closed` one honestly (Twilio does not reopen closed
+ * conversations), confirms our line is still projected into it, then posts.
+ * Never deletes the existing conversation — it is the thread's history.
+ */
+async function postToExistingGroup(params: {
+  existingSid: string
+  projected: string
+  body: string
+  media?: GroupMmsMedia[]
+}): Promise<GroupMmsResult> {
+  const { existingSid, projected } = params
+  const where = `existing group conversation ${existingSid}`
+  try {
+    const convRes = await resilientFetch(`${BASE}/Conversations/${existingSid}`, {
+      headers: { Authorization: authHeader() },
+    })
+    const conv = (await convRes.json()) as { sid?: string; state?: string; chat_service_sid?: string; message?: string }
+    if (!conv.sid) return { ok: false, error: `${where}: ${conv.message ?? `not readable (${convRes.status})`}` }
+    let chatServiceSid = conv.chat_service_sid ?? null
+
+    if (conv.state === 'closed') {
+      return { ok: false, error: `${where} is closed` }
+    }
+    if (conv.state !== 'active') {
+      const wakeRes = await resilientFetch(`${BASE}/Conversations/${existingSid}`, {
+        method: 'POST',
+        headers: headers(),
+        body: new URLSearchParams({ State: 'active' }),
+      })
+      const woke = (await wakeRes.json()) as { sid?: string; state?: string; chat_service_sid?: string; message?: string }
+      if (!woke.sid || woke.state !== 'active') {
+        return { ok: false, error: `${where} is ${conv.state ?? 'unknown'} and could not be reactivated: ${woke.message ?? 'no state change'}` }
+      }
+      chatServiceSid = woke.chat_service_sid ?? chatServiceSid
+    }
+
+    // Our line has to be projected into the group for Author=projected to be
+    // accepted and for replies to keep routing to us.
+    const participants = await fetchConversationParticipants(existingSid)
+    if (!participants.some((p) => p.projectedAddress === projected)) {
+      return { ok: false, error: `${where} does not carry our line ${projected}` }
+    }
+
+    const posted = await postGroupMessages({
+      conversationSid: existingSid,
+      chatServiceSid,
+      projected,
+      body: params.body,
+      media: params.media,
+    })
+    if (!posted.ok) return { ok: false, error: `${where}: ${posted.error}` }
+    return {
+      ok: true,
+      conversationSid: existingSid,
+      messageSid: posted.messageSid,
+      chatServiceSid,
+      media: posted.media,
+      reused: true,
+    }
+  } catch (e) {
+    return { ok: false, error: `${where}: ${String(e)}` }
   }
 }
 
@@ -166,6 +346,10 @@ export async function sendGroupMms(params: {
       const part = (await partRes.json()) as { sid?: string; message?: string }
       if (!part.sid) {
         await deleteConversation(conversationSid)
+        const existing = parseExistingGroupConversationSid(part.message)
+        if (existing) {
+          return postToExistingGroup({ existingSid: existing, projected, body: params.body, media: params.media })
+        }
         return { ok: false, error: `participant ${phone}: ${part.message ?? 'failed to add'}` }
       }
     }
@@ -185,77 +369,32 @@ export async function sendGroupMms(params: {
     }
     const proj = (await projRes.json()) as { sid?: string; message?: string }
     if (!proj.sid) {
+      // Adding the projected line completes the number group, so this is where
+      // Twilio says the group already exists — and names it. Post into that
+      // conversation instead of failing the send.
       await deleteConversation(conversationSid)
+      const existing = parseExistingGroupConversationSid(proj.message)
+      if (existing) {
+        return postToExistingGroup({ existingSid: existing, projected, body: params.body, media: params.media })
+      }
       return { ok: false, error: `projected address ${projected}: ${proj.message ?? 'failed to add'}` }
     }
 
-    // 4. Upload media to MCS (attachments were silently DROPPED on group sends
-    //    before 2026-07-09 — the uploaded file never reached the message).
-    const mediaSids: Array<{ mediaSid: string; contentType: string }> = []
-    if (params.media?.length) {
-      if (!chatServiceSid) {
-        await deleteConversation(conversationSid)
-        return { ok: false, error: 'conversation has no chat service sid — cannot attach media' }
-      }
-      for (const m of params.media) {
-        const up = await uploadConversationMedia(chatServiceSid, m)
-        if (!up.ok) {
-          await deleteConversation(conversationSid)
-          return { ok: false, error: `media upload (${m.filename ?? m.contentType}): ${up.error}` }
-        }
-        mediaSids.push({ mediaSid: up.mediaSid, contentType: m.contentType })
-      }
-    }
-
-    // 5. Post the message authored by the projected address — Twilio fans it
-    //    out as a real carrier group MMS. First media rides the body message.
-    const first = new URLSearchParams({ Author: projected, Body: params.body })
-    if (mediaSids[0]) first.set('MediaSid', mediaSids[0].mediaSid)
-    let msgRes: Response
-    try {
-      msgRes = await resilientFetch(`${BASE}/Conversations/${conversationSid}/Messages`, {
-        method: 'POST',
-        headers: headers(),
-        body: first,
-      })
-    } catch (e) {
+    // 4–6. Media, the body message authored by the projected line, follow-up
+    //      media — shared with the reuse path above. A fresh conversation that
+    //      cannot carry its first message is torn down, as before.
+    const posted = await postGroupMessages({
+      conversationSid,
+      chatServiceSid,
+      projected,
+      body: params.body,
+      media: params.media,
+    })
+    if (!posted.ok) {
       await deleteConversation(conversationSid)
-      return { ok: false, error: String(e) }
+      return { ok: false, error: posted.error }
     }
-    const msg = (await msgRes.json()) as { sid?: string; message?: string }
-    if (!msg.sid) {
-      await deleteConversation(conversationSid)
-      return { ok: false, error: msg.message ?? 'failed to send group message' }
-    }
-
-    // 6. Any remaining media go out as media-only follow-up messages (one
-    //    MediaSid per message — the reliably-documented REST contract).
-    for (const m of mediaSids.slice(1)) {
-      const extra = new URLSearchParams({ Author: projected, MediaSid: m.mediaSid })
-      let extraRes: Response
-      try {
-        extraRes = await resilientFetch(`${BASE}/Conversations/${conversationSid}/Messages`, {
-          method: 'POST',
-          headers: headers(),
-          body: extra,
-        })
-      } catch (e) {
-        // Timeout/network error on a follow-up media message — the primary
-        // message already sent, so this degrades exactly like the step's
-        // !ok branch below: log and stop, still report overall success.
-        console.warn('[twilio-conversations] follow-up media message failed:', String(e))
-        break
-      }
-      const extraMsg = (await extraRes.json()) as { sid?: string; message?: string }
-      if (!extraMsg.sid) {
-        // The body message already went out — do NOT tear the group down.
-        // Report success with the media that did send.
-        console.warn('[twilio-conversations] follow-up media message failed:', extraMsg.message)
-        break
-      }
-    }
-
-    return { ok: true, conversationSid, messageSid: msg.sid, chatServiceSid, media: mediaSids }
+    return { ok: true, conversationSid, messageSid: posted.messageSid, chatServiceSid, media: posted.media }
   } catch (e) {
     return { ok: false, error: String(e) }
   }

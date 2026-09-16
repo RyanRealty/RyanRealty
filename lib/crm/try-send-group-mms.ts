@@ -4,7 +4,7 @@ import type { CrmAttachmentRef } from '@/lib/crm/attachment-limits'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
 import {
   decideGroupSmsFallback,
-  GROUP_THREAD_FALLBACK_NOTICE,
+  groupFallbackNotice,
   GROUP_THREAD_FAILED,
 } from '@/lib/crm/compose-group'
 
@@ -69,7 +69,10 @@ export async function trySendGroupMms(opts: {
   const proxy = await brokerTwilioNumber(slug)
   if (!proxy || !primaryTarget) {
     return opts.explicitGroupThread
-      ? { status: 'fallback', notice: GROUP_THREAD_FALLBACK_NOTICE }
+      ? {
+          status: 'fallback',
+          notice: groupFallbackNotice(!proxy ? 'no Twilio line for this broker' : 'the first recipient has no send target'),
+        }
       : { status: 'continue' }
   }
 
@@ -91,7 +94,7 @@ export async function trySendGroupMms(opts: {
   for (const e164 of opts.rawPhones) members.push({ rid: null, phone: e164 })
   if (members.length < 2) {
     return opts.explicitGroupThread
-      ? { status: 'fallback', notice: GROUP_THREAD_FALLBACK_NOTICE }
+      ? { status: 'fallback', notice: groupFallbackNotice('fewer than two recipients have a phone number on file') }
       : { status: 'continue' }
   }
 
@@ -131,7 +134,9 @@ export async function trySendGroupMms(opts: {
       if (opts.explicitGroupThread) {
         return {
           status: 'fallback',
-          notice: fan.notice ?? GROUP_THREAD_FALLBACK_NOTICE,
+          // The reason travels with the notice — a Twilio refusal or our own
+          // guard's sentence — so the broker reads WHY, not just that it fell back.
+          notice: groupFallbackNotice(group.error),
         }
       }
       return { status: 'continue' }
