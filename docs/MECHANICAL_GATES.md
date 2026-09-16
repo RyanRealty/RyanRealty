@@ -20,7 +20,7 @@ keeps being violated, the answer is a new gate, not more prose.
 | G8 | **Page DAL completeness** — every `app/<route>/page.tsx` reads through `@/lib/data` (positive direction) | `scripts/check-page-dal.mjs` (ratcheted) | Plan §1 |
 | G9 | **`generateStaticParams` on every dynamic route** | `scripts/check-static-params.mjs` (ratcheted) | Plan Wave 3 §9 |
 | G10 | **Bundle budget** — total + per-chunk JS size ceiling + growth-vs-baseline detection | `scripts/check-bundle-budget.mjs` (baselined) post-`next build` | Plan §1 |
-| G11 | **Route smoke** — every canonical route returns 200, non-blank, non-404 against a live server | `scripts/check-route-smoke.mjs` + start-server-and-test | feedback memory "verify before moving on" |
+| G11 | **Route smoke** — every canonical route returns 200, non-blank, non-404 against a live server, and serves no count-up numeral as "0" under a non-zero settled figure (the AnimatedNumber SSR placeholder, SITE-117; `scripts/lib/served-number-placeholder.mjs`) | `scripts/check-route-smoke.mjs` + start-server-and-test | feedback memory "verify before moving on" |
 | G12 | **Draft-first commit gate** — user-facing diffs require an `Approved-by: matt` or `Draft-shown: <url>` line | `.husky/commit-msg` → `scripts/check-draft-first.mjs` | CLAUDE.md §0.5 |
 | G13 | First-frame thumbnail quality (video pipeline) | `scripts/check_first_frame.py` | CLAUDE.md §4 |
 | G14 | TypeScript strict | `tsc --noEmit` via `next build` | Plan §1 |

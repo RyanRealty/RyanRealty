@@ -16,6 +16,9 @@
  *   - Body does NOT contain "Application error" (no top-level crash)
  *   - <title> tag is non-empty
  *   - Body is at least 5 KB (catches blank-page regressions)
+ *   - No count-up numeral is served as "0" under a non-zero settled figure
+ *     (the AnimatedNumber SSR placeholder, SITE-117; see
+ *     scripts/lib/served-number-placeholder.mjs)
  *
  * Run modes:
  *   - Standalone: `node scripts/check-route-smoke.mjs` (requires the
@@ -39,6 +42,7 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
+import { placeholderZeroReason } from './lib/served-number-placeholder.mjs'
 
 const BASE = (process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:3000').replace(/\/+$/, '')
 const LISTING_KEY = process.env.SMOKE_LISTING_KEY
@@ -284,6 +288,11 @@ function checkBody(body) {
   const titleMatch = body.match(/<title>([^<]*)<\/title>/i)
   if (!titleMatch || titleMatch[1].trim().length === 0) reasons.push('empty <title>')
   if (body.length < 5_000) reasons.push(`body too small (${body.length} bytes)`)
+  // A count-up numeral whose served face is "0" under a non-zero settled figure
+  // is a false stat in the HTML a crawler reads (SITE-117). See
+  // scripts/lib/served-number-placeholder.mjs for the mechanism.
+  const placeholder = placeholderZeroReason(body)
+  if (placeholder) reasons.push(placeholder)
   return { ok: reasons.length === 0, reasons, title: titleMatch?.[1]?.trim() }
 }
 

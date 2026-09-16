@@ -1206,6 +1206,19 @@ const SEEDS: readonly Seed[] = [
       'Mechanical, on a production build: /communities/northwest-crossing and /communities/tetherow render a section whose rendered text contains every amenity name in that community\'s data/resort-community-<slug>.json, above #subdivisions, with a source line; every other authored community with amenities renders the same primitive; a community with no amenities on file renders no such section and invents nothing. ci:route-content-floor fails when any seeded section of a place class loses items vs its contentFloor.sections floor and passes on the seeded build; the floor can only be lowered by hand in parity.json with a reason. ci:mockup-parity fails if V3PlaceAmenities leaves the community page. ci:gates and ci:runtime-gates green. SEO increment named (crawlable amenity doors and/or Place JSON-LD amenityFeature from the same rows). Information increment named (amenities with access and source visible in the fold+1). Taste receipt per TASTE.md on the table instrument; a sonnet mark rebaselines and does not mark done. honestyFunction must not fall; requiredComponents cannot shrink.',
   },
 
+  {
+    versionGap: 'SITE-117',
+    domain: 'public-ux',
+    title:
+      'Fleet §0: V3Number server-renders its 0 placeholder — every alerts strip\'s served HTML says "0 houses came on the market" until hydration swaps in the real count',
+    objective:
+      "Found 2026-09-16 on /cities (claude-cloud-fermi-20260915, SITE-92): the fold's V3AlertsStrip claim is '<V3Number> houses came on the market in Central Oregon in the last 30 days.' The served HTML carries `<span class=\"tabular-nums v3 v3-number v3-alerts__num-pop\">0</span>` while Market Truth publishes 256 (new_listings_30d, region central-oregon, period_end 2026-09-11) and the strip's own source line prints '256 houses'. The hydrated page animates 0→256 (beui-number digit swap). A crawler, a no-JS reader, a reader on a slow connection, and reduced-motion-before-hydration all read a false zero — on every V3AlertsStrip (city, neighborhood, community, subdivision, zip, cities index). CLAUDE.md §0: a number that leaves this shop is verified; a zero for a count that is 256 is a wrong number, not a placeholder. Fix the class: V3Number server-renders the FINAL value (the same figure the source line names) and animates only on the client after mount (from the previous value on change; from 0 on first paint only if motion is allowed and the final value is already in the DOM for anyone who never runs JS). Keep the beui-number interaction (that is the catalog demo the receipts name as adaptedFrom beui-number); reduced-motion shows the finished number, as today.",
+    output:
+      'components/site/v3/V3Number* (or components/motion/number.tsx, wherever the placeholder is rendered) SSRs the final value; a unit test that renders the primitive to a string and asserts the served text equals the formatted final value (never 0 for a non-zero input); a gate or test on every V3AlertsStrip consumer (or a static check on the served HTML of one class in ci:route-smoke) so a placeholder zero cannot come back; shots unchanged (the hydrated pixels do not move); evidence on this node.',
+    accept:
+      "Mechanical: `curl` of a production build's /cities, /communities/tetherow and /cities/bend served HTML contains the real published count in the strip's claim (e.g. '256 houses came on the market') and never '>0<' inside .v3-alerts__num-pop for a place whose source line names a non-zero count; a unit test pins it; reduced-motion still shows the finished number; the digit-swap still animates on value change in the browser. ci:gates and ci:runtime-gates green. honestyFunction cannot fall on any class receipt; no receipt is re-scored for this (pixels unchanged).",
+  },
+
 ]
 
 async function main() {
