@@ -127,6 +127,10 @@ export function buyHeroInventory(
   return {
     figures,
     source: BUY_HERO_TRACE,
+    // The open clause names the feed; the population and the place stay in the
+    // full trace behind the disclosure (the trace has no comma, so without
+    // this the whole sentence was the clause — two lines of it).
+    sourceName: 'Live MLS · Oregon Data Share',
     updatedAt: pulse.updated_at ?? null,
   }
 }

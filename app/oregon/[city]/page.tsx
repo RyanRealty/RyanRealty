@@ -123,13 +123,36 @@ import './oregon-city.css'
 type Params = { city: string }
 
 export const dynamicParams = true
-export const revalidate = 3600
+// FORCE-DYNAMIC, not `revalidate` (SITE-105, prod 500 fixed 2026-09-16). This
+// page awaits `searchParams` (taste_variant, for the TASTE.md evaluator's
+// forced empty/feed-miss preview states). With `revalidate` set and
+// generateStaticParams returning [] below, every /oregon/<city> URL is a
+// "first request" path that Next renders through its on-demand STATIC
+// generation pass rather than a normal per-request render. That pass forbids
+// Dynamic API usage, and — unlike a build-time prerender attempt — does not
+// catch the resulting DYNAMIC_SERVER_USAGE error and fall back to dynamic
+// rendering; it throws, and every one of those URLs served /500 in
+// production (ryan-realty.com/oregon/medford, x-next-error-status: 500,
+// reproduced locally on ashland/klamath-falls/grants-pass/eugene/medford —
+// /contact reads the same searchParams key but is a real static route seeded
+// at build, so the build's own prerender pass caught it there instead of
+// crashing at request time). Same failure class already documented and fixed
+// once on app/subdivisions/[slug]/page.tsx (cookies() instead of
+// searchParams, 2026-07-15..2026-09-01): a truly request-scoped read is
+// incompatible with this route's ISR shape, so the route goes fully dynamic.
+// `revalidate` is dropped, not just left in place, because Next silently
+// zeroes it once `dynamic: 'force-dynamic'` is set
+// (node_modules/next/dist/build/utils.js) — leaving `revalidate = 3600` here
+// would read as live and is not. ISR caching for this route is gone until a
+// future pass moves the taste_variant read off the server render path the
+// way subdivisions eventually did (restoring its `revalidate = 300`).
+export const dynamic = 'force-dynamic'
 
 // Build-time prerender is intentionally empty (ci:ssg-budget). Seeding the top
 // 25 out-of-area cities ran a live Supabase query inside `next build` and then
 // prerendered 25 pages against timeout-capped rails. Indexability is decided at
 // render time (renderable/noindex logic below); with dynamicParams=true +
-// revalidate=3600 every URL still serves, rendered on first request.
+// force-dynamic every URL still serves, rendered fresh on every request.
 export async function generateStaticParams(): Promise<Array<{ city: string }>> {
   return []
 }

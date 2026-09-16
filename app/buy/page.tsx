@@ -26,11 +26,21 @@
  * Parity: design_system/ryan-realty/ui_kits/buy/parity.json.
  */
 
-import { getSurfaceImage, getListingTiles, getMarketPulseRegionSnapshot } from '@/lib/data'
+import {
+  attachListingCardExtras,
+  getSurfaceImage,
+  getListingTiles,
+  getMarketPulseRegionSnapshot,
+  loadRecentPriceDropEvents,
+} from '@/lib/data'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
+import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
 import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { homeFieldItems } from '@/app/_v3/home-field-items'
 import { HomeHomesField } from '@/app/_v3/HomeHomesField'
+import { HomeHomesRails } from '@/app/_v3/HomeHomesRails'
+import { homeRailRows, enrichHomeRailRows } from '@/app/_v3/home-rail-items'
+import { homeRailItemList } from '@/app/_v3/home-jsonld'
 import { HOME_TILE_FETCH, HOME_FIELD_LIMIT } from '@/app/_v3/home-constants'
 import { REGIONAL_SEARCH_HREF } from '@/lib/search/publish-regional-search-href'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -88,11 +98,38 @@ export default async function BuyPage() {
   // three figures in the hero and the two sections its doors open print the
   // same numbers. No second query and no aggregate in page code (§0, §7 rule
   // 2); ./_v3/buy-hero-inventory.ts turns the row into props.
-  const [buyTiles, buyCities, regionPulse] = await Promise.all([
+  //
+  // THE HOUSES IN THE FOLD (SITE-91, 2026-09-16). The table scored this fold
+  // 53 with the Field "a crop of timber roofs and sky with no price, address,
+  // beds, or type chip" and "no carousel chrome visible". The homepage already
+  // answered the same finding (SITE-83): shelves of live houses on V3Carousel,
+  // each card carrying ask, address, beds/baths/sqft and town. The same rows,
+  // the same loaders, the same ItemList — built here from THIS page's
+  // single-family tiles so every card belongs to the population the hero's
+  // figures describe. The typed Field stays on the page (it is the browse-by-
+  // type instrument and a required component) and moves under the guides.
+  const [buyTiles, buyCities, regionPulse, openHouseLabels, recentPriceDrops] = await Promise.all([
     getListingTiles({ status: 'active', propertySubType: 'Single Family Residence', limit: HOME_TILE_FETCH }).catch(() => []),
     getMarketPulseAllCitySnapshots().catch(() => []),
     getMarketPulseRegionSnapshot('central-oregon').catch(() => null),
+    loadOpenHouseBadgeLabels().catch(() => ({})),
+    loadRecentPriceDropEvents(30).catch(() => new Map()),
   ])
+  const railRowsRaw = homeRailRows(buyTiles, {
+    nowMs: Date.now(),
+    regionalHref: REGIONAL_SEARCH_HREF,
+    bendHref: '/homes-for-sale/bend',
+    priceCutsHref: '/price-drops',
+    newHref: '/homes-for-sale?view=list&sort=newest',
+    openHouseLabels,
+    priceDrops: recentPriceDrops,
+  })
+  const railKeys = railRowsRaw.flatMap((row) => row.cards.map((card) => card.listingKey))
+  const railExtras = await attachListingCardExtras(railKeys).catch(() => new Map())
+  const railRows = enrichHomeRailRows(railRowsRaw, railExtras)
+  // Crawlable record of the houses on this page: one ItemList of canonical
+  // listing URLs, the same builder the homepage uses.
+  const railListLd = homeRailItemList(railRows)
   // The same six towns the homepage leads with, same order, off the pulse
   // snapshots (a lib/data read; ci:page-action-imports bans a new page->action
   // read, which is where the city index lives).
@@ -142,6 +179,13 @@ export default async function BuyPage() {
           ]}
         />
 
+        {railListLd ? (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(railListLd) }}
+          />
+        ) : null}
+
         <div className="relative">
           <V3Stage
             id="top"
@@ -150,6 +194,14 @@ export default async function BuyPage() {
             headline="Buy a home in Central Oregon"
             posterSrc={heroSrc ?? OLD_MILL_HERO}
             overlayStrength="standard"
+            /* Compact, as on the homepage: the shelf of priced houses below has
+               to clear the 1440x900 fold with its ask and address, not just
+               its photograph. Unlike the homepage this page has no V3Pulse, so
+               the band stays — the three figures in it are the page's sourced
+               market facts, and a compact Stage that dropped them would be the
+               product hold failing silently. */
+            height="compact"
+            bandWhenCompact
             /* The live market, inside the hero. Undefined when fewer than two
                figures could be sourced, and then this Stage is the quiet photo
                form it has always been. */
@@ -171,9 +223,11 @@ export default async function BuyPage() {
           </div>
         </div>
 
-        {/* Pattern 2, Field -- the houses, first thing after the Stage. */}
-        <HomeHomesField
-          fieldItems={buyFieldItems}
+        {/* The houses, first thing after the Stage: shelves of live
+            single-family listings on V3Carousel, ask + address + facts on every
+            card (SITE-91). */}
+        <HomeHomesRails
+          rows={railRows}
           emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
         />
 
@@ -185,6 +239,15 @@ export default async function BuyPage() {
             rows={[firstGuide, ...restGuides]}
           />
         ) : null}
+
+        {/* Pattern 2, Field -- browse the same population by type, with the
+            regional search as the door out. Under the guides so the shelves
+            above and this Field are never adjacent. */}
+        <HomeHomesField
+          fieldItems={buyFieldItems}
+          seeAll={{ href: REGIONAL_SEARCH_HREF, label: 'All Central Oregon homes for sale' }}
+          emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
+        />
 
         <V3Quiet
           id="how-it-works"

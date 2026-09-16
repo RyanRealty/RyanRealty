@@ -18,6 +18,7 @@
     "push": "sh scripts/push-retry.sh",
     "gates:stamp": "node scripts/stamp-gates-marker.mjs",
     "start": "next start",
+    "start:prod": "sh scripts/start-prod-server.sh",
     "lint": "eslint",
     "lint:design-tokens": "node scripts/lint-design-tokens.js",
     "lint:design-tokens:all": "node scripts/lint-design-tokens.js --all",
