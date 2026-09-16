@@ -87,6 +87,14 @@ export type V3ChartHoverProps = {
    * Opt-in beside keysToggle so charts that only want legend filters stay put.
    */
   yearPages?: boolean
+  /**
+   * COLUMN BANDS (SITE-116 round 4). One band per stop, as wide as the gap
+   * between stops, and the ACTIVE one washed — so a bar chart answers a
+   * pointer, a finger or the arrow keys with a state the reader can see on
+   * the band itself, not only a tip beside it. With `initial`, the resting
+   * band is washed before anybody touches the chart. x axis only.
+   */
+  columnBands?: boolean
 }
 
 export type V3ChartHoverFrame = {
@@ -107,6 +115,7 @@ export function V3ChartHover({
   keyClasses,
   frame,
   yearPages = false,
+  columnBands = false,
 }: V3ChartHoverProps) {
   const vertical = axis === 'y'
   const live = keys != null && keys.length > 1 && frame != null
@@ -159,6 +168,15 @@ export function V3ChartHover({
   const ref = useRef<HTMLDivElement>(null)
   const uid = useId()
   const fracs = useMemo(() => columns.map((c) => c.frac), [columns])
+  // Half a band: half the smallest gap between neighbouring stops, so bands
+  // tile the plot without overlapping. One stop owns the whole plot.
+  const bandHalf = useMemo(() => {
+    if (!columnBands || vertical || fracs.length === 0) return 0
+    if (fracs.length === 1) return 0.5
+    let gap = Infinity
+    for (let i = 1; i < fracs.length; i += 1) gap = Math.min(gap, Math.abs(fracs[i]! - fracs[i - 1]!))
+    return Number.isFinite(gap) ? gap / 2 : 0
+  }, [columnBands, vertical, fracs])
 
   const nearest = useCallback(
     (client: number) => {
@@ -284,6 +302,20 @@ export function V3ChartHover({
       }}
       onKeyDown={onKey}
     >
+      {bandHalf > 0
+        ? columns.map((c, i) => {
+            const left = Math.max(0, c.frac - bandHalf)
+            const right = Math.min(1, c.frac + bandHalf)
+            return (
+              <span
+                key={`band-${i}-${c.tick}`}
+                className={cn('v3-chart__hoverband', active === i && 'is-active')}
+                style={{ left: `${left * 100}%`, width: `${Math.max(0, right - left) * 100}%` }}
+                aria-hidden="true"
+              />
+            )
+          })
+        : null}
       {col ? (
         <>
           <div

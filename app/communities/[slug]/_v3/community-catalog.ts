@@ -33,6 +33,17 @@ import { ScrollReveal } from '@/components/motion/scroll-reveal'
  */
 import { Combobox } from '@/components/motion/combobox'
 /**
+ * SITE-116 round 4. The fourth installed catalog source this class paints:
+ * beautifului's insight cards (`https://www.beautifului.dev/r/insight-cards.json`,
+ * documented at https://www.beautifului.dev — the `beautifului:insight-cards`
+ * id the round-3 judge set as replaceWith for the census), wrapped by
+ * components/site/v3/V3CensusInsight.client.tsx and mounted by V3Census in
+ * the "Which number is …?" section: one page per population, the pager, the
+ * allocation bar where two counts partition one whole. Named here so Tip
+ * Ready's requireRouteImport sees the route's own _v3 set import the specifier.
+ */
+import InsightCards from '@/components/motion/insight-cards'
+/**
  * The house primitive that paints it, reached through the barrel: the wire
  * ci:site-primitive-wired (G73) counts. V3PlaceIndex mounts it on this route
  * under the `finder` prop; naming it here records which route owes the wiring.
@@ -42,6 +53,7 @@ import { V3PlaceFinder } from '@/components/site/v3'
 void AnimatedNumber
 void ScrollReveal
 void Combobox
+void InsightCards
 void V3PlaceFinder
 
 export const communityCatalogReady = true

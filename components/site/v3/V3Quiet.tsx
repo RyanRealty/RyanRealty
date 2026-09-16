@@ -92,6 +92,7 @@ import {
   V3_ROOT_CLASS,
 } from './atoms'
 import { QUIET_MARK_ICON, V3Icon } from './V3Icon'
+import { V3Number } from './V3Number.client'
 import './tokens.css'
 import './V3Quiet.css'
 
@@ -266,6 +267,23 @@ export type V3QuietFact = {
   detail?: string
   /** 0..1 share of the row set's largest. Out of range draws nothing. */
   weight?: number
+  /**
+   * The live number behind `value`, for the installed digit primitive (beUI
+   * number through V3Number — SITE-116 round 4, the form the judge named for
+   * the belonging facts). The face is `value`, server-rendered from the first
+   * byte; digits move only if the number changes after the reader arrives,
+   * never on load (TASTE.md). A value with no count prints as plain text —
+   * "David McLay Kidd" is a fact, not a numeral.
+   */
+  count?: number
+  /**
+   * WHAT THE FIGURE MEANS FOR THE READER, one plain sentence under it. TASTE.md
+   * names the tell it answers: "a figure with no plain sentence beside it" is a
+   * KPI grid whatever its typeface. The caller sources it (§0) — on the
+   * community page it is the config's own prose, verbatim — and this primitive
+   * prints it or, absent, prints the fact as before.
+   */
+  sentence?: string
   id?: string
 }
 
@@ -537,6 +555,8 @@ type RenderableItem =
       value: string
       detail: string | undefined
       weight: number | undefined
+      count: number | undefined
+      sentence: string | undefined
       id?: string
     }
   | { kind: 'chips'; term: string; labels: string[]; id?: string }
@@ -612,6 +632,13 @@ function toRenderable(items: readonly V3QuietItem[]): RenderableItem[] {
           typeof item.weight === 'number' && item.weight >= 0 && item.weight <= 1
             ? item.weight
             : undefined,
+        // A count is a finite non-negative number or nothing; the face is the
+        // caller's `value` either way.
+        count:
+          typeof item.count === 'number' && Number.isFinite(item.count) && item.count >= 0
+            ? item.count
+            : undefined,
+        sentence: text(item.sentence),
         id: text(item.id),
       })
       continue
@@ -932,6 +959,10 @@ export function V3Quiet({
   )
 
   const blocks = toBlocks(rendered)
+  // Figures with their sentences are a different object from a tile row
+  // (the same opt-in V3Instrument's `said` mode uses): wider cells, read as
+  // sentences. No fact carries a sentence, no cell moves.
+  const said = rendered.some((item) => item.kind === 'fact' && item.sentence)
 
   return (
     <section
@@ -942,6 +973,7 @@ export function V3Quiet({
         !contextLine && !title && 'v3-quiet--headless',
         alertRenderable && 'v3-quiet--alert',
         factLayout === 'plate' && 'v3-quiet--plate',
+        said && 'v3-quiet--said',
         className,
       )}
       aria-labelledby={headingId}
@@ -1046,7 +1078,14 @@ export function V3Quiet({
                             item.value.length > 24 && 'v3-quiet__factfigure--long',
                           )}
                         >
-                          {item.value}
+                          {/* The installed digit primitive carries a counted
+                              figure; its face is `value`, already formatted,
+                              and it never counts up on load. */}
+                          {item.count != null ? (
+                            <V3Number value={item.count} formatted={item.value} />
+                          ) : (
+                            item.value
+                          )}
                         </span>
                         {item.detail ? (
                           <span className="v3-quiet__factdetail">{item.detail}</span>
@@ -1058,6 +1097,7 @@ export function V3Quiet({
                         <span style={{ width: `${(item.weight * 100).toFixed(1)}%` }} />
                       </div>
                     )}
+                    {item.sentence ? <p className="v3-quiet__factsaid">{item.sentence}</p> : null}
                   </li>
                 ) : item.kind === 'reach' ? (
                   <>

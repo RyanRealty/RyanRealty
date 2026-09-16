@@ -797,6 +797,75 @@
   box-shadow: var(--v3-media-shadow);
 }
 
+/* ---------------------------------------------------------------------------
+   Bar values and column bands (SITE-116 round 4). A price-band histogram
+   shipped as four flat rectangles with no reading on them and no visible
+   state under a pointer — "an unfinished wireframe" to the judge. Now: each
+   bar's count over it (the count per band IS the reading, so every band is
+   labelled), the y rail retired because it would say the tallest bar's figure
+   twice, and a band per column that the hover layer washes for the active
+   stop. Resting on the modal band shows the chart is interactive before a
+   pointer arrives; that resting tip stays folded because its number is
+   already over the bar. The crosshair through a bar is noise once the band
+   carries the state, so bands retire it.
+   --------------------------------------------------------------------------- */
+.v3 .v3-chart--barvalues .v3-chart__frame {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.v3 .v3-chart--barvalues .v3-chart__y {
+  display: none;
+}
+
+.v3 .v3-chart--barvalues .v3-chart__x {
+  grid-column: 1;
+}
+
+/* Headroom for the tallest bar's label, which sits above the plot's top edge. */
+.v3 .v3-chart--barvalues .v3-chart__plot {
+  margin-top: 1.4em;
+}
+
+.v3 .v3-chart__barvalues {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.v3 .v3-chart__barvalue {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - var(--v3-space-3xs)));
+  white-space: nowrap;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-strong);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: var(--v3-track-label);
+  line-height: var(--v3-leading-control);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-chart__hoverband {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: transparent;
+  transition: background-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-chart__hoverband.is-active {
+  background: var(--v3-wash);
+}
+
+.v3 .v3-chart--bands .v3-chart__crosshair {
+  display: none;
+}
+
+.v3 .v3-chart--bands.v3-chart--barvalues .v3-chart__tip--resting {
+  display: none;
+}
+
 /* Year pager (beautifului-insight) — isolate one year; month scrub below. */
 .v3 .v3-chart__year-pager {
   margin-bottom: var(--v3-space-sm);

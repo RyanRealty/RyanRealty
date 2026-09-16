@@ -65,6 +65,13 @@ export type V3PlaceIndexFinder = {
   placeholder?: string
   /** What the list says when nothing matches. */
   emptyMessage?: string
+  /**
+   * The place this index sits on, as the finder's first row and default
+   * selection (SITE-116 round 4): "All of Tetherow", its own page. The open
+   * list then shows the catalog control's selected check and active fill
+   * before the reader touches it; picking a plat still navigates there.
+   */
+  root?: { href: string; label: string; detail?: string | null } | null
 }
 
 /** One place inside the place this section sits on. */
@@ -267,6 +274,11 @@ export function V3PlaceIndex({
               label={finder.label}
               placeholder={trimmed(finder.placeholder)}
               emptyMessage={trimmed(finder.emptyMessage)}
+              root={
+                finder.root && trimmed(finder.root.href) && trimmed(finder.root.label)
+                  ? { href: finder.root.href, name: finder.root.label, detail: trimmed(finder.root.detail ?? undefined) ?? null }
+                  : null
+              }
               // Every row of the index, folded or not, with the count it prints.
               items={rows.map((row) => ({
                 href: row.href,

@@ -79,10 +79,19 @@ function quantile(sorted: readonly number[], q: number): number {
 /**
  * The asking-price distribution as category bars, one per price band.
  * Undefined below ASKING_BANDS_MIN prices: nothing is padded.
+ *
+ * SITE-116 round 4 (defect 4: "four identical flat navy rectangles with no
+ * value labels, no visible hover"): every band carries its count over the
+ * bar (`barValues` — the count per band IS the reading), the hover layer
+ * washes the band under the pointer and rests on the modal band
+ * (`columnBands`, `restingRead: 'max'`), and the claim names the WINDOW —
+ * the date the live tiles were read, the same clock the Atlas stamps its
+ * own read with — when the caller passes it.
  */
 export function askingBandsChart(
   tiles: readonly Pick<ListingTile, 'listPrice' | 'propertyType' | 'propertySubType'>[],
   placeName: string,
+  options?: { asOf?: string | null },
 ): V3ChartProps | undefined {
   const prices = askingPrices(tiles)
   if (prices.length < ASKING_BANDS_MIN) return undefined
@@ -120,18 +129,26 @@ export function askingBandsChart(
   const hi = prices[n - 1]!
   const q1 = quantile(prices, 0.25)
   const q3 = quantile(prices, 0.75)
+  // The window, named in the claim: "as of Sep 15, 2026" — the date the
+  // tiles were read — when the caller passes it, else the caption's "right
+  // now" stands alone.
+  const asOf = options?.asOf?.trim()
+  const subject = `${n === 1 ? '1 house' : `${formatCount(n)} houses`} for sale in ${placeName}${asOf ? ` as of ${asOf}` : ''}`
   const claim =
     n === 1
-      ? `1 house for sale in ${placeName}, asking ${formatPriceCompact(lo)}.`
+      ? `${subject}, asking ${formatPriceCompact(lo)}.`
       : lo === hi
-        ? `${formatCount(n)} houses for sale in ${placeName}, all asking ${formatPriceCompact(lo)}.`
-        : `${formatCount(n)} houses for sale in ${placeName}, asking ${formatPriceCompact(lo)} to ${formatPriceCompact(hi)}; ` +
+        ? `${subject}, all asking ${formatPriceCompact(lo)}.`
+        : `${subject}, asking ${formatPriceCompact(lo)} to ${formatPriceCompact(hi)}; ` +
           `the middle half asks ${formatPriceCompact(q1)} to ${formatPriceCompact(q3)}.`
 
   return {
     kind: 'bars',
     run: true,
     barLabels: 'all',
+    barValues: true,
+    columnBands: true,
+    restingRead: 'max',
     caption: v3Text(`What ${placeName} houses are asking right now`),
     claim: v3Text(claim),
     series: [{ name: v3Text('Houses for sale'), points }],

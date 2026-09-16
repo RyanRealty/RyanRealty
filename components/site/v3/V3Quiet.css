@@ -697,6 +697,30 @@
   width: 100%;
 }
 
+/* --- The sentence under a figure (SITE-116 round 4) ---------------------------
+   A `kind: 'fact'` row may carry `sentence`: what the figure means for the
+   reader, in the caller's sourced words. TASTE.md names the tell it answers —
+   "a figure with no plain sentence beside it" — so the sentence sits directly
+   under the value in full ink at the small body size, held to the text
+   measure. On the plate, a block whose facts carry sentences takes wider
+   cells, so it reads as figures with their sentences and not as a tile grid. */
+.v3-quiet__factsaid {
+  margin: var(--v3-space-2xs) 0 0;
+  max-width: var(--v3-measure-text);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  text-wrap: pretty;
+}
+
+.v3.v3-quiet--plate.v3-quiet--said .v3-quiet__list {
+  grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
+}
+
+.v3.v3-quiet--plate .v3-quiet__factsaid {
+  margin-top: var(--v3-space-xs);
+}
+
 /* --- The reach line (SITE-116 round 3) ---------------------------------------
    One axis from here to the farthest destination; a mark per place at its
    share of the way (`--v3-at`, set by the primitive from the caller's value
