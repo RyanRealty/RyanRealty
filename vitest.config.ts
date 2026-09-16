@@ -118,6 +118,8 @@ export default defineConfig({
       'app/cma/**/*.test.ts',
       'app/admin/**/cmas/**/*.test.ts',
       'app/admin/**/cmas/**/*.test.tsx',
+      'app/admin/**/bpo/**/*.test.ts',
+      'app/admin/**/bpo/**/*.test.tsx',
       // LP form/filter logic tests colocate with their actions.
       'app/lp/**/*.test.ts',
       // Server-action contract tests (authz + refusal locks) colocate with the

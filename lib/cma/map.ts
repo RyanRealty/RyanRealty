@@ -14,7 +14,7 @@
  * registry stays for the file-based CMAs).
  */
 
-import { getBoundaryGeoJSON } from '@/lib/data'
+import { getBoundaryGeoJSON } from '@/lib/data/geo/getBoundaryGeoJSON'
 import { spreadStackedMapPoints, type CmaMapPoint } from '@/lib/cma-map'
 import { circlePath, pathParam, ringsFromGeometry, type MapLatLng } from '@/lib/cma/map-overlay'
 import { renderMapGroundSvg, svgDataUri, viewBbox, type MapGroundLabel } from '@/lib/cma/map-ground'

@@ -31,7 +31,8 @@
  * ground (Redmond, Tumalo) cannot fail open across 97.
  */
 
-import { selectCmaCompsPool, selectCmaCompsByKeys, getSubdivisionRing, assignSubdivisionSlugs } from '@/lib/data'
+import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data/cma/builderReads'
+import { getSubdivisionRing, assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
   closedSaleDomTotal,
@@ -39,7 +40,7 @@ import {
   listingHistoryLine as buildListingHistoryLine,
 } from '@/lib/cma/listing-history-line'
 import { hydrateClosedCompDaysOnMarket } from '@/lib/cma/hydrate-closed-comp-dom'
-import type { CmaListingRow } from '@/lib/data'
+import type { CmaListingRow } from '@/lib/data/cma/builderReads'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
 import { saneYearBuilt } from '@/lib/cma/subject'
 import { ACREAGE_THRESHOLD_ACRES, landProduct } from '@/lib/cma/land-pricing'
