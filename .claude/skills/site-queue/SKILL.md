@@ -249,7 +249,7 @@ npx tsx scripts/site-queue-status.ts --claim SITE-02,SITE-05 --owner <your-sessi
 That is the ONLY claim path, and it is where both caps live. Do not write the claim
 yourself with a raw client: `claimWorkNode` in `lib/data/loop/work-graph.ts` carries
 `server-only` and cannot load in a CLI, so a hand-written claim silently bypasses the
-caps (found 2026-09-08). The tool refuses a third worker and a third node per session,
+caps (found 2026-09-08). The tool refuses a seventh worker and a third node per session,
 writes optimistically on `state = 'open'` so two sessions racing for one node cannot
 both win, and stamps the first heartbeat. A claimed node is never served to another
 session.
@@ -269,8 +269,10 @@ lands second. Every session shares one account allowance, so more sessions reach
 rate limit sooner; when one hits it, it schedules its wake for the reset and the
 others keep going.
 
-**The fleet cap (Matt 2026-09-08).** At most **three workers** hold site claims at
-once and **two claims per session** — enforced by `site-queue-status.ts --claim` (the
+**The fleet cap (Matt 2026-09-08; raised to six 2026-09-15).** At most **six workers**
+hold site claims at once (three until 2026-09-15; the routine prompt that still says three is
+outranked by `MAX_SITE_WORKERS`, which the JSON's `maxWorkers` reports) and **two claims per
+session** — enforced by `site-queue-status.ts --claim` (the
 CLI path every session uses) and by `claimWorkNode` (the server path), printed by the
 brief as `SITE FLEET FULL`, and named once in `lib/data/loop/work-node.ts`
 (`MAX_SITE_WORKERS`, `MAX_SITE_CLAIMS_PER_SESSION`). The reason is not politeness:
