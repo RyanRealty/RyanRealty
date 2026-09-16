@@ -5,15 +5,16 @@
  * override), finalize, and delete. Every action is gated on an admin session
  * and returns { data, error } / { error } — never throws. A BPO is broker-facing
  * and internal: there is no auto-send path here.
+ *
+ * Heavy build/CMA modules are dynamic-imported so /admin/bpo/[slug] does not
+ * statically evaluate the DAL barrel (googleapis) or the PDF stack on every
+ * review render. Do not add `export { x } from` here — G63 / Turbopack reject
+ * value re-exports in a 'use server' file.
  */
 
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { buildBpo } from '@/lib/bpo/build'
-import { resolveCmaSubject } from '@/lib/cma/subject'
-import { slugifyBpoAddress } from '@/lib/bpo/slug'
-import { resolveWritableBpoSlot } from '@/lib/cma/versions'
 import { getBpoAdminRowBySlug, updateBpoRowFieldsBySlug, deleteBpoRowById } from '@/lib/data/bpo/reads'
 
 async function requireAdmin(): Promise<string | null> {
@@ -46,6 +47,14 @@ export async function buildBpoAdminAction(
     const address = input.address?.trim() || null
     const mls = input.mlsNumber?.trim() || null
     if (!address && !mls) return { data: null, error: 'Enter a property address or an MLS number.' }
+
+    const [{ slugifyBpoAddress }, { resolveCmaSubject }, { resolveWritableBpoSlot }, { buildBpo }] =
+      await Promise.all([
+        import('@/lib/bpo/slug'),
+        import('@/lib/cma/subject'),
+        import('@/lib/cma/versions'),
+        import('@/lib/bpo/build'),
+      ])
 
     let slug: string
     let rawAddress = address
@@ -109,6 +118,7 @@ export async function rebuildBpoAction(
         ? Math.round(input.priceOverride)
         : null
 
+    const { buildBpo } = await import('@/lib/bpo/build')
     const result = await buildBpo({
       slug,
       mlsNumber: (row.subject_listing_key as string | null) ?? null,
