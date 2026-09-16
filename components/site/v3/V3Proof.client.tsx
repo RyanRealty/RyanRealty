@@ -64,6 +64,13 @@ export type V3ProofProps = {
    */
   record?: boolean
   /**
+   * Also render the `source` door in the band's head, beside the claim (compact
+   * bands only). The bottom source line stays. On /about the only door to
+   * /reviews sat under the 1440 fold, and the taste table read the band as
+   * having none (2026-09-13). Opt-in: omit it and every band renders as before.
+   */
+  sourceInHead?: boolean
+  /**
    * /reviews only. Strip + year chips are the page; every quote stays in the
    * served HTML under one disclosure. Compact `record={false}` bands ignore
    * this, so the homepage newest-four path does not move.
@@ -188,6 +195,7 @@ export function V3Proof({
   quotes,
   source,
   record = true,
+  sourceInHead = false,
   archive = false,
   face = false,
   actions,
@@ -417,6 +425,11 @@ export function V3Proof({
               {headline}
             </V3Heading>
             <p className="v3-proof__claim">{claim}</p>
+            {sourceInHead && !record ? (
+              <a className="v3-proof__door" href={source.href}>
+                {source.label}
+              </a>
+            ) : null}
           </div>
           {showFace ? <ScoreFace average={averageFigure!.value} count={countFigure!.value} /> : null}
         </>

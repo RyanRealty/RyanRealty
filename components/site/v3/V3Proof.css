@@ -71,6 +71,43 @@
   max-width: var(--v3-measure-text);
 }
 
+/* The door to every review, in the HEAD of a compact band (opt-in,
+   `sourceInHead`). The bottom source line is the band's default door, and on
+   /about it sat under the fold — the table read "no visible door to /reviews".
+   Same caret the strip doors use; tap height so it is a control, not a footnote. */
+.v3-proof__door {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  min-height: var(--v3-tap);
+  margin-top: var(--v3-space-2xs);
+  color: var(--v3-navy);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-strong);
+  text-decoration: none;
+}
+
+.v3-proof__door::after {
+  content: '';
+  display: inline-block;
+  width: 0.4em;
+  height: 0.4em;
+  border-top: var(--v3-rule-weight-hairline) solid currentColor;
+  border-right: var(--v3-rule-weight-hairline) solid currentColor;
+  transform: rotate(45deg);
+}
+
+.v3-proof__door:hover,
+.v3-proof__door:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.v3-proof__door:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
 /* 375: stars + quote + Call in the first viewport. Claim is desktop context. */
 @media (max-width: 47.99rem) {
   .v3-proof--score {
@@ -976,13 +1013,17 @@
 }
 
 .v3-proof__pick-pull {
-  overflow: hidden;
   color: var(--v3-ink);
   font-size: var(--v3-size-body);
   font-weight: var(--v3-weight-medium);
   line-height: var(--v3-leading-heading);
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  /* The pull is the review's FIRST SENTENCE, WHOLE (V3ProofQuote.pull). This
+     rule used to cut it with nowrap + ellipsis, so a band whose claim reads
+     "in full, exactly as they were written" sat beside two picks ending in
+     "attention to de…" — the taste table called it a visible contradiction,
+     not a crop (about, 2026-09-13). A whole sentence wraps; it is not cut. */
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .v3-proof__pick-who {
