@@ -1,14 +1,11 @@
 /* ===========================================================================
-   V3PlaceFinder — house paint on the installed beUI combobox.
-   Styles for V3PlaceFinder.client.tsx and nothing else. Every value resolves
-   from ./tokens.css. The catalog file keeps its own utility classes so the
-   install check still sees the demo source; these rules paint OVER them —
-   navy edge, cream surface, radius 0 (Broadside), Geist, 44px rows — and
-   change no interaction. Where a catalog utility sets the same property,
-   !important is the price of not editing the installed file.
-
-   The panel portals to document.body, so its rules are global by class and
-   read the tokens from :root, where the token block lives.
+   V3PlaceFinder — the index's finder.
+   Styles for V3PlaceFinder.client.tsx and nothing else. The control's paint
+   — navy edge, cream surface, radius 0, Geist, 44px rows, the demo's active
+   fill and selected check — is V3TypeCombobox.css's (SITE-92 r4), because the
+   finder IS V3TypeCombobox over the index's rows. What is left to say here is
+   the finder's place in the section head: a field-width control, full width
+   on a phone. Every value resolves from ./tokens.css.
    =========================================================================== */
 
 .v3.v3-place-finder {
@@ -16,107 +13,12 @@
   max-width: 24rem;
 }
 
-/* The trigger: a field, not a pill. */
-.v3-place-finder__trigger {
-  min-height: var(--v3-tap) !important;
-  height: auto !important;
-  padding: 0 var(--v3-space-sm) !important;
-  border: 2px solid var(--v3-ink) !important;
-  border-radius: var(--v3-radius-control) !important;
-  background: var(--v3-surface) !important;
-  color: var(--v3-ink) !important;
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body) !important;
-  transition: background-color var(--v3-dur-state) var(--v3-ease-out);
-}
-
-.v3-place-finder__trigger:hover {
-  background: var(--v3-surface-raised) !important;
-}
-
-.v3-place-finder__trigger:focus-within {
-  outline: var(--v3-focus-width) solid var(--v3-focus);
-  outline-offset: var(--v3-focus-offset);
-  box-shadow: none !important;
-}
-
-.v3-place-finder__trigger svg {
-  color: var(--v3-ink);
-}
-
-.v3-place-finder__input {
-  min-height: calc(var(--v3-tap) - 4px) !important;
-  color: var(--v3-ink) !important;
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body) !important;
-}
-
-.v3-place-finder__input::placeholder {
-  color: var(--v3-ink-muted) !important;
-}
-
-/* The panel (portaled). One navy edge, the cream surface, no radius, and
-   the list's rows at the tap height. */
-.v3-place-finder__panel {
-  border: 2px solid var(--v3-ink) !important;
-  border-radius: var(--v3-radius-control) !important;
-  background: var(--v3-surface) !important;
-  color: var(--v3-ink) !important;
-  box-shadow: none !important;
-}
-
-.v3-place-finder__list {
-  padding: var(--v3-space-2xs) !important;
-  max-height: 18rem !important;
-}
-
-.v3-place-finder__option {
-  min-height: var(--v3-tap);
-  padding: var(--v3-space-xs) var(--v3-space-sm) !important;
-  border-radius: var(--v3-radius-control) !important;
-  color: var(--v3-ink) !important;
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body-sm) !important;
-}
-
-/* The active-row highlight the catalog draws as a shared-layout span: the
-   house wash, square. Its first child is that span only while active. */
-.v3-place-finder__option > span[aria-hidden]:first-child {
-  border-radius: var(--v3-radius-control) !important;
-  background: var(--v3-wash) !important;
-}
-
-.v3-place-finder__option[data-selected] .v3-place-finder__name {
-  font-weight: var(--v3-weight-strong);
-}
-
-.v3-place-finder__name {
-  display: block;
-  color: var(--v3-ink);
-}
-
-.v3-place-finder__detail {
-  display: block;
-  color: var(--v3-ink-muted);
-  font-size: var(--v3-size-source);
-  font-variant-numeric: tabular-nums;
-  line-height: var(--v3-leading-note);
-}
-
-.v3-place-finder__empty {
-  padding: var(--v3-space-lg) var(--v3-space-sm) !important;
-  color: var(--v3-ink-muted) !important;
-  font-size: var(--v3-size-body-sm) !important;
+.v3-place-finder__box {
+  width: 100%;
 }
 
 @media (max-width: 40rem) {
   .v3.v3-place-finder {
     max-width: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .v3-place-finder__trigger {
-    transition: none;
   }
 }
