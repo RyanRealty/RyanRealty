@@ -195,12 +195,28 @@
   border: var(--v3-rule-section);
   background: var(--v3-surface);
   overflow: visible;
-  transition: border-color var(--v3-dur-state) var(--v3-ease-out);
+  transition:
+    border-color var(--v3-dur-state) var(--v3-ease-out),
+    background-color var(--v3-dur-state) var(--v3-ease-out);
 }
 
 /* The catalog draws its focus and error rings as box-shadows in the shadcn
    ring / destructive hues. Two colors only: the ring goes, the warm-stone
-   outline is the focus, and an error is a heavier navy rule. */
+   outline is the focus, and an error is a heavier navy rule.
+
+   SITE-111 (2026-09-16): error used to be ONLY a border-width bump with
+   box-shadow explicitly killed — the evaluator read that, correctly, as "a
+   border-colour change" indistinguishable from a repainted native input in a
+   still frame. The catalog demo pairs its destructive ring with a shake
+   (components/motion/input.tsx runs `animate(fieldRef, {x:[...]})` on
+   hasError, gated by the SAME useReducedMotion() this register already
+   respects — untouched here). A ring is the one piece of that pairing a
+   still CAN show, so it is restored: recolored navy instead of the demo's
+   red, flush instead of the focus ring's offset float so the two states read
+   as different gestures, plus a navy wash fill so the whole field — not just
+   its edge — reads as flagged once the shake has settled. Success carries NO
+   border treatment in the demo either (only the drawn check), so that state
+   is left exactly idle on purpose — the check is the entire signal. */
 .sell-field .sell-field__box[data-state='focused'] {
   border-color: var(--v3-ink);
   box-shadow: none;
@@ -211,11 +227,10 @@
 .sell-field .sell-field__box[data-state='error'] {
   border-color: var(--v3-ink);
   border-width: var(--v3-rule-weight-mast);
+  background: var(--v3-wash);
   box-shadow: none;
-}
-
-.sell-field .sell-field__box[data-state='success'] {
-  border-color: var(--v3-ink);
+  outline: 3px solid var(--v3-ink);
+  outline-offset: 0;
 }
 
 .sell-field .sell-field__input {
