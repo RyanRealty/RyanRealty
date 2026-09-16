@@ -3,7 +3,6 @@ import type { PriceDrop } from '@/lib/data'
 import { formatPrice } from '@/lib/format/money'
 import { listingTileHref, displaySubdivision } from '@/lib/slug'
 import { listingMlsStreetLine, publishCardAddress } from '@/lib/listing/publish-street-line'
-import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 
 export type PriceDropFieldItem = V3FieldItem & {
   overlay?: string
@@ -14,10 +13,16 @@ export type PriceDropFieldItem = V3FieldItem & {
    * Absent when the row carries no percent — unknown is not zero (§0).
    */
   cutShare?: number
-  /** "was $599K, -8.3%" — kept off the beds/baths line so inventory stays clear. */
+  /** Positive cut percent, when the row carries one. */
+  cutPct?: number
+  /** "was $599,000, -8.3%" — kept off the beds/baths line so inventory stays clear. */
   dropLine?: string
   /** "3 bd · 2 ba · 1,600 sqft · Old Bend" without the drop clause. */
   specs?: string
+  /** MLS city, when the row names one. */
+  city?: string
+  /** Route slug for /price-drops/{city}, when the city is one we pre-render. */
+  citySlug?: string
 }
 
 function namedPrice(n: number | null | undefined): string | null {
@@ -59,15 +64,18 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
       was && pct ? `was ${was}, ${pct}` : pct ? pct : was ? `was ${was}` : null
 
     const subdivision = displaySubdivision(drop.subdivisionName)
+    const city = drop.city?.trim() || null
+    const citySlug = drop.citySlug?.trim() || null
     const inventory = [
       drop.beds != null ? `${drop.beds} bd` : null,
       drop.baths != null ? `${drop.baths} ba` : null,
       drop.sqft != null ? `${drop.sqft.toLocaleString('en-US')} sqft` : null,
-      subdivision,
+      city,
+      subdivision && subdivision !== city ? subdivision : null,
     ]
       .filter((part): part is string => part !== null && part !== '')
       .join(' · ')
-    // Field list / a11y still get one meta line; the rail card splits drop vs specs.
+    // Field list / a11y still get one meta line; the slide splits drop vs specs.
     const meta = [dropLine, inventory]
       .filter((part): part is string => part !== null && part !== '')
       .join(' · ')
@@ -80,13 +88,20 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropField
       priceLabel,
       title: publishCardAddress(drop),
       ...(pct ? { overlay: pct } : {}),
+      ...(drop.lastDropPct != null && Number.isFinite(drop.lastDropPct) && drop.lastDropPct > 0
+        ? { cutPct: drop.lastDropPct }
+        : {}),
       ...(deepest > 0 && drop.lastDropPct != null && Number.isFinite(drop.lastDropPct) && drop.lastDropPct > 0
         ? { cutShare: Math.min(1, drop.lastDropPct / deepest) }
         : {}),
       ...(dropLine ? { dropLine } : {}),
       ...(inventory ? { specs: inventory } : {}),
+      ...(city ? { city } : {}),
+      ...(citySlug ? { citySlug } : {}),
       ...(meta ? { meta } : {}),
-      ...(photoSrc ? { photoSrc: listingRowPhotoSrc(photoSrc) } : {}),
+      // Keep the feed URL. The slide asks Spark for a field plate at render
+      // so a 320×240 ledger thumb never opens the fold.
+      ...(photoSrc ? { photoSrc } : {}),
       lat: drop.lat,
       lng: drop.lng,
     })

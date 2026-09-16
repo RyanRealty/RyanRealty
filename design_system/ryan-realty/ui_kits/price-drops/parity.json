@@ -79,7 +79,7 @@
     "V3SectionTracker + TrackSearchView + MetadataBlock (not sections)",
     "V3Breadcrumb",
     "PriceDropsOpening -- the H1 and the count of homes that cut price",
-    "V3Field #cuts -- V3Carousel rail of photographed cut houses (price, address, beds/baths/sqft)",
+    "V3Field #cuts -- installed shadcn carousel, one composed slide, cut-size switch + city doors (price, city, address, beds/baths/sqft)",
     "V3Drawing #spread -- distribution of this week's cuts (after photographs)",
     "V3SourceLine -- the trace and the stamp under the set",
     "PriceDropAlertsSheet -- the ask: tell me when a home cuts price",

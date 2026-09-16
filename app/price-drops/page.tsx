@@ -49,15 +49,15 @@ import {
 import { priceDropFieldItems } from './_v3/drops-field-items'
 import { priceDropDistribution } from './_v3/drops-drawing'
 import { priceDropDatasetSchemas } from './_v3/drops-jsonld'
-import { PriceDropPhotos, PriceDropsOpening } from './_v3/PriceDropsField'
+import { PriceDropsFold, PriceDropsOpening } from './_v3/PriceDropsField'
 
 export const revalidate = 1800
 
 export const metadata: Metadata = pageMetadata({
-  title: 'Price Drops in Central Oregon | Last 7 Days | Homes Cut This Week',
+  title: 'Price Drops in Central Oregon | Last 7 Days | Homes That Cut Asking Price',
   description:
     'Photographed asking-price cuts on active Central Oregon single-family homes from the last 7 days. ' +
-    'See current list price, prior ask, drop percent, beds, baths, and sqft for each reduced home in Bend, Redmond, Sisters, Sunriver, and nearby cities.',
+    'Current list price, prior ask, drop percent, city, beds, baths, and sqft for each reduced home in Bend, Redmond, Sisters, Sunriver, and nearby cities.',
   path: '/price-drops',
   keywords: [
     'price reduced homes Central Oregon',
@@ -66,6 +66,8 @@ export const metadata: Metadata = pageMetadata({
     'reduced asking price Oregon homes',
     'price cut homes for sale Bend',
     'recently reduced homes Central Oregon',
+    'price reductions Redmond Oregon',
+    'price reductions Sisters Oregon',
   ],
 })
 
@@ -134,7 +136,9 @@ export default async function PriceDropsRegionPage() {
             type: 'itemList' as const,
             name: 'Central Oregon homes with a price cut in the last 7 days',
             items: fieldItems.slice(0, 24).map((item) => ({
-              name: `${item.priceLabel} · ${item.title}`,
+              name: `${item.priceLabel} · ${item.title}${item.city ? `, ${item.city}` : ''}${
+                item.dropLine ? ` · ${item.dropLine}` : ''
+              }`,
               url: item.href.startsWith('http') ? item.href : `${siteUrl}${item.href}`,
             })),
           },
@@ -185,19 +189,21 @@ export default async function PriceDropsRegionPage() {
                     ? `price cuts this week · ${captionCount} shown below`
                     : 'price cuts this week'
               }
-              captionDrillHref={distribution ? '#spread' : '#cuts'}
-              captionDrillLabel={
-                distribution ? 'see how far each ask came down' : 'browse the cuts'
-              }
             />
             {/* Photographs open the fold; drawing is the differentiator under the rail. */}
             <div className="pd-fold">
               <V3Field
                 id="cuts"
                 className="pd-homes-field"
+                slotSurface="photos"
                 ariaLabel="Homes with a price cut in the last 7 days"
                 items={fieldItems}
-                mapSlot={<PriceDropPhotos items={fieldItems} />}
+                mapSlot={
+                  <PriceDropsFold
+                    items={fieldItems}
+                    railLabel="Homes with a price cut this week"
+                  />
+                }
                 emptyMessage="No price cut on this pull has both a street and a list price, so this list has nothing to name."
               />
               {distribution ? (
@@ -209,10 +215,10 @@ export default async function PriceDropsRegionPage() {
                 />
               ) : null}
             </div>
-            {/* The "by how much" in text, not only in ld+json, and the stamp the
-                Dataset already carried but the page never printed (same audit). */}
             <V3SourceLine
-              className="pd-source"
+              className={`${V3_ROOT_CLASS} pd-source`}
+              sourceName="Oregon Data Share"
+              asOf={fetchedAt}
               source={`${dropsTrace('Central Oregon')}${
                 medianDropPctLabel ? `. Median drop ${medianDropPctLabel}` : ''
               }${totalReducedLabel ? `, ${totalReducedLabel} in asking prices cut this week` : ''}${
