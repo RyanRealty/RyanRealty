@@ -135,6 +135,14 @@ export type {
 } from './V3Drawing.client'
 
 /**
+ * SITE-93: the barrel's wrapper for the installed beUI combobox. The type
+ * picker in a place fold, and the house primitive ci:catalog-install reads for
+ * beui-combobox.
+ */
+export { V3TypeCombobox } from './V3TypeCombobox.client'
+export type { V3TypeComboboxProps, V3TypeOption } from './V3TypeCombobox.client'
+
+/**
  * Compact two-bar months-of-supply overlay for a place opening (SITE-43).
  * Homes for sale vs a month of sales. Wired through PlaceAreaHero.
  */
@@ -144,10 +152,19 @@ export type { V3MosBarsProps } from './V3MosBars'
 /**
  * Region months-of-supply threshold scale with a searchable city overlay
  * (SITE-69). Pair with V3Drawing's two bars — never a KPI tile of the ratio.
- * Adapted from beui:combobox + beautifului:insight-cards into house paint.
+ * The overlay is the installed beUI combobox through V3TypeCombobox (SITE-92
+ * round 4); beautifului:insight-cards for the one-figure-against-another read.
  */
-export { V3MosCompare, V3_MOS_COMPARE_MAX } from './V3MosCompare.client'
-export type { V3MosCompareProps, V3MosCompareCity } from './V3MosCompare.client'
+export { V3MosCompare, V3_MOS_COMPARE_MAX, V3_MOS_COMPARE_REGION_KEY } from './V3MosCompare.client'
+export type { V3MosCompareProps, V3MosCompareCity, V3MosOverlayControlProps } from './V3MosCompare.client'
+
+/**
+ * The designed mark for a place with no photograph (SITE-92 round 4): its
+ * recorded outline as a tile, or the map's point mark. What a Ledger row
+ * draws in its media square through `mark` instead of a lettered tile.
+ */
+export { V3PlaceMark } from './V3PlaceMark'
+export type { V3PlaceMarkProps } from './V3PlaceMark'
 
 /**
  * JSON-LD injector. New public pages import this as MetadataBlock so they
@@ -371,6 +388,7 @@ export type {
   V3LedgerPlainRow,
   V3LedgerRows,
   V3LedgerReveal,
+  V3LedgerScale,
 } from './V3Ledger'
 export { V3_LEDGER_SPARK_MIN } from './V3Ledger'
 /** The Ledger's phone hold (SITE-52); mounted by V3Ledger itself, exported so the barrel gate sees one register. */

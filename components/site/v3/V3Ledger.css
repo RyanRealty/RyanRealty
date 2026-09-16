@@ -150,6 +150,21 @@
   object-fit: cover;
 }
 
+/* The designed mark (SITE-92 round 4): the caller's drawing of the place —
+   its recorded outline, or the map's point mark — in the photo's square. The
+   drawing paints its own ground (V3PlaceMark.css); this only seats it. */
+.v3-ledger__mark {
+  display: block;
+  overflow: hidden;
+  background: transparent;
+}
+
+.v3-ledger__mark > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* The glyph: the place's initial in cream on a navy tile, the monogram the
    evaluators asked for twice (cities 2026-09-08, subdivisions 2026-09-09: a
    wash square with a navy letter read as "an unstyled gray placeholder"). One
@@ -315,6 +330,105 @@
   background: var(--v3-ink);
 }
 
+/* Ruled ---------------------------------------------------------------------
+   `scale` on an encoded ledger (SITE-92 round 4): the bar scale said on the
+   drawing. One linear scale keyed to Bend made every other city's bar a
+   sliver, so the city index hands over square-root weights — and a scale the
+   reader cannot see is a lie about magnitude. The caller's sentence sits in
+   the name column; a ruler sits over the bar column with the caller's ticks,
+   each a formatted count at its position on the same scale the bars use.
+
+   The value column is FIXED in a ruled list, not `auto`: the ruler has no
+   figure in that cell, so an auto column would give its track a different
+   width from every row's and the ticks would sit beside the wrong bars. Wide
+   enough for "No live count" and "1,493 for sale" at the figure size. */
+.v3-ledger--ruled {
+  --v3-ledger-value-w: 8.75rem;
+}
+
+.v3-ledger--ruled .v3-ledger__measure,
+.v3-ledger__ruler-measure {
+  grid-template-columns: minmax(0, 1fr) var(--v3-ledger-value-w, auto);
+}
+
+.v3-ledger--ruled .v3-ledger__value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v3-ledger__ruler {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-3xs) var(--v3-space-md);
+  align-items: end;
+  padding-bottom: var(--v3-space-xs);
+}
+
+.v3-ledger__scale-note {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+  text-wrap: pretty;
+}
+
+.v3-ledger__ruler-measure {
+  display: grid;
+  align-items: end;
+  gap: var(--v3-space-sm);
+  min-width: 0;
+}
+
+/* The ruler: a hairline the ticks hang from, the count above each tick in the
+   numeral face. The last tick is the list's largest count at the full track,
+   so its label is right-aligned to the tick instead of centred past the end. */
+.v3-ledger__ruler-track {
+  position: relative;
+  display: block;
+  height: 1.25rem;
+  min-width: 2.5rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--v3-navy) 30%, transparent);
+}
+
+.v3-ledger__tick {
+  position: absolute;
+  bottom: 0;
+  width: 0;
+  height: 0.35rem;
+  border-left: 1px solid color-mix(in srgb, var(--v3-navy) 45%, transparent);
+  transform: translateX(-50%);
+}
+
+.v3-ledger__tick-label {
+  position: absolute;
+  bottom: 0.45rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--v3-font-mono);
+  font-size: var(--v3-size-label);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--v3-ink-muted);
+  white-space: nowrap;
+}
+
+.v3-ledger__tick:last-child .v3-ledger__tick-label {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+@media (min-width: 48rem) {
+  /* The same two columns as an encoded row, so the ruler's track and the
+     rows' tracks share one left edge. */
+  .v3-ledger__ruler {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    column-gap: var(--v3-space-lg);
+  }
+}
+
 /* Reveal ---------------------------------------------------------------------
    One line the row's text does not carry, and an optional twelve-point run as
    a line (SITE-52). HIDDEN at rest and shown by hover, by keyboard focus, and
@@ -336,11 +450,11 @@
   left: calc(-1 * var(--v3-space-sm));
   right: calc(-1 * var(--v3-space-sm));
   z-index: 1;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+  align-items: start;
   justify-content: space-between;
-  gap: var(--v3-space-2xs) var(--v3-space-md);
+  gap: var(--v3-space-2xs) var(--v3-space-lg);
   padding: var(--v3-space-2xs) var(--v3-space-sm) var(--v3-space-xs);
   visibility: hidden;
   background: color-mix(in srgb, var(--v3-navy) 6%, var(--v3-cream));
@@ -356,13 +470,22 @@
   z-index: 2;
 }
 
-/* The run and its words stay together, and sit at the right edge under the
-   figure when the band has room for both. */
+/* THE RUN IS A SMALL CHART (SITE-92 round 4), not a thumbnail: what it counts
+   over it, a baseline under it, the endpoint marked and labelled, the window's
+   two ends named. It takes a real column at the right edge — 16rem when the
+   band has the room — and scales to it. The first build fixed the SVG at
+   120x24 beside the text, and at 375 it ran off the panel's edge. */
 .v3-ledger__run {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--v3-space-xs);
-  margin-left: auto;
+  display: grid;
+  justify-items: start;
+  gap: var(--v3-space-3xs);
+  width: min(100%, 16rem);
+  min-width: 0;
+}
+
+.v3-ledger__run-label {
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
 }
 
 .v3-ledger__item:hover .v3-ledger__reveal,
@@ -373,12 +496,14 @@
 
 .v3-ledger__reveal-line {
   min-width: 0;
+  color: var(--v3-ink);
 }
 
 .v3-ledger__spark {
-  flex: 0 0 auto;
-  width: 7.5rem;
-  height: 1.5rem;
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 252 / 56;
   overflow: visible;
 }
 
@@ -392,6 +517,49 @@
 
 .v3-ledger__spark circle {
   fill: var(--v3-ink);
+}
+
+.v3-ledger__spark-base {
+  stroke: color-mix(in srgb, var(--v3-navy) 22%, transparent);
+  stroke-width: 1;
+}
+
+/* The endpoint's value, in the numeral face, in viewBox units so it scales
+   with the chart it labels. */
+.v3-ledger__spark-end {
+  fill: var(--v3-ink);
+  font-family: var(--v3-font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The window's ends, under the plot's own width (the viewBox keeps a right
+   gutter for the endpoint label, which the axis must not run into). */
+.v3-ledger__run-ends {
+  display: flex;
+  justify-content: space-between;
+  width: var(--v3-run-plot, 100%);
+  font-family: var(--v3-font-mono);
+  font-size: var(--v3-size-label);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--v3-ink-muted);
+}
+
+/* Narrow: the band is one column, the line over the chart, the chart the
+   full width of the row, and no bleed past the row's own edges — the bleed
+   is what pushed the run off the panel at 375. */
+@media (max-width: 47.99rem) {
+  .v3-ledger__reveal {
+    left: 0;
+    right: 0;
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: 0;
+  }
+
+  .v3-ledger__run {
+    width: 100%;
+  }
 }
 
 /* A hold on the phone is the reveal, not the OS link menu. */

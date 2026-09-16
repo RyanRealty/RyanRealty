@@ -85,6 +85,9 @@ const REGION_ALERT_PROPERTY_TYPE = 'A'
 /** The whole-region MLS filter this mount sends: every city, no narrower key. */
 const REGION_CITY_FILTER = ''
 
+/** The section ids the sticky repeat yields to: the A–Z ledger (app/cities/page.tsx). */
+const STICKY_YIELDS_TO = ['featured-cities'] as const
+
 type Props = {
   /** The section id. Defaults away from `alerts` — the bottom Sheet on this
    *  page (RegionalAlertSheet) already renders `id="alerts"`, and two equal
@@ -155,6 +158,11 @@ export function CitiesAlertsStrip({ id = 'regional-alerts', newCount30d, updated
       source={source}
       updatedAt={updatedAt}
       stickyAfter="atlas"
+      /* The A–Z ledger is the page's product and every row a door; a fixed
+         bar over its last rows in view was judged a defect two rounds running
+         (SITE-92). The strip stays down while the ledger is on screen and
+         returns past it, over the doors and the edges, until the foot sheet. */
+      stickyYieldTo={STICKY_YIELDS_TO}
       stickyLabel={`${REGION_NAME} listing alerts`}
       trap={TRAP}
       emphasis="primary"

@@ -18,6 +18,14 @@ export type V3AlertsStickyState = {
   footerVisible: boolean
   /** The visitor closed the strip this session. */
   dismissed: boolean
+  /**
+   * A section the strip YIELDS to is on screen (`stickyYieldTo`): a ledger of
+   * doors the reader is scanning row by row, where a fixed bar over the last
+   * rows in view was judged twice as "clipping the final visible ledger row"
+   * (the city index, SITE-92 rounds 3 and 4). The strip stays down while any
+   * such section is in the viewport and returns once the reader is past it.
+   */
+  yielding: boolean
 }
 
 export const V3_ALERTS_STICKY_INITIAL: V3AlertsStickyState = {
@@ -25,18 +33,20 @@ export const V3_ALERTS_STICKY_INITIAL: V3AlertsStickyState = {
   calloutVisible: false,
   footerVisible: false,
   dismissed: false,
+  yielding: false,
 }
 
 /**
  * The strip shows only when every condition holds: the visitor is past the
- * anchor, the callout is off screen, the footer is off screen, nobody closed
- * it, and nothing has been sent. Order does not matter; every reason to hide
- * wins on its own.
+ * anchor, the callout is off screen, the footer is off screen, no section it
+ * yields to is on screen, nobody closed it, and nothing has been sent. Order
+ * does not matter; every reason to hide wins on its own.
  */
 export function stickyVisible(state: V3AlertsStickyState, status: V3AlertsStatus): boolean {
   if (!stickyEligible(state, status)) return false
   if (state.calloutVisible) return false
   if (state.footerVisible) return false
+  if (state.yielding) return false
   return true
 }
 

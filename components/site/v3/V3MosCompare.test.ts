@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { mosBandCounts, mosCompareIdleRead } from './V3MosCompare.client'
+import {
+  mosBandCounts,
+  mosCompareIdleRead,
+  mosOverlayOptions,
+  V3_MOS_COMPARE_REGION_KEY,
+  type V3MosCompareCity,
+} from './V3MosCompare.client'
 
 // The compare's caption at rest (SITE-92, 2026-09-16). The separate evaluator
 // read "Balanced at 4.6 months · Balanced 4–6" as the same reading stated four
@@ -43,5 +49,31 @@ describe('mosCompareIdleRead', () => {
     expect(mosCompareIdleRead({ regionLabel: 'Central Oregon', regionMosLabel: '4.6', regionVerdict: 'Balanced', cities: [{ mos: 7 }] })).toBe(
       "Central Oregon at 4.6 months, balanced · of 1 city with a reading: 1 buyer's",
     )
+  })
+})
+
+// The overlay's option rows (SITE-92 round 4): the region alone first, as the
+// resting choice the catalog control always holds, then every city with a
+// publishable reading carrying its own months and verdict — never a city whose
+// reading was withheld, and never a figure this file computed.
+describe('mosOverlayOptions', () => {
+  const region = { regionLabel: 'Central Oregon', regionMosLabel: '4.6', regionVerdict: 'Balanced market' }
+  const cities: V3MosCompareCity[] = [
+    { slug: 'bend', name: 'Bend', mos: 3.5, mosLabel: '3.5', verdictLabel: "Seller's market", activeLabel: '616 for sale' },
+    { slug: 'la-pine', name: 'La Pine', mos: 8.7, mosLabel: '8.7', verdictLabel: "Buyer's market", activeLabel: '146 for sale' },
+    { slug: 'metolius', name: 'Metolius', mos: null, mosLabel: null, verdictLabel: null, activeLabel: '4 for sale' },
+    { slug: 'culver', name: 'Culver', mos: 0, mosLabel: '0.0', verdictLabel: 'Balanced market', activeLabel: null },
+  ]
+
+  it('leads with the region alone and lists only cities with a published reading', () => {
+    const options = mosOverlayOptions({ ...region, cities })
+    expect(options.map((o) => o.key)).toEqual([V3_MOS_COMPARE_REGION_KEY, 'bend', 'la-pine'])
+    expect(options[0]).toEqual({ key: V3_MOS_COMPARE_REGION_KEY, label: 'Central Oregon alone', count: '4.6 mo · Balanced' })
+    expect(options[1]!.count).toBe("3.5 mo · Seller's")
+    expect(options[2]!.count).toBe("8.7 mo · Buyer's")
+  })
+
+  it('offers nothing when no city has a reading, so the control is not drawn', () => {
+    expect(mosOverlayOptions({ ...region, cities: cities.slice(2) })).toEqual([])
   })
 })
