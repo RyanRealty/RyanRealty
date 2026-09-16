@@ -26,9 +26,53 @@ import { trySendGroupMms } from '@/lib/crm/try-send-group-mms'
 
 export type CrmActionResult = { ok: true; notice?: string } | { ok: false; error: string }
 
-import type { CrmAccess } from '@/app/actions/crm-access'
+import { getCrmAccess, requireCrmAccess, type CrmAccess } from '@/app/actions/crm-access'
 export type { CrmAccess } from '@/app/actions/crm-access'
-export { getCrmAccess, requireCrmAccess } from '@/app/actions/crm-access'
+export { getCrmAccess, requireCrmAccess }
+
+export type CrmPersonRow = {
+  id: number
+  fub_legacy_id: number | null
+  name: string | null
+  first_name: string | null
+  picture_url: string | null
+  last_name: string | null
+  stage: string
+  source: string | null
+  assigned_broker: string | null
+  tags: string[]
+  emails: Array<{ value?: string; isPrimary?: number | boolean }>
+  phones: Array<{ value?: string; isPrimary?: number | boolean }>
+  last_activity_at: string | null
+  fub_created_at: string | null
+  price: number | null
+  timeframe: string | null
+  pond_id: number | null
+}
+
+export type CrmListFilters = {
+  q?: string
+  stage?: string
+  broker?: string
+  tag?: string
+  view?: string
+  page?: number
+  /** §07 scope dropdown: restrict to one pond (crm_people.pond_id). */
+  pond?: string
+  /** Canonical neighborhood filter — the crm_people.neighborhood_slug COLUMN. */
+  neighborhood?: string
+}
+
+export type CrmSavedView = {
+  id: number
+  name: string
+  description: string | null
+  filter: { stage?: string; tagsAny?: string[] }
+  position: number
+}
+
+const PAGE_SIZE = 50
+
 
 // The broker-RBAC policy (Option A — Matt is owner/superuser) lives in
 // lib/crm/scope.ts as a PURE, unit-tested helper (`scopeBroker`), imported above.
