@@ -5,6 +5,7 @@ import { REGION_CITIES_SOURCE, REGION_FOLD_LABEL } from './region-constants'
 import { marketReportHereBody } from '@/lib/market/report-doors'
 import {
   REGION_JARGON_RE,
+  REGION_SOLD_ON_FOLD_CITATION,
   buildRegionInstruments,
   buildRegionMosChart,
   composeRegionLiveTrace,
@@ -27,9 +28,17 @@ describe('SITE-88 visitor-facing region traces', () => {
   it('does not print leftover membership, sample-gated, or MarketPulse', () => {
     const { live, pace } = buildRegionInstruments(HUD, '3.8')
     const extra = composeRegionLiveTrace(live.trace, true)
-    for (const text of [live.trace, pace.trace, extra, REGION_CITIES_SOURCE, REGION_FOLD_LABEL]) {
+    for (const text of [
+      live.trace,
+      pace.trace,
+      extra,
+      REGION_CITIES_SOURCE,
+      REGION_FOLD_LABEL,
+      REGION_SOLD_ON_FOLD_CITATION,
+    ]) {
       expect(text, text).not.toMatch(REGION_JARGON_RE)
     }
+    expect(REGION_SOLD_ON_FOLD_CITATION).not.toMatch(/population|sample-gated|behind the fold|cards and the line/i)
   })
 
   it('uses a one-line visitor citation when the MOS drawing publishes', () => {
