@@ -17,7 +17,8 @@ import { getCanonicalCityForSubdivision } from '@/lib/data/communities/registry'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { logAdminAction } from '@/app/actions/log-admin-action'
-import { getOrCreatePlaceBanner, getBannerSearchQuery } from '@/app/actions/banners'
+import { getOrCreatePlaceBanner } from '@/app/actions/banners'
+import { getBannerSearchQuery } from '@/lib/banner-prompts'
 import { getResortCommunityContent } from '@/lib/community-content'
 
 /**
