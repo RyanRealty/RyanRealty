@@ -518,6 +518,36 @@ const nextConfig: NextConfig = {
       './node_modules/puppeteer-core/**',
       './node_modules/@sparticuz/chromium-min/**',
     ],
+    // Found 2026-09-16: admin/bpo/[slug] traced at 366.95mb (limit 250mb) after
+    // the action-required shrink. The review page imported the @/lib/data barrel
+    // (bookingAvailability → googleapis ~196mb) plus the CMA/BPO build graph
+    // (pdfjs / canvas). Leaf imports cut that chain; these excludes keep the
+    // leftovers out of this lambda. Rebuild still writes HTML to the DB — it
+    // does not need Gmail or a PDF renderer.
+    'app/admin/(protected)/bpo/[slug]/page': [
+      './node_modules/googleapis/**',
+      './node_modules/googleapis-common/**',
+      './node_modules/pdfjs-dist/**',
+      './node_modules/@napi-rs/canvas/**',
+      './node_modules/puppeteer-core/**',
+      './node_modules/@sparticuz/chromium-min/**',
+    ],
+    'app/admin/(protected)/bpo/page': [
+      './node_modules/googleapis/**',
+      './node_modules/googleapis-common/**',
+      './node_modules/pdfjs-dist/**',
+      './node_modules/@napi-rs/canvas/**',
+      './node_modules/puppeteer-core/**',
+      './node_modules/@sparticuz/chromium-min/**',
+    ],
+    'app/admin/(protected)/bpo/new/page': [
+      './node_modules/googleapis/**',
+      './node_modules/googleapis-common/**',
+      './node_modules/pdfjs-dist/**',
+      './node_modules/@napi-rs/canvas/**',
+      './node_modules/puppeteer-core/**',
+      './node_modules/@sparticuz/chromium-min/**',
+    ],
   },
 }
 

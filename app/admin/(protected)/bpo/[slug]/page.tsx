@@ -41,15 +41,12 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { listActiveBrokersForCma } from '@/lib/data'
+import { listActiveBrokersForCma } from '@/lib/data/cma/builderReads'
 import { getBpoAdminRowBySlug } from '@/lib/data/bpo/reads'
-import {
-  EntityTitle,
-  ReportNumbers,
-  SectionHead,
-  StateWord,
-  type AdminState,
-} from '@/components/admin/v2'
+import { EntityTitle } from '@/components/admin/v2/EntityTitle'
+import { ReportNumbers } from '@/components/admin/v2/ReportGrid'
+import { SectionHead } from '@/components/admin/v2/SectionHead'
+import { StateWord, type AdminState } from '@/components/admin/v2/StateWord'
 import { BpoReviewActions } from '@/app/admin/(protected)/bpo/_components/BpoReviewActions'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'

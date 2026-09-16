@@ -9,8 +9,8 @@
  * or expired listing is still the authoritative record of the structure).
  */
 
-import { findCmaSubjectByMls, findCmaSubjectByAddress } from '@/lib/data'
-import type { CmaListingRow } from '@/lib/data'
+import { findCmaSubjectByMls, findCmaSubjectByAddress } from '@/lib/data/cma/builderReads'
+import type { CmaListingRow } from '@/lib/data/cma/builderReads'
 import type { CmaSubject } from '@/lib/cma/types'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
