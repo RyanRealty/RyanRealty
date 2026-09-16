@@ -47,7 +47,7 @@ import {
   V3Drawing,
   V3Footer,
   V3Ledger,
-  V3MosCompare,
+  V3PlaceMark,
   V3Quiet,
   V3SectionTracker,
   V3_FOOTER_COLUMNS,
@@ -56,9 +56,13 @@ import {
   v3Text,
   type V3LedgerFigureRow,
   type V3LedgerReveal,
+  type V3LedgerScale,
   type V3MosCompareCity,
   type V3QuietItem,
 } from '@/components/site/v3'
+import { CitiesMosCompare } from './_v3/CitiesMosCompare.client'
+import { silhouetteTile } from '@/lib/atlas/silhouette-tile'
+import { getPlacePhotoStrip } from '@/lib/place-photos'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 import { V3Atlas, V3Eyebrow, V3Heading } from '@/components/site/v3'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
@@ -72,8 +76,10 @@ import { cityFeaturedLinks } from '@/app/cities/CityFeaturedLinks'
 import {
   CITY_SENTENCE_FALLBACK,
   FEATURED_CITY_SLUGS,
+  INDEX_BAR_SCALE_NOTE,
   NO_LIVE_COUNT_LABEL,
   firstSentence,
+  indexBarTicks,
   indexBarWeight,
   liveForSaleLabel,
 } from '@/app/cities/_v3/cities-index-constants'
@@ -98,7 +104,7 @@ const OTHERS_TRACE =
   'live MLS through Oregon Data Share, the city snapshot row for each remaining Central Oregon city: active single-family count and the median list price of those listings'
 
 const REVEAL_TRACE =
-  'On hover, focus, or a hold, a row shows its months-of-supply verdict where our market metric layer publishes one for the city — regional MLS through Oregon Data Share, detached homes (market_metric: months_of_supply and market_verdict), and the last twelve complete months of closed detached sales as a line (market_metric closed_count, detached, one calendar month each); a month the source withheld breaks the line, and fewer than six published months draws none'
+  'On hover, focus, or a hold, a row shows its months-of-supply verdict where our market metric layer publishes one for the city — regional MLS through Oregon Data Share, detached homes (market_metric: months_of_supply and market_verdict), and the last twelve complete months of closed detached sales as a line (market_metric closed_count, detached, one calendar month each) with the window\'s first and last month named under it and the last published month\'s count beside the endpoint; a month the source withheld breaks the line, and fewer than six published months draws none. The bars are on a square-root scale of each city\'s share of the largest count, said on the drawing; the figure beside each bar is the count'
 
 const REGION_SUPPLY_TRACE =
   'Regional MLS through Oregon Data Share, read through our market metric layer — detached homes across Central Oregon (market_metric, definition mt-v1, segment detached, region central-oregon): active_count, and months_of_supply as homes for sale divided by closes in the last six months divided by six. The monthly pace drawn here is that division recovered exactly from the two published figures'
@@ -161,12 +167,21 @@ function cityReveal(layers: DetachedOverlay | undefined, months: readonly Public
   if (!line && !drawRun) return undefined
   const first = window[0]
   const last = window[window.length - 1]
+  // The endpoint the line ends on is the last PUBLISHED month, which is the
+  // window's last month unless the source withheld it; its label is that
+  // month's own count, the same figure the last drawn point is.
+  const lastPublished = [...window].reverse().find((m) => m.closedCount != null)
   return {
     line: v3Text(line ?? 'Closed sales by month'),
     ...(drawRun && first && last
       ? {
           series,
-          seriesLabel: v3Text(`Closes by month, ${formatMonthYear(first.periodStart)} to ${formatMonthYear(last.periodStart)}`),
+          seriesLabel: v3Text('Closed detached sales by month'),
+          seriesEnds: {
+            first: v3Text(formatMonthYear(first.periodStart)),
+            last: v3Text(formatMonthYear(last.periodStart)),
+          },
+          ...(lastPublished?.closedCount != null ? { seriesLast: v3Text(formatCount(lastPublished.closedCount)) } : {}),
         }
       : {}),
   }
@@ -351,6 +366,28 @@ export default async function CitiesPage() {
     })
   }
 
+  // A PHOTOGRAPH FOR THE ROWS THE REGISTRY DOES NOT COVER (SITE-92 round 4).
+  // The remaining cities have no curated hero; the asset library may still
+  // hold a graded photograph OF the place (approved, geo-tagged with the slug,
+  // vision-graded A or B, captioned, unwatermarked, never a generated still —
+  // lib/place-photos.ts). One frame per row, from the same rule the community
+  // boards use. A city with none draws its recorded outline instead, below.
+  const libraryPhotoBySlug = new Map<string, string>()
+  await Promise.all(
+    others.map(async (city) => {
+      const frames = await getPlacePhotoStrip(city.slug, { limit: 1 }).catch(() => [])
+      const src = frames[0]?.src
+      if (src) libraryPhotoBySlug.set(city.slug, src)
+    }),
+  )
+  // THE DRAWN FALLBACK: the town's recorded outline, the same boundary the
+  // Atlas above draws it with, as the row's mark where there is no photograph.
+  // A town with no recorded boundary gets the map's point mark — honest about
+  // what is not recorded, never a letter and never a picture of somewhere else.
+  const townGeometryBySlug = new Map<string, GeoJSON.Geometry>(
+    townRegions.map((r) => [r.id.replace(/^town:/, ''), r.geometry] as const),
+  )
+
   const directory: Array<{
     slug: string
     name: string
@@ -375,7 +412,7 @@ export default async function CitiesPage() {
         sentence: null as string | null,
         activeCount: snap ? snap.activeCount : city.activeCount,
         medianListPrice: snap ? snap.medianPrice : city.medianPrice,
-        mediaSrc: undefined as string | undefined,
+        mediaSrc: libraryPhotoBySlug.get(city.slug),
       }
     }),
   ].sort((a, b) => a.name.localeCompare(b.name))
@@ -407,11 +444,22 @@ export default async function CitiesPage() {
       value: v3Text(city.activeCount != null ? liveForSaleLabel(city.activeCount) : NO_LIVE_COUNT_LABEL),
       weight: indexBarWeight(city.activeCount, maxCount),
       media: city.mediaSrc ? { src: city.mediaSrc } : undefined,
+      mark: city.mediaSrc ? undefined : <V3PlaceMark silhouette={silhouetteTile(townGeometryBySlug.get(city.slug))} />,
       reveal: cityReveal(layers, monthlyBySlug.get(city.slug) ?? []),
       ariaLabel: v3Text(`Homes for sale in ${city.name}, Oregon`),
     }
   })
   const [firstFeatured, ...restFeatured] = figureRows
+
+  // The bar scale, said on the drawing: the note and the ruler's ticks, each a
+  // round count at its position on the same square-root scale the weights use
+  // (cities-index-constants.ts). The ledger prints these and computes nothing.
+  const ledgerScale: V3LedgerScale | undefined = countsPublishable
+    ? {
+        note: v3Text(INDEX_BAR_SCALE_NOTE),
+        ticks: indexBarTicks(maxCount).map((t) => ({ at: t.at, label: v3Text(formatCount(t.count)) })),
+      }
+    : undefined
 
   const cityDoors: V3QuietItem[] = featured.flatMap((city) =>
     cityFeaturedLinks(city.slug, city.name),
@@ -456,7 +504,7 @@ export default async function CitiesPage() {
 
   const regionScale =
     hud.monthsSupply != null && mosText && regionVerdict ? (
-      <V3MosCompare
+      <CitiesMosCompare
         regionLabel="Central Oregon"
         regionMos={hud.monthsSupply}
         regionMosLabel={mosText}
@@ -541,6 +589,7 @@ export default async function CitiesPage() {
                   basemap={basemapForRegions(townRegions, { dots: atlas.dots, fit: 'dots' })}
                   fit="dots"
                   salesWash={INDEX_SALES_WASH}
+                  townsAs="doors"
                   types={atlas.types}
                   events={atlas.events}
                   source={atlas.source}
@@ -572,6 +621,7 @@ export default async function CitiesPage() {
             drawing={regionDrawing}
             rows={[firstFeatured, ...restFeatured]}
             encode={countsPublishable ? 'bar' : undefined}
+            scale={ledgerScale}
             source={v3Text(FEATURED_TRACE + '. Remaining cities: ' + OTHERS_TRACE + '. ' + REVEAL_TRACE)}
             updated={ledgerStamp ? v3Text(formatDate(ledgerStamp)) : undefined}
             action={{ label: v3Text('Search all listings'), href: '/search', variant: 'primary' }}

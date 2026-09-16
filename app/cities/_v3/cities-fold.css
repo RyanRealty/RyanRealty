@@ -304,16 +304,10 @@
   }
 }
 
-/* Town outlines at region scale (SITE-92 re-score, 2026-09-16): fifteen
-   small polygons across Central Oregon at the barrel's 72% navy / 1.1px read
-   as road lines under the heat field — the judge saw "plain text labels over
-   a dot heatmap with no outlined, touchable town boundaries." The index is
-   exactly the surface where the boundary IS the door, so on this fold the
-   town places take the Atlas's own override variables (--atlas-stroke /
-   --atlas-fill / --atlas-width): full navy, a shade heavier, a faint fill.
-   Hover and focus keep the component's own state. No new color. */
-.cities-fold__drawing .v3-atlas__place--town {
-  --atlas-stroke: var(--v3-navy);
-  --atlas-width: 1.6px;
-  --atlas-fill: color-mix(in srgb, var(--v3-navy) 10%, transparent);
-}
+/* Town outlines at region scale (SITE-92 rounds 3 and 4). Round 3 tried to
+   restyle `.v3-atlas__place--town` from here; on this page every region is a
+   town and towns were drawn in the Atlas's BASE layer under the marks, so the
+   selector matched nothing and the override variables would have pinned the
+   hover state off if it had. The look now lives in the primitive, behind
+   `townsAs="doors"` on the page's V3Atlas mount (V3Atlas.css, "towns as
+   doors"), where hover, focus and the pinned state are its own. */

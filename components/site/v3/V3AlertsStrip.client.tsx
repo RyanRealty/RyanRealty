@@ -169,6 +169,16 @@ export type V3AlertsStripProps = {
   listings?: readonly V3AlertsListing[]
   /** The id of the section the strip appears after. Defaults to `atlas`. */
   stickyAfter?: string
+  /**
+   * Ids of sections the strip YIELDS to: while any of them is on screen the
+   * strip stays down, and it returns once the reader has scrolled past. For a
+   * ledger of doors the reader scans row by row — a fixed bar over the last
+   * rows in view read as the bar "clipping the final visible ledger row" two
+   * rounds running on the city index (SITE-92). The page still reserves the
+   * strip's height the whole time (`stickyEligible`), so nothing jumps when
+   * it comes back. Absent, the strip behaves exactly as before.
+   */
+  stickyYieldTo?: readonly string[]
   /** Accessible name for the strip region. */
   stickyLabel: string
   dismissLabel?: string
@@ -202,6 +212,7 @@ export function V3AlertsStrip({
   types,
   listings,
   stickyAfter = 'atlas',
+  stickyYieldTo,
   stickyLabel,
   dismissLabel = 'Close',
   invalidMessage = 'That address does not look complete.',
@@ -231,7 +242,11 @@ export function V3AlertsStrip({
   const stickyInputRef = useRef<HTMLInputElement | null>(null)
   const inFlight = useRef(false)
 
-  // The sticky rules: three observers and one session flag, all client-only.
+  /* A stable key for the yield list, so the effect below re-binds only when
+     the ids change and not on every render that hands it a fresh array. */
+  const stickyYieldKey = (stickyYieldTo ?? []).join(' ')
+
+  // The sticky rules: the observers and one session flag, all client-only.
   useEffect(() => {
     let dismissed = false
     try {
@@ -292,12 +307,30 @@ export function V3AlertsStrip({
       io.observe(footer)
       observers.push(io)
     }
+    // The sections the strip yields to. One observer, every target, one set of
+    // the ids currently on screen: the strip is down while the set is not
+    // empty. A missing id is simply not observed.
+    const yieldTargets = (stickyYieldKey ? stickyYieldKey.split(' ') : [])
+      .map((sectionId) => document.getElementById(sectionId))
+      .filter((el): el is HTMLElement => el != null)
+    if (yieldTargets.length > 0) {
+      const onScreen = new Set<Element>()
+      const io = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) onScreen.add(entry.target)
+          else onScreen.delete(entry.target)
+        }
+        setSticky((s) => (s.yielding === onScreen.size > 0 ? s : { ...s, yielding: onScreen.size > 0 }))
+      })
+      yieldTargets.forEach((el) => io.observe(el))
+      observers.push(io)
+    }
     return () => {
       observers.forEach((io) => io.disconnect())
       window.removeEventListener('scroll', onScroll)
       if (frame) window.cancelAnimationFrame(frame)
     }
-  }, [id, stickyAfter])
+  }, [id, stickyAfter, stickyYieldKey])
 
   const dismiss = useCallback(() => {
     setSticky((s) => ({ ...s, dismissed: true }))

@@ -11,7 +11,13 @@ import {
   type V3AlertsStickyState,
 } from './V3AlertsStrip.logic'
 
-const past: V3AlertsStickyState = { passed: true, calloutVisible: false, footerVisible: false, dismissed: false }
+const past: V3AlertsStickyState = {
+  passed: true,
+  calloutVisible: false,
+  footerVisible: false,
+  dismissed: false,
+  yielding: false,
+}
 
 describe('stickyVisible', () => {
   it('hides until the anchor has been scrolled past', () => {
@@ -25,6 +31,11 @@ describe('stickyVisible', () => {
 
   it('never covers the footer', () => {
     expect(stickyVisible({ ...past, footerVisible: true }, 'idle')).toBe(false)
+  })
+
+  it('stays down while a section it yields to is on screen (the ledger of doors), and comes back after', () => {
+    expect(stickyVisible({ ...past, yielding: true }, 'idle')).toBe(false)
+    expect(stickyVisible({ ...past, yielding: false }, 'idle')).toBe(true)
   })
 
   it('stays closed for the session once dismissed', () => {
@@ -48,9 +59,11 @@ describe('stickyVisible', () => {
  * remove the strip's own height every time the footer arrived.
  */
 describe('stickyEligible', () => {
-  it('ignores the two conditions that flip on every scroll', () => {
+  it('ignores the conditions that flip on every scroll', () => {
     expect(stickyEligible({ ...past, calloutVisible: true }, 'idle')).toBe(true)
     expect(stickyEligible({ ...past, footerVisible: true }, 'idle')).toBe(true)
+    // Yielding to a ledger hides the strip; the page keeps its room for it.
+    expect(stickyEligible({ ...past, yielding: true }, 'idle')).toBe(true)
   })
 
   it('ends with the three that hold for the rest of the visit', () => {
