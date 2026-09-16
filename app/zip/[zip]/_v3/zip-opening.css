@@ -57,12 +57,14 @@
   align-items: flex-end;
 }
 
-.zip-opening__claim-swap [data-slot='digit-swap-glyph'],
-.zip-opening__claim-glyph {
-  width: 0.72em;
-  margin-inline: 0.06em;
-  border-bottom: 2px solid var(--v3-navy);
-  background: color-mix(in oklab, var(--v3-navy) 8%, transparent);
+.zip-opening__claim-swap [data-slot='digit-swap-glyph'] {
+  width: 0.82em;
+  min-width: 0.82em;
+  height: 1.15em;
+  margin-inline: 0.08em;
+  border-bottom: 3px solid var(--v3-navy);
+  background: color-mix(in oklab, var(--v3-navy) 12%, var(--v3-cream, #faf8f4));
+  box-shadow: inset 0 -3px 0 var(--v3-navy);
 }
 
 .zip-opening__doors {
@@ -375,16 +377,26 @@
 }
 
 .zip-opening__progress-bar {
-  position: relative;
+  position: relative !important;
+  inset: auto !important;
   display: block;
-  width: 8.5rem;
+  width: 8.5rem !important;
+  height: 6px !important;
   color: var(--v3-navy);
-  background: color-mix(in oklab, var(--v3-navy) 16%, transparent);
+  background-color: var(--v3-navy) !important;
+  /* take-route-shots disables animation; settle the catalog bar at the open mark */
+  transform: scaleX(0.42) !important;
+  transform-origin: left center !important;
 }
 
 .zip-opening__progress {
   justify-self: end;
   color: var(--v3-navy);
+}
+
+.zip-opening__progress circle:nth-of-type(2) {
+  /* 56px circle, thickness 6 → C ≈ 157; 42% fill */
+  stroke-dashoffset: 91 !important;
 }
 
 .zip-opening__masonry {
