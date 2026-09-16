@@ -43,6 +43,9 @@ import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 const BASE = (process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:3000').replace(/\/+$/, '')
 const LISTING_KEY = process.env.SMOKE_LISTING_KEY
 const TIMEOUT_MS = Number(process.env.SMOKE_TIMEOUT_MS ?? 15_000)
+// The listings sitemap alone: the heaviest read the gate makes (see
+// discoverResolvingListingKey), so it gets its own ceiling.
+const SITEMAP_TIMEOUT_MS = Number(process.env.SMOKE_SITEMAP_TIMEOUT_MS ?? 45_000)
 
 // ADMIN ROUTES GET A LONGER BUDGET — as a CLASS, not route by route.
 //
@@ -329,8 +332,44 @@ async function checkHop(route, url, hop) {
  * exactly how this defect survived.
  */
 async function discoverResolvingListingKey() {
-  const { status, body } = await fetchWithTimeout(`${BASE}/sitemaps/listings.xml`, TIMEOUT_MS)
-  if (status !== 200) return { key: null, why: `sitemaps/listings.xml returned HTTP ${status}` }
+  // The sitemap is the heaviest read this gate makes: ~7,500 active rows paged
+  // out of a ~600,000-row MV. On 2026-09-16 it answered 500 ("canceling
+  // statement due to statement timeout") once in GitHub Actions (PR #252,
+  // 144/145) and twice on a local production build, then 200 on the next try —
+  // a transient on the database, not a property of the server under test. One
+  // probe turned that into a red step, so the discovery retries with backoff;
+  // a status that holds across every attempt is still reported as the failure
+  // it is. The loader itself is hardened separately (keyset paging).
+  //
+  // A TIMEOUT IS A FAILED ATTEMPT, NOT A CRASH (2026-09-16, run 35043457290).
+  // The first cut of this loop only looked at the returned status, so when the
+  // sitemap took longer than TIMEOUT_MS the AbortError from fetchWithTimeout
+  // escaped it and the whole gate died with a stack trace before the retry.
+  // Every attempt's throw is caught here and counted like a bad status. The
+  // sitemap also gets its own, longer ceiling: fifteen seconds is right for a
+  // page, not for the one read that pages 7,500 rows on a cold server.
+  const DISCOVERY_ATTEMPTS = 3
+  const DISCOVERY_BACKOFF_MS = [1000, 3000]
+  let status = 0
+  let body = ''
+  let why = ''
+  for (let attempt = 1; attempt <= DISCOVERY_ATTEMPTS; attempt++) {
+    try {
+      ;({ status, body } = await fetchWithTimeout(`${BASE}/sitemaps/listings.xml`, SITEMAP_TIMEOUT_MS))
+      why = `HTTP ${status}`
+    } catch (err) {
+      status = 0
+      body = ''
+      why = err?.name === 'AbortError' ? `no response within ${SITEMAP_TIMEOUT_MS}ms` : `fetch failed: ${err?.message ?? err}`
+    }
+    if (status === 200) break
+    if (attempt < DISCOVERY_ATTEMPTS) {
+      const wait = DISCOVERY_BACKOFF_MS[attempt - 1] ?? DISCOVERY_BACKOFF_MS.at(-1)
+      console.warn(`  sitemaps/listings.xml answered ${why} (attempt ${attempt}/${DISCOVERY_ATTEMPTS}) — retrying in ${wait}ms`)
+      await new Promise((r) => setTimeout(r, wait))
+    }
+  }
+  if (status !== 200) return { key: null, why: `sitemaps/listings.xml answered ${why} on ${DISCOVERY_ATTEMPTS} attempts` }
   // Canonical detail URLs end in -<mlsNumber>; getListingCanonicalPathFields
   // accepts an MLS number as well as a ListingKey.
   const m = body.match(/<loc>[^<]*\/homes-for-sale\/[^<]*?-(\d{5,})<\/loc>/)

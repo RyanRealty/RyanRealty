@@ -21,6 +21,8 @@
   border-color: var(--v3-ink);
   color: var(--v3-ink);
   background: var(--v3-cream);
+  /* shadcn's default trigger is h-8 (32px) — under the 44px tap floor. */
+  min-block-size: var(--v3-tap);
 }
 
 .contact-field [data-state='error'],
