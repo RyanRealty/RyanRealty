@@ -45,6 +45,11 @@
       "blocking": true
     },
     {
+      "name": "NeighborhoodInsight",
+      "section": "NeighborhoodInsight #place-insight (SITE-104) -- the fold's paged figure, beautifului's InsightCards (components/motion/insight-cards) wrapped by NeighborhoodInsight.client.tsx. Page one is the two named MOS bars (V3MosBars, the house primitive the layout lock protects) with the VERDICT above them, computed by marketVerdict() off the same hud.monthsSupply the bars divide and sitting above the threshold clause the bars' own source line already prints, so the sentence, the bars and the rule cannot disagree (scripts/check-market-formula.mjs). Page two is this neighborhood's OWN published monthly closed series on the catalog's AnomalyCard — median sale price on a pointer scrub, and a second metric chip for how many homes closed that month, which is published nowhere else on this page. The page hands it no rows at all when leftoverNeighborhoodOrCityMonthly fell back to the parent city (placeMonthly = leftoverUsed && !cityFallback), because a Bend-wide line under an Awbrey Butte heading is a section 0 lie. Both pills are real anchors out of the fold: /months-of-supply and the parent city's market report.",
+      "blocking": true
+    },
+    {
       "name": "V3Footer",
       "section": "Chrome. The canonical sitemap projection (V3_FOOTER_COLUMNS off lib/site-nav) plus the legal row. Carries no button, and NOT because the header covers the ask: it does not below 880px, which is why the opening Instrument's action is the page's primary. The footer stays button-free because a second filled control in the closing viewport would put two primaries in one viewport, and the ask the reader arrived for is thirty rows above it. Rendered OUTSIDE main, because HTML-AAM maps footer to role=contentinfo only when it is not nested in sectioning content.",
       "blocking": true
@@ -180,11 +185,12 @@
   "sectionOrder": [
     "V3SectionTracker",
     "MetadataBlock",
-    "PlaceAreaHero (photograph owns the fold)",
+    "PlaceAreaHero (SITE-104: the shortened still — H1 and the three crawlable doors, nothing else. The two MOS bars used to float on it as a cream overlay; they are page one of the fold's insight pager now.)",
     "V3Breadcrumb",
     "V3Heading",
-    "NeighborhoodAlertsStrip #alerts (V3AlertsStrip: the first callout after the opening, this neighborhood's real 30-day count as the claim, the city-scoped promise, email, one button; the sticky repeat past #atlas from the same component)",
-    "V3Atlas #atlas -- the living map scoped to the neighborhood (renders only with a recorded boundary and at least one listing inside it)",
+    "V3Atlas #atlas -- the living map scoped to the neighborhood, and SITE-104 moves it INTO the first viewport as the fold's drawing (type toggles + price scrubber kept; the key, the events rail and the aside are folded away so drawing + figure + ask fit one screen). Renders only with a recorded boundary and at least one listing inside it.",
+    "NeighborhoodInsight #place-insight (SITE-104) -- the fold's paged figure, beautifului's InsightCards (components/motion/insight-cards) wrapped by NeighborhoodInsight.client.tsx. Page one is the two named MOS bars (V3MosBars, the house primitive the layout lock protects) with the VERDICT above them, computed by marketVerdict() off the same hud.monthsSupply the bars divide and sitting above the threshold clause the bars' own source line already prints, so the sentence, the bars and the rule cannot disagree (scripts/check-market-formula.mjs). Page two is this neighborhood's OWN published monthly closed series on the catalog's AnomalyCard — median sale price on a pointer scrub, and a second metric chip for how many homes closed that month, which is published nowhere else on this page. The page hands it no rows at all when leftoverNeighborhoodOrCityMonthly fell back to the parent city (placeMonthly = leftoverUsed && !cityFallback), because a Bend-wide line under an Awbrey Butte heading is a section 0 lie. Both pills are real anchors out of the fold: /months-of-supply and the parent city's market report.",
+    "NeighborhoodAlertsStrip #alerts (V3AlertsStrip: the ask in the FIRST VIEWPORT, this neighborhood's real 30-day count as the claim, the city-scoped promise, email, one button; the sticky repeat past #atlas from the same component). SITE-104 makes the fold three columns — the drawing, the figure, the ask — so the callout sits third in source order inside .nbh-fold rather than directly under the opening. It is still on the visitor's first screen at 1440 and at 375, it still carries the 30-day figure with its trace, and the sticky still keys off #atlas scrolling past. Its property-type control is the installed beUI combobox (NeighborhoodTypeCombobox.client.tsx -> V3TypeCombobox -> components/motion/combobox) handed down through renderTypes; the two flat Houses / Land rectangles it replaces are what the 2026-09-12 table named \"Cream box\".",
     "PlaceTypeSlider",
     "#homes",
     "#subdivisions",

@@ -52,6 +52,7 @@ import {
   rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
 import { newestFirstHref, placeAlertsCopy, placeAlertsStickyNote } from '@/lib/site/place-alerts'
+import { NeighborhoodTypeCombobox } from './NeighborhoodTypeCombobox.client'
 
 const TRAP = { name: 'company', label: 'Company' } as const
 
@@ -125,6 +126,18 @@ export function NeighborhoodAlertsStrip({
       trap={TRAP}
       emphasis="primary"
       types={types}
+      // SITE-104: the place picker is the installed beUI combobox, not two flat
+      // rectangles. The barrel owns the markup (V3TypeCombobox), the strip keeps
+      // owning the selection, and this route hands the control down — the same
+      // seam the city uses. See NeighborhoodTypeCombobox.client.tsx.
+      renderTypes={({ options, value, onChange }) => (
+        <NeighborhoodTypeCombobox
+          label={`Property type in ${neighborhoodName}`}
+          options={options}
+          value={value}
+          onChange={onChange}
+        />
+      )}
       onSubmit={submit}
     />
   )
