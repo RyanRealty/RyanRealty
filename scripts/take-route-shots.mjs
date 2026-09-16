@@ -149,6 +149,7 @@ import sharp from 'sharp'
 import { chromium } from 'playwright'
 import { SHOT_BYTE_CAP } from './check-shot-weight.mjs'
 import { CATALOG_PATH, demoStateSpecs, loadTasteCatalog } from './lib/taste-catalog.mjs'
+import { installRemoteMediaProxy } from './lib/remote-media-proxy.mjs'
 
 const UI_KITS = 'design_system/ryan-realty/ui_kits'
 
@@ -439,39 +440,10 @@ const CHROMIUM_EXECUTABLE = (() => {
  *
  * Set SHOT_NO_MEDIA_PROXY=1 to turn it off.
  */
-const MEDIA_TYPES = new Set(['image', 'media', 'font'])
-const mediaCache = new Map()
-
-async function installRemoteMediaProxy(context, pageOrigin, stats) {
-  if (process.env.SHOT_NO_MEDIA_PROXY === '1') return
-  await context.route('**/*', async (route) => {
-    const request = route.request()
-    if (!MEDIA_TYPES.has(request.resourceType())) return route.continue()
-    let origin
-    try {
-      origin = new URL(request.url()).origin
-    } catch {
-      return route.continue()
-    }
-    if (origin === pageOrigin) return route.continue()
-    const key = request.url()
-    try {
-      if (!mediaCache.has(key)) {
-        const response = await fetch(key, { signal: AbortSignal.timeout(20_000) })
-        if (!response.ok) throw new Error(`HTTP ${response.status}`)
-        mediaCache.set(key, {
-          body: Buffer.from(await response.arrayBuffer()),
-          contentType: response.headers.get('content-type') ?? 'application/octet-stream',
-        })
-      }
-      const hit = mediaCache.get(key)
-      stats.served += 1
-      return route.fulfill({ status: 200, contentType: hit.contentType, body: hit.body })
-    } catch {
-      return route.continue()
-    }
-  })
-}
+/* Implementation moved to scripts/lib/remote-media-proxy.mjs on 2026-09-15 so
+   check-route-content-floor.mjs — which MEASURES images and was failing every
+   image-bearing route in the cloud sandbox — gets the identical behaviour from
+   one copy. `SHOT_NO_MEDIA_PROXY=1` still turns it off. */
 
 export function resolveUrl(baseUrl, routeKey, readParity) {
   let u

@@ -172,6 +172,7 @@ This table is the only site backlog. Sessions pull the oldest open node (`npx ts
 | SITE-112 | `19ae02ff-f1b9-49d6-b895-aa7e98f10034` | subdivision first viewport: authored caption, Atlas |
 | SITE-113 | `005519f9-657b-44c8-82d3-b76d1e579088` | /team first viewport: faces |
 | SITE-114 | `d2b42092-600e-45d5-a383-0707cf5c2d76` | /zip first viewport: Field of this ZIP's houses |
+| SITE-120 | `6f4a1ecc-f4b2-4ad3-85d8-58c8de8060e6` | Place alerts sticky ask: person voice, not a form |
 
 **Round five (seeded 2026-09-11, SITE-90 to SITE-114).** Every taste-table class still under 70. Catalog source is in-repo (`components/motion`, `components/ui`); `taste-evaluate` requires `demoMatch`. Accept: score above the 2026-09-08 table mark **and ≥ 70**. `run loop` picks these as open.
 

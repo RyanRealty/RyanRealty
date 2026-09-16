@@ -11,6 +11,88 @@ Surface: Claude Code cloud session `claude-cloud-01DYvsoL-20260915` (branch `cla
 - **Next:** Cos Mini grok-4.6 rejudge of PR #253 (compare, city) → land or send back. SITE-102/100 (housing-market family) skipped while SITE-103 is held elsewhere. Do not rebuild SITE-93/95 from main.
 - Skills read: `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `scripts/lib/taste-receipt.mjs --ship`, `scripts/lib/taste-catalog.mjs --preflight`.
 
+# Current — 2026-09-16 (SITE-120 Tip Ready PR — place-alert sticky ask)
+
+Surface: Cursor cloud `cursor-cloud-site120-20260916`, branch `cursor/site-120-place-alerts-3485`. PR only — do not merge.
+
+- **SITE-120 copy landed on this branch.** Sticky / callout family is now person-voice: "Hear about new listings in {scope} the day they hit the market."; note "Every new listing, with its price changes. Unsubscribe any time."; promise "We'll email you every new listing in {scope} as it comes on the market, with any price change on those homes in the same email. Unsubscribe any time."; button "Send me new listings"; sent "You're set. We'll email you when something new lists in {scope}." Five binders (city, neighborhood, community, subdivision, ZIP). Old form lines locked by `mannered-public-copy` + SITE-120 accept test.
+- **`--ship` community: exit 0** (`demoMatch: true`, open-state, catalog-install). City / neighborhood / subdivision receipts still lack `demoMatch` — not invented. No new judge run.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `TASTE.md`, `VOICE.md`, `taste-receipt.mjs --ship`.
+
+# Current — 2026-09-16 (cloud grinder: SITE-103 landed at 70, SITE-91 rose to 55, production NOT deploying)
+
+Surface: Claude cloud routine `cloud-grinder-2026-09-16-04`, two lanes in worktrees, both merged to main and pushed.
+
+- **PRODUCTION IS STUCK AT 151a32f9.** `/api/cron/deploy-health` (bearer CRON_SECRET) reports `status: stale`, deployedSha 151a32f9, latestSha 4c9834d8 at 09:10Z; neither 6ef8d5a3 (CMA Cursor transport, pushed 09-15 22:18Z) nor today's pushes went live. Both classify as Vercel builds (`scripts/vercel-ignore-build.mjs`), CI is green, so the failure is on Vercel (build error or queue) and the sandbox has no Vercel token to read it. The deploy-health alert never sends: `lib/deploy-health-alert.ts` wraps `RESEND_FROM` in `Ryan Realty Ops <…>` even when the env value already carries a display name (Resend: "Invalid from field"). Matt was notified by push. Open the Vercel dashboard for ryan-realty-platform.
+- **SITE-103 market-report-region — landed on main at 4c9834d8, NOT marked done until live.** Lane commits 60b718c5 … 4c9834d8. Judge claude-sonnet-5 via the claude CLI (builder claude-opus-5): 67/70/73 median **70**, `demoMatch: true`, honestyFunction 9, rebaselined off the grok-4.6 63. `taste-receipt --ship` exit 0. Real beautifului InsightCards (pager, Liveline scrub, allocation bar) in the fold; beui-number with server-settled faces; cities as a supply ladder. Repair on the way: every Liveline in the repo drew "No data to display" (series ended at epoch 1_700_000_000; Liveline filters on the wall clock) — affected /invest too. Next session: once deploy-health says `current` on ≥ 4c9834d8, open /housing-market/central-oregon live, confirm the insight card + ladder, then mark done with `scratchpad`-style evidence (must contain `demoMatch: true`, `ui_kits/market-report-region`, and `--ship`).
+- **SITE-91 buy — rose 51 → 55 (same instrument, +4 ≥ floor 3), `demoMatch: true`, ship OK, under 70, node released to open.** Merged at 52d02d5f. shadcn carousel object in the fold (flanking 44px chevrons, fifth-card peek, price-band brush, asking-price ladder); JSON-LD 5 → 6, listing hrefs 0 → 43, first priced ask at 779px/1440 and 805px/375. Next lane: judge's open defects are two consecutive card rails (put the buyer-guide Ledger between the shelf and the remaining rails; vary the lead card) and the 375 chip-row fade cue. Price-cut meter in the band was cut on §0 grounds (`price_reduction_share` is nulled by `overlayLeftoverHudFamily`).
+- **Tooling fixed by both lanes:** `claudeModelFromWrapper` in `scripts/lib/taste-evaluate-result.mjs` recorded the CLI's haiku overhead as the judge; it now prefers the asked alias (91 tests). Cloud worktrees: Turbopack refuses a symlinked `node_modules` — a bind mount (SITE-103) or a real copy (SITE-91) works; `.husky/_` must be copied in or the worktree's commits run no hooks.
+- **PR #252 (fermi) and PR #244 (cursor)** are superseded for SITE-91 / SITE-103 by these landings; #252 still carries SITE-90 / SITE-108 / SITE-105 work for its owner.
+- Skills read: `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `scripts/lib/taste-receipt.mjs --ship`.
+
+# Current — 2026-09-16 (SITE-91 /buy built + judged · oregon-city prod 500 fixed · five tooling agents)
+
+Surface: Claude cloud session `claude-cloud-fermi-20260915`, branch `claude/cool-fermi-0paep0`, PR #252 (draft, second commit).
+Matt's rule this round (now §6 of the site-queue skill): **friction is a lane, not a detour** — spin up an agent to fix the tool, on a disjoint file set, while the orchestrator keeps the page.
+
+- **P0 — every `/oregon/<city>` page was 500 on production** (`x-next-error-status: 500`, medford/ashland/klamath-falls/grants-pass/eugene). Root cause: the page awaits `searchParams` (taste_variant) under `revalidate = 3600` + empty `generateStaticParams`, so every URL is a first-request on-demand STATIC pass, which throws `DYNAMIC_SERVER_USAGE` uncaught. Same class as the 2026-07-15 subdivisions 500. Fix: `export const dynamic = 'force-dynamic'` (ISR for this route gone until the `taste_variant` read moves off the server path). Verified 200 on dev for five cities; `ci:public-isr-ttl` OK. Appended to SITE-105.
+- **SITE-91 /buy:** compact Stage keeping its band via new `V3Stage.bandWhenCompact` (the barrel hid the band under compact for the homepage's Pulse repeat — /buy has no Pulse and would have lost its only sourced figures); `HomeHomesRails` (SITE-83 V3Carousel shelves, ask + address + facts on every card) directly under it, built from THIS page's SFR tiles; `HomeHomesField` kept under the Ledger (browse by type, regional search as the door); rail `ItemList` JSON-LD; `V3StageInventory.sourceName` shortens the open source clause (108px → 66px; full trace still in HTML behind the disclosure); 375 strip stacks one figure per line, no stranded middots. Measured: first ask ends 860px at 1440 (fold 900) · 873px at 375 (fold 812, 61px under — the rail heading wrap is in `home-homes-rails.css`, held by Matthews Mini; not forced).
+- **Tooling shipped by agents (all reviewed):** `scripts/lib/gate-browser.mjs` (shared context: media proxy + `ignoreHTTPSErrors` only under a proxy) used by tap-targets + content-floor; `run-runtime-gates.sh` runs all FOUR gates and prints a summary (was `set -e`, stopped at route-smoke); `taste-evaluate` appends the option-list compliance line to every prompt and re-asks the same judge ONCE on an off-list `replaceWith` (2 of 3 sonnet runs were rejected for that yesterday; 9 tests); `scripts/start-prod-server.sh` / `npm run start:prod` (stale-build + port-holder guards, real-UA waiter); `cloud-setup.sh` `CLOUD_SETUP_SKIP_DEPS=1` for fonts mid-session; skill cloud section: cold-render recipe, build order (stop dev first — the OOM is the OS killer), branch-push sequence.
+- **Pre-existing findings appended to their nodes** (not from PR #252; zero `.v3-carousel` on each route): SITE-90 about hero 725<1296 · SITE-95 compare heroImageNatural at the edge · SITE-107 place-type-community heroImageNatural 720<2043 · SITE-110 search hero 160<230 + `v3-range__beui` 4x24 · SITE-113 team words 115<130 + sms links 36.6x44 on production · SITE-96 contact `input` 226.8x42 + `.v3-ask__field button` h32 on production · SITE-93 range handle. `scripts/tap-targets-baseline.json` records ZERO violations, so it is stale vs production — not regenerated (shrink-only; a human decides).
+- **Evaluator variance, on the record:** agent B's proof run scored /price-drops **62 (62·59·65) demoMatch TRUE** on the identical shots the lane's run scored **59 (59·59·56) demoMatch FALSE** — same judge (claude-sonnet-5), same rubric. The committed receipt keeps the conservative mark. Two marks on one page is exactly what the receipt rules exist to stop; noted, not rewritten.
+- **`ci:runtime-gates` never honoured `PORT` for the gates themselves (found 2026-09-16, fixed):** each gate reads its own `*_BASE_URL` and defaults to `127.0.0.1:3000`; the shell started the server on `$PORT` and waited on it but never exported the base to the gates, so `PORT=3401 npm run ci:runtime-gates` measured an empty port — route-smoke died in discovery on `ECONNREFUSED 127.0.0.1:3000` before probing one route, page-payload said `/homes-for-sale: fetch failed`, tap-targets and content-floor rendered nothing. Four FAILs against a build a hand-started server answered in <1s. CI never saw it (PORT unset). Now `run-runtime-gates.sh` exports `SMOKE_BASE_URL` / `PAGE_PAYLOAD_BASE_URL` / `TAP_TARGETS_BASE_URL` / `CONTENT_FLOOR_BASE_URL` = `$BASE`.
+
+# Current — 2026-09-15 (SITE-108 /price-drops — false absence + cap-as-count, cloud session)
+
+Surface: Claude cloud session `claude-cloud-fermi-20260915`, branch `claude/cool-fermi-0paep0`.
+Nodes held: SITE-108 (price-drops), SITE-91 (buy, not started).
+
+- **§0 P0 — /price-drops published a false absence.** `getPriceDrops` hands one
+  `listing_key` per event to `getListingTiles`, which puts them in ONE PostgREST
+  `.in()`. The key list rides the URL. Measured cliff (anon AND service role, so not
+  RLS): **530 keys = 14,410 chars → 528 rows; 540 keys = 14,680 chars → `TypeError:
+  fetch failed`**. Fetch-layer death, so `error.message` never named it — `fetchTiles`
+  threw and `makeResilientCached` cached the fallback `[]` as a real empty market. The
+  window held 545 keys, so the page said "No active single-family home … has a
+  documented asking-price cut in the last 7 days" while **262 homes qualified**.
+  Activity-dependent and silent: the busier the market, the more certain the page says
+  nothing is happening. Fix: `KEY_CHUNK = 300` chunked read, union sorted + paged in JS,
+  cache key `listing-tiles-v6`.
+- **§0 P0 — the cap published itself as the count, live on production.**
+  `total` was `capped.length`. Production read 2026-09-15: `/price-drops` **60** (true
+  262), `/price-drops/bend` **40** (true 115), `/price-drops/redmond` **40** (true 51).
+  Bend and Redmond both reading exactly 40 is the tell. Understates only. Fix:
+  `total = joined.length`; `shownCount` now scopes the Dataset's dollar sum + median so a
+  48-row figure cannot sit beside a 262-row count.
+- **UX / demoMatch.** `V3Carousel` parked prev/next as a static pair under the first card
+  — the cream-box tell the table scored `demoMatch: false`. Restored shadcn's flanking
+  chevrons, centred on the media midline (measured: media mid 344, chevron centre 344),
+  44x44, navy on cream. Barrel var defaults moved to `:where()` so a consumer override
+  stops silently losing the cascade — which is also why `/price-drops` cards were 280px
+  wide instead of the 22rem the page had asked for since it was written (specs line
+  wrapped; hero image 262 → 334, floor is 300).
+- **Tooling fixed, not worked around.**
+  - `start:ci` hard-coded `-p 3000`, so the `PORT=` its own docs advertise could never
+    work. Now `next start -p ${PORT:-3000}`.
+  - `check-route-content-floor.mjs` measures IMAGES with a bare `chromium.launch()`.
+    In a cloud sandbox Node reaches the photo CDNs through the proxy and headless
+    Chromium does not, so every image-bearing route collapsed to `heroImageWidth: 120`
+    and floors failed on routes nobody touched. `take-route-shots.mjs` already solved
+    this ("TRAP 10"); extracted to `scripts/lib/remote-media-proxy.mjs` and shared.
+    Violations went 10 → 6 and `price-drops` now reads
+    `words 1800, images 7, hero 334px, jsonLd 6` — **passes its floor**.
+- **Pre-existing content-floor violations this surfaced** (NOT from this diff — none of
+  these routes render a `.v3-carousel`, verified 0 elements each): `about`
+  heroImageWidth 725 < 1296; `compare` heroImageNatural 1365 < 1382;
+  `place-type-community` heroImageNatural 720 < 2043; `search` heroImageWidth 160 < 230;
+  `team` words 115 < 130; `oregon-city` HTTP 500. Belongs to SITE-90 / 95 / 107 / 110 / 113.
+- **Sandbox limits worth knowing:** `sitemaps/listings.xml` 500s locally on a Postgres
+  statement timeout (200 on production); headless Chromium cannot reach the Spark CDN
+  directly (curl can) — that is what the shared media proxy is for.
+- **Judge:** no `grok` CLI and no `cursor-agent` in this sandbox, so the chain falls to
+  the claude CLI. Judge = claude-sonnet-5, builder = claude-opus-5. The live table was
+  scored on grok-4.6, so this mark REBASELINES the class and the node is NOT done on it.
+
 # Current — 2026-09-15 (Public Patch P0 Tip Ready — place plats + search + rail flip)
 
 Surface: Public Patch on Matthews Mini. Tip Ready locally. **Do not push origin** — Cos Mini lands. HOLD owner email.

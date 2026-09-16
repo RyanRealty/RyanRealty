@@ -131,6 +131,14 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { RegionInquirySheet } from './_v3/RegionInquirySheet.client'
 import { RegionCityMos } from './_v3/RegionCityMos.client'
+import { RegionInsight } from './_v3/RegionInsight.client'
+import {
+  buildRegionInsightBoard,
+  regionInsightDatasetVariables,
+  regionInsightFaqs,
+  regionInsightPageCount,
+  regionInsightTemporalCoverage,
+} from './_v3/region-insight'
 import './_v3/region-market.css'
 import {
   CLOSED_SALES_FROM_YEAR,
@@ -178,12 +186,22 @@ export async function generateMetadata(): Promise<Metadata> {
   })
   const median =
     hud.medianList != null && hud.medianList > 0 ? formatPriceCompact(hud.medianList) : null
+  // SITE-103 SEO: the description carries the live verdict and the supply
+  // figure the H1 states, so the snippet is the answer instead of a promise of
+  // one. Both clauses ship only when their own figure resolved — a description
+  // is a published number and gets the same guard as the screen (section 0).
+  const mosRawMeta = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
+  const verdictMeta = marketVerdict(mosRawMeta)
+  const supplyClause =
+    mosRawMeta != null && verdictMeta.kind !== 'unknown'
+      ? `${formatMonthsOfSupply(mosRawMeta)} months of supply — ${verdictMeta.label}. `
+      : ''
   return pageMetadata({
     title: median
       ? `Central Oregon housing market · ${median} median list`
       : 'Central Oregon region deep dive',
     description:
-      'Central Oregon housing market: live single-family inventory, months of supply as homes for sale vs a month of sales, and city doors for Bend, Redmond, Sisters, and the rest of the region. Oregon Data Share via Ryan Realty.',
+      `${supplyClause}Central Oregon housing market: live single-family inventory, months of supply as homes for sale against a month of sales, the last twelve months of closed sale prices, and city doors for Bend, Redmond, Sisters, and the rest of the region. Oregon Data Share via Ryan Realty.`,
     path: '/housing-market/central-oregon',
     keywords: [
       'Central Oregon housing market',
@@ -249,9 +267,17 @@ export default async function CentralOregonRegionPage() {
     dropInProgressMonth(priceHistory, currentMonthKey),
   )
   const regionChart = buildRegionMedianChart(chartMonths.months, chartMonths.leftoverUsed)
-  // SITE-88: year isolate lives on THIS route's opening chart only. Do not put
-  // yearPages on YEAR_OVERLAY_READING — that object is shared with city detail
-  // and the annual review.
+  // SITE-103: the beautifului InsightCards board. Same rows the long-view chart
+  // and the size-of-the-market Ledger already publish, turned into three
+  // distinct sourced claims. A page that cannot be sourced is simply absent
+  // (./_v3/region-insight.ts); the control itself is omitted below two pages,
+  // because a pager with one page is not the catalog object.
+  const insightBoard = buildRegionInsightBoard({
+    monthly: chartMonths.months,
+    closedSeries,
+    hud,
+  })
+  const hasInsight = regionInsightPageCount(insightBoard) >= 2
   // Two market-truth rows feed this section's figures. One stamp only when
   // both rows carry one clock; a mismatch withholds the stamp rather than
   // aging the fresher row (publishInstrumentStamp contract).
@@ -264,7 +290,15 @@ export default async function CentralOregonRegionPage() {
     mosText,
     leftoverStamp ? formatDate(leftoverStamp) : null,
   )
-  const openingChart = regionChart ? { ...regionChart, yearPages: true } : regionChart
+  // THE LONG VIEW, UNDER THE CARDS (SITE-103). It keeps its id so the route's
+  // own mobile rules still find it, keeps marks and hover on EVERY series, and
+  // loses `yearPages`: the InsightCards pager is the fold's pager now, and two
+  // pagers a hand's width apart, one of them stepping years and one stepping
+  // claims, read as one broken control. Nothing is lost — every year the year
+  // pager isolated is still drawn, still hoverable, still in the legend toggle.
+  const openingChart = regionChart
+    ? { ...regionChart, id: 'market-chart', yearPages: false }
+    : regionChart
 
   // buildMarketFaq - the single source for the visible FAQ, the FAQPage JSON-LD, and
   // the Dataset variableMeasured. The pulse-or-fallback input is the timeout fallback
@@ -282,10 +316,16 @@ export default async function CentralOregonRegionPage() {
     pulseActiveCount: hud.active,
     refreshedAt: leftoverStamp,
   }
-  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
+  const { faqs: pulseFaqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
     'Central Oregon',
     pulse ?? { grain: 'region', activeCount: null, medianListPrice: null, refreshedAt: null },
   )
+  // SITE-103: the closed-sales questions the cards above already answer, in the
+  // words a visitor types. Route-local (see regionInsightFaqs) — the shared
+  // builder answers the live region row, and these are a different population.
+  // ONE array still feeds the visible block and the FAQPage payload, so the two
+  // cannot diverge.
+  const faqs = [...pulseFaqs, ...regionInsightFaqs(insightBoard)]
   const refreshedAt = leftoverStamp
 
   // The region row's TWO Instruments, built in ./_v3/region-figures.ts. Every figure is
@@ -313,8 +353,17 @@ export default async function CentralOregonRegionPage() {
   // the opening is not a collapsed "all N figures" row.
   const [firstLiveFigure, ...restLiveFigures] = region.live.figures
   const [firstExtraFigure, ...restExtraFigures] = extraLive
+  // INVARIANT 3, WIDENED HONESTLY (SITE-103). The two figures and the two bars
+  // are ACTIVE listings. The cards and the long-view line above them are CLOSED
+  // sales — a different population in the same section — so the trace says so in
+  // one clause rather than letting an active-inventory line cover a sold price.
+  // Each card also carries its own note naming its own population; this clause
+  // is what a reader who only opens the section's source line gets.
   const liveTrace =
     composeRegionLiveTrace(regionMos ? REGION_LIVE_CITATION : region.live.trace, false) +
+    (hasInsight || openingChart
+      ? ' The cards and the line above are a second population: houses that already sold, month by month, from the same Oregon Data Share MLS feed. An asking price and a closed sale price are not the same number.'
+      : '') +
     (publicMixHasRow(publicMix)
       ? ' Financing, feature, and bedroom mix for this refresh is not shown on this page.'
       : '')
@@ -415,11 +464,18 @@ export default async function CentralOregonRegionPage() {
     // metric names while the variable list is derived one figure at a time, so a null
     // column left the payload describing a measurement it did not contain - a claim
     // outrunning its payload, which is the same defect class as a wrong number.
-    const metricNames = datasetVariables.map((variable) => variable.name.toLowerCase())
+    // SITE-103: the closed-sales figures the InsightCards publish join the
+    // payload, so what a reader scrubs to and what an answer engine quotes are
+    // the same number. They are derived from the same board the cards render —
+    // never typed beside it — so a page the board could not source adds
+    // nothing, and the description below still names only what is carried.
+    const publishedVariables = [...datasetVariables, ...regionInsightDatasetVariables(insightBoard)]
+    const metricNames = publishedVariables.map((variable) => variable.name.toLowerCase())
     const metricList =
       metricNames.length === 1
         ? metricNames[0]
         : `${metricNames.slice(0, -1).join(', ')}, and ${metricNames[metricNames.length - 1]}`
+    const coverage = regionInsightTemporalCoverage(insightBoard)
     schemas.push({
       type: 'dataset',
       name: `Central Oregon, Oregon real estate market statistics${asOfLabel ? `, ${asOfLabel}` : ''}`,
@@ -429,8 +485,9 @@ export default async function CentralOregonRegionPage() {
         'Sourced from Oregon Data Share via Ryan Realty.',
       url: '/housing-market/central-oregon',
       dateModified: asOfIso ?? undefined,
+      ...(coverage ? { temporalCoverage: coverage } : {}),
       spatialCoverageName: 'Central Oregon, OR',
-      variableMeasured: datasetVariables,
+      variableMeasured: publishedVariables,
     })
   }
 
@@ -486,11 +543,24 @@ export default async function CentralOregonRegionPage() {
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
             asOf={refreshedAt ?? undefined}
             action={{ label: v3Text('Ask about Central Oregon'), href: '#ask' }}
-            chart={openingChart}
+            /* SITE-103. THE FOLD IS THE CATALOG CONTROL, THEN THE TWO BARS,
+               THEN THE LONG VIEW. InsightCards (beautifului-insight) opens on a
+               claim a person can read in one breath and a line they can drag;
+               V3MosBars is the layout-lock answer; the three-year overlay is
+               the context, moved from `chart` to `chartSecondary` so the fold
+               is not a split column at 1440 and so a phone reaches a drawing
+               within the first screen. Every figure face inside is beui-number
+               and settles server-side (settleFigures / settle) rather than
+               publishing 0 until hydration. */
+            settleFigures
+            chartSecondary={openingChart}
             drawing={
-              regionMos ? (
+              <div className="region-fold">
+                {hasInsight ? <RegionInsight board={insightBoard} /> : null}
+                {regionMos ? (
                 <V3MosBars
                   id="central-oregon-mos"
+                  settle
                   className="region-market-mos"
                   caption={regionMos.caption}
                   plainLabel={regionMos.plainLabel}
@@ -505,7 +575,8 @@ export default async function CentralOregonRegionPage() {
                   sourceName="Oregon Data Share MLS"
                   tooltip={regionMos.tooltip}
                 />
-              ) : null
+                ) : null}
+              </div>
             }
           />
         ) : (

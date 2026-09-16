@@ -569,6 +569,13 @@ export { V3PlaceIndex, placeIndexRows } from './V3PlaceIndex'
 export type { V3PlaceIndexProps, V3PlaceIndexEntry } from './V3PlaceIndex'
 
 /* -------------------------------------------------------------------------- */
+/* Amenities — first-class on-the-ground list (SITE-116)                       */
+/* -------------------------------------------------------------------------- */
+
+export { V3Amenities } from './V3Amenities'
+export type { V3AmenitiesProps } from './V3Amenities'
+
+/* -------------------------------------------------------------------------- */
 /* Pattern 10 — SLOTS: a tool's empty state, drawn as the thing it makes       */
 /* -------------------------------------------------------------------------- */
 

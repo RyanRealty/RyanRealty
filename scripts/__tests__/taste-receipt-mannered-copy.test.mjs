@@ -6,6 +6,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   ACTION_BILLBOARD_REFUSE,
+  FORM_ALERT_ASK_REFUSE,
   HOME_BRIEF_LEAK_REFUSE,
   INVENTORY_LECTURE_REFUSE,
   PLATS_VOICE_REFUSE,
@@ -318,5 +319,27 @@ describe('Find a home + pulse lecture refuse', () => {
         'More than one in five listings on the Central Oregon market is already under contract.',
       ),
     ).toContain(INVENTORY_LECTURE_REFUSE)
+  })
+})
+
+describe('SITE-120 form-voice alert ask refuse', () => {
+  it('refuses the form-reciting sticky ask', () => {
+    expect(manneredPublicCopyProblems("submitLabel: 'Email me each one'")).toContain(FORM_ALERT_ASK_REFUSE)
+    expect(
+      manneredPublicCopyProblems("after: 'listings, by email, as they come on the market.'"),
+    ).toContain(FORM_ALERT_ASK_REFUSE)
+    expect(
+      manneredPublicCopyProblems("'Every new listing by email. Unsubscribe any time.'"),
+    ).toContain(FORM_ALERT_ASK_REFUSE)
+  })
+
+  it('passes the person-voice family', () => {
+    expect(manneredPublicCopyProblems("submitLabel: 'Send me new listings'")).toEqual([])
+    expect(
+      manneredPublicCopyProblems("claim: 'Hear about new listings in Bend the day they hit the market.'"),
+    ).toEqual([])
+    expect(
+      manneredPublicCopyProblems("'Every new listing, with its price changes. Unsubscribe any time.'"),
+    ).toEqual([])
   })
 })

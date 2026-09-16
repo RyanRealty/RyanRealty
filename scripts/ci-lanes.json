@@ -40,6 +40,7 @@
     "ci:offmarket-listing-cta",
     "ci:page-dal",
     "ci:pdf-page-safety",
+    "ci:place-section-depth",
     "ci:prerender-db-safety",
     "ci:private-key-parity",
     "ci:private-phone",
@@ -1301,6 +1302,13 @@
       "lib/listing/publish-listing-mosaic.ts",
       "lib/listing/row-photo.ts",
       "lib/data/listings/getListingDetail.ts"
+    ],
+    "ci:place-section-depth": [
+      "app/communities/**",
+      "app/cities/**",
+      "app/subdivisions/**",
+      "components/site/v3/V3Amenities.tsx",
+      "scripts/check-place-section-depth.mjs"
     ],
     "ci:rubric-freeze": [
       "design_system/public/taste-rule-freeze.json",

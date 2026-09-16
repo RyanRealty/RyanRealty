@@ -179,54 +179,40 @@ describe('taste-evaluate-result — the judge chain', () => {
       'claude-sonnet-5',
     )
     expect(claudeModelFromWrapper({}, 'opus')).toBe('claude-opus-5')
-    // The CLI lists its own internal haiku helper alongside the judge; the
-    // alias we asked for is the judge (2026-09-15, SITE-95).
-    expect(
-      claudeModelFromWrapper(
-        {
-          modelUsage: {
-            'claude-haiku-4-5-20251001': { inputTokens: 899 },
-            'claude-sonnet-5': { inputTokens: 2, cacheReadInputTokens: 28660 },
-          },
-        },
-        'sonnet',
-      ),
-    ).toBe('claude-sonnet-5')
-    // Nothing on the judge chain ran: say so rather than claim a ruler.
-    expect(
-      claudeModelFromWrapper({ modelUsage: { 'claude-haiku-4-5-20251001': { inputTokens: 899 } } }, 'sonnet'),
-    ).toBe('claude-haiku-4-5-20251001')
     expect(claudeModelFromWrapper(null, 'sonnet')).toBe('claude-sonnet-5')
   })
 
-  it('SITE-93: modelUsage carries the CLI side model too — the requested alias wins', () => {
-    // Verified 2026-09-16: `claude -p --model sonnet --output-format json`
-    // reports ["claude-haiku-4-5-20251001", "claude-sonnet-5"], haiku first.
-    // ids[0] signed a sonnet judging as a model that may not sign at all.
+  it('does not record the CLI\u2019s own background model as the judge', () => {
+    // The exact wrapper a `--model sonnet` run returned on 2026-09-16: the CLI
+    // bills its housekeeping haiku into the SAME map as the model that
+    // answered, FIRST, and with MORE output tokens. Object order and token
+    // count both point the wrong way; the alias is the ask.
     const wrapper = {
       modelUsage: {
-        'claude-haiku-4-5-20251001': { inputTokens: 90 },
-        'claude-sonnet-5': { inputTokens: 44_000 },
+        'claude-haiku-4-5-20251001': { outputTokens: 10, canonicalModel: 'claude-haiku-4-5' },
+        'claude-sonnet-5': { outputTokens: 4, canonicalModel: 'claude-sonnet-5' },
       },
     }
     expect(claudeModelFromWrapper(wrapper, 'sonnet')).toBe('claude-sonnet-5')
-    expect(isAllowedEvaluator(claudeModelFromWrapper(wrapper, 'sonnet'))).toBe(true)
   })
 
-  it('SITE-93: falls to the first ALLOWED id when the requested alias is not in the usage', () => {
+  it('reports the substitute honestly when the asked-for model never answered', () => {
     const wrapper = {
       modelUsage: {
-        'claude-haiku-4-5-20251001': { inputTokens: 90 },
-        'claude-opus-5': { inputTokens: 44_000 },
+        'claude-haiku-4-5-20251001': { outputTokens: 900, canonicalModel: 'claude-haiku-4-5' },
       },
     }
-    expect(claudeModelFromWrapper(wrapper, 'sonnet')).toBe('claude-opus-5')
+    expect(claudeModelFromWrapper(wrapper, 'sonnet')).toBe('claude-haiku-4-5-20251001')
   })
 
-  it('SITE-93: reports what it was given when nothing in the usage may sign — never invents a pass', () => {
-    const wrapper = { modelUsage: { 'claude-haiku-4-5-20251001': { inputTokens: 90 } } }
-    expect(claudeModelFromWrapper(wrapper, 'sonnet')).toBe('claude-haiku-4-5-20251001')
-    expect(isAllowedEvaluator('claude-haiku-4-5-20251001')).toBe(false)
+  it('matches the asked-for model through canonicalModel when the key is dated', () => {
+    const wrapper = {
+      modelUsage: {
+        'claude-haiku-4-5-20251001': { outputTokens: 10, canonicalModel: 'claude-haiku-4-5' },
+        'claude-opus-5-20260901': { outputTokens: 4, canonicalModel: 'claude-opus-5' },
+      },
+    }
+    expect(claudeModelFromWrapper(wrapper, 'opus')).toBe('claude-opus-5-20260901')
   })
 
   it('classifies claude CLI failures without inventing a verdict', () => {

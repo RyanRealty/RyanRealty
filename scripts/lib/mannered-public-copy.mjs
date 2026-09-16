@@ -34,6 +34,9 @@ export const INVENTORY_LECTURE_REFUSE =
 export const PLATS_VOICE_REFUSE =
   'mannered public copy: public-facing plat / plats / recorded boundary plat language. Buyers say subdivision / neighborhood / community. Leave the node in_progress.'
 
+export const FORM_ALERT_ASK_REFUSE =
+  'mannered public copy: place-alert sticky ask reads like a form ("Email me each one" / "Every new listing by email." / "by email, as they come on the market"). Talk like a person. Leave the node in_progress.'
+
 /** "3,271 homes for sale across Central Oregon…" under Homes in Bend / place folds. */
 export const INVENTORY_LECTURE_RES = Object.freeze([
   /\d[\d,]*\+?\s*homes for sale across/i,
@@ -58,6 +61,13 @@ export const PLATS_VOICE_RES = Object.freeze([
   /each phase is its own plat/i,
   /\bplat lines\b/i,
   /· Recorded plats/i,
+])
+
+/** SITE-120 — the sticky ask that recited the form, not a person (Matt 2026-09-16). */
+export const FORM_ALERT_ASK_RES = Object.freeze([
+  /Email me each one/,
+  /by email, as they come on the market/,
+  /Every new listing by email\./,
 ])
 
 /** Visitor-facing lectures about how the map / feed / filter works. */
@@ -123,6 +133,12 @@ const PLACE_COPY_FILES = Object.freeze([
   'app/communities/[slug]/page.tsx',
   'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
   'app/subdivisions/[slug]/page.tsx',
+  'lib/site/place-alerts.ts',
+  'app/cities/[slug]/_v3/CityAlertSheet.client.tsx',
+  'app/cities/[slug]/[neighborhoodSlug]/_v3/NeighborhoodAlertsSheet.client.tsx',
+  'app/communities/[slug]/_v3/CommunityAlertSheet.client.tsx',
+  'app/subdivisions/[slug]/_v3/SubdivisionAlertSheet.client.tsx',
+  'app/zip/[zip]/_v3/ZipAlertsSheet.client.tsx',
 ])
 
 const SEARCH_COPY_FILES = Object.freeze([
@@ -143,6 +159,7 @@ const EXTRA_PUBLIC_COPY = Object.freeze({
   'place-type-community': PLACE_COPY_FILES,
   neighborhood: PLACE_COPY_FILES,
   subdivision: PLACE_COPY_FILES,
+  zip: PLACE_COPY_FILES,
   search: SEARCH_COPY_FILES,
 })
 
@@ -213,7 +230,8 @@ export function publicCopyFilesFor({ route, kit } = {}) {
     kit === 'place-type' ||
     kit === 'place-type-community' ||
     kit === 'neighborhood' ||
-    kit === 'subdivision'
+    kit === 'subdivision' ||
+    kit === 'zip'
   ) {
     for (const f of PLACE_COPY_FILES) {
       if (!files.includes(f)) files.push(f)
@@ -267,6 +285,9 @@ export function manneredPublicCopyProblems(sourceText) {
   }
   if (PLATS_VOICE_RES.some((re) => re.test(scan))) {
     p.push(PLATS_VOICE_REFUSE)
+  }
+  if (FORM_ALERT_ASK_RES.some((re) => re.test(scan))) {
+    p.push(FORM_ALERT_ASK_REFUSE)
   }
   return p
 }
