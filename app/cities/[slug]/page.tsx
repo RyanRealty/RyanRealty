@@ -88,6 +88,7 @@ import { cityPageTrail } from '@/lib/site/place-trail'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { latestSaleMedian } from '@/lib/market/latest-sale-median'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
+import { formatPrice } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { skippableRail } from '@/lib/build-phase'
@@ -99,7 +100,6 @@ import {
   V3_FOOTER_COLUMNS,
   V3Heading,
   V3Instrument,
-  V3MosBars,
   V3PlaceDoor,
   V3Ledger,
   V3Answers,
@@ -124,6 +124,8 @@ import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
 import { overlaysFromRegions } from '@/lib/place/child-rings'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { CityAlertsStrip } from './_v3/CityAlertSheet.client'
+import { CityInsight } from './_v3/CityInsight.client'
+import { buildCityInsightBoard } from './_v3/city-insight'
 import './_v3/city-fold.css'
 import { cityLibraryHero, cityStagePoster } from './_v3/city-opening'
 import { bendNeighborhoodPlaces } from './_v3/city-places'
@@ -570,6 +572,58 @@ export default async function CityDetailPage({ params }: Props) {
   const marketHeadline = `Typical price in ${cityName}`
   const verdictCaption = cityVerdictCaption({ mos: mosRaw, verdict: face.verdict })
 
+  // SITE-93 — the fold figure as ONE paged insight.
+  //
+  // The bars are the SAME props the fold already rendered; they moved inside
+  // the pager, they did not change. The verdict sentence returns above them:
+  // it is derived from the months-of-supply figure the bars draw
+  // (cityVerdictCaption off publishPlaceFace), so the sentence and the number
+  // beside it cannot disagree (scripts/check-market-formula.mjs), and until
+  // now it rendered on NO city that publishes MOS — `!placeMos && verdictCaption`
+  // in the opening above is false for every one of them.
+  //
+  // The second page draws the monthly median-close path the page already read
+  // for its year overlay and its FAQ (`chartMonths.months`, in-progress month
+  // dropped). Its latest complete month is `saleMedian` — the same figure the
+  // FAQ answers with — so the fold, the chart and the FAQ all publish one
+  // number from one row (CLAUDE.md §0).
+  const foldMosProps = placeMos
+    ? {
+        caption: placeMos.caption,
+        plainLabel: placeMos.plainLabel,
+        homesName: placeMos.homesName,
+        homesLabel: placeMos.homesLabel,
+        homesValue: placeMos.homesValue,
+        salesName: placeMos.salesName,
+        salesLabel: placeMos.salesLabel,
+        salesValue: placeMos.salesValue,
+        source: placeMos.source,
+        asOf: placeMos.asOf,
+        sourceName: 'Oregon Data Share',
+        tooltip: placeMos.tooltip,
+      }
+    : null
+  const foldLatestSale = saleMedian
+    ? { value: saleMedian.value, formatted: formatPrice(saleMedian.value), monthLabel: saleMedian.monthLabel }
+    : null
+  // The pager's supply page says what the bars do NOT. The bars caption the
+  // months ("About 3.6 months of homes on the market."); repeating that
+  // sentence directly above itself is the craft miss, and the VERDICT is the
+  // thing this fold has never published — `!placeMos && verdictCaption` in the
+  // opening above is false for every city that publishes MOS, so the classification
+  // was computed and then shown to nobody. It comes off marketVerdict(), and the
+  // thresholds it was computed against are already printed under the bars in
+  // the MOS source line (MOS_THRESHOLD_CLAUSE, scripts/check-market-formula.mjs),
+  // so the verdict and its rule stay one tap apart without being said twice.
+  const foldVerdictProse =
+    mosRaw != null && face.verdict && face.verdict.kind !== 'unknown' ? `A ${face.verdict.label}.` : null
+  const insightBoard = buildCityInsightBoard({
+    placeName: cityName,
+    marketHref: `/housing-market/${slug}`,
+    verdictProse: foldVerdictProse,
+    months: chartMonths.months,
+  })
+
   // SITE-03: the door beside the H1. ONE live fact — the active count — as the
   // way into this city's own pre-filtered inventory. No median, no months, no
   // days-to-pending: that five-figure strip is the leftover HUD ci:taste-canon
@@ -886,25 +940,21 @@ export default async function CityDetailPage({ params }: Props) {
                 incomplete={!atlasView.complete}
               />
             </div>
-            <aside className="city-fold__figure">
-              {placeMos ? (
-                <div className="city-fold__mos">
-                  <V3MosBars
-                    caption={placeMos.caption}
-                    plainLabel={placeMos.plainLabel}
-                    homesName={placeMos.homesName}
-                    homesLabel={placeMos.homesLabel}
-                    homesValue={placeMos.homesValue}
-                    salesName={placeMos.salesName}
-                    salesLabel={placeMos.salesLabel}
-                    salesValue={placeMos.salesValue}
-                    source={placeMos.source}
-                    asOf={placeMos.asOf}
-                    sourceName="Oregon Data Share"
-                    tooltip={placeMos.tooltip}
-                  />
-                </div>
-              ) : null}
+            {/* SITE-93: the fold figure is ONE paged object (beautifului
+                InsightCards), not another plate of the same shape. Page 1 is
+                the two named MOS bars with the verdict and its thresholds
+                above them; page 2 is the published monthly median-close path
+                on the catalog's own pointer-scrub. Both pills are real links
+                out of the fold. */}
+            <aside className="city-fold__figure city-fold__figure--insight">
+              <CityInsight
+                id="place-insight"
+                board={insightBoard}
+                mos={foldMosProps}
+                latestSale={foldLatestSale}
+              />
+            </aside>
+            <aside className="city-fold__figure city-fold__figure--ask">
               <CityAlertsStrip
                 id="alerts"
                 cityName={cityName}

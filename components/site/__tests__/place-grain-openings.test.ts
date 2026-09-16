@@ -51,13 +51,19 @@ function tile(partial: Partial<ListingTile> & Pick<ListingTile, 'listingKey'>): 
 
 describe('city opening', () => {
   const page = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
+  const cityInsight = readFileSync(resolve('app/cities/[slug]/_v3/CityInsight.client.tsx'), 'utf8')
 
   it('draws leftover MOS in the city fold, not a listing_tile_mv count', () => {
     expect(page).toMatch(/buildPlaceMosView\(\{/)
     expect(page).toMatch(/grain: 'city'/)
     expect(page).toMatch(/<PlaceAreaHero posterSrc=\{stagePosterSrc\} \/>/)
-    expect(page).toMatch(/<V3MosBars/)
-    expect(page).toMatch(/caption=\{placeMos\.caption\}/)
+    // SITE-93: the two named bars are page one of the fold's insight pager, so
+    // the page composes their props and CityInsight mounts V3MosBars. The
+    // figures are still leftover MOS and nothing else — that is what this holds.
+    expect(page).toMatch(/caption: placeMos\.caption/)
+    expect(page).toMatch(/homesValue: placeMos\.homesValue/)
+    expect(page).toMatch(/mos=\{foldMosProps\}/)
+    expect(cityInsight).toMatch(/<V3MosBars/)
     expect(page).toMatch(/types=\{alertTypes\}/)
     expect(page).toMatch(/getPlaceOpeningListings\(\{ city: cityName \}\)/)
     expect(page).not.toMatch(/listing_tile_mv[\s\S]{0,80}monthsSupply/)

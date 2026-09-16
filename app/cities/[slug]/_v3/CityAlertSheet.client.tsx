@@ -63,6 +63,7 @@ import {
   rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
 import { newestFirstHref, placeAlertsCopy, placeAlertsStickyNote } from '@/lib/site/place-alerts'
+import { CityTypeCombobox } from './CityTypeCombobox.client'
 import { CITY_ALERT_PROPERTY_TYPE } from './city-constants'
 
 const TRAP = { name: 'company', label: 'Company' } as const
@@ -146,6 +147,21 @@ export function CityAlertsStrip({
       // opening published no door.
       emphasis={demote ? 'ghost' : 'primary'}
       types={types}
+      // SITE-93: the property-type picker is the installed beUI combobox, not
+      // three flat toggles. The strip still owns the selection; the route owns
+      // the control, because the barrel imports no catalog source.
+      renderTypes={({ options, value, onChange }) => (
+        <CityTypeCombobox
+          label={`New ${cityName} listings by type`}
+          options={options.map((option) => ({
+            key: option.key,
+            label: option.label,
+            count: option.count,
+          }))}
+          value={value}
+          onChange={onChange}
+        />
+      )}
       onSubmit={submit}
     />
   )

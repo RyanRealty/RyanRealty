@@ -21,10 +21,38 @@ const formatPercent = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(2)}%`
 const formatMoney = (v: number) => `$${Math.round(v).toLocaleString('en-US')}`
 const formatCount = (v: number) => Math.round(v).toLocaleString('en-US')
 
-function makePoints(values: number[], gap = 6): LivelinePoint[] {
-  // Fixed epoch: demo scrub times are relative. Live clocks in render
-  // (incl. useMemo) fail ci:hydration-safety (#418).
-  const end = 1_700_000_000
+/**
+ * The epoch the SERVER lays points on. Live clocks in render (incl. useMemo)
+ * fail ci:hydration-safety (#418), so the first paint is deterministic.
+ */
+export const STATIC_EPOCH = 1_700_000_000
+
+/**
+ * Ryan Realty fix (2026-09-15). Liveline windows its points against the WALL
+ * CLOCK: with `window={49}` it draws the last 49 seconds ending at the
+ * current instant.
+ * Points laid on a fixed 2023 epoch are ~90 million seconds outside that
+ * window, so every chart in this file drew nothing — CompareCard printed "No
+ * data to display" (reproduced on /invest) and AnomalyCard drew an empty
+ * frame. The epoch has to be live at DRAW time and static at HYDRATION time,
+ * which is what this is: the static epoch for the server render and the first
+ * client paint, then the real clock one effect later.
+ *
+ * The Liveline is KEYED on it. Liveline freezes `data` into `pausedDataRef` on
+ * the first frame it sees while `paused` and never refreshes it, so a chart
+ * mounted on the static epoch would keep the 2023 points for good no matter
+ * what it was re-rendered with. Changing the key remounts it once, on the
+ * clock it is actually going to be windowed against.
+ */
+export function useChartEpoch(): number {
+  const [epoch, setEpoch] = useState(STATIC_EPOCH)
+  useEffect(() => {
+    setEpoch(Date.now() / 1000)
+  }, [])
+  return epoch
+}
+
+function makePoints(values: number[], gap = 6, end: number = STATIC_EPOCH): LivelinePoint[] {
   return values.map((value, index) => ({
     time: end - (values.length - 1 - index) * gap,
     value,
@@ -57,9 +85,9 @@ function smooth(values: number[], perSegment = 9): number[] {
   return out
 }
 
-function smoothPoints(values: number[], spanSecs: number): LivelinePoint[] {
+function smoothPoints(values: number[], spanSecs: number, end?: number): LivelinePoint[] {
   const dense = smooth(values)
-  return makePoints(dense, spanSecs / Math.max(1, dense.length - 1))
+  return makePoints(dense, spanSecs / Math.max(1, dense.length - 1), end)
 }
 
 function useInkStroke() {
@@ -139,6 +167,7 @@ export function CompareCard({
   hideLegend?: boolean
 }) {
   const stroke = useInkStroke()
+  const epoch = useChartEpoch()
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
   const painted = useMemo(
     () =>
@@ -149,7 +178,7 @@ export function CompareCard({
       })),
     [series, stroke],
   )
-  const points = useMemo(() => painted.map((s) => smoothPoints(s.values, 42)), [painted])
+  const points = useMemo(() => painted.map((s) => smoothPoints(s.values, 42, epoch)), [painted, epoch])
   const pointCount = points[0]?.length ?? 0
   const chartSeries: LivelineSeries[] = useMemo(
     () =>
@@ -189,6 +218,7 @@ export function CompareCard({
         onPointerUp={() => setHoverIndex(null)}
       >
         <Liveline
+          key={epoch}
           data={[]}
           value={0}
           series={chartSeries}
@@ -254,11 +284,12 @@ export function AnomalyCard({
   formatTime?: (t: number) => string
 }) {
   const stroke = useInkStroke()
+  const epoch = useChartEpoch()
   const l = { ...DEFAULT_ANOMALY_LABELS, ...labels }
   const [metric, setMetric] = useState<'spend' | 'usage'>('spend')
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
-  const spend = useMemo(() => makePoints(anomaly.spend, 7), [anomaly])
-  const usage = useMemo(() => makePoints(anomaly.usage, 7), [anomaly])
+  const spend = useMemo(() => makePoints(anomaly.spend, 7, epoch), [anomaly, epoch])
+  const usage = useMemo(() => makePoints(anomaly.usage, 7, epoch), [anomaly, epoch])
   const data = metric === 'spend' ? spend : usage
   const value = data.at(-1)?.value ?? (metric === 'spend' ? anomaly.spend.at(-1) ?? 0 : anomaly.usage.at(-1) ?? 0)
   const formatSpend = l.formatSpend ?? formatMoney
@@ -298,6 +329,7 @@ export function AnomalyCard({
         onPointerUp={() => setHoverIndex(null)}
       >
         <Liveline
+          key={epoch}
           data={data}
           value={value}
           theme="light"
@@ -400,6 +432,13 @@ export type InsightPage = {
   prose: ReactNode
   Card: React.ComponentType
   pill: string
+  /**
+   * Ryan Realty: where the pill goes. The demo's pill is a dead button — on a
+   * public page a control that does nothing is a craft defect, and a real
+   * anchor is also a crawlable link out of the fold. Omit it and the pill
+   * stays the demo's button.
+   */
+  href?: string
 }
 
 const PAGES: InsightPage[] = [
@@ -454,7 +493,7 @@ export default function InsightCards({
   const move = (direction: -1 | 1) => {
     setPage((current) => (current + direction + pages.length) % pages.length)
   }
-  const { prose, Card, pill } = pages[safe]
+  const { prose, Card, pill, href } = pages[safe]
 
   return (
     <div className="insight-cards">
@@ -481,9 +520,15 @@ export default function InsightCards({
       </div>
       <p className="insight-cards__prose">{prose}</p>
       <Card />
-      <button type="button" className="insight-cards__pill">
-        {pill}
-      </button>
+      {href ? (
+        <a className="insight-cards__pill" href={href}>
+          {pill}
+        </a>
+      ) : (
+        <button type="button" className="insight-cards__pill">
+          {pill}
+        </button>
+      )}
     </div>
   )
 }

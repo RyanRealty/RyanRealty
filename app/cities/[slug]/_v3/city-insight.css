@@ -1,0 +1,152 @@
+/* SITE-93 — house paint for beautifului's InsightCards in the city fold.
+   Tokens only (components/site/v3/tokens.css). The catalog's own layout, pager
+   and scrub geometry are untouched; this repaints them navy on cream and
+   squares the corners the register never rounds. */
+
+.city-insight {
+  min-width: 0;
+}
+
+/* NO PLATE. The register separates columns with a hairline rule, not with a
+   panel — a bordered cream box beside two borderless columns is the exact tell
+   the evaluator named. The rule lives on the fold column (city-fold.css). */
+.city-insight .insight-cards {
+  width: 100%;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  padding: 0;
+  gap: var(--v3-space-xs);
+}
+
+/* The pager face: the register's eyebrow, not a product chip. */
+.city-insight .insight-cards__title,
+.city-insight .insight-pager__title {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.city-insight .insight-cards__count,
+.city-insight .insight-pager__count {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
+}
+
+.city-insight .insight-pager__face {
+  border-radius: var(--v3-radius-control);
+  background: transparent;
+  border: 0;
+  padding-inline: 0;
+}
+
+/* Previous / Next stay the catalog's control; 44px so they are real targets. */
+.city-insight .insight-pager__btn {
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  border-radius: var(--v3-radius-control);
+  border: var(--v3-rule-hairline);
+  border-color: var(--v3-edge);
+  background: var(--v3-surface-raised);
+  color: var(--v3-ink);
+}
+
+.city-insight .insight-pager__btn:hover {
+  background: var(--v3-wash);
+  border-color: var(--v3-navy);
+}
+
+.city-insight .insight-pager__btn:focus-visible {
+  outline: 3px solid var(--v3-focus);
+  outline-offset: 2px;
+}
+
+.city-insight .insight-cards__prose {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
+  margin: 0;
+}
+
+.city-insight .insight-cards__card {
+  border-radius: var(--v3-radius-card);
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+/* The pill is a real link out of the fold. Ghost, square, 44px. */
+.city-insight .insight-cards__pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  border-radius: var(--v3-radius-control);
+  border: var(--v3-rule-hairline);
+  border-color: var(--v3-edge);
+  background: transparent;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  padding-inline: var(--v3-space-sm);
+  text-decoration: none;
+  width: fit-content;
+}
+
+.city-insight .insight-cards__pill:hover {
+  background: var(--v3-wash);
+  border-color: var(--v3-navy);
+}
+
+/* The bars inside the pager are the same figure they always were — drop the
+   plate they used to sit on so the pager owns the one border. */
+.city-insight .v3.v3-mos {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  max-width: 100%;
+}
+
+.city-insight__chart {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+}
+
+.city-insight__chart .insight-chart-stage {
+  min-height: 7.5rem;
+  touch-action: pan-y;
+}
+
+.city-insight .insight-tooltip {
+  border-radius: var(--v3-radius-control);
+  border: var(--v3-rule-hairline);
+  border-color: var(--v3-edge);
+  background: var(--v3-surface-raised);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  box-shadow: none;
+}
+
+.city-insight__num {
+  font-family: var(--v3-font-num);
+  font-weight: var(--v3-weight-num);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 63.99rem) {
+  .city-insight .insight-cards {
+    padding: var(--v3-space-xs);
+  }
+
+  .city-insight__chart .insight-chart-stage {
+    min-height: 6rem;
+  }
+}
