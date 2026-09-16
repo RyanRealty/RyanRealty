@@ -35,7 +35,7 @@ describe('homepage keeps the market essay off home (Redfin lock)', () => {
   it('Sell door is Sell a home to valuation, never see what your home is worth', () => {
     expect(SRC).toMatch(/label: v3Text\('Sell a home'\)/)
     expect(SRC).toMatch(/Buy a home/)
-    expect(SRC).toMatch(/Work with us/)
+    expect(SRC).toMatch(/Join Ryan Realty/)
     expect(SRC).toMatch(/href: '\/join'/)
     expect(SRC).toMatch(/valuationHref\('\/'\)/)
     expect(SRC).not.toMatch(/See what your home is worth/)

@@ -15,6 +15,13 @@ const LISTING_CSS = readFileSync(
   resolve('components/site/listing-detail/listing-detail.css'),
   'utf8',
 )
+/**
+ * SITE-122: the phone bottom bar is one component now (V3PhoneDock), and the
+ * fixed frame the listing bar used to declare for itself moved into its
+ * stylesheet. That file is where the shared geometry lives; listing-detail.css
+ * keeps only the desktop hide.
+ */
+const DOCK_CSS = readFileSync(resolve('components/site/v3/V3PhoneDock.css'), 'utf8')
 
 describe('V3StickyAsk · the barrel contract', () => {
   it('is exported from the barrel, so no page hand-rolls a second one', () => {
@@ -75,11 +82,22 @@ describe('V3StickyAsk · the bottom edge', () => {
     expect(SRC).toContain("removeProperty('--rr-sticky-bottom')")
   })
 
-  it('shares the listing bar geometry: same height token, same safe area, same layer', () => {
+  it('shares the phone dock geometry: same height token, same safe area, same layer', () => {
     expect(CSS).toContain('var(--v3-sticky-bar-h)')
     expect(CSS).toContain('env(safe-area-inset-bottom, 0px)')
     expect(CSS).toContain('z-index: 80')
-    expect(LISTING_CSS).toContain('z-index: 80')
+    expect(DOCK_CSS).toContain('z-index: 80')
+    expect(DOCK_CSS).toContain('var(--v3-sticky-bar-h)')
+    expect(DOCK_CSS).toContain('env(safe-area-inset-bottom, 0px)')
+  })
+
+  it('leaves the listing bar no fixed frame of its own — one bar, one stylesheet', () => {
+    expect(LISTING_CSS).not.toMatch(/\.listing-mobile-cta[^{}]*\{[^}]*position:\s*fixed/)
+  })
+
+  it('retires on a phone while a dock is mounted, so the edge has one owner', () => {
+    expect(CSS).toContain('body:has([data-v3-dock])')
+    expect(DOCK_CSS).toContain('--rr-dock-h')
   })
 
   it('docks above a cookie bar, exactly as the listing bar does', () => {

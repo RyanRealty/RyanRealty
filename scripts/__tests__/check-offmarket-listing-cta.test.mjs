@@ -213,12 +213,15 @@ describe('ci:offmarket-listing-cta', () => {
     const p = join(SANDBOX, BAR)
     const src = readFileSync(p, 'utf8')
     const start = src.indexOf('  if (offMarket) {')
-    const end = src.indexOf('  const phone =', start)
+    // The active branch begins where the broker's own line is read — the one
+    // thing the off-market branch exists to skip (SITE-122).
+    const end = src.indexOf('  const line = broker.phoneDirect', start)
     expect(start).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
     writeFileSync(p, src.slice(0, start) + src.slice(end))
     const r = run()
     expect(r.code).toBe(1)
-    expect(r.out).toContain('a tel:/sms: contact URI is NOT guarded')
+    expect(r.out).toContain("a read of the broker's line (phoneDirect / phoneFub) is NOT guarded")
   })
 
   it('FAILS when the early return survives but stops testing the flag', () => {
@@ -226,7 +229,7 @@ describe('ci:offmarket-listing-cta', () => {
     edit(BAR, '  if (offMarket) {', '  if (listingKey === "never") {')
     const r = run()
     expect(r.code).toBe(1)
-    expect(r.out).toContain('a tel:/sms: contact URI is NOT guarded')
+    expect(r.out).toContain("a read of the broker's line (phoneDirect / phoneFub) is NOT guarded")
   })
 
   it('PASSES when the mobile bar guard is re-spelled as a ternary instead of an early return', () => {
@@ -236,15 +239,25 @@ describe('ci:offmarket-listing-cta', () => {
     const rewritten = src
       .replace('  if (offMarket) {\n    return (', '  if (offMarket) {\n    return (')
       .replace(
-        'const tel = phone ? phone.replace(/[^\\d]/g, \'\') : null',
-        "const tel = offMarket ? null : phone ? phone.replace(/[^\\d]/g, '') : null",
+        'const line = broker.phoneDirect ?? broker.phoneFub ?? null',
+        'const line = offMarket ? null : (broker.phoneDirect ?? broker.phoneFub ?? null)',
       )
-      .replace(/\{`tel:\$\{tel\}`\}/g, '{offMarket ? undefined : `tel:${tel}`}')
-      .replace(/\{`sms:\$\{tel\}`\}/g, '{offMarket ? undefined : `sms:${tel}`}')
     writeFileSync(p, rewritten)
     const r = run()
     expect(r.out).toContain('OK - every off-market branch')
     expect(r.code).toBe(0)
+  })
+
+  it("FAILS when the bar stops reading the broker's line at all (a bar with no attributed Call / Text)", () => {
+    reset()
+    edit(
+      BAR,
+      'const line = broker.phoneDirect ?? broker.phoneFub ?? null',
+      'const line = null as string | null',
+    )
+    const r = run()
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('no read of broker.phoneDirect / broker.phoneFub')
   })
 
   /* ── the broker card ─────────────────────────────────────────────────────── */

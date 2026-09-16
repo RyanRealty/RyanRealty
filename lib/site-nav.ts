@@ -249,7 +249,7 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/team', label: 'Our team' },
       { href: '/reviews', label: 'Client reviews' },
       { href: '/contact', label: 'Contact us' },
-      { href: '/join', label: 'Work with us' },
+      { href: '/join', label: 'Join Ryan Realty' },
     ],
   },
 ]
@@ -331,7 +331,7 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
       { href: '/team', label: 'Our team' },
       { href: '/reviews', label: 'Client reviews' },
       { href: '/contact', label: 'Contact us' },
-      { href: '/join', label: 'Work with us' },
+      { href: '/join', label: 'Join Ryan Realty' },
     ],
   },
   {
@@ -385,7 +385,7 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
     },
     {
       heading: 'Join',
-      links: [{ href: '/join', label: 'Work with us' }],
+      links: [{ href: '/join', label: 'Join Ryan Realty' }],
     },
   ]),
   {

@@ -171,7 +171,7 @@ export default async function Home() {
     },
     {
       kicker: v3Text('Join'),
-      label: v3Text('Work with us'),
+      label: v3Text('Join Ryan Realty'),
       href: '/join',
       // The third door was the only one with no line under it (2026-09-08
       // evaluator). The count is the live broker roster this page already read

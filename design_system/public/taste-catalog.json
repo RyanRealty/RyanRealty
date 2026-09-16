@@ -198,6 +198,15 @@
     "shadcn:sheet": {
       "aliasOf": "shadcn-sheet"
     },
+    "shadcn-drawer": {
+      "add": "drawer",
+      "file": "components/ui/drawer.tsx",
+      "import": "@/components/ui/drawer",
+      "house": "components/site/v3/V3PhoneDock.client.tsx"
+    },
+    "shadcn:drawer": {
+      "aliasOf": "shadcn-drawer"
+    },
     "shadcn-dialog": {
       "add": "dialog",
       "file": "components/ui/dialog.tsx",
@@ -494,10 +503,11 @@
       },
       {
         "name": "drawer",
-        "installed": null,
+        "installed": "components/ui/drawer.tsx",
         "jobs": [
           "listing-detail:ask",
-          "search:filters"
+          "search:filters",
+          "chrome:work-with-us"
         ]
       },
       {
