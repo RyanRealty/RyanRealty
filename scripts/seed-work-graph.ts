@@ -300,6 +300,19 @@ const SEEDS = [
     output: 'Referral-linked closing shows referral_fee auto-populated from the recorded pct; admin referral desk shows GCI-after-fee.',
     accept: 'A test deal for a referred person computes net = gci - (pct \u00d7 side) without hand-typing; desk renders the figure with a \u00a70 trace.',
   },
+  {
+    versionGap: 'G36',
+    // admin-crm is a plane, not a company domain; the broker's messaging surface sits under broker-tools.
+    domain: 'broker-tools',
+    title:
+      'CRM group text: one thread per set of people (post into the Twilio group that already exists) and one party per participant row',
+    objective:
+      "Matt's screenshot 2026-09-15 3:55 PM PT: Text to Leisha Hogan + Tanya Hogan → 'Could not start one group thread — texted each person separately.' Vercel log: '[crm] group MMS failed, falling back to 1:1: projected address +1541…3095: Group MMS with given participant list already exists as Conversation CHaf1f40233b2944ec944df877e7c57ce9'. Twilio keys a group MMS by its number group and refuses a second Conversation for the same people; the Jul 31 group (CHaf1f40…) is still active on Twilio with all three participants. Every group text since Aug 1 (Aug 1, Aug 11 ×6, Sep 15 ×2) hit that refusal, the half-built conversation was deleted and the composer fell back to two 1:1s — with the reason swallowed in console.warn. Second defect from the same evidence: crm_conversation_participant keys a member by channel_address; the 1:1 send recorded the phone as the contact stores it while the inbound webhook recorded E.164, so one person became two rows, the sync trigger (rows > 1) flagged the one-person thread is_group=true, and the next 1:1 send could not find a non-group thread and opened a new one. Measured with the service role in two query shapes: 22 is_group=true conversations, 17 with exactly one person (12 as two spellings of one number, 5 phone+email), 0 genuine fan-outs; Tanya Hogan's texts split across EIGHT conversations since Aug 1.",
+    output:
+      'Shipped on claude/cool-fermi-0paep0 (PR #252): lib/crm/twilio-conversations.ts posts into the conversation Twilio names (wakes inactive, refuses closed, confirms our projected line, never deletes it; 6 tests); lib/crm/compose-group.ts groupFallbackNotice carries the reason; lib/crm/record-message.ts normalizes every participant address to E.164 / lower-case email with in-call dedupe (3 tests); supabase/migrations/20260916070000_conversation_participants_are_parties.sql — trigger counts distinct parties, rows normalized, fragmented 1:1 threads merged into each contact\'s earliest, rollups recomputed, one-1:1-per-contact index rebuilt so a leftover duplicate fails the migration.',
+    accept:
+      "Mechanical, in order: (1) PR #252 merged and deployed; (2) `npm run db:push` applied 20260916070000 \u2014 verify with two query shapes, read with the service role and printed: no crm_conversation row is a group (is_group true) without a Twilio conversation sid, and no primary contact holds more than one conversation without a Twilio conversation sid; Tanya Hogan (crm_people 57300) has ONE 1:1 conversation holding every sms row from Aug 1 on; (3) the next broker group text to Leisha + Tanya lands as ONE crm_message under the conversation whose twilio_conversation_sid = CHaf1f40233b2944ec944df877e7c57ce9 and the Twilio Conversation shows the new IM with delivery sent=all \u2014 read it back with a Twilio GET, never by texting anyone yourself (\u00a71: no outbound to real people from an agent); (4) the Vercel log shows no '[crm] group MMS failed' line for that send. Open until Matt or a session with DB access runs the migration; a session that cannot apply it records that plainly and does not mark done.",
+  },
 ] as const
 
 async function main() {
