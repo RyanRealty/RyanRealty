@@ -24,15 +24,15 @@ import {
 } from '@/components/ui/carousel'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Carousel } from '@/components/site/v3'
-
-/** Public wire for the house wrapper (ci:site-primitive-wired). The fold uses the installed source below. */
-export { V3Carousel }
 import {
   LISTING_FIELD_LEAD_PHOTO_SIZE,
   listingRowPhotoSrc,
 } from '@/lib/listing/row-photo'
 import type { PriceDropFieldItem } from './drops-field-items'
 import './price-drops-field.css'
+
+/** Public wire for the house wrapper (ci:site-primitive-wired). The fold uses the installed source. */
+export { V3Carousel }
 
 export function PriceDropPhotos({
   items,

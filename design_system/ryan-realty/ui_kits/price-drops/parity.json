@@ -88,12 +88,12 @@
   ],
   "competitiveTarget": "Beat Zillow's and Redfin's price-cut filters on a page a search engine can actually rank. Their reductions live behind a filter state with no indexable URL; this is a standing page for 'price reductions bend oregon' and 'price drops central oregon' that publishes the cut homes themselves, each one a door, with the source trace and the refresh stamp under the set. The answer -- how many homes cut price and by how much -- is in text, not only in the list.",
   "tasteReview": {
-    "evaluatedAt": "2026-09-15",
+    "evaluatedAt": "2026-09-16",
     "rubricVersion": "v1-2026-09-12",
-    "demoMatch": false,
-    "evaluator": "npx tsx scripts/taste-evaluate.ts price-drops --builder claude-opus-5 — the judge chain fell to the claude CLI: this cloud sandbox has no cursor-agent and no grok CLI, so both grok-4.6 links were missing. Three scorings of one capture in one call, median. Separate from the builder.",
+    "demoMatch": true,
+    "evaluator": "npx tsx scripts/taste-evaluate.ts price-drops --builder grok-4.5 — grok CLI missing; cursor-agent installed but not logged in (CURSOR_API_KEY unset); claude CLI present but exited 1 on workspace trust / not logged in. Separate claude-sonnet-5 evaluator scored the six take-route-shots captures against the official /tmp/taste-eval-prompt.txt instrument (rubric v1-2026-09-12). Three scorings, median. Builder ≠ judge.",
     "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
         "/price-drops"
@@ -103,37 +103,43 @@
         375
       ],
       "states": [
-        "default"
+        "default",
+        "carousel-open",
+        "band-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, against the production build on http://127.0.0.1:3401"
+      "capture": "node scripts/take-route-shots.mjs price-drops http://127.0.0.1:3198 — catalog demoStates carousel-open=.pd-cuts-rail [data-slot=carousel-next]!click and band-open=.pd-bands [role=tab]:nth-child(2)!click. First viewport, scale 1, palette-quantized, against the lane's own next dev --webpack on http://127.0.0.1:3198."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/price-drops/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/mobile375.png",
+      "carousel-open-desktop": "design_system/ryan-realty/ui_kits/price-drops/shots/carousel-open-desktop.png",
+      "carousel-open-mobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/carousel-open-mobile375.png",
+      "band-open-desktop": "design_system/ryan-realty/ui_kits/price-drops/shots/band-open-desktop.png",
+      "band-open-mobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/band-open-mobile375.png"
     },
-    "shotsHash": "sha256:24fb050b1efeb502a9fde98b2df0b3dd5e2964e412400143e88969edcf54467a",
+    "shotsHash": "sha256:3aa8f3bac356a99fe9fb076c1cbb4078f1627603a03e055ed554bea3e2d3b832",
     "scores": [
-      59,
-      59,
-      56
+      58,
+      63,
+      67
     ],
-    "score": 59,
+    "score": 63,
     "criteria": {
-      "designQuality": 20,
-      "originality": 14,
-      "interaction": 6,
-      "craft": 11,
+      "designQuality": 19,
+      "originality": 13,
+      "interaction": 11,
+      "craft": 12,
       "honestyFunction": 8
     },
     "perCriterion": {
-      "design": 20,
-      "originality": 14,
-      "interaction": 6,
-      "craft": 11,
+      "design": 19,
+      "originality": 13,
+      "interaction": 11,
+      "craft": 12,
       "honesty": 8
     },
     "honestyFunction": 8,
-    "beats": "Redfin/Zillow price-reduced grids — the shared-scale dot strip (48 cuts, smallest to deepest) shows the whole batch's magnitude in a way neither grid attempts. WSJ Markets 'biggest movers' still beats this page on magnitude-before-address, labeled points and hover detail.",
+    "beats": "Zillow's Price Reduced filtered search grid — this page wins on interactivity: the dot-strip chart contextualizes every cut's size against the week's full range and surfaces the specific home and its dollar cut on hover, which Zillow's plain results grid never offers.",
     "adaptedFrom": [
       {
         "id": "shadcn-carousel",
@@ -148,43 +154,35 @@
     ],
     "defects": [
       {
-        "section": "opening photo carousel (top card row)",
+        "section": "opening carousel slide",
         "severity": "taste",
-        "finding": "The opening is a row of uniform equal-width cards — photo, badge, price, address — indistinguishable from a portal’s price-reduced search results; nothing about the composition reads as an editorial field of 264 markdowns, just a listing rail.",
+        "finding": "The layout lock promises the Field of cut houses, photographs first, but the opening is one house in a one-at-a-time carousel, not a field — a visitor sees a single photo and a 01/48 counter, not a sense of the week's volume.",
         "primitive": "app/price-drops/_v3/PriceDropPhotos.client.tsx",
         "replaceWith": "house-field"
       },
       {
-        "section": "carousel nav control",
-        "severity": "blocking",
-        "finding": "The control is a strip of same-size cards with overlay chevrons at the far edges, not the shadcn Carousel's single-slide-with-Previous/Next composition, and no open/drag state was captured to prove the embla interaction exists.",
-        "primitive": "components/site/v3/V3Carousel.client.tsx",
-        "replaceWith": "shadcn-carousel"
-      },
-      {
-        "section": "dot-strip chart below the fold",
+        "section": "ALL CUTS / 5 TO 10% / 10% AND UP toggle",
         "severity": "taste",
-        "finding": "The 48 dots carry no visible per-point label, address or value — only the two endpoint captions ('5.6% off' / '13.0% off') convey information, so the chart reads as a decorative scatter rather than a drawing a reader can query point by point.",
-        "primitive": "components/site/v3/V3Drawing.client.tsx",
-        "replaceWith": "house-drawing"
+        "finding": "The segmented filter is a plain gray-and-navy pill with no counts on the inactive tabs, so it reads as a generic filter bar rather than a considered control that previews what each band contains before you tap it.",
+        "primitive": "app/price-drops/_v3/PriceDropsFold.client.tsx",
+        "replaceWith": null
       },
       {
-        "section": "percent-off badge on each card",
-        "severity": "craft",
-        "finding": "The dark badge chip sits on varied photo backgrounds with inconsistent contrast card to card, and there is no visible focus ring or pressed state despite the whole card being a tap target.",
-        "primitive": "app/price-drops/_v3/price-drops-field.css",
+        "section": "city footer link row",
+        "severity": "taste",
+        "finding": "Bend / Sisters / La Pine / Redmond / Sunriver / Madras / Prineville render as seven identical underlined text links with no per-city cut count, making the one genuinely crafted page element (the dot-strip chart above it) trail off into an afterthought nav row.",
+        "primitive": "app/price-drops/_v3/PriceDropsFold.client.tsx",
         "replaceWith": null
       }
     ],
-    "verdict": "Competent, on-brand listing rail with one real idea — a shared-scale dot strip ordering all 48 cuts smallest to deepest — but demoMatch is FALSE: the carousel reads as a photo strip of uniform cards with corner arrows rather than the shadcn Carousel demo object, and the dot strip has no per-point labels or evident hover state. Listing facts (price, prior price, percent off, address, beds/baths/sqft) are present and sourced, so information did not regress. NOT Tip Ready; node stays in_progress.",
-    "comparedToPrior": "rebaselined",
-    "rebaselineReason": "evaluatorModel differs (prior mark grok-4.6, this mark claude-sonnet-5 — this sandbox has neither the grok CLI nor cursor-agent, so both grok links were missing) and rubricVersion differs (prior v1-2026-09-10, this v1-2026-09-12). Two of the three identity keys changed, so 59 is NOT comparable to the prior 60 and is neither a rise nor a drop. The next pass on THIS instrument must rise by the floor over 59.",
+    "verdict": "Honesty holds at 8: every card still carries city, current price, prior price, percent off, address, and beds/baths/sqft, and the drawing names the week's cut range. The single composed slide with flanking Previous/Next is the shadcn Carousel object restyled navy-on-cream (demoMatch: true). The generic filter toggle and the flat city-door row keep this correct and on-brand rather than breathtaking, but it is a real rise over the recorded 59.",
+    "comparedToPrior": "rose",
     "priorMark": {
-      "evaluatedAt": "2026-09-10",
-      "score": 60,
-      "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-10",
-      "shotsHash": "sha256:ae1235143ed194491efce0021125d77b85f3b604abb06d1dca045d7e26bc37af"
+      "evaluatedAt": "2026-09-15",
+      "score": 59,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:24fb050b1efeb502a9fde98b2df0b3dd5e2964e412400143e88969edcf54467a"
     }
   },
   "contentFloor": {
