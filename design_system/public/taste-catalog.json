@@ -135,6 +135,7 @@
       "add": "@beui/infinite-masonry",
       "file": "components/motion/infinite-masonry.tsx",
       "import": "@/components/motion/infinite-masonry",
+      "house": "app/zip/[zip]/_v3/ZipHomesMasonry.client.tsx",
       "repo": "https://github.com/starc007/ui-components",
       "mustContain": [
         "InfiniteMasonry",
@@ -149,6 +150,7 @@
       "add": "@beui/smooth-scroll",
       "file": "components/motion/scroll-animation.tsx",
       "import": "@/components/motion/scroll-animation",
+      "house": "app/zip/[zip]/_v3/ZipHomesMasonry.client.tsx",
       "repo": "https://github.com/starc007/ui-components",
       "mustContain": [
         "useSmoothScroll",
