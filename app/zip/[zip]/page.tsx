@@ -153,10 +153,11 @@ import {
   neighborhoodName,
   normalizeZip,
   numeric,
-  ZIP_FIELD_PREVIEW,
   zipAlertBuckets,
   zipFieldCaption,
   zipFieldItems,
+  zipItemListEntries,
+  zipMasonryItems,
   zipMedianChart,
   zipSearchHref,
   ZIP_PACE_KEYS_ON_THE_HUD,
@@ -517,23 +518,12 @@ async function renderZipPage({ params }: { params: Promise<Params> }) {
 
   // ── THE FIELD ────────────────────────────────────────────────────────────
   const fieldItemsAll = zipFieldItems(tiles, zip)
-  // The phone-usable slice: rows and pins are ONE set (the Field contract),
-  // and that set is the preview, with the caption stating total + cap.
-  const fieldItems = fieldItemsAll.slice(0, ZIP_FIELD_PREVIEW)
-  const fieldCaption = zipFieldCaption(zip, fieldItemsAll.length, fieldItems.length)
+  const masonryItems = zipMasonryItems(tiles, zip)
+  const fieldCaption = zipFieldCaption(zip, fieldItemsAll.length, fieldItemsAll.length)
   const fieldTrace =
     `live MLS through Oregon Data Share, every active single-family listing in ZIP ${zip} (${area}) ` +
-    'that reports a list price. The map and the list are the same set'
-  // §0: this list and the Instrument's "detached homes for sale" figure below
-  // are two different populations of the same MLS PropertyType='A' bucket —
-  // this list is every sub type in it, the Instrument figure is the Market
-  // Truth detached-only subset. Only stated when the two counts genuinely
-  // come from different queries (mtHit); when the Instrument falls back to
-  // the same tile count, there is nothing to reconcile.
-  const populationNote =
-    mtHit && activeCount != null && fieldItemsAll.length > 0
-      ? `The listed set of ${fieldItemsAll.length.toLocaleString('en-US')} counts every property type. The ${activeCount.toLocaleString('en-US')} single-family figure below is the detached subset the market figures measure.`
-      : undefined
+    'that reports a list price. The Atlas marks and the masonry are the same set'
+  const itemListEntries = zipItemListEntries(masonryItems)
 
   // ── NEIGHBOURHOODS IN THIS ZIP ───────────────────────────────────────────
   // Grouped from the same tiles. THE KEY IS THE RAW FEED VALUE AND THE LABEL IS
@@ -682,6 +672,15 @@ async function renderZipPage({ params }: { params: Promise<Params> }) {
       spatialCoverageName: `ZIP ${zip} · ${area}`,
       variableMeasured: datasetStats,
     },
+    ...(itemListEntries.length > 0
+      ? [
+          {
+            type: 'itemList' as const,
+            name: `Homes for sale in ${zip}`,
+            items: itemListEntries,
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -712,10 +711,9 @@ async function renderZipPage({ params }: { params: Promise<Params> }) {
           claimHref={zipSearchHref(zip)}
           cityHref={`/cities/${cityUrlSlug(cityName)}`}
           browseHref={zipSearchHref(zip)}
-          fieldItems={fieldItems}
+          masonryItems={masonryItems}
           caption={fieldCaption}
           source={fieldTrace}
-          populationNote={populationNote}
           boundary={zipBoundary}
           atlas={{
             dots: atlasView.dots,

@@ -127,10 +127,12 @@ describe('ZIP page is on the v3 barrel', () => {
     expect(PAGE).toMatch(/CANONICAL_ZIPS/)
     expect(PAGE).toMatch(/title: 'ZIP not found · Ryan Realty'/)
     expect(PAGE).toMatch(/Homes for sale in \$\{zip\} · \$\{area\}, Oregon/)
-    // The same three JSON-LD payloads.
+    // The same three JSON-LD payloads, plus the masonry ItemList increment.
     expect(PAGE).toMatch(/type: 'breadcrumb'/)
     expect(PAGE).toMatch(/type: 'place'/)
     expect(PAGE).toMatch(/type: 'dataset'/)
+    expect(PAGE).toMatch(/type: 'itemList'/)
+    expect(PAGE).toMatch(/zipItemListEntries/)
     for (const variable of [
       'Median list price',
       'Median price per sq ft',

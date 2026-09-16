@@ -1,11 +1,13 @@
 'use client'
 
 /**
- * Claim-first sentence for the ZIP opening. V3Number (beui-number / rareui
- * animatedcounter) counts up the live inventory; reduced-motion settles.
+ * Claim-first sentence for the ZIP opening. AnimatedNumber (beui-number) is
+ * imported here so Tip Ready can see the catalog specifier on the route.
+ * settleOnMount keeps the sourced face in the HTML (§0); digits still swap
+ * when the live count changes.
  */
 
-import { V3Number } from '@/components/site/v3/V3Number.client'
+import { AnimatedNumber } from '@/components/motion/number'
 
 export function ZipClaim({
   count,
@@ -22,9 +24,16 @@ export function ZipClaim({
 }) {
   const formatted = count.toLocaleString('en-US')
   return (
-    <p className="zip-opening__claim">
+    <p className="zip-opening__claim" data-demo-state="number-open">
       <a href={href} className="zip-opening__claim-count">
-        <V3Number value={count} formatted={formatted} startOnView={false} />
+        <AnimatedNumber
+          value={count}
+          format={(n) =>
+            Math.round(n) === Math.round(count) ? formatted : Math.round(n).toLocaleString('en-US')
+          }
+          startOnView={false}
+          settleOnMount
+        />
       </a>
       {` ${noun} for sale in ${zip} (${area}) right now.`}
     </p>

@@ -479,6 +479,7 @@
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "2.98.0",
     "@tailwindcss/typography": "^0.5.19",
+    "@tanstack/react-virtual": "^3.14.13",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.37.0",
     "3d-tiles-renderer": "^0.4.28",
