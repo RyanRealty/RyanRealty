@@ -244,6 +244,16 @@ export type { V3PlaceValueProps, V3PlaceValueActivity } from './V3PlaceValue.cli
  * screen. Its verdict tail is built by stickyAskVerdict() in lib/sticky-ask.ts.
  */
 export { V3StickyAsk, type V3StickyAskProps, type V3StickyAskSurface } from './V3StickyAsk.client'
+export {
+  V3PhoneDock,
+  V3PhoneDockShell,
+  V3PhoneDockContacts,
+  V3WorkWithUs,
+  type V3PhoneDockVariant,
+  type V3PhoneDockShellProps,
+  type V3PhoneDockContactsProps,
+  type V3WorkWithUsProps,
+} from './V3PhoneDock.client'
 
 /**
  * The place-page affordability instrument (SITE-07, 2026-09-08): a payment and a

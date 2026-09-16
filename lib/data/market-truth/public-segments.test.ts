@@ -403,12 +403,16 @@ describe('public place pages', () => {
     expect(citiesIndex).toMatch(/<V3Ledger/)
     // The homepage's region-scoped property-type run was CUT 2026-08-27 (Matt).
     // 2026-09-06: Invest door dropped from Home. Doors are Buy a home / Sell a
-    // home / Work with us. Segments stay off home. No property-type section.
+    // home / Join Ryan Realty. Segments stay off home. No property-type section.
+    // SITE-122 (Matt 2026-09-16) renamed the recruiting door: "Work with us" is
+    // now the phone dock's ask, which opens buying and selling, so the door to
+    // /join says what it is.
     const home = readFileSync(resolve('app/page.tsx'), 'utf8')
     expect(home).not.toMatch(/getPublicPlaceSegments/)
     expect(home).toMatch(/V3Doors/)
     expect(home).toMatch(/Buy a home/)
-    expect(home).toMatch(/Work with us/)
+    expect(home).toMatch(/Join Ryan Realty/)
+    expect(home).not.toMatch(/Work with us/)
     expect(home).not.toMatch(/PlaceTypeSlider|V3PlacePropertyTypes|PublicProductTypes|communityTypeStripItems/)
     const community = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
     const neighborhood = readFileSync(

@@ -166,7 +166,7 @@ describe('the footer fold', () => {
     expect(out).toContain('>Buy</p>')
     expect(out).toContain('>Sell</p>')
     expect(out).toContain('>Join</p>')
-    expect(out).toContain('Work with us')
+    expect(out).toContain('Join Ryan Realty')
     expect(out).toContain('Value my home')
     expect(out).not.toContain('>Places</')
     expect(out).not.toContain('>Areas</')
