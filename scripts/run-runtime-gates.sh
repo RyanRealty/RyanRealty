@@ -19,7 +19,17 @@
 # the pass as proof. A gate measuring yesterday's bytes is a false negative
 # wearing a green tick, so the staleness check is part of the gate.
 #
-#   npm run ci:runtime-gates              # route-smoke, page-payload, tap-targets
+# ALL FOUR GATES RUN EVERY TIME (2026-09-16). Before this, the whole script ran
+# under `set -e`, so a failing `ci:route-smoke` skipped page-payload,
+# tap-targets and route-content-floor entirely — observed in this sandbox on a
+# Postgres statement timeout inside sitemaps/listings.xml that production does
+# not reproduce (it serves 200 there). CLAUDE.md's ship-class rule needs every
+# gate's result from the SAME run, not a report that stops at the first
+# failure, so the four gates below run under `set +e` and
+# scripts/lib/runtime-gate-summary.mjs prints one pass/fail line per gate and
+# sets the script's final exit code — non-zero if ANY gate failed.
+#
+#   npm run ci:runtime-gates              # route-smoke, page-payload, tap-targets, route-content-floor
 #   PORT=3010 npm run ci:runtime-gates    # somewhere else
 #
 # Build first: `npm run build`. This starts a server, it does not make one.
@@ -27,6 +37,19 @@ set -e
 
 PORT="${PORT:-3000}"
 BASE="http://127.0.0.1:${PORT}"
+# THE GATES MUST BE TOLD WHERE THE SERVER IS (2026-09-16). Each gate reads its
+# own base-URL variable and defaults to 127.0.0.1:3000; this script started the
+# server on $PORT and waited on $BASE, but never told the gates, so
+# `PORT=3401 npm run ci:runtime-gates` measured a port with nothing on it:
+# route-smoke died in discovery on ECONNREFUSED 127.0.0.1:3000 before probing
+# a single route, page-payload reported `/homes-for-sale: fetch failed`, and
+# tap-targets and route-content-floor rendered nothing — four FAILs against a
+# build a hand-started server answered in under a second. CI never saw it
+# because CI leaves PORT unset. One base, every gate.
+export SMOKE_BASE_URL="$BASE"
+export PAGE_PAYLOAD_BASE_URL="$BASE"
+export TAP_TARGETS_BASE_URL="$BASE"
+export CONTENT_FLOOR_BASE_URL="$BASE"
 LOG="${RUNTIME_GATES_LOG:-/tmp/runtime-gates-server.log}"
 
 if [ ! -f .next/BUILD_ID ]; then
@@ -99,9 +122,23 @@ if ! node scripts/wait-for-server.mjs "$BASE" "${RUNTIME_GATES_WAIT:-180}"; then
   exit 1
 fi
 
+# `set -e` above protects the setup section: a stale build, a held port, or a
+# server that never comes up leaves nothing worth measuring, so those still
+# stop the run immediately. From here on every gate runs regardless of an
+# earlier gate's exit code — see the header note above.
+set +e
 npm run ci:route-smoke
+STATUS_SMOKE=$?
 npm run ci:page-payload
+STATUS_PAYLOAD=$?
 npm run ci:tap-targets
+STATUS_TAP=$?
 npm run ci:route-content-floor
+STATUS_FLOOR=$?
 
-echo "runtime-gates OK — route-smoke, page-payload, tap-targets and route-content-floor all measured against $BASE"
+node scripts/lib/runtime-gate-summary.mjs \
+  "route-smoke=$STATUS_SMOKE" \
+  "page-payload=$STATUS_PAYLOAD" \
+  "tap-targets=$STATUS_TAP" \
+  "route-content-floor=$STATUS_FLOOR"
+exit $?

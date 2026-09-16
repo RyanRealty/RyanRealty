@@ -105,11 +105,21 @@ export function V3Carousel({
           </CarouselItem>
         ))}
       </CarouselContent>
+      {/*
+        The shadcn carousel's control IS a round chevron button on each side of
+        the track you drag (`ui.shadcn.com/docs/components/carousel`). Until
+        2026-09-15 this wrapped both in a `.v3-carousel__nav` row and pinned
+        them `static` under the first card, which the taste table scored as the
+        cream-box tell on /price-drops: "a visitor would not recognize the same
+        control", demoMatch false. Keep shadcn's own absolute flanking
+        placement and paint it in house tokens; the offsets live in
+        V3Carousel.css so a bleed rail can pull them inside the track.
+      */}
       {count > 1 ? (
-        <div className="v3-carousel__nav">
-          <CarouselPrevious className="v3-carousel__step static size-auto translate-x-0 translate-y-0" />
-          <CarouselNext className="v3-carousel__step static size-auto translate-x-0 translate-y-0" />
-        </div>
+        <>
+          <CarouselPrevious className="v3-carousel__step v3-carousel__step--prev" />
+          <CarouselNext className="v3-carousel__step v3-carousel__step--next" />
+        </>
       ) : null}
     </Carousel>
   )

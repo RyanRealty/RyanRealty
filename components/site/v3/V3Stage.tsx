@@ -147,6 +147,17 @@ export type V3StageInventory = {
   figures: V3StageFigure[]
   /** The trace, without the word "Source" — V3SourceLine renders that prefix. */
   source: string
+  /**
+   * The source's short name for V3SourceLine's compact clause. Without it the
+   * clause is derived from the trace's leading segment up to its first comma,
+   * and a trace with no comma ("live MLS through Oregon Data Share ·
+   * single-family houses across Central Oregon") becomes the whole clause: on
+   * /buy that was two lines, under a SOURCE label, over the as-of and the
+   * method — 108px of band under the figures at every width, which the taste
+   * table named at 375 (SITE-91). The full trace still ships in the HTML,
+   * folded behind the disclosure; this only shortens what is open by default.
+   */
+  sourceName?: string | null
   /** When the row behind these figures was last refreshed. */
   updatedAt?: string | number | Date | null
 }
@@ -213,6 +224,17 @@ export type V3StageProps = {
    * V3StageInventory for what it changes and why.
    */
   inventory?: V3StageInventory
+  /**
+   * Keep the inventory band when `height` is 'compact'. The compact inventory
+   * Stage hides its band by default because on the homepage V3Pulse repeats
+   * every figure in it one section down (homepage-v6 layout lock). /buy has
+   * no Pulse: hidden there, the count, the median and the pace — the page's
+   * only sourced figures — leave the page altogether, which is the product
+   * hold's "sourced figures stay" failing silently (SITE-91, 2026-09-16). Opt
+   * in and the band paints under the compact frame; omit it and every
+   * existing caller renders byte-identically.
+   */
+  bandWhenCompact?: boolean
   /**
    * Optional working control in the copy stack (homepage search). When this
    * is the Stage action, omit `action` so a second button does not ship.
@@ -315,6 +337,7 @@ export function V3Stage<H extends string, L extends string>({
   headingLevel = 2,
   height = 'standard',
   inventory,
+  bandWhenCompact = false,
   children,
   id,
   className,
@@ -349,6 +372,7 @@ export function V3Stage<H extends string, L extends string>({
         height === 'compact' && 'v3-stage--compact',
         Boolean(children) && 'v3-stage--with-slot',
         strip && 'v3-stage--inventory',
+        strip && bandWhenCompact && 'v3-stage--band-kept',
         className,
       )}
       aria-labelledby={headingId}
@@ -452,7 +476,17 @@ export function V3Stage<H extends string, L extends string>({
                   {figure.href ? (
                     <Link href={figure.href} className="v3-stage-strip__door">
                       <strong className="v3-stage-strip__value">{figure.value}</strong>
-                      <span>{figure.label}</span>
+                      {/* THE LABEL CARRIES THE AFFORDANCE. The caret rule in
+                          ./V3Stage.css section 3 was written for the older
+                          cell layout and selects `.v3-figure__label`, which
+                          the SITE-77 claim form does not render — so from
+                          2026-09-09 to 2026-09-16 these doors shipped with no
+                          rest-state affordance at all, and a separate
+                          evaluator scored the band "flat text … the doors are
+                          real links but nothing in the still signals hover"
+                          (SITE-91). The class is named here so the caret has
+                          something to hang on in BOTH forms. */}
+                      <span className="v3-stage-strip__label">{figure.label}</span>
                     </Link>
                   ) : (
                     <>
@@ -468,6 +502,7 @@ export function V3Stage<H extends string, L extends string>({
             <V3SourceLine
               onMedia
               source={strip.source}
+              sourceName={strip.sourceName}
               updatedAt={strip.updatedAt}
               className="v3-stage-strip__source"
             />

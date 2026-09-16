@@ -12,7 +12,25 @@
 # fast or backgrounded. Independent installs run in parallel and are joined
 # with `wait`; the heaviest step (Playwright's Chromium) is optional and
 # skipped unless CLOUD_SETUP_BROWSERS=1, because most sessions never drive a
-# browser. Run `npm run setup:browsers` inside a session when you need it.
+# browser.
+#
+# MID-SESSION GAP (found 2026-09-15): `npm run setup:browsers` is just
+# `npx playwright install --with-deps chromium` — it does NOT copy the brand
+# fonts, because that only happens inside this script. A session that boots
+# from `npm ci` + `npm run setup:browsers` alone (skipping this script
+# entirely) never gets Amboqia/AzoSans registered, and `fc-list` proves it:
+# `grep -ic amboqia` comes back 0. Chromium doesn't need the fonts to launch,
+# so nothing fails loudly — a taste-pass render just looks wrong later. The
+# one-command fix for a lane already mid-session (node_modules present,
+# `npm ci` not worth repeating) is CLOUD_SETUP_SKIP_DEPS=1, which skips the
+# apt and npm steps and leaves fonts + the optional browser install + the
+# parity check:
+#
+#     CLOUD_SETUP_SKIP_DEPS=1 CLOUD_SETUP_BROWSERS=1 bash scripts/cloud-setup.sh
+#
+# That assumes fontconfig is already on the box (true for the environment's
+# own snapshot, since the full run below installs it) — a session that has
+# never run the full script needs that once first.
 #
 # NETWORK: the environment's access level must reach the package registries.
 # "Trusted" covers npm/PyPI/apt. Driving the live site additionally needs
@@ -27,11 +45,18 @@ cd "$ROOT"
 # ── system packages ─────────────────────────────────────────────────────────
 # ffmpeg is required by the video pipeline (Remotion post-mix, whisper align).
 # fontconfig lets the brand fonts register for headless Chromium text render.
+# Skippable with CLOUD_SETUP_SKIP_DEPS=1 (mid-session fonts+browser lane —
+# see MID-SESSION GAP above); the fast path assumes a prior full run already
+# put these on the box.
 log "system packages (ffmpeg, fontconfig)"
-if command -v apt-get >/dev/null 2>&1; then
-  sudo apt-get update -qq >/dev/null 2>&1 || true
-  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    ffmpeg fontconfig >/dev/null 2>&1 || echo "  ! apt install failed (non-fatal)"
+if [ "${CLOUD_SETUP_SKIP_DEPS:-0}" = "1" ]; then
+  echo "  skipped (CLOUD_SETUP_SKIP_DEPS=1)"
+else
+  if command -v apt-get >/dev/null 2>&1; then
+    sudo apt-get update -qq >/dev/null 2>&1 || true
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+      ffmpeg fontconfig >/dev/null 2>&1 || echo "  ! apt install failed (non-fatal)"
+  fi
 fi
 command -v ffmpeg >/dev/null 2>&1 && echo "  ffmpeg $(ffmpeg -version 2>/dev/null | head -1 | cut -d' ' -f3)" || echo "  ! ffmpeg missing"
 
@@ -54,12 +79,19 @@ fi
 # ── node dependencies ───────────────────────────────────────────────────────
 # PUPPETEER_SKIP_DOWNLOAD mirrors the install:macos script: we manage browsers
 # explicitly below rather than letting every package pull its own copy.
+# Skippable with CLOUD_SETUP_SKIP_DEPS=1 — a session already mid-way through
+# work has node_modules; paying `npm ci` again just to reach the font/browser
+# steps below defeats the point of a one-command fix.
 log "node dependencies"
-export PUPPETEER_SKIP_DOWNLOAD=1
-if [ -f package-lock.json ]; then
-  npm ci --no-audit --no-fund 2>&1 | tail -3
+if [ "${CLOUD_SETUP_SKIP_DEPS:-0}" = "1" ]; then
+  echo "  skipped (CLOUD_SETUP_SKIP_DEPS=1)"
 else
-  npm install --no-audit --no-fund 2>&1 | tail -3
+  export PUPPETEER_SKIP_DOWNLOAD=1
+  if [ -f package-lock.json ]; then
+    npm ci --no-audit --no-fund 2>&1 | tail -3
+  else
+    npm install --no-audit --no-fund 2>&1 | tail -3
+  fi
 fi
 
 # ── browsers (optional, heaviest step) ──────────────────────────────────────
@@ -80,6 +112,8 @@ echo "npm         $(npm --version)"
 command -v ffmpeg >/dev/null 2>&1 && echo "ffmpeg      present" || echo "ffmpeg      MISSING"
 echo
 echo "Next:"
-echo "  npm run setup:browsers   # if this session needs to drive a browser"
+echo "  CLOUD_SETUP_SKIP_DEPS=1 CLOUD_SETUP_BROWSERS=1 bash scripts/cloud-setup.sh"
+echo "                            # mid-session: browser AND fonts in one command"
+echo "                            # (npm run setup:browsers alone gets you the browser, not the fonts)"
 echo "  npm run auth:verify      # refresh authenticated third-party sessions"
 echo "  npm run ci:gates         # full gate chain"

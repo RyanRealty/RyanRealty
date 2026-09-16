@@ -373,38 +373,107 @@ function applyTileFilters<T>(builder: T, parsed: z.output<typeof FilterSchema>):
   return query as unknown as T
 }
 
+/**
+ * Max `listing_key` values in one `.in(...)` before the request is split.
+ *
+ * PostgREST carries an IN-list in the QUERY STRING, so a keyed read costs
+ * ~27 URL chars per 26-char ListingKey. Measured against this project on
+ * 2026-09-15 (anon and service role alike, so it is not RLS): 530 keys =
+ * 14,410 URL chars answers 528 rows; 540 keys = 14,680 chars dies in the
+ * fetch layer with `TypeError: fetch failed` — not a Postgres error, so no
+ * `error.message` ever names the cause.
+ *
+ * That cliff is why /price-drops published "Nothing in this window" while
+ * 259 Central Oregon homes qualified: getPriceDrops hands this function one
+ * key per price_drop event in the window, the market produced 545 of them,
+ * the single read blew the URL, fetchTiles threw, and the resilient wrapper
+ * cached the fallback `[]` as an empty market. The failure is
+ * activity-dependent and silent — the busier the market, the more certain
+ * the page says nothing is happening — which is exactly the §0 case of a
+ * query shape reporting absence.
+ *
+ * 300 keys ≈ 8.2 KB of URL, a little over half the measured cliff, so the
+ * margin absorbs longer keys and any added filter without a second audit.
+ */
+const KEY_CHUNK = 300
+
+/** Sort the union of chunked reads the way Postgres ordered each chunk. */
+function compareTiles(sort: z.infer<typeof FilterSchema>['sort']) {
+  const bySortKey: Record<
+    typeof sort,
+    { pick: (t: ListingTile) => number | string | null; asc: boolean; nullsFirst: boolean }
+  > = {
+    newest: { pick: (t) => t.modifiedAt ?? null, asc: false, nullsFirst: false },
+    oldest: { pick: (t) => t.modifiedAt ?? null, asc: true, nullsFirst: true },
+    'price-asc': { pick: (t) => t.listPrice ?? null, asc: true, nullsFirst: true },
+    'price-desc': { pick: (t) => t.listPrice ?? null, asc: false, nullsFirst: false },
+    'close-newest': { pick: (t) => t.closeDate ?? null, asc: false, nullsFirst: false },
+  }
+  const { pick, asc, nullsFirst } = bySortKey[sort]
+  return (a: ListingTile, b: ListingTile): number => {
+    const av = pick(a)
+    const bv = pick(b)
+    if (av == null && bv == null) return 0
+    if (av == null) return nullsFirst ? -1 : 1
+    if (bv == null) return nullsFirst ? 1 : -1
+    if (av === bv) return 0
+    return (av < bv ? -1 : 1) * (asc ? 1 : -1)
+  }
+}
+
 async function fetchTiles(filter: GetListingTilesFilter): Promise<ListingTile[]> {
   const parsed = FilterSchema.parse(filter)
   const supabase = supabaseAnon()
   if (!supabase) return []
 
-  let query = applyTileFilters(supabase.from('listing_tile_mv').select(TILE_MV_SELECT_COLUMNS), parsed)
+  const read = async (keys?: string[], range?: { from: number; to: number }) => {
+    const scoped = keys ? { ...parsed, listingKeys: keys } : parsed
+    let query = applyTileFilters(
+      supabase.from('listing_tile_mv').select(TILE_MV_SELECT_COLUMNS),
+      scoped,
+    )
 
-  // Sort
-  if (parsed.sort === 'newest') {
-    query = query.order('modified_at', { ascending: false, nullsFirst: false })
-  } else if (parsed.sort === 'oldest') {
-    query = query.order('modified_at', { ascending: true, nullsFirst: true })
-  } else if (parsed.sort === 'price-asc') {
-    query = query.order('list_price', { ascending: true, nullsFirst: true })
-  } else if (parsed.sort === 'price-desc') {
-    query = query.order('list_price', { ascending: false, nullsFirst: false })
-  } else if (parsed.sort === 'close-newest') {
-    query = query.order('close_date', { ascending: false, nullsFirst: false })
+    // Sort
+    if (parsed.sort === 'newest') {
+      query = query.order('modified_at', { ascending: false, nullsFirst: false })
+    } else if (parsed.sort === 'oldest') {
+      query = query.order('modified_at', { ascending: true, nullsFirst: true })
+    } else if (parsed.sort === 'price-asc') {
+      query = query.order('list_price', { ascending: true, nullsFirst: true })
+    } else if (parsed.sort === 'price-desc') {
+      query = query.order('list_price', { ascending: false, nullsFirst: false })
+    } else if (parsed.sort === 'close-newest') {
+      query = query.order('close_date', { ascending: false, nullsFirst: false })
+    }
+
+    if (range) query = query.range(range.from, range.to)
+    const { data, error } = await query
+    if (error) {
+      // THROW (don't `return []`) so a transient error is never cached as
+      // "0 homes in this area" on the main search for the whole TTL. The
+      // resilient wrapper retries once uncached, then falls back to [].
+      throw new Error(`[getListingTiles] supabase error: ${error.message}`)
+    }
+    // `.select(TILE_MV_SELECT_COLUMNS)` with a runtime string makes supabase-js
+    // infer GenericStringError, so cast through unknown (same as searchListingsAll).
+    return (data ?? []).map((row) => mvRowToTile(row as unknown as ListingTileMvRow))
   }
 
-  query = query.range(parsed.offset, parsed.offset + parsed.limit - 1)
-
-  const { data, error } = await query
-  if (error) {
-    // THROW (don't `return []`) so a transient error is never cached as
-    // "0 homes in this area" on the main search for the whole TTL. The
-    // resilient wrapper retries once uncached, then falls back to [].
-    throw new Error(`[getListingTiles] supabase error: ${error.message}`)
+  const keys = parsed.listingKeys
+  if (!keys || keys.length <= KEY_CHUNK) {
+    return read(undefined, { from: parsed.offset, to: parsed.offset + parsed.limit - 1 })
   }
-  // `.select(TILE_MV_SELECT_COLUMNS)` with a runtime string makes supabase-js
-  // infer GenericStringError, so cast through unknown (same as searchListingsAll).
-  return (data ?? []).map((row) => mvRowToTile(row as unknown as ListingTileMvRow))
+
+  // Over the cliff: read each chunk whole, then order and page the union here.
+  // Postgres cannot see across the chunks, so its ORDER BY only holds inside
+  // one; applying `range` per chunk would page a slice of a slice and drop
+  // rows the caller asked for. Each chunk is bounded by its own key list.
+  const chunks: string[][] = []
+  for (let i = 0; i < keys.length; i += KEY_CHUNK) chunks.push(keys.slice(i, i + KEY_CHUNK))
+  const pages = await Promise.all(chunks.map((chunk) => read(chunk)))
+  const union = pages.flat()
+  union.sort(compareTiles(parsed.sort))
+  return union.slice(parsed.offset, parsed.offset + parsed.limit)
 }
 
 /**
@@ -424,7 +493,11 @@ export const getListingTiles = (filter: GetListingTilesFilter): Promise<ListingT
     // cached before the guard that held region-wide (Southern Oregon) tiles.
     // v5 (2026-07-08, design-audit P1): tiles now carry streetSuffix from the
     // rebuilt listing_tile_mv — evict entries cached without it.
-    ['listing-tiles-v5', cacheKey],
+    // v6 (2026-09-15, SITE-108): a keyed read over ~535 listing_keys blew the
+    // PostgREST URL and failed in the fetch layer, so every caller above that
+    // count cached the fallback [] as a real empty result. KEY_CHUNK splits
+    // the read; this bump evicts the empties it cached.
+    ['listing-tiles-v6', cacheKey],
     {
       revalidate: CACHE_WINDOWS.listingTile,
       tags: [cacheTag.listings],
