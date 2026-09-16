@@ -123,6 +123,11 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(FOLD_JSX).toContain('BEND OFFICE ·')
     expect(FOLD_JSX).toContain('BRAND.address.street')
     expect(FOLD).not.toMatch(/70vh|64vh/)
+    expect(FOLD).toContain('object-position: center 68%')
+    expect(FOLD).toContain('aspect-ratio: 2.4 / 1')
+    expect(FOLD).not.toMatch(/grid-template-columns: minmax\(16rem/)
+    expect(FOLD).toContain('.about-firm__hero img')
+    expect(FOLD).toContain('width: 100%')
   })
 
   it('prints the Bend office and firm OREA, not a broker roster', () => {
@@ -152,6 +157,8 @@ describe('SITE-90 /about brokerage fold', () => {
     expect(INQUIRY).toContain('method="get"')
     expect(INQUIRY).toContain('name="inquiry"')
     expect(INQUIRY).toContain('Send a message')
+    expect(INQUIRY).toContain('The full conversation continues on')
+    expect(INQUIRY).toContain('href="/contact"')
     expect(INQUIRY).toContain("from '@/components/ui/input'")
     expect(INQUIRY).toContain('flex w-full items-center gap-2')
     expect(INQUIRY).toContain('aria-label="How can we help"')
