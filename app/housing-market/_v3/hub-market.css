@@ -1,0 +1,70 @@
+/* SITE-100 — the hub fold's InsightCards + MOS bars. Tokens only. */
+
+.hub-fold {
+  display: grid;
+  gap: var(--v3-space-lg);
+  min-width: 0;
+}
+
+@media (min-width: 64rem) {
+  .hub-fold {
+    grid-template-columns: minmax(0, 1.45fr) minmax(15rem, 0.85fr);
+    gap: var(--v3-space-xl);
+    align-items: start;
+  }
+}
+
+.hub-market-mos {
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  background: transparent;
+  border: 0;
+  padding-inline: 0;
+  box-shadow: none;
+}
+
+.v3.v3-mos.hub-market-mos {
+  max-width: none;
+  width: 100%;
+}
+
+#market.v3-instrument {
+  padding-top: var(--v3-space-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+#market .v3-instrument__eyebrow { order: 1; }
+#market .v3-instrument__headline { order: 2; }
+#market .v3-instrument__note { order: 3; }
+#market .v3-instrument__stage { order: 4; }
+#market.v3-instrument > .v3-instrument__chart { order: 5; }
+#market .v3-instrument__cards { order: 6; }
+#market .v3-instrument__figures { order: 7; }
+#market .v3-instrument__action { order: 8; }
+#market .v3-instrument__fold { order: 9; }
+#market .v3-instrument__source { order: 10; }
+
+#market .v3-instrument__drawing {
+  width: 100%;
+  min-width: 0;
+}
+
+#market .v3-instrument__chart {
+  width: 100%;
+  min-width: 0;
+}
+
+#market .v3-source__trace {
+  max-width: 40rem;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}
+
+.hub-insight {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}

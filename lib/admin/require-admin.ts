@@ -3,7 +3,7 @@ import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { getAdminContext } from '@/lib/auth/guards'
-import { getCrmAccess } from '@/app/actions/crm'
+import { getCrmAccess } from '@/app/actions/crm-access'
 import { createServiceClient } from '@/lib/supabase/service'
 import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 import {

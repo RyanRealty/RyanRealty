@@ -85,7 +85,7 @@ export function priceDropDistribution(input: {
     sampleKey: 'cuts',
     // What the marks actually give up. The primitive's default names a month,
     // which these marks do not carry.
-    askHint: 'Hover, tap or tab a cut for the home, the percent and the dollars.',
+    askHint: `${median.label}. Hover, tap or tab another cut for its home and dollars.`,
     source:
       `Active single-family listings in the ${input.placeLabel} service area with a documented asking-price cut in the last ${input.windowDays} days ` +
       `(the same pull the list below renders). ${input.total} cuts are in the window and the pull is capped at ${input.cap}, ` +

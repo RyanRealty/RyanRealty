@@ -209,31 +209,55 @@ export function buildHubLead(closedYear: CoMarketAnnualRow | null | undefined): 
  * row the page stamps with `refreshedAt`, so this Instrument's `updated` prop
  * is never null the way the old mixed hero's was.
  */
-export function buildSfrFollowFigures(hud: {
-  medianList: number | null
-  active: number | null
-  daysToPending: number | null
-} | null, mosText: string | null): V3InstrumentFigure[] {
+export function buildSfrFollowFigures(
+  hud: {
+    medianList: number | null
+    active: number | null
+    daysToPending: number | null
+    pending?: number | null
+  } | null,
+  mosText: string | null,
+  opts?: { mosBars?: boolean },
+): V3InstrumentFigure[] {
   const figures: V3InstrumentFigure[] = []
+  const mosBars = opts?.mosBars === true
   if (hud?.medianList != null && hud.medianList > 0) {
     figures.push({
       value: v3Text(formatPriceExact(hud.medianList)),
       label: v3Text('median list price, single-family'),
       href: '/housing-market/central-oregon',
+      sentence: v3Text(
+        'Half the houses for sale across Central Oregon ask more than this, half ask less.',
+      ),
+      count: hud.medianList,
     })
   }
-  if (hud != null && hud.active != null && hud.active > 0) {
+  // SITE-100 / catalog house-mos: when the two-bar drawing publishes, do not
+  // reprint homes-for-sale and months-of-supply as jumbo tiles. The drawing
+  // is those two numbers. Miss keeps the inventory door so a chart-less
+  // refresh is not a blank fold.
+  if (!mosBars && hud != null && hud.active != null && hud.active > 0) {
     figures.push({
       value: v3Text(hud.active.toLocaleString('en-US')),
       label: v3Text('homes for sale, single-family'),
       href: listingsBrowsePath(),
+      sentence: v3Text('Single-family houses on the market across the region right now.'),
+      count: hud.active,
     })
   }
-  if (mosText) {
+  if (!mosBars && mosText) {
     figures.push({
       value: v3Text(mosText),
       label: v3Text(MOS_PLAIN_LABEL),
       href: '/months-of-supply',
+    })
+  }
+  if (mosBars && hud?.pending != null && hud.pending > 0) {
+    figures.push({
+      value: v3Text(hud.pending.toLocaleString('en-US')),
+      label: v3Text('under contract now'),
+      sentence: v3Text('Sellers who have accepted an offer and have not closed yet.'),
+      count: hud.pending,
     })
   }
   if (hud?.daysToPending != null && hud.daysToPending > 0) {
@@ -241,6 +265,10 @@ export function buildSfrFollowFigures(hud: {
       value: v3Text(String(hud.daysToPending)),
       label: v3Text('days to an offer, last 90 days, single-family'),
       href: '/housing-market/central-oregon',
+      sentence: v3Text(
+        'The middle of the wait between a house going on the market and a seller accepting an offer.',
+      ),
+      count: hud.daysToPending,
     })
   }
   return figures

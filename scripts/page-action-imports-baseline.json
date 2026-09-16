@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-02T04:08:47.116Z",
-  "reason": "Audit #4: pages importing read symbols from app/actions instead of @/lib/data. Ratchet — may only shrink as reads migrate to the DAL.",
+  "reason": "Audit #4: pages importing read symbols from app/actions instead of @/lib/data. Ratchet \u2014 may only shrink as reads migrate to the DAL.",
   "total": 257,
   "violations": [
     "app/account/buying-preferences/page.tsx :: getBuyingPreferences <- @/app/actions/buying-preferences",
@@ -145,7 +145,7 @@
     "app/admin/(protected)/geo/resort-communities/page.tsx :: listSubdivisionsWithFlags <- @/app/actions/subdivision-flags",
     "app/admin/(protected)/guides/page.tsx :: getAdminGuides <- @/app/actions/guides",
     "app/admin/(protected)/layout.tsx :: getAdminRoleForEmail <- @/app/actions/admin-roles",
-    "app/admin/(protected)/layout.tsx :: getCrmAccess <- @/app/actions/crm",
+    "app/admin/(protected)/layout.tsx :: getCrmAccess <- @/app/actions/crm-access",
     "app/admin/(protected)/layout.tsx :: getSession <- @/app/actions/auth",
     "app/admin/(protected)/listings/[listingKey]/page.tsx :: getAdminListingEditableData <- @/app/actions/admin-listing-detail",
     "app/admin/(protected)/listings/[listingKey]/page.tsx :: getAdminRoleForEmail <- @/app/actions/admin-roles",
@@ -260,5 +260,6 @@
     "app/team/[slug]/edit/page.tsx :: getCurrentBrokerForSelfService <- @/app/actions/broker-self",
     "app/team/[slug]/page.tsx :: getAgentBySlug <- @/app/actions/agents",
     "app/team/[slug]/page.tsx :: getBrokerageSettings <- @/app/actions/brokerage"
-  ]
+  ],
+  "count": 257
 }

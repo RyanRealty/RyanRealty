@@ -34,6 +34,27 @@ describe('buildSfrFollowFigures — list median digits', () => {
     expect(String(figures[0]?.label)).not.toBe('homes for sale vs a month of sales')
   })
 
+  it('SITE-100: when MOS bars publish, drops inventory and MOS tiles and leads with median plus under contract', () => {
+    const figures = buildSfrFollowFigures(
+      {
+        medianList: 729875,
+        active: 1200,
+        daysToPending: 14,
+        pending: 410,
+      },
+      '2.1 months',
+      { mosBars: true },
+    )
+    expect(figures.map((f) => String(f.label))).toEqual([
+      'median list price, single-family',
+      'under contract now',
+      'days to an offer, last 90 days, single-family',
+    ])
+    expect(figures[0]?.count).toBe(729875)
+    expect(figures[0]?.sentence).toBeTruthy()
+    expect(String(figures[0]?.sentence)).not.toMatch(/\d/)
+  })
+
   it('omits the MOS figure when the raw value is absent, never a fabricated figure', () => {
     const figures = buildSfrFollowFigures(
       { medianList: 729875, active: 1200, daysToPending: 14 },

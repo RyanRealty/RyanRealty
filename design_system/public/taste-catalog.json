@@ -2895,6 +2895,10 @@
     },
     "price-drops": {
       "layoutLock": "Opening is the Field of cut houses. Count is a caption. Do not open on a KPI of reductions this week with no photographs.",
+      "demoStates": [
+        "carousel-open=.pd-cuts-rail [data-slot=carousel-next]!click",
+        "band-open=.pd-bands [role=tab]:nth-child(2)!click"
+      ],
       "modules": [
         {
           "id": "house-field",
@@ -2947,6 +2951,9 @@
     },
     "market-report": {
       "layoutLock": "Market destinations open on Instrument. Months of supply is two bars, never a KPI tile. One ask on the page. Absent is not zero.",
+      "demoStates": [
+        "insight-open=#market-insights .insight-pager__btn[aria-label^='Next']!click"
+      ],
       "modules": [
         {
           "id": "house-instrument",

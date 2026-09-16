@@ -25,7 +25,7 @@ import {
 } from 'lucide-react'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { useIsMobile } from '@/hooks/use-mobile'
-import { getNextRecommendation, type CrmNextRec } from '@/app/actions/crm'
+import { getNextRecommendation, type CrmNextRec } from '@/app/actions/crm-next-rec'
 import { cn } from '@/lib/utils'
 
 type Item = { label: string; href: string; icon: React.ComponentType<{ className?: string }> }

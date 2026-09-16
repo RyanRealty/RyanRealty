@@ -4,7 +4,7 @@ import { buildLiveFigures } from '../[...slug]/_v3/geo-figures'
 import { buildRegionFigures } from '../annual-review/_v3/annual-sections'
 import { buildRegionInstruments } from '../central-oregon/_v3/region-figures'
 import { YEAR_OVERLAY_READING, buildRegionMedianChart } from './market-charts'
-import { CLOSED_LEAD_FIGURES, MARKET_FOLD_LABEL, MARKET_LEAD_FIGURES } from './opening'
+import { CLOSED_LEAD_FIGURES, HUB_LEAD_FIGURES, MARKET_FOLD_LABEL, MARKET_LEAD_FIGURES } from './opening'
 import { REGION_LEAD_FIGURES } from '../central-oregon/_v3/region-constants'
 
 /**
@@ -84,6 +84,10 @@ describe('the fold names what it reveals', () => {
     // Five figures with a cap of four render all five (the primitive refuses a fold
     // that would hide exactly one). Three is what actually caps the row at four.
     expect(CLOSED_LEAD_FIGURES).toBe(MARKET_LEAD_FIGURES - 1)
+  })
+
+  it('SITE-100: the hub leads with two figures when MOS bars own inventory and pace', () => {
+    expect(HUB_LEAD_FIGURES).toBe(2)
   })
 })
 
