@@ -183,58 +183,68 @@ function PhotoStrip({
       data-compare-strip={home.key}
       {...(first ? { 'data-compare-first': 'true' } : {})}
     >
-      <CarouselContent className="compare-sheet__strip-track ml-0">
-        {home.photos.map((photo, i) => (
-          <CarouselItem key={photo.url} className="compare-sheet__strip-slide pl-0">
-            {/* eslint-disable-next-line @next/next/no-img-element -- MLS photos are
+      {/* The FRAME: the photograph and the two controls that flank it. It is its
+          own positioned box so the steps centre on the media's midline rather
+          than on the whole card. */}
+      <div className="compare-sheet__frame">
+        <CarouselContent className="compare-sheet__strip-track ml-0">
+          {home.photos.map((photo, i) => (
+            <CarouselItem key={photo.url} className="compare-sheet__strip-slide pl-0">
+              {/* eslint-disable-next-line @next/next/no-img-element -- MLS photos are
                 remote and already sized by the CSS; next/image would add a loader
                 round trip per frame to a block that must stay cheap. The first two
                 frames of each home load eagerly so the sheet opens with houses in
                 it rather than with four grey boxes. */}
-            <img
-              className="compare-sheet__photo"
-              src={photo.url}
-              alt={photo.alt}
-              loading={i < 2 ? 'eager' : 'lazy'}
-              {...(i < 2 ? { fetchPriority: 'high' as const } : {})}
-              decoding="async"
-            />
-          </CarouselItem>
-        ))}
-      </CarouselContent>
+              <img
+                className="compare-sheet__photo"
+                src={photo.url}
+                alt={photo.alt}
+                loading={i < 2 ? 'eager' : 'lazy'}
+                {...(i < 2 ? { fetchPriority: 'high' as const } : {})}
+                decoding="async"
+              />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
       {/* THE ADD SITS ON THE HOUSE. Four identical outline buttons in a row
           under the photos turned the sample into a repeated form kit (the
           2026-09-12 table said so); the thing a reader taps to keep this home
           is this home. */}
-      <a
-        className="compare-sheet__add"
-        href={home.addHref}
-        data-compare-add={home.key}
-        onClick={() => onAdd?.(home.key)}
-      >
-        <span className="compare-sheet__add-glyph" aria-hidden="true">
-          +
-        </span>
-        {/* At 375 the words come off and the plus stands alone: "Add to yours"
-            wrapped to two lines across a 145px photograph (2026-09-15 capture).
-            The control keeps its name for a screen reader either way. */}
-        <span className="compare-sheet__add-word">{addLabel}</span>
-        <span className="compare-sheet__sr"> {home.title} to your comparison</span>
-      </a>
+        <a
+          className="compare-sheet__add"
+          href={home.addHref}
+          data-compare-add={home.key}
+          onClick={() => onAdd?.(home.key)}
+        >
+          <span className="compare-sheet__add-glyph" aria-hidden="true">
+            +
+          </span>
+          {/* At 375 the words come off and the plus stands alone: "Add to yours"
+              wrapped to two lines across a 145px photograph (2026-09-15
+              capture). The control keeps its name for a screen reader either
+              way. */}
+          <span className="compare-sheet__add-word">{addLabel}</span>
+          <span className="compare-sheet__sr"> {home.title} to your comparison</span>
+        </a>
+        {/* THE STEPS FLANK THE PHOTOGRAPH, centred on its midline, which is
+            where CarouselPrevious and CarouselNext sit in the kit and in the
+            demo. Parked as a static pair under the frame they are the
+            cream-box tell the ruler already scored against on /price-drops.
+            Ours keep the house radius (0) and read cream-on-navy-outline so
+            they hold over any photograph. */}
+        {count > 1 ? (
+          <div className="compare-sheet__strip-nav">
+            <CarouselPrevious className="compare-sheet__step static size-auto translate-x-0 translate-y-0" />
+            <CarouselNext className="compare-sheet__step static size-auto translate-x-0 translate-y-0" />
+          </div>
+        ) : null}
+      </div>
       {count > 1 ? (
         <>
-          {/* THE CONTROL SITS UNDER THE FRAME, NOT ON THE PHOTOGRAPH. Overlaid
-              in the corners it read as "navy squares pasted on the image", not
-              as the kit's prev/next, which the demo puts outside the frame
-              (2026-09-16 evaluator); it is also how the house V3Carousel has
-              always drawn its steps. Beside them: the track, and which frame
-              you are on IN WORDS, straight off api.selectedScrollSnap() the
-              way the kit's own API example prints it. */}
+          {/* WHICH FRAME YOU ARE ON, UNDER THE CONTROL — the track drawn, and
+              the read straight off api.selectedScrollSnap(), the way the kit's
+              own API example prints "Slide 2 of 5" beneath its carousel. */}
           <div className="compare-sheet__strip-read">
-            <div className="compare-sheet__strip-nav">
-              <CarouselPrevious className="compare-sheet__step static size-auto translate-x-0 translate-y-0" />
-              <CarouselNext className="compare-sheet__step static size-auto translate-x-0 translate-y-0" />
-            </div>
             <span className="compare-sheet__dots" aria-hidden="true">
               {home.photos.map((photo, i) => (
                 <span

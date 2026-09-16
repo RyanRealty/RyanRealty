@@ -324,12 +324,32 @@
    reader already looks for them — shadcn's own demo centres its prev/next on
    the frame rather than stacking them beneath it. A 44px row under every
    column also cost the first viewport three comparison rows. */
-/* The steps sit UNDER the frame, in the control row — the way the kit's demo
-   keeps them off the image, and the way the house V3Carousel draws them. */
+/* The frame: the photograph, plus the two controls that flank it. */
+.v3 .compare-sheet__frame {
+  position: relative;
+}
+
+/* THE STEPS FLANK THE PHOTOGRAPH at its vertical midline — where the kit puts
+   CarouselPrevious and CarouselNext, and where the demo's round arrows sit.
+   Parked as a static pair beneath the frame they are the cream-box tell the
+   ruler scored against on /price-drops (PR #252, 7b5535bd). Ours keep the
+   house radius (0) and a cream fill inside a navy outline so they hold over
+   any photograph. The right edge is the VISIBLE slide's edge, not the peek's. */
 .v3 .compare-sheet__strip-nav {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: var(--compare-peek);
+  transform: translateY(-50%);
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: var(--v3-space-3xs);
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.v3 .compare-sheet__strip-nav > * {
+  pointer-events: auto;
 }
 
 .v3 .compare-sheet__step {
@@ -342,7 +362,7 @@
   padding: 0;
   border: 1px solid var(--v3-navy);
   border-radius: var(--v3-radius-control);
-  background: transparent;
+  background: var(--v3-cream);
   color: var(--v3-navy);
   cursor: pointer;
   transition:
@@ -361,7 +381,7 @@
 .v3 .compare-sheet__step:disabled {
   cursor: default;
   border-color: color-mix(in srgb, var(--v3-navy) 30%, transparent);
-  background: transparent;
+  background: color-mix(in srgb, var(--v3-cream) 82%, transparent);
   color: color-mix(in srgb, var(--v3-navy) 45%, transparent);
 }
 
