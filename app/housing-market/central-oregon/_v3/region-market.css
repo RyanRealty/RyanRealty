@@ -1,4 +1,22 @@
-/* Region fold — MOS proof + year overlay split (SITE-88). Tokens only. */
+/* Region fold — InsightCards, the two MOS bars, then the long view (SITE-103).
+   Tokens only. */
+
+/* The drawing holds two objects now: the catalog control and the two bars.
+   At 1440 they sit side by side so the fold is a reading and a proof, not one
+   long column; at a phone width they stack, cards first. */
+.region-fold {
+  display: grid;
+  gap: var(--v3-space-lg);
+  min-width: 0;
+}
+
+@media (min-width: 64rem) {
+  .region-fold {
+    grid-template-columns: minmax(0, 1.45fr) minmax(15rem, 0.85fr);
+    gap: var(--v3-space-xl);
+    align-items: start;
+  }
+}
 
 .region-market-mos {
   margin: 0;

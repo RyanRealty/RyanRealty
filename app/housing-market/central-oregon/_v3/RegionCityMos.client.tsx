@@ -50,7 +50,10 @@ export function RegionCityMos({ cities, className }: RegionCityMosProps) {
                       />
                     </span>
                     <span className="region-city-mos__value">
-                      <V3Number value={city.homes} formatted={city.homesLabel} />
+                      {/* settle (SITE-103): a for-sale count that renders 0
+                          until hydration is a wrong figure in the HTML, and
+                          seven cities counting up on scroll is decoration. */}
+                      <V3Number value={city.homes} formatted={city.homesLabel} settle />
                     </span>
                   </span>
                   <span className="region-city-mos__barrow">

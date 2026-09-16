@@ -76,11 +76,30 @@ function useInkStroke() {
   return stroke
 }
 
-function chartIndexFromPointer(event: React.PointerEvent, pointCount: number) {
+function chartProgressFromPointer(event: React.PointerEvent) {
   const rect = event.currentTarget.getBoundingClientRect()
-  const progress = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width))
-  return Math.round(progress * (pointCount - 1))
+  if (!(rect.width > 0)) return 0
+  return Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width))
 }
+
+function chartIndexFromPointer(event: React.PointerEvent, pointCount: number) {
+  return Math.round(chartProgressFromPointer(event) * (pointCount - 1))
+}
+
+/**
+ * Opt-in (SITE-103): report the scrub position as a 0–1 fraction so a caller
+ * whose own figures follow the pointer can map it onto ITS series, whatever
+ * density the card smoothed the line to. Absent, every card behaves exactly as
+ * the catalog demo does.
+ */
+export type ScrubReporter = (progress: number | null) => void
+
+/**
+ * Opt-in (SITE-103): render the card's own figure face. The card still owns
+ * WHICH value is shown and when; the caller owns how the digits are drawn, so a
+ * sourced count can arrive as a beUI number instead of a static string.
+ */
+export type ValueRenderer = (value: number, formatted: string) => ReactNode
 
 function ChartTooltip({ rows }: { rows: { label: string; value: string; color: string }[] }) {
   return (
@@ -133,10 +152,23 @@ export function CompareCard({
   series = COMPARE_SERIES,
   formatTime,
   hideLegend = false,
+  smoothLine = true,
+  onScrubProgress,
+  renderValue,
 }: {
   series?: CompareSeries[]
   formatTime?: (t: number) => string
   hideLegend?: boolean
+  /**
+   * Opt-in (SITE-103). The demo smooths its line through a Catmull-Rom pass,
+   * which invents ~9 points between every real one. On a marketing chart that
+   * is fine; under a legend that READS the scrubbed point it publishes a price
+   * nobody paid (CLAUDE.md section 0). `smoothLine={false}` plots the sourced
+   * points themselves, so every value the scrubber can land on is a real one.
+   */
+  smoothLine?: boolean
+  onScrubProgress?: ScrubReporter
+  renderValue?: ValueRenderer
 }) {
   const stroke = useInkStroke()
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
@@ -149,7 +181,15 @@ export function CompareCard({
       })),
     [series, stroke],
   )
-  const points = useMemo(() => painted.map((s) => smoothPoints(s.values, 42)), [painted])
+  const points = useMemo(
+    () =>
+      painted.map((s) =>
+        smoothLine
+          ? smoothPoints(s.values, 42)
+          : makePoints(s.values, 42 / Math.max(1, s.values.length - 1)),
+      ),
+    [painted, smoothLine],
+  )
   const pointCount = points[0]?.length ?? 0
   const chartSeries: LivelineSeries[] = useMemo(
     () =>
@@ -168,12 +208,22 @@ export function CompareCard({
       {hideLegend ? null : (
         <div className="insight-cards__legend">
           {painted.map((s, i) => {
-            const last = points[i]?.at(-1)?.value ?? (s.values.at(-1) ?? 0)
+            // The legend reads the SCRUBBED point when the pointer is on the
+            // stage, the resting last point otherwise — the same rule
+            // AnomalyCard already applies to its own face. A legend frozen on
+            // the last point while the line under it moves is a poster.
+            const read =
+              hoverIndex !== null
+                ? points[i]?.[hoverIndex]?.value
+                : points[i]?.at(-1)?.value
+            const last = read ?? (s.values.at(-1) ?? 0)
             const format = s.formatValue ?? formatPercent
             return (
               <div key={s.name}>
                 <span className="insight-cards__series-name">{s.name}</span>
-                <span className="insight-cards__delta">{format(last)}</span>
+                <span className="insight-cards__delta">
+                  {renderValue ? renderValue(last, format(last)) : format(last)}
+                </span>
                 <span className="insight-cards__sub">{s.sub}</span>
               </div>
             )
@@ -182,11 +232,26 @@ export function CompareCard({
       )}
       <div
         className="insight-chart-stage"
-        onPointerDown={(event) => setHoverIndex(chartIndexFromPointer(event, pointCount))}
-        onPointerMove={(event) => setHoverIndex(chartIndexFromPointer(event, pointCount))}
-        onPointerLeave={() => setHoverIndex(null)}
-        onPointerCancel={() => setHoverIndex(null)}
-        onPointerUp={() => setHoverIndex(null)}
+        onPointerDown={(event) => {
+          setHoverIndex(chartIndexFromPointer(event, pointCount))
+          onScrubProgress?.(chartProgressFromPointer(event))
+        }}
+        onPointerMove={(event) => {
+          setHoverIndex(chartIndexFromPointer(event, pointCount))
+          onScrubProgress?.(chartProgressFromPointer(event))
+        }}
+        onPointerLeave={() => {
+          setHoverIndex(null)
+          onScrubProgress?.(null)
+        }}
+        onPointerCancel={() => {
+          setHoverIndex(null)
+          onScrubProgress?.(null)
+        }}
+        onPointerUp={() => {
+          setHoverIndex(null)
+          onScrubProgress?.(null)
+        }}
       >
         <Liveline
           data={[]}
@@ -248,10 +313,16 @@ export function AnomalyCard({
   data: anomaly = ANOMALY_DATA,
   labels,
   formatTime,
+  onScrubProgress,
+  onMetric,
+  renderValue,
 }: {
   data?: AnomalyData
   labels?: Partial<AnomalyLabels>
   formatTime?: (t: number) => string
+  onScrubProgress?: ScrubReporter
+  onMetric?: (metric: 'spend' | 'usage') => void
+  renderValue?: ValueRenderer
 }) {
   const stroke = useInkStroke()
   const l = { ...DEFAULT_ANOMALY_LABELS, ...labels }
@@ -272,7 +343,10 @@ export function AnomalyCard({
         <div>
           <span className="insight-cards__series-name">{l.title}</span>
           <span className="insight-cards__delta">
-            {hoverIndex !== null ? format(data[hoverIndex]?.value ?? 0) : format(value)}
+            {(() => {
+              const face = hoverIndex !== null ? data[hoverIndex]?.value ?? 0 : value
+              return renderValue ? renderValue(face, format(face)) : format(face)
+            })()}
           </span>
         </div>
         <div className="insight-cards__chips">
@@ -281,7 +355,11 @@ export function AnomalyCard({
               key={item}
               type="button"
               aria-pressed={metric === item}
-              onClick={() => setMetric(item)}
+              onClick={() => {
+                setMetric(item)
+                setHoverIndex(null)
+                onMetric?.(item)
+              }}
               className="insight-cards__metric"
             >
               {item === 'spend' ? l.spend : l.usage}
@@ -291,11 +369,26 @@ export function AnomalyCard({
       </div>
       <div
         className="insight-chart-stage"
-        onPointerDown={(event) => setHoverIndex(chartIndexFromPointer(event, data.length))}
-        onPointerMove={(event) => setHoverIndex(chartIndexFromPointer(event, data.length))}
-        onPointerLeave={() => setHoverIndex(null)}
-        onPointerCancel={() => setHoverIndex(null)}
-        onPointerUp={() => setHoverIndex(null)}
+        onPointerDown={(event) => {
+          setHoverIndex(chartIndexFromPointer(event, data.length))
+          onScrubProgress?.(chartProgressFromPointer(event))
+        }}
+        onPointerMove={(event) => {
+          setHoverIndex(chartIndexFromPointer(event, data.length))
+          onScrubProgress?.(chartProgressFromPointer(event))
+        }}
+        onPointerLeave={() => {
+          setHoverIndex(null)
+          onScrubProgress?.(null)
+        }}
+        onPointerCancel={() => {
+          setHoverIndex(null)
+          onScrubProgress?.(null)
+        }}
+        onPointerUp={() => {
+          setHoverIndex(null)
+          onScrubProgress?.(null)
+        }}
       >
         <Liveline
           data={data}
@@ -347,18 +440,28 @@ const ALLOCATION_SEGMENTS: AllocationSegment[] = [
 export function AllocationCard({
   segments = ALLOCATION_SEGMENTS,
   note,
+  onSelect,
+  renderAmount,
 }: {
   segments?: AllocationSegment[]
   note?: string
+  onSelect?: (segment: AllocationSegment) => void
+  renderAmount?: (segment: AllocationSegment) => ReactNode
 }) {
   const [selected, setSelected] = useState(segments[0]?.name ?? '')
   const active = segments.find((segment) => segment.name === selected) ?? segments[0]
+  const pick = (segment: AllocationSegment) => {
+    setSelected(segment.name)
+    onSelect?.(segment)
+  }
   if (!active) return null
 
   return (
     <div className="insight-cards__card">
       <span className="insight-cards__series-name">{active.label}</span>
-      <span className="insight-cards__hero">{active.amount}</span>
+      <span className="insight-cards__hero">
+        {renderAmount ? renderAmount(active) : active.amount}
+      </span>
       <div className="insight-cards__alloc-track" role="group" aria-label="Allocation segments">
         {segments.map((s, i) => (
           <button
@@ -366,7 +469,7 @@ export function AllocationCard({
             type="button"
             aria-pressed={selected === s.name}
             aria-label={`${s.label}: ${s.pct}%`}
-            onClick={() => setSelected(s.name)}
+            onClick={() => pick(s)}
             className={cn('insight-cards__alloc-seg', s.cls || `insight-cards__alloc-seg--${i}`)}
             style={{ width: `${s.pct}%`, transitionTimingFunction: EASE }}
           >
@@ -380,7 +483,7 @@ export function AllocationCard({
             key={s.name}
             type="button"
             aria-pressed={selected === s.name}
-            onClick={() => setSelected(s.name)}
+            onClick={() => pick(s)}
             className="insight-cards__chip"
           >
             {s.name} {s.pct}%
@@ -400,6 +503,13 @@ export type InsightPage = {
   prose: ReactNode
   Card: React.ComponentType
   pill: string
+  /**
+   * Opt-in (SITE-103): make the pill a real door. The demo's pill is a prompt
+   * back to its own agent, which on a public page is a control that does
+   * nothing. With an href the same pill navigates; without one it is the
+   * catalog button, unchanged.
+   */
+  pillHref?: string
 }
 
 const PAGES: InsightPage[] = [
@@ -454,7 +564,7 @@ export default function InsightCards({
   const move = (direction: -1 | 1) => {
     setPage((current) => (current + direction + pages.length) % pages.length)
   }
-  const { prose, Card, pill } = pages[safe]
+  const { prose, Card, pill, pillHref } = pages[safe]
 
   return (
     <div className="insight-cards">
@@ -481,9 +591,15 @@ export default function InsightCards({
       </div>
       <p className="insight-cards__prose">{prose}</p>
       <Card />
-      <button type="button" className="insight-cards__pill">
-        {pill}
-      </button>
+      {pillHref ? (
+        <a href={pillHref} className="insight-cards__pill">
+          {pill}
+        </a>
+      ) : (
+        <button type="button" className="insight-cards__pill">
+          {pill}
+        </button>
+      )}
     </div>
   )
 }

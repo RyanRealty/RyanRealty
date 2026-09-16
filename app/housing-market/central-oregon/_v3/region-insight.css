@@ -1,0 +1,78 @@
+/* SITE-103 — the region fold's InsightCards. Tokens only; the catalog's own
+   structure lives in components/motion/insight-cards.css and is not restated
+   here. What this file does is give the control the section's rhythm and keep
+   its digits from jittering while they animate. */
+
+.region-insight {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.region-insight .insight-cards {
+  gap: var(--v3-space-sm);
+}
+
+.region-insight .insight-cards__title {
+  font-size: var(--v3-size-h4, 1.25rem);
+  letter-spacing: -0.01em;
+}
+
+.region-insight .insight-cards__prose {
+  max-width: var(--v3-measure-text);
+  color: var(--v3-ink);
+}
+
+.region-insight .insight-cards__prose strong {
+  font-weight: 600;
+}
+
+/* A figure that is about to move reserves its own width, so the claim above it
+   does not reflow on every pointer move. */
+.region-insight__digits {
+  display: inline-block;
+  min-width: 4ch;
+  font-variant-numeric: tabular-nums;
+}
+
+.region-insight .insight-cards__legend {
+  gap: var(--v3-space-md);
+}
+
+.region-insight .insight-cards__note {
+  max-width: var(--v3-measure-text);
+}
+
+.region-insight__card {
+  display: grid;
+  gap: var(--v3-space-sm);
+  min-width: 0;
+}
+
+/* The scrub stage is the point of the control: give it a real target, and say
+   so with the cursor. */
+.region-insight .insight-chart-stage {
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+@media (max-width: 47.99rem) {
+  .region-insight .insight-chart-stage {
+    height: 8.5rem;
+  }
+
+  .region-insight .insight-cards__prose {
+    font-size: var(--v3-size-body-sm);
+  }
+
+  .region-insight .insight-cards__delta {
+    font-size: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .region-insight .insight-cards__alloc-seg,
+  .region-insight .insight-cards__alloc-shine {
+    transition: none;
+  }
+}
