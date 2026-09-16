@@ -1,0 +1,284 @@
+/* ===========================================================================
+   PATTERN 11: DOOR BOARD
+   Styles for V3DoorBoard.tsx and nothing else. Every value resolves from
+   ./tokens.css, which V3DoorBoard.tsx imports and whose scope the section opens
+   on itself with V3_ROOT_CLASS. No raw color, no hardcoded motion, no shadow,
+   radius 0 (Broadside).
+
+   THE FORM IS A BOARD OF PLACES: one packed grid, a hairline above every tile
+   and never a box around it, the photograph (or the drawn outline) leading
+   each tile, the name in the display face, the live figure under it, one
+   line, then the doors as a tap-height row. The tile with the largest figure
+   leads across two columns. Compare the Ledger above it on the city index:
+   that is rows and bars; this is pictures and doors.
+
+   The block selector is doubled (`.v3.v3-door-board`) for the same reason
+   every pattern doubles its own: the prototype route declares plain global
+   single-class rules, App Router keeps route CSS in the document across client
+   navigations, and a (0,1,0) rule must never be able to reach this one.
+   =========================================================================== */
+
+.v3.v3-door-board {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+/* Rule weight is the hierarchy: a section following content opens on the 2px
+   navy section rule, like Quiet, Ledger and the amenity Board. */
+* + .v3.v3-door-board {
+  border-top: var(--v3-rule-section);
+}
+
+/* Hash landing under the sticky chrome, the same offset every pattern uses. */
+.v3.v3-door-board[id] {
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
+/* Head ---------------------------------------------------------------------- */
+.v3-door-board__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-xs);
+  margin-bottom: var(--v3-space-lg);
+}
+
+.v3-door-board__lede {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+/* The tiles -----------------------------------------------------------------
+   auto-fill so the column count is a consequence of the measure, never a
+   breakpoint someone has to maintain; min() keeps one column at 375. Row gap
+   is real here (unlike the amenity board) because a tile ends on its doors
+   row and the next tile's photograph needs air above its hairline. */
+.v3-door-board__tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
+  column-gap: var(--v3-space-lg);
+  row-gap: var(--v3-space-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-door-board__tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+  padding-top: var(--v3-space-sm);
+  border-top: var(--v3-rule-hairline);
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
+/* THE LEAD TILE: the caller's largest figure spans two columns from 48rem,
+   its photograph wider, so the board opens on the place that carries the
+   most of the region's inventory — the same emphasis the ledger gives its
+   full-track bar. */
+@media (min-width: 48rem) {
+  .v3-door-board__tile--lead {
+    grid-column: span 2;
+  }
+
+  .v3-door-board__tile--lead .v3-door-board__media {
+    aspect-ratio: 2 / 1;
+  }
+}
+
+/* The face: photograph (or drawn outline) and name, one link, named by the
+   name. The whole face is the target and clears the tap floor on its own. */
+.v3-door-board__name {
+  margin: 0;
+  min-width: 0;
+}
+
+.v3-door-board__face {
+  display: grid;
+  gap: var(--v3-space-xs);
+  min-height: var(--v3-tap);
+  color: var(--v3-ink);
+  text-decoration: none;
+}
+
+.v3-door-board__face:hover .v3-door-board__name-text,
+.v3-door-board__face:focus-visible .v3-door-board__name-text {
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset-display);
+}
+
+.v3-door-board__face:focus-visible {
+  outline: var(--v3-focus-width) solid var(--v3-focus);
+  outline-offset: var(--v3-focus-offset);
+}
+
+/* The photograph, unframed, 3:2, cover; the wash shows until it decodes. The
+   drawn outline (V3PlaceMark) paints its own Atlas ground and fills the same
+   box, so a tile with no picture is plainly a drawing, never an empty plate. */
+.v3-door-board__media {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: var(--v3-wash);
+}
+
+.v3-door-board__photo,
+.v3-door-board__media > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.v3-door-board__photo {
+  object-fit: cover;
+}
+
+.v3-door-board__name-text {
+  display: block;
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-heading);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+/* The figure: the digits large, tabular, in the body face (the number is a
+   reading beside the name, not the tile's hero), the unit quiet beside them. */
+.v3-door-board__figure {
+  margin: 0;
+  min-width: 0;
+  color: var(--v3-ink);
+}
+
+.v3-door-board__count {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 0.4em;
+}
+
+.v3-door-board__count-digits {
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-num);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.v3-door-board__count-unit {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3-door-board__figure--absent {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3-door-board__line {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+  text-wrap: pretty;
+}
+
+/* The doors: a wrapping row of tap-height text links, each with the count it
+   opens onto in tabular numerals, the caret drawn as the amenity board's door
+   draws it. A row, not a list of hairline rows — the rows above are the
+   Ledger's shape, and this section must not repeat it. */
+.v3-door-board__doors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--v3-space-md);
+  margin: var(--v3-space-3xs) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-door-board__door-item {
+  min-width: 0;
+}
+
+.v3-door-board__door {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4em;
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-2xs) 0;
+  color: var(--v3-navy);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-strong);
+  line-height: var(--v3-leading-control);
+  text-decoration: none;
+}
+
+.v3-door-board__door::after {
+  content: '';
+  display: inline-block;
+  width: 0.4em;
+  height: 0.4em;
+  align-self: center;
+  border-top: var(--v3-rule-weight-hairline) solid currentColor;
+  border-right: var(--v3-rule-weight-hairline) solid currentColor;
+  transform: rotate(45deg);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-door-board__door:hover,
+.v3-door-board__door:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.v3-door-board__door:hover::after,
+.v3-door-board__door:focus-visible::after {
+  transform: translateX(calc(var(--v3-travel) * 0.25)) rotate(45deg);
+}
+
+.v3-door-board__door:focus-visible {
+  outline: var(--v3-focus-width) solid var(--v3-focus);
+  outline-offset: var(--v3-focus-offset);
+}
+
+/* The rest of a door's name ("in Bend"), in the link for a screen reader and
+   a crawler, off the tile for a reader who can see the name beside it. */
+.v3-door-board__door-rest {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.v3-door-board__door-figure {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3em;
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink-muted);
+}
+
+.v3-door-board__door-figure-digits {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--v3-ink);
+}
+
+.v3-door-board__source {
+  margin-top: var(--v3-space-lg);
+}

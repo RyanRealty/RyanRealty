@@ -590,6 +590,23 @@ export { V3PlaceIndex, placeIndexRows } from './V3PlaceIndex'
 export { V3PlaceAmenities, amenityGroups, amenityBoardLede } from './V3PlaceAmenities'
 export type { V3PlaceAmenitiesProps, V3PlaceAmenity, V3PlaceAmenityGroup, V3PlaceAmenityFact } from './V3PlaceAmenities'
 
+/* PATTERN 11: DOOR BOARD (site queue SITE-92 round 5). Every place on a      */
+/* board — its photograph or drawn outline, its live figure as the installed  */
+/* digit primitive, one line, and its doors each carrying the count it opens  */
+/* onto. Built because the city index's second, third and fourth door per     */
+/* city rendered as thirty identical Quiet rows: the brief's own refuse case, */
+/* "a link farm of city names with no figure". Quiet stays the form for a     */
+/* handful of exits; a board of places with counts is this.                   */
+export { V3DoorBoard } from './V3DoorBoard'
+export type { V3DoorBoardProps, V3DoorBoardTile, V3DoorBoardDoor, V3DoorBoardFigure } from './V3DoorBoard'
+
+/* THE PLACE STRIP (SITE-92 round 5): a claim with its live figure and the    */
+/* places it covers drawn as a strip of recorded outlines, each a door. The   */
+/* Sheet's `figure` slot mounts it so the regional alerts ask stands on the   */
+/* region's real 30-day count and the towns the alert covers.                 */
+export { V3PlaceStrip } from './V3PlaceStrip'
+export type { V3PlaceStripProps, V3PlaceStripPlace } from './V3PlaceStrip'
+
 export type { V3PlaceIndexProps, V3PlaceIndexEntry, V3PlaceIndexFinder } from './V3PlaceIndex'
 
 /* The place finder: the installed beUI combobox over an index's own rows,     */

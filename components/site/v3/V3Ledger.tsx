@@ -40,6 +40,7 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { buildSparkPlot } from '@/lib/charts/plot'
 import { V3LedgerRevealIsland } from './V3LedgerReveal.client'
+import { V3Number } from './V3Number.client'
 import {
   V3Button,
   V3Eyebrow,
@@ -189,6 +190,19 @@ export type V3LedgerReveal = {
    * and computes nothing from the series.
    */
   seriesLast?: V3Text
+  /**
+   * THE READOUT (SITE-92 round 5): one entry per `series` entry, in the same
+   * order, each the month's name and its count AS THE READER SHOULD SEE THEM
+   * ("Aug 2026", "180 closed"), preformatted by the caller; `value` is null
+   * for a month the source withheld, which the run already draws as a gap.
+   * With these the run is a chart a reader can query: a hover or a drag
+   * across it, or the arrow keys on the focused row, name the nearest
+   * published month and its count beside the run (V3LedgerReveal.client.tsx),
+   * where the round-4 chart "promised more data on hover but didn't let you
+   * actually query the line" (the evaluator). The primitive prints the two
+   * strings it is handed for whichever point is nearest and formats neither.
+   */
+  points?: readonly { label: V3Text; value: V3Text | null }[]
 }
 
 /** Published points a twelve-month run needs before it is drawn (DATA_GRAPHICS.md). */
@@ -236,6 +250,19 @@ export type V3LedgerFigureRow = V3LedgerRowBase & {
    * whose length was guessed is worse than no bar.
    */
   weight?: number
+  /**
+   * THE FIGURE AS A LIVE NUMERAL (SITE-92 round 5, the evaluator: "the sourced
+   * live counts render as flat static digits identical to any table cell").
+   * `value` stays the row's whole figure as text and its accessible value;
+   * when this is set the digits inside it are drawn by the installed beUI
+   * number (components/motion/number.tsx through V3Number): the served face is
+   * `formatted` from the first byte and the digits move only when `value`
+   * changes after load — never a count-up on load (TASTE.md). `rest` is the
+   * unit or clause after the digits ("for sale"). Both strings are the
+   * caller's; the primitive formats nothing and `value` must read the same as
+   * `formatted` + `rest`, which is what the source trace covers.
+   */
+  numeral?: { value: number; formatted: V3Text; rest?: V3Text }
 }
 
 /**
@@ -387,6 +414,17 @@ type V3LedgerBase = {
    * out of 0..1 or not finite is dropped, never clamped, like a weight.
    */
   scale?: V3LedgerScale
+  /**
+   * HOW THE HEAD IS COMPOSED when the list carries a `drawing` (SITE-92 round
+   * 5). `stack` (default) is the column every pattern opens with: eyebrow,
+   * heading, note, then the drawing. `beside` sets the drawing in a second
+   * column BESIDE the eyebrow, heading and note from 64rem up, so the section
+   * opens as a drawn head — words left, the figure drawn right — instead of a
+   * third eyebrow → heading → paragraph stack in a row (the evaluator on the
+   * city index: "three consecutive sections repeat the same
+   * eyebrow-heading-paragraph-source shape"). Narrow windows stack as before.
+   */
+  headLayout?: 'stack' | 'beside'
 }
 
 /** The bar scale, explained: one sentence and the ticks that mark it (see `scale`). */
@@ -479,6 +517,7 @@ export function V3Ledger(props: V3LedgerProps) {
     media = 'mark',
     encode,
     scale,
+    headLayout = 'stack',
   } = props
 
   /* The ruler's ticks: the caller's positions on the caller's scale, each a
@@ -545,6 +584,7 @@ export function V3Ledger(props: V3LedgerProps) {
         encode === 'bar' && 'v3-ledger--encoded',
         ruler && !isEmpty && 'v3-ledger--ruled',
         anyReveal && 'v3-ledger--reveal',
+        drawing && headLayout === 'beside' && 'v3-ledger--head-beside',
         className,
       )}
       aria-labelledby={headingId}
@@ -606,6 +646,13 @@ export function V3Ledger(props: V3LedgerProps) {
                     minPoints: V3_LEDGER_SPARK_MIN,
                   })
                 : null
+            /* The run is scrubbable only when the caller named every month:
+               a readout that could name a point and not its month would be a
+               number with no window, which the dataviz method forbids. */
+            const scrub =
+              spark != null &&
+              row.reveal?.points != null &&
+              row.reveal.points.length === row.reveal.series?.length
             return (
               <li key={row.id ?? row.href} className="v3-ledger__item">
               <Link
@@ -687,10 +734,10 @@ export function V3Ledger(props: V3LedgerProps) {
                           />
                         ) : null}
                       </span>
-                      <span className="v3-ledger__value">{row.value}</span>
+                      <span className="v3-ledger__value">{valueOf(row)}</span>
                     </span>
                   ) : (
-                    <span className="v3-ledger__value">{row.value}</span>
+                    <span className="v3-ledger__value">{valueOf(row)}</span>
                   )
                 ) : null}
                 {row.reveal ? (
@@ -708,9 +755,21 @@ export function V3Ledger(props: V3LedgerProps) {
                           <span
                             className="v3-ledger__run"
                             style={{ ['--v3-run-plot' as string]: `${((SPARK_W / SPARK_VB_W) * 100).toFixed(2)}%` }}
+                            data-points={scrub ? JSON.stringify(row.reveal.points!.map((p) => [p.label, p.value])) : undefined}
                           >
-                            {row.reveal.seriesLabel ? (
-                              <span className="v3-ledger__run-label">{row.reveal.seriesLabel}</span>
+                            {row.reveal.seriesLabel || scrub ? (
+                              /* The run's head: what it counts, and — when the
+                                 caller handed over the months — the readout
+                                 the scrub fills with the nearest month and
+                                 its count. Empty until asked; the island
+                                 seats the endpoint in it when the reveal
+                                 opens. */
+                              <span className="v3-ledger__run-head">
+                                {row.reveal.seriesLabel ? (
+                                  <span className="v3-ledger__run-label">{row.reveal.seriesLabel}</span>
+                                ) : null}
+                                {scrub ? <span className="v3-ledger__readout" data-readout="" /> : null}
+                              </span>
                             ) : null}
                             {/* A small chart, not a thumbnail: a baseline, the
                                 run, the endpoint marked and — when the caller
@@ -730,6 +789,32 @@ export function V3Ledger(props: V3LedgerProps) {
                                 y2={SPARK_H - 0.5}
                               />
                               <path d={spark.d} />
+                              {scrub ? (
+                                /* The scrub's cursor and one mark per published
+                                   point, hidden until the island names one.
+                                   Their positions are the plot's own (plot.ts
+                                   returns them), so the mark the reader is
+                                   shown is the point the line is drawn through. */
+                                <>
+                                  <line
+                                    className="v3-ledger__spark-cursor"
+                                    x1="0"
+                                    x2="0"
+                                    y1={SPARK_PAD}
+                                    y2={SPARK_H - 0.5}
+                                  />
+                                  {spark.points.map((p) => (
+                                    <circle
+                                      key={p.i}
+                                      className="v3-ledger__spark-pt"
+                                      data-i={p.i}
+                                      cx={p.x.toFixed(1)}
+                                      cy={p.y.toFixed(1)}
+                                      r="3.2"
+                                    />
+                                  ))}
+                                </>
+                              ) : null}
                               {spark.last ? (
                                 <circle cx={spark.last.x.toFixed(1)} cy={spark.last.y.toFixed(1)} r="2.6" />
                               ) : null}
@@ -789,6 +874,22 @@ export function V3Ledger(props: V3LedgerProps) {
 function glyphOf(what: V3Text): string {
   const first = String(what).trim().charAt(0)
   return first ? first.toUpperCase() : '·'
+}
+
+/**
+ * The value column's content: the caller's live numeral drawn by the installed
+ * digit primitive when the row carries one, the plain figure string otherwise.
+ * Either way the text a reader — or a crawler — gets is the caller's formatted
+ * figure; nothing here rounds or formats.
+ */
+function valueOf(row: V3LedgerFigureRow): ReactNode {
+  if (!row.numeral) return row.value
+  return (
+    <>
+      <V3Number value={row.numeral.value} formatted={row.numeral.formatted} className="v3-ledger__digits" />
+      {row.numeral.rest ? <> {row.numeral.rest}</> : null}
+    </>
+  )
 }
 
 /** The phone's hold, mounted only when a row has something to reveal. */

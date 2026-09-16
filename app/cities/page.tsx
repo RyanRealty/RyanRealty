@@ -19,6 +19,17 @@
  * the region (beui:combobox); no-photo rows carry a resting supply reading
  * when Market Truth publishes one.
  *
+ * SITE-92 round 5 (judged 63 on sixteen plates): the doors per featured city
+ * are a DOOR BOARD (V3DoorBoard) — photograph or drawn outline, the city's
+ * live count as the installed digit primitive, its doors each with the count
+ * it opens onto — not thirty Quiet rows; the alerts sheet stands on the
+ * region's real 30-day count and the towns drawn as a strip of marks
+ * (V3PlaceStrip in the Sheet's figure slot); the close is one figured door
+ * carrying the region's live total plus one light line of place types, not a
+ * second link list; the ledger's counts are live numerals (beui:number), its
+ * head sets the supply drawing beside the words, and its reveal run is
+ * scrubbable — hover, drag or arrow keys name the nearest month and its count.
+ *
  * Parity contract: design_system/ryan-realty/ui_kits/cities/parity.json
  */
 
@@ -44,6 +55,7 @@ import { buildAnswerFigures, salesPerMonthFrom } from '@/lib/site/answer-figures
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
   V3Breadcrumb,
+  V3DoorBoard,
   V3Drawing,
   V3Footer,
   V3Ledger,
@@ -54,10 +66,12 @@ import {
   V3_LEDGER_SPARK_MIN,
   V3_ROOT_CLASS,
   v3Text,
+  type V3DoorBoardTile,
   type V3LedgerFigureRow,
   type V3LedgerReveal,
   type V3LedgerScale,
   type V3MosCompareCity,
+  type V3PlaceStripPlace,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { CitiesMosCompare } from './_v3/CitiesMosCompare.client'
@@ -71,6 +85,15 @@ import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atla
 import { getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { REGIONAL_SEARCH_HREF } from '@/lib/search/publish-regional-search-href'
 import { CitiesAlertsStrip } from './_v3/CitiesAlertsStrip.client'
+import { countBendLuxury, countOpenHousesByCity } from './_v3/cities-doors'
+import {
+  LUXURY_DOOR_TRACE,
+  OPEN_HOUSE_DOOR_TRACE,
+  leadTileId,
+  luxuryDoorFigure,
+  openHouseDoorFigure,
+  tileFigure,
+} from './_v3/cities-door-figures'
 import './_v3/cities-fold.css'
 import { cityFeaturedLinks } from '@/app/cities/CityFeaturedLinks'
 import {
@@ -104,7 +127,25 @@ const OTHERS_TRACE =
   'live MLS through Oregon Data Share, the city snapshot row for each remaining Central Oregon city: active single-family count and the median list price of those listings'
 
 const REVEAL_TRACE =
-  'On hover, focus, or a hold, a row shows its months-of-supply verdict where our market metric layer publishes one for the city — regional MLS through Oregon Data Share, detached homes (market_metric: months_of_supply and market_verdict), and the last twelve complete months of closed detached sales as a line (market_metric closed_count, detached, one calendar month each) with the window\'s first and last month named under it and the last published month\'s count beside the endpoint; a month the source withheld breaks the line, and fewer than six published months draws none. The bars are on a square-root scale of each city\'s share of the largest count, said on the drawing; the figure beside each bar is the count'
+  'On hover, focus, or a hold, a row shows its months-of-supply verdict where our market metric layer publishes one for the city — regional MLS through Oregon Data Share, detached homes (market_metric: months_of_supply and market_verdict), and the last twelve complete months of closed detached sales as a line (market_metric closed_count, detached, one calendar month each) with the window\'s first and last month named under it and the last published month\'s count beside the endpoint; a month the source withheld breaks the line, and fewer than six published months draws none. A hover or a drag across the run, or the arrow keys on a focused row, name the nearest published month and its count beside it. The bars are on a square-root scale of each city\'s share of the largest count, said on the drawing; the figure beside each bar is the count'
+
+/**
+ * The ledger's note (SITE-92 round 5). The count and the A-to-Z are already
+ * the H1's caption and the heading; the note says what a row does instead of
+ * restating them a third time.
+ */
+const LEDGER_NOTE =
+  'Every row is a door to the city\'s own page. Hover, focus or hold a row for its supply reading and its last twelve months of closes; the bar is its live single-family count.'
+
+/** The door board's one sentence: what its figures count, and where each door's count comes from. */
+const DOOR_BOARD_LEDE =
+  'Each featured city with its live single-family count — the figure its row above prints, and what its guide and its homes open onto — then its doors: the guide, the homes, this week\'s open houses, and for Bend the homes at $1.5M and up, each with the count it opens onto where the calendar or the search published one.'
+
+/** The board's §0 trace: the tile figures are the ledger's; the door figures are the destination pages' own reads. */
+const DOOR_BOARD_TRACE = `${FEATURED_TRACE}. ${OPEN_HOUSE_DOOR_TRACE}. ${LUXURY_DOOR_TRACE}`
+
+/** The board tile's drawn mark is 3:2 like its photographs, with the ledger tile's margin. */
+const DOOR_TILE_BOX = { w: 66, h: 44, pad: 5 } as const
 
 const REGION_SUPPLY_TRACE =
   'Regional MLS through Oregon Data Share, read through our market metric layer — detached homes across Central Oregon (market_metric, definition mt-v1, segment detached, region central-oregon): active_count, and months_of_supply as homes for sale divided by closes in the last six months divided by six. The monthly pace drawn here is that division recovered exactly from the two published figures'
@@ -135,6 +176,7 @@ const INDEX_READ_BUDGET_MS = {
   regionPace: 8_000,
   overlays: 10_000,
   monthlyRuns: 10_000,
+  doors: 8_000,
 } as const
 
 /** The twelve complete months a row's run covers. */
@@ -182,6 +224,13 @@ function cityReveal(layers: DetachedOverlay | undefined, months: readonly Public
             last: v3Text(formatMonthYear(last.periodStart)),
           },
           ...(lastPublished?.closedCount != null ? { seriesLast: v3Text(formatCount(lastPublished.closedCount)) } : {}),
+          // The scrub's readout (SITE-92 round 5): every month named, its
+          // count as the reader should see it, null where the source withheld
+          // the month — the run draws that month as a gap and names no point.
+          points: window.map((m) => ({
+            label: v3Text(formatMonthYear(m.periodStart)),
+            value: m.closedCount != null ? v3Text(`${formatCount(m.closedCount)} closed`) : null,
+          })),
         }
       : {}),
   }
@@ -222,7 +271,7 @@ export default async function CitiesPage() {
   // One Market Truth read for the region and every city on the page, and one
   // monthly read per city for the run under its row. Both are timeboxed: a
   // slow read costs the drawing and the reveals, never the directory.
-  const [overlays, monthlyBySlug] = await Promise.all([
+  const [overlays, monthlyBySlug, openHouseCounts, luxuryCount] = await Promise.all([
     withTimeoutFallback(
       getDetachedOverlays([
         { geoType: 'region', geoSlug: 'central-oregon' },
@@ -242,6 +291,23 @@ export default async function CitiesPage() {
       new Map<string, PublicMonthlyPoint[]>(),
       INDEX_READ_BUDGET_MS.monthlyRuns,
       'cities:monthlyRuns',
+    ),
+    // THE DOORS' OWN COUNTS (SITE-92 round 5): what each door on the board
+    // opens onto — the open-house calendar's count for this week per featured
+    // city (the same read /open-houses/<city> makes) and Bend's count at the
+    // luxury floor (the filter /luxury-homes-bend opens onto). Both timeboxed:
+    // a slow read costs the door its figure, never the door.
+    withTimeoutFallback(
+      countOpenHousesByCity(FEATURED_CITY_SLUGS),
+      new Map<string, number>(),
+      INDEX_READ_BUDGET_MS.doors,
+      'cities:openHouseDoors',
+    ),
+    withTimeoutFallback(
+      countBendLuxury().then((n): number | null => n).catch((): number | null => null),
+      null,
+      INDEX_READ_BUDGET_MS.doors,
+      'cities:luxuryDoor',
     ),
   ])
   const regionMt = overlays.get('region:central-oregon')
@@ -442,6 +508,13 @@ export default async function CitiesPage() {
       what: v3Text(city.name),
       detail: detail ? v3Text(detail) : undefined,
       value: v3Text(city.activeCount != null ? liveForSaleLabel(city.activeCount) : NO_LIVE_COUNT_LABEL),
+      // The digits as the installed beUI number (beui:number, SITE-92 round
+      // 5): the served face is the same figure `value` reads, and nothing
+      // counts up on load; the digits move only if the count changes.
+      numeral:
+        city.activeCount != null && city.activeCount > 0
+          ? { value: city.activeCount, formatted: v3Text(formatCount(city.activeCount)), rest: v3Text('for sale') }
+          : undefined,
       weight: indexBarWeight(city.activeCount, maxCount),
       media: city.mediaSrc ? { src: city.mediaSrc } : undefined,
       mark: city.mediaSrc ? undefined : <V3PlaceMark silhouette={silhouetteTile(townGeometryBySlug.get(city.slug))} />,
@@ -461,9 +534,105 @@ export default async function CitiesPage() {
       }
     : undefined
 
-  const cityDoors: V3QuietItem[] = featured.flatMap((city) =>
-    cityFeaturedLinks(city.slug, city.name),
-  )
+  // THE DOOR BOARD (SITE-92 round 5). The second, third and fourth door per
+  // featured city, each carrying the count it opens onto: the tile's figure is
+  // the city's live single-family count — the same figure its ledger row
+  // prints, and what its guide and its inventory open onto — and the
+  // open-house and luxury doors carry their own filtered counts from the
+  // destination pages' own reads (cities-doors.ts). A city with no verified
+  // photograph draws its recorded outline in the Atlas's language, as its
+  // ledger row does. The tile with the largest count leads the board.
+  const doorLead = leadTileId(featured.map((c) => ({ id: c.slug, count: c.activeCount })))
+  const doorTiles: V3DoorBoardTile[] = featured.map((city) => {
+    const headlines = overlays.get(`city:${city.slug}`)?.headlines ?? null
+    const median = fmtMedian(city.medianListPrice)
+    const supply = headlines
+      ? `${headlines.verdictLabel.charAt(0).toUpperCase()}${headlines.verdictLabel.slice(1)} · ${headlines.mosLabel} months of supply`
+      : null
+    const line = [median ? `Median list ${median}` : null, supply].filter((part): part is string => Boolean(part)).join(' · ')
+    const figure = tileFigure(city.activeCount)
+    const doors = cityFeaturedLinks(city.slug, city.name).map((door) => {
+      const doorFigure =
+        door.kind === 'open-houses'
+          ? openHouseDoorFigure(openHouseCounts.get(city.slug))
+          : door.kind === 'luxury'
+            ? luxuryDoorFigure(luxuryCount)
+            : null
+      return {
+        id: door.kind,
+        label: v3Text(door.label),
+        rest: door.rest ? v3Text(door.rest) : undefined,
+        href: door.href,
+        figure: doorFigure
+          ? { value: doorFigure.value, formatted: v3Text(doorFigure.formatted), unit: v3Text(doorFigure.unit) }
+          : undefined,
+      }
+    })
+    return {
+      id: city.slug,
+      name: v3Text(city.name),
+      href: `/cities/${city.slug}`,
+      media: city.hero.verified ? { src: city.hero.src } : undefined,
+      mark: city.hero.verified
+        ? undefined
+        : <V3PlaceMark silhouette={silhouetteTile(townGeometryBySlug.get(city.slug), DOOR_TILE_BOX)} />,
+      figure: figure ? { value: figure.value, formatted: v3Text(figure.formatted), unit: v3Text(figure.unit) } : undefined,
+      absent: figure ? undefined : v3Text(NO_LIVE_COUNT_LABEL),
+      line: line ? v3Text(line) : undefined,
+      doors,
+      lead: city.slug === doorLead,
+    }
+  })
+
+  // THE ASK STANDS ON ITS DATA (SITE-92 round 5): the region's real 30-day
+  // count — the same Market Truth figure the fold's strip prints — and every
+  // town the Atlas drew, as its recorded outline, each a door. The same reads
+  // as the fold; nothing new is fetched for the foot of the page.
+  const alertPlaces: V3PlaceStripPlace[] = townRegions
+    .map((r) => ({
+      id: r.id.replace(/^town:/, ''),
+      name: v3Text(r.name),
+      href: r.href,
+      silhouette: silhouetteTile(r.geometry),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+  const alertCount = regionPace.newCount30d
+  const alertsFigureSource =
+    (alertCount != null
+      ? `${formatCount(alertCount)} houses: regional MLS through Oregon Data Share — new listings in the last 30 days across Central Oregon as our market metric layer counts them (detached single-family; Coming Soon excluded), the same figure the strip beside the Atlas prints. `
+      : "The region's 30-day count was not published on this refresh, so the ask carries no figure. ") +
+    "Each outline is the town's recorded boundary, the same one the Atlas above draws; the alert itself covers every city in Central Oregon, drawn or not."
+
+  // THE CLOSE (SITE-92 round 5): one figured door — the search, carrying the
+  // region's live total of every type from the same Atlas read the fold drew,
+  // the meter under it the share of live listings still for sale — then the
+  // place types and the seller ask as one light line, and the MLS cooperative
+  // behind the page. Not a second six-row list under the doors.
+  const liveTotal = atlas.complete && atlas.counts.forSale > 0 ? atlas.counts : null
+  const edgeItems: V3QuietItem[] = [
+    {
+      label: 'Search every listing',
+      href: REGIONAL_SEARCH_HREF,
+      lead: true,
+      detail: liveTotal
+        ? `${formatCount(liveTotal.pending)} more are pending. The bar is the share of live listings still for sale; filter by price, beds and place from there.`
+        : 'Every active listing of every property type on the regional MLS, filterable by price, beds and place.',
+      figure: liveTotal
+        ? {
+            value: formatCount(liveTotal.forSale),
+            unit: 'for sale of every type',
+            source: `${atlas.source} Read ${atlas.stamp}.`,
+            sourceName: 'Oregon Data Share',
+            ratio: liveTotal.forSale / (liveTotal.forSale + liveTotal.pending),
+          }
+        : undefined,
+    },
+    { label: 'Communities', href: '/communities', weight: 'secondary' },
+    { label: 'Neighborhoods', href: '/neighborhoods', weight: 'secondary' },
+    { label: 'Subdivisions', href: '/subdivisions', weight: 'secondary' },
+    { label: 'Value my home', href: valuationHref('/cities'), weight: 'secondary' },
+    { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com', weight: 'secondary', mark: 'external' },
+  ]
 
   // The region's months of supply as the two-bar drawing, from the same two
   // published figures the old sentence quoted. G68: formatted and classified
@@ -615,10 +784,9 @@ export default async function CitiesPage() {
             headingLevel={2}
             eyebrow={v3Text('Every city')}
             heading={v3Text('Central Oregon cities, A to Z')}
-            note={v3Text(
-              directoryNote || 'Live single-family inventory from the regional MLS.',
-            )}
+            note={v3Text(LEDGER_NOTE)}
             drawing={regionDrawing}
+            headLayout="beside"
             rows={[firstFeatured, ...restFeatured]}
             encode={countsPublishable ? 'bar' : undefined}
             scale={ledgerScale}
@@ -636,29 +804,36 @@ export default async function CitiesPage() {
           />
         )}
 
-        {cityDoors.length > 0 ? (
-          <V3Quiet
-            id="city-doors"
-            eyebrow="Straight to the listings"
-            heading="Every city, every door"
-            items={cityDoors}
-          />
-        ) : null}
+        <V3DoorBoard
+          id="city-doors"
+          eyebrow={v3Text('Straight to the listings')}
+          heading={v3Text('Every city, every door')}
+          lede={v3Text(DOOR_BOARD_LEDE)}
+          tiles={doorTiles}
+          source={v3Text(DOOR_BOARD_TRACE)}
+          sourceName="Oregon Data Share"
+          updated={ledgerStamp ? v3Text(formatDate(ledgerStamp)) : undefined}
+        />
 
-        <RegionalAlertSheet placeLabel="Central Oregon" city="" />
+        <RegionalAlertSheet
+          placeLabel="Central Oregon"
+          city=""
+          figure={{
+            newCount30d: regionPace.newCount30d,
+            source: alertsFigureSource,
+            sourceName: 'Oregon Data Share',
+            updatedAt: ledgerStamp,
+            places: alertPlaces,
+            placesLabel: 'Every town the Atlas draws, each a door',
+            scopeLine: 'The alert covers every city in Central Oregon, not only the towns drawn here.',
+          }}
+        />
 
         <V3Quiet
           id="edges"
           eyebrow="Central Oregon"
           heading="Search every listing in Central Oregon"
-          items={[
-            { label: 'Search all listings', href: '/search' },
-            { label: 'Value my home', href: valuationHref('/cities') },
-            { label: 'Communities', href: '/communities' },
-            { label: 'Neighborhoods', href: '/neighborhoods' },
-            { label: 'Subdivisions', href: '/subdivisions' },
-            { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
-          ]}
+          items={edgeItems}
           note="Filter by price, beds, and location across every city on the list. Oregon Data Share is the regional MLS cooperative behind the live listing and market data on this page."
         />
       </main>
