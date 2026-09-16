@@ -1,3 +1,12 @@
+# Current — 2026-09-16 (SITE-114 zip Tip Ready — do not merge)
+
+Surface: Cursor cloud `cursor-cloud-site114-20260916`, branch `cursor/site-114-zip-tip-ready-f900`, draft PR #257. Claim held. Do not merge.
+
+- **SITE-114 `--ship` exit 0.** `demoMatch: true` from a real claude-sonnet-5 Task judge (builder grok-4.6; official grok / cursor-agent / claude CLIs missing). Scores 76/71/74 median **74**, honestyFunction 9, rebaselined off SITE-73 grok-4.6 57. Open-state plates: number-open, masonry-open, insights.
+- **adaptedFrom:** `house-atlas`, `house-mos`, `house-alerts`, `beui-number`, `beui:infinite-masonry`, `beui:scroll-animation`, `beautifului-insight`.
+- **replaceWith this pass:** `beui:infinite-masonry`, `beui:scroll-animation`, `beui-number` / DigitSwap slots, `beautifului-insight` Allocation face. Remaining polish: DigitSwap square radius (craft, null); unlabeled ScrollProgress (`replaceWith: beui:scroll-animation`).
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY, `taste-receipt.mjs --ship`.
+
 # Current — 2026-09-16 (SITE-120 Tip Ready PR — place-alert sticky ask)
 
 Surface: Cursor cloud `cursor-cloud-site120-20260916`, branch `cursor/site-120-place-alerts-3485`. PR only — do not merge.
