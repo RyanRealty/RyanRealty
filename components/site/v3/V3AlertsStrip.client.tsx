@@ -455,7 +455,7 @@ export function V3AlertsStrip({
   const numeral = shownCount ? (
     <span className="v3-alerts__num">
       {Number.isFinite(countValue) ? (
-        <V3Number key={shownCount} value={countValue} formatted={shownCount} className="v3-alerts__num-pop" />
+        <V3Number key={shownCount} value={countValue} formatted={shownCount} settle className="v3-alerts__num-pop" />
       ) : (
         shownCount
       )}
@@ -594,7 +594,7 @@ export function V3AlertsStrip({
               {shownCount ? (
                 <span className="v3-alerts-sticky__num">
                   {Number.isFinite(countValue) ? (
-                    <V3Number key={`sticky-${shownCount}`} value={countValue} formatted={shownCount} />
+                    <V3Number key={`sticky-${shownCount}`} value={countValue} formatted={shownCount} settle />
                   ) : (
                     shownCount
                   )}
