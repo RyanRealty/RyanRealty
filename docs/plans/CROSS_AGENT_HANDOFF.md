@@ -1,3 +1,11 @@
+# Current — 2026-09-16 (SITE-118 degraded ISR persist refuse)
+
+Surface: Cursor cloud `cursor-cloud-site118-20260916`, branch `cursor/site-118-degraded-isr-009c` @ `ad0499691`. PR #266 (draft) — do not merge. Node left `in_progress`. HOLD owner send.
+
+- **SITE-118.** Place-page `withTimeoutFallback` timeouts used to persist thin ISR HTML (`revalidate` 300|3600). `runPublishedPageRender` notes those reads, retries once at prerender with a 3× leash, and `noStore()`s at runtime so a timed-out atlas is never the second-request copy.
+- **Evidence.** `ci:gates` 165/165 including `ci:degraded-isr`. `lib/site/degraded-isr.test.ts` 10/10 (persist refuse + prerender retry + skippableRail not degraded). Floors unchanged. Tip Ready `--ship` N/A (mechanism, no catalog paint).
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md` HARD TIP READY.
+
 # Current — 2026-09-16 (SITE-117 Tip Ready PR — V3Number SSR honesty)
 
 Surface: Cursor cloud `cursor-cloud-site117-20260916`, branch `cursor/site-117-v3number-ssr-e734`. PR only — do not merge. Node left `in_progress`.
