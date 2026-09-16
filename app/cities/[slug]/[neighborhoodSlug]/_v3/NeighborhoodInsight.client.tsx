@@ -54,7 +54,7 @@
  */
 
 import { useMemo } from 'react'
-import InsightCards, { AnomalyCard, useChartEpoch, type InsightPage } from '@/components/motion/insight-cards'
+import InsightCards, { AnomalyCard, type InsightPage } from '@/components/motion/insight-cards'
 import { AnimatedNumber } from '@/components/motion/number'
 import { V3_ROOT_CLASS, V3MosBars, V3SourceLine, type V3MosBarsProps } from '@/components/site/v3'
 import {
@@ -74,10 +74,7 @@ export type NeighborhoodInsightProps = {
 }
 
 export function NeighborhoodInsight({ id, placeName, board, mos }: NeighborhoodInsightProps) {
-  // The same epoch the catalog's card lays its points on, so the month under a
-  // tick is the month that point came from.
-  const epoch = useChartEpoch()
-  const pages = useMemo(() => buildPages(board, mos, epoch), [board, mos, epoch])
+  const pages = useMemo(() => buildPages(board, mos), [board, mos])
   if (pages.length === 0) return null
 
   return (
@@ -87,11 +84,7 @@ export function NeighborhoodInsight({ id, placeName, board, mos }: NeighborhoodI
   )
 }
 
-function buildPages(
-  board: NeighborhoodInsightBoard,
-  mos: V3MosBarsProps | null,
-  epoch: number,
-): InsightPage[] {
+function buildPages(board: NeighborhoodInsightBoard, mos: V3MosBarsProps | null): InsightPage[] {
   const pages: InsightPage[] = []
 
   if (mos) {
@@ -102,7 +95,7 @@ function buildPages(
         return <V3MosBars {...mos} className="nbh-insight__mos" />
       },
       pill: board.supplyHrefLabel,
-      href: board.supplyHref,
+      pillHref: board.supplyHref,
     })
   }
 
@@ -127,10 +120,10 @@ function buildPages(
         </>
       ),
       Card: function ClosedSalesCard() {
-        return <ClosedSalesChart path={path} epoch={epoch} />
+        return <ClosedSalesChart path={path} />
       },
       pill: path.hrefLabel,
-      href: path.href,
+      pillHref: path.href,
     })
   }
 
@@ -138,8 +131,7 @@ function buildPages(
 }
 
 /** The catalog's AnomalyCard, whole: pointer-scrub line plus two metric chips. */
-function ClosedSalesChart({ path, epoch }: { path: NeighborhoodInsightPath; epoch: number }) {
-  const labels = path.points.map((p) => p.label)
+function ClosedSalesChart({ path }: { path: NeighborhoodInsightPath }) {
   return (
     <div className="nbh-insight__chart">
       <AnomalyCard
@@ -156,30 +148,14 @@ function ClosedSalesChart({ path, epoch }: { path: NeighborhoodInsightPath; epoc
           spentLine: () => `Median sale price ran ${path.range.medianLow} to ${path.range.medianHigh};`,
           vsLine: `homes sold ran ${path.range.soldLow} to ${path.range.soldHigh}. ${path.window}.`,
         }}
-        formatTime={(t) => monthFace(t, labels, epoch)}
+        /* SITE-103's opt-in axis: one face per SOURCED point, handed straight
+           to the card. It replaces a formatTime() that reverse-engineered each
+           tick's index from the chart epoch and the point gap — arithmetic that
+           could name the wrong month the moment either changed, which is exactly
+           what the catalog derives internally now. */
+        tickLabels={path.points.map((p) => p.label.slice(0, 3))}
       />
       <V3SourceLine source={path.source} sourceName="Oregon Data Share" />
     </div>
   )
-}
-
-/**
- * AnomalyCard lays its points seven apart, ending at the chart epoch
- * (makePoints(values, 7, epoch)). Map a tick back onto the month it came from,
- * so the axis under the line names a real month instead of clock time.
- *
- * A TICK OFF THE SERIES GETS NOTHING. The card opens a 49-wide window and eight
- * points fill 49 of it exactly, but a shorter series leaves ticks before the
- * first month this page can name. Those resolve to a negative index and print
- * empty rather than borrowing the nearest month (CLAUDE.md §0).
- */
-function monthFace(t: number, labels: string[], epoch: number): string {
-  if (labels.length === 0) return ''
-  const gap = 7
-  const index = Math.round((t - (epoch - (labels.length - 1) * gap)) / gap)
-  if (index < 0 || index > labels.length - 1) return ''
-  const label = labels[index] ?? ''
-  // "August 2026" is too wide for a tick; the axis says the month, the source
-  // line and the card's own title carry the window.
-  return label.split(' ')[0] ?? label
 }

@@ -124,9 +124,27 @@ export function buyHeroInventory(
 
   if (figures.length < 2) return undefined
 
+  // THE RATIO THAT CANNOT SHIP HERE (SITE-91, 2026-09-16). A separate
+  // evaluator asked the band for a mark rather than a fourth clause, and the
+  // obvious one was `price_reduction_share` off this very row — "6% of them
+  // have cut their asking price", drawn as a meter, the figure that explains
+  // the price-cut badges on the cards below. It does not ship, and the reason
+  // is section 0, not taste: getMarketPulseSnapshot's overlayLeftoverHudFamily
+  // NULLS price_reduction_share on purpose ("Pulse weekly cut share has no
+  // leftover equivalent"). Every other figure in this strip has been overlaid
+  // onto the detached single-family population; the stored cut share (5.99 on
+  // the live region row, 2026-09-16) describes the mixed pulse population. A
+  // share of one population set beside a count of another is a figure that
+  // reads true and is not, so the strip goes out with three figures rather
+  // than four. If it is ever wanted, it needs its own population-matched read
+  // and its own trace, not this row.
   return {
     figures,
     source: BUY_HERO_TRACE,
+    // The open clause names the feed; the population and the place stay in the
+    // full trace behind the disclosure (the trace has no comma, so without
+    // this the whole sentence was the clause — two lines of it).
+    sourceName: 'Live MLS · Oregon Data Share',
     updatedAt: pulse.updated_at ?? null,
   }
 }

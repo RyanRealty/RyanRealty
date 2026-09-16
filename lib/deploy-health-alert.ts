@@ -15,7 +15,16 @@ import { sendEmail } from '@/lib/resend'
 import { EMAIL_FONT_STACK } from '@/lib/email/brand'
 
 const ALERT_TO = process.env.MATT_ALERT_EMAIL ?? 'matt@ryan-realty.com'
-const ALERT_FROM = process.env.RESEND_FROM ?? 'alerts@mail.ryan-realty.com'
+const ALERT_FROM_RAW = process.env.RESEND_FROM ?? 'alerts@mail.ryan-realty.com'
+/**
+ * RESEND_FROM may already be `Name <address>`. Wrapping that a second time
+ * produced `Ryan Realty Ops <Name <address>>`, which Resend refuses ("Invalid
+ * `from` field"), so the stale-deploy alert this route exists to send never
+ * sent — found 2026-09-16 while production sat 12 hours behind main with
+ * `alertError` in the cron response and no email. A bare address gets the
+ * display name; an addressed value is used as written.
+ */
+const ALERT_FROM = ALERT_FROM_RAW.includes('<') ? ALERT_FROM_RAW : `Ryan Realty Ops <${ALERT_FROM_RAW}>`
 
 export type DeployHealthAlertParams = {
   /** The commit SHA the live production deployment was built from. */
@@ -50,7 +59,7 @@ export async function sendDeployHealthAlertEmail(
   const subject = `[Deploy] Production behind main by ${p.behindMinutes}m (${short(p.latestSha)} not live)`
 
   try {
-    const r = await sendEmail({ to: ALERT_TO, from: `Ryan Realty Ops <${ALERT_FROM}>`, subject, html })
+    const r = await sendEmail({ to: ALERT_TO, from: ALERT_FROM, subject, html })
     if (r.error) return { ok: false, error: r.error }
     return { ok: true, id: r.id }
   } catch (err) {

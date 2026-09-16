@@ -293,26 +293,57 @@ export function claudeCliFailure(status, stderr, wrapper, { cliMissing = false }
 /**
  * The model id the claude CLI actually answered with, off the wrapper's
  * `modelUsage` keys; falls back to the alias's canonical id.
+ *
+ * WHY THIS IS NOT `Object.keys(usage)[0]` (SITE-91, 2026-09-16). The CLI bills
+ * its OWN background model — the one that writes session titles and compacts
+ * context — into the SAME `modelUsage` map as the model that answered the
+ * prompt, and the map's key order is not answer order. On this sandbox a
+ * `--model sonnet` run came back as:
+ *
+ *   { "claude-haiku-4-5-20251001": { outputTokens: 10 },
+ *     "claude-sonnet-5":           { outputTokens: 4  } }
+ *
+ * so `[0]` recorded `claude-haiku-4-5-20251001` as the judge. That is a FALSE
+ * INSTRUMENT on the receipt in both directions: `isAllowedEvaluator` refuses
+ * haiku, so a real sonnet mark could not ship; and `identityDrift` would read
+ * it as a different judge from the committed mark and turn a real rise into a
+ * rebaseline. Output-token count does not disambiguate either (haiku's
+ * housekeeping outscored the answer above).
+ *
+ * The alias IS the ask, so the rule is: if the model we asked for is in the
+ * map, that is the model that answered. Only when it is absent did the CLI
+ * substitute, and then the busiest id is the honest report of what did.
  */
 export function claudeModelFromWrapper(wrapper, alias) {
+  const want = FALLBACK_EVALUATORS[alias] ?? FALLBACK_EVALUATORS.sonnet
   const usage = wrapper && typeof wrapper === 'object' ? wrapper.modelUsage : null
   if (usage && typeof usage === 'object') {
     const ids = Object.keys(usage).filter((k) => /^claude-/.test(k))
-    // THE CLI REPORTS EVERY MODEL THE TURN TOUCHED, not just the one that
-    // answered. A `--model sonnet` run on 2026-09-15 came back with
-    // modelUsage { claude-haiku-4-5-20251001: 899 input tokens (the CLI's own
-    // internal helper), claude-sonnet-5: 28,660 } — and taking ids[0] stamped
-    // the receipt `claude-haiku-4-5`, a model that is not on the judge chain
-    // at all. The judge is the model matching the alias we asked for; anything
-    // else in that map is a passenger. When no sonnet/opus ran, the first id
-    // still comes back, so a receipt says honestly what actually graded it.
-    const asked = ids.find((k) => new RegExp(`^claude-${alias}(?:-|$)`).test(k))
+    // `modelUsage` lists EVERY model the CLI billed on that turn, and the first
+    // key is the small fast model the CLI runs for its own overhead: a real
+    // wrapper from `claude -p --model sonnet` on 2026-09-16 reads
+    // ["claude-haiku-4-5-20251001", "claude-sonnet-5"]. Taking ids[0] recorded
+    // HAIKU as the judge of a mark sonnet had actually scored — untrue, and
+    // refused by isAllowedEvaluator, so a lane that walked the chain correctly
+    // could not write an honest receipt at all (SITE-103 and SITE-91 hit it
+    // the same day). The alias IS the ask: prefer the exact id that was asked
+    // for (or a key whose canonicalModel is it), then an id carrying the
+    // asked alias, then any judge-family id, and only when the CLI
+    // substituted something else the busiest id, which is the honest report
+    // of what actually answered.
+    const asked =
+      ids.find((id) => id === want || usage[id]?.canonicalModel === want) ??
+      ids.find((id) => new RegExp(`^claude-${alias}(?:-|$)`).test(id))
     if (asked) return asked
-    const ruler = ids.find((k) => /^claude-(sonnet|opus)(?:-|$)/.test(k))
-    if (ruler) return ruler
-    if (ids.length) return ids[0]
+    const family = ids.find((id) => isAllowedEvaluator(id))
+    if (family) return family
+    if (ids.length) {
+      return ids
+        .slice()
+        .sort((a, b) => Number(usage[b]?.outputTokens ?? 0) - Number(usage[a]?.outputTokens ?? 0))[0]
+    }
   }
-  return FALLBACK_EVALUATORS[alias] ?? FALLBACK_EVALUATORS.sonnet
+  return want
 }
 
 /** Problems on a parsed evaluator object. Empty = schema ok (booleans may still be false). */

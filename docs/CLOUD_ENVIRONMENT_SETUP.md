@@ -133,11 +133,24 @@ to be missing in a session, drop the `sudo` prefix.
 Installs ffmpeg, the brand fonts (Amboqia + AzoSans, shipped in-repo), and node
 dependencies, then runs the parity gate. Chromium is **skipped by default** —
 the environment has roughly a five-minute build budget and most sessions never
-drive a browser. When a session needs one:
+drive a browser.
+
+**`npm run setup:browsers` alone does not install the fonts (found 2026-09-15).**
+It is just `npx playwright install --with-deps chromium` — a plain npm script,
+not this file — so a session that boots from `npm ci` + `npm run setup:browsers`
+and never runs `cloud-setup.sh` gets a browser with no Amboqia/AzoSans
+registered (`fc-list | grep -ic amboqia` reads 0). Chromium launches fine
+without them, so nothing fails loudly; a taste-pass render just looks wrong
+later. When a session mid-way through work needs a browser, run the one
+command that gets both instead, skipping the apt/npm steps it doesn't need to
+repeat:
 
 ```bash
-npm run setup:browsers
+CLOUD_SETUP_SKIP_DEPS=1 CLOUD_SETUP_BROWSERS=1 bash scripts/cloud-setup.sh
 ```
+
+`CLOUD_SETUP_SKIP_DEPS=1` assumes fontconfig is already on the box, which is
+true once the environment's own setup script (below) has run at least once.
 
 If the setup script times out, move `npm ci` into a background `SessionStart`
 hook rather than trimming what it installs.
@@ -157,22 +170,40 @@ may trigger a new-device check. If it does, set `SKYSLOPE_TOTP_SECRET` and
 
 ## 5. Known risks on the first cloud run
 
-Three things about THIS repo that the generic docs will not tell you. Check each
+Several things about THIS repo that the generic docs will not tell you. Check each
 on the first session rather than discovering it mid-task.
 
-**The build may not fit in 16 GB.** Cloud sessions get 4 vCPU / 16 GB RAM / 30 GB
-disk. `npm run push` runs a full `next build`, and ledger row W3.5 is already
-blocked because pre-rendering `/search/[...slug]` SIGABRTs the build worker with
-a heap out-of-memory — on the Mac mini. If `npm run push` dies during static
-generation, that is the ceiling, not a code bug. `NODE_OPTIONS=--max-old-space-size`
-in the environment variables is the first lever.
+**The build may not fit, and it's order, not heap size (2026-09-15).** Cloud sessions
+get roughly 4 vCPU / 15 GB RAM / 30 GB disk, no swap. `npm run push` runs a full
+`next build`, and ledger row W3.5 is already blocked because pre-rendering
+`/search/[...slug]` runs out of heap — on the Mac mini. On a cloud box the build was
+also OOM-killed (exit 137, "Killed", no Node error at all) while a `next dev` server
+was ALSO running; with dev stopped and `NODE_OPTIONS=--max-old-space-size=11264` set,
+the identical build passed in about 10 minutes. The OS OOM killer did that, not V8's
+heap limit — so `NODE_OPTIONS=--max-old-space-size` in the environment variables is
+still worth setting, but it is not the fix by itself. **Stop the dev server before you
+build.** Order: stop dev → `next build` → start the prod server → gates.
 
-**`git push` authentication.** The local remote is SSH
-(`git@github.com:RyanRealty/RyanRealty.git`). Cloud sessions authenticate GitHub
-through a proxy and set `GH_TOKEN`/`GITHUB_TOKEN` to the placeholder
-`proxy-injected`. The platform sets its own remote on the clone, so pushing
-should work — but `scripts/push-with-gates.sh` opens its own connection, so prove
-`npm run push` end to end on the first session before trusting it.
+**Starting the prod server after a build, safely.** `npm run start:prod`
+(`scripts/start-prod-server.sh`) refuses a `.next` older than the HEAD commit, refuses
+a held port (prints the pid + command; `FREE_PORT=1` to take it anyway), and starts
+`next start` detached, waiting on it with `scripts/wait-for-server.mjs`. An ad hoc
+`npx next start -p <port>` has none of those guards — on 2026-09-15 one collided with
+an earlier `next start` still holding the port, logged `EADDRINUSE` into a file
+nobody read, and two Playwright probes measured the OLD build as if it were the new
+one.
+
+**`git push` authentication, and `npm run push` targets `main` (2026-09-15).** The
+local remote is SSH (`git@github.com:RyanRealty/RyanRealty.git`). Cloud sessions
+authenticate GitHub through a proxy and set `GH_TOKEN`/`GITHUB_TOKEN` to the
+placeholder `proxy-injected`. The platform sets its own remote on the clone, so
+pushing should work — but `scripts/push-with-gates.sh` opens its own connection, so
+prove `npm run push` end to end on the first session before trusting it. More
+importantly: `npm run push` rebases onto and pushes `origin/main`. A cloud session
+whose harness has it bound to its OWN branch must NOT run it — the sequence that
+works there is commit → `npm run gates:stamp` → `git push -u origin <branch>`. The
+pre-push hook only checks the gates-stamp marker, and the marker is valid for 240
+minutes.
 
 **`gh` is not pre-installed**, and CLAUDE.md tells every agent to use it for
 GitHub operations. Add `apt install -y gh` to the setup script if a session needs
@@ -182,6 +213,7 @@ without it.
 ## Related
 
 - [`scripts/cloud-setup.sh`](../scripts/cloud-setup.sh) — the setup script
+- [`scripts/start-prod-server.sh`](../scripts/start-prod-server.sh) — `npm run start:prod`; starts a built server with the stale-build and held-port guards `run-runtime-gates.sh` uses
 - [`scripts/_auth-capture.mjs`](../scripts/_auth-capture.mjs) — third-party sessions
 - [`scripts/check-vm-parity.mjs`](../scripts/check-vm-parity.mjs) — the gate that keeps this working
 - [`.devcontainer/`](../.devcontainer/) — the multi-agent alternative

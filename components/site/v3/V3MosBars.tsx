@@ -32,6 +32,12 @@ export type V3MosBarsProps = {
   sourceName?: string
   tooltip: { homes: string; sales: string; source: string }
   id?: string
+  /**
+   * Opt-in (SITE-103): publish the two counts on the server and animate them
+   * only when they change, instead of shipping "0 homes for sale" in the HTML
+   * and counting up on load. See V3Number.settle.
+   */
+  settle?: boolean
   className?: string
 }
 
@@ -49,6 +55,7 @@ export function V3MosBars({
   sourceName = 'Oregon Data Share',
   tooltip,
   id = 'place-mos',
+  settle = false,
   className,
 }: V3MosBarsProps) {
   const uid = useId()
@@ -74,7 +81,7 @@ export function V3MosBars({
     const whole = Number.isFinite(value) && Math.abs(value - Math.round(value)) < 1e-9
     if (!whole) return label
     const n = Math.round(value)
-    return <V3Number key={`${id}-${n}-${label}`} value={n} formatted={label} />
+    return <V3Number key={`${id}-${n}-${label}`} value={n} formatted={label} settle={settle} />
   }
 
   return (
