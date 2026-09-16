@@ -138,6 +138,14 @@ export type {
  * Compact two-bar months-of-supply overlay for a place opening (SITE-43).
  * Homes for sale vs a month of sales. Wired through PlaceAreaHero.
  */
+/**
+ * SITE-93: the barrel's wrapper for the installed beUI combobox. The type
+ * picker in a place fold, and the house primitive ci:catalog-install reads for
+ * beui-combobox.
+ */
+export { V3TypeCombobox } from './V3TypeCombobox.client'
+export type { V3TypeComboboxProps, V3TypeOption } from './V3TypeCombobox.client'
+
 export { V3MosBars } from './V3MosBars'
 export type { V3MosBarsProps } from './V3MosBars'
 
@@ -596,7 +604,7 @@ export type { V3AmenitiesProps } from './V3Amenities'
  */
 export { V3Slots } from './V3Slots.client'
 
-export type { V3SlotsProps, V3SlotsColumn, V3SlotsFill } from './V3Slots.client'
+export type { V3SlotsProps, V3SlotsFill } from './V3Slots.client'
 
 /* -------------------------------------------------------------------------- */
 /* PLACE SECTIONS — compositions of the six, not a seventh                     */

@@ -14,6 +14,7 @@
  * Section order: design_system/ryan-realty/ui_kits/neighborhood/parity.json.
  */
 
+import { Fragment } from 'react'
 import { notFound } from 'next/navigation'
 import { readCityOpenHouses, openHouseRows, OPEN_HOUSE_TRACE } from '@/lib/kb/place-open-houses'
 import type { Metadata } from 'next'
@@ -57,6 +58,7 @@ import {
 } from '@/lib/kb/place-sections'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { buildPlaceMosView } from '@/lib/site/place-mos'
+import { marketVerdict } from '@/lib/market/classify'
 import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
@@ -109,7 +111,10 @@ import {
   tooFewSalesItems,
 } from '@/app/cities/[slug]/_v3/place-graphics'
 import { NeighborhoodAlertsStrip } from './_v3/NeighborhoodAlertsSheet.client'
+import { NeighborhoodInsight } from './_v3/NeighborhoodInsight.client'
+import { buildNeighborhoodInsightBoard } from './_v3/neighborhood-insight'
 import { dailyLifeRows } from './_v3/neighborhood-daily-life'
+import './_v3/neighborhood-fold.css'
 import {
   neighborhoodAboutItems,
   neighborhoodExploreItems,
@@ -541,6 +546,51 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const closedN = leftoverClosedCount(hud, placeMonthly ? chartMonths.months : [])
   const costChart = placeMonthly ? placeCostChart(closedN, medianChart) : undefined
 
+  /* ── The fold's paged figure (SITE-104) ─────────────────────────────────
+     ONE object the reader can page and scrub, not another plate of the same
+     shape. The two named MOS bars are page one, with the VERDICT above them —
+     the word this fold has never published. marketVerdict() is the single
+     source of the <=4 / <6 / >=6 boundaries (lib/market/classify.ts), it is
+     handed the SAME months-of-supply figure the bars divide, and the thresholds
+     it was judged against are already printed in the bars' own source line, so
+     the sentence, the bars and the rule cannot disagree (§0 rule 5,
+     scripts/check-market-formula.mjs). publishPlaceFace withholds the verdict
+     from every grain under city ON THE FACE, and that stays true — this is the
+     figure column, and the same verdict already answers #faq twenty sections
+     down.
+
+     Page two is the monthly closed-sale path, and ONLY when the monthly read
+     answered with this neighborhood's own rows: `placeMonthly` is exactly
+     `leftoverUsed && !cityFallback`, so a Bend-wide line never draws under an
+     Awbrey Butte heading (§0). It publishes the monthly SOLD COUNT, which
+     appears nowhere else on this page. */
+  const foldMosProps = placeMos
+    ? {
+        caption: placeMos.caption,
+        plainLabel: placeMos.plainLabel,
+        homesName: placeMos.homesName,
+        homesLabel: placeMos.homesLabel,
+        homesValue: placeMos.homesValue,
+        salesName: placeMos.salesName,
+        salesLabel: placeMos.salesLabel,
+        salesValue: placeMos.salesValue,
+        source: placeMos.source,
+        asOf: placeMos.asOf,
+        sourceName: 'Oregon Data Share',
+        tooltip: placeMos.tooltip,
+      }
+    : null
+  const foldVerdict = hud.monthsSupply != null ? marketVerdict(hud.monthsSupply) : null
+  const foldVerdictProse =
+    foldVerdict && foldVerdict.kind !== 'unknown' ? `A ${foldVerdict.label}.` : null
+  const insightBoard = buildNeighborhoodInsightBoard({
+    placeName: neighborhood.name,
+    cityName,
+    marketHref: `/housing-market/${citySlug}`,
+    verdictProse: foldVerdictProse,
+    months: placeMonthly ? chartMonths.months : [],
+  })
+
   /* ── The ledgers ───────────────────────────────────────────────────────── */
 
   const dailyRows = dailyLifeRows(richContent, cityName)
@@ -626,6 +676,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     img: p.img ?? '',
   }))
   const [firstPeer, ...restPeer] = placeFigureRows(peerItems, `${cityName} neighborhood`)
+  /* The fold's door row. Six is what fits on three lines in the figure column at
+     1440 and still reads as a row rather than a list; the seventh door is the
+     city's own index, so the cap hides nothing. */
+  const peerDoors = peerNeighborhoods.slice(0, 6).map((p) => ({ name: p.name, href: p.href }))
 
   // No excludeSlug: a neighborhood page links its own city on purpose.
   const otherCityItems: CityPlaceItem[] = buildOtherCityItems(allCitySnapshots, {
@@ -701,61 +755,132 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={neighborhoodSchemas} />
 
+        {/* SITE-104: the photograph is shortened to H1 + crawlable doors, and
+            MOS comes OFF it. The bars used to float here as a cream overlay
+            whose claim sentence clipped at 1440 and whose card covered the
+            hillside at 375 (receipt 2026-09-10); they are now page one of the
+            fold's paged figure, where the caption can wrap and the bars keep
+            their hover. */}
         <div
           className={
             stagePosterSrc
-              ? 'place-opening place-opening--media place-opening--neighborhood'
-              : 'place-opening place-opening--neighborhood'
+              ? 'place-opening place-opening--media place-opening--neighborhood place-opening--nbhfold'
+              : 'place-opening place-opening--neighborhood place-opening--nbhfold'
           }
         >
-          <PlaceAreaHero posterSrc={stagePosterSrc} mos={placeMos} />
+          <PlaceAreaHero posterSrc={stagePosterSrc} />
           {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
           <V3Breadcrumb trail={trail} tone={stagePosterSrc ? 'on-media' : 'surface'} />
           <div className="place-opening__copy">
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
             </V3Heading>
-            {/* SITE-84 SEO: crawlable city + inventory doors in the opening. */}
-            <p className="place-opening__caption">
+            {/* SITE-84 SEO: crawlable city + inventory doors in the opening.
+                SITE-104 adds the parent city's market report — the third door,
+                and the page a reader who wants the numbers behind this fold
+                goes to next. */}
+            <p className="place-opening__caption place-opening__caption--doors">
               <a href={`/cities/${citySlug}`}>{cityName} real estate</a>
               {' · '}
               <a href={browseHref}>{neighborhood.name} homes for sale</a>
+              {' · '}
+              <a href={`/housing-market/${citySlug}`}>{cityName} housing market</a>
             </p>
           </div>
         </div>
 
-        {/* SITE-04: the ask as the first callout after the opening, with this
-            neighborhood's real 30-day count as its claim and the city-scoped
-            promise, plus the sticky repeat past #atlas from the same component.
-            Same server action, same payload, same honeypot as the sheet it
-            replaces. */}
-        <NeighborhoodAlertsStrip
-          id="alerts"
-          cityName={cityName}
-          neighborhoodName={neighborhood.name}
-          geoSlug={metricNeighborhoodSlug}
-          newCount30d={publicPace.newCount30d}
-          updatedAt={leftoverStamp}
-          browseHref={browseHref}
-          types={alertTypes}
-        />
+        {/* SITE-104: drawing + figure + ask in the first viewport, the shape the
+            place class landed on the city and the subdivision. Atlas is the
+            drawing (type toggles + price scrubber). The paged insight is the
+            figure. The alerts callout is the ask — still the callout SITE-04
+            shipped, with the same 30-day figure, the same trace and the same
+            sticky repeat keyed off #atlas scrolling past. */}
+        <div className="nbh-fold">
+          <div className="nbh-fold__stage">
+            <div className="nbh-fold__drawing">
+              <V3Atlas
+                id="atlas"
+                headingLevel={2}
+                headline={v3Text(`${neighborhood.name} right now`)}
+                headlineTone="eyebrow"
+                claimText={`Every home for sale and under contract inside the ${neighborhood.name} lines. Scrub price to filter the map.`}
+                dots={atlasView.dots}
+                regions={atlasRegions.filter((r) => r.kind === 'town' || r.kind === 'neighborhood')}
+                basemap={basemapForRegions(atlasRegions, { dots: atlasView.dots, fit: 'dots' })}
+                fit="dots"
+                types={atlasView.types}
+                events={atlasView.events}
+                source={atlasView.source}
+                stamp={atlasView.stamp}
+                incomplete={!atlasView.complete}
+              />
+            </div>
+            <aside className="nbh-fold__figure nbh-fold__figure--insight">
+              <NeighborhoodInsight
+                id="place-insight"
+                placeName={neighborhood.name}
+                board={insightBoard}
+                mos={foldMosProps}
+              />
+              {/* SITE-104 SEO: the fold's door row. A reader looking at the Awbrey
+                  Butte outline asks what is next to it, and until now the only
+                  answer on this page was a Ledger twenty sections down. Six
+                  neighbour doors plus the city's own index, in the first viewport,
+                  crawlable. It sits under the FIGURE and not under the map because
+                  that is the column with room at 1440: the drawing column ends with
+                  the Atlas's live rail, and a row after it landed at y=951.
 
-        {(
-          <V3Atlas
-            id="atlas"
-            headingLevel={2}
-            headline={v3Text(`${neighborhood.name} right now`)}
-            dots={atlasView.dots}
-            regions={atlasRegions.filter((r) => r.kind === 'town' || r.kind === 'neighborhood')}
-            basemap={basemapForRegions(atlasRegions, { dots: atlasView.dots, fit: 'dots' })}
-            fit="dots"
-            types={atlasView.types}
-            events={atlasView.events}
-            source={atlasView.source}
-            stamp={atlasView.stamp}
-            incomplete={!atlasView.complete}
-          />
-        )}
+                  NAMES ONLY. The peer ACTIVE COUNTS are an all-types count and the
+                  bars above these doors are detached-only, so printing both in one
+                  viewport would set two different measures of "homes for sale" side
+                  by side with one trace between them (CLAUDE.md §0 rule 5, and the
+                  class's layout lock: inventory counts on the page must agree). The
+                  counts keep their trace in #peer-neighborhoods, where they already
+                  ship. */}
+              {peerDoors.length > 0 ? (
+                <nav
+                  id="also-in-city"
+                  className="nbh-fold__peers"
+                  aria-label={`Other ${cityName} neighborhoods`}
+                >
+                  <p className="nbh-fold__peers-label">Also in {cityName}</p>
+                  {/* The separator rides with the door it follows, inside a nowrap
+                      span, so a wrap never opens a line with a stray middot. The
+                      SPACE after each span is a real text node and it is the row's
+                      only break opportunity: JSX drops the whitespace between
+                      sibling elements, so with the space inside the nowrap span the
+                      row became one unbreakable word and ran straight through the
+                      column beside it (captured 2026-09-16). */}
+                  <p className="nbh-fold__peers-row">
+                    {peerDoors.map((peer) => (
+                      <Fragment key={peer.href}>
+                        <span className="nbh-fold__peers-door">
+                          <a href={peer.href}>{peer.name}</a>
+                          <span aria-hidden="true"> ·</span>
+                        </span>{' '}
+                      </Fragment>
+                    ))}
+                    <span className="nbh-fold__peers-door">
+                      <a href={`/cities/${citySlug}#neighborhoods`}>Every {cityName} neighborhood</a>
+                    </span>
+                  </p>
+                </nav>
+              ) : null}
+            </aside>
+            <aside className="nbh-fold__figure nbh-fold__figure--ask">
+              <NeighborhoodAlertsStrip
+                id="alerts"
+                cityName={cityName}
+                neighborhoodName={neighborhood.name}
+                geoSlug={metricNeighborhoodSlug}
+                newCount30d={publicPace.newCount30d}
+                updatedAt={leftoverStamp}
+                browseHref={browseHref}
+                types={alertTypes}
+              />
+            </aside>
+          </div>
+        </div>
 
         <PlaceTypeSlider cards={typeCards} label={`${neighborhood.name} property types`} />
 

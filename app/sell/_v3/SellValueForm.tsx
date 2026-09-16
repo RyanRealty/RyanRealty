@@ -22,6 +22,29 @@
  * SellAnswer.tsx against the SellAnswerData type, so the drawing can be
  * replaced without touching this file.
  *
+ * SITE-111 — THE TWO INSTALLED CONTROLS THIS FILE RUNS.
+ *
+ *   beui-input (components/motion/input, https://beui.dev/components/motion/input)
+ *   is the address field and every contact field: the catalog's own label slot,
+ *   left affix, error SHAKE, and the success check whose path draws itself.
+ *   Painted in v3 tokens — navy on cream, square corners, no second hue, the
+ *   warm-stone focus ring — so it is the demo's object in our paint rather than
+ *   a cream box wearing its name.
+ *
+ *   shadcn:sheet (components/ui/sheet, https://ui.shadcn.com/docs/components/sheet)
+ *   is everything after the address. The 2026-09-12 table read the old fold
+ *   exactly right: "Layout lock is Stage then the address sheet ... No sheet
+ *   edge, overlay, or sheet chrome. Contact never appears." So the submit now
+ *   opens the real Radix sheet — overlay over the photograph, focus trap,
+ *   Escape and a close control — and the sourced answer reveals INSIDE it,
+ *   between the address and the contact step, one question at a time on 390.
+ *   The address stays on screen behind the scrim, which is the continuity the
+ *   pattern owes (PUBLIC_UI section 5).
+ *
+ * The sheet opens on the submit, not on the answer: the read takes a beat, and
+ * a working surface that appears only once the data lands reads as a page that
+ * swallowed the tap. The reading state is the sheet's first frame.
+ *
  * ATTRIBUTION. `readAskSource()` is read once at submit and feeds BOTH the GA4
  * event (`ask_source`, never `source` — that key is taken and means the form)
  * and the CMA request metadata, so a submit the sticky control sent can be
@@ -29,11 +52,72 @@
  */
 import { useEffect, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Input as MotionInput, type InputClassNames } from '@/components/motion/input'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { V3_ROOT_CLASS } from '@/components/site/v3'
 import { cn } from '@/lib/utils'
 
 type SellPin = { lat: number; lng: number; label: string }
+
+/**
+ * The catalog control, painted. Every slot the beUI Input exposes gets a house
+ * class so the demo's structure survives and only its palette changes: pill
+ * radius to square, destructive red to a heavier navy rule, the emerald check
+ * to a navy stroke, Inter to Geist. The rules live in sell-stage.css.
+ */
+const SELL_FIELD_CLASSES: InputClassNames = {
+  root: 'sell-field',
+  label: 'sell-field__label',
+  field: 'sell-field__box',
+  input: 'sell-field__input',
+  leftIcon: 'sell-field__affix',
+  successIcon: 'sell-field__check',
+  errorMessage: 'sell-field__error',
+}
+
+/** The left affix on the address field: a pin, drawn, never an emoji. */
+function PinAffix() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+      <path
+        d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="10" r="2.4" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+/**
+ * WHEN THE ADDRESS FIELD IS SATISFIED.
+ *
+ * The catalog control's success check is the field's validity affordance: this
+ * value is a complete street address, the thing the submit will accept. It is
+ * the same gate `advanceFromAddress` enforces, drawn instead of withheld —
+ * before this, the check only appeared when Google Places committed a pin, so
+ * the visitor who typed a whole address by hand (and every capture of this page
+ * that has no Places key) got no confirmation at all that the field was done.
+ * A Places commit is the stronger form of the same fact and still sets it.
+ *
+ * It says the FIELD is complete. It does not claim the house was verified —
+ * that is the written valuation's job, and the page says so in the sheet.
+ */
+function addressLooksComplete(value: string): boolean {
+  const v = value.trim()
+  if (v.length < 10) return false
+  // A house number, then a street word.
+  if (!/^\d[\w-]*\s+[A-Za-z]/.test(v)) return false
+  // And a place: a comma, a ZIP, or a two-letter state at the end.
+  return /,/.test(v) || /\b\d{5}(?:-\d{4})?\b/.test(v) || /\b[A-Z]{2}\b\s*$/.test(v)
+}
 
 function sellStageRoot(): HTMLElement | null {
   if (typeof document === 'undefined') return null
@@ -84,6 +168,13 @@ declare global {
 }
 
 type Step = 'address' | 'answer' | 'qualify' | 'when' | 'success'
+
+/** The sheet's own progression, so a visitor can see how many questions are left. */
+const SHEET_RAIL: { id: Step; label: string }[] = [
+  { id: 'answer', label: 'Market read' },
+  { id: 'qualify', label: 'Where to send it' },
+  { id: 'when', label: 'Timing' },
+]
 
 /**
  * The timeframe, as a SCALE rather than three identical boxes.
@@ -136,6 +227,7 @@ type Props = {
 
 export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Props) {
   const [step, setStep] = useState<Step>('address')
+  const [sheetOpen, setSheetOpen] = useState(false)
   const [address, setAddress] = useState('')
   const [answer, setAnswer] = useState<SellAnswerData | null>(null)
   const [name, setName] = useState('')
@@ -143,6 +235,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
   const [phone, setPhone] = useState('')
   const [timeline, setTimeline] = useState<SellerLPTimeline | ''>('')
   const [smsConsent, setSmsConsent] = useState(false)
+  const [addressError, setAddressError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [isHot, setIsHot] = useState(false)
@@ -151,16 +244,17 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
 
   const addressFieldId = `${formId}-address`
 
+  /**
+   * The photograph follows the field. Typing leans and dims the poster, a
+   * committed Places street locks the deeper scrim, and the sheet opens over
+   * that — so what sits behind the overlay is still the street that was typed.
+   */
   useEffect(() => {
-    if (step !== 'address') {
-      setSellStageFocus('idle')
-      return
-    }
     if (pin) setSellStageFocus('pinned')
     else if (address.trim().length >= 3) setSellStageFocus('typing')
     else setSellStageFocus('idle')
     return () => setSellStageFocus('idle')
-  }, [address, pin, step])
+  }, [address, pin])
 
   /**
    * The address the visitor already typed somewhere else.
@@ -188,10 +282,11 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
 
   function advanceFromAddress(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setAddressError(null)
     setError(null)
     const v = address.trim()
     if (v.length < 5) {
-      setError('Please enter a complete property address.')
+      setAddressError('Please enter a complete property address.')
       return
     }
     // The accept test for this node is the share of ADDRESS submits that end in
@@ -201,6 +296,9 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
     } catch {
       // tracking helper missing in some envs
     }
+    // The sheet IS the working surface, so it opens on the submit and carries
+    // its own reading state.
+    setSheetOpen(true)
     startTransition(async () => {
       const result = await answerSellValue({ address: v })
       if (!result.ok) {
@@ -279,279 +377,305 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
     setStep('when')
   }
 
-  if (step === 'success') {
-    return (
-      <div>
-        <h2 className="font-display text-2xl font-semibold text-primary">
-          Got it. Your home value is on its way.
-        </h2>
-        <p className="mt-3 text-foreground">{publishSellValuationConfirm(isHot)}</p>
-        {bookLane ? (
-          <p className="mt-3 text-foreground">
-            You said you are ready now, so the useful next thing is twenty minutes on the phone
-            or at the house.{' '}
-            <a href="/book" className="font-semibold text-primary underline underline-offset-2">
-              Pick a time that works
-            </a>
-            , and we will bring the numbers with us.
-          </p>
-        ) : null}
-        <p className="mt-3 text-muted-foreground">
-          Prefer to talk right now? Call Matt at{' '}
-          <a href={`tel:${CONTACT.phoneDirectTel}`} className="font-semibold text-primary underline underline-offset-2 tabular-nums">
-            {CONTACT.phoneDirect}
+  function closeSheet() {
+    setSheetOpen(false)
+    setError(null)
+    setStep('address')
+  }
+
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  const reading = pending && step === 'address'
+  const railIndex = SHEET_RAIL.findIndex((rung) => rung.id === step)
+
+  const sheetTitle = reading
+    ? 'Reading the Bend record'
+    : step === 'answer'
+      ? 'What the record says about this street'
+      : step === 'qualify'
+        ? 'Where should we send it?'
+        : step === 'when'
+          ? 'When are you thinking of selling?'
+          : 'Your home value is on its way'
+
+  const sheetBody = reading ? (
+    <div className="sell-ask-sheet__body sell-ask-sheet__reading" role="status">
+      <span className="sell-ask-sheet__pulse" aria-hidden="true" />
+      <p>Pulling closed sales, supply and pace for this address.</p>
+    </div>
+  ) : step === 'success' ? (
+    <div className="sell-ask-sheet__body">
+      <p className="text-foreground">{publishSellValuationConfirm(isHot)}</p>
+      {bookLane ? (
+        <p className="mt-3 text-foreground">
+          You said you are ready now, so the useful next thing is twenty minutes on the phone
+          or at the house.{' '}
+          <a href="/book" className="font-semibold text-primary underline underline-offset-2">
+            Pick a time that works
           </a>
-          .
+          , and we will bring the numbers with us.
         </p>
-      </div>
-    )
-  }
-
-  if (step === 'when') {
-    return (
-      <div>
-        <Button
-          type="button"
-          variant="link"
-          onClick={() => {
-            setError(null)
-            setStep('qualify')
-          }}
-          className="mb-3 h-auto justify-start p-0"
+      ) : null}
+      <p className="mt-3 text-muted-foreground">
+        Prefer to talk right now? Call Matt at{' '}
+        <a
+          href={`tel:${CONTACT.phoneDirectTel}`}
+          className="font-semibold text-primary underline underline-offset-2 tabular-nums"
         >
-          Back
-        </Button>
-        <h2 className="font-display text-xl font-semibold text-primary">
-          Last thing: when are you thinking of selling?
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          It changes what we send you, not whether we send it.
+          {CONTACT.phoneDirect}
+        </a>
+        .
+      </p>
+    </div>
+  ) : step === 'when' ? (
+    <div className="sell-ask-sheet__body">
+      <p className="text-sm text-muted-foreground">
+        It changes what we send you, not whether we send it.
+      </p>
+      <ol className="sell-when">
+        {TIMELINE_OPTIONS.map((opt) => (
+          <li key={opt.value}>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                setTimeline(opt.value)
+                submit(opt.value)
+              }}
+              className={cn('sell-when__opt', timeline === opt.value && 'sell-when__opt--picked')}
+              style={{ ['--sell-when-horizon' as string]: String(opt.horizon) }}
+            >
+              <span className="sell-when__mark" aria-hidden="true" />
+              <span className="sell-when__label">{opt.label}</span>
+              <span className="sell-when__when">{opt.when}</span>
+              <span className="sell-when__sub">{opt.sub}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+      {pending ? <p className="mt-3 text-sm text-muted-foreground">Sending</p> : null}
+      {error ? (
+        <p className="mt-3 text-sm font-medium text-destructive" role="alert">
+          {error}
         </p>
-        <ol className="sell-when">
-          {TIMELINE_OPTIONS.map((opt) => (
-            <li key={opt.value}>
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => {
-                  setTimeline(opt.value)
-                  submit(opt.value)
-                }}
-                className={cn('sell-when__opt', timeline === opt.value && 'sell-when__opt--picked')}
-                style={{ ['--sell-when-horizon' as string]: String(opt.horizon) }}
-              >
-                <span className="sell-when__mark" aria-hidden="true" />
-                <span className="sell-when__label">{opt.label}</span>
-                <span className="sell-when__when">{opt.when}</span>
-                <span className="sell-when__sub">{opt.sub}</span>
-              </button>
-            </li>
-          ))}
-        </ol>
-        {pending ? <p className="mt-3 text-sm text-muted-foreground">Sending</p> : null}
-        {error ? (
-          <p className="mt-3 text-sm font-medium text-destructive" role="alert">
-            {error}
-          </p>
-        ) : null}
+      ) : null}
+      <Button
+        type="button"
+        variant="link"
+        onClick={() => {
+          setError(null)
+          setStep('qualify')
+        }}
+        className="mt-4 h-auto justify-start p-0"
+      >
+        Back
+      </Button>
+    </div>
+  ) : step === 'qualify' ? (
+    <form className="sell-ask-sheet__body" onSubmit={handleQualifySubmit} noValidate>
+      <div className="sell-ask-sheet__fields">
+        <MotionInput
+          id="sell-value-name"
+          name="name"
+          type="text"
+          label="Your name (optional)"
+          autoComplete="name"
+          value={name}
+          onChange={setName}
+          classNames={SELL_FIELD_CLASSES}
+          autoFocus
+        />
+        <MotionInput
+          id="sell-value-email"
+          name="email"
+          type="email"
+          label="Email"
+          required
+          autoComplete="email"
+          inputMode="email"
+          value={email}
+          onChange={setEmail}
+          error={error && !emailLooksValid ? error : false}
+          success={emailLooksValid}
+          reserveErrorLine
+          classNames={SELL_FIELD_CLASSES}
+        />
+        <MotionInput
+          id="sell-value-phone"
+          name="phone"
+          type="tel"
+          label="Phone (optional)"
+          autoComplete="tel"
+          inputMode="tel"
+          value={phone}
+          onChange={setPhone}
+          classNames={SELL_FIELD_CLASSES}
+        />
       </div>
-    )
-  }
 
-  if (step === 'answer' && answer) {
-    return (
-      <div>
-        <Button
-          type="button"
-          variant="link"
-          onClick={() => {
-            setError(null)
-            setStep('address')
-          }}
-          className="mb-3 h-auto justify-start p-0"
-        >
-          Edit address
-        </Button>
-        <SellAnswer answer={answer} />
-        <p className="mt-5 text-foreground">
-          The one thing that is not on this page is the price. That takes the comparable sales
-          side by side, and it comes back written, inside 24 hours.
-        </p>
-        <Button
-          type="button"
-          onClick={() => setStep('qualify')}
-          className="mt-4 min-h-11 w-full text-base"
-        >
-          Send me the written valuation
-        </Button>
-      </div>
-    )
-  }
+      <SmsConsentDisclosure className="mt-4" checked={smsConsent} onCheckedChange={setSmsConsent} />
 
-  if (step === 'qualify') {
-    return (
-      <form onSubmit={handleQualifySubmit} noValidate>
-        <Button
-          type="button"
-          variant="link"
-          onClick={() => {
-            setError(null)
-            setStep(answer ? 'answer' : 'address')
-          }}
-          className="mb-3 h-auto justify-start p-0"
-        >
-          {answer ? 'Back to the market read' : 'Edit address'}
-        </Button>
-        <p className="text-sm text-muted-foreground">{address}</p>
-        <h2 className="mt-2 font-display text-xl font-semibold text-primary">
-          Where should we send it?
-        </h2>
+      <Button type="submit" disabled={pending} className="mt-6 min-h-11 w-full text-base">
+        Continue
+      </Button>
+      <Button
+        type="button"
+        variant="link"
+        onClick={() => {
+          setError(null)
+          setStep(answer ? 'answer' : 'address')
+        }}
+        className="mt-2 h-auto justify-start p-0"
+      >
+        {answer ? 'Back to the market read' : 'Edit address'}
+      </Button>
+    </form>
+  ) : answer ? (
+    <div className="sell-ask-sheet__body">
+      <SellAnswer answer={answer} />
+      <p className="mt-5 text-foreground">
+        The one thing that is not on this page is the price. That takes the comparable sales
+        side by side, and it comes back written, inside 24 hours.
+      </p>
+      <Button
+        type="button"
+        onClick={() => setStep('qualify')}
+        className="mt-4 min-h-11 w-full text-base"
+      >
+        Send me the written valuation
+      </Button>
+    </div>
+  ) : null
 
-        <div className="mt-5 grid gap-4">
-          <div>
-            <Label htmlFor="sell-value-name">
-              Your name <span className="font-normal text-muted-foreground">(optional)</span>
-            </Label>
-            <Input
-              id="sell-value-name"
-              name="name"
-              type="text"
-              autoComplete="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-2 min-h-11 text-base"
-              autoFocus
-            />
-          </div>
-          <div>
-            <Label htmlFor="sell-value-email">Email</Label>
-            <Input
-              id="sell-value-email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              inputMode="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-2 min-h-11 text-base"
-            />
-          </div>
-          <div>
-            <Label htmlFor="sell-value-phone">
-              Phone <span className="font-normal text-muted-foreground">(optional)</span>
-            </Label>
-            <Input
-              id="sell-value-phone"
-              name="phone"
-              type="tel"
-              autoComplete="tel"
-              inputMode="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="mt-2 min-h-11 text-base"
-            />
-          </div>
-        </div>
-
-        <SmsConsentDisclosure className="mt-4" checked={smsConsent} onCheckedChange={setSmsConsent} />
-
-        {error ? (
-          <p className="mt-3 text-sm font-medium text-destructive" role="alert">
-            {error}
-          </p>
-        ) : null}
-
-        <Button type="submit" disabled={pending} className="mt-6 min-h-11 w-full text-base">
-          Continue
-        </Button>
-      </form>
-    )
-  }
-
-  const fieldState = error ? 'error' : pin ? 'success' : 'idle'
-  // Stage fold only: reveal a street pin AFTER Places commits. The at-rest Bend
-  // preview was cut — the rail already carries closes + MOS, and a second Bend
-  // map plate stacked the form back into a portal card and clipped The record.
+  // Stage fold only: reveal a street pin AFTER Places commits, so the at-rest
+  // fold is the sourced line and the ask, never a portal map card.
   const stageMap = pagePath === '/sell'
   const pinSrc = stageMap && pin ? sellPinMapUrl(pin) : null
   const mapSrc = pinSrc
   const mapLabel = pin ? pin.label : ''
 
   return (
-    <form id={formId} onSubmit={advanceFromAddress} className="scroll-mt-24 sell-stage-field" noValidate>
-      <Label htmlFor={addressFieldId}>Home address</Label>
-      {/* No autoFocus on first render: this form also mounts at the BOTTOM of
-          the homepage, and a focused off-screen input scroll-jacked every
-          mobile visitor to the footer on load (2026-08-27 mobile audit,
-          reproduced 3/3 fresh loads). The name field in the next step keeps
-          its autoFocus — that one fires after a user action. */}
-      <div className="sell-stage-field__control" data-state={fieldState}>
-        <AddressAutocomplete
-          id={addressFieldId}
-          value={address}
-          onChange={(next) => {
-            setAddress(next)
-            // Typing after a pin clears the resolved map until Places commits again.
-            if (pin && next.trim() !== pin.label.trim()) setPin(null)
-          }}
-          onPlaceSelected={(place) => {
-            setAddress(place.formattedAddress)
-            if (
-              typeof place.lat === 'number' &&
-              typeof place.lng === 'number' &&
-              Number.isFinite(place.lat) &&
-              Number.isFinite(place.lng)
-            ) {
-              setPin({
-                lat: place.lat,
-                lng: place.lng,
-                label: place.formattedAddress,
-              })
-            } else {
-              setPin(null)
-            }
-          }}
-          invalid={error !== null}
-          className="mt-2 min-h-11 text-base"
-        />
-        {pin ? (
-          <svg className="sell-stage-field__check" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 12.5l4.5 4.5L19 7.5" />
-          </svg>
-        ) : null}
-      </div>
-
-      {/* Places pin plate (catalog sheet + transitions-panel): only after a
-          street commits, so the at-rest fold stays proof + ask, not a map card. */}
-      {mapSrc ? (
-        <figure className="sell-stage-pin sell-stage-pin--locked" aria-label="Pinned home location">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="sell-stage-pin__map" src={mapSrc} alt="" decoding="async" />
-          <figcaption className="sell-stage-pin__label">{mapLabel}</figcaption>
-        </figure>
-      ) : null}
-
-      {error ? (
-        <p className="mt-3 text-sm font-medium text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <Button
-        type="submit"
-        disabled={pending}
-        className="sell-stage-submit mt-4 min-h-11 w-full text-base"
+    <>
+      <form
+        id={formId}
+        onSubmit={advanceFromAddress}
+        className="scroll-mt-24 sell-stage-field"
+        noValidate
       >
-        <span>{pending ? 'Reading the market' : 'Value my home'}</span>
-        {!pending ? (
-          <span className="sell-stage-submit__arrow" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </span>
+        {/* No autoFocus on first render: this form also mounts at the BOTTOM of
+            the homepage, and a focused off-screen input scroll-jacked every
+            mobile visitor to the footer on load (2026-08-27 mobile audit,
+            reproduced 3/3 fresh loads). The name field in the next step keeps
+            its autoFocus — that one fires after a user action. */}
+        <div
+          className="sell-stage-field__control"
+          data-state={
+            addressError ? 'error' : pin || addressLooksComplete(address) ? 'success' : 'idle'
+          }
+        >
+          <AddressAutocomplete
+            id={addressFieldId}
+            variant="motion"
+            label="Home address"
+            leftIcon={<PinAffix />}
+            error={addressError ?? false}
+            success={(Boolean(pin) || addressLooksComplete(address)) && !addressError}
+            motionClassNames={SELL_FIELD_CLASSES}
+            value={address}
+            onChange={(next) => {
+              setAddress(next)
+              if (addressError) setAddressError(null)
+              // Typing after a pin clears the resolved map until Places commits again.
+              if (pin && next.trim() !== pin.label.trim()) setPin(null)
+            }}
+            onPlaceSelected={(place) => {
+              setAddress(place.formattedAddress)
+              if (
+                typeof place.lat === 'number' &&
+                typeof place.lng === 'number' &&
+                Number.isFinite(place.lat) &&
+                Number.isFinite(place.lng)
+              ) {
+                setPin({
+                  lat: place.lat,
+                  lng: place.lng,
+                  label: place.formattedAddress,
+                })
+              } else {
+                setPin(null)
+              }
+            }}
+            invalid={addressError !== null}
+          />
+        </div>
+
+        {mapSrc ? (
+          <figure className="sell-stage-pin sell-stage-pin--locked" aria-label="Pinned home location">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="sell-stage-pin__map" src={mapSrc} alt="" decoding="async" />
+            <figcaption className="sell-stage-pin__label">{mapLabel}</figcaption>
+          </figure>
         ) : null}
-      </Button>
-    </form>
+
+        <Button
+          type="submit"
+          disabled={pending}
+          className="sell-stage-submit mt-4 min-h-11 w-full text-base"
+        >
+          <span>{pending ? 'Reading the market' : 'Value my home'}</span>
+          {!pending ? (
+            <span className="sell-stage-submit__arrow" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+          ) : null}
+        </Button>
+      </form>
+
+      {/* shadcn:sheet — the real one. Overlay over the photograph, focus trap,
+          Escape, a close control, and one question at a time inside it. */}
+      <Sheet
+        open={sheetOpen}
+        onOpenChange={(next) => {
+          if (!next) closeSheet()
+        }}
+      >
+        <SheetContent
+          side="right"
+          className={cn(V3_ROOT_CLASS, 'sell-ask-sheet')}
+          overlayClassName="sell-ask-sheet__scrim"
+        >
+          <SheetHeader className="sell-ask-sheet__head">
+            <SheetDescription className="sell-ask-sheet__street">
+              {address.trim() || 'Your home'}
+            </SheetDescription>
+            <SheetTitle className="sell-ask-sheet__title">{sheetTitle}</SheetTitle>
+            {step !== 'success' ? (
+              <ol className="sell-ask-sheet__rail">
+                {SHEET_RAIL.map((rung, i) => (
+                  <li
+                    key={rung.id}
+                    className="sell-ask-sheet__rung"
+                    data-state={
+                      railIndex < 0
+                        ? 'todo'
+                        : i < railIndex
+                          ? 'done'
+                          : i === railIndex
+                            ? 'now'
+                            : 'todo'
+                    }
+                    aria-current={i === railIndex ? 'step' : undefined}
+                  >
+                    {rung.label}
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+          </SheetHeader>
+          {sheetBody}
+        </SheetContent>
+      </Sheet>
+    </>
   )
 }

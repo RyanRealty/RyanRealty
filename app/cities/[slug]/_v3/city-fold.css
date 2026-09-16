@@ -29,10 +29,13 @@
 }
 
 @media (max-width: 39.99rem) {
-  /* Barely a still — H1 + doors only so Atlas + MOS + alerts fit in 812. */
+  /* Barely a still — H1 + doors only so Atlas + MOS + alerts fit in 812.
+     SITE-93: 6.25rem clipped the door row after the first "Bend", so the
+     neighborhoods door was unreadable and uncrawlable to a phone reader. The
+     plate is now tall enough for the row to wrap whole. */
   .place-opening.place-opening--city.place-opening--media {
     min-height: 5rem;
-    max-height: 6.25rem;
+    max-height: 7.75rem;
   }
 
   .place-opening--city.place-opening--media .place-opening__copy {
@@ -43,6 +46,7 @@
 
   .place-opening--city .place-opening__caption--doors {
     font-size: var(--v3-size-source);
+    line-height: var(--v3-leading-note);
   }
 }
 
@@ -76,10 +80,50 @@
 }
 
 @media (min-width: 64rem) {
-  /* Atlas owns more of the fold; alerts figure stays wide enough to read. */
+  /* SITE-93: THREE columns, not two stacked plates in one.
+     The drawing, the figure, the ask — each a different width, a different
+     density and a different medium, which is exactly what the evaluator said
+     the old right column did not have ("no change in width, density, or
+     media"). It is also what puts the email ask back inside the first
+     viewport: as one column it ended 178px below the fold once the pager and
+     the four proof cards arrived. */
   .city-fold__stage {
-    grid-template-columns: minmax(0, 1.45fr) minmax(20rem, 0.95fr);
+    grid-template-columns: minmax(0, 1.25fr) minmax(15.5rem, 0.8fr) minmax(16.5rem, 0.85fr);
     column-gap: var(--v3-space-lg);
+  }
+
+  /* The Atlas's own wide layout puts a 16-20rem dock column beside the map.
+     In a 476px fold column that leaves the map ~180px and it draws as a
+     sliver, which is the opposite of "the map is Atlas". In the fold the map
+     takes the whole column and the type + price controls dock under it. */
+  .city-fold__drawing .v3-atlas__grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      'head'
+      'body'
+      'dock';
+    padding: 0;
+  }
+
+  .city-fold__drawing .v3-atlas__frame {
+    border-left: 0;
+    border-top: var(--v3-rule-hairline);
+    border-bottom: var(--v3-rule-hairline);
+  }
+
+  .city-fold__drawing .v3-atlas__stage {
+    min-height: 0;
+    max-height: min(42vh, 21rem);
+  }
+
+  /* Three columns, two rules. The register's own separator (PUBLIC_UI: rules,
+     not panels), so the figure and the ask read as columns of one front page
+     instead of cards floating in cream. */
+  .city-fold__figure--insight,
+  .city-fold__figure--ask {
+    border-left: var(--v3-rule-hairline);
+    padding-left: var(--v3-space-lg);
   }
 }
 
@@ -190,12 +234,15 @@
     display: none;
   }
 
+  /* SITE-93 phone: TWO proof cards, each with price + beds/baths/sqft. The
+     rule that hid the whole strip below 64rem meant a phone saw a 121-house
+     claim and no house at all. */
   .city-fold__figure .v3-alerts__strip {
     max-height: none;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  /* One proof card on a phone — price + beds/baths/sqft stay with the claim. */
-  .city-fold__figure .v3-alerts__strip > li:nth-child(n + 2) {
+  .city-fold__figure .v3-alerts__strip > li:nth-child(n + 3) {
     display: none;
   }
 
@@ -212,24 +259,14 @@
     font-size: var(--v3-size-body-sm);
   }
 
-  /* Drop source + proof thumb on phone so ask + types land in the first viewport. */
-  .city-fold__figure .v3-source,
-  .city-fold__figure .v3-alerts__source,
-  .city-fold__figure .v3-alerts__strip {
-    display: none;
-  }
-
-  /* Claim → types → email. */
+  /* Claim → figure → types → email. */
   .city-fold__figure .v3.v3-alerts .v3-alerts__grid {
-    grid-template-areas: 'lead' 'ask' !important;
+    grid-template-areas: 'lead' 'figure' 'ask' !important;
   }
 
-  .city-fold__figure .v3.v3-mos {
-    padding: var(--v3-space-2xs) var(--v3-space-xs);
-  }
-
-  .city-fold__figure .v3-mos__plain,
-  .city-fold__figure .v3-mos .v3-source {
+  /* SITE-93 §0: the as-of stamp rides with the figure on a phone too. It used
+     to be dropped here, so neither fold numeral carried a date at 375. */
+  .city-fold__figure .v3-mos__plain {
     display: none;
   }
 
@@ -252,6 +289,7 @@
   display: grid;
   gap: var(--v3-space-md);
   min-width: 0;
+  align-content: start;
 }
 
 .city-fold__figure .v3-mos,
@@ -259,14 +297,14 @@
   margin: 0;
 }
 
-/* MOS in the figure column — compact cream plate, full caption + as-of visible. */
-.city-fold__mos {
-  display: grid;
-  gap: var(--v3-space-2xs);
+/* SITE-93: the figure column's first object is the paged insight; the two
+   named MOS bars are its first page, so the pager owns the one plate and the
+   bars keep their caption, their hover and their as-of stamp. */
+.city-fold__figure .city-insight {
+  min-width: 0;
 }
 
 .city-fold__figure .v3.v3-mos {
-  padding: var(--v3-space-xs) var(--v3-space-sm);
   gap: var(--v3-space-2xs);
   max-width: 100%;
 }
@@ -300,8 +338,8 @@
   grid-template-columns: minmax(0, 1fr) !important;
   grid-template-areas: 'lead' 'figure' 'ask' !important;
   column-gap: 0;
-  row-gap: var(--v3-space-sm);
-  gap: var(--v3-space-sm);
+  row-gap: var(--v3-space-xs);
+  gap: var(--v3-space-xs);
 }
 
 .city-fold__figure .v3.v3-alerts .v3-alerts__ask {
@@ -314,6 +352,21 @@
 .city-fold__figure .v3-alerts__ask button[type='submit'] {
   min-height: var(--v3-tap);
   min-width: var(--v3-tap);
+}
+
+/* The ask is a COLUMN in this narrow column. Field beside button at 312px left
+   the placeholder reading "you@ema" — a field a visitor cannot see the shape of
+   is a worse ask than one that takes another row. */
+.city-fold__figure .v3-alerts__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-2xs);
+  align-items: stretch;
+}
+
+.city-fold__figure .v3-alerts__row .v3-btn {
+  width: 100%;
+  justify-content: center;
 }
 
 .city-fold__figure .v3-alerts__eyebrow {
@@ -331,12 +384,14 @@
 }
 
 .city-fold__figure .v3-alerts__num {
-  font-size: clamp(2.5rem, 6vw, 3.5rem);
+  font-size: clamp(2.25rem, 4.5vw, 2.9rem);
   line-height: 0.95;
   margin-right: 0.2em;
 }
 
-/* Type toggle stays in the fold so the reader can change the ask. */
+/* The type control stays in the fold so the reader can change the ask. On this
+   route it is the installed beUI combobox (CityTypeCombobox.client.tsx); the
+   toggle-row rules below still serve the neighborhood and community strips. */
 .city-fold__figure .v3-alerts__types {
   display: flex;
   flex-wrap: wrap;
@@ -349,32 +404,69 @@
   min-width: var(--v3-tap);
 }
 
-/* Compact proof rows — one card so the email ask stays in the 1440 fold. */
+.city-fold__figure .v3-alerts__types--control {
+  display: block;
+  max-width: 17rem;
+}
+
+/* SITE-93 proof rows: the newest four, not one. Each card already carries
+   price, street address and beds/baths/sqft — a photo without the facts is an
+   inventory miss, and one card against a two-figure claim was the evaluator's
+   "nothing to do but read it once". Two columns so four fit the fold. */
 .city-fold__figure .v3-alerts__strip {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--v3-space-xs);
-  max-height: 5.5rem;
-  overflow: hidden;
-}
-
-.city-fold__figure .v3-alerts__strip > li:nth-child(n + 2) {
-  display: none;
+  max-height: none;
+  overflow: visible;
 }
 
 .city-fold__figure .v3-alerts__thumb {
   display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr);
-  align-items: start;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  align-items: center;
   column-gap: var(--v3-space-xs);
+  row-gap: 0;
   min-width: 0;
   max-width: none;
+  /* Each card is a link to that home: a real target at 375 (WCAG 2.5.5). The
+     compacted two-line body came to 41.3px on its own (ci:tap-targets). */
+  min-block-size: var(--v3-tap);
 }
 
 .city-fold__figure .v3-alerts__thumb img {
-  width: 5.5rem;
+  width: 3rem;
   aspect-ratio: 4 / 3;
   object-fit: cover;
+}
+
+/* Price beside the street, the facts under both: four homes with their whole
+   card in the room one card used to take. */
+.city-fold__figure .v3-alerts__thumb-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: var(--v3-space-2xs);
+  row-gap: 0;
+  line-height: var(--v3-leading-control);
+}
+
+.city-fold__figure .v3-alerts__thumb-price {
+  grid-column: 1;
+  font-size: var(--v3-size-body-sm);
+}
+
+.city-fold__figure .v3-alerts__thumb-name {
+  grid-column: 2;
+  font-size: var(--v3-size-body-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.city-fold__figure .v3-alerts__thumb-facts {
+  grid-column: 1 / -1;
+  font-size: var(--v3-size-source);
 }
 
 .city-fold__figure .v3-alerts__thumb-name,
@@ -383,6 +475,15 @@
   overflow-wrap: anywhere;
   word-break: normal;
   hyphens: manual;
+}
+
+@media (max-width: 47.99rem) {
+  /* SITE-93 phone: the insight's pill is dropped from view so the 30-day claim
+     and its proof cards reach the first viewport. The anchor stays in the
+     served HTML, and /months-of-supply is linked again from #market. */
+  .city-fold__figure--insight .insight-cards__pill {
+    display: none;
+  }
 }
 
 @media (max-width: 39.99rem) {

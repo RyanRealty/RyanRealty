@@ -139,7 +139,17 @@ function balancedCut(text: string, cuts: string): number {
     const ch = text[i]!
     if (ch === '(' || ch === '[') depth += 1
     else if (ch === ')' || ch === ']') depth = Math.max(0, depth - 1)
-    else if (depth === 0 && cuts.includes(ch)) return i
+    else if (depth === 0 && cuts.includes(ch)) {
+      // A DECIMAL POINT IS NOT A SENTENCE END. The /sell evaluator (2026-09-16)
+      // found the consequence and called it blocking, correctly: the supply
+      // trace "months of supply 3.5 (seller's market) — …" folded to the clause
+      // "months of supply 3", so the line under the drawing published a
+      // DIFFERENT number from the verdict sentence beside it. Section 0 says the
+      // printed number equals the shipped one, and a fold that cuts inside a
+      // figure breaks that on every page whose trace opens with one.
+      if (ch === '.' && /[0-9]/.test(text[i - 1] ?? '') && /[0-9]/.test(text[i + 1] ?? '')) continue
+      return i
+    }
   }
   return -1
 }

@@ -70,6 +70,7 @@ export function V3MosBars({
     [homesName, homesValue, homesLabel, salesName, salesValue, salesLabel],
   )
 
+  void tooltip // the caller's trace object; the visible trace is V3SourceLine below
   const show = useCallback(() => setOpen(true), [])
   const hide = useCallback(() => setOpen(false), [])
 
@@ -124,12 +125,18 @@ export function V3MosBars({
       </div>
       {open ? (
         <div className="v3-mos__tip" id={tipId} role="status">
-          {/* More data than the bars: the ratio and the dated source — not a
-              second label of the same two numerals (SITE-84 evaluator). */}
+          {/* More data than the bars: the ratio — not a second label of the
+              same two numerals (SITE-84 evaluator).
+
+              AND NOT THE SOURCE AGAIN (SITE-93). The tip used to reprint
+              "Oregon Data Share · detached single-family · as of <date>"
+              directly above the SOURCE line that says it, which the 2026-09-10
+              receipt recorded as a craft defect, and two copies of one stamp is
+              also two chances to read two dates. The trace has one home on this
+              figure: the source line below, which is always visible. */}
           <p>
             Supply ratio: {homesLabel} homes for sale ÷ {salesLabel} sales a month.
           </p>
-          <p className="v3-mos__tip-source">{tooltip.source}</p>
         </div>
       ) : null}
       <V3SourceLine source={source} asOf={asOf} sourceName={sourceName} />

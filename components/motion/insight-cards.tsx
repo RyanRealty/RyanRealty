@@ -40,9 +40,13 @@ const formatCount = (v: number) => Math.round(v).toLocaleString('en-US')
  * never re-reads them, so correcting the epoch one render later is too late:
  * the stage mounts only once the real clock is in hand.
  */
-const STABLE_EPOCH = 1_700_000_000
+export const STABLE_EPOCH = 1_700_000_000
 
-function useChartEpoch(): number | null {
+/**
+ * Exported for the route insight panels (city, subdivision): they lay their
+ * own month ticks on the same clock this file's cards lay their points on.
+ */
+export function useChartEpoch(): number | null {
   const [epoch, setEpoch] = useState<number | null>(null)
   useEffect(() => {
     setEpoch(Date.now() / 1000)

@@ -81,7 +81,7 @@
       "add": "@beui/combobox",
       "file": "components/motion/combobox.tsx",
       "import": "@/components/motion/combobox",
-      "house": "components/site/v3/V3MorphSearch.tsx",
+      "house": "components/site/v3/V3TypeCombobox.client.tsx",
       "repo": "https://github.com/starc007/ui-components",
       "mustContain": [
         "ComboboxTrigger",
@@ -2504,7 +2504,11 @@
     },
     "city": {
       "layoutLock": "A place page opens with a drawing and a figure beside the alerts sentence. Do not replace Atlas or MOS bars with a portal search hero. Inventory counts on the same page must agree.",
-      "primitivesToAdd": [
+      "demoStates": [
+        "insight-open=#place-insight .insight-pager__btn[aria-label^='Next']!click",
+        "types-open=#alerts .city-typebox__trigger!click",
+        "mos-hover=#place-insight .v3-mos__barrow!hover"
+      ],      "primitivesToAdd": [
         "V3Carousel"
       ],
       "modules": [

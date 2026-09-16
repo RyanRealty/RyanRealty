@@ -422,6 +422,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* Two words, one line. At 1440 with the search field in the bar this wrapped
+     to "Sign / in" in every first-viewport shot. */
+  white-space: nowrap;
   min-height: var(--v3-tap);
   padding: 0 var(--v3-space-xs);
   color: var(--v3-ink);

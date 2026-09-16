@@ -26,10 +26,10 @@
  */
 
 import type { Metadata } from 'next'
-import { getListingTiles, getListingDetailPhotos, getListingDetail } from '@/lib/data'
+import { getListingTiles, getListingDetailPhotos, getListingDetail, getListingPhotos } from '@/lib/data'
 import CompareClient, { type CompareListingData } from '@/components/compare/CompareClient'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { formatDateTime } from '@/lib/format/date'
+import { formatDate, formatDateTime } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
 import { listingCanonicalHref } from '@/lib/slug'
 import {
@@ -40,15 +40,16 @@ import {
   V3Heading,
   V3Quiet,
   V3SectionTracker,
-  type V3SlotsColumn,
 } from '@/components/site/v3'
 import { CompareEmpty } from './_v3/CompareEmpty.client'
+import type { CompareSheetHome, CompareSheetRow } from './_v3/CompareSheet.client'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export const metadata: Metadata = {
   title: 'Compare homes · Ryan Realty',
-  description: 'Compare up to 4 Central Oregon homes side by side: price, size, beds, baths, and features.',
+  description:
+    'Put up to four Central Oregon homes side by side: price, price per square foot, beds, baths, square feet, lot, year built, garage and days on market, with the spread between them named.',
   alternates: { canonical: `${siteUrl}/compare` },
   robots: { index: false, follow: true },
   openGraph: {
@@ -67,52 +68,60 @@ export const metadata: Metadata = {
   },
 }
 
+/** How long a rendered copy of this page is served before it is read again.
+ *  The sample's caption states this in minutes, off this constant, so the page
+ *  can never claim a freshness its own cache does not keep. */
 export const revalidate = 300
 
 /* ---------------------------------------------------------------------------
-   THE WORKED EXAMPLE (site queue SITE-50)
+   THE WORKED EXAMPLE (site queue SITE-50, rebuilt SITE-95)
 
-   The rows the sample compares, and the values pulled off a live tile. These
-   are the same fields CompareClient's real table leads with, so the example is
-   the product and not a drawing of it. HOA and taxes are deliberately absent:
-   they need a getListingDetail read per home, and four extra full-row reads to
-   decorate an empty state is a cost the page should not pay.
+   The fields the sample compares and how each one is read off a live tile.
+   These are the same fields CompareClient's real table leads with, so the
+   example is the product and not a drawing of it. HOA and taxes stay out: they
+   need a getListingDetail read per home, and four extra full-row reads to
+   decorate a landing state is a cost this page should not pay.
 
    SECTION 0. Every value below comes off the listing_tile_mv row read in this
    render — no rounding that changes a figure, no fallback to a remembered one,
-   and an em dash wherever the feed withheld the field. The homes are real and
-   they are labelled "Sample" in a visible word, so nothing here can be read as
-   the visitor's own queue or as a fabricated address.
+   and an em dash wherever the feed withheld the field. The spread sentence on
+   each row is computed HERE, from the same numbers formatted into the cells, so
+   the sheet can never print a delta its own columns disagree with. The homes
+   are real and they are labelled "Sample" in a visible word, so nothing here
+   can be read as the visitor's own queue or as a fabricated address.
    --------------------------------------------------------------------------- */
-const SAMPLE_ROWS = [
-  'Price',
-  'Price / sq ft',
-  'Beds',
-  'Baths',
-  'Sq ft',
-  'Lot',
-  'Year built',
-  'Days on market',
-] as const
 
-/**
- * Which rows get a length drawn under the figure, and which print the numeral
- * alone. A bar is a comparison, so it only goes on a row where the comparison
- * teaches something: four homes built 1999-2020 all sit at 99% of the newest,
- * which draws four identical bars and says nothing, and a bed count of 2 beside
- * 4 is already read faster as "2" than as half a bar. Price, price per foot,
- * size, lot and days on market are the rows where the spread is the point.
- */
-const ENCODED_ROWS: Record<string, true> = {
-  Price: true,
-  'Price / sq ft': true,
-  'Sq ft': true,
-  Lot: true,
-  'Days on market': true,
+type SampleTile = Awaited<ReturnType<typeof getListingTiles>>[number]
+
+type RowSpec = {
+  label: string
+  read: (t: SampleTile) => number | null
+  /** How the value prints in a cell. */
+  format: (n: number) => string
+  /**
+   * How the DIFFERENCE prints. Defaults to `format`; a year built needs it
+   * because the spread between 1981 and 2016 is 35 years, not the year 35.
+   */
+  formatSpread?: (n: number) => string
+  /** The words after the spread figure, e.g. "apart", "more square feet".
+   *  A function because "1 more beds" is not a sentence. */
+  spreadWord: (n: number) => string
+  /**
+   * Whether a length is drawn under the figure. ONE RULE FOR EVERY ROW as of
+   * 2026-09-15: the first cut drew bars on price, price per foot, size, lot and
+   * days on market only, on the argument that four homes built 1999-2020 all
+   * sit at 99% of the newest and teach nothing — and two evaluators in a row
+   * read the result as a table whose rhythm broke halfway down, "bare numbers
+   * with no mark", an afterthought rather than a system. A near-equal row
+   * drawing four near-equal lengths is the honest picture of a near-equal row.
+   * The field stays because a future row (a yes/no, a status) will not take a
+   * length at all.
+   */
+  encoded: boolean
+  /** Whether the spread also reads as a percentage. Only where it means
+   *  something: 4,700% more days on market is noise, not a reading. */
+  percent?: boolean
 }
-
-/** How many homes the example shows. The tool holds four; the example fills it. */
-const SAMPLE_SIZE = 4
 
 const EM_DASH = '—'
 
@@ -120,19 +129,128 @@ function num(n: number | null | undefined): string {
   return n == null ? EM_DASH : n.toLocaleString('en-US')
 }
 
-function acres(n: number | null | undefined): string {
-  return n == null ? EM_DASH : `${n.toFixed(2)} ac`
+const SAMPLE_ROWS: readonly RowSpec[] = [
+  {
+    label: 'Price',
+    read: (t) => t.listPrice,
+    format: (n) => formatPriceExact(n),
+    spreadWord: () => 'apart',
+    encoded: true,
+    percent: true,
+  },
+  {
+    label: 'Price / sq ft',
+    read: (t) => t.pricePerSqft,
+    format: (n) => `$${Math.round(n).toLocaleString('en-US')}`,
+    spreadWord: () => 'apart',
+    encoded: true,
+    percent: true,
+  },
+  {
+    label: 'Beds',
+    read: (t) => t.beds,
+    format: num,
+    spreadWord: (n) => (n === 1 ? 'more bedroom' : 'more bedrooms'),
+    encoded: true,
+  },
+  {
+    label: 'Baths',
+    read: (t) => t.baths,
+    format: num,
+    spreadWord: (n) => (n === 1 ? 'more bathroom' : 'more bathrooms'),
+    encoded: true,
+  },
+  {
+    label: 'Sq ft',
+    read: (t) => t.sqft,
+    format: num,
+    spreadWord: () => 'more square feet',
+    encoded: true,
+  },
+  {
+    label: 'Lot',
+    read: (t) => t.lotSizeAcres,
+    format: (n) => `${n.toFixed(2)} ac`,
+    spreadWord: () => 'more land',
+    encoded: true,
+  },
+  {
+    label: 'Year built',
+    // A calendar year is not a quantity: it prints without a thousands
+    // separator (the 2026-09-12 table caught "2,005"), and the spread between
+    // two years is a count of years.
+    read: (t) => t.yearBuilt,
+    format: (n) => String(Math.round(n)),
+    formatSpread: (n) => String(Math.round(n)),
+    spreadWord: (n) => (n === 1 ? 'year apart' : 'years apart'),
+    encoded: true,
+  },
+  {
+    label: 'Garage',
+    read: (t) => t.garageSpaces,
+    format: num,
+    spreadWord: (n) => (n === 1 ? 'more space' : 'more spaces'),
+    encoded: true,
+  },
+  {
+    label: 'Days on market',
+    read: (t) => t.dom,
+    format: num,
+    spreadWord: (n) => (n === 1 ? 'day apart' : 'days apart'),
+    encoded: true,
+  },
+]
+
+/** How many homes the example shows. The tool holds four; the example fills it. */
+const SAMPLE_SIZE = 4
+/** How many active tiles are read to find four with a photo and full facts. */
+const SAMPLE_POOL = 24
+/** How many photographs of each home the strip pages through. */
+const SAMPLE_PHOTOS = 5
+
+function streetOf(t: SampleTile): string {
+  return [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ').trim()
 }
 
-function daysOnMarket(d: string | null | undefined): number | null {
-  if (!d) return null
-  const date = new Date(d)
-  if (Number.isNaN(date.getTime())) return null
-  const days = Math.floor((Date.now() - date.getTime()) / (24 * 60 * 60 * 1000))
-  return days >= 0 ? days : null
+function isFinitePresent(v: number | null | undefined): v is number {
+  return v != null && Number.isFinite(v)
 }
 
-void daysOnMarket
+/**
+ * The spread sentence for one row: the two extremes, whose they are, and the
+ * distance between them. Computed from the same raw values the cells format.
+ */
+function readingFor(
+  spec: RowSpec,
+  values: readonly (number | null)[],
+  titles: readonly string[],
+  { named = true }: { named?: boolean } = {},
+): string {
+  const present = values
+    .map((v, i) => ({ v, i }))
+    .filter((p): p is { v: number; i: number } => isFinitePresent(p.v))
+  if (present.length === 0) return 'The feed published this for none of these homes.'
+  if (present.length === 1) {
+    const only = present[0]!
+    return `Published only for ${titles[only.i]}: ${spec.format(only.v)}.`
+  }
+  const low = present.reduce((a, b) => (b.v < a.v ? b : a))
+  const high = present.reduce((a, b) => (b.v > a.v ? b : a))
+  if (low.v === high.v) {
+    return `All ${present.length} homes: ${spec.format(low.v)}.`
+  }
+  const diff = high.v - low.v
+  const spread = (spec.formatSpread ?? spec.format)(diff)
+  const pct =
+    spec.percent && low.v > 0 ? `, ${Math.round((high.v / low.v - 1) * 100).toLocaleString('en-US')}% more` : ''
+  const missing = values.length - present.length
+  const withheld = missing > 0 ? ` (${missing} not published)` : ''
+  // At 375 the two addresses push this to three lines above the houses, so the
+  // narrow reading names the extremes without naming whose they are — the
+  // LOWEST / HIGHEST marks in the columns do that job on the same screen.
+  if (!named) return `${spec.format(low.v)} lowest · ${spec.format(high.v)} highest · ${spread} ${spec.spreadWord(diff)}${pct}`
+  return `${spec.format(low.v)} at ${titles[low.i]} · ${spec.format(high.v)} at ${titles[high.i]} · ${spread} ${spec.spreadWord(diff)}${pct}${withheld}`
+}
 
 export default async function ComparePage({
   searchParams,
@@ -157,60 +275,109 @@ export default async function ComparePage({
   // THE WORKED EXAMPLE, read only when there is nothing to compare. A visitor
   // who arrived with homes queued never sees it, so the read never runs for
   // them and the populated page costs exactly what it always did.
-  let sampleColumns: V3SlotsColumn[] = []
+  let sampleHomes: CompareSheetHome[] = []
+  let sampleRows: CompareSheetRow[] = []
+  let sampleClaim = ''
   let sampleCaption = ''
+  let sampleSheetCaption = ''
   let sampleSource = ''
   if (ids.length === 0) {
-    const sampleTiles = await getListingTiles({
+    const pool = await getListingTiles({
       status: 'active',
       sort: 'newest',
-      limit: SAMPLE_SIZE,
+      limit: SAMPLE_POOL,
     }).catch(() => [])
-    // The raw numbers behind the formatted values, one array per row, so the
-    // lengths under the figures are computed from exactly the values printed
-    // above them. A row's largest value is its denominator; a withheld field
-    // contributes nothing and draws nothing.
-    const rawByRow: (number | null)[][] = SAMPLE_ROWS.map((row) =>
-      sampleTiles.map((t) => {
-        switch (row) {
-          case 'Price':
-            return t.listPrice
-          case 'Price / sq ft':
-            return t.pricePerSqft
-          case 'Beds':
-            return t.beds
-          case 'Baths':
-            return t.baths
-          case 'Sq ft':
-            return t.sqft
-          case 'Lot':
-            return t.lotSizeAcres
-          case 'Year built':
-            return t.yearBuilt
-          case 'Days on market':
-            return t.dom
-          default:
-            return null
-        }
-      }),
+    // A COMPARISON OF FOUR HOMES IS FOUR HOMES. The 2026-09-12 table found a
+    // vacant lot in the third column — dashes for beds, baths, square feet and
+    // price per foot — so the opening object was not what the page promises.
+    // The filter is named in the trace below, not hidden.
+    const picked = pool
+      .filter(
+        (t) =>
+          !!t.photoUrl &&
+          isFinitePresent(t.listPrice) &&
+          isFinitePresent(t.beds) &&
+          isFinitePresent(t.baths) &&
+          isFinitePresent(t.sqft) &&
+          (t.sqft ?? 0) > 0,
+      )
+      .slice(0, SAMPLE_SIZE)
+
+    // getListingPhotos, NOT getListingDetailPhotos. The normalized
+    // `listing_photos` table is populated only for our own and backfilled
+    // listings — read on 2026-09-15 it held no row for any of the four newest
+    // active listings, so the strip would have rendered one tile photo per home
+    // and no carousel at all. getListingPhotos falls back through
+    // `listings.details->'Photos'` (the raw Spark payload every active listing
+    // carries, at Uri1600) and then the single PhotoURL, and it honours
+    // media_suppressed — an owner who asked for their photographs to come down
+    // stays down here too.
+    const photoSets = await Promise.all(
+      picked.map((t) => getListingPhotos(t.listingKey).catch(() => [])),
     )
-    const rowMax = rawByRow.map((values) => {
-      const present = values.filter((v): v is number => v != null && Number.isFinite(v) && v > 0)
-      return present.length > 0 ? Math.max(...present) : null
+
+    const titles = picked.map((t) => streetOf(t) || (t.listNumber ? `MLS ${t.listNumber}` : 'This home'))
+    // TWO HOMES ON ONE STREET NEED TWO NAMES. The 2026-09-15 capture put two
+    // pills reading "Apollo" side by side, and a spread sentence naming
+    // "Apollo Place" twice would have been worse than useless. When a street
+    // name repeats, its number comes back.
+    const streetNames = picked.map((t) => (t.streetName ?? '').trim())
+    const repeated = new Set(
+      streetNames.filter((n, i) => n.length > 0 && streetNames.indexOf(n) !== i),
+    )
+    const shortTitles = picked.map((t, i) => {
+      const name = streetNames[i] ?? ''
+      if (!name) return titles[i]!
+      return repeated.has(name) && t.streetNumber ? `${t.streetNumber} ${name}` : name
+    })
+    // The name a spread sentence uses: the street with its suffix, so
+    // "$609,900 at Barstow Place" reads like a person talking about a house.
+    const readingNames = picked.map((t, i) => {
+      const name = [t.streetName, t.streetSuffix].filter(Boolean).join(' ').trim()
+      if (!name) return titles[i]!
+      return repeated.has((t.streetName ?? '').trim()) && t.streetNumber
+        ? `${t.streetNumber} ${name}`
+        : name
     })
 
-    sampleColumns = sampleTiles.map((t, colIndex) => {
-      const street = [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ').trim()
-      const dom = t.dom
-      const weights = SAMPLE_ROWS.map((row, rowIndex) => {
-        if (!ENCODED_ROWS[row]) return null
-        const max = rowMax[rowIndex]
-        const value = rawByRow[rowIndex]?.[colIndex]
-        if (max == null || max <= 0 || value == null || !Number.isFinite(value) || value <= 0) {
-          return null
-        }
-        return value / max
-      })
+    // The raw numbers behind the formatted values, one array per row, so the
+    // lengths under the figures and the spread sentences beside them are
+    // computed from exactly the values printed above them.
+    const rawByRow: (number | null)[][] = SAMPLE_ROWS.map((spec) => picked.map((t) => spec.read(t)))
+    const rowMax = rawByRow.map((values) => {
+      const present = values.filter((v): v is number => isFinitePresent(v) && v > 0)
+      return present.length > 0 ? Math.max(...present) : null
+    })
+    // Which home holds each extreme. Marked only on encoded rows, and only when
+    // the two extremes actually differ — "Lowest" on four identical figures is
+    // a mark that teaches nothing.
+    const extremes = rawByRow.map((values) => {
+      const present = values
+        .map((v, i) => ({ v, i }))
+        .filter((p): p is { v: number; i: number } => isFinitePresent(p.v))
+      if (present.length < 2) return { low: -1, high: -1 }
+      const low = present.reduce((a, b) => (b.v < a.v ? b : a))
+      const high = present.reduce((a, b) => (b.v > a.v ? b : a))
+      return low.v === high.v ? { low: -1, high: -1 } : { low: low.i, high: high.i }
+    })
+
+    sampleRows = SAMPLE_ROWS.map((spec, r) => ({
+      label: spec.label,
+      reading: readingFor(spec, rawByRow[r] ?? [], readingNames),
+      readingShort: readingFor(spec, rawByRow[r] ?? [], readingNames, { named: false }),
+      encoded: spec.encoded,
+    }))
+
+    sampleHomes = picked.map((t, colIndex) => {
+      const title = titles[colIndex]!
+      const city = t.city ?? ''
+      // Feed order, hero first: Spark publishes the primary photograph at
+      // index 0 and getListingPhotos preserves that order.
+      const urls = (photoSets[colIndex] ?? [])
+        .map((p) => p.url)
+        .filter((u): u is string => !!u)
+        .slice(0, SAMPLE_PHOTOS)
+      const photoUrls = urls.length > 0 ? urls : t.photoUrl ? [t.photoUrl] : []
       return {
         key: t.listingKey,
         // The ONE listing-URL builder (ci:listing-canonical-single). The
@@ -227,38 +394,63 @@ export default async function ComparePage({
           subdivisionName: t.subdivisionName,
         }),
         addHref: `/compare?ids=${encodeURIComponent(t.listingKey)}`,
-        title: street || (t.listNumber ? `MLS ${t.listNumber}` : 'This home'),
-        ...(t.city ? { place: t.city } : {}),
-        ...(t.photoUrl ? { photoUrl: t.photoUrl } : {}),
-        facts: [
-          t.listPrice != null ? formatPriceExact(t.listPrice) : EM_DASH,
-          t.pricePerSqft != null ? `$${Math.round(t.pricePerSqft).toLocaleString('en-US')}` : EM_DASH,
-          num(t.beds),
-          num(t.baths),
-          t.sqft != null ? num(t.sqft) : EM_DASH,
-          acres(t.lotSizeAcres),
-          num(t.yearBuilt),
-          dom != null ? `${num(dom)}` : EM_DASH,
-        ],
-        weights,
+        title,
+        shortTitle: shortTitles[colIndex] ?? title,
+        ...(city ? { place: city } : {}),
+        price: isFinitePresent(t.listPrice) ? formatPriceExact(t.listPrice) : EM_DASH,
+        facts: `${num(t.beds)} bd · ${num(t.baths)} ba · ${num(t.sqft)} sq ft`,
+        photos: photoUrls.map((url, i) => ({
+          url,
+          alt: `${title}${city ? `, ${city}` : ''} — photograph ${i + 1} of ${photoUrls.length}`,
+        })),
+        values: SAMPLE_ROWS.map((spec, r) => {
+          const v = rawByRow[r]?.[colIndex]
+          return isFinitePresent(v) ? spec.format(v) : EM_DASH
+        }),
+        weights: SAMPLE_ROWS.map((spec, r) => {
+          if (!spec.encoded) return null
+          const max = rowMax[r]
+          const v = rawByRow[r]?.[colIndex]
+          if (max == null || max <= 0 || !isFinitePresent(v) || v <= 0) return null
+          return v / max
+        }),
+        marks: SAMPLE_ROWS.map((_spec, r) => {
+          const e = extremes[r]!
+          if (e.low === colIndex) return 'low' as const
+          if (e.high === colIndex) return 'high' as const
+          return null
+        }),
       }
     })
-    if (sampleColumns.length > 0) {
+
+    if (sampleHomes.length > 0) {
       const stamp = formatDateTime(new Date())
+      const n = sampleHomes.length
+      // THE FOLD SAYS THE JOB; THE READING SAYS THE FIGURES. The claim used to
+      // carry the price and size spreads and then the reading line under it
+      // repeated both — two muted paragraphs before any house was large enough
+      // to look at (2026-09-12 table). The sheet's own reading line states the
+      // spread, in the row the reader is on, so the claim gets out of its way
+      // and carries the door instead.
+      sampleClaim = `${n} homes for sale right now. Tap a row to read the spread.`
       // The source is NAMED in the caption, in the fold, not only inside the
-      // disclosure below the table: an evaluator reading the rendered page on
+      // disclosure below the sheet: an evaluator reading the rendered page on
       // 2026-09-09 could see a freshness stamp and no publisher.
-      // Two clauses, and no more. Adding the source name here was right; adding
-      // a third sentence explaining the bars with it pushed the caption to six
-      // lines at 375 and turned it into a footnote block (2026-09-09 evaluator,
-      // round two). A length beside a numeral does not need explaining — the
-      // full encoding rule lives in the trace behind "Source".
-      sampleCaption = `${sampleColumns.length} ${sampleColumns.length === 1 ? 'home' : 'homes'} for sale in Central Oregon right now, shown as an example of the finished comparison. Regional MLS through Oregon Data Share, read ${stamp}.`
+      // SAY HOW FRESH, NOT JUST WHEN. "read <date>" leaves a reader to guess
+      // whether the four homes are a fixture; they are a live read, and the
+      // cadence comes off `revalidate` rather than out of a sentence, so the
+      // claim cannot drift from the cache that serves it.
+      sampleCaption = `${n} real listings, shown as an example — not your queue. Oregon Data Share, read ${formatDate(new Date())} and re-read every ${Math.round(revalidate / 60)} minutes.`
+      // NO DATASET CODENAMES IN COPY A VISITOR READS (TASTE.md: raw slugs and
+      // internal labels are a named tell; the 2026-09-15 evaluator called this
+      // one blocking). The table name belongs in the §0 trace behind "Source",
+      // which is the audit line, not in the caption under the sheet.
+      sampleSheetCaption = `Regional MLS through Oregon Data Share, read ${stamp}. Where the MLS published no figure you will see a dash.`
       // The trace opens with its source's NAME, because V3SourceDisclosure
       // folds a trace to the shorter of its pre-comma segment and its first
       // sentence — a trace that opens with a clause instead of a name folds to
       // a fragment nobody can read.
-      sampleSource = `Regional MLS through Oregon Data Share, read from listing_tile_mv in this render: standard_status Active, scoped to the Central Oregon service-area cities, ordered by most recent MLS update, the first ${SAMPLE_SIZE}. Price is ListPrice as published; beds, baths, square feet, lot acres and year built are the feed's own fields; days on market is the tile's dom. A field the feed withheld renders as an em dash, never as a zero and never as an estimate. The length under a figure is that home's value as a share of the largest in the same row, computed from the same numbers printed above it, and it is drawn only on the rows where the spread is the point — price, price per foot, size, lot and days on market. These are real active listings and they are labelled as an example — they are not your comparison, and nothing here has been filled in for you.`
+      sampleSource = `Regional MLS through Oregon Data Share, read from listing_tile_mv in this render: standard_status Active, scoped to the Central Oregon service-area cities, ordered by most recent MLS update, the first ${SAMPLE_POOL} read and the first ${SAMPLE_SIZE} that publish a photograph, a price, beds, baths and square feet shown here — a comparison of four homes has to be four homes, so a vacant lot is not one of them. Price is ListPrice as published; beds, baths, square feet, lot acres, year built, garage spaces and days on market are the feed's own fields, and the photographs are that listing's own, read through getListingPhotos from the Spark payload on the listings row (details.Photos at Uri1600, falling back to the single PhotoURL), in the order the feed publishes them and honouring an owner's media-removal request. A field the feed withheld renders as an em dash, never as a zero and never as an estimate. The length under a figure is that home's value as a share of the largest in the same row — one rule for every row — and the spread sentence over the sheet is the difference between the two extremes in that row, with the two extremes marked in the columns that hold them; all of it computed from the same numbers printed in the cells. The example is re-read on the same cadence the page is cached at, so the stamp in the caption is the age of the figures and not of the page. These are real active listings and they are labelled as an example — they are not your comparison, and nothing here has been filled in for you.`
     }
   }
 
@@ -312,7 +504,7 @@ export default async function ComparePage({
       : null
 
     listings = deduped.map((t) => {
-      const streetParts = [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ').trim()
+      const streetParts = streetOf(t)
       const addressParts = [streetParts, t.city, 'OR', t.postalCode].filter(Boolean)
       const detail = detailMap.get(t.listingKey)
       return {
@@ -346,14 +538,33 @@ export default async function ComparePage({
       <main className={V3_ROOT_CLASS}>
         <V3SectionTracker />
 
+        {/* BreadcrumbList, plus — when the sample is the opening — an ItemList
+            of the four homes it shows, each pointing at that listing's
+            canonical URL. The page is noindex,follow: the list is not here to
+            rank /compare, it is a crawlable, machine-readable path from a
+            utility page to four listing pages that ARE indexed. */}
         <MetadataBlock
-          schema={{
-            type: 'breadcrumb',
-            items: [
-              { name: 'Home', url: '/' },
-              { name: 'Compare', url: '/compare' },
-            ],
-          }}
+          schemas={[
+            {
+              type: 'breadcrumb',
+              items: [
+                { name: 'Home', url: '/' },
+                { name: 'Compare', url: '/compare' },
+              ],
+            },
+            ...(sampleHomes.length > 0
+              ? ([
+                  {
+                    type: 'itemList' as const,
+                    name: 'Homes for sale in the compare sample',
+                    items: sampleHomes.map((h) => ({
+                      name: [h.title, h.place].filter(Boolean).join(', '),
+                      url: h.href,
+                    })),
+                  },
+                ] as const)
+              : []),
+          ]}
         />
 
         <V3Breadcrumb
@@ -367,11 +578,13 @@ export default async function ComparePage({
             viewport edge at both 1440 and 375 (2026-09-09 capture). A heading
             belongs to the block it names. */}
         {ids.length === 0 ? (
-          sampleColumns.length > 0 ? (
+          sampleHomes.length > 0 ? (
             <CompareEmpty
-              columns={sampleColumns}
-              rows={SAMPLE_ROWS}
+              homes={sampleHomes}
+              rows={sampleRows}
+              claim={sampleClaim}
               caption={sampleCaption}
+              sheetCaption={sampleSheetCaption}
               source={sampleSource}
             />
           ) : (

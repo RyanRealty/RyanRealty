@@ -17,6 +17,7 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "@/lib/utils";
+import "@/components/site/v3/tokens.css";
 
 export type InputClassNames = {
   root?: string;
@@ -131,7 +132,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
                 : "idle"
         }
         className={cn(
-          "relative h-11 overflow-hidden rounded-full border transition-colors duration-200",
+          // box-content: the 1px border must not eat into the input's own
+          // height, or the native <input> (h-full of this box) lands at 42px
+          // and fails the 44px tap-target floor (CLAUDE.md §3, --v3-tap).
+          "relative box-content h-[var(--v3-tap)] overflow-hidden rounded-full border transition-colors duration-200",
           "border-border",
           focused && !hasError && "border-foreground/40 ring-2 ring-ring/40",
           hasError && "border-destructive ring-2 ring-destructive/25",

@@ -6,6 +6,9 @@ import { buildPlaceMosView } from '@/lib/site/place-mos'
 const PAGE = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
 const FOLD_CSS = readFileSync(resolve('app/cities/[slug]/_v3/city-fold.css'), 'utf8')
 const PLACE_MOS = readFileSync(resolve('lib/site/place-mos.ts'), 'utf8')
+const INSIGHT = readFileSync(resolve('app/cities/[slug]/_v3/CityInsight.client.tsx'), 'utf8')
+const COMBOBOX = readFileSync(resolve('app/cities/[slug]/_v3/CityTypeCombobox.client.tsx'), 'utf8')
+const ALERT_SHEET = readFileSync(resolve('app/cities/[slug]/_v3/CityAlertSheet.client.tsx'), 'utf8')
 
 describe('SITE-82 city fold composition', () => {
   it('imports page-local city-fold.css and composes Atlas beside CityAlertsStrip', () => {
@@ -30,11 +33,39 @@ describe('SITE-82 city fold composition', () => {
 
   it('puts MOS + alerts in the fold figure and drops PlaceDoor when MOS publishes', () => {
     expect(PAGE).toMatch(/const placeDoor = placeMos \? null : placeDoorRaw/)
-    expect(PAGE).toMatch(/<V3MosBars/)
+    // SITE-93: the two named bars are page one of the fold's insight pager, so
+    // the page hands them over as props instead of mounting V3MosBars itself.
+    expect(PAGE).toMatch(/<CityInsight/)
+    expect(PAGE).toMatch(/mos=\{foldMosProps\}/)
+    expect(INSIGHT).toMatch(/<V3MosBars/)
     expect(PAGE).toMatch(/city-fold__figure/)
     expect(PAGE).toMatch(/foldAtlasDots/)
     // Photograph no longer carries the MOS overlay — fold figure owns it.
     expect(PAGE).toMatch(/<PlaceAreaHero posterSrc=\{stagePosterSrc\} \/>/)
+  })
+
+  it('SITE-93: the fold is drawing | figure | ask, and the figure is the catalog pager', () => {
+    expect(PAGE).toMatch(/city-fold__figure city-fold__figure--insight/)
+    expect(PAGE).toMatch(/city-fold__figure city-fold__figure--ask/)
+    expect(FOLD_CSS).toMatch(/\.city-fold__figure--insight/)
+    expect(FOLD_CSS).toMatch(/grid-template-columns: minmax\(0, 1\.25fr\)/)
+    // The catalog source itself, imported by the route (ci:catalog-install).
+    expect(INSIGHT).toMatch(/from '@\/components\/motion\/insight-cards'/)
+    expect(INSIGHT).toMatch(/from '@\/components\/motion\/number'/)
+    expect(COMBOBOX).toMatch(/from '@\/components\/motion\/combobox'/)
+  })
+
+  it('SITE-93: the alerts type control is the installed combobox, bound by the route', () => {
+    expect(ALERT_SHEET).toMatch(/renderTypes=/)
+    expect(ALERT_SHEET).toMatch(/<CityTypeCombobox/)
+    expect(FOLD_CSS).toMatch(/\.city-fold__figure \.v3-alerts__types/)
+  })
+
+  it('SITE-93: the phone keeps the proof cards and the as-of stamp it used to drop', () => {
+    // The rule that hid the whole strip (and every source line) below 64rem is
+    // gone; two cards and the MOS stamp stay on a phone.
+    expect(FOLD_CSS).not.toMatch(/\.city-fold__figure \.v3-alerts__strip \{\s*\n\s*display: none/)
+    expect(FOLD_CSS).toMatch(/nth-child\(n \+ 3\)/)
   })
 
   it('hides Atlas key counts in the fold so MOS owns the inventory numeral', () => {
@@ -42,7 +73,7 @@ describe('SITE-82 city fold composition', () => {
     expect(FOLD_CSS).toMatch(/display:\s*none/)
   })
 
-  it('keeps alerts type toggle and 44px tap targets in the fold figure', () => {
+  it('keeps a type control and 44px tap targets in the fold figure', () => {
     expect(FOLD_CSS).toMatch(/\.city-fold__figure \.v3-alerts__types/)
     expect(FOLD_CSS).toMatch(/min-height:\s*var\(--v3-tap\)/)
   })

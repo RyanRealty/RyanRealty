@@ -1,0 +1,32 @@
+-- Partial index for the listings sitemap's keyset pages on the tile MV source.
+--
+-- lib/data/sitemap/getListingSitemapRows.ts pages listing_tile_mv by
+-- `WHERE standard_status IN ('Active','Active Under Contract')
+--  [AND listing_key > $last] ORDER BY listing_key LIMIT 1000`, reading as the
+-- `anon` role (statement_timeout = 3s). The only ordered index was the unique
+-- listing_tile_mv_key over ALL ~593K rows, so every page walked that index in
+-- key order and filtered status through the heap.
+--
+-- Measured on production, 2026-09-16, first page (EXPLAIN ANALYZE, BUFFERS):
+--   before: Index Scan using listing_tile_mv_key, Rows Removed by Filter
+--           577,625, Buffers shared hit=495,789 read=31,409,
+--           Execution Time 15,898 ms  -> 500 on every cold request as anon
+--           (CI route-smoke: "sitemaps/listings.xml answered HTTP 500 on 3
+--           attempts", PR #252 and PR #253 alike; production only answered
+--           200 because the route is cached for an hour).
+--   after:  Index Scan using listing_tile_mv_src_public_active_key, Rows Removed
+--           by Filter 0, Buffers shared hit=994 read=13, Execution Time 231 ms
+--           (same statement, same page, index valid at 08:36Z).
+--
+-- The predicate matches PUBLIC_ACTIVE_STATUSES (lib/listing-status-public.ts)
+-- exactly; the view's own `NOT ILIKE '%coming%soon%'` filter stays a cheap
+-- per-row filter on top of the range scan.
+--
+-- Applied to production with CREATE INDEX CONCURRENTLY on 2026-09-16 so the
+-- build could not block the hourly REFRESH MATERIALIZED VIEW CONCURRENTLY;
+-- this file records it for parity. CONCURRENTLY cannot run inside a
+-- transaction — if this migration is replayed through a transactional runner,
+-- the plain form below is the intended result.
+CREATE INDEX IF NOT EXISTS listing_tile_mv_src_public_active_key
+  ON public.listing_tile_mv_src USING btree (listing_key)
+  WHERE standard_status IN ('Active', 'Active Under Contract');

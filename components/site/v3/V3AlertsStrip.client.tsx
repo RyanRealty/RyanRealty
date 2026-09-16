@@ -57,7 +57,7 @@
  * `company: ''` is the same as having no trap.
  */
 
-import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading, V3SourceDisclosure } from './atoms'
 import { V3Icon } from './V3Icon'
@@ -165,6 +165,19 @@ export type V3AlertsStripProps = {
    * place only publishes one type.
    */
   types?: readonly V3AlertsTypeOption[]
+  /**
+   * SITE-93: the route's own control for `types`, when it has one. The barrel
+   * imports no app module and no catalog source, so a route that installed a
+   * real picker (the city's beUI combobox,
+   * app/cities/[slug]/_v3/CityTypeCombobox.client.tsx) passes it here and the
+   * strip keeps owning the selection. Omit and the toggle row below renders,
+   * which is what the neighborhood and community strips still do.
+   */
+  renderTypes?: (control: {
+    options: readonly V3AlertsTypeOption[]
+    value: string | null
+    onChange: (key: string) => void
+  }) => ReactNode
   /** Compact recent-listings strip beside the sentence, when types are omitted. */
   listings?: readonly V3AlertsListing[]
   /** The id of the section the strip appears after. Defaults to `atlas`. */
@@ -200,6 +213,7 @@ export function V3AlertsStrip({
   emphasis = 'primary',
   trap,
   types,
+  renderTypes,
   listings,
   stickyAfter = 'atlas',
   stickyLabel,
@@ -479,20 +493,30 @@ export function V3AlertsStrip({
               <span className="v3-alerts__claim-text">{shownClaim}</span>
             </V3Heading>
             {types && types.length > 1 ? (
-              <div className="v3-alerts__types" role="group" aria-label="Property type">
-                {types.map((option) => (
-                  <button
-                    key={option.key}
-                    type="button"
-                    data-type={option.key}
-                    className="v3-alerts__type"
-                    aria-pressed={option.key === selected?.key}
-                    onClick={() => setTypeKey(option.key)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
+              renderTypes ? (
+                <div className="v3-alerts__types v3-alerts__types--control">
+                  {renderTypes({
+                    options: types,
+                    value: selected?.key ?? null,
+                    onChange: (key: string) => setTypeKey(key),
+                  })}
+                </div>
+              ) : (
+                <div className="v3-alerts__types" role="group" aria-label="Property type">
+                  {types.map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      data-type={option.key}
+                      className="v3-alerts__type"
+                      aria-pressed={option.key === selected?.key}
+                      onClick={() => setTypeKey(option.key)}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )
             ) : null}
           </div>
 

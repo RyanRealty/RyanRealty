@@ -182,6 +182,36 @@ describe('taste-evaluate-result — the judge chain', () => {
     expect(claudeModelFromWrapper(null, 'sonnet')).toBe('claude-sonnet-5')
   })
 
+  it('SITE-93: modelUsage carries the CLI side model too — the requested alias wins', () => {
+    // Verified 2026-09-16: `claude -p --model sonnet --output-format json`
+    // reports ["claude-haiku-4-5-20251001", "claude-sonnet-5"], haiku first.
+    // ids[0] signed a sonnet judging as a model that may not sign at all.
+    const wrapper = {
+      modelUsage: {
+        'claude-haiku-4-5-20251001': { inputTokens: 90 },
+        'claude-sonnet-5': { inputTokens: 44_000 },
+      },
+    }
+    expect(claudeModelFromWrapper(wrapper, 'sonnet')).toBe('claude-sonnet-5')
+    expect(isAllowedEvaluator(claudeModelFromWrapper(wrapper, 'sonnet'))).toBe(true)
+  })
+
+  it('SITE-93: falls to the first ALLOWED id when the requested alias is not in the usage', () => {
+    const wrapper = {
+      modelUsage: {
+        'claude-haiku-4-5-20251001': { inputTokens: 90 },
+        'claude-opus-5': { inputTokens: 44_000 },
+      },
+    }
+    expect(claudeModelFromWrapper(wrapper, 'sonnet')).toBe('claude-opus-5')
+  })
+
+  it('SITE-93: reports what it was given when nothing in the usage may sign — never invents a pass', () => {
+    const wrapper = { modelUsage: { 'claude-haiku-4-5-20251001': { inputTokens: 90 } } }
+    expect(claudeModelFromWrapper(wrapper, 'sonnet')).toBe('claude-haiku-4-5-20251001')
+    expect(isAllowedEvaluator('claude-haiku-4-5-20251001')).toBe(false)
+  })
+
   it('does not record the CLI\u2019s own background model as the judge', () => {
     // The exact wrapper a `--model sonnet` run returned on 2026-09-16: the CLI
     // bills its housekeeping haiku into the SAME map as the model that

@@ -2,7 +2,7 @@
   "route": "app/compare/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Utility comparison page: side-by-side property table. noindex — not an SEO surface. The landing state is the competitive surface: Redfin and Zillow open their compare screens on the visitor's own saved thumbnails, and this page has no saved-homes rail to open on. It wins instead by showing the finished object to a visitor who arrives with nothing — four real homes for sale right now, in the real table, labelled as an example, each one a single tap into their own comparison.",
-  "note": "E-HOMES-SEARCH 2026-08-13. Migrated /compare chrome onto the v3 barrel. Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount it. V3Breadcrumb belowNav=false. V3Footer outside <main>. Page contract carried unchanged: robots noindex,follow, revalidate 60, canonical /compare, DAL fetch (getListingTiles by listNumbers AND listingKeys, dedup, getListingDetailPhotos), CompareClient props, BreadcrumbList JSON-LD, V3SectionTracker pageType=compare. Shared /compare?ids= links keep resolving. Dual objectives unchanged. Capture does not live on this route. KB-era deletions: SmoothScrollProvider, KbBreadcrumb, KbFooter, kb-root, kb.css, navy header band. AICompare deleted 2026-08-18 (never wired). MetadataBlock and KbSectionTracker stay on non-v3 registers. SITE-50 (2026-09-09): the empty state left V3Quiet for V3Slots, a new barrel pattern. The taste table scored this class 29 with the verdict 'an empty form label, not a product demo'; Quiet has no slot, no table and no figure by contract, so the fix could never be a prop on Quiet. Two more defects were fixed in the same change: the H1 sat in a bare <header> with no measure and no gutter and was clipped at x=0 at both 1440 and 375, and the visually-hidden spans inside the new table escaped their scroll container (no positioned ancestor) and made the document scroll sideways at 375 — html.scrollWidth 602 against a 375 viewport.",
+  "note": "E-HOMES-SEARCH 2026-08-13. Migrated /compare chrome onto the v3 barrel. Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount it. V3Breadcrumb belowNav=false. V3Footer outside <main>. Page contract carried unchanged: robots noindex,follow, revalidate 60, canonical /compare, DAL fetch (getListingTiles by listNumbers AND listingKeys, dedup, getListingDetailPhotos), CompareClient props, BreadcrumbList JSON-LD, V3SectionTracker pageType=compare. Shared /compare?ids= links keep resolving. Dual objectives unchanged. Capture does not live on this route. KB-era deletions: SmoothScrollProvider, KbBreadcrumb, KbFooter, kb-root, kb.css, navy header band. AICompare deleted 2026-08-18 (never wired). MetadataBlock and KbSectionTracker stay on non-v3 registers. SITE-50 (2026-09-09): the empty state left V3Quiet for V3Slots, a new barrel pattern. The taste table scored this class 29 with the verdict 'an empty form label, not a product demo'; Quiet has no slot, no table and no figure by contract, so the fix could never be a prop on Quiet. Two more defects were fixed in the same change: the H1 sat in a bare <header> with no measure and no gutter and was clipped at x=0 at both 1440 and 375, and the visually-hidden spans inside the new table escaped their scroll container (no positioned ancestor) and made the document scroll sideways at 375 — html.scrollWidth 602 against a 375 viewport. SITE-95 (2026-09-15): the worked example moved off the hand-drawn table V3Slots used to carry and onto the installed catalog source. app/compare/_v3/CompareSheet.client.tsx imports @/components/ui/table (real data-slot rows, hover, data-state=selected) and @/components/ui/carousel (embla, one photo rail per home with the kit's own prev/next), painted navy/cream in app/compare/_v3/compare-sheet.css through v3 tokens only — the same shape app/invest/_v3/InvestTables.client.tsx uses. V3Slots keeps the pattern (headline, claim, visible SAMPLE label, tray, section 0 trace) and takes the sheet as a node; its own table, photo stamps, hairline bars and four outline Add buttons are deleted, not restyled. Rows went 8 to 9 (garage), every row carries a bar and the two extremes are marked on the field being read, the reading line over the sheet states that field's spread across all four homes, and at 375 a picker carries two homes at a time instead of cropping the second column through its own address. Photographs read through getListingPhotos, not getListingDetailPhotos: listing_photos held no row for any of the four newest active listings on 2026-09-15 (checked broad and by exact key), so the strip had nothing to page. SEO: ItemList JSON-LD naming the four sampled homes at their canonical listing URLs beside the BreadcrumbList, a description that names the fields, and the search door restored as a real anchor.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -21,7 +21,7 @@
     },
     {
       "name": "CompareEmpty",
-      "section": "#compare-empty — the empty state, which mounts V3Slots and binds it to ComparisonContext so the slots show the visitor's own tray and an add from the example lands in the same list a search-result add does.",
+      "section": "#compare-empty — the empty state. Mounts V3Slots (the pattern: H1, claim, SAMPLE label, tray, section 0 trace) and CompareSheet (the worked example: the installed shadcn Table and shadcn Carousel), and binds both to ComparisonContext so the tray shows the visitor's own queue and an add from the example lands in the same list a search-result add does.",
       "blocking": true
     },
     {
@@ -61,11 +61,11 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts compare — grok-4.6 via grok CLI, three scorings of the SITE-65 production first-viewport shots, separate from the grok-4.5 builder",
-    "evaluatorModel": "grok-4.6",
-    "builderModel": "grok-4.5",
+    "evaluatedAt": "2026-09-16",
+    "rubricVersion": "v1-2026-09-12",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts compare --builder claude-opus-5 --evaluator claude --url http://127.0.0.1:3297/compare — claude-sonnet-5 through the claude CLI, three scorings of the six shots below in one call, separate from the claude-opus-5 builder. No grok CLI exists in this cloud sandbox, so the judge is link 2 of the chain (site-queue SKILL.md, Matt 2026-09-15). Shots are of the PRODUCTION build (next build, then next start -p 3297). Exit 0.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
     "shotSpec": {
       "routes": [
         "/compare"
@@ -75,84 +75,81 @@
         375
       ],
       "states": [
-        "empty-queue"
+        "empty-queue",
+        "carousel-open",
+        "table-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, https://ryan-realty.com/compare after 036a4276"
+      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, http://127.0.0.1:3297/compare — the production build of this commit, served by next start. The open states are --states 'carousel-open=[data-compare-first] [data-slot=\"carousel-next\"]@#compare-empty!click,table-open=[data-compare-row=\"Price / sq ft\"]@#compare-empty!click'. The carousel click is scoped by data-compare-first so it can only land on the left-most rail: that rail reads \"2 of 5\" on a different photograph with its second track mark filled and both flanking chevrons live, while the other three read \"1 of 5\" with a dimmed prev."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/compare/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/compare/shots/mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/compare/shots/mobile375.png",
+      "carouselOpenDesktop": "design_system/ryan-realty/ui_kits/compare/shots/carousel-open-desktop.png",
+      "carouselOpenMobile375": "design_system/ryan-realty/ui_kits/compare/shots/carousel-open-mobile375.png",
+      "tableOpenDesktop": "design_system/ryan-realty/ui_kits/compare/shots/table-open-desktop.png",
+      "tableOpenMobile375": "design_system/ryan-realty/ui_kits/compare/shots/table-open-mobile375.png"
     },
-    "shotsHash": "sha256:9f34615ffb7971e5aaa9d37f34cdc7ae62bf6f00e004e328d560e4b3c93091c7",
+    "shotsHash": "sha256:142b2128f4492c9ebbff5b8e2a4f009c3b268c54cd2702ffd24ed28f35e3c43e",
     "scores": [
-      50,
-      56,
-      60
+      58,
+      62,
+      66
     ],
-    "score": 56,
-    "beats": "Redfin's and Zillow's compare screens open on the visitor's own saved homes with large listing cards and a highlight-differences control. This page wins a live four-home MLS sample and a named Oregon Data Share timestamp on first load. It loses photo scale, a winner or delta reading, and any 375 layout that can actually hold four homes.",
-    "defects": [
+    "score": 62,
+    "perCriterion": {
+      "design": 19,
+      "originality": 15,
+      "interaction": 9,
+      "craft": 11,
+      "honesty": 8
+    },
+    "honestyFunction": 8,
+    "demoMatch": true,
+    "adaptedFrom": [
       {
-        "section": "#compare-empty .v3-slots__photo",
-        "severity": "taste",
-        "finding": "The houses are the subject and they render as 64px stamps; an editorial compare would make the four exteriors the spectacle, not table chrome. replaceWith: V3Carousel of the four street views as the opening object, or column heads at photo-card scale."
+        "id": "shadcn-table"
       },
       {
-        "section": "#compare-empty .v3-slots__scroller",
-        "severity": "blocking",
-        "finding": "At 375 the second column is sliced through 40 McKinley, Add thi, and $529,99, so four homes cannot be compared in one view. replaceWith: V3Segmented (two homes at a time) or V3Sheet compare, not a cropped spreadsheet scroller."
+        "id": "shadcn-carousel"
       },
       {
-        "section": "#compare-empty .v3-slots__add",
-        "severity": "taste",
-        "finding": "Four identical outline Add this home buttons turn the comparison into a repeated form kit instead of a reading of which house to keep."
+        "id": "house-slots"
       },
       {
-        "section": "#compare-empty .v3-slots__bar",
-        "severity": "taste",
-        "finding": "The lengths under Price, Price / sq ft, Sq ft and Lot are hairline underlines, not a glanceable comparison; they do not survive a still as data."
-      },
-      {
-        "section": "#compare-empty .v3-slots__value",
-        "severity": "craft",
-        "finding": "Year built prints as 2,005, 2,006, 2,021 and 2,003; years do not take thousands separators."
-      },
-      {
-        "section": "#compare-empty .v3-slots__photo",
-        "severity": "craft",
-        "finding": "40 McKinley Avenue opens on a kitchen while the other three columns open on street exteriors, so the four homes do not read as the same kind of object."
-      },
-      {
-        "section": "#compare-empty .v3-slots__table",
-        "severity": "taste",
-        "finding": "Nothing names a winner or a spread; $849,000 sits next to $529,999 with no sentence that one is $319,001 more, so the job of compare is left to the reader's arithmetic. replaceWith: V3Sheet compare with a per-row mark, or a claim that states the spread."
-      },
-      {
-        "section": "#compare-empty .v3-slots__claim",
-        "severity": "taste",
-        "finding": "The fold spends itself on muted explanation (claim plus SAMPLE caption) before any house is large enough to look at; the page still opens as eyebrow, display heading, paragraph, then a ledger."
-      },
-      {
-        "section": "#compare-empty .v3-slots__col-title",
-        "severity": "craft",
-        "finding": "Addresses wrap to uneven depths (Porcupine Drive on three lines at 375, others cropped mid-word), so the column heads do not share one rhythm."
-      },
-      {
-        "section": "#compare-empty .v3-slots__table",
-        "severity": "taste",
-        "finding": "No hover, tap, scrub or toggle in the still rewards more data; Add this home leaves the sample instead of revealing a difference, a sort, or a two-up. replaceWith: beUI tabs / V3Segmented to pick which pair, plus a row hover that states the delta."
+        "id": "house-compare-empty"
       }
     ],
+    "beats": "Zillow saved-homes compare — this page states the exact source and refresh cadence ('Oregon Data Share, read Sep 15, 2026 and re-read every 5 minutes') and computes the price and price/sq ft spread as a plain sentence before the table even starts, something Zillow's raw column grid never does; it does not yet beat Redfin's own compare tool on interaction clarity, since 'Add to yours' has no visible picker telling the visitor what tapping it actually does.",
+    "defects": [
+      {
+        "section": "compare-table rows below Price/sq ft (Beds row and implied rows beneath it)",
+        "severity": "taste",
+        "finding": "Only the Price and Price/sq ft rows carry the horizontal-bar encoding with HIGHEST/LOWEST labels; the Beds row directly below reverts to four bare numbers with no mark, bar, or color, so the table degrades into a scrolling list of figures the moment you scroll past row two.",
+        "replaceWith": "shadcn-table"
+      },
+      {
+        "section": "'+ Add to yours' button on each filled photo",
+        "severity": "defect",
+        "finding": "All four slots are already filled with the sample listings, so a floating '+ Add to yours' stamped over every photo is ambiguous — nothing on screen shows whether tapping it swaps that slot, opens a picker, or appends a fifth column, and no picker/sheet is visible in either open shot.",
+        "replaceWith": null
+      },
+      {
+        "section": "card spec line vs. table body (price, beds, baths, sqft)",
+        "severity": "taste",
+        "finding": "Price, beds, baths, and square footage are printed once under each photo in the card's spec line, then printed again as the first rows of the table immediately below with no new framing, so the reader sees the same four numbers twice before the comparison offers anything the card didn't already say.",
+        "replaceWith": null
+      }
+    ],
+    "verdict": "This is a real improvement over the prose-plus-link page the reference file describes — it opens with four filled photo columns and an already-interactive table, and demoMatch is true: the carousel arrows genuinely advance frames (1 of 5 to 2 of 5) and the table row-tap genuinely moves the HIGHEST/LOWEST annotation between rows. But past that top-of-table bar encoding it starts sliding into 'scrolling lists as the design' the moment Beds shows up as bare numbers, and the redundant price/beds/baths repeat between card and table plus the ambiguous 'Add to yours' CTA keep it from reading as considered rather than assembled. Every visible figure ($/sq ft math, the spread sentence, the dated source line) checks out and is sourced, so honesty holds, but nothing in these screenshots shows whether JSON-LD or title tags moved — that half of the comprehensive bar is unverifiable from pixels and should not be assumed improved.",
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 53,
-      "evaluatorModel": "claude-sonnet-5",
+      "evaluatedAt": "2026-09-10",
+      "score": 56,
+      "evaluatorModel": "grok-4.6",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:f541dd6d4bea0aa03bb14eba85e7fe3c6517076eef541aa71fd164a0f7844da0"
+      "shotsHash": "sha256:9f34615ffb7971e5aaa9d37f34cdc7ae62bf6f00e004e328d560e4b3c93091c7"
     },
-    "rebaselineReason": "evaluatorModel and shotsHash differ: SITE-50's 53 was claude-sonnet-5 on shots that still led with four dashed empty slots (shotsHash sha256:f541dd6d); this mark is grok-4.6 on new first-viewport shots after SITE-65 made the live sample the opening. Same rubricVersion v1-2026-09-08. Mechanical accept holds: four listing photographs and prices in the 1440 fold, no dashed empty Add-a-home tray.",
-    "verdict": "Better than a 53: the dashed empty tray is gone and the first screen is the comparison itself, which is the job. It is still a spreadsheet under a display heading — stamp photos, hairline bars you have to hunt, a 375 crop that hides two of the four homes, and four identical outline buttons, so it is not yet a page anyone would screenshot."
+    "rebaselineReason": "All three instrument keys differ from the 2026-09-10 prior mark. evaluatorModel: claude-sonnet-5 through the claude CLI, because no grok CLI exists in this cloud sandbox (the prior mark was grok-4.6). rubricVersion: v1-2026-09-12, which added the blocking demoMatch rule and the replaceWith option list (prior was v1-2026-09-08). shotsHash: six new first-viewport shots off the PRODUCTION build, including the two open states this rubric requires. The 2026-09-12 taste table's row for this class (median 46, grok-4.6, v1-2026-09-12, demoMatch false) is a third instrument again. THE PLACEMENT THAT TURNED demoMatch TRUE: CarouselPrevious and CarouselNext flank the photograph at its vertical midline, absolutely positioned on the frame's left and right edges, which is where the kit puts them and where the demo's round arrows sit; ours keep the house radius (0) and read navy-outline on cream so they hold over any photograph. Parked as a static pair UNDER the frame — which is what an earlier pass built — the same rail was scored demoMatch false five times running, and the ruler had already scored that same placement as the cream-box tell on /price-drops (PR #252, 7b5535bd). The counter and the drawn track stay under the frame, where the kit's own API example prints 'Slide 2 of 5'. SAME-DAY DRIFT, STATED PLAINLY: this judge marked the class 62, then 55, 50, 50 across four intermediate page states this session, and 62 again here; its scoring bands overlap throughout (58/62/66 now, 47/52/50 at the low point). Every mark was recorded as returned and none was re-rolled. contentFloor measured on this build at 1440 with the sandbox CA trusted: h1 1, words 339, headings 0, sections 2, internalLinks 168, images 24, heroImageWidth 245, heroImageNatural 1536, video 0, jsonLd 4 — every floor holds and jsonLd rose by the ItemList."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
@@ -178,10 +175,10 @@
       "internalLinks": 116,
       "images": 5,
       "heroImageWidth": 234,
-      "heroImageNatural": 1382,
+      "heroImageNatural": 1200,
       "video": 0,
       "jsonLd": 3
     },
-    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason."
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason. heroImageNatural LOWERED 1382 -> 1200 on 2026-09-16 (SITE-95), and here is the reason: on this route that figure is the natural width of the FIRST sampled listing's lead photograph, and the sample is four live active listings that rotate on every revalidate. Measured across renders on 2026-09-15/16 the same page reported 1200, 1534, 1536, 1538 (individual frames in the same rail go to 1822) — whatever the MLS published for that listing, served through the Spark 1600x1200 resize endpoint, which returns a smaller original at its own size. The 1382 floor was seeded from a day whose first listing happened to carry a 1536px photograph, so it was a property of that sample, not of the page; a render that drew a 1200px original failed the gate with nothing wrong. 1200 is the smallest observed and still refuses a thumbnail (the 320px ledger thumb, or any rewrite of the Spark URL to a smaller box, fails at once). The render this commit was scored on measured 1536, so this is not a floor lowered to let the current build through."
   }
 }

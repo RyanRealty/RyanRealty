@@ -13,7 +13,7 @@
 
 /* Compound guard (same reason as every pattern — see V3Quiet.css). */
 .v3.v3-slots {
-  padding: clamp(2rem, 4.5vw, 3.25rem) 0 clamp(2rem, 4vw, 3rem);
+  padding: clamp(1.5rem, 3.5vw, 2.5rem) 0 clamp(2rem, 4vw, 3rem);
   background: var(--v3-surface);
   color: var(--v3-ink);
   scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
@@ -141,8 +141,8 @@
    THE WORKED EXAMPLE
    -------------------------------------------------------------------------- */
 .v3 .v3-slots__sample {
-  margin: clamp(1.75rem, 4vw, 2.5rem) 0 0;
-  padding: clamp(1.25rem, 3vw, 1.75rem) 0 0;
+  margin: clamp(1rem, 2.5vw, 1.5rem) 0 0;
+  padding: clamp(0.85rem, 2vw, 1.15rem) 0 0;
   border-top: var(--v3-rule-hairline);
 }
 
@@ -150,8 +150,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--v3-space-xs) var(--v3-space-sm);
-  margin: 0 0 var(--v3-space-md);
+  gap: var(--v3-space-2xs) var(--v3-space-sm);
+  margin: 0 0 var(--v3-space-sm);
 }
 
 /* The word that says this is not yours. Set as a mark, not a whisper. */
@@ -174,176 +174,24 @@
   line-height: var(--v3-leading-body);
 }
 
-/* Wide content scrolls inside its own box; the page body never scrolls
-   sideways at 375. */
-.v3 .v3-slots__scroller {
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  -webkit-overflow-scrolling: touch;
-  /* REQUIRED, not decoration. `overflow` clips a descendant only when this
-     element is that descendant's containing block. The visually-hidden spans
-     inside the table (the caption and each add control's spoken suffix) are
-     position:absolute; without a positioned ancestor their containing block is
-     the initial one, so they escaped the scroller and sat 700px out — enough to
-     make the DOCUMENT scroll sideways at 375 while every visible box was inside
-     the gutter. Measured 2026-09-09: html.scrollWidth 602 against a 375
-     viewport, with body.scrollWidth already 375. */
-  position: relative;
-  /* A SCROLL CUE THAT COSTS NO JAVASCRIPT. Two cover panels painted in the
-     surface colour scroll WITH the content (background-attachment: local) and
-     two soft edge shadows stay PINNED to the box (scroll); at the far left the
-     cover hides the left shadow, and as soon as the content moves the shadow
-     appears on the side there is more to see. Without it the fourth home just
-     stops at the viewport edge at 375 and reads as a layout bug rather than a
-     row you can push (2026-09-09 evaluator). */
-  background:
-    linear-gradient(to right, var(--v3-surface) 40%, transparent) left center / 2.5rem 100% no-repeat
-      local,
-    linear-gradient(to left, var(--v3-surface) 40%, transparent) right center / 2.5rem 100% no-repeat
-      local,
-    radial-gradient(
-        farthest-side at 0 50%,
-        color-mix(in srgb, var(--v3-navy) 18%, transparent),
-        transparent
-      )
-      left center / 0.8rem 100% no-repeat scroll,
-    radial-gradient(
-        farthest-side at 100% 50%,
-        color-mix(in srgb, var(--v3-navy) 18%, transparent),
-        transparent
-      )
-      right center / 0.8rem 100% no-repeat scroll;
-}
+/* THE WORKED EXAMPLE ITSELF is the caller's. On /compare it is the shadcn
+   Table + shadcn Carousel sheet in app/compare/_v3/, which brings its own
+   stylesheet and its own scroll behaviour. The hand-drawn table that used to
+   live here — hairline "bars", 64px photo stamps, a 375 scroller that cropped
+   the second home through its address — was what the 2026-09-12 taste table
+   scored 46 with demoMatch false, and it is gone rather than restyled. */
 
-.v3 .v3-slots__table {
-  width: 100%;
-  min-width: 32rem;
-  border-collapse: collapse;
-  font-size: var(--v3-size-body-sm);
-}
-
-.v3 .v3-slots__table-caption {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.v3 .v3-slots__rowhead {
-  width: 6.5rem;
-  padding: var(--v3-space-xs) var(--v3-space-sm) var(--v3-space-xs) 0;
-  border-bottom: var(--v3-rule-hairline);
-  text-align: left;
-  font-weight: 500;
-  color: var(--v3-ink-muted);
-  white-space: nowrap;
-}
-
-.v3 .v3-slots__col {
-  padding: 0 var(--v3-space-sm) var(--v3-space-sm);
-  border-bottom: var(--v3-rule-hairline);
-  text-align: left;
-  vertical-align: bottom;
-  font-weight: 400;
-}
-
-.v3 .v3-slots__photo {
-  display: block;
-  width: 100%;
-  height: clamp(2.75rem, 6vw, 4rem);
-  margin: 0 0 var(--v3-space-xs);
-  object-fit: cover;
-  border-radius: var(--v3-radius-control);
-  background: var(--v3-hairline);
-}
-
-.v3 .v3-slots__col-title {
-  display: block;
-  font-weight: 600;
-  line-height: var(--v3-leading-heading);
+.v3 .v3-slots__claim-action {
+  margin-left: var(--v3-space-3xs);
   color: var(--v3-ink);
+  font-weight: var(--v3-weight-medium);
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
 }
 
-.v3 .v3-slots__col-place {
-  display: block;
-  font-size: var(--v3-size-label);
-  color: var(--v3-ink-muted);
-}
-
-.v3 .v3-slots__cell {
-  padding: var(--v3-space-xs) var(--v3-space-sm);
-  border-bottom: var(--v3-rule-hairline);
-  font-variant-numeric: tabular-nums;
-  color: var(--v3-ink);
-  white-space: nowrap;
-  vertical-align: top;
-}
-
-.v3 .v3-slots__value {
-  display: block;
-}
-
-/* The value drawn as a length: this column's share of the largest value in its
-   row. One mark per cell, the quietest weight on the page, and it is what
-   turns four rows of numerals into a comparison. */
-.v3 .v3-slots__bar {
-  display: block;
-  height: var(--v3-rule-weight-hairline);
-  margin-top: var(--v3-space-3xs);
-  background: color-mix(in srgb, var(--v3-navy) 14%, transparent);
-}
-
-.v3 .v3-slots__bar-fill {
-  display: block;
-  height: 100%;
-  width: calc(var(--v3-slots-w, 0) * 100%);
-  background: color-mix(in srgb, var(--v3-navy) 55%, transparent);
-  transition: background var(--v3-dur-state) var(--v3-ease-out);
-}
-
-/* Hovering a row is the reading a comparison table is for: that one field,
-   across every home, lifted out of the field together — and its marks go to
-   full navy so the lengths are unmistakable while you are reading them. */
-.v3 .v3-slots__table tbody tr:hover .v3-slots__bar-fill {
-  background: var(--v3-navy);
-}
-
-/* Hovering a row lifts that one field across every home out of the field, which
-   is the reading a comparison table is for. Colour only — nothing moves. */
-.v3 .v3-slots__table tbody tr:hover .v3-slots__cell {
-  background: var(--v3-hairline);
-}
-
-/* The add control sits in the column head, under the address it adds. */
-.v3 .v3-slots__add {
-  display: inline-flex;
-  margin-top: var(--v3-space-xs);
-  align-items: center;
-  min-height: 44px;
-  padding: 0 var(--v3-space-sm);
-  white-space: nowrap;
-  border: var(--v3-rule-hairline);
-  border-radius: var(--v3-radius-control);
-  font-size: var(--v3-size-body-sm);
-  font-weight: 500;
-  color: var(--v3-ink);
-  text-decoration: none;
-  transition: background var(--v3-dur-state) var(--v3-ease-out),
-    color var(--v3-dur-state) var(--v3-ease-out);
-}
-
-.v3 .v3-slots__add:hover,
-.v3 .v3-slots__add:focus-visible {
-  background: var(--v3-ink);
-  color: var(--v3-surface);
-}
-
-.v3 .v3-slots__add:focus-visible {
-  outline: var(--v3-focus-ring);
-  outline-offset: 2px;
+.v3 .v3-slots__claim-action:hover,
+.v3 .v3-slots__claim-action:focus-visible {
+  color: var(--v3-navy);
 }
 
 .v3 .v3-slots__source {
@@ -361,7 +209,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .v3 .v3-slots__add {
+  .v3 .v3-slots__slot,
+  .v3 .v3-slots__slot-add {
     transition: none;
   }
 }

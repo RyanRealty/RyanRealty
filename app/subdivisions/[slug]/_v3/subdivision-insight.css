@@ -1,0 +1,197 @@
+/* SITE-112 — house paint for beautifului's InsightCards in the subdivision
+   fold. Tokens only (components/site/v3/tokens.css). The catalog's layout,
+   pager, allocation bar and scrub geometry are untouched; this repaints them
+   navy on cream and squares the corners the register never rounds. Same paint
+   the city fold carries, so the two place classes read as one page family. */
+
+.plat-insight {
+  min-width: 0;
+}
+
+/* NO PLATE. The register separates columns with a hairline rule, not a panel —
+   a bordered cream box beside two borderless columns is the tell the table
+   instrument named on this route ("Cream box"). The rule lives on the fold
+   column (plat-fold.css). */
+.plat-insight .insight-cards {
+  width: 100%;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  padding: 0;
+  gap: var(--v3-space-xs);
+}
+
+/* The pager face: the register's eyebrow, not a product chip. */
+.plat-insight .insight-cards__title,
+.plat-insight .insight-pager__title {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.plat-insight .insight-cards__count,
+.plat-insight .insight-pager__count {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
+}
+
+.plat-insight .insight-pager__face {
+  border-radius: var(--v3-radius-control);
+  background: transparent;
+  border: 0;
+  padding-inline: 0;
+}
+
+.plat-insight .insight-cards__head,
+.plat-insight .insight-pager {
+  border-bottom: var(--v3-rule-hairline);
+  padding-bottom: var(--v3-space-2xs);
+}
+
+/* Previous / Next ARE the catalog's control and stay the catalog's shape:
+   borderless, transparent, 44x44, a wash on hover. */
+.plat-insight .insight-pager__btn {
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  border: 0;
+  border-radius: var(--v3-radius-control);
+  background: transparent;
+  color: var(--v3-ink);
+}
+
+.plat-insight .insight-pager__btn:hover {
+  background: var(--v3-wash);
+}
+
+.plat-insight .insight-pager__btn:focus-visible {
+  outline: 3px solid var(--v3-focus);
+  outline-offset: 2px;
+}
+
+.plat-insight .insight-cards__prose {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
+  margin: 0;
+}
+
+.plat-insight .insight-cards__card {
+  border-radius: var(--v3-radius-card);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  gap: var(--v3-space-2xs);
+}
+
+/* The hero figure is the selected band's own count, in the display face the
+   register reserves for a figure. */
+.plat-insight .insight-cards__hero {
+  font-family: var(--v3-font-display);
+  color: var(--v3-ink);
+}
+
+.plat-insight .insight-cards__series-name {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.plat-insight .insight-cards__delta {
+  font-family: var(--v3-font-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink);
+}
+
+/* Chips and metric toggles clear the 44px hit area (WCAG 2.5.8) without
+   growing the catalog's pill shape. */
+.plat-insight .insight-cards__chip,
+.plat-insight .insight-cards__metric {
+  min-height: var(--v3-tap);
+  font-family: var(--v3-font-body);
+}
+
+.plat-insight .insight-cards__chip:focus-visible,
+.plat-insight .insight-cards__metric:focus-visible,
+.plat-insight .insight-cards__alloc-seg:focus-visible {
+  outline: 3px solid var(--v3-focus);
+  outline-offset: 2px;
+}
+
+/* The allocation bar keeps the catalog's geometry; only its height grows to a
+   real hit area, because each segment is a control. */
+.plat-insight .insight-cards__alloc-track {
+  height: var(--v3-tap);
+  background: var(--v3-wash);
+}
+
+.plat-insight .insight-cards__note {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+/* The pill is a real link out of the fold. Ghost, square, 44px. */
+.plat-insight .insight-cards__pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  border-radius: var(--v3-radius-control);
+  border: var(--v3-rule-hairline);
+  border-color: var(--v3-edge);
+  background: transparent;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  padding-inline: var(--v3-space-sm);
+  text-decoration: none;
+  width: fit-content;
+}
+
+.plat-insight .insight-cards__pill:hover {
+  background: var(--v3-wash);
+  border-color: var(--v3-navy);
+}
+
+.plat-insight__card {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+}
+
+.plat-insight__chart .insight-chart-stage {
+  min-height: 7rem;
+  touch-action: pan-y;
+}
+
+.plat-insight .insight-tooltip {
+  border-radius: var(--v3-radius-control);
+  border: var(--v3-rule-hairline);
+  border-color: var(--v3-edge);
+  background: var(--v3-surface-raised);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  box-shadow: none;
+}
+
+.plat-insight__num {
+  font-family: var(--v3-font-num);
+  font-weight: var(--v3-weight-num);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 63.99rem) {
+  .plat-insight__chart .insight-chart-stage {
+    min-height: 6rem;
+  }
+}
