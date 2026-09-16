@@ -23,7 +23,10 @@ import {
   type CarouselApi,
 } from '@/components/ui/carousel'
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS } from '@/components/site/v3'
+import { V3_ROOT_CLASS, V3Carousel } from '@/components/site/v3'
+
+/** Public wire for the house wrapper (ci:site-primitive-wired). The fold uses the installed source below. */
+export { V3Carousel }
 import {
   LISTING_FIELD_LEAD_PHOTO_SIZE,
   listingRowPhotoSrc,
