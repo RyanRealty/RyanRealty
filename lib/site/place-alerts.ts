@@ -40,7 +40,7 @@
  * wording the binders share (the test beside this file holds the three to one
  * literal): the alert cron runs hourly (vercel.json) and sends one email per
  * alert per run with everything new in it (app/actions/saved-search-alerts.ts),
- * so the sentence is "every new listing, by email", never "one email per
+ * so the sentence is "every new listing", never "one email per
  * listing". Price changes ride on the same row: every row this capture writes
  * takes the table's default event toggles, and `price_change` is on
  * (docs/DATABASE_SCHEMA_SNAPSHOT.md, listing_alerts.events). Both directions
@@ -149,7 +149,7 @@ export function placeAlertsClaimParts(
   noun: PlaceAlertsNoun = HOUSES,
 ): PlaceAlertsStickyClaim {
   if (n == null) {
-    return { before: 'New', place: scopeName, after: 'listings, by email, as they come on the market.' }
+    return { before: 'Hear about new listings in', place: scopeName, after: 'the day they hit the market.' }
   }
   const after = 'in the last 30 days.'
   if (earnsDisplayFigure(n)) return { before: `${units(n, noun)} came on the market in`, place: placeName, after }
@@ -324,11 +324,11 @@ export function placeAlertsCopy(input: PlaceAlertsInput): PlaceAlertsCopy {
     scopeLine,
     scopePhrase,
     promiseScope: scopeLine ? null : scopePhrase,
-    submitLabel: 'Email me each one',
+    submitLabel: 'Send me new listings',
     browseLabel: `See the newest ${input.placeName} listings`,
     sent: {
-      heading: `Set. New ${input.scopeName} listings land by email when they hit the market.`,
-      body: 'Price changes on those homes come in the same email. Pause or unsubscribe from any alert email.',
+      heading: `You're set. We'll email you when something new lists in ${input.scopeName}.`,
+      body: 'Price changes on those homes ride along in the same email. Pause or unsubscribe from any of them.',
     },
     source:
       n == null
