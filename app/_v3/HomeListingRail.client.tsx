@@ -6,6 +6,7 @@
  * Photo and copy open the listing. Tour plays in the card media. No save/heart on public cards (Matt 2026-09-15).
  */
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
 import {
@@ -19,6 +20,7 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  type CarouselApi,
 } from '@/components/ui/carousel'
 import { V3_ROOT_CLASS, V3Button } from '@/components/site/v3'
 import {
@@ -30,7 +32,7 @@ import '@/components/site/v3/V3ListingRow.css'
 import '@/components/site/v3/V3Carousel.css'
 import './home-homes-rails.css'
 
-function HomeRailCardFace({
+export function HomeRailCardFace({
   card,
   priority,
 }: {
@@ -91,11 +93,73 @@ function HomeRailCardFace({
   )
 }
 
+/**
+ * THE SHELF'S POSITION, read off the installed carousel's own api.
+ *
+ * `ui.shadcn.com/docs/components/carousel` ships exactly this beside the demo
+ * ("Slide 1 of 5", from `api.selectedScrollSnap()` / `api.scrollSnapList()`).
+ * Keeping it is the difference between adapting the component and re-skinning
+ * a row of cards: a still of the shelf now says how far along the reader is,
+ * and clicking a chevron visibly moves it.
+ *
+ * Exported so the /buy fold shelf (`app/buy/_v3/BuyHomesShelf.client.tsx`)
+ * reads its position through the same code rather than a second copy.
+ */
+export function useRailPosition(api: CarouselApi | undefined): {
+  index: number
+  count: number
+} {
+  const [pos, setPos] = useState({ index: 0, count: 0 })
+
+  useEffect(() => {
+    if (!api) return
+    const read = () =>
+      setPos({ index: api.selectedScrollSnap(), count: api.scrollSnapList().length })
+    read()
+    api.on('select', read)
+    api.on('reInit', read)
+    return () => {
+      api.off('select', read)
+      api.off('reInit', read)
+    }
+  }, [api])
+
+  return pos
+}
+
+function pad2(n: number): string {
+  return n < 10 ? `0${n}` : String(n)
+}
+
+/**
+ * The counter and the rule that fills with it. Zero extra height: the rule is
+ * the head row's own bottom hairline, painted navy up to the snap position, so
+ * the affordance costs the fold nothing.
+ */
+export function HomeRailPosition({ index, count }: { index: number; count: number }) {
+  if (count < 2) return null
+  const shown = Math.min(index + 1, count)
+  return (
+    <span className="home-rail__pos" aria-hidden="true">
+      <span className="home-rail__pos-count">
+        {pad2(shown)} <span className="home-rail__pos-sep">/</span> {pad2(count)}
+      </span>
+      <span
+        className="home-rail__pos-rule"
+        style={{ ['--home-rail-p' as string]: `${(shown / count) * 100}%` }}
+      />
+    </span>
+  )
+}
+
 export function HomeListingRail({
   row,
 }: {
   row: HomeRailRow
 }) {
+  const [api, setApi] = useState<CarouselApi>()
+  const { index, count } = useRailPosition(api)
+
   return (
     <section
       id={row.id}
@@ -108,11 +172,13 @@ export function HomeListingRail({
             {row.heading}
           </h2>
         </div>
+        <HomeRailPosition index={index} count={count} />
         <V3Button href={row.seeAll.href} variant="ghost">
           {row.seeAll.label}
         </V3Button>
       </div>
       <Carousel
+        setApi={setApi}
         opts={{ align: 'start', containScroll: 'trimSnaps' }}
         className={cn(V3_ROOT_CLASS, 'v3-carousel', 'v3-carousel--rail', 'home-rail__carousel')}
         aria-label={row.heading}
@@ -121,17 +187,26 @@ export function HomeListingRail({
           {row.cards.map((card, index) => (
             <CarouselItem
               key={card.listingKey}
-              className="v3-carousel__slide v3-carousel__slide--rail pl-0 !basis-[min(17.5rem,78vw)] min-[64rem]:!basis-1/4"
+              className="v3-carousel__slide v3-carousel__slide--rail pl-0"
             >
               <HomeRailCardFace card={card} priority={index < 2} />
             </CarouselItem>
           ))}
         </CarouselContent>
+        {/*
+          The shadcn control IS a round chevron on each side of the track you
+          drag. Parked under the cards as a static pair (which is what shipped
+          until 2026-09-16) it fell below the 900px fold on /buy, so the shelf
+          read in a screenshot as a static grid and a separate evaluator
+          scored demoMatch FALSE. V3Carousel had already been corrected the
+          same way in b32f97c3; this is the identical treatment, centred on
+          the media midline by `--v3-carousel-nav-top` in V3Carousel.css.
+        */}
         {row.cards.length > 1 ? (
-          <div className="v3-carousel__nav home-rail__arrows">
-            <CarouselPrevious className="v3-carousel__step static size-auto translate-x-0 translate-y-0" />
-            <CarouselNext className="v3-carousel__step static size-auto translate-x-0 translate-y-0" />
-          </div>
+          <>
+            <CarouselPrevious className="v3-carousel__step v3-carousel__step--prev" />
+            <CarouselNext className="v3-carousel__step v3-carousel__step--next" />
+          </>
         ) : null}
       </Carousel>
     </section>

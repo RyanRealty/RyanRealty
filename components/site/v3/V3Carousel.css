@@ -146,9 +146,12 @@
 }
 
 /* shadcn disables the button at each end of the track; keep it in place so the
-   pair never reflows, but read as spent. */
+   pair never reflows, but read as spent. 0.5 is the demo's own
+   `disabled:opacity-50`; at the 0.35 this carried until 2026-09-16 the spent
+   chevron was invisible against a listing photograph, so a shelf at its first
+   snap photographed with ONE control and read as a row with a "more" button. */
 .v3 .v3-carousel__step:disabled {
-  opacity: 0.35;
+  opacity: 0.5;
   cursor: default;
 }
 

@@ -1,0 +1,128 @@
+/* The /buy fold shelf. Tokens only — every value resolves from
+   components/site/v3/tokens.css through the shared rail sheet it extends.
+
+   Every rule that retunes the segmented control is written
+   `.v3 .buy-shelf__switch > [role='tablist']`, not one class: the control's own
+   rules in V3Chart.css are two-selector (`.v3 .v3-chart-switch__seg`), and at
+   equal specificity whichever stylesheet the module graph happens to emit last
+   would win. */
+
+/* `.v3.home-rail` opens every shelf with `--v3-space-xl` of top padding and a
+   3px navy section rule. Both are right for a shelf that follows cream; this
+   one follows the hero's navy band, where the rule is a second navy line and
+   the 36px is fold the first priced ask needs. Two classes, because
+   `.v3.home-rail` is a two-class selector and a one-class rule loses to it. */
+.v3.buy-shelf {
+  padding-top: var(--v3-space-xs);
+  border-top: 0;
+}
+
+.buy-shelf__head {
+  padding-bottom: var(--v3-space-xs);
+}
+
+.buy-shelf__switch {
+  display: block;
+  min-width: 0;
+}
+
+.v3 .buy-shelf__switch > [role='tablist'] {
+  max-width: 100%;
+  margin: 0 var(--v3-gutter) var(--v3-space-xs);
+}
+
+/* The chips carry band names, which are longer than "1Y / 5Y / MAX", so they
+   take the tighter of the control's two paddings. Without it the four bands ran
+   to 560px on the chip line and wrapped "Homes in Bend and nearby" onto two
+   lines beside them. */
+.v3 .buy-shelf__switch [role='tab'] {
+  padding-inline: var(--v3-space-sm);
+  letter-spacing: 0.06em;
+}
+
+.buy-shelf__track {
+  position: relative;
+  min-width: 0;
+}
+
+.buy-shelf__see-all {
+  margin: var(--v3-space-xs) var(--v3-gutter) 0;
+}
+
+/* ---------------------------------------------------------------------------
+   FROM 64rem: ONE CHROME LINE.
+
+   The section becomes a grid and `.buy-shelf__switch` becomes `display:
+   contents`, so the tablist V3ChartSwitch renders and the panels it renders are
+   grid items of this section rather than of the switch. Heading, band chips and
+   see-all then share row 1 and the open track takes row 2 whole.
+
+   Measured before this rule, at 1440x900: the chips on their own line put the
+   first priced ask at y=880 with its address at 914 and its specs at 904 — both
+   under the fold, which is the defect this whole shelf exists to close.
+   --------------------------------------------------------------------------- */
+@media (min-width: 64rem) {
+  .buy-shelf {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    column-gap: var(--v3-space-md);
+  }
+
+  .buy-shelf__head {
+    grid-column: 1;
+    grid-row: 1;
+    padding-bottom: 0;
+  }
+
+  .buy-shelf__switch {
+    display: contents;
+  }
+
+  .v3 .buy-shelf__switch > [role='tablist'] {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    margin: 0;
+  }
+
+  .buy-shelf__switch > [role='tabpanel'],
+  .buy-shelf__track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-width: 0;
+  }
+
+  .buy-shelf__see-all {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    margin: 0 var(--v3-gutter) 0 0;
+  }
+}
+
+@media (max-width: 40rem) {
+  .v3.buy-shelf {
+    padding-top: var(--v3-space-3xs);
+  }
+
+  /* The chips scroll inside the pill rather than wrapping to a second line: a
+     wrapped segmented control reads as two controls, and the second line costs
+     the 375x812 fold 44px it does not have. The pill keeps its own edges — a
+     full-bleed grey band is not this control. */
+  .v3 .buy-shelf__switch > [role='tablist'] {
+    display: flex;
+    max-width: none;
+    margin: 0 var(--v3-gutter) var(--v3-space-2xs);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .v3 .buy-shelf__switch > [role='tablist']::-webkit-scrollbar {
+    display: none;
+  }
+
+  .v3 .buy-shelf__switch [role='tab'] {
+    flex: 0 0 auto;
+  }
+}

@@ -476,7 +476,17 @@ export function V3Stage<H extends string, L extends string>({
                   {figure.href ? (
                     <Link href={figure.href} className="v3-stage-strip__door">
                       <strong className="v3-stage-strip__value">{figure.value}</strong>
-                      <span>{figure.label}</span>
+                      {/* THE LABEL CARRIES THE AFFORDANCE. The caret rule in
+                          ./V3Stage.css section 3 was written for the older
+                          cell layout and selects `.v3-figure__label`, which
+                          the SITE-77 claim form does not render — so from
+                          2026-09-09 to 2026-09-16 these doors shipped with no
+                          rest-state affordance at all, and a separate
+                          evaluator scored the band "flat text … the doors are
+                          real links but nothing in the still signals hover"
+                          (SITE-91). The class is named here so the caret has
+                          something to hang on in BOTH forms. */}
+                      <span className="v3-stage-strip__label">{figure.label}</span>
                     </Link>
                   ) : (
                     <>

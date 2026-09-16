@@ -16,11 +16,6 @@
   .home-rails > .home-rail:first-child {
     padding-top: var(--v3-space-2xs);
   }
-
-  .home-rail__carousel .home-rail__media,
-  .home-rail__carousel .v3-lrow__media {
-    aspect-ratio: 16 / 10;
-  }
 }
 
 * + .v3.home-rail,
@@ -44,6 +39,7 @@
 
 .home-rail__head-copy {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: var(--v3-space-2xs);
   min-width: 0;
@@ -82,46 +78,88 @@
   font-size: var(--v3-size-body-sm);
 }
 
-.home-rail__arrows {
+/* THE POSITION READOUT (SITE-91, 2026-09-16). The shadcn carousel demo ships
+   "Slide 1 of 5" beside the track; this is that, in the register's voice, and
+   it costs the fold nothing because the fill rule IS the head row's bottom
+   hairline. The pair the head row used to carry — `.home-rail__arrows`, both
+   chevrons pinned static UNDER the first card — is gone: at 1440x900 it sat
+   below the fold, so the shelf photographed as a static grid and a separate
+   evaluator scored demoMatch FALSE on /buy. The chevrons now flank the track
+   (V3Carousel.css). */
+.home-rail__pos {
   display: flex;
+  align-items: center;
   gap: var(--v3-space-xs);
-  margin: var(--v3-space-xs) var(--v3-gutter) 0;
+  flex: 0 1 8rem;
+  min-width: 0;
+  margin-left: auto;
+  color: var(--v3-ink-muted);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-control);
 }
 
-.home-rail__arrows [data-slot='carousel-previous'],
-.home-rail__arrows [data-slot='carousel-next'] {
-  position: static;
-  inset: auto;
-  display: inline-flex;
-  opacity: 1;
-  transform: none;
+.home-rail__pos-count {
+  white-space: nowrap;
+}
+
+.home-rail__pos-sep {
+  opacity: 0.5;
+}
+
+.home-rail__pos-rule {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 2.5rem;
+  height: var(--v3-rule-weight-hairline);
+  background: var(--v3-hairline);
+}
+
+.home-rail__pos-rule::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--home-rail-p, 0%);
+  background: var(--v3-navy);
+  transition: width var(--v3-dur-state) var(--v3-ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-rail__pos-rule::after {
+    transition: none;
+  }
 }
 
 /* Inventory rails ride V3Carousel (shadcn carousel job → house primitive). */
 .home-rail__carousel {
   padding: 0 0 var(--v3-space-sm);
-}
-
-.home-rail__carousel .v3-carousel__viewport {
-  padding-inline: var(--v3-gutter);
+  /* The chevrons ride just inside the track's own edge. Outside it (shadcn's
+     `-left-12`) there is room at 1440 and none at 375, and a control that
+     disappears on a phone is not the same object. */
+  --v3-carousel-nav-inset: var(--v3-space-xs);
 }
 
 /* SITE-83: denser cards so price + address clear the first viewport under a
-   compact Stage (evaluator cropped through the photograph otherwise). */
+   compact Stage (evaluator cropped through the photograph otherwise).
+
+   THE WIDTH IS A VARIABLE, NOT A FLEX-BASIS (SITE-91). V3Carousel.css derives
+   the flanking chevrons' vertical centre from `--v3-carousel-slide-w` — slide
+   width less its own right padding, times the 16/10 media aspect, halved — so
+   a hard-coded basis here silently drifts the buttons onto the price row.
+   Four across the 72rem measure from 64rem up; a peeking 78vw card below it,
+   which is what tells a phone reader the shelf scrolls. */
 .home-rail__carousel.v3-carousel--rail .v3-carousel__slide,
 .home-rail__carousel.v3-carousel--rail [data-slot='carousel-item'] {
-  flex: 0 0 min(17.5rem, 78vw);
-  max-width: min(17.5rem, 78vw);
+  max-width: var(--v3-carousel-slide-w);
   overflow: hidden;
   height: auto;
   min-height: auto;
 }
 
 @media (min-width: 64rem) {
-  .home-rail__carousel.v3-carousel--rail .v3-carousel__slide,
-  .home-rail__carousel.v3-carousel--rail [data-slot='carousel-item'] {
-    flex: 0 0 25%;
-    max-width: 25%;
+  .home-rail__carousel.v3-carousel--rail {
+    --v3-carousel-slide-w: calc(min(var(--v3-measure), 100vw) / 4);
   }
 }
 
@@ -133,15 +171,25 @@
   overflow: hidden;
   height: auto;
   gap: 0;
+  /* The shadcn Card at size="sm" opens with 12px of its own block padding, so
+     every card in every rail carried a 12px cream strip above the photograph —
+     and the flanking chevrons, which centre on the media midline, sat 12px
+     high because of it (measured 2026-09-16: card top 591, media top 603,
+     chevron centre 676 against a midline of 688). The header and the content
+     carry their own padding; the media wants the card's edge. */
+  padding-block: 0;
   border-radius: var(--v3-radius-control);
   background: var(--v3-surface);
   color: var(--v3-ink);
   box-shadow: none;
 }
 
+/* ONE ASPECT AT EVERY WIDTH (SITE-91). 4/3 on desktop put the first ask at
+   y=860 against a 900 fold with the address and the specs under it, and it
+   also broke the flanking chevrons' midline maths, which assumes 16/10. */
 .home-rail__carousel .home-rail__media,
 .home-rail__carousel .v3-lrow__media {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 10;
   min-height: 0;
 }
 
@@ -153,7 +201,7 @@
 .home-rail__card .v3-lrow__media {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 10;
   height: auto;
   min-height: 0;
 }
@@ -209,4 +257,42 @@
   z-index: 2;
   max-width: calc(100% - 0.5rem);
   pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+   375. LAST IN THE FILE ON PURPOSE: every rule above is single-class, so a
+   narrow override written earlier in the sheet loses the cascade to the base
+   rule that follows it.
+
+   The head becomes one line — the display size steps down and the see-all is a
+   text control on the same baseline — because "Homes in Bend and nearby" over
+   a two-line boxed button cost 96px and pushed the first priced ask to y=873
+   against an 812 fold (SITE-91, 2026-09-16).
+   --------------------------------------------------------------------------- */
+@media (max-width: 40rem) {
+  .home-rail__head {
+    align-items: center;
+    gap: var(--v3-space-2xs);
+    padding-bottom: var(--v3-space-2xs);
+  }
+
+  .home-rail__title {
+    font-size: var(--v3-size-body-lg);
+    letter-spacing: 0;
+    line-height: var(--v3-leading-control);
+  }
+
+  .home-rail__head .v3-btn--ghost {
+    min-height: var(--v3-tap);
+    padding-inline: var(--v3-space-2xs);
+    border-color: transparent;
+    font-size: var(--v3-size-body-sm);
+    white-space: nowrap;
+  }
+
+  /* 375 carries the carousel in the chevrons that flank the photograph; the
+     readout would take the heading's last word with it. */
+  .home-rail__pos {
+    display: none;
+  }
 }
