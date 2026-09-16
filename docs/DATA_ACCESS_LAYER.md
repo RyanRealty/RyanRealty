@@ -241,6 +241,7 @@ The listing detail page embeds whatever `getListingVideos()` returns. We do not 
 | getMarketPulse | unstable_cache | 900s (15min) | market |
 | getRecentActivity | unstable_cache | 60s | activity |
 | getBrokers | unstable_cache | 86400s (1d) | brokers |
+| getCrmAccess | React cache() (per request) | — | crm identity for admin chrome |
 | getMarketReport | unstable_cache | 3600s | market |
 | collectCompanyScoreboardSignals | none (weekly ops ingest) | — | — |
 | insertImprovementLedgerRow / listOpenImprovementWindows / getChangeClassConfidence | none (loop ledger) | — | — |

@@ -423,7 +423,7 @@ const nextConfig: NextConfig = {
   },
   // Avoid "Body exceeded 1 MB limit" → browser "Failed to fetch" (e.g. Server Actions with images/large payloads)
   experimental: {
-    optimizePackageImports: ['@hugeicons/react', '@hugeicons/core-free-icons', 'iconoir-react', 'date-fns', 'recharts', '@react-email/components', 'radix-ui', '@react-google-maps/api', '@googlemaps/markerclusterer'],
+    optimizePackageImports: ['@hugeicons/react', '@hugeicons/core-free-icons', 'iconoir-react', 'lucide-react', 'date-fns', 'recharts', '@react-email/components', 'radix-ui', '@react-google-maps/api', '@googlemaps/markerclusterer'],
     serverActions: {
       bodySizeLimit: '4mb',
     },
@@ -481,6 +481,30 @@ const nextConfig: NextConfig = {
     ],
     'app/home-valuation/actions': [
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
+    ],
+  },
+  // Safety net for lean admin pages. NFT still follows dynamic import()
+  // specifiers; without excludes, a residual chrome edge can copy chromium,
+  // ffmpeg, googleapis, or public/cmas into a page that never uses them.
+  // /admin/analytics/action-required failed deploy at ~805.9 MB uncompressed
+  // (Vercel 250 MB cap). Do NOT set VERCEL_SUPPORT_LARGE_FUNCTIONS=1 as the
+  // primary fix — shrink the graph. To print a per-function size report on
+  // the next Vercel build, set VERCEL_ANALYZE_BUILD_OUTPUT=1 on the project.
+  outputFileTracingExcludes: {
+    'app/admin/(protected)/analytics/action-required/page': [
+      './node_modules/@sparticuz/**/*',
+      './node_modules/puppeteer-core/**/*',
+      './node_modules/puppeteer/**/*',
+      './node_modules/@ffmpeg-installer/**/*',
+      './node_modules/ffmpeg-static/**/*',
+      './node_modules/googleapis/**/*',
+      './node_modules/google-auth-library/**/*',
+      './node_modules/@napi-rs/**/*',
+      './node_modules/pdfjs-dist/**/*',
+      './public/cmas/**/*',
+      './public/drafts/**/*',
+      './public/v5_library/**/*',
+      './public/proof/**/*',
     ],
   },
 }

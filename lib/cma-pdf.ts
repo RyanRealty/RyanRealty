@@ -8,8 +8,7 @@
  * puppeteer-core + @sparticuz/chromium-min.
  */
 
-import puppeteer, { type Browser } from 'puppeteer-core'
-import chromium from '@sparticuz/chromium-min'
+import type { Browser } from 'puppeteer-core'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { fetchCmaMapPngBuffer } from '@/lib/cma-map'
@@ -35,6 +34,10 @@ const ASSET_MIME: Record<string, string> = {
 }
 
 async function getBrowser(): Promise<Browser> {
+  const [{ default: puppeteer }, { default: chromium }] = await Promise.all([
+    import('puppeteer-core'),
+    import('@sparticuz/chromium-min'),
+  ])
   const isVercel = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)
   if (isVercel) {
     return puppeteer.launch({

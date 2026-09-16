@@ -10,17 +10,14 @@ import { revalidatePerson } from '@/lib/crm/revalidate-person'
  * deleted. Every mutation writes the native tables directly.
  */
 
-import { cache } from 'react'
 import { revalidatePath, unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getSession } from '@/app/actions/auth'
-import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import {
   CRM_STAGES,
   CRM_BROKERS,
   type CrmBrokerSlug,
 } from '@/lib/crm/constants'
-import { resolveCrmSlugForAccess } from '@/lib/data/brokers/resolveCrmSlug'
+import { getCrmAccess as loadCrmAccess, type CrmAccess } from '@/lib/data/crm/getCrmAccess'
 import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
 import { isQualifyingStage, fireQualifiedLeadEvent } from '@/lib/meta/qualifiedEvent'
 import { buildCrmPeopleQuery, CRM_PEOPLE_SELECT } from '@/lib/data/crm/buildCrmPeopleQuery'
@@ -30,30 +27,11 @@ import { trySendGroupMms } from '@/lib/crm/try-send-group-mms'
 
 export type CrmActionResult = { ok: true; notice?: string } | { ok: false; error: string }
 
-export type CrmAccess = {
-  email: string
-  role: 'superuser' | 'broker' | 'report_viewer'
-  /** Own CRM slug from brokers.crm_slug (table-first). */
-  brokerSlug: string | null
-}
+export type { CrmAccess }
 
-// Request-memoized resolver: hot admin pages call getCrmAccess 3-5 times per
-// render (the page itself + every self-scoping action in its Promise.all), and
-// each un-memoized call is a serial supabase.auth.getUser() network hop plus an
-// admin_roles read. React cache() shares ONE resolution per request. It lives
-// as a module-private const because Next requires every export of a
-// 'use server' file to be an async function (cache() returns a plain wrapper).
-const resolveCrmAccess = cache(async (): Promise<CrmAccess | null> => {
-  const session = await getSession()
-  const email = session?.user?.email?.trim().toLowerCase() ?? null
-  const role = await getAdminRoleForEmail(email)
-  if (!role || !email) return null
-  return { email, role: role.role, brokerSlug: await resolveCrmSlugForAccess({ email, brokerId: role.brokerId }) }
-})
-
-/** Resolve the caller's CRM access (role + own-broker slug). Null when not an admin. */
+/** Thin wrapper so this 'use server' file owns the export Next compiles. */
 export async function getCrmAccess(): Promise<CrmAccess | null> {
-  return resolveCrmAccess()
+  return loadCrmAccess()
 }
 
 export type CrmPersonRow = {
@@ -1323,89 +1301,10 @@ export async function advanceEnrollmentNowAction(enrollmentId: number) {
   )
 }
 
-export type CrmNextRec = {
-  enrollmentId: number
-  sequenceName: string
-  stepIndex: number
-  channel: string
-  subjectPreview: string | null
-  bodyPreview: string
-  unresolved: string[]
-  holdReason: string | null
-} | null
-
-/** Resolve a step's subject/body for PREVIEW — mirrors the engine exactly: a
- *  templateKey overrides inline subject/body from crm_templates. Without this the
- *  preview (and every guard built on it) inspects an empty inline body while the
- *  engine sends the template — a broker could one-click-send text never seen. */
-async function resolveStepContent(
-  sb: ReturnType<typeof createServiceClient>,
-  step: Record<string, unknown>,
-): Promise<{ subject: string | null; body: string }> {
-  let subject = step.subject != null ? String(step.subject) : null
-  let body = String(step.body ?? '')
-  const templateKey = step.templateKey != null ? String(step.templateKey) : ''
-  if (templateKey) {
-    const { data: tpl } = await sb.from('crm_templates').select('subject,body').eq('key', templateKey).maybeSingle()
-    if (tpl) {
-      if (tpl.subject != null) subject = tpl.subject
-      if (tpl.body != null) body = tpl.body
-    }
-  }
-  return { subject, body }
-}
-
-/** The broker-confirmed "recommended next step" for a contact, fully rendered
- *  exactly as the lead would receive it. Drives the color-coded next-step card
- *  + the in-app message preview. Returns null when nothing is waiting. */
-export async function getNextRecommendation(personId: number): Promise<CrmNextRec> {
-  const access = await getCrmAccess()
-  if (!access) return null
-  const sb = createServiceClient()
-  const { data: en } = await sb
-    .from('crm_sequence_enrollments')
-    .select('id,step_index,status,crm_sequences!inner(name,steps)')
-    .eq('person_id', personId)
-    .eq('status', 'awaiting_broker_next')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  if (!en) return null
-  const seq = en.crm_sequences as unknown as { name: string; steps: Array<Record<string, unknown>> }
-  const step = (seq.steps ?? [])[en.step_index as number] as Record<string, unknown> | undefined
-  if (!step) return null
-  const { data: person } = await sb
-    .from('crm_people')
-    .select('first_name,last_name,name,stage,source,lender_name,emails,phones,addresses,assigned_broker,custom')
-    .eq('id', personId)
-    .maybeSingle()
-  const { renderCrmMerge, findUnresolvedMergeTokens, referencesCmaLink } = await import('@/lib/crm/merge')
-  const { buildMergeContext } = await import('@/lib/crm/merge-context')
-  const p = (person ?? {}) as { first_name?: string | null; name?: string | null; assigned_broker?: string | null; custom?: Record<string, unknown> }
-  const mergeCtx = await buildMergeContext({ person: p, senderSlug: p.assigned_broker ?? null })
-  const channel = String(step.channel ?? 'step')
-  const isMessage = channel === 'email' || channel === 'sms'
-  const resolved = await resolveStepContent(sb, step)
-  const rawBody = resolved.body || String(step.taskName ?? '')
-  const bodyPreview = renderCrmMerge(rawBody, p, mergeCtx)
-  const subjectPreview = resolved.subject ? renderCrmMerge(resolved.subject, p, mergeCtx) : null
-  const holdReason =
-    referencesCmaLink(rawBody) && !((p.custom ?? {}) as Record<string, unknown>).cmaLink
-      ? 'Holds until the CMA is built (the link is stamped at finalize)'
-      : isMessage && !rawBody.trim()
-        ? 'Message content is missing — check the template'
-        : null
-  return {
-    enrollmentId: en.id as number,
-    sequenceName: seq.name,
-    stepIndex: en.step_index as number,
-    channel,
-    subjectPreview,
-    bodyPreview,
-    unresolved: findUnresolvedMergeTokens(`${subjectPreview ?? ''} ${bodyPreview}`),
-    holdReason,
-  }
-}
+// Re-export for existing CRM callers. Console chrome imports crm-next-rec
+// directly so admin pages do not compile this god-file.
+export type { CrmNextRec } from '@/app/actions/crm-next-rec'
+export { getNextRecommendation } from '@/app/actions/crm-next-rec'
 
 export type { BrokerActionItem } from '@/lib/data/crm/getBrokerActionQueue'
 

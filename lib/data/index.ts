@@ -152,6 +152,10 @@ export type { ViewedListing } from '@/lib/data/crm/getViewedListings'
 // CRM — lead intake (single source of truth for dashboard lead counts)
 export { getLeadIntake } from '@/lib/data/crm/getLeadIntake'
 export type { LeadIntake, LeadIntakeInput, LeadIntakeChannel } from '@/lib/data/crm/getLeadIntake'
+export { getCrmAccess } from '@/lib/data/crm/getCrmAccess'
+export type { CrmAccess } from '@/lib/data/crm/getCrmAccess'
+export { searchCrmPeople } from '@/lib/data/crm/searchCrmPeople'
+export type { CrmPersonHit } from '@/lib/data/crm/searchCrmPeople'
 export {
   classifyLeadSource,
   isAttributableLead,
