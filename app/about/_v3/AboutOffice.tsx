@@ -26,7 +26,7 @@ export function AboutOffice({ id = 'office' }: { id?: string } = {}) {
   const cityLine = `${BRAND.address.city}, ${BRAND.address.region} ${BRAND.address.postalCode}`
   return (
     <section id={id} className="about-office" aria-labelledby="office-heading">
-      <Card className="about-office__card max-w-lg">
+      <Card className="about-office__card">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={OFFICE_EXTERIOR} alt="" width={800} height={533} />
         <CardHeader>
