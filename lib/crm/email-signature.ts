@@ -24,7 +24,7 @@
  * Email-client reality: web fonts don't load in Gmail/Outlook, so the stack
  * falls back from Geist to system sans. Inline styles only. Table layout.
  */
-import { getBrokers } from '@/lib/data'
+import { getBrokers } from '@/lib/data/brokers/getBrokers'
 import type { Broker } from '@/lib/data/types/broker'
 import { htmlToPlainText } from '@/lib/crm/email-body'
 

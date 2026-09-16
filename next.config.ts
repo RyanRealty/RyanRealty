@@ -65,6 +65,10 @@ const nextConfig: NextConfig = {
     // external it is required from node_modules at runtime, where the right
     // platform build actually exists.
     '@ffmpeg-installer/ffmpeg',
+    // PDF render stack — must stay off admin page lambdas. Routes that need
+    // Chromium (CMA/BPO PDF APIs) load these at runtime via dynamic import.
+    'puppeteer-core',
+    '@sparticuz/chromium-min',
   ],
   // Emit production source maps so Lighthouse Best Practices audit
   // valid-source-maps passes. /team route dropped to BP=0 without this
@@ -481,6 +485,31 @@ const nextConfig: NextConfig = {
     ],
     'app/home-valuation/actions': [
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
+    ],
+  },
+  // Keep media dumps + browser tooling out of every serverless function.
+  // Found 2026-09-16: admin/analytics/action-required traced at 805.9mb
+  // (limit 250mb) after the dangling public/proof symlink was removed and
+  // NFT could finish — the admin shell had been pulling the CRM send graph
+  // (and with it accidental media paths) into the page lambda.
+  outputFileTracingExcludes: {
+    '*': [
+      './public/asset-library/**',
+      './public/template-picker/**',
+      './public/videos/**',
+      './public/images/**',
+      './public/mockup-preview/**',
+      './public/lp/**',
+      './public/golf/**',
+      './public/list-kits/**',
+      './public/install-kits/**',
+      './public/producer-gallery/**',
+      './node_modules/@playwright/**',
+      './node_modules/playwright/**',
+      './node_modules/playwright-core/**',
+      './node_modules/@ffmpeg-installer/**',
+      './node_modules/puppeteer-core/**',
+      './node_modules/@sparticuz/chromium-min/**',
     ],
   },
 }

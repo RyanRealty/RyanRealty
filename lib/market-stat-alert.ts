@@ -18,7 +18,9 @@ import { sendEmail } from '@/lib/resend'
 import { EMAIL_FONT_STACK } from '@/lib/email/brand'
 
 const ALERT_TO = process.env.MATT_ALERT_EMAIL ?? 'matt@ryan-realty.com'
-const ALERT_FROM = process.env.RESEND_FROM ?? 'alerts@mail.ryan-realty.com'
+const ALERT_FROM_RAW = process.env.RESEND_FROM ?? 'alerts@mail.ryan-realty.com'
+/** Same rule as lib/deploy-health-alert.ts — do not nest display names. */
+const ALERT_FROM = ALERT_FROM_RAW.includes('<') ? ALERT_FROM_RAW : `Ryan Realty Ops <${ALERT_FROM_RAW}>`
 
 export type MarketStatAlertParams = {
   failures: string[]
@@ -56,7 +58,7 @@ export async function sendMarketStatAlertEmail(
     p.subject ?? `[Data] Market-stat consistency check failed (${p.failures.length} issue${p.failures.length === 1 ? '' : 's'})`
 
   try {
-    const r = await sendEmail({ to: ALERT_TO, from: `Ryan Realty Ops <${ALERT_FROM}>`, subject, html })
+    const r = await sendEmail({ to: ALERT_TO, from: ALERT_FROM, subject, html })
     if (r.error) return { ok: false, error: r.error }
     return { ok: true, id: r.id }
   } catch (err) {
