@@ -62,7 +62,7 @@
   width: 100%;
   max-width: none;
   min-width: 0;
-  padding: 0 0 var(--v3-space-sm);
+  padding: 0 0 var(--v3-space-2xs);
   position: relative;
   z-index: 0;
   align-self: stretch;
@@ -357,46 +357,56 @@
   z-index: 0;
 }
 
-/* Compact the figure so the strip shares the 1440 fold with card facts. */
-.pd-spread .v3-drawing__figure,
-.pd-spread .v3-drawing__figure:first-child {
+/* Compact the figure so the strip shares the 1440 fold with card facts.
+   THESE CARRY `.v3.pd-spread`, NOT `.pd-spread`. The barrel's own rules are
+   `.v3 .v3-drawing__figure:first-child` and `.v3 .v3-drawing__claim` — the
+   same specificity as a bare `.pd-spread` descendant selector, so which one
+   won came down to stylesheet order, and the barrel was winning: measured at
+   1440 on 2026-09-16 the figure kept its 0.75rem top padding, the claim kept
+   its 44rem measure and its 1rem bottom margin, and the whole 77px went
+   between the rail and the claim while the drawing fell out of the fold —
+   which is the "clipped to a few unlabeled dots" defect the evaluator named.
+   `.v3` also sits on this element, so `.v3.pd-spread` outranks it outright. */
+.v3.pd-spread .v3-drawing__figure,
+.v3.pd-spread .v3-drawing__figure:first-child {
   padding-top: 0;
   padding-bottom: var(--v3-space-2xs);
 }
 
-.pd-spread .v3-drawing__claim {
+.v3.pd-spread .v3-drawing__figure:first-child .v3-drawing__claim,
+.v3.pd-spread .v3-drawing__claim {
   margin-bottom: var(--v3-space-2xs);
   max-width: none;
-  font-size: var(--v3-size-body-sm);
+  font-size: var(--v3-size-body);
 }
 
-.pd-spread .v3-drawing__foot {
+.v3.pd-spread .v3-drawing__foot {
   margin-top: var(--v3-space-2xs);
 }
 
 /* Page already prints V3SourceLine — drop the drawing's duplicate foot source. */
-.pd-spread .v3-drawing__source {
+.v3.pd-spread .v3-drawing__source {
   display: none;
 }
 
 /* Compact strip so the first card + distribution share the 1440 fold. */
-.pd-spread .v3-drawing__strip {
+.v3.pd-spread .v3-drawing__strip {
   --v3-drawing-lane-step: 0.7rem;
 }
 
 /* The idle reading is the only thing on screen that says the marks answer —
    hiding it to save 20px is what made the strip read as "a decorative
    scatter" (evaluator, 2026-09-15). It stays at every width. */
-.pd-spread .v3-drawing__quiet {
+.v3.pd-spread .v3-drawing__quiet {
   display: none;
 }
 
 @media (max-width: 47.999rem) {
-  .pd-spread .v3-drawing__strip {
+  .v3.pd-spread .v3-drawing__strip {
     --v3-drawing-lane-step: 1.65rem;
   }
 
-  .pd-spread .v3-drawing__quiet {
+  .v3.pd-spread .v3-drawing__quiet {
     display: block;
   }
 }

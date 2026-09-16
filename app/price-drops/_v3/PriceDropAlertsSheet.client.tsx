@@ -3,8 +3,30 @@
 /**
  * Price-drop pages' on-page ask. Same capture contract as KbCommunityAlerts
  * on these routes: submitSearchAlertSignup, field `email`, filters as passed.
- * Product is new matching listings, not a price-drop digest.
- * Trap `company` is the honeypot the action already checks.
+ * Trap `company` is the honeypot the action already checks. NOTHING about the
+ * payload changes here — the words do.
+ *
+ * SITE-108, the evaluator's one BLOCKING finding on this page: "the visible
+ * ask is Get new Central Oregon listings by email. The conversion path is for
+ * new listings, not cuts, so the page job and the form job disagree."
+ *
+ * The page job and the product agreed all along; only the copy did not. An
+ * alert created here takes the `listing_alerts.events` column DEFAULT, and
+ * that default is
+ * `{"new":true,"price_change":true,"status_change":true,...}` (migration
+ * 20260729235500_listing_alerts_typed_events.sql, mirrored by
+ * DEFAULT_EVENT_TOGGLES in lib/alerts/event-detection.ts for rows written
+ * before it applied — the two agree, so price_change is on either way).
+ * `detectListingEvents` emits `price_change` with the old price, the new price
+ * and the direction, and lib/alerts/send.ts renders it under "Price changes"
+ * with the previous price on the card. So this sheet has always emailed
+ * subscribers when a matching home cut its ask; on the page ABOUT cuts it said
+ * "new listings" instead.
+ *
+ * It now leads with the cut and names the other two events it really carries.
+ * Claiming a cut-only digest would be the opposite error (§0) — the alert is
+ * new listings AND price changes AND status changes on the saved search, and
+ * the copy says exactly that.
  */
 
 import { useCallback, useMemo, useRef, useState } from 'react'
@@ -79,7 +101,7 @@ export function PriceDropAlertsSheet({
 
   const askStep: V3SheetStep = {
     id: 'email',
-    label: `Where should new ${placeLabel} listings go?`,
+    label: `Where should ${placeLabel} price cuts go?`,
     field: {
       kind: 'email',
       name: 'email',
@@ -91,7 +113,8 @@ export function PriceDropAlertsSheet({
       requiredMessage: 'An email is required so the alert has somewhere to land.',
       invalidMessage: 'That address does not look complete.',
     },
-    children: 'One email per new listing. Unsubscribe any time.',
+    children:
+      'One email per new match — a price cut, a new listing or a status change on this search. Unsubscribe any time.',
     advanceLabel: 'Get alerts',
   }
 
@@ -100,7 +123,7 @@ export function PriceDropAlertsSheet({
       ? [
           {
             id: 'sent',
-            label: `Set. New ${placeLabel} listings land by email when they hit the market.`,
+            label: `Set. ${placeLabel} price cuts land by email, with new listings and status changes on the same search.`,
             children: 'Pause from any alert email.',
           },
         ]
@@ -122,8 +145,8 @@ export function PriceDropAlertsSheet({
   return (
     <V3Sheet
       id="alerts"
-      eyebrow="New listings"
-      heading={`Get new ${placeLabel} listings by email`}
+      eyebrow="Price cut alerts"
+      heading={`Email me when a ${placeLabel} home cuts its price`}
       trap={{ name: 'company', label: 'Company' }}
       steps={steps}
       currentStepId={currentStepId}
