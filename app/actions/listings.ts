@@ -2076,11 +2076,17 @@ export type CityMarketStats = {
 
 export type SubdivisionInCity = { subdivisionName: string; count: number }
 
-/** True if subdivision name is empty or denotes "not applicable" (N/A, NA, etc.). Exclude from hot communities and subdivision lists. */
+/**
+ * True if subdivision name is empty, denotes "not applicable" (N/A, NA, etc.),
+ * or carries no letter at all ("********", "---": MLS placeholder entries that
+ * surfaced as typeahead rows for a Dekalb Avenue query, Matt 2026-09-16).
+ * Exclude from hot communities and subdivision lists.
+ */
 function isNaSubdivision(name: string | null | undefined): boolean {
   const n = (name ?? '').trim().toLowerCase()
   if (!n) return true
   if (n === 'n/a' || n === 'na' || n === 'not applicable' || n === 'none') return true
+  if (!/[a-z]/.test(n)) return true
   return false
 }
 

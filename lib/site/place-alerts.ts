@@ -149,7 +149,7 @@ export function placeAlertsClaimParts(
   noun: PlaceAlertsNoun = HOUSES,
 ): PlaceAlertsStickyClaim {
   if (n == null) {
-    return { before: 'New', place: scopeName, after: 'listings, by email, as they come on the market.' }
+    return { before: 'Hear about new listings in', place: scopeName, after: 'the day they hit the market.' }
   }
   const after = 'in the last 30 days.'
   if (earnsDisplayFigure(n)) return { before: `${units(n, noun)} came on the market in`, place: placeName, after }
@@ -324,11 +324,11 @@ export function placeAlertsCopy(input: PlaceAlertsInput): PlaceAlertsCopy {
     scopeLine,
     scopePhrase,
     promiseScope: scopeLine ? null : scopePhrase,
-    submitLabel: 'Email me each one',
+    submitLabel: 'Send me new listings',
     browseLabel: `See the newest ${input.placeName} listings`,
     sent: {
-      heading: `Set. New ${input.scopeName} listings land by email when they hit the market.`,
-      body: 'Price changes on those homes come in the same email. Pause or unsubscribe from any alert email.',
+      heading: `You're set. We'll email you when something new lists in ${input.scopeName}.`,
+      body: 'Price changes on those homes ride along in the same email. Pause or unsubscribe from any of them.',
     },
     source:
       n == null

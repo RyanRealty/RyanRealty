@@ -52,22 +52,19 @@ export function V3ChromeSearch() {
   }, [])
 
   const items = useMemo(() => {
-    const typed = flattenSuggestions(suggestions)
-      .filter(
-        (item) =>
-          item.kind === 'address' ||
-          item.kind === 'city' ||
-          item.kind === 'subdivision' ||
-          item.kind === 'neighborhood' ||
-          item.kind === 'zip',
-      )
-      .map((item) => ({
-        id: item.href,
-        title: item.label,
-        description: item.sublabel,
-      }))
+    // Comprehensive (Matt 2026-09-16): every kind the suggest feed returns —
+    // addresses, cities, subdivisions, neighborhoods, ZIPs, brokers, reports and
+    // guides — not a hand-picked five. The feed already matched them to the
+    // query; `keywords` carries that query so the morph's own substring filter
+    // cannot drop a match the server made on a field the row does not print.
+    const typed = flattenSuggestions(suggestions).map((item) => ({
+      id: item.href,
+      title: item.label,
+      description: item.sublabel,
+      keywords: [query],
+    }))
     return typed.length > 0 ? typed : PLACE_SEEDS
-  }, [suggestions])
+  }, [suggestions, query])
 
   const onSelect = useCallback(
     (item: MorphingSearchItem) => {
@@ -101,6 +98,11 @@ export function V3ChromeSearch() {
         shortcut=""
         emptyMessage="No places match that."
         className="v3-chrome__search-morph"
+        // The chrome is sticky at z-index 100 (V3Chrome.css); the morph's
+        // portal defaults to z-50, which put the open input row behind the
+        // header on every page (Matt, phone, 2026-09-16). Above the chrome and
+        // the Find-me stage (120), below the nav overlay (200).
+        overlayClassName="z-[150]"
       />
     </div>
   )

@@ -1192,6 +1192,30 @@ const SEEDS: readonly Seed[] = [
     accept:
       "Mechanical, live on an Active Bend listing resolved at run time (the Broken Top subject or another Active with a full Spark record): the rendered Facts region (not JSON-LD, not RSC payload) contains beds, baths, living sqft, lot, year built, garage, and every other non-empty ListingDetail field the page already reads (heating/cooling/fireplace/pool/stories/roof/sewer/tax/HOA when present). Public remarks remain visible as written (SITE-57). Hero and opened gallery frames request 1600 mosaic (or original photos.sparkplatform.com) URLs — grep of the live HTML has no ore/800x600 or ore/320x240 on the main listing photo/srcset for the primary frame. A recurring-regression gate fails if PropertySpecs (or its successor) omits beds/baths/sqft or if ListingHero paints 320/800 as the lead frame. 1440 and 375 shots attached. Do not wait on SITE-99 taste. honestyFunction must not fall; remarks, payment, schools, Tour/Call/Text stay.",
   },
+  {
+    versionGap: 'SITE-121',
+    domain: 'public-ux',
+    title:
+      'Matt CHANGE [p0] search: the phone header search cannot be typed in — the open morph sits under the sticky chrome and its panel is ~150px wide',
+    objective:
+      "Matt 2026-09-16, from his phone on a listing page: \"I cannot type in the search. This needs to be fast and comprehensive.\" Root cause read in code: V3ChromeSearch mounts the catalog MorphingSearch (components/motion/morphing-search.tsx) whose portaled overlay is Tailwind z-50 while .v3.v3-chrome is position: sticky; z-index: 100 (V3Chrome.css), so the open dialog — anchored to the trigger's top INSIDE the header band — has its 48px input row drawn behind the header and only the result list shows below it; on a phone the icon-only trigger sits at the far right, and the panel width is measured from the icon's left edge to the viewport (~150px on 375). The dialog input is focused a frame after open (requestAnimationFrame), which iOS treats as programmatic, so no keyboard. The chrome also filtered the suggest feed to five kinds, dropping brokers, reports and guides.",
+    output:
+      'MorphingSearch takes an overlayClassName (the chrome passes z-[150], above the chrome at 100 and the Find-me stage at 120, below the nav overlay at 200); icon-only opens as a full-width sheet clamped inside 12px gutters; the dialog input autoFocuses during the opening tap; V3ChromeSearch passes every suggest kind with the query as a keyword; a phone capture at 375 with the search open and typed into; evidence on this node.',
+    accept:
+      'Mechanical, on a production build at 375x812 and 1440x900: tapping the header search opens a dialog whose input is fully inside the viewport and not covered by the chrome (its bounding box top is at or below the top of the viewport and the element under its centre point is the input); typing "dekalb" yields address suggestions; on the listing page the same holds. The 1440 desk pill keeps its typeable-at-rest field. ci:tap-targets and ci:runtime-gates green. Live on ryan-realty.com after landing: the same three checks on a phone.',
+  },
+  {
+    versionGap: 'SITE-120',
+    domain: 'public-ux',
+    title:
+      'Matt CHANGE place alerts: the sticky ask reads like a form, not a person — "New X listings, by email, as they come on the market. Every new listing by email. Unsubscribe any time. Email me each one"',
+    objective:
+      "Matt 2026-09-16, from his phone on /subdivisions/keystone-terrace: \"I don't like the language on cta.\" The sticky alerts strip and the first callout share one wording family built in lib/site/place-alerts.ts (placeAlertsClaimParts, submitLabel, sent copy) and repeated as literal promise / stickyNote strings in the city, neighborhood, subdivision, community and ZIP alert sheets (the disclosure gate reads those literals per surface). It says \"by email\" twice, restates \"every new listing\" as a fragment, and the button is \"Email me each one\". VOICE.md: warm, direct, talk to the reader, say what the client gets. The engine sends one email per alert per hourly run, so the promise stays \"every new listing\" (never \"one email per listing\").",
+    output:
+      "New wording, one family: sticky claim \"Hear about new listings in {scope} the day they hit the market.\"; note \"Every new listing, with its price changes. Unsubscribe any time.\"; callout promise \"We'll email you every new listing in {scope} as it comes on the market, with any price change on those homes in the same email. Unsubscribe any time.\"; button \"Send me new listings\"; sent state \"You're set. We'll email you when something new lists in {scope}.\" Applied to all five place sheets; ci:alert-capture-disclosure green; a 375 capture of the sticky strip; evidence on this node.",
+    accept:
+      'Mechanical: grep of app/ and lib/ finds no "Email me each one", no "by email, as they come on the market", no "Every new listing by email."; ci:alert-capture-disclosure passes on every capture surface (frequency sentence + unsubscribe still present in each file); the sticky strip and callout on a place page render the new wording at 375 and 1440; V3AlertsStrip logic tests green. Matt reads the new lines on his phone and does not send them back.',
+  },
 
 ]
 

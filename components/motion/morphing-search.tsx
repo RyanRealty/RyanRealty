@@ -60,6 +60,15 @@ export interface MorphingSearchProps {
 	onQueryChange?: (query: string) => void;
 	onSelect?: (item: MorphingSearchItem) => void;
 	className?: string;
+	/**
+	 * Classes for the portaled overlay layer (the click catcher, the morph
+	 * panel and the dialog all resolve against it). The default `z-50` sits
+	 * BELOW a sticky site header at z-index 100, so a search anchored inside
+	 * that header opened with its input row hidden behind the chrome and only
+	 * the result list showing (Matt, phone, 2026-09-16: "I cannot type in the
+	 * search"). A host whose header stacks above 50 passes its own z here.
+	 */
+	overlayClassName?: string;
 }
 
 type AnchorRect = {
@@ -90,6 +99,7 @@ export function MorphingSearch({
 	onQueryChange,
 	onSelect,
 	className,
+	overlayClassName,
 }: MorphingSearchProps) {
 	const [internalOpen, setInternalOpen] = useState(defaultOpen);
 	const [query, setQuery] = useState("");
@@ -345,12 +355,24 @@ export function MorphingSearch({
 
 	const shellLayoutId = `${uid}-shell`;
 	const listboxId = `${uid}-results`;
+	// A compact (icon-only) trigger sits at the far edge of a phone header, so a
+	// panel measured from the icon's left edge to the viewport was ~150px wide
+	// and hung off the right of a 375px screen. Icon-only opens as a full-width
+	// sheet instead: as wide as the viewport allows, clamped inside its gutters,
+	// still anchored to the trigger's top so the morph has an origin.
+	const viewportWidth = mounted ? window.innerWidth : 0;
 	const panelWidth = mounted
-		? Math.max(
-				anchorRect.width,
-				Math.min(448, window.innerWidth - anchorRect.left - 16),
-			)
+		? iconOnly
+			? Math.max(anchorRect.width, Math.min(448, viewportWidth - 24))
+			: Math.max(
+					anchorRect.width,
+					Math.min(448, viewportWidth - anchorRect.left - 16),
+				)
 		: anchorRect.width;
+	const panelLeft =
+		mounted && iconOnly
+			? Math.max(12, Math.min(anchorRect.left, viewportWidth - panelWidth - 12))
+			: anchorRect.left;
 	const resultsHeight = mounted
 		? Math.max(96, Math.min(288, window.innerHeight - anchorRect.top - 80))
 		: 288;
@@ -370,7 +392,10 @@ export function MorphingSearch({
 				<div
 					aria-hidden={!open}
 					inert={!open}
-					className="pointer-events-none fixed left-0 top-0 z-50 size-0"
+					className={cn(
+						"pointer-events-none fixed left-0 top-0 z-50 size-0",
+						overlayClassName,
+					)}
 				>
 					<AnimatePresence
 						initial={false}
@@ -396,7 +421,7 @@ export function MorphingSearch({
 									className="fixed z-10 rounded-xl bg-background/90 backdrop-blur-xl"
 									style={{
 										top: anchorRect.top,
-										left: anchorRect.left,
+										left: panelLeft,
 										width: panelWidth,
 										height: 48 + resultsHeight,
 										boxShadow: "inset 0 0 0 1px var(--color-border)",
@@ -438,7 +463,7 @@ export function MorphingSearch({
 									className="pointer-events-auto fixed z-20 overflow-hidden rounded-xl"
 									style={{
 										top: anchorRect.top,
-										left: anchorRect.left,
+										left: panelLeft,
 										width: panelWidth,
 									}}
 								>
@@ -454,6 +479,11 @@ export function MorphingSearch({
 										<div className="flex h-10 min-w-0 flex-1 items-center">
 											<input
 												ref={inputRef}
+												// Focus during React's commit of the tap that opened
+												// the dialog, i.e. still inside the user gesture. The
+												// requestAnimationFrame focus below runs a frame later,
+												// which iOS treats as programmatic: no keyboard.
+												autoFocus
 												value={query}
 												onChange={(event) => updateQuery(event.target.value)}
 												role="combobox"
