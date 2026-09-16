@@ -250,7 +250,8 @@ describe('homepage hero search uses the public search stack', () => {
     expect(SEARCH).toContain("import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'")
     expect(SEARCH).toContain('<AddressAutocomplete')
     const SELL_FORM = readFileSync(resolve('app/sell/_v3/SellValueForm.tsx'), 'utf8')
-    expect(SELL_FORM).toContain("import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'")
+    const SELL_FIELD = readFileSync(resolve('app/sell/_v3/SellAddressField.tsx'), 'utf8')
+    expect(SELL_FIELD).toContain("import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'")
     // …and what the hero hands it is what /sell opens with.
     expect(SELL_FORM).toContain("new URLSearchParams(window.location.search).get('address')")
   })

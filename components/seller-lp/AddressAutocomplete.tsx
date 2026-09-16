@@ -22,8 +22,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { animate, AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Input } from '@/components/ui/input'
 import { Input as MotionInput, type InputClassNames } from '@/components/motion/input'
+import { InputGroup, InputGroupAddon } from '@/components/ui/input-group'
+import { Label } from '@/components/ui/label'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { cn } from '@/lib/utils'
 
@@ -53,11 +56,14 @@ type Props = {
    *
    * `motion` is the beUI motion Input (components/motion/input, catalog id
    * beui-input): its own label slot, left affix, error shake, and the success
-   * check whose path draws itself. /sell runs this one, painted in v3 tokens
-   * so it is navy on cream with square corners and no second hue. The Places
-   * widget binds to the first <input> inside the wrapper either way.
+   * check whose path draws itself.
+   *
+   * `group` is that same beUI input composed inside shadcn InputGroup so the
+   * pin is an InputGroupAddon and the group owns the catalog focus / invalid
+   * rings. /sell runs this one. The Places widget binds to the first <input>
+   * inside the wrapper either way.
    */
-  variant?: 'ui' | 'motion'
+  variant?: 'ui' | 'motion' | 'group'
   /** motion only: the field's own label, rendered by the catalog control. */
   label?: string
   /** motion only: truthy shakes the field; a string also prints the message. */
@@ -68,6 +74,8 @@ type Props = {
   leftIcon?: ReactNode
   /** motion only: per-slot classes so the demo is painted, not replaced. */
   motionClassNames?: InputClassNames
+  /** motion / group: reserve the error row so validation does not shift the ask. */
+  reserveErrorLine?: boolean
 }
 
 // Bias suggestions toward Bend / Central Oregon (not strict — still allows any US address).
@@ -90,6 +98,7 @@ export default function AddressAutocomplete({
   success,
   leftIcon,
   motionClassNames,
+  reserveErrorLine,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const onChangeRef = useRef(onChange)
@@ -98,8 +107,17 @@ export default function AddressAutocomplete({
   const acRef = useRef<{ unbind: () => void } | null>(null)
   const [suggesting, setSuggesting] = useState(false)
   const { ready } = useGoogleMapsReady({ libraries: ['places'] })
+  const reduce = useReducedMotion()
+  const groupRef = useRef<HTMLDivElement>(null)
+  const hasError = Boolean(error)
+  const errorMessage = typeof error === 'string' ? error : null
   onChangeRef.current = onChange
   onPlaceSelectedRef.current = onPlaceSelected
+
+  useEffect(() => {
+    if (variant !== 'group' || !groupRef.current || reduce || !hasError) return
+    animate(groupRef.current, { x: [0, -6, 6, -4, 4, -2, 0] }, { duration: 0.45 })
+  }, [hasError, reduce, variant])
 
   useEffect(() => {
     if (!ready || acRef.current) return
@@ -192,7 +210,66 @@ export default function AddressAutocomplete({
         window.setTimeout(() => setSuggesting(false), 200)
       }}
     >
-      {variant === 'motion' ? (
+      {variant === 'group' ? (
+        <div className="flex flex-col gap-1.5">
+          {label ? (
+            <Label htmlFor={id} className="px-1 text-sm font-medium text-foreground">
+              {label}
+            </Label>
+          ) : null}
+          <div ref={groupRef}>
+            <InputGroup
+              className={cn(
+                'h-auto min-h-11 w-full',
+                hasError && 'border-destructive ring-3 ring-destructive/25',
+              )}
+            >
+              <MotionInput
+                id={id}
+                name={name}
+                type="text"
+                autoComplete="off"
+                value={value}
+                onChange={commit}
+                placeholder={placeholder}
+                className={cn('min-w-0 flex-1', className)}
+                classNames={{
+                  root: 'min-w-0 flex-1 gap-0',
+                  field:
+                    'h-auto min-h-11 rounded-none border-0 bg-transparent shadow-none ring-0 overflow-visible',
+                  ...motionClassNames,
+                }}
+                error={hasError}
+                success={success}
+                autoFocus={autoFocus}
+                aria-invalid={hasError || invalid ? true : undefined}
+                data-slot="input-group-control"
+                inputMode="text"
+              />
+              {leftIcon ? (
+                <InputGroupAddon align="inline-start">{leftIcon}</InputGroupAddon>
+              ) : null}
+            </InputGroup>
+          </div>
+          <div className={reserveErrorLine ? 'min-h-4' : 'contents'}>
+            <AnimatePresence initial={false}>
+              {errorMessage ? (
+                <motion.p
+                  id={id ? `${id}-error` : undefined}
+                  role="alert"
+                  initial={reduce ? { opacity: 0 } : { opacity: 0, y: -4, filter: 'blur(4px)' }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                  exit={reduce ? { opacity: 0 } : { opacity: 0, y: -4, filter: 'blur(4px)' }}
+                  transition={{ duration: 0.2 }}
+                  className="sell-field__error px-1 text-xs text-destructive"
+                >
+                  {errorMessage}
+                </motion.p>
+              ) : null}
+            </AnimatePresence>
+          </div>
+        </div>
+      ) : variant === 'motion' ? (
         <MotionInput
           id={id}
           name={name}
@@ -207,6 +284,7 @@ export default function AddressAutocomplete({
           error={error}
           success={success}
           leftIcon={leftIcon}
+          reserveErrorLine={reserveErrorLine}
           autoFocus={autoFocus}
           aria-invalid={invalid ? 'true' : undefined}
           inputMode="text"
