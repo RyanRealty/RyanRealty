@@ -1,0 +1,24 @@
+/* ===========================================================================
+   AMENITIES — SITE-116
+   Styles for V3Amenities.tsx and nothing else. Every value resolves from
+   ./tokens.css. No raw color. The catalog InsightCards child paints itself;
+   this file is the section chrome only.
+   =========================================================================== */
+
+.v3.v3-amenities {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+* + .v3.v3-amenities {
+  border-top: var(--v3-rule-section);
+}
+
+.v3-amenities__board {
+  margin-top: var(--v3-space-lg);
+}
+
+.v3-amenities__source {
+  margin-top: var(--v3-space-md);
+}

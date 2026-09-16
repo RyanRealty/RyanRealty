@@ -23,10 +23,11 @@ const BINDERS = [
   'app/cities/[slug]/_v3/CityAlertSheet.client.tsx',
   'app/cities/[slug]/[neighborhoodSlug]/_v3/NeighborhoodAlertsSheet.client.tsx',
   'app/communities/[slug]/_v3/CommunityAlertSheet.client.tsx',
+  'app/subdivisions/[slug]/_v3/SubdivisionAlertSheet.client.tsx',
 ]
 
 const PROMISE_LITERAL =
-  "promise={`We'll email you every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''} as it comes on the market. Price changes on those homes come in the same email. Unsubscribe any time.`}"
+  "promise={`We'll email you every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''} as it comes on the market, with any price change on those homes in the same email. Unsubscribe any time.`}"
 
 /**
  * The strip's cadence sentence. It stays a LITERAL in each binder — the file
@@ -200,7 +201,7 @@ describe('placeAlertsCopy', () => {
     }
     expect(PROMISE_LITERAL).toMatch(/every new listing/i)
     expect(PROMISE_LITERAL).toMatch(/unsubscribe/i)
-    expect(PROMISE_LITERAL).toMatch(/price changes/i)
+    expect(PROMISE_LITERAL).toMatch(/price change/i)
     expect(STICKY_NOTE_LITERAL).toMatch(/every new listing/i)
     expect(STICKY_NOTE_LITERAL).toMatch(/unsubscribe/i)
   })

@@ -115,6 +115,16 @@
       "name": "communityGuides",
       "section": "Pattern 3, #reading \u2014 the guides this community is the subject of (site queue SITE-30, 2026-09-09). THE SECTION ID IS #reading AND NOT #guides: #guides on this template is already the area-guide VIDEO ledger further down (live on broken-top and brasada-ranch), and two sections cannot share an id. The blog has linked INTO /communities/<slug> since 2026-07-28 through lib/blog-geo-links.ts; nothing linked back, verified live on sunriver, broken-top, brasada-ranch, northwest-crossing, tetherow and caldera-springs, all six carrying zero <a href=\"/blog/\u2026\"> while eleven community guides published the day before sat with no inbound link from the page each one is about. communityGuides (app/communities/[slug]/_v3/place-knowledge.ts) is that same matcher read BACKWARDS \u2014 a post belongs to a community exactly when matchGeoLinksForPost would have linked the post to it \u2014 so one rule decides both directions and they cannot drift. It reads getAllPublishedBlogRefs (every published post), never getRecentBlogPosts, whose 24-post recency window cannot answer \"which post is about THIS place\" once a community's guide falls out of it. Newest first, capped at four, rendered through the shared articleRows into V3Ledger layout=\"magazine\" \u2014 the same form the city page gives its guides. A community the matcher does not name renders NO section rather than the newest post about somewhere else; eight of the registry's communities matched at least one published post on 2026-09-09.",
       "blocking": true
+    },
+    {
+      "name": "V3Amenities",
+      "section": "SITE-116. First-class amenity section (#amenities) for every master-planned community that has an authored amenities[] list. House chrome is V3Amenities; the interactive object is the installed beautifului InsightCards (AllocationCard pager + segmented bar + chips + pill). Quiet #belonging no longer carries amenity chips. A community with no authored amenities renders nothing here rather than inventing a club. ItemList JSON-LD is derived from the same list.",
+      "blocking": true
+    },
+    {
+      "name": "CommunityAmenities",
+      "section": "SITE-116 client island. Reconstructs InsightCards pages from buildCommunityAmenityBoard. requireRouteImport of @/components/motion/insight-cards lives here and in community-catalog.ts.",
+      "blocking": true
     }
   ],
   "layoutComponents": [
@@ -194,7 +204,7 @@
         "emittedBy": "MetadataBlock schemas array (faqPage entry), items = the same faqs array V3Quiet renders. On the KB page this came out of FAQBlock's includeJsonLd; the payload's meaning is unchanged."
       }
     ],
-    "note": "One derivation, one answer. The visible questions, the FAQPage items, and the Dataset variables all come from buildMarketFaq called once, fed the SAME figures the Instrument renders and the RAW months-of-supply value the page rounds only at display."
+    "note": "One derivation, one answer. The visible questions, the FAQPage items, and the Dataset variables all come from buildMarketFaq called once, fed the SAME figures the Instrument renders and the RAW months-of-supply value the page rounds only at display. SITE-116 adds an ItemList of authored amenities when #amenities renders — derived from the same amenityItemListItems the section uses, omitted when the config recorded none."
   },
   "dataLayer": {
     "getCommunityBySlug": "app/actions/communities. Identity, city, subdivision, description. notFound() when absent, in both generateMetadata and the page.",
@@ -228,6 +238,7 @@
     "PlaceSplitView #homes",
     "V3Ledger #subdivisions (registry child subdivisions, SFR-counted from the same city set as the face; omitted when the registry names none)",
     "V3Instrument #market (this community's typical-price slope after villages; never Bend's median) or V3Quiet (too few / stated absence)",
+    "V3Amenities #amenities (SITE-116: authored amenity list as InsightCards; omitted when the config recorded none)",
     "V3Quiet #belonging",
     "V3CourseMap #course (the community's own course, when the registry names one with a map)",
     "V3PlaceCharacter",
@@ -263,7 +274,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-15",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "SITE-94 Tip Ready receipt. Catalog beui-number is the installed source at components/motion/number.tsx, imported by app/communities/[slug]/_v3/community-catalog.ts (requireRouteImport). The fold already paints that source through V3AlertsStrip → V3Number → AnimatedNumber. Open-state is the valuation email field (value-open). Cos Mini re-score optional; Tip Ready = taste-receipt --ship exit 0.",
+    "evaluator": "SITE-94 Tip Ready receipt, SITE-116 amenity catalog install on the same instrument. Catalog beui-number is the installed source at components/motion/number.tsx; beautifului-insight is components/motion/insight-cards.tsx. Both are imported by app/communities/[slug]/_v3/community-catalog.ts (requireRouteImport). The fold paints beui-number through V3AlertsStrip → V3Number → AnimatedNumber. #amenities paints InsightCards AllocationCard from the authored amenity list. Open-state is the valuation email field (value-open). Scores and shotsHash are the SITE-94 plates — this pass did not invent a new judge mark. Tip Ready = taste-receipt --ship exit 0.",
     "evaluatorModel": "grok-4.6",
     "builderModel": "grok-4.5",
     "comparedToPrior": "rebaselined",
@@ -320,6 +331,9 @@
       },
       {
         "id": "beui-number"
+      },
+      {
+        "id": "beautifului-insight"
       }
     ],
     "beats": "Tetherow official (tetherow.com) still wins amenity photography; this fold wins on live MLS marks on the recorded boundary (28 for sale, 4 pending) and two dated new listings with price, address, beds, baths, and sqft. Zillow\u2019s Tetherow page is the portal floor \u2014 we beat it on Atlas vs a Google default, not on listing-photo scale.",

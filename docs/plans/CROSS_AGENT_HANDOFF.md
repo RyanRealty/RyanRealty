@@ -19,6 +19,14 @@ Surface: Claude Code cloud session `claude-cloud-01DYvsoL-20260915` (branch `cla
 - **Next:** Cos Mini grok-4.6 rejudge of PR #253 (compare, city, subdivision) → land or send back. Matt's two fixes are directives, not taste passes — land them with the PR. SITE-102/100 (housing-market family) skipped while SITE-103 is held elsewhere. Do not rebuild SITE-93/95 from main.
 - Skills read: `.claude/skills/site-queue/SKILL.md`, `design_system/public/TASTE.md`, `scripts/lib/taste-receipt.mjs --ship`, `scripts/lib/taste-catalog.mjs --preflight`.
 
+# Current — 2026-09-16 (SITE-120 Tip Ready PR — place-alert sticky ask)
+
+Surface: Cursor cloud `cursor-cloud-site120-20260916`, branch `cursor/site-120-place-alerts-3485`. PR only — do not merge.
+
+- **SITE-120 copy landed on this branch.** Sticky / callout family is now person-voice: "Hear about new listings in {scope} the day they hit the market."; note "Every new listing, with its price changes. Unsubscribe any time."; promise "We'll email you every new listing in {scope} as it comes on the market, with any price change on those homes in the same email. Unsubscribe any time."; button "Send me new listings"; sent "You're set. We'll email you when something new lists in {scope}." Five binders (city, neighborhood, community, subdivision, ZIP). Old form lines locked by `mannered-public-copy` + SITE-120 accept test.
+- **`--ship` community: exit 0** (`demoMatch: true`, open-state, catalog-install). City / neighborhood / subdivision receipts still lack `demoMatch` — not invented. No new judge run.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `TASTE.md`, `VOICE.md`, `taste-receipt.mjs --ship`.
+
 # Current — 2026-09-16 (cloud grinder: SITE-103 landed at 70, SITE-91 rose to 55, production NOT deploying)
 
 Surface: Claude cloud routine `cloud-grinder-2026-09-16-04`, two lanes in worktrees, both merged to main and pushed.

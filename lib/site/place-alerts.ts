@@ -40,7 +40,7 @@
  * wording the binders share (the test beside this file holds the three to one
  * literal): the alert cron runs hourly (vercel.json) and sends one email per
  * alert per run with everything new in it (app/actions/saved-search-alerts.ts),
- * so the sentence is "every new listing, by email", never "one email per
+ * so the sentence is "every new listing", never "one email per
  * listing". Price changes ride on the same row: every row this capture writes
  * takes the table's default event toggles, and `price_change` is on
  * (docs/DATABASE_SCHEMA_SNAPSHOT.md, listing_alerts.events). Both directions

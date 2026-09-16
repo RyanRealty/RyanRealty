@@ -749,17 +749,21 @@ describe('design directive contracts', () => {
   })
 
   it('D100 — community page RENDERS rich resort content (amenities/golf/membership/builders)', () => {
-    // v3 spelling (2026-08-26): the SAME config renders through
-    // buildPlaceKnowledge — overview prose, at-a-glance, drive times,
-    // amenities by category, the course, membership, builders — into the
-    // belonging Quiet. A page that fetches the config and renders nothing
-    // still fails ci:resort-definitions' renders-resort-content arm.
+    // SITE-116: amenities are a first-class #amenities section
+    // (V3Amenities + InsightCards). Belonging Quiet still carries membership,
+    // builders, and the authored story. A page that fetches the config and
+    // renders nothing still fails ci:resort-definitions' renders-resort-content arm.
     const src = readSrc('app/communities/[slug]/page.tsx')
     expect(src).toMatch(/getResortCommunityContent\(resortSlug\)/)
     expect(src).toMatch(/buildPlaceKnowledge\(\{/)
     expect(src).toMatch(/knowledgeItems/)
+    expect(src).toMatch(/buildCommunityAmenityBoard/)
+    expect(src).toMatch(/<V3Amenities/)
+    expect(src).toMatch(/id="amenities"/)
     const knowledge = readSrc('app/communities/[slug]/_v3/place-knowledge.ts')
-    expect(knowledge).toMatch(/amenities|At a glance|Membership|Builders/i)
+    expect(knowledge).toMatch(/Membership|Builders/i)
+    const amenities = readSrc('app/communities/[slug]/_v3/community-amenities.ts')
+    expect(amenities).toMatch(/amenities/)
   })
 
   it('D98 — resort/golf definitions are locked by a gate (registry + alias-aware wiring)', () => {

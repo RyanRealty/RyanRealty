@@ -97,6 +97,7 @@ import {
   V3PlaceIndex,
   type V3PlaceIndexEntry,
   V3SectionTracker,
+  V3Amenities,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import './_v3/community-fold.css'
@@ -132,6 +133,11 @@ import {
   reconcilePlaceHoaFaq,
 } from './_v3/community-figures'
 import { buildPlaceKnowledge, communityGuides, placeKnowledgeSource } from './_v3/place-knowledge'
+import { CommunityAmenities } from './_v3/CommunityAmenities.client'
+import {
+  amenityItemListItems,
+  buildCommunityAmenityBoard,
+} from './_v3/community-amenities'
 import { matchGeoLinksForPost } from '@/lib/blog-geo-links'
 import { measuredPlaceHoaInput } from './_v3/place-hoa-measured'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
@@ -592,6 +598,12 @@ export default async function CommunityDetailPage({ params }: Props) {
     citySlug: citySlug || undefined,
   })
   const browseHref = placeLinks.browseUrl
+  const amenityBoard = buildCommunityAmenityBoard({
+    placeName: publicName,
+    amenities: richContent?.amenities,
+    amenityPosts,
+    browseHref,
+  })
   const communityMarketHref = placeLinks.marketUrl
   const cityReportHref = citySlug ? `/housing-market/${citySlug}` : '/housing-market'
 
@@ -878,6 +890,14 @@ export default async function CommunityDetailPage({ params }: Props) {
     // beside them from a second array, so the markup can never describe a
     // sentence the page does not print.
     faqs: answerFaqs,
+    amenityItems: amenityBoard
+      ? amenityItemListItems(
+          amenityBoard,
+          `/communities/${slug}`,
+          richContent?.amenities ?? [],
+          amenityPosts,
+        )
+      : undefined,
   })
   const communityGuideSchema = areaGuideVideoSchema(publicName, `/communities/${slug}`, areaGuideVideo)
   if (communityGuideSchema) communitySchemas.push(communityGuideSchema)
@@ -1073,6 +1093,18 @@ export default async function CommunityDetailPage({ params }: Props) {
             ]}
           />
         )}
+
+        {amenityBoard ? (
+          <V3Amenities
+            id="amenities"
+            eyebrow={`${publicName} · Amenities`}
+            heading={`What ${publicName} has on the ground`}
+            lede={amenityBoard.claim}
+            source={amenityBoard.source}
+          >
+            <CommunityAmenities board={amenityBoard} />
+          </V3Amenities>
+        ) : null}
 
         {knowledgeItems.length > 0 ? (
           <V3Quiet

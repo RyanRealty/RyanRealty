@@ -117,7 +117,7 @@ export function ZipAlertsSheet({
       id={id}
       eyebrow={`New listings · ${zip}${area ? ` · ${area}` : ''}`}
       href={newestFirstHref(browseHref)}
-      promise={`We'll email you every new listing in ${zip} as it comes on the market. Price changes on those homes come in the same email. Unsubscribe any time.`}
+      promise={`We'll email you every new listing in ${zip} as it comes on the market, with any price change on those homes in the same email. Unsubscribe any time.`}
       stickyNote={placeAlertsStickyNote(copy.scopeLine, 'Every new listing, with its price changes. Unsubscribe any time.')}
       stickyAfter="atlas"
       updatedAt={updatedAt}

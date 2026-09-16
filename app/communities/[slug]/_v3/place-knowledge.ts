@@ -9,9 +9,10 @@
  * plus the resort registry and the school registry, and turns them into rows.
  *
  * THE SOURCE SET IS CLOSED, and it is the same set the KB overview read: the
- * config's prose, at-a-glance facts, drive times, amenities, course, membership
- * and builders, the registry's subdivision aliases and HOA estimate, the verified
- * city-to-district registry in data/co-schools.ts. No fact is composed from two
+ * config's prose, at-a-glance facts, drive times, course, membership and
+ * builders, the registry's subdivision aliases and HOA estimate, the verified
+ * city-to-district registry in data/co-schools.ts. Amenities left this Quiet
+ * on SITE-116 — they render through #amenities. No fact is composed from two
  * sources and none is invented. A community with no config yields fewer rows,
  * which is what the page then shows.
  *
@@ -206,26 +207,12 @@ export function buildPlaceKnowledge(input: {
     })
   }
 
-  const byCategory = new Map<string, string[]>()
-  for (const amenity of content?.amenities ?? []) {
-    const category = amenity.category?.trim() || 'On site'
-    const label = amenity.access ? `${amenity.name} (${amenity.access})` : amenity.name
-    if (!label?.trim()) continue
-    const list = byCategory.get(category) ?? []
-    list.push(label)
-    byCategory.set(category, list)
-  }
-  for (const [category, names] of byCategory) {
-    items.push({ kind: 'chips', term: category, labels: names })
-  }
-
-  const seenPost = new Set<string>()
-  for (const amenity of content?.amenities ?? []) {
-    const post = amenity.blog_slug ? input.amenityPosts[amenity.blog_slug] : undefined
-    if (!post || seenPost.has(post.slug)) continue
-    seenPost.add(post.slug)
-    items.push({ label: post.title, href: `/blog/${post.slug}` })
-  }
+  // SITE-116: amenities left this Quiet. They are a first-class #amenities
+  // section (V3Amenities + InsightCards) so a chip row cannot stand in for
+  // the thing a master-planned community is sold on. amenityPosts still
+  // arrive so the page's existing call site does not fork; the doors live
+  // on that board.
+  void input.amenityPosts
 
   const specs = content?.courseSpecs
   if (specs) {
