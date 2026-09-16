@@ -795,6 +795,14 @@ export type SparkPlot = {
   d: string
   /** The last published point, for the endpoint mark. */
   last: { x: number; y: number } | null
+  /**
+   * Every published point's position, in the caller's box, oldest first
+   * (`i` is its index in the input run, so a null month leaves a gap in `i`,
+   * never a point). For the scrub: a reader who hovers or arrows across the
+   * run is shown the nearest PUBLISHED point, and the primitive needs its
+   * coordinates without redoing the geometry above (SITE-92 round 5).
+   */
+  points: readonly { i: number; x: number; y: number }[]
   /** Published points drawn. */
   n: number
   min: number
@@ -833,7 +841,15 @@ export function buildSparkPlot(
     prev = p.i
   }
   const tail = points[points.length - 1]!
-  return { kind: 'spark', d, last: { x: x(tail.i), y: y(tail.v) }, n: points.length, min, max }
+  return {
+    kind: 'spark',
+    d,
+    last: { x: x(tail.i), y: y(tail.v) },
+    points: points.map((p) => ({ i: p.i, x: x(p.i), y: y(p.v) })),
+    n: points.length,
+    min,
+    max,
+  }
 }
 
 /** One mark on a strip. `at` is the x value; every string is caller-formatted. */

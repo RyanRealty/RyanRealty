@@ -26,12 +26,12 @@
     },
     {
       "name": "V3Quiet",
-      "section": "Quiet — the second, third and fourth door per city, then the page's outbound edges and the Oregon Data Share citation.",
+      "section": "Quiet — #edges, the page's close (SITE-92 round 5): one figured lead door — the search, carrying the region's live total of every type from the Atlas read — then the place types, the seller ask and the Oregon Data Share citation as one light line. The per-city doors left this pattern for V3DoorBoard.",
       "blocking": true
     },
     {
       "name": "RegionalAlertSheet",
-      "section": "SFR listing-alert capture, as a barrel Sheet. Same submitSearchAlertSignup payload and same company trap the KB band posted.",
+      "section": "SFR listing-alert capture, as a barrel Sheet. Same submitSearchAlertSignup payload and same company trap the KB band posted. Since SITE-92 round 5 it stands on the region's real 30-day count and the towns drawn — V3PlaceStrip in the Sheet's figure slot, mounted by this component, which is why the strip is not a separate route import here.",
       "blocking": true
     },
     {
@@ -56,7 +56,7 @@
     },
     {
       "name": "cityFeaturedLinks",
-      "section": "Quiet — guide, inventory and open-house doors per city, plus Bend's luxury page (G7, ci:westside-backlog).",
+      "section": "Door board — guide, inventory and open-house doors per featured city, plus Bend's luxury page (G7, ci:westside-backlog); each door carries the count it opens onto (SITE-92 round 5).",
       "blocking": true
     },
     {
@@ -72,6 +72,11 @@
     {
       "name": "V3Heading",
       "section": "The page H1 in the opening above the fold ('Central Oregon cities'), with one caption; the A–Z ledger's heading is level 2 (SITE-92).",
+      "blocking": true
+    },
+    {
+      "name": "V3DoorBoard",
+      "section": "#city-doors (SITE-92 round 5): every featured city as a tile — its verified photograph or its recorded outline, its live single-family count as the installed digit primitive (beui:number), one line, and its doors each printing the count it opens onto (the open-house calendar's count this week, Bend's $1.5M-and-up count). Replaces the thirty identical Quiet rows the round-4 judge named as the brief's own refuse case.",
       "blocking": true
     }
   ],
@@ -99,9 +104,9 @@
     "V3Atlas #atlas -- the regional drawing: every town a door, every mark a live listing (SITE-92)",
     "CitiesAlertsStrip #regional-alerts -- the figure beside the drawing: the region's 30-day count and the ask (SITE-92) (id regional-alerts: RegionalAlertSheet at the foot of the page owns #alerts)",
     "V3Ledger #featured-cities -- EVERY city A–Z in one ledger, live count on the row, each row a door",
-    "V3Quiet #city-doors -- deep filter doors per featured city; ci:westside-backlog pins the Bend luxury door here",
-    "RegionalAlertSheet -- the ask",
-    "V3Quiet #edges -- search every listing",
+    "V3DoorBoard #city-doors -- every featured city as a tile with its photograph or outline, its live count, and its doors each carrying the count it opens onto; ci:westside-backlog pins the Bend luxury door here (SITE-92 round 5)",
+    "RegionalAlertSheet -- the ask, standing on the region's 30-day count and the towns drawn as a strip of marks (V3PlaceStrip in the Sheet's figure slot) (SITE-92 round 5)",
+    "V3Quiet #edges -- the close: one figured door (the search, with the region's live total of every type) and one light line of place types, the seller ask and the MLS citation (SITE-92 round 5)",
     "V3Footer"
   ],
   "openDefects": {

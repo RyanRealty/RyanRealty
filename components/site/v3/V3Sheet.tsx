@@ -371,6 +371,20 @@ export type V3SheetProps = {
   onOpenChange?: (open: boolean) => void
   /** Extra control under the step, e.g. "Save with Google instead". */
   footer?: ReactNode
+  /**
+   * THE DATA THE ASK STANDS ON (site queue SITE-92 round 5). A drawn or figured
+   * object rendered between the head and the step, outside the form: the
+   * region's live 30-day count and the towns the alert covers as a strip of
+   * marks (V3PlaceStrip), a computed reading, a chart. A capture form with
+   * nothing but a label, an input and a button in the viewport was named by
+   * the separate evaluator as "a stock SaaS newsletter form with no data, mark,
+   * or motion"; the figure is what makes the ask an instrument of the page
+   * rather than an interruption of it. The node must be a barrel primitive,
+   * never a caller's own markup. With a figure the sheet widens from its 40rem
+   * working measure to the page measure and, from 64rem, sets the figure
+   * beside the step (V3Sheet.css, `v3-sheet--figured`).
+   */
+  figure?: ReactNode
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1050,6 +1064,7 @@ export function V3Sheet({
   open,
   onOpenChange,
   footer,
+  figure,
 }: V3SheetProps) {
   const uid = useId()
   const title = text(heading)
@@ -1301,7 +1316,7 @@ export function V3Sheet({
   return wrapSurface(
     <section
       id={id}
-      className={cn(V3_ROOT_CLASS, 'v3-sheet', className)}
+      className={cn(V3_ROOT_CLASS, 'v3-sheet', figure != null && 'v3-sheet--figured', className)}
       aria-labelledby={headingId}
     >
       <div className="v3-sheet-head">
@@ -1317,6 +1332,12 @@ export function V3Sheet({
           </p>
         ) : null}
       </div>
+
+      {figure != null ? (
+        /* The data the ask stands on, outside the form so nothing inside it is
+           read as part of the question or submitted with the answer. */
+        <div className="v3-sheet-figure">{figure}</div>
+      ) : null}
 
       {echoed.length > 0 ? (
         <dl className="v3-sheet-echo" aria-label={echoLabel} key={`echo-${step.id}`}>

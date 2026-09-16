@@ -35,6 +35,48 @@
   gap: var(--v3-space-xs);
 }
 
+/* THE FIGURED SHEET (`figure`, SITE-92 round 5). An ask that stands on data
+   takes the page measure instead of the 40rem working measure, and from 64rem
+   sets the figure in a column beside the step: head across the top, the
+   drawn object left, the one question right, the trace across the foot. The
+   echo, the footer and anything else auto-place under the step. Below 64rem
+   everything stacks in reading order: head, figure, question. */
+.v3.v3-sheet--figured {
+  max-width: var(--v3-measure);
+}
+
+.v3-sheet-figure {
+  min-width: 0;
+}
+
+@media (min-width: 64rem) {
+  .v3.v3-sheet--figured {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-areas:
+      'head head'
+      'figure step'
+      'foot foot';
+    column-gap: var(--v3-space-2xl);
+    align-items: start;
+  }
+
+  .v3.v3-sheet--figured > .v3-sheet-head {
+    grid-area: head;
+  }
+
+  .v3.v3-sheet--figured > .v3-sheet-figure {
+    grid-area: figure;
+  }
+
+  .v3.v3-sheet--figured > .v3-sheet-step {
+    grid-area: step;
+  }
+
+  .v3.v3-sheet--figured > .v3-sheet-foot {
+    grid-area: foot;
+  }
+}
+
 /* Tabular so "Step 1 of 3" does not shift width as the visitor advances. */
 .v3-sheet-progress {
   margin: 0;

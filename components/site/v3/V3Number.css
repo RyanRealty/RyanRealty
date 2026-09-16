@@ -1,5 +1,20 @@
-/* Count figure. Inherits type from the parent; tabular so digits do not jump. */
-.v3 .v3-number {
+/* Count figure. Inherits type from the parent; tabular so digits do not jump.
+
+   THE WRAPPER CARRIES V3_ROOT_CLASS, WHICH PAINTS (SITE-92 round 5). `.v3` in
+   tokens.css sets the surface background, the ink, the body face, the body
+   size and the body leading on every element that carries it — and V3Number
+   puts it on an inline span INSIDE a figure. Measured on the round-4 plates of
+   /cities: the sticky strip's "256" sat on a cream box over the navy bar, and
+   the fold's "256" rendered at body size under a rule asking for 3.5rem. A
+   numeral is not a surface. It inherits everything from the figure it sits in
+   and paints nothing of its own; tabular digits are the one thing it adds.
+   `.v3.v3-number` is (0,2,0), which beats the root's (0,1,0). */
+.v3.v3-number {
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  -webkit-font-smoothing: inherit;
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
 }
