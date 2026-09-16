@@ -40,16 +40,15 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { PriceDropAlertsSheet } from './_v3/PriceDropAlertsSheet.client'
+import { DROPS_CITY_SLUGS, cityLabel, dropsTrace } from './_v3/drops-constants'
 import {
-  DROPS_CITY_SLUGS,
-  cityLabel,
-  dropsTrace,
-  medianPositive,
-} from './_v3/drops-constants'
-import { priceDropFieldItems } from './_v3/drops-field-items'
+  pageDeepestCut,
+  pageMedianCut,
+  priceDropFieldItems,
+} from './_v3/drops-field-items'
 import { priceDropDistribution } from './_v3/drops-drawing'
 import { priceDropDatasetSchemas } from './_v3/drops-jsonld'
-import { PriceDropPhotos, PriceDropsOpening } from './_v3/PriceDropsField'
+import { PriceDropPhotos, PriceDropsOpening, priceDropsDeck } from './_v3/PriceDropsField'
 
 export const revalidate = 1800
 
@@ -85,9 +84,15 @@ export default async function PriceDropsRegionPage() {
     noStore()
   }
 
-  const totalReduced = drops.reduce((sum, d) => sum + (d.lastDropAmount ?? 0), 0)
-  const medianDropPct = medianPositive(drops.map((d) => d.lastDropPct))
   const fieldItems = priceDropFieldItems(drops)
+  // ONE median and ONE deepest, measured on the rows this page RENDERS — the
+  // cards notch their meters at it, the drawing draws its hairline at it, the
+  // deck states it, and the Dataset and the source line publish it. Before
+  // SITE-108 the same figure was computed three ways over three slightly
+  // different populations, which is the §0 failure this collapses.
+  const medianDropPct = pageMedianCut(fieldItems)
+  const deepestShownPct = pageDeepestCut(fieldItems)
+  const totalReduced = drops.reduce((sum, d) => sum + (d.lastDropAmount ?? 0), 0)
   // SITE-49: the distribution the count implies, above the grid. Every mark is
   // a row the grid renders; a row with no percent is not plotted (§0).
   const distribution = priceDropDistribution({
@@ -97,6 +102,7 @@ export default async function PriceDropsRegionPage() {
     placeLabel: 'Central Oregon',
     windowDays: 7,
     fetchedAt: fetchedAt ? formatDate(fetchedAt) : null,
+    medianPct: medianDropPct,
   })
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const pageUrl = `${siteUrl}/price-drops`
@@ -123,17 +129,23 @@ export default async function PriceDropsRegionPage() {
       pageUrl,
       placeName: 'Central Oregon',
       total,
+      shownCount: fieldItems.length,
       totalReducedLabel,
       medianDropPctLabel,
       fetchedAt: drops.length > 0 ? fetchedAt : null,
     }),
+    // SEO (SITE-108): every cut home this page renders is an ItemList entry,
+    // not the first 24, and each entry's name leads with the cut — the thing
+    // the query asks for. The name still carries only figures the card prints.
     ...(fieldItems.length > 0
       ? [
           {
             type: 'itemList' as const,
             name: 'Central Oregon homes with a price cut in the last 7 days',
-            items: fieldItems.slice(0, 24).map((item) => ({
-              name: `${item.priceLabel} · ${item.title}`,
+            items: fieldItems.map((item) => ({
+              name: [item.cutLabel, item.priceLabel, item.title]
+                .filter((part): part is string => Boolean(part))
+                .join(' · '),
               url: item.href.startsWith('http') ? item.href : `${siteUrl}${item.href}`,
             })),
           },
@@ -188,6 +200,12 @@ export default async function PriceDropsRegionPage() {
               captionDrillLabel={
                 distribution ? 'see how far each ask came down' : 'browse the cuts'
               }
+              deck={priceDropsDeck({
+                placeLabel: 'Central Oregon',
+                shownCount: captionCount,
+                medianPct: medianDropPct,
+                deepestPct: deepestShownPct,
+              })}
             />
             {/* Photographs open the fold; drawing is the differentiator under the rail. */}
             <div className="pd-fold">

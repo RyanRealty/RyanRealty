@@ -4,7 +4,9 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  overflow: hidden;
+  /* NOT `overflow: hidden` — shadcn already clips the track on
+     [data-slot='carousel-content'], and clipping here as well would eat the
+     flanking chevrons that sit at the track's edges. */
 }
 
 .v3 .v3-carousel__label {
@@ -44,7 +46,11 @@
 
 .v3.v3-carousel--rail .v3-carousel__slide,
 .v3.v3-carousel--rail [data-slot='carousel-item'] {
-  flex: 0 0 min(17.5rem, 78vw);
+  /* One variable, because the flanking chevrons are centred on the media and
+     the media's height is derived from this width. Change the slide width
+     through `--v3-carousel-slide-w` (below) and the buttons follow; hard-code
+     a different `flex-basis` here and they silently drift onto the price row. */
+  flex: 0 0 var(--v3-carousel-slide-w);
   min-height: auto;
   height: auto;
   overflow: visible;
@@ -64,30 +70,53 @@
   height: auto;
 }
 
-.v3.v3-carousel--rail .v3-carousel__nav {
-  padding-inline: var(--v3-gutter);
-}
-
-.v3 .v3-carousel__nav {
-  display: flex;
-  gap: var(--v3-space-xs);
-  margin-top: var(--v3-space-xs);
-}
-
+/* THE BOX — every step, wherever it is mounted. This stays a descendant
+   selector on purpose: `HomeListingRail` renders its pair nested inside
+   `.home-rail__arrows` rather than as children of the carousel root, and when
+   this rule was briefly scoped to `>` those buttons lost their hit area and
+   `ci:tap-targets` measured them at 18x18 on the homepage. Position is the
+   only thing that belongs to the flanking layout; the control itself is the
+   same object everywhere. */
 .v3 .v3-carousel__step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   appearance: none;
+  /* WCAG 2.5.8 / ci:tap-targets — a full 44x44 control, not an icon with a
+     hairline around it. */
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  min-width: var(--v3-tap);
   min-height: var(--v3-tap);
-  padding: 0 var(--v3-space-md);
+  padding: 0;
   border: 1px solid var(--v3-navy);
-  background: transparent;
+  border-radius: 999px;
+  background: var(--v3-cream);
   color: var(--v3-navy);
   cursor: pointer;
   font: inherit;
-  font-size: var(--v3-size-body-sm);
-  font-weight: var(--v3-weight-strong);
   transition:
     background var(--v3-dur-state) var(--v3-ease-out),
-    color var(--v3-dur-state) var(--v3-ease-out);
+    color var(--v3-dur-state) var(--v3-ease-out),
+    opacity var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* THE FLANKING PLACEMENT IS SHADCN'S OWN (SITE-108).
+   `CarouselPrevious` / `CarouselNext` already ship `absolute inset-y-0
+   -left-12 my-auto` and `-right-12`: a round control on each side of the
+   track you drag, OUTSIDE it, vertically centred on the whole slide. Until
+   2026-09-16 this file re-pinned them INSIDE the track, over the first and
+   last photograph, and the separate evaluator scored exactly that: "overlay
+   chevrons at the far edges, not the shadcn Carousel's composition — a
+   visitor would not recognise the same control", demoMatch false.
+
+   So the barrel no longer positions them at all. It paints the box above and
+   lifts it over the track; the consumer owns the room the outside placement
+   needs (`.pd-cuts-stage`, `.place-type-film__stage`: 3rem plus one tap
+   target of inline padding). Re-adding a `left`/`top` override here puts the
+   chevrons back on the photographs. */
+.v3.v3-carousel > .v3-carousel__step {
+  z-index: 2;
 }
 
 .v3 .v3-carousel__step:hover {
@@ -95,7 +124,26 @@
   color: var(--v3-ink-on-navy);
 }
 
+/* shadcn disables the button at each end of the track; keep it in place so the
+   pair never reflows, but read as spent. */
+.v3 .v3-carousel__step:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .v3 .v3-carousel__step:focus-visible {
   outline: var(--v3-focus-ring);
   outline-offset: var(--v3-focus-offset);
+}
+
+/* A rail slide opens on a 16/10 photograph and then continues into price,
+   address and specs. Placement is shadcn's (the chevrons centre on the whole
+   slide, as the demo does); only the slide width lives here.
+
+   `:where()` keeps this at ZERO specificity so it is a true default a
+   consumer rule such as `.pd-cuts-rail.v3-carousel--rail` always outranks.
+   Declaring it at normal specificity is what silently restored the barrel's
+   slide width over /price-drops' own documented 22rem. */
+:where(.v3.v3-carousel--rail) {
+  --v3-carousel-slide-w: min(17.5rem, 78vw);
 }

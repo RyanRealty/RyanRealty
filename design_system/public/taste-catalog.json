@@ -2881,6 +2881,7 @@
     },
     "price-drops": {
       "layoutLock": "Opening is the Field of cut houses. Count is a caption. Do not open on a KPI of reductions this week with no photographs.",
+      "demoStates": ["carousel-open=.pd-cuts-rail [data-slot=\"carousel-next\"]!click"],
       "modules": [
         {
           "id": "house-field",

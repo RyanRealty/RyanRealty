@@ -3,6 +3,7 @@ import type { PriceDrop } from '@/lib/data'
 import { priceDropFieldItems } from '@/app/price-drops/_v3/drops-field-items'
 import { priceDropDatasetSchemas } from '@/app/price-drops/_v3/drops-jsonld'
 import { medianPositive } from '@/app/price-drops/_v3/drops-constants'
+import { priceDropsDeck } from '@/app/price-drops/_v3/PriceDropsField'
 
 function drop(over: Partial<PriceDrop> = {}): PriceDrop {
   return {
@@ -73,6 +74,7 @@ describe('priceDropDatasetSchemas', () => {
         pageUrl: 'https://ryan-realty.com/price-drops',
         placeName: 'Central Oregon',
         total: 0,
+        shownCount: 0,
         totalReducedLabel: null,
         medianDropPctLabel: null,
         fetchedAt: new Date().toISOString(),
@@ -85,6 +87,7 @@ describe('priceDropDatasetSchemas', () => {
       pageUrl: 'https://ryan-realty.com/price-drops',
       placeName: 'Central Oregon',
       total: 12,
+      shownCount: 12,
       totalReducedLabel: '$1.2M',
       medianDropPctLabel: '4.5%',
       fetchedAt: '2026-08-12T17:00:00.000Z',
@@ -94,10 +97,77 @@ describe('priceDropDatasetSchemas', () => {
     expect(schemas[1]).toMatchObject({ type: 'webPage' })
     expect(JSON.stringify(schemas)).not.toContain('\u2014')
   })
+
+  // SITE-108 (§0): `total` is the whole window; the dollar sum and the median
+  // are computed from the rendered rows only. When those differ, every figure
+  // says which set it covers so a 48-row sum cannot read as the 262-row total.
+  it('names the rendered scope when the page shows fewer than the window holds', () => {
+    const [dataset] = priceDropDatasetSchemas({
+      pageUrl: 'https://ryan-realty.com/price-drops',
+      placeName: 'Central Oregon',
+      total: 262,
+      shownCount: 48,
+      totalReducedLabel: '$1.2M',
+      medianDropPctLabel: '6.8%',
+      fetchedAt: '2026-09-15T17:00:00.000Z',
+    })
+    const named = (dataset as unknown as {
+      variableMeasured: Array<{ name: string; value: unknown }>
+    }).variableMeasured
+    expect(named[0]).toMatchObject({ name: 'Price reductions (7-day window)', value: 262 })
+    expect(named[1].name).toBe('Total asking-price cuts (48 shown)')
+    expect(named[2].name).toBe('Median drop (48 shown)')
+  })
+
+  it('leaves the scope unsaid when the page renders the whole window', () => {
+    const [dataset] = priceDropDatasetSchemas({
+      pageUrl: 'https://ryan-realty.com/price-drops',
+      placeName: 'Central Oregon',
+      total: 9,
+      shownCount: 9,
+      totalReducedLabel: '$400K',
+      medianDropPctLabel: '3.0%',
+      fetchedAt: '2026-09-15T17:00:00.000Z',
+    })
+    const named = (dataset as unknown as { variableMeasured: Array<{ name: string }> })
+      .variableMeasured
+    expect(named[1].name).toBe('Total asking-price cuts')
+    expect(named[2].name).toBe('Median drop')
+  })
 })
 
 describe('medianPositive', () => {
   it('ignores null and non-positive values', () => {
     expect(medianPositive([null, 0, 4, 2, 6])).toBe(4)
+  })
+})
+
+// SITE-108: the competitiveTarget is a page that answers "how many cut price
+// and by how much" in TEXT, not only in a list a crawler has to infer from.
+describe('priceDropsDeck', () => {
+  it('states the middle cut and the deepest cut in words', () => {
+    expect(
+      priceDropsDeck({
+        placeLabel: 'Central Oregon',
+        shownCount: 48,
+        medianPct: 6.84,
+        deepestPct: 13.04,
+      }),
+    ).toBe(
+      'Across the 48 Central Oregon cuts on this page the middle seller came down 6.8%, and the deepest came down 13.0%.',
+    )
+  })
+
+  it('says nothing rather than half an answer when a figure is missing (§0)', () => {
+    const base = { placeLabel: 'Bend', shownCount: 12, medianPct: 5, deepestPct: 9 }
+    expect(priceDropsDeck({ ...base, medianPct: null })).toBeNull()
+    expect(priceDropsDeck({ ...base, deepestPct: 0 })).toBeNull()
+    expect(priceDropsDeck({ ...base, shownCount: 0 })).toBeNull()
+  })
+
+  it('reads singular when one cut is on the page', () => {
+    expect(
+      priceDropsDeck({ placeLabel: 'Sisters', shownCount: 1, medianPct: 4, deepestPct: 4 }),
+    ).toContain('1 Sisters cut on this page')
   })
 })

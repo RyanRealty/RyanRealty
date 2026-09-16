@@ -69,20 +69,37 @@ export function priceDropDistribution(input: {
   placeLabel: string
   windowDays: number
   fetchedAt: string | null
+  /**
+   * THE page's median cut — the same figure the cards compare against and the
+   * source line publishes. One number over one population (§0). Omitted or
+   * unplaceable on this axis means no hairline; it is never approximated.
+   */
+  medianPct?: number | null
 }): V3DrawingFigure | null {
   const points = priceDropPoints(input.drops)
   if (points.length === 0) return null
 
   const deepest = points[points.length - 1]!
   const shallowest = points[0]!
-  const median = points[Math.floor((points.length - 1) / 2)]!
+  const median =
+    input.medianPct != null && Number.isFinite(input.medianPct) && input.medianPct > 0
+      ? input.medianPct
+      : points[Math.floor((points.length - 1) / 2)]!.at
 
   return {
     key: 'cuts',
     draw: 'strip',
-    claim: `${points.length} of this week's ${input.placeLabel} price cuts, smallest to deepest: the middle one came down ${median.at.toFixed(1)}%, the deepest ${deepest.at.toFixed(1)}%.`,
+    // The CLAIM is about this drawing's own marks. The week's answer — the
+    // middle cut and the deepest — is stated in text up in the opening, so
+    // repeating it here would put the same sentence on the page twice.
+    // SITE-108: the evaluator read the unlabelled dots as "a decorative
+    // scatter", so the claim now names what the hairline is.
+    claim: `Every one of these ${points.length} cuts, placed by how far the ask came down. The hairline is this page's middle cut, ${median.toFixed(1)}% — the same notch each card's bar carries.`,
     caption: 'Every cut this week by how far the ask came down',
     sampleKey: 'cuts',
+    // One labelled landmark on the axis, so the strip reads without a hover.
+    // Same figure the cards compare against and the source line publishes.
+    context: { value: median, label: `middle cut ${median.toFixed(1)}%` },
     // What the marks actually give up. The primitive's default names a month,
     // which these marks do not carry.
     askHint: 'Hover, tap or tab a cut for the home, the percent and the dollars.',
