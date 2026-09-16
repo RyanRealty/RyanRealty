@@ -18,8 +18,6 @@ export type BannerEntity =
   | { entityType: 'city'; entityKey: string; displayName: string }
   | { entityType: 'subdivision'; entityKey: string; displayName: string; city: string; isResort?: boolean }
 
-export { getBannerSearchQuery }
-
 async function logBannerAudit(actionType: string, details: Record<string, unknown>) {
   const session = await getSession()
   const adminEmail = session?.user?.email ?? ''

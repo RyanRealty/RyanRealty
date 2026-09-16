@@ -23,12 +23,27 @@ import { buildCrmPeopleQuery, CRM_PEOPLE_SELECT } from '@/lib/data/crm/buildCrmP
 import { savedViewToSegment } from '@/lib/data/crm/getSavedViewSegment'
 import { EMPTY_SEGMENT, type CrmSegment, type CrmNode } from '@/lib/crm/segment-ast'
 import { trySendGroupMms } from '@/lib/crm/try-send-group-mms'
+import {
+  getCrmAccess as loadCrmAccess,
+  requireCrmAccess as loadRequireCrmAccess,
+} from '@/app/actions/crm-access'
+import { getNextRecommendation as loadNextRecommendation } from '@/app/actions/crm-next-rec'
 
 export type CrmActionResult = { ok: true; notice?: string } | { ok: false; error: string }
 
-import { getCrmAccess, requireCrmAccess, type CrmAccess } from '@/app/actions/crm-access'
-export type { CrmAccess } from '@/app/actions/crm-access'
-export { getCrmAccess, requireCrmAccess }
+// Local alias + wrapper — `export { fn }` / `export { fn } from` are illegal in
+// a 'use server' file (Turbopack: only async function declarations may be exported).
+export type CrmAccess = import('@/app/actions/crm-access').CrmAccess
+
+export async function getCrmAccess(): Promise<CrmAccess | null> {
+  return loadCrmAccess()
+}
+
+export async function requireCrmAccess(): Promise<
+  { ok: true; access: CrmAccess } | { ok: false; error: string }
+> {
+  return loadRequireCrmAccess()
+}
 
 export type CrmPersonRow = {
   id: number
@@ -1292,10 +1307,11 @@ export async function advanceEnrollmentNowAction(enrollmentId: number) {
   )
 }
 
-export type { CrmNextRec } from '@/app/actions/crm-next-rec'
-export { getNextRecommendation } from '@/app/actions/crm-next-rec'
+export type CrmNextRec = import('@/app/actions/crm-next-rec').CrmNextRec
 
-export type { BrokerActionItem } from '@/lib/data/crm/getBrokerActionQueue'
+export async function getNextRecommendation(personId: number): Promise<CrmNextRec> {
+  return loadNextRecommendation(personId)
+}
 
 /** Broker confirms the recommended next step — engine sends it on the next run. */
 export async function confirmNextStepAction(enrollmentId: number) {

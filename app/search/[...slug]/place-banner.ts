@@ -1,4 +1,5 @@
-import { getBannerUrl, getOrCreatePlaceBanner, getBannerSearchQuery } from '../../actions/banners'
+import { getBannerUrl, getOrCreatePlaceBanner } from '../../actions/banners'
+import { getBannerSearchQuery } from '../../../lib/banner-prompts'
 import { getBestListingHeroForGeography } from '../../actions/photo-classification'
 import { getResortEntityKeys } from '../../actions/subdivision-flags'
 import { cityEntityKey, subdivisionEntityKey } from '../../../lib/slug'
