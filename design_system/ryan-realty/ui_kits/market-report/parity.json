@@ -125,10 +125,11 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-10",
-    "rubricVersion": "v1-2026-09-08",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts market-report \u2014 grok-4.6 via grok CLI, three scorings of the SITE-75 worktree first-viewport shots, separate from the grok-4.5 builder",
-    "evaluatorModel": "grok-4.6",
+    "evaluatedAt": "2026-09-16",
+    "rubricVersion": "v1-2026-09-12",
+    "demoMatch": true,
+    "evaluator": "npx tsx scripts/taste-evaluate.ts market-report --builder grok-4.5 --url http://127.0.0.1:43100/housing-market \u2014 grok CLI, cursor-agent, and claude CLI all missing in this cloud sandbox. Separate judge claude-sonnet-5 via Cursor Task (three scorings of the six PNGs in one call, same rubric v1-2026-09-12). The builder, grok-4.5 / cursor-grok-4.6, did not grade the page.",
+    "evaluatorModel": "claude-sonnet-5",
     "builderModel": "grok-4.5",
     "shotSpec": {
       "routes": [
@@ -139,88 +140,108 @@
         375
       ],
       "states": [
-        "default"
+        "default",
+        "scrub-open",
+        "insight-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized, http://localhost:4375/housing-market on wt/site-75-77-20260910"
+      "capture": "first viewport, node scripts/take-route-shots.mjs market-report http://127.0.0.1:43100 --states \"scrub-open=#market-insights .insight-chart-stage@#market-insights!hover,insight-open=#market-insights .insight-pager__btn[aria-label^='Next']@#market-insights!click\", scale 1, palette-quantized, next dev --webpack :43100. scrub-open rests the pointer on the InsightCards Liveline: claim + beui faces move from August 2026 ($664K / $689K) to February 2026 ($633K / $620K). insight-open clicks pager Next to the Anomaly page (335 closings, metric toggle)."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/market-report/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/market-report/shots/mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/market-report/shots/mobile375.png",
+      "scrubOpenDesktop": "design_system/ryan-realty/ui_kits/market-report/shots/scrub-open-desktop.png",
+      "scrubOpenMobile375": "design_system/ryan-realty/ui_kits/market-report/shots/scrub-open-mobile375.png",
+      "insightOpenDesktop": "design_system/ryan-realty/ui_kits/market-report/shots/insight-open-desktop.png",
+      "insightOpenMobile375": "design_system/ryan-realty/ui_kits/market-report/shots/insight-open-mobile375.png"
     },
-    "shotsHash": "sha256:c3a343dca30cf3c2200bb87e9ac8413679124807284637df893ec97d0a41e552",
+    "shotsHash": "sha256:3d9b6c114b00f87a01c8f2f4552e423b024d41e6f6026655b50b7b1a140a55e0",
     "scores": [
-      57,
-      63,
-      67
+      56,
+      60,
+      65
     ],
-    "score": 63,
+    "score": 60,
     "criteria": {
-      "designQuality": 20,
-      "originality": 18,
-      "interaction": 7,
-      "craft": 10,
+      "designQuality": 17,
+      "originality": 15,
+      "interaction": 11,
+      "craft": 9,
       "honestyFunction": 8
     },
-    "beats": "Zillow's regional market entry (a median-price tile plus a 12-month chart) \u2014 we win on months of supply as two named bars with a source and as-of; we lose on first-viewport density and on any series a reader can scrub.",
+    "perCriterion": {
+      "design": 17,
+      "originality": 15,
+      "interaction": 11,
+      "craft": 9,
+      "honesty": 8
+    },
+    "beats": "Redfin Data Center \u2014 this fold adds a scrub-and-toggle instrument Redfin's own market page doesn't offer (drag any month to swap the trailing-12 comparison, flip the same line between homes-closed and median-price), but it still loses on breadth: Redfin shows DOM, inventory, and multiple geographies side by side in one screen while this hub exposes only two numbers per page and makes you page through to see a third.",
     "adaptedFrom": [
+      {
+        "id": "beautifului-insight"
+      },
+      {
+        "id": "beui-number"
+      },
       {
         "id": "house-instrument"
       },
       {
         "id": "house-mos"
+      },
+      {
+        "id": "house-chart"
       }
     ],
     "defects": [
       {
-        "section": "#chooser",
-        "severity": "taste",
-        "finding": "The 1440 fold still ends on More reports, and the Live market row restates 1,550 homes and points at the instrument already on screen \u2014 the old directory occupying the first viewport instead of a second drawing.",
-        "replaceWith": "house-chart"
-      },
-      {
-        "section": ".v3-instrument__fold",
-        "severity": "taste",
-        "finding": "Supply by property type, sale pace, and what the houses have sits as a closed all-caps disclosure over empty cream; first read is a plus and no encoding, not paged insights.",
-        "replaceWith": "beautifului-insight"
-      },
-      {
-        "section": ".v3-instrument__eyebrow",
-        "severity": "craft",
-        "finding": "CENTRAL OREGON, OREGON prints the region as a city-state slug, a template leftover a visitor reads as a bug.",
+        "section": "scrub tooltip in the What's happening module at 375px (scrub-open-mobile375.png)",
+        "severity": "defect",
+        "finding": "the two comparison labels 'Sep 2025 \u2013 Aug 2026 $644K' and 'Sep 2024 \u2013 Aug 2025 $670K' collide and clip mid-word on mobile, so the scrubbed read-out is unreadable exactly where the interaction is supposed to prove itself",
         "replaceWith": null
       },
       {
-        "section": ".v3-chart",
-        "severity": "craft",
-        "finding": "A month of sales prints 322.0 beside integer 1,550 homes for sale; the trailing tenth makes a count look like a lab reading.",
-        "replaceWith": null
-      },
-      {
-        "section": ".v3-instrument__fold-summary",
-        "severity": "craft",
-        "finding": "At 375 the fold label wraps to three lines of tracked caps plus a plus, so the only extra-data control on the phone is the ugliest line in the viewport.",
-        "replaceWith": null
-      },
-      {
-        "section": ".v3-chart",
+        "section": "What's happening module vs. Median sale price by month module",
         "severity": "taste",
-        "finding": "The two lollipops already print 1,550 and 322.0 on the marks, so a hover restates the claim; no type toggle, no scrub, and the live count is a frozen end-label rather than sourced digits that swap.",
-        "replaceWith": "beui-number"
+        "finding": "both data sections use the identical eyebrow-label / bold-sentence-with-inline-numbers / thin-line-chart / italic-source shape back to back, which is the stacked-section tell even though each individually is fine",
+        "replaceWith": null
+      },
+      {
+        "section": "HOMES FOR SALE VS A MONTH OF SALES sidebar card",
+        "severity": "taste",
+        "finding": "the card's content ends near mid-page while the left column runs far past it, leaving a tall unused cream void in the right rail that reads as an unfinished layout rather than a considered two-column rhythm",
+        "replaceWith": null
+      },
+      {
+        "section": "Homes closed / Median sale toggle pill on the insight page",
+        "severity": "taste",
+        "finding": "the metric switch is a single small gray pill dropped into a mostly empty right two-thirds of the row next to a lone '335', reading as an afterthought control rather than an instrument built to carry the page's headline claim",
+        "replaceWith": null
+      },
+      {
+        "section": "paged insight CTAs \u2014 See every home for sale vs Open the closed-sales explorer",
+        "severity": "taste",
+        "finding": "the two insight pages each carry their own distinct primary ask, so paging through the instrument changes which conversion path a visitor is offered instead of holding one ask for the page",
+        "replaceWith": null
       }
     ],
+    "verdict": "This is better than a bare 51/100 chooser page \u2014 the fold now has a real scrubber that changes two trailing-12 stat blocks and a chart dot together, a second paged insight with its own toggle, and honest MoS bars whose 4.5-month verdict actually matches 1,483/326 \u2014 but it is not the visually breathtaking instrument the brief wants, because the two chart sections repeat the same eyebrow-sentence-chart-source shape and the mobile scrub tooltip collides into unreadable text at the one moment it should be proving the interaction works. demoMatch is true (paging and scrubbing are both real, and this is the one catalog id the brief explicitly tells the builder to adapt into V3Chart rather than paste as an AI card), but craft gaps at 375px and a layout with an unbalanced sidebar keep it in the 'competent, not stopping' range rather than a page you'd screenshot.",
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-09",
-      "score": 54,
-      "evaluatorModel": "claude-sonnet-5",
+      "evaluatedAt": "2026-09-10",
+      "score": 63,
+      "scores": [
+        57,
+        63,
+        67
+      ],
+      "evaluatorModel": "grok-4.6",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:eb7f52062d31892a753d8c8cca7a63095773ef6bd16cfa63870a1ba60998ae8b",
-      "criteria": {
-        "honestyFunction": 8
-      }
+      "shotsHash": "sha256:c3a343dca30cf3c2200bb87e9ac8413679124807284637df893ec97d0a41e552",
+      "source": "SITE-75 route receipt committed at HEAD on this parity.json (median 63, grok-4.6)"
     },
-    "rebaselineReason": "evaluatorModel and shotsHash differ: SITE-40's 54 was claude-sonnet-5 on the Five-products chooser fold; this mark is grok-4.6 on new first-viewport shots after SITE-75 opened the hub on Instrument. Same rubricVersion v1-2026-09-08.",
-    "verdict": "Better than a 54 directory: the first viewport is now a verdict in display serif and months of supply as two named bars, which is this shop and not a template. What is dull is the closed fold as a labeled hole and More reports crawling into the same 900px, so the page still spends its fold on a sitemap instead of another drawing."
+    "rebaselineReason": "All three instrument keys differ, so the 63 is not a baseline and the rise rule does not apply to it. evaluatorModel grok-4.6 \u2192 claude-sonnet-5 (grok CLI and cursor-agent missing in this sandbox; claude-sonnet-5 is the fallback judge). rubricVersion v1-2026-09-08 \u2192 v1-2026-09-12 (demoMatch required, catalog option-list replaceWith). shotsHash sha256:c3a343dc\u2026 \u2192 the six shots above: scrub-open and insight-open are new. This is the first mark on the new instrument.",
+    "notes": "honestyFunction 8, equal to the prior mark's 8 \u2014 the product hold is met. SEO rose: gated title Central Oregon Housing Market held; description + Dataset variableMeasured + FAQPage items now carry the live median, MOS, and insight-board sentences. Information rose: lead figures carry sentences/counts; InsightCards Compare/Anomaly/Allocation publish sourced closed-sale figures from leftover HUD / Oregon Data Share; MOS stays two named bars with an integer sales face. UX rose: installed beautifului InsightCards (pager, Liveline scrub) and beui-number faces, not a house wrapper after demoMatch false. taste-evaluate.ts exited because every judge CLI was missing; the JSON above is the claude-sonnet-5 Task scoring of the same six files the CLI would have been told to Read. No competitiveBrief on this class, so competitiveBriefPass is not required and is not invented."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
