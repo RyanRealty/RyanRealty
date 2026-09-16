@@ -140,6 +140,20 @@ evaluator, cannot capture a shot, and is then tempted to call the item done with
 npm run setup:browsers   # npx playwright install --with-deps chromium
 ```
 
+**That command alone does not get you the brand fonts (2026-09-15).** It is only
+`npx playwright install --with-deps chromium` — the font copy lives inside
+`cloud-setup.sh`, not the npm script — so a session that boots from `npm ci` + `npm run
+setup:browsers` and never runs the shell script gets a browser with `fc-list | grep -iE
+'amboqia|geist'` reading 0. Chromium launches fine without them, so nothing fails
+loudly; a taste-pass render just uses the wrong face. (Geist is served by the app
+itself via `next/font` and needs no system step — the gap is Amboqia + AzoSans, which
+ffmpeg and headless Chromium need registered.) Get both in one command instead of just
+the browser:
+
+```bash
+CLOUD_SETUP_SKIP_DEPS=1 CLOUD_SETUP_BROWSERS=1 bash scripts/cloud-setup.sh
+```
+
 Run it once at boot, in the background if you like, not when the taste pass is already
 blocked.
 
@@ -147,9 +161,25 @@ The rest of what differs, none of it optional:
 
 - **Dev server:** `next dev --webpack`. Turbopack refuses the worktree `node_modules`
   symlink (memory `reference_worktree_node_modules_turbopack`).
+- **Dev-server render cache outlives a restart (2026-09-15).** `/price-drops` (and any
+  route setting `revalidate`) writes `unstable_cache` entries to
+  `.next/dev/cache/fetch-cache/*`. After a DAL change the page kept serving the old
+  numbers until BOTH the dev process was restarted AND every file under that directory
+  was deleted BY NAME (the hook refuses `rm -rf`, so list the directory and `rm` each
+  path) — AND the first request after that was the one measured, because the second
+  request is served from the in-process render cache again and looks stale a second
+  time. Cold-render recipe, in order: kill dev, `rm` every file in
+  `.next/dev/cache/fetch-cache/` by name, restart, read the numbers off the FIRST
+  request only.
 - **Reading production:** curl with a real browser user agent. The WAF blocks curl's
   default, so you read a bot screen and conclude the page is broken
-  (`reference_bot_screen_blocks_automation_uas`).
+  (`reference_bot_screen_blocks_automation_uas`). Headless Chromium has the opposite
+  problem (2026-09-15): it does not trust the agent proxy's CA, so a Playwright page
+  against production fails `net::ERR_CERT_AUTHORITY_INVALID` while Node/curl through
+  `HTTPS_PROXY` work fine. For a gate, use the shared `scripts/lib/remote-media-proxy.mjs`
+  (and the shared gate-browser helper another lane is adding) instead of a hand-rolled
+  launch. For an ad hoc Playwright probe against production, set `ignoreHTTPSErrors:
+  true` on the browser context.
 - **Scratch files:** repo-root `scratchpad/` — gitignored and excluded from tsconfig. A
   scratch script written outside the repo cannot resolve `node_modules`, and a
   top-level `await` needs the `.mts` extension. A cloud fire on 2026-09-08 lost four
@@ -166,9 +196,29 @@ The rest of what differs, none of it optional:
   "proactively clear git locks" is a local-machine rule.
 - **Sends:** never message a real person (CLAUDE.md §1). A test submit uses an address
   whose local part contains `fleet-test`, which the CRM suppresses by design.
-- **Push:** `npm run push` runs a full `next build`. On a 16 GB cloud box that can
-  SIGABRT during static generation; `NODE_OPTIONS=--max-old-space-size` is the first
-  lever, not a code bug.
+- **Build order, not heap size (2026-09-15).** `next build` was OOM-killed (exit 137,
+  "Killed") on a 15 GB / 4-core box with no swap while a `next dev` server was ALSO
+  running. With dev stopped and `NODE_OPTIONS=--max-old-space-size=11264` set, the same
+  build passed in about 10 minutes. The OS OOM killer did that, not V8's heap limit, so
+  raising `max-old-space-size` alone is not the lever — stopping the dev server is.
+  Order: stop dev → build → start the prod server → gates.
+- **Starting a built server, safely:** `npm run start:prod`
+  (`scripts/start-prod-server.sh`). An ad hoc `npx next start -p 3401` collided with an
+  earlier `next start` still holding 3401 on 2026-09-15, logged `EADDRINUSE` into a log
+  nobody read, and two Playwright probes measured the OLD build as if it were the new
+  one — the same trap `run-runtime-gates.sh` already guards against. This script
+  refuses a `.next` older than the HEAD commit, refuses a held port (prints the pid +
+  command; `FREE_PORT=1` kills exactly that pid and retakes it), starts `next start`
+  detached, and waits with `scripts/wait-for-server.mjs` (a real User-Agent — a bare
+  curl/axios default UA gets the bot screen, same failure mode as "Reading production"
+  above).
+- **Push:** never `npm run push` from a cloud session bound to its own branch — it
+  rebases onto and pushes `origin/main`, which is not this branch (2026-09-15). The
+  sequence that works: commit, `npm run gates:stamp`, then `git push -u origin
+  <branch>`. The pre-push hook only checks the gates-stamp marker, and the marker is
+  valid for 240 minutes. (A worktree lane that should be pushing its OWN branch but
+  runs `npm run push` instead is the different, already-documented mistake — memory
+  `reference_npm_push_from_worktree_targets_main`.)
 
 ## The round
 
@@ -463,6 +513,21 @@ was rebuilt to end.
 ### 5. Next round, immediately
 Boot again. Take the next eligible set. Sleeping between rounds is not a state this
 skill has.
+
+### 6. Friction is a lane, not a detour (Matt 2026-09-16)
+
+When a round trips over the PROCESS — a gate that cannot run where you are, a
+tool that lies about what it measured, a judge that has to be re-run for a
+formatting slip, a build that dies for an environment reason, a trap you fell
+into that the next lane will fall into too — do not fix it inline out of the
+orchestrator's context and do not write it down as advice. **Spin up an agent
+to fix the tool**, in parallel with the site lane, on a disjoint file set:
+`scripts/**`, `docs/**`, this skill. The orchestrator keeps the page. The rule
+is CLAUDE.md §6 applied to the loop's own tooling: a trap that keeps biting
+gets a mechanical fix, never more prose. The 2026-09-15 cloud round burned
+four builds and two stale-server measurements before the fixes (shared media
+proxy for image-measuring gates, `start:ci` honouring `PORT`) shipped — each
+of those was a five-minute agent brief.
 
 ## When it stops, and only then
 

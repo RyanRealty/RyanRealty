@@ -31,7 +31,7 @@ import { join } from 'node:path'
 import { chromium } from 'playwright'
 import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 import { floorProblems, measurePage, seedFloor, spliceContentFloor } from './lib/content-floor.mjs'
-import { installRemoteMediaProxy } from './lib/remote-media-proxy.mjs'
+import { openGateContext } from './lib/gate-browser.mjs'
 
 const ROOT = process.cwd()
 const CLASS_REGISTRY_PATH = 'design_system/public/taste-classes.json'
@@ -114,13 +114,17 @@ async function main() {
   console.log('==============================================')
 
   const browser = await chromium.launch()
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, userAgent: CI_PROBE_HEADERS['User-Agent'] })
-  // This gate MEASURES IMAGES, so it has to be able to load them. In a cloud
-  // sandbox Node reaches the photo CDNs through the configured proxy and
-  // headless Chromium does not, which collapses heroImageWidth on every
-  // image-bearing route at once and fails floors nobody touched. Same fix
-  // take-route-shots.mjs already carried; now shared.
-  const mediaStats = await installRemoteMediaProxy(ctx, new URL(BASE).origin)
+  // This gate MEASURES IMAGES, and under --seed it navigates to a live
+  // PRODUCTION host over https. scripts/lib/gate-browser.mjs carries both
+  // fixes a cloud sandbox needs for that (untrusted proxy CA in Chromium,
+  // cross-origin photo CDNs failing to load in-page) so this gate does not
+  // wire them by hand. See that file's header for the measured failure.
+  const { context: ctx, mediaStats } = await openGateContext(browser, {
+    baseUrl: BASE,
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 1,
+    userAgent: CI_PROBE_HEADERS['User-Agent'],
+  })
   const page = await ctx.newPage()
 
   const failures = []

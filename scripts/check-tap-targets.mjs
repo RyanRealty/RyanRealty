@@ -81,6 +81,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { chromium } from 'playwright'
 import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
+import { openGateContext } from './lib/gate-browser.mjs'
 
 const MIN_PX = 44
 const SHRINK_TOLERANCE_PX = 2 // sub-pixel + font-rendering drift between hosts
@@ -537,10 +538,16 @@ async function main() {
   const skipped = { 'third-party': 0, 'visually-hidden-until-focus': 0 }
   let measured = 0
   let navFailed = 0
+  let mediaServed = 0
 
   for (const route of ROUTES) {
     for (const vp of VIEWPORTS) {
-      const ctx = await browser.newContext({
+      // These routes render listing photos and broker headshots from
+      // external CDNs; scripts/lib/gate-browser.mjs fetches those in Node so
+      // a broken-image box never shifts a control's measured size in a
+      // sandbox where headless Chromium cannot reach them directly.
+      const { context: ctx, mediaStats } = await openGateContext(browser, {
+        baseUrl: BASE,
         viewport: { width: vp.width, height: vp.height },
         deviceScaleFactor: 1,
       })
@@ -579,6 +586,7 @@ async function main() {
         console.error(
           `  FAIL  ${route} @${vp.name} — ${String(lastErr?.message ?? 'unknown').split('\n')[0]}`,
         )
+        mediaServed += mediaStats.served
         await ctx.close()
         continue
       }
@@ -621,10 +629,14 @@ async function main() {
       console.log(
         `  ok    ${route} @${vp.name} · ${live.length} controls · ${small.length} under ${MIN_PX} · ${bad} unexcused`,
       )
+      mediaServed += mediaStats.served
       await ctx.close()
     }
   }
   await browser.close()
+  if (mediaServed > 0) {
+    console.log(`\n(${mediaServed} cross-origin media request(s) fetched through Node — sandbox egress.)`)
+  }
 
   if (navFailed) {
     console.error(`\n${navFailed} route/viewport pair(s) did not render. Measurement is incomplete.`)

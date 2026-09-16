@@ -97,10 +97,25 @@
   min-height: 0;
 }
 
-/* Compact inventory Stage: the KPI band repeats V3Pulse. Hide it so
-   photographed house rails enter the first viewport (homepage-v6 layout lock). */
-.v3.v3-stage--inventory.v3-stage--compact .v3-stage-band {
+/* Compact inventory Stage: on the homepage the KPI band repeats V3Pulse. Hide
+   it so photographed house rails enter the first viewport (homepage-v6 layout
+   lock). A page with no Pulse opts back in with `bandWhenCompact` (SITE-91):
+   without the band its only sourced figures would leave the page. */
+.v3.v3-stage--inventory.v3-stage--compact:not(.v3-stage--band-kept) .v3-stage-band {
   display: none;
+}
+
+/* A kept band under a compact frame is there so the houses below it still
+   break the fold: less vertical padding than the standard band. Measured on
+   /buy at 1440x900 before this block: band 141px, of which the source block
+   was 108, and the first card's ask ended at 910px. The source block is
+   shortened by `sourceName` (V3StageInventory), not by widening its column —
+   a wider column squeezed the claim onto two lines with a stranded middot at
+   the end of the first, the exact tell this variant exists to avoid. */
+.v3.v3-stage--band-kept .v3-stage-band__inner {
+  padding-top: var(--v3-space-sm);
+  padding-bottom: var(--v3-space-sm);
+  gap: var(--v3-space-xs);
 }
 
 @media (max-width: 40rem) {
@@ -381,8 +396,27 @@
   line-height: 1.4;
 }
 
+/* NARROW: one figure per line, no separators. As one inline sentence the three
+   clauses wrapped at 375 into three rows that each ended in a stranded middot,
+   with the source block under them — the taste table named it on /buy
+   (SITE-91, 2026-09-16). The sentence form returns at 48rem, below. */
 .v3 .v3-stage-strip__claim > span {
+  display: block;
   white-space: normal;
+}
+
+.v3 .v3-stage-strip__claim > span > span[aria-hidden='true'] {
+  display: none;
+}
+
+@media (min-width: 48rem) {
+  .v3 .v3-stage-strip__claim > span {
+    display: inline;
+  }
+
+  .v3 .v3-stage-strip__claim > span > span[aria-hidden='true'] {
+    display: inline;
+  }
 }
 
 .v3 .v3-stage-strip__claim .v3-stage-strip__door {

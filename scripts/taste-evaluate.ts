@@ -36,6 +36,9 @@ import {
   classForRoute,
   evaluatorBrief,
   loadTasteCatalog,
+  offListReplaceWithValues,
+  offListRetryLine,
+  optionListComplianceLine,
   replaceWithOptionProblems,
 } from './lib/taste-catalog.mjs'
 import { parseCompetitiveBrief } from './lib/taste-receipt.mjs'
@@ -239,6 +242,171 @@ function askClaude(prompt: string, alias: 'sonnet' | 'opus'): { answer?: JudgeAn
   }
 }
 
+/** One entry of the chain judgeOrder() returns: the link, plus its model/alias when relevant. */
+type JudgeStep =
+  | { link: 'grok'; reason: string }
+  | { link: 'cursor'; model: string; reason: string }
+  | { link: 'claude'; alias: 'sonnet' | 'opus'; reason: string }
+
+/** Ask the link a step names. Used for the initial ask AND for the one off-list re-ask below. */
+export function askViaStep(step: JudgeStep, promptText: string) {
+  if (step.link === 'grok') return askGrok(promptText)
+  if (step.link === 'cursor') return askCursor(promptText)
+  return askClaude(promptText, step.alias)
+}
+
+export function describeJudgeStep(step: JudgeStep): string {
+  if (step.link === 'grok') return 'grok CLI'
+  if (step.link === 'cursor') return `cursor-agent (${step.model})`
+  return `claude CLI (${step.alias})`
+}
+
+/**
+ * Every schema/option-list check main() gates on, run against one parsed
+ * answer. Pulled out so a test can drive the off-list retry below without
+ * spawning a CLI or duplicating the validator's rules.
+ */
+export function validateJudgeAnswer(
+  content: string,
+  {
+    loaded,
+    classKey,
+    competitiveBrief,
+  }: {
+    loaded: ReturnType<typeof loadTasteCatalog>
+    classKey: string
+    competitiveBrief: ReturnType<typeof parseCompetitiveBrief>
+  },
+) {
+  const parsed = parseJsonLoose(content)
+  const schemaProblems = evaluatorResultProblems(parsed, { competitiveBrief })
+  const defects =
+    parsed && typeof parsed === 'object' && Array.isArray((parsed as { defects?: unknown }).defects)
+      ? (parsed as { defects: Array<{ replaceWith?: unknown }> }).defects
+      : []
+  const missingReplace = defects.filter((d) => d && typeof d === 'object' && !('replaceWith' in d)).length
+  const optionProblems = replaceWithOptionProblems(loaded, classKey, { defects })
+  return { parsed, schemaProblems, defects, missingReplace, optionProblems }
+}
+
+/** True only when the SOLE problem is an off-list replaceWith — the one class this file re-asks. */
+export function isOffListOnlyRejection(v: ReturnType<typeof validateJudgeAnswer>): boolean {
+  return v.missingReplace === 0 && v.optionProblems.length > 0 && v.schemaProblems.length === 0
+}
+
+/**
+ * The one re-ask (see this file's header and the operator note on
+ * 2026-09-15): a rejection that is ONLY an off-list replaceWith — the judge
+ * invented a phrase like "beeswarm" instead of copying a catalog id — gets
+ * asked again, on the SAME link, exactly once, with the rejected values and
+ * the allowed ids spelled out. Any other rejection (demoMatch false,
+ * competitiveBriefPass false/omitted, a JSON parse failure, or an off-list
+ * value mixed with a schema problem) is a verdict, not a slip, and is handed
+ * straight back unretried — main() then fails it exactly as it always has.
+ * The retry is never recorded in the receipt envelope; it is stderr only.
+ */
+export function resolveWithOffListRetry({
+  step,
+  promptText,
+  loaded,
+  classKey,
+  competitiveBrief,
+  answer,
+  ask = askViaStep,
+  log = (msg: string) => console.error(msg),
+}: {
+  step: JudgeStep
+  promptText: string
+  loaded: ReturnType<typeof loadTasteCatalog>
+  classKey: string
+  competitiveBrief: ReturnType<typeof parseCompetitiveBrief>
+  answer: JudgeAnswer
+  ask?: typeof askViaStep
+  log?: (msg: string) => void
+}): { answer: JudgeAnswer; validation: ReturnType<typeof validateJudgeAnswer>; retried: boolean } {
+  const validation = validateJudgeAnswer(answer.content, { loaded, classKey, competitiveBrief })
+  if (!isOffListOnlyRejection(validation)) return { answer, validation, retried: false }
+  const rejected = offListReplaceWithValues(loaded, classKey, { defects: validation.defects })
+  log(`taste-evaluate: replaceWith off-list (${rejected.join(', ')}), re-asking ${describeJudgeStep(step)} once.`)
+  const retryPromptText = `${promptText}\n\n${offListRetryLine(loaded, classKey, rejected)}`
+  const retry = ask(step, retryPromptText)
+  if (!retry.answer) return { answer, validation, retried: true }
+  return {
+    answer: retry.answer,
+    validation: validateJudgeAnswer(retry.answer.content, { loaded, classKey, competitiveBrief }),
+    retried: true,
+  }
+}
+
+/**
+ * Assembles the judge prompt. `complianceLine` (built from the SAME
+ * optionListIds the option-list validator uses — see taste-catalog.mjs) is
+ * appended UNCONDITIONALLY, for every link and every route: grok already
+ * complies without it, but the text is harmless for grok/cursor and keeps
+ * one prompt shape across the chain, which is the point of a chain at all —
+ * a route mark must not depend on which link answered it. Nothing here
+ * branches on `step`/link/evaluator; if a future case needs a claude-only
+ * addition, that is a new, separate, commented block — this one stays common.
+ */
+export function buildEvaluatorPrompt({
+  images,
+  args,
+  catalogNote,
+  briefNote,
+  refNote,
+  bar,
+  competitiveBrief,
+  complianceLine,
+}: {
+  images: Array<{ name: string; path: string }>
+  args: { url?: string; focus?: string }
+  catalogNote: string
+  briefNote: string
+  refNote: string
+  bar: string
+  competitiveBrief: ReturnType<typeof parseCompetitiveBrief>
+  complianceLine: string
+}): string {
+  const question = [
+    loadRubric(),
+    '',
+    `Rubric version for the receipt: ${RUBRIC_VERSION}.`,
+    `The shots, in order: ${images.map((i) => i.name).join(', ')}.`,
+    'Names ending -desktop are 1440px wide; names ending -mobile375 are 375px wide.',
+    args.url ? `The page is rendered at ${args.url}.` : '',
+    args.focus ? `What changed in this pass: ${args.focus}` : '',
+    catalogNote,
+    briefNote,
+    refNote,
+    bar,
+    '',
+    'Score the SAME shots THREE separate times, independently, as three different reviewers would. One pass is noise.',
+    'Honesty is not a trade. The loop is comprehensive: SEO, listing/page information, and UX must all improve on this pass. A prettier fold that hides a sourced figure, drops JSON-LD, removes an ask, drops listing facts from a card, or makes a number unverifiable is a blocking defect. honestyFunction must not fall. Omitting honesty to skip the hold is a blocking defect. requiredComponents, JSON-LD, titles, conversion asks, tap targets, and page payload must not fall. Listing pages may not drop or summarize PropertySpecs, MLS remarks, schools, payment, or Tour/Call/Text. Name in the verdict whether SEO improved and whether inventory/information improved; if either is only "held," that is a defect.',
+    'Diagnose each defect as a JOB, then set replaceWith from the catalog option list in the brief (id + demo URL). Prefer those ids over vague house adjectives. Do not pick a house primitive that already lost. Cream-box examples that are demoMatch false: Avatar import ≠ AvatarGroup demo; Button import ≠ flat V3Button navy rect; Sheet import ≠ custom drawer. If the live control and the demo are not the same interaction, demoMatch is false. Shots named search-open / *-open are the demo-match record — judge whether the opened control matches the catalog demo, not only the rest fold. A V3 wrapper that imported the file then hid the morph, the card body, or the carousel is demoMatch false.',
+    'Then list the named defects behind the number: each one names the section (a css class or an id you can see), the severity (blocking | taste | craft), a finding of at least ten characters, and replaceWith — a catalog id from the option list, a house form from the rubric list only when no catalog job fits, or null if the finding is craft/honesty/SEO not form.',
+    'Empty defects is only allowed above 95.',
+    complianceLine,
+    competitiveBrief
+      ? 'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"demoMatch":true|false,"competitiveBriefPass":true|false,"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"...","replaceWith":"<catalog option-list id, house form, or null>"}],"verdict":"<two sentences>"}. demoMatch and competitiveBriefPass are required. Omitting either discards the response.'
+      : 'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"demoMatch":true|false,"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"...","replaceWith":"<catalog option-list id, house form, or null>"}],"verdict":"<two sentences>"}. demoMatch is required. Omitting it discards the response.',
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  // Either CLI is an agent: it is told to open the files rather than handed base64,
+  // which is also why the shots must be absolute paths.
+  return [
+    'You are a design critic reviewing a page you did not build. You are hard to impress and you say why. You never praise a page for being clean; clean is the floor. You name what is dull. When the display is a banned data form, you name the house form that replaces it.',
+    '',
+    `Read these screenshot files with your file tool and judge what is IN them:`,
+    ...images.map((i) => `  ${i.path}`),
+    '',
+    question,
+    '',
+    'Reply with the JSON object and nothing else — no preamble, no code fence.',
+  ].join('\n')
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   if (!args.routeKey) {
@@ -316,54 +484,24 @@ async function main() {
         .join('\n')
     : ''
 
-  const question = [
-    loadRubric(),
-    '',
-    `Rubric version for the receipt: ${RUBRIC_VERSION}.`,
-    `The shots, in order: ${images.map((i) => i.name).join(', ')}.`,
-    'Names ending -desktop are 1440px wide; names ending -mobile375 are 375px wide.',
-    args.url ? `The page is rendered at ${args.url}.` : '',
-    args.focus ? `What changed in this pass: ${args.focus}` : '',
-    catalogNote,
-    briefNote,
-    refNote,
-    bar,
-    '',
-    'Score the SAME shots THREE separate times, independently, as three different reviewers would. One pass is noise.',
-    'Honesty is not a trade. The loop is comprehensive: SEO, listing/page information, and UX must all improve on this pass. A prettier fold that hides a sourced figure, drops JSON-LD, removes an ask, drops listing facts from a card, or makes a number unverifiable is a blocking defect. honestyFunction must not fall. Omitting honesty to skip the hold is a blocking defect. requiredComponents, JSON-LD, titles, conversion asks, tap targets, and page payload must not fall. Listing pages may not drop or summarize PropertySpecs, MLS remarks, schools, payment, or Tour/Call/Text. Name in the verdict whether SEO improved and whether inventory/information improved; if either is only "held," that is a defect.',
-    'Diagnose each defect as a JOB, then set replaceWith from the catalog option list in the brief (id + demo URL). Prefer those ids over vague house adjectives. Do not pick a house primitive that already lost. Cream-box examples that are demoMatch false: Avatar import ≠ AvatarGroup demo; Button import ≠ flat V3Button navy rect; Sheet import ≠ custom drawer. If the live control and the demo are not the same interaction, demoMatch is false. Shots named search-open / *-open are the demo-match record — judge whether the opened control matches the catalog demo, not only the rest fold. A V3 wrapper that imported the file then hid the morph, the card body, or the carousel is demoMatch false.',
-    'Then list the named defects behind the number: each one names the section (a css class or an id you can see), the severity (blocking | taste | craft), a finding of at least ten characters, and replaceWith — a catalog id from the option list, a house form from the rubric list only when no catalog job fits, or null if the finding is craft/honesty/SEO not form.',
-    'Empty defects is only allowed above 95.',
-    competitiveBrief
-      ? 'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"demoMatch":true|false,"competitiveBriefPass":true|false,"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"...","replaceWith":"<catalog option-list id, house form, or null>"}],"verdict":"<two sentences>"}. demoMatch and competitiveBriefPass are required. Omitting either discards the response.'
-      : 'Answer as JSON: {"scores":[n,n,n],"score":<median>,"perCriterion":{"design":n,"originality":n,"interaction":n,"craft":n,"honesty":n},"demoMatch":true|false,"beats":"<the competing page you would compare this to and the metric we win or lose>","defects":[{"section":"...","severity":"...","finding":"...","replaceWith":"<catalog option-list id, house form, or null>"}],"verdict":"<two sentences>"}. demoMatch is required. Omitting it discards the response.',
-  ]
-    .filter(Boolean)
-    .join('\n')
-
-  // Either CLI is an agent: it is told to open the files rather than handed base64,
-  // which is also why the shots must be absolute paths.
-  const prompt = [
-    'You are a design critic reviewing a page you did not build. You are hard to impress and you say why. You never praise a page for being clean; clean is the floor. You name what is dull. When the display is a banned data form, you name the house form that replaces it.',
-    '',
-    `Read these screenshot files with your file tool and judge what is IN them:`,
-    ...images.map((i) => `  ${i.path}`),
-    '',
-    question,
-    '',
-    'Reply with the JSON object and nothing else — no preamble, no code fence.',
-  ].join('\n')
+  // Same array the option-list validator checks defects against (below, and
+  // again after a retry) — computed once so the prompt and the validator can
+  // never drift onto two different lists for the same class.
+  const complianceLine = optionListComplianceLine(loaded, classKey)
+  const prompt = buildEvaluatorPrompt({ images, args, catalogNote, briefNote, refNote, bar, competitiveBrief, complianceLine })
 
   // The round's ruler is the judge that scored the current table; the chain
   // starts there so a route mark stays comparable to its table row.
   const order = judgeOrder({ round: roundJudge(process.cwd()), builderModel: args.builder ?? null, requested: args.evaluator })
   let answer: JudgeAnswer | undefined
+  let winningStep: JudgeStep | undefined
   for (const [i, step] of order.entries()) {
     const last = i === order.length - 1
     if (step.link === 'grok') {
       const grok = askGrok(prompt)
       if (grok.answer) {
         answer = grok.answer
+        winningStep = step as JudgeStep
         break
       }
       if (grok.fail) {
@@ -380,6 +518,7 @@ async function main() {
       const cursor = askCursor(prompt)
       if (cursor.answer) {
         answer = cursor.answer
+        winningStep = step as JudgeStep
         break
       }
       if (cursor.fail) {
@@ -398,9 +537,10 @@ async function main() {
       process.exit(2)
     }
     answer = claude.answer!
+    winningStep = step as JudgeStep
     break
   }
-  if (!answer) {
+  if (!answer || !winningStep) {
     console.error('taste-evaluate: no judge answered. Leave the node in_progress.')
     process.exit(2)
   }
@@ -413,21 +553,19 @@ async function main() {
       process.exit(2)
     }
   }
-  const { content, evaluatorModel, transport } = answer
-  const parsed = parseJsonLoose(content)
-  const schemaProblems = evaluatorResultProblems(parsed, { competitiveBrief })
-  const defects =
-    parsed && typeof parsed === 'object' && Array.isArray((parsed as { defects?: unknown }).defects)
-      ? (parsed as { defects: Array<{ replaceWith?: unknown }> }).defects
-      : []
-  const missingReplace = defects.filter((d) => d && typeof d === 'object' && !('replaceWith' in d)).length
+  // The one retry: only when the sole rejection is an off-list replaceWith
+  // (see resolveWithOffListRetry above). Every other verdict — including a
+  // second off-list answer — falls through to the same checks as before.
+  const retried = resolveWithOffListRetry({ step: winningStep, promptText: prompt, loaded, classKey, competitiveBrief, answer })
+  answer = retried.answer
+  const { parsed, schemaProblems, missingReplace, optionProblems } = retried.validation
+  const { evaluatorModel, transport } = answer
   if (missingReplace > 0) {
     console.error(
       `taste-evaluate: ${missingReplace} defect(s) missing replaceWith. The next catalog-class receipt will fail ci:taste-canon.`,
     )
     process.exit(2)
   }
-  const optionProblems = replaceWithOptionProblems(loaded, classKey, { defects })
   if (optionProblems.length) {
     console.error(`taste-evaluate: replaceWith not on the option list:\n${optionProblems.join('\n')}`)
     process.exit(2)
@@ -463,7 +601,12 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err instanceof Error ? err.message : String(err))
-  process.exit(1)
-})
+// Guarded so a test can import the pure functions above (buildEvaluatorPrompt,
+// validateJudgeAnswer, resolveWithOffListRetry, …) without running the CLI —
+// same pattern as scripts/lib/taste-catalog.mjs's own `main()` guard.
+if (process.argv[1] && process.argv[1].endsWith('taste-evaluate.ts')) {
+  main().catch((err) => {
+    console.error(err instanceof Error ? err.message : String(err))
+    process.exit(1)
+  })
+}
