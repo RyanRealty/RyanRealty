@@ -17,8 +17,12 @@
 
 .compare-sheet {
   /* How much of the next photograph shows past the current slide. One value,
-     read by the slide basis and by the add control that has to sit on the
-     slide the reader is looking at rather than on the peek. */
+     read by the slide basis and by the controls that have to sit on the slide
+     the reader is looking at rather than on the peek. A FIXED length, not a
+     share of the column: at 18% the four slivers were four different widths to
+     read, and the photograph itself fell to 223 CSS px, under this route's
+     contentFloor of 234. */
+  --compare-peek: 1.5rem;
   display: grid;
   gap: var(--v3-space-sm);
   /* Out to the section's own gutter at phone widths: at 375 the instrument
@@ -278,11 +282,9 @@
 .v3 .compare-sheet__strip-slide {
   /* The next frame shows past this one. A full-width slide with two chevrons
      is a photo flipper; the rail reads as a rail because the frame is not the
-     slide. 18% is another photograph, not the 4px slip that read as clipped
-     overflow on 2026-09-15. */
-  flex: 0 0 82%;
+     slide. */
+  flex: 0 0 calc(100% - var(--compare-peek));
   min-width: 0;
-  padding-right: var(--v3-space-3xs);
 }
 
 .v3 .compare-sheet__photo {
@@ -302,7 +304,7 @@
   top: 0;
   bottom: 0;
   left: 0;
-  right: 18%;
+  right: var(--compare-peek);
   z-index: 1;
   display: flex;
   align-items: center;
@@ -354,7 +356,7 @@
 
 .v3 .compare-sheet__dots {
   position: absolute;
-  right: 18%;
+  right: var(--compare-peek);
   bottom: var(--v3-space-3xs);
   z-index: 1;
   display: flex;
@@ -375,7 +377,7 @@
 .v3 .compare-sheet__add {
   position: absolute;
   top: 0;
-  right: 18%;
+  right: var(--compare-peek);
   z-index: 1;
   display: inline-flex;
   align-items: center;
@@ -502,8 +504,8 @@
     padding-inline: var(--v3-gutter);
   }
 
-  /* No peek at 375: 18% of a 120px photograph is not a rail, it is a crowded
-     frame with two controls on top of it. The steps and the drag stay. */
+  /* No peek at 375: a 24px sliver off a 120px photograph is not a rail, it is
+     a crowded frame with two controls on top of it. Steps and drag stay. */
   .v3 .compare-sheet__strip-slide {
     flex: 0 0 100%;
     padding-right: 0;
