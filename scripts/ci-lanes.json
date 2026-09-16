@@ -4,6 +4,7 @@
     "ci:broker-own-book",
     "ci:commit-compiles",
     "ci:count-degraded-read",
+    "ci:degraded-isr",
     "ci:crm-fail-closed",
     "ci:crm-scope",
     "ci:crm-secrets",

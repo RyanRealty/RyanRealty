@@ -32,6 +32,7 @@ import {
   getAllResortCommunities,
 } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { formatDateTime } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
@@ -140,7 +141,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
 }
 
-export default async function CommunityPlaceTypePage({ params }: Props) {
+export default async function CommunityPlaceTypePage(props: Props) {
+  return runPublishedPageRender('community-type', () => renderCommunityPlaceTypePage(props))
+}
+
+async function renderCommunityPlaceTypePage({ params }: Props) {
   const { slug, type } = await params
   const spec = resolvePlaceTypePage(type)
   if (!spec) notFound()

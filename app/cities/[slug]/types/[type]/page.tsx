@@ -29,6 +29,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getGeoSnapshot, getListingTiles, getListingTilesCount } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { PRIMARY_CITIES } from '@/lib/cities'
 import { slugify } from '@/lib/slug'
@@ -108,7 +109,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
 }
 
-export default async function CityPlaceTypePage({ params }: Props) {
+export default async function CityPlaceTypePage(props: Props) {
+  return runPublishedPageRender('city-type', () => renderCityPlaceTypePage(props))
+}
+
+async function renderCityPlaceTypePage({ params }: Props) {
   const { slug, type } = await params
   const spec = resolvePlaceTypePage(type)
   if (!spec) notFound()

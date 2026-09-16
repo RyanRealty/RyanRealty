@@ -24,13 +24,13 @@
  *
  * And the third branch is a placeholder, never absence: a read that genuinely
  * misses renders the standin's `unavailable` state, which keeps the section,
- * says so in a sentence, and points at the place's own map. `noStore()` on that
- * branch stops ISR persisting a mapless render for the revalidate window
- * (memory: reference_isr_caches_empty_fallback — /price-drops shipped "0 price
- * drops" for 30 minutes at a time on exactly this shape).
+ * says so in a sentence, and points at the place's own map. SITE-118
+ * `refuseDegradedIsr` on that branch stops ISR persisting a mapless render
+ * for the revalidate window (memory: reference_isr_caches_empty_fallback —
+ * /price-drops shipped "0 price drops" for 30 minutes at a time on exactly
+ * this shape).
  */
 import Link from 'next/link'
-import { unstable_noStore as noStore } from 'next/cache'
 import {
   getBoundaryGeoJSON,
   getCityBoundaryGeoJSON,
@@ -38,6 +38,7 @@ import {
 } from '@/lib/data'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
+import { refuseDegradedIsr, runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import {
   asPlaceBoundary,
@@ -112,7 +113,11 @@ export type PlaceTypeAtlasSectionProps = {
   listingsCount: number | null
 }
 
-export async function PlaceTypeAtlasSection({
+export async function PlaceTypeAtlasSection(props: PlaceTypeAtlasSectionProps) {
+  return runPublishedPageRender('place-type-atlas', () => renderPlaceTypeAtlasSection(props))
+}
+
+async function renderPlaceTypeAtlasSection({
   id,
   eyebrow,
   placeName,
@@ -126,7 +131,7 @@ export async function PlaceTypeAtlasSection({
   const boundary = await resolveBoundary(source)
   if (!boundary) {
     // Unknown is not empty: do not let the full-route cache keep this render.
-    noStore()
+    refuseDegradedIsr('place-type-atlas', ['place-type:boundary'])
     return (
       <PlaceTypeAtlasStandin
         id={id}
