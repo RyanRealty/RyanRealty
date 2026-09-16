@@ -163,11 +163,11 @@ export async function generateMetadata(): Promise<Metadata> {
       ? `${formatMonthsOfSupply(mosRawMeta)} months of supply — ${verdictMeta.label}. `
       : ''
   return pageMetadata({
-    title: median
-      ? `Central Oregon housing market · ${median} median list`
-      : 'Central Oregon Housing Market',
+    title: 'Central Oregon Housing Market',
     description:
-      `${supplyClause}Live Central Oregon housing market: inventory and pace by city, months of supply as homes for sale against a month of sales, and the last twelve months of closed sale prices. Oregon Data Share via Ryan Realty.`,
+      `${supplyClause}${
+        median ? `Median list ${median}. ` : ''
+      }Live Central Oregon housing market: inventory and pace by city, months of supply as homes for sale against a month of sales, and the last twelve months of closed sale prices. Oregon Data Share via Ryan Realty.`,
     path: '/housing-market',
     keywords: [
       'Central Oregon housing market',
@@ -659,9 +659,7 @@ export default async function HousingMarketHubPage() {
             className="hm-tremor"
             eyebrow={v3Text('Central Oregon')}
             headline={v3Text(
-              verdict.kind === 'unknown'
-                ? 'Central Oregon housing market'
-                : `Central Oregon housing market: a ${verdict.label}`,
+              `Central Oregon housing market${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
             )}
             figures={[firstSfrFigure, ...restSfrFigures]}
             /* SITE-100. THE FOLD IS THE CATALOG CONTROL, THEN THE TWO BARS,
