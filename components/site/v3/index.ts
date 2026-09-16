@@ -579,7 +579,7 @@ export type { V3PlaceIndexProps, V3PlaceIndexEntry } from './V3PlaceIndex'
  */
 export { V3Slots } from './V3Slots.client'
 
-export type { V3SlotsProps, V3SlotsColumn, V3SlotsFill } from './V3Slots.client'
+export type { V3SlotsProps, V3SlotsFill } from './V3Slots.client'
 
 /* -------------------------------------------------------------------------- */
 /* PLACE SECTIONS — compositions of the six, not a seventh                     */

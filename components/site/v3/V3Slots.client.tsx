@@ -17,51 +17,31 @@
    a WORKED EXAMPLE, the tool's real output over real rows, labelled in a word
    the reader cannot miss so nobody mistakes the example for their own.
 
+   WHAT CHANGED (SITE-95, 2026-09-15). The example used to be a table this file
+   drew by hand: hairline underlines for marks, 64px photo stamps, four
+   identical outline buttons, and at 375 a scroller that cropped the second home
+   through its own address. The 2026-09-12 table scored that 46 with
+   demoMatch false. The example is now whatever the CALLER hands in — on
+   /compare it is `app/compare/_v3/CompareSheet.client.tsx`, the installed
+   shadcn Table and shadcn Carousel painted with house tokens. This pattern
+   keeps what it was always for: the headline, the one-sentence claim, the
+   visible SAMPLE label, the tray, and the §0 trace under all of it.
+
    NOT A SIXTH SECTION ON A PAGE THAT HAS ONE. This replaces a Quiet block on
    /compare; it does not sit beside one. Any tool with a bounded tray and an
    output worth previewing takes it: a saved-search tray, a comp picker.
 
    HONESTY IS STRUCTURAL. `sample.label` is a required string and it renders as
    visible words beside the example, not as a styling cue — a faded table is
-   not a disclosure. The columns are whatever the caller read live, and the
-   caller's §0 trace rides under them in the same disclosure every other
-   pattern uses.
+   not a disclosure. No label, no example: the tray stands in instead, and the
+   caller's §0 trace still renders.
    =========================================================================== */
 
+import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading, V3SourceDisclosure, type V3Text } from './atoms'
 import './tokens.css'
 import './V3Slots.css'
-
-/** One column of the worked example: a real subject and its row values. */
-export type V3SlotsColumn = {
-  /** The id the tool takes for this subject. Never shown. */
-  key: string
-  /** The subject's own page. */
-  href: string
-  /** Where "add" goes without JavaScript — a real URL, so the example works
-   *  before hydration and for a reader who never gets it. */
-  addHref: string
-  /** The column head, e.g. a street address. */
-  title: string
-  /** The quieter second line under the head, e.g. a city. */
-  place?: string
-  photoUrl?: string
-  /** One value per `sample.rows` entry, in the same order. Short strings. */
-  facts: readonly string[]
-  /**
-   * Optional share, 0..1, per `sample.rows` entry — this column's value as a
-   * fraction of the largest value in that ROW. Drawn as a length under the
-   * figure, so a reader sees which home is biggest before reading a numeral.
-   *
-   * The CALLER computes it, from the same numbers it formatted into `facts`
-   * (the rule every encoded primitive here follows: the component never does
-   * arithmetic it could then disagree with the trace about). `null` on a row
-   * that a length would not teach anything about — a year built, where four
-   * homes all sit at 99% of the newest — and the cell prints the value alone.
-   */
-  weights?: readonly (number | null)[]
-}
 
 /** What is in a slot right now. */
 export type V3SlotsFill = {
@@ -79,6 +59,13 @@ export type V3SlotsProps = {
   eyebrow?: string
   /** One sentence saying what the tool does. Not a paragraph. */
   claim: string
+  /**
+   * The door at the end of the claim: where a reader goes to pick their own
+   * subjects. A real anchor, because the tray that used to carry that link is
+   * withheld while the sample is the opening (SITE-65) and a landing state with
+   * no way out is a dead end.
+   */
+  claimAction?: { label: string; href: string }
   /** How many subjects the tool holds. Clamped to 2..6. */
   slots: number
   /** The filled slots, in order. Anything past `slots` is ignored. */
@@ -92,24 +79,21 @@ export type V3SlotsProps = {
     label: string
     /** One sentence under the label. */
     caption: string
-    /** The compared fields, in row order. */
-    rows: readonly string[]
-    columns: readonly V3SlotsColumn[]
-    /** The words on each column's add control. */
-    addLabel: string
   }
+  /**
+   * The worked example: the tool's REAL output, rendered by the caller. On
+   * /compare this is the shadcn-table + shadcn-carousel compare sheet. Omit it
+   * (or omit `sample.label`) and the tray stands in — this pattern never draws
+   * half an example.
+   */
+  example?: ReactNode
   /** The full section 0 trace for the example's figures, behind "Source". */
   source: string
-  /** Called with a column key when the reader adds it. The navigation still
-   *  happens through `addHref`; this only keeps a local tray in step. */
-  onAdd?: (key: string) => void
   className?: string
 }
 
 const MIN_SLOTS = 2
 const MAX_SLOTS = 6
-/** Four columns is the widest an example stays legible at 375 in a scroller. */
-const MAX_COLUMNS = 4
 
 export function V3Slots({
   id,
@@ -117,23 +101,22 @@ export function V3Slots({
   headingLevel = 2,
   eyebrow,
   claim,
+  claimAction,
   slots,
   filled,
   emptyLabel,
   emptyHref,
   sample,
+  example,
   source,
-  onAdd,
   className,
 }: V3SlotsProps) {
   const count = Math.max(MIN_SLOTS, Math.min(MAX_SLOTS, Math.round(slots)))
   const taken = (filled ?? []).slice(0, count)
-  const columns = sample.columns.filter((c) => c.key && c.title.trim()).slice(0, MAX_COLUMNS)
-  const rows = sample.rows.map((r) => r.trim()).filter(Boolean)
   const sampleLabel = sample.label.trim()
   // A worked example with no label is an example nobody was told about, which
   // is the one thing this pattern exists to prevent. No label, no example.
-  const showSample = columns.length > 0 && rows.length > 0 && sampleLabel.length > 0
+  const showSample = example != null && sampleLabel.length > 0
 
   const headingId = `${id}-heading`
   /* SITE-65: an all-empty tray above the sample is four dashed boxes the
@@ -154,7 +137,14 @@ export function V3Slots({
         <V3Heading level={headingLevel} id={headingId} className="v3-slots__headline">
           {headline}
         </V3Heading>
-        <p className="v3-slots__claim">{claim}</p>
+        <p className="v3-slots__claim">
+          {claim}
+          {claimAction ? (
+            <a className="v3-slots__claim-action" href={claimAction.href}>
+              {claimAction.label}
+            </a>
+          ) : null}
+        </p>
 
         {showSample ? (
           <figure className="v3-slots__sample">
@@ -162,91 +152,7 @@ export function V3Slots({
               <span className="v3-slots__sample-tag">{sampleLabel}</span>
               <span className="v3-slots__sample-caption">{sample.caption}</span>
             </figcaption>
-
-            {/* The example is a real table with a real header row, so a screen
-                reader gets the same object a sighted reader does. It scrolls
-                inside itself at 375; the page never scrolls sideways. */}
-            <div className="v3-slots__scroller">
-              <table className="v3-slots__table">
-                <caption className="v3-slots__table-caption">
-                  {sampleLabel}: {sample.caption}
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col" className="v3-slots__rowhead">
-                      <span className="v3-slots__sr">What is compared</span>
-                    </th>
-                    {columns.map((c) => (
-                      <th scope="col" key={`h-${c.key}`} className="v3-slots__col">
-                        {c.photoUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- one
-                          // remote MLS photo per example column, already sized by
-                          // the CSS; next/image would add a loader round trip to a
-                          // block that is deliberately cheap.
-                          <img
-                            className="v3-slots__photo"
-                            src={c.photoUrl}
-                            alt=""
-                            loading="lazy"
-                            decoding="async"
-                          />
-                        ) : null}
-                        <a className="v3-slots__col-title" href={c.href}>
-                          {c.title}
-                        </a>
-                        {c.place ? <span className="v3-slots__col-place">{c.place}</span> : null}
-                        {/* The add sits with the home it adds, in the head, not
-                            in a row at the bottom of the table: a control the
-                            reader has to scroll past every value to reach is a
-                            control most readers never see. */}
-                        <a
-                          className="v3-slots__add"
-                          href={c.addHref}
-                          onClick={() => onAdd?.(c.key)}
-                        >
-                          {sample.addLabel}
-                          <span className="v3-slots__sr"> — {c.title}</span>
-                        </a>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row, r) => (
-                    <tr key={`r-${row}`}>
-                      <th scope="row" className="v3-slots__rowhead">
-                        {row}
-                      </th>
-                      {columns.map((c) => {
-                        const weight = c.weights?.[r]
-                        const encoded =
-                          typeof weight === 'number' && Number.isFinite(weight) && weight > 0
-                            ? Math.min(1, weight)
-                            : null
-                        return (
-                          <td key={`c-${c.key}-${r}`} className="v3-slots__cell">
-                            <span className="v3-slots__value">{c.facts[r] ?? '—'}</span>
-                            {/* The length under the figure. Four numbers in a
-                                row of hairlines is a table wearing hairlines
-                                (TASTE.md); the same four with a mark each is a
-                                comparison you can read at a glance. */}
-                            {encoded != null ? (
-                              <span
-                                className="v3-slots__bar"
-                                aria-hidden="true"
-                                style={{ ['--v3-slots-w' as string]: String(encoded) }}
-                              >
-                                <span className="v3-slots__bar-fill" />
-                              </span>
-                            ) : null}
-                          </td>
-                        )
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {example}
           </figure>
         ) : null}
 

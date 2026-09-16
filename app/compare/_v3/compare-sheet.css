@@ -1,0 +1,449 @@
+/* ===========================================================================
+   THE COMPARE SHEET — shadcn Table + shadcn Carousel, painted with house
+   tokens. Styles for app/compare/_v3/CompareSheet.client.tsx and nothing else.
+
+   Every colour, rule weight, radius and duration below resolves from
+   components/site/v3/tokens.css. No brand hex, no second palette, no
+   elevation shadow: the kit keeps its interaction (hover, data-state=selected,
+   embla prev/next) and loses its stone greys.
+
+   THE SHEET IS WIDER THAN THE TEXT MEASURE ON PURPOSE. Four homes inside a
+   72rem column leave 226px per photograph, which is the "64px stamp" the
+   2026-09-12 table named, one size up. The instrument gets its own width and
+   the prose above it keeps the reading measure — the oldest trick in an
+   editorial data page, and the reason the houses are finally big enough to
+   look at.
+   =========================================================================== */
+
+.compare-sheet {
+  display: grid;
+  gap: var(--v3-space-sm);
+  /* Out to the section's own gutter at phone widths: at 375 the instrument
+     touches the same edge the breadcrumb rule does, which buys each of the two
+     photographs ~40px it did not have. Parent-relative, never viewport-
+     relative, so a scrollbar can never turn the bleed into sideways scroll. */
+  width: calc(100% + 2 * var(--v3-gutter));
+  margin-inline: calc(-1 * var(--v3-gutter));
+}
+
+/* Past 1400px the page has at least 124px of margin either side of the 72rem
+   measure, so the sheet may take 64px of it and still clear a scrollbar. That
+   is the difference between a 248px photograph and a 280px one — the houses
+   are the product, and the instrument gets the width the prose does not need. */
+@media (min-width: 87.5rem) {
+  .compare-sheet {
+    width: calc(100% + 8rem);
+    margin-inline: -4rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   THE READING — the sentence the columns add up to.
+   -------------------------------------------------------------------------- */
+.v3 .compare-sheet__reading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--v3-space-2xs) var(--v3-space-sm);
+  margin: 0;
+  padding-bottom: var(--v3-space-xs);
+  border-bottom: var(--v3-rule-hairline);
+  color: var(--v3-ink);
+}
+
+.v3 .compare-sheet__reading-label {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .compare-sheet__reading-body {
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   THE PICKER — which homes are in the sheet.
+   -------------------------------------------------------------------------- */
+.v3 .compare-sheet__picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+}
+
+.v3 .compare-sheet__picker-label {
+  margin-right: var(--v3-space-2xs);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .compare-sheet__pick {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: var(--v3-rule-hairline);
+  border-color: color-mix(in srgb, var(--v3-navy) 25%, transparent);
+  border-radius: var(--v3-radius-control);
+  background: transparent;
+  color: var(--v3-ink-muted);
+  font: inherit;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  cursor: pointer;
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out),
+    border-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .compare-sheet__pick:hover {
+  border-color: var(--v3-navy);
+  color: var(--v3-ink);
+}
+
+.v3 .compare-sheet__pick[aria-pressed='true'] {
+  background: var(--v3-navy);
+  border-color: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+}
+
+.v3 .compare-sheet__pick:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+/* --------------------------------------------------------------------------
+   THE TABLE — shadcn's object, house paint.
+   -------------------------------------------------------------------------- */
+.v3 .compare-sheet [data-slot='table-container'] {
+  overflow-x: visible;
+  border-top: var(--v3-rule-section);
+}
+
+.v3 .compare-sheet [data-slot='table'] {
+  table-layout: fixed;
+  width: 100%;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3 .compare-sheet [data-slot='table-header'] .compare-sheet__head-row {
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.v3 .compare-sheet [data-slot='table-row'] {
+  border-color: var(--v3-hairline);
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* The kit's own hover and selected states, in navy instead of stone. Resting
+   on a row lifts that one field across every home out of the field — the
+   reading a comparison table is for. */
+.v3 .compare-sheet [data-slot='table-body'] [data-slot='table-row']:hover {
+  background: color-mix(in srgb, var(--v3-navy) 5%, transparent);
+}
+
+.v3 .compare-sheet [data-slot='table-body'] [data-slot='table-row'][data-state='selected'] {
+  background: color-mix(in srgb, var(--v3-navy) 8%, transparent);
+}
+
+.v3 .compare-sheet [data-slot='table-row']:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: calc(-1 * var(--v3-focus-width));
+}
+
+.v3 .compare-sheet__rowhead {
+  width: 6.25rem;
+  height: auto;
+  padding: var(--v3-space-xs) var(--v3-space-sm) var(--v3-space-xs) 0;
+  text-align: left;
+  vertical-align: top;
+  white-space: normal;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .compare-sheet__corner {
+  border-bottom: 0;
+}
+
+.v3 .compare-sheet__col {
+  height: auto;
+  padding: 0 var(--v3-space-xs) var(--v3-space-sm) 0;
+  text-align: left;
+  vertical-align: bottom;
+  white-space: normal;
+  font-weight: var(--v3-weight-body);
+  color: var(--v3-ink);
+}
+
+.v3 .compare-sheet__col-title {
+  display: block;
+  margin-top: var(--v3-space-xs);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-strong);
+  line-height: var(--v3-leading-heading);
+  color: var(--v3-ink);
+  text-decoration: none;
+}
+
+.v3 .compare-sheet__col-title:hover,
+.v3 .compare-sheet__col-title:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.v3 .compare-sheet__col-place,
+.v3 .compare-sheet__col-facts {
+  display: block;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-body);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   THE PHOTO STRIP — shadcn carousel, one per home.
+   -------------------------------------------------------------------------- */
+.v3 .compare-sheet__strip {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.v3 .compare-sheet__strip [data-slot='carousel-content'] {
+  overflow: hidden;
+  width: 100%;
+}
+
+.v3 .compare-sheet__strip-track {
+  display: flex;
+  touch-action: pan-y pinch-zoom;
+}
+
+.v3 .compare-sheet__strip-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+.v3 .compare-sheet__photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  background: var(--v3-hairline);
+}
+
+ /* The steps ride ON the photograph, bottom left. A 44px row under every
+    column cost the first viewport three comparison rows, and shadcn's own
+    demo overlays its prev/next on the frame rather than stacking them
+    beneath it. */
+.v3 .compare-sheet__strip-nav {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: color-mix(in srgb, var(--v3-navy) 92%, transparent);
+}
+
+.v3 .compare-sheet__step {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  border-radius: var(--v3-radius-control);
+  background: transparent;
+  color: var(--v3-ink-on-navy);
+  cursor: pointer;
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .compare-sheet__step:hover:not(:disabled) {
+  background: var(--v3-pressed);
+  color: var(--v3-ink-on-navy);
+}
+
+.v3 .compare-sheet__step:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.v3 .compare-sheet__step:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3 .compare-sheet__strip-count {
+  padding: 0 var(--v3-space-3xs);
+  font-family: var(--v3-font-mono);
+  font-size: var(--v3-size-label);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink-on-navy-muted);
+}
+
+/* The add rides on the house, top right of its photograph. */
+.v3 .compare-sheet__add {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-3xs);
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+  text-decoration: none;
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .compare-sheet__add:hover,
+.v3 .compare-sheet__add:focus-visible {
+  background: var(--v3-pressed);
+}
+
+.v3 .compare-sheet__add:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3 .compare-sheet__add-glyph {
+  font-family: var(--v3-font-mono);
+  font-size: var(--v3-size-body);
+}
+
+/* --------------------------------------------------------------------------
+   THE CELLS — a value, a length, and (on the field being read) the extreme.
+   -------------------------------------------------------------------------- */
+.v3 .compare-sheet__cell {
+  padding: var(--v3-space-xs) var(--v3-space-xs) var(--v3-space-xs) 0;
+  vertical-align: top;
+  white-space: normal;
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink);
+}
+
+.v3 .compare-sheet__value {
+  display: block;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-heading);
+}
+
+/* The value drawn as a length: this home's share of the largest in its row.
+   Not a hairline underline — a mark you read before you read the numeral. */
+.v3 .compare-sheet__bar {
+  display: block;
+  height: 0.4rem;
+  margin-top: var(--v3-space-3xs);
+  background: color-mix(in srgb, var(--v3-navy) 10%, transparent);
+}
+
+.v3 .compare-sheet__bar-fill {
+  display: block;
+  height: 100%;
+  width: calc(var(--compare-w, 0) * 100%);
+  background: color-mix(in srgb, var(--v3-navy) 45%, transparent);
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .compare-sheet [data-slot='table-row']:hover .compare-sheet__bar-fill,
+.v3 .compare-sheet [data-slot='table-row'][data-state='selected'] .compare-sheet__bar-fill {
+  background: var(--v3-navy);
+}
+
+.v3 .compare-sheet__mark {
+  display: block;
+  margin-top: var(--v3-space-3xs);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-navy);
+}
+
+.v3 .compare-sheet__caption {
+  margin-top: var(--v3-space-sm);
+  text-align: left;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .compare-sheet__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   375 — two homes, never a cropped column.
+   -------------------------------------------------------------------------- */
+@media (max-width: 56rem) {
+  .compare-sheet {
+    gap: var(--v3-space-xs);
+  }
+
+  /* The TABLE bleeds to the edge at 375 — that is 40px of photograph. The
+     prose around it does not: a control touching the viewport edge reads as a
+     clipped control (2026-09-15 capture, the fourth picker pill). */
+  .v3 .compare-sheet__reading,
+  .v3 .compare-sheet__picker,
+  .v3 .compare-sheet__caption {
+    padding-inline: var(--v3-gutter);
+  }
+
+  .v3 .compare-sheet__rowhead {
+    width: 4rem;
+    padding-right: var(--v3-space-xs);
+    font-size: var(--v3-size-label);
+  }
+
+  .v3 .compare-sheet__picker-label {
+    margin-right: var(--v3-space-3xs);
+  }
+
+  .v3 .compare-sheet__pick {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 0 var(--v3-space-xs);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3 .compare-sheet__pick,
+  .v3 .compare-sheet__step,
+  .v3 .compare-sheet__add,
+  .v3 .compare-sheet__bar-fill,
+  .v3 .compare-sheet [data-slot='table-row'] {
+    transition: none;
+  }
+}
