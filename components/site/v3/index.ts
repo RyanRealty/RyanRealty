@@ -469,6 +469,16 @@ export type { V3MorphSearchProps, V3MorphSearchItem } from './V3MorphSearch'
 export { V3Number } from './V3Number.client'
 export type { V3NumberProps } from './V3Number.client'
 /**
+ * Scroll-entered MEDIA (SITE-116). Catalog job beui-scroll-animation: the
+ * installed `components/motion/scroll-reveal.tsx`, on the house motion ladder
+ * (300ms, ≤16px travel, ease-out, reduced motion respected). It takes `media`
+ * and not `children` on purpose — the catalog component serves its child at
+ * opacity 0 until it is scrolled to, so a photograph or a drawn mark may go
+ * inside it and a word may not.
+ */
+export { V3Reveal } from './V3Reveal.client'
+export type { V3RevealProps } from './V3Reveal.client'
+/**
  * Dual-thumb tick range (SITE-72). Catalog job beui-range-slider: tick stops,
  * navy fill, bounce reduced to the house 120ms ease-out. Wired from search.
  */

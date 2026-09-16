@@ -411,6 +411,19 @@
   height: 100%;
   object-fit: cover;
 }
+/* SITE-116 round 2: a type with no cover photograph gets a drawn mark
+   centred in the same frame, instead of a blank wash panel. It arrives on
+   scroll (V3Reveal, the installed beUI scroll animation); a photograph never
+   does, because a photograph caught mid-entrance is an empty box. */
+.place-type-card__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: currentColor;
+  opacity: 0.55;
+}
 .place-type-card.is-active {
   background: var(--v3-navy);
   color: var(--v3-cream);

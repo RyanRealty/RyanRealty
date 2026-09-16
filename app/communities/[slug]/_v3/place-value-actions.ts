@@ -175,7 +175,8 @@ export async function answerPlaceValue(input: PlaceValueAnswerInput): Promise<Pl
 
   const stamp = answer?.asOf ? `; updated ${formatDate(answer.asOf)}` : ''
   const source =
-    `regional MLS through Oregon Data Share, read through the Market Truth metric layer: detached single-family homes assigned to ${place.name} by boundary membership; ` +
+    // SITE-116 round 2: the feed, not our metric layer's internal name.
+    `regional MLS through Oregon Data Share: detached single-family homes assigned to ${place.name} by boundary membership; ` +
     `comparable sales from the Ryan Realty CMA engine${stamp}`
 
   return {

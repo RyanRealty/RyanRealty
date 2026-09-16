@@ -6,4 +6,9 @@ describe('community-catalog SITE-94', () => {
     const src = readFileSync(new URL('./community-catalog.ts', import.meta.url), 'utf8')
     expect(src).toMatch(/from ['"]@\/components\/motion\/number['"]/)
   })
+
+  it('imports the installed beui scroll-animation source (SITE-116 round 2)', () => {
+    const src = readFileSync(new URL('./community-catalog.ts', import.meta.url), 'utf8')
+    expect(src).toMatch(/from ['"]@\/components\/motion\/scroll-reveal['"]/)
+  })
 })

@@ -24,8 +24,18 @@
 import type { V3QuietItem } from '@/components/site/v3'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import type { PlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
+import type { SubdivisionSchool } from '@/lib/data/subdivisions/getSubdivisionSchools'
+import { findSchoolByName } from '@/data/co-schools'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import { measuredPlaceHoaInput } from './place-hoa-measured'
+
+/** The visitor's word for each MLS school level. `district` prints as prose below. */
+const SCHOOL_LEVEL_LABEL: Record<SubdivisionSchool['level'], string> = {
+  elementary: 'Elementary',
+  middle: 'Middle',
+  high: 'High school',
+  district: 'District',
+}
 
 type Registry = {
   subdivision_aliases?: string[]
@@ -116,6 +126,12 @@ export function placeKnowledgeSource(input: {
     : authored
 }
 
+/** Small counts read as words in a sentence, larger ones as digits. */
+const SMALL_NUMBER_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+function spelledOut(n: number): string {
+  return n >= 0 && n < SMALL_NUMBER_WORDS.length ? SMALL_NUMBER_WORDS[n]! : n.toLocaleString('en-US')
+}
+
 function childPlatItems(input: {
   name: string
   aliases: readonly string[]
@@ -151,6 +167,12 @@ export function buildPlaceKnowledge(input: {
   registry: Registry | null
   schoolDistrictName: string | null
   schoolDistrictSlug: string | null
+  /**
+   * The assigned schools this community's OWN listings report, already through
+   * getSubdivisionSchools' §0 threshold (>= 10 listings carrying the field,
+   * >= 70% agreeing). Absent or empty is the normal case and prints nothing.
+   */
+  namedSchools?: readonly SubdivisionSchool[]
   isResort: boolean
   /**
    * True only when the published count WAS built from the alias set, the page's
@@ -246,6 +268,21 @@ export function buildPlaceKnowledge(input: {
     .filter((d) => Number.isFinite(d.minutes) && d.destination)
     .sort((a, b) => a.minutes - b.minutes)
   const longestDrive = drives.reduce((max, d) => Math.max(max, d.minutes), 0)
+  if (drives.length > 0) {
+    // SAY WHAT THE LINE IS (SITE-116 round 2, 2026-09-16). Each drive row
+    // already draws its minutes as a length — the share of the longest drive
+    // in the set — and an evaluator read the result as "a decorative hairline
+    // underline that carries no visible encoding to any value". A drawing
+    // nobody is told how to read is a drawing that is not doing its job
+    // (PLACE_PAGES.md rule 7: labels are the question a non-broker asks). One
+    // sentence turns the same marks into a chart, and it also gives the run of
+    // facts above it somewhere to end.
+    items.push({
+      kind: 'prose',
+      term: 'How far to what',
+      body: `Nearest first. The line under each name is that drive against the longest one here, so the set reads as one comparison instead of ${spelledOut(drives.length)} separate numbers.`,
+    })
+  }
   for (const drive of drives) {
     items.push({
       kind: 'fact',
@@ -308,7 +345,29 @@ export function buildPlaceKnowledge(input: {
    * how the configs record "on application"; the row then prints the status
    * alone rather than a dash pretending to be a figure.
    */
-  for (const tier of content?.membershipTiers ?? []) {
+  const tiersToPrint = (content?.membershipTiers ?? []).filter((tier) => {
+    const label = String(tier.name ?? tier.tier ?? tier.label ?? '').trim()
+    if (!label) return false
+    const rawPrice = tier.price == null || tier.price === '' ? '' : String(tier.price).trim()
+    const price = rawPrice && !/[—–]/.test(rawPrice) ? rawPrice : ''
+    const status = tier.waitlist_status ? String(tier.waitlist_status).trim() : ''
+    return Boolean(price || status)
+  })
+  if (tiersToPrint.length > 0) {
+    // A BEAT, NOT A NEW CLAIM (SITE-116 round 2). The membership rows used to
+    // begin mid-run, directly under the course's bunker-sand source, with
+    // nothing to say the subject had changed — which is how a section of real
+    // structured facts reads as one undifferentiated spec sheet. The lead-in
+    // states only what is already true of the rows beneath it: these are the
+    // tiers the community publishes, and a price we do not hold is not
+    // invented into one.
+    items.push({
+      kind: 'prose',
+      term: 'Membership',
+      body: `The tiers ${name} publishes, as published. A tier whose price is on application prints its waitlist status and no figure — we do not put a number on it.`,
+    })
+  }
+  for (const tier of tiersToPrint) {
     const label = String(tier.name ?? tier.tier ?? tier.label ?? '').trim()
     if (!label) continue
     const rawPrice = tier.price == null || tier.price === '' ? '' : String(tier.price).trim()
@@ -330,6 +389,51 @@ export function buildPlaceKnowledge(input: {
     .map((b) => String(b.name ?? '').trim())
     .filter(Boolean)
   if (builders.length > 0) items.push({ kind: 'chips', term: 'Builders', labels: builders })
+
+  /**
+   * THE SCHOOLS BY NAME (SITE-116 round 2, 2026-09-16; competitive brief beat
+   * 7 asks for schools "named and sourced, never a walk-score tile"). The
+   * district alone was all this block carried, and "Bend-La Pine Schools" is
+   * not the fact a buyer with a seven-year-old is looking for.
+   *
+   * THE SOURCE IS THE MLS, AND THE THRESHOLD IS THE HONESTY. These come from
+   * getSubdivisionSchools — the modal school field across THIS community's own
+   * listings through Oregon Data Share — and a level only publishes when at
+   * least SCHOOL_MIN_SAMPLES listings carry the field and at least
+   * SCHOOL_MIN_AGREEMENT of them agree. A split assignment publishes nothing
+   * rather than a guess, which is why /subdivisions has shipped the same read
+   * since W2.4. Each row prints its own evidence — the count that agreed over
+   * the count that carried a value — so the claim can be checked on the page,
+   * and the district sentence below still carries the "confirm by address"
+   * caveat that governs all of them. Nothing here is authored, estimated, or
+   * recalled: a community whose listings do not clear the bar prints the
+   * district and stops.
+   */
+  const namedSchools = (input.namedSchools ?? []).filter((s) => s.name?.trim() && s.level !== 'district')
+  if (namedSchools.length > 0) {
+    items.push({
+      kind: 'prose',
+      term: 'Schools by name',
+      body: `The assignment the homes here report to the MLS. It is by address, not by community, so confirm it for a specific house before you rely on it.`,
+    })
+    for (const school of namedSchools) {
+      const schoolName = school.name.trim()
+      items.push({
+        kind: 'fact',
+        term: SCHOOL_LEVEL_LABEL[school.level],
+        value: schoolName,
+        detail: `on ${school.modalCount} of the ${school.totalCount} listings here that carry one`,
+      })
+      // The door only opens when the curated Central Oregon registry resolves
+      // the MLS spelling (data/co-schools.ts). An unresolved name stays plain
+      // text rather than becoming a link to a page that does not exist — the
+      // same rule /subdivisions has followed since W2.4.
+      const registered = findSchoolByName(schoolName)
+      if (registered) {
+        items.push({ label: `${registered.name} school page`, href: `/schools/${registered.slug}` })
+      }
+    }
+  }
 
   if (input.schoolDistrictName) {
     items.push({

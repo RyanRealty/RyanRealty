@@ -52,6 +52,55 @@ const CURATED_COMMUNITY_PHOTOS: Record<string, readonly PlacePhoto[]> = {
   'vandevert-ranch': [{ src: '/images/communities/vandevert-ranch.jpg', alt: 'Vandevert Ranch on the Little Deschutes' }],
 }
 
+/**
+ * A frame OF ONE NAMED PLACE on the board, keyed by the board row's key
+ * (SITE-116 round 2, 2026-09-16). The evaluator's finding was that six of
+ * nine Tetherow places render as photo-less text cards while the resort's own
+ * homepage is a grid of photo tiles, and Matt's words were "there should be
+ * some imagery, we can't just have walls of text".
+ *
+ * THE RULE THIS MAP OBEYS, AND WHY IT IS SHORT. A photograph on a tile is a
+ * claim that the frame shows THAT place. The three Tetherow frames we own are
+ * all of the golf course, so the golf tile gets one and the café, the spa, the
+ * sport centre, the courts, the Nordic loops, the two restaurants and Shevlin
+ * Park get none — because we hold none. A generated still is not a
+ * photograph either: `pickLibraryPhotos` already refuses `source:
+ * 'grok-imagine'`, and nothing here reaches around that. A tile with no frame
+ * renders the board's designed place mark (V3PlaceAmenities), which says "we
+ * have not photographed this yet" honestly instead of showing an empty box or
+ * a picture of somewhere else.
+ *
+ * The other way a tile gets a real photograph needs no entry here: when the
+ * row carries a `blog_slug` and we have published a guide about that place,
+ * the page puts the guide's own cover on the tile. NorthWest Crossing's two
+ * parks arrive that way.
+ */
+const CURATED_PLACE_TILE_PHOTOS: Record<string, Record<string, PlacePhoto>> = {
+  tetherow: {
+    'golf-course': {
+      src: '/lp/tetherow/img/tetherow-aerial-course.jpg',
+      alt: 'The Tetherow course from the air: fairways, sagebrush rough, and the homes along them',
+    },
+  },
+  heath: {
+    'golf-course': {
+      src: '/lp/tetherow/img/tetherow-course-118.jpg',
+      alt: 'A fairway at Tetherow, fescue and sagebrush on both sides',
+    },
+  },
+}
+
+/**
+ * The frame for one board row, or null. Pure and synchronous: the map is
+ * authored, so a caller never waits on it and a missing entry is the normal
+ * case rather than a failure.
+ */
+export function curatedPlaceTilePhoto(slug: string, key: string | null | undefined): PlacePhoto | null {
+  const k = key?.trim()
+  if (!k) return null
+  return CURATED_PLACE_TILE_PHOTOS[slug]?.[k] ?? null
+}
+
 export type ManifestAsset = {
   type?: string
   /** Where the frame came from: 'curated', 'pexels', 'grok-imagine', … */
@@ -135,19 +184,28 @@ function normalize(src: string): string {
 
 /**
  * Up to `limit` photographs of the place, curated frames first, then graded
- * library photos, never the frame already used as the hero.
+ * library photos, never a frame already spent elsewhere on the page.
+ *
+ * `excludeSrc` takes one path or several: the fold's hero, and (SITE-116 round
+ * 2) any frame already standing on a board tile. A frame on the tile of the
+ * place it shows beats the same frame in a general strip, so the strip yields
+ * it rather than printing it twice.
  */
 export async function getPlacePhotoStrip(
   slug: string,
-  options: { excludeSrc?: string | null; limit?: number } = {},
+  options: { excludeSrc?: string | readonly (string | null | undefined)[] | null; limit?: number } = {},
 ): Promise<PlacePhoto[]> {
   const limit = options.limit ?? 3
-  const exclude = options.excludeSrc ? normalize(options.excludeSrc) : null
+  const excluded = new Set(
+    (Array.isArray(options.excludeSrc) ? options.excludeSrc : [options.excludeSrc])
+      .map((s) => (typeof s === 'string' && s.trim() ? normalize(s) : null))
+      .filter((s): s is string => Boolean(s)),
+  )
   const out: PlacePhoto[] = []
   const seen = new Set<string>()
   const push = (photo: PlacePhoto) => {
     const key = normalize(photo.src)
-    if (!key || seen.has(key) || key === exclude) return
+    if (!key || seen.has(key) || excluded.has(key)) return
     seen.add(key)
     out.push(photo)
   }

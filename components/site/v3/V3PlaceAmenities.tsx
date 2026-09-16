@@ -42,8 +42,65 @@
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { V3Eyebrow, V3Heading, V3Lede, V3SourceDisclosure, V3_ROOT_CLASS } from './atoms'
+import { V3Icon, type V3IconName } from './V3Icon'
+import { V3Number } from './V3Number.client'
+import { V3Reveal } from './V3Reveal.client'
 import './tokens.css'
 import './V3PlaceAmenities.css'
+
+/**
+ * THE KIND'S MARK (SITE-116 round 2, 2026-09-16). A board tile we hold no
+ * photograph of used to be type alone, and nine of those in a grid is the
+ * "wall of text" Matt named beside a resort homepage that is nothing but photo
+ * tiles. It is ALSO not something we can fix by inventing a picture: a frame
+ * on a tile is a claim that the frame shows that place, and the asset rule
+ * excludes generated stills outright (lib/place-photos.ts).
+ *
+ * So the honest state is a DRAWN one. Every kind a community config uses —
+ * measured across all 27 of them on 2026-09-16: Recreation 54, Parks 24, Golf
+ * 22, Schools 20, Dining 16, Landmark 10, Wellness 9, Other 8, Shopping 5, and
+ * one each of Events, Education, Fitness, Racquet, Winter, Trails — resolves
+ * to an Iconoir stroke mark from the house set, and anything unmapped falls to
+ * the building. The mark is deliberately SMALL: it sits where a photograph
+ * would start, at a control's height, so a tile that has a photograph plainly
+ * has one and a tile that does not is plainly a drawing rather than a grey box
+ * pretending to be a picture that failed to load.
+ */
+const KIND_MARK: Record<string, V3IconName> = {
+  golf: 'Golf',
+  dining: 'Cutlery',
+  restaurants: 'Cutlery',
+  food: 'Cutlery',
+  cafe: 'CoffeeCup',
+  coffee: 'CoffeeCup',
+  parks: 'Leaf',
+  park: 'Leaf',
+  trails: 'PineTree',
+  trail: 'PineTree',
+  recreation: 'Walking',
+  schools: 'Book',
+  school: 'Book',
+  education: 'Book',
+  wellness: 'Flower',
+  spa: 'Flower',
+  fitness: 'Gym',
+  racquet: 'TennisBall',
+  tennis: 'TennisBall',
+  winter: 'Snow',
+  shopping: 'Shop',
+  retail: 'Shop',
+  events: 'Calendar',
+  landmark: 'MapPin',
+  lodging: 'Home',
+  other: 'Building',
+  'on site': 'Building',
+}
+
+/** The mark for a kind, always something: an unmapped kind is the building. */
+export function amenityKindMark(category: string | null | undefined): V3IconName {
+  const key = category?.trim().toLowerCase() ?? ''
+  return KIND_MARK[key] ?? 'Building'
+}
 
 /** One recorded place inside the place this section sits on. */
 export type V3PlaceAmenity = {
@@ -185,20 +242,54 @@ function AmenityTile({
   row,
   kind,
   anchorId,
+  step,
 }: {
   row: V3PlaceAmenityGroup['rows'][number]
   kind: string
   /** Set on the first tile of a kind: the chip in the head lands here. */
   anchorId?: string
+  /** Reveal position, so a row of tiles does not all arrive on one frame. */
+  step: number
 }) {
   const door = row.door
   const image = row.image && row.image.src?.trim() ? row.image : null
   return (
-    <li className={cn('v3-place-amenities__tile', image && 'v3-place-amenities__tile--pictured')} id={anchorId}>
+    <li
+      className={cn(
+        'v3-place-amenities__tile',
+        image ? 'v3-place-amenities__tile--pictured' : 'v3-place-amenities__tile--marked',
+      )}
+      id={anchorId}
+    >
+      {/* A PHOTOGRAPH IS NEVER BEHIND THE REVEAL; A DRAWN MARK ALWAYS IS.
+          The catalog component serves its child at `opacity: 0` until the
+          element is scrolled to, and measured on 2026-09-16 the Tetherow
+          course frame came back BLANK in three separate capture runs while the
+          same tile photographed perfectly in a hand-driven browser — a record
+          can catch an entrance that a reader would not. On a board whose whole
+          job this round is imagery, a photograph that any reader, crawler or
+          record can catch as an empty box is not a trade worth 300ms of
+          motion. So the frame is plain, always-on, first-byte HTML.
+          The mark is the opposite case: it is a drawing, it costs nothing if a
+          reader never sees it arrive, and eight of Tetherow's nine tiles carry
+          one — so the board still shows the catalog's interaction, staggered
+          across the grid, on the elements where being late is free. */}
       {image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img className="v3-place-amenities__photo" src={image.src} alt={image.alt} loading="lazy" decoding="async" />
-      ) : null}
+        <div className="v3-place-amenities__media">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="v3-place-amenities__photo" src={image.src} alt={image.alt} loading="lazy" decoding="async" />
+        </div>
+      ) : (
+        <V3Reveal
+          className="v3-place-amenities__media"
+          step={step}
+          media={
+            <span className="v3-place-amenities__mark">
+              <V3Icon name={amenityKindMark(kind)} size={24} />
+            </span>
+          }
+        />
+      )}
       <p className="v3-place-amenities__kind">{kind}</p>
       <h3 className="v3-place-amenities__name">{row.name}</h3>
       {row.description ? <p className="v3-place-amenities__line">{row.description}</p> : null}
@@ -270,12 +361,18 @@ export function V3PlaceAmenities({
         {groups.length > 1 ? (
           <nav className="v3-place-amenities__index" aria-label={`${title}: by kind`}>
             <ul className="v3-place-amenities__chips">
+              {/* The count on each chip is the installed beUI number
+                  (components/motion/number.tsx via V3Number): it counts up to
+                  the figure the board can be checked against, and the SERVED
+                  face is already the settled figure, so a crawler and a no-JS
+                  reader never read a 0 beside a kind that has three places.
+                  aria-hidden because the list under the chip is the count. */}
               {groups.map((group) => (
                 <li key={group.id}>
                   <a className="v3-place-amenities__chip" href={`#${group.id}`}>
                     {group.category}
                     <span className="v3-place-amenities__chip-count" aria-hidden="true">
-                      {group.rows.length}
+                      <V3Number value={group.rows.length} formatted={String(group.rows.length)} />
                     </span>
                   </a>
                 </li>
@@ -287,6 +384,9 @@ export function V3PlaceAmenities({
 
       {strip.length > 0 ? (
         <figure className="v3-place-amenities__strip" data-frames={strip.length}>
+          {/* Plain, for the reason on the tile below: a photograph of the
+              place is the point of this section, and it is never put behind
+              an entrance that a record or a fast scroller can catch empty. */}
           {strip.map((photo) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -312,16 +412,25 @@ export function V3PlaceAmenities({
           sits on each tile as its eyebrow, and the chip for a kind lands on
           that kind's first tile. */}
       <ul className="v3-place-amenities__tiles">
-        {groups.flatMap((group) =>
-          group.rows.map((row, index) => (
+        {groups
+          .flatMap((group) =>
+            group.rows.map((row, index) => ({
+              row,
+              kind: group.category,
+              anchorId: index === 0 ? group.id : undefined,
+            })),
+          )
+          .map((tile, position) => (
             <AmenityTile
-              key={row.key}
-              row={row}
-              kind={group.category}
-              anchorId={index === 0 ? group.id : undefined}
+              key={tile.row.key}
+              row={tile.row}
+              kind={tile.kind}
+              anchorId={tile.anchorId}
+              // The stagger runs across the board, not inside a group, so the
+              // ramp follows the reading order a visitor actually scrolls.
+              step={position}
             />
-          )),
-        )}
+          ))}
       </ul>
 
       {trace ? (

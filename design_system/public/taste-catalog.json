@@ -116,6 +116,27 @@
     "beui:range-slider": {
       "aliasOf": "beui-range-slider"
     },
+    "beui-scroll-animation": {
+      "add": "https://beui.dev/r/scroll-reveal.json",
+      "file": "components/motion/scroll-reveal.tsx",
+      "import": "@/components/motion/scroll-reveal",
+      "house": "components/site/v3/V3Reveal.client.tsx",
+      "repo": "https://github.com/starc007/ui-components",
+      "mustContain": [
+        "ScrollReveal",
+        "useInView",
+        "blur("
+      ]
+    },
+    "beui:scroll-animation": {
+      "aliasOf": "beui-scroll-animation"
+    },
+    "beui-scroll-reveal": {
+      "aliasOf": "beui-scroll-animation"
+    },
+    "beui:scroll-reveal": {
+      "aliasOf": "beui-scroll-animation"
+    },
     "beui-number": {
       "add": "@beui/number",
       "file": "components/motion/number.tsx",
