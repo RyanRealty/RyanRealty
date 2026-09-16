@@ -28,40 +28,23 @@
  * counted in GA4 and audited in the row it created.
  */
 import { useEffect, useState, useTransition } from 'react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupText,
+} from '@/components/ui/input-group'
+import { Input as BeuiInput } from '@/components/motion/input'
+import { Button as BeuiButton } from '@/components/motion/button'
+import { ExpandingArrowButton } from '@/components/motion/expanding-arrow-button'
+import { TransitionsPanel } from '@/components/motion/transitions-panel'
 import { cn } from '@/lib/utils'
-
-type SellPin = { lat: number; lng: number; label: string }
-
-function sellStageRoot(): HTMLElement | null {
-  if (typeof document === 'undefined') return null
-  return document.getElementById('sell-hero')
-}
-
-function setSellStageFocus(mode: 'idle' | 'typing' | 'pinned') {
-  const root = sellStageRoot()
-  if (!root) return
-  if (mode === 'idle') root.removeAttribute('data-sell-focus')
-  else root.setAttribute('data-sell-focus', mode)
-}
-
-function sellPinMapUrl(pin: SellPin): string | null {
-  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim()
-  if (!key) return null
-  const params = new URLSearchParams({
-    center: `${pin.lat},${pin.lng}`,
-    zoom: '15',
-    size: '640x240',
-    scale: '2',
-    maptype: 'roadmap',
-    key,
-    // Navy pin — Google Static Maps marker color is API hex, not a CSS token.
-    markers: `color:0x102742|${pin.lat},${pin.lng}`,
-  })
-  return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`
-}
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
 import { readAskSource, withAskSource, type AskSource } from '@/lib/ask-source'
 import {
@@ -84,6 +67,21 @@ declare global {
 }
 
 type Step = 'address' | 'answer' | 'qualify' | 'when' | 'success'
+type FieldDemo = 'idle' | 'error' | 'success'
+
+type SellPin = { lat: number; lng: number; label: string }
+
+function sellStageRoot(): HTMLElement | null {
+  if (typeof document === 'undefined') return null
+  return document.getElementById('sell-hero')
+}
+
+function setSellStageFocus(mode: 'idle' | 'typing' | 'pinned') {
+  const root = sellStageRoot()
+  if (!root) return
+  if (mode === 'idle') root.removeAttribute('data-sell-focus')
+  else root.setAttribute('data-sell-focus', mode)
+}
 
 /**
  * The timeframe, as a SCALE rather than three identical boxes.
@@ -132,9 +130,15 @@ const NEAR_TERM: SellerLPTimeline = 'ready-now'
 type Props = {
   pagePath?: string
   formId?: string
+  /** Shot helper: sourced Bend answer, no dollar figure, after address. */
+  previewAnswer?: SellAnswerData | null
 }
 
-export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Props) {
+export function SellValueForm({
+  pagePath = '/sell',
+  formId = 'get-value',
+  previewAnswer = null,
+}: Props) {
   const [step, setStep] = useState<Step>('address')
   const [address, setAddress] = useState('')
   const [answer, setAnswer] = useState<SellAnswerData | null>(null)
@@ -148,19 +152,25 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
   const [isHot, setIsHot] = useState(false)
   const [bookLane, setBookLane] = useState(false)
   const [pin, setPin] = useState<SellPin | null>(null)
+  const [fieldDemo, setFieldDemo] = useState<FieldDemo>('idle')
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const addressFieldId = `${formId}-address`
+  const shownAnswer = previewOpen && previewAnswer ? previewAnswer : answer
+  const addressError =
+    fieldDemo === 'error' ? 'Please enter a complete property address.' : error
+  const addressSuccess = fieldDemo === 'success' || Boolean(pin)
 
   useEffect(() => {
-    if (step !== 'address') {
-      setSellStageFocus('idle')
+    if (step !== 'address' || previewOpen) {
+      setSellStageFocus(previewOpen ? 'pinned' : 'idle')
       return
     }
     if (pin) setSellStageFocus('pinned')
     else if (address.trim().length >= 3) setSellStageFocus('typing')
     else setSellStageFocus('idle')
     return () => setSellStageFocus('idle')
-  }, [address, pin, step])
+  }, [address, pin, previewOpen, step])
 
   /**
    * The address the visitor already typed somewhere else.
@@ -178,12 +188,16 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
    */
   useEffect(() => {
     let from = ''
+    let taste = ''
     try {
       from = new URLSearchParams(window.location.search).get('address')?.trim() ?? ''
+      taste = new URLSearchParams(window.location.search).get('taste_state')?.trim() ?? ''
     } catch {
       // no URL access (a sandboxed embed) — the field just opens empty
     }
     if (from.length >= 5) setAddress((current) => (current ? current : from))
+    if (taste === 'error' || taste === 'success') setFieldDemo(taste)
+    if (taste === 'answer') setPreviewOpen(true)
   }, [])
 
   function advanceFromAddress(e: React.FormEvent<HTMLFormElement>) {
@@ -279,9 +293,54 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
     setStep('when')
   }
 
+  const tasteStrip = (
+    <div className="sell-taste sr-only">
+      <BeuiButton
+        type="button"
+        variant="ghost"
+        data-taste="error-open"
+        onClick={() => {
+          setPreviewOpen(false)
+          setFieldDemo('error')
+          setError('Please enter a complete property address.')
+          setStep('address')
+        }}
+      >
+        Show field error
+      </BeuiButton>
+      <BeuiButton
+        type="button"
+        variant="ghost"
+        data-taste="success-open"
+        onClick={() => {
+          setPreviewOpen(false)
+          setFieldDemo('success')
+          setError(null)
+          setStep('address')
+        }}
+      >
+        Show field success
+      </BeuiButton>
+      <BeuiButton
+        type="button"
+        variant="ghost"
+        data-taste="answer-open"
+        onClick={() => {
+          setFieldDemo('idle')
+          setError(null)
+          setPreviewOpen(true)
+          setStep('address')
+        }}
+      >
+        Show sourced answer
+      </BeuiButton>
+    </div>
+  )
+
   if (step === 'success') {
     return (
       <div>
+        {tasteStrip}
         <h2 className="font-display text-2xl font-semibold text-primary">
           Got it. Your home value is on its way.
         </h2>
@@ -310,17 +369,18 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
   if (step === 'when') {
     return (
       <div>
-        <Button
+        {tasteStrip}
+        <BeuiButton
           type="button"
-          variant="link"
+          variant="ghost"
           onClick={() => {
             setError(null)
             setStep('qualify')
           }}
-          className="mb-3 h-auto justify-start p-0"
+          className="mb-3"
         >
           Back
-        </Button>
+        </BeuiButton>
         <h2 className="font-display text-xl font-semibold text-primary">
           Last thing: when are you thinking of selling?
         </h2>
@@ -358,32 +418,39 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
     )
   }
 
-  if (step === 'answer' && answer) {
+  if ((step === 'answer' && shownAnswer) || (previewOpen && shownAnswer)) {
     return (
       <div>
-        <Button
+        {tasteStrip}
+        <BeuiButton
           type="button"
-          variant="link"
+          variant="ghost"
           onClick={() => {
             setError(null)
+            setPreviewOpen(false)
             setStep('address')
           }}
-          className="mb-3 h-auto justify-start p-0"
+          className="mb-3"
         >
           Edit address
-        </Button>
-        <SellAnswer answer={answer} />
+        </BeuiButton>
+        <TransitionsPanel open id="sell-answer-panel">
+          <SellAnswer answer={shownAnswer} />
+        </TransitionsPanel>
         <p className="mt-5 text-foreground">
           The one thing that is not on this page is the price. That takes the comparable sales
           side by side, and it comes back written, inside 24 hours.
         </p>
-        <Button
+        <ExpandingArrowButton
           type="button"
-          onClick={() => setStep('qualify')}
-          className="mt-4 min-h-11 w-full text-base"
+          className="mt-4 h-12 min-h-11 w-full min-w-0"
+          onClick={() => {
+            setPreviewOpen(false)
+            setStep('qualify')
+          }}
         >
           Send me the written valuation
-        </Button>
+        </ExpandingArrowButton>
       </div>
     )
   }
@@ -391,27 +458,28 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
   if (step === 'qualify') {
     return (
       <form onSubmit={handleQualifySubmit} noValidate>
-        <Button
+        {tasteStrip}
+        <BeuiButton
           type="button"
-          variant="link"
+          variant="ghost"
           onClick={() => {
             setError(null)
             setStep(answer ? 'answer' : 'address')
           }}
-          className="mb-3 h-auto justify-start p-0"
+          className="mb-3"
         >
           {answer ? 'Back to the market read' : 'Edit address'}
-        </Button>
+        </BeuiButton>
         <p className="text-sm text-muted-foreground">{address}</p>
         <h2 className="mt-2 font-display text-xl font-semibold text-primary">
           Where should we send it?
         </h2>
 
-        <div className="mt-5 grid gap-4">
-          <div>
-            <Label htmlFor="sell-value-name">
+        <FieldGroup className="mt-5">
+          <Field>
+            <FieldLabel htmlFor="sell-value-name">
               Your name <span className="font-normal text-muted-foreground">(optional)</span>
-            </Label>
+            </FieldLabel>
             <Input
               id="sell-value-name"
               name="name"
@@ -422,9 +490,9 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
               className="mt-2 min-h-11 text-base"
               autoFocus
             />
-          </div>
-          <div>
-            <Label htmlFor="sell-value-email">Email</Label>
+          </Field>
+          <Field data-invalid={error ? true : undefined}>
+            <FieldLabel htmlFor="sell-value-email">Email</FieldLabel>
             <Input
               id="sell-value-email"
               name="email"
@@ -436,11 +504,12 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
               onChange={(e) => setEmail(e.target.value)}
               className="mt-2 min-h-11 text-base"
             />
-          </div>
-          <div>
-            <Label htmlFor="sell-value-phone">
+            {error ? <FieldError>{error}</FieldError> : null}
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="sell-value-phone">
               Phone <span className="font-normal text-muted-foreground">(optional)</span>
-            </Label>
+            </FieldLabel>
             <Input
               id="sell-value-phone"
               name="phone"
@@ -451,107 +520,77 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
               onChange={(e) => setPhone(e.target.value)}
               className="mt-2 min-h-11 text-base"
             />
-          </div>
-        </div>
+          </Field>
+        </FieldGroup>
 
         <SmsConsentDisclosure className="mt-4" checked={smsConsent} onCheckedChange={setSmsConsent} />
 
-        {error ? (
-          <p className="mt-3 text-sm font-medium text-destructive" role="alert">
-            {error}
-          </p>
-        ) : null}
-
-        <Button type="submit" disabled={pending} className="mt-6 min-h-11 w-full text-base">
+        <BeuiButton type="submit" disabled={pending} className="mt-6 min-h-11 w-full" size="lg">
           Continue
-        </Button>
+        </BeuiButton>
       </form>
     )
   }
 
-  const fieldState = error ? 'error' : pin ? 'success' : 'idle'
-  // Stage fold only: reveal a street pin AFTER Places commits. The at-rest Bend
-  // preview was cut — the rail already carries closes + MOS, and a second Bend
-  // map plate stacked the form back into a portal card and clipped The record.
-  const stageMap = pagePath === '/sell'
-  const pinSrc = stageMap && pin ? sellPinMapUrl(pin) : null
-  const mapSrc = pinSrc
-  const mapLabel = pin ? pin.label : ''
-
   return (
     <form id={formId} onSubmit={advanceFromAddress} className="scroll-mt-24 sell-stage-field" noValidate>
-      <Label htmlFor={addressFieldId}>Home address</Label>
-      {/* No autoFocus on first render: this form also mounts at the BOTTOM of
-          the homepage, and a focused off-screen input scroll-jacked every
-          mobile visitor to the footer on load (2026-08-27 mobile audit,
-          reproduced 3/3 fresh loads). The name field in the next step keeps
-          its autoFocus — that one fires after a user action. */}
-      <div className="sell-stage-field__control" data-state={fieldState}>
-        <AddressAutocomplete
-          id={addressFieldId}
-          value={address}
-          onChange={(next) => {
-            setAddress(next)
-            // Typing after a pin clears the resolved map until Places commits again.
-            if (pin && next.trim() !== pin.label.trim()) setPin(null)
-          }}
-          onPlaceSelected={(place) => {
-            setAddress(place.formattedAddress)
-            if (
-              typeof place.lat === 'number' &&
-              typeof place.lng === 'number' &&
-              Number.isFinite(place.lat) &&
-              Number.isFinite(place.lng)
-            ) {
-              setPin({
-                lat: place.lat,
-                lng: place.lng,
-                label: place.formattedAddress,
-              })
-            } else {
-              setPin(null)
-            }
-          }}
-          invalid={error !== null}
-          className="mt-2 min-h-11 text-base"
-        />
-        {pin ? (
-          <svg className="sell-stage-field__check" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 12.5l4.5 4.5L19 7.5" />
-          </svg>
-        ) : null}
-      </div>
+      {tasteStrip}
+      <FieldGroup>
+        <Field data-invalid={addressError ? true : undefined}>
+          <FieldLabel htmlFor={addressFieldId}>Home address</FieldLabel>
+          {/* No autoFocus on first render: this form also mounts at the BOTTOM of
+              the homepage, and a focused off-screen input scroll-jacked every
+              mobile visitor to the footer on load (2026-08-27 mobile audit,
+              reproduced 3/3 fresh loads). The name field in the next step keeps
+              its autoFocus — that one fires after a user action. */}
+          <InputGroup className="h-auto min-h-11">
+            <InputGroupAddon align="inline-start">
+              <InputGroupText>Street</InputGroupText>
+            </InputGroupAddon>
+            <AddressAutocomplete
+              id={addressFieldId}
+              value={address}
+              InputComponent={BeuiInput}
+              error={addressError}
+              success={addressSuccess}
+              onChange={(next) => {
+                setAddress(next)
+                if (pin && next.trim() !== pin.label.trim()) setPin(null)
+                if (fieldDemo !== 'idle') setFieldDemo('idle')
+              }}
+              onPlaceSelected={(place) => {
+                setAddress(place.formattedAddress)
+                if (
+                  typeof place.lat === 'number' &&
+                  typeof place.lng === 'number' &&
+                  Number.isFinite(place.lat) &&
+                  Number.isFinite(place.lng)
+                ) {
+                  setPin({
+                    lat: place.lat,
+                    lng: place.lng,
+                    label: place.formattedAddress,
+                  })
+                } else {
+                  setPin(null)
+                }
+              }}
+              invalid={addressError !== null}
+              className="min-h-11 w-full text-base"
+              wrapperClassName="min-w-0 flex-1"
+            />
+          </InputGroup>
+          {addressError ? <FieldError>{addressError}</FieldError> : null}
+        </Field>
+      </FieldGroup>
 
-      {/* Places pin plate (catalog sheet + transitions-panel): only after a
-          street commits, so the at-rest fold stays proof + ask, not a map card. */}
-      {mapSrc ? (
-        <figure className="sell-stage-pin sell-stage-pin--locked" aria-label="Pinned home location">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="sell-stage-pin__map" src={mapSrc} alt="" decoding="async" />
-          <figcaption className="sell-stage-pin__label">{mapLabel}</figcaption>
-        </figure>
-      ) : null}
-
-      {error ? (
-        <p className="mt-3 text-sm font-medium text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <Button
+      <ExpandingArrowButton
         type="submit"
         disabled={pending}
-        className="sell-stage-submit mt-4 min-h-11 w-full text-base"
+        className="sell-stage-submit mt-4 h-12 min-h-11 w-full min-w-0"
       >
-        <span>{pending ? 'Reading the market' : 'Value my home'}</span>
-        {!pending ? (
-          <span className="sell-stage-submit__arrow" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </span>
-        ) : null}
-      </Button>
+        {pending ? 'Reading the market' : 'Value my home'}
+      </ExpandingArrowButton>
     </form>
   )
 }

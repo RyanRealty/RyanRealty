@@ -153,6 +153,72 @@
     "shadcn:input": {
       "aliasOf": "shadcn-input"
     },
+    "shadcn-input-group": {
+      "add": "input-group",
+      "file": "components/ui/input-group.tsx",
+      "import": "@/components/ui/input-group",
+      "mustContain": [
+        "data-slot=\"input-group\"",
+        "InputGroupAddon"
+      ]
+    },
+    "shadcn:input-group": {
+      "aliasOf": "shadcn-input-group"
+    },
+    "shadcn-field": {
+      "add": "field",
+      "file": "components/ui/field.tsx",
+      "import": "@/components/ui/field",
+      "mustContain": [
+        "data-slot=\"field\"",
+        "FieldError"
+      ]
+    },
+    "shadcn:field": {
+      "aliasOf": "shadcn-field"
+    },
+    "beui-button": {
+      "add": "@beui/button",
+      "file": "components/motion/button.tsx",
+      "import": "@/components/motion/button",
+      "repo": "https://github.com/starc007/ui-components",
+      "mustContain": [
+        "pressScale",
+        "Spawn a Material-style ripple"
+      ]
+    },
+    "beui:button": {
+      "aliasOf": "beui-button"
+    },
+    "beui-expanding-arrow-button": {
+      "add": "@beui/expanding-arrow-button",
+      "file": "components/motion/expanding-arrow-button.tsx",
+      "import": "@/components/motion/expanding-arrow-button",
+      "repo": "https://github.com/starc007/ui-components",
+      "mustContain": [
+        "DottedChevron",
+        "ARROW_OPACITY"
+      ]
+    },
+    "beui:expanding-arrow-button": {
+      "aliasOf": "beui-expanding-arrow-button"
+    },
+    "transitions-panel": {
+      "add": "https://transitions.dev",
+      "file": "components/motion/transitions-panel.tsx",
+      "import": "@/components/motion/transitions-panel",
+      "repo": "https://github.com/Jakubantalik/transitions.dev",
+      "mustContain": [
+        "TRANSITIONS_PANEL_SURFACE",
+        "t-panel-slide"
+      ]
+    },
+    "transitions:panel": {
+      "aliasOf": "transitions-panel"
+    },
+    "transitions:panel-reveal": {
+      "aliasOf": "transitions-panel"
+    },
     "beui-input": {
       "add": "@beui/input",
       "file": "components/motion/input.tsx",
@@ -526,7 +592,7 @@
       },
       {
         "name": "field",
-        "installed": null,
+        "installed": "components/ui/field.tsx",
         "jobs": [
           "sell:address"
         ]
@@ -2499,7 +2565,48 @@
           "catalog": "transitions",
           "url": "https://transitions.dev",
           "job": "Answer panel reveal after the address, at our motion band."
+        },
+        {
+          "id": "shadcn-field",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/field",
+          "job": "Address and contact fields use the Field primitive, not a house stack."
+        },
+        {
+          "id": "shadcn-input",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/input",
+          "job": "Contact step inputs stay on the shadcn Input source."
+        },
+        {
+          "id": "shadcn-input-group",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/input-group",
+          "job": "Address row is an InputGroup, not a lone cream box."
+        },
+        {
+          "id": "shadcn-sheet",
+          "catalog": "shadcn",
+          "url": "https://ui.shadcn.com/docs/components/sheet",
+          "job": "Stage photograph first, then the address sheet."
+        },
+        {
+          "id": "beui-button",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/button",
+          "job": "Back, continue, and taste controls use the beUI press/ripple button."
+        },
+        {
+          "id": "beui-expanding-arrow-button",
+          "catalog": "beui",
+          "url": "https://beui.dev/components/motion/expanding-arrow-button",
+          "job": "Value my home is the expanding-arrow submit, not a house CSS chevron."
         }
+      ],
+      "demoStates": [
+        "error-open=[data-taste=error-open]@#get-value!click",
+        "success-open=[data-taste=success-open]@#get-value!click",
+        "answer-open=[data-taste=answer-open]@#get-value!click"
       ]
     },
     "city": {

@@ -20,10 +20,25 @@
  * The empty-ignore is a ref flag, not Date.now(), so ci:hydration-safety stays quiet.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ComponentType } from 'react'
 import { Input } from '@/components/ui/input'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { cn } from '@/lib/utils'
+
+export type AddressMotionInputProps = {
+  id?: string
+  name?: string
+  value: string
+  onChange?: (value: string) => void
+  error?: string | boolean
+  success?: boolean
+  label?: string
+  className?: string
+  autoFocus?: boolean
+  autoComplete?: string
+  placeholder?: string
+  reserveErrorLine?: boolean
+}
 
 type Props = {
   id?: string
@@ -43,6 +58,11 @@ type Props = {
   wrapperClassName?: string
   autoFocus?: boolean
   invalid?: boolean
+  error?: string | boolean
+  success?: boolean
+  label?: string
+  /** Installed beui-input. Sell passes this so shake/check is the catalog demo. */
+  InputComponent?: ComponentType<AddressMotionInputProps>
 }
 
 // Bias suggestions toward Bend / Central Oregon (not strict — still allows any US address).
@@ -59,6 +79,10 @@ export default function AddressAutocomplete({
   wrapperClassName,
   autoFocus,
   invalid,
+  error,
+  success,
+  label,
+  InputComponent,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const onChangeRef = useRef(onChange)
@@ -148,28 +172,53 @@ export default function AddressAutocomplete({
         window.setTimeout(() => setSuggesting(false), 200)
       }}
     >
-      <Input
-        id={id}
-        name={name}
-        type="text"
-        autoComplete="off"
-        value={value}
-        onChange={(e) => {
-          const next = e.target.value
-          if (!next && ignoreEmptyRef.current) {
+      {InputComponent ? (
+        <InputComponent
+          id={id}
+          name={name}
+          value={value}
+          autoComplete="off"
+          placeholder={placeholder}
+          className={className}
+          autoFocus={autoFocus}
+          error={error ?? (invalid ? true : false)}
+          success={success}
+          label={label}
+          reserveErrorLine={Boolean(error)}
+          onChange={(next) => {
+            if (!next && ignoreEmptyRef.current) {
+              ignoreEmptyRef.current = false
+              return
+            }
             ignoreEmptyRef.current = false
-            return
-          }
-          ignoreEmptyRef.current = false
-          setSuggesting(next.trim().length > 0)
-          onChange(next)
-        }}
-        placeholder={placeholder}
-        className={className}
-        autoFocus={autoFocus}
-        aria-invalid={invalid ? 'true' : undefined}
-        inputMode="text"
-      />
+            setSuggesting(next.trim().length > 0)
+            onChange(next)
+          }}
+        />
+      ) : (
+        <Input
+          id={id}
+          name={name}
+          type="text"
+          autoComplete="off"
+          value={value}
+          onChange={(e) => {
+            const next = e.target.value
+            if (!next && ignoreEmptyRef.current) {
+              ignoreEmptyRef.current = false
+              return
+            }
+            ignoreEmptyRef.current = false
+            setSuggesting(next.trim().length > 0)
+            onChange(next)
+          }}
+          placeholder={placeholder}
+          className={className}
+          autoFocus={autoFocus}
+          aria-invalid={invalid ? 'true' : undefined}
+          inputMode="text"
+        />
+      )}
     </div>
   )
 }
