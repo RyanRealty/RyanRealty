@@ -27,12 +27,13 @@ export function ZipClaim({
   return (
     <p id="number-open" className="zip-opening__claim" data-demo-state="number-open">
       <a href={href} className="zip-opening__claim-count">
-        <span aria-hidden="true">
+        <span aria-hidden="true" className="zip-opening__claim-face">
           <DigitSwap
             value={formatted}
             animationKey={`zip-claim-${count}`}
             direction="up"
             className="zip-opening__claim-swap"
+            glyphClassName="zip-opening__claim-glyph"
           />
         </span>
         <span className="sr-only">

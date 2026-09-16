@@ -48,6 +48,9 @@ describe('buildZipInsightBoard', () => {
     expect(board.compare?.source).toMatch(/Sep 15, 2026/)
     expect(board.mix?.source).toMatch(/Sep 15, 2026/)
     expect(zipInsightHasPages(board)).toBe(true)
+    for (const segment of board.mix?.segments ?? []) {
+      expect(segment.amount).toBe(`${segment.pct.toFixed(1)}%`)
+    }
   })
 
   it('omits compare when the series is shorter than two years', () => {

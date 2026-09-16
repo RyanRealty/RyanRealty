@@ -213,11 +213,6 @@ function buildPace(cells: readonly ZipMonthCell[], source: string): ZipPaceBoard
   return { cells: window, closings, medians, peakIndex, source }
 }
 
-function formatShare(share: number): string {
-  const pct = Math.round(share * 1000) / 10
-  return `${pct.toFixed(1)}%`
-}
-
 function mixSegments(
   shares: readonly ZipMixShare[],
   words: Record<string, { chip: string; plain: string }>,
@@ -238,7 +233,7 @@ function mixSegments(
       name: item.w.chip,
       label: item.w.plain,
       pct,
-      amount: formatShare(item.row.share),
+      amount: `${pct.toFixed(1)}%`,
     }
   })
 }
