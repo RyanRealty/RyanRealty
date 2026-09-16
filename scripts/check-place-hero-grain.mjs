@@ -89,11 +89,11 @@ const pages = [
   {
     path: 'app/zip/[zip]/page.tsx',
     label: 'zip page opening names the ZIP, not the parent city',
-    // The v3 Field replaced KbHero here. The count that opens the page is
-    // zipFieldCaption's, and that builder interpolates the ZIP itself.
+    // The fold opens on zipOpeningCaption (SITE-114 Tip Ready). It still
+    // interpolates the ZIP itself — never the parent city name.
     v3: {
       module: 'app/zip/[zip]/_v3/zip-constants.ts',
-      builder: 'zipFieldCaption',
+      builder: 'zipOpeningCaption',
       // The caption must name the place it counted. `in ${zip}` is the whole
       // rule at this grain: a caption that read `in ${cityName}` would hang a
       // ZIP count on the city, which is the founding defect one grain up.
