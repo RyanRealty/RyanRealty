@@ -59,27 +59,29 @@ export function ZipHomesMasonry({
   }
 
   return (
-    <SmoothScroll root={false} className="zip-opening__scroll" touch>
-      <div className="zip-opening__homes-head">
-        <p className="zip-opening__homes-kicker">Houses in {zip}</p>
-        <MasonryProgress />
-      </div>
-      <InfiniteMasonry
-        items={visible}
-        getItemKey={(item) => item.id}
-        renderItem={(item) => <ZipMasonryCard item={item} />}
-        onLoadMore={loadMore}
-        hasMore={hasMore}
-        loading={loading}
-        estimateSize={(item) => item.imageHeight + 72}
-        minColumnWidth={168}
-        maxColumns={3}
-        gap={12}
-        ariaLabel={`Active single-family listings in ${zip}`}
-        className="zip-opening__masonry"
-        endState={`Every priced home in ${zip} that is on this list.`}
-      />
-    </SmoothScroll>
+    <div data-demo-state="masonry-open">
+      <SmoothScroll root={false} className="zip-opening__scroll" touch>
+        <div className="zip-opening__homes-head">
+          <p className="zip-opening__homes-kicker">Houses in {zip}</p>
+          <MasonryProgress />
+        </div>
+        <InfiniteMasonry
+          items={visible}
+          getItemKey={(item) => item.id}
+          renderItem={(item) => <ZipMasonryCard item={item} />}
+          onLoadMore={loadMore}
+          hasMore={hasMore}
+          loading={loading}
+          estimateSize={(item) => item.imageHeight + 72}
+          minColumnWidth={168}
+          maxColumns={3}
+          gap={12}
+          ariaLabel={`Active single-family listings in ${zip}`}
+          className="zip-opening__masonry"
+          endState={`Every priced home in ${zip} that is on this list.`}
+        />
+      </SmoothScroll>
+    </div>
   )
 }
 
