@@ -171,6 +171,19 @@ import {
 } from '@/app/cities/[slug]/_v3/city-sections'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 
+/**
+ * Read budgets on this page are scaled up for the cold, contended server a
+ * CI run and a fresh deploy start on (SITE-118: a degraded first render is
+ * cached for the ISR window). CI run 35107805042 (2026-09-16) measured the
+ * Tetherow page's `#faq` at 91 words against its 189-word floor and `#value`
+ * at 44 against 50, while the same build passed 11/11 sections locally: the
+ * timeboxed reads behind the answers expired and the sections rendered
+ * thinner. The budgets below multiply the local values; the fallbacks and
+ * their honesty (absent, never zero) are unchanged. The cities index carries
+ * the same workaround (INDEX_READ_BUDGET_MS).
+ */
+const COMMUNITY_READ_BUDGET_SCALE = 3
+
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   return getAllResortCommunities().map((c) => ({ slug: c.slug }))
 }
@@ -327,25 +340,25 @@ export default async function CommunityDetailPage({ params }: Props) {
     placeCharacter,
     openingListings,
   ] = await Promise.all([
-    withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
-    withTimeoutFallback(getPriceHistory('neighborhood', neighborhoodSlug, 'monthly', 60), [], 4500, 'comm:priceHistory'),
-    withTimeoutFallbackResult(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), { polygon: null, pins: [] }, 4500, 'comm:boundary'),
-    withTimeoutFallback(getResortBoundaryGeoJSON(slug), null, 4500, 'comm:resortBoundary'),
-    withTimeoutFallback(getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: slug }), [], 4500, 'comm:platCells'),
+    withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000 * COMMUNITY_READ_BUDGET_SCALE, 'comm:snapshot'),
+    withTimeoutFallback(getPriceHistory('neighborhood', neighborhoodSlug, 'monthly', 60), [], 4500 * COMMUNITY_READ_BUDGET_SCALE, 'comm:priceHistory'),
+    withTimeoutFallbackResult(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), { polygon: null, pins: [] }, 4500 * COMMUNITY_READ_BUDGET_SCALE, 'comm:boundary'),
+    withTimeoutFallback(getResortBoundaryGeoJSON(slug), null, 4500 * COMMUNITY_READ_BUDGET_SCALE, 'comm:resortBoundary'),
+    withTimeoutFallback(getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: slug }), [], 4500 * COMMUNITY_READ_BUDGET_SCALE, 'comm:platCells'),
     isResortInCity
       ? withTimeoutFallbackResult(
           Promise.all(
             [...new Set([cityName, ...(registryEntry?.mls_cities ?? [])])].map((c) => fetchAllCityActiveSfr(c)),
           ).then((sets) => sets.flat()),
-          [], 9000, 'comm:citySfr',
+          [], 9000 * COMMUNITY_READ_BUDGET_SCALE, 'comm:citySfr',
         )
       : Promise.resolve({ value: [] as Awaited<ReturnType<typeof getListingTiles>>, ok: true }),
-    withTimeoutFallback(getResortCommunityContent(resortSlug), null, 2500, 'comm:content'),
-    withTimeoutFallback(getPriceHistory('city', canonicalCityCacheSlug(citySlug), 'monthly', 60), [], 4500, 'comm:cityPriceHistory'),
+    withTimeoutFallback(getResortCommunityContent(resortSlug), null, 2500 * COMMUNITY_READ_BUDGET_SCALE, 'comm:content'),
+    withTimeoutFallback(getPriceHistory('city', canonicalCityCacheSlug(citySlug), 'monthly', 60), [], 4500 * COMMUNITY_READ_BUDGET_SCALE, 'comm:cityPriceHistory'),
     withTimeoutFallback(
       getPublicDetachedPace({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }),
       EMPTY_PUBLIC_PACE,
-      3000,
+      3000 * COMMUNITY_READ_BUDGET_SCALE,
       'comm:publicPace',
     ),
     // The parent city's same statistics, ONLY as the context mark on the answer
@@ -354,20 +367,20 @@ export default async function CommunityDetailPage({ params }: Props) {
       ? withTimeoutFallback(
           getPublicDetachedPace({ geoType: 'city', geoSlug: citySlug }),
           EMPTY_PUBLIC_PACE,
-          3000,
+          3000 * COMMUNITY_READ_BUDGET_SCALE,
           'comm:cityPace',
         )
       : Promise.resolve(EMPTY_PUBLIC_PACE),
     withTimeoutFallback(
       getPublicPlaceSegments({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }),
       [],
-      3000,
+      3000 * COMMUNITY_READ_BUDGET_SCALE,
       'comm:publicSegments',
     ),
     withTimeoutFallback(
       getPublicDetachedMonthly({ geoType: 'city', geoSlug: citySlug, currentMonthKey }),
       [],
-      4500,
+      4500 * COMMUNITY_READ_BUDGET_SCALE,
       'comm:leftoverCityMonthly',
     ),
     withTimeoutFallback(
@@ -377,20 +390,20 @@ export default async function CommunityDetailPage({ params }: Props) {
         currentMonthKey,
       }),
       [],
-      4500,
+      4500 * COMMUNITY_READ_BUDGET_SCALE,
       'comm:leftoverNeighborhoodMonthly',
     ),
     withTimeoutFallback(
       getDetachedOverlays([{ geoType: 'neighborhood', geoSlug: neighborhoodSlug }]),
       new Map(),
-      3000,
+      3000 * COMMUNITY_READ_BUDGET_SCALE,
       'comm:detachedOverlay',
     ),
-    withTimeoutFallback(getPlaceDocuments('community', slug), [], 4000, 'comm:documents'),
+    withTimeoutFallback(getPlaceDocuments('community', slug), [], 4000 * COMMUNITY_READ_BUDGET_SCALE, 'comm:documents'),
     withTimeoutFallback(
       getPlaceCharacter('neighborhood', neighborhoodSlug),
       null,
-      4000,
+      4000 * COMMUNITY_READ_BUDGET_SCALE,
       'comm:character',
     ),
     withTimeoutFallback(
@@ -399,7 +412,7 @@ export default async function CommunityDetailPage({ params }: Props) {
         subdivision: community.subdivision || undefined,
       }),
       [],
-      3000,
+      3000 * COMMUNITY_READ_BUDGET_SCALE,
       'comm:openingListings',
     ),
   ])
@@ -418,11 +431,11 @@ export default async function CommunityDetailPage({ params }: Props) {
   })
   // Face is leftover membership (Tetherow 16 SFR), never alias Field length.
   const face = publishPlaceFace({ grain: 'community', hud })
-  const libraryHero = await withTimeoutFallback(communityLibraryHero(slug), null, 3000, 'comm:libraryHero')
+  const libraryHero = await withTimeoutFallback(communityLibraryHero(slug), null, 3000 * COMMUNITY_READ_BUDGET_SCALE, 'comm:libraryHero')
   // The approved area guide for THIS community, exact slug only (a Bend guide
   // on a Tetherow page is wrong). A door in a ledger below the fold, never a
   // looping hero: the first fold stays Split + leftover face.
-  const areaGuideVideo = await withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'comm:areaGuide')
+  const areaGuideVideo = await withTimeoutFallback(getAreaGuideVideo(slug), null, 3000 * COMMUNITY_READ_BUDGET_SCALE, 'comm:areaGuide')
   // SITE-52: this Ledger's own heading is "{publicName} area guide", so the
   // row's 'Area guide' when would repeat it — drop it, unlike the mixed
   // guides-and-news Ledger on the city and neighborhood nodes where the same
@@ -446,7 +459,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     .filter((s): s is string => Boolean(s))
   const amenityPosts =
     amenityBlogSlugs.length > 0
-      ? await skippableRail(() => getBlogPostsBySlugs(amenityBlogSlugs), {}, 2500, 'comm:amenityPosts')
+      ? await skippableRail(() => getBlogPostsBySlugs(amenityBlogSlugs), {}, 2500 * COMMUNITY_READ_BUDGET_SCALE, 'comm:amenityPosts')
       : {}
 
   // THE AMENITY BOARD (SITE-116, Matt 2026-09-16: "we have to show that we are
@@ -540,13 +553,13 @@ export default async function CommunityDetailPage({ params }: Props) {
       ? await withTimeoutFallbackResult(
           getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', propertyType: 'A', limit: BOUNDARY_ROW_CAP }),
           [],
-          4500,
+          4500 * COMMUNITY_READ_BUDGET_SCALE,
           'comm:tiles',
         ).then((r) => (r.ok ? r.value : []))
       : await withTimeoutFallbackResult(
           getListingTiles({ city: cityName, status: 'active', propertyType: 'A', limit: 1500 }),
           [],
-          4500,
+          4500 * COMMUNITY_READ_BUDGET_SCALE,
           'comm:tiles-fallback',
         ).then((r) => (r.ok ? r.value : []))
   const usedSubdivisionNarrowing = !useResortTiles && (!boundaryReliable || boundaryListingKeys.length === 0)
@@ -554,7 +567,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     const subListingsRead = await withTimeoutFallbackResult(
       getCommunityListings(cityName, community.subdivision, BOUNDARY_ROW_CAP),
       [],
-      4500,
+      4500 * COMMUNITY_READ_BUDGET_SCALE,
       'comm:sub-listings',
     )
     const subListings = subListingsRead.ok ? subListingsRead.value : []
@@ -670,7 +683,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const namedSchools = await skippableRail(
     () => getSubdivisionSchools(cityName, community.subdivision),
     [],
-    2500,
+    2500 * COMMUNITY_READ_BUDGET_SCALE,
     'comm:schools',
   ).catch(() => [])
 
@@ -767,7 +780,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           label: publicName,
         }),
         null,
-        6000,
+        6000 * COMMUNITY_READ_BUDGET_SCALE,
         'comm:atlas',
       )
     : null
@@ -775,7 +788,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   // The lots inside this community, from the county assessor's cadastre. A
   // /subdivisions/ slug for a registry community redirects here, so this is
   // where a plat's lot lines actually get drawn.
-  const publishedPosts = await withTimeoutFallback(getAllPublishedBlogRefs(), [], 3000, 'comm:blogRefs')
+  const publishedPosts = await withTimeoutFallback(getAllPublishedBlogRefs(), [], 3000 * COMMUNITY_READ_BUDGET_SCALE, 'comm:blogRefs')
   // ONE array of child plats. The Atlas draws it and the index below names it,
   // so the map and the list are the same set by construction rather than by
   // two reads that happen to agree today.
@@ -848,7 +861,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       aliases: [community.subdivision, publicName, ...childAliases],
     }),
     {},
-    4500,
+    4500 * COMMUNITY_READ_BUDGET_SCALE,
     'comm:typeThumbs',
   )
   const typeCards = publishPlaceTypeCards({
