@@ -1,0 +1,244 @@
+/* ===========================================================================
+   PATTERN 11: CENSUS
+   Styles for V3Census.tsx and nothing else. Every value resolves from
+   ./tokens.css, which V3Census.tsx imports and whose scope the section opens
+   on itself with V3_ROOT_CLASS. No raw color, no hardcoded motion.
+
+   THE FORM IS A SHEET: one row per figure, the figure in the display face at
+   the left, three scope cells beside it under three small-caps column heads,
+   and a door at the far end. Hairlines between rows, no boxes. At 375 the
+   columns stack inside each row and carry their own label, so the sheet is
+   still a sheet and not a scroll container.
+
+   The block selector is doubled (`.v3.v3-census`) for the same reason every
+   other pattern doubles its own: the prototype route declares plain global
+   single-class rules, App Router keeps route CSS in the document across client
+   navigations, and a (0,1,0) rule must never be able to reach this one.
+   =========================================================================== */
+
+.v3.v3-census {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+/* Rule weight is the hierarchy: a section following content opens on the 2px
+   navy section rule. Same as Quiet, Instrument, Ledger, Index and Board. */
+* + .v3.v3-census {
+  border-top: var(--v3-rule-section);
+}
+
+/* Head ---------------------------------------------------------------------- */
+.v3-census__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-xs);
+  margin-bottom: var(--v3-space-md);
+}
+
+.v3-census__heading {
+  margin: 0;
+}
+
+.v3-census__lede {
+  max-width: var(--v3-measure-text);
+}
+
+/* The sheet ----------------------------------------------------------------- */
+.v3-census__table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.v3-census__th {
+  padding: 0 var(--v3-space-sm) var(--v3-space-2xs) 0;
+  border-bottom: var(--v3-rule-section);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-eyebrow);
+  line-height: var(--v3-leading-note);
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.v3-census__th--figure {
+  width: 22%;
+}
+
+.v3-census__th--door {
+  width: 9rem;
+  text-align: right;
+  padding-right: 0;
+}
+
+.v3-census__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+/* The hairline IS the rhythm: a rule under every row. Hover lifts the row on
+   the wash so the reader can hold one count while reading its three cells. */
+.v3-census__row {
+  border-bottom: var(--v3-rule-hairline);
+  transition: background-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-census__row:hover,
+.v3-census__row:focus-within {
+  background: var(--v3-wash);
+}
+
+.v3-census__figure-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--v3-space-3xs);
+  padding: var(--v3-space-sm) var(--v3-space-sm) var(--v3-space-sm) 0;
+  color: var(--v3-ink);
+  font-weight: var(--v3-weight-body);
+  text-align: left;
+  vertical-align: top;
+}
+
+/* The figure is the spectacle (Broadside numerals are Amboqia). */
+.v3-census__figure {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-display);
+}
+
+.v3-census__noun {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+
+.v3-census__cell {
+  padding: var(--v3-space-sm) var(--v3-space-sm) var(--v3-space-sm) 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  vertical-align: top;
+}
+
+.v3-census__cell--door {
+  padding-right: 0;
+  text-align: right;
+}
+
+/* The door: tap-height text link with the house caret. */
+.v3-census__door {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  min-height: var(--v3-tap);
+  color: var(--v3-navy);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-strong);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.v3-census__door::after {
+  content: '';
+  display: inline-block;
+  width: 0.4em;
+  height: 0.4em;
+  border-top: var(--v3-rule-weight-hairline) solid currentColor;
+  border-right: var(--v3-rule-weight-hairline) solid currentColor;
+  transform: rotate(45deg);
+}
+
+.v3-census__door:hover,
+.v3-census__door:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.v3-census__door:focus-visible {
+  outline: var(--v3-focus-width) solid var(--v3-focus);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-census__source {
+  margin-top: var(--v3-space-md);
+}
+
+/* Phone: each row becomes a stacked block. The column heads go, every scope
+   cell carries its own small-caps label, and the door sits under the cells at
+   the full tap height. */
+@media (max-width: 47.99rem) {
+  .v3-census__thead {
+    display: none;
+  }
+
+  .v3-census__table,
+  .v3-census__table tbody,
+  .v3-census__row {
+    display: block;
+    width: 100%;
+  }
+
+  .v3-census__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--v3-space-sm) 0;
+    border-top: var(--v3-rule-hairline);
+    border-bottom: 0;
+  }
+
+  .v3-census__row:last-child {
+    border-bottom: var(--v3-rule-hairline);
+  }
+
+  .v3-census__figure-cell {
+    flex-direction: row;
+    align-items: baseline;
+    gap: var(--v3-space-xs);
+    padding: 0 0 var(--v3-space-2xs);
+  }
+
+  .v3-census__cell {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    gap: var(--v3-space-xs);
+    padding: var(--v3-space-3xs) 0;
+  }
+
+  .v3-census__cell::before {
+    content: attr(data-label);
+    color: var(--v3-ink-muted);
+    font-size: var(--v3-size-eyebrow);
+    font-weight: var(--v3-weight-strong);
+    letter-spacing: var(--v3-track-eyebrow);
+    line-height: var(--v3-leading-body);
+    text-transform: uppercase;
+  }
+
+  .v3-census__cell--door {
+    display: block;
+    padding-top: var(--v3-space-2xs);
+    text-align: left;
+  }
+
+  .v3-census__cell--door::before {
+    content: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-census__row {
+    transition: none;
+  }
+}

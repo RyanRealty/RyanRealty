@@ -573,6 +573,17 @@ export type { V3PlaceAmenitiesProps, V3PlaceAmenity, V3PlaceAmenityGroup } from 
 export type { V3PlaceIndexProps, V3PlaceIndexEntry } from './V3PlaceIndex'
 
 /* -------------------------------------------------------------------------- */
+/* Pattern 11 — CENSUS: one place, counted several true ways, on one sheet     */
+/*                                                                             */
+/* A page that prints several correct inventory figures over different         */
+/* populations owes the reader the sentence that says how they differ. This    */
+/* is that sentence as a table: figure, what, where, when, and the door to the */
+/* section that holds it (SITE-116 round 3).                                   */
+/* -------------------------------------------------------------------------- */
+export { V3Census, censusRows } from './V3Census'
+export type { V3CensusProps, V3CensusRow } from './V3Census'
+
+/* -------------------------------------------------------------------------- */
 /* Pattern 10 — SLOTS: a tool's empty state, drawn as the thing it makes       */
 /* -------------------------------------------------------------------------- */
 

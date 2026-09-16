@@ -172,6 +172,21 @@
   border-bottom: 1px solid var(--v3-edge, currentColor);
 }
 
+/* The one sentence over the list that says what its count counts — every
+   property type, filed under the place's MLS names, inside this frame — so
+   the list's figure can be told apart from the map key's (SITE-116 round 3).
+   Body-small, muted, inside the list's own gutter; never a wall. */
+.place-split__scope {
+  flex-shrink: 0;
+  margin: 0;
+  padding: var(--v3-space-xs) var(--v3-gutter);
+  border-bottom: var(--v3-rule-hairline);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  text-wrap: pretty;
+}
+
 /* Compact Map / Split / List. Not the filter-bar chip row. */
 /* The three views are the map's primary thumb targets, so the strip holds the
    44px floor at every width. The toolbar row grows 16px at 390 and 14.4px at

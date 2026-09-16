@@ -100,6 +100,7 @@ import {
   type V3PlaceIndexEntry,
   V3PlaceAmenities,
   type V3PlaceAmenity,
+  V3Census,
   V3SectionTracker,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
@@ -111,7 +112,8 @@ import { getPlaceOpeningListings } from '@/lib/data'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
-import { PlaceSplitView } from '@/components/search/PlaceSplitView'
+import { PlaceSplitView, searchPlaceSplit } from '@/components/search/PlaceSplitView'
+import { buildCommunityCensus, communityCensusLede } from './_v3/community-census'
 import {
   placeTypeCoverPhotos,
   publishPlaceTypeCards,
@@ -979,6 +981,52 @@ export default async function CommunityDetailPage({ params }: Props) {
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
+
+  /**
+   * ONE SEARCH FOR THE HOMES LIST, HELD BY THE PAGE (SITE-116 round 3).
+   *
+   * The split view used to run its viewport search inside its own render, so
+   * its count ("26 homes on this map") existed nowhere the page could name it
+   * beside the Atlas key ("25 for sale · 4 pending") or the alerts figure ("1
+   * house came on"). The round-2 evaluator read the three as one total in
+   * disagreement and marked the page blocking. The search now runs here, once,
+   * with the SAME geometry props the view receives, and the view renders the
+   * result as `presearched` — so the census sheet below and the list's own
+   * claim print one read, not two reads that happen to agree today.
+   */
+  const splitGeometry = {
+    city: cityName,
+    subdivision: community.subdivision,
+    boundaryGeojson: seedRing ? mapPolygon : null,
+    seedRing,
+    listings: splitListings,
+    totalCount: splitListings?.length,
+    degraded: !citySfrRead.ok && isResortInCity,
+  }
+  const splitSearch = await searchPlaceSplit(splitGeometry)
+  // The MLS names the alert and the homes list both match: the registry alias
+  // set (Tetherow, Triple, Tetherow Resort), or the community's own name when
+  // it files under one.
+  const scopeNames = community.subdivision ? getSubdivisionMatchNames(community.subdivision) : [publicName]
+
+  /**
+   * THE CENSUS (§0 rule 5). Every inventory figure this page prints, each
+   * with what it counts, where, and over what window — the same variables the
+   * sections print, so no number here can differ from the one it explains.
+   * Nothing is changed to make the figures agree; each is exact about its own
+   * population, and the sheet is where a reader sees that.
+   */
+  const censusRows = buildCommunityCensus({
+    placeName: publicName,
+    atlas: { forSale: atlasView.counts.forSale, pending: atlasView.counts.pending, complete: atlasView.complete },
+    homesListCount: splitSearch.degraded ? null : splitSearch.totalCount,
+    homesListCapped: splitSearch.capped,
+    matchNames: scopeNames,
+    detachedActive: hud.active,
+    newCount30d: publicPace.newCount30d,
+    sold12mo: hud.sold12mo ?? publicPace.closedCount,
+  })
+  const censusLede = communityCensusLede(publicName, censusRows)
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -1045,7 +1093,10 @@ export default async function CommunityDetailPage({ params }: Props) {
                 headingLevel={2}
                 headline={v3Text(`${publicName} right now`)}
                 headlineTone="eyebrow"
-                claimText={`${publicName} — every active and pending mark is a live MLS listing.`}
+                // SITE-116 round 3: the claim names the POPULATION the key
+                // counts — every property type, inside the drawn boundary —
+                // so the key's figures cannot be read as the page's one total.
+                claimText={`Every listing inside the recorded ${publicName} boundary — houses, condos, townhomes and lots — as the MLS shows it right now. For sale and pending are the marks; the key counts them.`}
                 keyPlacement="head"
                 sourceName="Oregon Data Share"
                 dots={atlasView.dots}
@@ -1077,6 +1128,22 @@ export default async function CommunityDetailPage({ params }: Props) {
               />
             </aside>
           </div>
+          {/* SITE-116 round 3: the reconciliation, where the two fold figures
+              meet. One sheet, every count this page prints, each with what /
+              where / when — §0 rule 5 kept: no figure is changed to agree. */}
+          {censusRows.length >= 2 ? (
+            <div className="community-fold__census">
+              <V3Census
+                id="counted"
+                eyebrow={`${publicName} · How we count`}
+                heading={`Which number is ${publicName}?`}
+                lede={censusLede}
+                rows={censusRows}
+                sourceName="Oregon Data Share"
+                asOf={mosAsOf}
+              />
+            </div>
+          ) : null}
           <div className="community-fold__ask">
             <CommunityPlaceValue slug={slug} placeName={publicName} activity={placeActivitySpark} />
           </div>
@@ -1126,6 +1193,10 @@ export default async function CommunityDetailPage({ params }: Props) {
           listings={splitListings}
           totalCount={splitListings?.length}
           degraded={!citySfrRead.ok && isResortInCity}
+          // The same geometry as splitGeometry above, spelled out because the
+          // page contract pins these props by name; the search itself ran once.
+          presearched={splitSearch}
+          scopeNames={scopeNames}
         />
 
         {/* Subdivisions inside the community - every row is a door, mirroring
