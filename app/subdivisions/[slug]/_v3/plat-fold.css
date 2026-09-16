@@ -40,14 +40,28 @@
 }
 
 @media (max-width: 39.99rem) {
+  /* SITE-112: these two carry !important because the rule at the top of this
+     file does, and without it the phone photograph kept the 9rem / 12rem
+     desktop band — 44px of the fold that the email field needed. */
   .place-opening.place-opening--plat.place-opening--media {
-    min-height: 5rem;
-    max-height: 6.25rem;
+    min-height: 7.25rem !important;
+    max-height: 7.75rem !important;
+  }
+
+  /* The breadcrumb is absolutely positioned over the photograph
+     (components/place/place-opening.css), so on a short phone band its 52px box
+     lands on top of the H1 and cuts the first 11px off it. Trimming its own
+     bottom padding clears the headline without moving either one. */
+  .place-opening--plat.place-opening--media .v3-breadcrumb {
+    padding-bottom: 0;
   }
 
   .place-opening--plat.place-opening--media .place-opening__copy {
     align-self: end;
-    padding-top: calc(var(--v3-space-lg) + 1.5rem);
+    /* The band is 96px on a phone and the breadcrumb is inside it; the old
+       3.5rem top pad pushed the H1 through the bottom edge, which
+       overflow:hidden then cut in half. */
+    padding-top: 3rem;
     padding-bottom: var(--v3-space-2xs);
   }
 
@@ -84,12 +98,23 @@
 }
 
 .plat-fold__doors {
-  margin-top: var(--v3-space-md);
+  margin-top: var(--v3-space-2xs);
 }
 
 .plat-fold__seo-doors {
   margin-top: var(--v3-space-xs);
   font-size: var(--v3-size-source);
+}
+
+/* The row says what it is before it says where it goes, so four anchors read
+   as one caption under the map instead of a loose list. */
+.plat-fold__seo-label {
+  display: block;
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+  margin-bottom: var(--v3-space-3xs);
 }
 
 .plat-fold__seo-doors a {
@@ -104,9 +129,48 @@
 }
 
 @media (min-width: 64rem) {
+  /* SITE-112: THREE columns, not one column holding three plates.
+     The drawing, the paged figure, the ask - each a different width, a
+     different density and a different medium. It is also what puts the email
+     field back inside the first viewport now that the pager sits beside it
+     rather than above it. */
   .plat-fold__stage {
-    grid-template-columns: minmax(0, 1.45fr) minmax(20rem, 0.95fr);
+    grid-template-columns: minmax(0, 1.2fr) minmax(15.5rem, 0.85fr) minmax(16rem, 0.85fr);
     column-gap: var(--v3-space-lg);
+  }
+
+  /* The Atlas's own wide layout puts a 16-20rem dock column beside the map. In
+     a fold column that leaves the map a sliver, which is the opposite of "the
+     map is Atlas". In the fold the map takes the whole column and the type +
+     price controls dock under it. */
+  .plat-fold__drawing .v3-atlas__grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      'head'
+      'body'
+      'dock';
+    padding: 0;
+  }
+
+  .plat-fold__drawing .v3-atlas__frame {
+    border-left: 0;
+    border-top: var(--v3-rule-hairline);
+    border-bottom: var(--v3-rule-hairline);
+  }
+
+  .plat-fold__drawing .v3-atlas__stage {
+    min-height: 0;
+    max-height: min(42vh, 21rem);
+  }
+
+  /* Three columns, two rules. The register's own separator (PUBLIC_UI: rules,
+     not panels), so the figure and the ask read as columns of one front page
+     instead of cards floating in cream. */
+  .plat-fold__figure--insight,
+  .plat-fold__figure--ask {
+    border-left: var(--v3-rule-hairline);
+    padding-left: var(--v3-space-lg);
   }
 }
 
@@ -171,47 +235,111 @@
 
 @media (max-width: 63.99rem) {
   .plat-fold {
-    padding-top: var(--v3-space-2xs);
+    padding-top: 0;
     padding-bottom: var(--v3-space-sm);
     gap: 0;
   }
 
   .plat-fold__stage {
-    gap: var(--v3-space-2xs);
+    gap: var(--v3-space-xs);
   }
 
-  /* Readable Atlas strip — still short enough for MOS + ask. */
+  /* SITE-112: ON A PHONE THE FOLD IS THE DRAWING AND THE ASK. All three
+     columns do not fit 375 x 812 — the pager alone is ~340px — and the two
+     things the instrument named as missing were the map's own controls and the
+     conversion ask, not the order of the columns. So the map keeps its claim,
+     type filter, zoom and price scrubber, the alerts sentence and the email
+     field follow it, and the paged figure sits immediately under them where a
+     thumb reaches it in one scroll. On a wide window the source order stands:
+     drawing, figure, ask. */
+  /* The drawing column dissolves so the map and the doors become rows of the
+     stage in their own right, and the phone can put the doors after the ask. */
+  .plat-fold__drawing {
+    display: contents;
+  }
+
+  .plat-fold__drawing > .v3-atlas {
+    min-width: 0;
+  }
+
+  .plat-fold__figure--ask {
+    order: 1;
+  }
+
+  .plat-fold__figure--insight {
+    order: 2;
+  }
+
+  .plat-fold__seo-doors {
+    order: 3;
+  }
+
+  /* SITE-112: THE MAP KEEPS ITS JOB ON A PHONE. Until this pass the narrow
+     fold hid the claim sentence, the type filter, the zoom and the whole dock,
+     so a phone visitor got a mute cream crop of a map with a place name on it
+     and nothing to do — the exact finding the table instrument wrote twice
+     ("no price scrubber, no House checkbox, and no zoom", "the map is captured
+     before any legend, dot key, or count is visible"). The frame is now tall
+     enough to read and the dock rides under it. */
   .plat-fold__drawing .v3-atlas__frame {
-    max-height: min(12vh, 5.5rem);
+    max-height: min(18vh, 6.25rem);
   }
 
   .plat-fold__drawing .v3-atlas__head {
-    padding-bottom: 0;
+    padding-bottom: var(--v3-space-3xs, 0.25rem);
   }
 
   .plat-fold__drawing .v3-atlas__headline {
     font-size: var(--v3-size-body-sm);
   }
 
-  .plat-fold__drawing .v3-atlas__claim,
-  .plat-fold__drawing .v3-atlas__zoom,
-  .plat-fold__drawing .v3-atlas__types,
-  .plat-fold__drawing .v3-atlas__sales-legend,
-  .plat-fold__drawing .v3-atlas__dock {
+  .plat-fold__drawing .v3-atlas__claim {
+    font-size: var(--v3-size-body-sm);
+    line-height: var(--v3-leading-note);
+  }
+
+  .plat-fold__drawing .v3-atlas__sales-legend {
     display: none;
   }
 
-  .plat-fold__figure .v3-alerts__strip,
-  .plat-fold__figure .v3-source,
   .plat-fold__figure .v3-alerts__source,
-  .plat-fold__doors {
+  .plat-fold__figure > .v3-source {
     display: none;
   }
 
-  /* Claim → full-width email ask. MOS caption stays; proof + V3 doors wait. */
-  .plat-fold__figure .v3.v3-alerts .v3-alerts__grid {
+  /* One scrollable line rather than four links wrapped over three. Same four
+     anchors, same HTML, a third of the height. */
+  .plat-fold__drawing .v3-atlas__dock {
+    gap: var(--v3-space-2xs);
+    padding-top: var(--v3-space-3xs);
+  }
+
+  .plat-fold__seo-doors {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: baseline;
+    gap: 0.25rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+
+  .plat-fold__seo-doors::-webkit-scrollbar {
+    display: none;
+  }
+
+  .plat-fold__seo-label {
+    display: none;
+  }
+
+  /* SITE-112: claim, then the email ask, THEN the proof thumb. 375 x 812 holds
+     the map with its controls and the field, and that is the whole budget; the
+     priced listing used to sit between the two and pushed the submit control
+     off the fold, which is what "the phone job is an unfinished form" meant.
+     It keeps its price, address and beds/baths/sqft, one row lower. */
+  .plat-fold .plat-fold__figure .v3.v3-alerts .v3-alerts__grid {
     grid-template-columns: minmax(0, 1fr) !important;
-    grid-template-areas: 'lead' 'ask' !important;
+    grid-template-areas: 'lead' 'ask' 'figure' !important;
   }
 
   .plat-fold__figure .v3.v3-mos {
@@ -258,6 +386,34 @@
   display: grid;
   gap: var(--v3-space-md);
   min-width: 0;
+  align-content: start;
+}
+
+.plat-fold__figure--insight {
+  gap: var(--v3-space-sm);
+}
+
+/* The ask column carries the most rows of the three, and every one of them has
+   to land inside 1440x900 with the second door and the picker still visible. */
+.plat-fold__figure--ask {
+  gap: var(--v3-space-xs);
+}
+
+/* The picker is the fast path to a neighbouring subdivision; the crawlable
+   index of the same places sits below the fold. Label above the control, both
+   inside the ask column's measure. */
+.plat-fold__picker {
+  display: grid;
+  gap: var(--v3-space-3xs, 0.25rem);
+  min-width: 0;
+}
+
+.plat-fold__picker-label {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
 }
 
 .plat-fold__figure .v3-mos,
@@ -365,7 +521,11 @@
     display: none;
   }
 
-  .plat-fold__figure .v3-source {
+  /* SITE-112: the ask column's own trace folds away on a wide window (the
+     figures it explains sit in the two columns beside it, each carrying its
+     own). Only the DIRECT child, so the traces inside the paged cards keep
+     rendering — a figure without its trace is not shippable (CLAUDE.md 0). */
+  .plat-fold__figure--ask > .v3-source {
     display: none;
   }
 }

@@ -26,7 +26,23 @@ export function AnimatedNumber({
   // short mobile plate — 0.6 left them stuck at the initial 0 (SITE-73 honesty).
   const inView = useInView(ref, { once: true, amount: 0.15 });
   const reduce = useReducedMotion();
-  const [display, setDisplay] = useState(0);
+  /**
+   * Ryan Realty fix (SITE-112, 2026-09-16). The initial face is the REAL
+   * VALUE, not 0.
+   *
+   * The catalog component seeds `display` at 0, so the server HTML and the
+   * first client paint of every animated figure on this site published a zero:
+   * "0 houses came on the market", and, once a fold carried a dollar figure,
+   * "$0". A crawler, a reader with JavaScript off, and any snapshot taken
+   * before the effect runs all read a number that is not the one the source
+   * trace names, which CLAUDE.md section 0 does not allow at any weight.
+   *
+   * Seeding at `value` is hydration-safe by construction: the server and the
+   * first client render produce the same string. The count-up is unchanged -
+   * `fromRef` still starts at 0, so the effect animates 0 → value exactly as
+   * the demo does, and reduced motion still lands on the finished number.
+   */
+  const [display, setDisplay] = useState(value);
   const fromRef = useRef(0);
 
   useEffect(() => {

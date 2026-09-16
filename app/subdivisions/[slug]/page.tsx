@@ -146,6 +146,10 @@ import './_v3/plat-opening.css'
 import './_v3/plat-fold.css'
 import { SubdivisionAlertsStrip } from './_v3/SubdivisionAlertSheet.client'
 import { platNewCount30dFromTiles } from './_v3/plat-fold-figures'
+import { SubdivisionInsight } from './_v3/SubdivisionInsight.client'
+import { SubdivisionPicker } from './_v3/SubdivisionPicker.client'
+import { buildSubdivisionInsightBoard } from './_v3/subdivision-insight'
+import { atlasRegionNames } from '@/lib/atlas/place-names'
 import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { getSubdivisionSalesHistory } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
@@ -160,6 +164,7 @@ import { answersFaqItems, buildPlaceAnswers } from '@/lib/site/place-answers'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { subdivisionPageTrail } from '@/lib/site/place-trail'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
+import { formatCount } from '@/lib/format/count'
 import { formatDate } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -180,7 +185,7 @@ import {
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { V3Atlas, V3Quiet, type AtlasRegion } from '@/components/site/v3'
+import { V3Atlas, V3PlaceIndex, V3Quiet, type AtlasRegion, type V3PlaceIndexEntry } from '@/components/site/v3'
 import { getTaxlotsInBoundary, getTaxlotsNear, TAXLOT_DISCLAIMER } from '@/lib/data'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
@@ -227,6 +232,14 @@ import {
   type PlatFootprint,
 } from '@/lib/data/subdivisions/getSubdivisionFootprint'
 import { getPlatFootprintTaxlots } from '@/lib/data/subdivisions/getPlatFootprintTaxlots'
+
+/**
+ * SITE-112 — how many sibling subdivisions the picker and the index carry.
+ * Bend alone holds 1,519 subdivisions above the publishing floor; a page that
+ * prints all of them is a link farm, not an index, and /subdivisions is the
+ * door to the whole set. Deepest sale history first.
+ */
+const PLAT_SISTER_CAP = 24
 
 export const dynamicParams = true
 // ISR ON DEMAND (SITE-29, 2026-09-09). This route was `force-dynamic` from
@@ -1251,6 +1264,109 @@ export default async function SubdivisionPage({ params }: Props) {
   }
 
   const inventorySource = homesLedgerTrace(platScope)
+
+  /* ── THE FOLD'S PAGED FIGURE (SITE-112) ──────────────────────────────────
+     The counted active set's asking prices, and this place's own closed count
+     per year, on the beautifului InsightCards pager the city fold already
+     carries. Every figure below comes off a read this page had already made:
+     nothing new is fetched for the fold and nothing is rounded on the way in.
+
+     THE ASKING PRICES ARE THE COUNTED SET. Same tiles, same membership test
+     and same property filter getPlatPublicInventory counted for the "homes for
+     sale" figure, so the bands and the page's count cannot disagree (the
+     layout lock). A tile with no published price is left out of the bands and
+     named in the card's own sentence rather than dropped in silence (§0).
+
+     THE YEARS FOLLOW soldChart's RULE, for the same reason: the MLS-name join
+     where it produced years (the same population the Ledger below prints), and
+     otherwise the recorded-boundary series with its own trace — never both,
+     because two populations may not sit under one heading. */
+  const platAskingPrices = mapTiles
+    .filter((t) => {
+      if (inventoryKeySet && inventoryKeySet.size > 0 && !inventoryKeySet.has(t.listingKey)) return false
+      if (t.propertyType != null && t.propertyType !== 'A') return false
+      if (
+        t.propertySubType != null &&
+        t.propertySubType !== '' &&
+        t.propertySubType !== 'Single Family Residence'
+      ) {
+        return false
+      }
+      return true
+    })
+    .map((t) => t.listPrice)
+    .filter((price): price is number => price != null && Number.isFinite(price) && price > 0)
+  const insightSoldYears = completeYears.length > 0 ? completeYears : boundaryComplete
+  const insightBoard = buildSubdivisionInsightBoard({
+    placeName: displayName,
+    askingPrices: platAskingPrices,
+    activeCount,
+    medianListPrice: platFigures.medianListPrice,
+    browseHref: browseHref ?? null,
+    closedYears: insightSoldYears,
+    inventorySource: platInventoryTrace(platScope),
+    soldSource:
+      completeYears.length > 0 ? salesHistoryTrace(displayName) : platLifetimeClosedTrace(displayName),
+    soldHref: '/how-we-get-our-numbers',
+    soldHrefLabel: 'How we get our numbers',
+  })
+
+  /* ── THE SUBDIVISIONS AROUND THIS ONE (SITE-112) ─────────────────────────
+     One cached read this route already makes for the robots policy
+     (getIndexableSubdivisions) carries every subdivision with a page of its
+     own, its city, and its lifetime closed count. The reader who lands here is
+     usually choosing between this place and its neighbours, and until now the
+     page offered no way to reach one.
+
+     TWO SURFACES, ONE LIST. The picker in the fold is the fast path — the beUI
+     combobox, typeahead over the whole set, the page you are on marked. The
+     V3PlaceIndex below the fold is the crawlable one: a real anchor per
+     subdivision with its own figure, which is what a `role="option"` row can
+     never be. Both are built from this array, so neither can show a place the
+     other does not. */
+  // Cached 6h and already read for this request's robots policy, so the
+  // picker and the index below cost one read between them.
+  const indexablePlats = await getIndexableSubdivisions()
+  const sisterPlats = citySlug
+    ? indexablePlats
+        .filter((p) => p.citySlug === citySlug)
+        .slice()
+        .sort((a, b) => b.closedCount - a.closedCount || a.name.localeCompare(b.name))
+        .slice(0, PLAT_SISTER_CAP)
+    : []
+  // Names through the set-aware publisher: stripping the recorder's residue can
+  // fold two plats onto one string, and two rows reading the same while opening
+  // different pages is worse than a long name.
+  const sisterNames = atlasRegionNames(sisterPlats.map((p) => p.name))
+  const sisterRows = sisterPlats.flatMap((p, i) => {
+    const name = sisterNames[i]
+    return name ? [{ slug: p.slug, name, closedCount: p.closedCount }] : []
+  })
+  const sisterEntries: V3PlaceIndexEntry[] = sisterRows
+    .filter((row) => row.slug !== slug)
+    .map((row) => ({ name: row.name, href: `/subdivisions/${row.slug}`, count: row.closedCount }))
+  // The subject is ALWAYS the selected row, including on a page that did not
+  // make the deepest-history cut above or that sits below the indexing floor
+  // entirely. Its count comes from the same cached set when that set holds one,
+  // then from its own lifetime read, and otherwise the row carries no numeral
+  // at all (§0: unknown is not zero).
+  const selfIndexable = indexablePlats.find((p) => p.slug === slug)
+  const pickerRows = sisterRows.some((row) => row.slug === slug)
+    ? sisterRows
+    : [
+        {
+          slug,
+          name: displayName,
+          closedCount: selfIndexable?.closedCount ?? lifetimeClosed ?? -1,
+        },
+        ...sisterRows,
+      ]
+  const pickerOptions = pickerRows.map((row) => ({
+    key: row.slug,
+    label: row.name,
+    count: row.closedCount >= 0 ? formatCount(row.closedCount) : null,
+    href: `/subdivisions/${row.slug}`,
+  }))
   const splitCity = placeCity ?? undefined
   const splitSubdivision = registryMatch?.canonicalName ?? displayName
   const placeQuery = splitCity ? `${displayName} ${splitCity} Oregon` : `${displayName} Oregon`
@@ -1264,8 +1380,8 @@ export default async function SubdivisionPage({ params }: Props) {
   const foldHouseCount = activeCount ?? (foldAtlasDots.length > 0 ? foldAtlasDots.length : null)
   const atlasClaimText =
     foldHouseCount != null && foldHouseCount > 0
-      ? `${foldHouseCount} homes for sale in ${displayName} right now. Drag the price scrubber to narrow the map.`
-      : `Homes for sale in ${displayName}. Drag the price scrubber to narrow the map.`
+      ? `${foldHouseCount} homes for sale in ${displayName}. Scrub price to filter the map.`
+      : `Homes for sale in ${displayName}. Scrub price to filter the map.`
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -1351,11 +1467,16 @@ export default async function SubdivisionPage({ params }: Props) {
                   incomplete={!atlasView.complete}
                   {...(frame == null && atlasRegions.length === 0 ? { fit: 'dots' as const } : {})}
                 />
-              </div>
-              <aside className="plat-fold__figure">
-                {/* SITE-86 SEO: crawlable doors at the top of the figure so they
-                    land in the first viewport (not under the H1, not below the ask). */}
+                {/* SITE-112: the crawlable doors belong to the map's column,
+                    under it. On a wide window that is one line instead of the
+                    "wrapped underlined link dump" the table instrument named
+                    (four links folded into three over the email field). On a
+                    phone the column goes display:contents and this row is
+                    ordered after the ask, because 375 x 812 holds the map and
+                    the field and nothing else. Same four anchors in the HTML
+                    either way. */}
                 <p className="place-opening__caption place-opening__caption--doors plat-fold__seo-doors">
+                  <span className="plat-fold__seo-label">More about this area</span>
                   {browseHref ? <a href={browseHref}>{displayName} homes for sale</a> : null}
                   {browseHref && citySlug ? ' · ' : null}
                   {citySlug ? <a href={`/cities/${citySlug}`}>{cityName} real estate</a> : null}
@@ -1368,6 +1489,24 @@ export default async function SubdivisionPage({ params }: Props) {
                     </>
                   ) : null}
                 </p>
+              </div>
+              {/* SITE-112: the fold figure is ONE paged object (beautifului
+                  InsightCards), not another plate of the same shape. Page one
+                  is the counted set's asking prices on the catalog's own
+                  allocation bar; page two is this place's closed count per year
+                  on its pointer-scrub line. Both pills are real links out of
+                  the fold. REGISTRY 4 keeps months of supply and every closed
+                  price off this grain, so neither page borrows one. */}
+              <aside className="plat-fold__figure plat-fold__figure--insight">
+                <SubdivisionInsight
+                  id="place-insight"
+                  placeName={displayName}
+                  board={insightBoard}
+                  sourceName={PLAT_FEED}
+                  asOf={inventory?.readAt ?? null}
+                />
+              </aside>
+              <aside className="plat-fold__figure plat-fold__figure--ask">
                 <SubdivisionAlertsStrip
                   id="alerts"
                   placeName={displayName}
@@ -1386,6 +1525,22 @@ export default async function SubdivisionPage({ params }: Props) {
                     </V3Button>
                   ))}
                 </div>
+                {pickerOptions.length > 1 ? (
+                  <div className="plat-fold__picker">
+                    <span className="plat-fold__picker-label">
+                      {citySlug ? `Another subdivision in ${cityName}` : 'Another subdivision'}
+                    </span>
+                    <SubdivisionPicker
+                      label={
+                        citySlug
+                          ? `Go to another subdivision in ${cityName}`
+                          : 'Go to another subdivision'
+                      }
+                      options={pickerOptions}
+                      value={slug}
+                    />
+                  </div>
+                ) : null}
                 <V3SourceLine
                   source={inventorySource}
                   asOf={inventory?.readAt ?? null}
@@ -1406,6 +1561,25 @@ export default async function SubdivisionPage({ params }: Props) {
             <V3SourceLine source={inventorySource} asOf={inventory?.readAt ?? null} sourceName={PLAT_FEED} />
           </>
         )}
+
+        {/* SITE-112: the picker's legend, in the served HTML. Every subdivision
+            in this city with a page of its own, each one a real anchor a
+            crawler can follow, each carrying its own lifetime sale count. The
+            reader choosing between neighbours had no door out of this page
+            before this pass. */}
+        {sisterEntries.length > 1 ? (
+          <V3PlaceIndex
+            id="nearby-subdivisions"
+            eyebrow={`${cityName} · Subdivisions`}
+            heading={`Other subdivisions in ${cityName}`}
+            lede={'Each one has its own page — what has sold there, what is for sale, and where it sits.'}
+            countLabel="lifetime sales"
+            entries={sisterEntries}
+            foldAfter={12}
+            action={{ label: 'Every Central Oregon subdivision', href: '/subdivisions' }}
+            source="Deschutes County · Oregon Data Share"
+          />
+        ) : null}
 
         <PlaceTypeSlider cards={typeCards} label={`${displayName} property types`} />
 
