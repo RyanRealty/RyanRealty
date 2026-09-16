@@ -9,6 +9,7 @@
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { formatDate } from '@/lib/format/date'
 import { unstable_noStore as noStore } from 'next/cache'
 import { getPriceDrops } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -18,6 +19,7 @@ import type { SchemaInput } from '@/lib/site/json-ld'
 import {
   V3_ROOT_CLASS,
   V3Breadcrumb,
+  V3Drawing,
   V3Field,
   V3Footer,
   V3_FOOTER_COLUMNS,
@@ -36,8 +38,9 @@ import {
   medianPositive,
 } from '../_v3/drops-constants'
 import { priceDropFieldItems } from '../_v3/drops-field-items'
+import { priceDropDistribution } from '../_v3/drops-drawing'
 import { priceDropDatasetSchemas } from '../_v3/drops-jsonld'
-import { PriceDropPhotos, PriceDropsOpening } from '../_v3/PriceDropsField'
+import { PriceDropsFold, PriceDropsOpening } from '../_v3/PriceDropsField'
 
 export const revalidate = 1800
 export const dynamicParams = false
@@ -55,8 +58,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return pageMetadata({
     title: `Price Drops in ${cityName}, Oregon`,
     description:
-      `Active homes in ${cityName}, Oregon where the seller has reduced the asking price in the last 7 days. ` +
-      `Current list price, original list price, and drop percentage from the regional MLS.`,
+      `Active homes in ${cityName}, Oregon where the seller reduced the asking price in the last 7 days. ` +
+      `Current list price, prior ask, drop percent, beds, baths, and sqft from the regional MLS.`,
     path: `/price-drops/${slug}`,
     keywords: [
       `price reduced homes ${cityName} Oregon`,
@@ -87,6 +90,14 @@ export default async function PriceDropsCityPage({ params }: Props) {
   const totalReduced = drops.reduce((sum, d) => sum + (d.lastDropAmount ?? 0), 0)
   const medianDropPct = medianPositive(drops.map((d) => d.lastDropPct))
   const fieldItems = priceDropFieldItems(drops)
+  const distribution = priceDropDistribution({
+    drops,
+    total,
+    cap: 48,
+    placeLabel: cityName,
+    windowDays: 7,
+    fetchedAt: fetchedAt ? formatDate(fetchedAt) : null,
+  })
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const pageUrl = `${siteUrl}${path}`
 
@@ -124,7 +135,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
             type: 'itemList' as const,
             name: `${cityName} homes with a price cut in the last 7 days`,
             items: fieldItems.slice(0, 24).map((item) => ({
-              name: `${item.priceLabel} · ${item.title}`,
+              name: `${item.priceLabel} · ${item.title}${item.dropLine ? ` · ${item.dropLine}` : ''}`,
               url: item.href.startsWith('http') ? item.href : `${siteUrl}${item.href}`,
             })),
           },
@@ -176,15 +187,41 @@ export default async function PriceDropsCityPage({ params }: Props) {
               captionValue={captionCount.toLocaleString('en-US')}
               captionLabel={captionCount === 1 ? `price cut in ${cityName}` : `price cuts in ${cityName}`}
             />
-            <V3Field
-              id="cuts"
-              className="pd-homes-field"
-              ariaLabel={`Homes in ${cityName} with a price cut in the last 7 days`}
-              items={fieldItems}
-              mapSlot={<PriceDropPhotos items={fieldItems} />}
-              emptyMessage={`No price cut in ${cityName} on this pull has both a street and a list price, so this list has nothing to name.`}
+            <div className="pd-fold">
+              <V3Field
+                id="cuts"
+                className="pd-homes-field"
+                slotSurface="photos"
+                ariaLabel={`Homes in ${cityName} with a price cut in the last 7 days`}
+                items={fieldItems}
+                mapSlot={
+                  <PriceDropsFold
+                    items={fieldItems}
+                    railLabel={`Homes in ${cityName} with a price cut this week`}
+                    showCityDoors={false}
+                  />
+                }
+                emptyMessage={`No price cut in ${cityName} on this pull has both a street and a list price, so this list has nothing to name.`}
+              />
+              {distribution ? (
+                <V3Drawing
+                  id="spread"
+                  className="pd-spread"
+                  figures={[distribution]}
+                  label={`${cityName} price cuts by how far the ask came down`}
+                />
+              ) : null}
+            </div>
+            <V3SourceLine
+              className={`${V3_ROOT_CLASS} pd-source`}
+              sourceName="Oregon Data Share"
+              asOf={fetchedAt}
+              source={`${dropsTrace(cityName)}${
+                medianDropPctLabel ? `. Median drop ${medianDropPctLabel}` : ''
+              }${totalReducedLabel ? `, ${totalReducedLabel} in asking prices cut this week` : ''}${
+                fetchedAt ? ` · updated ${formatDate(fetchedAt)}` : ''
+              }`}
             />
-            <V3SourceLine source={dropsTrace(cityName)} />
           </>
         ) : (
           <V3Quiet

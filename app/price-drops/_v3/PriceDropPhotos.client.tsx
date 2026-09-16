@@ -1,11 +1,29 @@
 'use client'
 
 /**
- * Photographed price-cut houses as a V3Carousel rail (shadcn carousel job).
- * Count stays a caption beside the Field; this slot is photographs first.
+ * Photographed price-cut houses as the installed shadcn carousel
+ * (`npx shadcn add carousel` → `components/ui/carousel.tsx`).
+ *
+ * THE OBJECT. ui.shadcn.com/docs/components/carousel is one composed slide
+ * with Previous / Next flanking the track — not a strip of equal peeking
+ * cards. This file imports that source itself. A house rail wrapper is not
+ * the install (`ci:catalog-install` requireRouteImport / taste-receipt --ship).
+ *
+ * Each slide names city and cut size on the facts, not as a chip on the
+ * photograph (contrast on mixed MLS plates failed the last mark).
  */
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { V3Carousel } from '@/components/site/v3'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from '@/components/ui/carousel'
+import { cn } from '@/lib/utils'
+import { V3_ROOT_CLASS } from '@/components/site/v3'
 import {
   LISTING_FIELD_LEAD_PHOTO_SIZE,
   listingRowPhotoSrc,
@@ -13,61 +31,99 @@ import {
 import type { PriceDropFieldItem } from './drops-field-items'
 import './price-drops-field.css'
 
-export function PriceDropPhotos({ items }: { items: readonly PriceDropFieldItem[] }) {
-  // Photographs first: a cut without a plate does not take a gray slot in the rail.
+export function PriceDropPhotos({
+  items,
+  label,
+}: {
+  items: readonly PriceDropFieldItem[]
+  label: string
+}) {
   const photographed = items.filter((item) => Boolean(item.photoSrc?.trim()))
   const rail = photographed.length > 0 ? photographed : items
+  const [api, setApi] = useState<CarouselApi>()
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    if (!api) return
+    const read = () => setIndex(api.selectedScrollSnap())
+    read()
+    api.on('select', read)
+    api.on('reInit', read)
+    return () => {
+      api.off('select', read)
+      api.off('reInit', read)
+    }
+  }, [api])
+
+  if (rail.length === 0) return null
 
   return (
-    <V3Carousel
-      label="Homes with a price cut this week"
-      mode="rail"
-      className="pd-cuts-rail"
-    >
-      {rail.map((item, index) => (
-        <Link
-          key={item.id}
-          href={item.href}
-          className="pd-card"
-          aria-label={
-            item.specs
-              ? `${item.priceLabel}, ${item.title}, ${item.specs}`
-              : `${item.priceLabel}, ${item.title}`
-          }
-        >
-          {item.photoSrc ? (
-            <span className="pd-card__media">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={listingRowPhotoSrc(item.photoSrc, LISTING_FIELD_LEAD_PHOTO_SIZE)}
-                alt=""
-                width={800}
-                height={600}
-                className="pd-card__photo"
-                loading={index < 8 ? 'eager' : 'lazy'}
-                fetchPriority={index < 2 ? 'high' : 'auto'}
-                decoding="async"
-              />
-              {item.overlay ? (
-                <span className="pd-card__badge">{item.overlay}</span>
-              ) : null}
-            </span>
-          ) : null}
-          <span className="pd-card__body">
-            <span className="pd-card__ask">
-              <span className="pd-card__price">{item.priceLabel}</span>
-              {item.cutShare != null ? (
-                <span className="pd-card__cut" aria-hidden="true">
-                  <span style={{ width: `${(item.cutShare * 100).toFixed(1)}%` }} />
+    <div className="pd-cuts">
+      <Carousel
+        setApi={setApi}
+        opts={{ align: 'start', containScroll: 'trimSnaps' }}
+        className={cn(V3_ROOT_CLASS, 'v3-carousel', 'pd-cuts-rail')}
+        aria-label={label}
+      >
+        <CarouselContent className="v3-carousel__track ml-0">
+          {rail.map((item, i) => (
+            <CarouselItem
+              key={item.id}
+              className="v3-carousel__slide pl-0"
+              aria-label={`Slide ${i + 1} of ${rail.length}`}
+            >
+              <Link
+                href={item.href}
+                className="pd-slide"
+                aria-label={
+                  item.specs
+                    ? `${item.priceLabel}, ${item.title}, ${item.specs}`
+                    : `${item.priceLabel}, ${item.title}`
+                }
+              >
+                {item.photoSrc ? (
+                  <span className="pd-slide__media">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={listingRowPhotoSrc(item.photoSrc, LISTING_FIELD_LEAD_PHOTO_SIZE)}
+                      alt=""
+                      width={800}
+                      height={600}
+                      className="pd-slide__photo"
+                      loading={i < 2 ? 'eager' : 'lazy'}
+                      fetchPriority={i === 0 ? 'high' : 'auto'}
+                      decoding="async"
+                    />
+                  </span>
+                ) : null}
+                <span className="pd-slide__body">
+                  {item.city ? <span className="pd-slide__city">{item.city}</span> : null}
+                  <span className="pd-slide__price">{item.priceLabel}</span>
+                  {item.dropLine ? <span className="pd-slide__drop">{item.dropLine}</span> : null}
+                  {item.cutShare != null ? (
+                    <span className="pd-slide__cut" aria-hidden="true">
+                      <span style={{ width: `${(item.cutShare * 100).toFixed(1)}%` }} />
+                    </span>
+                  ) : null}
+                  <span className="pd-slide__addr">{item.title}</span>
+                  {item.specs ? <span className="pd-slide__specs">{item.specs}</span> : null}
                 </span>
-              ) : null}
-            </span>
-            {item.dropLine ? <span className="pd-card__drop">{item.dropLine}</span> : null}
-            <span className="pd-card__addr">{item.title}</span>
-            {item.specs ? <span className="pd-card__specs">{item.specs}</span> : null}
-          </span>
-        </Link>
-      ))}
-    </V3Carousel>
+              </Link>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        {rail.length > 1 ? (
+          <>
+            <CarouselPrevious className="v3-carousel__step v3-carousel__step--prev" />
+            <CarouselNext className="v3-carousel__step v3-carousel__step--next" />
+          </>
+        ) : null}
+      </Carousel>
+      {rail.length > 1 ? (
+        <p className="pd-cuts__pos" aria-live="polite">
+          {String(index + 1).padStart(2, '0')} / {String(rail.length).padStart(2, '0')}
+        </p>
+      ) : null}
+    </div>
   )
 }

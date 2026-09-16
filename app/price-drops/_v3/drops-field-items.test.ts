@@ -44,16 +44,17 @@ describe('priceDropFieldItems photographs', () => {
     expect(items[0].photoSrc).toBe('/p.jpg')
     expect(items[0].overlay).toBe('-8.3%')
     expect(items[0].dropLine).toBe('was $599,000, -8.3%')
-    expect(items[0].specs).toBe('3 bd · 2 ba · 1,600 sqft · Old Bend')
+    expect(items[0].specs).toBe('3 bd · 2 ba · 1,600 sqft · Bend · Old Bend')
+    expect(items[0].city).toBe('Bend')
+    expect(items[0].citySlug).toBe('bend')
+    expect(items[0].cutPct).toBe(8.3)
     expect(items[0].meta).toContain('3 bd')
     expect(items[0].meta).toContain('was $599,000')
   })
 
-  it('asks Spark for the row size so a prefetched drops Flight never names a 1600 plate', () => {
+  it('keeps the feed photograph so the fold can ask Spark for a field plate', () => {
     const spark = 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/20260501165710852242000000-o.jpg'
     const items = priceDropFieldItems([drop({ photoUrl: spark })])
-    expect(items[0]?.photoSrc).toBe(
-      'https://cdn.resize.sparkplatform.com/ore/320x240/true/20260501165710852242000000-o.jpg',
-    )
+    expect(items[0]?.photoSrc).toBe(spark)
   })
 })

@@ -162,6 +162,12 @@ export type V3FieldProps = {
    */
   listFlow?: boolean
   /**
+   * How a passed `mapSlot` sizes. `photos` keeps the slot in document flow
+   * (a photographed carousel) so a following Sheet cannot paint over prices
+   * and addresses. `map` (default) absolutely fills the 4/3 frame.
+   */
+  slotSurface?: 'map' | 'photos'
+  /**
    * The door after a capped set. Same slot Ledger already has: one ghost
    * control, earned by the rows above it.
    */
@@ -310,6 +316,7 @@ export function V3Field({
   lead,
   footNote,
   listFlow = false,
+  slotSurface = 'map',
   action,
   emptyMessage = 'No listings in this view.',
   activeId,
@@ -342,8 +349,9 @@ export function V3Field({
       : true
 
   const photoItems = useMemo(() => items.filter(hasListingPhoto), [items])
+  const slottedPhotos = slotSurface === 'photos' && hasSlot
   const usePhotoSurface =
-    hasSlot === false && photoItems.length >= PHOTO_SURFACE_MIN
+    slottedPhotos || (hasSlot === false && photoItems.length >= PHOTO_SURFACE_MIN)
   const mosaic = usePhotoSurface ? photoItems.slice(0, PHOTO_SURFACE_MAX) : []
 
   const { pins, missing } = useMemo(
