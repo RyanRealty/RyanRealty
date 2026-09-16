@@ -19,6 +19,10 @@
  * the region (beui:combobox); no-photo rows carry a resting supply reading
  * when Market Truth publishes one.
  *
+ * SITE-92: the fold is a drawing (Atlas) beside a figure (InsightCards +
+ * MOS + the installed combobox) and the alerts sentence. Catalog sources
+ * install first: beautifului InsightCards, beui-number, beui combobox.
+ *
  * Parity contract: design_system/ryan-realty/ui_kits/cities/parity.json
  */
 
@@ -26,11 +30,12 @@ import { valuationHref } from '@/lib/site/valuation-href'
 import type { Metadata } from 'next'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
-import { getAllCitySnapshots } from '@/lib/data'
+import { getAllCitySnapshots, getBoundaryGeoJSON, getListingTiles } from '@/lib/data'
 import { getDetachedOverlays, type DetachedOverlay } from '@/lib/data/market-truth/getSellBendMarket'
 import { getPublicDetachedMonthly, type PublicMonthlyPoint } from '@/lib/data/market-truth/public-monthly'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
-import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { getCityContent } from '@/lib/city-content'
 import { cityHero, preferPlaceHero } from '@/lib/geo-images'
 import { runPublishedPageRender } from '@/lib/site/degraded-isr'
@@ -44,6 +49,7 @@ import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { buildAnswerFigures, salesPerMonthFrom } from '@/lib/site/answer-figures'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
+  V3Atlas,
   V3Breadcrumb,
   V3Drawing,
   V3Footer,
@@ -55,12 +61,25 @@ import {
   V3_LEDGER_SPARK_MIN,
   V3_ROOT_CLASS,
   v3Text,
+  type AtlasRegion,
   type V3LedgerFigureRow,
   type V3LedgerReveal,
   type V3MosCompareCity,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
+import { CitiesInsight } from '@/app/cities/_v3/CitiesInsight.client'
+import { CitiesAlertsStrip } from '@/app/cities/_v3/CitiesAlerts.client'
+import {
+  buildCitiesInsightBoard,
+  citiesInsightDatasetVariables,
+  citiesInsightPageCount,
+} from '@/app/cities/_v3/cities-insight'
+import { HomeHomesRails } from '@/app/_v3/HomeHomesRails'
+import { homeRailRows } from '@/app/_v3/home-rail-items'
+import { homeRailItemList } from '@/app/_v3/home-jsonld'
+import { REGIONAL_SEARCH_HREF } from '@/lib/search/publish-regional-search-href'
+import '@/app/cities/_v3/cities-fold.css'
 import { cityFeaturedLinks } from '@/app/cities/CityFeaturedLinks'
 import {
   CITY_SENTENCE_FALLBACK,
@@ -78,9 +97,9 @@ export const revalidate = 3600
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export const metadata: Metadata = pageMetadata({
-  title: 'Central Oregon cities: Bend, Redmond, Sisters',
+  title: 'Central Oregon cities: live inventory in Bend, Redmond, Sisters',
   description:
-    'Active single-family homes in Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the rest of Central Oregon. Live inventory and pricing from the regional MLS.',
+    'Active single-family homes in Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the rest of Central Oregon. Live inventory, months of supply, and priced listings from the regional MLS.',
   path: '/cities',
 })
 
@@ -143,7 +162,29 @@ export default async function CitiesPage() {
 
 async function renderCitiesIndex() {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [allCities, allSnapshots] = await Promise.all([getCitiesForIndex(), getAllCitySnapshots()])
+  const [allCities, allSnapshots, regionMonthly, regionPace, atlasPop, listingTiles] = await Promise.all([
+    getCitiesForIndex(),
+    getAllCitySnapshots(),
+    withTimeoutFallback(
+      getPublicDetachedMonthly({ geoType: 'region', geoSlug: 'central-oregon', currentMonthKey }),
+      [],
+      3500,
+      'cities:regionMonthly',
+    ),
+    withTimeoutFallback(
+      getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
+      EMPTY_PUBLIC_PACE,
+      3000,
+      'cities:regionPace',
+    ),
+    withTimeoutFallback(
+      buildPlaceAtlas({ cities: [], label: 'Central Oregon' }),
+      EMPTY_PLACE_ATLAS,
+      5000,
+      'cities:atlas',
+    ),
+    withTimeoutFallback(getListingTiles({ propertyType: 'A', limit: 36 }), [], 4000, 'cities:tiles'),
+  ])
 
   const sortedCities = sortCitiesWithPrimaryFirst(allCities)
   const visibleCities = sortedCities.slice(0, 60)
@@ -152,7 +193,7 @@ async function renderCitiesIndex() {
   // One Market Truth read for the region and every city on the page, and one
   // monthly read per city for the run under its row. Both are timeboxed: a
   // slow read costs the drawing and the reveals, never the directory.
-  const [overlays, monthlyBySlug] = await Promise.all([
+  const [overlays, monthlyBySlug, cityBoundaries] = await Promise.all([
     withTimeoutFallback(
       getDetachedOverlays([
         { geoType: 'region', geoSlug: 'central-oregon' },
@@ -173,13 +214,24 @@ async function renderCitiesIndex() {
       4500,
       'cities:monthlyRuns',
     ),
+    withTimeoutFallback(
+      Promise.all(
+        FEATURED_CITY_SLUGS.map(async (slug) => {
+          const geometry = await getBoundaryGeoJSON({ geoType: 'city', geoSlug: slug })
+          return geometry ? { slug, geometry } : null
+        }),
+      ),
+      [] as Array<{ slug: string; geometry: NonNullable<Awaited<ReturnType<typeof getBoundaryGeoJSON>>> } | null>,
+      5000,
+      'cities:boundaries',
+    ),
   ])
   const regionMt = overlays.get('region:central-oregon')
   const hud = leftoverHudKpis({
     grain: 'region',
     headlines: regionMt?.headlines ?? null,
     inventory: regionMt?.inventory ?? null,
-    pace: EMPTY_PUBLIC_PACE,
+    pace: regionPace,
   })
 
   const snapshotBySlug = new Map<string, { activeCount: number | null; medianPrice: number | null }>()
@@ -267,10 +319,11 @@ async function renderCitiesIndex() {
     null,
   )
   const regionFaqInput: MarketFaqInput = pulse ?? { grain: 'region', activeCount: totalActive, refreshedAt: latestSnapshotAt }
-  const { datasetVariables: regionDatasetVars, asOfIso: regionAsOfIso } = buildMarketFaq(
-    'Central Oregon',
-    regionFaqInput,
-  )
+  const {
+    datasetVariables: regionDatasetVars,
+    asOfIso: regionAsOfIso,
+    faqs: regionFaqs,
+  } = buildMarketFaq('Central Oregon', regionFaqInput)
 
   const schemas: SchemaInput[] = [
     {
@@ -294,6 +347,10 @@ async function renderCitiesIndex() {
       spatialCoverageName: 'Central Oregon, OR',
       variableMeasured: regionDatasetVars,
     })
+  }
+
+  if (regionFaqs.length > 0) {
+    schemas.push({ type: 'faqPage', items: regionFaqs })
   }
 
   const directory: Array<{
@@ -418,6 +475,55 @@ async function renderCitiesIndex() {
         {regionScale}
       </>
     ) : null
+
+  const insightBoard = buildCitiesInsightBoard({
+    monthly: regionMonthly,
+    cities: directory.map((city) => ({
+      slug: city.slug,
+      name: city.name,
+      activeCount: city.activeCount,
+    })),
+  })
+  const showInsight = citiesInsightPageCount(insightBoard) >= 2
+  if (showInsight) {
+    const insightVars = citiesInsightDatasetVariables(insightBoard)
+    if (insightVars.length > 0) {
+      schemas.push({
+        type: 'dataset',
+        name: 'Central Oregon cities, closed-sale months and city inventory mix',
+        description:
+          'Median close price and closing counts by month for Central Oregon, plus each published city\'s share of live single-family inventory.',
+        url: '/cities',
+        variableMeasured: insightVars,
+      })
+    }
+  }
+
+  const atlasRegions: AtlasRegion[] = cityBoundaries
+    .filter((row): row is NonNullable<(typeof cityBoundaries)[number]> => row != null)
+    .map((row) => ({
+      id: `city:${row.slug}`,
+      kind: 'town' as const,
+      kindLabel: 'City',
+      name:
+        cityNameBySlug.get(row.slug) ??
+        row.slug
+          .split('-')
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' '),
+      href: `/cities/${row.slug}`,
+      geometry: row.geometry,
+    }))
+  const showAtlas = atlasPop.dots.length > 0 || atlasRegions.length > 0
+
+  const railRows = homeRailRows(listingTiles, {
+    nowMs: Date.now(),
+    regionalHref: REGIONAL_SEARCH_HREF,
+    bendHref: '/cities/bend',
+    priceCutsHref: '/price-drops',
+    newHref: '/search?sort=newest',
+  })
+  const listingItemList = homeRailItemList(railRows)
   // When the drawing cannot be drawn, the note carries the figure as before.
   const directoryNote = regionDrawing
     ? `${formatCount(directory.length)} cities, A to Z.`
@@ -443,7 +549,7 @@ async function renderCitiesIndex() {
               publisher: { '@type': 'Organization', name: 'Ryan Realty' },
               mainEntity: {
                 '@type': 'ItemList',
-                itemListElement: featured.map((c, i) => ({
+                itemListElement: directory.map((c, i) => ({
                   '@type': 'ListItem',
                   position: i + 1,
                   name: `${c.name}, Oregon`,
@@ -454,18 +560,78 @@ async function renderCitiesIndex() {
           }}
         />
 
+        {listingItemList ? (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(listingItemList) }}
+          />
+        ) : null}
+
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Cities' }]} />
+
+        <section className="cities-fold" aria-labelledby="cities-fold-title">
+          <header className="cities-fold__head">
+            <p className="cities-fold__eyebrow">Central Oregon</p>
+            <h1 id="cities-fold-title" className="cities-fold__title">
+              Central Oregon cities
+            </h1>
+            <p className="cities-fold__note">
+              {directoryNote || 'Live single-family inventory from the regional MLS.'}{' '}
+              {hud.active != null
+                ? `${formatCount(hud.active)} homes for sale across the region.`
+                : ''}
+            </p>
+          </header>
+          <div className="cities-fold__stage">
+            {showAtlas ? (
+              <div className="cities-fold__drawing">
+                <V3Atlas
+                  id="atlas"
+                  headingLevel={2}
+                  headline={v3Text('Cities on the map')}
+                  headlineTone="eyebrow"
+                  claimText="Central Oregon houses for sale — active and pending homes across the cities on this list."
+                  keyPlacement="head"
+                  sourceName="Oregon Data Share"
+                  dots={atlasPop.dots}
+                  regions={atlasRegions}
+                  types={atlasPop.types}
+                  events={atlasPop.events}
+                  source={atlasPop.source}
+                  stamp={atlasPop.stamp}
+                  incomplete={!atlasPop.complete}
+                />
+              </div>
+            ) : null}
+            <aside className="cities-fold__figure">
+              <CitiesAlertsStrip
+                newCount30d={hud.new30}
+                updatedAt={leftoverStamp}
+              />
+              {regionDrawing}
+              {showInsight ? <CitiesInsight board={insightBoard} /> : null}
+            </aside>
+          </div>
+        </section>
+
+        {railRows.length > 0 ? (
+          <div className="cities-fold__homes">
+            <HomeHomesRails
+              rows={railRows}
+              emptyMessage="No photographed homes with a published price on this refresh."
+            />
+          </div>
+        ) : null}
 
         {firstFeatured ? (
           <V3Ledger
             id="featured-cities"
-            headingLevel={1}
-            eyebrow={v3Text('Central Oregon')}
-            heading={v3Text('Central Oregon cities')}
+            headingLevel={2}
+            eyebrow={v3Text('A to Z')}
+            heading={v3Text('Every city')}
             note={v3Text(
               directoryNote || 'Live single-family inventory from the regional MLS.',
             )}
-            drawing={regionDrawing}
             rows={[firstFeatured, ...restFeatured]}
             encode={countsPublishable ? 'bar' : undefined}
             source={v3Text(FEATURED_TRACE + '. Remaining cities: ' + OTHERS_TRACE + '. ' + REVEAL_TRACE)}

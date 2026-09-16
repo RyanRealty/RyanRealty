@@ -233,3 +233,37 @@
 @media (max-width: 30rem) {
   .v3-mos-compare__band-label { font-size: 0.62rem; }
 }
+
+/* Installed beui combobox, painted after install. Keep the trigger + list. */
+.v3-mos-compare__beui {
+  width: 100%;
+}
+
+.v3-mos-compare__beui-trigger {
+  min-height: var(--v3-tap);
+  border-radius: 0;
+  border: 0;
+  border-bottom: var(--v3-rule-hairline);
+  background: transparent;
+  color: var(--v3-ink);
+  box-shadow: none;
+}
+
+.v3-mos-compare__beui-trigger:hover,
+.v3-mos-compare__beui-trigger:focus-within {
+  border-color: var(--v3-navy);
+}
+
+.v3-mos-compare__beui-content {
+  border: var(--v3-rule-hairline);
+  border-radius: 0;
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+}
+
+.v3-mos-compare__beui-content [role='option'] {
+  display: grid;
+  gap: 0.1rem;
+  min-height: var(--v3-tap);
+  color: var(--v3-ink);
+}
