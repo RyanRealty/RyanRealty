@@ -923,6 +923,105 @@
   --atlas-stroke-d: color-mix(in srgb, var(--v3-navy) 34%, transparent);
 }
 
+/* TOWNS AS DOORS (`townsAs="doors"`, the region index — SITE-92 round 4).
+   Every town is painted in the place layer, above the marks, as a drawn
+   place: a navy tint the marks show through, a full-ink line the cream halo
+   lifts off the field, heavier on hover, focus and pin. A town with nothing
+   on it stays a door and wears a little less ink. The `--town` element class
+   is what scopes it, so a community or neighborhood on the same map keeps
+   the place look above. The section class scopes all of it, so a map that
+   did not ask keeps its base towns exactly as they were. */
+.v3-atlas--town-doors .v3-atlas__place--town {
+  --atlas-fill-d: color-mix(in srgb, var(--v3-navy) 11%, transparent);
+  --atlas-stroke-d: color-mix(in srgb, var(--v3-navy) 92%, transparent);
+  --atlas-width-d: 1.5px;
+  stroke-linejoin: round;
+}
+
+.v3-atlas--town-doors .v3-atlas__place--town.is-empty {
+  --atlas-fill-d: color-mix(in srgb, var(--v3-navy) 4%, transparent);
+  --atlas-stroke-d: color-mix(in srgb, var(--v3-navy) 60%, transparent);
+}
+
+.v3-atlas--town-doors .v3-atlas__place--town:hover,
+.v3-atlas--town-doors .v3-atlas__place--town.is-active {
+  --atlas-fill-d: color-mix(in srgb, var(--v3-navy) 26%, transparent);
+  --atlas-stroke-d: var(--v3-navy);
+  --atlas-width-d: 2.4px;
+}
+
+/* A wider halo under a heavier line, so the line reads over a dense cluster. */
+.v3-atlas--town-doors .v3-atlas__halos {
+  --atlas-width: 4.5px;
+}
+
+/* THE MARKS STEP DOWN AT REGION SCALE. Four thousand 4.2px marks over a town
+   the size of a thumbnail is a blot, and the evaluator called it one twice
+   ("a near-solid dark smudge", "an ink blot placeholder"). At the far bucket
+   (the region at rest, the same 1.35 the sales wash hides at) a mark is a
+   2.4px stipple in lighter ink, so Bend reads as density inside Bend's line;
+   the first zoom steps bring the marks part way back and past them they take
+   their full weight. The mark's own state rules — the held home, the marks in
+   the pinned place — keep their weight at every bucket, restated here because
+   the bucket selector outranks them. */
+.v3-atlas--town-doors[data-atlas-zoom='far'] .v3-atlas__dot {
+  stroke-width: 2.4px;
+  stroke: color-mix(in srgb, var(--v3-navy) 36%, transparent);
+}
+
+.v3-atlas--town-doors[data-atlas-zoom='far'] .v3-atlas__dot--pending {
+  stroke: color-mix(in srgb, var(--v3-navy) 26%, transparent);
+}
+
+.v3-atlas--town-doors[data-atlas-zoom='far'] .v3-atlas__dot--sold {
+  stroke: color-mix(in srgb, var(--v3-navy) 20%, transparent);
+}
+
+.v3-atlas--town-doors[data-atlas-zoom='mid'] .v3-atlas__dot {
+  stroke-width: 3.2px;
+  stroke: color-mix(in srgb, var(--v3-navy) 46%, transparent);
+}
+
+.v3-atlas--town-doors[data-atlas-zoom='mid'] .v3-atlas__dot--pending {
+  stroke: color-mix(in srgb, var(--v3-navy) 34%, transparent);
+}
+
+.v3-atlas--town-doors[data-atlas-zoom='mid'] .v3-atlas__dot--sold {
+  stroke: color-mix(in srgb, var(--v3-navy) 24%, transparent);
+}
+
+.v3-atlas--town-doors[data-atlas-zoom] .v3-atlas__dot.is-here {
+  stroke: var(--v3-navy);
+  stroke-width: 6.5px;
+}
+
+.v3-atlas--town-doors[data-atlas-zoom] .v3-atlas__dot.is-home {
+  stroke: var(--v3-navy);
+  stroke-width: 9px;
+}
+
+/* THE NAME IS A TAG ON THE PLACE, not type floating in the field: a cream
+   chip with a navy edge, uppercase and tracked like the key, sitting inside
+   the silhouette when it is tall enough and just under its line when it is
+   not (V3Atlas.client.tsx places it). No text shadow — the chip is the
+   ground. The pinned place's own label keeps its navy tag above. */
+.v3-atlas--town-doors .v3-atlas__label--town {
+  display: block;
+  max-width: none;
+  padding: 0.12rem 0.42rem;
+  background: color-mix(in srgb, var(--v3-cream) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--v3-navy) 40%, transparent);
+  color: var(--v3-navy);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  line-height: var(--v3-leading-control);
+  text-transform: uppercase;
+  text-shadow: none;
+  white-space: nowrap;
+  -webkit-line-clamp: unset;
+}
+
 /* Hit strokes: the places cloned UNDER themselves with a wide transparent
    edge, live only where a thumb needs it. Under, not over: an interior tap
    reaches the place's own fill first, and the wide edge only takes the taps

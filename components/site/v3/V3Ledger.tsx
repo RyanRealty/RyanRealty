@@ -114,6 +114,20 @@ type V3LedgerRowBase = {
    */
   media?: { src: string }
   /**
+   * A DESIGNED MARK for a row with no photograph, drawn in the same square the
+   * photo would fill: the place's recorded outline (V3PlaceMark with a
+   * silhouette), or the map's own point mark where no outline is recorded.
+   * Read only in a list where some row carries a photo — that is when the
+   * column exists — and only on a row with no `media`; a row with neither
+   * draws the glyph. Decorative, like the photo: the row's accessible name is
+   * `what`, so the mark renders inside an aria-hidden span and carries no
+   * name of its own. The evaluator's finding on the city index (SITE-92 round
+   * 3): a third of the A–Z rows "fall back to a flat navy tile with a single
+   * white letter ... so the list reads unfinished next to the rows that do
+   * carry imagery."
+   */
+  mark?: ReactNode
+  /**
    * What a hover (desktop), a keyboard focus, or a tap-and-hold (phone) shows
    * about this row that its resting text does not: the months-of-supply
    * verdict, a small-n reason, a twelve-month run of closes as a line. From
@@ -157,14 +171,40 @@ export type V3LedgerReveal = {
   series?: readonly (number | null)[]
   /** What the series counts, for the accessible name: "closed sales by month, last 12 months". */
   seriesLabel?: V3Text
+  /**
+   * The window's two ends as the reader should see them under the run —
+   * "Sep 2025" and "Aug 2026" — PREFORMATTED by the caller through
+   * lib/format/date, so the chart names its window without this primitive
+   * formatting a date. Without them the run has no axis and reads as a
+   * squiggle (the evaluator, SITE-92 round 3: "a single unlabeled sparkline
+   * with no axis").
+   */
+  seriesEnds?: { first: V3Text; last: V3Text }
+  /**
+   * The LAST published point's value, preformatted by the caller, set beside
+   * the endpoint mark: the one direct label the dataviz method allows on a
+   * line (the endpoint, never a number on every point). It is the same figure
+   * the last entry of `series` draws, so the caller's trace on the list's
+   * `source` already covers it; this primitive prints the string it is given
+   * and computes nothing from the series.
+   */
+  seriesLast?: V3Text
 }
 
 /** Published points a twelve-month run needs before it is drawn (DATA_GRAPHICS.md). */
 export const V3_LEDGER_SPARK_MIN = 6
 
-/** The spark's box. Fixed, so the endpoint mark stays a circle and the stroke stays 1.5px. */
-const SPARK_W = 120
-const SPARK_H = 24
+/**
+ * The run's box, in viewBox units. The plot fills SPARK_W of a SPARK_VB_W
+ * viewBox: the difference is the right gutter the endpoint label sits in, so a
+ * five-character count never clips at the panel edge. The SVG scales to its
+ * column (width 100%, aspect from the viewBox) rather than sitting at a fixed
+ * 120px, which is what cut it off at 375 (SITE-92 round 3).
+ */
+const SPARK_W = 220
+const SPARK_VB_W = 252
+const SPARK_H = 56
+const SPARK_PAD = 4
 
 /**
  * A row whose third column carries data: a price, a count, a percent, a delta.
@@ -334,6 +374,25 @@ type V3LedgerBase = {
    * nine copies of a bar on nine pages.
    */
   encode?: 'bar'
+  /**
+   * WHAT THE BAR LENGTH MEANS, said on the drawing, when the encode is not a
+   * plain proportion. Read only with `encode="bar"`. The city index runs 5 to
+   * 616 on one list: on a linear scale every town but Bend is a sliver, so the
+   * page hands over square-root weights — and a scale a reader cannot see is a
+   * lie about magnitude. This prints the caller's one-sentence note and a
+   * ruler over the bar column with the caller's ticks, each an already-
+   * formatted count at its 0..1 position on the same scale the weights use.
+   * The ledger computes neither: the caller owns the arithmetic that turned
+   * counts into lengths, so the caller owns the ticks that explain it. A tick
+   * out of 0..1 or not finite is dropped, never clamped, like a weight.
+   */
+  scale?: V3LedgerScale
+}
+
+/** The bar scale, explained: one sentence and the ticks that mark it (see `scale`). */
+export type V3LedgerScale = {
+  note: V3Text
+  ticks: readonly { at: number; label: V3Text }[]
 }
 
 /**
@@ -419,7 +478,15 @@ export function V3Ledger(props: V3LedgerProps) {
     layout = 'list',
     media = 'mark',
     encode,
+    scale,
   } = props
+
+  /* The ruler's ticks: the caller's positions on the caller's scale, each a
+     finite share in 0..1, dropped otherwise for the same reason a weight is. */
+  const ruler = encode === 'bar' && scale ? scale : null
+  const rulerTicks = ruler
+    ? ruler.ticks.filter((t) => typeof t.at === 'number' && Number.isFinite(t.at) && t.at >= 0 && t.at <= 1)
+    : []
 
   /**
    * A finite share of the widest bar, or nothing. Out of range is DROPPED
@@ -476,6 +543,7 @@ export function V3Ledger(props: V3LedgerProps) {
         layout !== 'list' && `v3-ledger--${layout}`,
         media === 'photo' && 'v3-ledger--photo',
         encode === 'bar' && 'v3-ledger--encoded',
+        ruler && !isEmpty && 'v3-ledger--ruled',
         anyReveal && 'v3-ledger--reveal',
         className,
       )}
@@ -491,6 +559,28 @@ export function V3Ledger(props: V3LedgerProps) {
         {drawing ? <div className="v3-ledger__drawing">{drawing}</div> : null}
       </div>
 
+      {ruler && !isEmpty ? (
+        /* The scale, said on the drawing: the caller's sentence in the name
+           column and a ruler over the bar column, its ticks at the caller's
+           positions. The ruler is presentation, so it is hidden from assistive
+           tech; the sentence is read. The value column is fixed-width in a
+           ruled list (V3Ledger.css) so the ruler and every track share one
+           left and right edge. */
+        <div className="v3-ledger__ruler">
+          <p className="v3-ledger__scale-note">{ruler.note}</p>
+          <span className="v3-ledger__ruler-measure" aria-hidden="true">
+            <span className="v3-ledger__ruler-track">
+              {rulerTicks.map((t) => (
+                <span key={`${t.at}-${t.label}`} className="v3-ledger__tick" style={{ left: `${(t.at * 100).toFixed(2)}%` }}>
+                  <span className="v3-ledger__tick-label">{t.label}</span>
+                </span>
+              ))}
+            </span>
+            <span className="v3-ledger__ruler-value" />
+          </span>
+        </div>
+      ) : null}
+
       {isEmpty ? (
         <p className="v3-ledger__empty">{emptyMessage}</p>
       ) : (
@@ -503,13 +593,16 @@ export function V3Ledger(props: V3LedgerProps) {
                shape twice, 2026-09-09). The caller may still pass media; it
                is simply not drawn on this layout. */
             const showMedia = Boolean(row.media) && layout !== 'walk'
-            const showGlyph = anyMedia && !showMedia
+            /* No photo in a column that has photos: the caller's designed
+               mark when it handed one over, the glyph when it did not. */
+            const showMark = anyMedia && !showMedia && row.mark != null
+            const showGlyph = anyMedia && !showMedia && !showMark
             const spark =
               row.reveal?.series && row.reveal.series.length > 0
                 ? buildSparkPlot(row.reveal.series, {
                     w: SPARK_W,
                     h: SPARK_H,
-                    pad: 2.5,
+                    pad: SPARK_PAD,
                     minPoints: V3_LEDGER_SPARK_MIN,
                   })
                 : null
@@ -539,9 +632,16 @@ export function V3Ledger(props: V3LedgerProps) {
                 <span
                   className={cn(
                     'v3-ledger__what',
-                    (showMedia || showGlyph) && 'v3-ledger__what--media',
+                    (showMedia || showGlyph || showMark) && 'v3-ledger__what--media',
                   )}
                 >
+                  {showMark ? (
+                    /* The designed mark, in the photo's square. Decorative,
+                       like the photo and the glyph. */
+                    <span className="v3-ledger__media v3-ledger__mark" aria-hidden="true">
+                      {row.mark}
+                    </span>
+                  ) : null}
                   {showGlyph ? (
                     /* The glyph: the same square as the photo, in navy wash,
                        carrying the initial. Decorative, like the photo. */
@@ -605,22 +705,50 @@ export function V3Ledger(props: V3LedgerProps) {
                           /* The run and what it counts, together: a squiggle
                              with no words is a decoration, and the words are
                              the accessible name, so the SVG is hidden. */
-                          <span className="v3-ledger__run">
+                          <span
+                            className="v3-ledger__run"
+                            style={{ ['--v3-run-plot' as string]: `${((SPARK_W / SPARK_VB_W) * 100).toFixed(2)}%` }}
+                          >
                             {row.reveal.seriesLabel ? (
                               <span className="v3-ledger__run-label">{row.reveal.seriesLabel}</span>
                             ) : null}
+                            {/* A small chart, not a thumbnail: a baseline, the
+                                run, the endpoint marked and — when the caller
+                                gave it — labelled with its value; the window's
+                                two ends named under it. The SVG scales to its
+                                column; the labels are HTML so they stay type. */}
                             <svg
                               className="v3-ledger__spark"
-                              viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
-                              width={SPARK_W}
-                              height={SPARK_H}
+                              viewBox={`0 0 ${SPARK_VB_W} ${SPARK_H}`}
                               aria-hidden="true"
                             >
+                              <line
+                                className="v3-ledger__spark-base"
+                                x1={SPARK_PAD}
+                                x2={SPARK_W - SPARK_PAD}
+                                y1={SPARK_H - 0.5}
+                                y2={SPARK_H - 0.5}
+                              />
                               <path d={spark.d} />
                               {spark.last ? (
-                                <circle cx={spark.last.x.toFixed(1)} cy={spark.last.y.toFixed(1)} r="2.2" />
+                                <circle cx={spark.last.x.toFixed(1)} cy={spark.last.y.toFixed(1)} r="2.6" />
+                              ) : null}
+                              {spark.last && row.reveal.seriesLast ? (
+                                <text
+                                  className="v3-ledger__spark-end"
+                                  x={(spark.last.x + 7).toFixed(1)}
+                                  y={(spark.last.y + 3.8).toFixed(1)}
+                                >
+                                  {row.reveal.seriesLast}
+                                </text>
                               ) : null}
                             </svg>
+                            {row.reveal.seriesEnds ? (
+                              <span className="v3-ledger__run-ends">
+                                <span>{row.reveal.seriesEnds.first}</span>
+                                <span>{row.reveal.seriesEnds.last}</span>
+                              </span>
+                            ) : null}
                           </span>
                         ) : null}
                       </>
