@@ -160,7 +160,15 @@ export const REGION_LIVE_CITATION =
   'Active single-family houses across Central Oregon from Oregon Data Share MLS.'
 
 const REGION_LIVE_EXTRA =
-  'Condo, townhome, and other property types appear when enough listings exist to publish them. Pace figures behind the fold are the ones buyers and sellers ask about.'
+  'Condo, townhome, and other property types appear when enough listings exist to publish them. Pace numbers are the ones buyers and sellers ask about: days to an offer, and how many homes closed last month.'
+
+/**
+ * Visitor English for the sold-price cards and monthly line on the live
+ * inventory fold. Asking price and sold price are different numbers — say
+ * that without "population," "cards and the line," or pipeline words.
+ */
+export const REGION_SOLD_ON_FOLD_CITATION =
+  'Asking prices are houses still for sale. The monthly line and the pages you can drag are what already closed, from the same Oregon Data Share MLS records.'
 
 /**
  * Append the extra-figures clause in visitor English. No sample-gated /

@@ -19,12 +19,14 @@
  *    lib/format, because the barrel never formats and never rounds.
  */
 
-import type { BlogPostCard, MarketPulseSnapshot } from '@/lib/data'
+import type { BlogPostCard, ListingTile, MarketPulseSnapshot } from '@/lib/data'
 import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatDate } from '@/lib/format/date'
-import { listingsBrowsePath } from '@/lib/slug'
+import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { homesForSalePath, listingTileHref, listingsBrowsePath } from '@/lib/slug'
 import {
   marketReportDoorLinks,
   marketReportHereBody,
@@ -249,6 +251,66 @@ export function buildClosedLedger(series: CoMarketAnnualRow[]): ClosedLedger {
  * this page that reaches the barrel, getRecentBlogPosts filters only on status and
  * published_at, and one blank title would otherwise take the whole render down.
  */
+const FOR_SALE_CAP = 6
+
+function listingFactLine(tile: ListingTile): string | null {
+  const parts: string[] = []
+  if (tile.beds != null && tile.beds > 0) parts.push(`${Math.round(tile.beds)} bd`)
+  if (tile.baths != null && tile.baths > 0) parts.push(`${Math.round(tile.baths)} ba`)
+  if (tile.sqft != null && tile.sqft > 0) parts.push(`${Math.round(tile.sqft).toLocaleString('en-US')} sqft`)
+  return parts.length > 0 ? parts.join(' · ') : null
+}
+
+/**
+ * Newest active single-family houses on the region report. Each row is a
+ * house: street, city, ask, beds/baths/sqft. A tile missing those facts is
+ * dropped — a photo with no house is the inventory miss this ledger exists
+ * to close.
+ */
+export function buildForSaleLedger(tiles: readonly ListingTile[]): {
+  rows: V3LedgerFigureRow[]
+  source: string
+} {
+  const rows: V3LedgerFigureRow[] = []
+  for (const tile of tiles) {
+    if (rows.length >= FOR_SALE_CAP) break
+    const street = publishStreetLine({
+      streetNumber: tile.streetNumber,
+      streetDirPrefix: tile.streetDirPrefix,
+      streetName: tile.streetName,
+      streetSuffix: tile.streetSuffix,
+      streetDirSuffix: tile.streetDirSuffix,
+    })
+    const price = tile.listPrice != null && tile.listPrice > 0 ? tile.listPrice : null
+    const facts = listingFactLine(tile)
+    if (!street || price == null || !facts) continue
+    const city = tile.city?.trim()
+    const photo = tile.photoUrl?.trim()
+    rows.push({
+      href: listingTileHref(tile),
+      when: city ? v3Text(city) : undefined,
+      what: v3Text(street),
+      detail: v3Text(facts),
+      value: v3Text(formatPriceExact(price)),
+      id: tile.listNumber ?? tile.listingKey,
+      media: photo ? { src: listingRowPhotoSrc(photo, LISTING_FIELD_LEAD_PHOTO_SIZE) } : undefined,
+    })
+  }
+  return {
+    rows,
+    source:
+      'Newest active single-family listings on Oregon Data Share MLS. Price, street, beds, baths, and living area as published.',
+  }
+}
+
+/** Crawlable city browse doors for ItemList JSON-LD. */
+export function regionHomesForSaleDoors(): ReadonlyArray<{ name: string; url: string }> {
+  return CITY_LABELS.filter((label) => CITY_SLUG[label]).map((label) => ({
+    name: `${label} homes for sale`,
+    url: homesForSalePath(label),
+  }))
+}
+
 export function buildGuideRows(posts: BlogPostCard[]): V3LedgerPlainRow[] {
   const rows: V3LedgerPlainRow[] = []
   for (const post of posts) {
