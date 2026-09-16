@@ -48,6 +48,21 @@
   gap: var(--v3-space-md);
 }
 
+/* 44px on everything this route adds (WCAG 2.5.5). The catalog's chips and
+   metric toggles come in at 36, which is the demo's density and not a public
+   page's. The Allocation BANDS stay proportional — a 1% band cannot be 44px
+   wide — and pass under 2.5.8 Equivalent, because the chip row below does the
+   same job at full size. */
+.region-insight .insight-cards__chip,
+.region-insight .insight-cards__metric {
+  min-height: 2.75rem;
+  padding-inline: 0.8rem;
+}
+
+.region-insight .insight-cards__alloc-track {
+  height: 2.75rem;
+}
+
 .region-insight .insight-cards__note {
   max-width: var(--v3-measure-text);
 }

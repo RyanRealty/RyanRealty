@@ -1,4 +1,5 @@
-/* Region city MOS — two named bars per town (SITE-88). Tokens only. */
+/* The supply ladder — every town on one months-of-supply axis, against the two
+   thresholds that decide the verdict (SITE-103). Tokens only. */
 
 .region-city-mos {
   margin: 0 0 var(--v3-space-md);
@@ -7,11 +8,52 @@
 
 .region-city-mos__plain {
   margin: 0 0 var(--v3-space-sm);
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+/* The band strip sits on the same axis as every bar below it, so a reader can
+   drop a line from "Balanced" straight onto a town. */
+.region-city-mos__scale {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  /* The strip has to start and end where the BARS do, not where the row does,
+     or a reader drops a line from "Balanced" onto the wrong month. Same two
+     columns the door reserves for the name and the figure. */
+  padding-left: calc(6.5rem + var(--v3-space-sm));
+  padding-right: calc(4rem + var(--v3-space-sm));
+  margin-bottom: var(--v3-space-2xs);
+  border-bottom: 1px solid var(--v3-hairline);
+}
+
+.region-city-mos__band {
+  position: relative;
+  min-width: 0;
+  padding-bottom: 0.25rem;
+}
+
+.region-city-mos__band--balanced,
+.region-city-mos__band--buyers {
+  border-left: 1px solid var(--v3-hairline);
+  padding-left: 0.35rem;
+}
+
+.region-city-mos__band--buyers {
+  flex: 1 1 auto;
+}
+
+.region-city-mos__bandname {
+  display: block;
   font-size: var(--v3-size-label);
-  font-weight: 600;
   letter-spacing: var(--v3-track-label);
   text-transform: uppercase;
   color: var(--v3-ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .region-city-mos__list {
@@ -19,22 +61,27 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--v3-space-sm);
 }
 
 .region-city-mos__door {
   display: grid;
-  gap: var(--v3-space-2xs);
-  text-decoration: none;
-  color: inherit;
+  grid-template-columns: 6.5rem minmax(0, 1fr) 4rem;
+  grid-template-areas:
+    'name track mos'
+    'name counts counts';
+  align-items: center;
+  column-gap: var(--v3-space-sm);
+  row-gap: 0.15rem;
   min-height: var(--v3-tap);
   padding: var(--v3-space-xs) 0;
   border-bottom: 1px solid var(--v3-hairline);
+  text-decoration: none;
+  color: inherit;
 }
 
-.region-city-mos__door:hover .region-city-mos__name,
-.region-city-mos__door:focus-visible .region-city-mos__name {
-  color: var(--v3-ink);
+.region-city-mos__door:hover,
+.region-city-mos__door:focus-visible {
+  background: var(--v3-wash);
 }
 
 .region-city-mos__door:focus-visible {
@@ -43,70 +90,105 @@
 }
 
 .region-city-mos__name {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--v3-space-sm);
+  grid-area: name;
   font-size: var(--v3-size-body);
   font-weight: 600;
   color: var(--v3-ink);
 }
 
-.region-city-mos__mos {
-  font-size: var(--v3-size-label);
-  font-weight: 500;
-  color: var(--v3-ink-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.region-city-mos__bars {
-  display: grid;
-  gap: 0.25rem;
-}
-
-.region-city-mos__barrow {
-  display: grid;
-  grid-template-columns: 4.5rem minmax(0, 1fr) 3.5rem;
-  align-items: center;
-  gap: var(--v3-space-xs);
-}
-
-.region-city-mos__barlabel {
-  font-size: var(--v3-size-label);
-  color: var(--v3-ink-muted);
-}
-
 .region-city-mos__track {
+  grid-area: track;
   position: relative;
   display: block;
-  height: 0.5rem;
-  border-radius: 999px;
-  background: var(--v3-hairline);
-  overflow: hidden;
+  height: 0.75rem;
+  background: color-mix(in srgb, var(--v3-navy) 6%, transparent);
+}
+
+/* The thresholds, drawn on every row rather than once at the top: a rule a
+   reader has to carry down seven rows is not a rule they can read. */
+.region-city-mos__rule {
+  position: absolute;
+  top: -0.15rem;
+  bottom: -0.15rem;
+  width: 1px;
+  background: color-mix(in srgb, var(--v3-navy) 28%, transparent);
 }
 
 .region-city-mos__fill {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
   display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: color-mix(in srgb, var(--v3-ink) 45%, transparent);
+  background: var(--v3-navy);
 }
 
-.region-city-mos__fill--homes {
-  background: var(--v3-ink);
+/* Navy tints, never a new hue: the further a town is past a threshold, the
+   lighter its bar, so the three bands read without a legend on every row. */
+.region-city-mos__fill[data-band='balanced'] {
+  background: color-mix(in srgb, var(--v3-navy) 62%, var(--v3-cream));
 }
 
-.region-city-mos__value {
+.region-city-mos__fill[data-band='buyers'] {
+  background: color-mix(in srgb, var(--v3-navy) 38%, var(--v3-cream));
+}
+
+.region-city-mos__mos {
+  grid-area: mos;
   font-size: var(--v3-size-body-sm);
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
   text-align: right;
   color: var(--v3-ink);
+  font-variant-numeric: tabular-nums;
 }
 
-@media (min-width: 48rem) {
-  .region-city-mos__list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: var(--v3-space-lg);
+.region-city-mos__counts {
+  grid-area: counts;
+  font-size: var(--v3-size-label);
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.region-city-mos__rule-note {
+  margin: var(--v3-space-sm) 0 0;
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-label);
+  color: var(--v3-ink-muted);
+}
+
+@media (max-width: 30rem) {
+  .region-city-mos__scale {
+    padding-left: calc(5.5rem + var(--v3-space-xs));
+    padding-right: calc(3.4rem + var(--v3-space-xs));
+  }
+
+  .region-city-mos__door {
+    grid-template-columns: 5.5rem minmax(0, 1fr) 3.4rem;
+    column-gap: var(--v3-space-xs);
+  }
+
+  .region-city-mos__name {
+    font-size: var(--v3-size-body-sm);
+  }
+}
+
+/* The band strip is two months wide in the middle — about forty pixels at 375 —
+   so below 48rem the words and the long boundaries drop and the bare numerals
+   carry the scale. A truncated "6 OR MO..." is worse than "6+". */
+.region-city-mos__bandshort {
+  display: none;
+}
+
+@media (max-width: 47.99rem) {
+  .region-city-mos__bandword,
+  .region-city-mos__bandlong {
+    display: none;
+  }
+
+  .region-city-mos__bandshort {
+    display: inline;
+  }
+
+  .region-city-mos__bandname {
+    letter-spacing: 0;
   }
 }

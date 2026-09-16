@@ -26,7 +26,7 @@ const formatCount = (v: number) => Math.round(v).toLocaleString('en-US')
  * Liveline on this site read "No data to display").
  *
  * The chart keeps only the points inside `[now - window, now]`, where `now` is
- * `Date.now()`, and the window is 42–49 SECONDS. This file used to end its
+ * the browser's own wall clock, and the window is 42–49 SECONDS. This file used to end its
  * series at the literal `1_700_000_000` — a perfectly stable epoch, and a
  * correct hydration fix (#418: a clock read during render is a hydration
  * failure), but one that stopped being "now" in November 2023. Every card built

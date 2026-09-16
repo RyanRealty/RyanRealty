@@ -298,6 +298,19 @@ export function claudeModelFromWrapper(wrapper, alias) {
   const usage = wrapper && typeof wrapper === 'object' ? wrapper.modelUsage : null
   if (usage && typeof usage === 'object') {
     const ids = Object.keys(usage).filter((k) => /^claude-/.test(k))
+    // `modelUsage` lists EVERY model the CLI billed on that turn, and the first
+    // key is the small fast model the CLI runs for its own overhead: a real
+    // wrapper from `claude -p --model sonnet` on 2026-09-16 reads
+    // ["claude-haiku-4-5-20251001", "claude-sonnet-5"]. Taking ids[0] recorded
+    // HAIKU as the judge of a mark sonnet had actually scored — untrue, and
+    // refused by isAllowedEvaluator, so a lane that walked the chain correctly
+    // could not write an honest receipt at all (SITE-103). Prefer the id that
+    // matches the alias that was ASKED for, then any judge-family id, and only
+    // then the alias default.
+    const asked = ids.find((id) => new RegExp(`^claude-${alias}(?:-|$)`).test(id))
+    if (asked) return asked
+    const family = ids.find((id) => isAllowedEvaluator(id))
+    if (family) return family
     if (ids.length) return ids[0]
   }
   return FALLBACK_EVALUATORS[alias] ?? FALLBACK_EVALUATORS.sonnet
