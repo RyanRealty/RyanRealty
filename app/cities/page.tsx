@@ -578,7 +578,10 @@ async function renderCitiesIndex() {
             <p className="cities-fold__note">
               {directoryNote || 'Live single-family inventory from the regional MLS.'}{' '}
               {hud.active != null
-                ? `${formatCount(hud.active)} homes for sale across the region.`
+                ? `${formatCount(hud.active)} detached single-family homes for sale.`
+                : ''}
+              {atlasPop.counts.forSale > 0
+                ? ` The map marks ${formatCount(atlasPop.counts.forSale)} homes of every type.`
                 : ''}
             </p>
           </header>
@@ -590,7 +593,11 @@ async function renderCitiesIndex() {
                   headingLevel={2}
                   headline={v3Text('Cities on the map')}
                   headlineTone="eyebrow"
-                  claimText="Central Oregon houses for sale — active and pending homes across the cities on this list."
+                  claimText={
+                    atlasPop.counts.forSale > 0
+                      ? `${formatCount(atlasPop.counts.forSale)} homes of every type for sale on this map.`
+                      : 'Homes of every type for sale across the cities on this list.'
+                  }
                   keyPlacement="head"
                   sourceName="Oregon Data Share"
                   dots={atlasPop.dots}
