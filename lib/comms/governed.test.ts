@@ -167,6 +167,16 @@ describe('sendGovernedSms — guard order', () => {
     expect(h.inserts.filter((i) => i.table !== 'admin_actions')).toHaveLength(0)
   })
 
+  it('broker manual compose skipSuppression sends despite STOP/consent suppression (bulk-only gate)', async () => {
+    h.isSuppressed.mockResolvedValue({ suppressed: true, reasons: ['sms:no-sms-consent'] })
+    h.inSmsQuietHours.mockReturnValue(false)
+    wireHappySmsPath()
+    const res = await sendGovernedSms({ ...baseReq, skipSuppression: true })
+    expect(res).toEqual({ ok: true, sid: 'SM123', to: '+15415551234' })
+    expect(h.isSuppressed).not.toHaveBeenCalled()
+    expect(h.sendSms).toHaveBeenCalledTimes(1)
+  })
+
   it('fails CLOSED when the suppression read errors (reason string propagated)', async () => {
     h.isSuppressed.mockResolvedValue({ suppressed: true, reasons: ['suppression-check-failed: boom'] })
     const res = await sendGovernedSms(baseReq)

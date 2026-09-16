@@ -33,7 +33,7 @@ export async function searchComposePeopleAction(q: string): Promise<ComposePerso
 async function sendBrokerSelfCompose(
   formData: FormData,
   brokerSlug: string | null,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true; notice?: string } | { ok: false; error: string }> {
   const body = String(formData.get('body') ?? '').trim()
   if (!body) return { ok: false, error: 'Write the text first.' }
   const { resolveActingBrokerPhone, sendWhitelistedBrokerSms } = await import(
@@ -50,7 +50,7 @@ async function sendBrokerSelfCompose(
 
 export async function sendComposeAction(
   formData: FormData,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true; notice?: string } | { ok: false; error: string }> {
   const auth = await checkAdminAction('inbox.send')
   const denied = refuseMessagesSend(auth)
   if (denied || !auth.ok) return denied ?? { ok: false, error: 'Unauthorized' }
@@ -95,14 +95,14 @@ export async function sendComposeAction(
   await discardDraftAction(personId, channel === 'email' ? 'email' : 'text')
   revalidatePath('/admin/messages')
   revalidatePath('/admin/messages/new')
-  return { ok: true }
+  return result.notice ? { ok: true, notice: result.notice } : { ok: true }
 }
 
 export async function saveComposeDraftAction(
   personId: number,
   channel: 'text' | 'email',
   formData: FormData,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true; notice?: string } | { ok: false; error: string }> {
   const auth = await checkAdminAction('inbox.send')
   const denied = refuseMessagesSend(auth)
   if (denied || !auth.ok) return denied ?? { ok: false, error: 'Unauthorized' }
@@ -111,7 +111,7 @@ export async function saveComposeDraftAction(
 
 export async function sendMessagesSmsAction(
   formData: FormData,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true; notice?: string } | { ok: false; error: string }> {
   if (!formData.get('channel')) formData.set('channel', 'text')
   return sendComposeAction(formData)
 }

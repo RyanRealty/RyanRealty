@@ -338,53 +338,62 @@ export async function processNewExpiredListings(
         // PLAN 71 AUTO-ENROLL PAUSED (Matt directive 2026-07-11): expired
         // outreach is manual approve-and-send at /admin/expired-outreach —
         // nothing texts an expired owner without a broker's click. Tags,
-        // custom fields, the call task, the auto-CMA, and the Matt alert all
-        // still fire; only the automatic first-touch sequence is off. To
-        // restore the old behavior, re-add the autoEnrollPerson(crmPersonId)
-        // call here (import kept).
+        // custom fields, the call task, Auto-CMA, and the Matt alert still
+        // fire; only the automatic first-touch sequence is off. To restore
+        // auto-enroll, re-add autoEnrollPerson(crmPersonId) here (import kept).
         void autoEnrollPerson // import retained for the documented restore path
         console.log(
-          `[expired-listing-processor] auto-enroll PAUSED for crm ${crmPersonId} — manual queue at /admin/expired-outreach (2026-07-11 directive)`,
+          `[expired-listing-processor] auto-enroll PAUSED for crm ${crmPersonId} — manual approve at /admin/expired-outreach (2026-07-11 directive)`,
         )
 
-        // Auto-CMA (Matt directive 2026-06-11): every detected expired listing
-        // gets a CMA queued for the property, link attached to the opening
-        // outreach. notifyLead=false — the owner never asked us for anything.
-        try {
-          const { createCmaRequest } = await import('@/lib/cma-request')
-          const cmaRes = await createCmaRequest({
-            rawAddress: fullAddress,
-            parsedStreet: streetAddress || null,
-            parsedCity: l.City ?? null,
-            parsedState: 'OR',
-            parsedPostalCode: l.PostalCode ?? null,
-            leadEmail: owner.ownerEmail ?? null,
-            leadName: owner.ownerName ?? null,
-            leadPhone: owner.ownerPhone ?? null,
-            leadTimeline: 'ready-now',
-            leadClassification: 'hot',
-            crmPersonId,
-            requestSource: 'expired-listing-cron',
-            notifyLead: false,
-            // ONE doc (Matt 2026-08-05, supersedes spec 07 §4.1's separate
-            // audit): expired subjects build a plain CMA and the builder adds
-            // the last-listing review section from the listing history itself.
-            // Legacy 'expired-audit' rows still satisfy the worklist via
-            // acceptedDocTypesFor.
-            docType: 'cma',
-          })
-          if (cmaRes.ok) {
-            stats.cmas_queued++
-            // Spec 07 §4.2 — remember the doc id and stamp it INTO the upsert
-            // below. The expired_listings row does not exist yet at this point
-            // (upsertExpiredListingRow runs after this block), so stamping here
-            // 0-row-updates silently (adversarial audit 2026-07-18 CRITICAL).
-            queuedCmaId = cmaRes.cmaId
-          } else {
-            console.warn('[expired-listing-processor] CMA request failed:', cmaRes.error)
+        // Auto-CMA (Matt 2026-06-11; restored 2026-09-15): runs by default.
+        // Opt out with EXPIRED_AUTO_CMA=0|false|no. Judge/audit for this path
+        // use Cursor subscription transport (lib/grok/transport + cursor-cli),
+        // not api.x.ai — see lib/cma/worker.ts.
+        const expiredAutoCmaOff = /^(0|false|no)$/i.test(
+          (process.env.EXPIRED_AUTO_CMA ?? '').trim(),
+        )
+        if (!expiredAutoCmaOff) {
+          try {
+            const { createCmaRequest } = await import('@/lib/cma-request')
+            const cmaRes = await createCmaRequest({
+              rawAddress: fullAddress,
+              parsedStreet: streetAddress || null,
+              parsedCity: l.City ?? null,
+              parsedState: 'OR',
+              parsedPostalCode: l.PostalCode ?? null,
+              leadEmail: owner.ownerEmail ?? null,
+              leadName: owner.ownerName ?? null,
+              leadPhone: owner.ownerPhone ?? null,
+              leadTimeline: 'ready-now',
+              leadClassification: 'hot',
+              crmPersonId,
+              requestSource: 'expired-listing-cron',
+              notifyLead: false,
+              // ONE doc (Matt 2026-08-05, supersedes spec 07 §4.1's separate
+              // audit): expired subjects build a plain CMA and the builder adds
+              // the last-listing review section from the listing history itself.
+              // Legacy 'expired-audit' rows still satisfy the worklist via
+              // acceptedDocTypesFor.
+              docType: 'cma',
+            })
+            if (cmaRes.ok) {
+              stats.cmas_queued++
+              // Spec 07 §4.2 — remember the doc id and stamp it INTO the upsert
+              // below. The expired_listings row does not exist yet at this point
+              // (upsertExpiredListingRow runs after this block), so stamping here
+              // 0-row-updates silently (adversarial audit 2026-07-18 CRITICAL).
+              queuedCmaId = cmaRes.cmaId
+            } else {
+              console.warn('[expired-listing-processor] CMA request failed:', cmaRes.error)
+            }
+          } catch (e) {
+            console.warn('[expired-listing-processor] CMA request threw:', e)
           }
-        } catch (e) {
-          console.warn('[expired-listing-processor] CMA request threw:', e)
+        } else {
+          console.log(
+            `[expired-listing-processor] Auto-CMA skipped (EXPIRED_AUTO_CMA off) for ${fullAddress}`,
+          )
         }
       }
 

@@ -71,6 +71,11 @@ export type GovernedSmsRequest = {
   initiator: GovernedInitiator
   /** A6: only a manual, human-typed 1:1 reply may override quiet hours. */
   overrideQuietHours?: boolean
+  /**
+   * Broker CRM compose only: skip hard-stop / channel suppression.
+   * Consent, marketing opt-in, and STOP-list gates stay on bulk rails.
+   */
+  skipSuppression?: boolean
   /** crm_timeline.source — defaults to 'app'. */
   timelineSource?: string
 }

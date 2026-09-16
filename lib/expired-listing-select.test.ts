@@ -71,4 +71,15 @@ describe('expired capture select filters', () => {
     expect(PROCESSOR_SRC).toMatch(/fetchAndInsertHistoryCore/)
     expect(PROCESSOR_SRC).toMatch(/buildListingNote\([\s\S]*loadHistoryForExpiredNote/)
   })
+
+  it('Auto-CMA createCmaRequest(expired-listing-cron) runs by default; EXPIRED_AUTO_CMA opts out', () => {
+    expect(PROCESSOR_SRC).toMatch(/EXPIRED_AUTO_CMA/)
+    expect(PROCESSOR_SRC).toMatch(/\^\(0\|false\|no\)\$/i)
+    expect(PROCESSOR_SRC).toMatch(/expiredAutoCmaOff/)
+    // createCmaRequest + expired-listing-cron inside the default-on branch
+    expect(PROCESSOR_SRC).toMatch(
+      /if \(!expiredAutoCmaOff\)[\s\S]*createCmaRequest\([\s\S]*requestSource:\s*'expired-listing-cron'/,
+    )
+    expect(PROCESSOR_SRC).toMatch(/Auto-CMA skipped \(EXPIRED_AUTO_CMA off\)/)
+  })
 })

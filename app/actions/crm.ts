@@ -28,7 +28,7 @@ import { savedViewToSegment } from '@/lib/data/crm/getSavedViewSegment'
 import { EMPTY_SEGMENT, type CrmSegment, type CrmNode } from '@/lib/crm/segment-ast'
 import { trySendGroupMms } from '@/lib/crm/try-send-group-mms'
 
-export type CrmActionResult = { ok: true } | { ok: false; error: string }
+export type CrmActionResult = { ok: true; notice?: string } | { ok: false; error: string }
 
 export type CrmAccess = {
   email: string
@@ -627,7 +627,7 @@ export async function getTwilioSmsStatus(): Promise<{ a2p: string | null; canSen
   return { a2p, canSend: a2p === 'VERIFIED' }
 }
 
-/** Send a 1:1 SMS from the broker line via Twilio messaging service. Suppression-checked. */
+/** Send a 1:1 (or group) SMS from the broker line. Manual compose skips consent/STOP (bulk-only); quiet hours still apply. */
 export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionResult> {
   const access = await requireCrmAccess()
   if (!access.ok) return access
@@ -688,15 +688,16 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   const idempotencyKey = String(formData.get('idempotencyKey') ?? '').trim()
 
   const performSend = async (): Promise<CrmActionResult> => {
-  const { isSuppressed } = await import('@/lib/crm/suppressions')
   const { sendSms, sendSmsViaMessagingService, brokerTwilioNumber, toE164, lookupPersonByPhone } = await import('@/lib/crm/twilio')
+  const { GROUP_THREAD_FAILED } = await import('@/lib/crm/compose-group')
 
   let sentCount = 0
   let lastError: string | null = null
+  let fallbackNotice: string | undefined
 
-  // Normalize raw group-reply numbers → E.164, drop any that actually resolve to
-  // a contact (those go through the personId path with full suppression) or that
-  // a contact HAS opted out of. What remains are true no-contact numbers.
+  // Normalize raw group-reply numbers → E.164. Broker manual compose does not
+  // drop contacts for SMS consent / STOP (bulk-only); route resolved contacts
+  // onto the personId path.
   const rawPhones: string[] = []
   {
     const seen = new Set<string>()
@@ -706,8 +707,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
       seen.add(e164)
       const hit = await lookupPersonByPhone(e164)
       if (hit) {
-        // it IS a contact — suppression-check and route via the id path instead
-        if (!(await isSuppressed(hit.personId, 'sms')).suppressed && !recipientIds.includes(hit.personId)) recipientIds.push(hit.personId)
+        if (!recipientIds.includes(hit.personId)) recipientIds.push(hit.personId)
         continue
       }
       rawPhones.push(e164)
@@ -723,18 +723,18 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     access: access.access,
     explicitGroupThread,
     overrideQuietHours: override,
+    // Direct compose Send: consent / TCPA soft opt-in / STOP-list are BULK ONLY.
+    skipSuppression: true,
     requirePersonInScope,
     revalidate: revalidateCrm,
   })
-  if (groupAttempt) return groupAttempt
+  if (groupAttempt.status === 'sent') return { ok: true }
+  if (groupAttempt.status === 'failed') return { ok: false, error: groupAttempt.error }
+  if (groupAttempt.status === 'fallback') fallbackNotice = groupAttempt.notice
 
   // §A4: each 1:1 recipient routes through the governed chokepoint
-  // (lib/comms/sendGovernedSms) — hard-stop → suppression (fail closed) →
-  // quiet hours → the Twilio rail → timeline + conversation shadow-write.
-  // Rows written there are byte-identical to what this loop wrote inline.
-  // Scope stays HERE: it is authorization, not compliance. The whole-send
-  // idempotency wrapper below is unchanged, so the governed per-send key is
-  // deliberately omitted (one key per composer submit, the existing pattern).
+  // (lib/comms/sendGovernedSms). Manual compose skips suppression (bulk-only);
+  // quiet hours still apply unless the broker overrides.
   const { sendGovernedSms } = await import('@/lib/comms/sendGovernedSms')
   for (const rid of recipientIds) {
     // Every recipient (including extras) must be in the broker's scope.
@@ -748,6 +748,7 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
       purpose: 'crm:manual-sms',
       initiator: { kind: 'broker', broker: access.access.brokerSlug },
       overrideQuietHours: override,
+      skipSuppression: true,
     })
     if (!sent.ok) { lastError = sent.error; continue }
     sentCount++
@@ -767,9 +768,19 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     }
   }
 
-  if (sentCount === 0) return { ok: false, error: lastError ?? 'No recipient could be texted' }
+  if (sentCount === 0) {
+    if (explicitGroupThread) {
+      return {
+        ok: false,
+        error: lastError
+          ? `${GROUP_THREAD_FAILED} (${lastError})`
+          : GROUP_THREAD_FAILED,
+      }
+    }
+    return { ok: false, error: lastError ?? 'No recipient could be texted' }
+  }
   recipientIds.forEach((rid) => revalidateCrm(rid))
-  return { ok: true }
+  return fallbackNotice ? { ok: true, notice: fallbackNotice } : { ok: true }
   }
 
   // An EMPTY composer key still gets a ledger entry — deriveFallbackSendKey says why.

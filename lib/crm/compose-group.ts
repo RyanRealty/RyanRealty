@@ -1,12 +1,17 @@
 /**
  * Compose group rules — Apple Messages semantics.
  *
- * Two or more people in To: is one group thread. The send path must not
- * silently fan out to one-off texts unless the broker asked for that.
+ * Two or more people in To: is one group thread. Prefer one carrier group;
+ * if that fails, fan out per person with a truthful notice — never a silent
+ * zero-send ("nobody was texted").
  */
 
 export const GROUP_THREAD_FAILED =
   'Could not start one group thread. Nobody was texted separately.'
+
+/** Shown when the carrier group fails but each person was texted 1:1. */
+export const GROUP_THREAD_FALLBACK_NOTICE =
+  'Could not start one group thread — texted each person separately.'
 
 export type ComposePersonChip = {
   id: number
@@ -35,14 +40,17 @@ export function isComposeGroup(people: Array<{ id: number }>): boolean {
 
 /**
  * After a group-thread attempt, decide whether 1:1 fan-out is allowed.
- * `explicitGroupThread` is what the Apple compose surface sets for 2+ people.
+ * Explicit group compose (2+ people) always allows honest per-person delivery
+ * when the carrier group did not form — never silent zero-send.
  */
 export function decideGroupSmsFallback(params: {
   explicitGroupThread: boolean
   groupFormed: boolean
-}): { allowFanOut: boolean; error?: string } {
+}): { allowFanOut: boolean; notice?: string; error?: string } {
   if (params.groupFormed) return { allowFanOut: false }
-  if (params.explicitGroupThread) return { allowFanOut: false, error: GROUP_THREAD_FAILED }
+  if (params.explicitGroupThread) {
+    return { allowFanOut: true, notice: GROUP_THREAD_FALLBACK_NOTICE }
+  }
   return { allowFanOut: true }
 }
 

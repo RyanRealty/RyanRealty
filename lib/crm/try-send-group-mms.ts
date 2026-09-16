@@ -2,7 +2,11 @@ import 'server-only'
 
 import type { CrmAttachmentRef } from '@/lib/crm/attachment-limits'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
-import { decideGroupSmsFallback, GROUP_THREAD_FAILED } from '@/lib/crm/compose-group'
+import {
+  decideGroupSmsFallback,
+  GROUP_THREAD_FALLBACK_NOTICE,
+  GROUP_THREAD_FAILED,
+} from '@/lib/crm/compose-group'
 
 type SendResult = { ok: true } | { ok: false; error: string }
 
@@ -13,12 +17,25 @@ export type GroupSmsAccess = {
 }
 
 /**
- * One carrier group thread for 2+ people. Returns a send result when the
- * attempt is finished (sent, or refused so we do not fan out). Returns null
- * when the 1:1 path should continue.
+ * Outcome of a group-thread attempt from the CRM composer.
+ * - sent: carrier group delivered
+ * - failed: hard stop (do not fan out) — reserved; prefer fallback
+ * - fallback: group did not form; caller must 1:1 with notice
+ * - continue: not a multi-recipient send (or legacy path continues without notice)
+ */
+export type GroupSmsAttempt =
+  | { status: 'sent' }
+  | { status: 'failed'; error: string }
+  | { status: 'fallback'; notice: string }
+  | { status: 'continue' }
+
+/**
+ * One carrier group thread for 2+ people.
  *
- * The Twilio call lives in sendGovernedGroupMms (G56). This file only
- * assembles members, checks broker scope, and decides fan-out.
+ * Broker manual compose skips SMS consent / STOP / marketing-opt-in gates
+ * (those are bulk-only). Quiet hours still apply via sendGovernedGroupMms.
+ * If the carrier group cannot form, return fallback so the composer texts
+ * each person — never silent zero-send.
  */
 export async function trySendGroupMms(opts: {
   personId: number
@@ -29,16 +46,17 @@ export async function trySendGroupMms(opts: {
   access: GroupSmsAccess
   explicitGroupThread: boolean
   overrideQuietHours?: boolean
+  /** Broker compose: skip consent/STOP suppressions (bulk-only). */
+  skipSuppression?: boolean
   requirePersonInScope: (
     personId: number,
     access: GroupSmsAccess,
   ) => Promise<SendResult>
   revalidate: (personId: number) => void
-}): Promise<SendResult | null> {
-  if (opts.recipientIds.length + opts.rawPhones.length < 2) return null
+}): Promise<GroupSmsAttempt> {
+  if (opts.recipientIds.length + opts.rawPhones.length < 2) return { status: 'continue' }
 
   const { getSendTarget } = await import('@/lib/data/crm/getSendTarget')
-  const { isSuppressed } = await import('@/lib/crm/suppressions')
   const { renderCrmMerge, attributeSiteLinks } = await import('@/lib/crm/merge')
   const { buildMergeContext } = await import('@/lib/crm/merge-context')
   const { brokerTwilioNumber } = await import('@/lib/crm/twilio')
@@ -50,7 +68,9 @@ export async function trySendGroupMms(opts: {
     'matt'
   const proxy = await brokerTwilioNumber(slug)
   if (!proxy || !primaryTarget) {
-    return opts.explicitGroupThread ? { ok: false, error: GROUP_THREAD_FAILED } : null
+    return opts.explicitGroupThread
+      ? { status: 'fallback', notice: GROUP_THREAD_FALLBACK_NOTICE }
+      : { status: 'continue' }
   }
 
   const members: Array<{ rid: number | null; phone: string }> = []
@@ -58,18 +78,21 @@ export async function trySendGroupMms(opts: {
     if (rid !== opts.personId) {
       const scoped = await opts.requirePersonInScope(rid, opts.access)
       if (!scoped.ok) {
-        return opts.explicitGroupThread ? { ok: false, error: GROUP_THREAD_FAILED } : null
+        // Skip out-of-scope extras; still try group/fan-out with the rest.
+        continue
       }
     }
     const target = await getSendTarget(rid)
-    if (!target?.phone || (await isSuppressed(rid, 'sms')).suppressed) {
-      return opts.explicitGroupThread ? { ok: false, error: GROUP_THREAD_FAILED } : null
-    }
+    if (!target?.phone) continue
+    // Consent / STOP / opt-in: bulk-only. Manual compose does not drop members
+    // for crm_suppressions (skipSuppression). Phone presence is enough here.
     members.push({ rid, phone: target.phone })
   }
   for (const e164 of opts.rawPhones) members.push({ rid: null, phone: e164 })
   if (members.length < 2) {
-    return opts.explicitGroupThread ? { ok: false, error: GROUP_THREAD_FAILED } : null
+    return opts.explicitGroupThread
+      ? { status: 'fallback', notice: GROUP_THREAD_FALLBACK_NOTICE }
+      : { status: 'continue' }
   }
 
   const groupCtx = await buildMergeContext({ person: primaryTarget.person, senderSlug: slug })
@@ -81,7 +104,7 @@ export async function trySendGroupMms(opts: {
   )
   const { loadGroupMedia } = await import('@/lib/crm/attachments')
   const gm = await loadGroupMedia(opts.attachments)
-  if (!gm.ok) return gm
+  if (!gm.ok) return { status: 'failed', error: gm.error }
 
   const { sendGovernedGroupMms } = await import('@/lib/comms/sendGovernedGroupMms')
   const group = await sendGovernedGroupMms({
@@ -94,19 +117,30 @@ export async function trySendGroupMms(opts: {
     purpose: 'crm:manual-group-sms',
     initiator: { kind: 'broker', broker: slug },
     overrideQuietHours: opts.overrideQuietHours,
+    skipSuppression: opts.skipSuppression === true,
   })
   if (!group.ok) {
     const fan = decideGroupSmsFallback({
       explicitGroupThread: opts.explicitGroupThread,
       groupFormed: false,
     })
-    if (!fan.allowFanOut) return { ok: false, error: fan.error ?? group.error }
-    console.warn('[crm] group MMS failed, falling back to broadcast:', group.error)
-    return null
+    if (fan.allowFanOut) {
+      console.warn('[crm] group MMS failed, falling back to 1:1:', group.error)
+      // Explicit group compose: truthful notice. Legacy multi-recipient: continue
+      // silently into the existing 1:1 loop (no new toast copy).
+      if (opts.explicitGroupThread) {
+        return {
+          status: 'fallback',
+          notice: fan.notice ?? GROUP_THREAD_FALLBACK_NOTICE,
+        }
+      }
+      return { status: 'continue' }
+    }
+    return { status: 'failed', error: fan.error ?? group.error ?? GROUP_THREAD_FAILED }
   }
 
   for (const m of members) {
     if (m.rid !== null) opts.revalidate(m.rid)
   }
-  return { ok: true }
+  return { status: 'sent' }
 }

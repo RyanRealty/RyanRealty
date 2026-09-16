@@ -23,6 +23,7 @@ import { isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent
 import { parsePositiveInt, parsePositiveNumber } from '@/lib/cma/client-link'
 import type { CmaActionRow } from '@/lib/data'
 import { buildCma } from '@/lib/cma/build'
+import { runWithGrokTransportAsync } from '@/lib/grok/transport'
 import { autoSendBuiltCma } from '@/lib/cma/auto-send'
 import { slugifyAddress } from '@/lib/cma-request'
 
@@ -133,7 +134,14 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
       ? (payload['home_details'] as Record<string, unknown>)
       : null
   const linkedPersonId = num(payload['crm_person_id']) ?? notifyEntries(payload)[0]?.personId ?? null
-  const result = await buildCma({
+  // CHOICE (Matt 2026-09-15): expired Auto-CMA judge/audit rides Cursor
+  // subscription (cursor-agent; XAI_API_KEY stripped) — same pattern as Tip Ready
+  // taste receipts. Manual /admin/cmas rebuilds keep default xAI transport so
+  // broker rebuilds still work when Cursor CLI is absent on the host. Shared
+  // generateGrokStructured path; transport is ALS-scoped per build.
+  const requestSource =
+    str((action.data_evidence ?? {})['request_source'] as string | undefined) ?? 'brain-queue'
+  const buildArgs = {
     slug,
     mlsNumber: str(payload['mls_number']),
     rawAddress: str(payload['subject_address']),
@@ -163,10 +171,13 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
     // the worker must pass it through so the built cmas row lands as an audit
     // (failure analysis + services standard + 2.5% net sheet) instead of a plain
     // CMA the prospecting surface then refuses to send.
-    docType: str(payload['doc_type']) === 'expired-audit' ? 'expired-audit' : 'cma',
-    requestSource:
-      str((action.data_evidence ?? {})['request_source'] as string | undefined) ?? 'brain-queue',
-  })
+    docType: (str(payload['doc_type']) === 'expired-audit' ? 'expired-audit' : 'cma') as 'expired-audit' | 'cma',
+    requestSource,
+  }
+  const result =
+    requestSource === 'expired-listing-cron'
+      ? await runWithGrokTransportAsync('cursor', () => buildCma(buildArgs))
+      : await buildCma(buildArgs)
 
   if (result.ok) {
     // Per-lane Auto-send (Matt 2026-09-07). The switch lives in

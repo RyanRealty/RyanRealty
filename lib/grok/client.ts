@@ -10,6 +10,8 @@
  * ci:grok-models` re-checks them against the live account so a silent xAI
  * deprecation fails a gate instead of a production render.
  */
+import { cursorCliPresent, resolveGrokTransport } from './transport'
+
 
 export const XAI_BASE_URL = 'https://api.x.ai/v1'
 
@@ -75,8 +77,15 @@ export function grokApiKey(): string {
   return key.trim()
 }
 
-/** True when the key exists. Lets a surface degrade instead of throwing on render. */
+/**
+ * True when the active transport can serve a text/structured call.
+ * Cursor transport (expired Auto-CMA / GROK_TRANSPORT=cursor): Cursor CLI present.
+ * xAI transport (default, manual admin): XAI_API_KEY set.
+ * Does not delete or require XAI_API_KEY for Cursor — key stays in env unused.
+ */
 export function grokConfigured(): boolean {
+  // transport.ts does not import client — safe static import (cursor-cli does).
+  if (resolveGrokTransport() === 'cursor') return cursorCliPresent()
   return Boolean(process.env.XAI_API_KEY?.trim())
 }
 
@@ -105,6 +114,13 @@ export async function xaiFetch(
   init: RequestInit = {},
   options: XaiFetchOptions = {},
 ): Promise<Response> {
+  if (resolveGrokTransport() === 'cursor') {
+    throw new GrokError(
+      'xaiFetch blocked: Cursor transport active (no api.x.ai for this path)',
+      0,
+      path,
+    )
+  }
   const { timeoutMs = 120_000, retry = true } = options
   const url = path.startsWith('http') ? path : `${XAI_BASE_URL}${path}`
   const key = grokApiKey()

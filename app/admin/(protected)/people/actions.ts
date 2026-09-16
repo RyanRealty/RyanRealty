@@ -66,6 +66,7 @@ export async function sendSmsFromPerson(personId: number, formData: FormData): P
   const r = await sendCrmSmsAction(formData)
   revalidatePath(personPath(personId))
   if (!r.ok) redirect(errorUrl(personId, `Text not sent — ${r.error ?? 'unknown error'}`))
+  if (r.notice) redirect(`${personPath(personId)}?flash=${encodeURIComponent(r.notice)}`)
 }
 
 export async function sendEmailFromPerson(personId: number, formData: FormData): Promise<void> {
