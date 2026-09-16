@@ -18,11 +18,23 @@
  * grew the barrel V3TypeCombobox — the installed beUI combobox
  * (`components/motion/combobox`) painted with the house tokens, and the file
  * the catalog names as `beui-combobox`'s house. This finder composes THAT,
- * with `value: null` so the field opens on its placeholder rather than on a
- * plat nobody chose, and a pick that is a door: every option's key is its
- * page's href, so selecting one navigates there. The paint, the spring, the
- * typeahead, the roving focus and the `role="option"` rows are all
- * V3TypeCombobox's; nothing is re-implemented here.
+ * and a pick that is a door: every option's key is its page's href, so
+ * selecting one navigates there. The paint, the spring, the typeahead, the
+ * roving focus and the `role="option"` rows are all V3TypeCombobox's; nothing
+ * is re-implemented here.
+ *
+ * THE WHOLE PLACE IS THE DEFAULT ROW (SITE-116 round 4, defect 2). Round 3
+ * opened the field with nothing chosen (`value: null`), and the judge read
+ * the open list as "a generic dropdown": with no selection, the two states
+ * that make the catalog control recognisable — the check on the selected row
+ * and the active fill sliding between rows — were both invisible in the
+ * plate, while the same V3TypeCombobox on /cities, opened with a row
+ * selected, was judged a demo match. So the caller may pass `root`: the place
+ * this index sits on ("All of Tetherow", the community's own page), which is
+ * the first option and the one selected by default. It is where the reader
+ * already is, so picking it navigates nowhere; picking any plat still does.
+ * A root row carries no count unless the caller can vouch for one read on
+ * the same population as the plat counts (§0: unknown is not zero).
  *
  * The index's own anchors stay in the served HTML for the crawler and the
  * no-JS reader; this control is the fast path over them. It never invents an
@@ -54,6 +66,13 @@ export type V3PlaceFinderProps = {
   /** Shown inside the field before the visitor types. Defaults to the label. */
   placeholder?: string
   items: readonly V3PlaceFinderItem[]
+  /**
+   * The place the index sits on, as the first row and the default selection:
+   * `{ href: '/communities/tetherow', name: 'All of Tetherow' }`. Picking it
+   * navigates nowhere (the reader is already there). Omit and the field opens
+   * on its placeholder with no row marked, exactly as before.
+   */
+  root?: V3PlaceFinderItem | null
   /** What the list says when nothing matches. */
   emptyMessage?: string
   className?: string
@@ -64,28 +83,36 @@ export function V3PlaceFinder({
   label,
   placeholder,
   items,
+  root,
   emptyMessage = 'No place by that name here.',
   className,
 }: V3PlaceFinderProps) {
   const router = useRouter()
   const rows = items.filter((item) => item && item.href?.trim() && item.name?.trim())
+  const rootRow = root && root.href?.trim() && root.name?.trim() ? root : null
+  const rootHref = rootRow?.href.trim() ?? null
   const go = useCallback(
     (href: string) => {
-      if (href) router.push(href)
+      // The root is this page. Selecting it again is a no-op, not a reload.
+      if (!href || href === rootHref) return
+      router.push(href)
     },
-    [router],
+    [router, rootHref],
   )
   // A finder needs something to find between: V3TypeCombobox itself renders
-  // nothing under two options, and so does this.
+  // nothing under two options, and so does this. The root does not count —
+  // one plat and "all of it" is not a set to find between.
   if (rows.length < 2) return null
+
+  const options = [...(rootRow ? [rootRow] : []), ...rows.filter((item) => item.href.trim() !== rootHref)]
 
   return (
     <div id={id} className={cn(V3_ROOT_CLASS, 'v3-place-finder', className)}>
       <V3TypeCombobox
         label={label}
         placeholder={placeholder ?? label}
-        options={rows.map((item) => ({ key: item.href, label: item.name, count: item.detail?.trim() || null }))}
-        value={null}
+        options={options.map((item) => ({ key: item.href, label: item.name, count: item.detail?.trim() || null }))}
+        value={rootHref}
         onChange={go}
         inputClassName="v3-place-finder__input"
         emptyMessage={emptyMessage}

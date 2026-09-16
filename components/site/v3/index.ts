@@ -606,8 +606,14 @@ export type { V3PlaceFinderProps, V3PlaceFinderItem } from './V3PlaceFinder.clie
 /* is that sentence as a table: figure, what, where, when, and the door to the */
 /* section that holds it (SITE-116 round 3).                                   */
 /* -------------------------------------------------------------------------- */
-export { V3Census, censusRows } from './V3Census'
-export type { V3CensusProps, V3CensusRow } from './V3Census'
+export { V3Census, censusRows, censusPages } from './V3Census'
+export type { V3CensusProps, V3CensusRow, V3CensusGroup } from './V3Census'
+/* The census's client island — the installed beautifului insight cards over
+   the sheet's populations (SITE-116 round 4). Mounted by V3Census; its types
+   are exported so a caller can shape a page, the component itself stays a
+   sibling import (a barrel export nothing outside v3 mounts is what G73 —
+   ci:site-primitive-wired — refuses). */
+export type { V3CensusPage, V3CensusCard, V3CensusAllocationSegment, V3CensusBarRow } from './V3CensusInsight.client'
 
 /* -------------------------------------------------------------------------- */
 /* Pattern 10 — SLOTS: a tool's empty state, drawn as the thing it makes       */

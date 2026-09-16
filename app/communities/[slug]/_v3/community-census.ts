@@ -32,10 +32,53 @@
  *    houses whose membership is this community, closed in the last 12 months.
  */
 
-import type { V3CensusRow } from '@/components/site/v3'
+import type { V3CensusGroup, V3CensusRow } from '@/components/site/v3'
 import { formatCount } from '@/lib/format/count'
 
 const FEED = 'live MLS through Oregon Data Share'
+
+/**
+ * THE THREE POPULATIONS, as pages of the census insight (SITE-116 round 4).
+ * Each row below names its group; the sheet draws one page per group. The
+ * boundary group is a PARTITION — for sale and pending inside the recorded
+ * boundary are, together, every listing the map counts — so it draws as the
+ * installed allocation bar. The other two are windows over one population
+ * (or one count), not partitions, and draw as bars on the sheet's shared
+ * scale. Nothing here is a number; the notes restate the rows' own words.
+ */
+export const CENSUS_GROUP = {
+  boundary: 'boundary',
+  names: 'names',
+  membership: 'membership',
+} as const
+
+export function communityCensusGroups(placeName: string, matchNames: readonly string[]): V3CensusGroup[] {
+  const names = nameList(matchNames) || placeName
+  return [
+    {
+      key: CENSUS_GROUP.boundary,
+      label: `Inside the recorded ${placeName} boundary`,
+      partition: true,
+      note:
+        `For sale and pending together are every listing the map counts inside the recorded ${placeName} boundary right now, ` +
+        `of every property type. Tap a segment or a chip to inspect one; each share is that count over the two together.`,
+    },
+    {
+      key: CENSUS_GROUP.names,
+      label: `Under ${placeName}'s MLS names`,
+      note:
+        `Every listing the MLS files under ${names}, of every property type, inside the homes list's map frame. ` +
+        `Drawn on the same scale as every other count on this sheet.`,
+    },
+    {
+      key: CENSUS_GROUP.membership,
+      label: 'Detached houses only',
+      note:
+        `Detached single-family houses whose MLS membership is ${placeName}, over three windows: active at the last refresh, ` +
+        `listed in the last 30 days, closed in the last 12 months. One scale, shared with every count on this sheet.`,
+    },
+  ]
+}
 
 export type CommunityCensusInput = {
   placeName: string
@@ -84,6 +127,9 @@ export function buildCommunityCensus(input: CommunityCensusInput): V3CensusRow[]
       rows.push({
         key: 'atlas-for-sale',
         figure: formatCount(input.atlas.forSale),
+        count: input.atlas.forSale,
+        group: CENSUS_GROUP.boundary,
+        short: 'For sale',
         noun: 'for sale on the map',
         what: EVERY_TYPE,
         where,
@@ -97,6 +143,9 @@ export function buildCommunityCensus(input: CommunityCensusInput): V3CensusRow[]
       rows.push({
         key: 'atlas-pending',
         figure: formatCount(input.atlas.pending),
+        count: input.atlas.pending,
+        group: CENSUS_GROUP.boundary,
+        short: 'Pending',
         noun: 'pending on the map',
         what: EVERY_TYPE,
         where,
@@ -113,6 +162,8 @@ export function buildCommunityCensus(input: CommunityCensusInput): V3CensusRow[]
     rows.push({
       key: 'homes-list',
       figure: formatCount(input.homesListCount),
+      count: input.homesListCount,
+      group: CENSUS_GROUP.names,
       noun: input.homesListCapped ? 'nearest on the homes list' : 'on the homes list',
       what: EVERY_TYPE,
       where: names
@@ -132,6 +183,8 @@ export function buildCommunityCensus(input: CommunityCensusInput): V3CensusRow[]
     rows.push({
       key: 'detached-active',
       figure: formatCount(input.detachedActive),
+      count: input.detachedActive,
+      group: CENSUS_GROUP.membership,
       noun: input.detachedActive === 1 ? 'house for sale' : 'houses for sale',
       what: HOUSES_ONLY,
       where: MEMBERSHIP,
@@ -149,6 +202,8 @@ export function buildCommunityCensus(input: CommunityCensusInput): V3CensusRow[]
     rows.push({
       key: 'new-30d',
       figure: formatCount(input.newCount30d),
+      count: input.newCount30d,
+      group: CENSUS_GROUP.membership,
       noun: input.newCount30d === 1 ? 'house came on' : 'houses came on',
       what: HOUSES_ONLY,
       where: MEMBERSHIP,
@@ -165,6 +220,8 @@ export function buildCommunityCensus(input: CommunityCensusInput): V3CensusRow[]
     rows.push({
       key: 'sold-12m',
       figure: formatCount(input.sold12mo),
+      count: input.sold12mo,
+      group: CENSUS_GROUP.membership,
       noun: input.sold12mo === 1 ? 'house sold' : 'houses sold',
       what: HOUSES_ONLY,
       where: MEMBERSHIP,

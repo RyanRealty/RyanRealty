@@ -175,6 +175,233 @@
   margin-top: var(--v3-space-md);
 }
 
+/* The insight (SITE-116 round 4) ----------------------------------------------
+   The installed beautifului insight cards, painted in the house tokens: the
+   pager's title as a small-caps label, its buttons at tap height, the prose
+   in full ink, the allocation hero in the numeral face, every chip and the
+   pill on the register's control radius (0 in both registers — the demo's
+   pills are its paint, not its interaction). Controls hold the 44px floor. */
+.v3-census__insight {
+  margin-top: var(--v3-space-md);
+}
+
+.v3-census__insight .insight-cards__title {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3-census__insight .insight-cards__count {
+  font-size: var(--v3-size-label);
+}
+
+.v3-census__insight .insight-pager__btn {
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  border-radius: var(--v3-radius-control);
+  color: var(--v3-ink-muted);
+  transition:
+    background-color var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-census__insight .insight-pager__btn:hover,
+.v3-census__insight .insight-pager__btn:focus-visible {
+  background: var(--v3-wash);
+  color: var(--v3-ink);
+}
+
+.v3-census__insight .insight-pager__btn:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-census__insight .insight-cards__prose {
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+.v3-census__insight .insight-cards__series-name {
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+}
+
+.v3-census__insight .insight-cards__hero {
+  font-family: var(--v3-font-num);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+}
+
+.v3-census__insight .insight-cards__alloc-track {
+  height: var(--v3-tap);
+}
+
+.v3-census__insight .insight-cards__chip,
+.v3-census__insight .insight-cards__metric,
+.v3-census__insight .insight-cards__pill {
+  min-height: var(--v3-tap);
+  border-radius: var(--v3-radius-control);
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3-census__insight .insight-cards__chip:focus-visible,
+.v3-census__insight .insight-cards__alloc-seg:focus-visible,
+.v3-census__insight .insight-cards__pill:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-census__insight .insight-cards__pill {
+  border-color: var(--v3-navy);
+  color: var(--v3-navy);
+  font-weight: var(--v3-weight-strong);
+}
+
+.v3-census__insight .insight-cards__note {
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}
+
+/* The bars card: one count per row, the figure in the numeral face, its length
+   on the sheet's shared scale, and the window under it. Hover lifts the row so
+   the reader can hold one count while reading its title. */
+.v3-census__barlist {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-census__barrow {
+  display: grid;
+  grid-template-columns: minmax(9rem, 14rem) minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: var(--v3-space-md);
+  row-gap: var(--v3-space-3xs);
+  align-items: center;
+  padding: var(--v3-space-xs) 0;
+  border-top: var(--v3-rule-hairline);
+  transition: background-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-census__barrow:first-child {
+  border-top: 0;
+}
+
+.v3-census__barrow:hover {
+  background: var(--v3-wash);
+}
+
+.v3-census__barfigure {
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--v3-space-xs);
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: 1;
+  color: var(--v3-ink);
+}
+
+.v3-census__barnoun {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-body);
+  letter-spacing: 0;
+  color: var(--v3-ink-muted);
+}
+
+.v3-census__bartrack {
+  position: relative;
+  display: block;
+  height: var(--v3-space-sm);
+  background: var(--v3-hairline);
+}
+
+.v3-census__barfill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  min-width: 2px;
+  background: var(--v3-navy);
+}
+
+.v3-census__barwhen {
+  grid-column: 2;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+@media (max-width: 40rem) {
+  .v3-census__barrow {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+  }
+
+  .v3-census__barfigure {
+    grid-row: auto;
+  }
+
+  .v3-census__barwhen {
+    grid-column: 1;
+  }
+}
+
+/* The folded sheet: the same native disclosure the Index and Answers use, so
+   every row stays in the served HTML whether or not it is open. Closed points
+   right, open points down. */
+.v3-census__sheet {
+  margin-top: var(--v3-space-lg);
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3-census__sheet-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+  cursor: pointer;
+  list-style: none;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+}
+
+.v3-census__sheet-summary::-webkit-details-marker {
+  display: none;
+}
+
+.v3-census__sheet-summary::after {
+  content: '›';
+  color: var(--v3-ink-muted);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-census__sheet[open] > .v3-census__sheet-summary::after {
+  transform: rotate(90deg);
+}
+
+.v3-census__sheet-summary:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-census__sheet .v3-census__table {
+  margin-top: var(--v3-space-sm);
+}
+
 /* Phone: each row becomes a stacked block. The column heads go, every scope
    cell carries its own small-caps label, and the door sits under the cells at
    the full tap height. */
@@ -238,7 +465,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .v3-census__row {
+  .v3-census__row,
+  .v3-census__barrow,
+  .v3-census__insight .insight-pager__btn,
+  .v3-census__sheet-summary::after {
     transition: none;
   }
 }

@@ -918,10 +918,15 @@ describe('SearchMapClustered place SELECT re-fits bounds', () => {
 })
 
 describe('search chrome sharp chips (not chubby ovals)', () => {
-  it('uses 6px radius on srch-chip and map-search-views', () => {
+  // SITE-116 round 4: the chips and the view switch read the register's
+  // control radius token (0 in both registers, PUBLIC_UI.md §6) instead of a
+  // literal 6px, so one viewport holds one radius rule per control family.
+  // The intent this test has always held — sharp, never a 999px pill — stands.
+  it('reads --v3-radius-control on srch-chip and map-search-views, never a pill', () => {
     const css = readSrc('components/search/search-ledger.css')
-    expect(css).toMatch(/\.srch-chip \{\s*border-radius: 6px;/)
-    expect(css).toMatch(/\.map-search-views \{\s*border-radius: 6px;/)
+    expect(css).toMatch(/\.srch-chip \{\s*border-radius: var\(--v3-radius-control, 0\);/)
+    expect(css).toMatch(/\.map-search-views \{\s*border-radius: var\(--v3-radius-control, 0\);/)
+    expect(css).not.toMatch(/border-radius: 6px/)
     expect(css).not.toMatch(/\.srch-chip \{\s*border-radius: 999px;/)
     expect(css).not.toMatch(/\.map-search-views \{\s*border-radius: 999px;/)
   })

@@ -45,6 +45,22 @@ describe('askingBandsChart (SITE-116 round 3, defect 4)', () => {
       '6 houses for sale in Tetherow, asking $450K to $4.3M; the middle half asks $1.1M to $2.6M.',
     )
     expect(String(chart.caption)).toBe('What Tetherow houses are asking right now')
+    // SITE-116 round 4: every band carries its count, the hover layer washes
+    // the band under the pointer and rests on the modal band.
+    expect(chart.barValues).toBe(true)
+    expect(chart.columnBands).toBe(true)
+    expect(chart.restingRead).toBe('max')
+  })
+
+  it('names the window in the claim when the caller holds the refresh stamp (SITE-116 round 4)', () => {
+    const chart = askingBandsChart(
+      [house(1_100_000), house(1_600_000), house(2_300_000)],
+      'Tetherow',
+      { asOf: 'Sep 15, 2026' },
+    )!
+    expect(String(chart.claim)).toMatch(/^3 houses for sale in Tetherow as of Sep 15, 2026, asking \$1\.1M to \$2\.3M/)
+    const noStamp = askingBandsChart([house(1_100_000), house(1_600_000), house(2_300_000)], 'Tetherow', { asOf: null })!
+    expect(String(noStamp.claim)).toMatch(/^3 houses for sale in Tetherow, asking/)
   })
 
   it('widens a one-band set to two columns so it still reads as a scale', () => {
