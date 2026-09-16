@@ -238,6 +238,37 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
     proximity: c.proximity?.trim() || null,
   }))
 
+  /**
+   * THE TRACE A SELLER READS.
+   *
+   * Section 0 requires every figure to name its source. TASTE.md bans "raw
+   * slugs, internal labels, methodology jargon" in anything a visitor reads,
+   * and the 2026-09-16 evaluator caught exactly that under the days-to-pending
+   * rule on this page: "days to pending 25 - market_metric city:bend,
+   * median_days_to_contract_90d" — a cache key and a column name printed beside
+   * a number a seller is being asked to trust.
+   *
+   * lib/site/place-answers.ts already settled this for the place pages: the
+   * sentence stays in the reader's words, the machine handle leaves the body
+   * copy. This does the same for the /sell answer. Nothing is dropped — the
+   * figure, the derivation, the population and the date are untouched; the
+   * table name and the column name become the words they mean, and the place
+   * they name is the place this answer is about.
+   */
+  const readable = (line: string | null | undefined): string | null => {
+    if (!line) return null
+    return String(line)
+      .replace(
+        /market_metric\s+[a-z_]+:[a-z0-9-]+/gi,
+        `Market Truth metric layer, ${picked.label} detached homes`,
+      )
+      .replace(
+        /median_days_to_contract_90d/gi,
+        'median days from the listing date to a signed contract, trailing 90 days',
+      )
+      .replace(/market_pulse_live/gi, 'the live market pulse')
+  }
+
   const subjectSummary = subject
     ? [
         subject.beds != null ? `${subject.beds} bed` : null,
@@ -292,13 +323,13 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
       // because the drawing shows that number and §0 says a drawn number
       // carries the derivation that produced it.
       supply: [
-        answer?.trace.find((line) => line.startsWith('months of supply')),
-        trace.find((line) => line.startsWith('homes under contract in a typical month')),
+        readable(answer?.trace.find((line) => line.startsWith('months of supply'))),
+        readable(trace.find((line) => line.startsWith('homes under contract in a typical month'))),
       ]
         .filter(Boolean)
         .join(' · ') || null,
-      pace: answer?.trace.find((line) => line.startsWith('days to pending')) ?? null,
-      comps: trace.find((line) => line.startsWith('comparable closes')) ?? null,
+      pace: readable(answer?.trace.find((line) => line.startsWith('days to pending'))) ?? null,
+      comps: readable(trace.find((line) => line.startsWith('comparable closes'))) ?? null,
     },
     unmatchedSentence: `Nothing in the sales record matches ${street} on the first pass.`,
   })
@@ -320,7 +351,7 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
     subjectSummary,
     figures,
     asOfLabel,
-    trace,
+    trace: trace.map((line) => readable(line)).filter((line): line is string => Boolean(line)),
   }
 
   return { ok: true, answer: data }

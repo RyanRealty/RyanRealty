@@ -211,6 +211,16 @@ export const SELL_REVIEW_AUTHORS = [
 export const BEND_MARKET_TRACE_SCOPE =
   'live MLS through Oregon Data Share, detached single-family homes whose MLS City is Bend, not the city-limits polygon.'
 
+/**
+ * The section-0 trace for the two figures the first viewport prints beside the
+ * ask (closed count, median sale). SITE-111: those figures used to carry no
+ * source line until the Instrument three sections down, so the fold published
+ * numbers a reader could not check without scrolling. A figure and its trace
+ * belong in the same viewport.
+ */
+export const SELL_FOLD_TRACE =
+  'Regional MLS through Oregon Data Share, read through the Market Truth metric layer: detached single-family homes whose MLS City is Bend, trailing 12 months of closed sales.'
+
 export const TRACK_RECORD_TRACE =
   // The WINDOW is stated (2026-08-27 audit: "16 homes sold" carried a filter
   // trace and no window — career? YTD? — leaving the reader to guess). The

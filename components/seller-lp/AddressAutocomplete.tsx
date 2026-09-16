@@ -21,7 +21,9 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Input } from '@/components/ui/input'
+import { Input as MotionInput, type InputClassNames } from '@/components/motion/input'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { cn } from '@/lib/utils'
 
@@ -43,6 +45,29 @@ type Props = {
   wrapperClassName?: string
   autoFocus?: boolean
   invalid?: boolean
+  /**
+   * Which installed control renders the field.
+   *
+   * `ui` (default) is components/ui/input — the shadcn control every other
+   * caller of this component already shows.
+   *
+   * `motion` is the beUI motion Input (components/motion/input, catalog id
+   * beui-input): its own label slot, left affix, error shake, and the success
+   * check whose path draws itself. /sell runs this one, painted in v3 tokens
+   * so it is navy on cream with square corners and no second hue. The Places
+   * widget binds to the first <input> inside the wrapper either way.
+   */
+  variant?: 'ui' | 'motion'
+  /** motion only: the field's own label, rendered by the catalog control. */
+  label?: string
+  /** motion only: truthy shakes the field; a string also prints the message. */
+  error?: string | boolean
+  /** motion only: draws the success check. */
+  success?: boolean
+  /** motion only: the left affix (a pin on /sell). */
+  leftIcon?: ReactNode
+  /** motion only: per-slot classes so the demo is painted, not replaced. */
+  motionClassNames?: InputClassNames
 }
 
 // Bias suggestions toward Bend / Central Oregon (not strict — still allows any US address).
@@ -59,6 +84,12 @@ export default function AddressAutocomplete({
   wrapperClassName,
   autoFocus,
   invalid,
+  variant = 'ui',
+  label,
+  error,
+  success,
+  leftIcon,
+  motionClassNames,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const onChangeRef = useRef(onChange)
@@ -137,6 +168,19 @@ export default function AddressAutocomplete({
     }
   }, [ready])
 
+  // One commit path for both controls: the widget writes the formatted address
+  // straight onto the DOM node, and React can follow with an empty change that
+  // would wipe it. The ref flag swallows exactly that one event.
+  const commit = (next: string) => {
+    if (!next && ignoreEmptyRef.current) {
+      ignoreEmptyRef.current = false
+      return
+    }
+    ignoreEmptyRef.current = false
+    setSuggesting(next.trim().length > 0)
+    onChange(next)
+  }
+
   return (
     <div
       ref={wrapRef}
@@ -148,28 +192,40 @@ export default function AddressAutocomplete({
         window.setTimeout(() => setSuggesting(false), 200)
       }}
     >
-      <Input
-        id={id}
-        name={name}
-        type="text"
-        autoComplete="off"
-        value={value}
-        onChange={(e) => {
-          const next = e.target.value
-          if (!next && ignoreEmptyRef.current) {
-            ignoreEmptyRef.current = false
-            return
-          }
-          ignoreEmptyRef.current = false
-          setSuggesting(next.trim().length > 0)
-          onChange(next)
-        }}
-        placeholder={placeholder}
-        className={className}
-        autoFocus={autoFocus}
-        aria-invalid={invalid ? 'true' : undefined}
-        inputMode="text"
-      />
+      {variant === 'motion' ? (
+        <MotionInput
+          id={id}
+          name={name}
+          type="text"
+          label={label}
+          autoComplete="off"
+          value={value}
+          onChange={commit}
+          placeholder={placeholder}
+          className={className}
+          classNames={motionClassNames}
+          error={error}
+          success={success}
+          leftIcon={leftIcon}
+          autoFocus={autoFocus}
+          aria-invalid={invalid ? 'true' : undefined}
+          inputMode="text"
+        />
+      ) : (
+        <Input
+          id={id}
+          name={name}
+          type="text"
+          autoComplete="off"
+          value={value}
+          onChange={(e) => commit(e.target.value)}
+          placeholder={placeholder}
+          className={className}
+          autoFocus={autoFocus}
+          aria-invalid={invalid ? 'true' : undefined}
+          inputMode="text"
+        />
+      )}
     </div>
   )
 }

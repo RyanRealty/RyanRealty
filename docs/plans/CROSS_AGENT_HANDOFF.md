@@ -1,4 +1,5 @@
 # Current — 2026-09-16 (Claude cloud site queue: Matt's three phone directives landed — one bottom bar + Work with us sheet, header search, alert copy; SITE-95/93/112/104 Tip Ready on the sonnet stand-in)
+# Current — 2026-09-16 (Claude cloud site queue: SITE-95 compare + SITE-93 city Tip Ready on the sonnet stand-in; SITE-111 sell + SITE-112 subdivision building)
 
 Surface: Claude Code cloud session `claude-cloud-01DYvsoL-20260915` (branch `claude/run-loop-v30as0`, draft **PR #253**). No grok / cursor CLI in the sandbox, so every mark is the claude CLI as Sonnet with an Opus builder — a **rebaseline**, never done. Cos Mini: rejudge the tips on grok-4.6 and land.
 
