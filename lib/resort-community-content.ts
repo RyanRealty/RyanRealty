@@ -24,6 +24,8 @@ export type ResortAmenity = {
   access?: string | null
   /** Optional slug of a published blog post about this amenity (topic-cluster SEO). */
   blog_slug?: string | null
+  /** Optional public URL the config already recorded (a park page, a club menu). */
+  url?: string | null
 }
 
 export type ResortDriveTime = {
