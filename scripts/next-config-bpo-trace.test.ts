@@ -16,4 +16,10 @@ describe('admin/bpo NFT excludes', () => {
     expect(CONFIG).toContain('./scratch/**')
     expect(CONFIG).toContain('./public/cmas/**')
   })
+
+  it('spreads repo-dump excludes onto * — per-route keys do not apply under Turbopack', () => {
+    const star = CONFIG.split("'*': [")[1]?.split('],')[0] ?? ''
+    expect(star).toContain('...REPO_DUMP_TRACE_EXCLUDES')
+    expect(star).toContain('./public/images/**')
+  })
 })
