@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { ListingTile } from '@/lib/data'
-import { zipFieldCaption, zipFieldItems } from './zip-constants'
+import {
+  neighborhoodName,
+  zipFieldCaption,
+  zipOpeningCaption,
+  zipFieldItems,
+  zipItemListEntries,
+  zipMasonryItems,
+} from './zip-constants'
 
 function tile(partial: Partial<ListingTile> & Pick<ListingTile, 'listingKey'>): ListingTile {
   return {
@@ -33,6 +40,13 @@ describe('zipFieldCaption', () => {
     expect(zipFieldCaption('97702', 24, 24)).toBe('24 active single-family listings in 97702')
     expect(zipFieldCaption('97702', 0, 0)).toBeNull()
   })
+
+  it('opening caption reprints the claim count, never a second inventory', () => {
+    expect(zipOpeningCaption('97702', 198, 'detached single-family homes')).toBe(
+      '198 detached single-family homes for sale in 97702. Atlas marks and the photographs are this set.',
+    )
+    expect(zipOpeningCaption('97702', 0, 'homes')).toBeNull()
+  })
 })
 
 describe('zipFieldItems', () => {
@@ -46,5 +60,56 @@ describe('zipFieldItems', () => {
 
   it('drops a home with no list price', () => {
     expect(zipFieldItems([tile({ listingKey: 'a', listPrice: null })], '97702')).toEqual([])
+  })
+})
+
+describe('neighborhoodName', () => {
+  it('drops Undesignated and other visitor-place noise', () => {
+    expect(neighborhoodName('Undesignated')).toBeNull()
+    expect(neighborhoodName('undesignated')).toBeNull()
+    expect(neighborhoodName('Awbrey Butte')).toBe('Awbrey Butte')
+  })
+})
+
+describe('zipMasonryItems', () => {
+  it('keeps price, address, and beds/baths/sqft on photographed cards', () => {
+    const items = zipMasonryItems(
+      [tile({ listingKey: 'a', photoUrl: 'https://cdn.example/photo.jpg' })],
+      '97702',
+    )
+    expect(items).toHaveLength(1)
+    expect(items[0]?.priceLabel).toBeTruthy()
+    expect(items[0]?.title).toMatch(/Main/)
+    expect(items[0]?.meta).toMatch(/3 bd/)
+    expect(items[0]?.photoSrc).not.toMatch(/320x240/)
+    expect(items[0]?.imageHeight).toBeGreaterThan(160)
+  })
+
+  it('staggers photographed card heights so the masonry is not a 3-up row', () => {
+    const items = zipMasonryItems(
+      ['a', 'b', 'c', 'd', 'e', 'f'].map((id, i) =>
+        tile({
+          listingKey: `${id}-${i}-listing`,
+          photoUrl: `https://cdn.example/${id}.jpg`,
+          listPrice: 400000 + i * 25000,
+        }),
+      ),
+      '97702',
+    )
+    const heights = new Set(items.map((item) => item.imageHeight))
+    expect(Math.max(...items.map((item) => item.imageHeight))).toBeGreaterThanOrEqual(280)
+    expect(heights.size).toBeGreaterThanOrEqual(3)
+  })
+})
+
+describe('zipItemListEntries', () => {
+  it('names price + address + facts for the crawlable ItemList', () => {
+    const items = zipMasonryItems(
+      [tile({ listingKey: 'a', photoUrl: 'https://cdn.example/photo.jpg' })],
+      '97702',
+    )
+    const entries = zipItemListEntries(items)
+    expect(entries[0]?.name).toMatch(/Main/)
+    expect(entries[0]?.url).toBeTruthy()
   })
 })

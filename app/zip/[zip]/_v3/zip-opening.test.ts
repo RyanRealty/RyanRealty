@@ -9,9 +9,13 @@ import { zipAlertBuckets, zipAlertListings } from './zip-constants'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PAGE = readFileSync(join(HERE, '../page.tsx'), 'utf8')
 const FIELD = readFileSync(join(HERE, 'ZipHomesField.tsx'), 'utf8')
+const MASONRY = readFileSync(join(HERE, 'ZipHomesMasonry.client.tsx'), 'utf8')
+const CATALOG = readFileSync(join(HERE, 'zip-catalog.ts'), 'utf8')
 const ALERTS = readFileSync(join(HERE, 'ZipAlertsSheet.client.tsx'), 'utf8')
 const CLAIM = readFileSync(join(HERE, 'ZipClaim.client.tsx'), 'utf8')
 const CSS = readFileSync(join(HERE, 'zip-opening.css'), 'utf8')
+const CONSTANTS = readFileSync(join(HERE, 'zip-constants.ts'), 'utf8')
+const INSIGHT = readFileSync(join(HERE, 'zip-insight.ts'), 'utf8')
 
 describe('SITE-73 zip fold composition', () => {
   it('opens with Atlas drawing beside MOS + alerts figure (layout lock)', () => {
@@ -22,6 +26,7 @@ describe('SITE-73 zip fold composition', () => {
     expect(FIELD).toMatch(/id="atlas"/)
     expect(FIELD).toMatch(/<V3MosBars/)
     expect(FIELD).toMatch(/\{alerts\}/)
+    expect(FIELD).toMatch(/<ZipHomesMasonry/)
     expect(FIELD).not.toMatch(/PlaceFieldMap|google\.com\/maps|MorphingSearch/)
   })
 
@@ -48,19 +53,44 @@ describe('SITE-73 zip fold composition', () => {
     expect(CSS).toMatch(/min-height:\s*var\(--v3-tap\)/)
   })
 
-  it('puts the alerts ask in the mobile first viewport (drop MOS source / extra thumbs)', () => {
+  it('keeps Atlas dock + one listing proof on the phone (no crushed stain)', () => {
     expect(CSS).toMatch(/@media \(max-width: 63\.99rem\)/)
-    expect(CSS).toMatch(/\.zip-opening__figure \.v3-mos \.v3-source/)
+    expect(CSS).toMatch(/min-height:\s*14rem/)
+    expect(CSS).not.toMatch(/max-height:\s*min\(7vh/)
+    expect(CSS).not.toMatch(/\.zip-opening__drawing \.v3-atlas__dock \{\s*display:\s*none/)
     expect(CSS).toMatch(/\.zip-opening__figure \.v3-alerts__strip > li:nth-child\(n \+ 2\)/)
   })
 
-  it('wires V3Number on the claim and alert types with proof listings', () => {
+  it('installs catalog sources on the route (masonry, scroll-animation, number, insight-cards)', () => {
+    expect(CATALOG).toContain("from '@/components/motion/infinite-masonry'")
+    expect(CATALOG).toContain("from '@/components/motion/scroll-animation'")
+    expect(CATALOG).toContain("from '@/components/motion/number'")
+    expect(CATALOG).toContain("from '@/components/motion/digit-swap'")
+    expect(CATALOG).toContain("from '@/components/motion/insight-cards'")
+    expect(MASONRY).toContain("from '@/components/motion/infinite-masonry'")
+    expect(MASONRY).toContain("from '@/components/motion/scroll-animation'")
+    expect(MASONRY).toContain('id="masonry-open"')
     expect(CLAIM).toMatch(/V3Number/)
+    expect(CLAIM).toMatch(/settle/)
+    expect(CLAIM).toMatch(/DigitSwap/)
+    expect(CLAIM).toContain('id="number-open"')
+    expect(MASONRY).toMatch(/spring=\{false\}/)
+    expect(MASONRY).not.toMatch(/<SmoothScroll/)
+    expect(PAGE).toMatch(/ZipInsight/)
+    expect(PAGE).toMatch(/buildZipInsightBoard/)
+    expect(PAGE).toMatch(/zipOpeningCaption/)
+    expect(INSIGHT).not.toMatch(/lib\/data\/market-truth|lib\/supabase/)
     expect(ALERTS).toMatch(/V3AlertsStrip/)
     expect(ALERTS).toMatch(/types=\{types\}/)
     expect(PAGE).toMatch(/buildPlaceAlertTypes/)
     expect(PAGE).toMatch(/zipAlertBuckets/)
     expect(PAGE).toMatch(/types=\{alertTypes\}/)
+    expect(PAGE).toMatch(/masonryItems=\{masonryItems\}/)
+    expect(PAGE).not.toMatch(/populationNote/)
+  })
+
+  it('strips Undesignated before a neighborhood row is published', () => {
+    expect(CONSTANTS).toMatch(/isVisitorPlaceNoiseLabel/)
   })
 
   it('keeps inventory counts agreeing: claim, MOS homes, market active', () => {
@@ -86,6 +116,7 @@ describe('SITE-73 zip fold composition', () => {
     expect(FIELD).toMatch(/months-of-supply/)
     expect(PAGE).toMatch(/Live single-family inventory in ZIP/)
     expect(PAGE).not.toMatch(/MorphingSearch|morphing-search/)
+    expect(CSS).not.toMatch(/-webkit-line-clamp:\s*1/)
   })
 })
 

@@ -50,6 +50,7 @@ import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import type { PlaceAlertListing, PlaceAlertTypeBucket } from '@/lib/site/place-alerts'
+import { isVisitorPlaceNoiseLabel } from '@/lib/site/visitor-place-noise'
 
 /** Month ticks for the year overlay, in the order a calendar year runs. */
 const MONTH_TICK = [
@@ -177,6 +178,7 @@ export function neighborhoodName(raw: string | null | undefined): string | null 
   const clean = displaySubdivision(raw)
   if (!clean) return null
   if (SUBDIVISION_NOISE.has(clean.toLowerCase())) return null
+  if (isVisitorPlaceNoiseLabel(clean)) return null
   if (clean.includes('_')) return null
   if (!CRR_ABBREVIATION.test(clean)) return clean
   const rest = clean.slice(3).trim()
@@ -302,6 +304,18 @@ export function zipFieldCaption(zip: string, total: number, shown: number): stri
   return `${totalLabel} · the ${shown.toLocaleString('en-US')} highest-priced below`
 }
 
+/** Opening caption. Uses the same count the claim and MOS print (layout lock). */
+export function zipOpeningCaption(
+  zip: string,
+  count: number | null,
+  noun: string,
+): string | null {
+  if (count == null || count <= 0) return null
+  const n = count.toLocaleString('en-US')
+  const word = noun.trim() || 'homes'
+  return `${n} ${word} for sale in ${zip}. Atlas marks and the photographs are this set.`
+}
+
 /**
  * Every tile is a row so the list, the map, and the caption count one set.
  * Photographs pass through when the tile has one. A missing photo does not drop the home.
@@ -325,6 +339,55 @@ export function zipFieldItems(tiles: readonly ListingTile[], zip: string): V3Fie
           : {}),
       }
     })
+}
+
+const MASONRY_HEIGHTS = [168, 236, 312, 196, 280, 360] as const
+
+export type ZipMasonryItem = {
+  id: string
+  href: string
+  title: string
+  priceLabel: string
+  meta?: string
+  photoSrc?: string
+  imageHeight: number
+}
+
+/** Photographed-first masonry cards. Same population as zipFieldItems. */
+export function zipMasonryItems(tiles: readonly ListingTile[], zip: string): ZipMasonryItem[] {
+  let photoLane = 0
+  return zipFieldItems(tiles, zip).map((item) => {
+    const hasPhoto = Boolean(item.photoSrc)
+    const imageHeight = hasPhoto
+      ? (MASONRY_HEIGHTS[photoLane++ % MASONRY_HEIGHTS.length] ?? 236)
+      : 140
+    return {
+      id: item.id,
+      href: item.href,
+      title: item.title,
+      priceLabel: item.priceLabel,
+      meta: item.meta,
+      photoSrc: item.photoSrc,
+      imageHeight,
+    }
+  })
+}
+
+export function zipItemListEntries(
+  items: readonly ZipMasonryItem[],
+): Array<{ name: string; url: string }> {
+  return items
+    .slice(0, 8)
+    .map((item) => {
+      const name = [item.priceLabel, item.title, item.meta].filter(Boolean).join(' · ')
+      if (!name || !item.href) return null
+      return { name, url: item.href }
+    })
+    .filter((row): row is { name: string; url: string } => row != null)
+}
+
+export function zipLeadItem(items: readonly ZipMasonryItem[]): ZipMasonryItem | null {
+  return items.find((item) => Boolean(item.photoSrc)) ?? items[0] ?? null
 }
 
 /**
