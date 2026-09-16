@@ -31,6 +31,7 @@ import { useMemo } from 'react'
 import InsightCards, {
   AllocationCard,
   AnomalyCard,
+  STABLE_EPOCH,
   useChartEpoch,
   type InsightPage,
 } from '@/components/motion/insight-cards'
@@ -56,7 +57,7 @@ export type SubdivisionInsightProps = {
 }
 
 export function SubdivisionInsight({ id, placeName, board, sourceName, asOf }: SubdivisionInsightProps) {
-  const epoch = useChartEpoch()
+  const epoch = useChartEpoch() ?? STABLE_EPOCH
   const pages = useMemo(
     () => buildPages(board, placeName, sourceName, asOf, epoch),
     [board, placeName, sourceName, asOf, epoch],
@@ -108,7 +109,7 @@ function buildPages(
         return <ForSaleCard page={forSale} sourceName={sourceName} asOf={asOf} />
       },
       pill: forSale.hrefLabel,
-      href: forSale.href,
+      pillHref: forSale.href,
     })
   }
 
@@ -132,7 +133,7 @@ function buildPages(
         return <SoldCard page={sold} sourceName={sourceName} epoch={epoch} />
       },
       pill: sold.hrefLabel,
-      href: sold.href,
+      pillHref: sold.href,
     })
   }
 
@@ -198,8 +199,8 @@ function SoldCard({ page, sourceName, epoch }: { page: PlatSoldPage; sourceName:
 }
 
 /**
- * AnomalyCard lays its points seven apart, ending at the chart epoch
- * (makePoints(values, 7, epoch)). Map a tick back onto the year it came from,
+ * AnomalyCard lays its points 49 / (n - 1) apart, ending at the chart epoch
+ * (makePoints(values, gap, epoch)). Map a tick back onto the year it came from,
  * so the axis under the line names a real year instead of a clock time.
  *
  * A TICK OFF THE SERIES GETS NOTHING. The card opens a 49-wide window and a
@@ -209,7 +210,8 @@ function SoldCard({ page, sourceName, epoch }: { page: PlatSoldPage; sourceName:
  */
 function yearFace(t: number, labels: string[], epoch: number): string {
   if (labels.length === 0) return ''
-  const gap = 7
+  // Mirrors AnomalyCard: 49 / (n - 1), which is the demo's 7 at eight points.
+  const gap = 49 / Math.max(1, labels.length - 1)
   const index = Math.round((t - (epoch - (labels.length - 1) * gap)) / gap)
   if (index < 0 || index > labels.length - 1) return ''
   return labels[index] ?? ''

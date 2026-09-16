@@ -509,6 +509,51 @@ export function replaceWithOptionProblems(catalog, classKey, tr) {
   return p
 }
 
+/**
+ * Transport-level compliance line for the judge prompt (SITE-63 round two,
+ * Matt 2026-09-15). replaceWithOptionProblems above is the mechanism that
+ * REFUSES an invented phrase ("beeswarm", "horizontal bar"); this is the
+ * transport telling the judge that rule BEFORE it answers, spelled out with
+ * the exact ids the validator will check against, so a run does not burn a
+ * subscription cycle finding it out from a rejection. It is not rubric
+ * wording — the rubric file names no option list — so it lives here, next to
+ * the function whose contract it is restating, and is appended to every judge
+ * prompt regardless of which link answers (grok, cursor or claude all get the
+ * identical text: one prompt shape, see taste-evaluate.ts).
+ */
+export function optionListComplianceLine(catalog, classKey) {
+  const ids = Array.from(optionListIds(catalog, classKey))
+  if (ids.length === 0) return ''
+  return `Every defect's replaceWith MUST be copied verbatim from the option list printed in this prompt (for this class: ${ids.join(', ')}), or be exactly null when the defect is craft, honesty or SEO rather than a wrong display FORM. Do not invent a descriptive phrase such as "beeswarm" or "horizontal bar" — a form you would like is not an option id.`
+}
+
+/** The off-list replaceWith strings a judge answer actually used, deduped, in the order first seen. */
+export function offListReplaceWithValues(catalog, classKey, tr) {
+  if (!isPlainObject(tr) || !Array.isArray(tr.defects)) return []
+  const allowed = optionListIds(catalog, classKey)
+  if (allowed.size === 0) return []
+  const seen = new Set()
+  const bad = []
+  for (const d of tr.defects) {
+    if (!isPlainObject(d) || !('replaceWith' in d) || d.replaceWith == null) continue
+    if (!isNonEmptyString(d.replaceWith) || allowed.has(d.replaceWith) || seen.has(d.replaceWith)) continue
+    seen.add(d.replaceWith)
+    bad.push(d.replaceWith)
+  }
+  return bad
+}
+
+/**
+ * The ONE re-ask line (taste-evaluate.ts retries a purely off-list rejection
+ * once): names what was rejected and repeats the allowed ids so the judge
+ * cannot repeat the same invented phrase out of not having the list in view.
+ */
+export function offListRetryLine(catalog, classKey, rejectedValues) {
+  const ids = Array.from(optionListIds(catalog, classKey))
+  const rejected = Array.isArray(rejectedValues) ? rejectedValues : []
+  return `Your last answer used replaceWith value(s) ${rejected.map((v) => JSON.stringify(v)).join(', ')} — none of those are on the option list for "${classKey}". Re-answer the FULL JSON object again. Every defect's replaceWith must be copied verbatim from this list: ${ids.join(', ')} — or be exactly null. Do not invent a new descriptive phrase.`
+}
+
 /** A receipt on a catalog class must name the modules it adapted, and each defect names replaceWith. */
 export function catalogReceiptProblems(catalog, classKey, tr) {
   if (!isPlainObject(catalog) || !isNonEmptyString(classKey) || !catalog.classes?.[classKey]) return []

@@ -51,6 +51,13 @@ export type CityMosPair = {
   sales: number
   salesLabel: string
   mosText: string
+  /**
+   * The RAW months-of-supply figure, for the ladder's bar length only
+   * (SITE-103). It is never printed: `mosText` is the only thing on screen and
+   * it comes from formatMonthsOfSupply, so the bar and the digits can never
+   * land on opposite sides of a threshold (invariant 1).
+   */
+  mosRaw: number
   href: string
 }
 
@@ -121,6 +128,7 @@ export function buildCityLedger(
         sales,
         salesLabel: sales.toLocaleString('en-US'),
         mosText: formatMonthsOfSupply(snapshot.months_of_supply),
+        mosRaw: snapshot.months_of_supply,
         href,
       })
     }

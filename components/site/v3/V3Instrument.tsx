@@ -280,6 +280,14 @@ export type V3InstrumentProps = {
    */
   drawing?: ReactNode
   /**
+   * Opt-in (SITE-103): render every counted figure's sourced face on the server
+   * and animate it only when the value changes. Without it the section ships
+   * `0` in its HTML for each counted figure and counts up after hydration — a
+   * wrong number in front of a crawler, and the load-time count-up TASTE.md
+   * bans. Opt-in, so no other route's opening moves.
+   */
+  settleFigures?: boolean
+  /**
    * 1 when the Instrument opens the page and carries its answer. 2 for a market band
    * inside a page another pattern opened. Required, because a page can carry two
    * Instruments and only one of them is the page's answer.
@@ -311,6 +319,7 @@ export function V3Instrument({
   foldAfter,
   foldLabel,
   chartFirst = false,
+  settleFigures = false,
   figures,
   source,
   updated,
@@ -431,7 +440,11 @@ export function V3Instrument({
                 )}
               >
                 <span className="v3-figure__value">
-                  <V3Number value={figure.count} formatted={figure.value} />
+                  <V3Number
+                    value={figure.count}
+                    formatted={figure.value}
+                    settle={settleFigures}
+                  />
                 </span>
                 <span className="v3-figure__label">{figure.label}</span>
               </div>

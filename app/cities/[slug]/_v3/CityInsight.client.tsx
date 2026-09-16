@@ -47,7 +47,8 @@
  */
 
 import { useMemo } from 'react'
-import InsightCards, { AnomalyCard, useChartEpoch, type InsightPage } from '@/components/motion/insight-cards'
+import InsightCards, { AnomalyCard, STABLE_EPOCH,
+  useChartEpoch, type InsightPage } from '@/components/motion/insight-cards'
 import { AnimatedNumber } from '@/components/motion/number'
 import { V3_ROOT_CLASS, V3MosBars, V3SourceLine, type V3MosBarsProps } from '@/components/site/v3'
 import { cityInsightCount, cityInsightMoney, type CityInsightBoard } from './city-insight'
@@ -65,7 +66,7 @@ export type CityInsightProps = {
 export function CityInsight({ id, board, mos, latestSale }: CityInsightProps) {
   // The same epoch the catalog's card lays its points on, so the month under a
   // tick is the month that point came from.
-  const epoch = useChartEpoch()
+  const epoch = useChartEpoch() ?? STABLE_EPOCH
   const pages = useMemo(() => buildPages(board, mos, latestSale, epoch), [board, mos, latestSale, epoch])
   if (pages.length === 0) return null
 
@@ -92,7 +93,7 @@ function buildPages(
         return <V3MosBars {...mos} className="city-insight__mos" />
       },
       pill: board.supplyHrefLabel,
-      href: board.supplyHref,
+      pillHref: board.supplyHref,
     })
   }
 
@@ -143,7 +144,7 @@ function buildPages(
         )
       },
       pill: path.hrefLabel,
-      href: path.href,
+      pillHref: path.href,
     })
   }
 
@@ -151,13 +152,14 @@ function buildPages(
 }
 
 /**
- * AnomalyCard lays its points seven apart, ending at the chart epoch
- * (makePoints(values, 7, epoch)). Map a tick back onto the month it came from,
+ * AnomalyCard lays its points 49 / (n - 1) apart, ending at the chart epoch
+ * (makePoints(values, gap, epoch)). Map a tick back onto the month it came from,
  * so the axis under the line names real months instead of clock time.
  */
 function monthFace(t: number, labels: string[], epoch: number): string {
   if (labels.length === 0) return ''
-  const gap = 7
+  // Mirrors AnomalyCard: 49 / (n - 1), which is the demo's 7 at eight points.
+  const gap = 49 / Math.max(1, labels.length - 1)
   const index = Math.round((t - (epoch - (labels.length - 1) * gap)) / gap)
   if (index < 0 || index > labels.length - 1) return ''
   const label = labels[index] ?? ''
