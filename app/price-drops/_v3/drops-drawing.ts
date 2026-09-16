@@ -105,8 +105,18 @@ export function priceDropDistribution(input: {
     askHint: 'Hover, tap or tab a cut for the home, the percent and the dollars.',
     source:
       `Active single-family listings in the ${input.placeLabel} service area with a documented asking-price cut in the last ${input.windowDays} days ` +
-      `(the same pull the list below renders). ${input.total} cuts are in the window and the pull is capped at ${input.cap}, ` +
-      `so ${input.total > input.cap ? `${input.total - input.cap} of them are not on this page at all` : 'every one of them is here'}. ` +
+      `(the same pull the list below renders). ${input.total} cuts are in the window; the pull is capped at ${input.cap} ` +
+      // WHAT THE PULL RETURNED, not the cap. Subtracting the cap was right on
+      // /price-drops, where the window always exceeds it, and wrong on every
+      // city route: /price-drops/bend had 118 in the window, a pull that
+      // returned 40, and this sentence claiming 70 were missing when 78 were
+      // (§0 — measured on the rendered page 2026-09-16, the day the drawing
+      // reached the city routes).
+      `and returned ${input.drops.length}, so ${
+        input.total > input.drops.length
+          ? `${input.total - input.drops.length} of them are not on this page at all`
+          : 'every one of them is here'
+      }. ` +
       `One mark per cut, placed at the cut as a percent of the previous ask; ` +
       `${input.drops.length - points.length} row(s) in the pull carry no percent or no street and are not plotted. ` +
       `Range ${shallowest.at.toFixed(1)}% to ${deepest.at.toFixed(1)}%` +

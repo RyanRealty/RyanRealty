@@ -77,8 +77,10 @@ describe('priceDropDistribution', () => {
     // dots read as "a decorative scatter" to the 2026-09-15 evaluator.
     expect(figure.claim).toContain('hairline')
     expect(figure.claim).toContain("each card's bar")
-    expect(figure.source).toContain('60 cuts are in the window and the pull is capped at 48')
-    expect(figure.source).toContain('12 of them are not on this page at all')
+    expect(figure.source).toContain('60 cuts are in the window; the pull is capped at 48')
+    // 7 rows came back, not the 48 cap: 53 of the window are not on this page.
+    expect(figure.source).toContain('and returned 7')
+    expect(figure.source).toContain('53 of them are not on this page at all')
     expect(figure.source).toContain('1 row(s) in the pull carry no percent')
   })
 
@@ -120,5 +122,35 @@ describe('priceDropDistribution', () => {
         fetchedAt: null,
       }),
     ).toBeNull()
+  })
+
+  // SITE-108 (§0). Subtracting the CAP was right on /price-drops, where the
+  // window always exceeds it, and wrong on every city route the drawing
+  // reached on 2026-09-16: /price-drops/bend had 118 cuts in the window and a
+  // pull that returned 40, and the trace claimed 70 were missing when 78 were.
+  it('counts what is missing from what the pull RETURNED, never from the cap', () => {
+    const figure = priceDropDistribution({
+      drops,
+      total: 118,
+      cap: 48,
+      placeLabel: 'Bend',
+      windowDays: 7,
+      fetchedAt: null,
+    })!
+    expect(figure.source).toContain('and returned 6')
+    expect(figure.source).toContain('112 of them are not on this page at all')
+    expect(figure.source).not.toContain('70 of them')
+  })
+
+  it('says every one is here when the window fits on the page', () => {
+    const figure = priceDropDistribution({
+      drops,
+      total: 6,
+      cap: 48,
+      placeLabel: 'Sisters',
+      windowDays: 7,
+      fetchedAt: null,
+    })!
+    expect(figure.source).toContain('every one of them is here')
   })
 })
