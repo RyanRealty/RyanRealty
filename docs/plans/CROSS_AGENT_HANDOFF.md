@@ -1,3 +1,11 @@
+# Current — 2026-09-16 (SITE-100 Tip Ready PR — market-report hub)
+
+Surface: Cursor cloud `cursor-cloud-site100-20260916`, branch `cursor/site-100-market-report-hub-6b52`, PR https://github.com/RyanRealty/RyanRealty/pull/258. PR only — do not merge.
+
+- **SITE-100 hub fold.** `/housing-market` opens on Instrument with installed beautifului InsightCards (pager + Liveline scrub) and beui-number, plus house MOS as two named bars. Stats from leftover HUD / MarketPulse / Oregon Data Share only. Chooser sits after the city ledger.
+- **`--ship` exit 0.** `demoMatch: true`, open-state (`insight-open` / `scrub-open`), catalog-install. Judge claude-sonnet-5 (CLIs missing; Task scored the six PNGs). Median 60 (56·60·65). Rebaselined off grok-4.6 63 / v1-2026-09-08. `adaptedFrom`: beautifului-insight, beui-number, house-instrument, house-mos, house-chart.
+- Skills read: `.cursor/skills/site-queue/SKILL.md`, `.claude/skills/site-queue/SKILL.md`, `TASTE.md`, `VOICE.md`, `taste-receipt.mjs --ship`.
+
 # Current — 2026-09-16 (SITE-120 Tip Ready PR — place-alert sticky ask)
 
 Surface: Cursor cloud `cursor-cloud-site120-20260916`, branch `cursor/site-120-place-alerts-3485`. PR only — do not merge.
