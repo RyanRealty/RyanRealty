@@ -127,11 +127,11 @@
 
   /* 375x812 is the tighter of the two folds by a long way: the band's three
      figure rows each hold the 44px tap floor, so the only slack in it is its
-     own block padding. Eight pixels top and bottom keeps the hairline reading
-     as an edge and hands 8px back to the shelf below. */
+     own block padding. Four pixels top and bottom keeps the hairline reading
+     as an edge and hands 16px back to the shelf below. */
   .v3.v3-stage--band-kept .v3-stage-band__inner {
-    padding-top: var(--v3-space-xs);
-    padding-bottom: var(--v3-space-xs);
+    padding-top: var(--v3-space-3xs);
+    padding-bottom: var(--v3-space-3xs);
   }
 }
 

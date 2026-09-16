@@ -229,9 +229,9 @@ export default async function BuyPage() {
 
         {/* THE HOUSES, FIRST THING AFTER THE STAGE (SITE-91, 2026-09-16).
             The lead shelf is this route's own composition of the installed
-            shadcn carousel — flanking chevrons on the media midline, the
-            demo's position readout, and the asking-price brush that answers
-            the question a buyer arrives with. Cheapest first, because the
+            shadcn carousel — flanking chevrons on the media midline and the
+            asking-price brush that answers the question a buyer arrives with.
+            Cheapest first, because the
             shelf opened on $1,875,000 and a fold that answers "what can I
             buy" with the top of the market answers it wrong.
             The remaining shelves (price cuts, new this week) stay on

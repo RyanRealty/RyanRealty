@@ -147,8 +147,12 @@
    the flanking chevrons' vertical centre from `--v3-carousel-slide-w` — slide
    width less its own right padding, times the 16/10 media aspect, halved — so
    a hard-coded basis here silently drifts the buttons onto the price row.
-   Four across the 72rem measure from 64rem up; a peeking 78vw card below it,
-   which is what tells a phone reader the shelf scrolls. */
+   Just over four across the 72rem measure from 64rem up — the fraction is what
+   leaves a fifth card cut by the track edge, which with a live chevron over it
+   is what tells a reader the shelf scrolls; a peeking 78vw card does the same
+   job on a phone. 4.35 is the widest divisor whose cards still fit
+   "3 bd · 3 ba · 1,939 sqft · $309/sqft" on ONE line: at 4.5 and past it the
+   specs wrap on every card but the first, which is the orphaned-label tell. */
 .home-rail__carousel.v3-carousel--rail .v3-carousel__slide,
 .home-rail__carousel.v3-carousel--rail [data-slot='carousel-item'] {
   max-width: var(--v3-carousel-slide-w);

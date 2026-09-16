@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { HomeRailCard } from '@/app/_v3/home-rail-items'
-import { BAND_FLOOR, buyShelfBands, sortByAsk } from './buy-shelf-bands'
+import { BAND_FLOOR, buyShelfBands, buyShelfLadder, sortByAsk } from './buy-shelf-bands'
 
 function card(price: number | null, key = `k${price}`): HomeRailCard {
   return {
@@ -132,5 +132,36 @@ describe('the carousel is the installed carousel (ci:catalog-install / --ship)',
   it('the shelf does not re-implement the card face', () => {
     expect(SHELF).toContain("from '@/app/_v3/HomeListingRail.client'")
     expect(SHELF).toContain('HomeRailCardFace')
+  })
+})
+
+describe('buyShelfLadder', () => {
+  it('places each ask between the shelf’s own low and high', () => {
+    const ladder = buyShelfLadder([card(400_000, 'a'), card(600_000, 'b'), card(800_000, 'c')])
+    expect(ladder).not.toBeNull()
+    expect(ladder?.low).toBe(400_000)
+    expect(ladder?.high).toBe(800_000)
+    expect(ladder?.marks.map((m) => m.pct)).toEqual([0, 0.5, 1])
+  })
+
+  it('keeps the cards in the order it was handed, so mark i is card i', () => {
+    const ladder = buyShelfLadder([card(800_000, 'c'), card(400_000, 'a'), card(600_000, 'b')])
+    expect(ladder?.marks.map((m) => m.listingKey)).toEqual(['c', 'a', 'b'])
+  })
+
+  it('refuses a strip that would be marks stacked on one point', () => {
+    expect(buyShelfLadder([card(500_000, 'a'), card(500_000, 'b'), card(500_000, 'c')])).toBeNull()
+  })
+
+  it('refuses fewer than three asks, and ignores a listing with no published ask', () => {
+    expect(buyShelfLadder([card(400_000, 'a'), card(800_000, 'b')])).toBeNull()
+    expect(
+      buyShelfLadder([card(400_000, 'a'), card(800_000, 'b'), card(null, 'none')]),
+    ).toBeNull()
+  })
+
+  it('names no figure but the low and the high it was handed', () => {
+    const ladder = buyShelfLadder([card(400_000, 'a'), card(600_000, 'b'), card(800_000, 'c')])
+    expect(Object.keys(ladder ?? {}).sort()).toEqual(['high', 'low', 'marks'])
   })
 })

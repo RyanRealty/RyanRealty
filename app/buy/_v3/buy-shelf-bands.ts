@@ -69,3 +69,54 @@ export function buyShelfBands(cards: readonly HomeRailCard[]): BuyShelfBand[] {
   if (rungs.length < 2) return []
   return [{ key: 'any', label: 'Any price', cards: sorted }, ...rungs]
 }
+
+/** One listing's place on the shelf's own asking-price ladder. */
+export type BuyShelfMark = {
+  listingKey: string
+  price: number
+  /** 0–1 along min→max of the asks on THIS shelf. */
+  pct: number
+}
+
+export type BuyShelfLadder = {
+  low: number
+  high: number
+  marks: BuyShelfMark[]
+}
+
+/**
+ * The shelf's price ladder — the strip of marks that sits over the track.
+ *
+ * WHAT IT CLAIMS, IN ONE SENTENCE: these are the asks on this shelf, low to
+ * high, and the filled marks are the cards you can see. That is the whole
+ * point of a dot strip (TASTE.md's form list) over a row of cards: a portal
+ * card row says "here are four houses"; this says "here are twelve, and yours
+ * is the third cheapest of them".
+ *
+ * SECTION 0: `low` and `high` are the minimum and maximum `ListPrice` of the
+ * cards this shelf renders — published figures already on the cards' own
+ * faces, not a market statistic. Nothing here is an average, a median or a
+ * count of anything beyond the rendered set, and the two figures are printed
+ * at the ends of the strip so the marks between them are readable rather than
+ * decorative. `null` when fewer than three asks, or when every ask is the same
+ * number and the strip would be a stack of marks on one point.
+ */
+export function buyShelfLadder(cards: readonly HomeRailCard[]): BuyShelfLadder | null {
+  const priced = cards.filter(
+    (c): c is HomeRailCard & { price: number } =>
+      c.price != null && Number.isFinite(c.price) && c.price > 0,
+  )
+  if (priced.length < 3) return null
+  const low = Math.min(...priced.map((c) => c.price))
+  const high = Math.max(...priced.map((c) => c.price))
+  if (!(high > low)) return null
+  return {
+    low,
+    high,
+    marks: priced.map((c) => ({
+      listingKey: c.listingKey,
+      price: c.price,
+      pct: (c.price - low) / (high - low),
+    })),
+  }
+}

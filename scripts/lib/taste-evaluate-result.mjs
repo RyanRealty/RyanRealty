@@ -293,14 +293,41 @@ export function claudeCliFailure(status, stderr, wrapper, { cliMissing = false }
 /**
  * The model id the claude CLI actually answered with, off the wrapper's
  * `modelUsage` keys; falls back to the alias's canonical id.
+ *
+ * WHY THIS IS NOT `Object.keys(usage)[0]` (SITE-91, 2026-09-16). The CLI bills
+ * its OWN background model — the one that writes session titles and compacts
+ * context — into the SAME `modelUsage` map as the model that answered the
+ * prompt, and the map's key order is not answer order. On this sandbox a
+ * `--model sonnet` run came back as:
+ *
+ *   { "claude-haiku-4-5-20251001": { outputTokens: 10 },
+ *     "claude-sonnet-5":           { outputTokens: 4  } }
+ *
+ * so `[0]` recorded `claude-haiku-4-5-20251001` as the judge. That is a FALSE
+ * INSTRUMENT on the receipt in both directions: `isAllowedEvaluator` refuses
+ * haiku, so a real sonnet mark could not ship; and `identityDrift` would read
+ * it as a different judge from the committed mark and turn a real rise into a
+ * rebaseline. Output-token count does not disambiguate either (haiku's
+ * housekeeping outscored the answer above).
+ *
+ * The alias IS the ask, so the rule is: if the model we asked for is in the
+ * map, that is the model that answered. Only when it is absent did the CLI
+ * substitute, and then the busiest id is the honest report of what did.
  */
 export function claudeModelFromWrapper(wrapper, alias) {
+  const want = FALLBACK_EVALUATORS[alias] ?? FALLBACK_EVALUATORS.sonnet
   const usage = wrapper && typeof wrapper === 'object' ? wrapper.modelUsage : null
   if (usage && typeof usage === 'object') {
     const ids = Object.keys(usage).filter((k) => /^claude-/.test(k))
-    if (ids.length) return ids[0]
+    const asked = ids.find((id) => id === want || usage[id]?.canonicalModel === want)
+    if (asked) return asked
+    if (ids.length) {
+      return ids
+        .slice()
+        .sort((a, b) => Number(usage[b]?.outputTokens ?? 0) - Number(usage[a]?.outputTokens ?? 0))[0]
+    }
   }
-  return FALLBACK_EVALUATORS[alias] ?? FALLBACK_EVALUATORS.sonnet
+  return want
 }
 
 /** Problems on a parsed evaluator object. Empty = schema ok (booleans may still be false). */

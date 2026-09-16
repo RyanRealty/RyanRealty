@@ -182,6 +182,39 @@ describe('taste-evaluate-result — the judge chain', () => {
     expect(claudeModelFromWrapper(null, 'sonnet')).toBe('claude-sonnet-5')
   })
 
+  it('does not record the CLI\u2019s own background model as the judge', () => {
+    // The exact wrapper a `--model sonnet` run returned on 2026-09-16: the CLI
+    // bills its housekeeping haiku into the SAME map as the model that
+    // answered, FIRST, and with MORE output tokens. Object order and token
+    // count both point the wrong way; the alias is the ask.
+    const wrapper = {
+      modelUsage: {
+        'claude-haiku-4-5-20251001': { outputTokens: 10, canonicalModel: 'claude-haiku-4-5' },
+        'claude-sonnet-5': { outputTokens: 4, canonicalModel: 'claude-sonnet-5' },
+      },
+    }
+    expect(claudeModelFromWrapper(wrapper, 'sonnet')).toBe('claude-sonnet-5')
+  })
+
+  it('reports the substitute honestly when the asked-for model never answered', () => {
+    const wrapper = {
+      modelUsage: {
+        'claude-haiku-4-5-20251001': { outputTokens: 900, canonicalModel: 'claude-haiku-4-5' },
+      },
+    }
+    expect(claudeModelFromWrapper(wrapper, 'sonnet')).toBe('claude-haiku-4-5-20251001')
+  })
+
+  it('matches the asked-for model through canonicalModel when the key is dated', () => {
+    const wrapper = {
+      modelUsage: {
+        'claude-haiku-4-5-20251001': { outputTokens: 10, canonicalModel: 'claude-haiku-4-5' },
+        'claude-opus-5-20260901': { outputTokens: 4, canonicalModel: 'claude-opus-5' },
+      },
+    }
+    expect(claudeModelFromWrapper(wrapper, 'opus')).toBe('claude-opus-5-20260901')
+  })
+
   it('classifies claude CLI failures without inventing a verdict', () => {
     expect(claudeCliFailure(127, 'zsh: command not found: claude', null, { cliMissing: true })?.kind).toBe('missing')
     expect(claudeCliFailure(1, 'You have hit your usage limit', null)?.kind).toBe('402')

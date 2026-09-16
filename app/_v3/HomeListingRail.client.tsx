@@ -102,8 +102,10 @@ export function HomeRailCardFace({
  * a row of cards: a still of the shelf now says how far along the reader is,
  * and clicking a chevron visibly moves it.
  *
- * Exported so the /buy fold shelf (`app/buy/_v3/BuyHomesShelf.client.tsx`)
- * reads its position through the same code rather than a second copy.
+ * Exported with `HomeRailPosition` so any shelf that wants the readout reads
+ * it through this code rather than a second copy. The /buy FOLD shelf
+ * deliberately does not: 25px above the photograph is the difference between
+ * the first ask's street address being on screen at 1440x900 and under it.
  */
 export function useRailPosition(api: CarouselApi | undefined): {
   index: number
@@ -132,9 +134,9 @@ function pad2(n: number): string {
 }
 
 /**
- * The counter and the rule that fills with it. Zero extra height: the rule is
- * the head row's own bottom hairline, painted navy up to the snap position, so
- * the affordance costs the fold nothing.
+ * The counter and the hairline that fills with it — navy up to the snap
+ * position, `--v3-hairline` past it. It rides the head row beside the see-all,
+ * so it adds no row of its own.
  */
 export function HomeRailPosition({ index, count }: { index: number; count: number }) {
   if (count < 2) return null

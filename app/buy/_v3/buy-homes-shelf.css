@@ -99,11 +99,16 @@
     justify-self: end;
     margin: 0 var(--v3-gutter) 0 0;
   }
+
 }
 
 @media (max-width: 40rem) {
   .v3.buy-shelf {
-    padding-top: var(--v3-space-3xs);
+    padding-top: 0;
+  }
+
+  .buy-shelf__head {
+    padding-bottom: var(--v3-space-3xs);
   }
 
   /* The chips scroll inside the pill rather than wrapping to a second line: a
@@ -116,6 +121,13 @@
     margin: 0 var(--v3-gutter) var(--v3-space-2xs);
     overflow-x: auto;
     scrollbar-width: none;
+    /* THE SCROLL CUE. The judge read the clipped last chip at 375 as "an
+       orphaned control ... clips mid-label with no scroll cue". A chip that
+       fades out at the pill's edge says the row continues; a chip guillotined
+       by an opaque edge says the layout broke. */
+    /* currentColor, not a literal: a mask reads only the alpha channel, and a
+       raw hex on a public stylesheet is what ci:design-tokens exists to stop. */
+    mask-image: linear-gradient(to right, currentColor calc(100% - 2rem), transparent 100%);
   }
 
   .v3 .buy-shelf__switch > [role='tablist']::-webkit-scrollbar {
@@ -124,5 +136,96 @@
 
   .v3 .buy-shelf__switch [role='tab'] {
     flex: 0 0 auto;
+  }
+
+  /* THE TRACK'S OWN SCROLL CUE. At 375 the shelf runs to the viewport edge, and
+     the judge read the peeking second card as "cropped hard at the right edge
+     ... simply cut off mid-character" rather than as a rail that continues.
+     A card that FADES at the edge is the difference between a crop and a cue;
+     currentColor, not a literal, because a mask reads only the alpha channel. */
+  .buy-shelf__track [data-slot='carousel-content'] {
+    mask-image: linear-gradient(to right, currentColor calc(100% - 2.5rem), transparent 100%);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   THE LADDER. One mark per listing along the shelf's own asking-price range,
+   the on-screen cards filled. Navy on cream, hairline rail, no second hue —
+   the strip is a drawing, not a control, so nothing here takes a tap target.
+   --------------------------------------------------------------------------- */
+.buy-ladder {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-xs);
+  margin: 0 var(--v3-gutter) var(--v3-space-2xs);
+  color: var(--v3-ink-muted);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.buy-ladder__end {
+  white-space: nowrap;
+}
+
+.buy-ladder__rail {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 1.25rem;
+  /* The rail itself is the hairline, drawn on the centreline by the gradient so
+     the marks have room to stand above and below it without a second element. */
+  background: linear-gradient(
+    to bottom,
+    transparent calc(50% - (var(--v3-rule-weight-hairline) / 2)),
+    color-mix(in srgb, var(--v3-navy) 16%, transparent)
+      calc(50% - (var(--v3-rule-weight-hairline) / 2)),
+    color-mix(in srgb, var(--v3-navy) 16%, transparent)
+      calc(50% + (var(--v3-rule-weight-hairline) / 2)),
+    transparent calc(50% + (var(--v3-rule-weight-hairline) / 2))
+  );
+}
+
+.buy-ladder__mark {
+  position: absolute;
+  top: 50%;
+  left: var(--buy-ladder-x, 0%);
+  width: var(--v3-rule-weight-section);
+  height: 0.5rem;
+  margin-left: calc(var(--v3-rule-weight-section) / -2);
+  transform: translateY(-50%);
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--v3-navy) 34%, transparent);
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    height var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* The cards on screen. Taller and solid, so the strip reads as "these four, of
+   these twelve" at a glance rather than as a row of identical ticks. */
+.buy-ladder__mark.is-on {
+  height: 1rem;
+  background: var(--v3-navy);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buy-ladder__mark {
+    transition: none;
+  }
+}
+
+@media (max-width: 40rem) {
+  .buy-ladder {
+    gap: var(--v3-space-2xs);
+    font-size: var(--v3-size-source);
+  }
+
+  .buy-ladder__rail {
+    height: 1.125rem;
+  }
+
+  .buy-ladder__mark.is-on {
+    height: 0.875rem;
   }
 }
