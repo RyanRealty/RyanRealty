@@ -63,6 +63,25 @@
   height: 2.75rem;
 }
 
+/* Liveline draws its own series-toggle dots inside the stage at 22x12 — a real
+   control from the catalog source, under the 44px target size. The hit area is
+   grown with a transparent pseudo-element rather than by resizing the dots,
+   because the dots sit in the chart's own top padding and growing them would
+   move the plot. Nothing here paints, so the drawing is unchanged. */
+.region-insight .insight-chart-stage button {
+  position: relative;
+}
+
+.region-insight .insight-chart-stage button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: translate(-50%, -50%);
+}
+
 .region-insight .insight-cards__note {
   max-width: var(--v3-measure-text);
 }
