@@ -225,6 +225,12 @@ export function buildCommunitySchemas(input: {
   asOfIso: string | null
   asOfLabel: string | null
   faqs: readonly { question: string; answer: string }[]
+  /**
+   * SITE-116. Authored amenities as an ItemList when the page renders #amenities.
+   * Each item's URL is a recorded public URL, a published amenity blog, or the
+   * section anchor — never an invented place.
+   */
+  amenityItems?: ReadonlyArray<{ name: string; url: string }>
 }): SchemaInput[] {
   const { slug, name, cityName, citySlug } = input
 
@@ -272,6 +278,14 @@ export function buildCommunitySchemas(input: {
   }
 
   if (input.faqs.length > 0) schemas.push({ type: 'faqPage', items: input.faqs })
+
+  if (input.amenityItems && input.amenityItems.length > 0) {
+    schemas.push({
+      type: 'itemList',
+      name: `${name} amenities`,
+      items: input.amenityItems,
+    })
+  }
 
   return schemas
 }

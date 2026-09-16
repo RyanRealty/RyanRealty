@@ -6,4 +6,9 @@ describe('community-catalog SITE-94', () => {
     const src = readFileSync(new URL('./community-catalog.ts', import.meta.url), 'utf8')
     expect(src).toMatch(/from ['"]@\/components\/motion\/number['"]/)
   })
+
+  it('SITE-116 imports the installed beautifului InsightCards source', () => {
+    const src = readFileSync(new URL('./community-catalog.ts', import.meta.url), 'utf8')
+    expect(src).toMatch(/from ['"]@\/components\/motion\/insight-cards['"]/)
+  })
 })
