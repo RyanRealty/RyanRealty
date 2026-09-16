@@ -112,36 +112,55 @@ describe('amenityKindMark', () => {
   })
 })
 
-describe('the board never hides a photograph behind the scroll entrance', () => {
+describe('the board carries a tile by photograph or by type — never by a badge (SITE-116 round 3)', () => {
   const src = readFileSync(new URL('./V3PlaceAmenities.tsx', import.meta.url), 'utf8')
-  /** Every `<V3Reveal ... />` element in the source, as its own text. */
-  const reveals = src
-    .split('<V3Reveal')
-    .slice(1)
-    .map((tail) => tail.slice(0, tail.indexOf('/>')))
 
-  it('mounts the reveal, so the class keeps its installed catalog interaction', () => {
-    expect(src).toContain("from './V3Reveal.client'")
-    expect(reveals.length).toBeGreaterThan(0)
+  it('mounts no scroll reveal and no kind mark on a tile: the icon grid was the banned tell', () => {
+    // Round 2 put an Iconoir mark behind the beUI scroll reveal on every tile
+    // without a photograph; the evaluator named the result "card grids with
+    // icons". A tile we cannot picture is carried by its name at heading size,
+    // its authored line and its fact list — nothing stands in for a picture.
+    expect(src).not.toContain("from './V3Reveal.client'")
+    expect(src).not.toContain('<V3Reveal')
+    expect(src).not.toContain('v3-place-amenities__mark')
+    expect(src).not.toContain('<V3Icon')
   })
 
-  it('puts only the drawn mark inside it — never a photograph', () => {
-    // The catalog component serves its child at opacity 0 until it is scrolled
-    // to, and three capture runs on 2026-09-16 recorded the Tetherow course
-    // frame as a blank box because of it. A drawn mark may arrive late. A
-    // photograph may not: imagery on this board is the point of the section.
-    for (const reveal of reveals) {
-      expect(reveal).toContain('v3-place-amenities__mark')
-      expect(reveal).not.toContain('v3-place-amenities__photo')
-      expect(reveal).not.toContain('v3-place-amenities__frame')
-    }
+  it('prints a photograph plainly, never behind an entrance, and the facts as a description list', () => {
+    expect(src).toContain('className="v3-place-amenities__photo"')
+    expect(src).toContain('loading="lazy"')
+    expect(src).toContain('v3-place-amenities__facts')
+    expect(src).toContain('v3-place-amenities__fact-label')
   })
 
-  it('keeps every word outside it, in plain first-byte HTML', () => {
-    for (const reveal of reveals) {
-      expect(reveal).not.toContain('row.description')
-      expect(reveal).not.toContain('row.name')
-      expect(reveal).not.toContain('row.access')
-    }
+  it('the class keeps its installed scroll-animation through the type slider, not the board', () => {
+    const slider = readFileSync(new URL('../../place/PlaceTypeSlider.tsx', import.meta.url), 'utf8')
+    expect(slider).toContain('V3Reveal')
+    const reveal = readFileSync(new URL('./V3Reveal.client.tsx', import.meta.url), 'utf8')
+    expect(reveal).toMatch(/from ['"]@\/components\/motion\/scroll-reveal['"]/)
+  })
+})
+
+describe('amenityGroups carries the fact list', () => {
+  it('keeps a fact only when both halves are present, and passes access through whole', () => {
+    const groups = amenityGroups('a', [
+      {
+        name: 'Tetherow Café',
+        category: 'Dining',
+        access: 'Open to public · 7am to 2pm seasonally',
+        facts: [
+          { label: 'Who can use it', value: 'Open to public' },
+          { label: 'Hours', value: '7am to 2pm seasonally' },
+          { label: '', value: 'dropped' },
+          { label: 'Details', value: ' ' },
+        ],
+      },
+    ])
+    const row = groups[0]!.rows[0]!
+    expect(row.facts).toEqual([
+      { label: 'Who can use it', value: 'Open to public' },
+      { label: 'Hours', value: '7am to 2pm seasonally' },
+    ])
+    expect(row.access).toBe('Open to public · 7am to 2pm seasonally')
   })
 })

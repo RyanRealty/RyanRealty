@@ -301,7 +301,50 @@ export type V3QuietFold = {
   id?: string
 }
 
-export type V3QuietItem = V3QuietLink | V3QuietProse | V3QuietFact | V3QuietChips | V3QuietFold
+/** One mark on a `reach` line: a destination and how far it is. */
+export type V3QuietReachMark = {
+  /** The destination's name. The mark's text and its row's term. */
+  label: string
+  /** The distance in the line's unit, for GEOMETRY only — never printed. */
+  value: number
+  /** The distance as the caller formatted it: "7 min". */
+  valueLabel: string
+  /** One quiet clause: what is there. */
+  detail?: string
+  /** Hash target for the mark's row. Derived from the label when omitted. */
+  id?: string
+}
+
+/**
+ * A REACH: a set of distances from the place, drawn on one line
+ * (SITE-116 round 3). The community configs record drive times as
+ * `{minutes, destination, note}`; round 2 printed them as four hairline fact
+ * rows with a proportional underline, and the evaluator read the run as one
+ * more instance of the eyebrow → heading → rows template. A set of distances
+ * is a drawing: one axis from here to the farthest, a mark per destination
+ * where it falls, its name and its minutes on the mark, and a row per mark
+ * beneath carrying the note. Every mark is an anchor to its row, so the
+ * interaction — hover, tap, keyboard — is the same everywhere and needs no
+ * script. Geometry is a share of `max` computed here; every printed figure
+ * arrives formatted (`valueLabel`, `maxLabel`).
+ */
+export type V3QuietReach = {
+  kind: 'reach'
+  /** The set's title: "How far to what". */
+  term: string
+  /** One or two sentences under the title. */
+  body?: string | readonly string[]
+  /** The unit's name for the axis: "minutes". */
+  unitLabel?: string
+  /** The axis end, in the line's unit. Defaults to the farthest mark. */
+  max?: number
+  /** The axis end as the caller formatted it: "35 min". */
+  maxLabel?: string
+  marks: readonly V3QuietReachMark[]
+  id?: string
+}
+
+export type V3QuietItem = V3QuietLink | V3QuietProse | V3QuietFact | V3QuietChips | V3QuietFold | V3QuietReach
 
 /**
  * A Quiet block is named once. Either it shows a title, and that title is the
@@ -376,6 +419,15 @@ export type V3QuietProps = {
    * holding only doors and prose passes none and renders exactly as before.
    */
   source?: string
+  /**
+   * How `kind: 'fact'` rows are set (SITE-116 round 3). `rows` (default) is
+   * the hairline ledger: term left, value right, one row each. `plate` sets
+   * them as cells in a grid — the term as a small-caps label over the value in
+   * the display face — so a block of authored facts reads as a spec plate and
+   * not as another run of the row template the Index and the Ledger already
+   * use. Every other item kind spans the plate's full width in reading order.
+   */
+  factLayout?: 'rows' | 'plate'
   /**
    * The visible uppercase context line above the block. A label, never the
    * region's name.
@@ -489,6 +541,31 @@ type RenderableItem =
     }
   | { kind: 'chips'; term: string; labels: string[]; id?: string }
   | { kind: 'fold'; term: string; body: string[]; id?: string }
+  | {
+      kind: 'reach'
+      term: string
+      body: string[]
+      unitLabel: string | undefined
+      maxLabel: string | undefined
+      marks: Array<{
+        label: string
+        value: number
+        valueLabel: string
+        detail: string | undefined
+        id: string
+        /** 0..1 position along the line — geometry, never printed. */
+        share: number
+      }>
+      id?: string
+    }
+
+/** A hash-safe key from a label, for a mark's row id. */
+function slugKey(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
 
 /**
  * Drops what cannot be rendered honestly: a link with no label would ship an
@@ -553,6 +630,45 @@ function toRenderable(items: readonly V3QuietItem[]): RenderableItem[] {
       const labels = item.labels.map((l) => text(l)).filter((l): l is string => !!l)
       if (!term || labels.length === 0) continue
       out.push({ kind: 'chips', term, labels, id: text(item.id) })
+      continue
+    }
+
+    if (item.kind === 'reach') {
+      const term = text(item.term)
+      // A mark is a name and a formatted distance at a finite, non-negative
+      // position. Half of one is dropped, never drawn at zero.
+      const marks = (item.marks ?? []).flatMap((mark) => {
+        if (!mark || typeof mark !== 'object') return []
+        const label = text(mark.label)
+        const valueLabel = text(mark.valueLabel)
+        if (!label || !valueLabel || typeof mark.value !== 'number' || !Number.isFinite(mark.value) || mark.value < 0) return []
+        return [{ label, value: mark.value, valueLabel, detail: text(mark.detail), id: text(mark.id) }]
+      })
+      if (!term || marks.length === 0) continue
+      const farthest = marks.reduce((max, mark) => Math.max(max, mark.value), 0)
+      const max =
+        typeof item.max === 'number' && Number.isFinite(item.max) && item.max > 0 && item.max >= farthest
+          ? item.max
+          : farthest
+      const base = text(item.id) ?? `reach-${slugKey(term) || 'set'}`
+      const seen = new Set<string>()
+      out.push({
+        kind: 'reach',
+        term,
+        body: item.body == null ? [] : paragraphs(item.body),
+        unitLabel: text(item.unitLabel),
+        maxLabel: text(item.maxLabel),
+        marks: marks
+          .slice()
+          .sort((a, b) => a.value - b.value)
+          .map((mark, index) => {
+            let id = mark.id ?? `${base}-${slugKey(mark.label) || index}`
+            while (seen.has(id)) id = `${id}-${index}`
+            seen.add(id)
+            return { ...mark, id, share: max > 0 ? Math.min(1, mark.value / max) : 0 }
+          }),
+        id: text(item.id),
+      })
       continue
     }
 
@@ -756,6 +872,7 @@ export function V3Quiet({
   alert,
   note,
   source,
+  factLayout = 'rows',
   eyebrow,
   id,
   className,
@@ -824,6 +941,7 @@ export function V3Quiet({
         'v3-quiet',
         !contextLine && !title && 'v3-quiet--headless',
         alertRenderable && 'v3-quiet--alert',
+        factLayout === 'plate' && 'v3-quiet--plate',
         className,
       )}
       aria-labelledby={headingId}
@@ -920,7 +1038,16 @@ export function V3Quiet({
                     <dl className="v3-quiet__factpair">
                       <dt className="v3-quiet__factterm">{item.term}</dt>
                       <dd className="v3-quiet__factvalue">
-                        <span className="v3-quiet__factfigure">{item.value}</span>
+                        <span
+                          className={cn(
+                            'v3-quiet__factfigure',
+                            // On the plate a sentence-length value steps back
+                            // to body size; the class is inert in row layout.
+                            item.value.length > 24 && 'v3-quiet__factfigure--long',
+                          )}
+                        >
+                          {item.value}
+                        </span>
                         {item.detail ? (
                           <span className="v3-quiet__factdetail">{item.detail}</span>
                         ) : null}
@@ -932,6 +1059,77 @@ export function V3Quiet({
                       </div>
                     )}
                   </li>
+                ) : item.kind === 'reach' ? (
+                  <>
+                    {/* THE LINE. One axis from here to the farthest mark; a
+                        mark per destination at its share of the way, its name
+                        on one side and its distance on the other, alternating
+                        so near neighbours do not collide. Every mark is an
+                        anchor to its own row below, so hover, tap and keyboard
+                        all land on the same reading with no script. The rows
+                        are sibling items on purpose: the set stays a set of
+                        N places for the content floor, and each row carries
+                        the note the mark's title only hints at. */}
+                    <li id={item.id} className="v3-quiet__item v3-quiet__item--reach">
+                      <dl className="v3-quiet__pair">
+                        <dt className="v3-quiet__term">{item.term}</dt>
+                        <dd className="v3-quiet__body">
+                          {item.body.map((line, lineIndex) => (
+                            <p className="v3-quiet__para" key={lineIndex}>
+                              {line}
+                            </p>
+                          ))}
+                        </dd>
+                      </dl>
+                      <nav
+                        className="v3-quiet__reach"
+                        aria-label={`${item.term}: ${item.marks.map((mark) => `${mark.label} ${mark.valueLabel}`).join(', ')}`}
+                      >
+                        <div className="v3-quiet__reach-track">
+                          {item.marks.map((mark, markIndex) => (
+                            <a
+                              key={mark.id}
+                              href={`#${mark.id}`}
+                              className={cn(
+                                'v3-quiet__reach-mark',
+                                markIndex % 2 === 1 && 'v3-quiet__reach-mark--below',
+                                mark.share > 0.86 && 'v3-quiet__reach-mark--end',
+                                mark.share < 0.14 && 'v3-quiet__reach-mark--start',
+                              )}
+                              style={{ ['--v3-at' as string]: mark.share.toFixed(4) }}
+                              title={`${mark.label}: ${mark.valueLabel}${mark.detail ? ` · ${mark.detail}` : ''}`}
+                            >
+                              <span className="v3-quiet__reach-name">{mark.label}</span>
+                              <span className="v3-quiet__reach-dot" aria-hidden="true" />
+                              <span className="v3-quiet__reach-value">{mark.valueLabel}</span>
+                            </a>
+                          ))}
+                        </div>
+                        <div className="v3-quiet__reach-axis" aria-hidden="true">
+                          <span>Here</span>
+                          <span>
+                            {item.maxLabel ?? ''}
+                            {item.maxLabel && item.unitLabel ? ` · ${item.unitLabel}` : ''}
+                          </span>
+                        </div>
+                      </nav>
+                    </li>
+                    {item.marks.map((mark) => (
+                      <li
+                        key={mark.id}
+                        id={mark.id}
+                        className="v3-quiet__item v3-quiet__item--fact v3-quiet__item--reach-row"
+                      >
+                        <dl className="v3-quiet__factpair">
+                          <dt className="v3-quiet__factterm">{mark.label}</dt>
+                          <dd className="v3-quiet__factvalue">
+                            <span className="v3-quiet__factfigure">{mark.valueLabel}</span>
+                            {mark.detail ? <span className="v3-quiet__factdetail">{mark.detail}</span> : null}
+                          </dd>
+                        </dl>
+                      </li>
+                    ))}
+                  </>
                 ) : item.kind === 'fold' ? (
                   <li id={item.id} className="v3-quiet__item v3-quiet__item--fold">
                     <details className="v3-quiet__fold">

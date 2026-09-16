@@ -48,8 +48,24 @@
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { V3Button, V3Eyebrow, V3Heading, V3Lede, V3SourceDisclosure, V3_ROOT_CLASS } from './atoms'
+import { V3PlaceFinder } from './V3PlaceFinder.client'
 import './tokens.css'
 import './V3PlaceIndex.css'
+
+/**
+ * The finder over the index (SITE-116 round 3): the installed beUI combobox
+ * (V3PlaceFinder) with every row of this index as an item — name, its count
+ * as the detail, its href as the pick. A live control on a section that was
+ * otherwise a gazetteer, and the fast path over twenty-two anchors.
+ */
+export type V3PlaceIndexFinder = {
+  /** The field's accessible name: "Find a Tetherow neighborhood". */
+  label: string
+  /** Shown inside the field before typing. Defaults to the label. */
+  placeholder?: string
+  /** What the list says when nothing matches. */
+  emptyMessage?: string
+}
 
 /** One place inside the place this section sits on. */
 export type V3PlaceIndexEntry = {
@@ -96,6 +112,11 @@ export type V3PlaceIndexProps = {
   action?: { label: string; href: string }
   /** The §0 trace for the counts. Rendered as the collapsed disclosure. */
   source?: string
+  /**
+   * Mount the finder in the head: the installed beUI combobox over this
+   * index's own rows. Omit and the section renders exactly as before.
+   */
+  finder?: V3PlaceIndexFinder
   className?: string
 }
 
@@ -205,6 +226,7 @@ export function V3PlaceIndex({
   foldAfter = 12,
   action,
   source,
+  finder,
   className,
 }: V3PlaceIndexProps) {
   const rows = placeIndexRows(entries)
@@ -238,6 +260,22 @@ export function V3PlaceIndex({
           {title}
         </V3Heading>
         {claim ? <V3Lede className="v3-place-index__lede">{claim}</V3Lede> : null}
+        {finder && trimmed(finder.label) ? (
+          <div className="v3-place-index__finder">
+            <V3PlaceFinder
+              id={`${id}-finder`}
+              label={finder.label}
+              placeholder={trimmed(finder.placeholder)}
+              emptyMessage={trimmed(finder.emptyMessage)}
+              // Every row of the index, folded or not, with the count it prints.
+              items={rows.map((row) => ({
+                href: row.href,
+                name: row.name,
+                detail: row.count == null ? null : `${row.count.toLocaleString('en-US')}${unit ? ` ${unit}` : ''}`,
+              }))}
+            />
+          </div>
+        ) : null}
       </div>
 
       <ul className="v3-place-index__list">

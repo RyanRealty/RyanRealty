@@ -114,6 +114,7 @@ import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView, searchPlaceSplit } from '@/components/search/PlaceSplitView'
 import { buildCommunityCensus, communityCensusLede } from './_v3/community-census'
+import { amenityAccessFacts } from './_v3/amenity-facts'
 import {
   askingBandsChart,
   askingPrices,
@@ -465,6 +466,10 @@ export default async function CommunityDetailPage({ params }: Props) {
       category: amenity.category,
       description: amenity.description,
       access: amenity.access,
+      // SITE-116 round 3: the tile's fact list is the access line's own
+      // parts under the labels they answer (who can use it, hours, details).
+      // Nothing added; `access` stays whole for the JSON-LD.
+      facts: amenityAccessFacts(amenity.access),
       image: cover,
       door: post
         ? { href: `/blog/${post.slug}`, label: 'Read our guide' }
@@ -1221,6 +1226,14 @@ export default async function CommunityDetailPage({ params }: Props) {
           entries={platIndexEntries}
           foldAfter={10}
           source="Deschutes County · Oregon Data Share"
+          // SITE-116 round 3: the class's catalog object (beui:combobox) as
+          // the finder over these rows — type a name, pick a neighborhood,
+          // land on its page. The anchors below stay for the crawler.
+          finder={{
+            label: `Find a ${publicName} neighborhood`,
+            placeholder: 'Type a neighborhood name',
+            emptyMessage: `No ${publicName} neighborhood by that name.`,
+          }}
         />
 
         <PlaceTypeSlider cards={typeCards} label={`${publicName} property types`} />
@@ -1353,6 +1366,10 @@ export default async function CommunityDetailPage({ params }: Props) {
             eyebrow={`${publicName} · Belonging`}
             heading={`Living in ${publicName}`}
             items={knowledgeItems}
+            // SITE-116 round 3: the facts set as a plate of cells (term over
+            // value in the display face), the drive times as a drawn line —
+            // so this section stops sharing the Index's hairline-row template.
+            factLayout="plate"
             // §0. These rows are authored facts, so the block names who
             // published them. Built from the community config's own sources[].
             source={placeKnowledgeSource({
