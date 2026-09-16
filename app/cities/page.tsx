@@ -112,6 +112,25 @@ const REGION_SUPPLY_TRACE =
  */
 const INDEX_SALES_WASH = false
 
+/**
+ * Read budgets for the index's timeboxed reads, in ms. They were 6000 / 3500
+ * / 3500 / 4500 and on the PR #252 CI server (b662c40bc, 07:57Z, the :00
+ * listing_tile_mv refresh and a second PR's CI on the same database) every one
+ * fired: the Atlas rendered with 0 items, the ledger with 13 rows and 276
+ * words, the Place ItemList JSON-LD was gone — and `revalidate = 3600` cached
+ * that render for an hour. The depth ratchet (contentFloor.sectionDepth) is
+ * what caught it. A slow read still costs the drawing, never the directory;
+ * these budgets just stop a cold, contended server from paying that price on
+ * its first render. The mechanism that should make a degraded render
+ * unpersistable is SITE-118's; until it lands, the budget is the fence.
+ */
+const INDEX_READ_BUDGET_MS = {
+  atlas: 20_000,
+  regionPace: 8_000,
+  overlays: 10_000,
+  monthlyRuns: 10_000,
+} as const
+
 /** The twelve complete months a row's run covers. */
 const REVEAL_MONTHS = 12
 
@@ -166,12 +185,12 @@ export default async function CitiesPage() {
   const [allCities, allSnapshots, atlasRead, regionAtlas, regionPace] = await Promise.all([
     getCitiesForIndex(),
     getAllCitySnapshots(),
-    withTimeoutFallback(buildPlaceAtlas({ cities: [], label: 'Central Oregon', salesWash: INDEX_SALES_WASH }).catch(() => null), null, 6000, 'cities:atlas'),
+    withTimeoutFallback(buildPlaceAtlas({ cities: [], label: 'Central Oregon', salesWash: INDEX_SALES_WASH }).catch(() => null), null, INDEX_READ_BUDGET_MS.atlas, 'cities:atlas'),
     buildRegionAtlasRegions().catch(() => null),
     withTimeoutFallback(
       getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
       EMPTY_PUBLIC_PACE,
-      3500,
+      INDEX_READ_BUDGET_MS.regionPace,
       'cities:regionPace',
     ),
   ])
@@ -195,7 +214,7 @@ export default async function CitiesPage() {
         ...directorySlugs.map((slug) => ({ geoType: 'city' as const, geoSlug: slug })),
       ]),
       new Map<string, DetachedOverlay>(),
-      3500,
+      INDEX_READ_BUDGET_MS.overlays,
       'cities:leftoverOverlays',
     ),
     withTimeoutFallback(
@@ -206,7 +225,7 @@ export default async function CitiesPage() {
         ),
       ).then((pairs) => new Map<string, PublicMonthlyPoint[]>(pairs)),
       new Map<string, PublicMonthlyPoint[]>(),
-      4500,
+      INDEX_READ_BUDGET_MS.monthlyRuns,
       'cities:monthlyRuns',
     ),
   ])

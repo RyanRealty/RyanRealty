@@ -1219,6 +1219,18 @@ const SEEDS: readonly Seed[] = [
       "Mechanical: `curl` of a production build's /cities, /communities/tetherow and /cities/bend served HTML contains the real published count in the strip's claim (e.g. '256 houses came on the market') and never '>0<' inside .v3-alerts__num-pop for a place whose source line names a non-zero count; a unit test pins it; reduced-motion still shows the finished number; the digit-swap still animates on value change in the browser. ci:gates and ci:runtime-gates green. honestyFunction cannot fall on any class receipt; no receipt is re-scored for this (pixels unchanged).",
   },
 
+  {
+    versionGap: 'SITE-118',
+    domain: 'public-ux',
+    title:
+      'Fleet: a degraded first render is cached — a place page whose reads time out on a cold or contended server is served thin for the whole ISR window',
+    objective:
+      "Found 2026-09-16 on PR #252 CI (b662c40bc): /cities failed its own depth floors on the CI server — sections.atlas.items 0 (floor 8), featured-cities 13 items (floor 15) and 276 words (floor 466), jsonLd 4 (floor 5) — while the same build passed them locally (cities sections 5/5) and passed on the 06:29Z CI run. The page races every read against withTimeoutFallback (atlas 6000ms, region pace 3500ms, overlays 3500ms); on a cold server under database contention (the :00 listing_tile_mv refresh, a second PR's CI on the same project) the reads time out, the fallbacks render an empty Atlas and a thinner ledger, and `revalidate = 3600` caches THAT render for an hour. The local build logs show the same class at build time: '[withTimeoutFallback:about atlas] timed out after 6000ms', '[withTimeoutFallback:zip:publicPace] timed out after 3000ms' — a prerender that degrades at build time is what production serves until the first revalidation. This is every ISR place page (city, cities, community, subdivision, zip, about) with a timeout-guarded read, not /cities alone. The content-floor ratchet caught it because it measures depth; a page can be honest-in-code and thin-in-production.",
+    output:
+      'A mechanism, not a longer timeout alone: (1) a degraded render must not be persisted for the full window — e.g. the page reports degraded reads (withTimeoutFallbackResult) and a degraded render sets a short revalidate / is not written as the ISR copy, or the heavy reads are precomputed and cached (unstable_cache with a long TTL, primed by a cron) so a render never waits on the database; (2) a build-time prerender that degraded is detected and re-rendered before it is served; (3) ci:route-content-floor keeps failing a degraded render (it is the detector; never loosen it); (4) budgets on /cities raised meanwhile so a cold CI server passes (recorded on the node). Fleet class across every page that uses withTimeoutFallback on a published section.',
+    accept:
+      'Mechanical: on a production build started cold with the database under load (run ci:route-content-floor immediately after start, twice), every seeded sectionDepth floor holds on the first request; a render whose atlas read timed out is never the copy served on the second request; server logs show which reads degraded and that the copy was not persisted. ci:route-content-floor green on CI three runs in a row across the :00/:30 refresh windows. No floor lowered. honestyFunction and requiredComponents cannot fall.',
+  },
 ]
 
 async function main() {
