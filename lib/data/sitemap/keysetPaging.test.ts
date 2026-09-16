@@ -8,7 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  * build reproduced it twice with the server log
  * "[getListingSitemapRows] listing_tile_mv page failed: canceling statement
  * due to statement timeout" — eight concurrent ORDER BY + OFFSET pages over
- * the same filtered listing_tile_mv contending for the statement timeout.
+ * the same filtered MV contending for the statement timeout (listing_tile_mv
+ * then; listing_search_mv since 2026-09-16 — the paging contract is the same).
  * This locks the replacement: sequential `.gt('listing_key', lastKey)
  * .order('listing_key').limit(PAGE_SIZE)` paging, a tolerant count sanity
  * check, and exponential-backoff retry. Supabase mocked per the DAL test

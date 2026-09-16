@@ -14,7 +14,8 @@
  * stable `listing_key` order, throw on error (never cache/serve empty on a
  * blip). Path assembly is `listingTileHref` so locs match the listing
  * canonical. Per docs/DATABASE_FOR_AI_AGENTS.md §0, public active inventory
- * reads listing_tile_mv — not a raw `listings` scan.
+ * reads listing_search_mv (listing_tile_mv until 2026-09-16) — not a raw
+ * `listings` scan.
  *
  * KEYSET PAGING, NOT OFFSET (2026-09-16). The original fix above paged with
  * `.order('listing_key').range(offset, offset + 999)` across PAGE_CONCURRENCY
@@ -42,6 +43,20 @@ import {
   type ListingSitemapTile,
 } from '@/lib/data/sitemap/listing-sitemap-path'
 
+// WHICH MV, AND WHY IT CHANGED (2026-09-16). This read paged `listing_tile_mv`
+// — ~593K rows, every status, indexed for city+status lookups and NOT for
+// `WHERE standard_status IN (…) ORDER BY listing_key`. Each keyset page walked
+// the listing_key index and threw away ~98% of what it touched, and the exact
+// count scanned the whole MV. Uncontended that was 12–19s cold; under the :00
+// `refresh_listing_tile_mv_30min` window with a second CI run on the same
+// database it hit the anon statement timeout and /sitemaps/listings.xml served
+// 500 three times in a row (PR #252 CI, 07:05–07:07Z; production served 200
+// only because the route caches for an hour). `listing_search_mv` is the
+// active-only view (Active / Active Under Contract / Pending over
+// listing_search_mv_src, Coming Soon hidden), ~9.7K rows, unique-indexed on
+// listing_key, carrying every column this sitemap needs; the same
+// PUBLIC_ACTIVE_STATUSES filter, the same ORDER BY listing_key, the same
+// keyset pages — over 1/60th of the rows. ci:sitemap-listings-honest pins it.
 const PAGE_SIZE = 1000
 const SELECT_COLS =
   'listing_key, list_number, street_number, street_name, city, subdivision_name, boundary_city, boundary_neighborhood, modified_at'
@@ -96,7 +111,7 @@ type AnonClient = NonNullable<ReturnType<typeof supabaseAnon>>
 async function fetchActiveCount(supabase: AnonClient): Promise<number | null> {
   const { count, error } = await withRetry(() =>
     supabase
-      .from('listing_tile_mv')
+      .from('listing_search_mv')
       .select('listing_key', { count: 'exact', head: true })
       .in('standard_status', PUBLIC_ACTIVE_STATUSES),
   )
@@ -122,7 +137,7 @@ async function fetchAllPagesKeyset(supabase: AnonClient): Promise<ListingSitemap
   for (;;) {
     const page = await withRetry(() => {
       const base = supabase
-        .from('listing_tile_mv')
+        .from('listing_search_mv')
         .select(SELECT_COLS)
         .in('standard_status', PUBLIC_ACTIVE_STATUSES)
       // ORDER BY is not optional. Unordered pages on this MV returned 7,586
@@ -178,8 +193,9 @@ async function fetchActiveListingTiles(): Promise<ListingSitemapTile[]> {
  * THE FILTER IS IN JS, NOT IN THE QUERY, ON PURPOSE. The MV read above is
  * pinned by ci:sitemap-listings-honest to a shape measured against production
  * (count + ORDER BY listing_key + keyset pages, 2026-09-16); adding an
- * `.in('city_lower', …)` predicate beside that ORDER BY changes the plan on a
- * 589K-row MV under a build deadline. Verified this session: a `city_lower`
+ * `.in('city_lower', …)` predicate beside that ORDER BY changed the plan on the
+ * 589K-row tile MV under a build deadline (the read moved to the ~9.7K-row
+ * active-only search MV the same day; the filter stays in JS regardless). Verified this session: a `city_lower`
  * equality filter with `.order('listing_key')` on this MV hit the statement
  * timeout, while the same filter without the order returned instantly. The rows
  * are already fetched and already carry `city`; dropping them here costs

@@ -2,7 +2,8 @@
 /**
  * check-sitemap-listings-honest.mjs — ci:sitemap-listings-honest
  *
- * /sitemaps/listings.xml must be a first-class read of listing_tile_mv
+ * /sitemaps/listings.xml must be a first-class read of listing_search_mv (active-only;
+ * it was listing_tile_mv until 2026-09-16)
  * (PUBLIC_ACTIVE_STATUSES, stable listing_key order). It must not be a
  * filter over buildAllUrls: that universe swallows errors into an empty
  * urlset and paged the MV without ORDER BY (7,586 rows / 5,827 unique
@@ -57,8 +58,16 @@ if (listingsIdx < 0 || universeCallIdx < 0 || listingsIdx > universeCallIdx) {
 }
 
 const dal = src('lib/data/sitemap/getListingSitemapRows.ts')
-if (!dal.includes("from('listing_tile_mv')")) {
-  problems.push('lib/data/sitemap/getListingSitemapRows.ts: must read listing_tile_mv')
+// 2026-09-16: the read moved from the 593K-row, every-status listing_tile_mv to
+// the ~9.7K-row active-only listing_search_mv (see the DAL header). Same
+// statuses, same ORDER BY listing_key, same keyset pages; a fraction of the rows
+// under the statement timeout. The tile MV is refused here so the read cannot
+// drift back to the shape that 500'd in CI.
+if (!dal.includes("from('listing_search_mv')")) {
+  problems.push('lib/data/sitemap/getListingSitemapRows.ts: must read listing_search_mv (the active-only MV)')
+}
+if (dal.includes("from('listing_tile_mv')")) {
+  problems.push('lib/data/sitemap/getListingSitemapRows.ts: must not page listing_tile_mv (593K rows, no status+key index — the 2026-09-16 CI 500s)')
 }
 if (!dal.includes('PUBLIC_ACTIVE_STATUSES')) {
   problems.push('lib/data/sitemap/getListingSitemapRows.ts: must filter PUBLIC_ACTIVE_STATUSES')
@@ -96,5 +105,5 @@ if (problems.length) {
   console.error(`\n\x1b[31m✗ ci:sitemap-listings-honest: ${problems.length} problem(s).\x1b[0m`)
   process.exit(1)
 }
-console.log('✓ listings.xml is a first-class ordered listing_tile_mv read, independent of the universe build.')
+console.log('✓ listings.xml is a first-class ordered listing_search_mv read, independent of the universe build.')
 process.exit(0)
