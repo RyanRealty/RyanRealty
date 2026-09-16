@@ -42,6 +42,7 @@ import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Button, V3ChartSwitch, v3Text } from '@/components/site/v3'
 import { HomeRailCardFace } from '@/app/_v3/HomeListingRail.client'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import type { HomeRailCard, HomeRailRow } from '@/app/_v3/home-rail-items'
 import { buyShelfBands, buyShelfLadder, sortByAsk } from './buy-shelf-bands'
 import '@/components/site/v3/V3ListingRow.css'
@@ -71,7 +72,18 @@ function BuyShelfLadderStrip({
   cards: readonly HomeRailCard[]
   inView: readonly number[]
 }) {
-  const ladder = buyShelfLadder(cards)
+  /* A fractional-share ask is the price of a slice, not of the house, so it
+     keeps its card (with its share label) and loses its mark — otherwise the
+     strip's low end would be a number that buys nobody a home
+     (ci:listing-figure-publish, 735 Purcell / Eagle Crest). */
+  const ladder = buyShelfLadder(cards, (card) =>
+    publishListingShareKind({
+      propertySubType: card.propertySubType,
+      subdivisionName: card.subdivisionName,
+      city: card.city,
+      listNumber: card.listNumber,
+    }) != null,
+  )
   if (!ladder) return null
   const visible = new Set(inView)
   const low = formatPublishedSaleAsk({ price: ladder.low, propertyType: 'A' })
@@ -82,10 +94,10 @@ function BuyShelfLadderStrip({
     <p className="buy-ladder" aria-hidden="true">
       <span className="buy-ladder__end">{low}</span>
       <span className="buy-ladder__rail">
-        {ladder.marks.map((mark, i) => (
+        {ladder.marks.map((mark) => (
           <span
             key={mark.listingKey}
-            className={cn('buy-ladder__mark', visible.has(i) && 'is-on')}
+            className={cn('buy-ladder__mark', visible.has(mark.index) && 'is-on')}
             style={{ ['--buy-ladder-x' as string]: `${mark.pct * 100}%` }}
           />
         ))}

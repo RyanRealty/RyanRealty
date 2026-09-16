@@ -73,6 +73,10 @@ export function buyShelfBands(cards: readonly HomeRailCard[]): BuyShelfBand[] {
 /** One listing's place on the shelf's own asking-price ladder. */
 export type BuyShelfMark = {
   listingKey: string
+  /** Where this card sits in the array the shelf renders, so a mark can be
+   *  filled from the carousel's own `slidesInView()` even when the ladder
+   *  itself skipped a card. */
+  index: number
   price: number
   /** 0–1 along min→max of the asks on THIS shelf. */
   pct: number
@@ -98,25 +102,38 @@ export type BuyShelfLadder = {
  * faces, not a market statistic. Nothing here is an average, a median or a
  * count of anything beyond the rendered set, and the two figures are printed
  * at the ends of the strip so the marks between them are readable rather than
- * decorative. `null` when fewer than three asks, or when every ask is the same
- * number and the strip would be a stack of marks on one point.
+ * decorative. `null` when fewer than three whole-dwelling asks, or when every
+ * ask is the same number and the strip would be a stack of marks on one point.
  */
-export function buyShelfLadder(cards: readonly HomeRailCard[]): BuyShelfLadder | null {
-  const priced = cards.filter(
-    (c): c is HomeRailCard & { price: number } =>
-      c.price != null && Number.isFinite(c.price) && c.price > 0,
+export function buyShelfLadder(
+  cards: readonly HomeRailCard[],
+  /**
+   * A card the ladder must SKIP. The caller passes the fractional-share test
+   * (`publishListingShareKind`): a share ask is the price of a slice of a
+   * house, so putting it on one scale with whole-dwelling asks would move the
+   * strip's low end to a number that does not buy a home — the exact class of
+   * defect ci:listing-figure-publish exists to stop. The card still renders,
+   * with its own share label on its face; it simply has no mark.
+   */
+  skip: (card: HomeRailCard) => boolean = () => false,
+): BuyShelfLadder | null {
+  const marked = cards.flatMap((c, index) =>
+    c.price != null && Number.isFinite(c.price) && c.price > 0 && !skip(c)
+      ? [{ card: c, index, price: c.price }]
+      : [],
   )
-  if (priced.length < 3) return null
-  const low = Math.min(...priced.map((c) => c.price))
-  const high = Math.max(...priced.map((c) => c.price))
+  if (marked.length < 3) return null
+  const low = Math.min(...marked.map((m) => m.price))
+  const high = Math.max(...marked.map((m) => m.price))
   if (!(high > low)) return null
   return {
     low,
     high,
-    marks: priced.map((c) => ({
-      listingKey: c.listingKey,
-      price: c.price,
-      pct: (c.price - low) / (high - low),
+    marks: marked.map((m) => ({
+      listingKey: m.card.listingKey,
+      index: m.index,
+      price: m.price,
+      pct: (m.price - low) / (high - low),
     })),
   }
 }

@@ -142,6 +142,7 @@ describe('buyShelfLadder', () => {
     expect(ladder?.low).toBe(400_000)
     expect(ladder?.high).toBe(800_000)
     expect(ladder?.marks.map((m) => m.pct)).toEqual([0, 0.5, 1])
+    expect(ladder?.marks.map((m) => m.index)).toEqual([0, 1, 2])
   })
 
   it('keeps the cards in the order it was handed, so mark i is card i', () => {
@@ -158,6 +159,21 @@ describe('buyShelfLadder', () => {
     expect(
       buyShelfLadder([card(400_000, 'a'), card(800_000, 'b'), card(null, 'none')]),
     ).toBeNull()
+  })
+
+  it('skips a card the caller refuses, and keeps the others on their own index', () => {
+    const cards = [card(400_000, 'share'), card(600_000, 'b'), card(800_000, 'c'), card(1_000_000, 'd')]
+    const ladder = buyShelfLadder(cards, (c) => c.listingKey === 'share')
+    // The low end is the cheapest WHOLE dwelling, not the share ask.
+    expect(ladder?.low).toBe(600_000)
+    expect(ladder?.marks.map((m) => m.listingKey)).toEqual(['b', 'c', 'd'])
+    // …and each surviving mark still points at its card's slot in the shelf.
+    expect(ladder?.marks.map((m) => m.index)).toEqual([1, 2, 3])
+  })
+
+  it('refuses the strip when skipping leaves fewer than three asks', () => {
+    const cards = [card(400_000, 'a'), card(600_000, 'b'), card(800_000, 'share')]
+    expect(buyShelfLadder(cards, (c) => c.listingKey === 'share')).toBeNull()
   })
 
   it('names no figure but the low and the high it was handed', () => {
